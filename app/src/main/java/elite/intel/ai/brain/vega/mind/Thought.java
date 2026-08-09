@@ -64,7 +64,11 @@ public abstract class Thought {
     protected volatile CompletableFuture<?> inFlight;
     /** Linearizes a completed memory publication against interruption of this thought. */
     private final Object settlementPublicationLock = new Object();
-    /** Lane-thread-confined marker used to report the latency until this turn first begins tool execution. */
+    /**
+     * Marker used to report the latency until this turn first begins tool execution. Set on the lane thread by
+     * the turn's first call and read by any later call of the same turn, which a batch runs on the thread that
+     * completed the call before it; the settlement chain's happens-before is what makes that read safe.
+     */
     private boolean firstToolStarted;
 
     /** Creates a thought from its immutable turn signals and the shared service context. */
@@ -186,6 +190,15 @@ public abstract class Thought {
     }
 
     /**
+     * How many function calls this thought can settle in one round. The default of one keeps every thought that
+     * reads a single invocation honest: the gateway repairs a longer response instead of letting calls be
+     * silently dropped here. Only a thought that really executes a batch raises it.
+     */
+    protected int maxToolCallsPerRound() {
+        return 1;
+    }
+
+    /**
      * One LLM round, registered as the interruptible in-flight handle. A provider/transport failure or an
      * interrupt-driven cancellation (exceptional future) is treated as no usable result.
      */
@@ -193,9 +206,11 @@ public abstract class Thought {
         if (isStopped()) {
             return null;
         }
-        CompanionDiagnostics.debug(trace, "llm", "request: tools=" + tools.size() + " messages=" + flow.size());
+        int maxCalls = maxToolCallsPerRound();
+        CompanionDiagnostics.debug(trace, "llm", "request: tools=" + tools.size() + " messages=" + flow.size()
+                + (maxCalls > 1 ? " max-calls=" + maxCalls : ""));
         CompletableFuture<LlmResult> future = dependencies.llmGateway()
-                .submit(new LlmRequest(newId(), List.copyOf(flow), tools, profile, trace));
+                .submit(new LlmRequest(newId(), List.copyOf(flow), tools, profile, trace, maxCalls));
         inFlight = future;
         if (isStopped()) {
             future.cancel(true); // interrupt raced ahead of registration: cancel now so join unblocks
@@ -469,13 +484,42 @@ public abstract class Thought {
         if (answer.isBlank()) {
             return;
         }
-        MemoryRecord record = MemoryRecord.query(Instant.now(), context.memoryInput(), answer);
+        publishQueryAnswer(answer);
+    }
 
-        boolean published = publishSettlement(() -> {
+    /**
+     * Publishes one completed query answer as the commander/companion pair and voices it. Write and speech are
+     * one settlement, so an interrupted turn leaves neither. A thought that settles several calls against one
+     * utterance overrides this, voices the answer as it arrives and uses
+     * {@link #recordQueryAnswerWithoutVoicing} once at the end of the turn instead.
+     */
+    protected void publishQueryAnswer(String answer) {
+        if (isStopped() || answer == null || answer.isBlank()) {
+            return;
+        }
+        MemoryRecord record = MemoryRecord.query(Instant.now(), context.memoryInput(), answer);
+        publishQueryRecord(() -> {
             dependencies.memoryGateway().write(record);
             voice(answer, false);
         });
-        if (published) {
+    }
+
+    /**
+     * Writes one completed question/answer pair for a caller that has already voiced the answer itself.
+     */
+    protected void recordQueryAnswerWithoutVoicing(String answer) {
+        if (isStopped() || answer == null || answer.isBlank()) {
+            return;
+        }
+        MemoryRecord record = MemoryRecord.query(Instant.now(), context.memoryInput(), answer);
+        publishQueryRecord(() -> dependencies.memoryGateway().write(record));
+    }
+
+    /**
+     * Admits one query publication through the settlement fence and reports it once when it is admitted.
+     */
+    private void publishQueryRecord(Runnable publication) {
+        if (publishSettlement(publication)) {
             CompanionDiagnostics.debug(trace, "memory", "record query");
         }
     }

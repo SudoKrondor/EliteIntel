@@ -58,6 +58,13 @@
              line here is edge-triggered, never per-frame, so the cost is a handful
              of lines a session. -->
         <Logger name="elite.intel.ui.overlay" level="info"/>
+        <!-- Also louder than elite.intel, for the same reason as the overlay above. Memory
+             consolidation used to announce its failures out loud, which told the commander
+             about housekeeping they can do nothing about (the batch is retried, and falls
+             back to a local summary). It is logged instead - but at the parent's error level
+             the warn line would have been discarded, leaving the failure with nowhere to go
+             at all. Edge-triggered: one line per failed batch, not per record. -->
+        <Logger name="elite.intel.ai.brain.vega.memory" level="warn"/>
         <Logger name="elite.intel.gameapi.JournalParser" level="error"/>
         <Logger name="elite.intel.gameapi.AuxiliaryFilesMonitor" level="error"/>
         <Logger name="elite.intel.gameapi.journal.subscribers" level="error"/>

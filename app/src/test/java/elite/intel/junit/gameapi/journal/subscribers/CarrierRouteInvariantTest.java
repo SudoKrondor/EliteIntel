@@ -255,7 +255,7 @@ class CarrierRouteInvariantTest {
 
     private static CarrierDataDto carrierWithFuel(int fuel) {
         CarrierDataDto carrier = new CarrierDataDto();
-        carrier.setFuelLevel(fuel);
+        carrier.setMeasuredFuelLevel(fuel);
         return carrier;
     }
 

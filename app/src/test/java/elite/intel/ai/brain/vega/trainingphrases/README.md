@@ -1,198 +1,191 @@
-# Training-phrase quality — база знаний для починки команд
+# Training-phrase quality — knowledge base for fixing commands
 
-Инструмент и правила для оценки качества **тренировочных фраз** (алиасов) семантического reducer'а
-компаньона и для починки команд, которые плохо распознаются. Всё детерминировано и **не требует LM Studio** —
-нужна только модель эмбеддингов (`distribution/embed`).
+The tool and the rules for judging the quality of the companion semantic reducer's **training phrases**
+(aliases), and for fixing commands that are recognized badly. Everything is deterministic and **needs no LM
+Studio** — only the embedding model (`distribution/embed`).
 
----
-
-## 1. Что это меряет и зачем
-
-Reducer на каждом ходу отбирает из ~188 команд короткий список (топ‑8 игровых команд + системные функции),
-который уходит модели. **Reducer — кандидатогенератор, а не классификатор:** его задача — чтобы правильная
-команда **попала в короткий список**, а финальный выбор делает LLM.
-
-Отсюда главный KPI — **`offered@K`** (команда в списке), а не `hit@1` (команда на 1‑м месте). Для антонимных
-пар (`увеличь`/`уменьши`) `hit@1` всегда плавает ~50/50 — это нормально, обе попадают в offered, разводит LLM.
-
-Цель теста — найти команды, у которых реальные формулировки игрока **не приводят** к нужной команде (не
-попадают в offered), и подсказать, что добавить в алиасы.
+Example phrases below are quoted verbatim in the language they belong to, because they are the data under test; an English gloss follows where the argument depends on the meaning.
 
 ---
 
-## 2. Файлы этого пакета
+## 1. What this measures, and why
 
-| Файл | Назначение |
+On every turn the reducer picks a short list out of ~188 commands (the top 8 game commands plus the system functions) and that list goes to the model.
+**The reducer is a candidate generator, not a classifier:** its job is to get the right command **onto the short
+list**, and the LLM makes the final choice.
+
+Hence the headline KPI is
+**`offered@K`** (the command is on the list), not `hit@1` (the command is first). For antonym pairs (`увеличь`/`уменьши`, "increase"/"decrease") `hit@1` always floats around 50/50, which is normal:
+both land in offered, and the LLM tells them apart.
+
+The point of the test is to find commands whose real player phrasings **do not
+lead** to the right command (do not land in offered), and to suggest what to add to the aliases.
+
+---
+
+## 2. Files in this package
+
+| File | Purpose |
 |---|---|
-| `TrainingPhraseQualityProbe.java` | Скоринг: гоняет пробы через эмбеддер, пишет `build/training-phrase-quality-<lang>.csv` |
-| `SemanticReducerProbe.java` | Диагностика: `dumpsCatalog` (каталог), `dumpsParams` (схема параметров), `dumpsAntonymCosines` (косинусы пар) |
-| `../../../resources/trainingphrases/probe-phrases-ru.json` | Пробы: `{ "id": [10 фраз], ... }` — тестовые формулировки на каждую команду. Для EN, пока нет `probe-phrases-en.json`, тест использует seed из английских alias-фраз. |
-| `../../../../scripts/build_training_xlsx.py` | Сборка Excel из CSV (листы `data` / `Легенда` / `Алгоритм`) |
+| `TrainingPhraseQualityProbe.java` | Scoring: runs the probes through the embedder, writes `build/training-phrase-quality-<lang>.csv` |
+| `SemanticReducerProbe.java` | Diagnostics: `dumpsCatalog` (the catalog), `dumpsParams` (the parameter schema), `dumpsAntonymCosines` (pair cosines) |
+| `../../../resources/trainingphrases/probe-phrases-ru.json` | Probes: `{ "id": [10 phrases], ... }` — test phrasings for each command. For EN, while there is no `probe-phrases-en.json`, the test uses a seed of the English alias phrases. |
+| `../../../../scripts/build_training_xlsx.py` | Builds the Excel file from the CSV (sheets `data` / `Legend` / `Method`) |
 
-Продакшн‑код, на который опирается тест (в пакете `companion.prompt`): `SemanticActionReducer`,
+The production code the test rests on (in the `companion.prompt` package): `SemanticActionReducer`,
 `AliasEmbeddingText`, `GameToolCandidates`, `SemanticPhraseMatcher`.
 
 ---
 
-## 3. Как запускать
+## 3. How to run it
 
 ```bash
-# 1) выгрузить схему параметров всех команд (name:type:req/opt) — для аудита проб
+# 1) dump the parameter schema of every command (name:type:req/opt) - for auditing the probes
 ./gradlew :app:embeddingTest --tests "elite.intel.vega.trainingphrases.SemanticReducerProbe.dumpsParams"
 
-# 2) прогнать скоринг -> build/training-phrase-quality-ru.csv и build/training-phrase-quality-en.csv
+# 2) run the scoring -> build/training-phrase-quality-ru.csv and build/training-phrase-quality-en.csv
 ./gradlew :app:embeddingTest --tests "elite.intel.vega.trainingphrases.TrainingPhraseQualityProbe"
 
-# 3) собрать Excel (в Downloads)
+# 3) build the Excel file (into Downloads)
 python scripts/build_training_xlsx.py "C:\Users\Alex\Downloads\training-phrase-quality-ru.xlsx"
 python scripts/build_training_xlsx.py en "C:\Users\Alex\Downloads\training-phrase-quality-en.xlsx"
 ```
 
-Каталог (id/алиасы/назначение) для авторинга проб: `SemanticReducerProbe.dumpsCatalog` -> `build/catalog-ru.txt`.
+The catalog (id/aliases/purpose) for authoring probes: `SemanticReducerProbe.dumpsCatalog` -> `build/catalog-ru.txt`.
 
 ---
 
-## 4. Как читать результат (колонки Excel)
+## 4. How to read the result (the Excel columns)
 
-- **rank** — место команды среди всех ~188 на одной пробе. `1` = распознана; `>1` = впереди чужие.
-- **score** — `hit@1 X/10` (сколько проб на 1‑м месте) + `offered Y/10` (сколько попало в короткий список).
-- **verdict** — **OK** = offered 10/10; **WATCH** = 9/10; **WEAK** = ≤8/10 (на 2+ пробах команда скрыта от LLM).
-- **conflict_group** — команда, которая чаще всего перебивает эту (с кем идёт семантический конфликт).
-- **own_match** — лучшая своя тренировочная фраза для пробы и её близость.
-- **competitor** — чужая команда и её фраза, что перебили (разрыв = competitor − own_match).
-- **suggested_additions** — пробы, где команда проиграла (кандидаты в новые алиасы, после вычитки).
+- **rank** — the command's place among all ~188 on one probe. `1` = recognized; `>1` = other commands are ahead.
+- **score** — `hit@1 X/10` (how many probes put it first) plus `offered Y/10` (how many landed on the short list).
+- **verdict** — **OK** = offered 10/10; **WATCH** = 9/10;
+  **WEAK** = 8/10 or less (on 2+ probes the command is hidden from the LLM).
+- **conflict_group** — the command that most often beats this one (its semantic conflict partner).
+- **own_match** — the command's own best training phrase for the probe, and its similarity.
+- **competitor** — the foreign command and phrase that beat it (the gap is competitor − own_match).
+- **suggested_additions** — the probes where the command lost (candidates for new aliases, after review).
 
 ---
 
-## 5. ГЛАВНОЕ ПРАВИЛО (alias/probe hygiene)
+## 5. THE MAIN RULE (alias/probe hygiene)
 
-> **Тренировочная фраза — и тестовая проба — это полное высказывание: есть глагол‑действие
-> (не голый entity‑фрагмент) И есть значение каждого обязательного параметра.**
+> **A training phrase, and a test probe, is a complete utterance: it has an action verb (not a bare entity
+> fragment) AND it has a value for every required parameter.**
 
-Плохо: `двигатели`, `к точке пиратской миссии`, `торговый бюджет`, `таймер напоминания`, `быстрее`.
-Хорошо: `наведись на двигатели`, `проложи маршрут к точке пиратской миссии`,
-`поставь торговый бюджет десять миллионов`, `напомни через пять минут проверить топливо`,
-`прибавь скорость на двадцать`.
+Bad: `двигатели` ("engines"), `к точке пиратской миссии` ("to the pirate mission point"), `торговый бюджет`
+("trade budget"), `таймер напоминания` ("reminder timer"), `быстрее` ("faster"). Good: `наведись на двигатели` ("target the engines"), `проложи маршрут к точке пиратской миссии` ("plot a route to the pirate mission point"), `поставь торговый бюджет десять миллионов` ("set the trade budget to ten million"), `напомни через пять минут проверить топливо` ("remind me in five minutes to check the fuel"),
+`прибавь скорость на двадцать` ("increase speed by twenty").
 
-**Почему:** голый фрагment становится «semantic hub» и ловит чужие короткие фразы; безпараметровая фраза
-для required‑param команды может смаршрутить команду, которая **не сможет выполниться** без значения.
+**Why:** a bare fragment becomes a "semantic hub" and catches other commands' short phrases; and a parameterless phrase for a command with a required parameter can route to a command that
+**cannot run** without a value.
 
-### Значение по типу параметра (см. `dumpsParams`)
+### A value per parameter type (see `dumpsParams`)
 
-| тип параметра (required) | что должно быть в алиасе/пробе |
+| parameter type (required) | what the alias/probe must contain |
 |---|---|
-| `number` | число в фразе: `сбавь ход на 20`, `бюджет десять миллионов` |
-| `string` / enum | конкретная сущность: `наведись на двигатели`, `добавь платину в добычу` |
-| `boolean` (state) | явное вкл/выкл: `включи объявления добычи`, `разреши стронгхолды`, `выключи радио` |
+| `number` | a number in the phrase: `сбавь ход на 20` ("slow down by 20"), `бюджет десять миллионов` ("budget ten million") |
+| `string` / enum | a concrete entity: `наведись на двигатели` ("target the engines"), `добавь платину в добычу` ("add platinum to mining") |
+| `boolean` (state) | an explicit on/off: `включи объявления добычи` ("turn on mining announcements"), `разреши стронгхолды` ("allow strongholds"), `выключи радио` ("turn off the radio") |
 
-Проверить пробы на пропущенные значения: выгрузить `dumpsParams`, затем сверить `probe-phrases-ru.json`
-(number → в каждой пробе цифра/числительное; boolean → слово вкл/выкл/разреши/запрети; string → сущность).
-
----
-
-## 6. Конвенция аннотаций и матчинг‑поверхность
-
-В бандле алиасы несут плейсхолдеры `{name:hint}` (`{key:X}`, `{minutes:X}`, `{state:true/false}`). **Каждая**
-фраза параметрической команды должна нести плейсхолдер — этого требует конвенция и извлечение параметров.
-
-Но в эмбеддер идёт **не** сырой алиас: `AliasEmbeddingText` строит матчинг‑поверхность —
-- **number** → подставляет пример‑число (`{key:X}` → `20`); замерено: матчит реальную «на двадцать» лучше, чем
-  и аннотация, и голый стрип;
-- **всё остальное** (string/enum/boolean) → **стрип** (значение уже несёт существительное/глагол фразы).
-
-Бандл и аннотации не трогаем — производная только для эмбеддинга.
+To check the probes for missing values: dump `dumpsParams`, then go through `probe-phrases-ru.json`
+(number → a digit or numeral in every probe; boolean → an on/off/allow/forbid word; string → an entity).
 
 ---
 
-## 7. Пределы эмбеддингов (что НЕ чинится алиасами)
+## 6. The annotation convention and the matching surface
 
-`multilingual-e5` ловит **тему/структуру**, но размывает **полярность и смысл содержимого**:
+In the bundle, aliases carry `{name:hint}` placeholders (`{key:X}`, `{minutes:X}`, `{state:true/false}`).
+**Every** phrase of a parameterized command must carry the placeholder; the convention and parameter extraction both require it.
 
-- **Полярность:** `уменьши скорость` vs `увеличь скорость` ≈ 0.95; `открой люк` vs `закрой люк` ≈ 0.96 —
-  выше, чем несвязанная пара (~0.84). Антонимы почти в ничью → **обе** в offered → LLM разводит. Норма.
-- **Free‑text параметр** (`set_reminder`): контент («тритий», «стыковка») доминирует над намерением
-  «напомни» → цепляет контентные команды. Лечится частично усилением intent‑фрейма; остаток — предел.
-- **Голые числа** (`navigate_to_coordinates`): координаты `двадцать пять десять` матчат `set_speed_25`.
+But it is **not** the raw alias that goes to the embedder: `AliasEmbeddingText` builds a matching surface —
 
-Для этих случаев цель — **offered@K** (в списке), а не hit@1. Замер: `dumpsAntonymCosines`.
+-
+**number** → substitutes an example number (`{key:X}` → `20`); measured to match a real "на двадцать" ("by twenty") better than either the annotation or a bare strip;
+- **everything else** (string/enum/boolean) → **stripped** (the phrase's own noun or verb already carries the value).
 
----
-
-## 8. Плейбук: как чинить WEAK/WATCH команду
-
-1. Открой строку команды в Excel: смотри `conflict_group`, `competitor`, `suggested_additions`.
-2. **Диагноз по причине:**
-   - *нет русских примеров* (алиас = английский id) → добавь русские алиасы в `ai_action_aliases_ru.properties`
-     (недостающие — и в базовый `ai_action_aliases.properties` как EN‑fallback).
-   - *голый фрагмент у чужой команды перебивает* (напр. `двигатели` у query‑команды) → убери/уточни его
-     (`двигатели` → `состояние двигателей`).
-   - *коллизия с соседом* → добавь команде **различающие** алиасы (глагол + сущность), которых не хватает.
-   - *безпараметровая проба/алиас для required‑param* → добавь значение (см. §5), не пустую форму.
-3. **Не копируй пробы дословно в алиасы** (переобучение) — пиши канонические формы; пробы остаются
-   независимой проверкой.
-4. Прогони §3 заново, сверь verdict. Осторожно с **whack‑a‑mole**: усиление одной команды подтягивает её к
-   нетронутым близнецам — проверь и их, при необходимости пройди ещё раз.
-5. Остаток из §7 (полярность/free‑text/числа) при offered≥9 — оставляй осознанно.
+The bundle and the annotations are left alone; the derived form exists only for embedding.
 
 ---
 
-## 9. Разобранные кейсы (эталоны)
+## 7. The limits of embeddings (what aliases will NOT fix)
 
-- **`target_subsystem`** (было rank 5 на «наведись на двигатели»): у `query_ship_loadout` висел голый алиас
-  `двигатели`. Убрали его + добавили `наведись на двигатели` → rank 1 при beta=0. Фикс — гигиена алиасов, не скоринг.
-- **`decrease_speed`** (WEAK): пробы `быстрее`/`медленнее`/`притормози немного` — без числа для required
-  `number`. `притормози` вообще ≈ «подъедь к месту» (навигация). Фикс — пробы с числом (`сбавь скорость на десять`).
-- **`set_reminder`** (WEAK→OK): free‑text; алиас `напомни {key:X}` после стрипа = голое «напомни». Заменили на
-  intent‑фрейм `напомни мне / поставь напоминание / не забудь / сделай напоминание` → offered 10/10.
-- **`navigate_to_pirate_mission_target`**: голый фрагмент `к точке пиратской миссии` ловил чужие короткие
-  фразы. Заменили на `проложи маршрут к точке пиратской миссии`.
-- **`increase_speed` / `decrease_speed` (EN, 2026-07-20)**: у английских алиасов была **одна** форма
-  (
-  `increase speed by {key:X}`), тогда как у ru/de/fr — по несколько. На «set speed plus five» команда брала 0.862 при cutoff 0.869 (топ —
-  `set_optimal_speed` 0.909), то есть **не попадала в offered
-  **, и модель честно отвечала «могу только 100% или оптимальную». Фикс — 5 канонических форм на команду, покрывающих глагол×существительное (
-  `set speed plus`, `speed plus`, `speed up by`, `throttle up by`); эмбеддер сам обобщает на `increase throttle by`,
-  `raise speed by`, `bump speed up by` и т.п. — перечислять все перестановки не нужно.
-- **`increase_speed` / `decrease_speed` (DE, 2026-07-20)
-  **: тот же класс дефекта, найден прогоном пробы по языкам. В немецком алиасы называли только `Geschwindigkeit`, а *
-  *`Schub`** принадлежал командам фиксированной тяги (`voller schub`, `viertel schub`,
-  `schub auf null`). Любая формулировка через тягу
-  (`erhöhe den schub um zehn`, `schub plus fünf`, `schubregler um zehn hoch`) проигрывала `set_speed_100`:
-  6 из 16 проб не попадали в offered (ранги 3/24/14/9). Фикс — добавить Schub-формы в обе команды → 0/16 промахов, команды фиксированной тяги остались на 1-м месте.
-  **Урок:
-  ** проверять, не владеет ли сосед ключевым существительным языка; RU в том же прогоне дал 0/16 сразу (6 алиасов на команду).
-- **`increase_speed` / `decrease_speed` (FR/ES, 2026-07-20)
-  **: прогон по остальным языкам подтвердил тот же паттерн. FR: алиасы только через `vitesse`, а `poussée`/
-  `gaz` принадлежали фиксированным командам
-  (`pleine poussée`, `quart de poussée`, `plein gaz`) → 2 из 16 проб мимо offered (`poussée plus cinq`
-  ранг 11, `poussée moins cinq` ранг 19). ES: **один** алиас на команду,
-  `acelerador` принадлежал фиксированным; формально offered 16/16, но ранги 7–11 позади **несвязанных** команд
-  (`retract_landing_gear`, `target_hostile_highest_threat`,
-  `query_ship_loadout`) — то есть фраза не матчила ничего толком и проходила лишь потому, что и лидер был слабым. Добавили poussée/gaz и acelerador/empuje формы → почти всё на 1-м месте, фиксированные команды не сдвинулись.
-  **Вывод:
-  ** «offered@K = OK» не означает «здорово»: если лидер — чужая несвязанная команда, запас держится на случайности, и это ровно та поза, из которой DE/EN упали.
-- **`increase_speed` / `decrease_speed` (IT/UK, 2026-07-20)
-  **: закрыли последние два языка с алиасами. UK — точная копия дефекта DE/FR: алиасы только через `швидкість`, а
-  `тяга`/`хід` принадлежали фиксированным командам → 2 из 16 мимо (`тяга плюс п'ять` ранг 10,
-  `плюс десять до тяги` ранг 15). Показательно: **RU в том же прогоне был чист**, потому что там `тягу`/
-  `ходу` уже были в алиасах nudge — один и тот же язык-«родственник», разный результат, разница только в алиасах. IT — все команды скорости говорят
-  `velocità`, а `spinta`/`manetta` не встречались нигде →
-  `più manetta di dieci` ранг 16. Фикс — spinta/manetta и тяга/хід формы → 0/16 промахов в обоих, фиксированные команды не сдвинулись. Итог по всем языкам:
-  **EN, DE, FR, UK, IT — дефект; RU — чисто; ES — формально чисто, но хрупко.**
-  Регрессия закреплена в
-  `ThrottleNudgeRoutingTest` (EN/RU/DE/FR/ES/IT/UK, 119 формулировок + 36 проверок, что команды фиксированной скорости остались на 1-м месте).
+`multilingual-e5` captures **topic and structure**, but blurs **polarity and content meaning**:
+
+- **Polarity:** `уменьши скорость` vs `увеличь скорость` ("decrease"/"increase speed") ≈ 0.95; `открой люк` vs
+  `закрой люк` ("open"/"close the hatch") ≈ 0.96, which is higher than an unrelated pair (~0.84). Antonyms are nearly tied →
+  **both** land in offered → the LLM tells them apart. This is normal.
+- **A free-text
+  parameter** (`set_reminder`): the content ("тритий"/"tritium", "стыковка"/"docking") dominates the "remind me" intent → it catches content commands. Partly cured by strengthening the intent frame; the rest is a hard limit.
+- **Bare numbers** (`navigate_to_coordinates`): coordinates `двадцать пять десять` ("twenty five ten") match
+  `set_speed_25`.
+
+For these cases the target is **offered@K** (on the list), not hit@1. Measure with `dumpsAntonymCosines`.
 
 ---
 
-## 10. Ловушка: видимость каталога зависит от ЖИВОЙ игры
+## 8. Playbook: how to fix a WEAK/WATCH command
 
-`new GameToolCandidates()` фильтрует команды через `Status.getInstance()` — это **живой
-** статус игры. Если приложение запущено и коммандер сидит в доке или на ногах, все команды тяги исчезают из каталога
-(146 вместо 164), и проба/тест падает по причине, не имеющей отношения к маршрутизации.
-
-В тестах и пробах фиксируйте ситуацию:
-`new GameToolCandidates(Status.detached(PlayerSituation.IN_SHIP_DEEP_SPACE))`. Так результат воспроизводим и не зависит от того, чем занят игрок.
+1. Open the command's row in Excel: look at `conflict_group`, `competitor`, `suggested_additions`.
+2. **Diagnose by cause:**
+    - *no examples in the target language* (the alias is the English id) → add localized aliases to
+      `ai_action_aliases_ru.properties` (and the missing ones to the base `ai_action_aliases.properties` as the EN fallback).
+    - *a bare fragment on another command is
+      winning* (for example `двигатели`, "engines", on a query command) → remove or qualify it (`двигатели` → `состояние двигателей`, "engine status").
+    - *a collision with a neighbour* → add the **distinguishing** aliases the command lacks (verb plus entity).
+    - *a parameterless probe/alias for a required-parameter command* → add the value (see §5), not the empty form.
+3. **Do not copy probes verbatim into
+   aliases** (overfitting) — write canonical forms; the probes stay an independent check.
+4. Run §3 again and check the verdict. Beware
+   **whack-a-mole**: strengthening one command pulls it towards its untouched twins, so check those too and go round again if needed.
+5. The residue from §7 (polarity, free text, numbers) at offered ≥ 9 is left in place deliberately.
 
 ---
 
-Применяется к любому языку, не только RU. См. также память `project_alias_probe_hygiene`.
+## 9. Worked cases (reference examples)
+
+- **`target_subsystem`** (was rank 5 on `наведись на двигатели`, "target the engines"): `query_ship_loadout`
+  carried a bare `двигатели` ("engines") alias. Removing it and adding `наведись на двигатели` gave rank 1 at beta=0. The fix was alias hygiene, not scoring.
+-
+**`decrease_speed`** (WEAK): the probes `быстрее`/`медленнее`/`притормози немного` ("faster"/"slower"/"slow down a bit") carried no number for the required `number` parameter. `притормози` ("slow down") is in any case close to "pull up to a place" (navigation). The fix was probes with a number (`сбавь скорость на десять`, "reduce speed by ten").
+- **`set_reminder`** (WEAK→OK): free text; the alias `напомни {key:X}` after stripping is a bare `напомни`
+  ("remind"). Replaced by the intent frame `напомни мне / поставь напоминание / не забудь / сделай напоминание`
+  ("remind me / set a reminder / don't forget / make a reminder") → offered 10/10.
+-
+**`navigate_to_pirate_mission_target`**: the bare fragment `к точке пиратской миссии` ("to the pirate mission point") caught other commands' short phrases. Replaced by `проложи маршрут к точке пиратской миссии` ("plot a route to the pirate mission point").
+- **`increase_speed` / `decrease_speed` (EN, 2026-07-20)**: the English aliases had
+  **one** form (`increase speed by {key:X}`), where ru/de/fr had several. On "set speed plus five" the command scored 0.862 against a cutoff of 0.869 (the top was `set_optimal_speed` at 0.909), so it
+  **did not land in
+  offered**, and the model honestly answered that it could only do 100% or optimal. The fix was 5 canonical forms per command covering verb × noun (`set speed plus`, `speed plus`, `speed up by`, `throttle up by`); the embedder generalizes on its own to `increase throttle by`, `raise speed by`, `bump speed up by` and so on, so there is no need to enumerate every permutation.
+- **`increase_speed` / `decrease_speed` (DE,
+  2026-07-20)**: the same class of defect, found by running the probe across languages. In German the aliases named only `Geschwindigkeit`, while
+  **`Schub`** belonged to the fixed thrust commands (`voller schub`, `viertel schub`, `schub auf null`). Any thrust-based phrasing (`erhöhe den schub um zehn`, `schub plus fünf`, `schubregler um zehn hoch`) lost to `set_speed_100`: 6 of 16 probes missed offered (ranks 3/24/14/9). The fix was to add the Schub forms to both commands → 0/16 misses, with the fixed-thrust commands still first.
+  **Lesson:** check whether a neighbour owns the language's key noun; RU in the same run gave 0/16 immediately (6 aliases per command).
+- **`increase_speed` / `decrease_speed` (FR/ES,
+  2026-07-20)**: running the remaining languages confirmed the same pattern. FR: aliases only through `vitesse`, while `poussée`/`gaz` belonged to the fixed commands (`pleine poussée`, `quart de poussée`, `plein gaz`) → 2 of 16 probes missed offered (`poussée plus cinq` rank 11, `poussée moins cinq` rank 19). ES:
+  **one** alias per command, and `acelerador` belonged to the fixed ones; formally offered 16/16, but at ranks 7-11, behind
+  **unrelated** commands (`retract_landing_gear`,
+  `target_hostile_highest_threat`, `query_ship_loadout`) — that is, the phrase matched nothing properly and got through only because the leader was weak too. Adding poussée/gaz and acelerador/empuje forms put almost everything first, and the fixed commands did not move.
+  **Conclusion:** "offered@K = OK" does not mean healthy: if the leader is an unrelated foreign command, the margin rests on luck, and that is exactly the posture DE and EN fell from.
+- **`increase_speed` / `decrease_speed` (IT/UK,
+  2026-07-20)**: closing the last two languages that have aliases. UK was an exact copy of the DE/FR defect: aliases only through `швидкість` ("speed"), while `тяга`/`хід`
+  ("thrust"/"way") belonged to the fixed commands → 2 of 16 missed (`тяга плюс п'ять` rank 10,
+  `плюс десять до тяги` rank 15). Tellingly, **RU in the same run was
+  clean**, because there `тягу`/`ходу` were already in the nudge aliases: the same sibling language, a different result, and the only difference was the aliases. IT: every speed command says `velocità`, while `spinta`/`manetta` appeared nowhere →
+  `più manetta di dieci` rank 16. The fix was `spinta`/`manetta` and `тяга`/`хід` forms → 0/16 misses in both, with the fixed commands unmoved. The result across all languages:
+  **EN, DE, FR, UK, IT had the defect; RU was clean; ES was formally clean but fragile.**
+  The regression is locked down in `ThrottleNudgeRoutingTest` (EN/RU/DE/FR/ES/IT/UK, 119 phrasings plus 36 checks that the fixed-speed commands stayed first).
+
+---
+
+## 10. The trap: catalog visibility depends on the LIVE game
+
+`new GameToolCandidates()` filters commands through `Status.getInstance()`, which is the
+**live** game status. If the application is running and the commander is docked or on foot, every thrust command disappears from the catalog (146 instead of 164), and the probe or test fails for a reason that has nothing to do with routing.
+
+In tests and probes, pin the situation:
+`new GameToolCandidates(Status.detached(PlayerSituation.IN_SHIP_DEEP_SPACE))`. The result is then reproducible and independent of whatever the player is doing.
+
+---
+
+Applies to any language, not only RU. See also the `project_alias_probe_hygiene` memory.

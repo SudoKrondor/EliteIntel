@@ -31,6 +31,15 @@ class CompanionLlmGatewayTest {
                 PromptCacheProfile.COMMANDER);
     }
 
+    /**
+     * A request from a caller that settles several calls per round, as a commander turn does.
+     */
+    private static LlmRequest request(int maxToolCalls, LlmToolDefinition... tools) {
+        LlmRequest single = request(tools);
+        return new LlmRequest(single.requestId(), single.messages(), single.tools(), single.profile(),
+                null, maxToolCalls);
+    }
+
     private static LlmToolDefinition tool(String name) {
         return new LlmToolDefinition(name, "description", "", List.of());
     }
@@ -67,19 +76,155 @@ class CompanionLlmGatewayTest {
         assertEquals(1, adapter.requests.size());
     }
 
+    /**
+     * Several calls at once is an arity error, not a malformed response: the model parsed, chose offered
+     * functions and only asked for too many. Observed with mistral-small answering "check the loadout, what is
+     * our cargo capacity" with two valid queries - repairing against the functions it named turns a lost turn
+     * into an answer.
+     */
     @Test
     void rejectsMultipleCallsAndAcceptsSingleCallRepair() throws Exception {
         ScriptedAdapter adapter = new ScriptedAdapter(
                 calls("remember", "speak"), calls("remember"));
-        LlmRequest original = request(tool("remember"), tool("speak"));
+        LlmRequest original = request(tool("remember"), tool("speak"), tool("navigate"));
 
         LlmResult result = run(adapter, original);
 
         assertTrue(result.isValid());
         assertEquals(List.of("remember"), result.toolInvocations().stream()
                 .map(LlmToolInvocation::name).toList());
-        assertEquals(original.messages(), adapter.requests.get(1).messages(),
-                "multi-call output is malformed and must not be replayed as history");
+        List<LlmMessage> repaired = adapter.requests.get(1).messages();
+        assertEquals(original.messages(), repaired.subList(0, original.messages().size()));
+        LlmMessage replay = repaired.get(original.messages().size());
+        assertEquals(List.of("remember", "speak"), replay.toolCalls().stream()
+                .map(LlmToolInvocation::name).toList(), "both calls are replayed so each can be rejected");
+        for (int i = 0; i < replay.toolCalls().size(); i++) {
+            LlmMessage rejection = repaired.get(original.messages().size() + 1 + i);
+            assertEquals(replay.toolCalls().get(i).id(), rejection.toolCallId());
+            assertTrue(rejection.content().contains("No call was executed"));
+            assertTrue(rejection.content().contains("exactly one function"));
+        }
+        assertEquals(List.of("remember", "speak"), adapter.requests.get(1).tools().stream()
+                        .map(LlmToolDefinition::name).toList(),
+                "the repair only has to pick between the functions the model itself named");
+    }
+
+    /**
+     * One intent stated twice is not two actions, so it needs no round trip to resolve.
+     */
+    @Test
+    void repeatedIdenticalCallCollapsesToThatCall() throws Exception {
+        ScriptedAdapter adapter = new ScriptedAdapter(calls("remember", "remember"));
+
+        LlmResult result = run(adapter, request(tool("remember"), tool("speak")));
+
+        assertTrue(result.isValid());
+        assertEquals(List.of("remember"), result.toolInvocations().stream()
+                .map(LlmToolInvocation::name).toList());
+        assertEquals(1, adapter.requests.size(), "an identical repeat is collapsed, not repaired");
+    }
+
+    /**
+     * A model that will not narrow down still gets its first choice carried out rather than losing the turn.
+     */
+    @Test
+    void persistentMultiCallExecutesFirstNamedCall() throws Exception {
+        ScriptedAdapter adapter = new ScriptedAdapter(
+                calls("remember", "speak"), calls("remember", "speak"));
+
+        LlmResult result = run(adapter, request(tool("remember"), tool("speak")));
+
+        assertTrue(result.isValid());
+        assertEquals(List.of("remember"), result.toolInvocations().stream()
+                .map(LlmToolInvocation::name).toList());
+        assertEquals(2, adapter.requests.size());
+    }
+
+    /**
+     * A caller that settles a batch gets the batch: the arity is the request's, not the gateway's.
+     */
+    @Test
+    void severalCallsAreAcceptedWhenTheCallerSettlesThem() throws Exception {
+        ScriptedAdapter adapter = new ScriptedAdapter(calls("remember", "speak"));
+
+        LlmResult result = run(adapter, request(3, tool("remember"), tool("speak")));
+
+        assertTrue(result.isValid());
+        assertEquals(List.of("remember", "speak"), result.toolInvocations().stream()
+                .map(LlmToolInvocation::name).toList());
+        assertEquals(1, adapter.requests.size(), "a response within the allowance needs no repair");
+    }
+
+    /**
+     * The allowance is a ceiling, so overshooting it is still repaired - down to the ceiling, not to one.
+     */
+    @Test
+    void callsBeyondTheAllowanceAreRepairedDownToIt() throws Exception {
+        ScriptedAdapter adapter = new ScriptedAdapter(
+                calls("remember", "speak", "navigate"), calls("remember", "navigate"));
+
+        LlmResult result = run(adapter, request(2, tool("remember"), tool("speak"), tool("navigate")));
+
+        assertTrue(result.isValid());
+        assertEquals(List.of("remember", "navigate"), result.toolInvocations().stream()
+                .map(LlmToolInvocation::name).toList());
+        assertTrue(adapter.requests.get(1).messages().get(3).content().contains("at most 2 functions"));
+    }
+
+    /**
+     * Overshooting twice keeps the calls the model itself put first, up to what the caller can settle.
+     */
+    @Test
+    void persistentOvershootKeepsTheFirstCallsWithinTheAllowance() throws Exception {
+        ScriptedAdapter adapter = new ScriptedAdapter(
+                calls("remember", "speak", "navigate"), calls("remember", "speak", "navigate"));
+
+        LlmResult result = run(adapter, request(2, tool("remember"), tool("speak"), tool("navigate")));
+
+        assertTrue(result.isValid());
+        assertEquals(List.of("remember", "speak"), result.toolInvocations().stream()
+                .map(LlmToolInvocation::name).toList());
+    }
+
+    /**
+     * Repeats are dropped, but the same function asked about two different things is two answers.
+     */
+    @Test
+    void deduplicationKeepsDistinctArgumentsOfTheSameFunction() throws Exception {
+        LlmToolDefinition navigate = new LlmToolDefinition(
+                "navigate", "description", "", List.of(
+                new ActionParameterSpec("target", "string", false, "destination", List.of(), null)));
+        JsonObject sol = new JsonObject();
+        sol.addProperty("target", "Sol");
+        JsonObject colonia = new JsonObject();
+        colonia.addProperty("target", "Colonia");
+        LlmResult twoSystemsAndARepeat = new LlmResult(LlmResult.Status.OK, List.of(
+                new LlmToolInvocation("call-1", "navigate", sol),
+                new LlmToolInvocation("call-2", "navigate", colonia),
+                new LlmToolInvocation("call-3", "navigate", sol)));
+        ScriptedAdapter adapter = new ScriptedAdapter(twoSystemsAndARepeat);
+
+        LlmResult result = run(adapter, request(2, navigate));
+
+        assertTrue(result.isValid());
+        assertEquals(2, result.toolInvocations().size());
+        assertEquals(List.of("Sol", "Colonia"), result.toolInvocations().stream()
+                .map(call -> call.arguments().get("target").getAsString()).toList());
+        assertEquals(1, adapter.requests.size(), "dropping the repeat brought it within the allowance");
+    }
+
+    /**
+     * Naming a function that was never offered is a bad choice, not a bad count; the whole list stays open.
+     */
+    @Test
+    void multiCallNamingUnofferedFunctionKeepsEveryOfferedFunction() throws Exception {
+        ScriptedAdapter adapter = new ScriptedAdapter(calls("remember", "invented"), calls("speak"));
+
+        LlmResult result = run(adapter, request(tool("remember"), tool("speak")));
+
+        assertTrue(result.isValid());
+        assertEquals(List.of("remember", "speak"), adapter.requests.get(1).tools().stream()
+                .map(LlmToolDefinition::name).toList());
     }
 
     @Test

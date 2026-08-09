@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.ai.brain.vega.llm.LmStudioLlmAdapter;
 import elite.intel.ai.brain.vega.model.llm.*;
 import org.junit.jupiter.api.Test;
 
@@ -32,11 +31,29 @@ class LmStudioLlmAdapterTest {
 
         assertEquals("gemma-3", json.get("model").getAsString());
         assertEquals("required", json.get("tool_choice").getAsString());
-        assertFalse(json.get("parallel_tool_calls").getAsBoolean());
+        assertFalse(json.get("parallel_tool_calls").getAsBoolean(),
+                "a caller that settles one call must not be offered several");
         assertFalse(json.has("prompt_cache_key"), "Mistral's cache key must not be sent to LM Studio");
         // Local models accept a custom temperature, so it must be sent (the inverse of the OpenAI case).
         assertTrue(json.has("temperature"), "a custom temperature must be sent to LM Studio");
         assertEquals(0.4, json.get("temperature").getAsDouble(), 0.0001);
+    }
+
+    /**
+     * The option follows the request, not the endpoint: a commander turn settles a batch, so forcing a single
+     * call here would make the batch unreachable on LM Studio while every other provider allowed it.
+     */
+    @Test
+    void parallelToolCallsFollowsWhatTheCallerCanSettle() {
+        LlmRequest batchRequest = new LlmRequest("req-4",
+                List.of(LlmMessage.of(LlmMessageRole.USER, "check the loadout and our cargo")),
+                List.of(new LlmToolDefinition("query_loadout", "Loadout", "", List.of()),
+                        new LlmToolDefinition("query_cargo", "Cargo", "", List.of())),
+                PromptCacheProfile.COMMANDER, null, 2);
+
+        JsonObject json = JsonParser.parseString(adapter.buildRequestBody(batchRequest)).getAsJsonObject();
+
+        assertTrue(json.get("parallel_tool_calls").getAsBoolean());
     }
 
     @Test

@@ -55,7 +55,7 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
         if (!request.tools().isEmpty()) {
             body.add("tools", renderTools(request.tools()));
             body.addProperty("tool_choice", toolChoice); // require a function call
-            addToolRequestParameters(body);
+            addToolRequestParameters(body, request);
         }
         if (sendCacheKey) {
             body.addProperty("prompt_cache_key", request.profile().cacheKey());
@@ -67,9 +67,10 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
     }
 
     /**
-     * Adds endpoint-specific options for a request that offers tools. The default OpenAI-compatible body needs none.
+     * Adds endpoint-specific options for a request that offers tools, including any that depend on what the
+     * caller can settle ({@link LlmRequest#maxToolCalls()}). The default OpenAI-compatible body needs none.
      */
-    protected void addToolRequestParameters(JsonObject body) {
+    protected void addToolRequestParameters(JsonObject body, LlmRequest request) {
         // Default implementation intentionally leaves the shared wire shape unchanged.
     }
 

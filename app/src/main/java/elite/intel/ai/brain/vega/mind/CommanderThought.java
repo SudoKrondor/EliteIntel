@@ -5,6 +5,7 @@ import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.ai.brain.i18n.TrailingStringAliasMatcher;
+import elite.intel.ai.brain.vega.CompanionConfig;
 import elite.intel.ai.brain.vega.clarify.PendingClarification;
 import elite.intel.ai.brain.vega.confirm.ConfirmationCoordinator;
 import elite.intel.ai.brain.vega.diag.CompanionDiagnostics;
@@ -21,29 +22,50 @@ import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import elite.intel.util.StringUtls;
 import elite.intel.util.json.JsonUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * A commander tool-calling turn: compose one prompt, receive exactly one function call, and settle it. Conversation,
- * query outcomes publish only their complete record; commands and clarification remain operational state rather
- * than dialogue history. A command may own a non-dialogue side effect such as writing a SAVED_TEXT record. A
- * game handler may finish after later cognitive turns, but its result remains owned by this thought.
+ * A commander tool-calling turn: compose one prompt, receive the function calls it selected, and settle them in
+ * model order. Conversation and query outcomes publish only their complete record; commands and clarification
+ * remain operational state rather than dialogue history. A command may own a non-dialogue side effect such as
+ * writing a SAVED_TEXT record. A game handler may finish after later cognitive turns, but its result remains
+ * owned by this thought.
  * <p>
- * It has the full commander tool set and detaches commands/queries from the ordered cognitive worker. The single
- * selected call owns the turn: a game handler owns its outcome, while {@code speak} owns a conversational reply.
+ * It has the full commander tool set and detaches commands/queries from the ordered cognitive worker. One
+ * utterance may carry more than one request ("check the loadout, what is our cargo capacity"), so the turn
+ * settles up to {@link CompanionConfig#maxCommanderToolCalls()} calls, each under its own type's outcome policy,
+ * strictly one after another: a batch is several answers to one utterance, never several things happening at
+ * once. Two kinds of call are never batched - {@code request_input} suspends the turn until the commander
+ * answers, and a dangerous action gates on confirmation - so either of those reduces the response to itself.
+ * {@link #settleableCalls} is the single owner of that reduction.
  */
 public final class CommanderThought extends Thought {
+
+    private static final Logger log = LogManager.getLogger(CommanderThought.class);
 
     /** How long a dangerous action waits for the commander's confirmation before discard. */
     private static final long CONFIRMATION_TIMEOUT_SECONDS = 30;
     /** llm.properties key for the fixed, code-voiced dangerous-action confirmation prompt. */
     private static final String CONFIRM_DANGEROUS_KEY = "handler.common.confirmDangerousAction";
+    /**
+     * Joins the answers of a batch into the turn's one companion reply.
+     */
+    private static final String ANSWER_SEPARATOR = "\n";
 
-    private enum ConfirmationOutcome { CONFIRMED, CANCELLED, TIMED_OUT, INTERRUPTED }
+    private enum ConfirmationOutcome { CONFIRMED, CANCELLED, TIMED_OUT, INTERRUPTED}
+
+    /**
+     * This turn's query answers in the order they were voiced, joined into its single completed record.
+     */
+    private final List<String> queryAnswers = Collections.synchronizedList(new ArrayList<>());
+    /**
+     * Whether this turn has already voiced its one command acknowledgement.
+     */
+    private volatile boolean acknowledged;
 
     CommanderThought(ThoughtContext context, ThoughtDependencies dependencies) {
         super(context, dependencies);
@@ -59,6 +81,10 @@ public final class CommanderThought extends Thought {
      * Runs the ordered cognitive stage on the commander lane and returns the detached handler completion. The
      * lane worker may accept the next commander turn once this method returns, while ThoughtLane keeps this
      * thought live for cancellation, watchdog, shutdown, and {@code isIdle()} until the future settles.
+     * <p>
+     * The turn's completed query record is published here rather than inside any one settlement path, because
+     * every path ends in this future: a batch, a single call, and a confirmed dangerous action alike. Which of
+     * them can produce a query answer is the danger policy's business, not this method's.
      */
     @Override
     CompletableFuture<Void> startLifecycle() {
@@ -66,7 +92,7 @@ public final class CommanderThought extends Thought {
             return CompletableFuture.completedFuture(null);
         }
         try {
-            return beginTurn();
+            return beginTurn().whenComplete((ignored, failure) -> publishTurnAnswers());
         } catch (Throwable failure) {
             return CompletableFuture.failedFuture(failure);
         }
@@ -79,7 +105,7 @@ public final class CommanderThought extends Thought {
             List<LlmToolDefinition> tools = prompt.tools();
             PromptCacheProfile profile = prompt.profile();
 
-            // Single-round by design: one LLM call selects the settling function. Explicit memory_search is an
+            // Single-round by design: one LLM call selects the settling function(s). Explicit memory_search is an
             // existing terminal game query; durable memory is never injected before this call.
             if (isStopped()) {
                 discardIncompleteTurn();
@@ -95,7 +121,7 @@ public final class CommanderThought extends Thought {
                 return CompletableFuture.completedFuture(null);
             }
 
-            LlmToolInvocation invocation = result.toolInvocations().get(0);
+            List<LlmToolInvocation> calls = settleableCalls(result.toolInvocations());
 
             // The input remains only in ThoughtContext until settlement. Pure LLM speech commits a complete
             // commander->companion pair; QUERY files its completed question/answer pair; every action/service-only
@@ -105,14 +131,16 @@ public final class CommanderThought extends Thought {
                 return CompletableFuture.completedFuture(null);
             }
 
-            // A dangerous action is held until the commander confirms it.
-            if (dependencies.dangerousActionPolicy().isDangerous(invocation)) {
-                handleDangerousConfirmation(invocation);
+            // A dangerous action is held until the commander confirms it. settleableCalls has already made such a
+            // call the turn's only one, so the confirmation still blocks nothing but this lane.
+            LlmToolInvocation first = calls.get(0);
+            if (dependencies.dangerousActionPolicy().isDangerous(first)) {
+                handleDangerousConfirmation(first);
                 return CompletableFuture.completedFuture(null); // a dangerous turn is terminal
             }
 
-            // Execute the one validated settling call and end.
-            return executeRound(tools, invocation);
+            // Execute the validated settling calls, one after another, and end.
+            return executeBatch(tools, calls);
         } catch (RuntimeException unexpected) {
             // An unexpected failure (e.g. during prompt assembly) is diagnosed and voiced, but is not dialogue.
             onInvalidResponse();
@@ -125,6 +153,130 @@ public final class CommanderThought extends Thought {
     @Override
     protected List<LlmToolDefinition> systemTools(List<LlmToolDefinition> gameTools) {
         return dependencies.systemFunctionProvider().systemFunctions(source(), gameTools);
+    }
+
+    /**
+     * One utterance can hold more than one request, so a commander turn settles a bounded batch.
+     */
+    @Override
+    protected int maxToolCallsPerRound() {
+        return CompanionConfig.maxCommanderToolCalls();
+    }
+
+    /**
+     * Reduces the model's calls to the ones this turn will actually settle. A single call is always kept as it
+     * is; the rules below exist only because a response with several calls can combine things that do not
+     * combine.
+     * <ul>
+     *   <li>A gating call - {@code request_input}, which suspends the turn until the commander answers, or a
+     *       dangerous action, which must not run before confirmation - reduces the response to itself. Whatever
+     *       the model paired it with belongs to a turn that can complete, and running calls around a suspension
+     *       would settle them against state the commander has not agreed to yet.</li>
+     *   <li>{@code speak} alongside a game call is dropped: the game call's outcome is the answer, and the
+     *       prompt already says speaking is the fallback for when no function fits, not a preface to one.</li>
+     *   <li>Nothing but {@code speak} keeps the first call, since the turn has one conversational reply.</li>
+     * </ul>
+     */
+    private List<LlmToolInvocation> settleableCalls(List<LlmToolInvocation> calls) {
+        if (calls.size() <= 1) {
+            return calls;
+        }
+        Optional<LlmToolInvocation> gating = calls.stream().filter(this::isGating).findFirst();
+        if (gating.isPresent()) {
+            CompanionDiagnostics.debug(trace(), "settle", "batch of " + calls.size()
+                    + " reduced to gating call " + gating.get().name());
+            return List.of(gating.get());
+        }
+        List<LlmToolInvocation> gameCalls = calls.stream()
+                .filter(call -> dependencies.actionTypeResolver().resolve(call.name()).isGameAction())
+                .toList();
+        if (gameCalls.isEmpty()) {
+            CompanionDiagnostics.debug(trace(), "settle",
+                    "batch of " + calls.size() + " reduced to one reply " + calls.get(0).name());
+            return List.of(calls.get(0));
+        }
+        if (gameCalls.size() < calls.size()) {
+            CompanionDiagnostics.debug(trace(), "settle", "dropped "
+                    + (calls.size() - gameCalls.size()) + " non-action call(s) alongside "
+                    + CompanionDiagnostics.calls(gameCalls));
+        }
+        return gameCalls;
+    }
+
+    /**
+     * Whether this call must own the whole turn: it suspends the turn or waits on the commander's confirmation.
+     */
+    private boolean isGating(LlmToolInvocation call) {
+        return RequestInputFunction.ID.equals(call.name())
+                || dependencies.dangerousActionPolicy().isDangerous(call);
+    }
+
+    /**
+     * Settles the calls strictly in model order, each starting only once the one before it has finished, so a
+     * commander who asked for two things hears the answers in the order they were asked and never has two
+     * handlers running against the same game state. A call that fails does not cancel the ones behind it: the
+     * batch is several independent requests, not one transaction. The returned future completes when the last
+     * one settles, which is what keeps the whole batch inside this thought's lifecycle for cancellation and the
+     * watchdog.
+     */
+    private CompletableFuture<Void> executeBatch(
+            List<LlmToolDefinition> tools,
+            List<LlmToolInvocation> calls
+    ) {
+        CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
+        for (LlmToolInvocation call : calls) {
+            chain = chain.thenCompose(ignored -> isStopped()
+                    ? CompletableFuture.completedFuture(null)
+                    : executeRound(tools, call));
+            chain = chain.exceptionally(failure -> {
+                reportUnsettledCall(call, failure);
+                return null;
+            });
+        }
+        return chain;
+    }
+
+    /**
+     * Reports a call whose settlement threw. Execution failures are already turned into structured results by
+     * {@link #dispatchGameCall}, so anything arriving here is cancellation or a defect in settlement itself, and
+     * a defect that only ever reached the UI log surface would be invisible in the log file. The cause is
+     * unwrapped because the value is normally a {@link CompletionException} whose own message is just the
+     * cause's {@code toString()}.
+     */
+    private void reportUnsettledCall(LlmToolInvocation call, Throwable failure) {
+        Throwable cause = failure.getCause() != null ? failure.getCause() : failure;
+        CompanionDiagnostics.debug(trace(), "settle",
+                call.name() + " did not settle: " + CompanionDiagnostics.truncate(String.valueOf(cause.getMessage())));
+        if (cause instanceof CancellationException) {
+            return; // an interrupted turn cancels its own work; that is not a failure to report
+        }
+        log.warn("Settling {} threw; the remaining calls of this turn continue", call.name(), cause);
+    }
+
+    /**
+     * Publishes this turn's query answers as its one completed record. A record per call would spell one
+     * utterance out as several identical questions in the history the next turn reads, so the pair is the
+     * commander's input against the answers in the order they were voiced.
+     */
+    private void publishTurnAnswers() {
+        List<String> answers;
+        synchronized (queryAnswers) {
+            answers = List.copyOf(queryAnswers);
+        }
+        if (answers.isEmpty()) {
+            return;
+        }
+        recordQueryAnswerWithoutVoicing(String.join(ANSWER_SEPARATOR, answers));
+    }
+
+    /**
+     * Voices each answer the moment its handler finishes, so the commander hears them as they arrive, and holds
+     * it for the turn's single record, which {@link #publishTurnAnswers} writes once the turn ends.
+     */
+    @Override
+    protected void publishQueryAnswer(String answer) {
+        voice(answer, false);
+        queryAnswers.add(answer);
     }
 
     /** Host-provided live facts for this commander input, appended to the system prompt as {@code <facts>}. */
@@ -307,11 +459,14 @@ public final class CommanderThought extends Thought {
 
     /** Dispatches one game handler and owns its late result without retaining the commander cognitive worker. */
     private CompletableFuture<Void> dispatchGameCall(LlmToolInvocation inv, IntelActionType settledType) {
-        if (settledType == IntelActionType.COMMAND) {
+        if (settledType == IntelActionType.COMMAND && !acknowledged) {
+            acknowledged = true;
             String acknowledgement = StringUtls.affirmative();
             voice(acknowledgement, false);
             // The acknowledgement means only that execution was accepted. It is code-generated action feedback,
-            // not an LLM dialogue reply, so it never enters conversational memory.
+            // not an LLM dialogue reply, so it never enters conversational memory. One turn acknowledges once,
+            // however many commands it carries - the commander gave one order, and each command still speaks its
+            // own outcome when it finishes.
         }
 
         CompletableFuture<JsonObject> execution = submitExecution(inv);

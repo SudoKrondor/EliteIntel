@@ -5,10 +5,7 @@ import elite.intel.ai.ApiFactory;
 import elite.intel.ai.brain.LocalLlmModelCheck;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandLoadAnnouncement;
 import elite.intel.ai.brain.vega.input.CompanionSubsystemGate;
-import elite.intel.ai.ears.AudioCalibrator;
-import elite.intel.ai.ears.AudioDeviceEnumerator;
-import elite.intel.ai.ears.AudioFormatDetector;
-import elite.intel.ai.ears.EarsInterface;
+import elite.intel.ai.ears.*;
 import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.hands.KeyBindCheck;
 import elite.intel.ai.mouth.kokoro.KokoroTTS;
@@ -482,6 +479,9 @@ public class AppController {
                 DeviceService.getInstance().stop();
             }
         }));
+        // After DEVICE, whose poll loop feeds it the button transitions, and after EARS, because arming
+        // push-to-talk puts the microphone to sleep and there must be a microphone to put to sleep.
+        services.put(ServiceType.PUSH_TO_TALK, new ServiceHolder(PushToTalkService::getInstance));
         // The companion subsystem is the LLM service (the legacy command pipeline was removed). In diagnostics
         // mode it is wired with a recording execution gateway (file-fed phrases exercise the real routing path
         // without pressing keys into the game or calling third-party REST APIs) and a speech gateway that
@@ -543,7 +543,7 @@ public class AppController {
     }
 
     enum ServiceType {
-        MOUTH, RADIO_MOUTH, EARS, HANDS, DEVICE, COMPANION, NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR,
-        WEB_SOCKET, JOURNAL_PARSER, AUXILIARY_FILES_MONITOR
+        MOUTH, RADIO_MOUTH, EARS, HANDS, DEVICE, PUSH_TO_TALK, COMPANION, NOTIFICATION_MONITOR,
+        MISSING_MISSION_MONITOR, WEB_SOCKET, JOURNAL_PARSER, AUXILIARY_FILES_MONITOR
     }
 }

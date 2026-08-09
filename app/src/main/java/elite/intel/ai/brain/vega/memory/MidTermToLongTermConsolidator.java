@@ -1,18 +1,11 @@
 package elite.intel.ai.brain.vega.memory;
 
-import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
-import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.ai.brain.vega.CompanionRuntimeGeneration;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
-import elite.intel.ai.brain.vega.model.Urgency;
 import elite.intel.ai.brain.vega.model.llm.LlmRequest;
 import elite.intel.ai.brain.vega.model.llm.PromptCacheProfile;
 import elite.intel.ai.brain.vega.model.memory.MemoryKind;
 import elite.intel.ai.brain.vega.model.memory.MemoryRecord;
-import elite.intel.ai.brain.vega.model.speech.SpeechRequest;
-import elite.intel.ai.brain.vega.speech.SpeechGateway;
-import elite.intel.i18n.Language;
-import elite.intel.session.SystemSession;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,13 +20,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class MidTermToLongTermConsolidator implements PendingConsolidationListener, AutoCloseable {
 
     private static final Logger log = LogManager.getLogger(MidTermToLongTermConsolidator.class);
-    private static final String FAILURE_NOTICE_KEY = "handler.common.memoryConsolidationFailed";
     private static final int MAX_MODEL_ATTEMPTS = 3;
     private static final long RETRY_BASE_DELAY_MILLIS = 250;
 
     private final MemoryGateway memoryGateway;
     private final LlmGateway llmGateway;
-    private final SpeechGateway speechGateway;
     private final Executor executor;
     private final RetryScheduler retryScheduler;
     private final CompanionRuntimeGeneration runtimeGeneration;
@@ -48,20 +39,18 @@ public final class MidTermToLongTermConsolidator implements PendingConsolidation
     /** Production constructor with an owned single background worker. */
     public MidTermToLongTermConsolidator(
             MemoryGateway memoryGateway,
-            LlmGateway llmGateway,
-            SpeechGateway speechGateway
+            LlmGateway llmGateway
     ) {
-        this(memoryGateway, llmGateway, speechGateway, new CompanionRuntimeGeneration());
+        this(memoryGateway, llmGateway, new CompanionRuntimeGeneration());
     }
 
     /** Production lifecycle constructor bound to the owning runtime generation. */
     public MidTermToLongTermConsolidator(
             MemoryGateway memoryGateway,
             LlmGateway llmGateway,
-            SpeechGateway speechGateway,
             CompanionRuntimeGeneration runtimeGeneration
     ) {
-        this(memoryGateway, llmGateway, speechGateway, runtimeGeneration,
+        this(memoryGateway, llmGateway, runtimeGeneration,
                 Executors.newSingleThreadExecutor(runnable -> {
                     Thread thread = new Thread(runnable, "companion-consolidator");
                     thread.setDaemon(true);
@@ -73,10 +62,9 @@ public final class MidTermToLongTermConsolidator implements PendingConsolidation
     MidTermToLongTermConsolidator(
             MemoryGateway memoryGateway,
             LlmGateway llmGateway,
-            SpeechGateway speechGateway,
             Executor executor
     ) {
-        this(memoryGateway, llmGateway, speechGateway, new CompanionRuntimeGeneration(), executor,
+        this(memoryGateway, llmGateway, new CompanionRuntimeGeneration(), executor,
                 (task, ignoredDelay) -> task.run());
     }
 
@@ -84,11 +72,10 @@ public final class MidTermToLongTermConsolidator implements PendingConsolidation
     MidTermToLongTermConsolidator(
             MemoryGateway memoryGateway,
             LlmGateway llmGateway,
-            SpeechGateway speechGateway,
             CompanionRuntimeGeneration runtimeGeneration,
             Executor executor
     ) {
-        this(memoryGateway, llmGateway, speechGateway, runtimeGeneration, executor,
+        this(memoryGateway, llmGateway, runtimeGeneration, executor,
                 (task, ignoredDelay) -> task.run());
     }
 
@@ -96,14 +83,12 @@ public final class MidTermToLongTermConsolidator implements PendingConsolidation
     MidTermToLongTermConsolidator(
             MemoryGateway memoryGateway,
             LlmGateway llmGateway,
-            SpeechGateway speechGateway,
             CompanionRuntimeGeneration runtimeGeneration,
             Executor executor,
             RetryScheduler retryScheduler
     ) {
         this.memoryGateway = Objects.requireNonNull(memoryGateway, "memoryGateway");
         this.llmGateway = Objects.requireNonNull(llmGateway, "llmGateway");
-        this.speechGateway = Objects.requireNonNull(speechGateway, "speechGateway");
         this.runtimeGeneration = Objects.requireNonNull(runtimeGeneration, "runtimeGeneration");
         this.executor = Objects.requireNonNull(executor, "executor");
         this.retryScheduler = Objects.requireNonNull(retryScheduler, "retryScheduler");
@@ -196,7 +181,7 @@ public final class MidTermToLongTermConsolidator implements PendingConsolidation
     }
 
     private void handleFailure(Batch batch, String reason) {
-        fail(batch.kind(), reason, batch.attempt() == 1);
+        fail(batch.kind(), reason);
         if (batch.attempt() >= MAX_MODEL_ATTEMPTS && commitLocalFallback(batch)) {
             completeBatch();
             return;
@@ -264,20 +249,19 @@ public final class MidTermToLongTermConsolidator implements PendingConsolidation
         }
     }
 
-    private void fail(MemoryKind kind, String reason, boolean notifyCommander) {
+    /**
+     * Logged, never spoken.
+     * <p>
+     * WHY: this is our housekeeping, not the commander's. The batch is retained and retried, and after
+     * repeated model failures a local summary is committed instead, so there is nothing for them to do and
+     * nothing they can do - announcing it only reads as the ship breaking mid-flight. The log carries the kind
+     * and the reason for anyone diagnosing it afterwards.
+     */
+    private void fail(MemoryKind kind, String reason) {
         if (!acceptsWork()) {
             return;
         }
         log.warn("{} memory consolidation failed; batch retained for retry: {}", kind, reason);
-        if (!notifyCommander) {
-            return;
-        }
-        runtimeGeneration.runIfActive(() -> {
-            if (!closed.get()) {
-                speechGateway.submit(new SpeechRequest(
-                        UUID.randomUUID().toString(), failureNotice(), Urgency.NORMAL));
-            }
-        });
     }
 
     @Override
@@ -303,11 +287,6 @@ public final class MidTermToLongTermConsolidator implements PendingConsolidation
     private LlmRequest compressionRequest(MemoryKind kind, String summary, List<MemoryRecord> batch) {
         return new LlmRequest(UUID.randomUUID().toString(), promptComposer.compose(kind, summary, batch),
                 List.of(), PromptCacheProfile.COMPRESSION);
-    }
-
-    private static String failureNotice() {
-        Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
-        return ResponseTextProvider.getText(language, FAILURE_NOTICE_KEY);
     }
 
     private static String localFallbackSummary(String previous, List<MemoryRecord> records) {

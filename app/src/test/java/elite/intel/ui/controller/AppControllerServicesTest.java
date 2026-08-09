@@ -7,9 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Guards the service registry against a registration silently going missing (e.g. dropped by a bad
@@ -38,6 +36,22 @@ class AppControllerServicesTest {
     @Test
     void companionSubsystemIsRegistered() {
         assertTrue(AppController.buildServices(false).keySet().contains(ServiceType.COMPANION));
+    }
+
+    /**
+     * Push-to-talk used to run off a Swing settings panel, so it worked only because that tab is built at
+     * startup. As a service it needs the registry entry, and it needs the device poll loop feeding it and a
+     * microphone to put to sleep before it arms.
+     */
+    @Test
+    void pushToTalkComesUpAfterTheDevicesAndTheMicrophone() {
+        for (boolean localTts : new boolean[]{false, true}) {
+            List<ServiceType> order = List.copyOf(AppController.buildServices(localTts).keySet());
+            assertTrue(order.contains(ServiceType.PUSH_TO_TALK),
+                    "the controller button must work without opening settings, localTts=" + localTts);
+            assertTrue(order.indexOf(ServiceType.DEVICE) < order.indexOf(ServiceType.PUSH_TO_TALK));
+            assertTrue(order.indexOf(ServiceType.EARS) < order.indexOf(ServiceType.PUSH_TO_TALK));
+        }
     }
 
     @Test

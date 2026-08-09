@@ -141,8 +141,13 @@ class CompanionSystemPromptTest {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         String normalized = text.replaceAll("\\s+", " ");
 
-        assertTrue(normalized.contains("Return exactly one offered function call and no free text"));
+        assertTrue(normalized.contains("Return offered function calls and no free text"));
         assertTrue(normalized.contains("Use only offered functions and their declared parameters"));
+        // One call per request is the rule; a second call is licensed by a second request in the input, never by
+        // indecision between candidates for the same one.
+        assertTrue(normalized.contains("One request takes one call"));
+        assertTrue(normalized.contains("a second, different request"));
+        assertTrue(normalized.contains("never to hedge between candidates"));
         assertOrdered(normalized,
                 "IF <pending_clarification> continues",
                 "ELSE IF any offered game function other than memory_search fits the input",
@@ -260,7 +265,7 @@ class CompanionSystemPromptTest {
     void commanderBranchCarriesFunctionCallingAndExcludesNarration() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         assertTrue(text.contains("<function_calling>"));
-        assertTrue(text.contains("exactly one offered function call"));
+        assertTrue(text.contains("One request takes one call"));
         assertFalse(text.contains("<narration>"));
         assertFalse(text.contains("<processing/>"));
         assertFalse(text.contains("classify_turn"));

@@ -33,6 +33,15 @@ public interface ShipRouteDao {
     @SqlQuery("SELECT * FROM ship_route order by leg")
     List<ShipRouteDao.Route> getAll();
 
+    /**
+     * System the plotted route ends at, or null when no route is plotted.
+     * <p>
+     * Its own query rather than the last element of {@link #getAll()}: callers
+     * poll this frequently and a long route is a hundred rows.
+     */
+    @SqlQuery("SELECT systemName FROM ship_route ORDER BY leg DESC LIMIT 1")
+    String getFinalSystemName();
+
     @SqlUpdate("DELETE FROM ship_route where systemName = :starSystem")
     void delete(String starSystem);
 

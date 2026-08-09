@@ -22,9 +22,14 @@ import java.util.stream.Collectors;
  * {@link LlmProviderAdapter} and {@link LlmTransport}, enforces the tool-call-only contract, and does one
  * protocol repair for an invalid model response before reporting {@link LlmResult.Status#INVALID_RESPONSE}.
  * A transient transport failure gets one jittered resend, while a permanent transport failure skips protocol
- * repair. Every valid response contains exactly one offered function call whose arguments match its exact schema.
- * A malformed, multi-call or schema-invalid response
- * receives one protocol repair before the gateway reports it as invalid.
+ * repair. Every valid response contains at least one and at most {@link LlmRequest#maxToolCalls()} offered
+ * function calls whose arguments match their exact schema - the caller declares how many it can settle, so a
+ * longer response is a defect rather than a bonus.
+ * <p>
+ * A schema-invalid or over-long response is repaired through a rejected tool continuation - the model is told
+ * truthfully that nothing ran and what to correct - while a malformed one, having no calls to reject, is simply
+ * resent. Repeated identical calls are dropped rather than repaired, and a model that keeps overshooting has the
+ * calls it named first carried out, up to the allowance, instead of losing the turn.
  * <p>
  * Threading: requests run on a single-thread executor (consciousness is serialized); {@link #submit}
  * returns immediately with a future. Cancelling that future interrupts the exact executor task and, through
@@ -170,7 +175,7 @@ public final class CompanionLlmGateway implements LlmGateway {
 
     /** What is wrong with a parsed response. {@link #NONE} means the response is ready for execution. */
     private enum Defect {
-        NONE, INVALID_TOOL_CALL, MALFORMED,
+        NONE, INVALID_TOOL_CALL, MULTI_CALL, MALFORMED,
         TRANSIENT_TRANSPORT, PERMANENT_TRANSPORT, CANCELLED_TRANSPORT
     }
 
@@ -213,10 +218,38 @@ public final class CompanionLlmGateway implements LlmGateway {
             CompanionDiagnostics.debug(trace, "llm", "attempt#2 ok");
             return secondAttempt.result();
         }
+        LlmResult salvaged = executableCallsWithinAllowance(secondAttempt, request);
         CompanionDiagnostics.debug(trace, "llm", "attempt#2 still " + secondAttempt.defect()
-                + " calls=" + CompanionDiagnostics.calls(secondAttempt.result().toolInvocations()) + " -> INVALID");
+                + " calls=" + CompanionDiagnostics.calls(secondAttempt.result().toolInvocations())
+                + (salvaged == null ? " -> INVALID"
+                : " -> executing " + CompanionDiagnostics.calls(salvaged.toolInvocations())));
+        if (salvaged != null) {
+            log.warn("LLM kept requesting more calls than the turn allows; executing the first {} of {}",
+                    salvaged.toolInvocations().size(), secondAttempt.result().toolInvocations().size());
+            return salvaged;
+        }
         log.warn("LLM response still has defect {} after retry; returning INVALID_RESPONSE", secondAttempt.defect());
         return INVALID;
+    }
+
+    /**
+     * Last resort for a model that keeps asking for more than the turn carries out: keep the calls it named
+     * first, up to the caller's allowance, provided each is offered and schema-exact. Both attempts named
+     * functions the model considered right for the order, so dropping the whole turn answers a request it can
+     * serve with silence, and the calls it put first are its own ranking. Only a genuine arity defect is
+     * salvaged this way - a malformed or schema-invalid response has nothing safe to execute.
+     */
+    private LlmResult executableCallsWithinAllowance(Attempt attempt, LlmRequest request) {
+        if (attempt.defect() != Defect.MULTI_CALL) {
+            return null;
+        }
+        List<LlmToolInvocation> kept = List.copyOf(
+                attempt.result().toolInvocations().subList(0, request.maxToolCalls()));
+        if (!ToolCallValidator.validateAndNormalizeExactSchemas(kept, request.tools())) {
+            return null;
+        }
+        return new LlmResult(attempt.result().status(), kept,
+                attempt.result().finishReason(), attempt.result().droppedText());
     }
 
     /** Runs one logical provider attempt and validates it for the expected position in the local tool flow. */
@@ -241,7 +274,7 @@ public final class CompanionLlmGateway implements LlmGateway {
             }
             JsonObject response = ((AiTransportResult.Success) outcome).response();
             long parseStartedNanos = System.nanoTime();
-            LlmResult result = adapter.parse(response);
+            LlmResult result = deduplicateCalls(adapter.parse(response));
             ensureActive();
             long parseMillis = elapsedMillis(parseStartedNanos);
             CompanionDiagnostics.debug(trace, "llm-http",
@@ -311,13 +344,45 @@ public final class CompanionLlmGateway implements LlmGateway {
         return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
     }
 
-    /** Validates that the model returned exactly one offered call with its exact schema. */
+    /**
+     * Validates that the model returned no more calls than the caller can settle, each an offered call matching
+     * its exact schema. Too many calls is a distinct defect from a malformed one: the response parsed and the
+     * model made a semantic choice, it merely asked for more than the turn carries out, so it is repairable
+     * against the functions it named.
+     */
     private Defect defectOf(LlmResult result, LlmRequest request) {
-        if (!result.isValid() || result.toolInvocations().size() != 1) {
+        if (!result.isValid() || result.toolInvocations().isEmpty()) {
             return Defect.MALFORMED;
+        }
+        if (result.toolInvocations().size() > request.maxToolCalls()) {
+            return Defect.MULTI_CALL;
         }
         return ToolCallValidator.validateAndNormalizeExactSchemas(result.toolInvocations(), request.tools())
                 ? Defect.NONE : Defect.INVALID_TOOL_CALL;
+    }
+
+    /**
+     * Drops calls that repeat one already in the response, keeping first occurrences in model order. Models do
+     * restate the same function with the same arguments; that is one intent said twice rather than two actions,
+     * and running or repairing it would spend an execution or a round trip on an answer already in hand. Same
+     * function with different arguments is left alone - two systems, two answers.
+     */
+    private static LlmResult deduplicateCalls(LlmResult result) {
+        List<LlmToolInvocation> calls = result.toolInvocations();
+        if (!result.isValid() || calls.size() < 2) {
+            return result;
+        }
+        List<LlmToolInvocation> distinct = new ArrayList<>(calls.size());
+        for (LlmToolInvocation call : calls) {
+            boolean repeat = distinct.stream().anyMatch(kept -> Objects.equals(kept.name(), call.name())
+                    && Objects.equals(kept.arguments(), call.arguments()));
+            if (!repeat) {
+                distinct.add(call);
+            }
+        }
+        return distinct.size() == calls.size()
+                ? result
+                : new LlmResult(result.status(), List.copyOf(distinct), result.finishReason(), result.droppedText());
     }
 
     /**
@@ -334,10 +399,12 @@ public final class CompanionLlmGateway implements LlmGateway {
         messages.add(LlmMessage.assistantToolCalls(replayedCalls));
         for (LlmToolInvocation call : replayedCalls) {
             messages.add(LlmMessage.toolResult(call.id(),
-                    rejectionFor(failedAttempt.defect(), call, request.tools())));
+                    rejectionFor(failedAttempt.defect(), call, replayedCalls, request.tools(),
+                            request.maxToolCalls())));
         }
         return new LlmRequest(request.requestId(), List.copyOf(messages),
-                repairTools(request.tools(), failedAttempt), request.profile(), request.trace());
+                repairTools(request.tools(), failedAttempt), request.profile(), request.trace(),
+                request.maxToolCalls());
     }
 
     /**
@@ -349,6 +416,9 @@ public final class CompanionLlmGateway implements LlmGateway {
             List<LlmToolDefinition> offeredTools,
             Attempt failedAttempt
     ) {
+        if (failedAttempt.defect() == Defect.MULTI_CALL) {
+            return narrowToRequestedTools(offeredTools, failedAttempt.result().toolInvocations());
+        }
         if (failedAttempt.defect() != Defect.INVALID_TOOL_CALL
                 || failedAttempt.result().toolInvocations().size() != 1) {
             return offeredTools;
@@ -360,6 +430,25 @@ public final class CompanionLlmGateway implements LlmGateway {
                         .findFirst())
                 .map(List::<LlmToolDefinition>of)
                 .orElse(offeredTools);
+    }
+
+    /**
+     * Keeps only the functions the model itself named. Its semantic choice was sound - the error was asking for
+     * several at once - so the repair only has to settle which one, and withholding the rest (above all
+     * {@code speak}) stops the retry from answering an order with conversation. A named function that was never
+     * offered means the choice itself was unsound, and the full list stays available to make it again.
+     */
+    private static List<LlmToolDefinition> narrowToRequestedTools(
+            List<LlmToolDefinition> offeredTools,
+            List<LlmToolInvocation> calls
+    ) {
+        Set<String> requested = calls.stream()
+                .map(LlmToolInvocation::name)
+                .collect(Collectors.toSet());
+        List<LlmToolDefinition> narrowed = offeredTools.stream()
+                .filter(tool -> requested.contains(tool.name()))
+                .toList();
+        return narrowed.size() == requested.size() ? narrowed : offeredTools;
     }
 
     /**
@@ -388,7 +477,7 @@ public final class CompanionLlmGateway implements LlmGateway {
     }
 
     private static boolean canBuildRejectedContinuation(Attempt failedAttempt) {
-        return failedAttempt.defect() != Defect.MALFORMED
+        return (failedAttempt.defect() == Defect.INVALID_TOOL_CALL || failedAttempt.defect() == Defect.MULTI_CALL)
                 && failedAttempt.result().isValid()
                 && !failedAttempt.result().toolInvocations().isEmpty();
     }
@@ -436,13 +525,33 @@ public final class CompanionLlmGateway implements LlmGateway {
     private static String rejectionFor(
             Defect defect,
             LlmToolInvocation call,
-            List<LlmToolDefinition> offeredTools
+            List<LlmToolInvocation> allCalls,
+            List<LlmToolDefinition> offeredTools,
+            int maxToolCalls
     ) {
         return switch (defect) {
             case INVALID_TOOL_CALL -> rejectionPayload(invalidToolCallReason(call, offeredTools));
+            case MULTI_CALL -> rejectionPayload(multiCallReason(allCalls, maxToolCalls));
             case NONE, MALFORMED, TRANSIENT_TRANSPORT, PERMANENT_TRANSPORT, CANCELLED_TRANSPORT ->
                     throw new IllegalArgumentException("No tool continuation for " + defect);
         };
+    }
+
+    /**
+     * Tells the model that asking for more actions than the turn carries out ran none of them. Its choice of
+     * functions is not disputed - only how many - so the correction asks it to cut the list down rather than
+     * re-opening the decision.
+     */
+    private static String multiCallReason(List<LlmToolInvocation> calls, int maxToolCalls) {
+        String names = calls.stream().map(LlmToolInvocation::name).collect(Collectors.joining(", "));
+        String allowance = maxToolCalls == 1
+                ? "A turn carries out exactly one function"
+                : "A turn carries out at most " + maxToolCalls + " functions";
+        return "No call was executed. " + allowance + ", but this response requested " + calls.size()
+                + " (" + names + "). Keep only the listed function" + (maxToolCalls == 1 ? "" : "s")
+                + " the original request actually asks for; anything left over can be asked for afterwards. Do "
+                + "not call speak merely because this attempt was rejected; call speak only when none of the "
+                + "other listed functions can fulfill the original request.";
     }
 
     /** Gives the model the exact correction for the rejected call without weakening schema validation. */

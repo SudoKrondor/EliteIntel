@@ -57,6 +57,8 @@ public class AnalyzeCarrierStatusQuery extends BaseQueryAnalyzer implements Inte
                 - marketBalance: credits available for market purchases. A negative value is money already
                   committed to pending purchases, not debt.
                 - fuelSupply: current tritium in the supply depot, in tons
+                - fuelSupplyMeasured: true when the game itself last reported fuelSupply, false when it is
+                  our own running total since that reading and so an estimate
                 - fuelSupplyReserve: tritium held in reserve, in tons
                 - totalFuelAvailable: fuelSupply and fuelSupplyReserve combined
                 - maxRangeOnCurrentSupply: range in light years on fuelSupply alone
@@ -71,6 +73,8 @@ public class AnalyzeCarrierStatusQuery extends BaseQueryAnalyzer implements Inte
                 - If a value is zero or missing, state that clearly.
                 - When reporting fundedOperation, always mention the calculation is approximate, based on
                   31 million credits per week.
+                - When fuelSupplyMeasured is false, say the tritium figure is approximate. It is a running
+                  total since the last reading, so quoting it flatly would claim knowledge we do not have.
                 """;
         return process(
                 new AiDataStruct(
@@ -81,6 +85,7 @@ public class AnalyzeCarrierStatusQuery extends BaseQueryAnalyzer implements Inte
                                 stats.getTotalBalance(),
                                 stats.getMarketBalance(),
                                 stats.getFuelLevel(),
+                                stats.isFuelLevelMeasured(),
                                 stats.getFuelReserve(),
                                 stats.getFuelLevel() + stats.getFuelReserve(),
                                 stats.getRangeExcludingReserve(),
@@ -104,6 +109,7 @@ public class AnalyzeCarrierStatusQuery extends BaseQueryAnalyzer implements Inte
             long totalBalance,
             long marketBalance,
             int fuelSupply,
+            boolean fuelSupplyMeasured,
             int fuelSupplyReserve,
             int totalFuelAvailable,
             int maxRangeOnCurrentSupply,

@@ -407,6 +407,242 @@ class ThoughtTest {
         assertTrue(memory.writes.isEmpty());
     }
 
+    /**
+     * One utterance, two questions. Observed with mistral-small on "check the loadout, what is our cargo
+     * capacity": both queries are the commander's, so both run and both are answered, in the order asked.
+     */
+    @Test
+    void twoQuestionsInOneUtteranceAreBothAnswered() {
+        execution.results.put("query_loadout", outcome("A-rated everything"));
+        execution.results.put("query_cargo", outcome("256 tons"));
+        llm.results.add(ok(call("query_loadout", new JsonObject()), call("query_cargo", new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "check the loadout what's our cargo capacity",
+                dependencies(queriesNamed("query_loadout", "query_cargo"))).run();
+
+        assertEquals(List.of("query_loadout", "query_cargo"), execution.toolNames(),
+                "a batch runs in the order the commander asked, never at once");
+        assertEquals(List.of("A-rated everything", "256 tons"),
+                speech.requests.stream().map(SpeechRequest::text).toList());
+    }
+
+    /**
+     * The pair is what the next turn reads as history, so one utterance stays one question: a record per call
+     * would show the commander asking the same thing twice.
+     */
+    @Test
+    void aBatchPublishesOneRecordJoiningItsAnswers() {
+        execution.results.put("query_loadout", outcome("A-rated everything"));
+        execution.results.put("query_cargo", outcome("256 tons"));
+        llm.results.add(ok(call("query_loadout", new JsonObject()), call("query_cargo", new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "check the loadout what's our cargo capacity",
+                dependencies(queriesNamed("query_loadout", "query_cargo"))).run();
+
+        assertEquals(1, memory.writes.size());
+        MemoryRecord record = memory.writes.get(0);
+        assertEquals(MemoryKind.QUERY, record.kind());
+        assertEquals("check the loadout what's our cargo capacity", record.entries().get(0).content());
+        assertEquals("A-rated everything\n256 tons", record.entries().get(1).content());
+    }
+
+    /**
+     * A single-call turn keeps filing its own record; the batch rule must not change the ordinary turn.
+     */
+    @Test
+    void aSingleQueryStillPublishesItsOwnRecord() {
+        execution.results.put("query_cargo", outcome("256 tons"));
+        llm.results.add(ok(call("query_cargo", new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "what's our cargo capacity",
+                dependencies(queriesNamed("query_cargo"))).run();
+
+        assertEquals(1, memory.writes.size());
+        assertEquals("256 tons", memory.writes.get(0).entries().get(1).content());
+    }
+
+    /**
+     * A batch is several independent requests, not one transaction, so a handler that fails takes only its own
+     * answer down. The commander still hears the failure and still gets the answer that did work.
+     */
+    @Test
+    void aFailedCallDoesNotCancelTheRestOfTheBatch() {
+        execution.futures.put("query_loadout",
+                CompletableFuture.failedFuture(new IllegalStateException("offline")));
+        execution.results.put("query_cargo", outcome("256 tons"));
+        llm.results.add(ok(call("query_loadout", new JsonObject()), call("query_cargo", new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "check the loadout what's our cargo capacity",
+                dependencies(queriesNamed("query_loadout", "query_cargo"))).run();
+
+        assertEquals(List.of("query_loadout", "query_cargo"), execution.toolNames());
+        assertEquals(2, speech.requests.size(), "the failure is voiced, then the answer that worked");
+        assertEquals("256 tons", speech.requests.get(1).text());
+        assertEquals(1, memory.writes.size());
+        assertEquals("256 tons", memory.writes.get(0).entries().get(1).content(),
+                "a failed query is voiced but never remembered, even inside a batch");
+    }
+
+    /**
+     * The isolation has to hold for a defect in settlement itself, not only for a handler that reports failure:
+     * that is what the batch's exception stage exists for. Here the speech gateway throws while the first answer
+     * is being settled.
+     */
+    @Test
+    void aThrowingSettlementDoesNotCancelTheRestOfTheBatch() {
+        execution.results.put("query_loadout", outcome("A-rated everything"));
+        execution.results.put("query_cargo", outcome("256 tons"));
+        speech.failNextSubmit = true;
+        llm.results.add(ok(call("query_loadout", new JsonObject()), call("query_cargo", new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "check the loadout what's our cargo capacity",
+                dependencies(queriesNamed("query_loadout", "query_cargo"))).run();
+
+        assertEquals(List.of("query_loadout", "query_cargo"), execution.toolNames(),
+                "the second call must still run after the first one's settlement threw");
+        assertEquals(1, memory.writes.size());
+        assertEquals("256 tons", memory.writes.get(0).entries().get(1).content(),
+                "only the answer that settled reaches memory");
+    }
+
+    /**
+     * The action's own outcome is the answer, so a speak paired with it would only talk over the result.
+     */
+    @Test
+    void speakAlongsideAnActionIsDropped() {
+        execution.results.put("query_cargo", outcome("256 tons"));
+        llm.results.add(ok(call(SpeakFunction.ID, text("checking the hold")),
+                call("query_cargo", new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "what's our cargo capacity",
+                dependencies(queriesNamed("query_cargo"))).run();
+
+        assertEquals(List.of("query_cargo"), execution.toolNames());
+        assertEquals(List.of("256 tons"), speech.requests.stream().map(SpeechRequest::text).toList());
+    }
+
+    /**
+     * A clarification suspends the turn until the commander answers, so nothing may be batched around it: the
+     * calls beside it belong to a turn that can actually finish.
+     */
+    @Test
+    void requestInputInABatchReducesTheTurnToTheClarification() {
+        LlmToolDefinition setSpeed = new LlmToolDefinition(
+                "set_speed", "Set speed", "set speed",
+                List.of(new ActionParameterSpec("amount", "number", true, "Speed amount", List.of("50"), null)));
+        reducer.tools = List.of(setSpeed);
+        reducer.catalog = List.of(setSpeed);
+        JsonObject args = new JsonObject();
+        args.addProperty(RequestInputFunction.PARAM_ACTION_ID, "set_speed");
+        args.addProperty(RequestInputFunction.PARAM_PARAMETER_NAME, "amount");
+        args.addProperty(RequestInputFunction.PARAM_QUESTION, "By how much?");
+        llm.results.add(ok(call("query_cargo", new JsonObject()), call(RequestInputFunction.ID, args)));
+        IntelActionTypeResolver types = new IntelActionTypeResolver(id -> switch (id) {
+            case "set_speed" -> IntelActionType.COMMAND;
+            case "query_cargo" -> IntelActionType.QUERY;
+            default -> IntelActionType.SYSTEM;
+        });
+
+        Thought.commander(Urgency.NORMAL, "set speed and check the hold", dependencies(types)).run();
+
+        assertTrue(execution.requests.isEmpty(), "nothing runs while the turn waits on the commander");
+        assertEquals("set_speed", clarification.peek().orElseThrow().actionId());
+        assertEquals(List.of("By how much?"), speech.requests.stream().map(SpeechRequest::text).toList());
+    }
+
+    /**
+     * Confirmation gates the whole turn: a dangerous action cannot ride along with calls that just run.
+     */
+    @Test
+    void aDangerousActionInABatchStillOwnsTheTurn() throws Exception {
+        llm.results.add(ok(call("query_cargo", new JsonObject()), call("self_destruct", new JsonObject())));
+        dangerous = invocation -> "self_destruct".equals(invocation.name());
+        IntelActionTypeResolver types = new IntelActionTypeResolver(id -> switch (id) {
+            case "self_destruct" -> IntelActionType.COMMAND;
+            case "query_cargo" -> IntelActionType.QUERY;
+            default -> IntelActionType.SYSTEM;
+        });
+        Thought thought = Thought.commander(Urgency.NORMAL, "check the hold then self destruct",
+                dependencies(types));
+        Thread worker = new Thread(thought::run, "batched-confirmation-test");
+        worker.start();
+        waitUntil(() -> !speech.requests.isEmpty());
+
+        assertTrue(execution.requests.isEmpty(), "the query must not run before the confirmation is answered");
+        confirmation.confirm();
+        waitUntil(() -> execution.toolNames().contains("self_destruct"));
+        worker.join(2000);
+        assertFalse(worker.isAlive(), "worker did not finish; the assertions below would be vacuous");
+
+        assertEquals(List.of("self_destruct"), execution.toolNames());
+    }
+
+    /**
+     * The danger policy is an interface, so a query can be marked dangerous even though the production policy
+     * flags only commands. Such a call settles outside the batch chain, through the confirmation path, and the
+     * turn's record must not depend on which path ran it.
+     */
+    @Test
+    void aConfirmedDangerousQueryStillPublishesItsAnswer() throws Exception {
+        execution.results.put("scan_system", outcome("two stars"));
+        llm.results.add(ok(call("scan_system", new JsonObject())));
+        dangerous = invocation -> "scan_system".equals(invocation.name());
+        Thought thought = Thought.commander(Urgency.NORMAL, "scan the system",
+                dependencies(queriesNamed("scan_system")));
+        Thread worker = new Thread(thought::run, "dangerous-query-test");
+        worker.start();
+        waitUntil(() -> !speech.requests.isEmpty()); // the code-voiced confirmation prompt
+
+        confirmation.confirm();
+        waitUntil(() -> !memory.writes.isEmpty());
+        worker.join(2000);
+        assertFalse(worker.isAlive(), "worker did not finish; the assertions below would be vacuous");
+
+        assertEquals(1, memory.writes.size());
+        assertEquals("two stars", memory.writes.get(0).entries().get(1).content());
+    }
+
+    /**
+     * One order, one "affirmative" - each command still speaks its own outcome when it finishes.
+     */
+    @Test
+    void severalCommandsAreAcknowledgedOnce() {
+        execution.results.put("deploy_hardpoints", outcome("hardpoints deployed"));
+        execution.results.put("full_stop", outcome("all stop"));
+        llm.results.add(ok(call("deploy_hardpoints", new JsonObject()), call("full_stop", new JsonObject())));
+        IntelActionTypeResolver types = new IntelActionTypeResolver(id ->
+                "deploy_hardpoints".equals(id) || "full_stop".equals(id)
+                        ? IntelActionType.COMMAND : IntelActionType.SYSTEM);
+
+        Thought.commander(Urgency.NORMAL, "hardpoints and full stop", dependencies(types)).run();
+
+        List<String> spoken = speech.requests.stream().map(SpeechRequest::text).toList();
+        assertEquals(3, spoken.size(), "one acknowledgement, then one outcome per command: " + spoken);
+        assertEquals(List.of("hardpoints deployed", "all stop"), spoken.subList(1, 3));
+        assertTrue(memory.writes.isEmpty(), "commands stay out of conversational memory");
+    }
+
+    /**
+     * Only a turn that settles a batch asks for one; every other round stays at a single call.
+     */
+    @Test
+    void onlyTheCommanderRoundAsksForSeveralCalls() {
+        llm.results.add(ok(call(SpeakFunction.ID, text("acknowledged"))));
+        llm.results.add(ok(call(SpeakFunction.ID, text("scanning complete"))));
+
+        Thought.commander(Urgency.NORMAL, "status", dependencies()).run();
+        Thought.eventReaction(Urgency.NORMAL, "scan finished", null, dependencies()).run();
+
+        assertTrue(llm.requests.get(0).maxToolCalls() > 1, "a commander utterance may hold several requests");
+        assertEquals(1, llm.requests.get(1).maxToolCalls(), "a narration turn is one line");
+    }
+
+    private IntelActionTypeResolver queriesNamed(String... queryIds) {
+        Set<String> queries = Set.of(queryIds);
+        return new IntelActionTypeResolver(id ->
+                queries.contains(id) ? IntelActionType.QUERY : IntelActionType.SYSTEM);
+    }
+
     @Test
     void reflexQueryPublishesCompleteQueryRecordWithoutLlm() {
         execution.results.put("scan_system", outcome("two stars"));
@@ -436,8 +672,8 @@ class ThoughtTest {
         assertFalse(speech.requests.get(0).text().isBlank());
     }
 
-    private static LlmResult ok(LlmToolInvocation invocation) {
-        return new LlmResult(LlmResult.Status.OK, List.of(invocation));
+    private static LlmResult ok(LlmToolInvocation... invocations) {
+        return new LlmResult(LlmResult.Status.OK, List.of(invocations));
     }
 
     private static LlmToolInvocation call(String name, JsonObject arguments) {
@@ -482,9 +718,15 @@ class ThoughtTest {
 
     private static final class FakeSpeech implements SpeechGateway {
         private final List<SpeechRequest> requests = new CopyOnWriteArrayList<>();
+        /** Makes the next submit throw, standing in for a defect raised while a turn settles. */
+        private volatile boolean failNextSubmit;
 
         @Override
         public CompletableFuture<Void> submit(SpeechRequest request) {
+            if (failNextSubmit) {
+                failNextSubmit = false;
+                throw new IllegalStateException("speech engine unavailable");
+            }
             requests.add(request);
             return CompletableFuture.completedFuture(null);
         }

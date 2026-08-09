@@ -113,7 +113,7 @@ class JournalPreScannerCarrierRouteTest {
 
     private static CarrierDataDto carrierWithFuel() {
         CarrierDataDto carrier = new CarrierDataDto();
-        carrier.setFuelLevel(545);
+        carrier.setMeasuredFuelLevel(545);
         carrier.setCargoCapacity(25000);
         carrier.setCargoSpaceUsed(13587);
         return carrier;

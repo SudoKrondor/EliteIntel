@@ -67,6 +67,7 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("council", "cancel");
         m.put("scalar", "scanner");
         m.put("lensing", "landing");
+        m.put("lending", "landing");
         m.put("team", "tin");
         m.put("karga", "cargo");
         m.put("skoop", "scoop");

@@ -47,17 +47,17 @@ public class CarrierJumpCompleteSubscriber {
 
             FleetCarrierRouteManager fleetCarrierRouteManager = FleetCarrierRouteManager.getInstance();
 
-            // WHY here as well as in CarrierLocationSubscriber: CarrierJump proves the carrier is in
-            // this system, and the route truncates at whatever this field says. CarrierLocation
-            // normally sets it a minute earlier, but that event is absent from older journals, and
-            // the route must not be left reporting a leg the carrier is parked in. Idempotent.
-            playerSession.setLastKnownCarrierLocation(starSystem);
-
-            // WHY: the system we are sitting in is never part of the remaining route. CarrierLocation
-            // normally clears the leg (and decrements fuel from it) a minute earlier, but that event
-            // is absent from older journals, so removing it here too keeps the route correct. The
-            // call is idempotent, and fuel is decremented in CarrierLocationSubscriber alone.
-            fleetCarrierRouteManager.removeLeg(starSystem);
+            // WHY here as well as from CarrierLocation: CarrierJump proves the carrier is in this system,
+            // and CarrierLocation is absent from older journals. Both events hand the same arrival to the
+            // same owner, which charges it once and serialises the two threads - without that, whichever
+            // wrote the carrier's system first left the other believing it had never moved, and the jump
+            // went uncharged, unannounced at its true fuel level and, off route, never re-plotted.
+            //
+            // WHY the coordinates go in with it: CarrierJump carries the destination StarPos, which is
+            // authoritative and free, where CarrierLocation has none and would resolve them over the
+            // network. Placeholder coordinates are withheld so they are resolved properly instead.
+            CarrierArrival.recordFleetArrival(starSystem, event.getSystemAddress(),
+                    coordsArePlaceholder ? null : starPos);
 
             // WHY: CarrierJump is only written when the commander is aboard, but the DOCKED status
             // flag is set only while he is in his ship. On foot in the concourse it is clear, so the
@@ -77,20 +77,9 @@ public class CarrierJumpCompleteSubscriber {
                 }
             }
 
-            if (!coordsArePlaceholder) {
-                // WHY: CarrierJump carries the destination StarPos, which is authoritative and free.
-                // CarrierLocation has no coordinates and has to resolve them from the route leg or
-                // over the network, so refine them here whenever the commander was aboard to see it.
-                CarrierDataDto carrierData = playerSession.getFleetCarrierData();
-                carrierData.setStarName(starSystem);
-                carrierData.setSystemAddress(event.getSystemAddress());
-                carrierData.setX(starPos[0]);
-                carrierData.setY(starPos[1]);
-                carrierData.setZ(starPos[2]);
-                playerSession.setFleetCarrierData(carrierData);
-            }
-
-            CarrierDataDto postJumpCarrierData = playerSession.getFleetCarrierData();
+            // WHY through the arrival owner: the level quoted below must be the one this jump left behind,
+            // never the one the depot held before it.
+            CarrierDataDto postJumpCarrierData = CarrierArrival.settledFleetCarrierData();
             int numJumpsRemaining = fleetCarrierRouteManager.getFleetCarrierRoute().size();
             int estimatedTimeToFinal = numJumpsRemaining * 20;
             String timeString;
@@ -108,12 +97,17 @@ public class CarrierJumpCompleteSubscriber {
                     : " " + localizedEvent("event.carrier.jump.remaining",
                     localizedEventPlural(numJumpsRemaining, "event.carrier.jump.count"), timeString);
 
+            // WHY the figure arrives pre-worded: whether the depot level is known or merely worked out is
+            // ours to decide, not the model's, and it must not quietly firm up an estimate into a fact.
             String instructions = """
                         Notify user about new carrier location.
-                        Example: Carrier jump complete!. New location <starSystem>, remaining fuel supply <fuelSupply> tons. Fuel in reserve <fuelReserve> tons.
+                        Example: Carrier jump complete!. New location <starSystem>, remaining fuel supply <fuelSupply>. Fuel in reserve <fuelReserve> tons.
+                        Quote fuelSupply exactly as given, keeping the word "approximately" when it is there.
                     """;
             CompanionRuntime.narrator().narrate(
-                            "Carrier Location: " + event.getStarSystem() + " fuelSupply " + postJumpCarrierData.getFuelLevel() + " fuelReserve:" + postJumpCarrierData.getFuelReserve() + remainingRoute,
+                    "Carrier Location: " + event.getStarSystem()
+                            + " fuelSupply " + CarrierFuelPhrase.of(postJumpCarrierData)
+                            + " fuelReserve:" + postJumpCarrierData.getFuelReserve() + remainingRoute,
                             instructions
                     );
             DeferredNotificationManager.getInstance().scheduleNotification(localizedEvent("event.carrier.jumpCooldownComplete"), FOUR_MINUTES);

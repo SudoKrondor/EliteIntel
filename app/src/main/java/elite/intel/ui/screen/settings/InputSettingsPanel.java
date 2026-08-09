@@ -1,23 +1,21 @@
 package elite.intel.ui.screen.settings;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
+import elite.intel.ai.ears.PushToTalkService;
 import elite.intel.devices.DeviceService;
-import elite.intel.devices.events.DeviceButtonEvent;
 import elite.intel.devices.events.DeviceConnectedEvent;
 import elite.intel.devices.events.DeviceDisconnectedEvent;
 import elite.intel.devices.model.Device;
 import elite.intel.eventbus.DeviceBus;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
-import elite.intel.ui.event.*;
+import elite.intel.ui.event.PttModeChangedEvent;
+import elite.intel.ui.event.PushToTalkSettingsChangedEvent;
+import elite.intel.ui.event.RestartEarsEvent;
 import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudSegmentedControl;
 import elite.intel.ui.widget.HudTwoColumns;
-import elite.intel.util.AudioPlayer;
-import elite.intel.util.PlayBeepEvent;
 
 import javax.swing.*;
 import java.awt.*;
@@ -29,8 +27,12 @@ import static elite.intel.ui.theme.HudForms.*;
 import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND;
 
 /**
- * "Input" settings tab - lets the user map a controller button to push-to-talk, monitored via
- * the shared SDL3 poll loop in {@link DeviceService}.
+ * "Input" settings tab - lets the commander map a controller button to push-to-talk, from the devices the
+ * shared SDL3 poll loop in {@link DeviceService} reports.
+ * <p>
+ * Editing only. The mapped button is acted on by {@link PushToTalkService}, which reads these settings back
+ * from {@code SystemSession}: a controller button must keep working whether or not this tab was ever opened,
+ * and the microphone gate is not something anyone should have to find inside a settings screen.
  */
 public class InputSettingsPanel extends JPanel {
 
@@ -43,15 +45,16 @@ public class InputSettingsPanel extends JPanel {
     private static final int MODE_TOGGLE = 0;
     private static final int MODE_HOLD = 1;
 
-    // Mirrors of the Swing selection state above, read from the SDL poll thread.
-    private volatile boolean pushToTalkEnabled = false;
-    private volatile Device selectedDevice = null;
-    private volatile int selectedButtonIndex = -1; // 0-based SDL button index, -1 = none
-    private volatile boolean toggleMode = true;
+    // Selection state behind the combos. EDT-only: the device subscriptions below hand straight to
+    // invokeLater, and the button itself is read by PushToTalkService, not here.
+    private boolean pushToTalkEnabled = false;
+    private Device selectedDevice = null;
+    private int selectedButtonIndex = -1; // 0-based SDL button index, -1 = none
+    private boolean toggleMode = true;
 
     // Name of the controller persisted in game_session, used to re-select it once it appears
     // in the connected-devices list (initial load, or reconnect after a disconnect).
-    private volatile String persistedControllerName = null;
+    private String persistedControllerName = null;
 
     // Suppresses SystemSession writes while combo selections are being driven programmatically
     // (initial load, or reacting to DeviceConnected/DeviceDisconnectedEvent) rather than by the user.
@@ -77,14 +80,6 @@ public class InputSettingsPanel extends JPanel {
         enablePushToTalkCheck.setSelected(pushToTalkEnabled);
         setControlsEnabled(pushToTalkEnabled);
         modeControl.setSelectedIndex(toggleMode ? MODE_TOGGLE : MODE_HOLD);
-
-        if (pushToTalkEnabled) {
-            SystemSession.getInstance().stopStartListening(true);
-            UiBus.publish(new SleepWakeStateChangedEvent(true));
-            if (!toggleMode) {
-                UiBus.publish(new PttModeChangedEvent(true));
-            }
-        }
 
         reconcileControllerSelection();
     }
@@ -149,20 +144,13 @@ public class InputSettingsPanel extends JPanel {
         setControlsEnabled(false);
     }
 
-    /** Applies the selected PTT mode: toggle (sleep/wake) vs hold-to-talk, and syncs session + events. */
+    /**
+     * Records the selected PTT mode: toggle (sleep/wake) vs hold-to-talk. {@link PushToTalkService} applies it.
+     */
     private void onModeChanged() {
-        if (modeControl.getSelectedIndex() == MODE_TOGGLE) {
-            toggleMode = true;
-            SystemSession.getInstance().setPushToTalkToggleMode(true);
-            UiBus.publish(new PttModeChangedEvent(false));
-        } else {
-            toggleMode = false;
-            SystemSession.getInstance().setPushToTalkToggleMode(false);
-            // Lock the system to sleeping - PTT button is the only wake trigger in this mode.
-            SystemSession.getInstance().stopStartListening(true);
-            UiBus.publish(new SleepWakeStateChangedEvent(true));
-            UiBus.publish(new PttModeChangedEvent(true));
-        }
+        toggleMode = modeControl.getSelectedIndex() == MODE_TOGGLE;
+        SystemSession.getInstance().setPushToTalkToggleMode(toggleMode);
+        UiBus.publish(new PushToTalkSettingsChangedEvent());
     }
 
     // -- UI handlers -----------------------------------------------------------
@@ -173,17 +161,9 @@ public class InputSettingsPanel extends JPanel {
         setControlsEnabled(enabled);
         if (enabled) {
             reconcileControllerSelection();
-
-            SystemSession.getInstance().stopStartListening(true);
-            UiBus.publish(new SleepWakeStateChangedEvent(true));
-            if (!toggleMode) UiBus.publish(new PttModeChangedEvent(true));
-        } else {
-
-            SystemSession.getInstance().stopStartListening(false);
-            UiBus.publish(new SleepWakeStateChangedEvent(false));
-            UiBus.publish(new PttModeChangedEvent(false));
         }
         SystemSession.getInstance().setPushToTalkEnabled(enabled);
+        UiBus.publish(new PushToTalkSettingsChangedEvent());
         // PTT on/off only affects the STT pipeline; it previously took effect only after an app
         // restart. Restart just the EARS service so the change applies now (no full rebuild needed).
         UiBus.publish(new RestartEarsEvent());
@@ -298,10 +278,6 @@ public class InputSettingsPanel extends JPanel {
 
     @Subscribe
     public void onDeviceDisconnected(DeviceDisconnectedEvent event) {
-        if (selectedDevice != null && selectedDevice.id() == event.deviceId() && !toggleMode) {
-            // Release PTT if the controller disconnects while the button is held.
-            UiBus.publish(new PttButtonStateEvent(false));
-        }
         SwingUtilities.invokeLater(() -> {
             suppressPersistence = true;
             try {
@@ -317,46 +293,4 @@ public class InputSettingsPanel extends JPanel {
         });
     }
 
-    @Subscribe
-    public void onButtonState(DeviceButtonEvent event) {
-        if (!pushToTalkEnabled) return;
-
-        Device device = selectedDevice;
-        int buttonIndex = selectedButtonIndex;
-        if (device == null || buttonIndex < 0) return;
-        if (event.deviceId() != device.id() || event.buttonIndex() != buttonIndex) return;
-
-        if (toggleMode) {
-            if (event.pressed()) {
-                GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
-                GameEventBus.publish(new TTSInterruptEvent(true));
-                toggleSleepWake();
-            }
-        } else {
-            if (event.pressed()) {
-                GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
-                GameEventBus.publish(new TTSInterruptEvent(true));
-                UiBus.publish(new PttButtonStateEvent(true));
-            } else {
-                GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_1));
-                UiBus.publish(new PttButtonStateEvent(false));
-            }
-        }
-    }
-
-    // -- Sleep / Wake actions (toggle mode only) ----------------------------------
-
-    private void toggleSleepWake() {
-        if (SystemSession.getInstance().isSleepingModeOn()) wakeUp(); else sleep();
-    }
-
-    private void wakeUp() {
-        SystemSession.getInstance().stopStartListening(false);
-        UiBus.publish(new VoiceInputModeToggleEvent(false));
-    }
-
-    private void sleep() {
-        SystemSession.getInstance().stopStartListening(true);
-        UiBus.publish(new VoiceInputModeToggleEvent(true));
-    }
 }

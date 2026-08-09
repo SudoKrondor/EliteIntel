@@ -7,10 +7,11 @@ import elite.intel.ai.brain.vega.model.llm.LlmToolInvocation;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * A reflex: {@code ReflexResolver} matched a commander input verbatim to exactly one safe action, along with any
- * arguments that alias itself pins down (e.g. "target fsd" -> {@code key=fsd}). It runs on the commander lane like
- * a {@link CommanderThought} but skips the LLM entirely - no prompt, no thinking loop, no tool selection, and no
- * argument extraction. Every non-exact input goes through {@link CommanderThought}.
+ * A reflex: {@code ReflexResolver} matched a commander input to exactly one safe action - word for word, or as a
+ * damaged transcript of one training phrase - along with any arguments that alias itself pins down (e.g.
+ * "target fsd" -> {@code key=fsd}). It runs on the commander lane like a {@link CommanderThought} but skips the
+ * LLM entirely - no prompt, no thinking loop, no tool selection, and no argument extraction. Every input that
+ * resolves to anything less than one certain action goes through {@link CommanderThought}.
  * <p>
  * A COMMAND reflex just executes the command: a side effect, not dialogue, so nothing is filed to memory and the
  * handler owns any spoken outcome. A QUERY reflex runs the query's own data-grounded analysis path and publishes

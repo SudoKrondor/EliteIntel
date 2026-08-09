@@ -512,14 +512,12 @@ public class ParakeetSTTImpl implements EarsInterface {
 
     private void sendToAi(String transcript, boolean pttCapture) {
         if (isSpeaking.get()) {
-            if (pttCapture) {
-                log.info("PTT: interrupting TTS to dispatch transcript: {}", transcript.replace("computer", ""));
-            } else if (isInterruptPhrase(transcript)) {
+            // A held button is an explicit order, never a bare interrupt: only a hands-free utterance may stop
+            // at the interrupt phrase, or pressing to talk over her would silently discard what was said.
+            if (!pttCapture && isInterruptPhrase(transcript)) {
                 log.info("Interrupt phrase detected during TTS playback: {}", transcript);
                 GameEventBus.publish(new BargeInEvent());
                 return;
-            } else {
-                log.info("Barge-in: interrupting TTS to dispatch transcript: {}", transcript.replace("computer", ""));
             }
             // BargeInController is the sole fan-out owner: it emits one TTS interrupt and interrupts thoughts.
             // Recognition stays active during playback; every non-control transcript continues as normal input.
@@ -528,8 +526,7 @@ public class ParakeetSTTImpl implements EarsInterface {
             GameEventBus.publish(new TTSInterruptEvent());
         }
         //AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_1);
-        log.info("Dispatching transcript: {}", transcript.replace("computer", ""));
-        GameEventBus.publish(new UserInputEvent(transcript.replace("computer", "")));
+        GameEventBus.publish(new UserInputEvent(transcript));
     }
 
     /**

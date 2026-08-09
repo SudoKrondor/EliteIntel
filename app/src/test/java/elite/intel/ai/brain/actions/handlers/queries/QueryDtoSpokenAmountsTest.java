@@ -45,7 +45,7 @@ class QueryDtoSpokenAmountsTest {
     void carrierStatusSpeaksEveryBankBalance() throws Exception {
         var dto = new AnalyzeCarrierStatusQuery.DataDto(
                 "your fleet carrier", 1_000_000L, 2_000_000_000L, -500_000L,
-                100, 50, 150, 400, 500, 3);
+                100, true, 50, 150, 400, 500, 3);
 
         Map<String, Object> parsed = parse(dto.toYaml());
 

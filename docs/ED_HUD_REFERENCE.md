@@ -1,653 +1,594 @@
 # ED_HUD_REFERENCE.md
 
-Справочник по визуальному языку HUD **Elite Dangerous** (ванильный Horizons/Odyssey)
-для проекта **EliteIntel**. Единый источник правды по дизайну HUD-компонентов;
-словесная спецификация языка, а не копия игрового арта.
+A reference for the visual language of the **Elite Dangerous** HUD (vanilla Horizons/Odyssey)
+for the
+**EliteIntel** project. The single source of truth for HUD component design; a written specification of the language, not a copy of the game's art.
 
-> **Кто это читает.** Ты — агент (Claude Code) в репозитории EliteIntel. Этот файл —
-> канон дизайна HUD; перед любой правкой, затрагивающей UI, сверяй её с нужным разделом.
+> **Who reads this.** You are an agent (Claude Code) working in the EliteIntel repository. This file is
+> the HUD design canon; before any change that touches the UI, check it against the relevant section.
 
-> **Что хранит этот файл.** ТОЛЬКО дизайн: цветовые смыслы, поведение состояний
-> (выбор/hover/disabled/статус), выравнивание, типографика, когда рамка-акцент а когда
-> плоско, какой компонент под задачу. Hex-значения, px и сигнатуры методов — в классах слоя
-> темы (`HudPalette`, `HudGlyphs`, `HudForms`, `AppTheme`) и исходниках. Имена констант и
-> компонентов — якоря дизайн→код.
+> **What this file holds.** Design ONLY: colour meanings, state behaviour
+> (selected/hover/disabled/status), alignment, typography, when an accent frame and when
+> flat, which component fits which job. Hex values, pixels and method signatures live in the theme
+> layer classes (`HudPalette`, `HudGlyphs`, `HudForms`, `AppTheme`) and the sources. Constant and
+> component names are the design→code anchors.
 
-> **Как пользоваться.** Цвета — словесно (оранжевый, зелёный…), конкретные значения бери
-> из `HudPalette` по имени. Если меняешь палитру или компоненты — обнови соответствующий
-> раздел этого файла в том же коммите.
+> **How to use it.** Colours are named in words (orange, green…); take the concrete values
+> from `HudPalette` by name. If you change the palette or the components, update the matching
+> section of this file in the same commit.
 
-## Правила применения
+## Rules of application
 
-- Стилизация = замена raw Swing на HUD-компоненты слоёв пакета `elite.intel.ui`, не локальная вёрстка.
-- Цвета/размеры/шрифты/толщины/иконочные роли — ТОЛЬКО из `HudPalette` по имени константы;
-  глиф-примитивы — `HudGlyphs`. Хардкод запрещён.
-- Цветовой слой в `HudPalette`: raw-цвета называются `HUD_COLOR_<HEX>` и ссылаются только на
-  literal-код цвета; роли называются `HUD_COLOR_ROLE_<SEMANTIC_NAME>` и ссылаются напрямую на
-  `HUD_COLOR_*`, без role→role цепочек.
-- Паттерн, нужный > 1 экрану, — в HUD-слой, не копировать по месту.
+- Styling means replacing raw Swing with the HUD components of the `elite.intel.ui` package layers, not local layout work.
+- Colours, sizes, fonts, thicknesses and icon roles come ONLY from `HudPalette` by constant name; glyph primitives come from `HudGlyphs`. Hardcoding is forbidden.
+- The colour layer in `HudPalette`: raw colours are named `HUD_COLOR_<HEX>` and reference only a literal colour code; roles are named `HUD_COLOR_ROLE_<SEMANTIC_NAME>` and reference `HUD_COLOR_*`
+  directly, with no role→role chains.
+- A pattern needed on more than one screen belongs in the HUD layer, not copied in place.
 
-**Слой темы (`elite.intel.ui.theme`) — источник правды, разнесён по ролям:**
-`HudPalette` — токены (цвета, метрики, роли шрифтов `HUD_FONT_*`); `HudGlyphs` — глиф/иконочные
-примитивы (`paintHud*`, `*Icon`, `scaledIcon`/`tintIcon`/`dimIcon`); `HudForms` — GridBag-хелперы
-форм (`baseGbc`/`addLabel`/`addField`/…); `AppTheme` — фабрики компонентов/рамок, стайлеры,
-`hudModalScaffold`, `applyDarkPalette`. Прочие слои `ui`: `widget` (HUD-компоненты),
-`screen`/`dialog` (экраны/модалки), `render` (рендереры таблиц), `support`, `controller`,
+**The theme layer (`elite.intel.ui.theme`) is the source of truth, split by role:**
+`HudPalette` holds the tokens (colours, metrics, `HUD_FONT_*` font roles); `HudGlyphs` holds the glyph and icon primitives (`paintHud*`, `*Icon`, `scaledIcon`/`tintIcon`/`dimIcon`); `HudForms` holds the GridBag form helpers (`baseGbc`/`addLabel`/`addField`/…); `AppTheme` holds the component and border factories, the stylers,
+`hudModalScaffold` and `applyDarkPalette`. The other `ui` layers: `widget` (HUD components),
+`screen`/`dialog` (screens and modals), `render` (table renderers), `support`, `controller`,
 `telemetry`, `event`, `i18n`.
 
 ---
 
-## I. Язык дизайна
+## I. The design language
 
-## 0. Общие принципы
+## 0. General principles
 
-1. **Тёмный фон, тонкие линии, без объёма.** Плоский стиль («Flat 2.0»). Никаких
-   градиентов, теней, скруглённых «капсул». Рамки — тонкие прямые линии.
-2. **Цвет несёт смысл.** Оранжевый — основной/рабочий. Состояние выражается СМЕНОЙ
-   цвета (зелёный/жёлтый/красный/циан), а не иконкой/заливкой-пилюлей.
-3. **Капс + разрядка.** Подписи, заголовки, значения — заглавными; заголовки секций с
-   лёгким letter-spacing.
-4. **Выделение = инверсия.** Активная/выбранная строка — сплошная яркая заливка, текст
-   ТЁМНЫЙ. Главный приём «фокуса» во всех списках/меню.
-5. **Значения вправо.** В «ключ→значение» и числовых колонках значение прижато к правому краю.
-6. **Приглушение = неактивно.** Disabled — тот же цвет, сильно приглушённый (`HUD_COLOR_ROLE_DISABLED`),
-   не серый «из другой палитры». Гаснет и текст, и иконка единым тёплым тоном.
+1. **Dark background, thin lines, no
+   depth.** A flat style ("Flat 2.0"). No gradients, shadows or rounded "pills". Frames are thin straight lines.
+2. **Colour carries
+   meaning.** Orange is the primary working colour. State is expressed by a CHANGE of colour (green/yellow/red/cyan), not by an icon or a pill fill.
+3. **Caps plus letter-spacing.** Labels, titles and values are uppercase; section titles carry light letter-spacing.
+4. **Selection means
+   inversion.** The active or selected row is a solid bright fill with DARK text. This is the main "focus" device in every list and menu.
+5. **Values to the right.** In key→value pairs and numeric columns the value is flushed right.
+6. **Dimming means
+   inactive.** Disabled is the same colour, heavily dimmed (`HUD_COLOR_ROLE_DISABLED`), never a grey "from another palette". Text and icon both fade in one warm tone.
 
-## 1. Цветовое кодирование
+## 1. Colour coding
 
-Канон ED (радар Odyssey: friendly=green, neutral=blue, alerted=yellow, hostile=red):
+The ED canon (the Odyssey radar: friendly=green, neutral=blue, alerted=yellow, hostile=red):
 
-- `HUD_COLOR_ROLE_PRIMARY_ACTION` (оранжевый) — норма/рабочий · `HUD_COLOR_ROLE_SUCCESS` (зелёный) — позитив/OK/прибыль ·
-  `HUD_COLOR_ROLE_WARNING` (жёлтый) — внимание/штатное ожидание · `HUD_COLOR_ROLE_DANGER` (красный) — опасность/
-  провал/hostile · `HUD_COLOR_ROLE_INFORMATION` (синий) — нейтрально-информационное · `HUD_COLOR_ROLE_DISABLED`/`HUD_COLOR_ROLE_SECONDARY_TEXT` — неактивно · `HUD_COLOR_ROLE_READOUT_LABEL` — приглушённая метка в key→value readout/telemetry-блоках (`HudTelemetryBlock`, §7); тот же тон, что `HUD_COLOR_ROLE_SECONDARY_TEXT`, но отдельная семантика — НЕ путать с disabled · `HUD_COLOR_ROLE_CREDITS_TEXT` — баланс кредитов CMDR (`HudCommanderBlock`, §7); тот же тон, что `HUD_COLOR_ROLE_SECONDARY_TEXT`, отдельная семантика.
-- Подложки: `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` (плашка строки) · `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` (hover-состояние) ·
-  `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` (фон тела таблицы/зазор, темнее плашки) · `HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND` (тело модалки,
-  между `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` и плашкой, §10.1) · `HUD_COLOR_ROLE_MODAL_SCRIM` (вуаль под модалкой, §10.1).
+- `HUD_COLOR_ROLE_PRIMARY_ACTION` (orange) — normal/working · `HUD_COLOR_ROLE_SUCCESS` (green) — positive/OK/profit ·
+  `HUD_COLOR_ROLE_WARNING` (yellow) — attention/expected waiting · `HUD_COLOR_ROLE_DANGER` (red) — danger/ failure/hostile · `HUD_COLOR_ROLE_INFORMATION` (blue) — neutral informational · `HUD_COLOR_ROLE_DISABLED`/`HUD_COLOR_ROLE_SECONDARY_TEXT` — inactive · `HUD_COLOR_ROLE_READOUT_LABEL` — the dimmed label in key→value readout and telemetry blocks (`HudTelemetryBlock`, §7); the same tone as `HUD_COLOR_ROLE_SECONDARY_TEXT` but a separate semantic — do NOT confuse it with disabled · `HUD_COLOR_ROLE_CREDITS_TEXT` — the CMDR credit balance (`HudCommanderBlock`, §7); the same tone as `HUD_COLOR_ROLE_SECONDARY_TEXT`, separate semantic.
+- Backings: `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` (the row plate) · `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` (hover state) ·
+  `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` (the table body background and gaps, darker than the plate) · `HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND` (the modal body, between `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` and the plate, §10.1) · `HUD_COLOR_ROLE_MODAL_SCRIM` (the veil under a modal, §10.1).
 
-**Правило:** цвет статуса = цвет ТЕКСТА значения (не заливка фона). Заливкой — только
-ВЫБОР/АКТИВНОСТЬ строки (§6, §4).
+**The
+rule:** a status colour is the colour of the value TEXT, not a background fill. A fill marks only row SELECTION or ACTIVITY (§6, §4).
 
-**`StatusBadge.State`** (цвет значения + левой риски в `HudStatusReadout`):
+**`StatusBadge.State`** (the value colour plus the left tick in `HudStatusReadout`):
 `OK`→`HUD_COLOR_ROLE_SUCCESS`, `STANDBY`→`HUD_COLOR_ROLE_WARNING`, `OFFLINE`→`HUD_COLOR_ROLE_DANGER`, `INFO`→`HUD_COLOR_ROLE_INFORMATION`,
-`IDLE`→`HUD_COLOR_ROLE_DISABLED`. `STANDBY` (жёлтый) — штатно ждёт пользователя; «спит/выключено/
-не инициализировано» — `IDLE` (§0.6). STT `SLEEPING`, остановленные LLM/TTS — `IDLE`.
+`IDLE`→`HUD_COLOR_ROLE_DISABLED`. `STANDBY` (yellow) means normally waiting for the user; "asleep/switched off/ not initialized" is `IDLE` (§0.6). STT `SLEEPING` and stopped LLM/TTS are `IDLE`.
 
-**Имя команды в диалоге** (built-in/custom; эталон `CommandDetailsDialog`) — `HUD_COLOR_ROLE_INFORMATION`,
-осознанное исключение (имя→`HUD_COLOR_ROLE_PRIMARY_TEXT` по §0.2/§11.1) ради разгрузки оранжевого. НЕ на id/action
-key, НЕ на таблицу каталога (§6), НЕ на binding id.
+**A command name in a
+dialog** (built-in or custom; the reference is `CommandDetailsDialog`) uses `HUD_COLOR_ROLE_INFORMATION`, a deliberate exception (a name would be `HUD_COLOR_ROLE_PRIMARY_TEXT` under §0.2/§11.1) to take load off the orange. NOT for the id or action key, NOT for the catalog table (§6), NOT for a binding id.
 
-**Контекстный режим панели.** По умолчанию оранжево-циан; красный/синий — только если задача требует.
+**A panel's contextual mode.** Orange and cyan by default; red and blue only if the task demands them.
 
-**Значок-индикатор в статус-ячейке — осознанное исключение.** Канон: статус = цвет текста,
-без иконки. Исключение ТОЧЕЧНО: `CONFLICT` в `StatusCellRenderer` (Import-диалог) несёт
-оранжевый треугольник `HUD_COLOR_ROLE_PRIMARY_ACTION`+«!» как УСИЛЕНИЕ (текст всё равно `HUD_COLOR_ROLE_WARNING`). `INVALID`/`OK`
-— без значка. На другие ячейки не расширять без явного решения.
-> **TODO.** Значок — растр (`ImageIcon`/`BufferedImage`). При следующем касании перевести
-> на `paintHud*`-глиф (§13).
+**An indicator glyph in a status cell is a deliberate
+exception.** The canon is status as text colour, with no icon. The exception is SPECIFIC: `CONFLICT` in `StatusCellRenderer` (the Import dialog) carries an orange `HUD_COLOR_ROLE_PRIMARY_ACTION` triangle plus "!" as REINFORCEMENT (the text is still `HUD_COLOR_ROLE_WARNING`). `INVALID`/`OK`
+carry no glyph. Do not extend this to other cells without an explicit decision.
+> **TODO.** The glyph is a raster (`ImageIcon`/`BufferedImage`). Move it to a `paintHud*` glyph
+> the next time this is touched (§13).
 
-**Красная заливка слайдера — осознанное исключение.** Канон: красный = `HUD_COLOR_ROLE_DANGER`
-(опасность/провал). Исключение ТОЧЕЧНО: активная часть трека `HudSlider` (§4) — насыщенный
-красный `HUD_COLOR_ROLE_SLIDER_VALUE_TRACK` как ИНДИКАТОР УРОВНЯ (повторяет ваниль-ED, выбран ради читаемости
-на тёплом треке), НЕ сигнал опасности. На другие контролы не расширять.
+**The red slider fill is a deliberate exception.** The canon is red = `HUD_COLOR_ROLE_DANGER`
+(danger/failure). The exception is SPECIFIC: the active part of the `HudSlider` track (§4) is saturated red `HUD_COLOR_ROLE_SLIDER_VALUE_TRACK` as a LEVEL INDICATOR (it follows vanilla ED, chosen for readability on the warm track), not a danger signal. Do not extend it to other controls.
 
-## 2. Типографика
+## 2. Typography
 
-**Кегль — ТОЛЬКО роли `HUD_FONT_*`, хардкод (`deriveFont`/`new Font`) запрещён.** Начертание
-(`BOLD`/`PLAIN`) роль НЕ несёт — ставит сайт через `deriveFont(Font.BOLD, РОЛЬ)`.
+**Font size comes ONLY from the `HUD_FONT_*` roles; hardcoding (`deriveFont`/`new Font`) is
+forbidden.** The weight (`BOLD`/`PLAIN`) is NOT carried by the role — the call site sets it through `deriveFont(Font.BOLD, ROLE)`.
 
-**База/ступени** (всё от одной базы): `HUD_FONT_BASE`; `HUD_FONT_XS` < `SM` < `MD` < `LG`.
-Значения — в `HudPalette`.
+**Base and
+steps** (everything from one base): `HUD_FONT_BASE`; `HUD_FONT_XS` < `SM` < `MD` < `LG`. The values live in `HudPalette`.
 
-- **XS:** `HUD_FONT_READOUT_KEY` (метка readout/telemetry, версия/метки шапки),
+- **XS:** `HUD_FONT_READOUT_KEY` (a readout/telemetry label, the version and header labels),
   `HUD_FONT_BADGE_ROLE` (`StatusBadge`), `HUD_FONT_BANNER` (`HudBanner`).
-- **SM:** `HUD_FONT_TABLE_HEADER` (заголовок таблицы; компакт — на ступень мельче),
-  `HUD_FONT_FIELD_VALUE` (значение полей/metadata), `HUD_FONT_READOUT_VALUE` (значение
-  readout, дата/баланс часов), `HUD_FONT_SECTION_TITLE` (`hudSectionLabel`/`hudGroupLabel`),
-  `HUD_FONT_TAB_COMPACT` (плотные внутренние вкладки `COMPACT`), `HUD_FONT_BUTTON`, `HUD_FONT_CHECKBOX`.
-- **MD:** `HUD_FONT_TABLE_ROW` (строки таблиц), `HUD_FONT_COMMANDER_NAME` (CMDR/SHIP в шапке),
-  `HUD_FONT_TAB_SECTION` (вкладки второго уровня `SECTION`).
-- **LG:** `HUD_FONT_TAB_MAIN` (`MAIN_NAV`), `HUD_FONT_APP_TITLE` (имя приложения; титул
-  шапки диалога §10.1), `HUD_FONT_ICON_BUTTON` (символ-кнопки и глифы ⓘ/«i»/×).
-- **Штучный:** `HUD_FONT_CLOCK` (моно, часы `HudCommanderBlock`), `HUD_FONT_STAT_LG`
-  (крупные статы `UsageStatsTabPanel`).
+- **SM:** `HUD_FONT_TABLE_HEADER` (a table header; one step smaller in compact),
+  `HUD_FONT_FIELD_VALUE` (field and metadata values), `HUD_FONT_READOUT_VALUE` (a readout value, the date and the clock balance), `HUD_FONT_SECTION_TITLE` (`hudSectionLabel`/`hudGroupLabel`),
+  `HUD_FONT_TAB_COMPACT` (the dense inner `COMPACT` tabs), `HUD_FONT_BUTTON`, `HUD_FONT_CHECKBOX`.
+- **MD:** `HUD_FONT_TABLE_ROW` (table rows), `HUD_FONT_COMMANDER_NAME` (CMDR/SHIP in the header),
+  `HUD_FONT_TAB_SECTION` (second-level `SECTION` tabs).
+-
+**LG:** `HUD_FONT_TAB_MAIN` (`MAIN_NAV`), `HUD_FONT_APP_TITLE` (the application name; the dialog header title, §10.1), `HUD_FONT_ICON_BUTTON` (symbol buttons and the ⓘ/"i"/× glyphs).
+- **One-off:** `HUD_FONT_CLOCK` (mono, the `HudCommanderBlock` clock), `HUD_FONT_STAT_LG`
+  (the large stats in `UsageStatsTabPanel`).
 
-**Новая роль, а не деление существующей.** Совпали по кеглю два несвязанных сайта — НЕ
-повод делить роль (позже кегли разъедутся). Заводи отдельную роль с тем же значением.
+**A new role, not a split of an existing
+one.** Two unrelated sites happening to share a size is NOT a reason to split a role (the sizes will diverge later). Create a separate role with the same value.
 
-**Относительный кегль (`getSize2D()±N`)** — ТОЛЬКО когда относительность несёт смысл и база —
-уже правильная роль: техподпись двухстрочной ячейки, декоративные заголовки. НЕ относить
-от LAF-дефолта — переводить на абсолютную роль.
+**A relative
+size (`getSize2D()±N`)** is for when the relativity itself carries meaning AND the base is already the right role: the technical sub-label of a two-line cell, decorative titles. Do NOT derive from the LAF default — convert that to an absolute role.
 
-## 3. Токены (spacing, высоты, иконки)
+## 3. Tokens (spacing, heights, icons)
 
-Все значения — в `HudPalette`, хардкод запрещён.
+Every value lives in `HudPalette`; hardcoding is forbidden.
 
-**Отступы и зазоры:** `HUD_GAP` (базовый шаг) · `HUD_DIALOG_BODY_INSET` = `HUD_GAP×2`
-(боковой инсет диалога) · `HUD_SEP_W` (щель между зонами checkbox/field) ·
+**Insets and gaps:** `HUD_GAP` (the base step) · `HUD_DIALOG_BODY_INSET` = `HUD_GAP×2`
+(the dialog side inset) · `HUD_SEP_W` (the gap between the checkbox and field zones) ·
 `HUD_PADDING` / `HUD_PADDING_SMALL`.
 
-**Высоты строк и контролов:** `HUD_TABLE_ROW_HEIGHT` / `…_COMPACT`; `HUD_BUTTON_HEIGHT` /
-`…_COMPACT`; `HUD_FIELD_HEIGHT`; `HUD_DIALOG_HEADER_HEIGHT` (НЕ путать с `HUD_BUTTON_HEIGHT` —
-шапка не кнопка).
+**Row and control heights:** `HUD_TABLE_ROW_HEIGHT` / `…_COMPACT`; `HUD_BUTTON_HEIGHT` /
+`…_COMPACT`; `HUD_FIELD_HEIGHT`; `HUD_DIALOG_HEADER_HEIGHT` (do NOT confuse with `HUD_BUTTON_HEIGHT` — a header is not a button).
 
-**Иконки (`HUD_ICON_*`):** `MAIN` (крупный nav) · `NAV` (средний) · `SMALL` · `TABLE`
-(аффорданс в ячейке, меньше высоты строки).
+**Icons (`HUD_ICON_*`):** `MAIN` (large nav) · `NAV` (medium) · `SMALL` · `TABLE`
+(an affordance inside a cell, smaller than the row height).
 
-**Рамки:** `HUD_BORDER_THICKNESS` (стандартная) · `HUD_BORDER_THICKNESS_ACCENT` (акцент).
-**Каретка набора:** `HUD_CARET_WIDTH`; вертикальное выравнивание — по visual bounds маркера через
-`HudGlyphs.paintHudTextCaret`, не по ручному пиксельному сдвигу.
+**Frames:** `HUD_BORDER_THICKNESS` (standard) · `HUD_BORDER_THICKNESS_ACCENT` (accent). **The typing
+caret:** `HUD_CARET_WIDTH`; vertical alignment follows the marker's visual bounds through
+`HudGlyphs.paintHudTextCaret`, not a manual pixel offset.
 
 ---
 
-## II. Компоненты
+## II. Components
 
-## 4. Кнопки и действия
+## 4. Buttons and actions
 
-Эталоны: Station Services (шорткаты), Ship Functions (переключатели).
+References: Station Services (shortcuts), Ship Functions (toggles).
 
-**HudButton** — кнопка-действие. Единый размер в группе: ширина, шрифт `HUD_FONT_BUTTON` bold,
-высота `HUD_BUTTON_HEIGHT`.
-- **Покой:** `HUD_COLOR_ROLE_PRIMARY_ACTION`-текст на `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND`, контур `HUD_COLOR_ROLE_CONTROL_DECORATION`.
-- **Pressed:** инверсия `HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT`, только на время нажатия.
-- **Hover:** `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND`. **Disabled:** `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` + `HUD_COLOR_ROLE_DISABLED` + контур `HUD_COLOR_ROLE_SECONDARY_BORDER`.
+**HudButton** is the action button. One size across a group: width, the `HUD_FONT_BUTTON` bold font, and `HUD_BUTTON_HEIGHT`.
 
-**Переключатель = СМЕНА ТЕКСТА-действия** (что произойдёт: `SLEEP`/`WAKE UP`/`STOP SERVICES`).
-Источник истины — внешнее состояние, не `isSelected()`. Остаётся кнопкой-глаголом, не статус-строкой.
+-
+**Rest:** `HUD_COLOR_ROLE_PRIMARY_ACTION` text on `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND`, outlined `HUD_COLOR_ROLE_CONTROL_DECORATION`.
+- **Pressed:** inverted `HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT`, only while held.
+- **Hover:** `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND`.
+  **Disabled:** `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` + `HUD_COLOR_ROLE_DISABLED` + a `HUD_COLOR_ROLE_SECONDARY_BORDER` outline.
 
-**Отображение состояния (не кнопка).** Если нужно показать ON/OFF/RETRACTED — текстом-значением
-в правой колонке, НЕ галочкой/слайдером-пилюлей.
+**A toggle is a CHANGE OF ACTION
+TEXT** (what will happen: `SLEEP`/`WAKE UP`/`STOP SERVICES`). The source of truth is external state, not `isSelected()`. It stays a verb button, not a status line.
 
-**Дискретный числовой степпер `◄ значение ►`** (`HudStepper`). Горизонтальные ЗАЛИВНЫЕ треугольники
-у ЛЕВОГО/ПРАВОГО краёв залитой плашки `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` БЕЗ рамки (как чекбокс §5.2 в OFF),
-значение — по центру. Зоны стрелок отделены от значения вертикальными щелями `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` (как зазор у чекбокса §5.2).
-Состояния стрелки: покой `HUD_COLOR_ROLE_PRIMARY_ACTION`; hover — лёгкий accent-вош на зоне; нажатие —
-полная заливка `HUD_COLOR_ROLE_PRIMARY_ACTION` + инверсия стрелки в `HUD_COLOR_ROLE_SELECTED_TEXT` (как pressed у subtle-кнопки §4); на краю
-диапазона стрелка гаснет до `HUD_COLOR_ROLE_DISABLED`. Значение —
-текст по центру, БЕЗ свободного ввода (как в игре). НЕ нативный `JSpinner` с вертикальными ▲▼.
-Стрелки — примитивы `paintHudArrowLeft`/`paintHudArrowRight` (§13). Якорь: `HudStepper(min, max, step, initial)`,
-`getValue()`/`setValue(int)`; в layout — фикс-ширина (`fill=NONE`/`weightx=0`).
+**Showing state (not a
+button).** When ON/OFF/RETRACTED has to be shown, use a value text in the right-hand column, NOT a tick or a pill slider.
 
-**Слайдер-шкала `HudSlider`** (форма ваниль-ED; эталон Options→Audio). Тёплая коричневая
-плашка-трек `HUD_COLOR_ROLE_PANEL_SEPARATOR` во всю ширину; приглушённая рейка `HUD_COLOR_ROLE_CONTROL_DECORATION` с
-КРАЕВЫМ отступом (`HUD_SLIDER_EDGE_INSET`, не упирается в края); активная часть слева до ручки —
-насыщенная красная заливка `HUD_COLOR_ROLE_SLIDER_VALUE_TRACK` (осознанное исключение §1, индикатор уровня),
-нарисована ПОВЕРХ высокой вертикальной стартовой риски (0); ручка — круглый диск `HUD_COLOR_ROLE_PRIMARY_ACTION` с
-кольцом `HUD_COLOR_ROLE_BUTTON_TEXT`. Значение — над ручкой (`HUD_COLOR_ROLE_PRIMARY_ACTION`, едет с ручкой); легко переключается на
-показ только при перетаскивании. Снап к шагу. Disabled — всё гаснет до `HUD_COLOR_ROLE_DISABLED` (§0.6).
-Все метрики — токены `HUD_SLIDER_*`, хардкод запрещён. Якорь: `HudSlider(min, max, step, value)`,
-`getValue()`/`setValue(int)`/`addChangeListener(ChangeListener)`; в layout — `fill=HORIZONTAL`
-(тянется по ширине). НЕ сырой `JSlider`.
+**The discrete numeric
+stepper `◄ value ►`** (`HudStepper`). Horizontal FILLED triangles at the LEFT and RIGHT edges of a filled `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` plate with NO frame (like the OFF checkbox, §5.2), with the value centred. The arrow zones are separated from the value by vertical `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gaps (like the checkbox gap, §5.2). Arrow states: at rest `HUD_COLOR_ROLE_PRIMARY_ACTION`; on hover a light accent wash over the zone; on press a full `HUD_COLOR_ROLE_PRIMARY_ACTION` fill with the arrow inverted to `HUD_COLOR_ROLE_SELECTED_TEXT` (like a pressed subtle button, §4); at the end of the range the arrow dims to `HUD_COLOR_ROLE_DISABLED`. The value is centred text with NO free input (as in the game). NOT a native `JSpinner` with vertical ▲▼. The arrows are the `paintHudArrowLeft`/`paintHudArrowRight` primitives (§13). Anchor: `HudStepper(min, max, step, initial)`,
+`getValue()`/`setValue(int)`; in layout, a fixed width (`fill=NONE`/`weightx=0`).
 
-**Сегментный метр уровня `HudMicMeter`** (вертикальный LED-VU; эталон — монитор микрофона).
-ИНДИКАЦИЯ realtime-уровня, НЕ ввод. Две колонки дискретных сегментов: **LIVE** (горит до текущего
-уровня, цвет зоны — `HUD_COLOR_ROLE_DANGER` ниже floor, `HUD_COLOR_ROLE_WARNING` floor→gate, `HUD_COLOR_ROLE_SUCCESS` выше gate) и узкая
-**PEAK-trail** (удерживаемый максимум, тусклый `HUD_COLOR_ROLE_DISABLED` со светлой крышкой `HUD_COLOR_ROLE_BUTTON_TEXT`;
-`HUD_COLOR_ROLE_DANGER` при клипе = «too hot»). Негорящие сегменты — `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND`. Пороги floor/gate —
-тонкие подписанные рейки (`HUD_COLOR_ROLE_SECONDARY_TEXT` / `HUD_COLOR_ROLE_INFORMATION`); под колонками — крупное текущее значение в
-цвет статуса (`HUD_FONT_STAT_LG`) + строка `LIVE · OPEN/MARGINAL/CLOSED/HOT`. Авто-масштаб по
-бегущему пику. Цифровые подписи — на самом контроле (шкала зон слева, PEAK у крышки), без широкого
-бокового блока. Данные — `AudioMonitorBus` (off-EDT → volatile-поля + `invokeLater(repaint)`),
-регистрация по `addNotify`/`removeNotify`. Метрики — токены `HUD_METER_*`. Якорь: `HudMicMeter`.
+**The `HudSlider`
+scale** (the vanilla ED form; the reference is Options→Audio). A warm brown track plate `HUD_COLOR_ROLE_PANEL_SEPARATOR` across the full width; a dimmed `HUD_COLOR_ROLE_CONTROL_DECORATION` rail with an EDGE inset (`HUD_SLIDER_EDGE_INSET`, it does not touch the edges); the active part from the left up to the knob is a saturated red `HUD_COLOR_ROLE_SLIDER_VALUE_TRACK` fill (the deliberate exception in §1, a level indicator), drawn OVER the tall vertical start tick (0); the knob is a round `HUD_COLOR_ROLE_PRIMARY_ACTION` disc with a `HUD_COLOR_ROLE_BUTTON_TEXT` ring. The value sits above the knob (`HUD_COLOR_ROLE_PRIMARY_ACTION`, travelling with it); it switches easily to showing only while dragging. Snaps to the step. Disabled dims everything to `HUD_COLOR_ROLE_DISABLED` (§0.6). All metrics are `HUD_SLIDER_*` tokens; hardcoding is forbidden. Anchor: `HudSlider(min, max, step, value)`,
+`getValue()`/`setValue(int)`/`addChangeListener(ChangeListener)`; in layout, `fill=HORIZONTAL`
+(it stretches across the width). NOT a raw `JSlider`.
 
-**Развилка:**
-- ЗНАЧЕНИЕ-индикация (key→value) → `HudStatusReadout` (§7.1);
-- ЖИВОЙ уровень/метр (realtime) → `HudMicMeter`;
-- ПЕРЕКЛЮЧАТЕЛЬ-кнопка → `HudButton` со сменой текста;
-- НАСТРОЙКА в форме → чекбокс §5.2;
-- ДИАПАЗОН с видимой позицией на шкале (громкость, скорость) → `HudSlider`;
-- немного дискретных значений компактно, без шкалы → `HudStepper` (`◄ значение ►`).
+**The `HudMicMeter` segmented level
+meter** (a vertical LED VU; the reference is the microphone monitor). It INDICATES a realtime level; it is NOT an input. Two columns of discrete segments:
+**LIVE** (lit up to the current level, the zone colour being `HUD_COLOR_ROLE_DANGER` below the floor, `HUD_COLOR_ROLE_WARNING` from floor to gate, `HUD_COLOR_ROLE_SUCCESS` above the gate) and a narrow
+**PEAK trail** (the held maximum, a dim `HUD_COLOR_ROLE_DISABLED` with a light `HUD_COLOR_ROLE_BUTTON_TEXT` cap;
+`HUD_COLOR_ROLE_DANGER` on clipping, meaning "too hot"). Unlit segments are `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND`. The floor and gate thresholds are thin labelled rails (`HUD_COLOR_ROLE_SECONDARY_TEXT` / `HUD_COLOR_ROLE_INFORMATION`); below the columns sits the large current value in the status colour (`HUD_FONT_STAT_LG`) plus a `LIVE · OPEN/MARGINAL/CLOSED/HOT` line. It auto-scales to the running peak. Numeric labels sit on the control itself (the zone scale on the left, PEAK at the cap), with no wide side block. The data comes from `AudioMonitorBus` (off-EDT → volatile fields plus `invokeLater(repaint)`), registered through `addNotify`/`removeNotify`. Metrics are `HUD_METER_*` tokens. Anchor: `HudMicMeter`.
 
-**Компактная квадратная кнопка-picker у поля** (выбор каталога/файла справа от поля). Квадрат
-со стороной = высоте СОСЕДНЕГО поля (идёт за полем, НЕ за `HUD_BUTTON_HEIGHT`), узкая. Глиф —
-ПРИМИТИВ (§13), не Unicode-текст (символ зависит от шрифта и «ломается»). На primary-заливке
-глиф ТЁМНЫЙ (инверсия §0.4), не белый. Боковые text-инсеты кнопки в квадратном режиме обнуляются —
-иначе глиф смещается. Добавлять в layout с `fill=NONE`/`weightx=0`, иначе квадрат растянется.
+**Choosing between them:**
 
-**→ Якоря:** `HudButton(label, boolean primary)` (primary=true — оранжевая заливка, false — контур);
-навигационные списки — `HudTabbedPane` (§11) / `HudSection` (§9);
-двухстрочные пункты — `HudCommandNameCellRenderer`;
-компактный picker — `makeFieldButton(glyph|Icon, fieldHeight)` + `HudButton.setSquareSide`,
-глиф ⋮ — `verticalEllipsisIcon` / `paintHudVerticalEllipsis`;
-иконка-аффорданс (close ×, save-в-файл) — `HudGlyphButton(painter, restTint, hoverTint, tooltip, onClick)`
-(глиф-примитив §13, футпринт `HUD_TABLE_ROW_HEIGHT_COMPACT`, глиф `HUD_ICON_TABLE`; единственный владелец — `HudDialogHeader` и шапка секции его переиспользуют); в шапку секции — через `HudSection.setHeaderActions` (§9);
-слайдер-шкала — `HudSlider(min, max, step, value)` (токены `HUD_SLIDER_*`, цвет заливки `HUD_COLOR_ROLE_SLIDER_VALUE_TRACK`);
-сегментный метр уровня — `HudMicMeter` (токены `HUD_METER_*`; подписка `AudioMonitorBus`).
+- VALUE indication (key→value) → `HudStatusReadout` (§7.1);
+- a LIVE level or meter (realtime) → `HudMicMeter`;
+- a TOGGLE button → `HudButton` with changing text;
+- a SETTING in a form → the checkbox, §5.2;
+- a RANGE with a visible position on a scale (volume, speed) → `HudSlider`;
+- a few discrete values compactly, without a scale → `HudStepper` (`◄ value ►`).
 
-## 5. Поля форм
+**The compact square picker button beside a
+field** (choosing a directory or file, to the right of the field). A square whose side equals the height of the ADJACENT field (it follows the field, NOT `HUD_BUTTON_HEIGHT`), and narrow. The glyph is a PRIMITIVE (§13), not Unicode text (the symbol depends on the font and breaks). On a primary fill the glyph is DARK (the inversion in §0.4), not white. The button's side text insets are zeroed in square mode — otherwise the glyph shifts. Add it to the layout with `fill=NONE`/`weightx=0`, or the square will stretch.
 
-### 5.1 Метка + текстовое поле
+**→
+Anchors:** `HudButton(label, boolean primary)` (primary=true is the orange fill, false the outline); navigation lists use `HudTabbedPane` (§11) / `HudSection` (§9); two-line items use `HudCommandNameCellRenderer`; the compact picker is `makeFieldButton(glyph|Icon, fieldHeight)` + `HudButton.setSquareSide`, with the ⋮ glyph as `verticalEllipsisIcon` / `paintHudVerticalEllipsis`; an affordance icon (close ×, save-to-file) is `HudGlyphButton(painter, restTint, hoverTint, tooltip, onClick)`
+(a glyph primitive, §13, with a `HUD_TABLE_ROW_HEIGHT_COMPACT` footprint and a `HUD_ICON_TABLE` glyph; its only owner is `HudDialogHeader`, and the section header reuses it); into a section header it goes through `HudSection.setHeaderActions` (§9); the slider scale is `HudSlider(min, max, step, value)` (the `HUD_SLIDER_*` tokens, fill colour `HUD_COLOR_ROLE_SLIDER_VALUE_TRACK`); the segmented level meter is `HudMicMeter` (the `HUD_METER_*` tokens; subscribes to `AudioMonitorBus`).
 
-Для строк «метка → поле» в формах (эталон: TRADE PROFILE):
-- **Метка** — светлая `HUD_COLOR_ROLE_PRIMARY_TEXT`-капс (как в ваниль-ED: метка светлая, значение оранжевое), кегль `HUD_FONT_SM`,
-  БЕЗ двоеточия, НЕ микс-кейс. Двоеточие из i18n чистить в бандлах (ВСЕ языки), не в коде.
-  Единый стиль — `styleFieldLabel` (один источник для `addLabel` и `hudReadoutLabel`); цвет/кегль меняются
-  централизованно в нём.
-- **Поле** — `HudTextField`, тёплая рамка `HUD_COLOR_ROLE_CONTROL_DECORATION` (§8), фон `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND`. Текст-значение —
-  `HUD_COLOR_ROLE_PRIMARY_ACTION` (оранжевое, парно к светлой метке; `styleTextComponent`), одинаково для однострочных и
-  многострочных полей; различие только enabled/disabled (`HUD_COLOR_ROLE_DISABLED`). Цвет НЕ зависит от
-  editable/read-only. Живая консоль/лог — отдельная роль (`HudLogArea`), не поле.
-- **Disabled (§0.6)** — централизованно, без локальных хаков: рамка следит за `isEnabled()` и гаснет до
-  `HUD_COLOR_ROLE_DISABLED` (`hudFieldLine` внутри `hudFieldBorder()`/`…WithInfo()`); текст в поле — `disabledTextColor=HUD_COLOR_ROLE_DISABLED`
-  (`styleTextComponent`); метка строки (`addLabel`) гаснет вместе с полем до `HUD_COLOR_ROLE_DISABLED`. Группу гасят
-  одним `setEnabled(false)` на контролах — каждый рисует свой disabled сам.
-- **Info-«i» (опц.)** — зона ВНУТРИ поля справа, отделена щелью `HUD_COLOR_ROLE_APPLICATION_BACKGROUND`. Тинт: покой
-  `HUD_COLOR_ROLE_CONTROL_DECORATION`; hover `HUD_COLOR_ROLE_PRIMARY_ACTION`; disabled `HUD_COLOR_ROLE_DISABLED`. Глиф — `paintHudInfoGlyph`.
-  Клик открывает справку, не ставит каретку. НЕ отдельной внешней кнопкой и НЕ Unicode-глифом.
-- **Picker у края поля** (выбор каталога/файла) — компактная квадратная кнопка, §4.
+## 5. Form fields
 
-**Read-only значение в форме.** Развилка:
-- короткое скалярное read-only БЕЗ справки → плоский текст `hudReadoutValue` (§7.2), без рамки;
-- значение, которому нужна in-field info-«i» или длинный путь со скроллом/выделением →
-  `HudTextField` + `setEditable(false)` (рамка = «ограниченная поверхность», не признак ввода);
-- компактная «ограниченная поверхность» без справки → `makeMetadataField` (`HudMetadataField`).
+### 5.1 Label plus text field
 
-Синие подчёркнутые action-«ссылки» — АНТИПАТТЕРН: справку несёт info-«i» внутри контрола.
+For "label → field" rows in forms (the reference is TRADE PROFILE):
 
-**Раскладка строки** «метка→поле[→picker/i]» — хелперы `baseGbc` / `addLabel` / `addField` (§ниже),
-не сырой `GridBagConstraints` по месту.
+- **The
+  label** is light `HUD_COLOR_ROLE_PRIMARY_TEXT` caps (as in vanilla ED: light label, orange value), at `HUD_FONT_SM`, with NO colon, and NOT mixed case. Strip colons coming from i18n in the bundles (ALL languages), not in the code. One style, `styleFieldLabel` (a single source for `addLabel` and `hudReadoutLabel`); colour and size change centrally inside it.
+- **The
+  field** is a `HudTextField`, with a warm `HUD_COLOR_ROLE_CONTROL_DECORATION` border (§8) and a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` background. The value text is
+  `HUD_COLOR_ROLE_PRIMARY_ACTION` (orange, pairing with the light label; `styleTextComponent`), the same for single-line and multi-line fields; the only difference is enabled/disabled (`HUD_COLOR_ROLE_DISABLED`). The colour does NOT depend on editable/read-only. A live console or log is its own role (`HudLogArea`), not a field.
+- **Disabled (§0.6)** is centralized, with no local hacks: the border follows `isEnabled()` and dims to
+  `HUD_COLOR_ROLE_DISABLED` (`hudFieldLine` inside `hudFieldBorder()`/`…WithInfo()`); the text in the field uses `disabledTextColor=HUD_COLOR_ROLE_DISABLED`
+  (`styleTextComponent`); and the row label (`addLabel`) dims together with the field to `HUD_COLOR_ROLE_DISABLED`. A group is dimmed by one `setEnabled(false)` on the controls, each of which draws its own disabled state.
+- **The info "i" (
+  optional)** is a zone INSIDE the field on the right, separated by a `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gap. Tints: at rest
+  `HUD_COLOR_ROLE_CONTROL_DECORATION`; hover `HUD_COLOR_ROLE_PRIMARY_ACTION`; disabled `HUD_COLOR_ROLE_DISABLED`. The glyph is `paintHudInfoGlyph`. A click opens the help and does not place the caret. NOT a separate external button and NOT a Unicode glyph.
+- **A picker at the field's edge** (choosing a directory or file) is a compact square button, §4.
 
-**→ Якоря:** `AppTheme.hudReadoutLabel`, `HudTextField.setInfoAction` / `makeTextField(infoAction)`,
-`hudFieldBorderWithInfo()`, `HUD_SEP_W`; read-only — `hudReadoutValue` (§7.2) / `makeMetadataField`
-(`HudMetadataField`); picker — `makeFieldButton` (§4); раскладка — `HudForms.baseGbc` / `addLabel` / `addField`.
+**A read-only value in a form.** Choose:
 
-### 5.2 Чекбокс
+- a short scalar read-only value with NO help → flat `hudReadoutValue` text (§7.2), no border;
+- a value that needs an in-field info "i", or a long path with scrolling and selection →
+  `HudTextField` + `setEditable(false)` (the border means "a bounded surface", not a sign of input);
+- a compact "bounded surface" with no help → `makeMetadataField` (`HudMetadataField`).
 
-Чекбокс ED — НЕ LAF-«птичка», а контрол-строка `[маркер | щель | текст]`, состояние несёт
-заливка (инверсия §0.4):
+Blue underlined action "links" are an ANTI-PATTERN: help is carried by the info "i" inside the control.
 
-- **ВКЛ:** плашка `HUD_COLOR_ROLE_PRIMARY_ACTION`; маркер — бокс-контур + залитый квадрат `HUD_COLOR_ROLE_SELECTED_TEXT`; текст `HUD_COLOR_ROLE_SELECTED_TEXT`-капс.
-- **ВЫКЛ:** плашка `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND`; маркер — пустой бокс `HUD_COLOR_ROLE_CONTROL_DECORATION`; текст `HUD_COLOR_ROLE_SECONDARY_TEXT`-капс.
-- **Disabled:** плашка `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND`; маркер — пустой бокс `HUD_COLOR_ROLE_DISABLED`; текст `HUD_COLOR_ROLE_DISABLED`.
+**The row
+layout** "label→field[→picker/i]" uses the `baseGbc` / `addLabel` / `addField` helpers (see below), not a raw `GridBagConstraints` in place.
 
-Щель `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` делит маркер и текст. Маркер — прямые линии, без «птички»/скругления.
+**→ Anchors:** `AppTheme.hudReadoutLabel`, `HudTextField.setInfoAction` / `makeTextField(infoAction)`,
+`hudFieldBorderWithInfo()`, `HUD_SEP_W`; read-only is `hudReadoutValue` (§7.2) / `makeMetadataField`
+(`HudMetadataField`); the picker is `makeFieldButton` (§4); the layout is `HudForms.baseGbc` / `addLabel` / `addField`.
 
-**Info-«i» (опц.)** — строка `[маркер | щель | текст | щель | i]`. Тинт по строке: ВЫКЛ
-`HUD_COLOR_ROLE_CONTROL_DECORATION`; ВКЛ `HUD_COLOR_ROLE_SELECTED_TEXT`; disabled `HUD_COLOR_ROLE_DISABLED`; hover над зоной `HUD_COLOR_ROLE_PRIMARY_ACTION`. Клик
-открывает справку, НЕ переключает. Без справки зона не рисуется.
+### 5.2 Checkbox
 
-**→ Якоря:** `HudCheckBox` (высота `HUD_TABLE_ROW_HEIGHT_COMPACT`), `setInfoAction` /
+The ED checkbox is NOT a LAF tick but a control row `[marker | gap | text]` whose state is carried by the fill (the inversion in §0.4):
+
+-
+**ON:** a `HUD_COLOR_ROLE_PRIMARY_ACTION` plate; the marker is a box outline plus a filled `HUD_COLOR_ROLE_SELECTED_TEXT` square; the text is `HUD_COLOR_ROLE_SELECTED_TEXT` caps.
+-
+**OFF:** a `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` plate; the marker is an empty `HUD_COLOR_ROLE_CONTROL_DECORATION` box; the text is `HUD_COLOR_ROLE_SECONDARY_TEXT` caps.
+-
+**Disabled:** a `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` plate; the marker is an empty `HUD_COLOR_ROLE_DISABLED` box; the text is `HUD_COLOR_ROLE_DISABLED`.
+
+A `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gap divides the marker from the text. The marker is straight lines, with no tick shape or rounding.
+
+**The info "i" (optional)** makes the row `[marker | gap | text | gap | i]`. The tint follows the row: OFF
+`HUD_COLOR_ROLE_CONTROL_DECORATION`; ON `HUD_COLOR_ROLE_SELECTED_TEXT`; disabled `HUD_COLOR_ROLE_DISABLED`; hover over the zone `HUD_COLOR_ROLE_PRIMARY_ACTION`. A click opens the help and does NOT toggle. With no help the zone is not drawn.
+
+**→ Anchors:** `HudCheckBox` (height `HUD_TABLE_ROW_HEIGHT_COMPACT`), `setInfoAction` /
 `makeCheckBox(label, sel, infoAction)`, `paintHudInfoGlyph`, `paintHudCheckMarker`, `HUD_SEP_W`.
 
 ### 5.3 Combo
 
-Эталон: combo ED (PRIMARY/BORDERLESS) — тёплый тёмный фон, оранжевый текст, плоская ▼
-без бокса-кнопки. НЕ нативный LAF.
-- **Свёрнутое** — фон `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND`, текст `HUD_COLOR_ROLE_PRIMARY_ACTION` (значение оранжевое, как в ваниль-ED; placeholder/
-  muted — `HUD_COLOR_ROLE_SECONDARY_TEXT`), рамка `hudFieldBorder()` (`HUD_COLOR_ROLE_CONTROL_DECORATION`). ▼ плоская (`HUD_COLOR_ROLE_PRIMARY_ACTION`; disabled
-  `HUD_COLOR_ROLE_DISABLED`) у края, без бокса/сепаратора. Серый сепаратор editor↔▼ — баг FlatLaf, гасится
-  глобально `ComboBox.buttonSeparatorWidth=0`.
-- **Список (popup)** — подложка `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND`; пункты `HUD_COLOR_ROLE_PRIMARY_ACTION`; выбранный — `HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT`;
-  рамка тёплая `HUD_COLOR_ROLE_CONTROL_DECORATION`. Отступ — `HUD_COMBO_ITEM_INSET_V/H`, шрифт `HUD_FONT_FIELD_VALUE`.
-  Рендер списка — внутренний рендерер фабрики, НЕ внешний `setRenderer`.
-- **Combo — поле ВВОДА**: на выбранной строке таблицы остаётся тёплым, не красится `HUD_COLOR_ROLE_PRIMARY_ACTION`.
-- **Выделение текста** — тёплое: `ComboBox.selectionBackground=HUD_COLOR_ROLE_PRIMARY_ACTION`,
-  `selectionForeground=HUD_COLOR_ROLE_SELECTED_TEXT` (глобально).
-- **Disabled** — тёплый приглушённый (§0.6): фон `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND`, текст/▼ `HUD_COLOR_ROLE_DISABLED`.
+The reference is the ED combo (PRIMARY/BORDERLESS): a warm dark background, orange text, and a flat ▼ with no button box. NOT the native LAF.
 
-**Единый API.** Combo — ТОЛЬКО через `HudComboBox`, НЕ `new JComboBox` + ручной `styleComboBox`.
-Текст элемента через `labelFn`, НЕ внешний `setRenderer`. Три точки входа:
-- **Обычный combo** — `new HudComboBox<>(E[]/ComboBoxModel[, labelFn[, mutedWhen]])`.
-  `mutedWhen` (`Predicate<E>`) — приглушать до `HUD_COLOR_ROLE_SECONDARY_TEXT` на невыбранной строке (placeholder/none).
-  `ComboBoxModel`-конструктор — для динамических моделей (Audio-устройства, биндинги).
-- **Editable-пикер с поиском** — `HudComboBox.picker(E[], labelFn, BiPredicate matches)`.
-  Инкапсулирован (флаг editable не ставить снаружи). Поведение: пустое поле → полный список;
-  ввод → фильтрация по `matches`. НЕ перетирать editor через `setSelectedItem` при фильтрации.
-- **Ячейка таблицы** — `HudComboCellEditor<E>`: держит `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND`, не инвертируется.
+-
+**Collapsed** — a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` background, `HUD_COLOR_ROLE_PRIMARY_ACTION` text (the value is orange, as in vanilla ED; placeholder and muted text are `HUD_COLOR_ROLE_SECONDARY_TEXT`), and a `hudFieldBorder()` border (`HUD_COLOR_ROLE_CONTROL_DECORATION`). The ▼ is flat (`HUD_COLOR_ROLE_PRIMARY_ACTION`; disabled
+`HUD_COLOR_ROLE_DISABLED`) at the edge, with no box or separator. The grey editor↔▼ separator is a FlatLaf bug, suppressed globally with `ComboBox.buttonSeparatorWidth=0`.
+- **The list (
+  popup)** — a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` backing; `HUD_COLOR_ROLE_PRIMARY_ACTION` items; the selected one `HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT`; a warm `HUD_COLOR_ROLE_CONTROL_DECORATION` border. The insets are `HUD_COMBO_ITEM_INSET_V/H` and the font `HUD_FONT_FIELD_VALUE`. The list is rendered by the factory's internal renderer, NOT an external `setRenderer`.
+- **A combo is an INPUT
+  field**: on a selected table row it stays warm and is not repainted `HUD_COLOR_ROLE_PRIMARY_ACTION`.
+- **Text selection** is warm: `ComboBox.selectionBackground=HUD_COLOR_ROLE_PRIMARY_ACTION`,
+  `selectionForeground=HUD_COLOR_ROLE_SELECTED_TEXT` (globally).
+-
+**Disabled** is warm and dimmed (§0.6): a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` background, with the text and ▼ in `HUD_COLOR_ROLE_DISABLED`.
 
-**Идемпотентность.** `styleComboBox` ставит `HudComboBoxUI` ТОЛЬКО если ещё не установлен
-(`setUI` пересоздаёт editor → новый `Document`, осиротевает `DocumentListener` фильтра).
+**One
+API.** A combo goes ONLY through `HudComboBox`, never `new JComboBox` plus a manual `styleComboBox`. Item text comes from `labelFn`, not an external `setRenderer`. Three entry points:
 
-**Opt-out editor (§12).** Editor picker'а помечается `HUD_COMBO_EDITOR_LOCKED` после первичной
-стилизации — иначе `applyDarkPalette` перетирает его `EmptyBorder` на `hudFieldBorder()`.
+- **The ordinary combo** — `new HudComboBox<>(E[]/ComboBoxModel[, labelFn[, mutedWhen]])`.
+  `mutedWhen` (`Predicate<E>`) dims an unselected row to `HUD_COLOR_ROLE_SECONDARY_TEXT` (placeholder/none). The `ComboBoxModel` constructor is for dynamic models (audio devices, bindings).
+- **An editable picker with
+  search** — `HudComboBox.picker(E[], labelFn, BiPredicate matches)`. It is encapsulated (do not set the editable flag from outside). Behaviour: an empty field gives the full list; typing filters by `matches`. Do NOT overwrite the editor through `setSelectedItem` while filtering.
+- **A table cell** — `HudComboCellEditor<E>`: it holds `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` and does not invert.
 
-> **TODO.** Фильтр-поиск вручную (`DocumentListener` → пересборка модели). Если пикеров
-> станет много, рассмотреть GlazedLists `AutoCompleteSupport` — ценой интеграции с HUD-каноном.
-> НЕ внедрять без явного решения.
+**Idempotence.** `styleComboBox` installs `HudComboBoxUI` ONLY if it is not there already (`setUI` recreates the editor → a new `Document`, orphaning the filter's `DocumentListener`).
 
-**→ Якоря:** `HudComboBox` (конструкторы `E[]`/`ComboBoxModel` × `[labelFn][, mutedWhen]`;
-фабрика `picker(E[], labelFn, matches)`) + `HudComboBoxUI`. ▼ — `paintHudArrowDown`.
-Стиль — `styleComboBox` (идемпотентный). Ячейка — `HudComboCellEditor<E>`. Глобально в
-`AppView.installDarkDefaults`: `ComboBox.disabled*` → тёплые, `selectionBackground=HUD_COLOR_ROLE_PRIMARY_ACTION`/
-`selectionForeground=HUD_COLOR_ROLE_SELECTED_TEXT`, `buttonSeparatorWidth=0`. Токены: `HUD_COMBO_ITEM_INSET_V/H`,
+**The opt-out editor (
+§12).** A picker's editor is marked `HUD_COMBO_EDITOR_LOCKED` after the initial styling — otherwise `applyDarkPalette` overwrites its `EmptyBorder` with `hudFieldBorder()`.
+
+> **TODO.** The search filter is manual (`DocumentListener` → rebuilding the model). If there come to be
+> many pickers, consider GlazedLists `AutoCompleteSupport`, at the cost of integrating it with the HUD canon.
+> Do NOT adopt it without an explicit decision.
+
+**→
+Anchors:** `HudComboBox` (constructors `E[]`/`ComboBoxModel` × `[labelFn][, mutedWhen]`; the `picker(E[], labelFn, matches)` factory) plus `HudComboBoxUI`. The ▼ is `paintHudArrowDown`. The style is `styleComboBox` (idempotent). The cell is `HudComboCellEditor<E>`. Globally in
+`AppView.installDarkDefaults`: `ComboBox.disabled*` → warm, `selectionBackground=HUD_COLOR_ROLE_PRIMARY_ACTION`/
+`selectionForeground=HUD_COLOR_ROLE_SELECTED_TEXT`, `buttonSeparatorWidth=0`. Tokens: `HUD_COMBO_ITEM_INSET_V/H`,
 `HUD_PICKER_FIELD_WIDTH/HEIGHT`, opt-out `HUD_COMBO_EDITOR_LOCKED`.
 
-### 5.4 Сегментный селектор (radio-группа)
+### 5.4 Segmented selector (radio group)
 
-Взаимоисключающий выбор «один-из» — НЕ круглый LAF-`JRadioButton` (круг ломает §0.1, а как
-чекбокс-строка radio неотличим от §5.2). Канон уже умеет «выбери ровно один» — инверсия-заливкой
-(§0.4, выбранная строка §6, активная вкладка/пункт §11). Контрол = бар равных сегментов,
-разделённых щелью `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` (как маркер↔текст §5.2 / `intercellSpacing` §6), ровно один залит.
-Высота `HUD_TABLE_ROW_HEIGHT_COMPACT`, шрифт `HUD_FONT_CHECKBOX` bold-капс — родня чекбоксу.
-Палитра 1-в-1 с §5.2:
+A mutually exclusive "one of" choice is NOT a round LAF `JRadioButton` (a circle breaks §0.1, and as a checkbox row a radio is indistinguishable from §5.2). The canon already knows how to say "pick exactly one":
+inversion by fill (§0.4, the selected row in §6, the active tab or item in §11). The control is a bar of equal segments separated by a `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gap (like marker↔text in §5.2 or `intercellSpacing` in §6), with exactly one filled. The height is `HUD_TABLE_ROW_HEIGHT_COMPACT` and the font `HUD_FONT_CHECKBOX` bold caps — a relative of the checkbox. The palette is identical to §5.2:
 
-- **Выбран:** плашка `HUD_COLOR_ROLE_PRIMARY_ACTION`; текст `HUD_COLOR_ROLE_SELECTED_TEXT`.
-- **Не выбран:** плашка `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND`; текст `HUD_COLOR_ROLE_SECONDARY_TEXT`.
-- **Hover (невыбранный):** текст → `HUD_COLOR_ROLE_PRIMARY_ACTION` (плашка та же).
-- **Disabled:** плашка `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND`; текст `HUD_COLOR_ROLE_DISABLED` (§0.6).
+- **Selected:** a `HUD_COLOR_ROLE_PRIMARY_ACTION` plate; `HUD_COLOR_ROLE_SELECTED_TEXT` text.
+- **Not selected:** a `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` plate; `HUD_COLOR_ROLE_SECONDARY_TEXT` text.
+- **Hover (unselected):** the text becomes `HUD_COLOR_ROLE_PRIMARY_ACTION` (the plate is unchanged).
+- **Disabled:** a `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` plate; `HUD_COLOR_ROLE_DISABLED` text (§0.6).
 
-Без обводки самого контрола (как слаб чекбокса; рамка-бокс — акцент §9, не дефолт). Программный
-`setSelectedIndex` НЕ шлёт `ChangeListener` (как `setSelected` у кнопки) — слушатель только на клик.
+No outline around the control itself (as with the checkbox; a box frame is an accent, §9, not the default). A programmatic
+`setSelectedIndex` does NOT fire `ChangeListener` (as `setSelected` does not on a button) — the listener fires on clicks only.
 
-**→ Якоря:** `HudSegmentedControl(String[] labels, int selectedIndex)`, `getSelectedIndex()` /
-`setSelectedIndex(int)` / `addChangeListener(ChangeListener)`; opt-out `HUD_LOCKED_FOREGROUND` (§12).
-Высота `HUD_TABLE_ROW_HEIGHT_COMPACT`, зазор `HUD_SEP_W`, шрифт `HUD_FONT_CHECKBOX`.
+**→ Anchors:** `HudSegmentedControl(String[] labels, int selectedIndex)`, `getSelectedIndex()` /
+`setSelectedIndex(int)` / `addChangeListener(ChangeListener)`; opt-out `HUD_LOCKED_FOREGROUND` (§12). Height `HUD_TABLE_ROW_HEIGHT_COMPACT`, gap `HUD_SEP_W`, font `HUD_FONT_CHECKBOX`.
 
-## 6. Таблицы
+## 6. Tables
 
-Эталоны: Commodities Market, Sub-Targets.
+References: Commodities Market, Sub-Targets.
 
-- **Заголовки колонок** — `HUD_COLOR_ROLE_SECONDARY_TEXT`-капс, тонкая тёплая рейка `HUD_COLOR_ROLE_CONTROL_DECORATION` под
-  шапкой (НЕ холодный `HUD_COLOR_ROLE_SECONDARY_BORDER`). Обязательна у ВСЕХ таблиц.
-- **Групповые сепараторы** (CHEMICALS/FOODS) — яркий капс без заливки, отдельной строкой.
-- **Строки данных** — плашка `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND`. НЕ zebra, НЕ grid.
-- **Фон тела** — `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` (темнее плашки). Деление — зазор `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` через `intercellSpacing`
-  (гориз.+вертик.). НЕ прозрачность — фон задаётся явно.
-- **Значения** — капс в РЕНДЕРЕРЕ (`toUpperCase`). Цвет: параметр/настройка → `HUD_COLOR_ROLE_PRIMARY_ACTION`;
-  имя-идентификатор → `HUD_COLOR_ROLE_PRIMARY_TEXT`. Статус-данные — по §1.
-- **Числовые колонки** — вправо; текстовые — влево.
-- **Combo-колонка** — рендерер с приглушённой ▼ (`HUD_COLOR_ROLE_CONTROL_DECORATION`; на выбранной `HUD_COLOR_ROLE_SELECTED_TEXT`);
-  редактор — `HudComboBox` (§5.3), всегда тёплый, НЕ инвертируется с выбором строки.
-- **Иконка-аффорданс** (шестерёнка) — мелкая, меньше высоты строки. Тинт по строке:
-  покой `HUD_COLOR_ROLE_CONTROL_DECORATION`, выбранная `HUD_COLOR_ROLE_SELECTED_TEXT`. Размер — `HUD_ICON_TABLE`.
+- **Column
+  headers** are `HUD_COLOR_ROLE_SECONDARY_TEXT` caps with a thin warm `HUD_COLOR_ROLE_CONTROL_DECORATION` rail under the header (NOT the cold `HUD_COLOR_ROLE_SECONDARY_BORDER`). Mandatory on ALL tables.
+- **Group separators** (CHEMICALS/FOODS) are bright caps with no fill, on their own row.
+- **Data rows** sit on a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` plate. NOT zebra, NOT a grid.
+- **The body
+  background** is `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` (darker than the plate). The division is a `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gap via `intercellSpacing`
+  (horizontal and vertical). NOT transparency — the background is set explicitly.
+-
+**Values** are uppercased in the RENDERER (`toUpperCase`). Colour: a parameter or setting → `HUD_COLOR_ROLE_PRIMARY_ACTION`; an identifying name → `HUD_COLOR_ROLE_PRIMARY_TEXT`. Status data follows §1.
+- **Numeric columns** align right; text columns align left.
+- **A combo
+  column** uses a renderer with a dimmed ▼ (`HUD_COLOR_ROLE_CONTROL_DECORATION`; `HUD_COLOR_ROLE_SELECTED_TEXT` on the selected row); the editor is `HudComboBox` (§5.3), always warm, and does NOT invert with the row selection.
+- **An affordance icon** (the gear) is small, below the row height. Its tint follows the row:
+  at rest `HUD_COLOR_ROLE_CONTROL_DECORATION`, on the selected row `HUD_COLOR_ROLE_SELECTED_TEXT`. The size is `HUD_ICON_TABLE`.
 
-**Selected row:** заливка `HUD_COLOR_ROLE_PRIMARY_ACTION` + текст `HUD_COLOR_ROLE_SELECTED_TEXT`, ЯВНО в рендерере (FlatLaf перебивает).
-Одна за раз. **Disabled row:** `HUD_COLOR_ROLE_DISABLED`.
+**Selected
+row:** a `HUD_COLOR_ROLE_PRIMARY_ACTION` fill plus `HUD_COLOR_ROLE_SELECTED_TEXT` text, set EXPLICITLY in the renderer (FlatLaf overrides it). One at a time.
+**Disabled row:** `HUD_COLOR_ROLE_DISABLED`.
 
-**→ Якоря:** `HudTable.style()/styleCompact()`, `HudTable.dataPlaneScrollPane()` (§12, не
-сырой `JScrollPane`). Высоты `HUD_TABLE_ROW_HEIGHT*`. Combo-ячейки — `DefaultCellEditor` на
-`HudComboBox`. Иконки — `HudGlyphs.scaledIcon`+`tintIcon`. Шрифты: `style()`→`HUD_FONT_TABLE_ROW`,
-`styleCompact()`→`HUD_FONT_SM`; заголовок `HUD_FONT_TABLE_HEADER`.
+**→
+Anchors:** `HudTable.style()/styleCompact()`, `HudTable.dataPlaneScrollPane()` (§12, not a raw `JScrollPane`). Heights `HUD_TABLE_ROW_HEIGHT*`. Combo cells are a `DefaultCellEditor` over a `HudComboBox`. Icons are `HudGlyphs.scaledIcon`+`tintIcon`. Fonts: `style()`→`HUD_FONT_TABLE_ROW`,
+`styleCompact()`→`HUD_FONT_SM`; the header is `HUD_FONT_TABLE_HEADER`.
 
-## 7. Readout и статус-строки
+## 7. Readouts and status lines
 
-### 7.1 HudStatusReadout (key→value с состоянием)
+### 7.1 HudStatusReadout (key→value with state)
 
-Эталоны: Outpost dialog, Ship Functions, Station faction-block.
-- **Метка слева** — `HUD_COLOR_ROLE_SECONDARY_TEXT`-капс, без двоеточия (ED разделяет колонкой, не пунктуацией).
-- **Значение справа** — прижато ВПРАВО, цвет по §1 (`ON`→норма, `OFF`→приглушён, опасное→красный).
-- Тонкая accent-риска слева. Правая колонка ровная.
+References: the Outpost dialog, Ship Functions, the Station faction block.
 
-**→ Якорь:** `HudStatusReadout` (метка `HUD_COLOR_ROLE_SECONDARY_TEXT`, значение справа в цвет `StatusBadge.State`).
+- **The label on the
+  left** is `HUD_COLOR_ROLE_SECONDARY_TEXT` caps with no colon (ED separates by column, not punctuation).
+- **The value on the right** is flushed RIGHT, coloured per §1 (`ON`→normal, `OFF`→dimmed, dangerous→red).
+- A thin accent tick on the left. The right column stays even.
 
-### 7.2 Read-only key→value в диалогах деталей
+**→
+Anchor:** `HudStatusReadout` (a `HUD_COLOR_ROLE_SECONDARY_TEXT` label, the value on the right in the `StatusBadge.State` colour).
 
-(эталон: `CommandDetailsDialog`) — ОТДЕЛЬНАЯ модель от `HudStatusReadout` (тот — `StatusBadge.State`
-и значение ВПРАВО). Две колонки:
-- **Метка** — капс без двоеточия (`hudReadoutLabel`).
-- **Значение** — плоский текст БЕЗ рамки, левым краем (НЕ вправо). Цвет: имя → `HUD_COLOR_ROLE_INFORMATION` (§1),
-  прочее → `HUD_COLOR_ROLE_PRIMARY_ACTION` (оранжевое, как значения полей). НЕ форсить в капс в рендере — если нужно, капсить в источнике.
-- **Рамка = признак ВВОДА**: read-only → плоский текст; многострочное/редактируемое
-  → area с `hudFieldBorder()` (§5.1).
+### 7.2 Read-only key→value in detail dialogs
 
-**→ Якорь:** `AppTheme.hudReadoutValue(value, color)` (плоский `JLabel`, без рамки) —
-пара к `hudReadoutLabel`. Один хелпер на все key→value диалоги.
+(the reference is `CommandDetailsDialog`) — a SEPARATE model from `HudStatusReadout` (which carries `StatusBadge.State`
+and puts the value on the RIGHT). Two columns:
 
-### 7.3 Баннеры и прогресс-полосы
+- **The label** is caps with no colon (`hudReadoutLabel`).
+- **The
+  value** is flat text with NO border, aligned left (NOT right). Colour: a name → `HUD_COLOR_ROLE_INFORMATION` (§1), anything else → `HUD_COLOR_ROLE_PRIMARY_ACTION` (orange, like field values). Do NOT force caps in the renderer — if caps are needed, uppercase at the source.
+- **A border means INPUT**: read-only is flat text; multi-line or editable is an area with `hudFieldBorder()` (§5.1).
 
-Эталоны: Quick Status, Community Goal tiers, market profit bars.
-- Строка-индикатор: метка + значение/состояние в цвет §1.
-- Прогресс/уровни — ряд тонких сегментов-делений в цвет-статус (циановые tier-бары).
-- Рейтинговые ряды (S/A/B/C/D/E/F) — буква в боксе + строка справа; провал (`INSUFFICIENT`) — красным.
+**→
+Anchor:** `AppTheme.hudReadoutValue(value, color)` (a flat `JLabel` with no border), the counterpart to `hudReadoutLabel`. One helper for every key→value dialog.
 
-**Баннер-уведомление/подсказка-внизу-панели — ТОЛЬКО `HudBanner`.** Левая accent-рейка + текст
-в цвет состояния (`StatusBadge.State`). Caution-хинт — `STANDBY` (жёлтый) с ведущим ⚠-глифом
-(3-арг конструктор `leadingWarnGlyph=true`). Ручные warning-полосы (`JLabel`+Unicode «⚠»+`HUD_COLOR_ROLE_WARNING_PANEL_BACKGROUND`)
-— АНТИПАТТЕРН: и bindings-хинт, и note «changes take effect» идут через `HudBanner`.
+### 7.3 Banners and progress bars
 
-**Длинная подсказка в узкой колонке** — `HudBanner.multiline(text, state)`: текст переносится по
-словам (`JTextArea`, пропорциональный шрифт), не клипуется. НЕ городить `<html width=…>`-хак.
+References: Quick Status, Community Goal tiers, market profit bars.
 
-**Disabled (§0.6).** `HudBanner` следит за `setEnabled`: рейка и текст гаснут до `HUD_COLOR_ROLE_DISABLED`,
-при включении — обратно в цвет состояния. Гасить вместе с неактивной колонкой/секцией.
+- An indicator line: a label plus a value or state in the §1 colour.
+- Progress and levels are a row of thin segment divisions in the status colour (the cyan tier bars).
+- Rating rows (S/A/B/C/D/E/F) are a letter in a box plus a line to the right; a failure (`INSUFFICIENT`) is red.
 
-**→ Якоря:** `HudBanner(text, state[, leadingWarnGlyph])` (одиночные уведомления; ⚠ —
-`warningGlyphIcon`/`paintHudWarningGlyph`, §13); `HudBanner.multiline(text, state)` (переносимый);
-`HudStatusReadout`; прогресс — сегментированная полоса `HUD_COLOR_ROLE_INFORMATION`/`HUD_COLOR_ROLE_SUCCESS`.
+**A notification banner or a hint at the bottom of a panel is
+ONLY `HudBanner`.** A left accent rail plus text in the state colour (`StatusBadge.State`). A caution hint is `STANDBY` (yellow) with a leading ⚠ glyph (the 3-argument constructor, `leadingWarnGlyph=true`). Hand-built warning strips (`JLabel` + a Unicode "⚠" + `HUD_COLOR_ROLE_WARNING_PANEL_BACKGROUND`)
+are an ANTI-PATTERN: both the bindings hint and the "changes take effect" note go through `HudBanner`.
 
-### 7.4 Диалоговый лог
+**A long hint in a narrow
+column** uses `HudBanner.multiline(text, state)`: the text wraps by word (a `JTextArea` with a proportional font) instead of being clipped. Do NOT build an `<html width=…>` hack.
 
-`HudLogArea.chat` ведёт реплики CMDR слева (зелёная рейка) и Vega справа (циановая). Активная
-реплика Vega получает непрозрачную рейку и циановую заливку, затухающую от рейки к тексту. Это
-осознанное исключение из запрета градиентов §0. После последнего символа печати заливка и рейка
-плавно затухают до обычного вида за `HUD_CHAT_ACTIVE_HOLD_MS`.
+**Disabled (
+§0.6).** `HudBanner` follows `setEnabled`: the rail and text dim to `HUD_COLOR_ROLE_DISABLED`, and return to the state colour when re-enabled. Dim it together with the inactive column or section.
 
-## 8. Скроллбары
+**→ Anchors:** `HudBanner(text, state[, leadingWarnGlyph])` (single notifications; the ⚠ is
+`warningGlyphIcon`/`paintHudWarningGlyph`, §13); `HudBanner.multiline(text, state)` (wrapping);
+`HudStatusReadout`; progress is a segmented `HUD_COLOR_ROLE_INFORMATION`/`HUD_COLOR_ROLE_SUCCESS` bar.
 
-Служебный хром, не носитель смысла. Цвет-статус (в т.ч. циан) НЕ применяется.
-- **Thumb** — плоский `fillRect`, тёплый `HUD_COLOR_ROLE_DISABLED`. **Track** — `fillRect` в `HUD_COLOR_ROLE_APPLICATION_BACKGROUND`.
-  Hover не «загорается». Кнопки-стрелки убраны, полоса узкая.
+### 7.4 The dialogue log
 
-> **Тёплый thumb, холодные рамки.** `HUD_COLOR_ROLE_FRAME_BORDER` (холодный) — только рамки кнопок/тулбара,
-> для thumb НЕ использовать. **Рамки полей** — тёплый `HUD_COLOR_ROLE_CONTROL_DECORATION`. **Скролл-обёртка
-> таблицы — без рамки**: таблица «плавает» на `HUD_COLOR_ROLE_APPLICATION_BACKGROUND`. Обрамление — приём §9 (FRAMED),
-> к таблицам по умолчанию не применяется.
+`HudLogArea.chat` puts CMDR lines on the left (a green rail) and Vega's on the right (cyan). The active Vega line gets an opaque rail and a cyan fill fading from the rail towards the text. This is a deliberate exception to the ban on gradients in §0. After the last character is typed, the fill and rail fade smoothly back to the ordinary look over `HUD_CHAT_ACTIVE_HOLD_MS`.
 
-**→ Якорь:** `HudScrollPane` → `AppTheme.styleScrollPane()`. Все прокручиваемые области —
-`HudScrollPane`, не сырой `JScrollPane`.
+## 8. Scrollbars
+
+Service chrome, not a carrier of meaning. Status colour (cyan included) does NOT apply.
+
+- **The thumb** is a flat `fillRect` in warm `HUD_COLOR_ROLE_DISABLED`. **The
+  track** is a `fillRect` in `HUD_COLOR_ROLE_APPLICATION_BACKGROUND`. Hover does not "light up". The arrow buttons are removed and the bar is narrow.
+
+> **Warm thumb, cold frames.** `HUD_COLOR_ROLE_FRAME_BORDER` (cold) is only for button and toolbar frames;
+> do NOT use it for the thumb. **Field borders** are the warm `HUD_COLOR_ROLE_CONTROL_DECORATION`. **A table's
+> scroll wrapper has no
+border**: the table "floats" on `HUD_COLOR_ROLE_APPLICATION_BACKGROUND`. Framing is the §9 device (FRAMED),
+> and is not applied to tables by default.
+
+**→
+Anchor:** `HudScrollPane` → `AppTheme.styleScrollPane()`. Every scrollable area is a `HudScrollPane`, not a raw `JScrollPane`.
 
 ---
 
-## III. Паттерны сборки
+## III. Assembly patterns
 
-## 9. Секции: FLAT vs FRAMED
+## 9. Sections: FLAT vs FRAMED
 
-Рамка-бокс — АКЦЕНТ, не дефолт (несколько подряд → «коробка в коробке», шум).
-- **FRAMED** (`new HudSection`, `compactCard`) — рамка `HUD_COLOR_ROLE_CONTROL_DECORATION` + заливка заголовка
-  `HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND`. Для обособленных виджетов-акцентов: сайдбары, commander-block, карточки.
-- **FLAT** (`HudSection.flat`, `compactFlat`) — без рамки/заливки. Заголовок-капс (`HUD_COLOR_ROLE_PRIMARY_ACTION`)
-  + тёплая рейка `HUD_COLOR_ROLE_CONTROL_DECORATION`; фон тела ПРОЗРАЧНЫЙ. Для рабочих секций вкладки.
+A box frame is an ACCENT, not the default (several in a row become a "box in a box", which is noise).
 
-**Правило:** рабочая зона → FLAT; обособленный акцент → FRAMED.
+- **FRAMED** (`new HudSection`, `compactCard`) is a `HUD_COLOR_ROLE_CONTROL_DECORATION` frame plus a
+  `HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND` header fill. For separated accent widgets: sidebars, the commander block, cards.
+- **FLAT** (`HudSection.flat`, `compactFlat`) has no frame or fill. A caps title (`HUD_COLOR_ROLE_PRIMARY_ACTION`)
+  plus a warm `HUD_COLOR_ROLE_CONTROL_DECORATION` rail; the body background is TRANSPARENT. For a tab's working sections.
 
-**Внутри модалки — всегда FLAT.** Рамку окна даёт каркас §10.1; FRAMED-секция под ней =
-вторая рамка («коробка в коробке») — антипаттерн.
+**The rule:** a working area is FLAT; a separated accent is FRAMED.
 
-**Две колонки рядом** — `HudTwoColumns(left, right)`: равные половины (`GridLayout 1×2`) +
-центральный вертикальный разделитель `HUD_COLOR_ROLE_PANEL_SEPARATOR` (тёплый, тише рейки секции §10.1;
-НЕ холодный `HUD_COLOR_ROLE_SECONDARY_BORDER`), нарисован `paintComponent` (палитра не перетирает). Дети заполняют
-половину; для верхнего выравнивания контента — обернуть колонку в `BorderLayout` и добавить в `NORTH`.
-Эталоны: AI Services (local/cloud setup), `CustomCommandEditorDialog` (identity/steps). НЕ городить
-локальный `GridBag`-хак равных колонок по месту.
+**Inside a modal, always
+FLAT.** The window frame comes from the §10.1 scaffold; a FRAMED section under it is a second frame ("a box in a box"), an anti-pattern.
 
-**Действия в шапке секции** — `HudSection.setHeaderActions(JComponent...)`: одна или несколько иконок-аффордансов
-(`HudGlyphButton` §4) в правый край полосы заголовка, напротив тайтла, слева-направо в порядке аргументов
-(последний — у правого инсета), для действий над содержимым секции (напр. save + clear у лог-панели). Кладутся в
-`GridLayout`-полосу, зазор `HUD_GAP_TIGHT`; ПОЛОСА пиннится к высоте строки заголовка (шапка не растёт), а
-`GridLayout` растягивает каждую иконку на эту высоту (глиф центрируется, не обрезается). Правый инсет — общий
-`HEADER_H_INSET` (несёт бордер шапки). Действия — однотипные глиф-кнопки (равная ширина ячеек). НЕ верстать
-кнопку по месту в теле секции. Эталон: AI-вкладка, шапка «Диагностика».
+**Two columns side by
+side** use `HudTwoColumns(left, right)`: equal halves (`GridLayout 1×2`) plus a central vertical `HUD_COLOR_ROLE_PANEL_SEPARATOR` divider (warm, quieter than the section rail in §10.1; NOT the cold `HUD_COLOR_ROLE_SECONDARY_BORDER`), drawn in `paintComponent` so the palette does not overwrite it. Children fill their half; to align content to the top, wrap the column in a `BorderLayout` and add it to `NORTH`. References: AI Services (local/cloud setup), `CustomCommandEditorDialog` (identity/steps). Do NOT build a local `GridBag` equal-column hack in place.
 
-## 10. Диалоги
+**Actions in a section
+header** use `HudSection.setHeaderActions(JComponent...)`: one or more affordance icons (`HudGlyphButton`, §4) at the right edge of the title strip, opposite the title, left to right in argument order (the last one sits at the right inset), for actions over the section's content (for example save plus clear on a log panel). They go into a `GridLayout` strip with a `HUD_GAP_TIGHT` gap; the STRIP is pinned to the title row height (the header does not grow), while
+`GridLayout` stretches each icon to that height (the glyph centres rather than being clipped). The right inset is the shared
+`HEADER_H_INSET` (which carries the header border). The actions are uniform glyph buttons (equal cell widths). Do NOT lay out a button in place inside the section body. Reference: the AI tab, the "Diagnostics" header.
 
-Эталоны: Universal Cartographics, Promotion to Master, Community Goal.
-- Панель с чёткой рамкой поверх затемнённого фона. Заголовок капсом, с иконкой и линией.
-- **Затемнение сцены ОБЯЗАТЕЛЬНО** (§10.1 scrim): без вуали окно сливается с экраном.
-- **Кнопки:** Primary → яркая заливка, тёмный текст (`makeButton`); остальные → тусклый
-  контур (`makeButtonSubtle`).
-- **Раскладка футера:** левый слот — СЛЕВА; primary — СПРАВА; EXTRA — левее primary.
-  Раскладку даёт `HudModalSpec` — вручную WEST/EAST не верстать. Прежний канон «primary слева» ОТМЕНЁН.
-- **Один футер на всё:** и модалки, и подвалы вкладок собирает `HudFooter.build(modal, …)`.
-  Различие ТОЛЬКО в левом слоте: модальный (`modal=true`) — `BACK`/dismiss; не-модальный
-  (`modal=false`) — статус/инфо, **`BACK` запрещён** (флаг это и гарантирует).
-- **«Unsaved changes» в SAVE-футере — стандартный `HudUnsavedHint`** (`HUD_COLOR_ROLE_WARNING` + ⚠-глиф, скрыт
-  по умолчанию, `status.unsavedChanges`), вплотную СЛЕВА от `SAVE` в правой группе; показ/скрытие по
-  dirty; `SAVE` гасить при отсутствии правок. НЕ полноширинная плашка-баннер над кнопками.
-- **Dismiss — всегда `BACK`** (ключ `button.back`, subtle), не `CLOSE`/`CANCEL`. НЕ primary-заливка.
-  Только в модальном футере.
-- **default-кнопку** ставит САМ диалог после `setContentPane`. Обычно primary; вправе выбрать
-  иную (эталон `CommandDetailsDialog`: default=`BACK`, чтобы Enter не запускал команду).
-- **Титульный блок объекта** — в NORTH: имя `HUD_COLOR_ROLE_INFORMATION` bold крупно (`HUD_FONT_APP_TITLE`, капс)
-  + id/ключ `HUD_COLOR_ROLE_SECONDARY_TEXT` (`HUD_FONT_READOUT_KEY`) под ним. Дублирование в key→value тела —
-  по ситуации (форма, где имя уже в титуле, из key→value его убирает).
-- Реплики NPC — «ёлочками».
+## 10. Dialogs
 
-**Confirm/yes-no — `HudConfirmDialog`, НЕ `JOptionPane`.** Переиспользуемая HUD-модалка на каркасе
-§10.1: `HudConfirmDialog.confirm(parent, title, message, primary, dismiss)` (2 кнопки → boolean) или
-`HudConfirmDialog.show(parent, title, message, primary, extra, dismiss)` (3 кнопки → `Result`
-PRIMARY/EXTRA/DISMISS). ESC и крестик → DISMISS. Сырой `JOptionPane.showConfirmDialog`/`showOptionDialog`
-— антипаттерн.
+References: Universal Cartographics, Promotion to Master, Community Goal.
 
-**→ Якоря:** сборка — ТОЛЬКО `AppTheme.hudModalScaffold(HudModalSpec)` (§10.1). Титульный
-блок — `AppTheme.commandTitleBlock`. Секции тела — `HudSection.flat` (§9). Confirm — `HudConfirmDialog`.
+- A panel with a clear frame over a dimmed background. The title in caps, with an icon and a line.
+- **Dimming the scene is MANDATORY** (the §10.1 scrim): without the veil the window merges into the screen.
+- **Buttons:** primary → a bright fill with dark text (`makeButton`); the rest → a dim outline (`makeButtonSubtle`).
+- **Footer
+  layout:** the left slot goes LEFT; primary goes RIGHT; EXTRA sits left of primary. The layout comes from `HudModalSpec` — do not lay out WEST/EAST by hand. The former "primary on the left" canon is REVOKED.
+- **One footer for
+  everything:** both modals and tab footers are assembled by `HudFooter.build(modal, …)`. The only difference is the left slot: modal (`modal=true`) gets `BACK`/dismiss; non-modal (`modal=false`) gets status or info, and
+  **`BACK` is forbidden** (the flag is what guarantees that).
+- **"Unsaved changes" in a SAVE footer is the
+  standard `HudUnsavedHint`** (`HUD_COLOR_ROLE_WARNING` plus the ⚠ glyph, hidden by default, `status.unsavedChanges`), immediately LEFT of `SAVE` in the right-hand group; shown and hidden by dirty state, with `SAVE` dimmed when there are no edits. NOT a full-width banner plate above the buttons.
+- **Dismiss is
+  always `BACK`** (the `button.back` key, subtle), not `CLOSE` or `CANCEL`. NOT a primary fill. Only in a modal footer.
+- **The default
+  button** is set by the dialog ITSELF after `setContentPane`. Usually primary; it may choose otherwise (the reference is `CommandDetailsDialog`: default=`BACK`, so that Enter does not run the command).
+- **The object's title
+  block** goes in NORTH: the name in `HUD_COLOR_ROLE_INFORMATION` bold and large (`HUD_FONT_APP_TITLE`, caps)
+  plus the id or key in `HUD_COLOR_ROLE_SECONDARY_TEXT` (`HUD_FONT_READOUT_KEY`) beneath it. Duplicating it in the key→value body is situational (a form whose name is already in the title removes it from key→value).
+- NPC lines use guillemets.
 
-### 10.1 Каркас диалога (шапка + тело + рамка + футер + scrim)
+**Confirm and yes/no use `HudConfirmDialog`,
+NOT `JOptionPane`.** A reusable HUD modal on the §10.1 scaffold: `HudConfirmDialog.confirm(parent, title, message, primary, dismiss)` (2 buttons → boolean) or
+`HudConfirmDialog.show(parent, title, message, primary, extra, dismiss)` (3 buttons → a `Result`
+of PRIMARY/EXTRA/DISMISS). ESC and the close × give DISMISS. A raw `JOptionPane.showConfirmDialog`/`showOptionDialog`
+is an anti-pattern.
 
-Системный титлбар ОС нарушает §0.1/§10 → `setUndecorated(true)` + кастомная HUD-шапка.
+**→
+Anchors:** assembly is ONLY `AppTheme.hudModalScaffold(HudModalSpec)` (§10.1). The title block is `AppTheme.commandTitleBlock`. Body sections are `HudSection.flat` (§9). Confirm is `HudConfirmDialog`.
 
-**Сборка — ТОЛЬКО через единый каркас.** `AppTheme.hudModalScaffold(HudModalSpec)` →
-wrapper-`JPanel` для `setContentPane`. Композиция, НЕ базовый класс. `HudDialogHeader` и
-`HudFooter`/`hudFooterBorder()` — ВНУТРЕННОСТИ каркаса, напрямую в окнах не верстать.
+### 10.1 The dialog scaffold (header + body + frame + footer + scrim)
 
-**`HudModalSpec` (builder):** `title` (nullable → без шапки), `onClose`, `body`, `scrollBody`
-(bool → viewport bg `HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND`), кнопки с ролями `primary`/`dismiss`/`extra` (§10).
-Каркас НЕ создаёт кнопки — принимает готовые. ESC/default-кнопку ставит окно после `setContentPane`.
+The OS system title bar breaks §0.1/§10 → `setUndecorated(true)` plus a custom HUD header.
 
-**Боковой инсет** — единый токен `HUD_DIALOG_BODY_INSET` (`HUD_GAP×2`). При `scrollBody`
-тело-`body` своего бордера НЕ несёт. Литералы 18/16/12 отменены.
+**Assembly goes ONLY through the single
+scaffold.** `AppTheme.hudModalScaffold(HudModalSpec)` returns a wrapper `JPanel` for `setContentPane`. It is composition, NOT a base class. `HudDialogHeader` and
+`HudFooter`/`hudFooterBorder()` are the scaffold's INTERNALS and are not laid out directly in windows.
 
-**Шапка = холодный якорь над тёплым телом** (отделяется сменой температуры, не яркостью).
-- **Фон** — `HUD_COLOR_ROLE_DIALOG_HEADER_BACKGROUND`. НЕ `HUD_COLOR_ROLE_PRIMARY_ACTION`, НЕ тёплые тона.
-- **Акцент** — нижняя рейка `HUD_COLOR_ROLE_PRIMARY_ACTION` (`HUD_BORDER_THICKNESS_ACCENT`).
-- **Заголовок** — капс bold `HUD_FONT_APP_TITLE`, `HUD_COLOR_ROLE_DIALOG_TITLE_TEXT`.
-- **Лого-якорь слева** — `elite-logo`, тинт `HUD_COLOR_ROLE_CONTROL_DECORATION`, `HUD_ICON_NAV`, декоративный.
-- **Крестик** — `paintHudCloseGlyph`: покой `HUD_COLOR_ROLE_CONTROL_DECORATION`, hover `HUD_COLOR_ROLE_DANGER`.
-- **Высота** — `HUD_DIALOG_HEADER_HEIGHT` (НЕ `HUD_BUTTON_HEIGHT`).
+**`HudModalSpec` (a builder):** `title` (nullable → no header), `onClose`, `body`, `scrollBody`
+(bool → viewport bg `HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND`), and buttons with the `primary`/`dismiss`/`extra` roles (§10). The scaffold does NOT create buttons; it accepts finished ones. ESC and the default button are set by the window after `setContentPane`.
 
-**Тело** — `HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND`: смысловая роль тела модалки; значение может быть alias к базовому фону.
-НЕ использовать вместо неё `HUD_COLOR_ROLE_APPLICATION_BACKGROUND`/`HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND` напрямую.
+**The side inset** is the single `HUD_DIALOG_BODY_INSET` token (`HUD_GAP×2`). With `scrollBody`
+the `body` itself carries no border of its own. The 18/16/12 literals are revoked.
 
-**Рейка-разделитель футера** — `HUD_COLOR_ROLE_PANEL_SEPARATOR` (тише рейки секции `HUD_COLOR_ROLE_CONTROL_DECORATION`
-и рейки шапки `HUD_COLOR_ROLE_PRIMARY_ACTION` — три линии разного веса). `hudFooterBorder()`: боковой инсет 0.
+**The header is a cold anchor over a warm body** (separated by a change of temperature, not brightness).
 
-**Рамка окна** — `HUD_COLOR_ROLE_PANEL_SEPARATOR`, толщина `HUD_BORDER_THICKNESS_ACCENT`. НЕ `HUD_COLOR_ROLE_PRIMARY_ACTION`
-(конкурирует с рейкой шапки), НЕ `HUD_COLOR_ROLE_CONTROL_DECORATION` 1px (сливается по углам). `MatteBorder`
-на wrapper каркаса. Drag за шапку; крестик перехватывает свои события.
+- **Background** — `HUD_COLOR_ROLE_DIALOG_HEADER_BACKGROUND`. NOT `HUD_COLOR_ROLE_PRIMARY_ACTION`, NOT warm tones.
+- **Accent** — a bottom `HUD_COLOR_ROLE_PRIMARY_ACTION` rail (`HUD_BORDER_THICKNESS_ACCENT`).
+- **Title** — bold caps `HUD_FONT_APP_TITLE` in `HUD_COLOR_ROLE_DIALOG_TITLE_TEXT`.
+- **The logo anchor on the
+  left** — `elite-logo`, tinted `HUD_COLOR_ROLE_CONTROL_DECORATION`, at `HUD_ICON_NAV`, decorative.
+- **The close ×** — `paintHudCloseGlyph`: at rest `HUD_COLOR_ROLE_CONTROL_DECORATION`, hover `HUD_COLOR_ROLE_DANGER`.
+- **Height** — `HUD_DIALOG_HEADER_HEIGHT` (NOT `HUD_BUTTON_HEIGHT`).
 
-**Scrim** — вуаль `HUD_COLOR_ROLE_MODAL_SCRIM` на `glassPane` окна-владельца. Ставится перед показом,
-снимается при закрытии. Каркас scrim НЕ оркеструет — снаружи через `runWithModalScrim(owner,
-showModal)`, owner — `SwingUtilities.getWindowAncestor(parent)`.
+**The
+body** is `HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND`: the semantic role of a modal's body; its value may be an alias of the base background. Do NOT use `HUD_COLOR_ROLE_APPLICATION_BACKGROUND`/`HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND` directly in its place.
 
-> **TODO (переходное рассогласование).** Scrim включён только у `CommandDetailsDialog`;
-> остальные 9 модалок — `setVisible(true)` без вуали. Включать РАЗОМ, не по одному.
+**The footer divider
+rail** is `HUD_COLOR_ROLE_PANEL_SEPARATOR` (quieter than the section rail `HUD_COLOR_ROLE_CONTROL_DECORATION`
+and the header rail `HUD_COLOR_ROLE_PRIMARY_ACTION` — three lines of different weight). `hudFooterBorder()`: side inset 0.
 
-Внутри окна второй заголовок НЕ дублировать.
+**The window
+frame** is `HUD_COLOR_ROLE_PANEL_SEPARATOR` at `HUD_BORDER_THICKNESS_ACCENT`. NOT `HUD_COLOR_ROLE_PRIMARY_ACTION`
+(it competes with the header rail), NOT `HUD_COLOR_ROLE_CONTROL_DECORATION` at 1px (it merges at the corners). A `MatteBorder`
+on the scaffold wrapper. Drag by the header; the close × intercepts its own events.
 
-**→ Якоря:** `AppTheme.hudModalScaffold(HudModalSpec)` → wrapper-`JPanel` для `setContentPane`.
-`HudModalSpec`: роли primary/dismiss/extra, `scrollBody`. Внутренности: `HudModalScaffold.build`;
-`HudDialogHeader(title, onClose)` (opt-out `HUD_LOCKED_FOREGROUND`; drag за шапку);
-футер — `HudFooter.build(modal, back, status, trailing)` / `hudFooterBorder()`. Scrim снаружи:
-`runWithModalScrim(owner, show)`, owner —
-`SwingUtilities.getWindowAncestor(parent)`. Особый случай ручного скролла: `SettingsPopup`
-отдаёт `hudScrollPane` как `body` со `scrollBody=false`.
+**The
+scrim** is a `HUD_COLOR_ROLE_MODAL_SCRIM` veil on the owner window's `glassPane`. It is set before showing and removed on close. The scaffold does NOT orchestrate the scrim — that happens outside through `runWithModalScrim(owner,
+showModal)`, with the owner being `SwingUtilities.getWindowAncestor(parent)`.
 
-## 11. Навбар и вкладки
+> **TODO (transitional inconsistency).** The scrim is enabled only on `CommandDetailsDialog`;
+> the other 9 modals call `setVisible(true)` with no veil. Enable them ALL AT ONCE, not one by one.
 
-Эталоны: Ship panel tabs, top nav ED, Station Services.
+Do NOT duplicate a second title inside the window.
 
-**Вкладки** — ряд капсом, под рядом тонкая рейка.
-- **Активная**: яркий бокс-заливка (SUB-TARGETS) или подчёркивание `HUD_COLOR_ROLE_PRIMARY_ACTION`; неактивные тусклее.
-- **`SECTION` (второй уровень, ACTIONS/SETTINGS)**: активная — залитый бокс `HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_BACKGROUND`+`HUD_COLOR_ROLE_SELECTED_TEXT`
-  (инверсия §0.4). Бокс доходит до нижней рейки; НЕ подчёркивание — иначе на фоне множества
-  секций-рейок полоса табов теряется. Под рядом рейка-подчёркивание `HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_UNDERLINE`, во всю ширину.
-  Первый таб — с лёгким левым отступом от начала рейки (`tabAreaInsets.left`).
-  `COMPACT` (плотные внутренние) — остаётся подчёркивание.
-- Иконочные: активный — сплошная заливка, иконка тёмная.
+**→ Anchors:** `AppTheme.hudModalScaffold(HudModalSpec)` → a wrapper `JPanel` for `setContentPane`.
+`HudModalSpec`: the primary/dismiss/extra roles, `scrollBody`. Internals: `HudModalScaffold.build`;
+`HudDialogHeader(title, onClose)` (opt-out `HUD_LOCKED_FOREGROUND`; drag by the header); the footer is `HudFooter.build(modal, back, status, trailing)` / `hudFooterBorder()`. The scrim from outside:
+`runWithModalScrim(owner, show)`, with the owner being
+`SwingUtilities.getWindowAncestor(parent)`. A special case of manual scrolling: `SettingsPopup`
+passes a `hudScrollPane` as the `body` with `scrollBody=false`.
 
-**Навигационные списки** (Station Services, market sidebar) — пункты на слабой подложке,
-тонкие разделители. **Активный — сплошная заливка + тёмный текст** (`HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT`), один
-за раз. Заголовки групп — тусклый капс. Иконка слева — монохромная в цвет пункта.
-**Двухстрочный пункт:** верх — имя (`HUD_COLOR_ROLE_PRIMARY_TEXT`), низ — техподпись `HUD_COLOR_ROLE_SECONDARY_TEXT` (не красим). На
-выбранной — обе → `HUD_COLOR_ROLE_SELECTED_TEXT`.
+## 11. Navbar and tabs
 
-**→ Якорь:** `HudTabbedPane` уровней `MAIN_NAV` (§11.1) и `SECTION`/`COMPACT`; двухстрочные —
+References: the Ship panel tabs, the ED top nav, Station Services.
+
+**Tabs** are a row in caps with a thin rail beneath the row.
+
+-
+**Active**: a bright box fill (SUB-TARGETS) or a `HUD_COLOR_ROLE_PRIMARY_ACTION` underline; the inactive ones are dimmer.
+- **`SECTION` (the second level,
+  ACTIONS/SETTINGS)**: the active one is a filled box, `HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_BACKGROUND`+`HUD_COLOR_ROLE_SELECTED_TEXT`
+  (the inversion in §0.4). The box reaches the bottom rail; NOT an underline, because against a background of many section rails the tab strip would be lost. Beneath the row runs a full-width `HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_UNDERLINE` rail. The first tab carries a light left inset from the start of the rail (`tabAreaInsets.left`).
+  `COMPACT` (the dense inner ones) keeps the underline.
+- Icon tabs: the active one has a solid fill and a dark icon.
+
+**Navigation lists** (Station Services, the market sidebar) are items on a faint backing with thin dividers. **The
+active one is a solid fill plus dark
+text** (`HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT`), one at a time. Group titles are dim caps. The icon on the left is monochrome in the item's colour.
+**A two-line
+item:** the top is the name (`HUD_COLOR_ROLE_PRIMARY_TEXT`), the bottom a `HUD_COLOR_ROLE_SECONDARY_TEXT` technical sub-label (which we do not recolour). On the selected row both become `HUD_COLOR_ROLE_SELECTED_TEXT`.
+
+**→ Anchor:** `HudTabbedPane` at the `MAIN_NAV` (§11.1) and `SECTION`/`COMPACT` levels; two-line items use
 `HudCommandNameCellRenderer`.
 
-### 11.1 App header + MAIN_NAV navbar
+### 11.1 App header plus the MAIN_NAV navbar
 
-Эталоны: top nav ED + инфопанель станции. Канон `TopStatusBar` + `HudTabbedPane(MAIN_NAV)`.
+References: the ED top nav plus the station info panel. The canon is `TopStatusBar` + `HudTabbedPane(MAIN_NAV)`.
 
-**Шапка (`TopStatusBar`).** Слева — имя приложения капсом (`HUD_COLOR_ROLE_PRIMARY_TEXT`, bold) + версия (`HUD_COLOR_ROLE_SECONDARY_TEXT`).
-Справа — пары «метка→значение»: метка (`CMDR`/`SHIP`) `HUD_COLOR_ROLE_SECONDARY_TEXT`-капс без двоеточия; значение
-`HUD_COLOR_ROLE_PRIMARY_TEXT`-капс, bold. НЕ циан/`HUD_COLOR_ROLE_PRIMARY_ACTION`: имя — значение, не статус.
+**The
+header (`TopStatusBar`).** On the left, the application name in caps (`HUD_COLOR_ROLE_PRIMARY_TEXT`, bold) plus the version (`HUD_COLOR_ROLE_SECONDARY_TEXT`). On the right, "label→value" pairs: the label (`CMDR`/`SHIP`) in `HUD_COLOR_ROLE_SECONDARY_TEXT` caps with no colon; the value in
+`HUD_COLOR_ROLE_PRIMARY_TEXT` caps, bold. NOT cyan or `HUD_COLOR_ROLE_PRIMARY_ACTION`: a name is a value, not a status.
 
-**Рейки навбара:** верхняя (шапка↔вкладки) `HUD_COLOR_ROLE_CONTROL_DECORATION`, тоньше; нижняя (навбар↔тело)
-`HUD_COLOR_ROLE_PRIMARY_ACTION`, толще. Холодный `HUD_COLOR_ROLE_SECONDARY_BORDER` НЕ применять.
+**The navbar
+rails:** the upper one (header↔tabs) is `HUD_COLOR_ROLE_CONTROL_DECORATION` and thinner; the lower one (navbar↔body) is
+`HUD_COLOR_ROLE_PRIMARY_ACTION` and thicker. Do NOT use the cold `HUD_COLOR_ROLE_SECONDARY_BORDER`.
 
-**Активная вкладка = инверсия**: `HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND`-заливка + `HUD_COLOR_ROLE_SELECTED_TEXT`. Заливка с вертикальным зазором
-от рейк. Подчёркивания НЕТ (оно для SECTION/COMPACT §11).
+**The active tab is an
+inversion**: a `HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND` fill plus `HUD_COLOR_ROLE_SELECTED_TEXT`. The fill has a vertical gap from the rails. There is NO underline (that belongs to SECTION/COMPACT, §11).
 
-**Неактивные:** текст `HUD_COLOR_ROLE_SECONDARY_TEXT`, иконка `HUD_COLOR_ROLE_CONTROL_DECORATION`. Disabled — `HUD_COLOR_ROLE_DISABLED`.
+**Inactive
+ones:** `HUD_COLOR_ROLE_SECONDARY_TEXT` text with a `HUD_COLOR_ROLE_CONTROL_DECORATION` icon. Disabled is `HUD_COLOR_ROLE_DISABLED`.
 
-**→ Якоря:** `TopStatusBar`, `HudTabbedPaneUi`.
+**→ Anchors:** `TopStatusBar`, `HudTabbedPaneUi`.
 
 ---
 
-## IV. Правила
+## IV. Rules
 
 ## 12. Palette opt-out
 
-Компонент, несущий свой фон/foreground, помечает себя opt-out client-property — палитра его
-пропускает. Так сделаны кнопки, таблицы (`dataPlaneScrollPane()`), шапка (`HUD_LOCKED_FOREGROUND`),
-editor picker'а (`HUD_COMBO_EDITOR_LOCKED`; иначе палитра ставит ему `hudFieldBorder()` →
-видимая вертикаль у ▼). `styleComboBox` идемпотентен по `setUI` (§5.3). Флаги — в `AppTheme`.
+A component that carries its own background or foreground marks itself with an opt-out client property, and the palette skips it. That is how the buttons, the tables (`dataPlaneScrollPane()`), the header (`HUD_LOCKED_FOREGROUND`) and a picker's editor (`HUD_COMBO_EDITOR_LOCKED`; otherwise the palette gives it `hudFieldBorder()` → a visible vertical line at the ▼) are done. `styleComboBox` is idempotent with respect to `setUI` (§5.3). The flags live in `AppTheme`.
 
-**Поле с info-зоной (§5.1)** — палитра (`styleTextComponent`) обязана сохранять широкий
-`hudFieldBorderWithInfo()`, а не сбрасывать на `hudFieldBorder()`: иначе резерв под «i» теряется
-и длинный текст налезает на глиф. Определяется через `HudTextField.hasInfoZone()`, не client-property.
+**A field with an info zone (§5.1)** obliges the palette (`styleTextComponent`) to keep the wide
+`hudFieldBorderWithInfo()` rather than resetting to `hudFieldBorder()`: otherwise the reserve for the "i" is lost and long text runs over the glyph. This is determined through `HudTextField.hasInfoZone()`, not a client property.
 
-## 13. Чек-лист
+## 13. Checklist
 
-- Цвета/шрифты/высоты/иконки/толщины рамок — ТОЛЬКО из `HudPalette` по имени. Хардкод запрещён.
-  Raw-цвета — только `HUD_COLOR_<HEX>`; роли — только `HUD_COLOR_ROLE_<SEMANTIC_NAME>` как прямой alias на `HUD_COLOR_*`.
-- Размер шрифта — ТОЛЬКО роли `HUD_FONT_*` (§2), хардкод-кегль запрещён.
-- Размер иконки — роль `HUD_ICON_*` (§3), хардкод-px запрещён.
-- Толщина рамки — роль (`HUD_BORDER_THICKNESS` / `HUD_BORDER_THICKNESS_ACCENT`), хардкод запрещён.
-- UI-текст — только `MultiLingualTextProvider.getText("key")`, без литералов.
-- Выделение строки = `HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT`. Состояние = цвет текста (§1). Disabled =
-  приглушение тем же цветом (`HUD_COLOR_ROLE_DISABLED`), не «серый из другой палитры» (§0.6).
-- Плоские прямые формы: без пилюль/градиентов/теней. Скроллбары — `fillRect`, без циана.
-- Хром и вторичные подписи — `HUD_COLOR_ROLE_SECONDARY_TEXT`/`HUD_COLOR_ROLE_DISABLED`, не цветом-статусом и не холодным
-  `HUD_COLOR_ROLE_FRAME_BORDER` (рамки полей — тёплый `HUD_COLOR_ROLE_CONTROL_DECORATION`).
-- Таблицы (§6) — плашка `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` на `HUD_COLOR_ROLE_APPLICATION_BACKGROUND`, без zebra/grid; деление — `intercellSpacing`;
-  выбор ЯВНО `HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT` в рендерере; hover `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND`; капс/цвет/выравнивание — в рендерере.
-- Иконка-аффорданс в ячейке — `HUD_ICON_TABLE`, тинт по строке (`HUD_COLOR_ROLE_CONTROL_DECORATION` покой, `HUD_COLOR_ROLE_SELECTED_TEXT` выбранная).
-- Combo (§5.3) — `HudComboBox`: тёплый фон, плоская ▼, тёплый список; НЕ инвертируется с
-  выбором строки. Без `HUD_COLOR_ROLE_INFORMATION`/`HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND`.
-- Примитивы для >1 места — в `HudGlyphs`: ▼ `paintHudArrowDown`; ▲ `paintHudArrowUp`; ◄ `paintHudArrowLeft`; ► `paintHudArrowRight`;
-  «i» `paintHudInfoGlyph`; × `paintHudCloseGlyph`; маркер чекбокса `paintHudCheckMarker`; ⋮ `paintHudVerticalEllipsis`; ⚠ `paintHudWarningGlyph`;
-  ⤓ save/download `paintHudSaveGlyph`; 🗑 clear/trash `paintHudTrashGlyph`; каретка `paintHudTextCaret`; тинт `tintIcon`; приглушение альфой `dimIcon`.
-  Глифы — примитивами, НЕ `drawString`/Unicode и НЕ растром.
-- Info-«i» — ВНУТРИ контрола (§5.2/§5.1) через `setInfoAction`. Синие ссылки — антипаттерн.
-- Тултипы (`setToolTipText`) — стиль ГЛОБАЛЬНО через `UIManager` `ToolTip.*` в `AppView.installDarkDefaults`
-  (тёмный `HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND` + тёплая рейка `HUD_COLOR_ROLE_CONTROL_DECORATION` `HUD_BORDER_THICKNESS`,
-  текст `HUD_COLOR_ROLE_PRIMARY_TEXT`, шрифт `HUD_FONT_TOOLTIP` — иначе наследует крупный `HUD_FONT_UI_DEFAULT`);
-  тени попапов сняты `Popup.dropShadowPainted=false` (HUD без теней). Кастомный tooltip по месту — антипаттерн.
-- Метка-ключ — `hudReadoutLabel` (`HUD_COLOR_ROLE_SECONDARY_TEXT`-капс без двоеточия). Двоеточие чистить в i18n (ВСЕ языки).
-- Read-only key→value (§7.2) — `hudReadoutValue(value, color)`: плоский текст, микс-кейс.
-  Рамка-поле — только у вводимого/area.
-- Титульный блок диалога (§10) — `commandTitleBlock(name, id)` в NORTH.
-- Модальный диалог (§10.1): ТОЛЬКО `AppTheme.hudModalScaffold(HudModalSpec)`. undecorated.
-  Dismiss=`BACK` subtle слева, primary справа. Scrim снаружи — `runWithModalScrim` (ЦЕЛЕВОЕ для всех разом).
-- Confirm/yes-no/save-discard — `HudConfirmDialog` (§10), НЕ `JOptionPane.showConfirmDialog`/`showOptionDialog`.
-- Тёплое оформление вне дефолта палитры защищать opt-out client-property (§12).
-- Секции тела модалки — `HudSection.flat` (§9). FRAMED внутри модалки — антипаттерн.
-- Панель шорткатов — `HudButton(primary=false)`, переключатель меняет текст-действие (§4).
-- On/off в форме — `HudCheckBox` (§5.2), без LAF-«птички».
-- Выбор «один-из» — `HudSegmentedControl` (§5.4): сегментный бар, инверсия-заливка выбранного,
-  деление `HUD_COLOR_ROLE_APPLICATION_BACKGROUND`. НЕ круглый LAF-`JRadioButton`.
-- Диапазон на шкале — `HudSlider` (§4): коричневый трек, красная заливка `HUD_COLOR_ROLE_SLIDER_VALUE_TRACK`
-  (исключение §1), круглая ручка `HUD_COLOR_ROLE_PRIMARY_ACTION`+кольцо `HUD_COLOR_ROLE_BUTTON_TEXT`, значение над ручкой; метрики `HUD_SLIDER_*`.
-  НЕ сырой `JSlider`.
-- Realtime-метр уровня — `HudMicMeter` (§4): сегментный LIVE + PEAK-trail, зоны `HUD_COLOR_ROLE_DANGER`/`HUD_COLOR_ROLE_WARNING`/`HUD_COLOR_ROLE_SUCCESS`,
-  пороги-рейки `HUD_COLOR_ROLE_SECONDARY_TEXT`/`HUD_COLOR_ROLE_INFORMATION`, подписи на контроле; метрики `HUD_METER_*`. НЕ хардкод-палитра/шрифты.
-- Паттерн для >1 экрана — в HUD-слой.
+- Colours, fonts, heights, icons and border thicknesses come ONLY from `HudPalette` by name. Hardcoding is forbidden. Raw colours are only `HUD_COLOR_<HEX>`; roles are only `HUD_COLOR_ROLE_<SEMANTIC_NAME>` as a direct alias of `HUD_COLOR_*`.
+- Font size comes ONLY from the `HUD_FONT_*` roles (§2); a hardcoded size is forbidden.
+- Icon size comes from a `HUD_ICON_*` role (§3); hardcoded pixels are forbidden.
+- Border thickness comes from a role (`HUD_BORDER_THICKNESS` / `HUD_BORDER_THICKNESS_ACCENT`); hardcoding is forbidden.
+- UI text comes only from `MultiLingualTextProvider.getText("key")`, with no literals.
+- Row selection is `HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT`. State is text colour (§1). Disabled is dimming in the same colour (`HUD_COLOR_ROLE_DISABLED`), not a "grey from another palette" (§0.6).
+- Flat straight forms: no pills, gradients or shadows. Scrollbars are `fillRect`, with no cyan.
+- Chrome and secondary labels use `HUD_COLOR_ROLE_SECONDARY_TEXT`/`HUD_COLOR_ROLE_DISABLED`, not a status colour and not the cold
+  `HUD_COLOR_ROLE_FRAME_BORDER` (field borders are the warm `HUD_COLOR_ROLE_CONTROL_DECORATION`).
+- Tables (§6) are a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` plate on `HUD_COLOR_ROLE_APPLICATION_BACKGROUND`, with no zebra or grid; division by `intercellSpacing`; selection set EXPLICITLY as `HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT` in the renderer; hover `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND`; caps, colour and alignment in the renderer.
+- An affordance icon in a cell is `HUD_ICON_TABLE`, tinted by the row (`HUD_COLOR_ROLE_CONTROL_DECORATION` at rest, `HUD_COLOR_ROLE_SELECTED_TEXT` when selected).
+- A combo (§5.3) is `HudComboBox`: warm background, flat ▼, warm list; it does NOT invert with the row selection. No `HUD_COLOR_ROLE_INFORMATION`/`HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND`.
+- Primitives needed in more than one place live in `HudGlyphs`: ▼ `paintHudArrowDown`; ▲ `paintHudArrowUp`; ◄ `paintHudArrowLeft`; ► `paintHudArrowRight`;
+  "i" `paintHudInfoGlyph`; × `paintHudCloseGlyph`; the checkbox marker `paintHudCheckMarker`; ⋮ `paintHudVerticalEllipsis`; ⚠ `paintHudWarningGlyph`; ⤓ save/download `paintHudSaveGlyph`; 🗑 clear/trash `paintHudTrashGlyph`; the caret `paintHudTextCaret`; tinting `tintIcon`; alpha dimming `dimIcon`. Glyphs are primitives, NOT `drawString`/Unicode and NOT rasters.
+- The info "i" lives INSIDE the control (§5.2/§5.1) through `setInfoAction`. Blue links are an anti-pattern.
+- Tooltips (`setToolTipText`) are styled GLOBALLY through the `UIManager` `ToolTip.*` keys in `AppView.installDarkDefaults`
+  (a dark `HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND` plus a warm `HUD_COLOR_ROLE_CONTROL_DECORATION` rail at `HUD_BORDER_THICKNESS`,
+  `HUD_COLOR_ROLE_PRIMARY_TEXT` text, and the `HUD_FONT_TOOLTIP` font — otherwise it inherits the large `HUD_FONT_UI_DEFAULT`); popup shadows are removed with `Popup.dropShadowPainted=false` (the HUD has no shadows). A custom tooltip in place is an anti-pattern.
+- A key label is `hudReadoutLabel` (`HUD_COLOR_ROLE_SECONDARY_TEXT` caps with no colon). Strip colons in i18n (ALL languages).
+- Read-only key→value (§7.2) is `hudReadoutValue(value, color)`: flat text, mixed case. A field border belongs only to an input or an area.
+- A dialog's title block (§10) is `commandTitleBlock(name, id)` in NORTH.
+- A modal dialog (§10.1): ONLY `AppTheme.hudModalScaffold(HudModalSpec)`. Undecorated. Dismiss=`BACK` subtle on the left, primary on the right. The scrim from outside is `runWithModalScrim` (the TARGET is all of them at once).
+- Confirm, yes/no and save-discard use `HudConfirmDialog` (§10), NOT `JOptionPane.showConfirmDialog`/`showOptionDialog`.
+- Warm styling outside the palette default is protected by an opt-out client property (§12).
+- A modal body's sections are `HudSection.flat` (§9). FRAMED inside a modal is an anti-pattern.
+- A shortcut panel uses `HudButton(primary=false)`, with the toggle changing the action text (§4).
+- On/off in a form is `HudCheckBox` (§5.2), with no LAF tick.
+- A "one of" choice is `HudSegmentedControl` (§5.4): a segmented bar, inversion fill on the selected one, divided by `HUD_COLOR_ROLE_APPLICATION_BACKGROUND`. NOT a round LAF `JRadioButton`.
+- A range on a scale is `HudSlider` (§4): a brown track, a red `HUD_COLOR_ROLE_SLIDER_VALUE_TRACK` fill (the §1 exception), a round `HUD_COLOR_ROLE_PRIMARY_ACTION` knob with a `HUD_COLOR_ROLE_BUTTON_TEXT` ring, and the value above the knob; metrics `HUD_SLIDER_*`. NOT a raw `JSlider`.
+- A realtime level meter is `HudMicMeter` (§4): segmented LIVE plus a PEAK trail, `HUD_COLOR_ROLE_DANGER`/`HUD_COLOR_ROLE_WARNING`/`HUD_COLOR_ROLE_SUCCESS` zones,
+  `HUD_COLOR_ROLE_SECONDARY_TEXT`/`HUD_COLOR_ROLE_INFORMATION` threshold rails, and labels on the control; metrics `HUD_METER_*`. NOT a hardcoded palette or fonts.
+- A pattern needed on more than one screen belongs in the HUD layer.
 
 ---
 
-## Приложение: Commander block
+## Appendix: the Commander block
 
-Виджет `HudCommanderBlock`. Эталон: инфопанель ED (крупное время, дата, баланс).
-- **Часы ED** — `HUD_COLOR_ROLE_PRIMARY_ACTION` моно bold крупно; дата под ним `HUD_COLOR_ROLE_SECONDARY_TEXT` plain (`dd MMM yyyy`,
-  месяц-капс), год = реальный **+1286**, время **UTC**.
-- **Баланс** — `HUD_COLOR_ROLE_SECONDARY_TEXT` по §7.1, тысячи запятыми + ` CR`. Прятать при ≤ 0.
-- **Лого** — приглушён альфой, не спорит с кнопками.
+The `HudCommanderBlock` widget. The reference is the ED info panel (a large clock, the date, the balance).
+
+- **The ED
+  clock** is `HUD_COLOR_ROLE_PRIMARY_ACTION` mono bold and large; the date beneath it is `HUD_COLOR_ROLE_SECONDARY_TEXT` plain (`dd MMM yyyy`, the month in caps), the year is the real one
+  **+1286**, and the time is **UTC**.
+- **The
+  balance** is `HUD_COLOR_ROLE_SECONDARY_TEXT` per §7.1, with comma thousands separators plus ` CR`. Hide it at 0 or below.
+- **The logo** is dimmed with alpha so it does not compete with the buttons.
