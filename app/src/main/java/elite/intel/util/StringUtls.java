@@ -13,6 +13,8 @@ import javax.annotation.Nullable;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class StringUtls {
 
@@ -267,12 +269,34 @@ public class StringUtls {
         s = s.replaceAll("[\\p{C}\\p{So}\\p{Sk}]+", " ")         // drop controls, emojis, and standalone symbols
                 .replaceAll("\\p{M}+", "");                      // drop stray combining marks (e.g. IPA U+0329) NFC couldn't compose; precomposed accents are \p{L} and survive
         if (hardenForEspeak) s = s.replaceAll("\\.{2,}", " ");  // "..." → space (espeak-ng stof crash on multi-dot sequences)
-        s = s.replaceAll("\\s{2,}", " ")                        // collapse repeated spaces
-                .replace(", pilot", " " + PlayerSession.getInstance().getVariablePlayerName())
-                .replace(", Commander", " " + PlayerSession.getInstance().getVariablePlayerName())
-                .replace("Commander", " " + PlayerSession.getInstance().getVariablePlayerName())
+        s = personalizeGenericAddress(s.replaceAll("\\s{2,}", " ")) // collapse repeated spaces
                 .trim();
         return s;
+    }
+
+    /**
+     * The generic ways the game and the LLM address the pilot: "Commander" on its own or after a comma,
+     * and "pilot" only after a comma - a bare "pilot" is a noun ("the pilot ejected"), not an address.
+     * Any preceding comma and whitespace is part of the match so the replacement reads as one phrase.
+     */
+    private static final Pattern GENERIC_ADDRESS = Pattern.compile(",?\\s*\\bCommander\\b|,\\s*\\bpilot\\b");
+
+    /**
+     * Replaces the generic address with one of the commander's own forms of address (name, military rank
+     * or honorific), drawn afresh for each occurrence.
+     */
+    private static String personalizeGenericAddress(String text) {
+        // WHY: one scan, not a chain of String.replace - the chain re-scanned what it had just inserted,
+        // so a form of address that itself contains the word ("Post Commander", "Lieutenant Commander")
+        // was substituted a second time and came out as "Post Post Commander".
+        Matcher matcher = GENERIC_ADDRESS.matcher(text);
+        StringBuilder personalized = new StringBuilder();
+        while (matcher.find()) {
+            String form = " " + PlayerSession.getInstance().getVariablePlayerName();
+            matcher.appendReplacement(personalized, Matcher.quoteReplacement(form));
+        }
+        matcher.appendTail(personalized);
+        return personalized.toString();
     }
 
     public static String normalizeVersion(String v) {
