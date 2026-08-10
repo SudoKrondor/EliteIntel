@@ -12,8 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.function.BooleanSupplier;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 class MissionRedirectedSubscriberTest {
 
@@ -55,6 +54,27 @@ class MissionRedirectedSubscriberTest {
             return mission != null && "Alpha Centauri".equals(mission.getDestinationSystem());
         });
         assertEquals("Alpha Centauri", missionManager.getMission(missionId).getDestinationSystem());
+    }
+
+    /**
+     * The redirect is the game announcing a mission's objectives are met. On a massacre contract it
+     * is the only authoritative "the kills are done" signal there is, so it has to survive on the
+     * mission row - {@code MassacreProgress} will not call a kill mission complete without it.
+     */
+    @Test
+    void redirectRecordsThatTheObjectivesAreComplete() throws InterruptedException {
+        long missionId = 800_003L;
+        missionAcceptedSubscriber.onMissionAcceptedEvent(genericMissionAccepted(missionId, "Sol", "Galileo"));
+        assertFalse(missionManager.getMission(missionId).isObjectivesComplete(),
+                "a freshly accepted mission has nothing confirmed");
+
+        subscriber.onMissionRedirectedSubscriber(redirectEvent(missionId, "Cubeo", "Victoria's Gift"));
+
+        awaitTrue(() -> {
+            var mission = missionManager.getMission(missionId);
+            return mission != null && mission.isObjectivesComplete();
+        });
+        assertNotNull(missionManager.getMission(missionId).getRedirectedAt());
     }
 
     private static MissionAcceptedEvent genericMissionAccepted(long missionId, String system, String station) {

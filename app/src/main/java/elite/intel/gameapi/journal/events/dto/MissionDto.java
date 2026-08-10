@@ -37,6 +37,7 @@ public class MissionDto extends BaseJsonDto {
     private String passengerType;
     private String donation;
     private long donated;
+    private String redirectedAt;
 
     public MissionDto(MissionAcceptedEvent event) {
         if (event != null) {
@@ -190,6 +191,20 @@ public class MissionDto extends BaseJsonDto {
     public void setPassengerWanted(boolean passengerWanted) {
         this.passengerWanted = passengerWanted;
     }
+
+    /**
+     * Timestamp of the journal {@code MissionRedirected} for this mission, or null if it has not
+     * been redirected.
+     * <p>
+     * This is the game telling us the mission's objectives are met and only the turn-in is left -
+     * on a massacre mission that is the ONLY authoritative "the kills are done" signal the journal
+     * offers. There is no per-kill mission counter in the journal, and a {@code Bounty} is not proof
+     * of mission credit (an assisted kill still pays a voucher), so kill progress inferred from
+     * bounties is an upper bound and this field is what confirms it. See {@code MassacreProgress}.
+     */
+    public void setRedirectedAt(String redirectedAt) {
+        this.redirectedAt = redirectedAt;
+    }
     /*
             GET Functions
      */
@@ -298,5 +313,20 @@ public class MissionDto extends BaseJsonDto {
 
     public String getExpiry() {
         return expiry;
+    }
+
+    /**
+     * @see #setRedirectedAt(String)
+     */
+    public String getRedirectedAt() {
+        return redirectedAt;
+    }
+
+    /**
+     * True once the game has redirected this mission to its turn-in point, i.e. its objectives are
+     * complete. Null on rows written before this field existed, which read as "not confirmed".
+     */
+    public boolean isObjectivesComplete() {
+        return redirectedAt != null;
     }
 }

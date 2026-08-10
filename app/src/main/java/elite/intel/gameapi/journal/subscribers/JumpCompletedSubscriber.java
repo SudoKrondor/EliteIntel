@@ -9,6 +9,7 @@ import elite.intel.db.dao.ShipSettingsDao;
 import elite.intel.db.managers.*;
 import elite.intel.gameapi.DiscoveryScanner;
 import elite.intel.gameapi.gamestate.dtos.NavRouteDto;
+import elite.intel.gameapi.hge.HighGradeEmissionsAdvisor;
 import elite.intel.gameapi.journal.events.FSDJumpEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.MaterialDto;
@@ -41,6 +42,7 @@ public class JumpCompletedSubscriber {
     private final ShipSettingsManager shipSettingsManager = ShipSettingsManager.getInstance();
     private final NeutronStarRouteManager neutronStarRouteManager = NeutronStarRouteManager.getInstance();
     private final GlobalSettingsManager globalSettings = GlobalSettingsManager.getInstance();
+    private final HighGradeEmissionsAdvisor hgeAdvisor = HighGradeEmissionsAdvisor.getInstance();
 
     @Subscribe
     public void onFSDJumpEvent(FSDJumpEvent event) {
@@ -136,6 +138,14 @@ public class JumpCompletedSubscriber {
                 }
             }
 
+            if (!event.isReplay()) {
+                hgeAdvisor.onSystemEntered(
+                        event.getSystemAddress(),
+                        event.getSystemAllegiance(),
+                        event.getPopulation(),
+                        factionStates(event));
+            }
+
             ShipSettingsDao.ShipSettings shipSettings = shipSettingsManager.getSettings(playerSession.getShipLoadout().getShipId());
             if (!event.isReplay() && shipSettings.isHonkOnJump()) {
                 DiscoveryScanner.honk(shipSettings);
@@ -144,6 +154,31 @@ public class JumpCompletedSubscriber {
         }); // end virtual thread
     }
 
+
+    /**
+     * Every state running on any faction in the system.
+     *
+     * <p>Both fields are read because they answer different questions: {@code FactionState} is the
+     * faction's dominant state, while {@code ActiveStates} lists everything else it is also running.
+     * A faction in Boom that is also in War reports War only in {@code ActiveStates}, and the war
+     * materials are on offer all the same.
+     */
+    static List<String> factionStates(FSDJumpEvent event) {
+        List<String> states = new ArrayList<>();
+        if (event.getFactions() == null) return states;
+        for (FSDJumpEvent.Faction faction : event.getFactions()) {
+            if (faction.getFactionState() != null) {
+                states.add(faction.getFactionState());
+            }
+            if (faction.getActiveStates() == null) continue;
+            for (FSDJumpEvent.ActiveState active : faction.getActiveStates()) {
+                if (active.getState() != null) {
+                    states.add(active.getState());
+                }
+            }
+        }
+        return states;
+    }
 
     private void processEdsmData(SystemBodiesDto systemBodiesDto, long systemAddress, double[] starPos, String starSystem) {
         if (systemBodiesDto == null) return;

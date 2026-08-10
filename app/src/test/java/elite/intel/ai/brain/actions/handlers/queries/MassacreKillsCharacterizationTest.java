@@ -86,15 +86,30 @@ class MassacreKillsCharacterizationTest {
     }
 
     @Test
-    @DisplayName("finishing a mission rolls the faction onto its next one and reports the completion")
-    void completedMissionRollsOver() {
+    @DisplayName("the game confirming a mission rolls the faction onto its next one and reports the completion")
+    void confirmedMissionRollsOver() {
         MissionDto first = mission(1, "Alpha", "Pirates", 5, "2026-07-01T00:00:00Z");
+        first.setRedirectedAt("2026-07-01T03:30:00Z");
         MissionDto second = mission(2, "Alpha", "Pirates", 7, "2026-07-01T00:00:00Z");
         List<BountyDto> kills = bounties("Pirates", 5, "2026-07-01T03:00:00Z");
 
         assertEquals("7 kills remain to complete the assignment. "
                         + "Summary: Alpha 7 Kills remaining, one mission completed",
                 compute(List.of(first, second), kills));
+    }
+
+    /**
+     * Bounties are an upper bound on mission credit, not a count of it, so the spoken answer holds
+     * at one kill remaining until the game's own redirect confirms the contract is done.
+     */
+    @Test
+    @DisplayName("kills alone never take the spoken count to zero")
+    void unconfirmedMissionStopsOneShortOfDone() {
+        MissionDto m = mission(1, "Alpha", "Pirates", 5, "2026-07-01T00:00:00Z");
+        List<BountyDto> kills = bounties("Pirates", 5, "2026-07-01T03:00:00Z");
+
+        assertEquals("1 kills remain to complete the assignment. Summary: Alpha 1 Kills remaining",
+                compute(List.of(m), kills));
     }
 
     @Test

@@ -2,6 +2,7 @@ package elite.intel.gameapi.search.spansh.station.vista;
 
 import com.google.gson.annotations.SerializedName;
 import elite.intel.gameapi.gamestate.dtos.BaseJsonDto;
+import elite.intel.gameapi.search.spansh.station.StationSearchHit;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.ToJsonConvertible;
 
@@ -16,7 +17,7 @@ public class VistaGenomicsLocationDto extends BaseJsonDto implements ToJsonConve
         return results;
     }
 
-    public static class Result implements ToJsonConvertible{
+    public static class Result implements ToJsonConvertible, StationSearchHit {
 
         @SerializedName("body_gravity")
         private double bodyGravity;

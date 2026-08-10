@@ -86,14 +86,65 @@ class MassacreProgressTest {
     }
 
     @Test
-    void aCompletedStackReportsFullProgress() {
-        List<MissionDto> stack = List.of(mission(1, "Alpha", "Pirates", 3, "2026-07-01T00:00:00Z"));
+    @DisplayName("only the game's redirect completes a stack, and then it reports full progress")
+    void aRedirectedStackReportsFullProgress() {
+        List<MissionDto> stack = List.of(
+                redirected(mission(1, "Alpha", "Pirates", 3, "2026-07-01T00:00:00Z"), "2026-07-01T01:00:00Z"));
 
         MassacreProgress progress = MassacreProgress.compute(
                 stack, bounties("Pirates", 3, "2026-07-01T01:00:00Z"));
 
         assertEquals(0, progress.killsRemaining());
         assertEquals(progress.killsRequired(), progress.killsDone());
+        assertEquals(1, progress.completedByFaction().get("Alpha"));
+    }
+
+    /**
+     * The bug this guards: a Bounty is not proof of mission credit - an assisted kill still pays a
+     * voucher - so counting bounties overshoots. Twelve bounties against a twelve-kill contract
+     * showed COMPLETE on the HUD while the game still wanted two more.
+     */
+    @Test
+    @DisplayName("bounties alone never complete a mission, however many of them there are")
+    void bountiesAloneCannotCompleteAMission() {
+        List<MissionDto> stack = List.of(mission(1, "Alpha", "Pirates", 12, "2026-07-01T00:00:00Z"));
+
+        MassacreProgress progress = MassacreProgress.compute(
+                stack, bounties("Pirates", 20, "2026-07-01T01:00:00Z"));
+
+        assertEquals(1, progress.killsRemaining(), "held one short of done until the game confirms");
+        assertEquals(11, progress.killsDone());
+        assertEquals(0, progress.completedByFaction().get("Alpha"));
+    }
+
+    @Test
+    @DisplayName("a redirect completes the mission even with no bounties recorded against it")
+    void aRedirectCompletesWithoutBounties() {
+        List<MissionDto> stack = List.of(
+                redirected(mission(1, "Alpha", "Pirates", 8, "2026-07-01T00:00:00Z"), "2026-07-01T04:00:00Z"));
+
+        MassacreProgress progress = MassacreProgress.compute(stack, List.of());
+
+        assertEquals(0, progress.killsRemaining());
+        assertEquals(8, progress.killsDone());
+    }
+
+    @Test
+    @DisplayName("the redirect rolls the provider onto its next mission, which starts from zero")
+    void aRedirectRollsOverToTheQueuedMission() {
+        // Alpha's first mission was confirmed done at 03:00; the five kills that finished it must
+        // not also count toward the second, which only started counting when the first ended.
+        List<MissionDto> stack = List.of(
+                redirected(mission(1, "Alpha", "Pirates", 5, "2026-07-01T00:00:00Z"), "2026-07-01T03:00:00Z"),
+                mission(2, "Alpha", "Pirates", 7, "2026-07-01T00:00:00Z"));
+        List<BountyDto> kills = new ArrayList<>(bounties("Pirates", 5, "2026-07-01T01:00:00Z"));
+        kills.addAll(bounties("Pirates", 2, "2026-07-01T05:00:00Z"));
+
+        MassacreProgress progress = MassacreProgress.compute(stack, kills);
+
+        assertEquals(12, progress.killsRequired());
+        assertEquals(5, progress.killsRemainingByFaction().get("Alpha"), "7 needed, 2 made since the roll-over");
+        assertEquals(1, progress.completedByFaction().get("Alpha"));
     }
 
     /**
@@ -115,6 +166,40 @@ class MassacreProgressTest {
         assertEquals(1, progress.killsDone());
     }
 
+    /**
+     * Replays real journal history: two Clan of LHS 1050 contracts from League of Seediansi
+     * (4 kills and 8 kills, both accepted 2026-08-08T00:37) killed out back to back.
+     * <p>
+     * The history is worth pinning because it independently confirms both rules this class turns
+     * on. The 4-kill mission redirected at 00:44:10, on the 4th bounty. The 8-kill mission then
+     * redirected at 01:08:04, one second after the 12th - i.e. exactly eight kills AFTER its
+     * predecessor finished, not eight after it was accepted. Same-provider missions really do
+     * queue, a redirect really does land on the qualifying kill, and every bounty in that run
+     * counted regardless of what the victim was.
+     */
+    @Test
+    @DisplayName("a same-provider queue counts the second mission from the first one's redirect")
+    void matchesRealJournalHistoryForAQueuedPair() {
+        MissionDto first = redirected(
+                mission(1, "League of Seediansi", "Clan of LHS 1050", 4, "2026-08-08T00:37:06Z"),
+                "2026-08-08T00:44:10Z");
+        MissionDto second = mission(2, "League of Seediansi", "Clan of LHS 1050", 8, "2026-08-08T00:37:24Z");
+
+        // Every bounty of that run up to 00:53:49, when the game showed four kills left on the
+        // second contract: four before the redirect, four after it.
+        List<BountyDto> kills = killsAt("Clan of LHS 1050",
+                "2026-08-08T00:42:24Z", "2026-08-08T00:43:37Z", "2026-08-08T00:43:56Z", "2026-08-08T00:44:10Z",
+                "2026-08-08T00:45:37Z", "2026-08-08T00:48:22Z", "2026-08-08T00:50:58Z", "2026-08-08T00:53:49Z");
+
+        MassacreProgress progress = MassacreProgress.compute(List.of(first, second), kills);
+
+        assertEquals(12, progress.killsRequired());
+        assertEquals(1, progress.completedByFaction().get("League of Seediansi"));
+        assertEquals(4, progress.killsRemainingByFaction().get("League of Seediansi"),
+                "the four kills that finished the first contract must not also count toward the second");
+        assertEquals(4, progress.killsRemaining());
+    }
+
     // -- fixtures ------------------------------------------------------------
 
     private static MissionDto mission(long id, String provider, String target, int kills, String acceptedAt) {
@@ -126,6 +211,31 @@ class MassacreProgressTest {
                 + "\"acceptedAt\":\"" + acceptedAt + "\","
                 + "\"reward\":0}";
         return GsonFactory.getGson().fromJson(json, MissionDto.class);
+    }
+
+    /**
+     * What {@code MissionRedirectedSubscriber} stamps on a mission when the game announces its
+     * objectives are met - here, that the kills are done.
+     */
+    private static MissionDto redirected(MissionDto mission, String redirectedAt) {
+        mission.setRedirectedAt(redirectedAt);
+        return mission;
+    }
+
+    /**
+     * Bounties at specific times, for replaying a real run rather than an evenly spaced one.
+     */
+    private static List<BountyDto> killsAt(String victimFaction, String... earnedAt) {
+        List<BountyDto> out = new ArrayList<>();
+        for (int i = 0; i < earnedAt.length; i++) {
+            BountyDto b = new BountyDto();
+            b.setVictimFaction(victimFaction);
+            b.setPilotName("pilot-" + i);
+            b.setEarnedAt(earnedAt[i]);
+            b.setRewards(List.of());
+            out.add(b);
+        }
+        return out;
     }
 
     private static List<BountyDto> bounties(String victimFaction, int count, String earnedAt) {

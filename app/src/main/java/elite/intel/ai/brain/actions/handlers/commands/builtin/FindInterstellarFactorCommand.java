@@ -7,8 +7,10 @@ import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.gameapi.inputs.RoutePlotter;
+import elite.intel.gameapi.search.spansh.station.CurrentSystemFilter;
 import elite.intel.gameapi.search.spansh.station.interstellarfactors.InterstellarFactorsResultDto;
 import elite.intel.gameapi.search.spansh.station.interstellarfactors.InterstellarFactorsSearch;
+import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
@@ -53,7 +55,8 @@ public final class FindInterstellarFactorCommand implements IntelCommand {
                 coordinates.x(), coordinates.y(), coordinates.z(), 100, 6000
         );
 
-        if (results == null || results.isEmpty()) {
+        results = CurrentSystemFilter.exclude(results, PlayerSession.getInstance().getPrimaryStarName());
+        if (results.isEmpty()) {
             return StringUtls.localizedResponse("handler.interstellarFactors.notFound");
         }
 

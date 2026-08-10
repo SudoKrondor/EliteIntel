@@ -25,6 +25,17 @@ import java.util.*;
  * </ul>
  * A kill only counts toward missions accepted before it was earned, which is
  * what stops pre-existing bounties from completing a freshly taken mission.
+ * <p>
+ * <b>Bounties over-count, so they can never finish a mission.</b> The journal has
+ * no per-kill mission counter: progress here is inferred from {@code Bounty}
+ * events, and a bounty is not proof of mission credit - a kill someone else
+ * landed the final blow on still pays a voucher, and not every ship flying a
+ * faction's flag is one the contract counts. Inferred progress is therefore an
+ * upper bound and is held one kill short of done. The one authoritative signal
+ * the game gives is {@code MissionRedirected}, which fires when the objectives
+ * are met and the mission is sent to its turn-in point; only that completes a
+ * mission here, rolls its provider onto the next one, and lets the whole stack
+ * read as complete.
  *
  * @param killsRemainingByFaction kills left on each provider's ACTIVE mission
  * @param completedByFaction      missions each provider has had completed
@@ -91,15 +102,30 @@ public record MassacreProgress(
         Map<String, MissionDto> activeMission = new LinkedHashMap<>();
         Map<String, Integer> activeRemaining = new LinkedHashMap<>();
         Map<String, Integer> completedByFaction = new LinkedHashMap<>();
+        Map<String, Instant> activeSince = new LinkedHashMap<>();
         for (String faction : pendingByFaction.keySet()) {
-            MissionDto first = Objects.requireNonNull(pendingByFaction.get(faction).pollFirst());
-            activeMission.put(faction, first);
-            activeRemaining.put(faction, first.getKillCount());
-            completedByFaction.put(faction, 0);
+            // Redirected missions are done on the game's own word. Draining them off the front of
+            // the queue is what rolls a provider onto its next mission, and the last redirect is
+            // when that next mission started counting - kills made before it belonged to its
+            // predecessor, since same-provider missions run one at a time.
+            Deque<MissionDto> queue = pendingByFaction.get(faction);
+            int completed = 0;
+            Instant since = Instant.EPOCH;
+            MissionDto first = queue.pollFirst();
+            while (first != null && first.isObjectivesComplete()) {
+                completed++;
+                since = redirectedAt(first);
+                first = queue.pollFirst();
+            }
+            completedByFaction.put(faction, completed);
+            activeSince.put(faction, since);
+            if (first != null) {
+                activeMission.put(faction, first);
+                activeRemaining.put(faction, first.getKillCount());
+            }
         }
 
-        applyHistoricalKills(bounties, targetFaction, activeMission, activeRemaining,
-                completedByFaction, pendingByFaction);
+        applyHistoricalKills(bounties, targetFaction, activeMission, activeRemaining, activeSince);
 
         Map<String, Integer> killsRemainingByFaction = new LinkedHashMap<>();
         for (String faction : byProvider.keySet()) {
@@ -115,15 +141,19 @@ public record MassacreProgress(
     }
 
     /**
-     * Applies bounties in chronological order. Each kill counts only toward
-     * missions already accepted when it was earned; when a mission finishes, the
-     * provider rolls onto its next one and the kill count continues against it.
+     * Applies bounties in chronological order to each provider's active mission.
+     * A kill counts only toward a mission that was already accepted - and already
+     * the provider's active one - when the bounty was earned.
+     * <p>
+     * The count stops one short of done: a bounty is evidence of a kill, not of
+     * mission credit, so it can drive the bar forward but must never declare the
+     * mission finished. Only {@code MissionRedirected} does that, and it has
+     * already been applied by the caller.
      */
     private static void applyHistoricalKills(Collection<BountyDto> bounties, String targetFaction,
                                              Map<String, MissionDto> activeMission,
                                              Map<String, Integer> activeRemaining,
-                                             Map<String, Integer> completedByFaction,
-                                             Map<String, Deque<MissionDto>> pendingByFaction) {
+                                             Map<String, Instant> activeSince) {
         List<BountyDto> relevant = bounties.stream()
                 .filter(Objects::nonNull)
                 .filter(b -> targetFaction.equals(b.getVictimFaction()) && b.getPilotName() != null)
@@ -133,25 +163,18 @@ public record MassacreProgress(
         for (BountyDto bounty : relevant) {
             Instant killTime = earnedAt(bounty);
             List<String> eligible = activeMission.entrySet().stream()
-                    .filter(e -> e.getValue() != null && acceptedAt(e.getValue()).compareTo(killTime) <= 0)
+                    .filter(e -> e.getValue() != null
+                            && acceptedAt(e.getValue()).compareTo(killTime) <= 0
+                            // Strictly after: the kill that completes a mission belongs to it, not
+                            // to its successor. Journal history is unambiguous - a 4-kill contract
+                            // redirected on the bounty at 00:44:10 and its queued 8-kill successor
+                            // then took exactly the eight bounties that came later.
+                            && activeSince.getOrDefault(e.getKey(), Instant.EPOCH).compareTo(killTime) < 0)
                     .map(Map.Entry::getKey)
                     .toList();
             for (String faction : eligible) {
-                int remaining = activeRemaining.get(faction) - 1;
-                if (remaining <= 0) {
-                    completedByFaction.merge(faction, 1, Integer::sum);
-                    Deque<MissionDto> pending = pendingByFaction.get(faction);
-                    if (pending != null && !pending.isEmpty()) {
-                        MissionDto next = pending.pollFirst();
-                        activeMission.put(faction, next);
-                        activeRemaining.put(faction, next.getKillCount());
-                    } else {
-                        activeMission.remove(faction);
-                        activeRemaining.remove(faction);
-                    }
-                } else {
-                    activeRemaining.put(faction, remaining);
-                }
+                int remaining = activeRemaining.get(faction);
+                if (remaining > 1) activeRemaining.put(faction, remaining - 1);
             }
         }
     }
@@ -202,6 +225,14 @@ public record MassacreProgress(
      */
     private static Instant acceptedAt(MissionDto m) {
         return parseOr(m.getAcceptedAt(), Instant.EPOCH);
+    }
+
+    /**
+     * When the provider's current mission started counting. Missing or unreadable = epoch, so no
+     * kill is excluded on the strength of a timestamp we could not read.
+     */
+    private static Instant redirectedAt(MissionDto m) {
+        return parseOr(m.getRedirectedAt(), Instant.EPOCH);
     }
 
     /**
