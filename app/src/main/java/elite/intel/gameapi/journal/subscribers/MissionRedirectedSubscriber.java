@@ -17,6 +17,10 @@ public class MissionRedirectedSubscriber {
     public void onMissionRedirectedSubscriber(MissionRedirectedEvent event) {
         Thread.ofVirtual().start(() -> {
             MissionDto mission = missionManager.getMission(event.getMissionID());
+            // A redirect can arrive for a mission we never saw accepted - accepted on another
+            // machine, or before this DB existed. Nothing to update then, and nothing to announce.
+            if (mission == null) return;
+
             String newDestinationStation = event.getNewDestinationStation();
             String newDestinationSystem = event.getNewDestinationSystem();
 
@@ -26,6 +30,9 @@ public class MissionRedirectedSubscriber {
             if (!newDestinationSystem.isEmpty()) {
                 mission.setDestinationSystem(newDestinationSystem);
             }
+            // The redirect IS the objectives-complete signal - MassacreProgress will not call a
+            // kill mission finished without it, so this has to be persisted with the destination.
+            mission.setRedirectedAt(event.getTimestamp());
             missionManager.save(mission);
 
             String instructions = """

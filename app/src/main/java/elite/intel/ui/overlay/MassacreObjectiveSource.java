@@ -6,11 +6,7 @@ import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.gameapi.missions.MassacreProgress;
 import elite.intel.session.PlayerSession;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Projects the pirate-massacre mission stack into a HUD objective with a real
@@ -52,10 +48,16 @@ public class MassacreObjectiveSource implements HudObjectiveSource {
                 missions.values(), bounties == null ? Set.of() : bounties);
         if (!progress.hasMissions() || progress.killsRequired() <= 0) return Optional.empty();
 
+        // Kills are inferred from bounty vouchers, which over-count: a voucher is paid for a kill
+        // someone else finished off, and the journal never says who landed the final blow. So the
+        // bar is an estimate that can only run high, and it says so - until MissionRedirected
+        // confirms the contract, which is the one count the game gives us and is exact.
+        boolean confirmed = progress.killsRemaining() == 0;
+
         List<HudRow> rows = new ArrayList<>();
-        rows.add(HudRow.progress("PIRATES",
+        rows.add(HudRow.progress(confirmed ? "PIRATES" : "PIRATES (EST)",
                 (int) progress.killsDone(), (int) progress.killsRequired(),
-                progress.killsRemaining() == 0 ? HudRow.State.GOOD : HudRow.State.NORMAL));
+                confirmed ? HudRow.State.GOOD : HudRow.State.NORMAL));
 
         int stacked = missions.size();
         if (stacked > 1) {

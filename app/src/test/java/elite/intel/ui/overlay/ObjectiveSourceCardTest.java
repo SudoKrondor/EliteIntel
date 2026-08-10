@@ -19,8 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static elite.intel.ui.overlay.HudCards.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The rows these sources build are what the commander actually reads on the card, and the renderer
@@ -137,22 +136,65 @@ class ObjectiveSourceCardTest {
         assertEquals(HudObjective.PRIORITY_SPECIALISED, card.priority(),
                 "it must outrank the generic mission card it replaces");
 
-        HudRow bar = rowOf(card, "PIRATES");
+        HudRow bar = rowOf(card, "PIRATES (EST)");
         assertTrue(bar.hasProgress());
         assertEquals(5, bar.current(), "one kill advances every mission in the stack");
         assertEquals(12, bar.max(), "the stack costs its longest chain, not the sum");
         assertEquals("2", valueOf(card, "MISSIONS"));
     }
 
+    /**
+     * Kills are inferred from bounty vouchers, which over-count - the journal never says who landed
+     * the final blow. The bar has to admit that rather than present a guess as a count, right up
+     * until the game's own redirect makes it exact.
+     */
     @Test
-    void aFinishedStackTurnsTheBarGood() {
-        saveMission(massacreJson(12, 3));
+    void anUnconfirmedBarIsLabelledAnEstimate() {
+        saveMission(massacreJson(16, 6));
+        saveBounties(2);
+
+        HudObjective card = new MassacreObjectiveSource().currentObjective().orElseThrow();
+
+        assertTrue(labels(card).contains("PIRATES (EST)"), labels(card).toString());
+        assertFalse(labels(card).contains("PIRATES"), "an estimate must not read as a count");
+    }
+
+    @Test
+    void aConfirmedBarDropsTheEstimateMarker() {
+        saveMission(redirectedMassacreJson(17, 6));
+
+        HudObjective card = new MassacreObjectiveSource().currentObjective().orElseThrow();
+
+        assertTrue(labels(card).contains("PIRATES"), labels(card).toString());
+        assertFalse(labels(card).contains("PIRATES (EST)"), "the game confirmed it, so it is not a guess");
+    }
+
+    @Test
+    void aStackTheGameConfirmedTurnsTheBarGood() {
+        saveMission(redirectedMassacreJson(12, 3));
         saveBounties(3);
 
         HudRow bar = rowOf(new MassacreObjectiveSource().currentObjective().orElseThrow(), "PIRATES");
 
         assertEquals(HudRow.State.GOOD, bar.state());
         assertEquals(bar.max(), bar.current());
+    }
+
+    /**
+     * The bug: twelve bounties against a twelve-kill contract drew a full green bar while the game
+     * still wanted two more kills. A bounty is not proof of mission credit, so the bar holds one
+     * short of full until the game redirects the mission to its turn-in point.
+     */
+    @Test
+    void killsAloneNeverFillTheBar() {
+        saveMission(massacreJson(15, 3));
+        saveBounties(5);
+
+        HudRow bar = rowOf(new MassacreObjectiveSource().currentObjective().orElseThrow(), "PIRATES (EST)");
+
+        assertEquals(HudRow.State.NORMAL, bar.state());
+        assertEquals(2, bar.current());
+        assertEquals(3, bar.max());
     }
 
     /**
@@ -220,6 +262,15 @@ class ObjectiveSourceCardTest {
 
     private String massacreJson(long id, int kills) {
         return massacreJson(id, kills, PROVIDER);
+    }
+
+    /**
+     * A massacre mission the game has redirected to its turn-in point, i.e. one it has confirmed
+     * the kills for - the only thing that completes a kill contract.
+     */
+    private String redirectedMassacreJson(long id, int kills) {
+        return massacreJson(id, kills).replaceFirst("}$",
+                ",\"redirectedAt\":\"%s\"}".formatted(Instant.now().minusSeconds(300).toString()));
     }
 
     private String massacreJson(long id, int kills, String provider) {
