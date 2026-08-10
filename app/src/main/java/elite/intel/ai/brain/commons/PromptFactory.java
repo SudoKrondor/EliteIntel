@@ -132,10 +132,12 @@ public class PromptFactory implements AiPromptFactory {
         PlayerSession playerSession = PlayerSession.getInstance();
         String alternativeName = playerSession.getAlternativeName();
         String playerName = alternativeName != null ? alternativeName : playerSession.getPlayerName();
-        String playerMilitaryRank = playerSession.getPlayerHighestMilitaryRank();
-        String playerHonorific = Ranks.getPlayerHonorific(
-                playerSession.getRankAndProgressDto().getCombatRankEmpire(),
-                playerSession.getRankAndProgressDto().getCombatRankFederation());
+        // Both forms are derived from the stored (language-independent) navy rank numbers rather than from
+        // the captured rank string, so equal standing in both navies is re-drawn on every prompt.
+        Integer empireRank = playerSession.getRankAndProgressDto().getCombatRankEmpire();
+        Integer federationRank = playerSession.getRankAndProgressDto().getCombatRankFederation();
+        String playerMilitaryRank = Ranks.getHighestRankAsString(empireRank, federationRank);
+        String playerHonorific = Ranks.getHonorific(empireRank, federationRank);
         // Only the known forms, deduped; fall back to a single "Commander" when nothing is known (so the
         // instruction never degenerates into "Commander, Commander, Commander").
         List<String> forms = Stream.of(playerName, playerMilitaryRank, playerHonorific)
