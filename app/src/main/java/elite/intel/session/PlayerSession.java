@@ -13,10 +13,15 @@ import elite.intel.gameapi.journal.events.dto.*;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
 import elite.intel.util.OsDetector;
 import elite.intel.util.Ranks;
+import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Random;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 
@@ -816,24 +821,33 @@ public class PlayerSession {
         });
     }
 
+    /**
+     * One of the ways to address the commander - name, highest military rank or honorific - drawn at
+     * random, so the companion varies how it speaks to them.
+     */
     public String getVariablePlayerName() {
+        // WHY: the speech-friendly alternative name replaces the in-game one rather than joining it as a
+        // fourth form; listing both gave the name two of the four draws and made rank and honorific rare.
         String alternativeName = trimToNull(getAlternativeName());
         String playerName = alternativeName != null ? alternativeName : trimToNull(getPlayerName());
-        String playerMilitaryRank = Ranks.getLocalizedRankName(getPlayerHighestMilitaryRank());
-        String playerHonorific = Ranks.getPlayerHonorific(
-                getRankAndProgressDto().getCombatRankEmpire(),
-                getRankAndProgressDto().getCombatRankFederation()
-        );
+        // Rank and honorific are both derived from the stored (language-independent) navy rank numbers, so
+        // equal standing in both navies is re-drawn on every address rather than frozen at rank-up time.
+        Integer empireRank = getRankAndProgressDto().getCombatRankEmpire();
+        Integer federationRank = getRankAndProgressDto().getCombatRankFederation();
+        String playerMilitaryRank = Ranks.getHighestRankAsString(empireRank, federationRank);
+        String playerHonorific = Ranks.getHonorific(empireRank, federationRank);
 
-
-        List<String> result = Arrays.stream(
-                new String[]{alternativeName, playerHonorific, playerName, playerMilitaryRank}
-        ).map(name -> trimToNull(name)).filter(Objects::nonNull).toList();
-        if (result.isEmpty()) {
+        // Deduped: an honorific that repeats the rank word must not get two of the draws either.
+        List<String> forms = Stream.of(playerName, playerMilitaryRank, playerHonorific)
+                .map(StringUtils::trimToNull)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (forms.isEmpty()) {
             return "Commander";
         }
 
-        return result.get(new Random().nextInt(result.size()));
+        return forms.get(new Random().nextInt(forms.size()));
     }
 
     public String getConfiguredPlayerName() {

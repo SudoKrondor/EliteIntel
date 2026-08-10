@@ -26,8 +26,8 @@ public class Ranks {
     /**
      * Federation navy ranks ordered by journal rank number: the list index equals the number the
      * journal reports for that rank (index 0 = unranked). Single source of truth for both the
-     * index-to-name lookup used by promotion announcements and the name-to-key lookup used by
-     * {@link #getLocalizedRankName}.
+     * index-to-name lookup used by promotion announcements and the English names the honorific
+     * maps are keyed by.
      */
     private static final List<RankTier> FEDERATION_RANKS = List.of(
             new RankTier("none", "ranks.federation.none"),
@@ -70,11 +70,6 @@ public class Ranks {
     );
 
     /**
-     * English rank name to i18n key, derived from the ordered rank lists (the "none" tier is excluded).
-     */
-    private static final Map<String, String> RANK_I18N_KEY_MAP = buildNameToKeyMap();
-
-    /**
      * Legal states, keyed by the journal's English value reduced to letters only (see {@link #legalStatusKey}).
      * The same vocabulary reaches us from two journal sources - a scanned ship (ShipTargeted.LegalStatus) and
      * the commander's own standing (Status.json LegalState) - which are not guaranteed to agree on case or
@@ -109,19 +104,6 @@ public class Ranks {
      */
     private static String legalStatusKey(String englishLegalStatus) {
         return englishLegalStatus.replaceAll("[^A-Za-z]", "").toLowerCase(java.util.Locale.ROOT);
-    }
-
-    /**
-     * Returns the localized display name for the given English rank name sourced from the game journal.
-     * Falls back to the original English name if no translation key is registered.
-     * Returns {@code null} for {@code null}, blank, or {@code "none"} input so callers can filter it out.
-     */
-    public static String getLocalizedRankName(String englishRankName) {
-        if (englishRankName == null || englishRankName.isBlank() || "none".equalsIgnoreCase(englishRankName)) {
-            return null;
-        }
-        String key = RANK_I18N_KEY_MAP.get(englishRankName);
-        return key != null ? getText(key) : englishRankName;
     }
 
     /**
@@ -168,6 +150,7 @@ public class Ranks {
     public static HashMap<String, String> getFederationHonorificMap() {
         HashMap<String, String> rankMap = new HashMap<>();
         //Federation ranks
+        rankMap.put("none", getText("ranks.honorific.commander"));
         rankMap.put("Recruit",              getText("ranks.honorific.recruit"));
         rankMap.put("Cadet",                getText("ranks.honorific.cadet"));
         rankMap.put("Midshipman",           getText("ranks.honorific.midshipman"));
@@ -351,47 +334,67 @@ public class Ranks {
 
 
     /**
-     * return honorific for imperial or federation depending on which rank is higher.
+     * Returns the honorific earned in whichever navy the commander stands higher in.
+     * <p>
+     * Neither navy outranks the other at the same tier, so an equal standing is drawn at random on every
+     * call: a Count who is also a Lieutenant Commander is addressed sometimes as an Imperial noble and
+     * sometimes by their Federal billet. Ranks the commander has not earned (index 0) and unknown ranks
+     * both fall back to the plain "Commander" address.
      */
-    public static String getHonorific(int imperial, int federation) {
-        if (imperial > federation) {
-            return getImperialHonorificMap().get(getImperialRankMap().get(imperial));
-
-        } else if (federation > imperial) {
-            return getFederationHonorificMap().get(getFederationRankMap().get(federation));
-        } else {
-            return chooseAtRandom(imperial, federation);
-        }
-    }
-
-    private static @NonNull String chooseAtRandom(int imperial, int federation) {
-        Random random = new Random();
-        int choice = random.nextInt(2); // Returns 0 or 1
-        if (choice == 0) {
-            return getImperialHonorificMap().get(getImperialRankMap().get(imperial));
-        } else {
-            return getFederationHonorificMap().get(getFederationRankMap().get(federation));
-        }
-    }
-
-    public static String getHighestRankAsString(Integer imperial, Integer federation) {
-        if (imperial > federation) {
-            return getImperialRankMap().get(imperial);
-        } else if (federation > imperial) {
-            return getFederationRankMap().get(federation);
+    public static @NonNull String getHonorific(Integer imperial, Integer federation) {
+        int imperialRank = rankIndex(imperial);
+        int federationRank = rankIndex(federation);
+        if (imperialRank > federationRank) {
+            return honorificFor(getImperialHonorificMap(), IMPERIAL_RANKS, imperialRank);
+        } else if (federationRank > imperialRank) {
+            return honorificFor(getFederationHonorificMap(), FEDERATION_RANKS, federationRank);
         } else {
             return new Random().nextBoolean()
-                    ? getImperialRankMap().get(imperial)
-                    : getFederationRankMap().get(federation);
+                    ? honorificFor(getImperialHonorificMap(), IMPERIAL_RANKS, imperialRank)
+                    : honorificFor(getFederationHonorificMap(), FEDERATION_RANKS, federationRank);
         }
     }
 
-    public static String getPlayerHonorific(Integer imperial, Integer federation) {
-        if (imperial >= federation) {
-            return getImperialHonorificMap().get(getImperialRankMap().get(imperial));
+    /**
+     * Returns the localized name of the highest navy rank held, drawing at random between the two
+     * navies when they stand at the same tier - the same rule the honorific follows. Returns
+     * {@code null} when the rank number is unknown, so callers can drop the form.
+     */
+    public static String getHighestRankAsString(Integer imperial, Integer federation) {
+        int imperialRank = rankIndex(imperial);
+        int federationRank = rankIndex(federation);
+        if (imperialRank > federationRank) {
+            return localizedRankAt(IMPERIAL_RANKS, imperialRank);
+        } else if (federationRank > imperialRank) {
+            return localizedRankAt(FEDERATION_RANKS, federationRank);
         } else {
-            return getFederationHonorificMap().get(getFederationRankMap().get(federation));
+            return new Random().nextBoolean()
+                    ? localizedRankAt(IMPERIAL_RANKS, imperialRank)
+                    : localizedRankAt(FEDERATION_RANKS, federationRank);
         }
+    }
+
+    /**
+     * The honorific maps are keyed by the English rank names the journal reports, so the lookup must use
+     * the English name of the tier and never its localized form - a localized key misses in every
+     * non-English locale, which silently dropped the honorific from the ways to address the commander.
+     */
+    private static @NonNull String honorificFor(Map<String, String> honorifics, List<RankTier> ranks, int rank) {
+        String englishName = rank >= 0 && rank < ranks.size() ? ranks.get(rank).englishName() : null;
+        String honorific = englishName == null ? null : honorifics.get(englishName);
+        return honorific != null ? honorific : getText("ranks.honorific.commander");
+    }
+
+    private static String localizedRankAt(List<RankTier> ranks, int rank) {
+        return rank >= 0 && rank < ranks.size() ? getText(ranks.get(rank).i18nKey()) : null;
+    }
+
+    /**
+     * Journal rank numbers arrive boxed and default to -1 before the game has reported them; -1 stands
+     * for "not known yet" and must compare below the unranked tier rather than blow up on unboxing.
+     */
+    private static int rankIndex(Integer rank) {
+        return rank == null ? -1 : rank;
     }
 
     /**
@@ -404,20 +407,6 @@ public class Ranks {
             rankMap.put(index, getText(ranks.get(index).i18nKey()));
         }
         return rankMap;
-    }
-
-    private static Map<String, String> buildNameToKeyMap() {
-        Map<String, String> map = new HashMap<>();
-        addNames(map, IMPERIAL_RANKS);
-        addNames(map, FEDERATION_RANKS);
-        return Map.copyOf(map);
-    }
-
-    private static void addNames(Map<String, String> map, List<RankTier> ranks) {
-        for (RankTier tier : ranks) {
-            if ("none".equals(tier.englishName())) continue; // the unranked tier has no journal rank name to localize
-            map.put(tier.englishName(), tier.i18nKey());
-        }
     }
 
 }

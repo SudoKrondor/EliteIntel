@@ -67,8 +67,7 @@ public class RankAndProgressDto implements ToJsonConvertible {
      * indices, so it always reflects the active UI language even after a language switch.
      */
     public String getHonorific() {
-        String honorific = Ranks.getHonorific(combatRankEmpire, combatRankFederation);
-        return honorific == null ? "Commander" : honorific;
+        return Ranks.getHonorific(combatRankEmpire, combatRankFederation);
     }
 
     public String getExobiologyRank() {

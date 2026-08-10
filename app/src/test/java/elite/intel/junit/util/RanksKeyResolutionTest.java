@@ -7,7 +7,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -96,19 +95,19 @@ class RanksKeyResolutionTest {
         assertEquals("Pacha", Ranks.getFederationHonorificMap().get("Post Commander"));
     }
 
+    /**
+     * The honorific maps are keyed by the English rank names of the ordered rank tiers, and a key that
+     * does not match one (a typo, or a tier Frontier renames) resolves to the generic "Commander"
+     * fallback rather than failing. Every earned tier must therefore produce an honorific of its own -
+     * "Commander" is only correct for the unranked tier, which is why index 0 is excluded.
+     */
     @Test
-    void localizedRankNamesResolveToDisplayText() {
-        // The honorific maps are keyed by the English rank names getLocalizedRankName expects.
-        List<String> englishRankNames = new ArrayList<>();
-        englishRankNames.addAll(Ranks.getImperialHonorificMap().keySet());
-        englishRankNames.addAll(Ranks.getFederationHonorificMap().keySet());
-
-        for (String name : englishRankNames) {
-            if ("none".equalsIgnoreCase(name)) continue; // getLocalizedRankName filters "none" -> null by design
-            String localized = Ranks.getLocalizedRankName(name);
-            assertNotNull(localized, "getLocalizedRankName should localize: " + name);
-            assertFalse(isUnresolvedKey(localized),
-                    "getLocalizedRankName(\"" + name + "\") leaked unresolved i18n key: " + localized);
+    void everyEarnedRankTierHasItsOwnHonorific() {
+        for (int rank = 1; rank <= 14; rank++) {
+            assertNotEquals("Commander", Ranks.getHonorific(rank, 0),
+                    "Imperial rank index " + rank + " fell back to the unranked honorific");
+            assertNotEquals("Commander", Ranks.getHonorific(0, rank),
+                    "Federation rank index " + rank + " fell back to the unranked honorific");
         }
     }
 
