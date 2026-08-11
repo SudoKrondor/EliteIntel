@@ -55,13 +55,15 @@ public class MassacreObjectiveSource implements HudObjectiveSource {
         boolean confirmed = progress.killsRemaining() == 0;
 
         List<HudRow> rows = new ArrayList<>();
-        rows.add(HudRow.progress(confirmed ? "PIRATES" : "PIRATES (EST)",
+        rows.add(HudRow.progress(HudText.get(confirmed
+                        ? "overlay.card.row.pirates"
+                        : "overlay.card.row.piratesEstimated"),
                 (int) progress.killsDone(), (int) progress.killsRequired(),
                 confirmed ? HudRow.State.GOOD : HudRow.State.NORMAL));
 
         int stacked = missions.size();
         if (stacked > 1) {
-            rows.add(HudRow.of("MISSIONS", String.valueOf(stacked)));
+            rows.add(HudRow.of(HudText.get("overlay.card.row.missions"), String.valueOf(stacked)));
         }
 
         long reward = missions.values().stream()
@@ -69,12 +71,12 @@ public class MassacreObjectiveSource implements HudObjectiveSource {
                 .mapToLong(MissionDto::getReward)
                 .sum();
         if (reward > 0) {
-            rows.add(HudRow.of("REWARD", String.format("%,d cr", reward)));
+            rows.add(HudRow.of(HudText.get("overlay.card.row.reward"), HudText.credits(reward)));
         }
 
         return Optional.of(new HudObjective(
                 "massacre-stack",
-                "MASSACRE CONTRACT",
+                HudText.get("overlay.card.title.massacre"),
                 progress.targetFaction() == null ? null : progress.targetFaction().toUpperCase(),
                 rows,
                 HudObjective.PRIORITY_SPECIALISED));

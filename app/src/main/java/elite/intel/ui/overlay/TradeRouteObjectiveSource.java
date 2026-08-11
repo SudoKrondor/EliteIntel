@@ -56,18 +56,19 @@ public class TradeRouteObjectiveSource implements HudObjectiveSource {
         List<HudRow> rows = new ArrayList<>();
 
         if (total > 0) {
-            rows.add(HudRow.progress("LEGS", completed, total));
+            rows.add(HudRow.progress(HudText.get("overlay.card.row.legs"), completed, total));
         }
-        commodityOf(stop).ifPresent(name -> rows.add(HudRow.of("COMMODITY", name)));
+        commodityOf(stop).ifPresent(name -> rows.add(HudRow.of(HudText.get("overlay.card.row.commodity"), name)));
         location(stop.getSourceSystem(), stop.getSourceStation())
-                .ifPresent(where -> rows.add(HudRow.of("BUY", where)));
+                .ifPresent(where -> rows.add(HudRow.of(HudText.get("overlay.card.row.buy"), where)));
         location(stop.getDestinationSystem(), stop.getDestinationStation())
-                .ifPresent(where -> rows.add(HudRow.of("SELL", where, HudRow.State.GOOD)));
+                .ifPresent(where -> rows.add(HudRow.of(HudText.get("overlay.card.row.sell"), where, HudRow.State.GOOD)));
 
         return Optional.of(new HudObjective(
                 "trade-route",
-                "TRADE ROUTE",
-                "LEG " + next.getLegNumber() + " OF " + total,
+                HudText.get("overlay.card.title.tradeRoute"),
+                HudText.get("overlay.card.subtitle.leg",
+                        String.valueOf(next.getLegNumber()), String.valueOf(total)),
                 rows,
                 HudObjective.PRIORITY_STANDING));
     }

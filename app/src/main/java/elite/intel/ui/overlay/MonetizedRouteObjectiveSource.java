@@ -43,21 +43,22 @@ public class MonetizedRouteObjectiveSource implements HudObjectiveSource {
         if (commodity == null) return Optional.empty();
 
         List<HudRow> rows = new ArrayList<>();
-        rows.add(HudRow.of("COMMODITY", commodity.toUpperCase()));
+        rows.add(HudRow.of(HudText.get("overlay.card.row.commodity"), commodity.toUpperCase()));
 
         location(tx.getSourceStarSystem(), tx.getSourceStationName())
-                .ifPresent(where -> rows.add(HudRow.of("BUY", where)));
+                .ifPresent(where -> rows.add(HudRow.of(HudText.get("overlay.card.row.buy"), where)));
         location(tx.getDestinationStarSystem(), tx.getDestinationStationName())
-                .ifPresent(where -> rows.add(HudRow.of("SELL", where, HudRow.State.GOOD)));
+                .ifPresent(where -> rows.add(HudRow.of(HudText.get("overlay.card.row.sell"), where, HudRow.State.GOOD)));
 
         long margin = (long) tx.getDestinationSellPrice() - tx.getSourceBuyPrice();
         if (margin > 0) {
-            rows.add(HudRow.of("MARGIN", String.format("%,d cr/t", margin)));
+            rows.add(HudRow.of(HudText.get("overlay.card.row.margin"),
+                    HudText.amount(margin, "overlay.card.unit.creditsPerTon")));
         }
 
         return Optional.of(new HudObjective(
                 "monetized-route",
-                "CARGO OPPORTUNITY",
+                HudText.get("overlay.card.title.cargoOpportunity"),
                 null,
                 rows,
                 HudObjective.PRIORITY_STANDING));

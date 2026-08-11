@@ -3,15 +3,16 @@ package elite.intel.ui.overlay;
 import elite.intel.gameapi.journal.events.dto.BioSampleDto;
 import elite.intel.gameapi.journal.events.dto.GenusDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
+import elite.intel.i18n.Language;
+import elite.intel.session.SystemSession;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static elite.intel.ui.overlay.ExobiologyFixtures.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The sampling list is derived on every poll rather than maintained, so these
@@ -21,6 +22,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ExobiologyObjectiveCardTest {
 
     private static final String ID = "exobiology:1:2";
+
+    /**
+     * Language is DB-backed and shared by every test in the fork, so it is restored here rather than by
+     * the one test that changes it.
+     */
+    @AfterEach
+    void restoreLanguage() {
+        SystemSession.getInstance().setLanguage(Language.EN);
+    }
 
     @Test
     void aFreshlySurveyedBodyListsEveryGenus() {
@@ -104,6 +114,23 @@ class ExobiologyObjectiveCardTest {
     }
 
     /**
+     * The payout is read by the commander, so it carries their own separators - not the developer's
+     * machine's, and not the United States' either.
+     */
+    @Test
+    void thePayoutIsGroupedInTheCommandersLanguage() {
+        GenusDto bacterium = genus("Bacterium", "$Codex_Ent_Bacterial_Genus_Name;");
+        bacterium.setRewardInCredits(1_000_000);
+        bacterium.setBonusCreditsForFirstDiscovery(500_000);
+
+        SystemSession.getInstance().setLanguage(Language.IT);
+
+        HudObjective card = ExobiologyObjectiveSource.card(bodyWith(bacterium), List.of(), ID).orElseThrow();
+
+        assertEquals("1.500.000 cr", card.rows().get(1).value());
+    }
+
+    /**
      * The overlay silently drops rows past its own limit, so the overflow has to
      * be folded into a row that fits rather than sent and lost.
      */
@@ -136,39 +163,6 @@ class ExobiologyObjectiveCardTest {
     }
 
     // -- fixtures --------------------------------------------------------------
-
-    private static LocationDto bodyWith(GenusDto... genuses) {
-        LocationDto body = new LocationDto(2L, 1L);
-        body.setPlanetName("Boeff WX-N b8-0 2");
-        body.setPlanetShortName("2");
-        if (genuses.length > 0) body.setGenus(new ArrayList<>(List.of(genuses)));
-        return body;
-    }
-
-    private static GenusDto genus(String localised, String symbol) {
-        GenusDto dto = new GenusDto();
-        dto.setGenusLocalised(localised);
-        dto.setGenusSymbol(symbol);
-        dto.setPlanetName("Boeff WX-N b8-0 2");
-        return dto;
-    }
-
-    private static BioSampleDto completed(String localised, String symbol) {
-        BioSampleDto dto = new BioSampleDto();
-        dto.setPlanetName("Boeff WX-N b8-0 2");
-        dto.setGenus(localised);
-        dto.setGenusSymbol(symbol);
-        dto.setScanXof3(3);
-        dto.setBioSampleCompleted(true);
-        return dto;
-    }
-
-    private static BioSampleDto partial(String localised, String symbol, int scanXof3) {
-        BioSampleDto dto = completed(localised, symbol);
-        dto.setScanXof3(scanXof3);
-        dto.setBioSampleCompleted(false);
-        return dto;
-    }
 
     private static List<String> labels(HudObjective card) {
         return card.rows().stream().map(HudRow::label).toList();

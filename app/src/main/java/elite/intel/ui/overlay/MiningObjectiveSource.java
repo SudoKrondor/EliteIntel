@@ -5,6 +5,7 @@ import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ModuleDto;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.ui.i18n.LocalizedNumbers;
 
 import java.util.*;
 
@@ -112,7 +113,8 @@ public class MiningObjectiveSource implements HudObjectiveSource {
 
         List<HudRow> rows = new ArrayList<>();
         if (cargoCapacity > 0) {
-            rows.add(HudRow.progress("HOLD", Math.min(cargoUsed, cargoCapacity), cargoCapacity,
+            rows.add(HudRow.progress(HudText.get("overlay.card.row.hold"),
+                    Math.min(cargoUsed, cargoCapacity), cargoCapacity,
                     holdState(cargoUsed, cargoCapacity)));
         }
 
@@ -129,14 +131,15 @@ public class MiningObjectiveSource implements HudObjectiveSource {
                     yield.tonnes() > 0 ? HudRow.State.GOOD : HudRow.State.NORMAL));
         }
         if (ordered.size() > shown) {
-            rows.add(HudRow.of("MORE TARGETS", "+" + (ordered.size() - shown)));
+            rows.add(HudRow.of(HudText.get("overlay.card.row.moreTargets"), "+" + (ordered.size() - shown)));
         }
 
-        rows.add(HudRow.of("LIMPETS", String.format("%,d", Math.max(0, limpets)), limpetState(limpets)));
+        rows.add(HudRow.of(HudText.get("overlay.card.row.limpets"),
+                LocalizedNumbers.grouped(Math.max(0, limpets)), limpetState(limpets)));
 
         return Optional.of(new HudObjective(
                 "mining",
-                "MINING",
+                HudText.get("overlay.card.title.mining"),
                 subtitle,
                 rows,
                 HudObjective.PRIORITY_AMBIENT));
@@ -218,7 +221,7 @@ public class MiningObjectiveSource implements HudObjectiveSource {
     }
 
     private static String tonnage(int tonnes) {
-        return String.format("%,d T", Math.max(0, tonnes));
+        return HudText.amount(Math.max(0, tonnes), "overlay.card.unit.tonnes");
     }
 
     /**
