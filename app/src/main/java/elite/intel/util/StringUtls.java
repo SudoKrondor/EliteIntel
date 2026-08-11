@@ -131,7 +131,13 @@ public class StringUtls {
         return EventsTextProvider.getText(lang, keyBase + suffix, args);
     }
 
-    private static String pluralSuffix(Language lang, int count) {
+    /**
+     * The plural category a count falls into, as a key suffix ({@code .one}, {@code .few}, {@code .many}).
+     * <p>
+     * Public because the rule is the language's, not the bundle's: the HUD pluralises against the
+     * {@code gui} bundle and must not carry a second copy of the Slavic categories.
+     */
+    public static String pluralSuffix(Language lang, int count) {
         return switch (lang) {
             case RU, UK -> ruPlural(count);
             default -> count == 1 ? ".one" : ".many";

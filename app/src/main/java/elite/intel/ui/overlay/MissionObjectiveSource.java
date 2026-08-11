@@ -148,7 +148,7 @@ public class MissionObjectiveSource implements HudObjectiveSource {
         List<HudRow> rows = new ArrayList<>();
         addTargetRow(rows, featured);
         if (featured.getReward() > 0) {
-            rows.add(HudRow.of("REWARD", credits(featured.getReward())));
+            rows.add(HudRow.of(HudText.get("overlay.card.row.reward"), HudText.credits(featured.getReward())));
         }
         addStackRows(rows, featured, missions);
         addSameSystemRow(rows, featured, missions);
@@ -167,10 +167,11 @@ public class MissionObjectiveSource implements HudObjectiveSource {
                 .toList();
         if (stack.size() < 2) return;
 
-        rows.add(HudRow.of("STACK", stack.size() + " MISSIONS"));
+        rows.add(HudRow.of(HudText.get("overlay.card.row.stack"),
+                HudText.plural("overlay.card.value.missionCount", stack.size())));
         long total = stack.stream().mapToLong(MissionDto::getReward).sum();
         if (total > 0) {
-            rows.add(HudRow.of("STACK REWARD", credits(total)));
+            rows.add(HudRow.of(HudText.get("overlay.card.row.stackReward"), HudText.credits(total)));
         }
     }
 
@@ -188,7 +189,8 @@ public class MissionObjectiveSource implements HudObjectiveSource {
                 .filter(mission -> system.equalsIgnoreCase(mission.getDestinationSystem()))
                 .count();
         if (sameSystem > 1) {
-            rows.add(HudRow.of("SAME SYSTEM", sameSystem + " MISSIONS"));
+            rows.add(HudRow.of(HudText.get("overlay.card.row.sameSystem"),
+                    HudText.plural("overlay.card.value.missionCount", (int) sameSystem)));
         }
     }
 
@@ -200,15 +202,18 @@ public class MissionObjectiveSource implements HudObjectiveSource {
     private void addTargetRow(List<HudRow> rows, MissionDto mission) {
         if (mission.getKillCount() > 0) {
             String faction = mission.getMissionTargetFaction();
-            rows.add(HudRow.of("KILLS REQUIRED", String.valueOf(mission.getKillCount())));
+            rows.add(HudRow.of(HudText.get("overlay.card.row.killsRequired"),
+                    String.valueOf(mission.getKillCount())));
             if (faction != null && !faction.isBlank()) {
-                rows.add(HudRow.of("TARGET", faction.toUpperCase()));
+                rows.add(HudRow.of(HudText.get("overlay.card.row.target"), faction.toUpperCase()));
             }
         } else if (mission.getCommodityName() != null && !mission.getCommodityName().isBlank()) {
             String qty = mission.getCount() > 0 ? " x" + mission.getCount() : "";
-            rows.add(HudRow.of("CARGO", mission.getCommodityName().toUpperCase() + qty));
+            rows.add(HudRow.of(HudText.get("overlay.card.row.cargo"),
+                    mission.getCommodityName().toUpperCase() + qty));
         } else if (mission.getPassengerCount() > 0) {
-            rows.add(HudRow.of("PASSENGERS", String.valueOf(mission.getPassengerCount())));
+            rows.add(HudRow.of(HudText.get("overlay.card.row.passengers"),
+                    String.valueOf(mission.getPassengerCount())));
         }
     }
 
@@ -217,11 +222,11 @@ public class MissionObjectiveSource implements HudObjectiveSource {
         if (expiry.isEmpty()) return Optional.empty();
         Duration left = Duration.between(Instant.now(), expiry.get());
         if (left.isNegative()) {
-            return Optional.of(HudRow.of("EXPIRED", "-", HudRow.State.CRITICAL));
+            return Optional.of(HudRow.of(HudText.get("overlay.card.row.expired"), "-", HudRow.State.CRITICAL));
         }
         // Under six hours is the point where it starts driving decisions.
         HudRow.State state = left.toHours() < 6 ? HudRow.State.WARN : HudRow.State.NORMAL;
-        return Optional.of(HudRow.of("EXPIRES", humanDuration(left), state));
+        return Optional.of(HudRow.of(HudText.get("overlay.card.row.expires"), humanDuration(left), state));
     }
 
     // -- text ------------------------------------------------------------------
@@ -230,7 +235,11 @@ public class MissionObjectiveSource implements HudObjectiveSource {
         if (mission.getMissionDescription() != null && !mission.getMissionDescription().isBlank()) {
             return mission.getMissionDescription();
         }
-        return mission.getMissionType() == null ? "MISSION" : mission.getMissionType().name();
+        // The type's own constant name is an identifier, not a label, and is only ever seen when the
+        // journal gave the mission no description of its own.
+        return mission.getMissionType() == null
+                ? HudText.get("overlay.card.title.mission")
+                : mission.getMissionType().name();
     }
 
     private String subtitle(MissionDto mission) {
@@ -246,17 +255,31 @@ public class MissionObjectiveSource implements HudObjectiveSource {
         return sb.isEmpty() ? null : sb.toString();
     }
 
-    private static String credits(long amount) {
-        return String.format("%,d cr", amount);
-    }
-
-    private static String humanDuration(Duration d) {
+    /**
+     * How long is left, in the commander's units. Package-private so the format can be pinned without a
+     * mission, a stack or a clock, as {@link #featured} already is.
+     */
+    static String humanDuration(Duration d) {
         long days = d.toDays();
         long hours = d.toHoursPart();
         long minutes = d.toMinutesPart();
-        if (days > 0) return days + "d " + String.format("%02dh", hours);
-        if (hours > 0) return hours + "h " + String.format("%02dm", minutes);
-        return minutes + "m";
+        // WHY Locale.ROOT: the pad is structure, not a figure. Bare String.format follows the JVM
+        // default locale, which is the operating system's and not the language chosen here, so on a
+        // machine set to a non-Western-digit locale it would put Arabic-Indic digits in this row while
+        // every other number on the card stayed Western.
+        //
+        // WHY the units are read inside the branches: each lookup is a bundle read behind a session
+        // read, and only two of the three are ever rendered. Hoisting them makes the card pay for one
+        // it never shows, on every poll.
+        if (days > 0) {
+            return days + HudText.get("overlay.card.duration.days") + " "
+                    + String.format(Locale.ROOT, "%02d", hours) + HudText.get("overlay.card.duration.hours");
+        }
+        if (hours > 0) {
+            return hours + HudText.get("overlay.card.duration.hours") + " "
+                    + String.format(Locale.ROOT, "%02d", minutes) + HudText.get("overlay.card.duration.minutes");
+        }
+        return minutes + HudText.get("overlay.card.duration.minutes");
     }
 
     /**

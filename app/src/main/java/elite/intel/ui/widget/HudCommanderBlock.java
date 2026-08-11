@@ -1,11 +1,10 @@
 package elite.intel.ui.widget;
 
-import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.i18n.LocalizedNumbers;
 import elite.intel.ui.theme.HudGlyphs;
 
 import javax.swing.*;
 import java.awt.*;
-import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -13,7 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
-import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.AppTheme.HUD_LOCKED_FOREGROUND;
 import static elite.intel.ui.theme.HudPalette.*;
 
 /**
@@ -102,7 +101,7 @@ public class HudCommanderBlock extends JPanel {
      */
     public void setCredits(long credits) {
         if (credits > 0) {
-            String amount = NumberFormat.getNumberInstance(Locale.US).format(credits);
+            String amount = LocalizedNumbers.grouped(credits);
             creditsLabel.setText(amount + " " + getText("ai.commander.creditsSuffix"));
             creditsLabel.setVisible(true);
         } else {

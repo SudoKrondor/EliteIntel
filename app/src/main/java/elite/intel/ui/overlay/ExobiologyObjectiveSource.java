@@ -9,13 +9,7 @@ import elite.intel.session.LocationData;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.ExoBio;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Projects the genuses still to sample in the current system into a HUD
@@ -143,7 +137,8 @@ public class ExobiologyObjectiveSource implements HudObjectiveSource {
         Map<String, Integer> partials = partialsByGenus(body.getPartialBioSamples());
 
         List<HudRow> rows = new ArrayList<>();
-        rows.add(HudRow.progress("GENUS", detected.size() - remaining.size(), detected.size()));
+        rows.add(HudRow.progress(HudText.get("overlay.card.row.genus"),
+                detected.size() - remaining.size(), detected.size()));
 
         int shown = Math.min(remaining.size(), MAX_GENUS_ROWS);
         for (GenusDto genus : remaining.subList(0, shown)) {
@@ -158,12 +153,12 @@ public class ExobiologyObjectiveSource implements HudObjectiveSource {
             }
         }
         if (remaining.size() > shown) {
-            rows.add(HudRow.of("MORE GENUS", "+" + (remaining.size() - shown)));
+            rows.add(HudRow.of(HudText.get("overlay.card.row.moreGenus"), "+" + (remaining.size() - shown)));
         }
 
         return Optional.of(new HudObjective(
                 id,
-                "EXOBIOLOGY",
+                HudText.get("overlay.card.title.exobiology"),
                 bodyLabel(body),
                 rows,
                 HudObjective.PRIORITY_AMBIENT));
@@ -218,7 +213,7 @@ public class ExobiologyObjectiveSource implements HudObjectiveSource {
     private static String displayName(GenusDto genus) {
         String name = genus.getGenusLocalised();
         if (name == null || name.isBlank()) name = genus.getGenusSymbol();
-        return name == null ? "UNKNOWN" : name.toUpperCase(Locale.ROOT);
+        return name == null ? HudText.get("overlay.card.row.unknownGenus") : name.toUpperCase(Locale.ROOT);
     }
 
     /**
@@ -226,7 +221,7 @@ public class ExobiologyObjectiveSource implements HudObjectiveSource {
      */
     private static String payout(GenusDto genus) {
         long reward = genus.getRewardInCredits() + genus.getBonusCreditsForFirstDiscovery();
-        return reward > 0 ? String.format("%,d cr", reward) : "";
+        return reward > 0 ? HudText.credits(reward) : "";
     }
 
     private static String bodyLabel(LocationDto body) {
