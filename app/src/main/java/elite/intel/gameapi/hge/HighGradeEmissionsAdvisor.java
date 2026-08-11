@@ -7,22 +7,30 @@ import elite.intel.db.managers.ShipSettingsManager;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
 import elite.intel.session.PlayerSession;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 import static elite.intel.util.StringUtls.localizedEvent;
 
 /**
- * Tells the commander when the system they just arrived in can drop Very Rare manufactured materials
- * from a High Grade Emissions signal.
+ * Tells the commander, on arrival, which Very Rare manufactured materials a High Grade Emissions
+ * signal can drop in the system they just jumped into.
  *
- * <p>The two facts that decide this arrive in separate journal events and on separate threads: the
- * system's allegiance, population and faction states come with {@code FSDJump}, while the emissions
- * signal itself comes with {@code FSSSignalDiscovered}. Either can land first — every subscriber runs
- * on its own virtual thread, and the jump handler makes EDSM calls before it finishes — so rather
- * than depend on an order that is not guaranteed, both halves report in here and whichever completes
- * the pair triggers the advice. One announcement per system, however many emissions it turns up.
+ * <p>Everything that decides the answer arrives with {@code FSDJump}: the system's allegiance, its
+ * population and its factions' states. What an emissions site drops is fixed by those three, so the
+ * advice can be given the moment the commander arrives.
+ *
+ * <p>WHY it does not wait to see an emissions signal first: it used to, and that made it silent in
+ * exactly the systems worth farming. Emissions sources spawn and despawn over time rather than being
+ * present on arrival, and the game does not reliably write an {@code FSSSignalDiscovered} for them -
+ * in one recorded session the commander jumped into an Empire system in Expansion, dropped into a
+ * High Grade Emissions site four minutes later and collected seven Imperial Shielding, while the only
+ * signal the journal ever reported for that system was its Nav Beacon. Waiting for a signal that
+ * never comes is not caution, it is a missed announcement. Whether a site has spawned yet does not
+ * change what this system's sites would drop, which is the whole of the advice.
  */
 public final class HighGradeEmissionsAdvisor {
 
@@ -32,41 +40,8 @@ public final class HighGradeEmissionsAdvisor {
     private final Consumer<List<String>> announcer;
 
     /**
-     * What is known about each system lately seen, keyed by system address and bounded so a long
-     * session cannot grow it without limit.
-     *
-     * <p>WHY a map and not just the current system: signals are handled on their own virtual threads,
-     * so one belonging to the system behind us can still land after the jump into this one. Held in a
-     * single slot it would overwrite the newly-entered system's state; held per system it lands
-     * harmlessly on the entry it actually describes.
-     */
-    private final Map<Long, SystemState> recentSystems = new LinkedHashMap<>() {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<Long, SystemState> eldest) {
-            return size() > REMEMBERED_SYSTEMS;
-        }
-    };
-
-    private static final int REMEMBERED_SYSTEMS = 8;
-
-    /**
-     * The system the commander is actually in; only this one is ever spoken about.
-     */
-    private long currentSystemAddress;
-
-    private static final class SystemState {
-        private String allegiance;
-        private long population;
-        private Collection<String> factionStates = List.of();
-        private boolean systemKnown;
-        private boolean emissionsSeen;
-        private boolean announced;
-    }
-
-    /**
-     * The setting lookup and the announcement are injected so the arrival/signal rendezvous can be
-     * tested without a database or a voice: they are the only two things this class does that reach
-     * outside it.
+     * The setting lookup and the announcement are injected so arrival handling can be tested without
+     * a database or a voice: they are the only two things this class does that reach outside it.
      */
     HighGradeEmissionsAdvisor(BooleanSupplier alertsEnabled, Consumer<List<String>> announcer) {
         this.alertsEnabled = alertsEnabled;
@@ -83,46 +58,13 @@ public final class HighGradeEmissionsAdvisor {
     }
 
     /**
-     * Called on arrival in a system, with the state the jump event reported about it. Arrival is what
-     * makes a system the current one — an emissions signal never does, because one can arrive from
-     * the system we are leaving.
+     * Called on arrival in a system, with the state the jump event reported about it. Says nothing
+     * when the system yields no Very Rare materials, which is most of them.
      */
-    public synchronized void onSystemEntered(long systemAddress, String allegiance, long population,
-                                             Collection<String> factionStates) {
-        currentSystemAddress = systemAddress;
-        SystemState state = stateOf(systemAddress);
-        state.allegiance = allegiance;
-        state.population = population;
-        state.factionStates = factionStates == null ? List.of() : List.copyOf(factionStates);
-        state.systemKnown = true;
-        advise(systemAddress, state);
-    }
-
-    /**
-     * Called when a High Grade Emissions signal is discovered in the given system. Recorded against
-     * that system whether or not it is the one we are in, so that a signal seen before the jump event
-     * has been processed is not lost.
-     */
-    public synchronized void onHighGradeEmissions(long systemAddress) {
-        SystemState state = stateOf(systemAddress);
-        state.emissionsSeen = true;
-        advise(systemAddress, state);
-    }
-
-    private SystemState stateOf(long systemAddress) {
-        return recentSystems.computeIfAbsent(systemAddress, key -> new SystemState());
-    }
-
-    private void advise(long systemAddress, SystemState state) {
-        if (systemAddress != currentSystemAddress) return;
-        if (state.announced || !state.systemKnown || !state.emissionsSeen) return;
-
-        List<String> symbols = HighGradeEmissions.materialSymbols(
-                state.allegiance, state.factionStates, state.population);
+    public void onSystemEntered(String allegiance, long population, Collection<String> factionStates) {
+        List<String> symbols = HighGradeEmissions.materialSymbols(allegiance, factionStates, population);
         if (symbols.isEmpty()) return;
         if (!alertsEnabled.getAsBoolean()) return;
-
-        state.announced = true;
         announcer.accept(symbols);
     }
 

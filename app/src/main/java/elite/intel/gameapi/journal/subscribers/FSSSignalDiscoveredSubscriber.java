@@ -4,7 +4,6 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.hge.HighGradeEmissionsAdvisor;
 import elite.intel.gameapi.journal.events.FSSSignalDiscoveredEvent;
 import elite.intel.gameapi.journal.events.dto.FssSignalDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -27,7 +26,6 @@ public class FSSSignalDiscoveredSubscriber {
     private final HuntingGroundManager pirateMissionDataManager = HuntingGroundManager.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
     private final SystemSession systemSession = SystemSession.getInstance();
-    private final HighGradeEmissionsAdvisor hgeAdvisor = HighGradeEmissionsAdvisor.getInstance();
 
     @Subscribe
     public void onFSSSignalDiscovered(FSSSignalDiscoveredEvent event) {
@@ -49,11 +47,6 @@ public class FSSSignalDiscoveredSubscriber {
             }
             if (event.getUssType() != null && event.getUssType().contains(USS_TYPE_VERY_VALUABLE_SALVAGE)) {
                 announceSalvage("event.fss.signal.salvage.veryValuable", event);
-                // The "very valuable salvage" USS type is what the game calls a High Grade Emissions
-                // source, and those are the ones that drop Very Rare manufactured materials.
-                if (!event.isReplay()) {
-                    hgeAdvisor.onHighGradeEmissions(event.getSystemAddress());
-                }
             }
             if (event.getSignalName() != null && event.getSignalName().contains(NOTABLE_STELLAR_PHENOMENON)) {
                 publishVoice(localizedEvent("event.fss.notable.stellar.phenomenon"));

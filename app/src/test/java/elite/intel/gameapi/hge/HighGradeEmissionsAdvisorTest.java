@@ -11,105 +11,96 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The arrival/signal rendezvous. The two facts arrive on separate threads in an order the journal
- * does not guarantee, so the advice has to come out exactly once however they interleave.
+ * Arrival is the whole trigger. What a system's emissions sites drop is fixed by its allegiance,
+ * population and faction states, so the advice is owed as soon as the commander jumps in.
+ *
+ * <p>These tests replace an earlier set built around a rendezvous between the jump event and an
+ * {@code FSSSignalDiscovered} for the emissions source. That pairing was removed because the signal
+ * often never arrives: emissions sites spawn over time rather than on arrival, and a real session
+ * recorded a commander farming seven Imperial Shielding out of a site in a system whose only reported
+ * signal was its Nav Beacon. The advice stayed silent for want of an event the game never wrote.
  */
 class HighGradeEmissionsAdvisorTest {
-
-    private static final long SYSTEM = 1_000L;
-    private static final long OTHER_SYSTEM = 2_000L;
 
     private final List<List<String>> announcements = new ArrayList<>();
     private final AtomicBoolean enabled = new AtomicBoolean(true);
     private final HighGradeEmissionsAdvisor advisor =
             new HighGradeEmissionsAdvisor(enabled::get, announcements::add);
 
-    private void enterBoomSystem(long systemAddress) {
-        advisor.onSystemEntered(systemAddress, "Independent", 5_000_000L, List.of("Boom"));
-    }
-
     @Test
-    @DisplayName("arrival first, then the signal")
-    void arrivalThenSignal() {
-        enterBoomSystem(SYSTEM);
-        assertTrue(announcements.isEmpty(), "nothing to say until emissions actually turn up");
+    @DisplayName("arriving in a qualifying system advises straight away")
+    void arrivalAdvisesImmediately() {
+        advisor.onSystemEntered("Independent", 5_000_000L, List.of("Boom"));
 
-        advisor.onHighGradeEmissions(SYSTEM);
-        assertEquals(1, announcements.size());
+        assertEquals(1, announcements.size(), "no second event is needed to earn the advice");
         assertEquals(List.of("protoheatradiators", "protolightalloys", "protoradiolicalloys"),
                 announcements.getFirst());
     }
 
+    /**
+     * The exact system from the session that exposed the bug: Empire allegiance with factions in
+     * Expansion. It was silent before, and its emissions site really did drop Imperial Shielding.
+     */
     @Test
-    @DisplayName("signal first, then arrival — the other half completes the pair")
-    void signalThenArrival() {
-        advisor.onHighGradeEmissions(SYSTEM);
-        assertTrue(announcements.isEmpty(), "system state is not known yet");
+    @DisplayName("an Empire system in Expansion offers its allegiance and its state materials")
+    void allegianceAndStateMaterialsAreCombined() {
+        advisor.onSystemEntered("Empire", 15_727L, List.of("Expansion", "Expansion"));
 
-        enterBoomSystem(SYSTEM);
-        assertEquals(1, announcements.size());
+        assertEquals(List.of("imperialshielding", "protoheatradiators", "protolightalloys",
+                "protoradiolicalloys"), announcements.getFirst());
+    }
+
+    /**
+     * NLTT 4671 from the same session: Empire with two factions at War. Imperial Shielding comes from
+     * the allegiance and the military pair from the war, and the commander is owed all three. The
+     * combination was only ever covered a piece at a time, so this pins it whole.
+     */
+    @Test
+    @DisplayName("an Empire system at war offers Imperial Shielding and the military pair")
+    void allegianceAndWarMaterialsAreCombined() {
+        advisor.onSystemEntered("Empire", 70_707L, List.of("War", "War"));
+
+        assertEquals(List.of("imperialshielding", "militarygradealloys", "militarysupercapacitors"),
+                announcements.getFirst());
+    }
+
+    /**
+     * Insoess, same session: one system running Boom, CivilLiberty, Election, Expansion and War at
+     * once, because a faction's {@code FactionState} names only its dominant state while
+     * {@code ActiveStates} lists the rest. Every rule that matches has to contribute.
+     */
+    @Test
+    @DisplayName("a system running several states at once offers every material they earn")
+    void concurrentStatesAllContribute() {
+        advisor.onSystemEntered("Empire", 2_534_651L,
+                List.of("Boom", "CivilLiberty", "Election", "Expansion", "War"));
+
+        assertEquals(List.of("imperialshielding", "militarygradealloys", "militarysupercapacitors",
+                        "protoheatradiators", "protolightalloys", "protoradiolicalloys"),
+                announcements.getFirst());
     }
 
     @Test
-    @DisplayName("a system full of emissions is still one announcement")
-    void announcesOncePerSystem() {
-        enterBoomSystem(SYSTEM);
-        advisor.onHighGradeEmissions(SYSTEM);
-        advisor.onHighGradeEmissions(SYSTEM);
-        advisor.onHighGradeEmissions(SYSTEM);
-
-        assertEquals(1, announcements.size());
-    }
-
-    @Test
-    @DisplayName("the next system gets its own announcement")
-    void newSystemAnnouncesAgain() {
-        enterBoomSystem(SYSTEM);
-        advisor.onHighGradeEmissions(SYSTEM);
-        enterBoomSystem(OTHER_SYSTEM);
-        advisor.onHighGradeEmissions(OTHER_SYSTEM);
+    @DisplayName("each system arrived in gets its own advice")
+    void eachArrivalAdvisesAgain() {
+        advisor.onSystemEntered("Empire", 15_727L, List.of());
+        advisor.onSystemEntered("Federation", 236_907L, List.of());
 
         assertEquals(2, announcements.size());
+        assertEquals(List.of("imperialshielding"), announcements.getFirst());
+        assertEquals(List.of("fedcorecomposites", "fedproprietarycomposites"), announcements.get(1));
     }
 
-    @Test
-    @DisplayName("a signal left over from the system behind us cannot trigger this one")
-    void staleSignalFromPreviousSystemIsDiscarded() {
-        enterBoomSystem(SYSTEM);
-        advisor.onHighGradeEmissions(OTHER_SYSTEM);
-
-        assertTrue(announcements.isEmpty());
-    }
-
-    @Test
-    @DisplayName("a late signal from the old system does not wipe the new system's state")
-    void lateSignalFromOldSystemDoesNotClobberTheNewOne() {
-        // Signals run on their own virtual threads, so one belonging to the system we are leaving can
-        // land after the jump into this one has been handled. It must not cost us this system.
-        enterBoomSystem(OTHER_SYSTEM);
-        enterBoomSystem(SYSTEM);
-        advisor.onHighGradeEmissions(OTHER_SYSTEM);
-        advisor.onHighGradeEmissions(SYSTEM);
-
-        assertEquals(1, announcements.size());
-    }
-
-    @Test
-    @DisplayName("a signal seen before the jump event was processed is not lost")
-    void signalArrivingAheadOfTheJumpEventIsKept() {
-        enterBoomSystem(OTHER_SYSTEM);
-        advisor.onHighGradeEmissions(SYSTEM);
-        assertTrue(announcements.isEmpty(), "not the current system yet");
-
-        enterBoomSystem(SYSTEM);
-        assertEquals(1, announcements.size(), "arrival completes the pair the signal already half-made");
-    }
-
+    /**
+     * Most systems on any route qualify for nothing, and this is what keeps the advice worth hearing.
+     * Independent with no relevant state is the common case, and it was the correct silence in the
+     * one system of that session whose emissions signal the journal actually did report.
+     */
     @Test
     @DisplayName("a system that qualifies for nothing says nothing")
     void quietWhenNothingQualifies() {
-        advisor.onSystemEntered(SYSTEM, "Independent", 5_000_000L, List.of("Lockdown"));
-        advisor.onHighGradeEmissions(SYSTEM);
+        advisor.onSystemEntered("Independent", 401_749L, List.of());
+        advisor.onSystemEntered("Alliance", 136_236L, List.of("Lockdown"));
 
         assertTrue(announcements.isEmpty());
     }
@@ -118,13 +109,19 @@ class HighGradeEmissionsAdvisorTest {
     @DisplayName("the ship's setting decides whether it is spoken")
     void respectsTheShipSetting() {
         enabled.set(false);
-        enterBoomSystem(SYSTEM);
-        advisor.onHighGradeEmissions(SYSTEM);
+        advisor.onSystemEntered("Independent", 5_000_000L, List.of("Boom"));
         assertTrue(announcements.isEmpty());
 
-        // Turning it on mid-system still works: the pair was never announced, so it is not used up.
         enabled.set(true);
-        advisor.onHighGradeEmissions(SYSTEM);
+        advisor.onSystemEntered("Independent", 5_000_000L, List.of("Boom"));
         assertEquals(1, announcements.size());
+    }
+
+    @Test
+    @DisplayName("a system with no reported factions is handled, not thrown at")
+    void nullFactionStatesAreTolerated() {
+        advisor.onSystemEntered("Empire", 15_727L, null);
+
+        assertEquals(List.of("imperialshielding"), announcements.getFirst());
     }
 }

@@ -140,7 +140,6 @@ public class JumpCompletedSubscriber {
 
             if (!event.isReplay()) {
                 hgeAdvisor.onSystemEntered(
-                        event.getSystemAddress(),
                         event.getSystemAllegiance(),
                         event.getPopulation(),
                         factionStates(event));
