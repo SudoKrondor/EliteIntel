@@ -1271,15 +1271,15 @@
   ],
   "fighter_attack_target": [
     "order fighter attack my target",
-    "use order fighter attack my target",
-    "set order fighter attack my target",
-    "activate order fighter attack my target",
-    "fighter attack",
-    "use fighter attack",
-    "set fighter attack",
-    "activate fighter attack",
-    "attack",
-    "please attack"
+    "fighter attack my target",
+    "attack my target",
+    "order the fighter to attack my target",
+    "tell the fighter to attack my target",
+    "have the fighter attack my target",
+    "fighter, attack my target now",
+    "fighter engage my target",
+    "fighter open fire on my target",
+    "send the fighter after my target"
   ],
   "fighter_defend": [
     "order fighter defend ship",

@@ -61,6 +61,9 @@ public class InterstellarFactorsSearchCriteria extends BaseJsonDto implements To
         @SerializedName("services")
         private List<Service> services;
 
+        @SerializedName("large_pads")
+        private LargePads largePads;
+
         public void setDistance(Distance distance) {
             this.distance = distance;
         }
@@ -71,6 +74,41 @@ public class InterstellarFactorsSearchCriteria extends BaseJsonDto implements To
 
         public void setServices(List<Service> services) {
             this.services = services;
+        }
+
+        /**
+         * Null leaves the pad size unconstrained, which is the right answer for a small or medium ship.
+         */
+        public void setLargePads(LargePads largePads) {
+            this.largePads = largePads;
+        }
+    }
+
+    /**
+     * Range filter over a station's large-pad count. Spansh has no boolean "large pad required" on the
+     * stations endpoint, so "at least one" is expressed as the range {@code [1, MANY]}.
+     */
+    public static class LargePads {
+
+        /**
+         * Comfortably above the largest pad count in the game; the range is really "one or more".
+         */
+        private static final int MANY = 100;
+
+        @SerializedName("comparison")
+        private final String comparison = "<=>";
+
+        @SerializedName("value")
+        private final int[] value;
+
+        // WHY: no setters and no other constructor. The only state this filter has a use for is "one or
+        // more", and a mutable range would let a caller build [0, 0] - the exact inverse of the intent.
+        private LargePads(int min, int max) {
+            this.value = new int[]{min, max};
+        }
+
+        public static LargePads atLeastOne() {
+            return new LargePads(1, MANY);
         }
     }
 

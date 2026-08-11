@@ -46,8 +46,6 @@
 
         <!-- Specific logger levels -->
         <Logger name="elite.intel" level="error"/>
-        <!-- More specific than elite.intel above, so this wins for the StarVizion subtree -->
-        <Logger name="elite.intel.starvizion" level="error"/>
         <!-- Also more specific than elite.intel, and deliberately louder than it.
              The HUD overlay is a separate native process: this logger carries its
              mode line and everything the child writes to stderr - which SteamVR

@@ -1,4 +1,4 @@
-package elite.intel.ui.screen.bindforge;
+package elite.intel.ui.screen.bindings;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.hands.*;
@@ -36,7 +36,7 @@ import static elite.intel.ui.theme.HudPalette.*;
 /**
  * The "Binding Profile" sub-tab of BIND FORGE: bindings directory/profile/file fields, the
  * Used/Missing Bindings tables, conflict detection, hover callouts, and the Fix Missing/Revert/Apply
- * footer. Extracted from the former monolithic {@code BindForgeTabPanel}.
+ * footer. Extracted from the former monolithic {@code BindingsTabPanel}.
  */
 public class BindingProfilePanel extends JPanel {
 

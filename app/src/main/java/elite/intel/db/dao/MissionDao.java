@@ -41,7 +41,7 @@ public interface MissionDao {
     String[] getAvailableMissionTypes();
 
     @SqlUpdate("DELETE FROM missions WHERE key = :missionId")
-    void delete(Long missionId);
+    void delete(@Bind("missionId") Long missionId);
 
     @SqlQuery("SELECT * FROM missions WHERE LOWER(keywords) LIKE '%' || LOWER(:keyword) || '%'")
     List<Mission> findByKeyword(@Bind("keyword") String keyword);

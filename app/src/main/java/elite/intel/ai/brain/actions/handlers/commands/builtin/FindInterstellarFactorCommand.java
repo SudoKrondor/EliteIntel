@@ -6,6 +6,7 @@ import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
+import elite.intel.db.managers.ShipManager;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.search.spansh.station.CurrentSystemFilter;
 import elite.intel.gameapi.search.spansh.station.interstellarfactors.InterstellarFactorsResultDto;
@@ -33,6 +34,7 @@ public final class FindInterstellarFactorCommand implements IntelCommand {
 
     private final LocationManager locationManager = LocationManager.getInstance();
     private final ReminderManager reminderManager = ReminderManager.getInstance();
+    private final ShipManager shipManager = ShipManager.getInstance();
 
     @Override
     public String id() {
@@ -51,8 +53,10 @@ public final class FindInterstellarFactorCommand implements IntelCommand {
         if (coordinates == null) {
             return StringUtls.localizedResponse("handler.interstellarFactors.noCoords");
         }
+        // WHY: same pad rule the trade route calculation applies - a large ship is only shown ports it can
+        // dock at, otherwise the route ends at an outpost it has to turn around and leave, bounty unpaid.
         List<InterstellarFactorsResultDto.Result> results = InterstellarFactorsSearch.findNearestInterstellarFactors(
-                coordinates.x(), coordinates.y(), coordinates.z(), 100, 6000
+                coordinates.x(), coordinates.y(), coordinates.z(), 100, 6000, shipManager.requireLargePad()
         );
 
         results = CurrentSystemFilter.exclude(results, PlayerSession.getInstance().getPrimaryStarName());

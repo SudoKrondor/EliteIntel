@@ -1,13 +1,13 @@
-package elite.intel.ui.starvizion;
+package elite.intel.ui.inputmonitor;
 
 import java.awt.*;
 
 /**
- * StarVizion-specific color roles kept separate from the HUD palette.
+ * Input-monitor-specific color roles kept separate from the HUD palette.
  */
-public final class StarVizionPalette {
+public final class InputMonitorPalette {
 
-    private StarVizionPalette() {
+    private InputMonitorPalette() {
     }
 
     public static final Color SETTINGS_DIALOG_BACKGROUND = new Color(0x151519);

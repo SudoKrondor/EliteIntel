@@ -3,6 +3,7 @@ package elite.intel.db.dao;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.StatementContext;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
+import org.jdbi.v3.sqlobject.customizer.Bind;
 import org.jdbi.v3.sqlobject.customizer.BindBean;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
@@ -34,7 +35,7 @@ public interface BioSampleDao {
     BioSampleDao.BioSample[] listAll();
 
     @SqlQuery("SELECT * FROM bio_samples WHERE json LIKE '%' || :planetName || '%' and json LIKE '%' || :primaryStar|| '%'")
-    List<BioSample> findByPlanetName(String primaryStar, String planetName);
+    List<BioSample> findByPlanetName(@Bind("primaryStar") String primaryStar, @Bind("planetName") String planetName);
 
     class BioSampleMapper implements RowMapper<BioSampleDao.BioSample> {
 

@@ -36,13 +36,13 @@ public interface LocationDao {
     LocationDao.Location findBySystemAddressAndInGameId(@Bind("systemId") Long systemId, @Bind("inGameId") Long inGameId);
 
     @SqlQuery("SELECT * FROM location WHERE inGameId = :inGameId AND :primaryStar = primaryStar")
-    LocationDao.Location findByInGameIdAndPrimaryStar(Long inGameId, String primaryStar);
+    LocationDao.Location findByInGameIdAndPrimaryStar(@Bind("inGameId") Long inGameId, @Bind("primaryStar") String primaryStar);
 
     @SqlQuery("SELECT * FROM location WHERE primaryStar = :primaryStar")
     List<Location> findByPrimaryStar(@Bind("primaryStar") String primaryStar);
 
     @SqlQuery("select * from location where primaryStar = :starSystem and json like '%\"PRIMARY_STAR\"%'")
-    Location findPrimaryStar(String starSystem);
+    Location findPrimaryStar(@Bind("starSystem") String starSystem);
 
     @SqlQuery("""
             SELECT location.primaryStar,
@@ -55,13 +55,13 @@ public interface LocationDao {
     Coordinates currentCoordinates();
 
     @SqlQuery("select * from location where systemAddress = :systemAddress and json->> '$.planetName' = :planetName")
-    Location findPrimaryBySystemAddress(long systemAddress, String planetName);
+    Location findPrimaryBySystemAddress(@Bind("systemAddress") long systemAddress, @Bind("planetName") String planetName);
 
     @SqlQuery("select * from location where systemAddress = :systemAddress and json->> '$.bodyId' = :bodyId")
-    Location findPrimaryBySystemAddress(long systemAddress, Long bodyId);
+    Location findPrimaryBySystemAddress(@Bind("systemAddress") long systemAddress, @Bind("bodyId") Long bodyId);
 
     @SqlQuery("select * from location where systemAddress = :systemAddress and json like '%\"locationType\": \"PRIMARY_STAR\"%'")
-    Location findPrimaryBySystemAddress(long systemAddress);
+    Location findPrimaryBySystemAddress(@Bind("systemAddress") long systemAddress);
 
     /**
      * Bodies in one system whose surface scan turned up biological genuses.
@@ -72,14 +72,14 @@ public interface LocationDao {
      * stored bodies are the older shape, so matching a key name would find almost none of them.
      */
     @SqlQuery("select * from location where systemAddress = :systemAddress and json_array_length(json, '$.genus') > 0")
-    List<Location> findBioSignalBodies(long systemAddress);
+    List<Location> findBioSignalBodies(@Bind("systemAddress") long systemAddress);
 
     @SqlQuery("select * from location where systemAddress = :systemAddress")
-    List<Location> findAllBySystemAddress(long systemAddress);
+    List<Location> findAllBySystemAddress(@Bind("systemAddress") long systemAddress);
 
 
     @SqlQuery("select * from location where json ->> '$.marketID' = :marketID")
-    Location findByMarketId(long marketID);
+    Location findByMarketId(@Bind("marketID") long marketID);
 
     @SqlQuery("select * from location where locationName = :locationName")
     Location findByLocationName(@Bind("locationName") String locationName);

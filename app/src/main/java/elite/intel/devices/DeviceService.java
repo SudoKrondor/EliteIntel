@@ -28,7 +28,7 @@ import static org.lwjgl.sdl.SDLInit.SDL_INIT_JOYSTICK;
  * connect/disconnect, axis, and button events on DeviceBus. Read-only device
  * access - never writes to the game or any game file.
  *
- * Singleton shared infrastructure: StarVizion, BindForge, and push-to-talk all consume these
+ * Singleton shared infrastructure: the input monitor, Bindings, and push-to-talk all consume these
  * events rather than owning their own SDL3 context. Call start() once; stop() to shut down
  * cleanly.
  */

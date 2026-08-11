@@ -1,4 +1,4 @@
-package elite.intel.ui.starvizion.overlay;
+package elite.intel.ui.inputmonitor.overlay;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.devices.events.DeviceButtonEvent;
@@ -12,9 +12,9 @@ import java.awt.geom.Path2D;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * Vizlet that highlights a shape when the assigned button is pressed.
+ * Readout that highlights a shape when the assigned button is pressed.
  */
-public class ButtonVizlet extends VizletWindow {
+public class ButtonReadout extends ReadoutWindow {
 
     public enum ButtonShape { SQUARE, RECTANGLE, CIRCLE, HEXAGON, TRIANGLE }
 
@@ -34,7 +34,7 @@ public class ButtonVizlet extends VizletWindow {
     // Live state
     private volatile boolean pressed = false;
 
-    public ButtonVizlet() {
+    public ButtonReadout() {
         super(DEFAULT_W, DEFAULT_H);
     }
 
@@ -76,7 +76,7 @@ public class ButtonVizlet extends VizletWindow {
     // -- Paint ----------------------------------------------------------------
 
     @Override
-    protected void paintVizlet(Graphics2D g2, int w, int h) {
+    protected void paintReadout(Graphics2D g2, int w, int h) {
         if (assignedDeviceId == null) {
             drawUnconfiguredHint(g2, w, h);
             return;
@@ -157,7 +157,7 @@ public class ButtonVizlet extends VizletWindow {
     private void drawUnconfiguredHint(Graphics2D g2, int w, int h) {
         g2.setColor(UNCONFIGURED_FG);
         g2.setFont(UNCONFIGURED_FONT);
-        String msg = getText("vizlet.unconfigured");
+        String msg = getText("readout.unconfigured");
         FontMetrics fm = g2.getFontMetrics();
         // Two-line wrap at the word "to"
         String line1 = "Right click to";

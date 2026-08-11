@@ -17,7 +17,7 @@ public interface ShipDao {
 
 
     @SqlQuery("SELECT * FROM ship where shipId= :shipId")
-    Ship findShip(int shipId);
+    Ship findShip(@Bind("shipId") int shipId);
 
     @SqlQuery("SELECT * FROM ship")
     List<Ship> allShips();

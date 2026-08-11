@@ -1,4 +1,4 @@
-package elite.intel.ui.screen.bindforge;
+package elite.intel.ui.screen.bindings;
 
 import elite.intel.ai.hands.BindingsApplyException;
 import elite.intel.ai.hands.BindingsMonitor;
@@ -66,7 +66,7 @@ public class BindingManagementPanel extends JPanel {
         HudTable.style(table);
 
         HudSection section = new HudSection(
-                getText("bindForge.bindingManagement.section.backups"),
+                getText("bindings.bindingManagement.section.backups"),
                 new BorderLayout(),
                 HudPanel.Variant.FLAT,
                 6);
@@ -77,14 +77,14 @@ public class BindingManagementPanel extends JPanel {
     }
 
     private JPanel buildFooter() {
-        backupNowButton = makeButton(getText("bindForge.bindingManagement.button.backupNow"));
+        backupNowButton = makeButton(getText("bindings.bindingManagement.button.backupNow"));
         backupNowButton.addActionListener(e -> performBackup());
 
-        restoreToEditingSlotButton = makeButtonSubtle(getText("bindForge.bindingManagement.button.restoreToEditingSlot"));
+        restoreToEditingSlotButton = makeButtonSubtle(getText("bindings.bindingManagement.button.restoreToEditingSlot"));
         restoreToEditingSlotButton.setEnabled(false);
         restoreToEditingSlotButton.addActionListener(e -> performRestoreToEditingSlot());
 
-        restoreToLiveButton = makeButton(getText("bindForge.bindingManagement.button.restoreToLive"));
+        restoreToLiveButton = makeButton(getText("bindings.bindingManagement.button.restoreToLive"));
         restoreToLiveButton.setEnabled(false);
         restoreToLiveButton.addActionListener(e -> performRestoreToLive());
 
@@ -134,7 +134,7 @@ public class BindingManagementPanel extends JPanel {
             return;
         }
         String presetFileName = gameFile.getName();
-        if (!confirmRestore("bindForge.bindingManagement.restore.editingSlot.confirm.text", presetFileName)) {
+        if (!confirmRestore("bindings.bindingManagement.restore.editingSlot.confirm.text", presetFileName)) {
             return;
         }
 
@@ -168,7 +168,7 @@ public class BindingManagementPanel extends JPanel {
             return;
         }
         String presetFileName = gameFile.getName();
-        if (!confirmRestore("bindForge.bindingManagement.restore.live.confirm.text", presetFileName)) {
+        if (!confirmRestore("bindings.bindingManagement.restore.live.confirm.text", presetFileName)) {
             return;
         }
 
@@ -205,7 +205,7 @@ public class BindingManagementPanel extends JPanel {
         int choice = JOptionPane.showConfirmDialog(
                 this,
                 getText(messageKey, presetFileName),
-                getText("bindForge.bindingManagement.restore.confirm.title"),
+                getText("bindings.bindingManagement.restore.confirm.title"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE);
         return choice == JOptionPane.YES_OPTION;
@@ -246,16 +246,16 @@ public class BindingManagementPanel extends JPanel {
     private void showBackupError(IOException e) {
         JOptionPane.showMessageDialog(
                 this,
-                getText("bindForge.bindingManagement.backup.error", e.getMessage()),
-                getText("bindForge.bindingManagement.backup.dialogTitle"),
+                getText("bindings.bindingManagement.backup.error", e.getMessage()),
+                getText("bindings.bindingManagement.backup.dialogTitle"),
                 JOptionPane.ERROR_MESSAGE);
     }
 
     private void showRestoreError(String message) {
         JOptionPane.showMessageDialog(
                 this,
-                getText("bindForge.bindingManagement.restore.error", message),
-                getText("bindForge.bindingManagement.restore.error.dialogTitle"),
+                getText("bindings.bindingManagement.restore.error", message),
+                getText("bindings.bindingManagement.restore.error.dialogTitle"),
                 JOptionPane.ERROR_MESSAGE);
     }
 
@@ -279,8 +279,8 @@ public class BindingManagementPanel extends JPanel {
 
     private String[] columnNames() {
         return new String[]{
-                getText("bindForge.bindingManagement.column.created"),
-                getText("bindForge.bindingManagement.column.files")
+                getText("bindings.bindingManagement.column.created"),
+                getText("bindings.bindingManagement.column.files")
         };
     }
 

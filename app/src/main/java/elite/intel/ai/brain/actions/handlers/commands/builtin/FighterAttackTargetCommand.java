@@ -11,7 +11,13 @@ public final class FighterAttackTargetCommand extends SimpleTapCommand {
 
     @Override
     public String llmDescription() {
-        return "Order the deployed ship-launched fighter (or NPC crew) to attack the commander's current target.";
+        // WHY: opening fire is not reversible. A fighter pointed at a clean or allied ship earns the commander
+        // a bounty they then have to fly somewhere and pay off, so this one asks the model for an explicit
+        // order rather than a plausible one - anything short of "attack my target" is another fighter command.
+        return "Order the deployed ship-launched fighter (or NPC crew) to open fire on the commander's current "
+                + "target. Use ONLY when the commander explicitly ordered an attack on their target; never as "
+                + "the closest guess for an unclear or garbled utterance, and never for a fighter order that "
+                + "does not name attacking the target (recall, defend, hold fire, deploy).";
     }
 
     public FighterAttackTargetCommand() {

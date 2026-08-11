@@ -1,13 +1,13 @@
-package elite.intel.ui.starvizion;
+package elite.intel.ui.inputmonitor;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.events.DeviceServiceStateEvent;
 import elite.intel.eventbus.DeviceBus;
-import elite.intel.ui.starvizion.overlay.AxesVizlet;
-import elite.intel.ui.starvizion.overlay.ButtonVizlet;
-import elite.intel.ui.starvizion.overlay.CounterVizlet;
-import elite.intel.ui.starvizion.overlay.KeyboardVizlet;
+import elite.intel.ui.inputmonitor.overlay.AxesReadout;
+import elite.intel.ui.inputmonitor.overlay.ButtonReadout;
+import elite.intel.ui.inputmonitor.overlay.CounterReadout;
+import elite.intel.ui.inputmonitor.overlay.KeyboardReadout;
 import elite.intel.ui.theme.HudForms;
 
 import javax.swing.*;
@@ -19,10 +19,10 @@ import static elite.intel.ui.theme.AppTheme.applyDarkPalette;
 import static elite.intel.ui.theme.AppTheme.makeButton;
 
 /**
- * StarVizion tab — spawns transparent always-on-top Vizlet overlay windows
+ * Input Monitor tab — spawns transparent always-on-top readout overlay windows
  * that display joystick/HOTAS axis positions and button states.
  */
-public class StarVizionTabPanel extends JPanel {
+public class InputMonitorTabPanel extends JPanel {
 
     private static final int AXES_DEFAULT_W  = 200;
     private static final int AXES_DEFAULT_H  = 200;
@@ -31,19 +31,19 @@ public class StarVizionTabPanel extends JPanel {
     private static final int KEYBOARD_DEFAULT_W = 160;
     private static final int COUNTER_DEFAULT_W  = 160;
     private static final int SPAWN_MARGIN    = 20;
-    private static final int VIZLET_GAP      = 10;
-    private static final int VIZLET_TOP_Y    = 60;
+    private static final int READOUT_GAP = 10;
+    private static final int READOUT_TOP_Y = 60;
 
     private JButton activateButton;
     private JLabel  statusLabel;
     private boolean active = false;
 
-    private AxesVizlet  axesVizlet;
-    private ButtonVizlet buttonVizlet;
-    private KeyboardVizlet keyboardVizlet;
-    private CounterVizlet counterVizlet;
+    private AxesReadout axesReadout;
+    private ButtonReadout buttonReadout;
+    private KeyboardReadout keyboardReadout;
+    private CounterReadout counterReadout;
 
-    public StarVizionTabPanel() {
+    public InputMonitorTabPanel() {
         DeviceBus.register(this);
         buildUi();
     }
@@ -67,9 +67,9 @@ public class StarVizionTabPanel extends JPanel {
         gbc.gridx = 0; gbc.gridwidth = 2; gbc.weightx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         JLabel desc = new JLabel("<html><body style='width:420px'>"
-                + getText("starvizion.description")
+                + getText("inputMonitor.description")
                 + "</body></html>");
-        desc.setForeground(StarVizionPalette.DESCRIPTION_TEXT);
+        desc.setForeground(InputMonitorPalette.DESCRIPTION_TEXT);
         add(desc, gbc);
 
         // Spacer
@@ -82,7 +82,7 @@ public class StarVizionTabPanel extends JPanel {
         nextRow(gbc);
         gbc.gridx = 0; gbc.gridwidth = 1; gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        activateButton = makeButton(getText("starvizion.activate"));
+        activateButton = makeButton(getText("inputMonitor.activate"));
         activateButton.addActionListener(e -> toggleActivation());
         add(activateButton, gbc);
 
@@ -91,7 +91,7 @@ public class StarVizionTabPanel extends JPanel {
         gbc.gridx = 0; gbc.gridwidth = 2; gbc.weightx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         statusLabel = new JLabel(" ");
-        statusLabel.setForeground(StarVizionPalette.STATUS_PENDING_TEXT);
+        statusLabel.setForeground(InputMonitorPalette.STATUS_PENDING_TEXT);
         add(statusLabel, gbc);
 
         // Push everything up
@@ -110,47 +110,59 @@ public class StarVizionTabPanel extends JPanel {
 
     private void activate() {
         if (!DeviceService.getInstance().isAvailable()) {
-            statusLabel.setText(getText("starvizion.sdl.unavailable"));
-            statusLabel.setForeground(StarVizionPalette.STATUS_UNAVAILABLE_TEXT);
+            statusLabel.setText(getText("inputMonitor.sdl.unavailable"));
+            statusLabel.setForeground(InputMonitorPalette.STATUS_UNAVAILABLE_TEXT);
         } else {
             statusLabel.setText(" ");
         }
 
-        // Spawn vizlets in upper-right, side by side
+        // Spawn readouts in upper-right, side by side
         Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
         int axesX  = screen.width - AXES_DEFAULT_W - SPAWN_MARGIN;
-        int btnX   = axesX - BTN_DEFAULT_W - VIZLET_GAP;
-        int row2Y  = VIZLET_TOP_Y + AXES_DEFAULT_H + VIZLET_GAP;
+        int btnX = axesX - BTN_DEFAULT_W - READOUT_GAP;
+        int row2Y = READOUT_TOP_Y + AXES_DEFAULT_H + READOUT_GAP;
         int keyboardX = screen.width - KEYBOARD_DEFAULT_W - SPAWN_MARGIN;
-        int counterX  = keyboardX - COUNTER_DEFAULT_W - VIZLET_GAP;
+        int counterX = keyboardX - COUNTER_DEFAULT_W - READOUT_GAP;
 
-        axesVizlet = new AxesVizlet();
-        axesVizlet.setLocation(axesX, VIZLET_TOP_Y);
-        axesVizlet.showVizlet();
+        axesReadout = new AxesReadout();
+        axesReadout.setLocation(axesX, READOUT_TOP_Y);
+        axesReadout.showReadout();
 
-        buttonVizlet = new ButtonVizlet();
-        buttonVizlet.setLocation(btnX, VIZLET_TOP_Y);
-        buttonVizlet.showVizlet();
+        buttonReadout = new ButtonReadout();
+        buttonReadout.setLocation(btnX, READOUT_TOP_Y);
+        buttonReadout.showReadout();
 
-        keyboardVizlet = new KeyboardVizlet();
-        keyboardVizlet.setLocation(keyboardX, row2Y);
-        keyboardVizlet.showVizlet();
+        keyboardReadout = new KeyboardReadout();
+        keyboardReadout.setLocation(keyboardX, row2Y);
+        keyboardReadout.showReadout();
 
-        counterVizlet = new CounterVizlet();
-        counterVizlet.setLocation(counterX, row2Y);
-        counterVizlet.showVizlet();
+        counterReadout = new CounterReadout();
+        counterReadout.setLocation(counterX, row2Y);
+        counterReadout.showReadout();
 
         active = true;
-        activateButton.setText(getText("starvizion.deactivate"));
+        activateButton.setText(getText("inputMonitor.deactivate"));
     }
 
     private void deactivate() {
-        if (axesVizlet != null) { axesVizlet.closeVizlet(); axesVizlet = null; }
-        if (buttonVizlet != null) { buttonVizlet.closeVizlet(); buttonVizlet = null; }
-        if (keyboardVizlet != null) { keyboardVizlet.closeVizlet(); keyboardVizlet = null; }
-        if (counterVizlet != null) { counterVizlet.closeVizlet(); counterVizlet = null; }
+        if (axesReadout != null) {
+            axesReadout.closeReadout();
+            axesReadout = null;
+        }
+        if (buttonReadout != null) {
+            buttonReadout.closeReadout();
+            buttonReadout = null;
+        }
+        if (keyboardReadout != null) {
+            keyboardReadout.closeReadout();
+            keyboardReadout = null;
+        }
+        if (counterReadout != null) {
+            counterReadout.closeReadout();
+            counterReadout = null;
+        }
         active = false;
-        if (activateButton != null) activateButton.setText(getText("starvizion.activate"));
+        if (activateButton != null) activateButton.setText(getText("inputMonitor.activate"));
     }
 
     // -- Event handlers -------------------------------------------------------
@@ -159,8 +171,8 @@ public class StarVizionTabPanel extends JPanel {
     public void onDeviceServiceState(DeviceServiceStateEvent event) {
         SwingUtilities.invokeLater(() -> {
             if (!event.available()) {
-                statusLabel.setText(getText("starvizion.sdl.unavailable"));
-                statusLabel.setForeground(StarVizionPalette.STATUS_UNAVAILABLE_TEXT);
+                statusLabel.setText(getText("inputMonitor.sdl.unavailable"));
+                statusLabel.setForeground(InputMonitorPalette.STATUS_UNAVAILABLE_TEXT);
             } else if (active) {
                 statusLabel.setText(" ");
             }

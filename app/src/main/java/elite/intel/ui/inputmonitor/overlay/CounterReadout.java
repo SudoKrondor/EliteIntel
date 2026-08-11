@@ -1,4 +1,4 @@
-package elite.intel.ui.starvizion.overlay;
+package elite.intel.ui.inputmonitor.overlay;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ui.event.SvKeyPressedEvent;
@@ -9,10 +9,10 @@ import java.awt.*;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * Vizlet that displays a running total of keystrokes detected by SDL3 during the current
+ * Readout that displays a running total of keystrokes detected by SDL3 during the current
  * session, regardless of which window has input focus. Read-only — no settings.
  */
-public class CounterVizlet extends VizletWindow {
+public class CounterReadout extends ReadoutWindow {
 
     private static final int DEFAULT_W = 160;
     private static final int DEFAULT_H = 160;
@@ -23,7 +23,7 @@ public class CounterVizlet extends VizletWindow {
     // Live state — updated by event bus (non-EDT), read on EDT during paint
     private volatile int count = 0;
 
-    public CounterVizlet() {
+    public CounterReadout() {
         super(DEFAULT_W, DEFAULT_H);
     }
 
@@ -38,8 +38,8 @@ public class CounterVizlet extends VizletWindow {
     // -- Paint ----------------------------------------------------------------
 
     @Override
-    protected void paintVizlet(Graphics2D g2, int w, int h) {
-        String label = getText("starvizion.counter.label");
+    protected void paintReadout(Graphics2D g2, int w, int h) {
+        String label = getText("inputMonitor.counter.label");
         String value = String.valueOf(count);
 
         g2.setColor(TEXT_COLOR);
@@ -70,6 +70,6 @@ public class CounterVizlet extends VizletWindow {
 
     @Override
     protected void openSettings() {
-        // No settings for this Vizlet.
+        // No settings for this Readout.
     }
 }

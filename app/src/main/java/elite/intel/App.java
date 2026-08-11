@@ -38,6 +38,13 @@ public class App {
 
     public static void main(String[] args) {
 
+        // WHY first, before anything that can start a thread: until this is installed, a thread that dies
+        // prints a bare stack trace to stderr and nothing reaches the log file. That is how the startup DAO
+        // failures reported from the field were lost - the pre-scan and the journal subscribers both run on
+        // virtual threads, which are unnamed, so the JVM's own message is the unusable: Exception in thread "".
+        Thread.setDefaultUncaughtExceptionHandler(
+                (thread, throwable) -> log.error("Uncaught exception on {}", identify(thread), throwable));
+
         // init kry and db first!
         Cypher.initializeKey();
         Database.init();
@@ -96,8 +103,15 @@ public class App {
             new AppController();
             view.getUiComponent().setVisible(true);
         });
-        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
-            log.error("Uncaught exception on thread {}", thread.getName(), throwable);
-        });
+    }
+
+    /**
+     * A thread's name, or its full identity when it has none. Virtual threads are unnamed unless the
+     * caller names them, and most of this app's background work runs on bare {@code Thread.ofVirtual()},
+     * so logging the name alone would attribute every one of those failures to the empty string.
+     */
+    private static String identify(Thread thread) {
+        String name = thread.getName();
+        return name == null || name.isBlank() ? thread.toString() : "thread " + name;
     }
 }

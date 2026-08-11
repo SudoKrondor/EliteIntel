@@ -1,7 +1,7 @@
 package elite.intel.ui.screen;
 
-import elite.intel.ui.screen.bindforge.BindingManagementPanel;
-import elite.intel.ui.screen.bindforge.BindingProfilePanel;
+import elite.intel.ui.screen.bindings.BindingManagementPanel;
+import elite.intel.ui.screen.bindings.BindingProfilePanel;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 
@@ -15,12 +15,12 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  * matching the {@code AppTheme.makeSectionTabs()} pattern already used by
  * {@link ActionsTabPanel} and {@link SettingsTabPanel}.
  */
-public class BindForgeTabPanel extends JPanel {
+public class BindingsTabPanel extends JPanel {
 
     private final BindingProfilePanel bindingProfilePanel = new BindingProfilePanel();
     private final BindingManagementPanel bindingManagementPanel = new BindingManagementPanel();
 
-    public BindForgeTabPanel() {
+    public BindingsTabPanel() {
         buildUi();
     }
 
@@ -31,8 +31,8 @@ public class BindForgeTabPanel extends JPanel {
 
         JTabbedPane tabs = AppTheme.makeSectionTabs();
         tabs.setTabPlacement(JTabbedPane.TOP);
-        tabs.addTab(getText("bindForge.tab.bindingProfile"), bindingProfilePanel);
-        tabs.addTab(getText("bindForge.tab.bindingManagement"), bindingManagementPanel);
+        tabs.addTab(getText("bindings.tab.bindingProfile"), bindingProfilePanel);
+        tabs.addTab(getText("bindings.tab.bindingManagement"), bindingManagementPanel);
 
         add(tabs, BorderLayout.CENTER);
     }

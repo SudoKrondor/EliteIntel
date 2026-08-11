@@ -1,4 +1,4 @@
-package elite.intel.ui.starvizion.overlay;
+package elite.intel.ui.inputmonitor.overlay;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.devices.events.DeviceAxisEvent;
@@ -12,9 +12,9 @@ import java.awt.geom.Path2D;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * Vizlet that renders a two-axis position indicator with a moving dot and dashed crosshair.
+ * Readout that renders a two-axis position indicator with a moving dot and dashed crosshair.
  */
-public class AxesVizlet extends VizletWindow {
+public class AxesReadout extends ReadoutWindow {
 
     public enum DotShape { CIRCLE, SQUARE, CROSSHAIR, TRIANGLE }
 
@@ -37,7 +37,7 @@ public class AxesVizlet extends VizletWindow {
     private volatile float xValue = 0f;
     private volatile float yValue = 0f;
 
-    public AxesVizlet() {
+    public AxesReadout() {
         super(DEFAULT_W, DEFAULT_H);
     }
 
@@ -83,7 +83,7 @@ public class AxesVizlet extends VizletWindow {
     // -- Paint ----------------------------------------------------------------
 
     @Override
-    protected void paintVizlet(Graphics2D g2, int w, int h) {
+    protected void paintReadout(Graphics2D g2, int w, int h) {
         if (assignedDeviceId == null) {
             drawUnconfiguredHint(g2, w, h);
             return;
@@ -145,7 +145,7 @@ public class AxesVizlet extends VizletWindow {
     private void drawUnconfiguredHint(Graphics2D g2, int w, int h) {
         g2.setColor(UNCONFIGURED_FG);
         g2.setFont(UNCONFIGURED_FONT);
-        String msg = getText("vizlet.unconfigured");
+        String msg = getText("readout.unconfigured");
         FontMetrics fm = g2.getFontMetrics();
         g2.drawString(msg, (w - fm.stringWidth(msg)) / 2, h / 2 + fm.getAscent() / 2);
     }

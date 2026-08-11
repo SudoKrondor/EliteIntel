@@ -1,4 +1,4 @@
-package elite.intel.ui.starvizion.overlay;
+package elite.intel.ui.inputmonitor.overlay;
 
 import elite.intel.eventbus.DeviceBus;
 import elite.intel.eventbus.GameEventBus;
@@ -11,11 +11,11 @@ import java.awt.event.MouseEvent;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * Base class for all Vizlet overlay windows.
+ * Base class for all readout overlay windows.
  * Transparent, borderless, always-on-top, non-focus-stealing, draggable JWindow.
- * Subclasses implement paintVizlet() and openSettings().
+ * Subclasses implement paintReadout() and openSettings().
  */
-public abstract class VizletWindow extends JWindow {
+public abstract class ReadoutWindow extends JWindow {
 
     protected static final Color BG_FILL = new Color(0x1A, 0x1A, 0x1E, 0xE0);
     protected static final Color BORDER_COLOR = new Color(0x44, 0x44, 0x55);
@@ -26,9 +26,9 @@ public abstract class VizletWindow extends JWindow {
     private boolean locked = false;
     private Point dragOrigin;
 
-    protected final VizletPanel contentPanel = new VizletPanel();
+    protected final ReadoutPanel contentPanel = new ReadoutPanel();
 
-    protected VizletWindow(int defaultW, int defaultH) {
+    protected ReadoutWindow(int defaultW, int defaultH) {
         setSize(defaultW, defaultH);
         setBackground(new Color(0, 0, 0, 0));
         setAlwaysOnTop(true);
@@ -45,15 +45,19 @@ public abstract class VizletWindow extends JWindow {
 
     // -- Lifecycle ------------------------------------------------------------
 
-    /** Show the vizlet and register with the event bus. */
-    public void showVizlet() {
+    /**
+     * Show the readout and register with the event bus.
+     */
+    public void showReadout() {
         GameEventBus.register(this);
         DeviceBus.register(this);
         setVisible(true);
     }
 
-    /** Hide the vizlet and unregister from the event bus. */
-    public void closeVizlet() {
+    /**
+     * Hide the readout and unregister from the event bus.
+     */
+    public void closeReadout() {
         setVisible(false);
         GameEventBus.unregister(this);
         DeviceBus.unregister(this);
@@ -63,10 +67,10 @@ public abstract class VizletWindow extends JWindow {
     // -- API for subclasses ---------------------------------------------------
 
     /**
-     * Paint the vizlet content. Called inside paintComponent after the background fill.
+     * Paint the readout content. Called inside paintComponent after the background fill.
      * g2 has antialiasing enabled. Clip is the full component bounds.
      */
-    protected abstract void paintVizlet(Graphics2D g2, int w, int h);
+    protected abstract void paintReadout(Graphics2D g2, int w, int h);
 
     protected abstract void openSettings();
 
@@ -76,8 +80,8 @@ public abstract class VizletWindow extends JWindow {
     }
 
     /**
-     * Paints the window's backdrop before {@link #paintVizlet}. The default is
-     * the standard vizlet chrome: a rounded translucent fill with a thin border.
+     * Paints the window's backdrop before {@link #paintReadout}. The default is
+     * the standard readout chrome: a rounded translucent fill with a thin border.
      * <p>
      * Overlays that own their whole surface - the HUD overlay, which needs a
      * user-adjustable background alpha and the flat square styling of
@@ -121,19 +125,19 @@ public abstract class VizletWindow extends JWindow {
         JPopupMenu menu = new JPopupMenu();
 
         if (hasSettings()) {
-            JMenuItem settingsItem = new JMenuItem(getText("vizlet.menu.settings"));
+            JMenuItem settingsItem = new JMenuItem(getText("readout.menu.settings"));
             settingsItem.addActionListener(e -> openSettings());
             menu.add(settingsItem);
         }
 
-        JMenuItem lockItem = new JMenuItem(getText("vizlet.menu.lock"));
+        JMenuItem lockItem = new JMenuItem(getText("readout.menu.lock"));
         lockItem.addActionListener(e -> {
             locked = !locked;
-            lockItem.setText(locked ? getText("vizlet.menu.unlock") : getText("vizlet.menu.lock"));
+            lockItem.setText(locked ? getText("readout.menu.unlock") : getText("readout.menu.lock"));
         });
 
-        JMenuItem closeItem = new JMenuItem(getText("vizlet.menu.close"));
-        closeItem.addActionListener(e -> closeVizlet());
+        JMenuItem closeItem = new JMenuItem(getText("readout.menu.close"));
+        closeItem.addActionListener(e -> closeReadout());
 
         menu.add(lockItem);
         menu.addSeparator();
@@ -159,9 +163,9 @@ public abstract class VizletWindow extends JWindow {
 
     // -- Inner panel ----------------------------------------------------------
 
-    protected final class VizletPanel extends JPanel {
+    protected final class ReadoutPanel extends JPanel {
 
-        VizletPanel() {
+        ReadoutPanel() {
             setOpaque(false);
         }
 
@@ -175,7 +179,7 @@ public abstract class VizletWindow extends JWindow {
                 int w = getWidth(), h = getHeight();
 
                 paintBackground(g2, w, h);
-                paintVizlet(g2, w, h);
+                paintReadout(g2, w, h);
             } finally {
                 g2.dispose();
             }

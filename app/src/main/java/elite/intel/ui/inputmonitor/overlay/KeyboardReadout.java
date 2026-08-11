@@ -1,4 +1,4 @@
-package elite.intel.ui.starvizion.overlay;
+package elite.intel.ui.inputmonitor.overlay;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ui.event.SvKeyPressedEvent;
@@ -9,10 +9,10 @@ import java.awt.*;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * Vizlet that shows the most recently pressed keyboard key (with modifiers), reverting to a
+ * Readout that shows the most recently pressed keyboard key (with modifiers), reverting to a
  * "waiting" message after a short hold period.
  */
-public class KeyboardVizlet extends VizletWindow {
+public class KeyboardReadout extends ReadoutWindow {
 
     private static final int DEFAULT_W = 160;
     private static final int DEFAULT_H = 160;
@@ -26,14 +26,14 @@ public class KeyboardVizlet extends VizletWindow {
     private Color textColor = Color.WHITE;
 
     // Live state — updated by event bus (non-EDT), read on EDT during paint
-    private volatile String displayText = getText("starvizion.keyboard.waiting");
+    private volatile String displayText = getText("inputMonitor.keyboard.waiting");
 
     private final Timer holdTimer;
 
-    public KeyboardVizlet() {
+    public KeyboardReadout() {
         super(DEFAULT_W, DEFAULT_H);
         holdTimer = new Timer(HOLD_MS, e -> {
-            displayText = getText("starvizion.keyboard.waiting");
+            displayText = getText("inputMonitor.keyboard.waiting");
             contentPanel.repaint();
         });
         holdTimer.setRepeats(false);
@@ -53,9 +53,9 @@ public class KeyboardVizlet extends VizletWindow {
     // -- Lifecycle --------------------------------------------------------------
 
     @Override
-    public void closeVizlet() {
+    public void closeReadout() {
         holdTimer.stop();
-        super.closeVizlet();
+        super.closeReadout();
     }
 
     // -- Configuration --------------------------------------------------------
@@ -72,8 +72,8 @@ public class KeyboardVizlet extends VizletWindow {
     // -- Paint ----------------------------------------------------------------
 
     @Override
-    protected void paintVizlet(Graphics2D g2, int w, int h) {
-        // Custom background fill/border, drawn over the default VizletWindow chrome.
+    protected void paintReadout(Graphics2D g2, int w, int h) {
+        // Custom background fill/border, drawn over the default ReadoutWindow chrome.
         g2.setColor(backgroundColor);
         g2.fillRoundRect(0, 0, w, h, ARC, ARC);
         g2.setColor(BORDER_COLOR);

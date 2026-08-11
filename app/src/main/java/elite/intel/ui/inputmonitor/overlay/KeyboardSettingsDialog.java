@@ -1,6 +1,6 @@
-package elite.intel.ui.starvizion.overlay;
+package elite.intel.ui.inputmonitor.overlay;
 
-import elite.intel.ui.starvizion.StarVizionPalette;
+import elite.intel.ui.inputmonitor.InputMonitorPalette;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudForms;
 
@@ -12,7 +12,7 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 public class KeyboardSettingsDialog extends JDialog {
 
-    private final KeyboardVizlet vizlet;
+    private final KeyboardReadout readout;
 
     private JButton  backgroundColorButton;
     private Color    chosenBackgroundColor;
@@ -21,11 +21,11 @@ public class KeyboardSettingsDialog extends JDialog {
     private JSpinner widthSpinner;
     private JSpinner heightSpinner;
 
-    public KeyboardSettingsDialog(KeyboardVizlet vizlet) {
-        super((Frame) null, getText("starvizion.keyboard.settings.title"), false);
-        this.vizlet = vizlet;
-        this.chosenBackgroundColor = vizlet.getBackgroundColor();
-        this.chosenTextColor = vizlet.getTextColor();
+    public KeyboardSettingsDialog(KeyboardReadout readout) {
+        super((Frame) null, getText("inputMonitor.keyboard.settings.title"), false);
+        this.readout = readout;
+        this.chosenBackgroundColor = readout.getBackgroundColor();
+        this.chosenTextColor = readout.getTextColor();
         setSize(380, 280);
         setLocationRelativeTo(null);
         AppTheme.applyAppIcon(this);
@@ -36,19 +36,19 @@ public class KeyboardSettingsDialog extends JDialog {
     private void buildUi() {
         JPanel root = new JPanel(new GridBagLayout());
         root.setBorder(new EmptyBorder(12, 16, 12, 16));
-        root.setBackground(StarVizionPalette.SETTINGS_DIALOG_BACKGROUND);
+        root.setBackground(InputMonitorPalette.SETTINGS_DIALOG_BACKGROUND);
         setContentPane(root);
 
         GridBagConstraints gbc = HudForms.baseGbc();
 
         // Background color
         nextRow(gbc);
-        addLabel(root, getText("starvizion.keyboard.backgroundColor"), gbc);
+        addLabel(root, getText("inputMonitor.keyboard.backgroundColor"), gbc);
         backgroundColorButton = AppTheme.makeButton("  ");
         backgroundColorButton.setBackground(chosenBackgroundColor);
         backgroundColorButton.setOpaque(true);
         backgroundColorButton.addActionListener(e -> {
-            Color c = JColorChooser.showDialog(this, getText("starvizion.keyboard.chooseBackgroundColor"), chosenBackgroundColor);
+            Color c = JColorChooser.showDialog(this, getText("inputMonitor.keyboard.chooseBackgroundColor"), chosenBackgroundColor);
             if (c != null) {
                 chosenBackgroundColor = c;
                 backgroundColorButton.setBackground(c);
@@ -58,12 +58,12 @@ public class KeyboardSettingsDialog extends JDialog {
 
         // Text color
         nextRow(gbc);
-        addLabel(root, getText("starvizion.keyboard.textColor"), gbc);
+        addLabel(root, getText("inputMonitor.keyboard.textColor"), gbc);
         textColorButton = AppTheme.makeButton("  ");
         textColorButton.setBackground(chosenTextColor);
         textColorButton.setOpaque(true);
         textColorButton.addActionListener(e -> {
-            Color c = JColorChooser.showDialog(this, getText("starvizion.keyboard.chooseTextColor"), chosenTextColor);
+            Color c = JColorChooser.showDialog(this, getText("inputMonitor.keyboard.chooseTextColor"), chosenTextColor);
             if (c != null) {
                 chosenTextColor = c;
                 textColorButton.setBackground(c);
@@ -73,14 +73,14 @@ public class KeyboardSettingsDialog extends JDialog {
 
         // Width
         nextRow(gbc);
-        addLabel(root, getText("starvizion.keyboard.width"), gbc);
-        widthSpinner = new JSpinner(new SpinnerNumberModel(vizlet.getWidth(), 80, 600, 10));
+        addLabel(root, getText("inputMonitor.keyboard.width"), gbc);
+        widthSpinner = new JSpinner(new SpinnerNumberModel(readout.getWidth(), 80, 600, 10));
         addField(root, widthSpinner, gbc);
 
         // Height
         nextRow(gbc);
-        addLabel(root, getText("starvizion.keyboard.height"), gbc);
-        heightSpinner = new JSpinner(new SpinnerNumberModel(vizlet.getHeight(), 80, 600, 10));
+        addLabel(root, getText("inputMonitor.keyboard.height"), gbc);
+        heightSpinner = new JSpinner(new SpinnerNumberModel(readout.getHeight(), 80, 600, 10));
         addField(root, heightSpinner, gbc);
 
         // Buttons
@@ -100,11 +100,11 @@ public class KeyboardSettingsDialog extends JDialog {
     }
 
     private void apply() {
-        vizlet.configure(chosenBackgroundColor, chosenTextColor);
+        readout.configure(chosenBackgroundColor, chosenTextColor);
 
         int w = (int) widthSpinner.getValue();
         int h = (int) heightSpinner.getValue();
-        vizlet.setSize(w, h);
+        readout.setSize(w, h);
 
         dispose();
     }

@@ -3,6 +3,7 @@ package elite.intel.db.dao;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.StatementContext;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
+import org.jdbi.v3.sqlobject.customizer.Bind;
 import org.jdbi.v3.sqlobject.customizer.BindBean;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
@@ -14,7 +15,7 @@ import java.sql.SQLException;
 public interface TradeProfileDao {
 
     @SqlQuery("SELECT * FROM trade_profile where shipId= :shipId")
-    TradeProfile getTradeProfile(int shipId);
+    TradeProfile getTradeProfile(@Bind("shipId") int shipId);
 
     @SqlUpdate("""
             INSERT INTO trade_profile (shipId, padSize, allowPlanetary, allowProhibited, allowPermit, allowFleetCarrier, startingBudget, maxDistanceLs, maxJumps, allowStrongHold)

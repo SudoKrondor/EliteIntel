@@ -1,6 +1,6 @@
 # `elite.intel.devices` - Developer Reference
 
-The devices package owns joystick, HOTAS, gamepad, and pedal input. It polls SDL3 on a single dedicated platform thread and publishes connect/disconnect, axis, and button events on the DeviceBus. It is shared infrastructure - StarVizion, BindForge, and push-to-talk all consume these events rather than managing their own SDL3 context.
+The devices package owns joystick, HOTAS, gamepad, and pedal input. It polls SDL3 on a single dedicated platform thread and publishes connect/disconnect, axis, and button events on the DeviceBus. It is shared infrastructure - the input monitor, Bindings, and push-to-talk all consume these events rather than managing their own SDL3 context.
 
 Read-only device access only. This package never writes to the game, the
 `.binds` file, or any other file.

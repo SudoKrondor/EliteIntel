@@ -3,6 +3,7 @@ package elite.intel.db.dao;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.StatementContext;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
+import org.jdbi.v3.sqlobject.customizer.Bind;
 import org.jdbi.v3.sqlobject.customizer.BindBean;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
@@ -47,7 +48,7 @@ public interface FleetCarrierRouteDao {
      * that misses reads an arrival as off-route.
      */
     @SqlQuery("SELECT * FROM fleet_carrier_route WHERE TRIM(systemName) COLLATE NOCASE = :starSystem")
-    FleetCarrierRouteLeg findByPrimaryStarName(String starSystem);
+    FleetCarrierRouteLeg findByPrimaryStarName(@Bind("starSystem") String starSystem);
 
 
     class FleetCarrierRouteMapper implements RowMapper<FleetCarrierRouteLeg> {

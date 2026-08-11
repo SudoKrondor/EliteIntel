@@ -1,9 +1,9 @@
-package elite.intel.ui.starvizion.overlay;
+package elite.intel.ui.inputmonitor.overlay;
 
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.model.Device;
-import elite.intel.ui.starvizion.StarVizionPalette;
-import elite.intel.ui.starvizion.model.SvButton;
+import elite.intel.ui.inputmonitor.InputMonitorPalette;
+import elite.intel.ui.inputmonitor.model.DeviceButton;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudForms;
 
@@ -15,20 +15,20 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 public class ButtonSettingsDialog extends JDialog {
 
-    private final ButtonVizlet vizlet;
+    private final ButtonReadout readout;
 
     private JComboBox<Device>                  deviceCombo;
-    private JComboBox<SvButton>                buttonCombo;
-    private JComboBox<ButtonVizlet.ButtonShape> shapeCombo;
+    private JComboBox<DeviceButton> buttonCombo;
+    private JComboBox<ButtonReadout.ButtonShape> shapeCombo;
     private JButton                            colorButton;
     private Color                              chosenColor;
     private JSpinner                           widthSpinner;
     private JSpinner                           heightSpinner;
 
-    public ButtonSettingsDialog(ButtonVizlet vizlet) {
-        super((Frame) null, getText("starvizion.button.settings.title"), false);
-        this.vizlet = vizlet;
-        this.chosenColor = vizlet.getPressedColor();
+    public ButtonSettingsDialog(ButtonReadout readout) {
+        super((Frame) null, getText("inputMonitor.button.settings.title"), false);
+        this.readout = readout;
+        this.chosenColor = readout.getPressedColor();
         setSize(380, 310);
         setLocationRelativeTo(null);
         AppTheme.applyAppIcon(this);
@@ -40,14 +40,14 @@ public class ButtonSettingsDialog extends JDialog {
     private void buildUi() {
         JPanel root = new JPanel(new GridBagLayout());
         root.setBorder(new EmptyBorder(12, 16, 12, 16));
-        root.setBackground(StarVizionPalette.SETTINGS_DIALOG_BACKGROUND);
+        root.setBackground(InputMonitorPalette.SETTINGS_DIALOG_BACKGROUND);
         setContentPane(root);
 
         GridBagConstraints gbc = HudForms.baseGbc();
 
         // Device
         nextRow(gbc);
-        addLabel(root, getText("starvizion.button.device"), gbc);
+        addLabel(root, getText("inputMonitor.button.device"), gbc);
         deviceCombo = new JComboBox<>();
         DeviceService.getInstance().getConnectedDevices().forEach(d -> deviceCombo.addItem(d));
         addField(root, deviceCombo, gbc);
@@ -55,24 +55,24 @@ public class ButtonSettingsDialog extends JDialog {
 
         // Button
         nextRow(gbc);
-        addLabel(root, getText("starvizion.button.button"), gbc);
+        addLabel(root, getText("inputMonitor.button.button"), gbc);
         buttonCombo = new JComboBox<>();
         addField(root, buttonCombo, gbc);
 
         // Shape
         nextRow(gbc);
-        addLabel(root, getText("starvizion.button.shape"), gbc);
-        shapeCombo = new JComboBox<>(ButtonVizlet.ButtonShape.values());
+        addLabel(root, getText("inputMonitor.button.shape"), gbc);
+        shapeCombo = new JComboBox<>(ButtonReadout.ButtonShape.values());
         addField(root, shapeCombo, gbc);
 
         // Pressed color
         nextRow(gbc);
-        addLabel(root, getText("starvizion.button.pressedColor"), gbc);
+        addLabel(root, getText("inputMonitor.button.pressedColor"), gbc);
         colorButton = AppTheme.makeButton("  ");
         colorButton.setBackground(chosenColor);
         colorButton.setOpaque(true);
         colorButton.addActionListener(e -> {
-            Color c = JColorChooser.showDialog(this, getText("starvizion.button.chooseColor"), chosenColor);
+            Color c = JColorChooser.showDialog(this, getText("inputMonitor.button.chooseColor"), chosenColor);
             if (c != null) {
                 chosenColor = c;
                 colorButton.setBackground(c);
@@ -82,14 +82,14 @@ public class ButtonSettingsDialog extends JDialog {
 
         // Width
         nextRow(gbc);
-        addLabel(root, getText("starvizion.button.width"), gbc);
-        widthSpinner = new JSpinner(new SpinnerNumberModel(vizlet.getWidth(), 60, 400, 10));
+        addLabel(root, getText("inputMonitor.button.width"), gbc);
+        widthSpinner = new JSpinner(new SpinnerNumberModel(readout.getWidth(), 60, 400, 10));
         addField(root, widthSpinner, gbc);
 
         // Height
         nextRow(gbc);
-        addLabel(root, getText("starvizion.button.height"), gbc);
-        heightSpinner = new JSpinner(new SpinnerNumberModel(vizlet.getHeight(), 60, 400, 10));
+        addLabel(root, getText("inputMonitor.button.height"), gbc);
+        heightSpinner = new JSpinner(new SpinnerNumberModel(readout.getHeight(), 60, 400, 10));
         addField(root, heightSpinner, gbc);
 
         // Buttons
@@ -110,7 +110,7 @@ public class ButtonSettingsDialog extends JDialog {
 
     private void loadCurrent() {
         repopulateButtons();
-        shapeCombo.setSelectedItem(vizlet.getButtonShape());
+        shapeCombo.setSelectedItem(readout.getButtonShape());
     }
 
     private void repopulateButtons() {
@@ -118,9 +118,9 @@ public class ButtonSettingsDialog extends JDialog {
         buttonCombo.removeAllItems();
         if (dev == null) return;
         for (int i = 0; i < dev.buttonCount(); i++) {
-            buttonCombo.addItem(new SvButton(i, "Button " + i));
+            buttonCombo.addItem(new DeviceButton(i, "Button " + i));
         }
-        selectButtonByIndex(vizlet.getButtonIndex());
+        selectButtonByIndex(readout.getButtonIndex());
     }
 
     private void selectButtonByIndex(int index) {
@@ -132,15 +132,15 @@ public class ButtonSettingsDialog extends JDialog {
     private void apply() {
         Device dev = (Device) deviceCombo.getSelectedItem();
         if (dev == null) { dispose(); return; }
-        SvButton btn = (SvButton) buttonCombo.getSelectedItem();
+        DeviceButton btn = (DeviceButton) buttonCombo.getSelectedItem();
         int b = btn != null ? btn.index() : 0;
-        ButtonVizlet.ButtonShape shape = (ButtonVizlet.ButtonShape) shapeCombo.getSelectedItem();
+        ButtonReadout.ButtonShape shape = (ButtonReadout.ButtonShape) shapeCombo.getSelectedItem();
 
-        vizlet.configure(dev, b, chosenColor, shape != null ? shape : ButtonVizlet.ButtonShape.CIRCLE);
+        readout.configure(dev, b, chosenColor, shape != null ? shape : ButtonReadout.ButtonShape.CIRCLE);
 
         int w = (int) widthSpinner.getValue();
         int h = (int) heightSpinner.getValue();
-        vizlet.setSize(w, h);
+        readout.setSize(w, h);
 
         dispose();
     }

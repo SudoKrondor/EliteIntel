@@ -11,12 +11,20 @@ public class InterstellarFactorsSearch {
     public static final String INTERSTELLAR_FACTORS_CONTACT = "Interstellar Factors Contact";
     private static final Logger log = LogManager.getLogger(InterstellarFactorsSearch.class);
 
+    /**
+     * The nearest stations offering Interstellar Factors, or null when the search failed.
+     *
+     * @param requiresLargePad when true, only stations with a large pad are returned. The commander's ship
+     *                         decides this, exactly as it does for a trade route: sending a Cutter to an
+     *                         outpost it cannot dock at is a wasted trip, and the bounty stays unpaid.
+     */
     public static List<InterstellarFactorsResultDto.Result> findNearestInterstellarFactors(
-            double x, double y, double z, int maxDistanceLy, int maxDistanceToArrivalLs
+            double x, double y, double z, int maxDistanceLy, int maxDistanceToArrivalLs, boolean requiresLargePad
     ) {
 
         try {
-            InterstellarFactorsSearchCriteria criteria = buildCriteria(x, y, z, maxDistanceLy, maxDistanceToArrivalLs);
+            InterstellarFactorsSearchCriteria criteria =
+                    buildCriteria(x, y, z, maxDistanceLy, maxDistanceToArrivalLs, requiresLargePad);
             StationSearchClient client = StationSearchClient.getInstance();
             InterstellarFactorsResultDto dto = client.searchInterstellarFactors(criteria);
             if (dto == null) return null;
@@ -27,8 +35,11 @@ public class InterstellarFactorsSearch {
         return null;
     }
 
-    private static InterstellarFactorsSearchCriteria buildCriteria(
-            double x, double y, double z, int maxDistanceLy, int maxDistanceToArrivalLs) {
+    /**
+     * Test seam: package-private so the request body can be asserted without a live Spansh call.
+     */
+    static InterstellarFactorsSearchCriteria buildCriteria(
+            double x, double y, double z, int maxDistanceLy, int maxDistanceToArrivalLs, boolean requiresLargePad) {
 
         InterstellarFactorsSearchCriteria.Distance distance =
                 new InterstellarFactorsSearchCriteria.Distance("0.00", String.format("%.2f", (double) maxDistanceLy));
@@ -43,6 +54,9 @@ public class InterstellarFactorsSearch {
         filters.setDistance(distance);
         filters.setDistanceToArrival(distanceToArrival);
         filters.setServices(List.of(service));
+        if (requiresLargePad) {
+            filters.setLargePads(InterstellarFactorsSearchCriteria.LargePads.atLeastOne());
+        }
 
         InterstellarFactorsSearchCriteria criteria = new InterstellarFactorsSearchCriteria();
         criteria.setFilters(filters);

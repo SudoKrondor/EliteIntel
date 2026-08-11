@@ -88,7 +88,7 @@ dependencies {
     // WebSocket server for external integrations
     implementation 'org.java-websocket:Java-WebSocket:1.5.7'
 
-    // LWJGL3 with SDL3 bindings — joystick/HOTAS/gamepad/pedal input for StarVizion overlay.
+    // LWJGL3 with SDL3 bindings — joystick/HOTAS/gamepad/pedal input for the input-monitor overlays.
     // API JARs: compile + runtime.  Native JARs: kept in the fat JAR as a last-resort fallback,
     // AND extracted to distribution/native/lwjgl/ at build time (see extractLwjglNatives task)
     // so SdlInputService can point LWJGL3 there instead of %TEMP%, sidestepping AV/noexec issues.

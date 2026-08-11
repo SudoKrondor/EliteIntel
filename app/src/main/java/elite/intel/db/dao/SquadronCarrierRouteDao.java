@@ -3,6 +3,7 @@ package elite.intel.db.dao;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.StatementContext;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
+import org.jdbi.v3.sqlobject.customizer.Bind;
 import org.jdbi.v3.sqlobject.customizer.BindBean;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
@@ -25,7 +26,7 @@ public interface SquadronCarrierRouteDao {
     List<SquadronCarrierRouteLeg> getAll();
 
     @SqlUpdate("DELETE FROM squadron_carrier_route where systemName = :starSystem")
-    void delete(String starSystem);
+    void delete(@Bind("starSystem") String starSystem);
 
     @SqlUpdate("DELETE FROM squadron_carrier_route")
     void clear();
@@ -37,7 +38,7 @@ public interface SquadronCarrierRouteDao {
     String getDestinationSystemName();
 
     @SqlQuery("SELECT * FROM squadron_carrier_route WHERE systemName = :starSystem")
-    SquadronCarrierRouteLeg findByPrimaryStarName(String starSystem);
+    SquadronCarrierRouteLeg findByPrimaryStarName(@Bind("starSystem") String starSystem);
 
 
     class SquadronCarrierRouteMapper implements RowMapper<SquadronCarrierRouteLeg> {

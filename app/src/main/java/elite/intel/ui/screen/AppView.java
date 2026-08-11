@@ -5,7 +5,7 @@ import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.controller.AiTabController;
 import elite.intel.ui.event.*;
-import elite.intel.ui.starvizion.StarVizionTabPanel;
+import elite.intel.ui.inputmonitor.InputMonitorTabPanel;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
@@ -31,7 +31,7 @@ public class AppView extends JFrame implements AppViewInterface {
     private static final String ICON_AI = "/images/ai.png";
     private static final String ICON_PLAYER = "/images/controller.png";
     private static final String ICON_ACTIONS = "/images/keys-binding.png";
-    private static final String ICON_BIND_FORGE = "/images/anvil.png";
+    private static final String ICON_BINDINGS = "/images/keyboard.png";
     private static final String ICON_SETTINGS = "/images/settings.png";
     private static final String ICON_STATS = "/images/stats.png";
     private static final String CREDITS_ICON = "/images/release.png";
@@ -43,12 +43,12 @@ public class AppView extends JFrame implements AppViewInterface {
     private AiTabPanel aiTabPanel;
     private CommanderTabPanel commanderTabPanel;
     private ActionsTabPanel actionsTabPanel;
-    private BindForgeTabPanel bindForgeTabPanel;
+    private BindingsTabPanel bindingsTabPanel;
     private SettingsTabPanel settingsTabPanel;
     private UsageStatsTabPanel usageStatsTabPanel;
     private MarkdownViewPanel creditsPanel;
     private HelpTabPanel helpTabPanel;
-    private StarVizionTabPanel starVizionTabPanel;
+    private InputMonitorTabPanel inputMonitorTabPanel;
     private AiTabController aiTabController;
     private TopStatusBar topStatusBar;
     private volatile ServicesStateEvent.State servicesState = ServicesStateEvent.State.STOPPED;
@@ -64,8 +64,8 @@ public class AppView extends JFrame implements AppViewInterface {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                if (bindForgeTabPanel != null) {
-                    bindForgeTabPanel.promptCloseWithDraft();
+                if (bindingsTabPanel != null) {
+                    bindingsTabPanel.promptCloseWithDraft();
                 }
                 System.exit(0);
             }
@@ -96,7 +96,7 @@ public class AppView extends JFrame implements AppViewInterface {
         ImageIcon aiIcon = scaledIcon(ICON_AI);
         ImageIcon commanderIcon = scaledIcon(ICON_PLAYER);
         ImageIcon actionsIcon = scaledIcon(ICON_ACTIONS);
-        ImageIcon bindForgeIcon = scaledIcon(ICON_BIND_FORGE);
+        ImageIcon bindingsIcon = scaledIcon(ICON_BINDINGS);
         ImageIcon settingsIcon = scaledIcon(ICON_SETTINGS);
         ImageIcon statsIcon = scaledIcon(ICON_STATS);
         ImageIcon creditsIcon = scaledIcon(CREDITS_ICON);
@@ -107,17 +107,17 @@ public class AppView extends JFrame implements AppViewInterface {
         aiTabPanel = new AiTabPanel(monoFont, uiState);
         commanderTabPanel = new CommanderTabPanel();
         actionsTabPanel = new ActionsTabPanel();
-        bindForgeTabPanel = new BindForgeTabPanel();
+        bindingsTabPanel = new BindingsTabPanel();
         settingsTabPanel = new SettingsTabPanel();
         usageStatsTabPanel = new UsageStatsTabPanel();
         creditsPanel = new MarkdownViewPanel("credits.md");
         helpTabPanel = new HelpTabPanel();
-        starVizionTabPanel = new StarVizionTabPanel();
+        inputMonitorTabPanel = new InputMonitorTabPanel();
 
         tabs.addTab(getText("tab.ai"), aiIcon, aiTabPanel);
         tabs.addTab(getText("tab.commander"), commanderIcon, commanderTabPanel);
         tabs.addTab(getText("tab.actions"), actionsIcon, actionsTabPanel);
-        tabs.addTab(getText("tab.bindForge"), bindForgeIcon, bindForgeTabPanel);
+        tabs.addTab(getText("tab.bindings"), bindingsIcon, bindingsTabPanel);
         tabs.addTab(getText("tab.settings"), settingsIcon, settingsTabPanel);
         tabs.addTab(getText("tab.stats"), statsIcon, usageStatsTabPanel);
         tabs.addTab(getText("tab.help"), helpIcon, helpTabPanel);
@@ -151,7 +151,7 @@ public class AppView extends JFrame implements AppViewInterface {
         settingsTabPanel.initData();
         commanderTabPanel.initData();
         actionsTabPanel.initData();
-        bindForgeTabPanel.initData();
+        bindingsTabPanel.initData();
         helpTabPanel.initData();
         aiTabPanel.initData(systemSession.isSleepingModeOn(), servicesState);
     }
@@ -179,10 +179,10 @@ public class AppView extends JFrame implements AppViewInterface {
         if (topStatusBar != null) topStatusBar.dispose();
         if (aiTabController != null) aiTabController.dispose();
         if (aiTabPanel != null) aiTabPanel.dispose();
-        if (bindForgeTabPanel != null) bindForgeTabPanel.dispose();
+        if (bindingsTabPanel != null) bindingsTabPanel.dispose();
         if (settingsTabPanel != null) settingsTabPanel.dispose();
         if (usageStatsTabPanel != null) usageStatsTabPanel.dispose();
-        if (starVizionTabPanel != null) starVizionTabPanel.dispose();
+        if (inputMonitorTabPanel != null) inputMonitorTabPanel.dispose();
         if (helpTabPanel != null) helpTabPanel.dispose();
         buildUi();
         initData();
