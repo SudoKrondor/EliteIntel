@@ -37,7 +37,9 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -59,6 +61,10 @@ public class CommanderTabPanel extends JPanel {
      * i18n key prefix for {@link ShipPersonality} labels; single owner for the cell renderer and the dropdown editor.
      */
     private static final String PERSONALITY_I18N_PREFIX = "ship.personality.";
+    /**
+     * Columns the Ship Options and Announcements toggle grids are laid out across.
+     */
+    private static final int COLUMN_COUNT = 3;
 
     /**
      * Maps a {@link ShipPersonality} enum name to its localized, HUD-cased display label.
@@ -224,158 +230,110 @@ public class CommanderTabPanel extends JPanel {
     /**
      * Ship automation toggles, all backed by {@link GlobalSettingsManager}.
      */
+    /**
+     * Ship automation toggles, backed by {@link GlobalSettingsManager}. Announcements live on their own tab,
+     * including the jump-related ones that used to sit in this grid's third column.
+     */
     private JPanel buildShipOptionsTab() {
         GlobalSettingsManager mgr = GlobalSettingsManager.getInstance();
-        JPanel shipOptions = transparentPanel(new GridBagLayout());
-        shipOptions.setBorder(new EmptyBorder(HUD_GAP, HUD_GAP, HUD_GAP, HUD_GAP));
+        List<JCheckBox> boxes = new ArrayList<>();
 
-        GridBagConstraints sc = optionGbc();
+        boxes.add(toggle("automation.autoSpeedUpForFtl", mgr.getAutoSpeedUpForFtl(), mgr::setAutoSpeedUpForFtl));
+        boxes.add(toggle("automation.autoLightsOffForFtl", mgr.getAutoLightsForFtl(), mgr::setAutoLightsForFtl));
+        boxes.add(toggle("automation.autoNightVisionOffForFtl", mgr.getAutoNightVisionOff(), mgr::setAutoNightVisionOffForSrv));
+        boxes.add(toggle("automation.autoHardpointsRetractForFtl", mgr.getAutoHardpointsRetractForFtl(), mgr::setAutoHardpointsRetractForFtl));
+        boxes.add(toggle("automation.autoLandingGearUpForFtl", mgr.getAutoLandingGearUpForFtl(), mgr::setAutoLandingGearUpForFtl));
+        boxes.add(toggle("automation.autoCargoScoopRetractForFtl", mgr.getAutoCargoScoopRetractForFtl(), mgr::setAutoCargoScoopRetractForFtl));
+        boxes.add(toggle("automation.autoGearUpOnTakeOff", mgr.getAutoGearUpOnTakeOff(), mgr::setAutoGearUpOnTakeOff));
+        boxes.add(toggle("automation.autoExitUiBeforeOpeningAnotherPanel", mgr.getAutoExitUiBeforeOpeningAnotherWindow(), mgr::setAutoExitUiBeforeOpeningAnotherWindow));
+        boxes.add(toggle("automation.autoLightsOffForSrvDeployment", mgr.getAutoLightsOffForSrvDeployment(), mgr::setAutoLightsOffForSrvDeployment));
 
-        sc.gridx = 0; sc.gridy = 0;
-        JCheckBox cb1 = makeCheckBox(getText("automation.autoSpeedUpForFtl"), mgr.getAutoSpeedUpForFtl());
-        cb1.addActionListener(e -> mgr.setAutoSpeedUpForFtl(cb1.isSelected()));
-        shipOptions.add(cb1, sc);
+        JCheckBox fighterDocking = toggle("automation.requestFighterDockOnFtl",
+                mgr.getAutoFighterOutFighterDocking(), mgr::setAutoFighterOutFighterDocking);
+        fighterDocking.setToolTipText("Disabled until FDev fixes Nomad related bug");
+        fighterDocking.setEnabled(false); ///NOTE disabled until FDev fixes their bug
+        boxes.add(fighterDocking);
 
-        sc.gridy = 1;
-        JCheckBox cb2 = makeCheckBox(getText("automation.autoLightsOffForFtl"), mgr.getAutoLightsForFtl());
-        cb2.addActionListener(e -> mgr.setAutoLightsForFtl(cb2.isSelected()));
-        shipOptions.add(cb2, sc);
-
-        sc.gridy = 2;
-        JCheckBox cb3 = makeCheckBox(getText("automation.autoNightVisionOffForFtl"), mgr.getAutoNightVisionOff());
-        cb3.addActionListener(e -> mgr.setAutoNightVisionOffForSrv(cb3.isSelected()));
-        shipOptions.add(cb3, sc);
-
-        sc.gridy = 3;
-        JCheckBox cb4 = makeCheckBox(getText("automation.autoHardpointsRetractForFtl"), mgr.getAutoHardpointsRetractForFtl());
-        cb4.addActionListener(e -> mgr.setAutoHardpointsRetractForFtl(cb4.isSelected()));
-        shipOptions.add(cb4, sc);
-
-        sc.gridy = 4;
-        JCheckBox cb5 = makeCheckBox(getText("automation.autoLandingGearUpForFtl"), mgr.getAutoLandingGearUpForFtl());
-        cb5.addActionListener(e -> mgr.setAutoLandingGearUpForFtl(cb5.isSelected()));
-        shipOptions.add(cb5, sc);
-
-        sc.gridx = 1; sc.gridy = 0;
-        JCheckBox cb6 = makeCheckBox(getText("automation.autoCargoScoopRetractForFtl"), mgr.getAutoCargoScoopRetractForFtl());
-        cb6.addActionListener(e -> mgr.setAutoCargoScoopRetractForFtl(cb6.isSelected()));
-        shipOptions.add(cb6, sc);
-
-        sc.gridy = 1;
-        JCheckBox cb7 = makeCheckBox(getText("automation.autoGearUpOnTakeOff"), mgr.getAutoGearUpOnTakeOff());
-        cb7.addActionListener(e -> mgr.setAutoGearUpOnTakeOff(cb7.isSelected()));
-        shipOptions.add(cb7, sc);
-
-        sc.gridy = 2;
-        JCheckBox cb8 = makeCheckBox(getText("automation.autoExitUiBeforeOpeningAnotherPanel"), mgr.getAutoExitUiBeforeOpeningAnotherWindow());
-        cb8.addActionListener(e -> mgr.setAutoExitUiBeforeOpeningAnotherWindow(cb8.isSelected()));
-        shipOptions.add(cb8, sc);
-
-        sc.gridy = 3;
-        JCheckBox cb9 = makeCheckBox(getText("automation.autoLightsOffForSrvDeployment"), mgr.getAutoLightsOffForSrvDeployment());
-        cb9.addActionListener(e -> mgr.setAutoLightsOffForSrvDeployment(cb9.isSelected()));
-        shipOptions.add(cb9, sc);
-
-        sc.gridy = 4;
-        JCheckBox cb10 = makeCheckBox(getText("automation.requestFighterDockOnFtl"), mgr.getAutoFighterOutFighterDocking());
-        cb10.setToolTipText("Disabled until FDev fixes Nomad related bug");
-        cb10.setEnabled(false);///NOTE disabled until FDev fixes their bug
-        cb10.addActionListener(e -> mgr.setAutoFighterOutFighterDocking(cb10.isSelected()));
-        shipOptions.add(cb10, sc);
-
-        sc.gridx = 2;
-        sc.gridy = 0;
-        JCheckBox cb11 = makeCheckBox(getText("automation.announceJumpRoute"), mgr.getAnnounceJumpRoute());
-        cb11.addActionListener(e -> mgr.setAnnounceJumpRoute(cb11.isSelected()));
-        shipOptions.add(cb11, sc);
-
-        sc.gridy = 1;
-        JCheckBox cb12 = makeCheckBox(getText("automation.announceJumpTraffic"), mgr.getAnnounceJumpTraffic());
-        cb12.addActionListener(e -> mgr.setAnnounceJumpTraffic(cb12.isSelected()));
-        shipOptions.add(cb12, sc);
-
-        sc.gridy = 2;
-        JCheckBox cb13 = makeCheckBox(getText("automation.announceJumpDeaths"), mgr.getAnnounceJumpDeaths());
-        cb13.addActionListener(e -> mgr.setAnnounceJumpDeaths(cb13.isSelected()));
-        shipOptions.add(cb13, sc);
-
-        sc.gridy = 3;
-        JCheckBox cb14 = makeCheckBox(getText("automation.announceRemainingJumps"), mgr.getAnnounceRemainingJumps());
-        cb14.addActionListener(e -> mgr.setAnnounceRemainingJumps(cb14.isSelected()));
-        shipOptions.add(cb14, sc);
-
-        sc.gridy = 4;
-        JCheckBox cb15 = makeCheckBox(getText("automation.announceFuelAvailable"), mgr.getAnnounceFuelAvailable());
-        cb15.addActionListener(e -> mgr.setAnnounceFuelAvailable(cb15.isSelected()));
-        shipOptions.add(cb15, sc);
-
-        return shipOptions;
+        return threeColumnGrid(boxes);
     }
 
     /**
-     * Spoken-announcement toggles, backed by {@link PlayerSession}. These are the same categories the
-     * {@code toggle_all_announcements} voice command flips, so {@link #initData()} re-reads them from the
-     * session: a voice command may have changed a category while the tab was not visible.
+     * Every spoken-announcement toggle, in one place.
+     * <p>
+     * The first six are backed by {@link PlayerSession} and are the categories the
+     * {@code toggle_all_announcements} voice command flips, so {@link #initData()} re-reads them: a voice
+     * command may have changed one while the tab was not visible. The jump-related ones below them are backed
+     * by {@link GlobalSettingsManager}, are read only here, and moved off the Ship Options tab so that a
+     * commander looking for an announcement has one place to look.
      */
     private JPanel buildAnnouncementsTab() {
-        JPanel announcements = transparentPanel(new GridBagLayout());
-        announcements.setBorder(new EmptyBorder(HUD_GAP, HUD_GAP, HUD_GAP, HUD_GAP));
+        GlobalSettingsManager mgr = GlobalSettingsManager.getInstance();
+        List<JCheckBox> boxes = new ArrayList<>();
 
-        GridBagConstraints ac = optionGbc();
+        discoveryAnnouncementBox = toggle("announcements.discovery",
+                playerSession.isDiscoveryAnnouncementOn(), playerSession::setDiscoveryAnnouncementOn);
+        routeAnnouncementBox = toggle("announcements.route",
+                playerSession.isRouteAnnouncementOn(), playerSession::setRouteAnnouncementOn);
+        radarContactAnnouncementBox = toggle("announcements.radarContact",
+                playerSession.isRadarContactAnnouncementOn(), playerSession::setRadarContactAnnouncementOn);
+        miningAnnouncementBox = toggle("announcements.mining",
+                playerSession.isMiningAnnouncementOn(), playerSession::setMiningAnnouncementOn);
+        navigationAnnouncementBox = toggle("announcements.navigation",
+                playerSession.isNavigationAnnouncementOn(), playerSession::setNavigationAnnouncementOn);
+        radioTransmissionBox = toggle("announcements.radioTransmissions",
+                playerSession.isRadioTransmissionOn(), playerSession::setRadioTransmissionOn);
 
-        ac.gridx = 0;
-        ac.gridy = 0;
-        discoveryAnnouncementBox = makeCheckBox(
-                getText("announcements.discovery"), playerSession.isDiscoveryAnnouncementOn());
-        discoveryAnnouncementBox.addActionListener(
-                e -> playerSession.setDiscoveryAnnouncementOn(discoveryAnnouncementBox.isSelected()));
-        announcements.add(discoveryAnnouncementBox, ac);
+        boxes.add(discoveryAnnouncementBox);
+        boxes.add(routeAnnouncementBox);
+        boxes.add(radarContactAnnouncementBox);
+        boxes.add(miningAnnouncementBox);
+        boxes.add(navigationAnnouncementBox);
+        boxes.add(radioTransmissionBox);
 
-        ac.gridy = 1;
-        routeAnnouncementBox = makeCheckBox(
-                getText("announcements.route"), playerSession.isRouteAnnouncementOn());
-        routeAnnouncementBox.addActionListener(
-                e -> playerSession.setRouteAnnouncementOn(routeAnnouncementBox.isSelected()));
-        announcements.add(routeAnnouncementBox, ac);
+        boxes.add(toggle("automation.announceJumpRoute", mgr.getAnnounceJumpRoute(), mgr::setAnnounceJumpRoute));
+        boxes.add(toggle("automation.announceJumpTraffic", mgr.getAnnounceJumpTraffic(), mgr::setAnnounceJumpTraffic));
+        boxes.add(toggle("automation.announceJumpDeaths", mgr.getAnnounceJumpDeaths(), mgr::setAnnounceJumpDeaths));
+        boxes.add(toggle("automation.announceRemainingJumps", mgr.getAnnounceRemainingJumps(), mgr::setAnnounceRemainingJumps));
+        boxes.add(toggle("automation.announceFuelAvailable", mgr.getAnnounceFuelAvailable(), mgr::setAnnounceFuelAvailable));
 
-        ac.gridx = 1;
-        ac.gridy = 0;
-        radarContactAnnouncementBox = makeCheckBox(
-                getText("announcements.radarContact"), playerSession.isRadarContactAnnouncementOn());
-        radarContactAnnouncementBox.addActionListener(
-                e -> playerSession.setRadarContactAnnouncementOn(radarContactAnnouncementBox.isSelected()));
-        announcements.add(radarContactAnnouncementBox, ac);
+        return threeColumnGrid(boxes);
+    }
 
-        ac.gridy = 1;
-        miningAnnouncementBox = makeCheckBox(
-                getText("announcements.mining"), playerSession.isMiningAnnouncementOn());
-        miningAnnouncementBox.addActionListener(
-                e -> playerSession.setMiningAnnouncementOn(miningAnnouncementBox.isSelected()));
-        announcements.add(miningAnnouncementBox, ac);
+    /**
+     * A labelled checkbox that writes straight back to the setting it reads.
+     */
+    private static JCheckBox toggle(String labelKey, boolean selected, Consumer<Boolean> onChange) {
+        JCheckBox box = makeCheckBox(getText(labelKey), selected);
+        box.addActionListener(e -> onChange.accept(box.isSelected()));
+        return box;
+    }
 
-        ac.gridx = 2;
-        ac.gridy = 0;
-        navigationAnnouncementBox = makeCheckBox(
-                getText("announcements.navigation"), playerSession.isNavigationAnnouncementOn());
-        navigationAnnouncementBox.addActionListener(
-                e -> playerSession.setNavigationAnnouncementOn(navigationAnnouncementBox.isSelected()));
-        announcements.add(navigationAnnouncementBox, ac);
+    /**
+     * Lays the toggles out in three equal columns, filled top to bottom so reading down a column follows the
+     * order they were added. Computing the placement from the list is what keeps the two tabs consistent as
+     * toggles are added or moved between them; the columns used to be hand-numbered, which is how five
+     * announcements ended up living on the automation tab.
+     */
+    private static JPanel threeColumnGrid(List<JCheckBox> boxes) {
+        JPanel grid = transparentPanel(new GridBagLayout());
+        grid.setBorder(new EmptyBorder(HUD_GAP, HUD_GAP, HUD_GAP, HUD_GAP));
 
-        ac.gridy = 1;
-        radioTransmissionBox = makeCheckBox(
-                getText("announcements.radioTransmissions"), playerSession.isRadioTransmissionOn());
-        radioTransmissionBox.addActionListener(
-                e -> playerSession.setRadioTransmissionOn(radioTransmissionBox.isSelected()));
-        announcements.add(radioTransmissionBox, ac);
+        GridBagConstraints gbc = optionGbc();
+        int rows = (boxes.size() + COLUMN_COUNT - 1) / COLUMN_COUNT;
+        for (int i = 0; i < boxes.size(); i++) {
+            gbc.gridx = i / rows;
+            gbc.gridy = i % rows;
+            grid.add(boxes.get(i), gbc);
+        }
 
-        // Filler so the three-column checkbox grid keeps its slack on the right rather than
-        // stretching the columns across the full width.
-        ac.gridx = 3;
-        ac.gridy = 0;
-        ac.weightx = 1.0;
-        announcements.add(Box.createHorizontalGlue(), ac);
+        // Filler so the grid keeps its slack on the right rather than stretching the columns across the
+        // full width.
+        gbc.gridx = COLUMN_COUNT;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        grid.add(Box.createHorizontalGlue(), gbc);
 
-        return announcements;
+        return grid;
     }
 
     /**

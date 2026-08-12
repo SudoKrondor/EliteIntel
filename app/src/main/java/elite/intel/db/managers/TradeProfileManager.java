@@ -49,7 +49,7 @@ public class TradeProfileManager {
         criteria.setAllowProhibited(profile.isAllowProhibited());
         criteria.setAllowFleetCarriers(profile.isAllowFleetCarrier());
         criteria.setMaxCargo(ship.getCargoCapacity());
-        criteria.setMaxJumpDistance(((int) playerSession.getShipLoadout().getMaxJumpRange() * 10));
+        criteria.setMaxJumpDistance(((int) playerSession.getShipLoadout().getMaxJumpRange()));
         criteria.setMaxLsFromArrival(profile.getMaxDistanceLs());
         criteria.setMaxJumps(profile.getMaxJumps());
         criteria.setAllowStrongHold(profile.isAllowStrongHold());

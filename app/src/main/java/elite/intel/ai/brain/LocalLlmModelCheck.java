@@ -5,6 +5,7 @@ import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
+import elite.intel.setup.SetupCheck;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.util.StringUtls;
 
@@ -45,6 +46,10 @@ public class LocalLlmModelCheck {
     public void check() {
         SystemSession session = SystemSession.getInstance();
         if (!session.useLocalCommandLlm()) return; // cloud LLM - nothing to verify
+        // A fresh install has no model named at all, which is not a wrong model - SetupCheck owns that case and
+        // says something useful about it. Without this guard the first thing a new commander hears is that their
+        // model is not Gemma, when they have not chosen one yet.
+        if (SetupCheck.isLlmUnconfigured()) return;
 
         String model = configuredLocalModel(session);
         if (isSupported(model)) return;

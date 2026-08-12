@@ -19,7 +19,7 @@ live in `CLAUDE.md` and take precedence where they overlap.
 - Keep concerns separated; do not mix unrelated responsibilities in one class.
 - Favour extension without modification (Open/Closed) where it does not add speculative abstraction.
 - Depend on interfaces at module seams (this project already does: `EarsInterface`, `MouthInterface`,
-  `AiCommandInterface`, etc.).
+  `LlmGateway`, `CompanionActionReducer`, etc.).
 - Subtypes must be substitutable for their base types (Liskov).
 - Prefer specific interfaces over broad ones (Interface Segregation).
 - Weigh long-term maintainability in design decisions.
@@ -33,6 +33,7 @@ DO NOT:
 - Introduce hidden dependencies, implicit behaviour, or implicit ordering between components.
 - Leak implementation details of a library or layer through an interface. Callers must not need to know vendor names, config keys, or transport details.
 - Handle the same concept (value type, missing-value representation, naming) differently across code paths. New code matches how the rest of the system already handles it.
+- Add a second way to do something the codebase already does one way. Established patterns in neighbouring code (how events are defined and registered, how subscribers persist through managers rather than DAOs, how the EventBus is used, how secrets are read, how logging is done, how tests are laid out) are binding even where this document does not name them. Check the sibling packages before inventing a variant.
 
 ## Robustness
 
@@ -62,7 +63,7 @@ states**. The two are not in tension when applied deliberately.
 
 - Less code is better than more code.
 - Reach for the simplest solution that fully solves the current problem.
-- Every class, field, and parameter must earn its place.
+- Every class, field, and parameter must earn its place. Remove unused parameters, fields, and state rather than leaving them for a later caller that may never arrive.
 
 ### Simplicity Anti-Patterns
 
@@ -130,6 +131,13 @@ public void handle(Item item) {
 - Preserve existing `// WHY:` comments unless they become irrelevant after a change.
 - When you change behaviour, update or delete any Javadoc/comments describing the old behaviour.
 
+### Documentation
+
+- Project docs (`CLAUDE.md`, this file, `PACKAGE.md`, spec/design notes) are part of the code. A change that makes one of them wrong is an incomplete change: update the doc in the same change set.
+- A rule or description that names a class, interface, table, migration, or system property must name one that exists. A stale name is worse than no name, because it sends the reader looking for something that is not there.
+- Docs must not contradict each other or the implementation. Where two docs overlap, the hard constraints in
+  `CLAUDE.md` win, and the other is corrected to match.
+
 ## Error Handling
 
 - Never silently skip or ignore errors, duplicates, or constraint violations.
@@ -168,13 +176,15 @@ DO NOT:
 
 - Do not introduce breaking changes to event shapes (`BaseEvent` subclasses /
   `EventRegistry`), public handler contracts, or DB migration history without explicit approval.
+- An additive field on an event is not a breaking change, but it does alter every payload that event is serialized into (the WebSocket broadcast, any LLM prompt built from it). Call it out, and check whether the consumers that read the event need the new field too.
 - DB schema changes go through a new versioned migration in
   `app/src/main/resources/db-migration/`; never edit an applied migration.
+- Feature work branches off and merges into the current integration branch, not `master`. See the branching model in `CLAUDE.md` before opening a PR or picking a diff base.
 
 ## Security
 
 - Consider security implications of changes.
-- API keys are encrypted at rest via `Cypher` and accessed through `ConfigManager`; never log, print, or transmit them.
+- API keys are encrypted at rest via `Cypher` and read through `SystemSession` (`getAiApiKey`, `getTtsApiKey`, ...); never log, print, or transmit them. A key may be tested for presence, never emitted.
 - Honour the hard constraint: game data comes only from the journal/EDSM/Spansh. No memory reading, injection, or overlays.
 
 ## Performance

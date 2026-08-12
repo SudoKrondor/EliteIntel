@@ -33,8 +33,6 @@ public class MarketSellEventSubscriber {
 
     @Subscribe
     public void onMarketSellEvent(MarketSellEvent event) {
-        TradeRouteManager.getInstance().deleteForMarketId(event.getMarketID());
-
         synchronized (pending) {
             pending.add(event);
             if (pendingFlush != null) pendingFlush.cancel(false);
@@ -42,9 +40,26 @@ public class MarketSellEventSubscriber {
         }
     }
 
+    /**
+     * Retires the route leg that ended at the station just sold at. Every pending sale is from the same
+     * docking, so the market is taken once; the DAO ignores it unless that market is where the leg being
+     * flown ends. Caller holds the {@code pending} lock.
+     */
+    private void retireFlownLeg() {
+        pending.stream()
+                .map(MarketSellEvent::getMarketID)
+                .distinct()
+                .forEach(marketId -> TradeRouteManager.getInstance().deleteForMarketId(marketId));
+    }
+
     private void flush() {
         synchronized (pending) {
             if (pending.isEmpty()) return;
+
+            // Retire the flown leg once per docking, not once per commodity. MarketSell fires per commodity,
+            // so a hold emptied of three goods used to raise three retirements - and on a loop whose next legs
+            // end at the same station, two of them took legs the commander had not flown yet.
+            retireFlownLeg();
 
             if (pending.size() == 1) {
                 MarketSellEvent e = pending.getFirst();

@@ -29,6 +29,11 @@ import static elite.intel.util.StringUtls.subtractString;
 public class ScanEventSubscriber {
 
 
+    /**
+     * {@code ScanType} of the bulk system dump a nav beacon produces. Its discovery flags are not to be
+     * believed; see {@link #carriesNoDiscoveryInformation}.
+     */
+    private static final String NAV_BEACON_SCAN = "NavBeaconDetail";
     private static final Logger log = LogManager.getLogger(ScanEventSubscriber.class);
     private static final Set<String> valuablePlanetClasses = Set.of(
             "ammonia world",
@@ -120,11 +125,17 @@ public class ScanEventSubscriber {
                 location.setAtmosphere(event.getAtmosphereType());
                 location.setMaterials(toListOfMaterials(event.getMaterials()));
                 location.setDistance(event.getDistanceFromArrivalLS());
-                location.setOurDiscovery(!event.isWasDiscovered());
+                // A nav beacon's discovery flags describe how this scan learned about the body, not who found
+                // it first (see carriesNoDiscoveryInformation), so they are not recorded. Leaving the stored
+                // values alone keeps whatever a real scan established; an unseen body then stays "not ours",
+                // which is the only answer a beacon can support and the safe one in a populated system.
+                if (!carriesNoDiscoveryInformation(event)) {
+                    location.setOurDiscovery(!event.isWasDiscovered());
+                    location.setWeMappedIt(!event.isWasMapped());
+                }
                 location.setRotationPeriod(event.getRotationPeriod());
                 location.setOrbitalPeriod(event.getOrbitalPeriod());
                 location.setAxialTilt(event.getAxialTilt());
-                location.setWeMappedIt(!event.isWasMapped());
                 location.setPlanetShortName(subtractString(event.getBodyName(), event.getStarSystem()));
 
 
@@ -177,6 +188,8 @@ public class ScanEventSubscriber {
     }
 
     private void announceIfNewDiscovery(ScanEvent event, LocationDto location) {
+        if (carriesNoDiscoveryInformation(event)) return;
+
         boolean wasDiscovered = event.isWasDiscovered();
         boolean wasMapped = event.isWasMapped();
         String shortName = subtractString(event.getBodyName(), event.getStarSystem());
@@ -198,6 +211,23 @@ public class ScanEventSubscriber {
         } else if (!wasDiscovered && PRIMARY_STAR.equals(location.getLocationType())) {
             announceOnce(event, localizedEvent("event.scan.newSystem"));
         }
+    }
+
+    /**
+     * A nav beacon hands over the whole system's body data at once, and the Scan events it produces report
+     * {@code WasDiscovered:false} for bodies that were charted decades ago. The flags describe how <em>this</em>
+     * scan learned about the body, not whether anyone had been there before.
+     * <p>
+     * The journal contradicts itself outright: of 97 {@code NavBeaconDetail} scans in one session, 37 claimed
+     * {@code WasMapped:true} with {@code WasDiscovered:false}, which cannot happen. Every {@code WasDiscovered:false}
+     * in that session came from this scan type; {@code AutoScan} and {@code Detailed} were always true.
+     * <p>
+     * Believing them announced "New System discovered!" for Wolf 1323, a populated system with named planets.
+     * The signal is in fact the opposite of a discovery: nav beacons only exist in populated systems, so a
+     * beacon scan is near proof the system has been settled for a long time.
+     */
+    static boolean carriesNoDiscoveryInformation(ScanEvent event) {
+        return NAV_BEACON_SCAN.equalsIgnoreCase(event.getScanType());
     }
 
     /**

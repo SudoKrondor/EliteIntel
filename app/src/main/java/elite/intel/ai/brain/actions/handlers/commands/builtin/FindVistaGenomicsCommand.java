@@ -7,6 +7,7 @@ import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
+import elite.intel.gameapi.ReminderContact;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.search.spansh.station.CurrentSystemFilter;
 import elite.intel.gameapi.search.spansh.station.vista.VistaGenomicsLocationDto;
@@ -87,7 +88,10 @@ public final class FindVistaGenomicsCommand implements IntelCommand {
         VistaGenomicsLocationDto.Result result = first.get();
 
         String announcement = StringUtls.localizedResponse("handler.vistaGenomics.headTo", result.getSystemName(), result.getStationName());
-        ReminderManager.getInstance().setReminder(result.getSystemName(), announcement);
+        // Arguments were the wrong way round here: the signature is (text, starSystem), so this stored
+        // the whole spoken sentence in the starSystem column and the system name as the reminder text.
+        ReminderManager.getInstance().setReminder(
+                announcement, result.getSystemName(), result.getStationName(), ReminderContact.VISTA_GENOMICS);
         CompanionRuntime.narrator().filler(announcement, false);
         return routePlotter.plotRoute(result.getSystemName());
     }

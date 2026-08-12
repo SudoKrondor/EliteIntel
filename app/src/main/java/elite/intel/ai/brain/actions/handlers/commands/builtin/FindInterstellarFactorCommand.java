@@ -7,6 +7,7 @@ import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.ShipManager;
+import elite.intel.gameapi.ReminderContact;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.search.spansh.station.CurrentSystemFilter;
 import elite.intel.gameapi.search.spansh.station.interstellarfactors.InterstellarFactorsResultDto;
@@ -70,7 +71,7 @@ public final class FindInterstellarFactorCommand implements IntelCommand {
         routePlotter.plotRoute(starName);
 
         String announcement = StringUtls.localizedResponse("handler.interstellarFactors.visit", stationName, starName);
-        reminderManager.setReminder("Visit Interstellar Factors at " + stationName, starName);
+        reminderManager.setReminder(announcement, starName, stationName, ReminderContact.INTERSTELLAR_FACTORS);
         return announcement;
     }
 }

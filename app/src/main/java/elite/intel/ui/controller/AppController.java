@@ -21,6 +21,7 @@ import elite.intel.gameapi.JournalParser;
 import elite.intel.gameapi.journal.MissingMissionMonitor;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
+import elite.intel.setup.SetupCheck;
 import elite.intel.tools.ws.WebSocketBroadcaster;
 import elite.intel.ui.event.*;
 import elite.intel.util.StringUtls;
@@ -335,6 +336,9 @@ public class AppController {
                 connectionCheckTimer.setRepeats(false);
                 connectionCheckTimer.start();
 
+                // Setup first: it speaks about what is missing entirely, and the checks below assume a
+                // configured app (KeyBindCheck reads a bindings profile; LocalLlmModelCheck judges a model).
+                SetupCheck.getInstance().check();
                 KeyBindCheck.getInstance().check();
                 CustomCommandLoadAnnouncement.getInstance().announce();
                 LocalLlmModelCheck.getInstance().check();

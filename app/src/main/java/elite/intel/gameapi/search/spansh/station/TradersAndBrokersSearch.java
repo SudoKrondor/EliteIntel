@@ -6,6 +6,7 @@ import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.ReminderContact;
 import elite.intel.gameapi.search.spansh.station.traderandbroker.*;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.TimeUtils;
@@ -137,8 +138,31 @@ public class TradersAndBrokersSearch {
                         TimeUtils.transformToYMDHtimeAgo(result.getUpdatedAt(), TimeUtils.LOCAL_DATE_TIME)))
         );
         ReminderManager.getInstance().setReminder(
-                localizedEvent("event.search.reminder", result.getStationName()), result.getSystemName()
+                localizedEvent("event.search.reminder", result.getStationName()), result.getSystemName(),
+                result.getStationName(), contactOf(traderType, brokerType)
         );
         return result.getSystemName();
+    }
+
+    /**
+     * Which contact this search was for. Known here and nowhere downstream — the result carries a
+     * station, not what the commander wanted from it — so it is recorded with the reminder rather
+     * than guessed at from the sentence later.
+     */
+    static ReminderContact contactOf(TraderType traderType, BrokerType brokerType) {
+        if (traderType != null) {
+            return switch (traderType) {
+                case RAW -> ReminderContact.MATERIAL_TRADER_RAW;
+                case MANUFACTURED -> ReminderContact.MATERIAL_TRADER_MANUFACTURED;
+                case ENCODED -> ReminderContact.MATERIAL_TRADER_ENCODED;
+            };
+        }
+        if (brokerType != null) {
+            return switch (brokerType) {
+                case HUMAN -> ReminderContact.TECHNOLOGY_BROKER_HUMAN;
+                case GUARDIAN -> ReminderContact.TECHNOLOGY_BROKER_GUARDIAN;
+            };
+        }
+        return null;
     }
 }

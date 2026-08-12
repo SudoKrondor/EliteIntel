@@ -9,10 +9,13 @@ import org.jdbi.v3.sqlobject.customizer.Bind;
 import org.jdbi.v3.sqlobject.customizer.Define;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
+import org.jdbi.v3.sqlobject.transaction.Transaction;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The single home for engineering materials: identity, translations, and how many the commander holds.
@@ -65,6 +68,37 @@ public interface MaterialNameDao {
 
     @SqlUpdate("UPDATE material_names SET amount = 0")
     void clearAmounts();
+
+    /**
+     * Replaces the entire held inventory in one transaction: everything not listed goes to zero,
+     * except the symbols in {@code preserve}, which are left exactly as they are.
+     * <p>
+     * Used by the startup reconstruction, whose input is anchored on a Materials snapshot — a full
+     * inventory listing that omits anything held at zero — so "absent means none" is exactly right.
+     * The transaction matters because the wipe and the rewrite must never be observable apart: a query
+     * landing between them would otherwise report an empty hold.
+     * <p>
+     * {@code preserve} carries the materials the live journal has already reported on since app start.
+     * The rebuild runs concurrently with the live parser, and a live report is newer than anything a
+     * replay can know, so it wins.
+     */
+    @Transaction
+    default void replaceAllAmounts(Collection<Holding> holdings, Set<String> preserve) {
+        for (Material material : listAll()) {
+            if (!preserve.contains(material.getSymbol())) setAmount(material.getSymbol(), 0);
+        }
+        for (Holding holding : holdings) {
+            if (preserve.contains(holding.symbol())) continue;
+            insertIfMissing(holding.symbol(), holding.name(), holding.materialType());
+            setAmount(holding.symbol(), holding.amount());
+        }
+    }
+
+    /**
+     * One row of a full-inventory rewrite.
+     */
+    record Holding(String symbol, String name, String materialType, int amount) {
+    }
 
     /**
      * Registers a material this build has never seen, so a future game update that adds one does not

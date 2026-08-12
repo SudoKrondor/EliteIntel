@@ -5,9 +5,11 @@ import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ModuleDto;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.Status;
 import elite.intel.ui.i18n.LocalizedNumbers;
 
 import java.util.*;
+import java.util.function.BooleanSupplier;
 
 /**
  * Projects a mining run into a HUD objective: what is being mined for, how much
@@ -17,11 +19,13 @@ import java.util.*;
  * the commander named the targets - so it ranks {@link HudObjective#PRIORITY_AMBIENT}
  * and never displaces an accepted mission or a plotted route.
  * <p>
- * Two conditions make a mining card, and both are already in the database: a
+ * Three conditions make a mining card. Two are already in the database: a
  * mining target list, and a refinery on the ship. The refinery is what makes it
  * a mining ship - nothing else refines an asteroid fragment into cargo - so a
  * hauler that happens to carry platinum never shows this card, and the card
- * disappears by itself when the commander swaps ships.
+ * disappears by itself when the commander swaps ships. The third is that the
+ * commander is not in supercruise: nobody mines while travelling, and a card
+ * about the ring they left hides the route they are flying.
  * <p>
  * <b>Symbols, not names.</b> Mining targets are stored as English display names
  * ("Low Temperature Diamonds"); the cargo hold is keyed by the lower-cased FDev
@@ -71,20 +75,27 @@ public class MiningObjectiveSource implements HudObjectiveSource {
     private static final int LIMPETS_LOW = 5;
 
     private final PlayerSession playerSession;
+    private final BooleanSupplier inSupercruise;
 
     public MiningObjectiveSource() {
-        this(PlayerSession.getInstance());
+        this(PlayerSession.getInstance(), () -> Status.getInstance().isInSupercruise());
     }
 
     /**
      * Seam for tests.
      */
-    MiningObjectiveSource(PlayerSession playerSession) {
+    MiningObjectiveSource(PlayerSession playerSession, BooleanSupplier inSupercruise) {
         this.playerSession = playerSession;
+        this.inSupercruise = inSupercruise;
     }
 
     @Override
     public Optional<HudObjective> currentObjective() {
+        // Nobody mines in supercruise: the targets and the refinery are still there, but the commander is
+        // travelling, and what they need on the card is where they are going. The card comes back by itself
+        // on the drop, because this is re-derived every poll.
+        if (inSupercruise.getAsBoolean()) return Optional.empty();
+
         Set<String> targets = playerSession.getMiningTargets();
         if (targets == null || targets.isEmpty()) return Optional.empty();
 

@@ -62,12 +62,15 @@ public class JournalPreScanner {
         privateBus.register(persistence);
         FinancePreScanAccumulator finance = new FinancePreScanAccumulator();
         privateBus.register(finance);
+        MaterialsPreScanAccumulator materials = new MaterialsPreScanAccumulator();
+        privateBus.register(materials);
 
         for (Path file : toScan) {
             processFile(file, privateBus);
         }
 
         finance.persist();
+        materials.persist();
         replotCarrierRouteIfLeftBehind(persistence);
 
         log.info("JournalPreScanner: done");

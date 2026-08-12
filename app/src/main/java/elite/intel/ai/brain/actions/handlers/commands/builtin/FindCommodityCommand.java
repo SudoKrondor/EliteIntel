@@ -135,7 +135,7 @@ public final class FindCommodityCommand implements IntelCommand {
         CommoditySearchResult result = results.getFirst();
         String reminder = StringUtls.localizedResponse("handler.commodity.headTo", result.getStarSystem(), result.getStationName(), result.getStationType(), result.getPrice());
         CompanionRuntime.narrator().filler(reminder, false);
-        reminderManager.setReminder(reminder, result.getStarSystem());
+        reminderManager.setReminder(reminder, result.getStarSystem(), result.getStationName(), null);
 
         RoutePlotter plotter = new RoutePlotter();
         plotter.plotRoute(result.getStarSystem());

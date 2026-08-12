@@ -87,12 +87,28 @@ public final class GameToolCandidates {
 
     /** Visible game tools in the allowed categories, ordered commands, then queries, then macros. */
     public List<Candidate> collect(Set<IntelActionCategory> allowed) {
+        return collect(allowed, true);
+    }
+
+    /**
+     * Every game tool in the allowed categories, including the ones the commander cannot use right now.
+     * <p>
+     * For a browse-everything reference view only — never for offering tools to a model, which must see just
+     * what is usable. Situation-by-situation union is not the same thing: an action gated on something other
+     * than where the commander is (a plotted route, say) is invisible in every situation and would be missing
+     * from the list entirely.
+     */
+    public List<Candidate> collectIgnoringVisibility(Set<IntelActionCategory> allowed) {
+        return collect(allowed, false);
+    }
+
+    private List<Candidate> collect(Set<IntelActionCategory> allowed, boolean gateOnVisibility) {
         List<Candidate> result = new ArrayList<>();
         if (allowed.contains(IntelActionCategory.ACTION)) {
-            addActions(result, commands);
+            addActions(result, commands, gateOnVisibility);
         }
         if (allowed.contains(IntelActionCategory.QUERY)) {
-            addActions(result, queries);
+            addActions(result, queries, gateOnVisibility);
         }
         if (allowed.contains(IntelActionCategory.MACRO)) {
             addMacros(result);
@@ -100,12 +116,12 @@ public final class GameToolCandidates {
         return result;
     }
 
-    private void addActions(List<Candidate> out, Map<String, ? extends IntelAction> actions) {
+    private void addActions(List<Candidate> out, Map<String, ? extends IntelAction> actions, boolean gateOnVisibility) {
         for (IntelAction action : actions.values()) {
             String id = action.id();
             if (EXCLUDED_IDS.contains(id)
                     || !action.isAvailableIn(IntelActionContext.COMPANION_COMMANDER)
-                    || !action.isVisibleForLLM(status)) {
+                    || (gateOnVisibility && !action.isVisibleForLLM(status))) {
                 continue;
             }
             boolean hasPhrases = AiActionAliasTextProvider.hasKey(language, id);

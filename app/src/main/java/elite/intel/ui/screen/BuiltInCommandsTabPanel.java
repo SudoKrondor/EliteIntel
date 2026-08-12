@@ -5,15 +5,11 @@ import elite.intel.ai.brain.actions.catalog.CommandCatalog;
 import elite.intel.ai.brain.actions.catalog.CommandCatalogEntry;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
-import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
-import elite.intel.ai.brain.vega.model.llm.LlmToolDefinition;
 import elite.intel.ai.brain.vega.prompt.GameToolCandidates;
-import elite.intel.ai.brain.vega.prompt.SemanticActionReducer;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
-import elite.intel.gameapi.NormalizedUserInputEvent;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.i18n.EventsTextProvider;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -22,14 +18,11 @@ import elite.intel.session.PlayerSituation;
 import elite.intel.session.Status;
 import elite.intel.ui.dialog.CommandDetailsDialog;
 import elite.intel.ui.dialog.HudConfirmDialog;
-import elite.intel.ui.event.CommanderMatchInputChangedEvent;
 import elite.intel.ui.event.CustomCommandsSummaryChangedEvent;
 import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudTable;
 import elite.intel.ui.widget.HudTwoColumns;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -37,62 +30,62 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
+import java.awt.event.HierarchyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
 import static elite.intel.ui.theme.HudForms.*;
-import static elite.intel.ui.theme.HudPalette.*;
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND;
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 
 /**
- * The "Help" tab. At the top of the page a two-column row (canon 9, equal halves + centred divider) pairs a
- * situation picker (an editable combo of every physical situation - in ship / SRV / fighter / taxi / on foot;
- * docked, landed, supercruise, ring, orbit, deep space; UNKNOWN when undetermined) with the concrete place for
- * it (read-only: station / body / system); below it sits the commander's current spoken phrase in an editable
- * field. The picker auto-follows the live game situation
- * but can be changed by hand, and the selected situation - not the live game - is what gates the list below; a
- * phrase edit re-runs the reducer over the field's text and re-highlights the matching actions (reducer-only,
- * no LLM turn, so both filters work with no LLM connected). Below those, an "Available commands and queries"
- * section (canon 9) holds one combined, alphabetically sorted list of the commands (built-in actions plus
- * custom-command macros) and queries available in the selected situation, laid out row-major across three
- * equal, header-less columns of a single read-only HUD table (canon 6). All of it updates live off game events
- * while the tab is showing (the table rebuilds when the selected situation changes).
+ * The "Built-in Commands" tab, under Actions: what this build can do, and which of it the commander can use
+ * where they are.
+ * <p>
+ * At the top of the page a two-column row (canon 9, equal halves + centred divider) pairs a scope picker with
+ * the concrete place for it (read-only: station / body / system); below it sits a search box, full width.
+ * <p>
+ * The scope picker holds ALL plus every physical situation - in ship / SRV / fighter / taxi / on foot; docked,
+ * landed, supercruise, ring, orbit, deep space. It auto-follows the live game situation until the commander
+ * picks something themselves, after which it stays put; an undetermined situation shows ALL. ALL lists every
+ * action this build has, including ones not usable right now; a situation lists only what is usable there.
+ * <p>
+ * The search box is a plain, literal text filter over the listed actions - name, action key, and the spoken
+ * phrases that trigger them. It is deliberately not the companion's routing: that ranks by meaning, so it
+ * would answer a typed word with commands that share none of it and no way to see why.
+ * <p>
+ * Below those, an "Available commands and queries" section (canon 9) holds one combined, alphabetically sorted
+ * list of the commands (built-in actions plus custom-command macros) and queries in the chosen scope, laid out
+ * row-major across three equal, header-less columns of a single read-only HUD table (canon 6). All of it
+ * updates live off game events while the tab is showing.
+ * <p>
+ * This replaced a second, flat catalog table that listed the same built-in commands with a text filter. Both
+ * listed the same entries and opened the same details dialog, so the one that also knows about context was
+ * kept - and it took the other's search with it.
  */
-public class HelpTabPanel extends JPanel {
-
-    private static final Logger log = LogManager.getLogger(HelpTabPanel.class);
+public class BuiltInCommandsTabPanel extends JPanel {
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final Status status = Status.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
     private final CommandCatalog commandCatalog = new CommandCatalog();
-    /** Situation the highlight reducer's candidates are gated by (read off the EDT by the background worker). */
-    private volatile PlayerSituation highlightSituation = PlayerSituation.UNKNOWN;
-    /**
-     * Reducer that highlights the actions matching the typed phrase. Its candidate visibility is gated by the
-     * PICKED situation ({@link #highlightSituation}) and the CURRENT language, so the highlight follows the
-     * "where I am" picker exactly like the available-actions list — unlike the running companion reducer, whose
-     * candidates are frozen to the live game status and to the companion-start language.
-     */
-    private final SemanticActionReducer highlightReducer =
-            SemanticActionReducer.withCandidateSource(this::highlightCandidates);
 
     /** Number of equal columns the available-actions list is laid out across (row-major fill). */
     private static final int COLUMN_COUNT = 3;
-    /** The action categories the Help tab lists and highlights: built-in commands, macros, and queries. */
+    /**
+     * The action categories this tab lists and highlights: built-in commands, macros, and queries.
+     */
     private static final Set<IntelActionCategory> ACTION_CATEGORIES =
             Set.of(IntelActionCategory.ACTION, IntelActionCategory.MACRO, IntelActionCategory.QUERY);
 
-    private JComboBox<PlayerSituation> situationCombo;
+    private JComboBox<Scope> situationCombo;
     private JTextField locationField;
-    private JTextField phraseField;
+    private JTextField searchField;
     private JTable actionsTable;
     private DefaultTableModel actionsModel;
     private HudSection actionsSection;
@@ -103,30 +96,33 @@ public class HelpTabPanel extends JPanel {
     private long lastFlags2 = -1L;
     /** Guards GameEventBus register/unregister so a hide without a prior show cannot throw or double-subscribe. */
     private boolean subscribed;
-    /** Action ids selected by the semantic reducer for the current commander phrase (EDT-only). */
-    private Set<String> highlightedActionIds = Set.of();
-    /** Monotonic token used to ignore stale background semantic-selection results. */
-    private int highlightRequest;
-    /** Current available action rows before highlight ordering is applied (EDT-only). */
+    /** Every action in the chosen scope, before the search box narrows it (EDT-only). */
     private List<ActionRow> visibleActionRows = List.of();
-    /** True while we set the phrase field ourselves, so its edit listener skips our echo (EDT-only). */
-    private boolean settingPhraseText;
     /** True while we sync the situation picker to the live game situation, so its listener skips it (EDT-only). */
     private boolean syncingSituation;
+    /**
+     * True until the commander picks a scope by hand; the picker chases the live game only while set (EDT-only).
+     */
+    private boolean followLiveSituation = true;
     /** Cell currently under the mouse in the actions table (row/col), or -1/-1 for none (EDT-only). */
     private int hoverRow = -1;
     private int hoverCol = -1;
 
-    public HelpTabPanel() {
+    public BuiltInCommandsTabPanel() {
         buildUi();
-        // Subscribe to the (frequent) live Status event only while the tab is actually showing; JTabbedPane
-        // toggles child visibility on tab switch, so componentShown/Hidden bracket the tab being open.
-        addComponentListener(new ComponentAdapter() {
-            @Override public void componentShown(ComponentEvent e) {
+        // Subscribe to the (frequent) live Status event only while the tab is actually showing. This sits
+        // inside a nested tab pane (Actions > Built-in Commands), and JTabbedPane hides the tab it switches
+        // away from without touching its children's own visible flag - so componentHidden never fires for a
+        // panel one level down and it would stay subscribed behind a different top-level tab. SHOWING_CHANGED
+        // is the event that accounts for every ancestor, which is exactly the question being asked here.
+        addHierarchyListener(event -> {
+            if ((event.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) == 0) {
+                return;
+            }
+            if (isShowing()) {
                 subscribe();
                 refresh();
-            }
-            @Override public void componentHidden(ComponentEvent e) {
+            } else {
                 unsubscribe();
             }
         });
@@ -143,20 +139,20 @@ public class HelpTabPanel extends JPanel {
         top.setOpaque(false);
         GridBagConstraints gbc = baseGbc();
 
-        // Left column - situation picker: selectable list of every PlayerSituation (localized, capsed),
-        // UNKNOWN = "unknown". It auto-follows the live game situation, but a manual pick re-filters the
-        // available actions below for that what-if context - the selected situation, not the live game, drives
-        // the filter (see availableRows).
+        // Left column - scope picker: ALL, then every PlayerSituation (localized, capsed), UNKNOWN = "unknown".
+        // It auto-follows the live game situation until the commander picks something themselves, after which it
+        // stays put - otherwise the next status tick would drag them off the scope they chose (ALL above all)
+        // while they were reading it. The selected scope, not the live game, drives the list (see availableRows).
         JPanel situationCol = transparentPanel(new GridBagLayout());
         GridBagConstraints sgc = baseGbc();
         addLabel(situationCol, EventsTextProvider.getText("game.situation.label"), sgc);
-        situationCombo = new HudComboBox<>(PlayerSituation.values(),
-                s -> caps(EventsTextProvider.getText(s.i18nKey())));
-        situationCombo.setSelectedItem(PlayerSituation.UNKNOWN); // no context known until the first refresh/sync
+        situationCombo = new HudComboBox<>(scopeChoices(), Scope::label);
+        situationCombo.setSelectedItem(Scope.ALL); // nothing known about the game yet: show everything
         situationCombo.addActionListener(e -> {
             if (syncingSituation) {
                 return; // our own live-sync; it re-filters explicitly, so skip the duplicate here
             }
+            followLiveSituation = false; // a deliberate pick owns the picker from here
             rebuildAvailableActionsForSelection();
         });
         addField(situationCol, situationCombo, sgc, 1, 1.0);
@@ -178,26 +174,33 @@ public class HelpTabPanel extends JPanel {
         placeWrap.add(placeCol, BorderLayout.NORTH);
         addSpanComponent(top, new HudTwoColumns(situationWrap, placeWrap), gbc);
 
-        // Phrase row - the same nested label+field column as the two above, added full-width, so its input's
+        // Search row - the same nested label+field column as the two above, added full-width, so its input's
         // left edge lines up exactly with the situation combo's (identical label width and nesting insets).
         nextRow(gbc);
-        JPanel phraseCol = transparentPanel(new GridBagLayout());
+        JPanel searchCol = transparentPanel(new GridBagLayout());
         GridBagConstraints fgc = baseGbc();
-        addLabel(phraseCol, getText("location.field.phrase"), fgc);
-        // In-field info-"i" (HUD section 5.1) explaining what this field is for.
-        phraseField = makeTextField(this::showPhraseInfo);
-        // Editable input, not a read-out: every edit re-runs the reducer over the field's current text and
-        // re-highlights the matching available actions below - the same filtering a spoken phrase drives, but
-        // reducer-only (no LLM turn), so it works even with no LLM connected. Guarded against our own
-        // programmatic echo (see setPhraseText) so an incoming phrase written back into the field does not run
-        // the reducer twice.
-        phraseField.getDocument().addDocumentListener(new DocumentListener() {
-            @Override public void insertUpdate(DocumentEvent e) { onPhraseEdited(); }
-            @Override public void removeUpdate(DocumentEvent e) { onPhraseEdited(); }
-            @Override public void changedUpdate(DocumentEvent e) { onPhraseEdited(); }
+        addLabel(searchCol, getText("actions.commands.search.label"), fgc);
+        // In-field info-"i" (HUD section 5.1) explaining what this field searches.
+        searchField = makeTextField(this::showSearchInfo);
+        // Plain text search: every edit narrows the list below to the actions whose name, id, or spoken
+        // phrases contain what was typed. Literal substring matching, so what is typed is what is looked for.
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                applyActionRows();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                applyActionRows();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) { applyActionRows();
+            }
         });
-        addField(phraseCol, phraseField, fgc, 1, 1.0);
-        addSpanComponent(top, phraseCol, gbc);
+        addField(searchCol, searchField, fgc, 1, 1.0);
+        addSpanComponent(top, searchCol, gbc);
 
         add(top, BorderLayout.NORTH);
 
@@ -268,8 +271,8 @@ public class HelpTabPanel extends JPanel {
             }
         });
         table.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
-                .put(KeyStroke.getKeyStroke("ENTER"), "openHelpCommandDetails");
-        table.getActionMap().put("openHelpCommandDetails", new AbstractAction() {
+                .put(KeyStroke.getKeyStroke("ENTER"), "openBuiltInCommandDetails");
+        table.getActionMap().put("openBuiltInCommandDetails", new AbstractAction() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent event) {
                 openCommandDetailsAt(table, table.getSelectedRow(), table.getSelectedColumn());
@@ -357,76 +360,6 @@ public class HelpTabPanel extends JPanel {
     }
 
     /**
-     * Live update of the commander's current spoken phrase (the normalized voice input), fired off the game
-     * event thread; the field update is marshaled onto the EDT.
-     * <p>
-     * In companion mode the authoritative {@link CommanderMatchInputChangedEvent} follows this for the same
-     * utterance and drives the reducer highlight on the exact match input, so re-running the reducer here would
-     * recompute (and log) the same reduce twice. Legacy command mode never fires that event, so this remains the
-     * only highlight trigger there - hence the reducer runs here only when the companion runtime is absent.
-     */
-    @Subscribe
-    public void onCommanderPhrase(NormalizedUserInputEvent event) {
-        String text = event.getText() == null ? "" : event.getText();
-        SwingUtilities.invokeLater(() -> {
-            setPhraseText(text);
-            if (!companionRunning()) {
-                updateSemanticHighlights(text);
-            }
-        });
-    }
-
-    /**
-     * Runs on every edit of the phrase field: re-runs the reducer over the field's current text to re-highlight
-     * the matching available actions (reducer-only, no LLM turn). Our own programmatic echo of an incoming
-     * phrase (see {@link #setPhraseText}) is skipped so the reducer does not run twice for it.
-     */
-    private void onPhraseEdited() {
-        if (settingPhraseText) {
-            return; // our echo of an incoming phrase; the phrase handler already ran the reducer for it
-        }
-        updateSemanticHighlights(phraseField.getText());
-    }
-
-    /**
-     * Sets the phrase field from an incoming (voice / companion) phrase without tripping the edit listener that
-     * would re-submit it: the flag makes {@link #onPhraseEdited} treat the change as an echo, and we only write
-     * when the text actually differs so a matching echo does not churn the document or jump the caret while the
-     * commander is typing. EDT-only.
-     */
-    private void setPhraseText(String text) {
-        String value = text == null ? "" : text;
-        if (value.equals(phraseField.getText())) {
-            return;
-        }
-        settingPhraseText = true;
-        try {
-            phraseField.setText(value);
-        } finally {
-            settingPhraseText = false;
-        }
-    }
-
-    /** Opens the in-field info-"i" (HUD section 5.1) help for the commander-phrase field. */
-    private void showPhraseInfo() {
-        HudConfirmDialog.info(
-                this,
-                getText("location.field.phrase"),
-                getText("location.field.phrase.info"),
-                getText("button.ok"));
-    }
-
-    /** Live update from the companion path: this is the exact match input used by the companion reducer. */
-    @Subscribe
-    public void onCommanderMatchInputChanged(CommanderMatchInputChangedEvent event) {
-        String text = event.text() == null ? "" : event.text();
-        SwingUtilities.invokeLater(() -> {
-            setPhraseText(text);
-            updateSemanticHighlights(text);
-        });
-    }
-
-    /**
      * Rebuilds the available-actions table when the set of custom-command macros changes (added, removed, or
      * reloaded, including a macro created by voice while this tab is open), so the list stays current without a
      * situation change or a tab switch.
@@ -456,8 +389,8 @@ public class HelpTabPanel extends JPanel {
         LocationDto location = currentLocation();
         PlayerSituation situation = status.getSituation(location);
         locationField.setText(caps(placeName(situation, location)));
-        setPhraseText(currentCommanderMatchInput());
         lastSituation = situation;
+        followLiveSituation = true; // a fresh look at the tab starts from where the commander actually is
         syncSituationToLive(situation);
     }
 
@@ -468,71 +401,77 @@ public class HelpTabPanel extends JPanel {
      * fires no event) yet the list still needs a refresh (e.g. on tab show or a macro-set change).
      */
     private void syncSituationToLive(PlayerSituation situation) {
+        if (!followLiveSituation) {
+            return; // the commander chose a scope; the game does not get to change it under them
+        }
         syncingSituation = true;
         try {
-            situationCombo.setSelectedItem(situation);
+            situationCombo.setSelectedItem(scopeFor(situation));
         } finally {
             syncingSituation = false;
         }
         rebuildAvailableActionsForSelection();
     }
 
-    /** Rebuilds the available actions for the situation currently chosen in the picker (the filter's context). */
+    /**
+     * The scope to show for a live situation. An undetermined situation - the game not running, or not yet
+     * read - falls back to ALL rather than to an empty list: with no idea where the commander is, every action
+     * is the honest answer, and an empty tab reads as a broken one.
+     */
+    static Scope scopeFor(PlayerSituation situation) {
+        return situation == null || situation == PlayerSituation.UNKNOWN ? Scope.ALL : Scope.of(situation);
+    }
+
+    /** Rebuilds the available actions for the scope currently chosen in the picker. */
     private void rebuildAvailableActionsForSelection() {
-        rebuildAvailableActions((PlayerSituation) situationCombo.getSelectedItem());
+        rebuildAvailableActions((Scope) situationCombo.getSelectedItem());
+    }
+
+    /**
+     * Opens the in-field info-"i" (HUD section 5.1) help for the search field.
+     */
+    private void showSearchInfo() {
+        HudConfirmDialog.info(
+                this,
+                getText("actions.commands.search.label"),
+                getText("actions.commands.search.info"),
+                getText("button.ok"));
     }
 
     private LocationDto currentLocation() {
         return locationManager.findByLocationData(playerSession.getLocationData());
     }
 
-    private String currentCommanderMatchInput() {
-        try {
-            return CompanionRuntime.state().lastCommanderMatchInput();
-        } catch (IllegalStateException ignored) {
-            // WHY: companion runtime not installed yet (e.g. before services start); no match input to show.
-            return "";
-        }
-    }
-
     /**
-     * Rebuilds the actions table from one combined list of everything available in the given situation
-     * (commands, macros, queries), laid out row-major across the {@link #COLUMN_COUNT} columns (see
-     * {@link #applyActionRows}). UNKNOWN clears the table.
+     * Rebuilds the actions table from one combined list of everything in the given scope (commands, macros,
+     * queries), laid out row-major across the {@link #COLUMN_COUNT} columns (see {@link #applyActionRows}).
+     * UNKNOWN clears the table; ALL lists everything this build has.
      */
-    private void rebuildAvailableActions(PlayerSituation situation) {
-        // Gate the highlight reducer by the same picked situation that gates the list below (see highlightReducer).
-        highlightSituation = situation;
-        if (situation == null || situation == PlayerSituation.UNKNOWN) {
+    private void rebuildAvailableActions(Scope scope) {
+        if (scope == null || scope.isSituation(PlayerSituation.UNKNOWN)) {
             clearAvailableActions();
             return;
         }
-        visibleActionRows = availableRows(ACTION_CATEGORIES, situation);
-        updateAvailableActionsTitle();
+        visibleActionRows = availableRows(ACTION_CATEGORIES, scope);
         applyActionRows();
-        updateSemanticHighlights(phraseField.getText());
     }
 
     private void clearAvailableActions() {
         visibleActionRows = List.of();
-        updateAvailableActionsTitle();
-        actionsModel.setRowCount(0);
-        highlightedActionIds = Set.of();
-        ++highlightRequest;
-        actionsTable.repaint();
+        applyActionRows();
     }
 
     /**
-     * Sorts the visible actions (highlighted first, then alphabetically) and lays them out row-major across the
-     * {@link #COLUMN_COUNT} columns: cell (r, c) holds item {@code r * COLUMN_COUNT + c}, so reading
+     * Narrows the scope's actions by the search box, sorts them alphabetically, and lays them out row-major
+     * across the {@link #COLUMN_COUNT} columns: cell (r, c) holds item {@code r * COLUMN_COUNT + c}, so reading
      * left-to-right, top-to-bottom follows the sorted order and the columns stay balanced (the short last row
      * trails empty cells).
      */
     private void applyActionRows() {
-        List<ActionRow> ordered = new ArrayList<>(visibleActionRows);
-        ordered.sort(Comparator
-                .comparing((ActionRow row) -> !highlightedActionIds.contains(row.id()))
-                .thenComparing(ActionRow::name, String.CASE_INSENSITIVE_ORDER));
+        List<ActionRow> ordered = new ArrayList<>(
+                matching(visibleActionRows, searchField == null ? "" : searchField.getText()));
+        ordered.sort(Comparator.comparing(ActionRow::name, String.CASE_INSENSITIVE_ORDER));
+        updateAvailableActionsTitle(ordered.size());
         int rowCount = (ordered.size() + COLUMN_COUNT - 1) / COLUMN_COUNT;
         actionsModel.setRowCount(0);
         for (int r = 0; r < rowCount; r++) {
@@ -545,9 +484,23 @@ public class HelpTabPanel extends JPanel {
         }
     }
 
-    private void updateAvailableActionsTitle() {
+    /**
+     * The rows a search matches: a literal, case-insensitive substring of the action's name, its id, or the
+     * spoken phrases that trigger it. Deliberately plain - what is typed is what is looked for - because this
+     * is a reference list the commander reads, not the routing the companion performs on a spoken phrase.
+     * A blank search matches everything. Static and package-private so it can be tested without a screen.
+     */
+    static List<ActionRow> matching(List<ActionRow> rows, String search) {
+        String query = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
+        if (query.isEmpty()) {
+            return rows;
+        }
+        return rows.stream().filter(row -> row.searchText().contains(query)).toList();
+    }
+
+    private void updateAvailableActionsTitle(int count) {
         if (actionsSection != null) {
-            actionsSection.setTitle(availableActionsTitle(visibleActionRows.size()));
+            actionsSection.setTitle(availableActionsTitle(count));
         }
     }
 
@@ -557,90 +510,88 @@ public class HelpTabPanel extends JPanel {
     }
 
     /**
-     * Localized, alphabetically sorted display names of the actions offered for the given categories in the
-     * given situation. {@link GameToolCandidates} owns "what is available" (context visibility plus the internal
-     * fallback-id exclusions); we gate it against a {@link Status#detached} status standing in for the chosen
-     * situation, so the list reflects the picked context rather than the live game. This only maps each
-     * surviving id to its localized name.
+     * Localized display names of the actions in the given scope. {@link GameToolCandidates} owns "what exists"
+     * (and, for a single situation, "what is usable there"); this only maps each surviving id to its localized
+     * name and the text a search looks through.
      */
-    private List<ActionRow> availableRows(Set<IntelActionCategory> categories, PlayerSituation situation) {
-        Status situationStatus = Status.detached(situation);
+    private List<ActionRow> availableRows(Set<IntelActionCategory> categories, Scope scope) {
         Map<String, String> nameById = nameIndex();
-        return new GameToolCandidates(situationStatus).collect(categories).stream()
-                .map(candidate -> new ActionRow(candidate.id(), nameById.getOrDefault(candidate.id(), candidate.id())))
+        List<GameToolCandidates.Candidate> candidates = scope.isAll()
+                ? new GameToolCandidates(Status.detached(PlayerSituation.UNKNOWN)).collectIgnoringVisibility(categories)
+                : new GameToolCandidates(Status.detached(scope.situation())).collect(categories);
+        return candidates.stream()
+                .map(candidate -> ActionRow.of(
+                        candidate.id(),
+                        nameById.getOrDefault(candidate.id(), candidate.id()),
+                        candidate.localizedAliasGroup()))
                 .sorted((left, right) -> String.CASE_INSENSITIVE_ORDER.compare(left.name(), right.name()))
                 .toList();
     }
 
-    /** Recomputes semantic reducer hits for the current phrase without blocking the UI thread. */
-    private void updateSemanticHighlights(String phrase) {
-        int request = ++highlightRequest;
-        if (phrase == null || phrase.isBlank()) {
-            highlightedActionIds = Set.of();
-            applyActionRows();
-            return;
-        }
-        new SwingWorker<Set<String>, Void>() {
-            @Override protected Set<String> doInBackground() {
-                List<LlmToolDefinition> tools = highlightReducer.selectTools(ACTION_CATEGORIES, phrase);
-                Set<String> ids = new HashSet<>();
-                for (LlmToolDefinition tool : tools) {
-                    ids.add(tool.name());
-                }
-                return ids;
-            }
-
-            @Override protected void done() {
-                if (request != highlightRequest) {
-                    return;
-                }
-                try {
-                    highlightedActionIds = get();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    highlightedActionIds = Set.of();
-                } catch (ExecutionException e) {
-                    log.debug("Reducer highlight computation failed", e.getCause());
-                    highlightedActionIds = Set.of();
-                }
-                applyActionRows();
-            }
-        }.execute();
-    }
-
     /**
-     * Candidates for {@link #highlightReducer}: gated by the picked situation (a what-if {@link Status#detached}
-     * context, so the highlight matches the available-actions list) and built fresh each call, so it reads the
-     * current command language rather than a frozen one. Empty for UNKNOWN. Runs off the EDT (background worker).
+     * One action in the list. {@code searchText} is the lower-cased haystack a search looks through - the
+     * display name, the id, and the spoken phrases - built once here rather than on every keystroke.
      */
-    private List<GameToolCandidates.Candidate> highlightCandidates(Set<IntelActionCategory> categories) {
-        PlayerSituation situation = highlightSituation;
-        if (situation == null || situation == PlayerSituation.UNKNOWN) {
-            return List.of();
-        }
-        return new GameToolCandidates(Status.detached(situation)).collect(categories);
-    }
+    record ActionRow(String id, String name, String searchText) {
 
-    /** True while the companion runtime is installed (companion mode); false in legacy command mode. */
-    private boolean companionRunning() {
-        try {
-            CompanionRuntime.reducer();
-            return true;
-        } catch (IllegalStateException notRunning) {
-            return false;
+        static ActionRow of(String id, String name, String phrases) {
+            String haystack = (name + " " + id + " " + (phrases == null ? "" : phrases)).toLowerCase(Locale.ROOT);
+            return new ActionRow(id, name, haystack);
         }
-    }
 
-    private record ActionRow(String id, String name) {
         @Override public String toString() {
             return name;
         }
     }
 
     /**
+     * One entry in the scope picker: either every action this build has, or only those usable in one situation.
+     * <p>
+     * A wrapper rather than an extra {@link PlayerSituation} constant, because ALL is a way of looking at the
+     * list and not a place the commander can be - the game's own situation enum has no business carrying it.
+     */
+    record Scope(PlayerSituation situation) {
+
+        static final Scope ALL = new Scope(null);
+
+        static Scope of(PlayerSituation situation) {
+            return new Scope(situation);
+        }
+
+        boolean isAll() {
+            return situation == null;
+        }
+
+        boolean isSituation(PlayerSituation other) {
+            return situation == other;
+        }
+
+        String label() {
+            return isAll()
+                    ? caps(getText("actions.commands.scope.all"))
+                    : caps(EventsTextProvider.getText(situation.i18nKey()));
+        }
+    }
+
+    /**
+     * ALL first, then every situation in enum order. UNKNOWN is left out on purpose: it is the game saying it
+     * cannot tell where the commander is, which is not something to filter a reference list by - ALL is what
+     * that means here, and an entry that always showed an empty list would only look broken.
+     */
+    static Scope[] scopeChoices() {
+        List<Scope> choices = new ArrayList<>();
+        choices.add(Scope.ALL);
+        for (PlayerSituation situation : PlayerSituation.values()) {
+            if (situation != PlayerSituation.UNKNOWN) {
+                choices.add(Scope.of(situation));
+            }
+        }
+        return choices.toArray(new Scope[0]);
+    }
+
+    /**
      * Per-cell renderer: an empty filler cell blends into the app background (no tile); a hovered action cell
-     * gets the hover tile; an action selected by the reducer gets the success foreground. Selection styling is
-     * left to the shared {@link HudTable.CellRenderer}.
+     * gets the hover tile. Selection styling is left to the shared {@link HudTable.CellRenderer}.
      */
     private final class ActionHighlightRenderer extends HudTable.ValueCellRenderer {
         @Override
@@ -650,15 +601,12 @@ public class HelpTabPanel extends JPanel {
             if (isSelected) {
                 return component;
             }
-            if (!(value instanceof ActionRow actionRow)) {
+            if (!(value instanceof ActionRow)) {
                 component.setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND); // empty slot, not a data tile
                 return component;
             }
             if (row == hoverRow && column == hoverCol) {
                 component.setBackground(HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND);
-            }
-            if (highlightedActionIds.contains(actionRow.id())) {
-                component.setForeground(HUD_COLOR_ROLE_SUCCESS);
             }
             return component;
         }

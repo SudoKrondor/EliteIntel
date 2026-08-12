@@ -43,6 +43,9 @@ public class MissionCompletedEvent extends BaseEvent {
     @SerializedName("Reward")
     private long reward;
 
+    @SerializedName("MaterialsReward")
+    private List<MaterialReward> materialsReward;
+
     @SerializedName("FactionEffects")
     private List<FactionEffect> factionEffects;
 
@@ -60,6 +63,7 @@ public class MissionCompletedEvent extends BaseEvent {
         this.destinationSystem = event.destinationSystem;
         this.destinationStation = event.destinationStation;
         this.reward = event.reward;
+        this.materialsReward = event.materialsReward;
         this.factionEffects = event.factionEffects;
     }
 
@@ -133,12 +137,62 @@ public class MissionCompletedEvent extends BaseEvent {
         return reward;
     }
 
+    /**
+     * Engineering materials handed over as part of the mission payout; null when there were none.
+     */
+    public List<MaterialReward> getMaterialsReward() {
+        return materialsReward;
+    }
+
     public List<FactionEffect> getFactionEffects() {
         return factionEffects;
     }
 
     public String getFormattedTimestamp(boolean useLocalTime) {
         return TimestampFormatter.formatTimestamp(getTimestamp().toString(), useLocalTime);
+    }
+
+    /**
+     * One material paid out by a mission. Unlike every other material-bearing event, this one reports
+     * {@code Name} in mixed case ({@code "HybridCapacitors"}) and {@code Category} as a game token
+     * ({@code "$MICRORESOURCE_CATEGORY_Manufactured;"}); both are normalized downstream rather than here,
+     * so this stays a faithful record of the journal line.
+     */
+    public static class MaterialReward {
+        @SerializedName("Name")
+        private String name;
+
+        @SerializedName("Name_Localised")
+        private String nameLocalised;
+
+        @SerializedName("Category")
+        private String category;
+
+        @SerializedName("Category_Localised")
+        private String categoryLocalised;
+
+        @SerializedName("Count")
+        private int count;
+
+        public String getName() {
+            return name;
+        }
+
+        public String getNameLocalised() {
+            return nameLocalised;
+        }
+
+        public String getCategory() {
+            return category;
+        }
+
+        public String getCategoryLocalised() {
+            return categoryLocalised;
+        }
+
+        public int getCount() {
+            return count;
+        }
     }
 
     public static class FactionEffect {

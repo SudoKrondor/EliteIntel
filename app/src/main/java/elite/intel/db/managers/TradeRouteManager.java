@@ -97,6 +97,9 @@ public class TradeRouteManager {
             dao.clear(); //clear previous route
 
             List<TradeRouteTransaction> result = tradeRoute.getResult();
+            // Recorded on every row so the route's length survives the legs being flown and deleted. The
+            // overlay reads it back rather than inferring the total from whatever rows are left.
+            int totalLegs = result.size();
             int counter = 0;
 
             //transaction contains from and to address + list of commodities
@@ -116,12 +119,21 @@ public class TradeRouteManager {
                 TradeRouteDao.TradeRoute data = new TradeRouteDao.TradeRoute();
                 data.setJson(stop.toJson());
                 data.setLegNumber(stop.getStopNumber());
+                data.setTotalLegs(totalLegs);
                 dao.save(data);
             }
             return Void.class;
         });
     }
 
+
+    /**
+     * How many legs the route had when it was plotted, or 0 when there is no route (or it predates the length
+     * being recorded, in which case the caller has to fall back to counting what is left).
+     */
+    public int getTotalLegs() {
+        return Database.withDao(TradeRouteDao.class, TradeRouteDao::totalLegs);
+    }
 
     public boolean hasRoute() {
         return Database.withDao(TradeRouteDao.class, dao -> dao.getNextStop() != null);

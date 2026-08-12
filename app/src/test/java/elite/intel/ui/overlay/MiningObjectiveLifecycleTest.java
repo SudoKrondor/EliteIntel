@@ -39,7 +39,7 @@ class MiningObjectiveLifecycleTest {
             ] }""";
 
     private final PlayerSession session = PlayerSession.getInstance();
-    private final MiningObjectiveSource source = new MiningObjectiveSource();
+    private final MiningObjectiveSource source = new MiningObjectiveSource(PlayerSession.getInstance(), () -> false);
 
     private ShipLoadOutDto previousLoadout;
     private GameEvents.CargoEvent previousCargo;

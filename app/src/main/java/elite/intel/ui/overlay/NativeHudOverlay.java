@@ -92,12 +92,7 @@ public class NativeHudOverlay {
         // is listed ahead of exobiology because both are ambient: a commander in
         // a ring is working the ring, not the sampling list of the system it
         // happens to sit in.
-        sources.add(new MassacreObjectiveSource());
-        sources.add(new MissionObjectiveSource());
-        sources.add(new TradeRouteObjectiveSource());
-        sources.add(new MonetizedRouteObjectiveSource());
-        sources.add(new MiningObjectiveSource());
-        sources.add(new ExobiologyObjectiveSource());
+        sources.addAll(defaultSources());
 
         SystemSession.HudOverlayLayout stored = systemSession.getHudOverlayLayout();
         backgroundAlpha = stored.alpha();
@@ -580,6 +575,26 @@ public class NativeHudOverlay {
      * happening. Ties keep the earlier source, so registration order is the
      * tie-break.
      */
+    /**
+     * The sources the overlay runs, in the order they compete. Priority decides first; this order is only the
+     * tie-break, which is what separates the equally-ranked ambient cards from each other. Visible so a test
+     * can assert the ladder against the real order instead of a copy that can drift from it.
+     */
+    static List<HudObjectiveSource> defaultSources() {
+        return List.of(
+                new MassacreObjectiveSource(),
+                new MissionObjectiveSource(),
+                new TradeRouteObjectiveSource(),
+                new MonetizedRouteObjectiveSource(),
+                new MiningObjectiveSource(),
+                new ExobiologyObjectiveSource(),
+                // Last and weakest: where the commander is pointed, which is worth showing when nothing
+                // else is and worth nothing next to what they are actually doing. A destination the app
+                // worked out (material trader, broker, factors) enriches this card rather than competing
+                // with it, so a stale errand can never claim the screen on its own.
+                new ShipRouteObjectiveSource());
+    }
+
     static Optional<HudObjective> highestPriority(List<HudObjectiveSource> sources) {
         return sources.stream()
                 .map(HudObjectiveSource::currentObjective)

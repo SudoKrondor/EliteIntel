@@ -31,7 +31,7 @@ public class MaterialCollectedSubscriber {
         // Keyed on the journal's Name (the FDev symbol), never Name_Localised: the same material
         // arrives under a different display string on every localized client.
         String symbol = event.getName();
-        materialManager.collect(symbol, determineType(event.getCategory()), event.getCount(), event.getNameLocalised());
+        materialManager.collect(symbol, MaterialsType.fromJournalCategory(event.getCategory()), event.getCount(), event.getNameLocalised());
 
         MaterialNameDao.Material material = materialManager.find(symbol);
         String displayName = event.getDisplayName();
@@ -57,12 +57,5 @@ public class MaterialCollectedSubscriber {
             pending.clear();
             CompanionRuntime.narrator().announce(announcement, false);
         }
-    }
-
-    private MaterialsType determineType(String category) {
-        if ("Raw".equalsIgnoreCase(category)) return MaterialsType.GAME_RAW;
-        if ("Manufactured".equalsIgnoreCase(category)) return MaterialsType.GAME_MANUFACTURED;
-        if ("Encoded".equalsIgnoreCase(category)) return MaterialsType.GAME_ENCODED;
-        else return MaterialsType.GAME_UNKNOWN;
     }
 }

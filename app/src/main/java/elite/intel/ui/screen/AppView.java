@@ -35,7 +35,6 @@ public class AppView extends JFrame implements AppViewInterface {
     private static final String ICON_SETTINGS = "/images/settings.png";
     private static final String ICON_STATS = "/images/stats.png";
     private static final String CREDITS_ICON = "/images/release.png";
-    private static final String HELP_ICON = "/images/manual.png";
 
     private final SystemSession systemSession = SystemSession.getInstance();
     private Font monoFont;
@@ -47,7 +46,6 @@ public class AppView extends JFrame implements AppViewInterface {
     private SettingsTabPanel settingsTabPanel;
     private UsageStatsTabPanel usageStatsTabPanel;
     private MarkdownViewPanel creditsPanel;
-    private HelpTabPanel helpTabPanel;
     private InputMonitorTabPanel inputMonitorTabPanel;
     private AiTabController aiTabController;
     private TopStatusBar topStatusBar;
@@ -100,7 +98,6 @@ public class AppView extends JFrame implements AppViewInterface {
         ImageIcon settingsIcon = scaledIcon(ICON_SETTINGS);
         ImageIcon statsIcon = scaledIcon(ICON_STATS);
         ImageIcon creditsIcon = scaledIcon(CREDITS_ICON);
-        ImageIcon helpIcon = scaledIcon(HELP_ICON);
         if (uiState == null) {
             uiState = new AiUiState();
         }
@@ -111,7 +108,6 @@ public class AppView extends JFrame implements AppViewInterface {
         settingsTabPanel = new SettingsTabPanel();
         usageStatsTabPanel = new UsageStatsTabPanel();
         creditsPanel = new MarkdownViewPanel("credits.md");
-        helpTabPanel = new HelpTabPanel();
         inputMonitorTabPanel = new InputMonitorTabPanel();
 
         tabs.addTab(getText("tab.ai"), aiIcon, aiTabPanel);
@@ -120,7 +116,6 @@ public class AppView extends JFrame implements AppViewInterface {
         tabs.addTab(getText("tab.bindings"), bindingsIcon, bindingsTabPanel);
         tabs.addTab(getText("tab.settings"), settingsIcon, settingsTabPanel);
         tabs.addTab(getText("tab.stats"), statsIcon, usageStatsTabPanel);
-        tabs.addTab(getText("tab.help"), helpIcon, helpTabPanel);
         //tabs.addTab("Credits", creditsIcon, creditsPanel);
 
         topStatusBar = new TopStatusBar(
@@ -152,7 +147,6 @@ public class AppView extends JFrame implements AppViewInterface {
         commanderTabPanel.initData();
         actionsTabPanel.initData();
         bindingsTabPanel.initData();
-        helpTabPanel.initData();
         aiTabPanel.initData(systemSession.isSleepingModeOn(), servicesState);
     }
 
@@ -183,7 +177,7 @@ public class AppView extends JFrame implements AppViewInterface {
         if (settingsTabPanel != null) settingsTabPanel.dispose();
         if (usageStatsTabPanel != null) usageStatsTabPanel.dispose();
         if (inputMonitorTabPanel != null) inputMonitorTabPanel.dispose();
-        if (helpTabPanel != null) helpTabPanel.dispose();
+        if (actionsTabPanel != null) actionsTabPanel.dispose();
         buildUi();
         initData();
         revalidate();

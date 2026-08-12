@@ -49,14 +49,17 @@ public class TradeRouteObjectiveSource implements HudObjectiveSource {
         List<TradeRouteManager.TradeRouteLegTuple<Integer, TradeStopDto>> remainingLegs =
                 tradeRouteManager.getAllStops();
         int remaining = remainingLegs == null ? 0 : remainingLegs.size();
-        int completed = legsCompleted(next.getLegNumber());
-        int total = legsTotal(next.getLegNumber(), remaining);
+        int leg = Math.max(1, next.getLegNumber());
+        int total = routeLength(tradeRouteManager.getTotalLegs(), next.getLegNumber(), remaining);
 
         TradeStopDto stop = next.getTradeStopDto();
         List<HudRow> rows = new ArrayList<>();
 
         if (total > 0) {
-            rows.add(HudRow.progress(HudText.get("overlay.card.row.legs"), completed, total));
+            // The bar counts the leg being flown, the same number the subtitle names. Showing legs *finished*
+            // here put two different figures for one thing on one card - "2 / 6" over "LEG 3 OF 6" - which read
+            // as an error even when it was not one.
+            rows.add(HudRow.progress(HudText.get("overlay.card.row.legs"), leg, total));
         }
         commodityOf(stop).ifPresent(name -> rows.add(HudRow.of(HudText.get("overlay.card.row.commodity"), name)));
         location(stop.getSourceSystem(), stop.getSourceStation())
@@ -67,10 +70,20 @@ public class TradeRouteObjectiveSource implements HudObjectiveSource {
         return Optional.of(new HudObjective(
                 "trade-route",
                 HudText.get("overlay.card.title.tradeRoute"),
-                HudText.get("overlay.card.subtitle.leg",
-                        String.valueOf(next.getLegNumber()), String.valueOf(total)),
+                HudText.get("overlay.card.subtitle.leg", String.valueOf(leg), String.valueOf(total)),
                 rows,
                 HudObjective.PRIORITY_STANDING));
+    }
+
+    /**
+     * The route's length. Uses the figure recorded when the route was plotted, which is the only one that
+     * cannot drift; falls back to counting for routes plotted before it was recorded.
+     */
+    static int routeLength(int recordedTotal, int nextLegNumber, int remainingLegs) {
+        int length = recordedTotal > 0 ? recordedTotal : legsTotal(nextLegNumber, remainingLegs);
+        // A route can never be shorter than the leg being flown. Cheap insurance against a stale or absent
+        // recorded length rendering "LEG 7 OF 6", which is the kind of thing a commander reports as a bug.
+        return Math.max(length, Math.max(1, nextLegNumber));
     }
 
     /**
@@ -83,8 +96,9 @@ public class TradeRouteObjectiveSource implements HudObjectiveSource {
     }
 
     /**
-     * The route's original length: legs already flown plus the rows that are
-     * still there (which include the leg being flown now).
+     * A route's length inferred from what is left: legs already flown plus the rows still there (which include
+     * the leg being flown now). Only correct while nothing but a flown leg is ever removed, which is why the
+     * length is now recorded instead — this remains for routes plotted before it was.
      */
     static int legsTotal(int nextLegNumber, int remainingLegs) {
         return legsCompleted(nextLegNumber) + Math.max(0, remainingLegs);

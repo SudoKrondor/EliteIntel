@@ -14,7 +14,10 @@ import java.sql.SQLException;
 public interface DestinationReminderDao {
 
 
-    @SqlUpdate("INSERT OR REPLACE INTO destination_reminder (id, starSystem, reminder) VALUES (1, :starSystem, :reminder)")
+    @SqlUpdate("""
+            INSERT OR REPLACE INTO destination_reminder (id, starSystem, reminder, stationName, contact)
+            VALUES (1, :starSystem, :reminder, :stationName, :contact)
+            """)
     void save(@BindBean Reminder data);
 
     @SqlQuery("SELECT * FROM destination_reminder WHERE id = 1")
@@ -30,6 +33,8 @@ public interface DestinationReminderDao {
             Reminder destination = new Reminder();
             destination.setReminder(rs.getString("reminder"));
             destination.setStarSystem(rs.getString("starSystem"));
+            destination.setStationName(rs.getString("stationName"));
+            destination.setContact(rs.getString("contact"));
             return destination;
         }
     }
@@ -41,7 +46,12 @@ public interface DestinationReminderDao {
 
         private String starSystem;
         private String reminder;
+        private String stationName;
+        private String contact;
 
+        /**
+         * The spoken sentence. Prose for the voice, in the language it was created in.
+         */
         public String getReminder() {
             return reminder;
         }
@@ -56,6 +66,29 @@ public interface DestinationReminderDao {
 
         public void setStarSystem(String starSystem) {
             this.starSystem = starSystem;
+        }
+
+        /**
+         * The port, when the reminder is for one; null for a reminder about a place.
+         */
+        public String getStationName() {
+            return stationName;
+        }
+
+        public void setStationName(String stationName) {
+            this.stationName = stationName;
+        }
+
+        /**
+         * The {@code ReminderContact} constant name, or null. Stored as the enum name so the label can
+         * be looked up in the reader's language rather than frozen at write time.
+         */
+        public String getContact() {
+            return contact;
+        }
+
+        public void setContact(String contact) {
+            this.contact = contact;
         }
     }
 }

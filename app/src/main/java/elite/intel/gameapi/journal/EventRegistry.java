@@ -40,6 +40,11 @@ public class EventRegistry {
         registerEvent("SupercruiseEntry", SupercruiseEntryEvent.class);
         registerEvent("Promotion", PromotionEvent.class);
         registerEvent("MaterialCollected", MaterialCollectedEvent.class);
+        registerEvent("MaterialTrade", MaterialTradeEvent.class);
+        registerEvent("MaterialDiscarded", MaterialDiscardedEvent.class);
+        registerEvent("Synthesis", SynthesisEvent.class);
+        registerEvent("TechnologyBroker", TechnologyBrokerEvent.class);
+        registerEvent("ScientificResearch", ScientificResearchEvent.class);
         registerEvent("ScanBaryCentre", ScanBaryCentreEvent.class);
         registerEvent("Docked", DockedEvent.class);
         registerEvent("DockingGranted", DockingGrantedEvent.class);
