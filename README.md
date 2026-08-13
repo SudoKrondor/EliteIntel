@@ -1,20 +1,15 @@
-## ⚙️ [INSTALL](https://www.elite-intel.org/Installation.html) | 🎓 [**WIKI**](https://www.elite-intel.org) | 💻[TECH STUFF](https://github.com/stone-alex/EliteIntel/blob/master/TECHNICAL.md)
+## ⚙️ [INSTALLATION](https://www.elite-intel.org/Installation.html) | 🎓 [
+**INFORMATION**](https://www.elite-intel.org) | 💻[TECH STUFF](https://github.com/stone-alex/EliteIntel/blob/master/TECHNICAL.md)
 
-# Elite Intel
-
-- **V1.0 English only** - require English game.
-- **V1.1 Multi lingual** in the active development.
-
-
+# Elite Intel - V1.1 (Multi lingual)
 
 --- 
 
 ## Linux and Windows Installers
 
-Can be ran 100% off-line or with various cloud services
+Can be run 100% off-line or with various cloud services
 
-1. Download the [👉**V1.0 installer**👈](https://github.com/stone-alex/EliteIntel/releases), or Apply for [**V1.1 Beta
-   Test**](https://matrix.to/#/#krondor:matrix.org)
+1. Download the [👉 **V1.1 installer**👈](https://github.com/stone-alex/EliteIntel/releases)
 2. Run the installer and follow the on-screen prompts.
 3. Set up an LLM. Two options are available:
     - **Local LLM** (free, offline): See the [**Local LLM
