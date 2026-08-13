@@ -178,6 +178,10 @@ test {
     }
     systemProperty 'elite.intel.db.url', 'jdbc:sqlite:file:testdb?mode=memory&cache=shared&busy_timeout=5000'
     systemProperty 'elite.intel.db.pool.size', '1'
+    // CI has no X11, so any test that reaches AWT fails there and passes on a
+    // developer's desktop. Run headless everywhere so that difference shows up
+    // locally instead of on the build server.
+    systemProperty 'java.awt.headless', 'true'
 }
 
 // Run with: ./gradlew localIntegrationTest

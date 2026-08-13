@@ -480,8 +480,14 @@ public class NativeHudOverlay {
 
     /**
      * 1.0 is calibrated for 1440p, so 1080p lands near 0.75 and 4K near 1.5.
+     * <p>
+     * With no display there is no height to scale from, and asking anyway throws:
+     * a headless build server constructs this class to test the child-process
+     * lifecycle, which has nothing to do with screens. 1.0 is the calibration
+     * point, so it is the honest answer when the question cannot be asked.
      */
     private static double defaultFontScale() {
+        if (GraphicsEnvironment.isHeadless()) return 1.0;
         int height = Toolkit.getDefaultToolkit().getScreenSize().height;
         return Math.max(0.75, Math.min(2.0, height / 1440d));
     }
