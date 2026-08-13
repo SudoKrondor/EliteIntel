@@ -40,8 +40,8 @@ tasks.named('build') {
 // Deliberately NOT wired into `build`: the binary it produces is tracked in git
 // (LFS), so building it on every `./gradlew build` would leave a dirty working
 // tree on machines that only touched the Java side. Run it by hand after
-// changing overlay/src, and commit the result. The Windows binary comes from the
-// build-overlay-windows CI job or from buildOverlayWindows below, the same way.
+// changing overlay/src, and commit the result. The Windows binary comes from
+// buildOverlayWindows below, the same way.
 tasks.register('buildOverlay', Exec) {
     group = 'build'
     description = 'Builds the native HUD overlay into distribution/overlays/'
