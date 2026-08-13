@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onglet Bindings  EliteIntel</title>
+    <meta name="description" content="Les assignations occupaient un coin de l&#39;onglet Actions ; elles ont désormais leur propre onglet,">
+    <link rel="canonical" href="https://www.elite-intel.org/fr/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Bindings-Tab.html">
+    <meta property="og:title" content="Onglet Bindings  EliteIntel">
+    <meta property="og:description" content="Les assignations occupaient un coin de l&#39;onglet Actions ; elles ont désormais leur propre onglet,">
+    <meta property="og:url" content="https://www.elite-intel.org/fr/UI-Bindings-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI-Bindings-Tab.html" class="locale-link">EN</a><span class="locale-current">FR</span><a href="../es/UI-Bindings-Tab.html" class="locale-link">ES</a><a href="../de/UI-Bindings-Tab.html" class="locale-link">DE</a><a href="../uk/UI-Bindings-Tab.html" class="locale-link">UK</a><a href="../ru/UI-Bindings-Tab.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Accueil</a>
+
+            <div class="nav-section">Application</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Interface</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Onglet Vega</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Onglet Commandant</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Actions</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub active"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Bindings</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Onglet Paramètres</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Onglet Statistiques</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Choisir votre LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Comment faire ?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Opération générale</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Commerce et profit</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Explorer la galaxie</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Exploration &amp; Exobiologie</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Missions pirates</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Toutes les commandes</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Commandes système</a>
+
+            <div class="nav-section">Communauté</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Chat Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Politique de confidentialité</a>
+            <a href="Contact.html" class="nav-link">📧 Contacter le développeur</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Onglet Bindings</h1>
+<p><img src="../images/keys-binding.png" class="inline" height="20" alt="Bindings"> <strong>Nouveau en V1.1.</strong>
+Les assignations occupaient un coin de l&#39;onglet Actions ; elles ont désormais leur propre onglet,
+avec un éditeur complet.</p>
+<p>Elite Intel pilote votre vaisseau en appuyant sur les touches auxquelles Elite Dangerous est
+assigné. Si un contrôle n&#39;a pas d&#39;assignation clavier, Elite Intel ne peut pas s&#39;en servir — c&#39;est
+dans cet onglet que vous le découvrez et que vous le corrigez.</p>
+<p>Deux sous-onglets : <strong>Profil de raccourcis</strong> et <strong>Gestion des raccourcis</strong>.</p>
+<hr>
+<h2>Profil de raccourcis</h2>
+<p><img src="../images/ui-tab-bindings-profile.png" alt="Profil de raccourcis"></p>
+<h3>Quel fichier est utilisé</h3>
+<p><strong>Profil</strong> — détecté automatiquement. Elite Intel lit l&#39;entrée <code>StartPreset</code> active et se rabat au
+besoin sur le fichier <code>.binds</code> le plus récent.</p>
+<p><strong>Fichier</strong> — le fichier <code>.binds</code> actuellement utilisé pour le diagnostic et l&#39;assignation.</p>
+<p><strong>Dossier</strong> — facultatif. Laissez-le vide et l&#39;emplacement standard d&#39;Elite Dangerous est utilisé ;
+renseignez-le si votre installation se trouve à un endroit inhabituel.</p>
+<p>Les deux champs disposent d&#39;un bouton ⓘ expliquant exactement comment la valeur a été choisie.</p>
+<h3>Les tableaux d&#39;assignations</h3>
+<p>Deux tableaux : <strong>Assignations utilisées</strong> et <strong>Assignations manquantes</strong>, chacun avec son décompte.
+Les assignations sont regroupées par catégorie :</p>
+<p>Vaisseau / vol · Combat · Panneaux d&#39;interface · Cartes · Exploration · Caméra · SRV · À pied ·
+Divers</p>
+<table>
+<thead>
+<tr>
+<th>Colonne</th>
+<th>Signification</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Commande</strong></td>
+<td>Le contrôle</td>
+</tr>
+<tr>
+<td><strong>Primaire</strong> / <strong>Secondaire</strong></td>
+<td>Les deux emplacements qu&#39;Elite Dangerous donne à chaque contrôle</td>
+</tr>
+<tr>
+<td><strong>Statut</strong></td>
+<td><code>Manquante</code> · <code>Pas de clavier</code> (assignée, mais uniquement à une manette) · <code>Non définie</code></td>
+</tr>
+<tr>
+<td><strong>Correction rapide</strong></td>
+<td>Assigne une touche libre et sûre à ce seul contrôle</td>
+</tr>
+<tr>
+<td><strong>Effacer</strong></td>
+<td>Retire l&#39;assignation clavier, en laissant intactes celles de manette et de HOTAS</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Les HOTAS et manettes sont affichés mais non modifiables.</strong> Elite Intel exécute via les
+assignations clavier ; les autres périphériques n&#39;apparaissent qu&#39;à titre de diagnostic.</p>
+</blockquote>
+<p><strong>Afficher uniquement les conflits</strong> filtre les tableaux sur les problèmes.</p>
+<h3>Conflits</h3>
+<p>Elite Dangerous ne considère un accord comme conflictuel que s&#39;il s&#39;agit <em>exactement</em> du même
+accord — <code>G</code> et <code>Shift+G</code> cohabitent sans souci. Elite Intel applique la même règle, et signale donc
+ce que le jeu signale réellement.</p>
+<p>Les lignes en conflit sont colorées, et le survol affiche <strong>Partage <em>touche</em> avec :</strong> suivi de la
+liste.</p>
+<p>Vous pouvez aussi voir <strong>Jumeau vaisseau/SRV — beaucoup l&#39;assignent comme :</strong> — non pas un conflit,
+mais une suggestion. Certains contrôles de vaisseau et de SRV sont par convention assignés à la même
+touche.</p>
+<h3>Modifier une assignation</h3>
+<p>Cliquez sur un emplacement pour ouvrir la boîte de dialogue d&#39;assignation.</p>
+<p><img src="../images/ui-bindings-assign.png" alt="Assigner une touche"></p>
+<p>Elle affiche l&#39;assignation sélectionnée, l&#39;emplacement et la valeur actuelle. Ensuite <strong>cliquez dans
+le champ et appuyez sur les touches voulues</strong> — modificateurs et touche ensemble. Échap annule. Les
+accords à plusieurs modificateurs sont pris en charge.</p>
+<p>Une carte clavier en direct montre ce qui est disponible : <strong>maintenez Ctrl/Maj/Alt pour voir les
+touches libres pour cette combinaison — vert : libre, rouge : déjà utilisée.</strong> Les touches réservées
+par le système d&#39;exploitation sont signalées et ne peuvent pas être assignées.</p>
+<p><strong>Effacer l&#39;assignation</strong> supprime l&#39;attribution.</p>
+<h3>Corriger les manquantes</h3>
+<p>Un bouton qui attribue des touches clavier sûres et adaptées à votre disposition à <strong>tous</strong> les
+contrôles dépourvus d&#39;assignation clavier.</p>
+<ul>
+<li>Les assignations existantes ne sont jamais modifiées.</li>
+<li>Aucune touche n&#39;est jamais réutilisée.</li>
+<li>Les changements ne vont <strong>que dans votre brouillon</strong>.</li>
+</ul>
+<p>Il rapporte ce qu&#39;il a fait, ainsi que ce qu&#39;il a ignoré et pourquoi : les deux emplacements déjà sur
+une manette, plus aucune touche sûre disponible, ou aucun emplacement modifiable en toute sécurité.</p>
+<h3>Brouillon, Appliquer, Réinitialiser</h3>
+<p>Les modifications ne partent <strong>pas</strong> directement vers Elite Dangerous. Elles s&#39;accumulent dans un
+brouillon, et le badge d&#39;état affiche <strong>Brouillon — non appliqué au jeu</strong> ou <strong>Synchronisé</strong>. Le même
+état apparaît sur l&#39;indicateur <em>Touches</em> de l&#39;onglet Vega.</p>
+<table>
+<thead>
+<tr>
+<th>Bouton</th>
+<th>Ce qu&#39;il fait</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Appliquer au jeu</strong></td>
+<td>Écrit le brouillon dans votre fichier <code>.binds</code>, après avoir pris une sauvegarde</td>
+</tr>
+<tr>
+<td><strong>Réinitialiser depuis le jeu</strong></td>
+<td>Jette le brouillon et recharge depuis le fichier du jeu</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Après application, ouvrez puis refermez l&#39;écran Contrôles dans Elite Dangerous.</strong> Le jeu ne
+relit ses assignations qu&#39;à l&#39;ouverture de cet écran. Elite Intel le dit aussi à voix haute.</p>
+</blockquote>
+<p>Si le fichier d&#39;assignations du jeu a changé après la création de votre brouillon, Appliquer refuse
+et vous demande de recharger ou d&#39;abandonner d&#39;abord, plutôt que d&#39;écraser silencieusement la
+modification de quelqu&#39;un d&#39;autre.</p>
+<p>Si vous fermez l&#39;application avec un brouillon non appliqué, il vous est demandé si vous voulez
+<strong>Appliquer au jeu</strong>, <strong>Conserver le brouillon</strong> ou <strong>Annuler</strong>.</p>
+<hr>
+<h2>Gestion des raccourcis</h2>
+<p><img src="../images/ui-tab-bindings-management.png" alt="Gestion des raccourcis"></p>
+<p>Vos sauvegardes d&#39;assignations, listées par date de <strong>Créée</strong> et par les <strong>Fichiers</strong> que chacune
+contient. Elite Intel en prend une automatiquement avant chaque application ; <strong>Sauvegarder
+maintenant</strong> en prend une à la demande.</p>
+<table>
+<thead>
+<tr>
+<th>Bouton</th>
+<th>Ce qu&#39;il fait</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Restaurer dans le brouillon</strong></td>
+<td>Charge la sauvegarde dans votre brouillon, pour que vous puissiez la relire avant qu&#39;elle ne touche le jeu</td>
+</tr>
+<tr>
+<td><strong>Restaurer en direct</strong></td>
+<td>La charge et l&#39;applique directement au jeu. Les contrôles habituels d&#39;application sûre s&#39;exécutent toujours</td>
+</tr>
+</tbody></table>
+<p>L&#39;une comme l&#39;autre remplace les modifications non enregistrées du brouillon en cours, et toutes deux
+demandent confirmation.</p>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

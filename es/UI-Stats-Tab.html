@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pestaña Estadísticas  EliteIntel</title>
+    <meta name="description" content="el modelo de lenguaje, en tokens y en latencia.">
+    <link rel="canonical" href="https://www.elite-intel.org/es/UI-Stats-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Stats-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Stats-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Stats-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Stats-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Stats-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Stats-Tab.html">
+    <meta property="og:title" content="Pestaña Estadísticas  EliteIntel">
+    <meta property="og:description" content="el modelo de lenguaje, en tokens y en latencia.">
+    <meta property="og:url" content="https://www.elite-intel.org/es/UI-Stats-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI-Stats-Tab.html" class="locale-link">EN</a><a href="../fr/UI-Stats-Tab.html" class="locale-link">FR</a><span class="locale-current">ES</span><a href="../de/UI-Stats-Tab.html" class="locale-link">DE</a><a href="../uk/UI-Stats-Tab.html" class="locale-link">UK</a><a href="../ru/UI-Stats-Tab.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Inicio</a>
+
+            <div class="nav-section">Aplicación</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Instalación</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Interfaz</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Pestaña Vega</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Pestaña Comandante</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Pestaña Acciones</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Pestaña Bindings</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Pestaña Ajustes</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub active"><img src="../images/stats.png" class="inline" height="20" alt=""> Pestaña Estadísticas</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Elegir tu LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">¿Cómo hago...?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Operación general</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Comercio y beneficio</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Explorar la galaxia</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Exploración &amp; Exobiología</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Navegación</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Misiones pirata</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Todos los comandos</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Comandos del sistema</a>
+
+            <div class="nav-section">Comunidad</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Chat Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Política de privacidad</a>
+            <a href="Contact.html" class="nav-link">📧 Contactar al desarrollador</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Pestaña Estadísticas</h1>
+<p><img src="../images/stats.png" class="inline" height="20" alt="Estadísticas"> Lo que te está costando
+el modelo de lenguaje, en tokens y en latencia.</p>
+<p><img src="../images/ui-tab-stats.png" alt="Pestaña Estadísticas"></p>
+<p>Un token es la unidad básica de cómputo de un modelo de lenguaje: aproximadamente una palabra o un
+número. Si usas un proveedor de nube de pago, los tokens son el contador.</p>
+<hr>
+<h2>Telemetría del LLM</h2>
+<p>El modelo que atiende realmente tus peticiones y cuánto lleva corriendo esta sesión. El nombre del
+modelo es el que respondió, no el que configuraste, así que aquí es donde confirmas que tu cambio
+de proveedor surtió efecto de verdad.</p>
+<h2>Uso de tokens</h2>
+<p>Cinco barras. <strong>Describen la petición más reciente</strong>, no la sesión, para que veas la forma de un
+único intercambio.</p>
+<table>
+<thead>
+<tr>
+<th>Celda</th>
+<th>Significado</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Último prompt</strong></td>
+<td>Tokens de entrada enviados</td>
+</tr>
+<tr>
+<td><strong>Última respuesta</strong></td>
+<td>Tokens de salida generados</td>
+</tr>
+<tr>
+<td><strong>Aciertos de caché</strong></td>
+<td>Entrada servida desde caché en lugar de volver a facturarse</td>
+</tr>
+<tr>
+<td><strong>Escrito en caché</strong></td>
+<td>Entrada escrita <em>en</em> la caché para que peticiones posteriores acierten</td>
+</tr>
+<tr>
+<td><strong>Última velocidad</strong></td>
+<td>Tokens por segundo</td>
+</tr>
+</tbody></table>
+<p>Las cuatro barras de tokens se llenan como proporción del total de esa única petición, de modo que
+se leen como una composición. La velocidad no tiene techo fijo, así que su barra se llena en
+relación con la respuesta más rápida vista en esta sesión.</p>
+<h2>Resumen de la sesión</h2>
+<table>
+<thead>
+<tr>
+<th>Línea</th>
+<th>Significado</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Tokens usados</strong></td>
+<td>Marcado <strong>(GRATIS)</strong> con un modelo local y <strong>(facturable)</strong> con uno en la nube</td>
+</tr>
+<tr>
+<td><strong>Tokens ahorrados por caché</strong></td>
+<td>Solo nube. Indica <em>&quot;servido a tarifa reducida&quot;</em> en cuanto hay aciertos</td>
+</tr>
+<tr>
+<td><strong>Tokens / hora</strong></td>
+<td>Una proyección. Muestra <em>&quot;recopilando datos…&quot;</em> durante los primeros 10 minutos, porque una tasa extrapolada de dos minutos de juego es una ficción</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Qué significan las cifras en la práctica</h2>
+<p>Una sesión típica ronda los <strong>250 000 tokens por hora</strong> en total.</p>
+<p>La integración con la nube de Elite Intel está ajustada por proveedor para maximizar el caché de
+prompts, y los tokens en caché son gratuitos o se facturan a tarifa reducida. Cuánto de esos
+250 000 acaba en caché depende por completo del proveedor: algunos cachean hasta el 80 %, otros más
+bien el 40 %. Esa diferencia es lo principal que separa a un proveedor barato de uno caro, y vale
+la pena observarlo aquí durante una sesión antes de comprometerte.</p>
+<p><strong>Con un modelo local no hay cifras de caché.</strong> La inferencia local sí cachea —llama.cpp mantiene
+una caché KV y la usa— pero no informa de los números, así que no hay nada honesto que mostrar. El
+panel lo dice en lugar de mostrar un cero engañoso, y oculta por completo la línea de caché.</p>
+<p>Para una versión en vivo y de un vistazo de estos mismos datos, la <a href="UI-Vega-Tab.html">pestaña Vega</a>
+lleva abajo una franja <strong>Resumen del sistema</strong> de seis bloques.</p>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

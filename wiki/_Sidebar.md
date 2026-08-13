@@ -1,7 +1,6 @@
 * ## [App](#)
   * ### <img src="images/settings.png" class="inline" height="20" alt="Settings"> [Installation](Installation)
-  * ### <img src="images/settings.png" class="inline" height="20" alt="Settings"> [Configuration](UI-and-Configuration-Options)
-  * ### <img src="images/settings.png" class="inline" height="20" alt="Settings"> [Configuration](UI-and-Configuration-Options)
+  * ### <img src="images/settings.png" class="inline" height="20" alt="Settings"> [User Interface](UI)
 * ## [wiki](#)
   * ### [Choose your LLM player](installing-local-llms)
   * ### [🆓 Install Ollama Linux](Install-Ollama-Local-LLM-Linux)

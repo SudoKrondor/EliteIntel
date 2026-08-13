@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Installation  EliteIntel</title>
-    <meta name="description" content="2. Запустіть інсталятор і дотримуйтесь підказок на екрані.">
+    <title>Встановлення  EliteIntel</title>
+    <meta name="description" content="Elite Intel V1.1 — поточна версія.">
     <link rel="canonical" href="https://www.elite-intel.org/uk/Installation.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Installation.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Installation.html">
@@ -12,8 +12,8 @@
     <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Installation.html">
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Installation.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Installation.html">
-    <meta property="og:title" content="Installation  EliteIntel">
-    <meta property="og:description" content="2. Запустіть інсталятор і дотримуйтесь підказок на екрані.">
+    <meta property="og:title" content="Встановлення  EliteIntel">
+    <meta property="og:description" content="Elite Intel V1.1 — поточна версія.">
     <meta property="og:url" content="https://www.elite-intel.org/uk/Installation.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -32,8 +32,8 @@
     <nav class="header-actions">
         <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
         <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
-        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
-        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
         <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
         <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
         <div class="locale-switcher"><a href="../Installation.html" class="locale-link">EN</a><a href="../fr/Installation.html" class="locale-link">FR</a><a href="../es/Installation.html" class="locale-link">ES</a><a href="../de/Installation.html" class="locale-link">DE</a><span class="locale-current">UK</span><a href="../ru/Installation.html" class="locale-link">RU</a></div>
@@ -50,8 +50,14 @@
 
             <div class="nav-section">Застосунок</div>
             <a href="Installation.html" class="nav-link active"><img src="../images/release.png" class="inline" height="20" alt=""> Встановлення</a>
-            <a href="Configuration.html" class="nav-link"><img src="../images/settings.png" class="inline" height="20" alt=""> Налаштування</a>
-            <a href="Options.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Параметри</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Інтерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Дії»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Бінди»</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Вкладка «Налаштування»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-накладка</a>
 
             <div class="nav-section">Вікі</div>
             <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
@@ -82,29 +88,50 @@
     </aside>
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
-<h3>Версія V1.0, що вийшла, відрізняється від того, що ви бачите на скріншотах.</h3>
-<h3>Якщо ви хочете версію V1.1, приєднуйтесь до команди бета-тестувальників.</h3>
-<h3>👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Приєднатись до команди бета-тестувальників V1.1 тут</strong></a>👈</h3>
+<h1>Встановлення</h1>
+<p>Elite Intel <strong>V1.1</strong> — поточна версія.</p>
 <hr>
 <h2><img src="../images/linux.png" class="inline" height="20" alt="Linux"> Linux <img src="../images/windows.png" class="inline" height="20" alt="Windows"> Windows</h2>
 <ol>
 <li>Завантажте <a href="https://github.com/stone-alex/EliteIntel/releases">👉<strong>інсталятор</strong>👈</a>.</li>
 <li>Запустіть інсталятор і дотримуйтесь підказок на екрані.</li>
-<li>Налаштуйте LLM. Доступні два варіанти:<ul>
-<li><strong>Локальний LLM</strong> (безкоштовно, офлайн): Дивіться <a href="installing-local-llms.html"><strong>посібник з локального LLM</strong></a>. Потрібна потужна відеокарта.</li>
-<li><strong>Хмарний LLM</strong> (має безкоштовну опцію та простіше в налаштуванні): Дивіться посібник <a href="UI-and-Configuration-Options.html"><strong>Налаштування застосунку</strong></a> для налаштування API-ключа.</li>
+<li>Налаштувати мовну модель. Два варіанти:<ul>
+<li><strong>Локальна LLM</strong> (безкоштовно, офлайн): див. <a href="installing-local-llms.html"><strong>посібник із локальної LLM</strong></a>.
+Потрібна продуктивна відеокарта.</li>
+<li><strong>Хмарна LLM</strong> (є безкоштовний рівень, налаштувати простіше): див.
+<a href="cloud-llm-options.html"><strong>Варіанти хмарних LLM</strong></a>, щоб отримати API-ключ, а потім введіть його в
+<a href="UI-Settings-Tab.html"><strong>Налаштування → Сервіси ШІ</strong></a>.</li>
 </ul>
 </li>
 </ol>
-<hr>
-<ol start="3">
-<li>Налаштуйте LLM. Доступні два варіанти:<ul>
-<li><strong>Локальний LLM</strong> (безкоштовно, офлайн): Дивіться <a href="installing-local-llms.html"><strong>посібник з локального LLM</strong></a>. Потрібна потужна відеокарта.</li>
-<li><strong>Хмарний LLM</strong> (простіше в налаштуванні): Дивіться посібник <a href="UI-and-Configuration-Options.html"><strong>Налаштування застосунку</strong></a> для налаштування API-ключа.</li>
-</ul>
-</li>
-</ol>
-<p>Налаштування завершено. Дивіться <a href="Configuration.html"><strong>Налаштування застосунку</strong></a> для наступних кроків.</p>
+<p>Встановлення завершено. Далі: <a href="UI.html"><strong>інтерфейс, вкладка за вкладкою</strong></a>.</p>
+<h3>Контрольний список першого запуску</h3>
+<p>Під час старту служб Elite Intel вимовляє ці попередження вголос, тож ви почуєте про все, чого
+бракує, — але краще зробити це заздалегідь:</p>
+<table>
+<thead>
+<tr>
+<th>Крок</th>
+<th>Де</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Вказати мовну модель</td>
+<td><a href="UI-Settings-Tab.html">Налаштування → Сервіси ШІ</a></td>
+</tr>
+<tr>
+<td>Перевірити теку журналу</td>
+<td><a href="UI-Settings-Tab.html">Налаштування → Загальні</a></td>
+</tr>
+<tr>
+<td>Перевірити теку прив&#39;язок і виправити відсутні</td>
+<td><a href="UI-Bindings-Tab.html">Вкладка «Бінди»</a></td>
+</tr>
+<tr>
+<td>Відкалібрувати звук</td>
+<td><a href="UI-Vega-Tab.html">Вкладка «Вега»</a> → <strong>КАЛІБРУВАННЯ ЗВУКУ</strong></td>
+</tr>
+</tbody></table>
 <hr>
 <h3>Видалення (Linux)</h3>
 <pre><code class="language-shell">~/.var/app/elite.intel.app/uninstall

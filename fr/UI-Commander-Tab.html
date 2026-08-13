@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onglet Commandant  EliteIntel</title>
+    <meta name="description" content="votre vaisseau fait pour vous automatiquement, ce dont Vega vous informe sans qu&#39;on le lui demande,">
+    <link rel="canonical" href="https://www.elite-intel.org/fr/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Commander-Tab.html">
+    <meta property="og:title" content="Onglet Commandant  EliteIntel">
+    <meta property="og:description" content="votre vaisseau fait pour vous automatiquement, ce dont Vega vous informe sans qu&#39;on le lui demande,">
+    <meta property="og:url" content="https://www.elite-intel.org/fr/UI-Commander-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI-Commander-Tab.html" class="locale-link">EN</a><span class="locale-current">FR</span><a href="../es/UI-Commander-Tab.html" class="locale-link">ES</a><a href="../de/UI-Commander-Tab.html" class="locale-link">DE</a><a href="../uk/UI-Commander-Tab.html" class="locale-link">UK</a><a href="../ru/UI-Commander-Tab.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Accueil</a>
+
+            <div class="nav-section">Application</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Interface</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Onglet Vega</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub active"><img src="../images/controller.png" class="inline" height="20" alt=""> Onglet Commandant</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Actions</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Bindings</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Onglet Paramètres</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Onglet Statistiques</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Choisir votre LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Comment faire ?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Opération générale</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Commerce et profit</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Explorer la galaxie</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Exploration &amp; Exobiologie</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Missions pirates</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Toutes les commandes</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Commandes système</a>
+
+            <div class="nav-section">Communauté</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Chat Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Politique de confidentialité</a>
+            <a href="Contact.html" class="nav-link">📧 Contacter le développeur</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Onglet Commandant</h1>
+<p><img src="../images/controller.png" class="inline" height="20" alt="Commandant"> Qui vous êtes, ce que
+votre vaisseau fait pour vous automatiquement, ce dont Vega vous informe sans qu&#39;on le lui demande,
+et avec quelle voix parle chaque coque de votre flotte.</p>
+<p><img src="../images/ui-tab-commander.png" alt="Onglet Commandant"></p>
+<hr>
+<h2>Profil du commandant</h2>
+<p><strong>Nom du commandant</strong> — remplace votre nom en jeu pour la synthèse vocale. À utiliser si Vega
+écorche votre pseudo, ou si vous voulez simplement qu&#39;on vous appelle autrement. Enregistré quand
+vous appuyez sur Entrée ou cliquez ailleurs.</p>
+<blockquote>
+<p>Le <strong>dossier du journal</strong> a été déplacé vers <a href="UI-Settings-Tab.html">Paramètres → Commun</a> en V1.1, et le
+<strong>dossier des assignations</strong> vers l&#39;<a href="UI-Bindings-Tab.html">onglet Bindings</a>.</p>
+</blockquote>
+<hr>
+<h2>Options de vaisseau</h2>
+<p>Des automatisations que Vega exécute à votre place. Chacune est un simple interrupteur écrit
+immédiatement. Utile pour tout le monde, et véritablement libérateur pour les commandants en
+situation de handicap.</p>
+<table>
+<thead>
+<tr>
+<th>Interrupteur</th>
+<th>Ce qu&#39;il fait</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Accélérer automatiquement pour le FTL</strong></td>
+<td>Met les gaz avant un saut</td>
+</tr>
+<tr>
+<td><strong>Éteindre les lumières pour le FTL</strong></td>
+<td>Coupe les feux du vaisseau avant un saut</td>
+</tr>
+<tr>
+<td><strong>Éteindre la vision nocturne pour le FTL</strong></td>
+<td>Désactive la vision nocturne avant un saut</td>
+</tr>
+<tr>
+<td><strong>Rentrer les points d&#39;emport pour le FTL</strong></td>
+<td>Rentre les points d&#39;emport avant un saut</td>
+</tr>
+<tr>
+<td><strong>Rentrer le train d&#39;atterrissage pour le FTL</strong></td>
+<td>Rentre le train avant un saut</td>
+</tr>
+<tr>
+<td><strong>Rentrer le cargo scoop pour le FTL</strong></td>
+<td>Rentre le collecteur avant un saut</td>
+</tr>
+<tr>
+<td><strong>Rentrer le train au décollage</strong></td>
+<td>Rentre le train après le décollage</td>
+</tr>
+<tr>
+<td><strong>Quitter l&#39;interface avant d&#39;ouvrir un autre panneau</strong></td>
+<td>Ferme le panneau ouvert avant d&#39;ouvrir le suivant, pour que les commandes de panneau n&#39;entrent pas en collision</td>
+</tr>
+<tr>
+<td><strong>Éteindre les lumières au déploiement du SRV</strong></td>
+<td>Coupe les feux quand vous déployez le SRV</td>
+</tr>
+<tr>
+<td><strong>Demander l&#39;amarrage du chasseur au FTL / annuler si hors portée</strong></td>
+<td><em>Actuellement désactivé</em> — en attente d&#39;un correctif Frontier pour un bug lié au Nomad</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Annonces</h2>
+<p>Tout ce que Vega dit spontanément. Les onze interrupteurs sont désormais au même endroit : il n&#39;y a
+donc qu&#39;un seul écran à vérifier quand quelque chose parle trop — ou pas assez.</p>
+<p><img src="../images/ui-commander-announcements.png" alt="Annonces"></p>
+<table>
+<thead>
+<tr>
+<th>Interrupteur</th>
+<th>Ce que vous entendez</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Annoncer les découvertes</strong></td>
+<td>Corps notables, premières découvertes, signaux biologiques</td>
+</tr>
+<tr>
+<td><strong>Annoncer la progression de la route</strong></td>
+<td>Où vous en êtes sur un itinéraire tracé</td>
+</tr>
+<tr>
+<td><strong>Annoncer les contacts radar</strong></td>
+<td>Vaisseaux apparaissant au scanner</td>
+</tr>
+<tr>
+<td><strong>Annoncer le minage</strong></td>
+<td>Événements de minage et rendements</td>
+</tr>
+<tr>
+<td><strong>Annoncer la navigation</strong></td>
+<td>Événements de navigation et arrivées</td>
+</tr>
+<tr>
+<td><strong>Transmissions radio</strong></td>
+<td>Échanges radio dans le personnage, énoncés avec une voix radio distincte</td>
+</tr>
+<tr>
+<td><strong>Annoncer la destination du saut</strong></td>
+<td>Quel est le système suivant</td>
+</tr>
+<tr>
+<td><strong>Annoncer le trafic de la destination</strong></td>
+<td>Rapports de trafic pour votre destination</td>
+</tr>
+<tr>
+<td><strong>Annoncer les pertes de la destination</strong></td>
+<td>Morts récentes dans le système de destination</td>
+</tr>
+<tr>
+<td><strong>Annoncer les sauts restants</strong></td>
+<td>Sauts restants sur la route</td>
+</tr>
+<tr>
+<td><strong>Annoncer la disponibilité d&#39;étoile à carburant</strong></td>
+<td>Si la destination possède une étoile récoltable</td>
+</tr>
+</tbody></table>
+<p>Les six premières peuvent aussi être basculées à la voix : cet écran les relit donc à chaque
+ouverture de l&#39;onglet — un <code>toggle all announcements</code> prononcé y sera reflété.</p>
+<hr>
+<h2>Configuration des voix de la flotte</h2>
+<p>Une ligne par vaisseau que vous possédez. Elite Intel découvre votre flotte à partir du journal du
+jeu ; vous n&#39;ajoutez pas de vaisseaux à la main.</p>
+<table>
+<thead>
+<tr>
+<th>Colonne</th>
+<th>Remarques</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Vaisseau</strong></td>
+<td>Le nom que vous avez donné à votre vaisseau</td>
+</tr>
+<tr>
+<td><strong>Modèle de vaisseau</strong></td>
+<td>Le type de coque</td>
+</tr>
+<tr>
+<td><strong>Voix</strong></td>
+<td>Cliquez pour choisir. La modifier joue aussitôt une réplique de démonstration avec cette voix, pour que vous puissiez l&#39;auditionner</td>
+</tr>
+<tr>
+<td><strong>Personnalité</strong></td>
+<td><code>Professionnel</code> · <code>Décontracté</code> · <code>Amical</code> · <code>Instable</code> · <code>Fripon</code></td>
+</tr>
+<tr>
+<td><strong>⚙</strong></td>
+<td>Ouvre les réglages de ce vaisseau</td>
+</tr>
+</tbody></table>
+<p><strong>À propos de la liste des voix.</strong> Les voix de vaisseau sont féminines. Les voix proposées dépendent
+du moteur vocal sélectionné dans <a href="UI-Settings-Tab.html">Paramètres → Services IA</a> :</p>
+<ul>
+<li><strong>Local (Kokoro)</strong> — 53 voix, étiquetées <code>Nom - accent</code>. Pas de clé, pas de téléchargement, pas de
+configuration.</li>
+<li><strong>Cloud (Google)</strong> — étiquetées <code>Nom - accent · HD</code> ou <code>· Standard</code>. En anglais, l&#39;accent
+distingue les voix. Dans toutes les autres langues, chaque voix est synthétisée dans cette langue :
+l&#39;étiquette affiche donc le genre et le niveau de qualité plutôt qu&#39;un accent anglais trompeur.</li>
+</ul>
+<blockquote>
+<p>Changer de moteur vocal réinitialise la voix de chaque vaisseau à la valeur par défaut du nouveau
+moteur. Les <strong>personnalités de vos vaisseaux sont conservées</strong>. L&#39;application vous prévient avant.</p>
+</blockquote>
+<hr>
+<h2>Réglages de vaisseau (le bouton ⚙)</h2>
+<p>Des réglages par vaisseau, parce qu&#39;un Python de minage et une Corvette de combat n&#39;attendent pas le
+même comportement.</p>
+<p><img src="../images/ui-ship-settings.png" alt="Réglages de vaisseau"></p>
+<p><strong>Scanner le système à l&#39;entrée</strong> — effectue un scan de découverte à votre arrivée dans un système.
+Choisissez le <strong>Groupe de tir</strong> (A–H) et le <strong>Déclencheur</strong> (1 ou 2) sur lequel votre scanner de
+découverte est monté. Si votre HUD est en mode Combat, Elite Intel bascule en Analyse, scanne, puis
+rebascule.</p>
+<p><strong>Alerte matériaux sur émissions haute qualité</strong> — vous signale lorsqu&#39;un signal d&#39;émissions haute
+qualité du système transporte des matériaux qui valent l&#39;arrêt.</p>
+<p><strong>Profil commercial</strong> — les contraintes qu&#39;Elite Intel respecte lorsqu&#39;il trace une route commerciale
+pour ce vaisseau. Chacune peut aussi être définie à la voix :
+<em>« alter trade profile, set max stops to four »</em>.</p>
+<table>
+<thead>
+<tr>
+<th>Réglage</th>
+<th>Signification</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Autoriser les ports planétaires</strong></td>
+<td>Inclure les ports de surface dans les routes</td>
+</tr>
+<tr>
+<td><strong>Autoriser les marchandises prohibées</strong></td>
+<td>Inclure des marchandises illégales quelque part sur la route</td>
+</tr>
+<tr>
+<td><strong>Autoriser les systèmes à permis</strong></td>
+<td>Inclure les systèmes nécessitant un permis</td>
+</tr>
+<tr>
+<td><strong>Autoriser les transporteurs de flotte</strong></td>
+<td>Inclure les transporteurs de flotte de joueurs comme marchés</td>
+</tr>
+<tr>
+<td><strong>Autoriser les systèmes forteresse</strong></td>
+<td>Inclure les systèmes forteresse thargoïdes ou de puissance</td>
+</tr>
+<tr>
+<td><strong>Dist. max à l&#39;arrivée (Ls)</strong></td>
+<td>À quelle distance de l&#39;étoile d&#39;arrivée une station peut se trouver</td>
+</tr>
+<tr>
+<td><strong>Arrêts max.</strong></td>
+<td>Nombre d&#39;étapes de la route</td>
+</tr>
+<tr>
+<td><strong>Capital de départ</strong></td>
+<td>Crédits que le planificateur de route peut dépenser</td>
+</tr>
+</tbody></table>
+<p>Voir <a href="TradeRoutePlotting.html">Commerce et profit</a> pour la manière dont les routes se volent.</p>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

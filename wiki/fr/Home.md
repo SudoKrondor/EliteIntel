@@ -1,9 +1,7 @@
 # Elite Intel
 ## Assistant vocal IA pour Elite Dangerous
 
-| V1.0                               | V1.1                               |
-|------------------------------------|------------------------------------|
-| ![EliteIntel app](images/v1.0.png) | ![EliteIntel app](images/v1.1.png) |
+![EliteIntel app](images/v1.1.png)
 
 
 ## Parlez naturellement. Volez mieux.

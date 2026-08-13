@@ -20,10 +20,11 @@ Pour faire tourner Elite Dangerous et le LLM sur la **même machine**, il faut a
 
 | Modèle | VRAM requise | Notes |
 |---|---|---|
-| `tulu-3.1-8b-supernova` Q4_K_M | ~5 Go | ✅ Recommandé pour V1.0 |
-| `google/gemma-4-e4b` | ~6,3 Go | ✅ Recommandé pour V1.1 |
+| `google/gemma-4-e4b` | ~6,3 Go | ✅ Requis |
 
-> **Quel modèle ?** `tulu-3.1-8b-supernova` est le modèle recommandé pour la **V1.0**. La **V1.1** passe à `google/gemma-4-e4b`, qui prend en charge le function calling requis par la nouvelle fonction compagnon. Les commandes ci-dessous utilisent le modèle de la V1.1 — en V1.0, remplacez-le par `tulu-3.1-8b-supernova`.
+> **Pourquoi ce modèle ?** Il prend en charge le function calling requis par le compagnon. Un modèle incapable
+> d'émettre un appel d'outil ne peut pas piloter l'application, aussi bien écrive-t-il.
+> Voir [Choisir votre LLM](installing-local-llms).
 
 ---
 
@@ -55,24 +56,12 @@ lms --help
 
 ### Étape 2 – Télécharger le modèle
 
-Pour la **V1.1**, téléchargez `google/gemma-4-e4b` :
-
 ```powershell
 lms get google/gemma-4-e4b
 ```
 
-Pour la **V1.0**, téléchargez `tulu-3.1-8b-supernova` :
-
-```powershell
-lms get matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
-```
-
-ou
-
-```powershell
-lms get Tulu-3.1
-```
-et choisissez la variante `matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF` (peut être listée comme `Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF`).
+Si le nom ne correspond pas exactement, `lms get` liste les candidats trouvés ; choisissez-en
+un avec les flèches et Entrée.
 
 Pour lister les modèles téléchargés :
 

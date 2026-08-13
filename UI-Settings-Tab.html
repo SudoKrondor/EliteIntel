@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings Tab  EliteIntel</title>
+    <meta name="description" content="Common strip that applies everywhere, then three sub-tabs: AI Services, Audio, and">
+    <link rel="canonical" href="https://www.elite-intel.org/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Settings-Tab.html">
+    <meta property="og:title" content="Settings Tab  EliteIntel">
+    <meta property="og:description" content="Common strip that applies everywhere, then three sub-tabs: AI Services, Audio, and">
+    <meta property="og:url" content="https://www.elite-intel.org/UI-Settings-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><span class="locale-current">EN</span><a href="fr/UI-Settings-Tab.html" class="locale-link">FR</a><a href="es/UI-Settings-Tab.html" class="locale-link">ES</a><a href="de/UI-Settings-Tab.html" class="locale-link">DE</a><a href="uk/UI-Settings-Tab.html" class="locale-link">UK</a><a href="ru/UI-Settings-Tab.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="images/elite-logo.png" class="inline" height="20" alt=""> Home</a>
+
+            <div class="nav-section">App</div>
+            <a href="Installation.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> User Interface</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Vega Tab</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="images/controller.png" class="inline" height="20" alt=""> Commander Tab</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Actions Tab</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Bindings Tab</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub active"><img src="images/settings.png" class="inline" height="20" alt=""> Settings Tab</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="images/stats.png" class="inline" height="20" alt=""> Stats Tab</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> HUD Overlay</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Choose your LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">How Do I…?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Search the Galaxy</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery &amp; ExoBiology</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Pirate Missions</a>
+            <a href="AllCommands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> All Commands &amp; Queries</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> System Commands</a>
+
+            <div class="nav-section">Community</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="images/communications.png" class="inline" height="20" alt=""> Matrix Chat ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Privacy Policy</a>
+            <a href="Contact.html" class="nav-link">📧 Contact Developer</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Settings Tab</h1>
+<p><img src="images/settings.png" class="inline" height="20" alt="Settings"> The plumbing. A
+<strong>Common</strong> strip that applies everywhere, then three sub-tabs: <strong>AI Services</strong>, <strong>Audio</strong>, and
+<strong>Push To Talk</strong>.</p>
+<hr>
+<h2>Common</h2>
+<p>Shown above the sub-tabs, because it applies to all of them.</p>
+<p><strong>Language</strong> — the language of both your voice commands and the app&#39;s own interface. Choosing
+one re-renders the whole window immediately and Vega announces the change out loud.</p>
+<p>Supported: English, Spanish, French, German, Italian, Portuguese, Brazilian Portuguese,
+Ukrainian, Russian.</p>
+<p><strong>Journal Directory</strong> — where Elite Dangerous writes its journal files. Optional: leave it
+blank and the standard location for your platform is used. This is how Elite Intel knows what
+is happening around your ship, so if it is wrong the app is effectively blind, and it will say
+so at startup.</p>
+<hr>
+<h2>AI Services</h2>
+<p><img src="images/ui-tab-settings-ai.png" alt="AI services"></p>
+<p><strong>Rewritten in V1.1.</strong> The old scattered &quot;Use&quot; checkboxes are gone. There are now two switches
+— one for the language model, one for speech — and the unused side of each is dimmed so it is
+obvious which one is live.</p>
+<p>This is also the one tab in the app that works on a <strong>draft</strong>. Nothing is written until you
+press <strong>Save</strong>, and trying to leave with unsaved edits asks you to <em>Save</em>, <em>Discard</em>, or
+<em>Keep editing</em>.</p>
+<h3>Language Model (LLM)</h3>
+<p>Switch between <strong>Local Setup</strong> and <strong>Cloud Setup</strong>.</p>
+<p><strong>Local Setup</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Host</strong></td>
+<td><code>Ollama</code> or <code>LM Studio</code>. Each keeps its own address and model, so you can switch back and forth without retyping</td>
+</tr>
+<tr>
+<td><strong>Address</strong></td>
+<td>Defaults to that host&#39;s usual URL. Point it at another machine&#39;s IP if inference runs elsewhere on your LAN</td>
+</tr>
+<tr>
+<td><strong>Model</strong></td>
+<td>The model name. <strong>One field</strong> — V1.1 uses a single model for both commands and queries</td>
+</tr>
+</tbody></table>
+<p>The default and recommended local model is <strong><code>google/gemma-4-e4b</code></strong>. Elite Intel warns you at
+startup if your local model is something else; other models may work poorly or not at all.</p>
+<p>Setup guides: <a href="Install-Ollama-Local-LLM-Linux.html">Ollama on Linux</a> ·
+<a href="Install-Ollama-Local-LLM-Windows.html">Ollama on Windows</a> ·
+<a href="Install-LM-Studio-Linux.html">LM Studio on Linux</a> ·
+<a href="Install-LM-Studio-Windows.html">LM Studio on Windows</a> ·
+<a href="AMD-RX-7800XT-LLM-Setup.html">AMD RX series</a></p>
+<p><strong>Cloud Setup</strong></p>
+<p>One field: your <strong>API Key</strong>, with a <strong>Locked</strong> checkbox beside it so a saved key cannot be
+edited by accident. Uncheck Locked to change it.</p>
+<p>Supported providers: <strong>Gemini, Grok, OpenAI, Claude, DeepSeek, Mistral.</strong></p>
+<blockquote>
+<p>You no longer pick a model. Elite Intel recognises the provider from the shape of your key
+and selects the right model itself.</p>
+</blockquote>
+<p>Mistral has a free tier and is the easiest way to start.
+See <a href="cloud-llm-options.html">Cloud LLM options</a> for how to obtain a key from each provider.</p>
+<h3>Speech (TTS)</h3>
+<p>Switch between <strong>Local · Kokoro</strong> and <strong>Cloud · Google</strong>.</p>
+<ul>
+<li><strong>Local · Kokoro</strong> has no configuration at all. 53 voices, built in, no key, no download.</li>
+<li><strong>Cloud · Google</strong> needs a <strong>Google TTS Key</strong>, with the same Locked checkbox.</li>
+</ul>
+<blockquote>
+<p>Switching engines resets every ship&#39;s voice to the new engine&#39;s default voice. Ship
+personalities are kept. You are asked to confirm before it happens.</p>
+</blockquote>
+<h3>Footer</h3>
+<p><strong>Restore Defaults</strong> resets the language-model configuration to local LM Studio with the
+default model, and saves immediately. <strong>Save</strong> commits everything else; it is greyed out until
+something actually changes, and an <strong>Unsaved changes</strong> hint appears next to it when it does.</p>
+<p>Saving restarts only what it has to — changing the model restarts the brain, changing the
+speech key restarts the mouth.</p>
+<hr>
+<h2>Audio</h2>
+<p><img src="images/ui-tab-settings-audio.png" alt="Audio settings"></p>
+<h3>Audio Devices</h3>
+<p><strong>Mic</strong> and <strong>Speaker</strong> dropdowns, or <em>(System Default)</em>. The same pickers are available from
+the <strong>Audio Devices</strong> button on the Vega tab.</p>
+<blockquote>
+<p>Device changes take effect on the <strong>next service start</strong>.</p>
+</blockquote>
+<p><strong>Enable Noise Reduction</strong> with a <strong>Low / Medium / High</strong> strength. Start at Medium. High is
+for genuinely noisy rooms — it is aggressive, and over-filtering can cost you transcription
+accuracy.</p>
+<h3>Audio Levels</h3>
+<table>
+<thead>
+<tr>
+<th>Slider</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Speech Volume</strong></td>
+<td>How loud Vega speaks</td>
+</tr>
+<tr>
+<td><strong>TTS Voice Speed</strong></td>
+<td>How fast Vega speaks</td>
+</tr>
+<tr>
+<td><strong>Beep Volume</strong></td>
+<td>The confirmation beep — it fires when speech-to-text has finished and the language model has your input</td>
+</tr>
+<tr>
+<td><strong>STT Threads</strong></td>
+<td>CPU threads for transcription (4–11). A minimum request, not a reservation: the app asks for this many, uses what the processor gives it, and releases them when the work is done</td>
+</tr>
+</tbody></table>
+<h3>Microphone Monitor</h3>
+<p>A live meter down the right side. Three things to read on it:</p>
+<ul>
+<li><strong>FLOOR</strong> — your noise level when you are <em>not</em> speaking.</li>
+<li><strong>GATE</strong> — the threshold. Audio above the gate is streamed for transcription; when it drops
+below, what was captured is transcribed and sent to the language model.</li>
+<li><strong>CLIP</strong> — you are overdriving the microphone. Anything above this line transcribes badly.</li>
+</ul>
+<p>You want a clear gap between FLOOR and your speaking level, and nothing touching CLIP. If that
+is not what you see, run <strong>CALIBRATE AUDIO</strong> on the Vega tab — it sets the gate for you, and
+warns you if the speech-to-noise gap is too small to work with.</p>
+<hr>
+<h2>Push To Talk</h2>
+<p><img src="images/ui-tab-settings-push-to-talk.png" alt="Push to talk"></p>
+<p>Push-to-talk works with a <strong>game controller or HOTAS button</strong>, not a keyboard. You give up one
+button and you gain a microphone that is closed except when you want it open.</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Enable Push to Talk</strong></td>
+<td>The master switch. Everything else is disabled until this is on</td>
+</tr>
+<tr>
+<td><strong>Controller</strong></td>
+<td>Any connected controller Elite Intel can see. It re-selects your saved controller automatically when it reconnects</td>
+</tr>
+<tr>
+<td><strong>Button</strong></td>
+<td>Which button on it</td>
+</tr>
+</tbody></table>
+<p>Two modes:</p>
+<ul>
+<li><strong>Toggle to sleep / wake</strong> — the button flips Vega between sleeping and listening. While
+asleep, Vega ignores everything except <code>Wake up!</code>, and the <code>listen</code> / <code>listen up</code> bypass word
+still gets a single command through: <em>&quot;Listen up — lower the landing gear.&quot;</em></li>
+<li><strong>Push to Talk</strong> — Vega ignores everything by default. Hold the button, hear a beep, speak,
+release. A second beep confirms your input is being processed.</li>
+</ul>
+<p>While push-to-talk is active, the <strong>SLEEP / WAKE UP</strong> button on the Vega tab is disabled — the
+controller button is the gate.</p>
+<p>The button works whether or not you ever open this tab.</p>
+<hr>
+<h2>Where the settings live</h2>
+<p>All settings and data are stored in a SQLite database:</p>
+<ul>
+<li><strong>Linux:</strong> <code>~/.local/share/elite-intel/elite-intel/db/</code></li>
+<li><strong>Windows:</strong> <code>%APPDATA%\elite-intel\db\</code></li>
+</ul>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

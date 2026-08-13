@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUD-накладка  EliteIntel</title>
+    <meta name="description" content="Нове у V1.1. Накладка поверх усіх вікон, яка виводить ваші поточні завдання на екран — у вікні">
+    <link rel="canonical" href="https://www.elite-intel.org/uk/UI-HUD-Overlay.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-HUD-Overlay.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-HUD-Overlay.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-HUD-Overlay.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-HUD-Overlay.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-HUD-Overlay.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-HUD-Overlay.html">
+    <meta property="og:title" content="HUD-накладка  EliteIntel">
+    <meta property="og:description" content="Нове у V1.1. Накладка поверх усіх вікон, яка виводить ваші поточні завдання на екран — у вікні">
+    <meta property="og:url" content="https://www.elite-intel.org/uk/UI-HUD-Overlay.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI-HUD-Overlay.html" class="locale-link">EN</a><a href="../fr/UI-HUD-Overlay.html" class="locale-link">FR</a><a href="../es/UI-HUD-Overlay.html" class="locale-link">ES</a><a href="../de/UI-HUD-Overlay.html" class="locale-link">DE</a><span class="locale-current">UK</span><a href="../ru/UI-HUD-Overlay.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Головна</a>
+
+            <div class="nav-section">Застосунок</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Встановлення</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Інтерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Дії»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Бінди»</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Вкладка «Налаштування»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub active"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-накладка</a>
+
+            <div class="nav-section">Вікі</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Як це зробити?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Загальне використання</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Торгівля та прибуток</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Пошук по галактиці</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Дослідження</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Навігація</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Піратські місії</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Всі команди</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Системні команди</a>
+
+            <div class="nav-section">Спільнота</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Політика конфіденційності</a>
+            <a href="Contact.html" class="nav-link">📧 Зв&#39;язатися з розробником</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>HUD-накладка</h1>
+<p><strong>Нове у V1.1.</strong> Накладка поверх усіх вікон, яка виводить ваші поточні завдання на екран — у вікні
+гри або всередині VR-шолома.</p>
+<p><img src="../images/ui-overlay-ingame.png" alt="HUD-накладка у грі"></p>
+<p>Вона замінює старе вікно накладки для OBS. Накладка працює в окремому процесі, тож не конкурує ні
+з грою, ні із застосунком за потік інтерфейсу.</p>
+<p>Картка малюється за геометрією кабіни, а не під прямим кутом до монітора, тому вона нахилена так
+само, як нахилені власні панелі корабля в цьому місці екрана: посуньте її — і нахил зміниться
+відповідно. Її рядки — похилі лінії, і саме тому значення може опинитися помітно нижче за підпис,
+до якого належить: читайте кожен рядок уздовж нахилу, так само як читаєте розташовані поруч
+показники самої гри. Наскільки сильно значення здається зміщеним, залежить не лише від розміщення,
+а й від <strong>РОЗМІРУ ТЕКСТУ</strong>: нахил задає кабіна, тому дрібніший текст означає нижчі рядки, і той
+самий зсув перетинає їх більше.</p>
+<p>Увімкніть її кнопкою <strong>ПОКАЗАТИ НАКЛАДКУ</strong> на <a href="UI-Vega-Tab.html">вкладці «Вега»</a>, а налаштуйте —
+кнопкою <strong>НАЛАШТУВАННЯ ОВЕРЛЕЮ</strong> поруч.</p>
+<blockquote>
+<p>Якщо виконуваного файлу накладки немає у збірці, перемикач лишається вимкненим і повідомляє про
+це в журнал діагностики. Він не вдаватиме накладку, якої немає.</p>
+</blockquote>
+<hr>
+<h2>Що вона показує</h2>
+<p>Накладка малює <strong>картки</strong> — по одній на кожне активне завдання, виведене з того, чим ви справді
+зайняті. Картки з&#39;являються та зникають самі; налаштовувати нічого.</p>
+<table>
+<thead>
+<tr>
+<th>Картка</th>
+<th>З&#39;являється, коли</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>ЕКЗОБІОЛОГІЯ</strong></td>
+<td>Ви берете проби організмів — рід і що лишилося знайти</td>
+</tr>
+<tr>
+<td><strong>КОНТРАКТ НА ЗНИЩЕННЯ</strong></td>
+<td>Ви виконуєте місії на знищення — потрібні вбивства, стос, винагорода</td>
+</tr>
+<tr>
+<td><strong>ВИДОБУТОК</strong></td>
+<td>Ви видобуваєте ресурси — трюм, лімпети, цільовий товар</td>
+</tr>
+<tr>
+<td><strong>ТОРГОВИЙ МАРШРУТ</strong></td>
+<td>Прокладено торговий маршрут — товар, купівля, продаж, маржа, відрізок <em>n</em> з <em>m</em></td>
+</tr>
+<tr>
+<td><strong>ВИГІДНИЙ ВАНТАЖ</strong></td>
+<td>Для вашого вантажу знайдено прибутковий варіант</td>
+</tr>
+<tr>
+<td><strong>МІСІЯ</strong></td>
+<td>Виділена місія — ціль, вантаж або пасажири, термін, винагорода</td>
+</tr>
+<tr>
+<td><strong>ПРОКЛАДЕНИЙ МАРШРУТ</strong></td>
+<td>Задано маршрут — пункт призначення, наступна система, залишок стрибків</td>
+</tr>
+<tr>
+<td><strong>ТОРГОВЕЦЬ МАТЕРІАЛАМИ</strong> · <strong>ТЕХНОЛОГІЧНИЙ БРОКЕР</strong> · <strong>МІЖЗОРЯНІ ПОСЕРЕДНИКИ</strong> · <strong>VISTA GENOMICS</strong></td>
+<td>Ви поставили нагадування про пункт призначення, щоб відвідати один із них</td>
+</tr>
+</tbody></table>
+<p>Картка виділеної місії обирає місію так само, як обрали б ви: спершу ту, що в пункті призначення
+вашого маршруту, потім ту, що в поточній системі, потім прийняту останньою.</p>
+<hr>
+<h2>Налаштування накладки</h2>
+<p><img src="../images/ui-overlay-settings.png" alt="Налаштування накладки"></p>
+<p><strong>ПРОЗОРІСТЬ ФОНУ</strong> (0–100 %) та <strong>РОЗМІР ТЕКСТУ</strong> (75–200 %) — навмисно два окремі регулятори.
+Єдиний повзунок «непрозорості» гасив би текст разом із фоном, а саме це й робить затемнену накладку
+нечитабельною над яскравою поверхнею планети. Гасіть фон, тексту не чіпайте.</p>
+<h3>ВИВІД НА</h3>
+<table>
+<thead>
+<tr>
+<th>Режим</th>
+<th>Що він робить</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Монітор</strong></td>
+<td>Вікно на робочому столі. Значення за замовчуванням і те, що робили всі версії до V1.1. Картка нахиляється під кабіну, і нахил змінюється з розміщенням — див. вище</td>
+</tr>
+<tr>
+<td><strong>VR-шолом</strong></td>
+<td>Накладка SteamVR. Потрібен запущений SteamVR. Якщо VR недоступна, відбувається відкат до вікна на робочому столі, тож ви ніколи не лишаєтесь ні з чим</td>
+</tr>
+<tr>
+<td><strong>Монітор і шолом</strong></td>
+<td>Обидва одразу, з однаковими даними. Корисно, якщо ви літаєте у VR, але ведете трансляцію чи запис з монітора</td>
+</tr>
+<tr>
+<td><strong>Вікно для захоплення у VR</strong></td>
+<td>Просте, пласке, непрозоре вікно, яке інструмент захоплення може закріпити</td>
+</tr>
+</tbody></table>
+<h3>Про вікно для захоплення у VR</h3>
+<p>Цей режим <strong>не</strong> звертається до SteamVR. Запустіть свій інструмент захоплення — Desktop+, OVR
+Toolkit або Virtual Desktop — і оберіть вікно з назвою <strong>«EliteIntel HUD (VR capture)»</strong>.</p>
+<p>Навіщо він потрібен: режим SteamVR передає композитору повну текстуру на кожен надрукований символ,
+і на шоломі, що працює через стрім, це відзначали як реальну втрату частоти кадрів. Інструмент
+захоплення бере вікно на GPU за власним розкладом і дає вам регулятори розміщення та кривини, яких
+у цього застосунку немає.</p>
+<p>Це окремий режим, а не «наведіть інструмент захоплення на вікно монітора», бо те вікно нахилене,
+напівпрозоре і є службовим вікном — а такі вікна діалоги вибору захоплення відфільтровують
+повністю.</p>
+<h3>ПОЛОЖЕННЯ В ШОЛОМІ</h3>
+<p>Вісім варіантів розміщення: <strong>Зверху, Зверху справа, Справа, Знизу справа, Знизу, Знизу зліва,
+Зліва, Зверху зліва.</strong></p>
+<blockquote>
+<p><strong>HUD закріплений перед вашим кріслом і не стежить за головою.</strong> Обраний напрямок відлічується
+від того, куди ви дивитесь після команди SteamVR <em>Скинути положення сидячи</em>, тому перецентрування
+огляду переміщує HUD разом із кабіною — а це саме те, що потрібно. Відвернетесь — і HUD лишиться
+там, де ви його залишили, точно як фізична панель.</p>
+</blockquote>
+<hr>
+<h2>Читання іншою мовою</h2>
+<p>Підписи карток слідують мові застосунку, а числа групуються так, як прийнято в цій мові. Назви, які
+надає гра — системи, станції, товари, — проходять без змін.</p>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

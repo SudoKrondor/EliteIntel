@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Installation  EliteIntel</title>
-    <meta name="description" content="1. Téléchargez le 👉programme d&#39;installation👈.">
+    <meta name="description" content="Elite Intel V1.1 est la version actuelle.">
     <link rel="canonical" href="https://www.elite-intel.org/fr/Installation.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Installation.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Installation.html">
@@ -13,7 +13,7 @@
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Installation.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Installation.html">
     <meta property="og:title" content="Installation  EliteIntel">
-    <meta property="og:description" content="1. Téléchargez le 👉programme d&#39;installation👈.">
+    <meta property="og:description" content="Elite Intel V1.1 est la version actuelle.">
     <meta property="og:url" content="https://www.elite-intel.org/fr/Installation.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -32,8 +32,8 @@
     <nav class="header-actions">
         <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
         <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
-        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
-        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
         <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
         <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
         <div class="locale-switcher"><a href="../Installation.html" class="locale-link">EN</a><span class="locale-current">FR</span><a href="../es/Installation.html" class="locale-link">ES</a><a href="../de/Installation.html" class="locale-link">DE</a><a href="../uk/Installation.html" class="locale-link">UK</a><a href="../ru/Installation.html" class="locale-link">RU</a></div>
@@ -50,8 +50,14 @@
 
             <div class="nav-section">Application</div>
             <a href="Installation.html" class="nav-link active"><img src="../images/release.png" class="inline" height="20" alt=""> Installation</a>
-            <a href="Configuration.html" class="nav-link"><img src="../images/settings.png" class="inline" height="20" alt=""> Configuration</a>
-            <a href="Options.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Options</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Interface</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Onglet Vega</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Onglet Commandant</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Actions</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Bindings</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Onglet Paramètres</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Onglet Statistiques</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
 
             <div class="nav-section">Wiki</div>
             <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Choisir votre LLM</a>
@@ -82,29 +88,50 @@
     </aside>
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
-<h3>La version publiée est V1.0, différente de ce que vous voyez sur les captures d&#39;écran.</h3>
-<h3>Si vous souhaitez la version V1.1, rejoignez l&#39;équipe de bêta-test.</h3>
-<h3>👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Rejoindre l&#39;équipe de bêta-test V1.1 ici</strong></a>👈</h3>
+<h1>Installation</h1>
+<p>Elite Intel <strong>V1.1</strong> est la version actuelle.</p>
 <hr>
 <h2><img src="../images/linux.png" class="inline" height="20" alt="Linux"> Linux <img src="../images/windows.png" class="inline" height="20" alt="Windows"> Windows</h2>
 <ol>
 <li>Téléchargez le <a href="https://github.com/stone-alex/EliteIntel/releases">👉<strong>programme d&#39;installation</strong>👈</a>.</li>
 <li>Exécutez le programme d&#39;installation et suivez les instructions à l&#39;écran.</li>
-<li>Configurez un LLM. Deux options sont disponibles :<ul>
-<li><strong>LLM local</strong> (gratuit, hors ligne) : Consultez le <a href="installing-local-llms.html"><strong>guide LLM local</strong></a>. Nécessite un GPU capable.</li>
-<li><strong>LLM cloud</strong> (a une option gratuite et est plus facile à configurer) : Consultez le guide <a href="UI-and-Configuration-Options.html"><strong>Configurer l&#39;application</strong></a> pour la configuration de la clé API.</li>
+<li>Configurer un modèle de langage. Deux options :<ul>
+<li><strong>LLM local</strong> (gratuit, hors ligne) : voir le <a href="installing-local-llms.html"><strong>guide LLM local</strong></a>.
+Nécessite un GPU performant.</li>
+<li><strong>LLM cloud</strong> (dispose d&#39;un palier gratuit et se configure plus facilement) : voir
+<a href="cloud-llm-options.html"><strong>Options de LLM cloud</strong></a> pour obtenir une clé API, puis saisissez-la dans
+<a href="UI-Settings-Tab.html"><strong>Paramètres → Services IA</strong></a>.</li>
 </ul>
 </li>
 </ol>
-<hr>
-<ol start="3">
-<li>Configurez un LLM. Deux options sont disponibles :<ul>
-<li><strong>LLM local</strong> (gratuit, hors ligne) : Consultez le <a href="installing-local-llms.html"><strong>guide LLM local</strong></a>. Nécessite un GPU capable.</li>
-<li><strong>LLM cloud</strong> (plus facile à configurer) : Consultez le guide <a href="UI-and-Configuration-Options.html"><strong>Configurer l&#39;application</strong></a> pour la configuration de la clé API.</li>
-</ul>
-</li>
-</ol>
-<p>Installation terminée. Consultez <a href="Configuration.html"><strong>Configurer l&#39;application</strong></a> pour les étapes suivantes.</p>
+<p>Configuration terminée. Ensuite : <a href="UI.html"><strong>l&#39;interface, onglet par onglet</strong></a>.</p>
+<h3>Liste de vérification au premier lancement</h3>
+<p>Elite Intel énonce ces avertissements à voix haute au démarrage des services : vous serez donc
+informé de tout ce qui manque — mais autant le faire d&#39;emblée :</p>
+<table>
+<thead>
+<tr>
+<th>Étape</th>
+<th>Où</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Le pointer vers un modèle de langage</td>
+<td><a href="UI-Settings-Tab.html">Paramètres → Services IA</a></td>
+</tr>
+<tr>
+<td>Vérifier le dossier du journal</td>
+<td><a href="UI-Settings-Tab.html">Paramètres → Général</a></td>
+</tr>
+<tr>
+<td>Vérifier le dossier des assignations et corriger les manquantes</td>
+<td><a href="UI-Bindings-Tab.html">Onglet Bindings</a></td>
+</tr>
+<tr>
+<td>Calibrer l&#39;audio</td>
+<td><a href="UI-Vega-Tab.html">Onglet Vega</a> → <strong>CALIBRER L&#39;AUDIO</strong></td>
+</tr>
+</tbody></table>
 <hr>
 <h3>Désinstallation (Linux)</h3>
 <pre><code class="language-shell">~/.var/app/elite.intel.app/uninstall

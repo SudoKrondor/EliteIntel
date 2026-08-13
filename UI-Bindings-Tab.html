@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bindings Tab  EliteIntel</title>
+    <meta name="description" content="Bindings were a corner of the Actions tab; they are now a tab of their own, with a full editor.">
+    <link rel="canonical" href="https://www.elite-intel.org/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Bindings-Tab.html">
+    <meta property="og:title" content="Bindings Tab  EliteIntel">
+    <meta property="og:description" content="Bindings were a corner of the Actions tab; they are now a tab of their own, with a full editor.">
+    <meta property="og:url" content="https://www.elite-intel.org/UI-Bindings-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><span class="locale-current">EN</span><a href="fr/UI-Bindings-Tab.html" class="locale-link">FR</a><a href="es/UI-Bindings-Tab.html" class="locale-link">ES</a><a href="de/UI-Bindings-Tab.html" class="locale-link">DE</a><a href="uk/UI-Bindings-Tab.html" class="locale-link">UK</a><a href="ru/UI-Bindings-Tab.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="images/elite-logo.png" class="inline" height="20" alt=""> Home</a>
+
+            <div class="nav-section">App</div>
+            <a href="Installation.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> User Interface</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Vega Tab</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="images/controller.png" class="inline" height="20" alt=""> Commander Tab</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Actions Tab</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub active"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Bindings Tab</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="images/settings.png" class="inline" height="20" alt=""> Settings Tab</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="images/stats.png" class="inline" height="20" alt=""> Stats Tab</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> HUD Overlay</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Choose your LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">How Do I…?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Search the Galaxy</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery &amp; ExoBiology</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Pirate Missions</a>
+            <a href="AllCommands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> All Commands &amp; Queries</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> System Commands</a>
+
+            <div class="nav-section">Community</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="images/communications.png" class="inline" height="20" alt=""> Matrix Chat ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Privacy Policy</a>
+            <a href="Contact.html" class="nav-link">📧 Contact Developer</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Bindings Tab</h1>
+<p><img src="images/keys-binding.png" class="inline" height="20" alt="Bindings"> <strong>New in V1.1.</strong>
+Bindings were a corner of the Actions tab; they are now a tab of their own, with a full editor.</p>
+<p>Elite Intel operates your ship by pressing the keys Elite Dangerous is bound to. If a control
+has no keyboard binding, Elite Intel cannot use it — this tab is where you find that out and
+fix it.</p>
+<p>Two sub-tabs: <strong>Binding Profile</strong> and <strong>Binding Management</strong>.</p>
+<hr>
+<h2>Binding Profile</h2>
+<p><img src="images/ui-tab-bindings-profile.png" alt="Binding profile"></p>
+<h3>Which file is in use</h3>
+<p><strong>Profile</strong> — detected automatically. Elite Intel reads the active <code>StartPreset</code> entry, and
+falls back to the newest <code>.binds</code> file if it has to.</p>
+<p><strong>File</strong> — the <code>.binds</code> file currently being used for diagnostics and assignment.</p>
+<p><strong>Bindings directory</strong> — optional. Leave it blank and the standard Elite Dangerous location is
+used; set it if your install is somewhere unusual.</p>
+<p>Both fields have an ⓘ button explaining exactly how the value was chosen.</p>
+<h3>The binding tables</h3>
+<p>Two tables: <strong>Used bindings</strong> and <strong>Missing bindings</strong>, with a count on each. Bindings are
+grouped by category:</p>
+<p>Ship / flight · Combat · UI panels · Maps · Exploration · Camera · SRV · On-foot · Miscellaneous</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Binding</strong></td>
+<td>The control</td>
+</tr>
+<tr>
+<td><strong>Primary</strong> / <strong>Secondary</strong></td>
+<td>The two slots Elite Dangerous gives every control</td>
+</tr>
+<tr>
+<td><strong>Status</strong></td>
+<td><code>Missing</code> · <code>No keyboard</code> (bound, but only to a controller) · <code>Not defined</code></td>
+</tr>
+<tr>
+<td><strong>Quick fix</strong></td>
+<td>Assigns a safe free key to this one control</td>
+</tr>
+<tr>
+<td><strong>Clear</strong></td>
+<td>Removes the keyboard binding, leaving controller and HOTAS bindings untouched</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>HOTAS and controllers are shown but not editable.</strong> Elite Intel executes through keyboard
+bindings, so other devices appear for diagnostics only.</p>
+</blockquote>
+<p><strong>Show conflicts only</strong> filters the tables to the problems.</p>
+<h3>Conflicts</h3>
+<p>Elite Dangerous treats a chord as conflicting only when it is <em>exactly</em> the same chord — <code>G</code>
+and <code>Shift+G</code> coexist happily. Elite Intel uses the same rule, so it flags what the game
+actually flags.</p>
+<p>Conflicting rows are coloured, and hovering one shows <strong>Shares <em>key</em> with:</strong> and the list.</p>
+<p>You may also see <strong>Ship/SRV twin — many bind it the same as:</strong> — not a conflict, a suggestion.
+Some ship and SRV controls are conventionally bound to the same key.</p>
+<h3>Editing a binding</h3>
+<p>Click a slot to open the assignment dialog.</p>
+<p><img src="images/ui-bindings-assign.png" alt="Assign a key"></p>
+<p>It shows the selected binding, the slot, and the current value. Then <strong>click the field and
+press the keys you want</strong> — modifiers and key together. Esc cancels. Chords with multiple
+modifiers are supported.</p>
+<p>A live keyboard map shows what is available: <strong>hold Ctrl/Shift/Alt to see the keys free for
+that combination — green is free, red is already used.</strong> Keys reserved by the operating system
+are marked and cannot be assigned.</p>
+<p><strong>Clear binding</strong> removes the assignment.</p>
+<h3>Fix Missing</h3>
+<p>One button that assigns safe, layout-friendly keyboard keys to <strong>every</strong> control that has no
+keyboard binding.</p>
+<ul>
+<li>Existing bindings are never changed.</li>
+<li>No key is ever reused.</li>
+<li>The changes go into your <strong>draft only</strong>.</li>
+</ul>
+<p>It reports what it did, and what it skipped and why: both slots already on a controller, no
+free safe key left, or no slot that could be edited safely.</p>
+<h3>Draft, Apply, Revert</h3>
+<p>Edits do <strong>not</strong> go straight to Elite Dangerous. They accumulate in a draft, and the status
+badge shows <strong>Draft — not applied to game</strong> or <strong>In sync with game</strong>. The same state appears on
+the Vega tab&#39;s <em>Keymap</em> readout.</p>
+<table>
+<thead>
+<tr>
+<th>Button</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Apply to Game</strong></td>
+<td>Writes the draft to your <code>.binds</code> file, taking a backup first</td>
+</tr>
+<tr>
+<td><strong>Revert from Game</strong></td>
+<td>Throws the draft away and reloads from the game file</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>After applying, open and then close the Controls screen in Elite Dangerous.</strong> The game only
+re-reads its bindings when that screen is opened. Elite Intel says this out loud too.</p>
+</blockquote>
+<p>If the game&#39;s binding file changed after your draft was created, Apply refuses and asks you to
+reload or discard first, rather than silently overwriting someone else&#39;s edit.</p>
+<p>Close the app with an unapplied draft and you are asked whether to <strong>Apply to Game</strong>, <strong>Keep
+Draft</strong>, or <strong>Discard</strong>.</p>
+<hr>
+<h2>Binding Management</h2>
+<p><img src="images/ui-tab-bindings-management.png" alt="Binding management"></p>
+<p>Your binding backups, listed by <strong>Created</strong> date and the <strong>Files</strong> each contains. Elite Intel
+takes one automatically before every Apply; <strong>Backup Now</strong> takes one on demand.</p>
+<table>
+<thead>
+<tr>
+<th>Button</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Restore to Editing Slot</strong></td>
+<td>Loads the backup into your draft, so you can review it before it touches the game</td>
+</tr>
+<tr>
+<td><strong>Restore to Live</strong></td>
+<td>Loads it and applies it to the game directly. The usual safe-apply checks still run</td>
+</tr>
+</tbody></table>
+<p>Either one replaces unsaved changes in the current draft, and both ask first.</p>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUD-оверлей  EliteIntel</title>
+    <meta name="description" content="Новое в V1.1. Оверлей поверх всех окон, который выводит ваши текущие задачи на экран — в окне">
+    <link rel="canonical" href="https://www.elite-intel.org/ru/UI-HUD-Overlay.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-HUD-Overlay.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-HUD-Overlay.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-HUD-Overlay.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-HUD-Overlay.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-HUD-Overlay.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-HUD-Overlay.html">
+    <meta property="og:title" content="HUD-оверлей  EliteIntel">
+    <meta property="og:description" content="Новое в V1.1. Оверлей поверх всех окон, который выводит ваши текущие задачи на экран — в окне">
+    <meta property="og:url" content="https://www.elite-intel.org/ru/UI-HUD-Overlay.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI-HUD-Overlay.html" class="locale-link">EN</a><a href="../fr/UI-HUD-Overlay.html" class="locale-link">FR</a><a href="../es/UI-HUD-Overlay.html" class="locale-link">ES</a><a href="../de/UI-HUD-Overlay.html" class="locale-link">DE</a><a href="../uk/UI-HUD-Overlay.html" class="locale-link">UK</a><span class="locale-current">RU</span></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Главная</a>
+
+            <div class="nav-section">Приложение</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Установка</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Интерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Действия»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Бинды»</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Вкладка «Настройки»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub active"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-оверлей</a>
+
+            <div class="nav-section">Вики</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Выбрать LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Как это сделать?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Общее использование</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Торговля и прибыль</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Поиск по галактике</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Исследование</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Навигация</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Пиратские миссии</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Все команды</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Системные команды</a>
+
+            <div class="nav-section">Сообщество</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Политика конфиденциальности</a>
+            <a href="Contact.html" class="nav-link">📧 Связаться с разработчиком</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>HUD-оверлей</h1>
+<p><strong>Новое в V1.1.</strong> Оверлей поверх всех окон, который выводит ваши текущие задачи на экран — в окне
+игры или внутри VR-шлема.</p>
+<p><img src="../images/ui-overlay-ingame.png" alt="HUD-оверлей в игре"></p>
+<p>Он заменяет старое окно оверлея для OBS. Оверлей работает в отдельном процессе, поэтому не
+конкурирует ни с игрой, ни с приложением за поток интерфейса.</p>
+<p>Карточка рисуется по геометрии кокпита, а не под прямым углом к монитору, поэтому она наклонена
+так же, как наклонены собственные панели корабля в этом месте экрана: сдвиньте её — и наклон
+изменится соответственно. Её строки — наклонные линии, и именно поэтому значение может оказаться
+заметно ниже подписи, к которой относится: читайте каждую строку вдоль наклона, ровно так же, как
+читаете расположенные рядом показания самой игры. Насколько сильно значение кажется съехавшим,
+зависит не только от размещения, но и от <strong>РАЗМЕРА ТЕКСТА</strong>: наклон задаёт кокпит, поэтому мелкий
+текст означает более низкие строки, и тот же сдвиг пересекает их больше.</p>
+<p>Включите его кнопкой <strong>ПОКАЗАТЬ ОВЕРЛЕЙ</strong> на <a href="UI-Vega-Tab.html">вкладке «Вега»</a>, а настройте — кнопкой
+<strong>НАСТРОЙКИ ОВЕРЛЕЯ</strong> рядом.</p>
+<blockquote>
+<p>Если исполняемого файла оверлея нет в сборке, переключатель остаётся выключенным и сообщает об
+этом в журнал диагностики. Он не станет изображать оверлей, которого нет.</p>
+</blockquote>
+<hr>
+<h2>Что он показывает</h2>
+<p>Оверлей рисует <strong>карточки</strong> — по одной на каждую активную задачу, выведенную из того, чем вы
+действительно заняты. Карточки появляются и исчезают сами; настраивать нечего.</p>
+<table>
+<thead>
+<tr>
+<th>Карточка</th>
+<th>Появляется, когда</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>ЭКЗОБИОЛОГИЯ</strong></td>
+<td>Вы берёте пробы организмов — род и что осталось найти</td>
+</tr>
+<tr>
+<td><strong>КОНТРАКТ НА ЗАЧИСТКУ</strong></td>
+<td>Вы выполняете миссии на зачистку — требуемые убийства, стопка, награда</td>
+</tr>
+<tr>
+<td><strong>ДОБЫЧА</strong></td>
+<td>Вы добываете ресурсы — трюм, лимпеты, целевой товар</td>
+</tr>
+<tr>
+<td><strong>ТОРГОВЫЙ МАРШРУТ</strong></td>
+<td>Проложен торговый маршрут — товар, покупка, продажа, маржа, отрезок <em>n</em> из <em>m</em></td>
+</tr>
+<tr>
+<td><strong>ВЫГОДНЫЙ ГРУЗ</strong></td>
+<td>Для вашего груза найден прибыльный вариант</td>
+</tr>
+<tr>
+<td><strong>МИССИЯ</strong></td>
+<td>Выделенная миссия — цель, груз или пассажиры, срок, награда</td>
+</tr>
+<tr>
+<td><strong>ПРОЛОЖЕННЫЙ МАРШРУТ</strong></td>
+<td>Задан маршрут — пункт назначения, следующая система, оставшиеся прыжки</td>
+</tr>
+<tr>
+<td><strong>ТОРГОВЕЦ МАТЕРИАЛАМИ</strong> · <strong>ТЕХНОЛОГИЧЕСКИЙ БРОКЕР</strong> · <strong>МЕЖЗВЁЗДНЫЕ ПОСРЕДНИКИ</strong> · <strong>VISTA GENOMICS</strong></td>
+<td>Вы поставили напоминание о пункте назначения, чтобы посетить один из них</td>
+</tr>
+</tbody></table>
+<p>Карточка выделенной миссии выбирает миссию так же, как выбрали бы вы: сначала ту, что в пункте
+назначения вашего маршрута, затем ту, что в текущей системе, затем принятую последней.</p>
+<hr>
+<h2>Настройки оверлея</h2>
+<p><img src="../images/ui-overlay-settings.png" alt="Настройки оверлея"></p>
+<p><strong>ПРОЗРАЧНОСТЬ ФОНА</strong> (0–100 %) и <strong>РАЗМЕР ТЕКСТА</strong> (75–200 %) — намеренно два отдельных
+регулятора. Единственный ползунок «непрозрачности» гасил бы текст вместе с фоном, а именно это и
+делает затемнённый оверлей нечитаемым над яркой поверхностью планеты. Гасите фон, текст не
+трогайте.</p>
+<h3>ВЫВОД НА</h3>
+<table>
+<thead>
+<tr>
+<th>Режим</th>
+<th>Что он делает</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Монитор</strong></td>
+<td>Окно на рабочем столе. Значение по умолчанию и то, что делали все версии до V1.1. Карточка наклоняется под кокпит, и наклон меняется с размещением — см. выше</td>
+</tr>
+<tr>
+<td><strong>VR-шлем</strong></td>
+<td>Оверлей SteamVR. Требуется запущенный SteamVR. Если VR недоступна, происходит откат к окну на рабочем столе, так что вы никогда не остаётесь ни с чем</td>
+</tr>
+<tr>
+<td><strong>Монитор и шлем</strong></td>
+<td>Оба сразу, с одинаковыми данными. Полезно, если вы летаете в VR, но ведёте трансляцию или запись с монитора</td>
+</tr>
+<tr>
+<td><strong>Окно для захвата в VR</strong></td>
+<td>Простое, плоское, непрозрачное окно, которое инструмент захвата может закрепить</td>
+</tr>
+</tbody></table>
+<h3>Об окне для захвата в VR</h3>
+<p>Этот режим <strong>не</strong> обращается к SteamVR. Запустите свой инструмент захвата — Desktop+, OVR Toolkit
+или Virtual Desktop — и выберите окно с именем <strong>«EliteIntel HUD (VR capture)»</strong>.</p>
+<p>Зачем он нужен: режим SteamVR передаёт композитору полную текстуру на каждый напечатанный символ, и
+на шлеме, работающем по стриму, это отмечали как реальную потерю кадровой частоты. Инструмент
+захвата берёт окно на GPU по собственному расписанию и даёт вам регуляторы размещения и кривизны,
+которых у этого приложения нет.</p>
+<p>Это отдельный режим, а не «наведите инструмент захвата на окно монитора», потому что то окно
+наклонено, полупрозрачно и является служебным окном — а такие окна диалоги выбора захвата
+отфильтровывают полностью.</p>
+<h3>ПОЛОЖЕНИЕ В ШЛЕМЕ</h3>
+<p>Восемь вариантов размещения: <strong>Сверху, Сверху справа, Справа, Снизу справа, Снизу, Снизу слева,
+Слева, Сверху слева.</strong></p>
+<blockquote>
+<p><strong>HUD закреплён перед вашим креслом и не следует за головой.</strong> Выбранное направление отсчитывается
+от того, куда вы смотрите после команды SteamVR <em>Сбросить положение сидя</em>, поэтому перецентровка
+вида перемещает HUD вместе с кокпитом — а это именно то, что нужно. Отвернётесь — и HUD останется
+там, где вы его оставили, точно как физическая панель.</p>
+</blockquote>
+<hr>
+<h2>Чтение на другом языке</h2>
+<p>Подписи карточек следуют языку приложения, а числа группируются так, как принято в этом языке.
+Названия, которые предоставляет игра — системы, станции, товары, — проходят без изменений.</p>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

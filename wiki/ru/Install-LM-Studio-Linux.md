@@ -20,10 +20,11 @@ LM Studio  альтернатива Ollama. Использует те же мо�
 
 | Модель | Требуется VRAM | Примечания |
 |---|---|---|
-| `tulu-3.1-8b-supernova` Q4_K_M | ~5 ГБ | ✅ Рекомендуется для V1.0 |
-| `google/gemma-4-e4b` | ~6.3 ГБ | ✅ Рекомендуется для V1.1 |
+| `google/gemma-4-e4b` | ~6.3 ГБ | ✅ Требуется |
 
-> **Какую модель выбрать?** `tulu-3.1-8b-supernova` — рекомендуемая модель для **V1.0**. В **V1.1** выполняется переход на `google/gemma-4-e4b`, которая поддерживает вызов функций (function calling), необходимый для новой функции «компаньон». В командах ниже используется модель V1.1 — для V1.0 замените её на `tulu-3.1-8b-supernova`.
+> **Почему именно она?** Она поддерживает вызов функций, необходимый компаньону. Модель, которая не умеет
+> формировать вызов инструмента, не сможет управлять приложением, как бы хорошо она ни
+> писала. См. [Выбрать LLM](installing-local-llms).
 
 ---
 
@@ -60,33 +61,11 @@ lms --help
 
 ### Шаг 2  Загрузка модели
 
-Для **V1.1** загрузите `google/gemma-4-e4b`:
-
 ```shell
 lms get google/gemma-4-e4b
 ```
-
-Для **V1.0** загрузите `tulu-3.1-8b-supernova`:
-
-```shell
-lms get tulu3.1
-Searching for models with the term tulu3.1
-No exact match found. Please choose a model from the list below.
-
-? Select a model to download
-❯ QuantFactory/Tulu-3.1-8B-SuperNova-GGUF
-  mradermacher/Tulu-3.1-8B-SuperNova-i1-GGUF
-  QuantFactory/Tulu-3.1-8B-SuperNova-Smart-GGUF
-  mradermacher/Tulu-3.1-8B-SuperNova-GGUF
-  bunnycore/Tulu-3.1-8B-SuperNova-Smart-IQ4_XS-GGUF
-  mradermacher/Tulu-3.1-8B-SuperNova-Smart-GGUF
-  mradermacher/Tulu-3.1-8B-SuperNova-Smart-i1-GGUF
-  matrixportalx/Tulu-3.1-8B-SuperNova-Q4_0-GGUF
-  matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
-
-↑↓ navigate • ⏎ select
-```
-Используйте стрелки для навигации и Enter для выбора. Выберите `matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF`.
+Если имя не совпадает точно, `lms get` покажет найденные варианты — выберите нужный
+стрелками и клавишей Enter.
 
 Чтобы просмотреть загруженные модели:
 
@@ -97,17 +76,11 @@ lms ls
 Это стандартный путь. Однако [в LM Studio есть известная ошибка](https://github.com/lmstudio-ai/lmstudio-bug-tracker/issues/917). В некоторых случаях загрузка завершается с ошибкой:
 ```Error: No staff picks found with the specified search criteria.```
 
-Если это произошло, загрузите модель вручную:
+В этом случае скачайте GGUF вручную со страницы модели на HuggingFace и импортируйте его:
 
 ```shell
-curl -s "https://huggingface.co/api/models/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF" | grep -o '"rfilename":"[^"]*\.gguf"'
+lms import /path/to/the-model.gguf
 ```
-Затем импортируйте её:
-
-```shell
-lms import /path/to/tulu-3.1-8b-supernova-q4_k_m.gguf
-```
-
 
 ---
 

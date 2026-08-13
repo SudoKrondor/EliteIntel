@@ -32,8 +32,8 @@
     <nav class="header-actions">
         <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
         <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
-        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
-        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
         <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
         <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
         <div class="locale-switcher"><a href="../installing-local-llms.html" class="locale-link">EN</a><a href="../fr/installing-local-llms.html" class="locale-link">FR</a><span class="locale-current">ES</span><a href="../de/installing-local-llms.html" class="locale-link">DE</a><a href="../uk/installing-local-llms.html" class="locale-link">UK</a><a href="../ru/installing-local-llms.html" class="locale-link">RU</a></div>
@@ -50,8 +50,14 @@
 
             <div class="nav-section">Aplicación</div>
             <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Instalación</a>
-            <a href="Configuration.html" class="nav-link"><img src="../images/settings.png" class="inline" height="20" alt=""> Configuración</a>
-            <a href="Options.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Opciones</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Interfaz</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Pestaña Vega</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Pestaña Comandante</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Pestaña Acciones</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Pestaña Bindings</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Pestaña Ajustes</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Pestaña Estadísticas</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
 
             <div class="nav-section">Wiki</div>
             <a href="installing-local-llms.html" class="nav-link active"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Elegir tu LLM</a>
@@ -137,9 +143,9 @@
 <td>Más rápido</td>
 </tr>
 <tr>
-<td><strong>Modelo preferido</strong></td>
-<td><a href="https://huggingface.co/mradermacher/Tulu-3.1-8B-SuperNova-i1-GGUF">tulu-3.1-8b-supernova Q4_K_M</a></td>
-<td><a href="https://huggingface.co/mradermacher/Tulu-3.1-8B-SuperNova-i1-GGUF">tulu-3.1-8b-supernova Q4_K_M</a></td>
+<td><strong>Modelo requerido</strong></td>
+<td><code>google/gemma-4-e4b</code></td>
+<td><code>google/gemma-4-e4b</code></td>
 </tr>
 <tr>
 <td><strong>Ideal para</strong></td>
@@ -210,25 +216,33 @@
 </ul>
 <hr>
 <h2>Recomendación del desarrollador</h2>
-<p>El desarrollador usa LM Studio con <a href="https://huggingface.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF"><code>matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF</code></a>. Este modelo proporciona inferencia rápida. El mismo modelo en Ollama funciona notablemente más lento. La aplicación está optimizada para este modelo. Otros modelos pueden funcionar, pero no están garantizados. Informa sobre los resultados de compatibilidad en Matrix.</p>
-<h2>¿Por qué tulu3.1:8b Supernova específicamente?</h2>
-<p>Elite Intel es un analizador de comandos y una herramienta de análisis de datos, no un chatbot conversacional. Esto impone requisitos específicos al modelo. Generar conversaciones que suenen naturales es insuficiente. El modelo debe inferir correctamente las acciones a partir de la entrada de voz y realizar análisis de datos estructurados. Debe devolver los resultados en JSON formateado, no en un ensayo o HTML. No todos los modelos de este tamaño realizan esta tarea de manera fiable.</p>
-<h2>Tulu 3 (la receta de entrenamiento base) es genuinamente excepcional</h2>
-<p><a href="https://huggingface.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF/tree/main">Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF</a></p>
-<p>La mayoría de los modelos de instrucción se entrenan con RLHF, que utiliza un modelo de recompensa aprendido para evaluar las salidas. Ese modelo de recompensa es en sí mismo una red neuronal, por lo que hereda todos los sesgos e inconsistencias habituales. Tulu 3 reemplazó esto con RLVR (Aprendizaje por refuerzo con recompensas verificables). En lugar de un modelo de recompensa aprendido, el entrenamiento utiliza una función de puntuación determinista: la respuesta es correcta o no lo es. Binario, sin sesgos. Esto es especialmente impactante para las tareas de seguimiento de instrucciones, donde la señal de recompensa es objetiva.</p>
-<p>El proceso de entrenamiento sigue un enfoque de cuatro etapas: curación de datos orientada a habilidades clave, ajuste fino supervisado, Optimización de Preferencia Directa y RLVR encima para mejorar el rendimiento en tareas verificables. Cada etapa se construye sobre la anterior. Por eso Tulu 3, sobre la base Llama de 8B, alcanza resultados que superan a las versiones instruct de Llama 3.1, Qwen 2.5, Mistral e incluso modelos cerrados como GPT-4o-mini y Claude 3.5 Haiku.</p>
-<p>Para EliteIntel, la etapa de clasificación de comandos es una tarea de seguimiento de instrucciones con respuestas correctas verificables (acción JSON X frente a Y). Este es precisamente el tipo de tarea que optimiza RLVR. El modelo está entrenado específicamente para producir salidas estructuradas deterministas.</p>
-<h2>Por qué la variante &quot;Supernova&quot;</h2>
-<p>La variante Supernova difiere del Tulu 3 estándar. Tulu-3.1-8B-SuperNova se crea mediante una fusión lineal de tres modelos: Llama-3.1-MedIT-SUN-8B (médico/razonamiento), Llama-3.1-Tulu-3-8B (seguimiento de instrucciones) y Llama-3.1-SuperNova-Lite (el modelo destilado de Arcee), cada uno con un peso igual de 1.0 usando mergekit.</p>
-<p>El modelo padre SuperNova-Lite es un modelo destilado de una base Arcee más grande, lo que proporciona una densidad de conocimiento superior a la de un modelo estándar de 8B. La fusión lineal promedia directamente los tensores de peso, combinando el conocimiento sin cómputo de entrenamiento adicional. Esto consigue resultados especialmente sólidos en tareas de seguimiento de instrucciones, como lo demuestra su puntuación IFEval.</p>
-<p><strong>Rendimiento</strong>: El modelo usa una arquitectura Llama de 8B. Con la cuantización Q4_K_M en una 3090 de 24 GB, cabe en la VRAM junto al juego con margen. Esto evita la descarga a CPU y mantiene el máximo rendimiento de inferencia. Los modelos Qwen comparables usan configuraciones de cabezas de atención distintas (como el ratio GQA de Qwen2.5) que pueden ser más lentos en el backend GGUF de llama.cpp.</p>
-<p>También funciona en una tarjeta con 12 GB de VRAM si no hay otras cargas de trabajo que consuman VRAM. Esto requiere que el juego se ejecute en una GPU o máquina independiente.</p>
+<p>El desarrollador usa LM Studio con <code>google/gemma-4-e4b</code> (~6,3 GB). El mismo modelo en Ollama va
+notablemente más lento. Otros modelos pueden funcionar, pero no está garantizado. Comparte tus
+hallazgos de compatibilidad en Matrix.</p>
+<h2>¿Por qué <code>google/gemma-4-e4b</code> específicamente?</h2>
+<p>Elite Intel es un analizador de comandos y una herramienta de análisis de datos, no un chatbot
+conversacional. Eso impone requisitos concretos al modelo. No basta con generar charla que suene
+natural. El modelo debe inferir correctamente las acciones a partir de la voz, realizar análisis de
+datos estructurados y devolver los resultados como datos estructurados, no como un ensayo en
+markdown o HTML. No todos los modelos de este tamaño lo hacen de forma fiable.</p>
+<p>El requisito ineludible es el <strong>function calling</strong>. El compañero de Elite Intel no pide al modelo
+que describa lo que haría: le ofrece un conjunto de herramientas y espera que llame a una, con
+argumentos. Un modelo que no puede emitir una llamada a herramienta bien formada no puede manejar
+la aplicación en absoluto, por bien que escriba. <code>google/gemma-4-e4b</code> lo admite.</p>
+<p>Con unos 6,3 GB cabe en la VRAM junto al juego en una tarjeta de 24 GB con margen, lo que evita
+descargar trabajo a la CPU y mantiene alto el rendimiento de inferencia.</p>
+<blockquote>
+<p><strong>Sobre el modelo retirado de V1.0.</strong> Las versiones anteriores recomendaban
+<code>tulu-3.1-8b-supernova</code>. No admite function calling, así que no puede ejecutar el compañero y ya
+no sirve con Elite Intel. Si sigues una guía antigua, ignórala e instala <code>google/gemma-4-e4b</code>.</p>
+</blockquote>
 <h2>¿Puedo usar un modelo diferente?</h2>
-<p>Se pueden usar modelos alternativos, pero es poco probable que igualen la velocidad y precisión de tulu3.1-supernova.</p>
-<p>Los problemas más comunes con los modelos alternativos incluyen un formato de respuesta incorrecto.
-El error más frecuente es que el modelo devuelva un ensayo en lugar de una acción estructurada o un resultado de análisis.</p>
+<p>Se pueden usar modelos alternativos, pero deben admitir function calling. Sin eso la aplicación no
+puede ejecutar nada.</p>
+<p>El fallo más frecuente con un modelo alternativo es un formato de respuesta incorrecto: el modelo
+devuelve prosa describiendo una acción en lugar de llamar realmente a la herramienta.</p>
 <hr>
-<p>Comunidad 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 
         </div>
     </main>

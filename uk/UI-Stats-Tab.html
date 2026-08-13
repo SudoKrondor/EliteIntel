@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вкладка «Статистика»  EliteIntel</title>
+    <meta name="description" content="модель — у токенах і в затримці.">
+    <link rel="canonical" href="https://www.elite-intel.org/uk/UI-Stats-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Stats-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Stats-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Stats-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Stats-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Stats-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Stats-Tab.html">
+    <meta property="og:title" content="Вкладка «Статистика»  EliteIntel">
+    <meta property="og:description" content="модель — у токенах і в затримці.">
+    <meta property="og:url" content="https://www.elite-intel.org/uk/UI-Stats-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI-Stats-Tab.html" class="locale-link">EN</a><a href="../fr/UI-Stats-Tab.html" class="locale-link">FR</a><a href="../es/UI-Stats-Tab.html" class="locale-link">ES</a><a href="../de/UI-Stats-Tab.html" class="locale-link">DE</a><span class="locale-current">UK</span><a href="../ru/UI-Stats-Tab.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Головна</a>
+
+            <div class="nav-section">Застосунок</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Встановлення</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Інтерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Дії»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Бінди»</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Вкладка «Налаштування»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub active"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-накладка</a>
+
+            <div class="nav-section">Вікі</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Як це зробити?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Загальне використання</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Торгівля та прибуток</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Пошук по галактиці</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Дослідження</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Навігація</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Піратські місії</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Всі команди</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Системні команди</a>
+
+            <div class="nav-section">Спільнота</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Політика конфіденційності</a>
+            <a href="Contact.html" class="nav-link">📧 Зв&#39;язатися з розробником</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Вкладка «Статистика»</h1>
+<p><img src="../images/stats.png" class="inline" height="20" alt="Статистика"> У що вам обходиться мовна
+модель — у токенах і в затримці.</p>
+<p><img src="../images/ui-tab-stats.png" alt="Вкладка «Статистика»"></p>
+<p>Токен — базова одиниця обчислень мовної моделі, приблизно слово або число. Якщо ви користуєтесь
+платним хмарним провайдером, токени і є лічильником.</p>
+<hr>
+<h2>Телеметрія LLM</h2>
+<p>Модель, яка насправді обслуговує ваші запити, і скільки часу триває поточна сесія. Ім&#39;я моделі —
+це те, що відповіло, а не те, що ви налаштували, тож саме тут ви пересвідчуєтесь, що зміна
+провайдера справді спрацювала.</p>
+<h2>Витрата токенів</h2>
+<p>П&#39;ять смуг. <strong>Вони описують останній запит</strong>, а не сесію, щоб ви бачили форму одного обміну.</p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Значення</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Останній промпт</strong></td>
+<td>Надіслані вхідні токени</td>
+</tr>
+<tr>
+<td><strong>Остання відповідь</strong></td>
+<td>Згенеровані вихідні токени</td>
+</tr>
+<tr>
+<td><strong>Влучання у кеш</strong></td>
+<td>Введення, обслужене з кешу замість повторної тарифікації</td>
+</tr>
+<tr>
+<td><strong>Записано в кеш</strong></td>
+<td>Введення, записане <em>у</em> кеш, щоб наступні запити в нього влучали</td>
+</tr>
+<tr>
+<td><strong>Остання швидкість</strong></td>
+<td>Токенів за секунду</td>
+</tr>
+</tbody></table>
+<p>Чотири токенні смуги заповнюються як частка від загального обсягу цього одного запиту, тож
+читаються як склад. У швидкості немає фіксованої стелі, тому її смуга заповнюється відносно
+найшвидшої відповіді за сесію.</p>
+<h2>Зведення сесії</h2>
+<table>
+<thead>
+<tr>
+<th>Рядок</th>
+<th>Значення</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Токенів використано</strong></td>
+<td>Позначено <strong>(БЕЗКОШТОВНО)</strong> для локальної моделі та <strong>(платно)</strong> для хмарної</td>
+</tr>
+<tr>
+<td><strong>Токенів зекономлено кешем</strong></td>
+<td>Лише хмара. Щойно з&#39;являються влучання, показує <em>«обслужено за зниженим тарифом»</em></td>
+</tr>
+<tr>
+<td><strong>Токенів / годину</strong></td>
+<td>Прогноз. Перші 10 хвилин показує <em>«збір даних…»</em>, бо швидкість, екстрапольована з двох хвилин гри, — це вигадка</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Що цифри означають на практиці</h2>
+<p>Типова сесія загалом іде приблизно по <strong>250 000 токенів на годину</strong>.</p>
+<p>Хмарна інтеграція Elite Intel налаштована під кожного провайдера на максимальне кешування
+промптів, а закешовані токени або безкоштовні, або тарифікуються за зниженою ставкою. Яка частка
+з цих 250 000 потрапить у кеш, цілком залежить від провайдера: одні кешують до 80 %, інші ближче
+до 40 %. Саме ця різниця здебільшого й відділяє дешевого провайдера від дорогого, і її варто
+поспостерігати тут протягом сесії, перш ніж на чомусь зупинитися.</p>
+<p><strong>У локальної моделі показників кешу немає.</strong> Локальний інференс кешує — llama.cpp тримає KV-кеш
+і використовує його, — але не повідомляє цифри, тож чесно показати нічого. Панель так і пише,
+замість того щоб виводити оманливий нуль, і повністю приховує рядок кешу.</p>
+<p>Живу зведену версію тих самих даних несе <a href="UI-Vega-Tab.html">вкладка «Вега»</a>: унизу в неї смуга
+<strong>Зведення системи</strong> з шести блоків.</p>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

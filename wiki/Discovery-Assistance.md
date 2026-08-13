@@ -46,6 +46,11 @@ When collecting bio samples in challenging terrain, EliteIntel tracks tagged sam
 4. **Continue**: Repeat until all scans are complete. EliteIntel provides continuous voice guidance during extended
    SRV traversal.
 
+
+**Display Overlay**
+
+![exo-bio-overlay.png](images/exo-bio-overlay.png)
+
 **Note**: EliteIntel uses coordinates from Codex tags. Remaining close to the sample during scanning improves
 coordinate accuracy. More tags provide more navigation options.
 

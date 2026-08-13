@@ -20,10 +20,11 @@ Para ejecutar Elite Dangerous y el LLM en la **misma máquina**, se requiere com
 
 | Modelo | VRAM requerida | Notas |
 |---|---|---|
-| `tulu-3.1-8b-supernova` Q4_K_M | ~5 GB | ✅ Recomendado para V1.0 |
-| `google/gemma-4-e4b` | ~6,3 GB | ✅ Recomendado para V1.1 |
+| `google/gemma-4-e4b` | ~6,3 GB | ✅ Requerido |
 
-> **¿Qué modelo?** `tulu-3.1-8b-supernova` es el modelo recomendado para **V1.0**. **V1.1** cambia a `google/gemma-4-e4b`, que admite el function calling necesario para la nueva función de compañero. Los comandos siguientes usan el modelo de V1.1: en V1.0, sustitúyelo por `tulu-3.1-8b-supernova`.
+> **¿Por qué este modelo?** Admite el function calling que necesita el compañero. Un modelo que no puede emitir una
+> llamada a una herramienta no puede manejar la aplicación, por bien que escriba.
+> Consulta [Elegir tu LLM](installing-local-llms).
 
 ---
 
@@ -60,33 +61,11 @@ lms --help
 
 ### Paso 2 – Descargar el modelo
 
-Para **V1.1**, descarga `google/gemma-4-e4b`:
-
 ```shell
 lms get google/gemma-4-e4b
 ```
-
-Para **V1.0**, descarga `tulu-3.1-8b-supernova`:
-
-```shell
-lms get tulu3.1
-Searching for models with the term tulu3.1
-No exact match found. Please choose a model from the list below.
-
-? Select a model to download
-❯ QuantFactory/Tulu-3.1-8B-SuperNova-GGUF
-  mradermacher/Tulu-3.1-8B-SuperNova-i1-GGUF
-  QuantFactory/Tulu-3.1-8B-SuperNova-Smart-GGUF
-  mradermacher/Tulu-3.1-8B-SuperNova-GGUF
-  bunnycore/Tulu-3.1-8B-SuperNova-Smart-IQ4_XS-GGUF
-  mradermacher/Tulu-3.1-8B-SuperNova-Smart-GGUF
-  mradermacher/Tulu-3.1-8B-SuperNova-Smart-i1-GGUF
-  matrixportalx/Tulu-3.1-8B-SuperNova-Q4_0-GGUF
-  matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
-
-↑↓ navigate • ⏎ select
-```
-Usa las flechas del teclado para navegar y Enter para seleccionar. Selecciona `matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF`.
+Si el nombre no coincide exactamente, `lms get` muestra los candidatos encontrados; elige
+uno con las flechas y Enter.
 
 Para listar los modelos descargados:
 
@@ -97,17 +76,11 @@ lms ls
 Esa es la ruta estándar. Sin embargo, [LM Studio tiene un bug conocido](https://github.com/lmstudio-ai/lmstudio-bug-tracker/issues/917). En algunos casos la descarga falla con:
 ```Error: No staff picks found with the specified search criteria.```
 
-Si eso ocurre, descarga el modelo manualmente:
+Si ocurre, descarga el GGUF a mano desde la página del modelo en HuggingFace e impórtalo:
 
 ```shell
-curl -s "https://huggingface.co/api/models/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF" | grep -o '"rfilename":"[^"]*\.gguf"'
+lms import /path/to/the-model.gguf
 ```
-Luego impórtalo:
-
-```shell
-lms import /path/to/tulu-3.1-8b-supernova-q4_k_m.gguf
-```
-
 
 ---
 

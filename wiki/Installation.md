@@ -1,7 +1,6 @@
-### The released version is V1.0 is different from what you see on screenshots.
+# Installation
 
-### If you want version V1.1 join the beta test team. 
-### 👉[**Join the Beta Test Team here V1.1**](https://matrix.to/#/#krondor:matrix.org)👈
+Elite Intel **V1.1** is the current release.
 
 ---
 
@@ -9,18 +8,26 @@
 
 1. Download the [👉**installer**👈](https://github.com/stone-alex/EliteIntel/releases).
 2. Run the installer and follow the on-screen prompts.
-3. Set up an LLM. Two options are available:
-   - **Local LLM** (free, offline): See the [**Local LLM guide**](installing-local-llms). Requires capable GPU hardware.
-   - **Cloud LLM** (has a free option and is easier to set up): See the [**Configure the app**](UI-and-Configuration-Options) guide for API key setup.
+3. Set up a language model. Two options:
+   - **Local LLM** (free, offline): see the [**Local LLM guide**](installing-local-llms).
+     Requires capable GPU hardware.
+   - **Cloud LLM** (has a free tier and is easier to set up): see
+     [**Cloud LLM options**](cloud-llm-options) for how to get an API key, then enter it in
+     [**Settings → AI Services**](UI-Settings-Tab).
 
----
+Setup complete. Next: [**the user interface, tab by tab**](UI).
 
+### First-run checklist
 
-4. Set up an LLM. Two options are available:
-   - **Local LLM** (free, offline): See the [**Local LLM guide**](installing-local-llms). Requires capable GPU hardware.
-   - **Cloud LLM** (easier to set up): See the [**Configure the app**](UI-and-Configuration-Options) guide for API key setup.
+Elite Intel speaks these warnings out loud when services start, so you will hear about anything
+missing — but they are worth doing up front:
 
-Setup complete. See [**Configure the app**](Configuration) for next steps.
+| Step | Where |
+|------|-------|
+| Point it at a language model | [Settings → AI Services](UI-Settings-Tab) |
+| Check the journal folder | [Settings → Common](UI-Settings-Tab) |
+| Check the bindings folder, and fix any missing bindings | [Bindings tab](UI-Bindings-Tab) |
+| Calibrate audio | [Vega tab](UI-Vega-Tab) → **CALIBRATE AUDIO** |
 
 ---
 

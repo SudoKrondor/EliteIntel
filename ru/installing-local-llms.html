@@ -32,8 +32,8 @@
     <nav class="header-actions">
         <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
         <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
-        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
-        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
         <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
         <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
         <div class="locale-switcher"><a href="../installing-local-llms.html" class="locale-link">EN</a><a href="../fr/installing-local-llms.html" class="locale-link">FR</a><a href="../es/installing-local-llms.html" class="locale-link">ES</a><a href="../de/installing-local-llms.html" class="locale-link">DE</a><a href="../uk/installing-local-llms.html" class="locale-link">UK</a><span class="locale-current">RU</span></div>
@@ -50,8 +50,14 @@
 
             <div class="nav-section">Приложение</div>
             <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Установка</a>
-            <a href="Configuration.html" class="nav-link"><img src="../images/settings.png" class="inline" height="20" alt=""> Настройка</a>
-            <a href="Options.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Параметры</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Интерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Действия»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Бинды»</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Вкладка «Настройки»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-оверлей</a>
 
             <div class="nav-section">Вики</div>
             <a href="installing-local-llms.html" class="nav-link active"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Выбрать LLM</a>
@@ -137,9 +143,9 @@
 <td>Быстрее</td>
 </tr>
 <tr>
-<td><strong>Рекомендуемая модель</strong></td>
-<td><a href="https://huggingface.co/mradermacher/Tulu-3.1-8B-SuperNova-i1-GGUF">tulu-3.1-8b-supernova Q4_K_M</a></td>
-<td><a href="https://huggingface.co/mradermacher/Tulu-3.1-8B-SuperNova-i1-GGUF">tulu-3.1-8b-supernova Q4_K_M</a></td>
+<td><strong>Требуемая модель</strong></td>
+<td><code>google/gemma-4-e4b</code></td>
+<td><code>google/gemma-4-e4b</code></td>
 </tr>
 <tr>
 <td><strong>Лучше всего подходит для</strong></td>
@@ -210,25 +216,34 @@
 </ul>
 <hr>
 <h2>Рекомендация разработчика</h2>
-<p>Разработчик использует LM Studio с <a href="https://huggingface.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF"><code>matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF</code></a>. Эта модель обеспечивает быструю инференцию. Та же модель на Ollama работает заметно медленнее. Приложение оптимизировано под эту модель. Другие модели могут работать, но это не гарантируется. Сообщай о результатах совместимости в Matrix.</p>
-<h2>Почему именно tulu3.1:8b Supernova?</h2>
-<p>Elite Intel  это анализатор команд и инструмент анализа данных, а не разговорный чатбот. Это предъявляет специфические требования к модели. Генерировать естественно звучащие разговоры  недостаточно. Модель должна правильно определять действия из голосового ввода и выполнять структурированный анализ данных. Она должна возвращать результаты в форматированном JSON, а не в виде эссе или HTML. Не все модели такого размера надёжно справляются с этой задачей.</p>
-<h2>Tulu 3 (базовый рецепт обучения)  по-настоящему исключительная разработка</h2>
-<p><a href="https://huggingface.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF/tree/main">Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF</a></p>
-<p>Большинство инструктивных моделей обучаются с помощью RLHF, который использует обученную модель вознаграждения для оценки выходных данных. Эта модель вознаграждения сама является нейронной сетью и наследует все типичные смещения и несоответствия. Tulu 3 заменил это на RLVR (обучение с подкреплением с верифицируемыми вознаграждениями). Вместо обученной модели вознаграждения обучение использует детерминированную функцию оценки: ответ либо правильный, либо нет. Бинарно, без смещений. Это особенно важно для задач следования инструкциям, где сигнал вознаграждения объективен.</p>
-<p>Конвейер обучения  это четырёхэтапный подход: куратирование данных для ключевых навыков, контролируемая тонкая настройка, оптимизация прямых предпочтений и RLVR поверх для повышения точности на верифицируемых задачах. Каждый этап строится на предыдущем. Именно поэтому Tulu 3 на базе Llama 8B достигает результатов, превосходящих instruct-версии Llama 3.1, Qwen 2.5, Mistral и даже закрытые модели, такие как GPT-4o-mini и Claude 3.5 Haiku.</p>
-<p>Для EliteIntel этап классификации команд является задачей следования инструкциям с верифицируемыми правильными ответами (JSON-действие X или Y). Это именно тот тип задач, который оптимизирует RLVR. Модель обучена специально для детерминированного структурированного вывода.</p>
-<h2>Почему вариант «Supernova»</h2>
-<p>Вариант Supernova отличается от стандартного Tulu 3. Tulu-3.1-8B-SuperNova создаётся путём линейного слияния трёх моделей: Llama-3.1-MedIT-SUN-8B (медицина/рассуждения), Llama-3.1-Tulu-3-8B (следование инструкциям) и Llama-3.1-SuperNova-Lite (дистиллированная модель Arcee), каждая с равным весом 1.0 с использованием mergekit.</p>
-<p>Родительская модель SuperNova-Lite  это дистиллированная модель из более крупной базы Arcee, обеспечивающая плотность знаний выше, чем у стандартной модели 8B. Линейное слияние усредняет тензоры весов напрямую, объединяя знания без дополнительных вычислений обучения. Это позволяет достигать особенно сильных результатов в задачах следования инструкциям, что подтверждается оценкой IFEval.</p>
-<p><strong>Производительность</strong>: Модель использует архитектуру Llama 8B. При квантизации Q4_K_M на 3090 с 24 ГБ она помещается в VRAM вместе с игрой с запасом. Это позволяет избежать выгрузки на CPU и поддерживать максимальную пропускную способность инференции. Сопоставимые модели Qwen используют другие конфигурации головок внимания (например, соотношение GQA у Qwen2.5), которые могут работать медленнее в бэкенде GGUF от llama.cpp.</p>
-<p>Она также работает на карте с 12 ГБ VRAM при отсутствии других нагрузок, потребляющих VRAM. Для этого игра должна запускаться на отдельном GPU или другой машине.</p>
+<p>Разработчик использует LM Studio с <code>google/gemma-4-e4b</code> (~6,3 ГБ). Та же модель в Ollama работает
+заметно медленнее. Другие модели могут работать, но это не гарантируется. Сообщайте о результатах
+совместимости в Matrix.</p>
+<h2>Почему именно <code>google/gemma-4-e4b</code>?</h2>
+<p>Elite Intel — это парсер команд и инструмент анализа данных, а не разговорный чат-бот. Это
+предъявляет к модели конкретные требования. Умения вести естественную беседу недостаточно. Модель
+должна правильно выводить действия из голосового ввода, выполнять структурированный анализ данных и
+возвращать результаты в виде структурированных данных, а не эссе в markdown или HTML. Не все модели
+такого размера делают это надёжно.</p>
+<p>Жёсткое требование — <strong>вызов функций</strong> (function calling). Компаньон Elite Intel не просит модель
+описать, что она сделала бы: он предлагает ей набор инструментов и ожидает вызова одного из них с
+аргументами. Модель, которая не умеет формировать корректный вызов инструмента, вообще не сможет
+управлять приложением, как бы хорошо она ни писала. <code>google/gemma-4-e4b</code> это поддерживает.</p>
+<p>При объёме около 6,3 ГБ она помещается в VRAM рядом с игрой на карте с 24 ГБ с запасом, что
+исключает выгрузку на CPU и сохраняет высокую скорость инференса.</p>
+<blockquote>
+<p><strong>О снятой с поддержки модели V1.0.</strong> Ранние версии рекомендовали <code>tulu-3.1-8b-supernova</code>. Она не
+поддерживает вызов функций, поэтому не может работать с компаньоном и больше не пригодна для
+Elite Intel. Если вы следуете старому руководству, не используйте его и установите
+<code>google/gemma-4-e4b</code>.</p>
+</blockquote>
 <h2>Можно ли использовать другую модель?</h2>
-<p>Альтернативные модели можно использовать, но они вряд ли сравнятся по скорости и точности с tulu3.1-supernova.</p>
-<p>Распространённые проблемы с альтернативными моделями  неправильный формат ответа.
-Самая частая ошибка  модель возвращает эссе вместо структурированного действия или результата анализа.</p>
+<p>Можно использовать альтернативные модели, но они должны поддерживать вызов функций. Без этого
+приложение не сможет ничего выполнить.</p>
+<p>Чаще всего с альтернативной моделью происходит сбой формата ответа: модель возвращает текст с
+описанием действия вместо фактического вызова инструмента.</p>
 <hr>
-<p>Сообщество 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 
         </div>
     </main>

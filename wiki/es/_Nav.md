@@ -11,8 +11,14 @@ link_contact: 📧 Contactar al desarrollador
 
 Home: Inicio
 Installation: Instalación
-Configuration: Configuración
-Options: Opciones
+UI: Interfaz
+UI-Vega-Tab: Pestaña Vega
+UI-Commander-Tab: Pestaña Comandante
+UI-Actions-Tab: Pestaña Acciones
+UI-Bindings-Tab: Pestaña Bindings
+UI-Settings-Tab: Pestaña Ajustes
+UI-Stats-Tab: Pestaña Estadísticas
+UI-HUD-Overlay: Overlay HUD
 installing-local-llms: Elegir tu LLM
 Install-Ollama-Local-LLM-Linux: Ollama  Linux
 Install-Ollama-Local-LLM-Windows: Ollama  Windows

@@ -29,6 +29,8 @@ Elite Intel calculates trade routes and guides cargo operations leg by leg. Say 
     - "Alter trading profile, allow fleet carriers" (note: carrier position may change before arrival)
     - "Alter trading profile, allow prohibited commodities"
 
+![trade-profile.png](images/trade-profile.png)
+
 4. **Calculate the Route**
    Say "Calculate trade route" or "Plot profitable trade route."
    Calculation typically takes 30 to 60 seconds.

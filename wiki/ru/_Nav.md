@@ -11,8 +11,14 @@ link_contact: 📧 Связаться с разработчиком
 
 Home: Главная
 Installation: Установка
-Configuration: Настройка
-Options: Параметры
+UI: Интерфейс
+UI-Vega-Tab: Вкладка «Вега»
+UI-Commander-Tab: Вкладка «Командир»
+UI-Actions-Tab: Вкладка «Действия»
+UI-Bindings-Tab: Вкладка «Бинды»
+UI-Settings-Tab: Вкладка «Настройки»
+UI-Stats-Tab: Вкладка «Статистика»
+UI-HUD-Overlay: HUD-оверлей
 installing-local-llms: Выбрать LLM
 Install-Ollama-Local-LLM-Linux: Ollama  Linux
 Install-Ollama-Local-LLM-Windows: Ollama  Windows

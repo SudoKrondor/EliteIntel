@@ -20,10 +20,11 @@ Um Elite Dangerous und das LLM auf **demselben Rechner** zu betreiben, ist minde
 
 | Modell | Benötigter VRAM | Hinweise |
 |---|---|---|
-| `tulu-3.1-8b-supernova` Q4_K_M | ~5 GB | ✅ Empfohlen für V1.0 |
-| `google/gemma-4-e4b` | ~6,3 GB | ✅ Empfohlen für V1.1 |
+| `google/gemma-4-e4b` | ~6,3 GB | ✅ Erforderlich |
 
-> **Welches Modell?** `tulu-3.1-8b-supernova` ist das empfohlene Modell für **V1.0**. **V1.1** wechselt zu `google/gemma-4-e4b`, das die für die neue Begleiter-Funktion erforderliche Function-Calling-Unterstützung bietet. Die folgenden Befehle verwenden das V1.1-Modell – ersetze es bei V1.0 durch `tulu-3.1-8b-supernova`.
+> **Warum dieses Modell?** Es unterstützt das Function Calling, das der Begleiter benötigt. Ein Modell, das keinen
+> Tool-Aufruf erzeugen kann, kann die App nicht steuern – ganz gleich, wie gut es formuliert.
+> Siehe [LLM auswählen](installing-local-llms).
 
 ---
 
@@ -60,33 +61,11 @@ lms --help
 
 ### Schritt 2 – Das Modell herunterladen
 
-Für **V1.1** lade `google/gemma-4-e4b` herunter:
-
 ```shell
 lms get google/gemma-4-e4b
 ```
-
-Für **V1.0** lade `tulu-3.1-8b-supernova` herunter:
-
-```shell
-lms get tulu3.1
-Searching for models with the term tulu3.1
-No exact match found. Please choose a model from the list below.
-
-? Select a model to download
-❯ QuantFactory/Tulu-3.1-8B-SuperNova-GGUF
-  mradermacher/Tulu-3.1-8B-SuperNova-i1-GGUF
-  QuantFactory/Tulu-3.1-8B-SuperNova-Smart-GGUF
-  mradermacher/Tulu-3.1-8B-SuperNova-GGUF
-  bunnycore/Tulu-3.1-8B-SuperNova-Smart-IQ4_XS-GGUF
-  mradermacher/Tulu-3.1-8B-SuperNova-Smart-GGUF
-  mradermacher/Tulu-3.1-8B-SuperNova-Smart-i1-GGUF
-  matrixportalx/Tulu-3.1-8B-SuperNova-Q4_0-GGUF
-  matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
-
-↑↓ navigate • ⏎ select
-```
-Mit den Pfeiltasten navigieren und Enter zum Auswählen drücken. `matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF` auswählen.
+Wenn der Name nicht exakt aufgelöst wird, listet `lms get` die gefundenen Kandidaten auf;
+wähle einen mit den Pfeiltasten und Enter.
 
 Um heruntergeladene Modelle aufzulisten:
 
@@ -97,17 +76,11 @@ lms ls
 Dies ist der Standardweg. Allerdings [hat LM Studio einen bekannten Fehler](https://github.com/lmstudio-ai/lmstudio-bug-tracker/issues/917). In einigen Fällen schlägt der Download fehl mit:
 ```Error: No staff picks found with the specified search criteria.```
 
-Wenn das auftritt, lade das Modell manuell herunter:
+Lade die GGUF-Datei in diesem Fall von der HuggingFace-Seite des Modells herunter und importiere sie:
 
 ```shell
-curl -s "https://huggingface.co/api/models/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF" | grep -o '"rfilename":"[^"]*\.gguf"'
+lms import /path/to/the-model.gguf
 ```
-Dann importieren:
-
-```shell
-lms import /path/to/tulu-3.1-8b-supernova-q4_k_m.gguf
-```
-
 
 ---
 

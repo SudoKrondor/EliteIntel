@@ -581,6 +581,15 @@ body {
   color: #000;
   cursor: default;
 }
+/* Locale that has no translation of this page yet: shown, but not clickable. */
+.locale-missing {
+  color: rgba(255,255,255,0.22);
+  cursor: default;
+}
+.locale-missing:hover {
+  background: none;
+  color: rgba(255,255,255,0.22);
+}
 
 @media (max-width: 480px) {
   .locale-switcher { font-size: 0.7rem; }

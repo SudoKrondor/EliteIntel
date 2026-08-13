@@ -1,7 +1,6 @@
-### Die veröffentlichte Version ist V1.0 und unterscheidet sich von dem, was auf Screenshots zu sehen ist.
+# Installation
 
-### Wenn du Version V1.1 möchtest, tritt dem Beta-Test-Team bei.
-### 👉[**Hier dem Beta-Test-Team V1.1 beitreten**](https://matrix.to/#/#krondor:matrix.org)👈
+Elite Intel **V1.1** ist die aktuelle Version.
 
 ---
 
@@ -10,17 +9,25 @@
 1. Den [👉**Installer**👈](https://github.com/stone-alex/EliteIntel/releases) herunterladen.
 2. Den Installer ausführen und den Anweisungen auf dem Bildschirm folgen.
 3. Ein LLM einrichten. Zwei Optionen stehen zur Verfügung:
-   - **Lokales LLM** (kostenlos, offline): Siehe die [**Lokale LLM-Anleitung**](installing-local-llms). Erfordert leistungsfähige GPU-Hardware.
-   - **Cloud-LLM** (hat eine kostenlose Option und ist einfacher einzurichten): Siehe die Anleitung [**App konfigurieren**](UI-and-Configuration-Options) für die API-Schlüssel-Einrichtung.
+   - **Lokales LLM** (kostenlos, offline): Siehe die [**Lokale LLM-Anleitung**](installing-local-llms).
+     Erfordert leistungsfähige GPU-Hardware.
+   - **Cloud-LLM** (hat eine kostenlose Option und ist einfacher einzurichten): Siehe
+     [**Cloud-LLM-Optionen**](cloud-llm-options), um einen API-Schlüssel zu bekommen, und trage ihn
+     dann unter [**Einstellungen → KI-Dienste**](UI-Settings-Tab) ein.
 
----
+Setup abgeschlossen. Weiter mit [**der Benutzeroberfläche, Reiter für Reiter**](UI).
 
+### Checkliste für den ersten Start
 
-3. Ein LLM einrichten. Zwei Optionen stehen zur Verfügung:
-   - **Lokales LLM** (kostenlos, offline): Siehe die [**Lokale LLM-Anleitung**](installing-local-llms). Erfordert leistungsfähige GPU-Hardware.
-   - **Cloud-LLM** (einfacher einzurichten): Siehe die Anleitung [**App konfigurieren**](UI-and-Configuration-Options) für die API-Schlüssel-Einrichtung.
+Elite Intel spricht diese Warnungen beim Start der Dienste laut aus, du erfährst also von allem,
+was fehlt — es lohnt sich aber, das vorab zu erledigen:
 
-Setup abgeschlossen. Nächste Schritte unter [**App konfigurieren**](Configuration).
+| Schritt | Wo |
+|------|-------|
+| Auf ein Sprachmodell verweisen | [Einstellungen → KI-Dienste](UI-Settings-Tab) |
+| Journal-Ordner prüfen | [Einstellungen → Allgemein](UI-Settings-Tab) |
+| Belegungsordner prüfen und fehlende Belegungen beheben | [Reiter Bindings](UI-Bindings-Tab) |
+| Audio kalibrieren | [Vega-Reiter](UI-Vega-Tab) → **AUDIO KALIBRIEREN** |
 
 ---
 

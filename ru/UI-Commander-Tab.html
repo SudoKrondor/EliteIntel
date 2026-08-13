@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вкладка «Командир»  EliteIntel</title>
+    <meta name="description" content="делает за вас автоматически, о чём «Вега» сообщает без просьбы и каким голосом говорит каждый">
+    <link rel="canonical" href="https://www.elite-intel.org/ru/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Commander-Tab.html">
+    <meta property="og:title" content="Вкладка «Командир»  EliteIntel">
+    <meta property="og:description" content="делает за вас автоматически, о чём «Вега» сообщает без просьбы и каким голосом говорит каждый">
+    <meta property="og:url" content="https://www.elite-intel.org/ru/UI-Commander-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI-Commander-Tab.html" class="locale-link">EN</a><a href="../fr/UI-Commander-Tab.html" class="locale-link">FR</a><a href="../es/UI-Commander-Tab.html" class="locale-link">ES</a><a href="../de/UI-Commander-Tab.html" class="locale-link">DE</a><a href="../uk/UI-Commander-Tab.html" class="locale-link">UK</a><span class="locale-current">RU</span></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Главная</a>
+
+            <div class="nav-section">Приложение</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Установка</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Интерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub active"><img src="../images/controller.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Действия»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Бинды»</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Вкладка «Настройки»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-оверлей</a>
+
+            <div class="nav-section">Вики</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Выбрать LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Как это сделать?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Общее использование</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Торговля и прибыль</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Поиск по галактике</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Исследование</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Навигация</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Пиратские миссии</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Все команды</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Системные команды</a>
+
+            <div class="nav-section">Сообщество</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Политика конфиденциальности</a>
+            <a href="Contact.html" class="nav-link">📧 Связаться с разработчиком</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Вкладка «Командир»</h1>
+<p><img src="../images/controller.png" class="inline" height="20" alt="Командир"> Кто вы, что ваш корабль
+делает за вас автоматически, о чём «Вега» сообщает без просьбы и каким голосом говорит каждый
+корпус вашего флота.</p>
+<p><img src="../images/ui-tab-commander.png" alt="Вкладка «Командир»"></p>
+<hr>
+<h2>Профиль командира</h2>
+<p><strong>Имя командира</strong> — заменяет ваше игровое имя для озвучивания. Пригодится, если «Вега» коверкает
+ваш ник или вы просто хотите, чтобы к вам обращались иначе. Сохраняется при нажатии Enter или
+щелчке вне поля.</p>
+<blockquote>
+<p><strong>Папка журнала</strong> в V1.1 переехала в <a href="UI-Settings-Tab.html">Настройки → Общие</a>, а <strong>папка привязок</strong> —
+на <a href="UI-Bindings-Tab.html">вкладку «Бинды»</a>.</p>
+</blockquote>
+<hr>
+<h2>Параметры корабля</h2>
+<p>Автоматизации, которые «Вега» выполняет за вас. Каждая — это обычный переключатель, записывающийся
+сразу. Полезно всем, а для командиров с ограниченными возможностями — по-настоящему
+освобождающе.</p>
+<table>
+<thead>
+<tr>
+<th>Переключатель</th>
+<th>Что делает</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Увеличить скорость перед FSD-переходом</strong></td>
+<td>Прибавляет тягу перед прыжком</td>
+</tr>
+<tr>
+<td><strong>Выключать огни перед FSD-переходом</strong></td>
+<td>Гасит бортовые огни перед прыжком</td>
+</tr>
+<tr>
+<td><strong>Выключать ночное видение перед FSD-переходом</strong></td>
+<td>Отключает ночное видение перед прыжком</td>
+</tr>
+<tr>
+<td><strong>Убирать оружие перед FSD-переходом</strong></td>
+<td>Убирает орудийные пилоны перед прыжком</td>
+</tr>
+<tr>
+<td><strong>Убирать шасси перед FSD-переходом</strong></td>
+<td>Поднимает шасси перед прыжком</td>
+</tr>
+<tr>
+<td><strong>Убирать грузовой ковш перед FSD-переходом</strong></td>
+<td>Убирает ковш перед прыжком</td>
+</tr>
+<tr>
+<td><strong>Убирать шасси при взлёте</strong></td>
+<td>Поднимает шасси после отрыва</td>
+</tr>
+<tr>
+<td><strong>Закрыть интерфейс перед открытием панелей</strong></td>
+<td>Закрывает открытую панель перед открытием следующей, чтобы команды панелей не сталкивались</td>
+</tr>
+<tr>
+<td><strong>Выключать огни при выпуске SRV</strong></td>
+<td>Гасит огни при выпуске SRV</td>
+</tr>
+<tr>
+<td><strong>Отменять переход, если истребитель снаружи</strong></td>
+<td><em>Сейчас отключено</em> — ожидается исправление Frontier для ошибки, связанной с Nomad</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Объявления</h2>
+<p>Всё, о чём «Вега» сообщает по своей инициативе. Все одиннадцать переключателей теперь в одном
+месте, так что есть единственный экран, куда заглянуть, когда что-то говорит слишком много — или
+слишком мало.</p>
+<p><img src="../images/ui-commander-announcements.png" alt="Объявления"></p>
+<table>
+<thead>
+<tr>
+<th>Переключатель</th>
+<th>Что вы услышите</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Объявлять открытия</strong></td>
+<td>Примечательные тела, первооткрытия, биологические сигналы</td>
+</tr>
+<tr>
+<td><strong>Объявлять прогресс маршрута</strong></td>
+<td>Где вы находитесь на проложенном маршруте</td>
+</tr>
+<tr>
+<td><strong>Объявлять радарные контакты</strong></td>
+<td>Корабли, появляющиеся на сканере</td>
+</tr>
+<tr>
+<td><strong>Объявлять добычу</strong></td>
+<td>События добычи и её результаты</td>
+</tr>
+<tr>
+<td><strong>Объявлять навигацию</strong></td>
+<td>Навигационные события и прибытия</td>
+</tr>
+<tr>
+<td><strong>Радиопередачи</strong></td>
+<td>Ролевые радиопереговоры, произносимые отдельным «радийным» голосом</td>
+</tr>
+<tr>
+<td><strong>Объявлять пункт назначения прыжка</strong></td>
+<td>Какая система будет следующей</td>
+</tr>
+<tr>
+<td><strong>Объявлять трафик пункта назначения</strong></td>
+<td>Сводки движения в системе, куда вы направляетесь</td>
+</tr>
+<tr>
+<td><strong>Объявлять потери в пункте назначения</strong></td>
+<td>Недавние смерти в системе назначения</td>
+</tr>
+<tr>
+<td><strong>Объявлять оставшиеся прыжки</strong></td>
+<td>Сколько прыжков осталось на маршруте</td>
+</tr>
+<tr>
+<td><strong>Объявлять наличие топливной звезды</strong></td>
+<td>Есть ли в пункте назначения звезда для заправки</td>
+</tr>
+</tbody></table>
+<p>Первые шесть можно переключать и голосом, поэтому этот экран перечитывает их всякий раз, когда вы
+открываете вкладку: произнесённое <code>toggle all announcements</code> отразится здесь.</p>
+<hr>
+<h2>Настройка голосов флота</h2>
+<p>По одной строке на каждый принадлежащий вам корабль. Elite Intel узнаёт состав флота из игрового
+журнала; корабли вручную добавлять не нужно.</p>
+<table>
+<thead>
+<tr>
+<th>Столбец</th>
+<th>Примечания</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Корабль</strong></td>
+<td>Данное вами имя корабля</td>
+</tr>
+<tr>
+<td><strong>Модель корабля</strong></td>
+<td>Тип корпуса</td>
+</tr>
+<tr>
+<td><strong>Голос</strong></td>
+<td>Щёлкните, чтобы выбрать. Смена голоса сразу проигрывает демонстрационную фразу, чтобы вы могли его оценить</td>
+</tr>
+<tr>
+<td><strong>Характер</strong></td>
+<td><code>Профессиональный</code> · <code>Неформальный</code> · <code>Дружелюбный</code> · <code>Безумный</code> · <code>Без тормозов</code></td>
+</tr>
+<tr>
+<td><strong>⚙</strong></td>
+<td>Открывает настройки этого корабля</td>
+</tr>
+</tbody></table>
+<p><strong>О списке голосов.</strong> Голоса кораблей — женские. Какие голоса появятся, зависит от движка синтеза
+речи, выбранного в <a href="UI-Settings-Tab.html">Настройки → Сервисы ИИ</a>:</p>
+<ul>
+<li><strong>Локально (Kokoro)</strong> — 53 голоса с подписью <code>Имя - акцент</code>. Без ключа, без загрузки, без
+настройки.</li>
+<li><strong>Облако (Google)</strong> — с подписью <code>Имя - акцент · HD</code> или <code>· Standard</code>. В английском голоса
+различает акцент. В любом другом языке каждый голос синтезируется на этом языке, поэтому подпись
+показывает пол и уровень качества вместо вводящего в заблуждение английского акцента.</li>
+</ul>
+<blockquote>
+<p>Смена движка синтеза речи сбрасывает голос каждого корабля на значение по умолчанию нового
+движка. <strong>Характеры кораблей сохраняются.</strong> Приложение предупредит вас заранее.</p>
+</blockquote>
+<hr>
+<h2>Настройки корабля (кнопка ⚙)</h2>
+<p>Настройки для каждого корабля отдельно, потому что добывающая Python и боевая Corvette не хотят
+одинакового поведения.</p>
+<p><img src="../images/ui-ship-settings.png" alt="Настройки корабля"></p>
+<p><strong>Сканировать систему при входе</strong> — выполняет сканирование открытия при прибытии в систему.
+Выберите <strong>огневую группу</strong> (A–H) и <strong>триггер</strong> (1 или 2), на который установлен ваш сканер
+открытий. Если ваш HUD в боевом режиме, Elite Intel переключается в режим анализа, сканирует и
+возвращается обратно.</p>
+<p><strong>Оповещение о материалах в мощных выбросах</strong> — сообщает, когда сигнал мощных выбросов в системе
+несёт материалы, ради которых стоит остановиться.</p>
+<p><strong>Торговый профиль</strong> — ограничения, которым следует Elite Intel, прокладывая торговый маршрут для
+этого корабля. Каждое из них можно задать и голосом:
+<em>«alter trade profile, set max stops to four»</em>.</p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Значение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Разрешить планетарные порты</strong></td>
+<td>Включать в маршруты наземные порты</td>
+</tr>
+<tr>
+<td><strong>Разрешить запрещённые грузы</strong></td>
+<td>Включать груз, незаконный где-либо на маршруте</td>
+</tr>
+<tr>
+<td><strong>Разрешить системы с разрешениями</strong></td>
+<td>Включать системы, требующие разрешения</td>
+</tr>
+<tr>
+<td><strong>Разрешить флотские авианосцы</strong></td>
+<td>Включать авианосцы игроков как рынки</td>
+</tr>
+<tr>
+<td><strong>Разрешить системы оплота</strong></td>
+<td>Включать системы-оплоты таргоидов или держав</td>
+</tr>
+<tr>
+<td><strong>Макс. св. секунд от входа</strong></td>
+<td>Насколько далеко от звезды прибытия может находиться станция</td>
+</tr>
+<tr>
+<td><strong>Макс. остановок</strong></td>
+<td>Количество отрезков маршрута</td>
+</tr>
+<tr>
+<td><strong>Стартовый капитал</strong></td>
+<td>Кредиты, которые планировщик маршрута может потратить</td>
+</tr>
+</tbody></table>
+<p>О том, как проходят маршруты, см. <a href="TradeRoutePlotting.html">Торговля и прибыль</a>.</p>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

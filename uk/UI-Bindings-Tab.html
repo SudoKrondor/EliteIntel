@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вкладка «Бінди»  EliteIntel</title>
+    <meta name="description" content="Прив&#39;язки були куточком вкладки «Дії»; тепер у них власна вкладка з повноцінним редактором.">
+    <link rel="canonical" href="https://www.elite-intel.org/uk/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Bindings-Tab.html">
+    <meta property="og:title" content="Вкладка «Бінди»  EliteIntel">
+    <meta property="og:description" content="Прив&#39;язки були куточком вкладки «Дії»; тепер у них власна вкладка з повноцінним редактором.">
+    <meta property="og:url" content="https://www.elite-intel.org/uk/UI-Bindings-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI-Bindings-Tab.html" class="locale-link">EN</a><a href="../fr/UI-Bindings-Tab.html" class="locale-link">FR</a><a href="../es/UI-Bindings-Tab.html" class="locale-link">ES</a><a href="../de/UI-Bindings-Tab.html" class="locale-link">DE</a><span class="locale-current">UK</span><a href="../ru/UI-Bindings-Tab.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Головна</a>
+
+            <div class="nav-section">Застосунок</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Встановлення</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Інтерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Дії»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub active"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Бінди»</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Вкладка «Налаштування»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-накладка</a>
+
+            <div class="nav-section">Вікі</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Як це зробити?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Загальне використання</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Торгівля та прибуток</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Пошук по галактиці</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Дослідження</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Навігація</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Піратські місії</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Всі команди</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Системні команди</a>
+
+            <div class="nav-section">Спільнота</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Політика конфіденційності</a>
+            <a href="Contact.html" class="nav-link">📧 Зв&#39;язатися з розробником</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Вкладка «Бінди»</h1>
+<p><img src="../images/keys-binding.png" class="inline" height="20" alt="Бінди"> <strong>Нове у V1.1.</strong>
+Прив&#39;язки були куточком вкладки «Дії»; тепер у них власна вкладка з повноцінним редактором.</p>
+<p>Elite Intel керує вашим кораблем, натискаючи клавіші, на які призначено Elite Dangerous. Якщо
+елемент керування не має клавіатурної прив&#39;язки, Elite Intel не зможе ним скористатися — саме на
+цій вкладці ви це з&#39;ясовуєте та виправляєте.</p>
+<p>Дві підвкладки: <strong>Профіль прив&#39;язок</strong> і <strong>Керування прив&#39;язками</strong>.</p>
+<hr>
+<h2>Профіль прив&#39;язок</h2>
+<p><img src="../images/ui-tab-bindings-profile.png" alt="Профіль прив'язок"></p>
+<h3>Який файл використовується</h3>
+<p><strong>Профіль</strong> — визначається автоматично. Elite Intel читає активний запис <code>StartPreset</code>, а за потреби
+відкочується до найсвіжішого файлу <code>.binds</code>.</p>
+<p><strong>Файл</strong> — файл <code>.binds</code>, який зараз використовується для діагностики та призначення.</p>
+<p><strong>Папка прив&#39;язок</strong> — необов&#39;язково. Залиште порожнім — буде використано стандартне розташування
+Elite Dangerous; вкажіть, якщо ваша інсталяція розташована у незвичному місці.</p>
+<p>Обидва поля мають кнопку ⓘ, яка пояснює, як саме було обрано значення.</p>
+<h3>Таблиці прив&#39;язок</h3>
+<p>Дві таблиці: <strong>Використані прив&#39;язки</strong> та <strong>Відсутні прив&#39;язки</strong>, у кожної свій лічильник.
+Прив&#39;язки згруповані за категоріями:</p>
+<p>Корабель / політ · Бій · Панелі інтерфейсу · Карти · Дослідження · Камера · SRV · Пішки · Інше</p>
+<table>
+<thead>
+<tr>
+<th>Стовпець</th>
+<th>Значення</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Прив&#39;язка</strong></td>
+<td>Елемент керування</td>
+</tr>
+<tr>
+<td><strong>Основна</strong> / <strong>Додаткова</strong></td>
+<td>Два слоти, які Elite Dangerous дає кожному елементу</td>
+</tr>
+<tr>
+<td><strong>Статус</strong></td>
+<td><code>Відсутня</code> · <code>Немає клавіатурної прив&#39;язки</code> (призначено, але лише на контролер) · <code>Не визначено</code></td>
+</tr>
+<tr>
+<td><strong>Швидке виправлення</strong></td>
+<td>Призначає безпечну вільну клавішу саме цьому елементу</td>
+</tr>
+<tr>
+<td><strong>Очистити</strong></td>
+<td>Видаляє клавіатурну прив&#39;язку, не чіпаючи прив&#39;язки контролера та HOTAS</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>HOTAS і контролери показані, але недоступні для редагування.</strong> Elite Intel виконує команди через
+клавіатурні прив&#39;язки, тому інші пристрої відображаються лише для діагностики.</p>
+</blockquote>
+<p><strong>Показувати лише конфлікти</strong> відфільтровує таблиці до проблемних рядків.</p>
+<h3>Конфлікти</h3>
+<p>Elite Dangerous вважає акорд конфліктним лише тоді, коли це <em>точно</em> той самий акорд: <code>G</code> і <code>Shift+G</code>
+чудово співіснують. Elite Intel використовує те саме правило, тож позначає саме те, що позначає сама
+гра.</p>
+<p>Конфліктні рядки підсвічені, а при наведенні показується <strong>Ділить <em>клавішу</em> з:</strong> і список.</p>
+<p>Ви можете також побачити <strong>Двійник корабель/SRV — багато хто призначає так само, як:</strong> — це не
+конфлікт, а підказка. Деякі елементи керування кораблем і SRV за традицією призначають на одну
+клавішу.</p>
+<h3>Редагування прив&#39;язки</h3>
+<p>Клацніть слот, щоб відкрити діалог призначення.</p>
+<p><img src="../images/ui-bindings-assign.png" alt="Призначення клавіші"></p>
+<p>Він показує обрану прив&#39;язку, слот і поточне значення. Далі <strong>клацніть поле й натисніть потрібні
+клавіші</strong> — модифікатори та клавішу разом. Esc скасовує. Акорди з кількома модифікаторами
+підтримуються.</p>
+<p>Жива карта клавіатури показує, що доступно: <strong>утримуйте Ctrl/Shift/Alt, щоб побачити клавіші, вільні
+для цієї комбінації: зелені вільні, червоні вже зайняті.</strong> Клавіші, зарезервовані операційною
+системою, позначені й не можуть бути призначені.</p>
+<p><strong>Очистити прив&#39;язку</strong> знімає призначення.</p>
+<h3>Виправити відсутні</h3>
+<p>Одна кнопка, яка призначає безпечні та зручні для розкладки клавіші <strong>кожному</strong> елементу керування,
+що не має клавіатурної прив&#39;язки.</p>
+<ul>
+<li>Наявні прив&#39;язки ніколи не змінюються.</li>
+<li>Жодна клавіша не використовується повторно.</li>
+<li>Зміни потрапляють <strong>лише у вашу чернетку</strong>.</li>
+</ul>
+<p>Кнопка повідомляє, що вона зробила, а також що пропустила й чому: обидва слоти вже на контролері, не
+лишилося вільної безпечної клавіші, або немає слота, який можна було б безпечно відредагувати.</p>
+<h3>Чернетка, застосування, відкат</h3>
+<p>Правки <strong>не</strong> йдуть прямо до Elite Dangerous. Вони накопичуються в чернетці, а значок стану показує
+<strong>Чернетка — не застосована до гри</strong> або <strong>Синхр.</strong>. Той самий стан відображається на індикаторі
+<em>Клавіші</em> вкладки «Вега».</p>
+<table>
+<thead>
+<tr>
+<th>Кнопка</th>
+<th>Що робить</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Застосувати до гри</strong></td>
+<td>Записує чернетку до вашого файлу <code>.binds</code>, попередньо створивши резервну копію</td>
+</tr>
+<tr>
+<td><strong>Скинути з гри</strong></td>
+<td>Відкидає чернетку та перезавантажує дані з файлу гри</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Після застосування відкрийте, а потім закрийте екран керування в Elite Dangerous.</strong> Гра
+перечитує свої прив&#39;язки лише під час відкриття цього екрана. Elite Intel промовляє це й уголос.</p>
+</blockquote>
+<p>Якщо файл прив&#39;язок гри змінився вже після створення вашої чернетки, застосування буде відхилено з
+проханням спершу перезавантажити або скасувати — замість мовчазного перезапису чужої правки.</p>
+<p>Якщо ви закриєте застосунок із незастосованою чернеткою, вас запитають, що робити: <strong>Застосувати до
+гри</strong>, <strong>Зберегти чернетку</strong> або <strong>Відмінити</strong>.</p>
+<hr>
+<h2>Керування прив&#39;язками</h2>
+<p><img src="../images/ui-tab-bindings-management.png" alt="Керування прив'язками"></p>
+<p>Ваші резервні копії прив&#39;язок, перелічені за датою у стовпці <strong>Створено</strong> та за <strong>Файлами</strong>, які
+містить кожна. Elite Intel створює копію автоматично перед кожним застосуванням; <strong>Створити резервну
+копію</strong> робить це на вимогу.</p>
+<table>
+<thead>
+<tr>
+<th>Кнопка</th>
+<th>Що робить</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Відновити в чернетку</strong></td>
+<td>Завантажує копію у вашу чернетку, щоб ви могли переглянути її до того, як вона торкнеться гри</td>
+</tr>
+<tr>
+<td><strong>Відновити наживо</strong></td>
+<td>Завантажує її та застосовує до гри напряму. Звичайні перевірки безпечного застосування при цьому виконуються</td>
+</tr>
+</tbody></table>
+<p>Будь-яка з двох замінює незбережені зміни поточної чернетки, і обидві спершу запитують.</p>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

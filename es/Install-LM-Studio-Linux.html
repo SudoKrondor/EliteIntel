@@ -32,8 +32,8 @@
     <nav class="header-actions">
         <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
         <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
-        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
-        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
         <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
         <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
         <div class="locale-switcher"><a href="../Install-LM-Studio-Linux.html" class="locale-link">EN</a><a href="../fr/Install-LM-Studio-Linux.html" class="locale-link">FR</a><span class="locale-current">ES</span><a href="../de/Install-LM-Studio-Linux.html" class="locale-link">DE</a><a href="../uk/Install-LM-Studio-Linux.html" class="locale-link">UK</a><a href="../ru/Install-LM-Studio-Linux.html" class="locale-link">RU</a></div>
@@ -50,8 +50,14 @@
 
             <div class="nav-section">Aplicación</div>
             <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Instalación</a>
-            <a href="Configuration.html" class="nav-link"><img src="../images/settings.png" class="inline" height="20" alt=""> Configuración</a>
-            <a href="Options.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Opciones</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Interfaz</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Pestaña Vega</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Pestaña Comandante</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Pestaña Acciones</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Pestaña Bindings</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Pestaña Ajustes</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Pestaña Estadísticas</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
 
             <div class="nav-section">Wiki</div>
             <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Elegir tu LLM</a>
@@ -103,18 +109,15 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><code>tulu-3.1-8b-supernova</code> Q4_K_M</td>
-<td>~5 GB</td>
-<td>✅ Recomendado para V1.0</td>
-</tr>
-<tr>
 <td><code>google/gemma-4-e4b</code></td>
 <td>~6,3 GB</td>
-<td>✅ Recomendado para V1.1</td>
+<td>✅ Requerido</td>
 </tr>
 </tbody></table>
 <blockquote>
-<p><strong>¿Qué modelo?</strong> <code>tulu-3.1-8b-supernova</code> es el modelo recomendado para <strong>V1.0</strong>. <strong>V1.1</strong> cambia a <code>google/gemma-4-e4b</code>, que admite el function calling necesario para la nueva función de compañero. Los comandos siguientes usan el modelo de V1.1: en V1.0, sustitúyelo por <code>tulu-3.1-8b-supernova</code>.</p>
+<p><strong>¿Por qué este modelo?</strong> Admite el function calling que necesita el compañero. Un modelo que no puede emitir una
+llamada a una herramienta no puede manejar la aplicación, por bien que escriba.
+Consulta <a href="installing-local-llms.html">Elegir tu LLM</a>.</p>
 </blockquote>
 <hr>
 <div class="yt-embed"><iframe src="https://www.youtube.com/embed/2HGFmlZGK1g" title="YouTube video" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>
@@ -135,38 +138,17 @@ export PATH=&quot;$HOME/.lmstudio/bin:$PATH&quot;
 </code></pre>
 <hr>
 <h3>Paso 2 – Descargar el modelo</h3>
-<p>Para <strong>V1.1</strong>, descarga <code>google/gemma-4-e4b</code>:</p>
 <pre><code class="language-shell">lms get google/gemma-4-e4b
 </code></pre>
-<p>Para <strong>V1.0</strong>, descarga <code>tulu-3.1-8b-supernova</code>:</p>
-<pre><code class="language-shell">lms get tulu3.1
-Searching for models with the term tulu3.1
-No exact match found. Please choose a model from the list below.
-
-? Select a model to download
-❯ QuantFactory/Tulu-3.1-8B-SuperNova-GGUF
-  mradermacher/Tulu-3.1-8B-SuperNova-i1-GGUF
-  QuantFactory/Tulu-3.1-8B-SuperNova-Smart-GGUF
-  mradermacher/Tulu-3.1-8B-SuperNova-GGUF
-  bunnycore/Tulu-3.1-8B-SuperNova-Smart-IQ4_XS-GGUF
-  mradermacher/Tulu-3.1-8B-SuperNova-Smart-GGUF
-  mradermacher/Tulu-3.1-8B-SuperNova-Smart-i1-GGUF
-  matrixportalx/Tulu-3.1-8B-SuperNova-Q4_0-GGUF
-  matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
-
-↑↓ navigate • ⏎ select
-</code></pre>
-<p>Usa las flechas del teclado para navegar y Enter para seleccionar. Selecciona <code>matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF</code>.</p>
+<p>Si el nombre no coincide exactamente, <code>lms get</code> muestra los candidatos encontrados; elige
+uno con las flechas y Enter.</p>
 <p>Para listar los modelos descargados:</p>
 <pre><code class="language-shell">lms ls
 </code></pre>
 <p>Esa es la ruta estándar. Sin embargo, <a href="https://github.com/lmstudio-ai/lmstudio-bug-tracker/issues/917">LM Studio tiene un bug conocido</a>. En algunos casos la descarga falla con:
 <code>Error: No staff picks found with the specified search criteria.</code></p>
-<p>Si eso ocurre, descarga el modelo manualmente:</p>
-<pre><code class="language-shell">curl -s &quot;https://huggingface.co/api/models/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF&quot; | grep -o &#39;&quot;rfilename&quot;:&quot;[^&quot;]*\.gguf&quot;&#39;
-</code></pre>
-<p>Luego impórtalo:</p>
-<pre><code class="language-shell">lms import /path/to/tulu-3.1-8b-supernova-q4_k_m.gguf
+<p>Si ocurre, descarga el GGUF a mano desde la página del modelo en HuggingFace e impórtalo:</p>
+<pre><code class="language-shell">lms import /path/to/the-model.gguf
 </code></pre>
 <hr>
 <h3>Paso 3 – Iniciar el servidor</h3>

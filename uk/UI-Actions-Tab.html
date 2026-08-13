@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вкладка «Дії»  EliteIntel</title>
+    <meta name="description" content="і все, чого ви його навчили. Дві підвкладки: Вбудовані команди та Власні команди.">
+    <link rel="canonical" href="https://www.elite-intel.org/uk/UI-Actions-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Actions-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Actions-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Actions-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Actions-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Actions-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Actions-Tab.html">
+    <meta property="og:title" content="Вкладка «Дії»  EliteIntel">
+    <meta property="og:description" content="і все, чого ви його навчили. Дві підвкладки: Вбудовані команди та Власні команди.">
+    <meta property="og:url" content="https://www.elite-intel.org/uk/UI-Actions-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI-Actions-Tab.html" class="locale-link">EN</a><a href="../fr/UI-Actions-Tab.html" class="locale-link">FR</a><a href="../es/UI-Actions-Tab.html" class="locale-link">ES</a><a href="../de/UI-Actions-Tab.html" class="locale-link">DE</a><span class="locale-current">UK</span><a href="../ru/UI-Actions-Tab.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Головна</a>
+
+            <div class="nav-section">Застосунок</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Встановлення</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Інтерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub active"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Дії»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Бінди»</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Вкладка «Налаштування»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-накладка</a>
+
+            <div class="nav-section">Вікі</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Як це зробити?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Загальне використання</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Торгівля та прибуток</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Пошук по галактиці</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Дослідження</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Навігація</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Піратські місії</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Всі команди</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Системні команди</a>
+
+            <div class="nav-section">Спільнота</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Політика конфіденційності</a>
+            <a href="Contact.html" class="nav-link">📧 Зв&#39;язатися з розробником</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Вкладка «Дії»</h1>
+<p><img src="../images/keys-binding.png" class="inline" height="20" alt="Дії"> Усе, що вміє Elite Intel,
+і все, чого ви його навчили. Дві підвкладки: <strong>Вбудовані команди</strong> та <strong>Власні команди</strong>.</p>
+<hr>
+<h2>Вбудовані команди</h2>
+<p><img src="../images/ui-tab-actions-builtin.png" alt="Вбудовані команди"></p>
+<p>Це відповідь на запитання <em>«що я можу сказати просто зараз?»</em>, а не лише <em>«що взагалі вміє ця
+збірка?»</em>.</p>
+<h3>Вибір ситуації</h3>
+<p>Список угорі ліворуч містить <strong>УСІ</strong>, а також кожну фізичну ситуацію, в якій ви можете опинитися: у
+кораблі, у SRV, у винищувачі, у таксі, пішки; пристиковані, сіли, плануєте, у надсвітловому
+польоті, біля кільця, на орбіті, у глибокому космосі.</p>
+<ul>
+<li>Він <strong>стежить за живою грою</strong>: вийдіть з корабля — і вибір сам перейде на <em>Пішки</em>, а список нижче
+зміниться разом із ним.</li>
+<li>Щойно ви обираєте ситуацію вручну, він <strong>перестає стежити</strong> й лишається там, куди ви його
+поставили.</li>
+<li><strong>УСІ</strong> перелічує кожну дію цієї збірки, включно з тими, що недоступні там, де ви зараз. Конкретна
+ситуація перелічує <strong>лише те, що застосовне там</strong>.</li>
+</ul>
+<p>Поруч поле лише для читання <strong>Місце</strong> показує конкретне місцеперебування, яке повідомляє гра, —
+станцію, тіло або систему.</p>
+<h3>Пошук</h3>
+<p>Простий буквальний текстовий фільтр за переліченими діями: їхніми назвами, ключами дій і
+вимовлюваними фразами, що їх запускають. Що ви набрали, те й шукається.</p>
+<blockquote>
+<p>Це навмисно <strong>не</strong> маршрутизація компаньйона. Диспетчер «Веги» ранжує за <em>змістом</em>, тож набране
+там «знайти» витягло б команди, які не мають з ним жодного спільного слова, і не дало б вам
+побачити чому. Коли ви читаєте список, вам потрібен саме буквальний пошук.</p>
+</blockquote>
+<h3>Доступні команди та запити</h3>
+<p>Єдиний об&#39;єднаний список, відсортований за абеткою у три колонки, з вбудованими діями, вашими
+макросами та запитами для обраної ситуації. Поки вкладка відкрита, він оновлюється наживо за
+ігровими подіями.</p>
+<p><strong>Двічі клацніть будь-який запис</strong>, щоб відкрити його подробиці.</p>
+<h3>Подробиці команди</h3>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Значення</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Назва команди</strong></td>
+<td>Зрозуміла людині назва</td>
+</tr>
+<tr>
+<td><strong>Ключ дії</strong></td>
+<td>Внутрішній ідентифікатор — саме цю назву бачить мовна модель</td>
+</tr>
+<tr>
+<td><strong>Тип команди</strong></td>
+<td><code>Вбудована прив&#39;язка</code> (натискає клавішу) · <code>Вбудована дія</code> (робить щось у застосунку) · <code>Вбудований запит</code> (відповідає на питання) · <code>Власна команда</code> (ваша)</td>
+</tr>
+<tr>
+<td><strong>Опис</strong></td>
+<td>Що вона робить</td>
+</tr>
+<tr>
+<td><strong>Навчальні фрази</strong></td>
+<td>Вимовлювані фрази, що ведуть до неї, вашою поточною мовою</td>
+</tr>
+</tbody></table>
+<p>Три кнопки:</p>
+<ul>
+<li><strong>Запустити</strong> — виконати просто зараз із застосунку, без голосу. Якщо команда приймає параметри,
+спершу з&#39;явиться невелика форма.</li>
+<li><strong>Запропонувати виправлення</strong> — відкриває заздалегідь заповнену задачу на GitHub з
+ідентифікатором команди, вашою мовою та поточними фразами, щоб ви запропонували кращі
+формулювання для своєї локалі. Саме так стають кращими неанглійські набори фраз; будь ласка,
+користуйтеся цим.</li>
+<li><strong>Закрити</strong></li>
+</ul>
+<p>Див. також: <a href="AllCommands.html">Усі команди</a>.</p>
+<hr>
+<h2>Власні команди</h2>
+<p><img src="../images/ui-tab-actions-custom.png" alt="Власні команди"></p>
+<p>Ваші власні макроси — іменована послідовність кроків, запущена тим, що ви кажете. За духом схоже на
+VoiceAttack, але зіставлення йде за змістом, а не за точною фразою.</p>
+<p>Таблиця перелічує <strong>Назву</strong> кожної команди та її <strong>Навчальні фрази</strong>, а над нею розташоване поле
+пошуку.</p>
+<table>
+<thead>
+<tr>
+<th>Кнопка</th>
+<th>Що робить</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Новий</strong></td>
+<td>Створити команду</td>
+</tr>
+<tr>
+<td><strong>Змінити</strong></td>
+<td>Змінити обрану команду</td>
+</tr>
+<tr>
+<td><strong>Видалити</strong></td>
+<td>Видалити обрану команду (з підтвердженням)</td>
+</tr>
+<tr>
+<td><strong>Експорт</strong></td>
+<td>Записати обрані команди у файл, яким можна поділитися</td>
+</tr>
+<tr>
+<td><strong>Імпорт</strong></td>
+<td>Прочитати команди з файлу. Ваш поточний набір попередньо резервується</td>
+</tr>
+<tr>
+<td><strong>Відновити з резервної копії</strong></td>
+<td>Повернути набір, який замінив імпорт</td>
+</tr>
+<tr>
+<td><strong>Відкрити папку резервних копій</strong></td>
+<td>Відкриває папку на диску</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>Якщо під час запуску файл власних команд коли-небудь виявиться пошкодженим, Elite Intel
+автоматично завантажить резервну копію та повідомить вам про це.</p>
+</blockquote>
+<h3>Редактор команд</h3>
+<p><img src="../images/ui-custom-command-editor.png" alt="Редактор власних команд"></p>
+<p><strong>Ідентифікація команди</strong></p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Примітки</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Назва</strong></td>
+<td>Як ви її називаєте</td>
+</tr>
+<tr>
+<td><strong>Опис</strong></td>
+<td>Що вона робить</td>
+</tr>
+<tr>
+<td><strong>Що ви скажете</strong></td>
+<td>Фрази, якими ви б її запускали — <strong>по одній у рядку</strong></td>
+</tr>
+<tr>
+<td><strong>Ключ дії</strong></td>
+<td>Внутрішній ідентифікатор. Натисніть <strong>Створити</strong>, і мовна модель напише його за вас на основі ваших фраз. Він має бути в ASCII snake_case, бо стає назвою інструмента, яку бачить модель, — тож довірте це кнопці «Створити». Перед створенням додайте щонайменше одну фразу</td>
+</tr>
+</tbody></table>
+<p><strong>Кроки</strong> — послідовність за порядком. Кроки можна додавати, змінювати, видаляти та переміщувати
+вгору й вниз.</p>
+<table>
+<thead>
+<tr>
+<th>Тип кроку</th>
+<th>Поля</th>
+<th>Для чого</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Натискання прив&#39;язки</strong></td>
+<td>Прив&#39;язка</td>
+<td>Один раз натиснути призначений елемент керування</td>
+</tr>
+<tr>
+<td><strong>Утримання прив&#39;язки</strong></td>
+<td>Прив&#39;язка, тривалість у мс</td>
+<td>Утримувати призначений елемент керування</td>
+</tr>
+<tr>
+<td><strong>Затримка</strong></td>
+<td>Тривалість у мс</td>
+<td>Зачекати між кроками</td>
+</tr>
+<tr>
+<td><strong>Промовити</strong></td>
+<td>Текст</td>
+<td>Змусити «Вегу» щось сказати</td>
+</tr>
+<tr>
+<td><strong>Натискання клавіші</strong></td>
+<td>Натискання клавіші, модифікатор</td>
+<td>Натиснути клавішу, ні до чого не прив&#39;язану в грі</td>
+</tr>
+</tbody></table>
+<p>Де можливо, віддавайте перевагу крокам типу <strong>Прив&#39;язка</strong> перед <strong>Натисканням клавіші</strong>: прив&#39;язки
+слідують за тими клавішами, які гра справді використовує, і тому переживають перепризначення
+елемента керування.</p>
+<h3>Як ними користуватися</h3>
+<p>Говоріть звичайно. Не потрібно дослівно відтворювати навчальну фразу — потрібно передати той самий
+зміст. Що сильніше ваші фрази відрізняються від інших команд, то надійніше буде обрана саме ваша.</p>
+<p>Під час запуску «Вега» повідомляє, скільки власних команд завантажилося і скільки не пройшло
+перевірку.</p>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

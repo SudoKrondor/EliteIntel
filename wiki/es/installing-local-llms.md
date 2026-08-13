@@ -14,8 +14,6 @@ Requisitos de hardware para ejecutar el juego y el LLM en la misma máquina:
 
 Si no dispones del hardware suficiente, utiliza el __[servicio gratuito en la nube](https://v2.auth.mistral.ai/login)__
 
-
-
 Una tabla de referencia de GPU proporcionada por **Kevin Rank** está disponible aquí:
 [Guía de referencia de GPU](https://docs.google.com/spreadsheets/d/1ZyPgTvlVg7ueemHEV-3J3j3tAynShIyxTs8rd59rips/edit?usp=sharing)
 
@@ -36,7 +34,7 @@ Una tabla de referencia de GPU proporcionada por **Kevin Rank** está disponible
 |                              | Ollama                                     | LM Studio                                                                                                    |
 |------------------------------|--------------------------------------------|--------------------------------------------------------------------------------------------------------------|
 | **Velocidad**                | Más lento                                  | Más rápido                                                                                                   |
-| **Modelo preferido**         | [tulu-3.1-8b-supernova Q4_K_M](https://huggingface.co/mradermacher/Tulu-3.1-8B-SuperNova-i1-GGUF) | [tulu-3.1-8b-supernova Q4_K_M](https://huggingface.co/mradermacher/Tulu-3.1-8B-SuperNova-i1-GGUF) |
+| **Modelo requerido**          | `google/gemma-4-e4b`                        | `google/gemma-4-e4b`                                                                                         |
 | **Ideal para**               | Configuración sencilla, mantenimiento mínimo | Mayor control sobre la carga del modelo                                                                     |
 | **Instalación**              | Un script y listo                          | Un script y listo                                                                                            |
 | **Se ejecuta como**          | Servicio del sistema (inicio automático)   | Inicio manual o inicio automático opcional                                                                   |
@@ -70,39 +68,38 @@ Una tabla de referencia de GPU proporcionada por **Kevin Rank** está disponible
 ---
 ## Recomendación del desarrollador
 
-El desarrollador usa LM Studio con [`matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF`](https://huggingface.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF). Este modelo proporciona inferencia rápida. El mismo modelo en Ollama funciona notablemente más lento. La aplicación está optimizada para este modelo. Otros modelos pueden funcionar, pero no están garantizados. Informa sobre los resultados de compatibilidad en Matrix.
+El desarrollador usa LM Studio con `google/gemma-4-e4b` (~6,3 GB). El mismo modelo en Ollama va
+notablemente más lento. Otros modelos pueden funcionar, pero no está garantizado. Comparte tus
+hallazgos de compatibilidad en Matrix.
 
-## ¿Por qué tulu3.1:8b Supernova específicamente?
+## ¿Por qué `google/gemma-4-e4b` específicamente?
 
-Elite Intel es un analizador de comandos y una herramienta de análisis de datos, no un chatbot conversacional. Esto impone requisitos específicos al modelo. Generar conversaciones que suenen naturales es insuficiente. El modelo debe inferir correctamente las acciones a partir de la entrada de voz y realizar análisis de datos estructurados. Debe devolver los resultados en JSON formateado, no en un ensayo o HTML. No todos los modelos de este tamaño realizan esta tarea de manera fiable.
+Elite Intel es un analizador de comandos y una herramienta de análisis de datos, no un chatbot
+conversacional. Eso impone requisitos concretos al modelo. No basta con generar charla que suene
+natural. El modelo debe inferir correctamente las acciones a partir de la voz, realizar análisis de
+datos estructurados y devolver los resultados como datos estructurados, no como un ensayo en
+markdown o HTML. No todos los modelos de este tamaño lo hacen de forma fiable.
 
-## Tulu 3 (la receta de entrenamiento base) es genuinamente excepcional
+El requisito ineludible es el **function calling**. El compañero de Elite Intel no pide al modelo
+que describa lo que haría: le ofrece un conjunto de herramientas y espera que llame a una, con
+argumentos. Un modelo que no puede emitir una llamada a herramienta bien formada no puede manejar
+la aplicación en absoluto, por bien que escriba. `google/gemma-4-e4b` lo admite.
 
-[Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF](https://huggingface.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF/tree/main)
+Con unos 6,3 GB cabe en la VRAM junto al juego en una tarjeta de 24 GB con margen, lo que evita
+descargar trabajo a la CPU y mantiene alto el rendimiento de inferencia.
 
-La mayoría de los modelos de instrucción se entrenan con RLHF, que utiliza un modelo de recompensa aprendido para evaluar las salidas. Ese modelo de recompensa es en sí mismo una red neuronal, por lo que hereda todos los sesgos e inconsistencias habituales. Tulu 3 reemplazó esto con RLVR (Aprendizaje por refuerzo con recompensas verificables). En lugar de un modelo de recompensa aprendido, el entrenamiento utiliza una función de puntuación determinista: la respuesta es correcta o no lo es. Binario, sin sesgos. Esto es especialmente impactante para las tareas de seguimiento de instrucciones, donde la señal de recompensa es objetiva.
-
-El proceso de entrenamiento sigue un enfoque de cuatro etapas: curación de datos orientada a habilidades clave, ajuste fino supervisado, Optimización de Preferencia Directa y RLVR encima para mejorar el rendimiento en tareas verificables. Cada etapa se construye sobre la anterior. Por eso Tulu 3, sobre la base Llama de 8B, alcanza resultados que superan a las versiones instruct de Llama 3.1, Qwen 2.5, Mistral e incluso modelos cerrados como GPT-4o-mini y Claude 3.5 Haiku.
-
-Para EliteIntel, la etapa de clasificación de comandos es una tarea de seguimiento de instrucciones con respuestas correctas verificables (acción JSON X frente a Y). Este es precisamente el tipo de tarea que optimiza RLVR. El modelo está entrenado específicamente para producir salidas estructuradas deterministas.
-
-## Por qué la variante "Supernova"
-
-La variante Supernova difiere del Tulu 3 estándar. Tulu-3.1-8B-SuperNova se crea mediante una fusión lineal de tres modelos: Llama-3.1-MedIT-SUN-8B (médico/razonamiento), Llama-3.1-Tulu-3-8B (seguimiento de instrucciones) y Llama-3.1-SuperNova-Lite (el modelo destilado de Arcee), cada uno con un peso igual de 1.0 usando mergekit.
-
-El modelo padre SuperNova-Lite es un modelo destilado de una base Arcee más grande, lo que proporciona una densidad de conocimiento superior a la de un modelo estándar de 8B. La fusión lineal promedia directamente los tensores de peso, combinando el conocimiento sin cómputo de entrenamiento adicional. Esto consigue resultados especialmente sólidos en tareas de seguimiento de instrucciones, como lo demuestra su puntuación IFEval.
-
-**Rendimiento**: El modelo usa una arquitectura Llama de 8B. Con la cuantización Q4_K_M en una 3090 de 24 GB, cabe en la VRAM junto al juego con margen. Esto evita la descarga a CPU y mantiene el máximo rendimiento de inferencia. Los modelos Qwen comparables usan configuraciones de cabezas de atención distintas (como el ratio GQA de Qwen2.5) que pueden ser más lentos en el backend GGUF de llama.cpp.
-
-También funciona en una tarjeta con 12 GB de VRAM si no hay otras cargas de trabajo que consuman VRAM. Esto requiere que el juego se ejecute en una GPU o máquina independiente.
+> **Sobre el modelo retirado de V1.0.** Las versiones anteriores recomendaban
+> `tulu-3.1-8b-supernova`. No admite function calling, así que no puede ejecutar el compañero y ya
+> no sirve con Elite Intel. Si sigues una guía antigua, ignórala e instala `google/gemma-4-e4b`.
 
 ## ¿Puedo usar un modelo diferente?
 
-Se pueden usar modelos alternativos, pero es poco probable que igualen la velocidad y precisión de tulu3.1-supernova.
+Se pueden usar modelos alternativos, pero deben admitir function calling. Sin eso la aplicación no
+puede ejecutar nada.
 
-Los problemas más comunes con los modelos alternativos incluyen un formato de respuesta incorrecto.
-El error más frecuente es que el modelo devuelva un ensayo en lugar de una acción estructurada o un resultado de análisis.
+El fallo más frecuente con un modelo alternativo es un formato de respuesta incorrecto: el modelo
+devuelve prosa describiendo una acción en lugar de llamar realmente a la herramienta.
 
 --- 
 
-Comunidad 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈

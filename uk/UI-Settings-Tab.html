@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вкладка «Налаштування»  EliteIntel</title>
+    <meta name="description" content="Загальне, що діє всюди, а під нею три підвкладки: Сервіси ШІ, Аудіо та Push To Talk.">
+    <link rel="canonical" href="https://www.elite-intel.org/uk/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Settings-Tab.html">
+    <meta property="og:title" content="Вкладка «Налаштування»  EliteIntel">
+    <meta property="og:description" content="Загальне, що діє всюди, а під нею три підвкладки: Сервіси ШІ, Аудіо та Push To Talk.">
+    <meta property="og:url" content="https://www.elite-intel.org/uk/UI-Settings-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI-Settings-Tab.html" class="locale-link">EN</a><a href="../fr/UI-Settings-Tab.html" class="locale-link">FR</a><a href="../es/UI-Settings-Tab.html" class="locale-link">ES</a><a href="../de/UI-Settings-Tab.html" class="locale-link">DE</a><span class="locale-current">UK</span><a href="../ru/UI-Settings-Tab.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Головна</a>
+
+            <div class="nav-section">Застосунок</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Встановлення</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Інтерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Дії»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Бінди»</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub active"><img src="../images/settings.png" class="inline" height="20" alt=""> Вкладка «Налаштування»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-накладка</a>
+
+            <div class="nav-section">Вікі</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Як це зробити?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Загальне використання</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Торгівля та прибуток</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Пошук по галактиці</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Дослідження</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Навігація</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Піратські місії</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Всі команди</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Системні команди</a>
+
+            <div class="nav-section">Спільнота</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Політика конфіденційності</a>
+            <a href="Contact.html" class="nav-link">📧 Зв&#39;язатися з розробником</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Вкладка «Налаштування»</h1>
+<p><img src="../images/settings.png" class="inline" height="20" alt="Налаштування"> Внутрішня кухня. Смуга
+<strong>Загальне</strong>, що діє всюди, а під нею три підвкладки: <strong>Сервіси ШІ</strong>, <strong>Аудіо</strong> та <strong>Push To Talk</strong>.</p>
+<hr>
+<h2>Загальне</h2>
+<p>Показана над підвкладками, бо стосується їх усіх.</p>
+<p><strong>Мова</strong> — мова і ваших голосових команд, і самого інтерфейсу застосунку. Вибір мови негайно
+перемальовує все вікно, а «Вега» вголос оголошує про зміну.</p>
+<p>Підтримуються: англійська, іспанська, французька, німецька, італійська, португальська, бразильська
+португальська, українська, російська.</p>
+<p><strong>Папка журналів</strong> — місце, куди Elite Dangerous записує файли журналу. Необов&#39;язково: залиште
+порожнім, і буде використано стандартне розташування для вашої платформи. Саме звідси Elite Intel
+дізнається, що відбувається навколо вашого корабля, тож за хибного значення застосунок фактично
+сліпий — і скаже про це під час запуску.</p>
+<hr>
+<h2>Сервіси ШІ</h2>
+<p><img src="../images/ui-tab-settings-ai.png" alt="Сервіси ШІ"></p>
+<p><strong>Переписано у V1.1.</strong> Колишні розкидані прапорці «Використовувати» зникли. Тепер є два перемикачі —
+один для мовної моделі, інший для синтезу мовлення, — і невикористаний бік кожного затемнено, тож
+очевидно, який із них активний.</p>
+<p>Це також єдина вкладка застосунку, що працює з <strong>чернеткою</strong>. Нічого не записується, доки ви не
+натиснете <strong>Зберегти</strong>, а спроба піти з незбереженими правками запропонує <em>Зберегти</em>, <em>Відмінити</em>
+або <em>Продовжити редагування</em>.</p>
+<h3>Мовна модель (LLM)</h3>
+<p>Перемикайтеся між <strong>Локальним налаштуванням</strong> і <strong>Хмарним налаштуванням</strong>.</p>
+<p><strong>Локальне налаштування</strong></p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Примітки</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Хост</strong></td>
+<td><code>Ollama</code> або <code>LM Studio</code>. Кожен зберігає власні адресу та модель, тож можна перемикатися туди-назад без повторного введення</td>
+</tr>
+<tr>
+<td><strong>Адреса</strong></td>
+<td>За замовчуванням — звичайна URL цього хоста. Вкажіть IP іншої машини, якщо інференс працює деінде у вашій мережі</td>
+</tr>
+<tr>
+<td><strong>Модель</strong></td>
+<td>Назва моделі. <strong>Одне поле</strong> — у V1.1 використовується єдина модель і для команд, і для запитів</td>
+</tr>
+</tbody></table>
+<p>Локальна модель за замовчуванням і рекомендована — <strong><code>google/gemma-4-e4b</code></strong>. Під час запуску Elite
+Intel попередить, якщо ваша локальна модель інша; інші моделі можуть працювати погано або не
+працювати зовсім.</p>
+<p>Посібники зі встановлення: <a href="Install-Ollama-Local-LLM-Linux.html">Ollama в Linux</a> ·
+<a href="Install-Ollama-Local-LLM-Windows.html">Ollama у Windows</a> ·
+<a href="Install-LM-Studio-Linux.html">LM Studio в Linux</a> ·
+<a href="Install-LM-Studio-Windows.html">LM Studio у Windows</a> ·
+<a href="AMD-RX-7800XT-LLM-Setup.html">Серія AMD RX</a></p>
+<p><strong>Хмарне налаштування</strong></p>
+<p>Одне поле: ваш <strong>API-ключ</strong>, поруч із ним прапорець <strong>Заблоковано</strong>, щоб збережений ключ не можна
+було змінити випадково. Зніміть прапорець, щоб його змінити.</p>
+<p>Підтримувані провайдери: <strong>Gemini, Grok, OpenAI, Claude, Deepseek, Mistral.</strong></p>
+<blockquote>
+<p>Модель більше обирати не потрібно. Elite Intel розпізнає провайдера за виглядом вашого ключа й сам
+добирає відповідну модель.</p>
+</blockquote>
+<p>У Mistral є безкоштовний рівень — це найпростіший спосіб почати.
+Про те, як отримати ключ у кожного провайдера, див. <a href="cloud-llm-options.html">Варіанти хмарних LLM</a>.</p>
+<h3>Синтез мовлення (TTS)</h3>
+<p>Перемикайтеся між <strong>Локально · Kokoro</strong> і <strong>Хмара · Google</strong>.</p>
+<ul>
+<li>У <strong>Локально · Kokoro</strong> взагалі немає налаштувань. 53 вбудовані голоси, без ключа й без
+завантаження.</li>
+<li><strong>Хмара · Google</strong> потребує <strong>Ключ Google TTS</strong> із тим самим прапорцем «Заблоковано».</li>
+</ul>
+<blockquote>
+<p>Зміна рушія скидає голос кожного корабля на голос нового рушія за замовчуванням. Характери
+кораблів зберігаються. Перед цим у вас запитають підтвердження.</p>
+</blockquote>
+<h3>Нижня панель</h3>
+<p><strong>Відновити значення за замовчуванням</strong> повертає конфігурацію мовної моделі до локального LM Studio
+з моделлю за замовчуванням і одразу зберігає. <strong>Зберегти</strong> фіксує все інше; кнопка неактивна, доки
+щось справді не зміниться, і тоді поруч з&#39;являється підказка <strong>Незбережені зміни</strong>.</p>
+<p>Збереження перезапускає лише те, що необхідно: зміна моделі перезапускає мозок, зміна ключа синтезу
+мовлення — рот.</p>
+<hr>
+<h2>Аудіо</h2>
+<p><img src="../images/ui-tab-settings-audio.png" alt="Налаштування аудіо"></p>
+<h3>Аудіопристрої</h3>
+<p>Списки <strong>Мікр.</strong> і <strong>Динам.</strong> або <em>(Системне за замовчуванням)</em>. Ті самі списки доступні через
+кнопку <strong>Аудіопристрої</strong> на вкладці «Вега».</p>
+<blockquote>
+<p>Зміна пристроїв набуває чинності під час <strong>наступного запуску служб</strong>.</p>
+</blockquote>
+<p><strong>Увімкнути шумопридушення</strong> зі ступенем <strong>Низький / Середній / Високий</strong>. Почніть із середнього.
+Високий призначений для по-справжньому гучних приміщень — він агресивний, а надмірна фільтрація може
+коштувати вам точності розпізнавання.</p>
+<h3>Рівні звуку</h3>
+<table>
+<thead>
+<tr>
+<th>Повзунок</th>
+<th>Що робить</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Гучність мовлення</strong></td>
+<td>Наскільки гучно говорить «Вега»</td>
+</tr>
+<tr>
+<td><strong>Швидкість голосу TTS</strong></td>
+<td>Наскільки швидко говорить «Вега»</td>
+</tr>
+<tr>
+<td><strong>Гучність сигналу</strong></td>
+<td>Підтверджувальний сигнал — лунає, коли розпізнавання мовлення завершено і мовна модель отримала ваш ввід</td>
+</tr>
+<tr>
+<td><strong>Потоки STT</strong></td>
+<td>Потоки процесора для розпізнавання (4–11). Це мінімальний запит, а не резервування: застосунок просить стільки, використовує те, що дає процесор, і звільняє потоки після завершення роботи</td>
+</tr>
+</tbody></table>
+<h3>Монітор мікрофона</h3>
+<p>Живий індикатор уздовж правого краю. На ньому читаються три речі:</p>
+<ul>
+<li><strong>FLOOR</strong> — рівень вашого шуму, коли ви <em>не</em> говорите.</li>
+<li><strong>GATE</strong> — поріг. Звук вище шлюзу передається на розпізнавання; коли він опускається нижче,
+захоплене розпізнається й надсилається мовній моделі.</li>
+<li><strong>CLIP</strong> — ви перевантажуєте мікрофон. Усе, що вище цієї лінії, розпізнається погано.</li>
+</ul>
+<p>Вам потрібен чіткий проміжок між FLOOR і рівнем вашого мовлення, і щоб ніщо не торкалося CLIP. Якщо
+картина інша, виконайте <strong>КАЛІБРУВАННЯ ЗВУКУ</strong> на вкладці «Вега»: воно налаштує шлюз за вас і
+попередить, якщо розрив між мовленням і шумом замалий для роботи.</p>
+<hr>
+<h2>Push To Talk</h2>
+<p><img src="../images/ui-tab-settings-push-to-talk.png" alt="Push to talk"></p>
+<p>Push-to-talk працює з <strong>кнопкою геймпада або HOTAS</strong>, а не клавіатури. Ви віддаєте одну кнопку й
+отримуєте мікрофон, закритий завжди, окрім моментів, коли ви хочете його відкрити.</p>
+<table>
+<thead>
+<tr>
+<th>Елемент</th>
+<th>Примітки</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Увімкнути Push to Talk</strong></td>
+<td>Головний вимикач. Усе інше недоступне, доки він не увімкнений</td>
+</tr>
+<tr>
+<td><strong>Контролер</strong></td>
+<td>Будь-який під&#39;єднаний контролер, який бачить Elite Intel. Під час повторного під&#39;єднання збережений контролер обирається автоматично</td>
+</tr>
+<tr>
+<td><strong>Кнопка</strong></td>
+<td>Яка саме кнопка на ньому</td>
+</tr>
+</tbody></table>
+<p>Два режими:</p>
+<ul>
+<li><strong>Перемикання сон / пробудження</strong> — кнопка переводить «Вегу» між сном і прослуховуванням. Уві сні
+«Вега» ігнорує все, крім <code>Wake up!</code>, а обхідне слово <code>listen</code> / <code>listen up</code> досі пропускає одну
+команду: <em>«Listen up — lower the landing gear.»</em></li>
+<li><strong>Push To Talk</strong> — за замовчуванням «Вега» ігнорує все. Утримуйте кнопку, почуйте сигнал, говоріть,
+відпустіть. Другий сигнал підтверджує, що ваш ввід обробляється.</li>
+</ul>
+<p>Поки push-to-talk активний, кнопка <strong>СОН / ПРОБУДЖЕННЯ</strong> на вкладці «Вега» вимкнена: ворітьми слугує
+кнопка контролера.</p>
+<p>Кнопка працює незалежно від того, чи відкривали ви колись цю вкладку.</p>
+<hr>
+<h2>Де зберігаються налаштування</h2>
+<p>Усі налаштування та дані зберігаються в базі SQLite:</p>
+<ul>
+<li><strong>Linux:</strong> <code>~/.local/share/elite-intel/elite-intel/db/</code></li>
+<li><strong>Windows:</strong> <code>%APPDATA%\elite-intel\db\</code></li>
+</ul>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

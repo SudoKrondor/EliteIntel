@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>No local hardware? Use a cloud LLM.  EliteIntel</title>
-    <meta name="description" content="Cloud option: Enter your API key for Mistral, xAI, OpenAI, or Anthropic/Claude. The app uses a fixed model per provider:">
+    <meta name="description" content="Cloud option: paste your API key into Settings → AI Services → Cloud Setup and press">
     <link rel="canonical" href="https://www.elite-intel.org/cloud-llm-options.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/cloud-llm-options.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/cloud-llm-options.html">
@@ -13,7 +13,7 @@
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/cloud-llm-options.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/cloud-llm-options.html">
     <meta property="og:title" content="No local hardware? Use a cloud LLM.  EliteIntel">
-    <meta property="og:description" content="Cloud option: Enter your API key for Mistral, xAI, OpenAI, or Anthropic/Claude. The app uses a fixed model per provider:">
+    <meta property="og:description" content="Cloud option: paste your API key into Settings → AI Services → Cloud Setup and press">
     <meta property="og:url" content="https://www.elite-intel.org/cloud-llm-options.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -32,8 +32,8 @@
     <nav class="header-actions">
         <img src="images/windows.png" alt="Windows" class="os-icon" title="Windows">
         <img src="images/linux.png" alt="Linux" class="os-icon" title="Linux">
-        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
-        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
         <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
         <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
         <div class="locale-switcher"><span class="locale-current">EN</span><a href="fr/cloud-llm-options.html" class="locale-link">FR</a><a href="es/cloud-llm-options.html" class="locale-link">ES</a><a href="de/cloud-llm-options.html" class="locale-link">DE</a><a href="uk/cloud-llm-options.html" class="locale-link">UK</a><a href="ru/cloud-llm-options.html" class="locale-link">RU</a></div>
@@ -50,8 +50,14 @@
 
             <div class="nav-section">App</div>
             <a href="Installation.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
-            <a href="Configuration.html" class="nav-link"><img src="images/settings.png" class="inline" height="20" alt=""> Configuration</a>
-            <a href="Options.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Options</a>
+            <a href="UI.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> User Interface</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Vega Tab</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="images/controller.png" class="inline" height="20" alt=""> Commander Tab</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Actions Tab</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Bindings Tab</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="images/settings.png" class="inline" height="20" alt=""> Settings Tab</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="images/stats.png" class="inline" height="20" alt=""> Stats Tab</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> HUD Overlay</a>
 
             <div class="nav-section">Wiki</div>
             <a href="installing-local-llms.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Choose your LLM</a>
@@ -84,15 +90,41 @@
         <div class="content-inner markdown-body" id="content-inner">
 <h1>No local hardware? Use a cloud LLM.</h1>
 <p><strong>LLM (AI Brain)</strong></p>
-<p><em>Cloud option:</em> Enter your API key for Mistral, xAI, OpenAI, or Anthropic/Claude. The app uses a fixed model per provider:</p>
-<ul>
-<li><strong>Mistral</strong>: &#39;mistral-small-2506&#39; <strong>(Free Tear)</strong></li>
-<li><strong>xAI</strong>: <code>grok-4-1-fast-non-reasoning</code></li>
-<li><strong>OpenAI</strong>: <code>gpt-4.1-mini</code> (commands) / <code>gpt-5.2</code> (queries)</li>
-<li><strong>Gemini Generative Language API</strong>: <code>gemini-3.1-flash-lite-preview</code> for commands and queries</li>
-<li><strong>Anthropic/Claude</strong></li>
-<li><strong>DeepSeek</strong></li>
-</ul>
+<p><em>Cloud option:</em> paste your API key into <strong>Settings → AI Services → Cloud Setup</strong> and press
+<strong>Save</strong>. You do not pick a model — Elite Intel recognises the provider from your key and
+selects the model itself:</p>
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Model used</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Mistral</strong> <em>(free tier)</em></td>
+<td><code>mistral-small-2506</code></td>
+</tr>
+<tr>
+<td><strong>xAI</strong></td>
+<td><code>grok-4-1-fast-non-reasoning</code></td>
+</tr>
+<tr>
+<td><strong>OpenAI</strong></td>
+<td><code>gpt-5.4-mini</code></td>
+</tr>
+<tr>
+<td><strong>Gemini</strong> (Generative Language API)</td>
+<td><code>gemini-3.1-flash-lite-preview</code></td>
+</tr>
+<tr>
+<td><strong>Anthropic / Claude</strong></td>
+<td><code>claude-haiku-4-5</code></td>
+</tr>
+<tr>
+<td><strong>DeepSeek</strong></td>
+<td><code>deepseek-v4-flash</code></td>
+</tr>
+</tbody></table>
 <p>Cost will be different depending on which Cloud service you choose, and how long you play.</p>
 <h3>FREE CLOUD Option: Mistral</h3>
 <ol>
@@ -100,7 +132,7 @@
 <li>Create account with a valid email you can verify.</li>
 <li>NO CREDIT CARD NECESSARY</li>
 <li>Create a &quot;Organisation&quot; (Call it whatever you want. For example &quot;Elite Intel&quot;)</li>
-<li>Generate an API key. Enter that key in to the app and restart the app.</li>
+<li>Generate an API key. Paste it into <strong>Settings → AI Services → Cloud Setup</strong>, press <strong>Save</strong>, and restart services on the Vega tab.</li>
 </ol>
 <h3>Option A: xAI API Key</h3>
 <ol>
@@ -108,14 +140,14 @@
 <li>Sign up or log in.</li>
 <li>Navigate to the API section and generate a new API key.</li>
 <li>Add credits to your account.</li>
-<li>Paste the key into the <strong>LLM</strong> field and check the lock box.</li>
+<li>Paste the key into the <strong>API Key</strong> field on <em>Settings → AI Services</em>, tick <strong>Locked</strong>, and press <strong>Save</strong>.</li>
 </ol>
 <h3>Option B: OpenAI API Key</h3>
 <ol>
 <li>Go to the <a href="https://platform.openai.com/">OpenAI Platform</a>.</li>
 <li>Sign up or log in.</li>
 <li>Navigate to the API section and generate a new API key.</li>
-<li>Paste the key into the <strong>LLM</strong> field and check the lock box.</li>
+<li>Paste the key into the <strong>API Key</strong> field on <em>Settings → AI Services</em>, tick <strong>Locked</strong>, and press <strong>Save</strong>.</li>
 </ol>
 <h3>Option C: Anthropic/Claude API Key</h3>
 <ol>
@@ -123,9 +155,9 @@
 <li>Sign in with email or Google. Note: authentication uses a magic link sent to your email.</li>
 <li>Go to <strong>Settings → Billing</strong> and add credits before creating a key. A key created on an unfunded account does not function even if credits are added afterward.</li>
 <li>Go to <strong>API Keys</strong> and create a key.</li>
-<li>Paste it into the <strong>LLM</strong> field, check the lock box, and start or restart services on the AI tab.</li>
+<li>Paste it into the <strong>API Key</strong> field on <em>Settings → AI Services</em>, tick <strong>Locked</strong>, press <strong>Save</strong>, then start or restart services on the Vega tab.</li>
 </ol>
-<h3>Getting a Google TTS Key (14 voices)</h3>
+<h3>Getting a Google TTS Key</h3>
 <ol>
 <li>Go to the <a href="https://console.cloud.google.com/">Google Cloud Console</a>.</li>
 <li>Sign in or create an account.</li>
@@ -133,7 +165,7 @@
 <li>Enable the <strong>Generative Language API</strong> for LLM and/or <strong>Cloud Text-to-Speech API</strong> for TTS.</li>
 <li>Go to <strong>Credentials</strong>, create an API key, and copy it.</li>
 <li><strong>Restrict the key</strong>: Click the key you just created. On the key detail page, click <strong>Restrict key</strong>. A dropdown appears. Check each API you enabled (STT and/or TTS), then click <strong>Save</strong>.</li>
-<li>Paste the key into the <strong>Speech to Text</strong> and/or <strong>Text to Speech</strong> fields in the app. Check the lock boxes.</li>
+<li>Paste the key into <strong>Settings → AI Services → Speech (TTS) → Google TTS Key</strong>, tick <strong>Locked</strong>, and press <strong>Save</strong>.</li>
 </ol>
 
         </div>

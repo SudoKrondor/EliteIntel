@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onglet Vega  EliteIntel</title>
+    <meta name="description" content="laissez ouvert en vol. Il démarre et arrête la pile IA, montre ce que Vega a entendu et dit, signale">
+    <link rel="canonical" href="https://www.elite-intel.org/fr/UI-Vega-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Vega-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Vega-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Vega-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Vega-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Vega-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Vega-Tab.html">
+    <meta property="og:title" content="Onglet Vega  EliteIntel">
+    <meta property="og:description" content="laissez ouvert en vol. Il démarre et arrête la pile IA, montre ce que Vega a entendu et dit, signale">
+    <meta property="og:url" content="https://www.elite-intel.org/fr/UI-Vega-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI-Vega-Tab.html" class="locale-link">EN</a><span class="locale-current">FR</span><a href="../es/UI-Vega-Tab.html" class="locale-link">ES</a><a href="../de/UI-Vega-Tab.html" class="locale-link">DE</a><a href="../uk/UI-Vega-Tab.html" class="locale-link">UK</a><a href="../ru/UI-Vega-Tab.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Accueil</a>
+
+            <div class="nav-section">Application</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Interface</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub active"><img src="../images/ai.png" class="inline" height="20" alt=""> Onglet Vega</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Onglet Commandant</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Actions</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Bindings</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Onglet Paramètres</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Onglet Statistiques</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Choisir votre LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Comment faire ?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Opération générale</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Commerce et profit</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Explorer la galaxie</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Exploration &amp; Exobiologie</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Missions pirates</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Toutes les commandes</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Commandes système</a>
+
+            <div class="nav-section">Communauté</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Chat Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Politique de confidentialité</a>
+            <a href="Contact.html" class="nav-link">📧 Contacter le développeur</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Onglet Vega</h1>
+<p><img src="../images/ai.png" class="inline" height="20" alt="Vega"> L&#39;onglet par défaut, celui que vous
+laissez ouvert en vol. Il démarre et arrête la pile IA, montre ce que Vega a entendu et dit, signale
+l&#39;état de chaque sous-système et ouvre l&#39;overlay en jeu.</p>
+<p><img src="../images/ui-tab-vega.png" alt="Onglet Vega"></p>
+<p>L&#39;onglet se répartit en quatre zones : les journaux <strong>conversation</strong> et <strong>diagnostic</strong> sur la
+gauche, <strong>État rapide</strong> et <strong>Raccourcis</strong> dans la barre latérale droite, et la bande de télémétrie
+<strong>Résumé système</strong> en bas.</p>
+<hr>
+<h2>Conversation</h2>
+<p>Tout ce que vous avez dit et tout ce que Vega a répondu, en un seul flux. Vos lignes sont alignées
+à gauche, les réponses de Vega à droite, pour qu&#39;une longue session reste lisible d&#39;un coup d&#39;œil.</p>
+<h2>Diagnostic / Messages système</h2>
+<p>Le journal technique : démarrages de services, résultats de calibration, avertissements
+d&#39;assignations, opérations sur fichiers. Il n&#39;est jamais énoncé ; il existe pour que vous voyiez ce
+que fait l&#39;application.</p>
+<p>Quatre boutons se trouvent dans l&#39;en-tête de section :</p>
+<table>
+<thead>
+<tr>
+<th>Bouton</th>
+<th>Ce qu&#39;il fait</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Copier</strong></td>
+<td>Copie dans le presse-papiers le texte que vous avez sélectionné dans le journal. Actif uniquement s&#39;il y a une sélection.</td>
+</tr>
+<tr>
+<td><strong>Enregistrer le paquet de débogage</strong></td>
+<td>Écrit un <code>.zip</code> horodaté contenant le journal système, le journal applicatif, votre fichier de journal en cours et vos assignations. <strong>C&#39;est ce qu&#39;il faut joindre à un rapport de bug.</strong></td>
+</tr>
+<tr>
+<td><strong>Vider la mémoire de Vega</strong></td>
+<td>Écrit un instantané JSON de la mémoire de travail de Vega pour la session en cours. Disponible uniquement pendant que les services tournent.</td>
+</tr>
+<tr>
+<td><strong>Effacer</strong></td>
+<td>Vide le journal de diagnostic et sa transcription d&#39;export.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>État rapide</h2>
+<p>Six indicateurs en direct. Chacun affiche un état et une couleur, si bien qu&#39;un coup d&#39;œil suffit à
+savoir si la pile est en bonne santé.</p>
+<table>
+<thead>
+<tr>
+<th>Indicateur</th>
+<th>États</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>STT</strong></td>
+<td><code>Veille</code> (services arrêtés) · <code>Endormi</code> (vous ignore) · <code>Écoute</code></td>
+</tr>
+<tr>
+<td><strong>IA</strong></td>
+<td><code>Veille</code> · <code>Hors ligne</code> (connexion impossible) · ou le nom du fournisseur qui répond réellement</td>
+</tr>
+<tr>
+<td><strong>TTS</strong></td>
+<td><code>Veille</code> · <code>Local</code> (Kokoro) · <code>Cloud</code> (Google)</td>
+</tr>
+<tr>
+<td><strong>Bindings</strong></td>
+<td><code>OK</code>, ou <code>N manquant</code></td>
+</tr>
+<tr>
+<td><strong>Commandes</strong></td>
+<td>Combien de commandes personnalisées sont chargées</td>
+</tr>
+<tr>
+<td><strong>Touches</strong></td>
+<td><code>Synchronisé</code> avec le jeu, ou <code>Modifié</code> — vous avez un brouillon d&#39;assignations non appliqué</td>
+</tr>
+</tbody></table>
+<p>L&#39;indicateur <strong>IA</strong> mérite d&#39;être surveillé. Il ne signale pas ce que vous avez <em>configuré</em>, il
+signale quel fournisseur a réellement répondu à la dernière requête.</p>
+<hr>
+<h2>Raccourcis</h2>
+<table>
+<thead>
+<tr>
+<th>Bouton</th>
+<th>Ce qu&#39;il fait</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Démarrer / Arrêter les services</strong></td>
+<td>Bascule toute la pile IA. Le bouton se désactive de lui-même pendant le démarrage ou l&#39;arrêt, pour ne pas être déclenché deux fois.</td>
+</tr>
+<tr>
+<td><strong>Sommeil / Réveil</strong></td>
+<td>En mode <em>réveil</em>, Vega écoute en continu. En mode <em>sommeil</em>, il vous ignore sauf si vous employez le mot de contournement <code>listen</code> ou dites <code>Wake up!</code>. Désactivé tant que le push-to-talk est actif : en mode PTT, le bouton <em>est</em> la porte.</td>
+</tr>
+<tr>
+<td><strong>Afficher / Masquer overlay</strong></td>
+<td>Affiche l&#39;<a href="UI-HUD-Overlay.html">overlay HUD</a> toujours au premier plan. Si le binaire de l&#39;overlay est absent, le bouton reste honnête et signale l&#39;échec dans le journal au lieu de prétendre à un overlay inexistant.</td>
+</tr>
+<tr>
+<td><strong>Réglages de l&#39;overlay</strong></td>
+<td>Ouvre les <a href="UI-HUD-Overlay.html">réglages de l&#39;overlay HUD</a> : transparence, taille du texte et emplacement de tracé (moniteur, casque VR, les deux).</td>
+</tr>
+<tr>
+<td><strong>Périphériques audio</strong></td>
+<td>Ouvre la boîte de dialogue d&#39;interface audio pour choisir micro et haut-parleur. Les changements prennent effet au prochain démarrage des services.</td>
+</tr>
+<tr>
+<td><strong>Calibrer l&#39;audio</strong></td>
+<td>Mesure votre bruit de fond et votre niveau de voix, et règle la porte audio. Disponible uniquement pendant que les services tournent. Lancez-le une fois avant votre premier vol, et de nouveau si vous changez de micro ou de pièce.</td>
+</tr>
+<tr>
+<td><strong>Mettre à jour</strong></td>
+<td>Apparaît lorsqu&#39;une nouvelle version est disponible.</td>
+</tr>
+</tbody></table>
+<p>Entre les deux groupes de boutons se trouve le <strong>bloc commandant</strong> : votre nom, votre vaisseau,
+l&#39;horloge et votre solde de crédits en direct.</p>
+<hr>
+<h2>Résumé système</h2>
+<p>Une bande de télémétrie de six blocs en bas de l&#39;onglet :</p>
+<table>
+<thead>
+<tr>
+<th>Bloc</th>
+<th>Signification</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Modèle LLM</strong></td>
+<td>Le modèle qui a traité la requête la plus récente</td>
+</tr>
+<tr>
+<td><strong>Durée de session</strong></td>
+<td>Temps écoulé depuis le démarrage des services</td>
+</tr>
+<tr>
+<td><strong>Tokens utilisés</strong></td>
+<td>Prompt + réponse + cache, pour la session</td>
+</tr>
+<tr>
+<td><strong>Tokens / heure</strong></td>
+<td>Un taux projeté. Reste vide les 10 premières minutes, le temps de collecter des données</td>
+</tr>
+<tr>
+<td><strong>Économie cache</strong></td>
+<td>Tokens servis depuis le cache. Le <code>0</code> est affiché délibérément : c&#39;est une information, pas une donnée manquante</td>
+</tr>
+<tr>
+<td><strong>Dernière vitesse</strong></td>
+<td>Tokens par seconde sur la dernière réponse</td>
+</tr>
+</tbody></table>
+<p>Pour le détail complet, voir l&#39;<a href="UI-Stats-Tab.html">onglet Statistiques</a>.</p>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

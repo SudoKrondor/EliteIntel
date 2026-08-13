@@ -77,10 +77,11 @@ sudo dnf install rocm-smi-devel
 
 | Modèle | VRAM requise | Notes |
 |---|---|---|
-| `tulu-3.1-8b-supernova` Q4_K_M | ~5 Go | ✅ Recommandé pour V1.0 |
-| `google/gemma-4-e4b` | ~6,3 Go | ✅ Recommandé pour V1.1 |
+| `google/gemma-4-e4b` | ~6,3 Go | ✅ Requis |
 
-> **Quel modèle ?** `tulu-3.1-8b-supernova` est le modèle recommandé pour la **V1.0**. La **V1.1** passe à `google/gemma-4-e4b`, qui prend en charge le function calling requis par la nouvelle fonction compagnon. Les commandes ci-dessous utilisent le modèle de la V1.1 — en V1.0, remplacez-le par `tulu-3.1-8b-supernova`.
+> **Pourquoi ce modèle ?** Il prend en charge le function calling requis par le compagnon. Un modèle incapable
+> d'émettre un appel d'outil ne peut pas piloter l'application, aussi bien écrive-t-il.
+> Voir [Choisir votre LLM](installing-local-llms).
 
 ### Étape 3 - Charger un modèle avec l'accélération ROCm
 

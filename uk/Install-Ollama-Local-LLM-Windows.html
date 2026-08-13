@@ -32,8 +32,8 @@
     <nav class="header-actions">
         <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
         <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
-        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
-        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
         <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
         <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
         <div class="locale-switcher"><a href="../Install-Ollama-Local-LLM-Windows.html" class="locale-link">EN</a><a href="../fr/Install-Ollama-Local-LLM-Windows.html" class="locale-link">FR</a><a href="../es/Install-Ollama-Local-LLM-Windows.html" class="locale-link">ES</a><a href="../de/Install-Ollama-Local-LLM-Windows.html" class="locale-link">DE</a><span class="locale-current">UK</span><a href="../ru/Install-Ollama-Local-LLM-Windows.html" class="locale-link">RU</a></div>
@@ -50,8 +50,14 @@
 
             <div class="nav-section">Застосунок</div>
             <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Встановлення</a>
-            <a href="Configuration.html" class="nav-link"><img src="../images/settings.png" class="inline" height="20" alt=""> Налаштування</a>
-            <a href="Options.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Параметри</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Інтерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Дії»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Бінди»</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Вкладка «Налаштування»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-накладка</a>
 
             <div class="nav-section">Вікі</div>
             <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
@@ -102,21 +108,18 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><code>tulu-3.1-8b-supernova</code> Q4_K_M</td>
-<td>~5 ГБ</td>
-<td>✅ Рекомендовано для V1.0</td>
-</tr>
-<tr>
 <td><code>google/gemma-4-e4b</code></td>
 <td>~6.3 ГБ</td>
-<td>✅ Рекомендовано для V1.1</td>
+<td>✅ Потрібно</td>
 </tr>
 </tbody></table>
 <blockquote>
-<p><strong>Яку модель обрати?</strong> <code>tulu-3.1-8b-supernova</code> — рекомендована модель для <strong>V1.0</strong>. У <strong>V1.1</strong> відбувається перехід на <code>google/gemma-4-e4b</code>, яка підтримує виклик функцій (function calling), потрібний для нової функції «компаньйон». У командах нижче використовується модель V1.1 — для V1.0 замініть її на <code>tulu-3.1-8b-supernova</code>.</p>
+<p><strong>Чому саме ця модель?</strong> Вона підтримує виклик функцій, потрібний компаньйону. Модель, яка не вміє формувати
+виклик інструмента, не зможе керувати застосунком, хоч би як добре вона писала.
+Див. <a href="installing-local-llms.html">Обрати LLM</a>.</p>
 </blockquote>
 <blockquote>
-<p><strong>Примітка:</strong> Для найшвидшого локального інференсу розгляньте <a href="Install-LM-Studio-Windows.html">LM Studio</a> з <code>matrixportalx/tulu-3.1-8b-supernova</code>. За результатами тестування, він помітно швидший за Ollama на тому самому обладнанні з тією самою моделлю.</p>
+<p><strong>Примітка:</strong> Для найшвидшого локального інференсу розгляньте <a href="Install-LM-Studio-Windows.html">LM Studio</a>. За результатами тестування, він помітно швидший за Ollama на тому самому обладнанні з тією самою моделлю.</p>
 </blockquote>
 <hr>
 <h3>Крок 1  Встановлення Ollama</h3>
@@ -128,11 +131,7 @@
 <hr>
 <h3>Крок 2  Завантаження моделі</h3>
 <p>Відкрийте <strong>Командний рядок</strong> або <strong>PowerShell</strong> і виконайте:</p>
-<p>Для <strong>V1.1</strong> завантажте <code>google/gemma-4-e4b</code>:</p>
 <pre><code class="language-shell">ollama pull google/gemma-4-e4b
-</code></pre>
-<p>Для <strong>V1.0</strong> завантажте <code>tulu-3.1-8b-supernova</code>:</p>
-<pre><code class="language-shell">ollama pull tulu3:8b
 </code></pre>
 <hr>
 <h3>Крок 3  (Необов&#39;язково) Налаштування конфігурації</h3>

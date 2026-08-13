@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Elite Intel User Interface  EliteIntel</title>
+    <meta name="description" content="Elite Intel V1.1 is organised into six tabs across the top of the window. Each one owns a">
+    <link rel="canonical" href="https://www.elite-intel.org/UI.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI.html">
+    <meta property="og:title" content="The Elite Intel User Interface  EliteIntel">
+    <meta property="og:description" content="Elite Intel V1.1 is organised into six tabs across the top of the window. Each one owns a">
+    <meta property="og:url" content="https://www.elite-intel.org/UI.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><span class="locale-current">EN</span><a href="fr/UI.html" class="locale-link">FR</a><a href="es/UI.html" class="locale-link">ES</a><a href="de/UI.html" class="locale-link">DE</a><a href="uk/UI.html" class="locale-link">UK</a><a href="ru/UI.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="images/elite-logo.png" class="inline" height="20" alt=""> Home</a>
+
+            <div class="nav-section">App</div>
+            <a href="Installation.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI.html" class="nav-link active"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> User Interface</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Vega Tab</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="images/controller.png" class="inline" height="20" alt=""> Commander Tab</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Actions Tab</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Bindings Tab</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="images/settings.png" class="inline" height="20" alt=""> Settings Tab</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="images/stats.png" class="inline" height="20" alt=""> Stats Tab</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> HUD Overlay</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Choose your LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">How Do I…?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Search the Galaxy</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery &amp; ExoBiology</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Pirate Missions</a>
+            <a href="AllCommands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> All Commands &amp; Queries</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> System Commands</a>
+
+            <div class="nav-section">Community</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="images/communications.png" class="inline" height="20" alt=""> Matrix Chat ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Privacy Policy</a>
+            <a href="Contact.html" class="nav-link">📧 Contact Developer</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>The Elite Intel User Interface</h1>
+<p>Elite Intel V1.1 is organised into six tabs across the top of the window. Each one owns a
+different part of the system, and most of them hold sub-tabs of their own.</p>
+<p>This section walks through every tab, every control, and what it actually does.</p>
+<hr>
+<h2>The six tabs</h2>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>What it is for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="images/ai.png" class="inline" height="20" alt="Vega"> <strong><a href="UI-Vega-Tab.html">Vega</a></strong></td>
+<td>The flight deck. Start and stop services, watch the conversation, read live status, open the in-game HUD overlay.</td>
+</tr>
+<tr>
+<td><img src="images/controller.png" class="inline" height="20" alt="Commander"> <strong><a href="UI-Commander-Tab.html">Commander</a></strong></td>
+<td>Who you are and how your ships behave. Automations, spoken announcements, and a voice and personality per ship.</td>
+</tr>
+<tr>
+<td><img src="images/keys-binding.png" class="inline" height="20" alt="Actions"> <strong><a href="UI-Actions-Tab.html">Actions</a></strong></td>
+<td>Everything Elite Intel can do. Browse the built-in command catalogue, and build your own macros.</td>
+</tr>
+<tr>
+<td><img src="images/keys-binding.png" class="inline" height="20" alt="Bindings"> <strong><a href="UI-Bindings-Tab.html">Bindings</a></strong></td>
+<td>Your Elite Dangerous key bindings. Diagnose gaps and conflicts, edit them, and write them back to the game.</td>
+</tr>
+<tr>
+<td><img src="images/settings.png" class="inline" height="20" alt="Settings"> <strong><a href="UI-Settings-Tab.html">Settings</a></strong></td>
+<td>The plumbing. Language, journal folder, language model, speech engine, audio, and push-to-talk.</td>
+</tr>
+<tr>
+<td><img src="images/stats.png" class="inline" height="20" alt="Stats"> <strong><a href="UI-Stats-Tab.html">Stats</a></strong></td>
+<td>Token usage and LLM telemetry for the current session.</td>
+</tr>
+</tbody></table>
+<p>There is also the <strong><a href="UI-HUD-Overlay.html">HUD Overlay</a></strong> — a separate always-on-top window (and an
+optional VR surface) driven from the Vega tab.</p>
+<hr>
+<h2>If this is your first run</h2>
+<p>Elite Intel speaks its own setup warnings out loud when services start, so you do not have to
+hunt for what is missing. In order of importance:</p>
+<ol>
+<li><strong>A language model.</strong> Nothing works without one. Go to
+<a href="UI-Settings-Tab.html">Settings → AI Services</a> and either paste a cloud API key or point the app
+at a local model. See <a href="installing-local-llms.html">Choose your LLM</a>.</li>
+<li><strong>The journal folder.</strong> Without it Elite Intel is blind to everything happening around your
+ship. <a href="UI-Settings-Tab.html">Settings → Common</a>.</li>
+<li><strong>The bindings folder.</strong> Without it Elite Intel cannot operate your ship.
+<a href="UI-Bindings-Tab.html">Bindings → Binding Profile</a>.</li>
+<li><strong>Calibrate audio.</strong> Strongly recommended before your first flight.
+<a href="UI-Vega-Tab.html">Vega tab</a> → <strong>CALIBRATE AUDIO</strong>.</li>
+</ol>
+<hr>
+<h2>Conventions used everywhere</h2>
+<ul>
+<li><strong>The window remembers nothing you have not saved.</strong> Only the <em>Settings → AI Services</em> tab
+works on a draft: it shows an <strong>Unsaved changes</strong> hint and will stop you leaving the tab
+without deciding. Every other toggle and slider in the app writes through the moment you
+change it.</li>
+<li><strong>A separate draft model applies to bindings.</strong> Edits go into a draft first and are written
+to Elite Dangerous only when you press <strong>Apply to Game</strong>.</li>
+<li><strong>Language changes rebuild the window.</strong> Selecting a new language in <em>Settings → Common</em>
+re-renders every tab in that language immediately, and Vega announces the change.</li>
+<li><strong>Nine languages are supported:</strong> English, Spanish, French, German, Italian, Portuguese,
+Brazilian Portuguese, Ukrainian and Russian.</li>
+</ul>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

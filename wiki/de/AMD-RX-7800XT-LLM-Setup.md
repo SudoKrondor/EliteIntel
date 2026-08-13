@@ -77,10 +77,11 @@ sudo dnf install rocm-smi-devel
 
 | Modell | Benötigter VRAM | Hinweise |
 |---|---|---|
-| `tulu-3.1-8b-supernova` Q4_K_M | ~5 GB | ✅ Empfohlen für V1.0 |
-| `google/gemma-4-e4b` | ~6,3 GB | ✅ Empfohlen für V1.1 |
+| `google/gemma-4-e4b` | ~6,3 GB | ✅ Erforderlich |
 
-> **Welches Modell?** `tulu-3.1-8b-supernova` ist das empfohlene Modell für **V1.0**. **V1.1** wechselt zu `google/gemma-4-e4b`, das die für die neue Begleiter-Funktion erforderliche Function-Calling-Unterstützung bietet. Die folgenden Befehle verwenden das V1.1-Modell – ersetze es bei V1.0 durch `tulu-3.1-8b-supernova`.
+> **Warum dieses Modell?** Es unterstützt das Function Calling, das der Begleiter benötigt. Ein Modell, das keinen
+> Tool-Aufruf erzeugen kann, kann die App nicht steuern – ganz gleich, wie gut es formuliert.
+> Siehe [LLM auswählen](installing-local-llms).
 
 ### Schritt 3 – Ein Modell mit ROCm-Beschleunigung laden
 

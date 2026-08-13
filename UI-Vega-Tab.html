@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vega Tab  EliteIntel</title>
+    <meta name="description" content="leave open while you fly. It starts and stops the AI stack, shows what Vega heard and said,">
+    <link rel="canonical" href="https://www.elite-intel.org/UI-Vega-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Vega-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Vega-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Vega-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Vega-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Vega-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Vega-Tab.html">
+    <meta property="og:title" content="Vega Tab  EliteIntel">
+    <meta property="og:description" content="leave open while you fly. It starts and stops the AI stack, shows what Vega heard and said,">
+    <meta property="og:url" content="https://www.elite-intel.org/UI-Vega-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><span class="locale-current">EN</span><a href="fr/UI-Vega-Tab.html" class="locale-link">FR</a><a href="es/UI-Vega-Tab.html" class="locale-link">ES</a><a href="de/UI-Vega-Tab.html" class="locale-link">DE</a><a href="uk/UI-Vega-Tab.html" class="locale-link">UK</a><a href="ru/UI-Vega-Tab.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="images/elite-logo.png" class="inline" height="20" alt=""> Home</a>
+
+            <div class="nav-section">App</div>
+            <a href="Installation.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> User Interface</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub active"><img src="images/ai.png" class="inline" height="20" alt=""> Vega Tab</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="images/controller.png" class="inline" height="20" alt=""> Commander Tab</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Actions Tab</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Bindings Tab</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="images/settings.png" class="inline" height="20" alt=""> Settings Tab</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="images/stats.png" class="inline" height="20" alt=""> Stats Tab</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> HUD Overlay</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Choose your LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">How Do I…?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Search the Galaxy</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery &amp; ExoBiology</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Pirate Missions</a>
+            <a href="AllCommands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> All Commands &amp; Queries</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> System Commands</a>
+
+            <div class="nav-section">Community</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="images/communications.png" class="inline" height="20" alt=""> Matrix Chat ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Privacy Policy</a>
+            <a href="Contact.html" class="nav-link">📧 Contact Developer</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Vega Tab</h1>
+<p><img src="images/ai.png" class="inline" height="20" alt="Vega"> The default tab, and the one you
+leave open while you fly. It starts and stops the AI stack, shows what Vega heard and said,
+reports the health of every subsystem, and opens the in-game overlay.</p>
+<p><img src="images/ui-tab-vega.png" alt="Vega tab"></p>
+<p>The tab is laid out in four zones: the <strong>conversation</strong> and <strong>diagnostics</strong> logs down the left,
+<strong>Quick Status</strong> and <strong>Shortcuts</strong> in the right sidebar, and the <strong>System Summary</strong> telemetry
+strip along the bottom.</p>
+<hr>
+<h2>Conversation</h2>
+<p>Everything you said and everything Vega said back, in one stream. Your lines are aligned left,
+Vega&#39;s replies are aligned right, so a long session stays readable at a glance.</p>
+<h2>Diagnostics / System Messages</h2>
+<p>The technical log — service starts, calibration results, binding warnings, file operations. It
+is never spoken; it exists so you can see what the app is doing.</p>
+<p>Four buttons sit in the section header:</p>
+<table>
+<thead>
+<tr>
+<th>Button</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Copy</strong></td>
+<td>Copies the text you have selected in the log to the clipboard. Enabled only when there is a selection.</td>
+</tr>
+<tr>
+<td><strong>Save debug bundle</strong></td>
+<td>Writes a timestamped <code>.zip</code> containing the system log, the application log, your live journal file and your bindings. <strong>This is what to attach to a bug report.</strong></td>
+</tr>
+<tr>
+<td><strong>Dump Vega&#39;s memory</strong></td>
+<td>Writes a JSON snapshot of Vega&#39;s working memory for the current session. Only available while services are running.</td>
+</tr>
+<tr>
+<td><strong>Clear</strong></td>
+<td>Empties the diagnostics log and its export transcript.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Quick Status</h2>
+<p>Six live readouts. Each shows a state and a colour, so a glance tells you whether the stack is
+healthy.</p>
+<table>
+<thead>
+<tr>
+<th>Readout</th>
+<th>States</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>STT</strong></td>
+<td><code>Standby</code> (services stopped) · <code>Sleeping</code> (ignoring you) · <code>Listening</code></td>
+</tr>
+<tr>
+<td><strong>LLM</strong></td>
+<td><code>Standby</code> · <code>Offline</code> (could not connect) · or the name of the provider actually answering</td>
+</tr>
+<tr>
+<td><strong>TTS</strong></td>
+<td><code>Standby</code> · <code>Local</code> (Kokoro) · <code>Cloud</code> (Google)</td>
+</tr>
+<tr>
+<td><strong>Bindings</strong></td>
+<td><code>All OK</code>, or <code>N missing</code></td>
+</tr>
+<tr>
+<td><strong>Commands</strong></td>
+<td>How many custom commands are loaded</td>
+</tr>
+<tr>
+<td><strong>Keymap</strong></td>
+<td><code>In sync</code> with the game, or <code>Modified</code> — you have an unapplied bindings draft</td>
+</tr>
+</tbody></table>
+<p>The <strong>LLM</strong> readout is worth watching. It does not report what you <em>configured</em>, it reports
+which provider actually answered the last request.</p>
+<hr>
+<h2>Shortcuts</h2>
+<table>
+<thead>
+<tr>
+<th>Button</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>START / STOP SERVICES</strong></td>
+<td>Toggles the whole AI stack. The button disables itself while starting or stopping so it cannot be double-fired.</td>
+</tr>
+<tr>
+<td><strong>SLEEP / WAKE UP</strong></td>
+<td>In <em>wake</em> mode Vega listens continuously. In <em>sleep</em> mode it ignores you unless you use the <code>listen</code> bypass word or say <code>Wake up!</code>. Disabled while push-to-talk is active — in PTT mode the button <em>is</em> the gate.</td>
+</tr>
+<tr>
+<td><strong>DISPLAY / HIDE OVERLAY</strong></td>
+<td>Shows the always-on-top <a href="UI-HUD-Overlay.html">HUD overlay</a>. If the overlay binary is missing the button stays honest and reports the failure in the log rather than claiming an overlay that is not there.</td>
+</tr>
+<tr>
+<td><strong>OVERLAY SETUP</strong></td>
+<td>Opens <a href="UI-HUD-Overlay.html">HUD overlay settings</a> — transparency, text size, and where it is drawn (monitor, VR headset, both).</td>
+</tr>
+<tr>
+<td><strong>Audio Devices</strong></td>
+<td>Opens the Audio Interface dialog to pick your microphone and speaker. Changes take effect on the next service start.</td>
+</tr>
+<tr>
+<td><strong>CALIBRATE AUDIO</strong></td>
+<td>Measures your noise floor and speech level and sets the audio gate. Available only while services are running. Run this once before your first flight, and again if you change microphone or room.</td>
+</tr>
+<tr>
+<td><strong>Update</strong></td>
+<td>Appears when a new release is available.</td>
+</tr>
+</tbody></table>
+<p>Between the two button groups sits the <strong>commander block</strong> — your name, your ship, the clock,
+and your live credit balance.</p>
+<hr>
+<h2>System Summary</h2>
+<p>A six-block telemetry strip along the bottom of the tab:</p>
+<table>
+<thead>
+<tr>
+<th>Block</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>LLM Model</strong></td>
+<td>The model that served the most recent request</td>
+</tr>
+<tr>
+<td><strong>Session Time</strong></td>
+<td>Time since services started</td>
+</tr>
+<tr>
+<td><strong>Tokens Used</strong></td>
+<td>Prompt + completion + cached, for the session</td>
+</tr>
+<tr>
+<td><strong>Tokens / Hour</strong></td>
+<td>A projected rate. Stays blank for the first 10 minutes while it collects data</td>
+</tr>
+<tr>
+<td><strong>Cache Saved</strong></td>
+<td>Tokens served from cache. <code>0</code> is shown deliberately — it is information, not missing data</td>
+</tr>
+<tr>
+<td><strong>Last Speed</strong></td>
+<td>Tokens per second on the last response</td>
+</tr>
+</tbody></table>
+<p>For the full breakdown, see the <a href="UI-Stats-Tab.html">Stats tab</a>.</p>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

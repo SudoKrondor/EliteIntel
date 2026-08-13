@@ -1,7 +1,6 @@
-### La version publiée est V1.0, différente de ce que vous voyez sur les captures d'écran.
+# Installation
 
-### Si vous souhaitez la version V1.1, rejoignez l'équipe de bêta-test. 
-### 👉[**Rejoindre l'équipe de bêta-test V1.1 ici**](https://matrix.to/#/#krondor:matrix.org)👈
+Elite Intel **V1.1** est la version actuelle.
 
 ---
 
@@ -9,18 +8,26 @@
 
 1. Téléchargez le [👉**programme d'installation**👈](https://github.com/stone-alex/EliteIntel/releases).
 2. Exécutez le programme d'installation et suivez les instructions à l'écran.
-3. Configurez un LLM. Deux options sont disponibles :
-   - **LLM local** (gratuit, hors ligne) : Consultez le [**guide LLM local**](installing-local-llms). Nécessite un GPU capable.
-   - **LLM cloud** (a une option gratuite et est plus facile à configurer) : Consultez le guide [**Configurer l'application**](UI-and-Configuration-Options) pour la configuration de la clé API.
+3. Configurer un modèle de langage. Deux options :
+   - **LLM local** (gratuit, hors ligne) : voir le [**guide LLM local**](installing-local-llms).
+     Nécessite un GPU performant.
+   - **LLM cloud** (dispose d'un palier gratuit et se configure plus facilement) : voir
+     [**Options de LLM cloud**](cloud-llm-options) pour obtenir une clé API, puis saisissez-la dans
+     [**Paramètres → Services IA**](UI-Settings-Tab).
 
----
+Configuration terminée. Ensuite : [**l'interface, onglet par onglet**](UI).
 
+### Liste de vérification au premier lancement
 
-3. Configurez un LLM. Deux options sont disponibles :
-   - **LLM local** (gratuit, hors ligne) : Consultez le [**guide LLM local**](installing-local-llms). Nécessite un GPU capable.
-   - **LLM cloud** (plus facile à configurer) : Consultez le guide [**Configurer l'application**](UI-and-Configuration-Options) pour la configuration de la clé API.
+Elite Intel énonce ces avertissements à voix haute au démarrage des services : vous serez donc
+informé de tout ce qui manque — mais autant le faire d'emblée :
 
-Installation terminée. Consultez [**Configurer l'application**](Configuration) pour les étapes suivantes.
+| Étape | Où |
+|------|-------|
+| Le pointer vers un modèle de langage | [Paramètres → Services IA](UI-Settings-Tab) |
+| Vérifier le dossier du journal | [Paramètres → Général](UI-Settings-Tab) |
+| Vérifier le dossier des assignations et corriger les manquantes | [Onglet Bindings](UI-Bindings-Tab) |
+| Calibrer l'audio | [Onglet Vega](UI-Vega-Tab) → **CALIBRER L'AUDIO** |
 
 ---
 

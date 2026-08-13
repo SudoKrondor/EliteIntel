@@ -11,8 +11,14 @@ link_contact: 📧 Entwickler kontaktieren
 
 Home: Startseite
 Installation: Installation
-Configuration: Konfiguration
-Options: Optionen
+UI: Benutzeroberfläche
+UI-Vega-Tab: Reiter Vega
+UI-Commander-Tab: Reiter Kommandant
+UI-Actions-Tab: Reiter Aktionen
+UI-Bindings-Tab: Reiter Bindings
+UI-Settings-Tab: Reiter Einstellungen
+UI-Stats-Tab: Reiter Statistik
+UI-HUD-Overlay: HUD-Overlay
 installing-local-llms: LLM auswählen
 Install-Ollama-Local-LLM-Linux: Ollama  Linux
 Install-Ollama-Local-LLM-Windows: Ollama  Windows

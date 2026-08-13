@@ -1,7 +1,6 @@
-### La versión publicada es V1.0 y difiere de lo que ves en las capturas de pantalla.
+# Instalación
 
-### Si quieres la versión V1.1, únete al equipo de pruebas beta.
-### 👉[**Únete al equipo de pruebas beta V1.1 aquí**](https://matrix.to/#/#krondor:matrix.org)👈
+Elite Intel **V1.1** es la versión actual.
 
 ---
 
@@ -9,18 +8,26 @@
 
 1. Descarga el [👉**instalador**👈](https://github.com/stone-alex/EliteIntel/releases).
 2. Ejecuta el instalador y sigue las instrucciones en pantalla.
-3. Configura un LLM. Hay dos opciones disponibles:
-   - **LLM local** (gratuito, sin conexión): Consulta la [**guía de LLM local**](installing-local-llms). Requiere hardware de GPU adecuado.
-   - **LLM en la nube** (tiene una opción gratuita y es más fácil de configurar): Consulta la guía [**Configurar la app**](UI-and-Configuration-Options) para la configuración de claves API.
+3. Configurar un modelo de lenguaje. Dos opciones:
+   - **LLM local** (gratis, sin conexión): consulta la [**guía de LLM local**](installing-local-llms).
+     Requiere hardware de GPU capaz.
+   - **LLM en la nube** (tiene plan gratuito y es más fácil de configurar): consulta
+     [**Opciones de LLM en la nube**](cloud-llm-options) para obtener una clave API, y después
+     introdúcela en [**Ajustes → Servicios de IA**](UI-Settings-Tab).
 
----
+Configuración completada. Siguiente: [**la interfaz, pestaña a pestaña**](UI).
 
+### Lista de comprobación del primer arranque
 
-3. Configura un LLM. Hay dos opciones disponibles:
-   - **LLM local** (gratuito, sin conexión): Consulta la [**guía de LLM local**](installing-local-llms). Requiere hardware de GPU adecuado.
-   - **LLM en la nube** (más fácil de configurar): Consulta la guía [**Configurar la app**](UI-and-Configuration-Options) para la configuración de claves API.
+Elite Intel dice estos avisos en voz alta al arrancar los servicios, así que te enterarás de
+cualquier cosa que falte, pero conviene hacerlos de antemano:
 
-Instalación completa. Consulta [**Configurar la app**](Configuration) para los próximos pasos.
+| Paso | Dónde |
+|------|-------|
+| Apuntarlo a un modelo de lenguaje | [Ajustes → Servicios de IA](UI-Settings-Tab) |
+| Comprobar la carpeta del diario | [Ajustes → General](UI-Settings-Tab) |
+| Comprobar la carpeta de asignaciones y corregir las que falten | [Pestaña Bindings](UI-Bindings-Tab) |
+| Calibrar el audio | [Pestaña Vega](UI-Vega-Tab) → **CALIBRAR AUDIO** |
 
 ---
 

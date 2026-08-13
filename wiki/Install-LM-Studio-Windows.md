@@ -20,10 +20,10 @@ To run Elite Dangerous and the LLM on the **same machine**, a minimum of an **NV
 
 | Model | VRAM Required  | Notes                  |
 |---|----------------|------------------------|
-| `tulu-3.1-8b-supernova` Q4_K_M | ~5 GB          | ✅ Recommended for V1.0 |
-| `google/gemma-4-e4b` | ~6.3 GB        | ✅ Recommended for V1.1 |
+| `google/gemma-4-e4b` | ~6.3 GB        | ✅ Required |
 
-> **Which model?** `tulu-3.1-8b-supernova` is the recommended model for **V1.0**. **V1.1** switches to `google/gemma-4-e4b`, which supports the function calling required by the new companion feature. The commands below use the V1.1 model — on V1.0, substitute `tulu-3.1-8b-supernova`.
+> **Why this one?** It supports the function calling the companion needs. A model that cannot emit
+> a tool call cannot drive the app, however well it writes. See [Choose your LLM](installing-local-llms).
 
 ---
 
@@ -55,24 +55,12 @@ lms --help
 
 ### Step 2 - Download the Model
 
-For **V1.1**, download `google/gemma-4-e4b`:
-
 ```powershell
 lms get google/gemma-4-e4b
 ```
 
-For **V1.0**, download `tulu-3.1-8b-supernova`:
-
-```powershell
-lms get matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
-```
-
-or
-
-```powershell
-lms get Tulu-3.1
-```
-and choose the `matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF` variant (may be listed as `Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF`).
+If the name does not resolve to an exact match, `lms get` lists the candidates it found and you
+pick one with the arrow keys and Enter.
 
 To list downloaded models:
 

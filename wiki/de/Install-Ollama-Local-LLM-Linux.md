@@ -18,12 +18,13 @@ Um Elite Dangerous und das LLM auf **demselben Rechner** zu betreiben, ist minde
 
 | Modell | Benötigter VRAM | Hinweise |
 |---|---|---|
-| `tulu-3.1-8b-supernova` Q4_K_M | ~5 GB | ✅ Empfohlen für V1.0 |
-| `google/gemma-4-e4b` | ~6,3 GB | ✅ Empfohlen für V1.1 |
+| `google/gemma-4-e4b` | ~6,3 GB | ✅ Erforderlich |
 
-> **Welches Modell?** `tulu-3.1-8b-supernova` ist das empfohlene Modell für **V1.0**. **V1.1** wechselt zu `google/gemma-4-e4b`, das die für die neue Begleiter-Funktion erforderliche Function-Calling-Unterstützung bietet. Die folgenden Befehle verwenden das V1.1-Modell – ersetze es bei V1.0 durch `tulu-3.1-8b-supernova`.
+> **Warum dieses Modell?** Es unterstützt das Function Calling, das der Begleiter benötigt. Ein Modell, das keinen
+> Tool-Aufruf erzeugen kann, kann die App nicht steuern – ganz gleich, wie gut es formuliert.
+> Siehe [LLM auswählen](installing-local-llms).
 
-> **Hinweis:** Für die schnellste lokale Inferenz empfiehlt sich [LM Studio](Install-LM-Studio-Linux) mit `matrixportalx/tulu-3.1-8b-supernova`. In Tests war es auf derselben Hardware mit demselben Modell deutlich schneller als Ollama.
+> **Hinweis:** Für die schnellste lokale Inferenz empfiehlt sich [LM Studio](Install-LM-Studio-Linux). In Tests war es auf derselben Hardware mit demselben Modell deutlich schneller als Ollama.
 
 ---
 
@@ -39,16 +40,8 @@ Ollama installiert sich als systemd-Dienst und startet automatisch.
 
 ### Schritt 2 – Ein empfohlenes Modell herunterladen
 
-Für **V1.1** lade `google/gemma-4-e4b` herunter:
-
 ```shell
 ollama pull google/gemma-4-e4b
-```
-
-Für **V1.0** lade `tulu-3.1-8b-supernova` herunter:
-
-```shell
-ollama pull hf.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
 ```
 
 ---

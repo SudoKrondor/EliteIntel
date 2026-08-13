@@ -18,12 +18,12 @@ To run Elite Dangerous and the LLM on the **same machine**, a minimum of an **NV
 
 | Model | VRAM Required  | Notes                  |
 |---|----------------|------------------------|
-| `tulu-3.1-8b-supernova` Q4_K_M | ~5 GB          | ✅ Recommended for V1.0 |
-| `google/gemma-4-e4b` | ~6.3 GB        | ✅ Recommended for V1.1 |
+| `google/gemma-4-e4b` | ~6.3 GB        | ✅ Required |
 
-> **Which model?** `tulu-3.1-8b-supernova` is the recommended model for **V1.0**. **V1.1** switches to `google/gemma-4-e4b`, which supports the function calling required by the new companion feature. The commands below use the V1.1 model — on V1.0, substitute `tulu-3.1-8b-supernova`.
+> **Why this one?** It supports the function calling the companion needs. A model that cannot emit
+> a tool call cannot drive the app, however well it writes. See [Choose your LLM](installing-local-llms).
 
-> **Note:** For the fastest local inference, consider [LM Studio](Install-LM-Studio-Windows) with `matrixportalx/tulu-3.1-8b-supernova`. In testing, it is noticeably faster than Ollama on the same hardware with the same model.
+> **Note:** For the fastest local inference, consider [LM Studio](Install-LM-Studio-Windows). In testing, it is noticeably faster than Ollama on the same hardware with the same model.
 
 ---
 
@@ -39,16 +39,8 @@ To run Elite Dangerous and the LLM on the **same machine**, a minimum of an **NV
 
 Open **Command Prompt** or **PowerShell** and run:
 
-For **V1.1**, pull `google/gemma-4-e4b`:
-
 ```shell
 ollama pull google/gemma-4-e4b
-```
-
-For **V1.0**, pull `tulu-3.1-8b-supernova`:
-
-```shell
-ollama pull tulu3:8b
 ```
 
 ---

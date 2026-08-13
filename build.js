@@ -152,11 +152,15 @@ function esc(s) {
 
 /* ── locale switcher ─────────────────────────────────────── */
 
-function buildLocaleSwitcher(currentCode, page, assetBase) {
+function buildLocaleSwitcher(currentCode, page, assetBase, availability) {
     const pageFile = page === 'Home' ? 'index.html' : `${page}.html`;
     return LOCALES.map(loc => {
         if (loc.code === currentCode) {
             return `<span class="locale-current">${loc.label}</span>`;
+        }
+        // Not translated yet: show the code, unlinked, rather than a link into a 404.
+        if (availability && !availability.get(loc.code)?.has(page)) {
+            return `<span class="locale-link locale-missing">${loc.label}</span>`;
         }
         // For English (root), link is just pageFile; for others it's ../fr/pageFile etc.
         // But we're generating relative links from the current page's directory.
@@ -179,9 +183,9 @@ function buildLocaleSwitcher(currentCode, page, assetBase) {
 
 /* ── hreflang link tags ──────────────────────────────────── */
 
-function buildHreflangTags(page) {
+function buildHreflangTags(page, availability) {
     const pageFile = page === 'Home' ? 'index.html' : `${page}.html`;
-    return LOCALES.map(loc => {
+    return LOCALES.filter(loc => !availability || availability.get(loc.code)?.has(page)).map(loc => {
         const url = loc.code === 'en'
             ? (page === 'Home' ? `${DOMAIN}/` : `${DOMAIN}/${pageFile}`)
             : (page === 'Home' ? `${loc.urlBase}` : `${loc.urlBase}${pageFile}`);
@@ -202,8 +206,14 @@ const DEFAULT_NAV = {
     link_contact:                      '📧 Contact Developer',
     Home:                              'Home',
     Installation:                      'Installation',
-    Configuration:                     'Configuration',
-    Options:                           'Options',
+    UI:                                'User Interface',
+    'UI-Vega-Tab':                     'Vega Tab',
+    'UI-Commander-Tab':                'Commander Tab',
+    'UI-Actions-Tab':                  'Actions Tab',
+    'UI-Bindings-Tab':                 'Bindings Tab',
+    'UI-Settings-Tab':                 'Settings Tab',
+    'UI-Stats-Tab':                    'Stats Tab',
+    'UI-HUD-Overlay':                  'HUD Overlay',
     'installing-local-llms':           'Choose your LLM',
     'Install-Ollama-Local-LLM-Linux':  'Ollama  Linux',
     'Install-Ollama-Local-LLM-Windows':'Ollama  Windows',
@@ -219,6 +229,15 @@ const DEFAULT_NAV = {
     AllCommands:                       'All Commands & Queries',
     'Obscure-System-Commands':         'System Commands',
 };
+
+// Which page slugs a wiki dir actually holds. Used so the locale switcher and hreflang tags
+// only ever point at pages that exist - locales translate at their own pace.
+function pageSetFor(wikiDir) {
+    if (!fs.existsSync(wikiDir)) return new Set();
+    return new Set(fs.readdirSync(wikiDir)
+        .filter(f => f.endsWith('.md') && !SKIP.has(path.basename(f, '.md')))
+        .map(f => path.basename(f, '.md')));
+}
 
 // Read _Nav.md from a wiki dir: lines of "key: value", # lines ignored
 function loadNavLabels(wikiDir) {
@@ -253,11 +272,14 @@ function buildTitleMap(wikiDir) {
 
 /* ── sidebar ─────────────────────────────────────────────── */
 
-function buildSidebar(activePage, assetBase, nav, titleMap) {
+function buildSidebar(activePage, assetBase, nav, titleMap, localePages) {
     const lbl = page => nav[page] || titleMap[page] || page.replace(/-/g, ' ');
     const img = (src, alt) => `<img src="${assetBase}images/${src}" class="inline" height="20" alt="${alt}">`;
     const lnk = (page, icon, extra = '') => {
-        const href   = page === 'Home' ? 'index.html' : `${page}.html`;
+        const file   = page === 'Home' ? 'index.html' : `${page}.html`;
+        // A page not yet translated for this locale falls back to the English (root) version,
+        // so the nav degrades to "English page" instead of a 404 while translations catch up.
+        const href   = (localePages && !localePages.has(page)) ? `${assetBase}${file}` : file;
         const active = page === activePage ? ' active' : '';
         const text   = (icon ? img(icon, '') + ' ' : '') + esc(lbl(page));
         return `<a href="${href}" class="nav-link${extra}${active}">${text}</a>`;
@@ -269,8 +291,14 @@ function buildSidebar(activePage, assetBase, nav, titleMap) {
 
             ${sec('section_app')}
             ${lnk('Installation',  'release.png')}
-            ${lnk('Configuration', 'settings.png')}
-            ${lnk('Options',       'microchip-ai.png')}
+            ${lnk('UI',                'microchip-ai.png')}
+            ${lnk('UI-Vega-Tab',       'ai.png',          ' nav-sub')}
+            ${lnk('UI-Commander-Tab',  'controller.png',  ' nav-sub')}
+            ${lnk('UI-Actions-Tab',    'keys-binding.png',' nav-sub')}
+            ${lnk('UI-Bindings-Tab',   'keys-binding.png',' nav-sub')}
+            ${lnk('UI-Settings-Tab',   'settings.png',    ' nav-sub')}
+            ${lnk('UI-Stats-Tab',      'stats.png',       ' nav-sub')}
+            ${lnk('UI-HUD-Overlay',    'microchip-ai.png',' nav-sub')}
 
             ${sec('section_wiki')}
             ${lnk('installing-local-llms',            'microchip-ai.png')}
@@ -301,10 +329,10 @@ function buildSidebar(activePage, assetBase, nav, titleMap) {
 
 /* ── HTML template ───────────────────────────────────────── */
 
-function renderPage({ title, description, canonical, body, activePage, locale, page, nav, titleMap }) {
+function renderPage({ title, description, canonical, body, activePage, locale, page, nav, titleMap, localePages, availability }) {
     const { code, assetBase } = locale;
-    const localeSwitcher = buildLocaleSwitcher(code, page, assetBase);
-    const hreflangTags   = buildHreflangTags(page);
+    const localeSwitcher = buildLocaleSwitcher(code, page, assetBase, availability);
+    const hreflangTags   = buildHreflangTags(page, availability);
     return `<!DOCTYPE html>
 <html lang="${locale.hreflang}">
 <head>
@@ -334,8 +362,8 @@ ${hreflangTags}
     <nav class="header-actions">
         <img src="${assetBase}images/windows.png" alt="Windows" class="os-icon" title="Windows">
         <img src="${assetBase}images/linux.png" alt="Linux" class="os-icon" title="Linux">
-        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
-        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
         <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
         <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
         <div class="locale-switcher">${localeSwitcher}</div>
@@ -347,7 +375,7 @@ ${hreflangTags}
 <div class="layout">
     <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
         <nav class="wiki-nav">
-${buildSidebar(activePage, assetBase, nav, titleMap)}
+${buildSidebar(activePage, assetBase, nav, titleMap, localePages)}
         </nav>
     </aside>
     <main class="content" id="content" role="main">
@@ -380,8 +408,10 @@ function buildSitemap(allPages) {
         const alts = localeUrls.map(({ hreflang, url }) =>
             `    <xhtml:link rel="alternate" hreflang="${hreflang}" href="${url}"/>`
         ).join('\n');
-        // Primary URL is English
-        const primaryUrl = localeUrls.find(l => l.hreflang === 'en').url;
+        // Primary URL is English; a page that exists only in some locales (mid-translation) uses
+        // whichever locale does have it rather than failing the whole build.
+        const primary = localeUrls.find(l => l.hreflang === 'en') || localeUrls[0];
+        const primaryUrl = primary.url;
         return `  <url>\n    <loc>${primaryUrl}</loc>\n${alts}\n  </url>`;
     }).join('\n');
 
@@ -410,7 +440,7 @@ function cleanOutputs() {
 
 /* ── build one locale ────────────────────────────────────── */
 
-async function buildLocale(locale, marked, sitemapIndex) {
+async function buildLocale(locale, marked, sitemapIndex, availability) {
     const { code, wikiDir, outDir, urlBase, assetBase } = locale;
 
     if (!fs.existsSync(wikiDir)) {
@@ -423,6 +453,8 @@ async function buildLocale(locale, marked, sitemapIndex) {
 
     const mdFiles = fs.readdirSync(wikiDir)
         .filter(f => f.endsWith('.md') && !SKIP.has(path.basename(f, '.md')));
+    // Which pages this locale actually has, so the sidebar can fall back to English for the rest.
+    const localePages = new Set(mdFiles.map(f => path.basename(f, '.md')));
 
     for (const file of mdFiles) {
         const page   = path.basename(file, '.md');
@@ -439,7 +471,7 @@ async function buildLocale(locale, marked, sitemapIndex) {
         let body = marked.parse(md);
         body = postprocessHtml(body, assetBase);
 
-        const html = renderPage({ title, description, canonical, body, activePage: page, locale, page, nav, titleMap });
+        const html = renderPage({ title, description, canonical, body, activePage: page, locale, page, nav, titleMap, localePages, availability });
         fs.writeFileSync(path.join(outDir, outFile), html, 'utf8');
 
         // Track for sitemap
@@ -462,8 +494,12 @@ async function main() {
     // page → [{hreflang, url}]
     const sitemapIndex = new Map();
 
+    // What each locale has, computed before any page is rendered: the locale switcher on page X
+    // needs to know about every other locale's copy of X.
+    const availability = new Map(LOCALES.map(loc => [loc.code, pageSetFor(loc.wikiDir)]));
+
     for (const locale of LOCALES) {
-        await buildLocale(locale, marked, sitemapIndex);
+        await buildLocale(locale, marked, sitemapIndex, availability);
     }
 
     // Build sitemap

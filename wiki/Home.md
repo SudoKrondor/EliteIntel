@@ -1,9 +1,9 @@
 # Elite Intel
 ## AI Voice Assistant for Elite Dangerous
 
-| V1.0                               | V1.1                               |
-|------------------------------------|------------------------------------|
-| ![EliteIntel app](images/v1.0.png) | ![EliteIntel app](images/v1.1.png) |
+
+
+![EliteIntel app](images/v1.1.png)
 
 
 ## Speak Naturally. Fly Better.
@@ -12,7 +12,7 @@ Elite Intel connects your voice to your ship. No command lists to memorize, no r
 
 Data is sourced in real time from [Spansh](https://spansh.co.uk/) and [EDSM](https://www.edsm.net/).
 
-**Supported languages:** English, Spanish, French, Ukrainian, German, Russian
+**Supported languages:** English, Spanish, French, German, Italian, Portuguese, Brazilian Portuguese, Ukrainian, Russian
 
 ---
 
@@ -42,9 +42,11 @@ If you have used voice recognition software with Elite Dangerous before, expect 
 
 ## A Voice That Fits the Cockpit
 
-**Kokoro TTS** is built in and works out of the box. No downloads, no API keys, no configuration. It provides 53 voices across English, Spanish, and French, and supports the full personality system.
+**Kokoro TTS** is built in and works out of the box. No downloads, no API keys, no configuration. It provides 53 voices covering English, Spanish, French, Italian and Portuguese, and supports the full personality system.
 
-For all other supported languages, **Google TTS** delivers natural-sounding speech in every language Elite Intel supports. An API key is required and can be configured under Settings / Cloud Services.
+For German, Ukrainian and Russian, **Google TTS** delivers natural-sounding speech in every language Elite Intel supports. An API key is required and is configured under [Settings → AI Services](UI-Settings-Tab).
+
+Each ship in your fleet gets its own voice and personality — see the [Commander tab](UI-Commander-Tab).
 
 ---
 
