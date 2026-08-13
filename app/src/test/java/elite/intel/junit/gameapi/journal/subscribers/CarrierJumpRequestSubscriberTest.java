@@ -118,7 +118,15 @@ class CarrierJumpRequestSubscriberTest {
 
     /**
      * Captures what the subscriber hands the companion, across the subscriber's virtual thread.
+     *
+     * <p>Only departure narrations, because the narrator is installed process-wide and every
+     * subscriber resolves it at {@code narrate()} time, not when it started work. A carrier arrival
+     * whose virtual thread outlived its own test therefore lands here, and taking the first
+     * narration that arrives meant asserting against another test's payload - which is exactly how
+     * this test came to fail on a "Carrier Location: Colonia" line it never triggered.
      */
+    private static final String DEPARTURE_INSTRUCTION_PREFIX = "Report the carrier departure";
+
     private static final class CapturingNarrator implements CompanionNarrator {
         private final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
         volatile String data;
@@ -130,6 +138,9 @@ class CarrierJumpRequestSubscriberTest {
 
         @Override
         public void narrate(String data, String instructions) {
+            // Both branches of the subscriber open with this, so a regression that drops the
+            // destination still arrives and still fails the assertion that guards it.
+            if (instructions == null || !instructions.startsWith(DEPARTURE_INSTRUCTION_PREFIX)) return;
             this.data = data;
             this.instructions = instructions;
             latch.countDown();

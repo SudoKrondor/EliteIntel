@@ -85,7 +85,12 @@ class CarrierLocationSubscriberTest {
 
         subscriber.onCarrierLocationEvent(carrierLocationEvent("Deciat", "FleetCarrier", 3803463824L));
 
-        awaitTrue(() -> session.getFleetCarrierData().getFuelLevel() == 380);
+        // Both postconditions, because the subscriber burns the fuel and only then drops the leg:
+        // waiting on the fuel alone returns mid-way through the arrival and asserts the leg removal
+        // before anything has had a chance to remove it. That passes on a fast machine and fails on
+        // a loaded CI runner.
+        awaitTrue(() -> session.getFleetCarrierData().getFuelLevel() == 380
+                && route.findByPrimaryStar("Deciat") == null);
 
         assertEquals(380, session.getFleetCarrierData().getFuelLevel(), "the arrival leg's tritium must be burned");
         assertNull(route.findByPrimaryStar("Deciat"), "the system we are sitting in is never part of the route");
