@@ -18,7 +18,7 @@ public interface GameSessionDao {
             INSERT OR REPLACE INTO game_session (id, kokoroVoice, googleVoice,
                                                              privacyModeOn, rmsThresholdHigh,
                                                              rmsThresholdLow, encryptedLLMKey, encryptedTTSKey,
-                                                             speechSpeed,
+                                                             speechSpeed, googleWaveNetPitch,
                                                              useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, notificationVolume, sttThreads, voiceVolume,
                                                              localLlmProvider,
                                                              ollamaAddress, ollamaCommandModel,
@@ -34,7 +34,7 @@ public interface GameSessionDao {
                                   VALUES (1, :kokoroVoice, :googleVoice,
                                                       :privacyModeOn, :rmsThresholdHigh,
                                                       :rmsThresholdLow, :encryptedLLMKey, :encryptedTTSKey,
-                                                      :speechSpeed,
+                                                      :speechSpeed, :googleWaveNetPitch,
                                                       :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :notificationVolume, :sttThreads, :voiceVolume,
                                                       :localLlmProvider,
                                                       :ollamaAddress, :ollamaCommandModel,
@@ -69,6 +69,7 @@ public interface GameSessionDao {
             session.setRmsThresholdLow(rs.getDouble("rmsThresholdLow"));
 
             session.setSpeechSpeed(rs.getFloat("speechSpeed"));
+            session.setGoogleWaveNetPitch(rs.getInt("googleWaveNetPitch"));
 
             session.setUseLocalCommandLlm(rs.getBoolean("useLocalCommandLlm"));
             session.setUseLocalQueryLlm(rs.getBoolean("useLocalQueryLlm"));
@@ -113,6 +114,7 @@ public interface GameSessionDao {
         private Double rmsThresholdLow = 100.00;
 
         private Float speechSpeed;
+        private int googleWaveNetPitch;
         private Float notificationVolume;
         private boolean useLocalCommandLlm;
         private boolean useLocalQueryLlm;
@@ -214,6 +216,14 @@ public interface GameSessionDao {
 
         public void setSpeechSpeed(Float speechSpeed) {
             this.speechSpeed = speechSpeed;
+        }
+
+        public int getGoogleWaveNetPitch() {
+            return googleWaveNetPitch;
+        }
+
+        public void setGoogleWaveNetPitch(int googleWaveNetPitch) {
+            this.googleWaveNetPitch = googleWaveNetPitch;
         }
 
         public boolean isUseLocalCommandLlm() {

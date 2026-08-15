@@ -493,10 +493,8 @@ public class GoogleTTSImpl implements MouthInterface {
             long apiStartTime = System.currentTimeMillis();
             // Legacy Chirp-HD rejects SSML; compatible voices retain punctuation-aware SSML pauses.
             SynthesisInput input = GoogleSynthesisInputFactory.create(text, voice);
-            AudioConfig config = AudioConfig.newBuilder()
-                    .setAudioEncoding(AudioEncoding.LINEAR16)
-                    .setSpeakingRate(request.speechRate())
-                    .build();
+            AudioConfig config = createAudioConfig(
+                    voice, request.speechRate(), systemSession.getGoogleWaveNetPitch());
             SynthesizeSpeechResponse response = textToSpeechClient.synthesizeSpeech(input, voice, config);
             long apiEndTime = System.currentTimeMillis();
             log.debug("Google TTS API call completed in {}ms", apiEndTime - apiStartTime);
@@ -558,6 +556,16 @@ public class GoogleTTSImpl implements MouthInterface {
                 }
             }
         }
+    }
+
+    static AudioConfig createAudioConfig(VoiceSelectionParams voice, double speechRate, int waveNetPitch) {
+        AudioConfig.Builder config = AudioConfig.newBuilder()
+                .setAudioEncoding(AudioEncoding.LINEAR16)
+                .setSpeakingRate(speechRate);
+        if (voice.getName().contains("-Wavenet-") && waveNetPitch != 0) {
+            config.setPitch(waveNetPitch);
+        }
+        return config.build();
     }
 
     private boolean vocalize(VocalizationRequest request) {

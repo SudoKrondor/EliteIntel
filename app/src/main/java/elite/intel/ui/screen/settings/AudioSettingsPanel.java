@@ -29,6 +29,7 @@ public class AudioSettingsPanel extends JPanel {
     private HudSlider voiceVolumeSlider;
     private HudSlider beepVolumeSlider;
     private HudSlider speechSpeedSlider;
+    private HudSlider googleWaveNetPitchSlider;
     private HudSlider sttThreadsSlider;
 
     private HudComboBox<String> inputCombo;
@@ -196,7 +197,7 @@ public class AudioSettingsPanel extends JPanel {
         return section;
     }
 
-    /** AUDIO LEVELS: four full-width HUD sliders stacked in one column, plus the local-TTS toggle. */
+    /** AUDIO LEVELS: five full-width HUD sliders stacked in one column. */
     private HudSection buildLevelsSection() {
         HudSection section = HudSection.flat(getText("settings.audio.section.levels"), new GridBagLayout());
         JPanel grid = section.body();
@@ -210,13 +211,21 @@ public class AudioSettingsPanel extends JPanel {
         speechSpeedSlider.addChangeListener(e -> UiBus.publish(new SpeechSpeedChangeEvent(speechSpeedSlider.getValue() / 100f)));
         addLevelRow(grid, ag, 1, getText("settings.audio.ttsVoiceSpeed"), speechSpeedSlider);
 
+        googleWaveNetPitchSlider = makeSlider(
+                SystemSession.GOOGLE_WAVENET_PITCH_MIN,
+                SystemSession.GOOGLE_WAVENET_PITCH_MAX,
+                systemSession.getGoogleWaveNetPitch());
+        googleWaveNetPitchSlider.addChangeListener(e ->
+                systemSession.setGoogleWaveNetPitch(googleWaveNetPitchSlider.getValue()));
+        addLevelRow(grid, ag, 2, getText("settings.audio.googleWaveNetPitch"), googleWaveNetPitchSlider);
+
         beepVolumeSlider = makeSlider(0, 100, (int) (systemSession.getBeepVolume() * 100));
         beepVolumeSlider.addChangeListener(e -> UiBus.publish(new NotificationVolumeChangedEvent(beepVolumeSlider.getValue() / 100f)));
-        addLevelRow(grid, ag, 2, getText("settings.audio.beepVolume"), beepVolumeSlider);
+        addLevelRow(grid, ag, 3, getText("settings.audio.beepVolume"), beepVolumeSlider);
 
         sttThreadsSlider = makeSlider(4, 11, systemSession.getSttThreads());
         sttThreadsSlider.addChangeListener(e -> UiBus.publish(new SttThreadsChangedEvent(sttThreadsSlider.getValue())));
-        addLevelRow(grid, ag, 3, getText("settings.audio.sttThreads"), sttThreadsSlider);
+        addLevelRow(grid, ag, 4, getText("settings.audio.sttThreads"), sttThreadsSlider);
 
         return section;
     }

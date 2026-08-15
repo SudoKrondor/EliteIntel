@@ -7,8 +7,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -72,6 +74,58 @@ class GoogleVoiceProviderTest {
     }
 
     @Test
+    void waveNetVoicesUseTheirExactBritishProviderMappings() {
+        SystemSession.getInstance().setLanguage(Language.EN);
+        GoogleVoiceProvider provider = GoogleVoiceProvider.getInstance();
+
+        assertVoice(provider.getVoiceParams("WAVENET_F"), "en-GB", "en-GB-Wavenet-F");
+        assertVoice(provider.getVoiceParams("WAVENET_N"), "en-GB", "en-GB-Wavenet-N");
+    }
+
+    @Test
+    void waveNetVoicesAreFemaleShipVoices() {
+        assertFalse(GoogleVoices.WAVENET_F.isMale());
+        assertFalse(GoogleVoices.WAVENET_N.isMale());
+        assertEquals(GoogleVoices.WAVENET_F, GoogleVoices.femaleOrDefault("WAVENET_F"));
+        assertEquals(GoogleVoices.WAVENET_N, GoogleVoices.femaleOrDefault("WAVENET_N"));
+    }
+
+    @Test
+    void waveNetVoicesUseTheSafeFemaleFallbackOutsideEnglish() {
+        SystemSession.getInstance().setLanguage(Language.DE);
+        GoogleVoiceProvider provider = GoogleVoiceProvider.getInstance();
+
+        VoiceSelectionParams waveNetF = provider.getVoiceParams("WAVENET_F");
+        VoiceSelectionParams waveNetN = provider.getVoiceParams("WAVENET_N");
+
+        assertVoice(waveNetF, "de-DE", "de-DE-Standard-G");
+        assertVoice(waveNetN, "de-DE", "de-DE-Standard-G");
+        assertFalse(waveNetF.getName().contains("Wavenet"));
+        assertFalse(waveNetN.getName().contains("Wavenet"));
+    }
+
+    @Test
+    void existingEnglishMappingsRemainUnchanged() {
+        SystemSession.getInstance().setLanguage(Language.EN);
+        GoogleVoiceProvider provider = GoogleVoiceProvider.getInstance();
+        Map<GoogleVoices, String> expectedNames = Map.ofEntries(
+                Map.entry(GoogleVoices.MARY, "en-US-Chirp3-HD-Zephyr"),
+                Map.entry(GoogleVoices.ANNA, "en-GB-Chirp-HD-F"),
+                Map.entry(GoogleVoices.EMMA, "en-US-Chirp3-HD-Despina"),
+                Map.entry(GoogleVoices.JAKE, "en-US-Chirp3-HD-Iapetus"),
+                Map.entry(GoogleVoices.JAMES, "en-AU-Chirp3-HD-Algieba"),
+                Map.entry(GoogleVoices.JENNIFER, "en-US-Chirp3-HD-Sulafat"),
+                Map.entry(GoogleVoices.JOSEPH, "en-US-Chirp3-HD-Sadachbia"),
+                Map.entry(GoogleVoices.MICHAEL, "en-US-Chirp3-HD-Charon"),
+                Map.entry(GoogleVoices.OLIVIA, "en-GB-Chirp3-HD-Aoede"),
+                Map.entry(GoogleVoices.RACHEL, "en-US-Chirp3-HD-Zephyr"),
+                Map.entry(GoogleVoices.STEVE, "en-US-Chirp3-HD-Algenib"));
+
+        expectedNames.forEach((voice, providerName) ->
+                assertEquals(providerName, provider.getVoiceParams(voice.name()).getName(), voice.name()));
+    }
+
+    @Test
     void anAvailableCharacterIsKeptWhenTheLookupOffersIt() {
         SystemSession.getInstance().setLanguage(Language.RU);
         GoogleVoiceProvider.getInstance().setAvailableVoices(code -> List.of(
@@ -116,5 +170,10 @@ class GoogleVoiceProviderTest {
         GoogleVoiceProvider.getInstance().setAvailableVoices(code -> List.of());
 
         assertEquals("ru-RU-Standard-A", GoogleVoiceProvider.getInstance().getVoiceParams("MARY").getName());
+    }
+
+    private static void assertVoice(VoiceSelectionParams voice, String languageCode, String name) {
+        assertEquals(languageCode, voice.getLanguageCode());
+        assertEquals(name, voice.getName());
     }
 }
