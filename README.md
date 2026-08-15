@@ -1,5 +1,4 @@
-## ⚙️ [INSTALLATION](https://www.elite-intel.org/Installation.html) | 🎓 [
-**INFORMATION**](https://www.elite-intel.org) | 💻[TECH STUFF](https://github.com/stone-alex/EliteIntel/blob/master/TECHNICAL.md)
+## ⚙️ [INSTALLATION](https://www.elite-intel.org/Installation.html) | 🎓 [**INFORMATION**](https://www.elite-intel.org) | 💻[TECH STUFF](https://github.com/stone-alex/EliteIntel/blob/master/TECHNICAL.md)
 
 # Elite Intel - V1.1 (Multi lingual)
 
