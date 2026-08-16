@@ -112,17 +112,7 @@ public class SetupCheck {
 
     private static LlmSetup llmSetup() {
         SystemSession session = SystemSession.getInstance();
-        return new LlmSetup(localModelOf(session), session.getAiApiKey());
-    }
-
-    /**
-     * The model named for the active local provider — the one the pipeline would actually run.
-     */
-    private static String localModelOf(SystemSession session) {
-        return switch (session.getLocalLlmProvider()) {
-            case OLLAMA -> session.getOllamaCommandModel();
-            case LMSTUDIO -> session.getLmStudioCommandModel();
-        };
+        return new LlmSetup(session.getLmStudioCommandModel(), session.getAiApiKey());
     }
 
     /**

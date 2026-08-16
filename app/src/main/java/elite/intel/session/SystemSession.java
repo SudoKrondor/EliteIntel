@@ -1,6 +1,5 @@
 package elite.intel.session;
 
-import elite.intel.ai.brain.LocalLlmProvider;
 import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
@@ -267,24 +266,6 @@ public class SystemSession {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().isUseLocalTTS());
     }
 
-    public LocalLlmProvider getLocalLlmProvider() {
-        String raw = Database.withDao(GameSessionDao.class, dao -> dao.get().getLocalLlmProvider());
-        try {
-            return LocalLlmProvider.valueOf(raw);
-        } catch (Exception e) {
-            return LocalLlmProvider.OLLAMA;
-        }
-    }
-
-    public void setLocalLlmProvider(LocalLlmProvider provider) {
-        Database.withDao(GameSessionDao.class, dao -> {
-            GameSessionDao.GameSession session = dao.get();
-            session.setLocalLlmProvider(provider.name());
-            dao.save(session);
-            return Void.class;
-        });
-    }
-
     /**
      * The active ship's name, or {@code null} when no ship is known.
      * <p>
@@ -319,16 +300,6 @@ public class SystemSession {
         });
     }
 
-    public void setOllamaSettings(String address, String commandModel) {
-        Database.withDao(GameSessionDao.class, dao -> {
-            GameSessionDao.GameSession session = dao.get();
-            session.setOllamaAddress(address);
-            session.setOllamaCommandModel(commandModel);
-            dao.save(session);
-            return Void.class;
-        });
-    }
-
     public void setLmStudioSettings(String address, String commandModel) {
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
@@ -337,14 +308,6 @@ public class SystemSession {
             dao.save(session);
             return Void.class;
         });
-    }
-
-    public String getOllamaAddress() {
-        return Database.withDao(GameSessionDao.class, dao -> dao.get().getOllamaAddress());
-    }
-
-    public String getOllamaCommandModel() {
-        return Database.withDao(GameSessionDao.class, dao -> dao.get().getOllamaCommandModel());
     }
 
     public String getLmStudioAddress() {

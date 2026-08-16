@@ -129,8 +129,8 @@ public abstract class AiEndPoint {
      * Runs a minimal connectivity round-trip and reports whether the raw provider response carries a
      * usable completion rather than a {@link elite.intel.ai.brain.BaseAiClient} transport/HTTP-error
      * sentinel. The provider-specific "this root is a completion" test is supplied by the caller because
-     * each backend uses a different success envelope (OpenAI {@code choices[]}, Ollama {@code message},
-     * Anthropic {@code content[]}, Gemini {@code candidates[]}). Fails closed: any exception or
+     * each backend uses a different success envelope (OpenAI {@code choices[]}, Anthropic
+     * {@code content[]}, Gemini {@code candidates[]}). Fails closed: any exception or
      * non-completion response reports unreachable.
      */
     protected boolean probeConnection(String promptJson, Client client, Predicate<JsonObject> hasCompletion) {
@@ -145,7 +145,7 @@ public abstract class AiEndPoint {
 
     /**
      * Builds a single-message ("ping") chat request on top of the given provider request skeleton and
-     * probes it. Shared by every chat-style backend (all OpenAI-compatible endpoints, Ollama, Anthropic);
+     * probes it. Shared by every chat-style backend (all OpenAI-compatible endpoints, Anthropic);
      * only the success envelope, supplied via {@code hasCompletion}, differs.
      */
     protected boolean probeChatStyle(JsonObject prompt, Client client, Predicate<JsonObject> hasCompletion) {

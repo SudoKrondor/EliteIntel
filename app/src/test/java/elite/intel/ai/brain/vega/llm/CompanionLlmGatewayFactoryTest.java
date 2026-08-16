@@ -1,13 +1,13 @@
 package elite.intel.ai.brain.vega.llm;
 
-import elite.intel.ai.brain.vega.llm.CompanionLlmGatewayFactory;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Verifies the user-facing "unsupported provider" message: it names the configured provider and lists the
- * providers companion mode currently supports, derived dynamically from the wired-adapter maps (so the list
+ * providers companion mode currently supports, derived dynamically from the wired adapters (so the list
  * stays correct as providers are added one at a time).
  */
 class CompanionLlmGatewayFactoryTest {
@@ -28,6 +28,7 @@ class CompanionLlmGatewayFactoryTest {
         assertTrue(message.contains("Claude"), message);
         assertTrue(message.contains("Gemini"), message);
         assertTrue(message.contains("LM Studio (Gemma 4)"), message);
-        assertTrue(message.contains("Ollama"), message);
+        // Ollama was dropped; naming it as supported would send commanders back to the host we removed.
+        assertFalse(message.contains("Ollama"), message);
     }
 }

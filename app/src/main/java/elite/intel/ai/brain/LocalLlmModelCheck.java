@@ -51,7 +51,7 @@ public class LocalLlmModelCheck {
         // model is not Gemma, when they have not chosen one yet.
         if (SetupCheck.isLlmUnconfigured()) return;
 
-        String model = configuredLocalModel(session);
+        String model = session.getLmStudioCommandModel();
         if (isSupported(model)) return;
 
         GameEventBus.publish(new VocalisationRequestEvent(
@@ -59,16 +59,6 @@ public class LocalLlmModelCheck {
                 MissionCriticalAnnouncementEvent.class, false));
         UiBus.publish(new AppLogEvent(
                 "Unsupported local LLM model configured: '" + model + "'. Supported: *" + SUPPORTED_LOCAL_MODEL_ROOT + "*"));
-    }
-
-    /**
-     * The served command model of the active local provider - the model the (companion) pipeline actually runs.
-     */
-    private static String configuredLocalModel(SystemSession session) {
-        return switch (session.getLocalLlmProvider()) {
-            case OLLAMA -> session.getOllamaCommandModel();
-            case LMSTUDIO -> session.getLmStudioCommandModel();
-        };
     }
 
     static boolean isSupported(String model) {

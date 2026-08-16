@@ -28,7 +28,7 @@ import java.util.concurrent.TimeoutException;
  * every wired provider. Placing it here keeps a one-way dependency ({@code companion.llm} → custom-command
  * for {@link CustomCommandKeyDeriver}); the reverse edge would be a package cycle.
  * <p>
- * When no provider is wired (Ollama, or an unconfigured/unsupported provider) the factory throws and this
+ * When no provider is wired (an unconfigured or unsupported cloud provider) the factory throws and this
  * surfaces the failure as a {@link KeyGenerationException} - the caller is expected to warn the commander,
  * not silently fall back to an in-language key that would not route.
  */

@@ -169,7 +169,7 @@ shadowJar {
     dependsOn extractLwjglNatives
 }
 
-// Default test task — exclude local-integration tests so CI never tries to call Ollama,
+// Default test task — exclude local-integration tests so CI never tries to call a live LLM,
 // and embedding-manual tests so CI never tries to load the 118 MB ONNX model.
 test {
     useJUnitPlatform {
@@ -233,7 +233,7 @@ tasks.register('subscriberTest', Test) {
 }
 
 // Run with: ./gradlew localIntegrationTest
-// Requires: Ollama (or configured LLM) running, app DB populated from at least one normal run
+// Requires: LM Studio (or configured cloud LLM) running, app DB populated from at least one normal run
 tasks.register('localIntegrationTest', Test) {
     description = 'Routing sanity check against live LLM. Not for CI.'
     group = 'verification'
