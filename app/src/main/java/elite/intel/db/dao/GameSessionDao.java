@@ -20,8 +20,6 @@ public interface GameSessionDao {
                                                              rmsThresholdLow, encryptedLLMKey, encryptedTTSKey,
                                                              speechSpeed, googleWaveNetPitch,
                                                              useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, notificationVolume, sttThreads, voiceVolume,
-                                                             localLlmProvider,
-                                                             ollamaAddress, ollamaCommandModel,
                                                              lmStudioAddress, lmStudioCommandModel,
                                                              aiLanguage,
                                                              audioInputDevice, audioOutputDevice,
@@ -36,8 +34,6 @@ public interface GameSessionDao {
                                                       :rmsThresholdLow, :encryptedLLMKey, :encryptedTTSKey,
                                                       :speechSpeed, :googleWaveNetPitch,
                                                       :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :notificationVolume, :sttThreads, :voiceVolume,
-                                                      :localLlmProvider,
-                                                      :ollamaAddress, :ollamaCommandModel,
                                                       :lmStudioAddress, :lmStudioCommandModel,
                                                       :aiLanguage,
                                                       :audioInputDevice, :audioOutputDevice,
@@ -76,9 +72,6 @@ public interface GameSessionDao {
             session.setNotificationVolume(rs.getFloat("notificationVolume"));
             session.setSttThreads(rs.getInt("sttThreads"));
             session.setVoiceVolume(rs.getInt("voiceVolume"));
-            session.setLocalLlmProvider(rs.getString("localLlmProvider"));
-            session.setOllamaAddress(rs.getString("ollamaAddress"));
-            session.setOllamaCommandModel(rs.getString("ollamaCommandModel"));
             session.setLmStudioAddress(rs.getString("lmStudioAddress"));
             session.setLmStudioCommandModel(rs.getString("lmStudioCommandModel"));
             session.setAiLanguage(rs.getString("aiLanguage"));
@@ -118,9 +111,6 @@ public interface GameSessionDao {
         private boolean useLocalTTS;
         private Integer sttThreads;
         private Integer voiceVolume;
-        private String localLlmProvider;
-        private String ollamaAddress;
-        private String ollamaCommandModel;
         private String lmStudioAddress;
         private String lmStudioCommandModel;
         private String aiLanguage;
@@ -260,30 +250,6 @@ public interface GameSessionDao {
 
         public void setVoiceVolume(Integer voiceVolume) {
             this.voiceVolume = voiceVolume;
-        }
-
-        public String getLocalLlmProvider() {
-            return localLlmProvider;
-        }
-
-        public void setLocalLlmProvider(String localLlmProvider) {
-            this.localLlmProvider = localLlmProvider;
-        }
-
-        public String getOllamaAddress() {
-            return ollamaAddress;
-        }
-
-        public void setOllamaAddress(String ollamaAddress) {
-            this.ollamaAddress = ollamaAddress;
-        }
-
-        public String getOllamaCommandModel() {
-            return ollamaCommandModel;
-        }
-
-        public void setOllamaCommandModel(String ollamaCommandModel) {
-            this.ollamaCommandModel = ollamaCommandModel;
         }
 
         public String getLmStudioAddress() {

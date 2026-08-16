@@ -10,7 +10,7 @@ assignees: ''
 **Environment**
 - Linux or Windows
 - App version number
-- Inference engine (LMStudio, Ollama, Or which cloud service is used). 
+- Inference engine (LMStudio, or which cloud service is used).
 - If local LLM, which model used.
 
 

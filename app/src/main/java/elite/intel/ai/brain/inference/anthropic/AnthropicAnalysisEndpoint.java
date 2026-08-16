@@ -16,7 +16,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Analysis endpoint for the Anthropic (Claude) backend.
  * <p>
- * Mirrors OllamaAnalysisEndpoint, adapting the request body to Claude's shape:
+ * Mirrors the OpenAI-compatible analysis endpoints, adapting the request body to Claude's shape:
  * - System messages are collected into a single top-level "system" field
  * - Content is read from response.content[0].text
  * <p>

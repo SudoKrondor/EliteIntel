@@ -45,7 +45,6 @@ class SetupCheckTest {
         SystemSession session = SystemSession.getInstance();
 
         assertTrue(session.useLocalCommandLlm(), "a fresh install points at a local LLM");
-        assertTrue(session.getOllamaCommandModel() == null || session.getOllamaCommandModel().isBlank());
         assertTrue(session.getLmStudioCommandModel() == null || session.getLmStudioCommandModel().isBlank());
         assertTrue(session.getAiApiKey() == null || session.getAiApiKey().isBlank());
         assertTrue(SetupCheck.isLlmUnconfigured(), "the warning has to fire on a fresh install");

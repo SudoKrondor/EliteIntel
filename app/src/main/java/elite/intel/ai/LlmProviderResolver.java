@@ -7,8 +7,8 @@ import elite.intel.session.SystemSession;
  * {@link ApiFactory} (for the legacy command/query endpoints) and companion mode use this, so the
  * detection logic is written once.
  * <p>
- * Local provider selection (LM Studio / Ollama) stays role-specific at the call site, because the
- * local toggle differs by role ({@code useLocalQueryLlm} vs {@code useLocalCommandLlm}).
+ * The local host (LM Studio) is not resolved here: the local toggle differs by role
+ * ({@code useLocalQueryLlm} vs {@code useLocalCommandLlm}), so it stays at the call site.
  */
 public final class LlmProviderResolver {
 

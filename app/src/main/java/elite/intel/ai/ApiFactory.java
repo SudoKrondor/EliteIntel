@@ -8,7 +8,6 @@ import elite.intel.ai.brain.inference.deepseek.DeepSeekAnalysisEndpoint;
 import elite.intel.ai.brain.inference.gemini.GeminiAnalysisEndpoint;
 import elite.intel.ai.brain.inference.lmstudio.LMStudioAnalysisEndpoint;
 import elite.intel.ai.brain.inference.mistral.MistralAnalysisEndpoint;
-import elite.intel.ai.brain.inference.ollama.OllamaAnalysisEndpoint;
 import elite.intel.ai.brain.inference.openai.OpenAiAnalysisEndPoint;
 import elite.intel.ai.brain.inference.xai.GrokAnalysisEndpoint;
 import elite.intel.ai.ears.EarsInterface;
@@ -41,10 +40,7 @@ public class ApiFactory {
 
     public AiAnalysisInterface getAnalysisEndpoint() {
         if (systemSession.useLocalQueryLlm()) {
-            return switch (systemSession.getLocalLlmProvider()) {
-                case LMSTUDIO -> LMStudioAnalysisEndpoint.getInstance();
-                default -> OllamaAnalysisEndpoint.getInstance();
-            };
+            return LMStudioAnalysisEndpoint.getInstance(); // LM Studio is the only local host
         }
         ProviderEnum provider = LlmProviderResolver.detectCloudProvider();
         return switch (provider) {

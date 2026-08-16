@@ -23,7 +23,7 @@ import java.util.zip.ZipInputStream;
 /**
  * Standalone updater application for EliteIntel.
  * <p>
- * Packaged as a small fat-jar (no Whisper/Piper/Ollama native deps).
+ * Packaged as a small fat-jar (no STT/TTS native deps).
  * Launched by the main app before it exits; receives the install directory
  * as the first CLI argument.
  * <p>

@@ -1,6 +1,5 @@
 package elite.intel.ui.screen.settings;
 
-import elite.intel.ai.brain.LocalLlmProvider;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.db.managers.ShipManager;
@@ -38,17 +37,18 @@ import static elite.intel.ui.theme.HudPalette.*;
 public class AiServicesSettingsPanel extends JPanel {
 
     private static final String DEFAULT_MODEL = "google/gemma-4-e4b";
+    /**
+     * LM Studio's out-of-the-box OpenAI-compatible endpoint; the only local host this app talks to.
+     */
+    private static final String DEFAULT_LOCAL_ADDRESS = "http://localhost:1234/v1/chat/completions";
 
     private static final int SRC_LOCAL = 0;
     private static final int SRC_CLOUD = 1;
-    private static final int PROV_OLLAMA = 0;
-    private static final int PROV_LMSTUDIO = 1;
 
     private final SystemSession systemSession = SystemSession.getInstance();
 
     // -- Controls --------------------------------------------------------------
     private HudSegmentedControl llmSourceControl;
-    private HudSegmentedControl providerControl;
     private JTextField addressField;
     private JTextField commandModelField;
     private JPasswordField apiKeyField;
@@ -65,16 +65,11 @@ public class AiServicesSettingsPanel extends JPanel {
     private JLabel unsavedLabel;
 
     // -- Working copy (in memory, committed only by save) ----------------------
-    private String ollamaAddress = "", ollamaCommand = "";
     private String lmAddress = "", lmCommand = "";
-    /** Which provider's values are currently shown in the address/model fields. */
-    private LocalLlmProvider shownProvider = LocalLlmProvider.LMSTUDIO;
 
     // Snapshot of the last saved state; the dirty flag tracks whether edits differ from it,
     // so reverting values back to saved clears the "unsaved changes" banner.
     private boolean savedLlmLocal;
-    private LocalLlmProvider savedProvider = LocalLlmProvider.LMSTUDIO;
-    private String savedOllamaAddress = "", savedOllamaCommand = "";
     private String savedLmAddress = "", savedLmCommand = "";
     private String savedAiKey = "", savedTtsKey = "";
     private boolean savedTtsLocal;
@@ -105,16 +100,10 @@ public class AiServicesSettingsPanel extends JPanel {
                 new String[]{getText("settings.ai.localSetup"), getText("settings.ai.cloudSetup")}, SRC_LOCAL);
         llm.add(llmSourceControl, BorderLayout.NORTH);
 
-        // Left column - LOCAL SETUP.
+        // Left column - LOCAL SETUP (LM Studio: address + served model).
         localCol = transparentPanel(new GridBagLayout());
         GridBagConstraints gc = baseGbc();
-        providerControl = new HudSegmentedControl(
-                new String[]{getText("settings.localLlm.ollama"), getText("settings.localLlm.lmStudio")}, PROV_LMSTUDIO);
-        addLabel(localCol, getText("settings.ai.host"), gc, 0);
-        addField(localCol, providerControl, gc, 1, 1.0);
-
         addressField = makeTextField();
-        nextRow(gc);
         addLabel(localCol, getText("settings.ai.address"), gc, 0);
         addField(localCol, addressField, gc, 1, 1.0);
 
@@ -216,7 +205,6 @@ public class AiServicesSettingsPanel extends JPanel {
             recomputeDirty();
             updateEnablement();
         });
-        providerControl.addChangeListener(e -> onProviderSwitched());
         llmLockCheck.addItemListener(e -> updateEnablement());
         ttsLockCheck.addItemListener(e -> updateEnablement());
 
@@ -245,24 +233,15 @@ public class AiServicesSettingsPanel extends JPanel {
             boolean local = systemSession.useLocalCommandLlm() && systemSession.useLocalQueryLlm();
             llmSourceControl.setSelectedIndex(local ? SRC_LOCAL : SRC_CLOUD);
 
-            LocalLlmProvider provider = systemSession.getLocalLlmProvider();
-            providerControl.setSelectedIndex(provider == LocalLlmProvider.OLLAMA ? PROV_OLLAMA : PROV_LMSTUDIO);
-            shownProvider = provider;
-
-            ollamaAddress = nz(systemSession.getOllamaAddress(), LocalLlmProvider.OLLAMA.getDefaultUrl());
-            ollamaCommand = nz(systemSession.getOllamaCommandModel(), "");
-            lmAddress = nz(systemSession.getLmStudioAddress(), LocalLlmProvider.LMSTUDIO.getDefaultUrl());
+            lmAddress = nz(systemSession.getLmStudioAddress(), DEFAULT_LOCAL_ADDRESS);
             lmCommand = nz(systemSession.getLmStudioCommandModel(), "");
-            loadFields(shownProvider);
+            loadFields();
 
             apiKeyField.setText(nz(systemSession.getAiApiKey(), ""));
             ttsKeyField.setText(nz(systemSession.getTtsApiKey(), ""));
             ttsSourceControl.setSelectedIndex(systemSession.useLocalTTS() ? SRC_LOCAL : SRC_CLOUD);
 
             savedLlmLocal = local;
-            savedProvider = provider;
-            savedOllamaAddress = ollamaAddress;
-            savedOllamaCommand = ollamaCommand;
             savedLmAddress = lmAddress;
             savedLmCommand = lmCommand;
             savedAiKey = nz(systemSession.getAiApiKey(), "");
@@ -285,39 +264,20 @@ public class AiServicesSettingsPanel extends JPanel {
         return dirty;
     }
 
-    private void onProviderSwitched() {
-        captureFields(shownProvider);
-        shownProvider = providerControl.getSelectedIndex() == PROV_OLLAMA
-                ? LocalLlmProvider.OLLAMA : LocalLlmProvider.LMSTUDIO;
-        loading = true;
-        try {
-            loadFields(shownProvider);
-        } finally {
-            loading = false;
-        }
-        recomputeDirty();
+    private void captureFields() {
+        lmAddress = addressField.getText();
+        lmCommand = commandModelField.getText();
     }
 
-    private void captureFields(LocalLlmProvider provider) {
-        if (provider == LocalLlmProvider.OLLAMA) {
-            ollamaAddress = addressField.getText();
-            ollamaCommand = commandModelField.getText();
-        } else {
-            lmAddress = addressField.getText();
-            lmCommand = commandModelField.getText();
-        }
-    }
-
-    private void loadFields(LocalLlmProvider provider) {
-        boolean ollama = provider == LocalLlmProvider.OLLAMA;
-        addressField.setText(ollama ? ollamaAddress : lmAddress);
-        commandModelField.setText(ollama ? ollamaCommand : lmCommand);
+    private void loadFields() {
+        addressField.setText(lmAddress);
+        commandModelField.setText(lmCommand);
     }
 
     /** Enables the active source's controls and dims the unused source (section 0.6). */
     private void updateEnablement() {
-        // Whole left column dims together (labels, provider switch, fields) via each control's
-        // own section 0.6 disabled rendering.
+        // Whole left column dims together (labels and fields) via each control's own
+        // section 0.6 disabled rendering.
         boolean local = llmSourceControl.getSelectedIndex() == SRC_LOCAL;
         for (Component c : localCol.getComponents()) {
             c.setEnabled(local);
@@ -346,20 +306,15 @@ public class AiServicesSettingsPanel extends JPanel {
     }
 
     private boolean isModified() {
-        captureFields(shownProvider);
+        captureFields();
         boolean newLocal = llmSourceControl.getSelectedIndex() == SRC_LOCAL;
-        LocalLlmProvider newProvider = providerControl.getSelectedIndex() == PROV_OLLAMA
-                ? LocalLlmProvider.OLLAMA : LocalLlmProvider.LMSTUDIO;
         boolean newTtsLocal = ttsSourceControl.getSelectedIndex() == SRC_LOCAL;
         String newAiKey = new String(apiKeyField.getPassword());
         String newTtsKey = new String(ttsKeyField.getPassword());
         return newLocal != savedLlmLocal
-                || newProvider != savedProvider
                 || newTtsLocal != savedTtsLocal
                 || !Objects.equals(newAiKey, savedAiKey)
                 || !Objects.equals(newTtsKey, savedTtsKey)
-                || !Objects.equals(ollamaAddress, savedOllamaAddress)
-                || !Objects.equals(ollamaCommand, savedOllamaCommand)
                 || !Objects.equals(lmAddress, savedLmAddress)
                 || !Objects.equals(lmCommand, savedLmCommand);
     }
@@ -389,11 +344,9 @@ public class AiServicesSettingsPanel extends JPanel {
      * @return {@code true} if the configuration was saved, {@code false} if the user aborted
      */
     public boolean save() {
-        captureFields(shownProvider);
+        captureFields();
 
         boolean newLocal = llmSourceControl.getSelectedIndex() == SRC_LOCAL;
-        LocalLlmProvider newProvider = providerControl.getSelectedIndex() == PROV_OLLAMA
-                ? LocalLlmProvider.OLLAMA : LocalLlmProvider.LMSTUDIO;
         boolean newTtsLocal = ttsSourceControl.getSelectedIndex() == SRC_LOCAL;
         String newAiKey = new String(apiKeyField.getPassword());
         String newTtsKey = new String(ttsKeyField.getPassword());
@@ -415,21 +368,16 @@ public class AiServicesSettingsPanel extends JPanel {
 
         // Restart side-effects fire only when the relevant config actually changed.
         boolean oldLocal = systemSession.useLocalCommandLlm() && systemSession.useLocalQueryLlm();
-        LocalLlmProvider oldProvider = systemSession.getLocalLlmProvider();
         String oldAiKey = systemSession.getAiApiKey();
         String oldTtsKey = systemSession.getTtsApiKey();
-        boolean providerCfgChanged =
-                !Objects.equals(systemSession.getOllamaAddress(), ollamaAddress)
-                        || !Objects.equals(systemSession.getOllamaCommandModel(), ollamaCommand)
-                        || !Objects.equals(systemSession.getLmStudioAddress(), lmAddress)
+        boolean localCfgChanged =
+                !Objects.equals(systemSession.getLmStudioAddress(), lmAddress)
                         || !Objects.equals(systemSession.getLmStudioCommandModel(), lmCommand);
-        boolean brainChanged = newLocal != oldLocal || newProvider != oldProvider
-                || providerCfgChanged || !Objects.equals(oldAiKey, newAiKey);
+        boolean brainChanged = newLocal != oldLocal
+                || localCfgChanged || !Objects.equals(oldAiKey, newAiKey);
         boolean mouthChanged = newTtsLocal != oldTtsLocal || !Objects.equals(oldTtsKey, newTtsKey);
 
-        systemSession.setOllamaSettings(ollamaAddress, ollamaCommand);
         systemSession.setLmStudioSettings(lmAddress, lmCommand);
-        systemSession.setLocalLlmProvider(newProvider);
         systemSession.setUseLocalCommandLlm(newLocal);
         systemSession.setUseLocalQueryLlm(newLocal);
         systemSession.setAiApiKey(newAiKey);
@@ -444,9 +392,6 @@ public class AiServicesSettingsPanel extends JPanel {
         }
 
         savedLlmLocal = newLocal;
-        savedProvider = newProvider;
-        savedOllamaAddress = ollamaAddress;
-        savedOllamaCommand = ollamaCommand;
         savedLmAddress = lmAddress;
         savedLmCommand = lmCommand;
         savedAiKey = newAiKey;
@@ -461,14 +406,10 @@ public class AiServicesSettingsPanel extends JPanel {
     private void restoreDefaults() {
         loading = true;
         try {
-            ollamaAddress = LocalLlmProvider.OLLAMA.getDefaultUrl();
-            ollamaCommand = DEFAULT_MODEL;
-            lmAddress = LocalLlmProvider.LMSTUDIO.getDefaultUrl();
+            lmAddress = DEFAULT_LOCAL_ADDRESS;
             lmCommand = DEFAULT_MODEL;
-            providerControl.setSelectedIndex(PROV_LMSTUDIO);
-            shownProvider = LocalLlmProvider.LMSTUDIO;
             llmSourceControl.setSelectedIndex(SRC_LOCAL);
-            loadFields(LocalLlmProvider.LMSTUDIO);
+            loadFields();
             updateEnablement();
         } finally {
             loading = false;
