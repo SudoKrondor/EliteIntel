@@ -9,12 +9,10 @@ import elite.intel.devices.model.Device;
 import elite.intel.eventbus.DeviceBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
-import elite.intel.ui.event.PttModeChangedEvent;
 import elite.intel.ui.event.PushToTalkSettingsChangedEvent;
 import elite.intel.ui.event.RestartEarsEvent;
 import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudSection;
-import elite.intel.ui.widget.HudSegmentedControl;
 import elite.intel.ui.widget.HudTwoColumns;
 
 import javax.swing.*;
@@ -39,18 +37,12 @@ public class InputSettingsPanel extends JPanel {
     private JCheckBox enablePushToTalkCheck;
     private HudComboBox<Object> controllerCombo;
     private HudComboBox<String> buttonCombo;
-    private HudSegmentedControl modeControl;
-
-    // Mode segment indices - order matches the segments built in buildUi().
-    private static final int MODE_TOGGLE = 0;
-    private static final int MODE_HOLD = 1;
 
     // Selection state behind the combos. EDT-only: the device subscriptions below hand straight to
     // invokeLater, and the button itself is read by PushToTalkService, not here.
     private boolean pushToTalkEnabled = false;
     private Device selectedDevice = null;
     private int selectedButtonIndex = -1; // 0-based SDL button index, -1 = none
-    private boolean toggleMode = true;
 
     // Name of the controller persisted in game_session, used to re-select it once it appears
     // in the connected-devices list (initial load, or reconnect after a disconnect).
@@ -74,12 +66,10 @@ public class InputSettingsPanel extends JPanel {
     public void initData() {
         SystemSession session = SystemSession.getInstance();
         pushToTalkEnabled = session.isPushToTalkEnabled();
-        toggleMode = session.isPushToTalkToggleMode();
         persistedControllerName = session.getPushToTalkControllerName();
 
         enablePushToTalkCheck.setSelected(pushToTalkEnabled);
         setControlsEnabled(pushToTalkEnabled);
-        modeControl.setSelectedIndex(toggleMode ? MODE_TOGGLE : MODE_HOLD);
 
         reconcileControllerSelection();
     }
@@ -88,27 +78,20 @@ public class InputSettingsPanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
-        // Single flat working section (section 9). Two-column body (section 10): left column holds the master enable
-        // slab and the mode switch (both stretched to the column width, no labels); right column holds
-        // the controller/button pickers as aligned rows.
+        // Single flat working section (section 9). Two-column body (section 10): left column holds the master
+        // enable slab (stretched to the column width, no label); right column holds the controller/button
+        // pickers as aligned rows.
         HudSection section = HudSection.flat(getText("settings.input.section.binding"), new BorderLayout());
         JPanel body = section.body();
 
         enablePushToTalkCheck = makeCheckBox(getText("settings.input.enablePushToTalk"), false);
         enablePushToTalkCheck.addActionListener(e -> onPushToTalkToggled());
 
-        modeControl = new HudSegmentedControl(
-                new String[]{getText("settings.input.mode.toggle"), getText("settings.input.mode.hold")},
-                MODE_TOGGLE);
-        modeControl.addChangeListener(e -> onModeChanged());
-
-        // Left column - enable slab + mode switch, both full-width (span) and label-less. GridBag + baseGbc
-        // so its row insets come from the same shared source as the right column (no hand-tuned border).
+        // Left column - the enable slab, full-width (span) and label-less. GridBag + baseGbc so its row
+        // insets come from the same shared source as the right column (no hand-tuned border).
         JPanel leftCol = transparentPanel(new GridBagLayout());
         GridBagConstraints lgc = baseGbc();
         addSpanComponent(leftCol, enablePushToTalkCheck, lgc);
-        nextRow(lgc);
-        addSpanComponent(leftCol, modeControl, lgc);
         JPanel leftWrap = transparentPanel(new BorderLayout());
         leftWrap.add(leftCol, BorderLayout.NORTH);
 
@@ -144,15 +127,6 @@ public class InputSettingsPanel extends JPanel {
         setControlsEnabled(false);
     }
 
-    /**
-     * Records the selected PTT mode: toggle (sleep/wake) vs hold-to-talk. {@link PushToTalkService} applies it.
-     */
-    private void onModeChanged() {
-        toggleMode = modeControl.getSelectedIndex() == MODE_TOGGLE;
-        SystemSession.getInstance().setPushToTalkToggleMode(toggleMode);
-        UiBus.publish(new PushToTalkSettingsChangedEvent());
-    }
-
     // -- UI handlers -----------------------------------------------------------
 
     private void onPushToTalkToggled() {
@@ -172,7 +146,6 @@ public class InputSettingsPanel extends JPanel {
     private void setControlsEnabled(boolean enabled) {
         controllerCombo.setEnabled(enabled);
         buttonCombo.setEnabled(enabled);
-        modeControl.setEnabled(enabled);
     }
 
     private void onControllerSelected() {
@@ -254,19 +227,6 @@ public class InputSettingsPanel extends JPanel {
             }
         }
         buttonCombo.setSelectedIndex(0);
-    }
-
-    // -- PTT mode sync -----------------------------------------------------------
-
-    @Subscribe
-    public void onPttModeChanged(PttModeChangedEvent event) {
-        SwingUtilities.invokeLater(() -> {
-            if (!pushToTalkEnabled) return;
-            boolean newToggleMode = SystemSession.getInstance().isPushToTalkToggleMode();
-            if (newToggleMode == toggleMode) return;
-            toggleMode = newToggleMode;
-            modeControl.setSelectedIndex(toggleMode ? MODE_TOGGLE : MODE_HOLD);
-        });
     }
 
     // -- SDL event subscriptions -------------------------------------------------

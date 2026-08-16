@@ -4,13 +4,10 @@ import elite.intel.db.dao.LocationDao;
 import elite.intel.db.util.Database;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.LocationData;
+import elite.intel.util.NavigationUtils;
 import elite.intel.util.json.GsonFactory;
 
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -169,5 +166,28 @@ public class LocationManager {
             List<LocationDao.Location> stations = dao.findStationsInCurrentStarSystem(systemAddress);
             return stations.stream().map(entity -> GsonFactory.getGson().fromJson(entity.getJson(), LocationDto.class)).collect(Collectors.toList());
         });
+    }
+
+    /**
+     * Stations we have already visited within {@code maxLightYears} of the given point, nearest first.
+     * <p>
+     * The database narrows the search to a cube around the point; the corners of that cube - which are
+     * further away than the radius - are trimmed here with the real galactic distance.
+     */
+    public List<LocationDto> findKnownStationsWithin(LocationDao.Coordinates origin, double maxLightYears) {
+        if (origin == null) return List.of();
+        return Database.withDao(LocationDao.class, dao -> dao.findStationsInCoordinateBox(
+                        origin.x() - maxLightYears, origin.x() + maxLightYears,
+                        origin.y() - maxLightYears, origin.y() + maxLightYears,
+                        origin.z() - maxLightYears, origin.z() + maxLightYears
+                ).stream()
+                .map(row -> Map.entry(
+                        row,
+                        NavigationUtils.calculateGalacticDistance(row.x(), row.y(), row.z(), origin.x(), origin.y(), origin.z())
+                ))
+                .filter(entry -> entry.getValue() <= maxLightYears)
+                .sorted(Map.Entry.comparingByValue())
+                .map(entry -> GsonFactory.getGson().fromJson(entry.getKey().json(), LocationDto.class))
+                .collect(Collectors.toList()));
     }
 }

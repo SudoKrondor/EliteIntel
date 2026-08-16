@@ -75,23 +75,6 @@ public class SystemSession {
     }
 
 
-    public boolean isSleepingModeOn() {
-        return Database.withDao(GameSessionDao.class, dao -> {
-            GameSessionDao.GameSession session = dao.get();
-            return session.getPrivacyModeOn();
-        });
-    }
-
-    public void stopStartListening(boolean streamingModeOn) {
-        Database.withDao(GameSessionDao.class, dao -> {
-            GameSessionDao.GameSession session = dao.get();
-            session.setPrivacyModeOn(streamingModeOn);
-            dao.save(session);
-            return null;
-        });
-    }
-
-
     public Double getRmsThresholdHigh() {
         if (rms == null || rms == 0.0) {
             return Database.withDao(GameSessionDao.class, dao -> {
@@ -460,19 +443,6 @@ public class SystemSession {
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
             session.setPushToTalkButtonIndex(buttonIndex);
-            dao.save(session);
-            return null;
-        });
-    }
-
-    public boolean isPushToTalkToggleMode() {
-        return Database.withDao(GameSessionDao.class, dao -> dao.get().isPushToTalkToggleMode());
-    }
-
-    public void setPushToTalkToggleMode(boolean toggleMode) {
-        Database.withDao(GameSessionDao.class, dao -> {
-            GameSessionDao.GameSession session = dao.get();
-            session.setPushToTalkToggleMode(toggleMode);
             dao.save(session);
             return null;
         });

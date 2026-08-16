@@ -18,7 +18,11 @@ import static elite.intel.gameapi.search.edsm.utils.EdsmUtils.toStationWithMarke
 
 public class MonetizeRoute {
 
-
+    /**
+     * A stop is only worth making if the commodity can fill most of the hold, so a market is
+     * ignored unless it can supply (or absorb) at least this fraction of the ship's cargo capacity.
+     */
+    private static final double MIN_CARGO_FILL_RATIO = 0.80;
 
     public static TradeTransaction findTrade(List<NavRouteDto> stops) {
 
@@ -43,11 +47,19 @@ public class MonetizeRoute {
         for (NavRouteDto stop : stops) {
             sources.addAll(toStationWithMarket(stop.getName(), allowedStations));
         }
-        return MonetizeRoute.findTrade(sources, destinations);
+        return MonetizeRoute.findTrade(sources, destinations, minimumQuantity(criteria.getMaxCargo()));
     }
 
-
-
+    /**
+     * The smallest tradeable quantity worth a docking stop: 80 percent of the ship's cargo capacity,
+     * rounded up to the next whole tonne.
+     */
+    static int minimumQuantity(int cargoCapacity) {
+        // WHY: an unknown capacity must not reject every market, so it falls back to the floor that
+        // applied before the threshold existed (more than one tonne) rather than to no floor at all.
+        if (cargoCapacity < 1) return 2;
+        return Math.max(1, (int) Math.ceil(cargoCapacity * MIN_CARGO_FILL_RATIO));
+    }
 
 
     /**
@@ -60,11 +72,12 @@ public class MonetizeRoute {
      *                       each containing market information including buy price and supply.
      * @param destStations   the list of trade stations the player can sell commodities to,
      *                       each containing market information including sell price and demand.
+     * @param minQuantity    the smallest supply/demand worth stopping for; markets offering or
+     *                       absorbing less than this are ignored, see {@link #minimumQuantity(int)}.
      * @return a RouteTuple representing the best trade route with maximum profit, or null
      * if no profitable trade route is available.
      */
-    private static TradeTransaction findTrade(List<Station> sourceStations, List<Station> destStations) {
-        // Source: min buyPrice (player buys from station) with supply > 0
+    static TradeTransaction findTrade(List<Station> sourceStations, List<Station> destStations, int minQuantity) {
         Map<String, BuyInfo> sourceMinBuy = new HashMap<>();
         for (Station station : sourceStations) {
             String stationName = station.getName();
@@ -73,7 +86,7 @@ public class MonetizeRoute {
             List<Commodity> market = station.getCommodities();
             if (market == null) continue;
             for (Commodity entry : market) {
-                if (entry.getStock() > 0 && entry.getBuyPrice() > 0) {  // buyPrice is what player pays
+                if (entry.getStock() >= minQuantity && entry.getBuyPrice() > 0) {  // buyPrice is what player pays
                     String comm = entry.getName();
                     int price = entry.getBuyPrice();
                     BuyInfo current = sourceMinBuy.get(comm);
@@ -84,7 +97,6 @@ public class MonetizeRoute {
             }
         }
 
-        // Dest: max sellPrice (player sells to station) with demand > 0
         Map<String, SellInfo> destMaxSell = new HashMap<>();
         for (Station station : destStations) {
             String stationName = station.getName();
@@ -93,7 +105,7 @@ public class MonetizeRoute {
             List<Commodity> market = station.getCommodities();
             if (market == null) continue;
             for (Commodity entry : market) {
-                if (entry.getDemand() > 1 && entry.getSellPrice() > 0) {  // sellPrice is what player gets
+                if (entry.getDemand() >= minQuantity && entry.getSellPrice() > 0) {  // sellPrice is what player gets
                     String comm = entry.getName();
                     int price = entry.getSellPrice();
                     SellInfo current = destMaxSell.get(comm);

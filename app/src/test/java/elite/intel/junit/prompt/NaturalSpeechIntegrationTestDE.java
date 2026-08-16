@@ -46,28 +46,6 @@ public class NaturalSpeechIntegrationTestDE {
     // Attention / control
     // =========================================================================
 
-    @ParameterizedTest(name = "[{index}] \"{0}\"")
-    @Order(10)
-    @MethodSource
-    void startListening(String input) throws InterruptedException {
-        assertRouted(input, WakeupCommand.ID);
-    }
-
-    static Stream<String> startListening() {
-        return Stream.of("wach auf", "aufwachen");
-    }
-
-
-    @ParameterizedTest(name = "[{index}] \"{0}\"")
-    @Order(11)
-    @MethodSource
-    void ignoreMe(String input) throws InterruptedException {
-        assertRouted(input, SleepCommand.ID);
-    }
-
-    static Stream<String> ignoreMe() {
-        return Stream.of("ignoriere mich", "hör nicht zu", "schlaf");
-    }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(12)

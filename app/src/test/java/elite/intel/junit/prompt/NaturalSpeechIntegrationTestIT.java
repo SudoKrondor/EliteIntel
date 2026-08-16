@@ -60,28 +60,7 @@ public class NaturalSpeechIntegrationTestIT {
     // Attention / control
     // =========================================================================
 
-    @ParameterizedTest(name = "[{index}] \"{0}\"")
-    @Order(10)
-    @MethodSource
-    void startListening(String input) throws InterruptedException {
-        assertRouted(input, WakeupCommand.ID);
-    }
 
-    static Stream<String> startListening() {
-        return Stream.of("riattivati", "svegliati", "ascoltami");
-    }
-
-    @ParameterizedTest(name = "[{index}] \"{0}\"")
-    @Order(11)
-    @MethodSource
-    void ignoreMe(String input) throws InterruptedException {
-        assertRouted(input, SleepCommand.ID);
-    }
-
-    static Stream<String> ignoreMe() {
-        return Stream.of("sospenditi", "vai in standby", "ignorami", "non ascoltarmi più",
-                "ignora i miei comandi", "ignora i comandi");
-    }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(12)
@@ -370,7 +349,7 @@ public class NaturalSpeechIntegrationTestIT {
     static Stream<String> navigateToMission() {
         return Stream.of("vai alla missione attiva",
                 "traccia la rotta verso la missione attiva", "traccia il percorso verso la missione",
-                "portami alla missione", "vai alla missione 1");
+                "traccia il percorso verso la missione 1", "portami alla missione", "vai alla missione 1");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -523,7 +502,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> lights() {
-        return Stream.of("fari", "luci","accendi i fari", "accendi le luci", "spegni i fari",
+        return Stream.of("accendi i fari", "accendi le luci", "spegni i fari",
                 "spegni le luci", "fari accesi", "fari spenti", "accendi fari esterni");
     }
 

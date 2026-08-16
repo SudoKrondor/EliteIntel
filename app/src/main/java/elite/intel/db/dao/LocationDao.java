@@ -84,10 +84,42 @@ public interface LocationDao {
     @SqlQuery("select * from location where locationName = :locationName")
     Location findByLocationName(@Bind("locationName") String locationName);
 
-    @SqlQuery(""" 
+    @SqlQuery("""
             select * from location  where json like '%"locationType": "STATION"%' and locationName != '' and systemAddress= :systemAddress;
             """)
     List<Location> findStationsInCurrentStarSystem(@Bind("systemAddress") long systemAddress);
+
+    /**
+     * Stations we have already visited, in systems that fall inside the given coordinate box.
+     * <p>
+     * A station row carries no galactic coordinates of its own - only the star it orbits does - so the
+     * station is joined to any coordinate-bearing row of the same system. The box is deliberately a cube
+     * rather than a sphere: SQLite has no sqrt, so the caller trims the corners with the real distance.
+     * A system whose rows all sit at 0,0,0 has no coordinates recorded (that is the unset value, not Sol
+     * as far as this row is concerned) and is skipped.
+     */
+    @SqlQuery("""
+            SELECT station.json AS json, sys.x AS x, sys.y AS y, sys.z AS z
+            FROM location station
+            JOIN (SELECT systemAddress,
+                         MAX(CAST(json ->> '$.X' AS REAL)) AS x,
+                         MAX(CAST(json ->> '$.Y' AS REAL)) AS y,
+                         MAX(CAST(json ->> '$.Z' AS REAL)) AS z
+                  FROM location
+                  WHERE NOT (json ->> '$.X' = 0 AND json ->> '$.Y' = 0 AND json ->> '$.Z' = 0)
+                  GROUP BY systemAddress) sys ON sys.systemAddress = station.systemAddress
+            WHERE station.json LIKE '%"locationType": "STATION"%'
+              AND station.locationName != ''
+              AND sys.x BETWEEN :minX AND :maxX
+              AND sys.y BETWEEN :minY AND :maxY
+              AND sys.z BETWEEN :minZ AND :maxZ
+            """)
+    @RegisterConstructorMapper(StationAtCoordinates.class)
+    List<StationAtCoordinates> findStationsInCoordinateBox(
+            @Bind("minX") double minX, @Bind("maxX") double maxX,
+            @Bind("minY") double minY, @Bind("maxY") double maxY,
+            @Bind("minZ") double minZ, @Bind("maxZ") double maxZ
+    );
 
 
     class LocationMapper implements RowMapper<LocationDao.Location> {
@@ -106,6 +138,13 @@ public interface LocationDao {
     }
 
     record Coordinates(String primaryStar,  double x, double y, double z) {
+
+    }
+
+    /**
+     * A stored station row together with the galactic coordinates of the system it sits in.
+     */
+    record StationAtCoordinates(String json, double x, double y, double z) {
 
     }
 

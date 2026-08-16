@@ -12,11 +12,22 @@ import elite.intel.util.TTSFriendlyNumberConverter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
 import java.util.Set;
 
 import static elite.intel.util.StringUtls.localizedEvent;
 
 public class ShipTargetedEventSubscriber {
+
+    /**
+     * The combat rank names ShipTargeted reports in {@code PilotRank}, ordered so the list index is
+     * the rank number {@link Ranks#getCombatRankMap()} is keyed by. The journal gives the target's
+     * rank as a name while the rank map is numeric, so this is the bridge between the two.
+     */
+    private static final List<String> PILOT_COMBAT_RANKS = List.of(
+            "Harmless", "Mostly Harmless", "Novice", "Competent", "Expert", "Master",
+            "Dangerous", "Deadly", "Elite", "Elite I", "Elite II", "Elite III", "Elite IV", "Elite V"
+    );
 
     private final Logger log = LogManager.getLogger(ShipTargetedEventSubscriber.class);
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -30,7 +41,7 @@ public class ShipTargetedEventSubscriber {
             CompanionRuntime.narrator().announce(localizedEvent("event.target.contactLost"), true);
         }
 
-        String pilotRankLocalized = Ranks.getLocalizedPilotFederationRankMap().get(event.getPilotRank());
+        String pilotRankLocalized = localizedCombatRank(event.getPilotRank());
 
         String legalStatus = event.getLegalStatus() == null ? null : event.getLegalStatus().toLowerCase();
         int bounty = event.getBounty();
@@ -77,6 +88,19 @@ public class ShipTargetedEventSubscriber {
                 EventNarrator.critical(info.toString());
             }
         }
+    }
+
+
+    /**
+     * Translates the target's combat rank name into the active language, or returns {@code null}
+     * when the journal reported no rank or one we do not know, so the caller can fall back to
+     * "rank unknown" rather than announce a wrong rank.
+     */
+    static String localizedCombatRank(String pilotRank) {
+        if (pilotRank == null || pilotRank.isBlank()) return null;
+        int rankNumber = PILOT_COMBAT_RANKS.indexOf(pilotRank.trim());
+        if (rankNumber < 0) return null;
+        return Ranks.getCombatRankMap().get(rankNumber);
     }
 
 

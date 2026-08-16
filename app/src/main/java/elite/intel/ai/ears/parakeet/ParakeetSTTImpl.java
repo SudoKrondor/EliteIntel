@@ -27,7 +27,8 @@ import javax.sound.sampled.*;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -258,7 +259,7 @@ public class ParakeetSTTImpl implements EarsInterface {
             byte[] buffer = new byte[bufferSize];
 
             boolean isActive = false;
-            boolean capturedWhileAwake = false;
+            boolean capturedWithPttHeld = false;
             int consecutiveVoice = 0;
             int consecutiveSilence = 0;
             audioCollector.reset();
@@ -309,7 +310,7 @@ public class ParakeetSTTImpl implements EarsInterface {
                 if (!isActive && consecutiveVoice >= ENTER_VOICE_FRAMES) {
                     isActive = true;
                     justActivated = true;
-                    capturedWhileAwake = pttHeld.get();
+                    capturedWithPttHeld = pttHeld.get();
                     audioCollector.reset();
                     for (byte[] frame : preRoll) audioCollector.write(frame, 0, frame.length);
                     preRoll.clear();
@@ -327,7 +328,7 @@ public class ParakeetSTTImpl implements EarsInterface {
                     log.info("PTT: button released, closing VAD");
                 }
                 if (isActive && !justActivated) {
-                    if (pttHeld.get()) capturedWhileAwake = true; // latch: button pressed mid-utterance
+                    if (pttHeld.get()) capturedWithPttHeld = true; // latch: button pressed mid-utterance
                     audioCollector.write(audio, 0, audioLen);
                     if (audioCollector.size() >= MAX_UTTERANCE_BYTES) {
                         isActive = false;
@@ -341,20 +342,20 @@ public class ParakeetSTTImpl implements EarsInterface {
 
                 if (wasActive && !isActive && audioCollector.size() > 0) {
                     final byte[] utterance = audioCollector.toByteArray();
-                    final boolean awake = capturedWhileAwake;
+                    final boolean pttHeldDuringCapture = capturedWithPttHeld;
                     DumpAudioForTesting.getInstance().dumpAudioAsWav(utterance, SAMPLE_RATE);
                     audioCollector.reset();
                     int pending = pendingTranscriptions.get();
                     if (pending > 0) log.warn("Transcription queue backed up: {} utterances waiting", pending);
                     pendingTranscriptions.incrementAndGet();
-                    submitWithTimeout(utterance, awake);
+                    submitWithTimeout(utterance, pttHeldDuringCapture);
                 }
             }
         }
     }
 
-    private void submitWithTimeout(byte[] utterance, boolean capturedWhileAwake) {
-        Future<?> future = transcriptionExecutor.submit(() -> transcribeAndDispatch(utterance, capturedWhileAwake));
+    private void submitWithTimeout(byte[] utterance, boolean capturedWithPttHeld) {
+        Future<?> future = transcriptionExecutor.submit(() -> transcribeAndDispatch(utterance, capturedWithPttHeld));
         Thread watchdog = new Thread(() -> {
             try {
                 future.get(INFERENCE_TIMEOUT_SEC, TimeUnit.SECONDS);
@@ -376,7 +377,7 @@ public class ParakeetSTTImpl implements EarsInterface {
         watchdog.start();
     }
 
-    private void transcribeAndDispatch(byte[] pcmBytes, boolean capturedWhileAwake) {
+    private void transcribeAndDispatch(byte[] pcmBytes, boolean capturedWithPttHeld) {
         pendingTranscriptions.decrementAndGet();
         try {
             if (systemSession.isNoiseReductionEnabled()) {
@@ -412,14 +413,13 @@ public class ParakeetSTTImpl implements EarsInterface {
 
                 UiBus.publish(new AppLogEvent("STT: [" + finalTranscript + "]"));
 
-                if (capturedWhileAwake) {
-                    String stripped = stripListenBypassPrefix(finalTranscript);
-                    sendToAi(stripped != null ? stripped : finalTranscript, true);
-                } else if (systemSession.isSleepingModeOn()) {
-                    if (passThrough(finalTranscript)) {
-                        String stripped = stripListenBypassPrefix(finalTranscript);
-                        sendToAi(stripped != null ? stripped : finalTranscript, false);
-                    }
+                // WHY: while push-to-talk is armed the button is the only thing that opens the
+                // microphone, so an utterance captured without it is room noise rather than an order
+                // and is dropped here, before it costs an AI round trip.
+                if (capturedWithPttHeld) {
+                    sendToAi(finalTranscript, true);
+                } else if (systemSession.isPushToTalkEnabled()) {
+                    log.debug("Discarding transcript captured with push-to-talk released: [{}]", finalTranscript);
                 } else {
                     sendToAi(finalTranscript, false);
                 }
@@ -468,46 +468,6 @@ public class ParakeetSTTImpl implements EarsInterface {
             sb.append(tokens[i]);
         }
         return sb.toString().replace("?", "").replace("!", "").replace(";", "").replace(":", "").replace(",", "").replace(".", "");
-    }
-
-    private boolean passThrough(String transcript) {
-        // Sleep mode only accepts exact wake phrases or listen-prefix commands at the start.
-        // This prevents phrases like "do not listen open map" from bypassing the gate.
-        return isPureWakePhrase(transcript) || stripListenBypassPrefix(transcript) != null;
-    }
-
-    private boolean isPureWakePhrase(String transcript) {
-        String lower = transcript.trim().toLowerCase(Locale.ROOT);
-        for (String phrase : AiActionLocalizations.wakeBypassPhrases()) {
-            if (lower.equals(phrase.toLowerCase(Locale.ROOT))) return true;
-        }
-        return false;
-    }
-
-    /**
-     * If the transcript starts with a localized listen-type prefix followed by
-     * meaningful content, returns the content with the prefix stripped.
-     * Returns null if the transcript is a pure wake phrase or has no listen prefix
-     * caller sends the original unchanged so the AI can route it via WAKEUP.
-     */
-    private String stripListenBypassPrefix(String transcript) {
-        return stripPrefixAtStart(transcript, AiActionLocalizations.listenBypassPrefixes());
-    }
-
-    private String stripPrefixAtStart(String transcript, Collection<String> prefixes) {
-        String lower = transcript.toLowerCase(Locale.ROOT);
-        List<String> sortedPrefixes = new ArrayList<>(prefixes);
-        sortedPrefixes.sort(Comparator.comparingInt(String::length).reversed());
-        for (String prefix : sortedPrefixes) {
-            String lowerPrefix = prefix.toLowerCase(Locale.ROOT);
-            if (lower.startsWith(lowerPrefix)
-                    && lower.length() > lowerPrefix.length()
-                    && Character.isWhitespace(lower.charAt(lowerPrefix.length()))) {
-                String remainder = transcript.substring(prefix.length()).trim();
-                if (!remainder.isBlank()) return remainder;
-            }
-        }
-        return null;
     }
 
     private void sendToAi(String transcript, boolean pttCapture) {

@@ -1,0 +1,16 @@
+[
+  {
+    "id": "3c8aa017-c37c-4058-8aa2-0f8515e419f4",
+    "actionKey": "external_camera",
+    "name": "External Camera",
+    "description": "Toggle the Camera Suite (external / free camera) while flying the ship. Say it again to leave the camera.",
+    "phrases": "external camera, camera, camera suite, deploy external camera, open camera, ship camera, photo mode, free camera, free cam, externe kamera, kamera, kamerasuite, externe kamera aktivieren, freie kamera, fotomodus, schiffskamera, cámara externa, cámara, suite de cámaras, activar cámara externa, cámara libre, modo cámara, cámara de la nave, caméra externe, caméra, suite caméra, active la caméra externe, caméra libre, mode photo, caméra du vaisseau, telecamera esterna, telecamera, suite telecamere, attiva telecamera esterna, telecamera libera, modalità foto, câmara externa, câmara, ativar câmara externa, câmara livre, modo fotografia, câmara da nave, câmera externa, câmera, ativar câmera externa, câmera livre, modo foto, câmera da nave, внешняя камера, камера, включи камеру, свободная камера, режим камеры, фотокамера, экстернал камера, зовнішня камера, увімкни камеру, вільна камера, режим камери, фоторежим",
+    "steps": [
+      {
+        "type": "BINDING_TAP",
+        "bindingId": "PhotoCameraToggle",
+        "durationMs": 0
+      }
+    ]
+  }
+]

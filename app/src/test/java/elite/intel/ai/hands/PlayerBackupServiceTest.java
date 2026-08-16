@@ -12,12 +12,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class PlayerBackupServiceTest {
 
@@ -182,6 +177,65 @@ class PlayerBackupServiceTest {
         assertNotNull(applyBackup);
         assertEquals(originalContent, Files.readString(gameFile, StandardCharsets.UTF_8));
         assertEquals(binds("Z"), Files.readString(applyBackup, StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void deleteBackupRemovesTheFolderAndItsContentsFromTheList() throws Exception {
+        Path bindingsDir = tempDir.resolve("bindings");
+        Files.createDirectories(bindingsDir);
+        write(bindingsDir.resolve("Custom.3.0.binds"), binds("A"));
+
+        Path playerBackupsDir = tempDir.resolve("playerbackups");
+        service(playerBackupsDir, fixedClock("2026-06-24T18:00:00Z")).createBackup(bindingsDir);
+        PlayerBackupService later = service(playerBackupsDir, fixedClock("2026-06-24T19:00:00Z"));
+        Path newest = later.createBackup(bindingsDir);
+
+        later.deleteBackup(newest);
+
+        assertFalse(Files.exists(newest));
+        assertEquals(List.of("2026-06-24_18-00-00"),
+                later.listBackups().stream().map(PlayerBackupService.PlayerBackup::timestamp).toList());
+    }
+
+    @Test
+    void deleteBackupLeavesTheOriginalBindingsFilesAlone() throws Exception {
+        Path bindingsDir = tempDir.resolve("bindings");
+        Files.createDirectories(bindingsDir);
+        Path liveFile = bindingsDir.resolve("Custom.3.0.binds");
+        write(liveFile, binds("A"));
+
+        PlayerBackupService service = service(tempDir.resolve("playerbackups"), fixedClock("2026-06-24T18:30:00Z"));
+        Path backupFolder = service.createBackup(bindingsDir);
+
+        service.deleteBackup(backupFolder);
+
+        assertTrue(Files.exists(liveFile));
+        assertEquals(binds("A"), Files.readString(liveFile, StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void deleteBackupRejectsAFolderOutsideTheBackupRoot() throws Exception {
+        Path outsider = tempDir.resolve("bindings");
+        Files.createDirectories(outsider);
+        write(outsider.resolve("Custom.3.0.binds"), binds("A"));
+
+        PlayerBackupService service = service(tempDir.resolve("playerbackups"), fixedClock("2026-06-24T18:30:00Z"));
+
+        assertThrows(IOException.class, () -> service.deleteBackup(outsider));
+        assertTrue(Files.exists(outsider), "A folder outside playerbackups must never be deleted");
+    }
+
+    @Test
+    void deleteBackupThrowsWhenTheFolderIsAlreadyGone() throws Exception {
+        Path bindingsDir = tempDir.resolve("bindings");
+        Files.createDirectories(bindingsDir);
+        write(bindingsDir.resolve("Custom.3.0.binds"), binds("A"));
+
+        PlayerBackupService service = service(tempDir.resolve("playerbackups"), fixedClock("2026-06-24T18:30:00Z"));
+        Path backupFolder = service.createBackup(bindingsDir);
+        service.deleteBackup(backupFolder);
+
+        assertThrows(IOException.class, () -> service.deleteBackup(backupFolder));
     }
 
     private PlayerBackupService service(Path playerBackupsDir, Clock clock) {

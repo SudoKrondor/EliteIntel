@@ -25,7 +25,8 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
 
 /**
  * The "Binding Management" sub-tab of BIND FORGE: a manual "Backup Now" action, a flat list of
- * existing {@code playerbackups} snapshots, and two restore actions on the selected backup.
+ * existing {@code playerbackups} snapshots, and two restore actions plus a delete action on the
+ * selected backup.
  * <p>
  * Both restore actions share the same first step (loading the backup's file for the active
  * preset into the working copy as the new draft): "Restore to Editing Slot" stops there, the
@@ -48,6 +49,7 @@ public class BindingManagementPanel extends JPanel {
     private JButton backupNowButton;
     private JButton restoreToEditingSlotButton;
     private JButton restoreToLiveButton;
+    private JButton deleteBackupButton;
     private boolean operationInProgress;
 
     public BindingManagementPanel() {
@@ -62,7 +64,7 @@ public class BindingManagementPanel extends JPanel {
         tableModel = new ReadOnlyTableModel(columnNames(), 0);
         table = new JTable(tableModel);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        table.getSelectionModel().addListSelectionListener(e -> updateRestoreButtonsEnabled());
+        table.getSelectionModel().addListSelectionListener(e -> updateSelectionActionsEnabled());
         HudTable.style(table);
 
         HudSection section = new HudSection(
@@ -88,8 +90,12 @@ public class BindingManagementPanel extends JPanel {
         restoreToLiveButton.setEnabled(false);
         restoreToLiveButton.addActionListener(e -> performRestoreToLive());
 
+        deleteBackupButton = makeButtonSubtle(getText("bindings.bindingManagement.button.deleteBackup"));
+        deleteBackupButton.setEnabled(false);
+        deleteBackupButton.addActionListener(e -> performDeleteBackup());
+
         return HudFooter.build(false, null, null,
-                List.of(backupNowButton, restoreToEditingSlotButton, restoreToLiveButton));
+                List.of(backupNowButton, restoreToEditingSlotButton, restoreToLiveButton, deleteBackupButton));
     }
 
     public void initData() {
@@ -201,11 +207,50 @@ public class BindingManagementPanel extends JPanel {
         }, "PlayerBackupRestoreLive-Thread").start();
     }
 
+    /**
+     * Deletes the selected backup folder so the list does not grow indefinitely. Guarded by a
+     * confirmation dialog because the snapshot it removes is not recoverable from anywhere else.
+     */
+    private void performDeleteBackup() {
+        PlayerBackupService.PlayerBackup backup = selectedBackup();
+        if (backup == null || operationInProgress) {
+            return;
+        }
+        if (!confirm("bindings.bindingManagement.delete.confirm.text",
+                "bindings.bindingManagement.delete.confirm.title",
+                backup.timestamp())) {
+            return;
+        }
+
+        setOperationBusy(true);
+        new Thread(() -> {
+            IOException failure = null;
+            try {
+                backupService.deleteBackup(backup.folder());
+            } catch (IOException e) {
+                failure = e;
+            }
+            IOException result = failure;
+            SwingUtilities.invokeLater(() -> {
+                setOperationBusy(false);
+                if (result != null) {
+                    showDeleteError(result.getMessage());
+                }
+                // Refresh either way: on failure the list re-reads what is actually on disk.
+                refreshBackups();
+            });
+        }, "PlayerBackupDelete-Thread").start();
+    }
+
     private boolean confirmRestore(String messageKey, String presetFileName) {
+        return confirm(messageKey, "bindings.bindingManagement.restore.confirm.title", presetFileName);
+    }
+
+    private boolean confirm(String messageKey, String titleKey, String argument) {
         int choice = JOptionPane.showConfirmDialog(
                 this,
-                getText(messageKey, presetFileName),
-                getText("bindings.bindingManagement.restore.confirm.title"),
+                getText(messageKey, argument),
+                getText(titleKey),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE);
         return choice == JOptionPane.YES_OPTION;
@@ -234,13 +279,14 @@ public class BindingManagementPanel extends JPanel {
         operationInProgress = busy;
         setCursor(busy ? Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR) : Cursor.getDefaultCursor());
         backupNowButton.setEnabled(!busy);
-        updateRestoreButtonsEnabled();
+        updateSelectionActionsEnabled();
     }
 
-    private void updateRestoreButtonsEnabled() {
-        boolean canRestore = !operationInProgress && selectedBackup() != null;
-        restoreToEditingSlotButton.setEnabled(canRestore);
-        restoreToLiveButton.setEnabled(canRestore);
+    private void updateSelectionActionsEnabled() {
+        boolean hasSelection = !operationInProgress && selectedBackup() != null;
+        restoreToEditingSlotButton.setEnabled(hasSelection);
+        restoreToLiveButton.setEnabled(hasSelection);
+        deleteBackupButton.setEnabled(hasSelection);
     }
 
     private void showBackupError(IOException e) {
@@ -259,6 +305,14 @@ public class BindingManagementPanel extends JPanel {
                 JOptionPane.ERROR_MESSAGE);
     }
 
+    private void showDeleteError(String message) {
+        JOptionPane.showMessageDialog(
+                this,
+                getText("bindings.bindingManagement.delete.error", message),
+                getText("bindings.bindingManagement.delete.error.dialogTitle"),
+                JOptionPane.ERROR_MESSAGE);
+    }
+
     private void refreshBackups() {
         tableModel.setRowCount(0);
         try {
@@ -274,7 +328,7 @@ public class BindingManagementPanel extends JPanel {
                     String.join(", ", backup.fileNames())
             });
         }
-        updateRestoreButtonsEnabled();
+        updateSelectionActionsEnabled();
     }
 
     private String[] columnNames() {
