@@ -121,6 +121,33 @@ public class PlayerBackupService {
     }
 
     /**
+     * Deletes one backup folder and everything in it, so the {@code playerbackups} list does not
+     * grow without bound. Only a direct child of the backup root can be deleted: the folder is
+     * resolved against the root first, so a path from anywhere else on disk is rejected rather
+     * than recursively deleted.
+     *
+     * @throws IOException if the folder is not a backup folder, is missing, or the delete fails
+     */
+    public void deleteBackup(Path backupFolder) throws IOException {
+        Path backupRoot = resolvePlayerBackupsDir().toAbsolutePath().normalize();
+        Path target = backupFolder.toAbsolutePath().normalize();
+        if (!backupRoot.equals(target.getParent())) {
+            throw new IOException("Not a player backup folder: " + backupFolder);
+        }
+        if (!Files.isDirectory(target)) {
+            throw new IOException("Backup folder no longer exists: " + backupFolder.getFileName());
+        }
+
+        try (var stream = Files.list(target)) {
+            for (Path file : stream.toList()) {
+                Files.delete(file);
+            }
+        }
+        Files.delete(target);
+        log.info("Deleted player backup {}", target.getFileName());
+    }
+
+    /**
      * Loads {@code presetFileName} from {@code backupFolder} into the current working copy,
      * making it the new draft - the same starting point as any other edit-in-progress.
      * Publishes {@link BindingsUpdatedEvent} so the Binding Profile tab reloads and reflects it.

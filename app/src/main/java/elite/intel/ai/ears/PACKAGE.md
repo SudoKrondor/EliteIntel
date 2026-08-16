@@ -42,7 +42,7 @@ Microphone (any format)
     │
 [stripTrashPrefix]          remove filler tokens prepended by model
     │
-[sleep-mode / PTT gate]     passThrough / wake-phrase / bypass-prefix check
+[push-to-talk gate]         discarded unless the button was held (when PTT is on)
     │
     ▼
 UserInputEvent (transcript, "computer" stripped)
@@ -154,7 +154,7 @@ The capture loop reads 100ms frames continuously. Each frame goes through the fo
 | `INFERENCE_TIMEOUT_SEC` | 4 | Watchdog timeout; executor replaced on hang |
 
 **Push-to-talk (PTT):** `PttButtonStateEvent` sets `pttHeld`. While held, any utterance is marked as PTT-captured (
-`capturedWhileAwake`). On button release,
+`capturedWithPttHeld`), latching even if the button goes down mid-utterance. On button release,
 `pttForceClose` is set to immediately close an open gate.
 
 **Frame monitor:** every processed frame publishes an `AudioMonitorEvent` (via
@@ -218,14 +218,15 @@ Parakeet occasionally prepends filler tokens (`mm-hmm`, `okay`, etc.) to real ut
 `stripTrashPrefix` strips any leading sequence matching `Reducer.trashSttWords`
 (punctuation-tolerant), then removes trailing punctuation from the remainder. Transcripts that are entirely trash are silently discarded.
 
-### Sleep-mode gating (`passThrough`)
+### Push-to-talk gating
 
-When `SystemSession.isSleepingModeOn()` is true, a transcript reaches the AI only if:
+When `SystemSession.isPushToTalkEnabled()` is true, the mapped controller button is the only thing that opens the microphone: a transcript reaches the AI only if the button was held while it was captured (`capturedWithPttHeld`). Anything else is room noise and is dropped here, before it costs an AI round trip.
 
-- It exactly matches one of the localized **wake phrases** (`AiActionLocalizations.wakeBypassPhrases()`), or
-- It starts with a **listen-bypass prefix** (`AiActionLocalizations.listenBypassPrefixes()`).
+With push-to-talk off there is no second gate - the VAD thresholds above decide what counts as speech, and every transcript that survives trash filtering is dispatched.
 
-The prefix is stripped before dispatching so the AI sees only the command content.
+> Superseded: Sleep/Wake mode gated this stage until V1.1 maintenance. A commander told the companion to sleep and
+> only a **wake phrase** or a **listen-bypass prefix** got through. It went unused once push-to-talk landed, and was
+> removed from the UI, settings, database, STT and tool set.
 
 ### TTS gate (`IsSpeakingEvent`)
 

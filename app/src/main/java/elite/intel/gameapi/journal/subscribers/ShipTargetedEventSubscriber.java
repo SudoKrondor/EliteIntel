@@ -12,11 +12,23 @@ import elite.intel.util.TTSFriendlyNumberConverter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import static elite.intel.util.StringUtls.localizedEvent;
 
 public class ShipTargetedEventSubscriber {
+
+    /**
+     * The combat rank names ShipTargeted reports in {@code PilotRank}, ordered so the list index is
+     * the rank number {@link Ranks#getCombatRankMap()} is keyed by. The journal gives the target's
+     * rank as a name while the rank map is numeric, so this is the bridge between the two.
+     */
+    private static final List<String> PILOT_COMBAT_RANKS = List.of(
+            "Harmless", "Mostly Harmless", "Novice", "Competent", "Expert", "Master",
+            "Dangerous", "Deadly", "Elite", "Elite I", "Elite II", "Elite III", "Elite IV", "Elite V"
+    );
 
     private final Logger log = LogManager.getLogger(ShipTargetedEventSubscriber.class);
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -30,7 +42,7 @@ public class ShipTargetedEventSubscriber {
             CompanionRuntime.narrator().announce(localizedEvent("event.target.contactLost"), true);
         }
 
-        String pilotRankLocalized = Ranks.getLocalizedPilotFederationRankMap().get(event.getPilotRank());
+        String pilotRankLocalized = localizedCombatRank(event.getPilotRank());
 
         String legalStatus = event.getLegalStatus() == null ? null : event.getLegalStatus().toLowerCase();
         int bounty = event.getBounty();
@@ -38,37 +50,31 @@ public class ShipTargetedEventSubscriber {
 
         float shieldHealth = event.getShieldHealth();
         float hullHealth = event.getHullHealth();
-        StringBuilder info = new StringBuilder();
         if (announceScan(event, legalStatus, missionTargetOrNull)) {
 
             String contactType = missionTargetOrNull.trim().equals("Mission Target")
                     ? localizedEvent("event.target.missionTarget")
                     : localizedEvent("event.target.legalTarget");
-            info.append(localizedEvent("event.target.contact", contactType));
 
-            info.append(pilotRankLocalized == null ? localizedEvent("event.target.rankUnknown") : pilotRankLocalized);
-            info.append(", ");
+            // Assembled as a joined list rather than by appending separators, so a detail that is
+            // absent (undamaged shields, intact hull) leaves no dangling comma for TTS to read out.
+            List<String> details = new ArrayList<>();
+            details.add(pilotRankLocalized == null ? localizedEvent("event.target.rankUnknown") : pilotRankLocalized);
+            details.add(legalStatus == null ? localizedEvent("event.target.legalStatusUnknown") : Ranks.getLocalizedLegalStatus(event.getLegalStatus()));
+            details.add(bounty == 0 ? localizedEvent("event.target.noBounty") : localizedEvent("event.target.bounty", TTSFriendlyNumberConverter.formatBountyForSpeech(bounty)));
 
-            info.append(legalStatus == null ? localizedEvent("event.target.legalStatusUnknown") : Ranks.getLocalizedLegalStatus(event.getLegalStatus()));
-            info.append(", ");
+            StringBuilder info = new StringBuilder(localizedEvent("event.target.contact", contactType))
+                    .append(' ').append(String.join(", ", details)).append('.');
 
-            info.append(bounty == 0 ? localizedEvent("event.target.noBounty") : localizedEvent("event.target.bounty", TTSFriendlyNumberConverter.formatBountyForSpeech(bounty)));
-            info.append(", ");
-
-            if (shieldHealth != 100 || hullHealth != 100) {
-                if (shieldHealth == 0) {
-                    info.append(localizedEvent("event.target.shieldsOffline"));
-                } else if (shieldHealth < 50) {
-                    info.append(", ");
-                    info.append(localizedEvent("event.target.shields", String.format("%.0f", shieldHealth)));
-                }
-
-                info.append(", ");
-                if (hullHealth < 50) {
-                    info.append(", ");
-                    info.append(localizedEvent("event.target.hull", String.format("%.0f", hullHealth)));
-                }
+            if (shieldHealth == 0) {
+                info.append(' ').append(localizedEvent("event.target.shieldsOffline"));
+            } else if (shieldHealth < 50) {
+                info.append(' ').append(localizedEvent("event.target.shields", String.format("%.0f", shieldHealth)));
             }
+            if (hullHealth < 50) {
+                info.append(' ').append(localizedEvent("event.target.hull", String.format("%.0f", hullHealth)));
+            }
+
             String data = buildCanonicalShipString(event);
             String key = Md5Utils.generateMd5(data);
             if (playerSession.getShipScan(key) == null || playerSession.getShipScan(key).isEmpty()) {
@@ -77,6 +83,19 @@ public class ShipTargetedEventSubscriber {
                 EventNarrator.critical(info.toString());
             }
         }
+    }
+
+
+    /**
+     * Translates the target's combat rank name into the active language, or returns {@code null}
+     * when the journal reported no rank or one we do not know, so the caller can fall back to
+     * "rank unknown" rather than announce a wrong rank.
+     */
+    static String localizedCombatRank(String pilotRank) {
+        if (pilotRank == null || pilotRank.isBlank()) return null;
+        int rankNumber = PILOT_COMBAT_RANKS.indexOf(pilotRank.trim());
+        if (rankNumber < 0) return null;
+        return Ranks.getCombatRankMap().get(rankNumber);
     }
 
 

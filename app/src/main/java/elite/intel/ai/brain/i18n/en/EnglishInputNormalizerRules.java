@@ -12,7 +12,14 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
     @Override
     public LinkedHashMap<String, String> buildPhoneticMap() {
         LinkedHashMap<String, String> m = new LinkedHashMap<>();
-        m.put(" of", " off");
+        // "off" is only ever heard as "of" inside these fixed phrases. A blanket of -> off correction used to
+        // sit here and was worse than no correction at all: it rewrote the ordinary preposition too, so
+        // "transfer power of the systems" reached the model as "power OFF the systems" and was refused as a
+        // request to shut power down. Phrase at a time, never a word on its own.
+        m.put("take of", "take off");
+        m.put("lift of", "lift off");
+        m.put("turn of", "turn off");
+        m.put("lights of", "lights off");
         m.put("manax", "max");
         m.put("hard points", "hardpoints");
         m.put("scott", "scan");
@@ -30,7 +37,6 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("spectrum scan", "scan system");
         m.put("full spectrum scan", "FSS");
         m.put("full-spectrum scan", "FSS");
-        m.put("when wake up", "wake up");
         m.put("nicolai has", "equalize");
         m.put("mitigation", "navigation");
         m.put("codec", "codex");
@@ -51,6 +57,13 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("distance", "distance");
         m.put("fields", "shields");
         m.put("power two", "power to");
+        // Unstressed "to" reaches the transcript as "of" or "two", and the article is usually spoken even
+        // though the aliases are authored without it. Collapsing all of them onto "power to <capacitor>" is
+        // what keeps the phrase a reflex instead of a question for the model. Ordered after "power two" so
+        // that repair has already run when the article rule looks at the text.
+        m.put("power of the", "power to");
+        m.put("power to the", "power to");
+        m.put("power of", "power to");
         m.put("what are the systems", "power to systems");
         m.put("continuation", "connection");
         m.put("and is it", "exit");

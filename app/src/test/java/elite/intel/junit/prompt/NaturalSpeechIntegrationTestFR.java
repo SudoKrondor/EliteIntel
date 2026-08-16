@@ -68,33 +68,6 @@ public class NaturalSpeechIntegrationTestFR {
     // Rôle: contrôler l'état d'écoute et interrompre la voix, sans interaction directe avec le jeu.
     // =========================================================================
 
-    @ParameterizedTest(name = "[{index}] \"{0}\"")
-    @Order(10)
-    @MethodSource
-    void startListening(String input) throws InterruptedException {
-        assertRouted(input, WakeupCommand.ID);
-    }
-
-    static Stream<String> startListening() {
-        return Stream.of("réveil",
-                "écoute commande vocale",
-                "réveille-toi"
-        );
-    }
-
-    @ParameterizedTest(name = "[{index}] \"{0}\"")
-    @Order(11)
-    @MethodSource
-    void ignoreMe(String input) throws InterruptedException {
-        assertRouted(input, SleepCommand.ID);
-    }
-
-    static Stream<String> ignoreMe() {
-        return Stream.of("passe en mode veille",
-                "tu peux disposer",
-                "désactive les commandes vocales"
-        );
-    }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(12)

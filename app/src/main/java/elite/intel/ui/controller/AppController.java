@@ -113,27 +113,6 @@ public class AppController {
     }
 
     @Subscribe
-    public void onStreamModeToggle(VoiceInputModeToggleEvent event) {
-        UiBus.publish(new ToggleWakeWordEvent(event.isStreaming()));
-    }
-
-    @Subscribe
-    public void toggleStreamingMode(ToggleWakeWordEvent event) {
-        appendToLog("Voice input mode toggle");
-        systemSession.stopStartListening(event.isOn());
-        UiBus.publish(new SleepWakeStateChangedEvent(event.isOn()));
-        GameEventBus.publish(new AiVoxResponseEvent(event.isOn() ? ignoreModeOnMessage() : ignoreModeOffMessage()));
-    }
-
-    private String ignoreModeOffMessage() {
-        return StringUtls.localizedSpeech("speech.ignoreModeOff");
-    }
-
-    private String ignoreModeOnMessage() {
-        return StringUtls.localizedSpeech("speech.ignoreModeOn");
-    }
-
-    @Subscribe
     private void recalibrateAudio(RecalibrateAudioEvent event) {
         SwingUtilities.invokeLater(() -> {
             appendToLog(StringUtls.localizedSpeech("log.audioCalibrationStarting"));
@@ -483,8 +462,8 @@ public class AppController {
                 DeviceService.getInstance().stop();
             }
         }));
-        // After DEVICE, whose poll loop feeds it the button transitions, and after EARS, because arming
-        // push-to-talk puts the microphone to sleep and there must be a microphone to put to sleep.
+        // After DEVICE, whose poll loop feeds it the button transitions, and after EARS, because the gate it
+        // arms is the microphone's and there must be a microphone to gate.
         services.put(ServiceType.PUSH_TO_TALK, new ServiceHolder(PushToTalkService::getInstance));
         // The companion subsystem is the LLM service (the legacy command pipeline was removed). In diagnostics
         // mode it is wired with a recording execution gateway (file-fed phrases exercise the real routing path

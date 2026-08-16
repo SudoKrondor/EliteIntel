@@ -11,18 +11,19 @@ import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.controller.ManagedService;
-import elite.intel.ui.event.*;
+import elite.intel.ui.event.PttButtonStateEvent;
+import elite.intel.ui.event.PttModeChangedEvent;
+import elite.intel.ui.event.PushToTalkSettingsChangedEvent;
 import elite.intel.util.AudioPlayer;
 import elite.intel.util.PlayBeepEvent;
 
 /**
  * Turns the commander's mapped controller button into the microphone gate.
  * <p>
- * Two modes, both driven by the same button. In <b>hold</b> mode a press opens the gate for as long as the
- * button is down: the current vocalisation is cut immediately, at the press rather than when the resulting
- * transcript arrives, so speaking over her is instant. In <b>toggle</b> mode a press flips the system between
- * sleeping and awake. Either way the button is the only thing that opens the gate while push-to-talk is on,
- * which is why arming it puts the system to sleep first.
+ * A press opens the gate for as long as the button is down: the current vocalisation is cut immediately, at
+ * the press rather than when the resulting transcript arrives, so speaking over her is instant. While
+ * push-to-talk is on the button is the only thing that opens the gate, and anything the microphone picks up
+ * without it is discarded by the STT pipeline as room noise.
  * <p>
  * This lived in the Input settings panel, where the runtime behaviour of a controller button depended on a
  * Swing component existing: it worked only because the settings tab is built eagerly at startup, and nobody
@@ -64,8 +65,6 @@ public final class PushToTalkService implements ManagedService {
         DeviceBus.register(this);
         UiBus.register(this);
         running = true;
-        // A disabled push-to-talk is left alone: there is no policy to enforce, and forcing the microphone
-        // awake here would undo a commander who put her to sleep by voice before starting the services.
         if (SystemSession.getInstance().isPushToTalkEnabled()) {
             arm();
         }
@@ -83,9 +82,7 @@ public final class PushToTalkService implements ManagedService {
     }
 
     /**
-     * Re-applies the policy after the commander changes the push-to-talk setting or its mode. Re-arming
-     * returns to the asleep baseline on purpose: whichever mode was just chosen, the button is what opens the
-     * gate, so leaving the microphone open would make the setting a lie until the next press.
+     * Re-applies the policy after the commander turns push-to-talk on or off, or remaps its button.
      */
     @Subscribe
     public void onSettingsChanged(PushToTalkSettingsChangedEvent event) {
@@ -99,13 +96,6 @@ public final class PushToTalkService implements ManagedService {
     @Subscribe
     public void onButtonState(DeviceButtonEvent event) {
         if (!isGateButton(event)) {
-            return;
-        }
-        if (SystemSession.getInstance().isPushToTalkToggleMode()) {
-            if (event.pressed()) {
-                announcePress();
-                toggleSleepWake();
-            }
             return;
         }
         if (event.pressed()) {
@@ -146,25 +136,10 @@ public final class PushToTalkService implements ManagedService {
     }
 
     /**
-     * Toggle mode flips sleeping and awake. {@link VoiceInputModeToggleEvent} rather than a plain state change
-     * on purpose: it is the commander's own instruction, so it earns the spoken confirmation that
-     * {@code AppController} attaches to that event, exactly as the "go to sleep" voice command does.
-     */
-    private void toggleSleepWake() {
-        SystemSession session = SystemSession.getInstance();
-        boolean wakingUp = session.isSleepingModeOn();
-        session.stopStartListening(!wakingUp);
-        UiBus.publish(new VoiceInputModeToggleEvent(!wakingUp));
-    }
-
-    /**
-     * Push-to-talk on: the system sleeps until the button says otherwise.
+     * Push-to-talk on: nothing reaches the companion until the button is held.
      */
     private void arm() {
-        SystemSession session = SystemSession.getInstance();
-        session.stopStartListening(true);
-        UiBus.publish(new SleepWakeStateChangedEvent(true));
-        UiBus.publish(new PttModeChangedEvent(!session.isPushToTalkToggleMode()));
+        UiBus.publish(new PttModeChangedEvent(true));
     }
 
     /**
@@ -172,8 +147,6 @@ public final class PushToTalkService implements ManagedService {
      */
     private void disarm() {
         releaseGate();
-        SystemSession.getInstance().stopStartListening(false);
-        UiBus.publish(new SleepWakeStateChangedEvent(false));
         UiBus.publish(new PttModeChangedEvent(false));
     }
 

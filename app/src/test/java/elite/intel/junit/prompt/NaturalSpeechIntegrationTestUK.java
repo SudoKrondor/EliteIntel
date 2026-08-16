@@ -42,27 +42,6 @@ public class NaturalSpeechIntegrationTestUK {
     // Attention / control
     // =========================================================================
 
-    @ParameterizedTest(name = "[{index}] \"{0}\"")
-    @Order(10)
-    @MethodSource
-    void startListening(String input) throws InterruptedException {
-        assertRouted(input, WakeupCommand.ID);
-    }
-
-    static Stream<String> startListening() {
-        return Stream.of("прокинься", "прокидайся");
-    }
-
-    @ParameterizedTest(name = "[{index}] \"{0}\"")
-    @Order(11)
-    @MethodSource
-    void ignoreMe(String input) throws InterruptedException {
-        assertRouted(input, SleepCommand.ID);
-    }
-
-    static Stream<String> ignoreMe() {
-        return Stream.of("ігноруй мене", "не слухай", "спи");
-    }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(12)

@@ -45,6 +45,12 @@ class FighterAttackTargetPhrasingTest {
      * Per language, the word stems an alias must all contain: the attack verb, the possessive, the target
      * noun. Alternatives inside a group cover inflection and word order ("greife"/"angreifen",
      * "атакуй"/"атаковать"); a token counts when it starts with one of them.
+     *
+     * <p>IT additionally licenses "concentr-" ("concentrati sul mio bersaglio") as an attack verb, at the
+     * Italian localizer's request. It is the only locale that renders the in-game "Focus Target" wording, and
+     * it is safe here only because it keeps the possessive and the noun: no other Italian fighter order
+     * contains "mio" or "bersaglio", so a damaged transcript of one cannot reach it. A bare "concentrati sul
+     * bersaglio" would be the phrase that caused the incident above, and must not be added.
      */
     private static final Map<Language, List<List<String>>> REQUIRED_STEMS = Map.ofEntries(
             entry(Language.EN, List.of(List.of("attack"), List.of("my"), List.of("target"))),
@@ -53,7 +59,7 @@ class FighterAttackTargetPhrasingTest {
             entry(Language.DE, List.of(List.of("greif", "angreif"), List.of("mein"), List.of("ziel"))),
             entry(Language.FR, List.of(List.of("attaqu"), List.of("ma"), List.of("cible"))),
             entry(Language.ES, List.of(List.of("atac", "ataqu"), List.of("mi"), List.of("objetivo"))),
-            entry(Language.IT, List.of(List.of("attacc"), List.of("mio"), List.of("bersaglio"))),
+            entry(Language.IT, List.of(List.of("attacc", "concentr"), List.of("mio"), List.of("bersaglio"))),
             entry(Language.PT, List.of(List.of("atac"), List.of("meu"), List.of("alvo"))),
             entry(Language.PTBZ, List.of(List.of("atac"), List.of("meu"), List.of("alvo")))
     );

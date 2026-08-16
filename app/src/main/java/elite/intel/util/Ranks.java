@@ -291,7 +291,7 @@ public class Ranks {
         rankMap.put(9, getText("rank.merc.eliteI"));
         rankMap.put(10, getText("rank.merc.eliteII"));
         rankMap.put(11, getText("rank.merc.eliteIII"));
-        rankMap.put(12, getText("rank.merc.eliteVI"));
+        rankMap.put(12, getText("rank.merc.eliteIV"));
         rankMap.put(13, getText("rank.merc.eliteV"));
         return rankMap;
     }
@@ -311,7 +311,7 @@ public class Ranks {
         rankMap.put("Elite I", getText("rank.merc.eliteI"));
         rankMap.put("Elite II", getText("rank.merc.eliteII"));
         rankMap.put("Elite III", getText("rank.merc.eliteIII"));
-        rankMap.put("Elite IV", getText("rank.merc.eliteVI"));
+        rankMap.put("Elite IV", getText("rank.merc.eliteIV"));
         rankMap.put("Elite V", getText("rank.merc.eliteV"));
         return rankMap;
     }

@@ -10,6 +10,7 @@ import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.PttButtonStateEvent;
+import elite.intel.ui.event.PttModeChangedEvent;
 import elite.intel.ui.event.PushToTalkSettingsChangedEvent;
 import elite.intel.util.Cypher;
 import org.junit.jupiter.api.*;
@@ -50,6 +51,11 @@ class PushToTalkServiceTest {
             return events.stream().anyMatch(event -> event instanceof PttButtonStateEvent);
         }
 
+        boolean sawArmed(boolean armed) {
+            return events.stream().anyMatch(event ->
+                    event instanceof PttModeChangedEvent mode && mode.isActive() == armed);
+        }
+
         void clear() {
             events.clear();
         }
@@ -59,10 +65,8 @@ class PushToTalkServiceTest {
     private final Collector game = new Collector();
 
     private boolean savedEnabled;
-    private boolean savedToggleMode;
     private String savedController;
     private int savedButton;
-    private boolean savedSleeping;
 
     @BeforeAll
     void boot() throws Exception {
@@ -74,10 +78,8 @@ class PushToTalkServiceTest {
     void setUp() {
         SystemSession session = SystemSession.getInstance();
         savedEnabled = session.isPushToTalkEnabled();
-        savedToggleMode = session.isPushToTalkToggleMode();
         savedController = session.getPushToTalkControllerName();
         savedButton = session.getPushToTalkButtonIndex();
-        savedSleeping = session.isSleepingModeOn();
 
         UiBus.register(ui);
         GameEventBus.register(game);
@@ -93,70 +95,44 @@ class PushToTalkServiceTest {
 
         SystemSession session = SystemSession.getInstance();
         session.setPushToTalkEnabled(savedEnabled);
-        session.setPushToTalkToggleMode(savedToggleMode);
         session.setPushToTalkControllerName(savedController);
         session.setPushToTalkButtonIndex(savedButton);
-        session.stopStartListening(savedSleeping);
     }
 
     /**
-     * Arming is what makes the button the only way in: leaving the microphone open would make the setting a
-     * lie until the commander happened to press something.
+     * Arming is what tells the rest of the app that the button now owns the microphone: the STT pipeline
+     * discards anything captured without it, and the AI tab says so on its status badge.
      */
     @Test
-    void armingPutsTheMicrophoneToSleep() {
-        configure(true, false);
-        SystemSession.getInstance().stopStartListening(false);
+    void armingAnnouncesThatTheButtonOwnsTheGate() {
+        configure(true);
 
         PushToTalkService.getInstance().start();
 
-        assertTrue(SystemSession.getInstance().isSleepingModeOn(),
-                "push-to-talk on means the button owns the gate, so the microphone starts asleep");
+        assertTrue(ui.sawArmed(true), "push-to-talk on means the button owns the gate");
+        assertFalse(ui.sawGateChange(), "but nothing is held until the commander presses it");
     }
 
-    /**
-     * A commander who put her to sleep by voice and then started the services must not be woken by a feature
-     * they are not using.
-     */
     @Test
     void startingWithPushToTalkOffChangesNothing() {
-        configure(false, false);
-        SystemSession.getInstance().stopStartListening(true);
+        configure(false);
         ui.clear();
 
         PushToTalkService.getInstance().start();
 
-        assertTrue(SystemSession.getInstance().isSleepingModeOn(), "a disabled gate has no policy to enforce");
-        assertTrue(ui.events.isEmpty(), "and nothing to announce");
+        assertTrue(ui.events.isEmpty(), "a disabled gate has no policy to enforce and nothing to announce");
     }
 
     @Test
-    void turningPushToTalkOffReopensTheMicrophone() {
-        configure(true, false);
+    void turningPushToTalkOffHandsTheMicrophoneBack() {
+        configure(true);
         PushToTalkService.getInstance().start();
+        ui.clear();
 
-        configure(false, false);
+        configure(false);
         UiBus.publish(new PushToTalkSettingsChangedEvent());
 
-        assertFalse(SystemSession.getInstance().isSleepingModeOn(),
-                "with the gate gone the microphone listens on its own again");
-    }
-
-    /**
-     * A settings change re-arms rather than leaving the previous state standing, so the button is always what
-     * opens the gate whichever mode was just chosen.
-     */
-    @Test
-    void switchingModeWhileAwakeReArms() {
-        configure(true, false);
-        PushToTalkService.getInstance().start();
-        SystemSession.getInstance().stopStartListening(false);
-
-        configure(true, true);
-        UiBus.publish(new PushToTalkSettingsChangedEvent());
-
-        assertTrue(SystemSession.getInstance().isSleepingModeOn());
-        assertFalse(ui.sawGateChange(), "toggle mode never opens the hold gate");
+        assertTrue(ui.sawArmed(false), "with the gate gone the microphone listens on its own again");
     }
 
     /**
@@ -165,7 +141,7 @@ class PushToTalkServiceTest {
      */
     @Test
     void aButtonFromAnUnknownControllerIsIgnored() {
-        configure(true, false);
+        configure(true);
         PushToTalkService.getInstance().start();
         ui.clear();
         game.clear();
@@ -184,7 +160,7 @@ class PushToTalkServiceTest {
      */
     @Test
     void aDisconnectThatIsNotHoldingTheGateChangesNothing() {
-        configure(true, false);
+        configure(true);
         PushToTalkService.getInstance().start();
         ui.clear();
 
@@ -195,7 +171,7 @@ class PushToTalkServiceTest {
 
     @Test
     void stoppingWhileIdlePublishesNoRelease() {
-        configure(true, false);
+        configure(true);
         PushToTalkService.getInstance().start();
         ui.clear();
 
@@ -211,7 +187,7 @@ class PushToTalkServiceTest {
      */
     @Test
     void startAndStopAreIdempotent() {
-        configure(true, false);
+        configure(true);
         PushToTalkService.getInstance().start();
         PushToTalkService.getInstance().start();
         PushToTalkService.getInstance().stop();
@@ -224,10 +200,9 @@ class PushToTalkServiceTest {
         assertFalse(ui.sawGateChange());
     }
 
-    private static void configure(boolean enabled, boolean toggleMode) {
+    private static void configure(boolean enabled) {
         SystemSession session = SystemSession.getInstance();
         session.setPushToTalkEnabled(enabled);
-        session.setPushToTalkToggleMode(toggleMode);
         session.setPushToTalkControllerName("Test HOTAS");
         session.setPushToTalkButtonIndex(0);
     }

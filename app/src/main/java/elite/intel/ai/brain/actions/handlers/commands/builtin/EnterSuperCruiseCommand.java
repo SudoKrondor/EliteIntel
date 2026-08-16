@@ -26,7 +26,7 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Engage supercruise to travel faster-than-light within the current system. If already in supercruise, instead target the next route system and jump.";
+        return "Engage supercruise to travel FTL (faster-than-light) within the current system. If already in supercruise, instead target the next route system and jump.";
     }
 
 
@@ -42,7 +42,7 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
     /** Cannot engage supercruise while docked (mass-locked by the station); allowed once undocked or lifted off. */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() && !status.isDocked();
+        return status.isInMainShip() && !status.isDocked() && !status.isInSupercruise();
     }
 
     @Override

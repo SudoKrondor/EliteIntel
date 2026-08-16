@@ -36,6 +36,57 @@ class PhoneticInputNormalizerTest {
     }
 
     /**
+     * The reported utterance. A blanket {@code of -> off} correction used to turn every English preposition
+     * into "off", so this arrived as "power OFF the systems" and the model answered that power transfer
+     * cannot decrease power.
+     */
+    @Test
+    void heardOfInAPowerRequestMeansToAndNeverOff() {
+        LinkedHashMap<String, String> corrections = new EnglishInputNormalizerRules().buildPhoneticMap();
+
+        assertEquals("transfer power to systems",
+                PhoneticInputNormalizer.normalize("transfer power of the systems", corrections));
+        assertEquals("transfer power to shields",
+                PhoneticInputNormalizer.normalize("transfer power of the shields", corrections));
+    }
+
+    /**
+     * The aliases are authored without the article, so the spoken form has to lose it to stay a reflex.
+     */
+    @Test
+    void theArticleInAPowerRequestCollapsesOntoTheAuthoredAlias() {
+        LinkedHashMap<String, String> corrections = new EnglishInputNormalizerRules().buildPhoneticMap();
+
+        assertEquals("power to engines",
+                PhoneticInputNormalizer.normalize("power to the engines", corrections));
+    }
+
+    /**
+     * The preposition itself is ordinary English and must survive: "get us out of dock" is an authored alias,
+     * and the old rule rewrote it word for word into something no alias contains.
+     */
+    @Test
+    void theOrdinaryPrepositionIsLeftAlone() {
+        LinkedHashMap<String, String> corrections = new EnglishInputNormalizerRules().buildPhoneticMap();
+
+        assertEquals("get us out of dock", PhoneticInputNormalizer.normalize("get us out of dock", corrections));
+        assertEquals("what is the distance of sol",
+                PhoneticInputNormalizer.normalize("what is the distance of sol", corrections));
+    }
+
+    /**
+     * What the blanket rule existed for still works, now pinned to the phrases that actually mean "off".
+     */
+    @Test
+    void stillRepairsTheFixedPhrasesWhereOfMeansOff() {
+        LinkedHashMap<String, String> corrections = new EnglishInputNormalizerRules().buildPhoneticMap();
+
+        assertEquals("take off", PhoneticInputNormalizer.normalize("take of", corrections));
+        assertEquals("turn off night vision", PhoneticInputNormalizer.normalize("turn of night vision", corrections));
+        assertEquals("lights off", PhoneticInputNormalizer.normalize("lights of", corrections));
+    }
+
+    /**
      * The French carrier is a homophone pair, so the STT engine decides which spelling arrives. Both must reach the
      * singular form the French aliases are authored in, and the singular must survive untouched.
      */

@@ -23,6 +23,10 @@ import java.util.List;
 public class TradeProfileManager {
 
     public static final int MAX_DISTANCE_TO_INITIAL_STATION = 500;
+    /**
+     * How far out of our own records a starting station may be picked before we ask Spansh instead.
+     */
+    public static final int MAX_DISTANCE_TO_KNOWN_STATION_LY = 20;
     private static final Logger log = LogManager.getLogger(TradeProfileManager.class);
     private static TradeProfileManager instance;
     private final ShipManager shipManager = ShipManager.getInstance();
@@ -57,15 +61,8 @@ public class TradeProfileManager {
         criteria.setStartingCapital(profile.getStartingBudget());
 
         if (withStationStartingStation) {
-            List<LocationDto> stations = LocationManager.getInstance().findStationsInCurrentStarSystem(
-                    playerSession.getLocationData().getSystemAddress()
-            );
-            if (stations.isEmpty()) {
+            if (!setStartingStationFromOurRecords(criteria)) {
                 if (spanshSearchForStation(criteria)) return null;
-            } else {
-                LocationDto locationDto = stations.stream().findFirst().get();
-                criteria.setStation(locationDto.getStationName());
-                criteria.setSystem(locationDto.getStarName());
             }
 
             if (criteria.getStation() == null || criteria.getSystem() == null) {
@@ -75,6 +72,53 @@ public class TradeProfileManager {
         }
         log.debug("Trade route criteria: {}", criteria.toString());
         return criteria;
+    }
+
+    /**
+     * Picks the starting station out of the stations we have already visited: the nearest one within
+     * {@link #MAX_DISTANCE_TO_KNOWN_STATION_LY} light years, falling back to the current system when we
+     * have no coordinates to measure from. Returns false when our own records cannot supply one, which
+     * is the caller's cue to ask Spansh.
+     * <p>
+     * WHY ours first: a station we have docked at is one we know the ship can use and one the commander
+     * can reach, and reading it costs a local query instead of a network round trip.
+     */
+    private boolean setStartingStationFromOurRecords(TradeRouteSearchCriteria criteria) {
+        LocationManager locationManager = LocationManager.getInstance();
+
+        List<LocationDto> candidates = locationManager.findKnownStationsWithin(
+                locationManager.getGalacticCoordinates(), MAX_DISTANCE_TO_KNOWN_STATION_LY
+        );
+        if (candidates.isEmpty()) {
+            // No coordinates recorded for the systems we know - fall back to the system we are standing in,
+            // which is identified by its address and so needs no coordinates at all.
+            candidates = locationManager.findStationsInCurrentStarSystem(
+                    playerSession.getLocationData().getSystemAddress()
+            );
+        }
+
+        return candidates.stream()
+                .filter(station -> station.getStationName() != null && station.getStarName() != null)
+                .filter(TradeProfileManager::sellsCommodities)
+                .findFirst()
+                .map(station -> {
+                    criteria.setStation(station.getStationName());
+                    criteria.setSystem(station.getStarName());
+                    log.debug("Starting trade station taken from our own records: {} in {}", station.getStationName(), station.getStarName());
+                    return true;
+                })
+                .orElse(false);
+    }
+
+    /**
+     * True unless the record positively says the station has no commodity market. A trade route has to
+     * start where cargo can be bought, but the older station rows were written before station services
+     * were captured, so an unknown service list is taken as usable rather than discarded.
+     */
+    private static boolean sellsCommodities(LocationDto station) {
+        List<String> services = station.getStationServices();
+        if (services == null || services.isEmpty()) return true;
+        return services.stream().anyMatch(service -> "commodities".equalsIgnoreCase(service));
     }
 
     private boolean spanshSearchForStation(TradeRouteSearchCriteria criteria) {

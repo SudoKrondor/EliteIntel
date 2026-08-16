@@ -11,11 +11,10 @@ Review the code for integrity and compliance with `@CODING_STANDARD.md`. The har
 # 1. Determine the change set and scope
 
 **Base branch (read this first).** This project does NOT use `master` as trunk.
-`master` is the current production release (e.g. V1.0); the **integration branch** (see "Branching model" in
+`master` is the current production release (e.g. V1.1-Release); the **integration branch** (see "Branching model" in
 `CLAUDE.md`, currently
-`V1.1-RC`) is what feature branches merge into. Diff feature work against the integration branch, not
-`master`. Diffing against
-`master` would surface the entire unreleased delta rather than the change under review. The only time the base is
+`V1.1-Release` is a V1.1 maintenance branch. There will be some small changes or bug fixes against that branch. Maybe even small features (like some searches)
+`V1.2` is what new feature branches merge into. Diff feature work against the integration branch, not `master`.
 `master` is a release-promotion review (integration branch -> master).
 
 Pick the mode from the argument:

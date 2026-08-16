@@ -54,7 +54,6 @@ public class AiTabPanel extends JPanel {
      */
     private static final Path APP_LOG_FILE = Path.of("logs", "elite-intel.log");
 
-    private JButton wakeWordButton;
     private JButton hudOverlayButton;
     private JButton hudOverlaySettingsButton;
     private boolean hudOverlayVisible;
@@ -77,7 +76,9 @@ public class AiTabPanel extends JPanel {
     private HudStatusReadout bindingsBadge;
     private HudStatusReadout commandsBadge;
     private HudStatusReadout keymapBadge;
-    private boolean sleeping;
+    /**
+     * Whether the push-to-talk gate is armed, so the STT badge can say what opens the microphone.
+     */
     private boolean pttModeActive;
     private String lastLlmProvider;
 
@@ -99,7 +100,6 @@ public class AiTabPanel extends JPanel {
         this.monoFont = monoFont;
         this.uiState = uiState; // stores the LLM connection status
         LlmSessionStatsTracker.getInstance(); // ensure tracker is registered before events flow
-        sleeping = SystemSession.getInstance().isSleepingModeOn();
         UiBus.register(this);
         buildUi();
         summaryClockTimer = new Timer(1_000, e -> tickSummaryClock());
@@ -125,11 +125,6 @@ public class AiTabPanel extends JPanel {
             UiBus.publish(new ToggleServicesEvent(!isServiceRunning.get()));
             startStopServicesButton.setEnabled(false);
         });
-
-        wakeWordButton = makeButtonSubtle(wakeWordText());
-        wakeWordButton.addActionListener(e ->
-                UiBus.publish(new ToggleWakeWordEvent(!sleeping)));
-        wakeWordButton.setEnabled(false);
 
         hudOverlayButton = makeButtonSubtle(hudOverlayText());
         hudOverlayButton.setToolTipText(getText("ai.hudOverlay.tooltip"));
@@ -245,7 +240,7 @@ public class AiTabPanel extends JPanel {
         JPanel bottom = transparentPanel(null);
         bottom.setLayout(new BoxLayout(bottom, BoxLayout.Y_AXIS));
 
-        for (JButton b : new JButton[]{startStopServicesButton, wakeWordButton,
+        for (JButton b : new JButton[]{startStopServicesButton,
                 hudOverlayButton, hudOverlaySettingsButton, audioDevicesButton, recalibrateAudioButton,
                 updateAppButton}) {
             b.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -254,8 +249,6 @@ public class AiTabPanel extends JPanel {
 
         // top: runtime controls
         top.add(startStopServicesButton);
-        top.add(Box.createRigidArea(new Dimension(0, HUD_GAP)));
-        top.add(wakeWordButton);
         top.add(Box.createRigidArea(new Dimension(0, HUD_GAP)));
         top.add(hudOverlayButton);
         top.add(Box.createRigidArea(new Dimension(0, HUD_GAP)));
@@ -430,9 +423,7 @@ public class AiTabPanel extends JPanel {
                 + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".json";
     }
 
-    public void initData(boolean sleepingModeOn, ServicesStateEvent.State serviceState) {
-        this.sleeping = sleepingModeOn;
-        wakeWordButton.setText(wakeWordText());
+    public void initData(ServicesStateEvent.State serviceState) {
         applyServiceState(serviceState);
     }
 
@@ -477,7 +468,6 @@ public class AiTabPanel extends JPanel {
         startStopServicesButton.setText(running ? getText("button.stopServices") : getText("button.startServices"));
         startStopServicesButton.setEnabled(!transitioning);
         recalibrateAudioButton.setEnabled(running);
-        wakeWordButton.setEnabled(running && !pttModeActive);
         refreshSttBadge();
         refreshLlmBadge();
         refreshTtsBadge();
@@ -533,24 +523,10 @@ public class AiTabPanel extends JPanel {
     }
 
     @Subscribe
-    public void onSleepWakeStateChanged(SleepWakeStateChangedEvent event) {
-        SwingUtilities.invokeLater(() -> {
-            sleeping = event.sleeping();
-            wakeWordButton.setText(wakeWordText());
-            refreshSttBadge();
-        });
-    }
-
-    @Subscribe
     public void onPttModeChanged(PttModeChangedEvent event) {
         SwingUtilities.invokeLater(() -> {
             pttModeActive = event.isActive();
-            wakeWordButton.setEnabled(isServiceRunning.get() && !pttModeActive);
-            if (pttModeActive) {
-                sleeping = true;
-                wakeWordButton.setText(wakeWordText());
-                refreshSttBadge();
-            }
+            refreshSttBadge();
         });
     }
 
@@ -577,9 +553,9 @@ public class AiTabPanel extends JPanel {
         boolean running = isServiceRunning.get();
 
         String sttText = !running ? getText("hud.state.standby")
-                : sleeping     ? getText("hud.state.sleeping")
-                               : getText("hud.state.listening");
-        StatusBadge.State sttState = (running && !sleeping) ? StatusBadge.State.OK : StatusBadge.State.IDLE;
+                : pttModeActive ? getText("hud.state.pushToTalk")
+                : getText("hud.state.listening");
+        StatusBadge.State sttState = (running && !pttModeActive) ? StatusBadge.State.OK : StatusBadge.State.IDLE;
         sttBadge = new HudStatusReadout(getText("hud.stt"), sttText, sttState);
 
         llmBadge = new HudStatusReadout(getText("hud.llm"),
@@ -624,8 +600,8 @@ public class AiTabPanel extends JPanel {
         boolean running = isServiceRunning.get();
         if (!running) {
             sttBadge.setValue(getText("hud.state.standby"), StatusBadge.State.IDLE);
-        } else if (sleeping) {
-            sttBadge.setValue(getText("hud.state.sleeping"), StatusBadge.State.IDLE);
+        } else if (pttModeActive) {
+            sttBadge.setValue(getText("hud.state.pushToTalk"), StatusBadge.State.IDLE);
         } else {
             sttBadge.setValue(getText("hud.state.listening"), StatusBadge.State.OK);
         }
@@ -701,11 +677,6 @@ public class AiTabPanel extends JPanel {
             String text = event.inSync() ? getText("hud.keymap.inSync") : getText("hud.keymap.modified");
             keymapBadge.setValue(text, state);
         });
-    }
-
-    private String wakeWordText() {
-        // sleeping -> offer to wake up; listening -> offer to sleep
-        return getText(sleeping ? "ai.action.wake" : "ai.action.sleep");
     }
 
     private String hudOverlayText() {

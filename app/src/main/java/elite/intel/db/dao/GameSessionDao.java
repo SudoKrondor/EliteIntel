@@ -16,7 +16,7 @@ public interface GameSessionDao {
 
     @SqlUpdate("""
             INSERT OR REPLACE INTO game_session (id, kokoroVoice, googleVoice,
-                                                             privacyModeOn, rmsThresholdHigh,
+                                                             rmsThresholdHigh,
                                                              rmsThresholdLow, encryptedLLMKey, encryptedTTSKey,
                                                              speechSpeed, googleWaveNetPitch,
                                                              useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, notificationVolume, sttThreads, voiceVolume,
@@ -26,13 +26,13 @@ public interface GameSessionDao {
                                                              aiLanguage,
                                                              audioInputDevice, audioOutputDevice,
                                                              pushToTalkEnabled, pushToTalkControllerName,
-                                                             pushToTalkButtonIndex, pushToTalkToggleMode,
+                                                             pushToTalkButtonIndex,
                                                              noiseReductionEnabled, noiseReductionStrength,
                                                              overlayAlpha, overlayFontScale, overlayWidth, overlayX, overlayY,
                                                              overlayDisplayMode, overlayVrPosition
                                                 )
                                   VALUES (1, :kokoroVoice, :googleVoice,
-                                                      :privacyModeOn, :rmsThresholdHigh,
+                                                      :rmsThresholdHigh,
                                                       :rmsThresholdLow, :encryptedLLMKey, :encryptedTTSKey,
                                                       :speechSpeed, :googleWaveNetPitch,
                                                       :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :notificationVolume, :sttThreads, :voiceVolume,
@@ -42,7 +42,7 @@ public interface GameSessionDao {
                                                       :aiLanguage,
                                                       :audioInputDevice, :audioOutputDevice,
                                                       :pushToTalkEnabled, :pushToTalkControllerName,
-                                                      :pushToTalkButtonIndex, :pushToTalkToggleMode,
+                                                      :pushToTalkButtonIndex,
                                                       :noiseReductionEnabled, :noiseReductionStrength,
                                                       :overlayAlpha, :overlayFontScale, :overlayWidth, :overlayX, :overlayY,
                                                       :overlayDisplayMode, :overlayVrPosition
@@ -64,7 +64,6 @@ public interface GameSessionDao {
 
             session.setKokoroVoice(rs.getString("kokoroVoice"));
             session.setGoogleVoice(rs.getString("googleVoice"));
-            session.setPrivacyModeOn(rs.getBoolean("privacyModeOn"));
             session.setRmsThresholdHigh(rs.getDouble("rmsThresholdHigh"));
             session.setRmsThresholdLow(rs.getDouble("rmsThresholdLow"));
 
@@ -88,7 +87,6 @@ public interface GameSessionDao {
             session.setPushToTalkEnabled(rs.getBoolean("pushToTalkEnabled"));
             session.setPushToTalkControllerName(rs.getString("pushToTalkControllerName"));
             session.setPushToTalkButtonIndex(rs.getInt("pushToTalkButtonIndex"));
-            session.setPushToTalkToggleMode(rs.getBoolean("pushToTalkToggleMode"));
             session.setNoiseReductionEnabled(rs.getBoolean("noiseReductionEnabled"));
             session.setNoiseReductionStrength(rs.getInt("noiseReductionStrength"));
             session.setOverlayAlpha(rs.getDouble("overlayAlpha"));
@@ -109,7 +107,6 @@ public interface GameSessionDao {
 
         private String kokoroVoice;
         private String googleVoice;
-        private Boolean privacyModeOn;
         private Double rmsThresholdHigh = 460.00;
         private Double rmsThresholdLow = 100.00;
 
@@ -132,7 +129,6 @@ public interface GameSessionDao {
         private boolean pushToTalkEnabled;
         private String pushToTalkControllerName;
         private int pushToTalkButtonIndex = -1;
-        private boolean pushToTalkToggleMode = true;
         private boolean noiseReductionEnabled = false;
         private int noiseReductionStrength = 1;
         /**
@@ -167,14 +163,6 @@ public interface GameSessionDao {
 
         public void setGoogleVoice(String googleVoice) {
             this.googleVoice = googleVoice;
-        }
-
-        public Boolean getPrivacyModeOn() {
-            return privacyModeOn;
-        }
-
-        public void setPrivacyModeOn(Boolean privacyModeOn) {
-            this.privacyModeOn = privacyModeOn;
         }
 
         public Double getRmsThresholdLow() {
@@ -360,14 +348,6 @@ public interface GameSessionDao {
 
         public void setPushToTalkButtonIndex(int pushToTalkButtonIndex) {
             this.pushToTalkButtonIndex = pushToTalkButtonIndex;
-        }
-
-        public boolean isPushToTalkToggleMode() {
-            return pushToTalkToggleMode;
-        }
-
-        public void setPushToTalkToggleMode(boolean pushToTalkToggleMode) {
-            this.pushToTalkToggleMode = pushToTalkToggleMode;
         }
 
         public boolean isNoiseReductionEnabled() {

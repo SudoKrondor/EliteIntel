@@ -1,39 +1,15 @@
 package elite.intel.ai.brain.i18n;
 
 import elite.intel.ai.brain.AiActionsMap;
-import elite.intel.ai.brain.i18n.de.GermanAiActionAliases;
-import elite.intel.ai.brain.i18n.en.EnglishAiActionAliases;
-import elite.intel.ai.brain.i18n.es.SpanishAiActionAliases;
-import elite.intel.ai.brain.i18n.fr.FrenchAiActionAliases;
-import elite.intel.ai.brain.i18n.it.ItalianAiActionAliases;
-import elite.intel.ai.brain.i18n.pt.PortugueseAiActionAliases;
-import elite.intel.ai.brain.i18n.ptbz.BrazilianPortugueseAiActionAliases;
-import elite.intel.ai.brain.i18n.ru.RussianAiActionAliases;
-import elite.intel.ai.brain.i18n.uk.UkrainianAiActionAliases;
 import elite.intel.session.SystemSession;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public final class AiActionLocalizations {
 
     private AiActionLocalizations() {
-    }
-
-    private static AiActionAliasProvider provider() {
-        return switch (SystemSession.getInstance().getLanguage()) {
-            case EN -> new EnglishAiActionAliases();
-            case RU -> new RussianAiActionAliases();
-            case UK -> new UkrainianAiActionAliases();
-            case DE -> new GermanAiActionAliases();
-            case FR -> new FrenchAiActionAliases();
-            case ES -> new SpanishAiActionAliases();
-            case IT -> new ItalianAiActionAliases();
-            case PT -> new PortugueseAiActionAliases();
-            case PTBZ -> new BrazilianPortugueseAiActionAliases();
-        };
     }
 
     public static List<String> phrasesForAction(String actionId) {
@@ -92,13 +68,5 @@ public final class AiActionLocalizations {
             phrases.add(phrase);
         }
         current.setLength(0);
-    }
-
-    public static Set<String> wakeBypassPhrases() {
-        return provider().wakeBypassPhrases();
-    }
-
-    public static Set<String> listenBypassPrefixes() {
-        return provider().listenBypassPrefixes();
     }
 }

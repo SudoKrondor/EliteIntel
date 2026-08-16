@@ -140,10 +140,13 @@ API keys for cloud providers are stored **encrypted in a local SQLite database**
 never logged, never transmitted except in request headers to the configured provider
 endpoint, and never leave the user's machine in any other form.
 
-### Sleep / Wake Mode
+### Microphone Gating
 
-- Wake mode - the app will listen to your every word and try to interpret it as a command. However, there is a check box on the Player tab. When UNCHECKED it makes the app ignore anything that it can't map to an action. So you can say things during game play and **for the most part** the app will only respond to a clear command or a query that is implemented.
-- Sleep mode - the app will ignore you completely except when you say "Wake Up" to return it to wake mode, or "Listen Up" followed by your request. "Listen Up" is a one-time by-pass of the sleep mode.
+Two ways in, chosen on the SETTINGS / PUSH TO TALK tab:
+
+- Built-in gate (the default) - the app listens continuously and its own noise gate decides what counts as speech. There is also a check box on the Player tab which, when UNCHECKED, makes the app ignore anything it cannot map to an action, so you can talk during play and
+  **for the most part** it will only respond to a clear command or an implemented query.
+- Push to talk - map a controller button, and the microphone is open only while that button is held. Anything captured without it is discarded before it reaches the AI.
 
 
 ### No Game Memory Access
