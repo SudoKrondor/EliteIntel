@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Запуск LLM на AMD RX 7800 XT (Посібник з ROCm)  EliteIntel</title>
-    <meta name="description" content="&gt; Рекомендовано: LM Studio (`lms`) зазвичай дає найкращі результати, але Ollama є гідною альтернативою.">
+    <meta name="description" content="&gt; Рекомендовано: LM Studio (`lms`) — сервер інференсу, який використовує Elite Intel.">
     <link rel="canonical" href="https://www.elite-intel.org/uk/AMD-RX-7800XT-LLM-Setup.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/AMD-RX-7800XT-LLM-Setup.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/AMD-RX-7800XT-LLM-Setup.html">
@@ -13,7 +13,7 @@
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/AMD-RX-7800XT-LLM-Setup.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/AMD-RX-7800XT-LLM-Setup.html">
     <meta property="og:title" content="Запуск LLM на AMD RX 7800 XT (Посібник з ROCm)  EliteIntel">
-    <meta property="og:description" content="&gt; Рекомендовано: LM Studio (`lms`) зазвичай дає найкращі результати, але Ollama є гідною альтернативою.">
+    <meta property="og:description" content="&gt; Рекомендовано: LM Studio (`lms`) — сервер інференсу, який використовує Elite Intel.">
     <meta property="og:url" content="https://www.elite-intel.org/uk/AMD-RX-7800XT-LLM-Setup.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -61,8 +61,7 @@
 
             <div class="nav-section">Вікі</div>
             <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
-            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
-            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 Безкоштовний хмарний LLM</a>
             <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
             <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
             <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub active"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
@@ -93,12 +92,12 @@
 <p>Посібник надано <strong>Ian Wirtz</strong></p>
 </blockquote>
 <blockquote>
-<p><strong>Рекомендовано:</strong> LM Studio (<code>lms</code>) зазвичай дає найкращі результати, але Ollama є гідною альтернативою.</p>
+<p><strong>Рекомендовано:</strong> LM Studio (<code>lms</code>) — сервер інференсу, який використовує Elite Intel.</p>
 </blockquote>
 <hr>
 <h2>Передумови</h2>
 <h3>Крок 1  Встановлення <code>rocm-hip-runtime</code></h3>
-<p>Перш ніж LM Studio або Ollama зможуть використовувати вашу відеокарту через ROCm, система потребує базових бібліотек HIP у просторі користувача для взаємодії з драйвером ядра.</p>
+<p>Перш ніж LM Studio зможе використовувати вашу відеокарту через ROCm, система потребує базових бібліотек HIP у просторі користувача для взаємодії з драйвером ядра.</p>
 <p><strong>Arch Linux / CachyOS:</strong></p>
 <pre><code class="language-bash">sudo pacman -S rocm-hip-runtime
 </code></pre>
@@ -182,19 +181,6 @@ source ~/.bashrc
 <pre><code class="language-fish">echo &#39;set -gx HSA_OVERRIDE_GFX_VERSION 11.0.0&#39; &gt;&gt; ~/.config/fish/config.fish
 source ~/.config/fish/config.fish
 </code></pre>
-<p><strong>Ollama (служба systemd):</strong></p>
-<p>Оскільки Ollama працює під власним системним користувачем <code>ollama</code>, змінну необхідно передати через drop-in файл systemd:</p>
-<pre><code class="language-bash">sudo mkdir -p /etc/systemd/system/ollama.service.d
-sudo nano /etc/systemd/system/ollama.service.d/override.conf
-</code></pre>
-<p>Вставте наступне, потім збережіть і вийдіть (<code>Ctrl+O</code>, <code>Enter</code>, <code>Ctrl+X</code>):</p>
-<pre><code class="language-ini">[Service]
-Environment=&quot;HSA_OVERRIDE_GFX_VERSION=11.0.0&quot;
-</code></pre>
-<p>Потім перезавантажте та перезапустіть службу:</p>
-<pre><code class="language-bash">sudo systemctl daemon-reload
-sudo systemctl restart ollama
-</code></pre>
 <hr>
 <h2>Перевірка</h2>
 <h3>Крок 5  Підтвердження завантаження обчислювального драйвера ядра</h3>
@@ -206,9 +192,6 @@ sudo systemctl restart ollama
 <h3>Крок 6  Запуск сервера та перевірка використання VRAM</h3>
 <p><strong>LM Studio:</strong></p>
 <pre><code class="language-bash">lms server start
-</code></pre>
-<p><strong>Ollama:</strong></p>
-<pre><code class="language-bash">ollama serve
 </code></pre>
 <p>Потім підтвердіть, що модель завантажена у VRAM:</p>
 <pre><code class="language-bash">rocm-smi

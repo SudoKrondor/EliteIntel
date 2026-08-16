@@ -215,8 +215,7 @@ const DEFAULT_NAV = {
     'UI-Stats-Tab':                    'Stats Tab',
     'UI-HUD-Overlay':                  'HUD Overlay',
     'installing-local-llms':           'Choose your LLM',
-    'Install-Ollama-Local-LLM-Linux':  'Ollama  Linux',
-    'Install-Ollama-Local-LLM-Windows':'Ollama  Windows',
+    'cloud-llm-options':               '🆓 Free Cloud LLM',
     'Install-LM-Studio-Linux':         'LM Studio  Linux',
     'Install-LM-Studio-Windows':       'LM Studio  Windows',
     'AMD-RX-7800XT-LLM-Setup':         'AMD RX Series',
@@ -302,8 +301,7 @@ function buildSidebar(activePage, assetBase, nav, titleMap, localePages) {
 
             ${sec('section_wiki')}
             ${lnk('installing-local-llms',            'microchip-ai.png')}
-            ${lnk('Install-Ollama-Local-LLM-Linux',   'ai.png', ' nav-sub')}
-            ${lnk('Install-Ollama-Local-LLM-Windows',  'ai.png', ' nav-sub')}
+            ${lnk('cloud-llm-options',                 'ai.png', ' nav-sub')}
             ${lnk('Install-LM-Studio-Linux',           'ai.png', ' nav-sub')}
             ${lnk('Install-LM-Studio-Windows',         'ai.png', ' nav-sub')}
             ${lnk('AMD-RX-7800XT-LLM-Setup',           'ai.png', ' nav-sub')}

@@ -61,8 +61,7 @@
 
             <div class="nav-section">Wiki</div>
             <a href="installing-local-llms.html" class="nav-link active"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Elegir tu LLM</a>
-            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
-            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 LLM gratuito en la nube</a>
             <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
             <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
             <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
@@ -90,7 +89,7 @@
         <div class="content-inner markdown-body" id="content-inner">
 <h1>Elegir un servidor de inferencia local</h1>
 <p>Para ejecutar un LLM local con Elite Intel, se necesita un <strong>servidor de inferencia</strong>. Es un software que carga el modelo de IA y lo sirve a través de una API local. Es el equivalente local de un servicio de IA en la nube, pero funciona completamente en tu propio hardware.</p>
-<p>Elite Intel es compatible con dos servidores de inferencia: <strong>Ollama</strong> y <strong>LM Studio</strong>. Ambos son compatibles y utilizan los mismos modelos. La elección puede cambiarse en la configuración en cualquier momento.</p>
+<p>Elite Intel utiliza <strong>LM Studio</strong> como servidor de inferencia. Funciona en Windows y Linux y expone una API compatible con OpenAI.</p>
 <p><img src="../images/local-llm.png" alt="loca llm ui"></p>
 <h2>Requisitos de GPU</h2>
 <p>Requisitos de hardware para ejecutar el juego y el LLM en la misma máquina:</p>
@@ -98,7 +97,9 @@
 <li>RTX 3090 24 GB de VRAM</li>
 <li>AMD RX 7800 XT</li>
 </ul>
-<p>Si no dispones del hardware suficiente, utiliza el <strong><a href="https://v2.auth.mistral.ai/login">servicio gratuito en la nube</a></strong></p>
+<p>Si no dispones del hardware suficiente, utiliza el <strong>servicio gratuito en la nube</strong> en
+👉 <strong><a href="https://console.mistral.ai/">console.mistral.ai</a></strong> 👈 — plan gratuito, sin tarjeta de crédito.
+Pasos de configuración: <a href="cloud-llm-options.html">LLM gratuito en la nube</a>.</p>
 <p>Una tabla de referencia de GPU proporcionada por <strong>Kevin Rank</strong> está disponible aquí:
 <a href="https://docs.google.com/spreadsheets/d/1ZyPgTvlVg7ueemHEV-3J3j3tAynShIyxTs8rd59rips/edit?usp=sharing">Guía de referencia de GPU</a></p>
 <hr>
@@ -112,113 +113,81 @@
 </thead>
 <tbody><tr>
 <td><a href="Install-LM-Studio-Linux.html">✅ LM Studio - Linux</a></td>
-<td>Rápido, mayor flexibilidad de modelos  la guía muestra cómo configurarlo como servidor</td>
+<td>Rápido, mayor flexibilidad de modelos - la guía muestra cómo configurarlo como servidor</td>
 </tr>
 <tr>
 <td><a href="Install-LM-Studio-Windows.html">✅ LM Studio - Windows</a></td>
-<td>Rápido, mayor flexibilidad de modelos  incluye interfaz gráfica</td>
+<td>Rápido, mayor flexibilidad de modelos - incluye interfaz gráfica</td>
 </tr>
 <tr>
-<td><a href="Install-Ollama-Local-LLM-Linux.html">Ollama - Linux</a></td>
-<td>Recomendado si tienes el hardware necesario para ejecutarlo</td>
-</tr>
-<tr>
-<td><a href="Install-Ollama-Local-LLM-Windows.html">Ollama - Windows</a></td>
-<td>Recomendado si tienes el hardware necesario para ejecutarlo</td>
+<td><a href="cloud-llm-options.html">🆓 LLM gratuito en la nube</a></td>
+<td>Sin GPU - plan gratuito de Mistral, sin tarjeta de crédito</td>
 </tr>
 </tbody></table>
 <hr>
-<h3>Ollama vs. LM Studio de un vistazo</h3>
+<h3>LM Studio de un vistazo</h3>
 <table>
 <thead>
 <tr>
 <th></th>
-<th>Ollama</th>
 <th>LM Studio</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Velocidad</strong></td>
-<td>Más lento</td>
-<td>Más rápido</td>
-</tr>
-<tr>
 <td><strong>Modelo requerido</strong></td>
 <td><code>google/gemma-4-e4b</code></td>
-<td><code>google/gemma-4-e4b</code></td>
-</tr>
-<tr>
-<td><strong>Ideal para</strong></td>
-<td>Configuración sencilla, mantenimiento mínimo</td>
-<td>Mayor control sobre la carga del modelo</td>
 </tr>
 <tr>
 <td><strong>Instalación</strong></td>
 <td>Un script y listo</td>
-<td>Un script y listo</td>
 </tr>
 <tr>
 <td><strong>Se ejecuta como</strong></td>
-<td>Servicio del sistema (inicio automático)</td>
-<td>Inicio manual o inicio automático opcional</td>
+<td>Inicio manual, o inicio automático opcional</td>
 </tr>
 <tr>
-<td><strong>Ajuste de modelo</strong></td>
-<td>Modelfile integrado en el modelo</td>
-<td>Parámetros al momento de carga</td>
+<td><strong>Ajuste del modelo</strong></td>
+<td>Opciones al cargar</td>
 </tr>
 <tr>
 <td><strong>Inicio automático Windows</strong></td>
-<td>✅ Funciona sin configuración adicional</td>
-<td>Requiere la aplicación de escritorio o el Programador de tareas</td>
+<td>Requiere la app de escritorio o el Programador de tareas</td>
 </tr>
 <tr>
 <td><strong>Inicio automático Linux</strong></td>
-<td>✅ Servicio systemd incluido</td>
-<td>Configuración manual de systemd</td>
+<td>Configuración manual de systemd (ver la guía de Linux)</td>
 </tr>
 <tr>
 <td><strong>Fuente de modelos</strong></td>
-<td>Biblioteca de Ollama</td>
 <td>HuggingFace (GGUF)</td>
 </tr>
 <tr>
 <td><strong>Puerto API</strong></td>
-<td><code>11434</code></td>
 <td><code>1234</code></td>
 </tr>
 <tr>
 <td><strong>Interfaz gráfica</strong></td>
-<td>Ninguna (solo CLI)</td>
 <td>Aplicación de escritorio opcional</td>
 </tr>
 </tbody></table>
 <hr>
 <h3>Guía de selección</h3>
-<p><strong>Usa Ollama cuando:</strong></p>
-<ul>
-<li>Quieres una instalación sencilla con configuración continua mínima</li>
-<li>Estás en Windows y prefieres no configurar el inicio manualmente</li>
-<li>Eres nuevo en los LLM locales</li>
-</ul>
-<p><strong>Usa LM Studio cuando:</strong></p>
-<ul>
-<li>Quieres una interfaz gráfica para explorar, descargar y gestionar modelos</li>
-<li>Ya estás familiarizado con HuggingFace y los archivos de modelo GGUF</li>
-<li>Quieres experimentar con diferentes modelos sin escribir Modelfiles</li>
-<li>Estás ejecutando una máquina de inferencia dedicada y necesitas un servidor headless limpio</li>
-</ul>
-<p><strong>Cualquier opción funciona cuando:</strong></p>
+<p><strong>Usa LM Studio en local cuando:</strong></p>
 <ul>
 <li>Tienes una NVIDIA RTX 3090 24 GB o equivalente o superior. La VRAM es el factor crítico, no la velocidad de la GPU. Una GPU con solo 12 GB de VRAM es insuficiente independientemente de la generación.</li>
 <li>Estás ejecutando Elite Dangerous y el LLM en la misma máquina</li>
 <li>Quieres apuntar Elite Intel a un PC separado en tu red</li>
+<li>Quieres una interfaz gráfica para explorar, descargar y gestionar modelos, o un servidor headless limpio en una máquina de inferencia dedicada</li>
+</ul>
+<p><strong>Usa mejor el <a href="cloud-llm-options.html">LLM gratuito en la nube</a> cuando:</strong></p>
+<ul>
+<li>Tu GPU no tiene VRAM suficiente para ejecutar un modelo junto al juego</li>
+<li>Prefieres no gestionar un servidor de inferencia local</li>
 </ul>
 <hr>
 <h2>Recomendación del desarrollador</h2>
-<p>El desarrollador usa LM Studio con <code>google/gemma-4-e4b</code> (~6,3 GB). El mismo modelo en Ollama va
-notablemente más lento. Otros modelos pueden funcionar, pero no está garantizado. Comparte tus
-hallazgos de compatibilidad en Matrix.</p>
+<p>El desarrollador usa LM Studio con <code>google/gemma-4-e4b</code> (~6,3 GB). Otros modelos pueden funcionar,
+pero no está garantizado. Comparte tus hallazgos de compatibilidad en Matrix.</p>
 <h2>¿Por qué <code>google/gemma-4-e4b</code> específicamente?</h2>
 <p>Elite Intel es un analizador de comandos y una herramienta de análisis de datos, no un chatbot
 conversacional. Eso impone requisitos concretos al modelo. No basta con generar charla que suene

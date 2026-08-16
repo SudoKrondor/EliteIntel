@@ -42,17 +42,14 @@ Wechsle zwischen **Lokale Einrichtung** und **Cloud-Einrichtung**.
 
 | Feld | Anmerkungen |
 |-------|-------|
-| **Host** | `Ollama` oder `LM Studio`. Jeder behält eigene Adresse und eigenes Modell, du kannst also hin- und herwechseln, ohne neu zu tippen |
-| **Adresse** | Vorbelegt mit der üblichen URL dieses Hosts. Richte sie auf die IP eines anderen Rechners, wenn die Inferenz woanders in deinem LAN läuft |
+| **Adresse** | Vorbelegt mit der üblichen URL von LM Studio. Richte sie auf die IP eines anderen Rechners, wenn die Inferenz woanders in deinem LAN läuft |
 | **Modell** | Der Modellname. **Ein Feld** — V1.1 nutzt ein einziges Modell für Befehle und Abfragen |
 
 Das voreingestellte und empfohlene lokale Modell ist **`google/gemma-4-e4b`**. Elite Intel warnt
 dich beim Start, wenn dein lokales Modell ein anderes ist; andere Modelle können schlecht oder gar
 nicht funktionieren.
 
-Einrichtungsanleitungen: [Ollama unter Linux](Install-Ollama-Local-LLM-Linux) ·
-[Ollama unter Windows](Install-Ollama-Local-LLM-Windows) ·
-[LM Studio unter Linux](Install-LM-Studio-Linux) ·
+Einrichtungsanleitungen: [LM Studio unter Linux](Install-LM-Studio-Linux) ·
 [LM Studio unter Windows](Install-LM-Studio-Windows) ·
 [AMD RX Series](AMD-RX-7800XT-LLM-Setup)
 

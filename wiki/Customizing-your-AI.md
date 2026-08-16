@@ -1,6 +1,6 @@
 # Customizing Elite Intel
 
-Elite Intel functions as the ship's voice and AI brain. With Kokoro as the built-in default TTS engine and most users running fully offline (Kokoro TTS and a local LLM via Ollama), this guide explains how to customize voice and personality settings.
+Elite Intel functions as the ship's voice and AI brain. With Kokoro as the built-in default TTS engine and most users running fully offline (Kokoro TTS and a local LLM via LM Studio), this guide explains how to customize voice and personality settings.
 
 ## Voices
 

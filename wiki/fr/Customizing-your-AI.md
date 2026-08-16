@@ -1,6 +1,6 @@
 # Personnaliser Elite Intel
 
-Elite Intel fonctionne comme la voix et le cerveau IA du vaisseau. Avec Kokoro TTS comme moteur de synthèse vocale par défaut et la plupart des utilisateurs fonctionnant entièrement hors ligne (Kokoro TTS et un LLM local via Ollama), ce guide explique comment personnaliser les paramètres de voix et de personnalité.
+Elite Intel fonctionne comme la voix et le cerveau IA du vaisseau. Avec Kokoro TTS comme moteur de synthèse vocale par défaut et la plupart des utilisateurs fonctionnant entièrement hors ligne (Kokoro TTS et un LLM local via LM Studio), ce guide explique comment personnaliser les paramètres de voix et de personnalité.
 
 ## Voix
 

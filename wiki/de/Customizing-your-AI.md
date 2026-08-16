@@ -1,6 +1,6 @@
 # Elite Intel anpassen
 
-Elite Intel fungiert als Schiffsstimme und KI-Gehirn. Mit Kokoro als integrierter Standard-TTS-Engine und den meisten Nutzern im vollständig Offline-Betrieb (Kokoro TTS und ein lokales LLM via Ollama) erklärt diese Anleitung, wie man Stimme und Persönlichkeitseinstellungen anpassen kann.
+Elite Intel fungiert als Schiffsstimme und KI-Gehirn. Mit Kokoro als integrierter Standard-TTS-Engine und den meisten Nutzern im vollständig Offline-Betrieb (Kokoro TTS und ein lokales LLM via LM Studio) erklärt diese Anleitung, wie man Stimme und Persönlichkeitseinstellungen anpassen kann.
 
 ## Stimmen
 

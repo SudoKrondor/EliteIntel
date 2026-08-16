@@ -2,7 +2,7 @@
 
 > Guide is provided by **Ian Wirtz**
 
-> **Recommended:** LM Studio (`lms`) tends to give the best results, but Ollama is a viable alternative.
+> **Recommended:** LM Studio (`lms`) is the inference server Elite Intel uses.
 
 ---
 
@@ -10,7 +10,7 @@
 
 ### Step 1 - Install `rocm-hip-runtime`
 
-Before LM Studio or Ollama can use your GPU via ROCm, the system needs the base user-space HIP libraries to communicate with the kernel driver.
+Before LM Studio can use your GPU via ROCm, the system needs the base user-space HIP libraries to communicate with the kernel driver.
 
 **Arch Linux / CachyOS:**
 ```bash
@@ -120,28 +120,6 @@ echo 'set -gx HSA_OVERRIDE_GFX_VERSION 11.0.0' >> ~/.config/fish/config.fish
 source ~/.config/fish/config.fish
 ```
 
-**Ollama (systemd service):**
-
-Because Ollama runs under its own `ollama` system user, the variable must be injected via a systemd drop-in:
-
-```bash
-sudo mkdir -p /etc/systemd/system/ollama.service.d
-sudo nano /etc/systemd/system/ollama.service.d/override.conf
-```
-
-Paste the following, then save and exit (`Ctrl+O`, `Enter`, `Ctrl+X`):
-
-```ini
-[Service]
-Environment="HSA_OVERRIDE_GFX_VERSION=11.0.0"
-```
-
-Then reload and restart the service:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl restart ollama
-```
-
 ---
 
 ## Verification
@@ -163,11 +141,6 @@ Scroll to the top of the output. If you see `Can't open /dev/kfd` or a crash, th
 **LM Studio:**
 ```bash
 lms server start
-```
-
-**Ollama:**
-```bash
-ollama serve
 ```
 
 Then confirm the model is loaded into VRAM:

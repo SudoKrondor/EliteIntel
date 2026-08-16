@@ -43,16 +43,13 @@ Switch between **Local Setup** and **Cloud Setup**.
 
 | Field | Notes |
 |-------|-------|
-| **Host** | `Ollama` or `LM Studio`. Each keeps its own address and model, so you can switch back and forth without retyping |
-| **Address** | Defaults to that host's usual URL. Point it at another machine's IP if inference runs elsewhere on your LAN |
+| **Address** | Defaults to LM Studio's usual URL. Point it at another machine's IP if inference runs elsewhere on your LAN |
 | **Model** | The model name. **One field** — V1.1 uses a single model for both commands and queries |
 
 The default and recommended local model is **`google/gemma-4-e4b`**. Elite Intel warns you at
 startup if your local model is something else; other models may work poorly or not at all.
 
-Setup guides: [Ollama on Linux](Install-Ollama-Local-LLM-Linux) ·
-[Ollama on Windows](Install-Ollama-Local-LLM-Windows) ·
-[LM Studio on Linux](Install-LM-Studio-Linux) ·
+Setup guides: [LM Studio on Linux](Install-LM-Studio-Linux) ·
 [LM Studio on Windows](Install-LM-Studio-Windows) ·
 [AMD RX series](AMD-RX-7800XT-LLM-Setup)
 

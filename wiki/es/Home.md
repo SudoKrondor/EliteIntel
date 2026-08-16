@@ -12,6 +12,12 @@ Los datos se obtienen en tiempo real de [Spansh](https://spansh.co.uk/) y [EDSM]
 
 **Idiomas admitidos:** inglés, español, francés, ucraniano, alemán, ruso
 
+> ### ⚠️ Se necesita un modelo de lenguaje (LLM)
+> Elite Intel es la voz y las manos; el LLM es el cerebro. Sin él, la aplicación no puede funcionar.
+> Ejecuta un modelo en local en tu GPU o usa el nivel **gratuito** en la nube de
+> 👉 **[console.mistral.ai](https://console.mistral.ai/)** 👈 — sin tarjeta de crédito.
+> Consulta [LLM gratuito en la nube](cloud-llm-options) o [Elegir tu LLM](installing-local-llms).
+
 ---
 
 ## Inteligencia, no solo automatización
@@ -51,8 +57,8 @@ Para todos los demás idiomas admitidos, **Google TTS** ofrece síntesis de voz 
 
 Elite Intel funciona con el modelo de lenguaje que mejor se adapte a tu configuración:
 
-**Gratis y sin conexión** - [LM Studio](https://lmstudio.ai/) u [Ollama](https://ollama.com/) ejecutando un modelo local  
-**Nube gratuita** - [Mistral](https://console.mistral.ai/home)  
+**Gratis y sin conexión** - [LM Studio](https://lmstudio.ai/) ejecutando un modelo local  
+**Nube gratuita** - [Mistral](https://console.mistral.ai/) - plan gratuito, sin tarjeta de crédito  
 **Nube de pago** - Anthropic, OpenAI, xAI, Gemini, DeepSeek
 
 Cambia de proveedor en cualquier momento desde los ajustes. No se requiere reinstalación.

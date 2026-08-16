@@ -20,8 +20,7 @@ UI-Settings-Tab: Pestaña Ajustes
 UI-Stats-Tab: Pestaña Estadísticas
 UI-HUD-Overlay: Overlay HUD
 installing-local-llms: Elegir tu LLM
-Install-Ollama-Local-LLM-Linux: Ollama  Linux
-Install-Ollama-Local-LLM-Windows: Ollama  Windows
+cloud-llm-options: 🆓 LLM gratuito en la nube
 Install-LM-Studio-Linux: LM Studio  Linux
 Install-LM-Studio-Windows: LM Studio  Windows
 AMD-RX-7800XT-LLM-Setup: AMD RX Series

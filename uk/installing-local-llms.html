@@ -61,8 +61,7 @@
 
             <div class="nav-section">Вікі</div>
             <a href="installing-local-llms.html" class="nav-link active"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
-            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
-            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 Безкоштовний хмарний LLM</a>
             <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
             <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
             <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
@@ -90,7 +89,7 @@
         <div class="content-inner markdown-body" id="content-inner">
 <h1>Вибір локального сервера інференції</h1>
 <p>Для запуску локального LLM з Elite Intel потрібен <strong>сервер інференції</strong>. Це програмне забезпечення, яке завантажує модель ШІ та надає до неї доступ через локальний API. Це локальний еквівалент хмарного сервісу ШІ, що працює повністю на твоєму власному залізі.</p>
-<p>Elite Intel підтримує два сервери інференції: <strong>Ollama</strong> та <strong>LM Studio</strong>. Обидва сумісні та використовують однакові моделі. Вибір можна змінити в налаштуваннях у будь-який час.</p>
+<p>Elite Intel використовує <strong>LM Studio</strong> як сервер інференції. Він працює у Windows і Linux та надає OpenAI-сумісний API.</p>
 <p><img src="../images/local-llm.png" alt="loca llm ui"></p>
 <h2>Вимоги до GPU</h2>
 <p>Вимоги до заліза для запуску гри та LLM на одній машині:</p>
@@ -98,7 +97,9 @@
 <li>RTX 3090 24 ГБ VRAM</li>
 <li>AMD RX 7800 XT</li>
 </ul>
-<p>Якщо у тебе недостатньо заліза, скористайся <strong><a href="https://v2.auth.mistral.ai/login">безкоштовним хмарним сервісом</a></strong></p>
+<p>Якщо у тебе недостатньо заліза, скористайся <strong>безкоштовним хмарним сервісом</strong> на
+👉 <strong><a href="https://console.mistral.ai/">console.mistral.ai</a></strong> 👈 — безкоштовний рівень, без кредитної картки.
+Кроки налаштування: <a href="cloud-llm-options.html">Безкоштовний хмарний LLM</a>.</p>
 <p>Таблиця порівняння GPU від <strong>Kevin Rank</strong> доступна тут:
 <a href="https://docs.google.com/spreadsheets/d/1ZyPgTvlVg7ueemHEV-3J3j3tAynShIyxTs8rd59rips/edit?usp=sharing">Довідник з GPU</a></p>
 <hr>
@@ -112,113 +113,81 @@
 </thead>
 <tbody><tr>
 <td><a href="Install-LM-Studio-Linux.html">✅ LM Studio - Linux</a></td>
-<td>Швидкий, більша гнучкість моделей  посібник показує налаштування як сервера</td>
+<td>Швидкий, більша гнучкість моделей - посібник показує налаштування як сервера</td>
 </tr>
 <tr>
 <td><a href="Install-LM-Studio-Windows.html">✅ LM Studio - Windows</a></td>
-<td>Швидкий, більша гнучкість моделей  є графічний інтерфейс</td>
+<td>Швидкий, більша гнучкість моделей - є графічний інтерфейс</td>
 </tr>
 <tr>
-<td><a href="Install-Ollama-Local-LLM-Linux.html">Ollama - Linux</a></td>
-<td>Рекомендовано, якщо є достатньо заліза</td>
-</tr>
-<tr>
-<td><a href="Install-Ollama-Local-LLM-Windows.html">Ollama - Windows</a></td>
-<td>Рекомендовано, якщо є достатньо заліза</td>
+<td><a href="cloud-llm-options.html">🆓 Безкоштовний хмарний LLM</a></td>
+<td>GPU не потрібен - безкоштовний рівень Mistral, без кредитної картки</td>
 </tr>
 </tbody></table>
 <hr>
-<h3>Ollama vs. LM Studio: коротке порівняння</h3>
+<h3>LM Studio: коротко</h3>
 <table>
 <thead>
 <tr>
 <th></th>
-<th>Ollama</th>
 <th>LM Studio</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Швидкість</strong></td>
-<td>Повільніший</td>
-<td>Швидший</td>
-</tr>
-<tr>
 <td><strong>Потрібна модель</strong></td>
 <td><code>google/gemma-4-e4b</code></td>
-<td><code>google/gemma-4-e4b</code></td>
-</tr>
-<tr>
-<td><strong>Найкраще підходить для</strong></td>
-<td>Проста установка, мінімальне обслуговування</td>
-<td>Більший контроль над завантаженням моделей</td>
 </tr>
 <tr>
 <td><strong>Встановлення</strong></td>
-<td>Один скрипт  і готово</td>
-<td>Один скрипт  і готово</td>
+<td>Один скрипт, і готово</td>
 </tr>
 <tr>
 <td><strong>Запускається як</strong></td>
-<td>Системний сервіс (автозапуск при старті)</td>
-<td>Ручний запуск або опціональний автозапуск</td>
+<td>Ручний запуск або опційний автозапуск</td>
 </tr>
 <tr>
 <td><strong>Налаштування моделі</strong></td>
-<td>Modelfile вбудований у модель</td>
-<td>Параметри при завантаженні</td>
+<td>Прапорці під час завантаження</td>
 </tr>
 <tr>
-<td><strong>Автозапуск Windows</strong></td>
-<td>✅ Працює з коробки</td>
-<td>Потребує десктопного додатку або планувальника завдань</td>
+<td><strong>Автозапуск у Windows</strong></td>
+<td>Потрібен застосунок або Планувальник завдань</td>
 </tr>
 <tr>
-<td><strong>Автозапуск Linux</strong></td>
-<td>✅ Сервіс systemd включено</td>
-<td>Ручне налаштування systemd</td>
+<td><strong>Автозапуск у Linux</strong></td>
+<td>Ручне налаштування systemd (див. посібник для Linux)</td>
 </tr>
 <tr>
 <td><strong>Джерело моделей</strong></td>
-<td>Бібліотека Ollama</td>
 <td>HuggingFace (GGUF)</td>
 </tr>
 <tr>
 <td><strong>Порт API</strong></td>
-<td><code>11434</code></td>
 <td><code>1234</code></td>
 </tr>
 <tr>
 <td><strong>Графічний інтерфейс</strong></td>
-<td>Відсутній (тільки CLI)</td>
-<td>Опціональний десктопний додаток</td>
+<td>Опційний застосунок для робочого столу</td>
 </tr>
 </tbody></table>
 <hr>
 <h3>Посібник з вибору</h3>
-<p><strong>Використовуй Ollama, якщо:</strong></p>
+<p><strong>Запускай LM Studio локально, якщо:</strong></p>
 <ul>
-<li>Тобі потрібна проста установка з мінімальним поточним налаштуванням</li>
-<li>Ти на Windows і не хочеш вручну налаштовувати автозапуск</li>
-<li>Ти тільки починаєш роботу з локальними LLM</li>
-</ul>
-<p><strong>Використовуй LM Studio, якщо:</strong></p>
-<ul>
-<li>Тобі потрібен графічний інтерфейс для перегляду, завантаження та управління моделями</li>
-<li>Ти вже знайомий з HuggingFace і файлами моделей GGUF</li>
-<li>Хочеш експериментувати з різними моделями без написання Modelfiles</li>
-<li>Запускаєш виділену машину для інференції та потребуєш чистого headless-сервера</li>
-</ul>
-<p><strong>Будь-який варіант підходить, якщо:</strong></p>
-<ul>
-<li>У тебе є NVIDIA RTX 3090 24 ГБ або аналог чи краще. VRAM  критичний фактор, а не швидкість GPU. GPU лише з 12 ГБ VRAM є недостатнім незалежно від покоління.</li>
+<li>У тебе є NVIDIA RTX 3090 24 ГБ або аналог чи краще. VRAM - критичний фактор, а не швидкість GPU. GPU лише з 12 ГБ VRAM є недостатнім незалежно від покоління.</li>
 <li>Ти запускаєш Elite Dangerous та LLM на одній машині</li>
 <li>Хочеш вказати Elite Intel на окремий ПК у своїй мережі</li>
+<li>Тобі потрібен графічний інтерфейс для перегляду, завантаження та управління моделями або чистий headless-сервер на виділеній машині</li>
+</ul>
+<p><strong>Краще скористайся <a href="cloud-llm-options.html">безкоштовним хмарним LLM</a>, якщо:</strong></p>
+<ul>
+<li>Твоїй відеокарті бракує VRAM, щоб тримати модель разом із грою</li>
+<li>Ти взагалі не хочеш обслуговувати локальний сервер інференції</li>
 </ul>
 <hr>
 <h2>Рекомендація розробника</h2>
-<p>Розробник використовує LM Studio з <code>google/gemma-4-e4b</code> (~6,3 ГБ). Та сама модель в Ollama працює
-помітно повільніше. Інші моделі можуть працювати, але це не гарантовано. Повідомляйте про
-результати сумісності в Matrix.</p>
+<p>Розробник використовує LM Studio з <code>google/gemma-4-e4b</code> (~6,3 ГБ). Інші моделі можуть працювати,
+але це не гарантовано. Повідомляйте про результати сумісності в Matrix.</p>
 <h2>Чому саме <code>google/gemma-4-e4b</code>?</h2>
 <p>Elite Intel — це парсер команд та інструмент аналізу даних, а не розмовний чат-бот. Це висуває до
 моделі конкретні вимоги. Уміння вести природну бесіду недостатньо. Модель має правильно виводити

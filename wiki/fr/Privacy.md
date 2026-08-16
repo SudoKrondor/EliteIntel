@@ -8,7 +8,7 @@ Cette politique explique quelles données sont traitées, comment elles sont uti
 
 EliteIntel est une application open source disponible sur [GitHub](https://github.com/stone-alex/EliteIntel). Elle utilise la reconnaissance vocale (STT), la synthèse vocale (TTS) et des grands modèles de langage (LLM) pour traiter les données du jeu.
 
-L'application peut fonctionner entièrement hors ligne en utilisant un STT local (NVIDIA Parakeet), un LLM local (Ollama) et un TTS local (Kokoro TTS). Aucune donnée ne quitte la machine dans cette configuration. Lorsque des services cloud sont utilisés, les données sont transmises comme décrit ci-dessous.
+L'application peut fonctionner entièrement hors ligne en utilisant un STT local (NVIDIA Parakeet), un LLM local (LM Studio) et un TTS local (Kokoro TTS). Aucune donnée ne quitte la machine dans cette configuration. Lorsque des services cloud sont utilisés, les données sont transmises comme décrit ci-dessous.
 
 ## Quelles données sont traitées ?
 
@@ -39,7 +39,7 @@ Aucune information personnelle n'est collectée, y compris les noms, adresses ou
 ## Droits et choix
 
 - **Inspecter le code** : Le code source complet est disponible sur GitHub.
-- **Passer entièrement hors ligne** : Utilisez Parakeet, Ollama ou LM Studio, et Kokoro TTS. Aucune donnée n'est transmise dans cette configuration.
+- **Passer entièrement hors ligne** : Utilisez Parakeet, LM Studio et Kokoro TTS. Aucune donnée n'est transmise dans cette configuration.
 - **Configurer les fournisseurs** : Sélectionnez le LLM cloud à utiliser, le cas échéant. Les clés API sont gérées dans la base de données locale.
 - **Supprimer vos données** : Aucune donnée n'est stockée en externe. Pour les données détenues par Google, xAI, OpenAI ou Anthropic, référez-vous à leurs politiques respectives.
 

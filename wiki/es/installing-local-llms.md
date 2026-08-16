@@ -2,7 +2,7 @@
 
 Para ejecutar un LLM local con Elite Intel, se necesita un **servidor de inferencia**. Es un software que carga el modelo de IA y lo sirve a través de una API local. Es el equivalente local de un servicio de IA en la nube, pero funciona completamente en tu propio hardware.
 
-Elite Intel es compatible con dos servidores de inferencia: **Ollama** y **LM Studio**. Ambos son compatibles y utilizan los mismos modelos. La elección puede cambiarse en la configuración en cualquier momento.
+Elite Intel utiliza **LM Studio** como servidor de inferencia. Funciona en Windows y Linux y expone una API compatible con OpenAI.
 
 ![loca llm ui](images/local-llm.png)
 
@@ -12,7 +12,9 @@ Requisitos de hardware para ejecutar el juego y el LLM en la misma máquina:
 - RTX 3090 24 GB de VRAM
 - AMD RX 7800 XT
 
-Si no dispones del hardware suficiente, utiliza el __[servicio gratuito en la nube](https://v2.auth.mistral.ai/login)__
+Si no dispones del hardware suficiente, utiliza el __servicio gratuito en la nube__ en
+👉 **[console.mistral.ai](https://console.mistral.ai/)** 👈 — plan gratuito, sin tarjeta de crédito.
+Pasos de configuración: [LLM gratuito en la nube](cloud-llm-options).
 
 Una tabla de referencia de GPU proporcionada por **Kevin Rank** está disponible aquí:
 [Guía de referencia de GPU](https://docs.google.com/spreadsheets/d/1ZyPgTvlVg7ueemHEV-3J3j3tAynShIyxTs8rd59rips/edit?usp=sharing)
@@ -20,57 +22,47 @@ Una tabla de referencia de GPU proporcionada por **Kevin Rank** está disponible
 ---
 ### Guías de instalación
 
-| Servidor de inferencia                                |                                                                                       |
-|-------------------------------------------------------|---------------------------------------------------------------------------------------|
-| [✅ LM Studio - Linux](Install-LM-Studio-Linux)       | Rápido, mayor flexibilidad de modelos  la guía muestra cómo configurarlo como servidor |
-| [✅ LM Studio - Windows](Install-LM-Studio-Windows)   | Rápido, mayor flexibilidad de modelos  incluye interfaz gráfica                       |
-| [Ollama - Linux](Install-Ollama-Local-LLM-Linux)     | Recomendado si tienes el hardware necesario para ejecutarlo                            |
-| [Ollama - Windows](Install-Ollama-Local-LLM-Windows) | Recomendado si tienes el hardware necesario para ejecutarlo                            |
+| Servidor de inferencia                                |                                                                                        |
+|-------------------------------------------------------|----------------------------------------------------------------------------------------|
+| [✅ LM Studio - Linux](Install-LM-Studio-Linux)       | Rápido, mayor flexibilidad de modelos - la guía muestra cómo configurarlo como servidor |
+| [✅ LM Studio - Windows](Install-LM-Studio-Windows)   | Rápido, mayor flexibilidad de modelos - incluye interfaz gráfica                        |
+| [🆓 LLM gratuito en la nube](cloud-llm-options)       | Sin GPU - plan gratuito de Mistral, sin tarjeta de crédito                              |
 
 ---
 
-### Ollama vs. LM Studio de un vistazo
+### LM Studio de un vistazo
 
-|                              | Ollama                                     | LM Studio                                                                                                    |
-|------------------------------|--------------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| **Velocidad**                | Más lento                                  | Más rápido                                                                                                   |
-| **Modelo requerido**          | `google/gemma-4-e4b`                        | `google/gemma-4-e4b`                                                                                         |
-| **Ideal para**               | Configuración sencilla, mantenimiento mínimo | Mayor control sobre la carga del modelo                                                                     |
-| **Instalación**              | Un script y listo                          | Un script y listo                                                                                            |
-| **Se ejecuta como**          | Servicio del sistema (inicio automático)   | Inicio manual o inicio automático opcional                                                                   |
-| **Ajuste de modelo**         | Modelfile integrado en el modelo           | Parámetros al momento de carga                                                                               |
-| **Inicio automático Windows**| ✅ Funciona sin configuración adicional     | Requiere la aplicación de escritorio o el Programador de tareas                                              |
-| **Inicio automático Linux**  | ✅ Servicio systemd incluido               | Configuración manual de systemd                                                                              |
-| **Fuente de modelos**        | Biblioteca de Ollama                       | HuggingFace (GGUF)                                                                                           |
-| **Puerto API**               | `11434`                                    | `1234`                                                                                                       |
-| **Interfaz gráfica**         | Ninguna (solo CLI)                         | Aplicación de escritorio opcional                                                                            |
+|                              | LM Studio                                             |
+|------------------------------|-------------------------------------------------------|
+| **Modelo requerido**         | `google/gemma-4-e4b`                                  |
+| **Instalación**              | Un script y listo                                     |
+| **Se ejecuta como**          | Inicio manual, o inicio automático opcional           |
+| **Ajuste del modelo**        | Opciones al cargar                                    |
+| **Inicio automático Windows**| Requiere la app de escritorio o el Programador de tareas |
+| **Inicio automático Linux**  | Configuración manual de systemd (ver la guía de Linux) |
+| **Fuente de modelos**        | HuggingFace (GGUF)                                    |
+| **Puerto API**               | `1234`                                                |
+| **Interfaz gráfica**         | Aplicación de escritorio opcional                     |
 
 ---
 
 ### Guía de selección
 
-**Usa Ollama cuando:**
-- Quieres una instalación sencilla con configuración continua mínima
-- Estás en Windows y prefieres no configurar el inicio manualmente
-- Eres nuevo en los LLM locales
-
-**Usa LM Studio cuando:**
-- Quieres una interfaz gráfica para explorar, descargar y gestionar modelos
-- Ya estás familiarizado con HuggingFace y los archivos de modelo GGUF
-- Quieres experimentar con diferentes modelos sin escribir Modelfiles
-- Estás ejecutando una máquina de inferencia dedicada y necesitas un servidor headless limpio
-
-**Cualquier opción funciona cuando:**
+**Usa LM Studio en local cuando:**
 - Tienes una NVIDIA RTX 3090 24 GB o equivalente o superior. La VRAM es el factor crítico, no la velocidad de la GPU. Una GPU con solo 12 GB de VRAM es insuficiente independientemente de la generación.
 - Estás ejecutando Elite Dangerous y el LLM en la misma máquina
 - Quieres apuntar Elite Intel a un PC separado en tu red
+- Quieres una interfaz gráfica para explorar, descargar y gestionar modelos, o un servidor headless limpio en una máquina de inferencia dedicada
+
+**Usa mejor el [LLM gratuito en la nube](cloud-llm-options) cuando:**
+- Tu GPU no tiene VRAM suficiente para ejecutar un modelo junto al juego
+- Prefieres no gestionar un servidor de inferencia local
 
 ---
 ## Recomendación del desarrollador
 
-El desarrollador usa LM Studio con `google/gemma-4-e4b` (~6,3 GB). El mismo modelo en Ollama va
-notablemente más lento. Otros modelos pueden funcionar, pero no está garantizado. Comparte tus
-hallazgos de compatibilidad en Matrix.
+El desarrollador usa LM Studio con `google/gemma-4-e4b` (~6,3 GB). Otros modelos pueden funcionar,
+pero no está garantizado. Comparte tus hallazgos de compatibilidad en Matrix.
 
 ## ¿Por qué `google/gemma-4-e4b` específicamente?
 

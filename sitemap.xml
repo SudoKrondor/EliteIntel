@@ -83,24 +83,6 @@
     <xhtml:link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Install-LM-Studio-Windows.html"/>
   </url>
   <url>
-    <loc>https://www.elite-intel.org/Install-Ollama-Local-LLM-Linux.html</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Install-Ollama-Local-LLM-Linux.html"/>
-    <xhtml:link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Install-Ollama-Local-LLM-Linux.html"/>
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/Install-Ollama-Local-LLM-Linux.html"/>
-    <xhtml:link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Install-Ollama-Local-LLM-Linux.html"/>
-    <xhtml:link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Install-Ollama-Local-LLM-Linux.html"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Install-Ollama-Local-LLM-Linux.html"/>
-  </url>
-  <url>
-    <loc>https://www.elite-intel.org/Install-Ollama-Local-LLM-Windows.html</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Install-Ollama-Local-LLM-Windows.html"/>
-    <xhtml:link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Install-Ollama-Local-LLM-Windows.html"/>
-    <xhtml:link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/Install-Ollama-Local-LLM-Windows.html"/>
-    <xhtml:link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Install-Ollama-Local-LLM-Windows.html"/>
-    <xhtml:link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Install-Ollama-Local-LLM-Windows.html"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Install-Ollama-Local-LLM-Windows.html"/>
-  </url>
-  <url>
     <loc>https://www.elite-intel.org/Installation.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Installation.html"/>
     <xhtml:link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Installation.html"/>

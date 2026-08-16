@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exécuter des LLMs sur AMD RX 7800 XT (Guide ROCm)  EliteIntel</title>
-    <meta name="description" content="&gt; Recommandé : LM Studio (`lms`) donne généralement les meilleurs résultats, mais Ollama est une alternative viable.">
+    <meta name="description" content="&gt; Recommandé : LM Studio (`lms`) est le serveur d&#39;inférence utilisé par Elite Intel.">
     <link rel="canonical" href="https://www.elite-intel.org/fr/AMD-RX-7800XT-LLM-Setup.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/AMD-RX-7800XT-LLM-Setup.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/AMD-RX-7800XT-LLM-Setup.html">
@@ -13,7 +13,7 @@
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/AMD-RX-7800XT-LLM-Setup.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/AMD-RX-7800XT-LLM-Setup.html">
     <meta property="og:title" content="Exécuter des LLMs sur AMD RX 7800 XT (Guide ROCm)  EliteIntel">
-    <meta property="og:description" content="&gt; Recommandé : LM Studio (`lms`) donne généralement les meilleurs résultats, mais Ollama est une alternative viable.">
+    <meta property="og:description" content="&gt; Recommandé : LM Studio (`lms`) est le serveur d&#39;inférence utilisé par Elite Intel.">
     <meta property="og:url" content="https://www.elite-intel.org/fr/AMD-RX-7800XT-LLM-Setup.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -61,8 +61,7 @@
 
             <div class="nav-section">Wiki</div>
             <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Choisir votre LLM</a>
-            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
-            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 LLM cloud gratuit</a>
             <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
             <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
             <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub active"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
@@ -93,12 +92,12 @@
 <p>Guide fourni par <strong>Ian Wirtz</strong></p>
 </blockquote>
 <blockquote>
-<p><strong>Recommandé :</strong> LM Studio (<code>lms</code>) donne généralement les meilleurs résultats, mais Ollama est une alternative viable.</p>
+<p><strong>Recommandé :</strong> LM Studio (<code>lms</code>) est le serveur d&#39;inférence utilisé par Elite Intel.</p>
 </blockquote>
 <hr>
 <h2>Prérequis</h2>
 <h3>Étape 1 - Installer <code>rocm-hip-runtime</code></h3>
-<p>Avant que LM Studio ou Ollama puisse utiliser votre GPU via ROCm, le système a besoin des bibliothèques HIP de l&#39;espace utilisateur pour communiquer avec le pilote du noyau.</p>
+<p>Avant que LM Studio puisse utiliser votre GPU via ROCm, le système a besoin des bibliothèques HIP de l&#39;espace utilisateur pour communiquer avec le pilote du noyau.</p>
 <p><strong>Arch Linux / CachyOS :</strong></p>
 <pre><code class="language-bash">sudo pacman -S rocm-hip-runtime
 </code></pre>
@@ -182,19 +181,6 @@ source ~/.bashrc
 <pre><code class="language-fish">echo &#39;set -gx HSA_OVERRIDE_GFX_VERSION 11.0.0&#39; &gt;&gt; ~/.config/fish/config.fish
 source ~/.config/fish/config.fish
 </code></pre>
-<p><strong>Ollama (service systemd) :</strong></p>
-<p>Comme Ollama s&#39;exécute sous son propre utilisateur système <code>ollama</code>, la variable doit être injectée via un drop-in systemd :</p>
-<pre><code class="language-bash">sudo mkdir -p /etc/systemd/system/ollama.service.d
-sudo nano /etc/systemd/system/ollama.service.d/override.conf
-</code></pre>
-<p>Collez ce qui suit, puis sauvegardez et quittez (<code>Ctrl+O</code>, <code>Entrée</code>, <code>Ctrl+X</code>) :</p>
-<pre><code class="language-ini">[Service]
-Environment=&quot;HSA_OVERRIDE_GFX_VERSION=11.0.0&quot;
-</code></pre>
-<p>Puis rechargez et redémarrez le service :</p>
-<pre><code class="language-bash">sudo systemctl daemon-reload
-sudo systemctl restart ollama
-</code></pre>
 <hr>
 <h2>Vérification</h2>
 <h3>Étape 5 - Confirmer que le pilote de calcul du noyau est chargé</h3>
@@ -206,9 +192,6 @@ sudo systemctl restart ollama
 <h3>Étape 6 - Démarrer le serveur et vérifier l&#39;utilisation de la VRAM</h3>
 <p><strong>LM Studio :</strong></p>
 <pre><code class="language-bash">lms server start
-</code></pre>
-<p><strong>Ollama :</strong></p>
-<pre><code class="language-bash">ollama serve
 </code></pre>
 <p>Puis confirmez que le modèle est chargé en VRAM :</p>
 <pre><code class="language-bash">rocm-smi

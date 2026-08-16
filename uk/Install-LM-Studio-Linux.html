@@ -61,8 +61,7 @@
 
             <div class="nav-section">Вікі</div>
             <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
-            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
-            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 Безкоштовний хмарний LLM</a>
             <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub active"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
             <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
             <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
@@ -90,7 +89,6 @@
         <div class="content-inner markdown-body" id="content-inner">
 <h2>Локальна LLM  налаштування на Linux (LM Studio)</h2>
 <p>Запуск локальної LLM зберігає всі дані приватними та офлайн. Плата за підписку відсутня. Застосовуються витрати на обладнання та електроенергію.</p>
-<p>LM Studio є альтернативою Ollama. Вона використовує ті самі моделі та той самий OpenAI-сумісний API. Вибір можна змінити в налаштуваннях будь-коли.</p>
 <p>Для роботи потрібні <a href="https://lmstudio.ai">LM Studio</a> та здатний GPU.</p>
 <hr>
 <h3>Мінімальні вимоги до обладнання</h3>
@@ -254,12 +252,6 @@ WantedBy=timers.target
 systemctl --user enable --now lmstudio-restart.timer
 </code></pre>
 <p>Таймер чекає 2 хвилини після входу в систему, перезапускає службу LM Studio один раз, а потім залишається неактивним. Якщо ви не відчуваєте повільного інференсу, цей крок не потрібний.</p>
-<hr>
-<h3>Вимкнення автозапуску Ollama (якщо встановлено)</h3>
-<p>Ollama за замовчуванням встановлює себе як увімкнену службу systemd. Щоб замість неї запустити LM Studio та запускати Ollama лише на вимогу:</p>
-<pre><code class="language-shell">sudo systemctl disable ollama.service
-sudo systemctl stop ollama.service
-</code></pre>
 <hr>
 <h3>Крок 5  Налаштування Elite Intel</h3>
 <p>Відкрийте вкладку <strong>Settings</strong> в Elite Intel:</p>

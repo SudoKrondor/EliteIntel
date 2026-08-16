@@ -61,8 +61,7 @@
 
             <div class="nav-section">Wiki</div>
             <a href="installing-local-llms.html" class="nav-link active"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Choose your LLM</a>
-            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
-            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> 🆓 Free Cloud LLM</a>
             <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
             <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
             <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
@@ -90,7 +89,7 @@
         <div class="content-inner markdown-body" id="content-inner">
 <h1>Choosing a Local Inference Server</h1>
 <p>To run a local LLM with Elite Intel, an <strong>inference server</strong> is required. This is software that loads the AI model and serves it over a local API. It is the local equivalent of a cloud AI service, running entirely on your own hardware.</p>
-<p>Elite Intel supports two inference servers: <strong>Ollama</strong> and <strong>LM Studio</strong>. Both are compatible and use the same models. The choice can be changed in settings at any time.</p>
+<p>Elite Intel uses <strong>LM Studio</strong> as its inference server. It runs on Windows and Linux and serves an OpenAI-compatible API.</p>
 <p><img src="images/local-llm.png" alt="loca llm ui"></p>
 <h2>GPU Requirements</h2>
 <p>Hardware requirements to run game and LLM on the same machine:</p>
@@ -98,7 +97,9 @@
 <li>RTX 3090 24GB VRAM</li>
 <li>AMD RX 7800 XT</li>
 </ul>
-<p>If you do not have enough hardware, use <strong><a href="https://v2.auth.mistral.ai/login">Free Cloud service</a></strong></p>
+<p>If you do not have enough hardware, use the <strong>free cloud service</strong> at
+👉 <strong><a href="https://console.mistral.ai/">console.mistral.ai</a></strong> 👈 — free tier, no credit card required.
+Setup steps: <a href="cloud-llm-options.html">Free Cloud LLM</a>.</p>
 <p>A GPU reference table provided by <strong>Kevin Rank</strong> is available here:
 <a href="https://docs.google.com/spreadsheets/d/1ZyPgTvlVg7ueemHEV-3J3j3tAynShIyxTs8rd59rips/edit?usp=sharing">GPU Reference Guide</a></p>
 <hr>
@@ -119,106 +120,74 @@
 <td>Fast, more model flexibility - got GUI</td>
 </tr>
 <tr>
-<td><a href="Install-Ollama-Local-LLM-Linux.html">Ollama - Linux</a></td>
-<td>Recommended if you have the hardware to run it</td>
-</tr>
-<tr>
-<td><a href="Install-Ollama-Local-LLM-Windows.html">Ollama - Windows</a></td>
-<td>Recommended if you have the hardware to run it</td>
+<td><a href="cloud-llm-options.html">🆓 Free Cloud LLM</a></td>
+<td>No GPU needed - free Mistral tier, no credit card</td>
 </tr>
 </tbody></table>
 <hr>
-<h3>Ollama vs. LM Studio at a Glance</h3>
+<h3>LM Studio at a Glance</h3>
 <table>
 <thead>
 <tr>
 <th></th>
-<th>Ollama</th>
 <th>LM Studio</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Speed</strong></td>
-<td>Slower</td>
-<td>Faster</td>
-</tr>
-<tr>
 <td><strong>Required model</strong></td>
 <td><code>google/gemma-4-e4b</code></td>
-<td><code>google/gemma-4-e4b</code></td>
-</tr>
-<tr>
-<td><strong>Best for</strong></td>
-<td>Simple setup, minimal maintenance</td>
-<td>More control over model loading</td>
 </tr>
 <tr>
 <td><strong>Install</strong></td>
 <td>One script, done</td>
-<td>One script, done</td>
 </tr>
 <tr>
 <td><strong>Runs as</strong></td>
-<td>System service (auto-starts on boot)</td>
 <td>Manual start, or opt-in auto-start</td>
 </tr>
 <tr>
 <td><strong>Model tuning</strong></td>
-<td>Modelfile baked into the model</td>
 <td>Flags at load time</td>
 </tr>
 <tr>
 <td><strong>Windows auto-start</strong></td>
-<td>✅ Works out of the box</td>
 <td>Requires desktop app or Task Scheduler</td>
 </tr>
 <tr>
 <td><strong>Linux auto-start</strong></td>
-<td>✅ systemd service included</td>
-<td>Manual systemd setup</td>
+<td>Manual systemd setup (covered in the Linux guide)</td>
 </tr>
 <tr>
 <td><strong>Model source</strong></td>
-<td>Ollama library</td>
 <td>HuggingFace (GGUF)</td>
 </tr>
 <tr>
 <td><strong>API port</strong></td>
-<td><code>11434</code></td>
 <td><code>1234</code></td>
 </tr>
 <tr>
 <td><strong>GUI</strong></td>
-<td>None (CLI only)</td>
 <td>Optional desktop app</td>
 </tr>
 </tbody></table>
 <hr>
 <h3>Selection Guide</h3>
-<p><strong>Use Ollama when:</strong></p>
-<ul>
-<li>You want a simple install with minimal ongoing configuration</li>
-<li>You are on Windows and prefer not to configure startup manually</li>
-<li>You are new to local LLMs</li>
-</ul>
-<p><strong>Use LM Studio when:</strong></p>
-<ul>
-<li>You want a desktop GUI to browse, download, and manage models</li>
-<li>You are already familiar with HuggingFace and GGUF model files</li>
-<li>You want to experiment with different models without writing Modelfiles</li>
-<li>You are running a dedicated inference machine and need a clean headless server</li>
-</ul>
-<p><strong>Either option works when:</strong></p>
+<p><strong>Run LM Studio locally when:</strong></p>
 <ul>
 <li>You have an NVIDIA RTX 3090 24 GB equivalent or better. VRAM is the critical factor, not GPU speed. A GPU with only 12 GB VRAM is insufficient regardless of generation.</li>
 <li>You are running Elite Dangerous and the LLM on the same machine</li>
 <li>You want to point Elite Intel at a separate PC on your network</li>
+<li>You want a desktop GUI to browse, download, and manage models, or a clean headless server on a dedicated inference machine</li>
+</ul>
+<p><strong>Use the <a href="cloud-llm-options.html">free cloud LLM</a> instead when:</strong></p>
+<ul>
+<li>Your GPU does not have the VRAM to run a model alongside the game</li>
+<li>You would rather not manage a local inference server at all</li>
 </ul>
 <hr>
 <h2>Developer Recommendation</h2>
-<p>The developer uses LM Studio with <code>google/gemma-4-e4b</code> (~6.3 GB). The same model on Ollama runs
-noticeably slower. Other models may work but are not guaranteed. Report compatibility findings on
-Matrix.</p>
+<p>The developer uses LM Studio with <code>google/gemma-4-e4b</code> (~6.3 GB). Other models may work but are
+not guaranteed. Report compatibility findings on Matrix.</p>
 <h2>Why <code>google/gemma-4-e4b</code> specifically?</h2>
 <p>Elite Intel is a command parser and data analysis tool, not a conversational chatbot. This imposes
 specific model requirements. Generating natural-sounding banter is insufficient. The model must

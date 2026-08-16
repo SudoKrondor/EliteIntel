@@ -43,16 +43,13 @@ Alterna entre **Configuración local** y **Configuración en la nube**.
 
 | Campo | Notas |
 |-------|-------|
-| **Host** | `Ollama` o `LM Studio`. Cada uno conserva su propia dirección y modelo, así que puedes cambiar de uno a otro sin volver a escribir nada |
-| **Dirección** | Por defecto, la URL habitual de ese host. Apúntala a la IP de otra máquina si la inferencia corre en otro punto de tu red |
+| **Dirección** | Por defecto, la URL habitual de LM Studio. Apúntala a la IP de otra máquina si la inferencia corre en otro punto de tu red |
 | **Modelo** | El nombre del modelo. **Un solo campo**: V1.1 usa un único modelo para comandos y consultas |
 
 El modelo local por defecto y recomendado es **`google/gemma-4-e4b`**. Elite Intel te avisa al
 arrancar si tu modelo local es otro; otros modelos pueden funcionar mal o no funcionar en absoluto.
 
-Guías de instalación: [Ollama en Linux](Install-Ollama-Local-LLM-Linux) ·
-[Ollama en Windows](Install-Ollama-Local-LLM-Windows) ·
-[LM Studio en Linux](Install-LM-Studio-Linux) ·
+Guías de instalación: [LM Studio en Linux](Install-LM-Studio-Linux) ·
 [LM Studio en Windows](Install-LM-Studio-Windows) ·
 [Serie AMD RX](AMD-RX-7800XT-LLM-Setup)
 

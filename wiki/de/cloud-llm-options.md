@@ -16,7 +16,7 @@
 Die Kosten variieren je nach gewähltem Cloud-Dienst und Spielzeit.
 
 ### KOSTENLOSE Cloud-Option: Mistral
-1. Gehe zur [Mistral Console](https://console.mistral.ai/home)
+1. Gehe zur [Mistral Console](https://console.mistral.ai/)
 2. Erstelle ein Konto mit einer gültigen, verifizierbaren E-Mail-Adresse.
 3. KEINE KREDITKARTE ERFORDERLICH
 4. Erstelle eine „Organisation" (beliebiger Name, z. B. „Elite Intel")

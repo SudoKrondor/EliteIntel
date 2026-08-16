@@ -16,7 +16,7 @@
 El coste variará según el servicio en la nube que elijas y el tiempo que juegues.
 
 ### Opción GRATUITA en la nube: Mistral
-1. Ve a la [consola de Mistral](https://console.mistral.ai/home)
+1. Ve a la [consola de Mistral](https://console.mistral.ai/)
 2. Crea una cuenta con un correo electrónico válido que puedas verificar.
 3. NO ES NECESARIA TARJETA DE CRÉDITO
 4. Crea una "Organización" (ponle el nombre que quieras, por ejemplo "Elite Intel")

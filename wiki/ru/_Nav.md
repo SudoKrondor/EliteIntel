@@ -20,8 +20,7 @@ UI-Settings-Tab: Вкладка «Настройки»
 UI-Stats-Tab: Вкладка «Статистика»
 UI-HUD-Overlay: HUD-оверлей
 installing-local-llms: Выбрать LLM
-Install-Ollama-Local-LLM-Linux: Ollama  Linux
-Install-Ollama-Local-LLM-Windows: Ollama  Windows
+cloud-llm-options: 🆓 Бесплатный облачный LLM
 Install-LM-Studio-Linux: LM Studio  Linux
 Install-LM-Studio-Windows: LM Studio  Windows
 AMD-RX-7800XT-LLM-Setup: AMD RX Series

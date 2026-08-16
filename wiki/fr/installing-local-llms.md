@@ -2,7 +2,7 @@
 
 Pour exécuter un LLM local avec Elite Intel, un **serveur d'inférence** est requis. Il s'agit d'un logiciel qui charge le modèle IA et le sert via une API locale. C'est l'équivalent local d'un service IA cloud, fonctionnant entièrement sur votre propre matériel.
 
-Elite Intel prend en charge deux serveurs d'inférence : **Ollama** et **LM Studio**. Les deux sont compatibles et utilisent les mêmes modèles. Le choix peut être modifié dans les paramètres à tout moment.
+Elite Intel utilise **LM Studio** comme serveur d'inférence. Il fonctionne sous Windows et Linux et expose une API compatible OpenAI.
 
 ![loca llm ui](images/local-llm.png)
 
@@ -12,7 +12,9 @@ Configuration matérielle requise pour faire tourner le jeu et le LLM sur la mê
 - RTX 3090 24 Go VRAM
 - AMD RX 7800 XT
 
-Si vous ne disposez pas du matériel suffisant, utilisez le __[service cloud gratuit](https://v2.auth.mistral.ai/login)__
+Si vous ne disposez pas du matériel suffisant, utilisez le __service cloud gratuit__ sur
+👉 **[console.mistral.ai](https://console.mistral.ai/)** 👈 — offre gratuite, sans carte bancaire.
+Étapes de configuration : [LLM cloud gratuit](cloud-llm-options).
 
 Un tableau de référence GPU fourni par **Kevin Rank** est disponible ici :
 [Guide de référence GPU](https://docs.google.com/spreadsheets/d/1ZyPgTvlVg7ueemHEV-3J3j3tAynShIyxTs8rd59rips/edit?usp=sharing)
@@ -20,57 +22,47 @@ Un tableau de référence GPU fourni par **Kevin Rank** est disponible ici :
 ---
 ### Guides d'installation
 
-| Serveur d'inférence                                     |                                                                     |
-|------------------------------------------------------|---------------------------------------------------------------------|
+| Serveur d'inférence                                   |                                                                                                    |
+|-------------------------------------------------------|----------------------------------------------------------------------------------------------------|
 | [✅ LM Studio - Linux](Install-LM-Studio-Linux)       | Rapide, plus de flexibilité pour les modèles - le guide montre comment le configurer comme serveur |
-| [✅ LM Studio - Windows](Install-LM-Studio-Windows)   | Rapide, plus de flexibilité pour les modèles - interface graphique disponible |
-| [Ollama - Linux](Install-Ollama-Local-LLM-Linux)     | Recommandé si vous avez le matériel pour le faire tourner |
-| [Ollama - Windows](Install-Ollama-Local-LLM-Windows) | Recommandé si vous avez le matériel pour le faire tourner |
+| [✅ LM Studio - Windows](Install-LM-Studio-Windows)   | Rapide, plus de flexibilité pour les modèles - interface graphique disponible                      |
+| [🆓 LLM cloud gratuit](cloud-llm-options)             | Aucun GPU requis - offre gratuite Mistral, sans carte bancaire                                     |
 
 ---
 
-### Ollama vs. LM Studio en un coup d'œil
+### LM Studio en un coup d'œil
 
-|                        | Ollama                              | LM Studio                                                                                                    |
-|------------------------|-------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| **Vitesse**            | Plus lent                           | Plus rapide                                                                                                  |
-| **Modèle requis**             | `google/gemma-4-e4b`                        | `google/gemma-4-e4b`                                                                                         |
-| **Idéal pour**         | Configuration simple, maintenance minimale | Plus de contrôle sur le chargement des modèles |
-| **Installation**       | Un script, c'est tout               | Un script, c'est tout                                                                                        |
-| **Fonctionne en tant que** | Service système (démarrage auto au boot) | Démarrage manuel, ou démarrage auto optionnel |
-| **Réglage du modèle**  | Modelfile intégré au modèle         | Options au moment du chargement                                                                              |
-| **Démarrage auto Windows** | ✅ Fonctionne par défaut          | Nécessite l'application de bureau ou le Planificateur de tâches |
-| **Démarrage auto Linux** | ✅ Service systemd inclus          | Configuration systemd manuelle                                                                               |
-| **Source du modèle**   | Bibliothèque Ollama                 | HuggingFace (GGUF)                                                                                           |
-| **Port API**           | `11434`                             | `1234`                                                                                                       |
-| **Interface graphique** | Aucune (CLI uniquement)            | Application de bureau optionnelle                                                                            |
+|                            | LM Studio                                                       |
+|----------------------------|-----------------------------------------------------------------|
+| **Modèle requis**          | `google/gemma-4-e4b`                                            |
+| **Installation**           | Un script, c'est tout                                           |
+| **Fonctionne en tant que** | Démarrage manuel, ou démarrage auto optionnel                   |
+| **Réglage du modèle**      | Options au moment du chargement                                 |
+| **Démarrage auto Windows** | Nécessite l'application de bureau ou le Planificateur de tâches |
+| **Démarrage auto Linux**   | Configuration systemd manuelle (voir le guide Linux)            |
+| **Source du modèle**       | HuggingFace (GGUF)                                              |
+| **Port API**               | `1234`                                                          |
+| **Interface graphique**    | Application de bureau optionnelle                               |
 
 ---
 
 ### Guide de sélection
 
-**Utilisez Ollama quand :**
-- Vous souhaitez une installation simple avec une configuration minimale
-- Vous êtes sur Windows et préférez ne pas configurer le démarrage manuellement
-- Vous débutez avec les LLMs locaux
-
-**Utilisez LM Studio quand :**
-- Vous souhaitez une interface graphique pour parcourir, télécharger et gérer les modèles
-- Vous êtes déjà familier avec HuggingFace et les fichiers de modèles GGUF
-- Vous souhaitez expérimenter avec différents modèles sans écrire de Modelfiles
-- Vous utilisez une machine dédiée à l'inférence et avez besoin d'un serveur headless propre
-
-**L'une ou l'autre option convient quand :**
+**Utilisez LM Studio en local quand :**
 - Vous disposez d'un NVIDIA RTX 3090 24 Go équivalent ou supérieur. La VRAM est le facteur critique, pas la vitesse du GPU. Un GPU avec seulement 12 Go de VRAM est insuffisant quelle que soit sa génération.
 - Vous exécutez Elite Dangerous et le LLM sur la même machine
 - Vous souhaitez pointer Elite Intel vers un PC séparé sur votre réseau
+- Vous souhaitez une interface graphique pour parcourir, télécharger et gérer les modèles, ou un serveur headless propre sur une machine dédiée à l'inférence
+
+**Utilisez plutôt le [LLM cloud gratuit](cloud-llm-options) quand :**
+- Votre GPU n'a pas assez de VRAM pour faire tourner un modèle en même temps que le jeu
+- Vous préférez ne pas gérer de serveur d'inférence local
 
 ---
 ## Recommandation du développeur
 
-Le développeur utilise LM Studio avec `google/gemma-4-e4b` (~6,3 Go). Le même modèle sous Ollama
-est nettement plus lent. D'autres modèles peuvent fonctionner, sans garantie. Signalez vos retours
-de compatibilité sur Matrix.
+Le développeur utilise LM Studio avec `google/gemma-4-e4b` (~6,3 Go). D'autres modèles peuvent
+fonctionner, sans garantie. Signalez vos retours de compatibilité sur Matrix.
 
 ## Pourquoi `google/gemma-4-e4b` en particulier ?
 

@@ -21,7 +21,7 @@ selects the model itself:
 Cost will be different depending on which Cloud service you choose, and how long you play.
 
 ### FREE CLOUD Option: Mistral
-1. Go to [Mistral Console](https://console.mistral.ai/home)
+1. Go to [Mistral Console](https://console.mistral.ai/)
 2. Create account with a valid email you can verify.
 3. NO CREDIT CARD NECESSARY
 4. Create a "Organisation" (Call it whatever you want. For example "Elite Intel")

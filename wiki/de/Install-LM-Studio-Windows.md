@@ -2,8 +2,6 @@
 
 Ein lokales LLM zu betreiben hält alle Daten privat und offline. Es gibt keine Abonnementgebühren. Hardware- und Stromkosten fallen an.
 
-LM Studio ist eine Alternative zu Ollama. Es verwendet dieselben Modelle und dieselbe OpenAI-kompatible API. Die Wahl kann jederzeit in den Einstellungen geändert werden.
-
 Es erfordert [LM Studio](https://lmstudio.ai) und eine leistungsfähige GPU.
 
 ---

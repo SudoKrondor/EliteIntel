@@ -2,8 +2,6 @@
 
 Faire tourner un LLM localement garde toutes les données privées et hors ligne. Aucun abonnement n'est requis. Des coûts matériels et électriques s'appliquent.
 
-LM Studio est une alternative à Ollama. Il utilise les mêmes modèles et la même API compatible OpenAI. Le choix peut être modifié dans les paramètres à tout moment.
-
 Il nécessite [LM Studio](https://lmstudio.ai) et un GPU suffisamment puissant.
 
 ---
@@ -238,17 +236,6 @@ systemctl --user enable --now lmstudio-restart.timer
 ```
 
 La minuterie attend 2 minutes après la connexion, redémarre le service LM Studio une fois, puis reste inactive. Si vous ne rencontrez pas d'inférence lente, cette étape n'est pas nécessaire.
-
----
-
-### Désactiver le démarrage automatique d'Ollama (si installé)
-
-Ollama s'installe par défaut en tant que service systemd activé. Pour utiliser LM Studio à la place et ne démarrer Ollama que sur demande :
-
-```shell
-sudo systemctl disable ollama.service
-sudo systemctl stop ollama.service
-```
 
 ---
 

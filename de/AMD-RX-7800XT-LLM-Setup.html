@@ -61,8 +61,7 @@
 
             <div class="nav-section">Wiki</div>
             <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> LLM auswählen</a>
-            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
-            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 Kostenloses Cloud-LLM</a>
             <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
             <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
             <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub active"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
@@ -93,12 +92,12 @@
 <p>Diese Anleitung wurde von <strong>Ian Wirtz</strong> bereitgestellt.</p>
 </blockquote>
 <blockquote>
-<p><strong>Empfehlung:</strong> LM Studio (<code>lms</code>) liefert in der Regel die besten Ergebnisse, Ollama ist jedoch eine brauchbare Alternative.</p>
+<p><strong>Empfehlung:</strong> LM Studio (<code>lms</code>) ist der von Elite Intel genutzte Inferenzserver.</p>
 </blockquote>
 <hr>
 <h2>Voraussetzungen</h2>
 <h3>Schritt 1 – <code>rocm-hip-runtime</code> installieren</h3>
-<p>Bevor LM Studio oder Ollama die GPU über ROCm nutzen können, benötigt das System die HIP-Basisbibliotheken im Benutzerbereich, um mit dem Kernel-Treiber zu kommunizieren.</p>
+<p>Bevor LM Studio die GPU über ROCm nutzen kann, benötigt das System die HIP-Basisbibliotheken im Benutzerbereich, um mit dem Kernel-Treiber zu kommunizieren.</p>
 <p><strong>Arch Linux / CachyOS:</strong></p>
 <pre><code class="language-bash">sudo pacman -S rocm-hip-runtime
 </code></pre>
@@ -182,19 +181,6 @@ source ~/.bashrc
 <pre><code class="language-fish">echo &#39;set -gx HSA_OVERRIDE_GFX_VERSION 11.0.0&#39; &gt;&gt; ~/.config/fish/config.fish
 source ~/.config/fish/config.fish
 </code></pre>
-<p><strong>Ollama (systemd-Dienst):</strong></p>
-<p>Da Ollama unter dem eigenen Systembenutzer <code>ollama</code> läuft, muss die Variable über eine systemd-Drop-in-Datei eingebunden werden:</p>
-<pre><code class="language-bash">sudo mkdir -p /etc/systemd/system/ollama.service.d
-sudo nano /etc/systemd/system/ollama.service.d/override.conf
-</code></pre>
-<p>Folgenden Inhalt einfügen, dann speichern und beenden (<code>Ctrl+O</code>, <code>Enter</code>, <code>Ctrl+X</code>):</p>
-<pre><code class="language-ini">[Service]
-Environment=&quot;HSA_OVERRIDE_GFX_VERSION=11.0.0&quot;
-</code></pre>
-<p>Anschließend den Dienst neu laden und starten:</p>
-<pre><code class="language-bash">sudo systemctl daemon-reload
-sudo systemctl restart ollama
-</code></pre>
 <hr>
 <h2>Überprüfung</h2>
 <h3>Schritt 5 – Bestätigen, dass der Kernel-Compute-Treiber geladen ist</h3>
@@ -206,9 +192,6 @@ sudo systemctl restart ollama
 <h3>Schritt 6 – Server starten und VRAM-Nutzung prüfen</h3>
 <p><strong>LM Studio:</strong></p>
 <pre><code class="language-bash">lms server start
-</code></pre>
-<p><strong>Ollama:</strong></p>
-<pre><code class="language-bash">ollama serve
 </code></pre>
 <p>Anschließend prüfen, ob das Modell in den VRAM geladen wurde:</p>
 <pre><code class="language-bash">rocm-smi

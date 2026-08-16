@@ -8,12 +8,13 @@ Elite Intel **V1.1** is the current release.
 
 1. Download the [👉**installer**👈](https://github.com/stone-alex/EliteIntel/releases).
 2. Run the installer and follow the on-screen prompts.
-3. Set up a language model. Two options:
+3. Set up a language model. **Elite Intel cannot run without one.** Two options:
    - **Local LLM** (free, offline): see the [**Local LLM guide**](installing-local-llms).
      Requires capable GPU hardware.
    - **Cloud LLM** (has a free tier and is easier to set up): see
      [**Cloud LLM options**](cloud-llm-options) for how to get an API key, then enter it in
      [**Settings → AI Services**](UI-Settings-Tab).
+     Free tier, no credit card: 👉 [**console.mistral.ai**](https://console.mistral.ai/) 👈
 
 Setup complete. Next: [**the user interface, tab by tab**](UI).
 

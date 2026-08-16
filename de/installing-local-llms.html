@@ -61,8 +61,7 @@
 
             <div class="nav-section">Wiki</div>
             <a href="installing-local-llms.html" class="nav-link active"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> LLM auswählen</a>
-            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
-            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 Kostenloses Cloud-LLM</a>
             <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
             <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
             <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
@@ -90,7 +89,7 @@
         <div class="content-inner markdown-body" id="content-inner">
 <h1>Einen lokalen Inferenzserver wählen</h1>
 <p>Um ein lokales LLM mit Elite Intel zu betreiben, ist ein <strong>Inferenzserver</strong> erforderlich. Das ist eine Software, die das KI-Modell lädt und es über eine lokale API bereitstellt. Es ist das lokale Äquivalent eines Cloud-KI-Dienstes und läuft vollständig auf deiner eigenen Hardware.</p>
-<p>Elite Intel unterstützt zwei Inferenzserver: <strong>Ollama</strong> und <strong>LM Studio</strong>. Beide sind kompatibel und verwenden dieselben Modelle. Die Auswahl kann jederzeit in den Einstellungen geändert werden.</p>
+<p>Elite Intel nutzt <strong>LM Studio</strong> als Inferenzserver. Er läuft unter Windows und Linux und stellt eine OpenAI-kompatible API bereit.</p>
 <p><img src="../images/local-llm.png" alt="loca llm ui"></p>
 <h2>GPU-Anforderungen</h2>
 <p>Hardwareanforderungen, um Spiel und LLM auf demselben Rechner zu betreiben:</p>
@@ -98,7 +97,9 @@
 <li>RTX 3090 24 GB VRAM</li>
 <li>AMD RX 7800 XT</li>
 </ul>
-<p>Wenn du nicht genug Hardware hast, nutze den <strong><a href="https://v2.auth.mistral.ai/login">kostenlosen Cloud-Dienst</a></strong></p>
+<p>Wenn du nicht genug Hardware hast, nutze den <strong>kostenlosen Cloud-Dienst</strong> unter
+👉 <strong><a href="https://console.mistral.ai/">console.mistral.ai</a></strong> 👈 — kostenloser Tarif, ohne Kreditkarte.
+Einrichtungsschritte: <a href="cloud-llm-options.html">Kostenloses Cloud-LLM</a>.</p>
 <p>Eine GPU-Referenztabelle von <strong>Kevin Rank</strong> ist hier verfügbar:
 <a href="https://docs.google.com/spreadsheets/d/1ZyPgTvlVg7ueemHEV-3J3j3tAynShIyxTs8rd59rips/edit?usp=sharing">GPU-Referenzleitfaden</a></p>
 <hr>
@@ -119,106 +120,74 @@
 <td>Schnell, mehr Modellflexibilität – mit GUI</td>
 </tr>
 <tr>
-<td><a href="Install-Ollama-Local-LLM-Linux.html">Ollama - Linux</a></td>
-<td>Empfohlen, wenn du die nötige Hardware hast</td>
-</tr>
-<tr>
-<td><a href="Install-Ollama-Local-LLM-Windows.html">Ollama - Windows</a></td>
-<td>Empfohlen, wenn du die nötige Hardware hast</td>
+<td><a href="cloud-llm-options.html">🆓 Kostenloses Cloud-LLM</a></td>
+<td>Keine GPU nötig – kostenloser Mistral-Tarif, ohne Kreditkarte</td>
 </tr>
 </tbody></table>
 <hr>
-<h3>Ollama vs. LM Studio auf einen Blick</h3>
+<h3>LM Studio auf einen Blick</h3>
 <table>
 <thead>
 <tr>
 <th></th>
-<th>Ollama</th>
 <th>LM Studio</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Geschwindigkeit</strong></td>
-<td>Langsamer</td>
-<td>Schneller</td>
-</tr>
-<tr>
-<td><strong>Erforderliches Modell</strong></td>
+<td><strong>Benötigtes Modell</strong></td>
 <td><code>google/gemma-4-e4b</code></td>
-<td><code>google/gemma-4-e4b</code></td>
-</tr>
-<tr>
-<td><strong>Am besten geeignet für</strong></td>
-<td>Einfache Einrichtung, minimaler Wartungsaufwand</td>
-<td>Mehr Kontrolle über das Laden von Modellen</td>
 </tr>
 <tr>
 <td><strong>Installation</strong></td>
 <td>Ein Skript, fertig</td>
-<td>Ein Skript, fertig</td>
 </tr>
 <tr>
 <td><strong>Läuft als</strong></td>
-<td>Systemdienst (startet automatisch beim Boot)</td>
-<td>Manueller Start oder optionaler Autostart</td>
+<td>Manueller Start, oder optionaler Autostart</td>
 </tr>
 <tr>
 <td><strong>Modell-Tuning</strong></td>
-<td>Modelfile im Modell integriert</td>
-<td>Parameter beim Laden</td>
+<td>Flags beim Laden</td>
 </tr>
 <tr>
 <td><strong>Windows-Autostart</strong></td>
-<td>✅ Funktioniert direkt</td>
 <td>Erfordert Desktop-App oder Aufgabenplanung</td>
 </tr>
 <tr>
 <td><strong>Linux-Autostart</strong></td>
-<td>✅ systemd-Dienst inklusive</td>
-<td>Manuelle systemd-Einrichtung</td>
+<td>Manuelle systemd-Einrichtung (siehe Linux-Anleitung)</td>
 </tr>
 <tr>
 <td><strong>Modellquelle</strong></td>
-<td>Ollama-Bibliothek</td>
 <td>HuggingFace (GGUF)</td>
 </tr>
 <tr>
 <td><strong>API-Port</strong></td>
-<td><code>11434</code></td>
 <td><code>1234</code></td>
 </tr>
 <tr>
 <td><strong>GUI</strong></td>
-<td>Keine (nur CLI)</td>
 <td>Optionale Desktop-App</td>
 </tr>
 </tbody></table>
 <hr>
 <h3>Auswahlhilfe</h3>
-<p><strong>Ollama verwenden, wenn:</strong></p>
-<ul>
-<li>Du eine einfache Installation mit minimalem laufenden Konfigurationsaufwand möchtest</li>
-<li>Du unter Windows bist und den Startup nicht manuell konfigurieren möchtest</li>
-<li>Du neu bei lokalen LLMs bist</li>
-</ul>
-<p><strong>LM Studio verwenden, wenn:</strong></p>
-<ul>
-<li>Du eine Desktop-GUI zum Durchsuchen, Herunterladen und Verwalten von Modellen möchtest</li>
-<li>Du bereits mit HuggingFace und GGUF-Modelldateien vertraut bist</li>
-<li>Du mit verschiedenen Modellen experimentieren möchtest, ohne Modelfiles zu schreiben</li>
-<li>Du einen dedizierten Inferenzrechner betreibst und einen sauberen Headless-Server benötigst</li>
-</ul>
-<p><strong>Beide Optionen funktionieren, wenn:</strong></p>
+<p><strong>LM Studio lokal betreiben, wenn:</strong></p>
 <ul>
 <li>Du eine NVIDIA RTX 3090 24 GB oder besser hast. VRAM ist der entscheidende Faktor, nicht die GPU-Geschwindigkeit. Eine GPU mit nur 12 GB VRAM ist unzureichend, unabhängig von der Generation.</li>
 <li>Du Elite Dangerous und das LLM auf demselben Rechner betreibst</li>
 <li>Du Elite Intel auf einen separaten PC in deinem Netzwerk verweisen möchtest</li>
+<li>Du eine Desktop-GUI zum Durchsuchen, Herunterladen und Verwalten von Modellen möchtest oder einen sauberen Headless-Server auf einem dedizierten Inferenzrechner</li>
+</ul>
+<p><strong>Stattdessen das <a href="cloud-llm-options.html">kostenlose Cloud-LLM</a> nutzen, wenn:</strong></p>
+<ul>
+<li>Deine GPU nicht genug VRAM hat, um ein Modell neben dem Spiel zu betreiben</li>
+<li>Du keinen lokalen Inferenzserver betreiben möchtest</li>
 </ul>
 <hr>
 <h2>Empfehlung des Entwicklers</h2>
-<p>Der Entwickler verwendet LM Studio mit <code>google/gemma-4-e4b</code> (~6,3 GB). Dasselbe Modell unter
-Ollama läuft merklich langsamer. Andere Modelle können funktionieren, sind aber nicht garantiert.
-Melde Kompatibilitätsergebnisse auf Matrix.</p>
+<p>Der Entwickler verwendet LM Studio mit <code>google/gemma-4-e4b</code> (~6,3 GB). Andere Modelle können
+funktionieren, sind aber nicht garantiert. Melde Kompatibilitätsergebnisse auf Matrix.</p>
 <h2>Warum genau <code>google/gemma-4-e4b</code>?</h2>
 <p>Elite Intel ist ein Befehls-Parser und ein Datenanalyse-Tool, kein konversationeller Chatbot. Das
 stellt spezifische Anforderungen an das Modell. Natürlich klingende Unterhaltung zu erzeugen reicht

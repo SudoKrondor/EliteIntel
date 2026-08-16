@@ -14,6 +14,12 @@ Data is sourced in real time from [Spansh](https://spansh.co.uk/) and [EDSM](htt
 
 **Supported languages:** English, Spanish, French, German, Italian, Portuguese, Brazilian Portuguese, Ukrainian, Russian
 
+> ### ⚠️ A language model (LLM) is required
+> Elite Intel is the voice and the hands — the LLM is the brain. Without one, the app cannot run.
+> Run a model locally on your own GPU, or use the **free** cloud tier at
+> 👉 **[console.mistral.ai](https://console.mistral.ai/)** 👈 — no credit card required.
+> See [Free Cloud LLM](cloud-llm-options) or [Choose your LLM](installing-local-llms).
+
 ---
 
 ## Intelligence, Not Just Automation
@@ -55,8 +61,8 @@ Each ship in your fleet gets its own voice and personality — see the [Commande
 
 Elite Intel works with the language model that suits your setup:
 
-**Free and offline** - [LM Studio](https://lmstudio.ai/) or [Ollama](https://ollama.com/) running a local model  
-**Free cloud** - [Mistral](https://console.mistral.ai/home)  
+**Free and offline** - [LM Studio](https://lmstudio.ai/) running a local model  
+**Free cloud** - [Mistral](https://console.mistral.ai/) - free tier, no credit card  
 **Paid cloud** - Anthropic, OpenAI, xAI, Gemini, DeepSeek
 
 Switch providers at any time in settings. No reinstallation required.
