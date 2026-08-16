@@ -35,7 +35,7 @@ class GoogleWaveNetPitchMigrationTest {
 
     private static String loadMigration() throws IOException {
         try (InputStream input = GoogleWaveNetPitchMigrationTest.class.getResourceAsStream(
-                "/db-migration/01027__google_wavenet_pitch.sql")) {
+                "/db-migration/01028__google_wavenet_pitch.sql")) {
             assertNotNull(input);
             return new String(input.readAllBytes(), StandardCharsets.UTF_8);
         }

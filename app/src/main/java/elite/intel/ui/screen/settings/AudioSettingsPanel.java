@@ -80,6 +80,7 @@ public class AudioSettingsPanel extends JPanel {
         addHierarchyListener(e -> {
             if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) {
                 syncDevices();
+                updateGoogleWaveNetPitchEnablement();
             }
         });
     }
@@ -243,6 +244,7 @@ public class AudioSettingsPanel extends JPanel {
         noiseReductionCheck.setSelected(nrEnabled);
         noiseStrengthControl.setSelectedIndex(systemSession.getNoiseReductionStrength());
         noiseStrengthControl.setEnabled(nrEnabled);
+        updateGoogleWaveNetPitchEnablement();
     }
 
     /** Re-reads the persisted device selection into the pickers without re-triggering a save. */
@@ -253,6 +255,12 @@ public class AudioSettingsPanel extends JPanel {
             selectDevice(outputCombo, systemSession.getAudioOutputDevice());
         } finally {
             syncingDevices = false;
+        }
+    }
+
+    private void updateGoogleWaveNetPitchEnablement() {
+        if (googleWaveNetPitchSlider != null) {
+            googleWaveNetPitchSlider.setEnabled(!systemSession.useLocalTTS());
         }
     }
 
