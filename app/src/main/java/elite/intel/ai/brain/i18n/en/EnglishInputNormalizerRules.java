@@ -79,8 +79,11 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("product center", "codex entry");
         m.put("council", "cancel");
         m.put("scalar", "scanner");
+        // Parakeet returns all three of these for "landing", most often in "request landing permission".
+        // None of them is an Elite word, so the correction is unconditional rather than phrase-bound.
         m.put("lensing", "landing");
         m.put("lending", "landing");
+        m.put("lansing", "landing");
         m.put("team", "tin");
         m.put("karga", "cargo");
         m.put("skoop", "scoop");

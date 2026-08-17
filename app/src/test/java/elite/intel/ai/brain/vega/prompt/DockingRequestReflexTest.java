@@ -70,6 +70,17 @@ class DockingRequestReflexTest {
     }
 
     /**
+     * The third acoustic form of the same word, reported after "lending" was already covered. All of the
+     * mishearings have to converge on the authored alias, not just the first one that was noticed.
+     */
+    @Test
+    void theMisheardLansingFormNormalizesIntoTheSameReflex() {
+        String normalized = PhoneticInputNormalizer.normalize("request lansing permission");
+        assertEquals("request landing permission", normalized);
+        assertEquals("request_docking", resolve(normalized).orElseThrow().actionId());
+    }
+
+    /**
      * The phrasings either side of the reported one, so the fix is not one lucky string.
      */
     @Test
