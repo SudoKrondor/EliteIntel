@@ -3,7 +3,6 @@ package elite.intel.ai.brain.actions.handlers.commands.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.hands.KeyProcessor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.managers.FleetCarrierRouteManager;
@@ -16,6 +15,8 @@ import elite.intel.util.PlayBeepEvent;
 
 import java.util.Collections;
 import java.util.Map;
+
+import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_UI_SELECT;
 
 /**
  * Owns its own execution: body migrated 1:1 from the legacy EnterNextCarrierDestinationHandler,
@@ -55,7 +56,7 @@ public final class EnterFleetCarrierDestinationCommand implements IntelCommand {
                 GameControllerBus.publish(GameInputSequenceEvent.of(
                         GameInputStep.text(carrierJump.getSystemName()),
                         GameInputStep.delay(250),
-                        GameInputStep.rawKey(KeyProcessor.KEY_ENTER)
+                        GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding())
                 ));
                 GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
             }
