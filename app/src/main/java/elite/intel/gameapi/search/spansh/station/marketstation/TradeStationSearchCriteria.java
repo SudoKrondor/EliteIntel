@@ -4,11 +4,17 @@ import com.google.gson.annotations.SerializedName;
 import elite.intel.gameapi.gamestate.dtos.BaseJsonDto;
 import elite.intel.util.json.ToJsonConvertible;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonConvertible {
+
+    /**
+     * Spansh's exact name for the commodity-market service, as served by
+     * {@code /api/stations/field_values/services}. There is no boolean "has a market" on the stations
+     * endpoint - the market requirement is expressed as a service filter.
+     */
+    public static final String MARKET_SERVICE = "Market";
 
     @SerializedName("filters")
     private Filters filters = new Filters();
@@ -75,12 +81,72 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
         }
     }
 
+    /**
+     * Station types, in Spansh's own vocabulary from {@code /api/stations/field_values/type}. The names are
+     * matched exactly and case-sensitively: a value Spansh does not know simply matches no station, so a
+     * misspelling here silently narrows the search instead of failing it.
+     */
     public static class StationType {
+
+        /**
+         * Orbital types that can hold a commodity market. Construction depots are left out - they are
+         * colonisation build sites, not trade stops.
+         */
+        public static final List<String> ORBITAL_TRADE_TYPES = List.of(
+                "Asteroid base", "Coriolis Starport", "Dodec Starport", "Mega ship",
+                "Ocellus Starport", "Orbis Starport", "Outpost"
+        );
+
+        /**
+         * Surface types, offered only when the trade profile allows planetary ports. Odyssey settlements
+         * are left out: they are numerous enough to crowd out real ports, and the ones that trade at all
+         * deal in on-foot goods rather than the ship cargo a trade route moves.
+         */
+        public static final List<String> PLANETARY_TRADE_TYPES = List.of(
+                "Planetary Outpost", "Planetary Port"
+        );
+
+        /**
+         * Player-owned, so offered only when the trade profile allows fleet carriers.
+         */
+        public static final List<String> CARRIER_TRADE_TYPES = List.of("Drake-Class Carrier");
+
         @SerializedName("value")
-         List<String> types= Arrays.asList("Asteroid base", "Coriolis Starport", "Mega ship");
+        List<String> types = ORBITAL_TRADE_TYPES;
 
         public void setTypes(List<String> types) {
             this.types = types;
+        }
+    }
+
+    /**
+     * Sorts the page nearest-first. Spansh returns results in index order when {@code sort} is empty, which
+     * is not distance order, so without this "the nearest station" is whichever row happened to come back
+     * first - hundreds of light years out while a neighbour sits on the same page.
+     * <p>
+     * WHY no direction setter: descending is never what a "nearest station" search wants.
+     */
+    public static class DistanceSort {
+
+        @SerializedName("distance")
+        private final Ascending distance = new Ascending();
+
+        private static class Ascending {
+            @SerializedName("direction")
+            private final String direction = "asc";
+        }
+    }
+
+    /**
+     * A required station service, as {@code {"name": ["Market"]}}.
+     */
+    public static class Service {
+
+        @SerializedName("name")
+        private final List<String> name;
+
+        public Service(List<String> name) {
+            this.name = name;
         }
     }
 
@@ -118,6 +184,9 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
         @SerializedName("type")
         private StationType stationType;
 
+        @SerializedName("services")
+        private List<Service> services;
+
         @SerializedName("small_pads")
         private RangeFilter smallPads;
 
@@ -146,6 +215,13 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
 
         public void setStationType(StationType stationType) {
             this.stationType = stationType;
+        }
+
+        /**
+         * Services the station must offer; see {@link #MARKET_SERVICE}.
+         */
+        public void setServices(List<Service> services) {
+            this.services = services;
         }
 
         // Setters
