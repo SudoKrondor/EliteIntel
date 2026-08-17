@@ -1,6 +1,5 @@
 package elite.intel.gameapi.inputs;
 
-import elite.intel.ai.hands.KeyProcessor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.managers.ShipRouteManager;
@@ -56,10 +55,10 @@ public class RoutePlotter {
                 GameInputStep.delay(200),
                 GameInputStep.text(destination),
                 GameInputStep.delay(250),
-                GameInputStep.rawKey(KeyProcessor.KEY_DOWNARROW),
-                GameInputStep.rawKey(KeyProcessor.KEY_ENTER),
+                GameInputStep.bindingTap(BINDING_UI_DOWN.getGameBinding()),
+                GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding()),
                 GameInputStep.delay(1000),
-                GameInputStep.rawKey(KeyProcessor.KEY_ENTER)
+                GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding())
         ));
 
         GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
