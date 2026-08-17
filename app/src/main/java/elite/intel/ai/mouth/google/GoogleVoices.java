@@ -4,9 +4,9 @@ package elite.intel.ai.mouth.google;
  * If you implement another TTS, map these voices in your class to the
  * voices available in your TTS provider.
  * <p>
- * The display name is fixed (Mary, Anna, ...), but the actual synthesized voice is localized: for a
- * non-English language the voice's {@link #getCharacter() Chirp3-HD character} is rendered in that language
- * (see {@code GoogleVoiceProvider}).
+ * The display name is fixed (Mary, Anna, ...), but the character voices are localized: for a non-English
+ * language their {@link #getCharacter() Chirp3-HD character} is rendered in that language. Explicit English
+ * provider voices instead use the locale's safe female fallback (see {@code GoogleVoiceProvider}).
  */
 public enum GoogleVoices {
 
@@ -21,6 +21,8 @@ public enum GoogleVoices {
     OLIVIA("Olivia", false, "British female", "Aoede"),         // en-GB-Chirp3-HD-Aoede
     RACHEL("Rachel", false, "American female", "Zephyr"),       // en-US-Chirp3-HD-Zephyr
     STEVE("Steve", true, "American male", "Algenib"),           // en-US-Chirp3-HD-Algenib
+    WAVENET_F("WaveNet F", false, "British female, WaveNet"),     // en-GB-Wavenet-F
+    WAVENET_N("WaveNet N", false, "British female, WaveNet"),     // en-GB-Wavenet-N
     ;
 
     /**
@@ -48,14 +50,24 @@ public enum GoogleVoices {
     private final String name;
     private final boolean isMale;
     private final String description;
-    /** Chirp3-HD voice character (e.g. "Zephyr"), shared across locales; used to synthesize this voice in a non-English language. */
+    /** Chirp3-HD voice character (e.g. "Zephyr"), shared across locales; null for an explicit English-only voice. */
     private final String character;
+    private final boolean englishOnly;
 
     GoogleVoices(String name, boolean isMale, String description, String character) {
         this.name = name;
         this.isMale = isMale;
         this.description = description;
         this.character = character;
+        this.englishOnly = false;
+    }
+
+    GoogleVoices(String name, boolean isMale, String description) {
+        this.name = name;
+        this.isMale = isMale;
+        this.description = description;
+        this.character = null;
+        this.englishOnly = true;
     }
 
     public String getName() {
@@ -70,9 +82,14 @@ public enum GoogleVoices {
         return description;
     }
 
-    /** The Chirp3-HD character name, used to build a localized voice name for a non-English language. */
+    /** The Chirp3-HD character name, or null for an explicit English-only provider voice. */
     public String getCharacter() {
         return character;
+    }
+
+    /** Explicit provider voices cannot be localized by replacing their locale prefix. */
+    public boolean isEnglishOnly() {
+        return englishOnly;
     }
 
     public boolean isMale() {

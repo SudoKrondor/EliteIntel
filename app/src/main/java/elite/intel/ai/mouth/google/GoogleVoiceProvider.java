@@ -45,6 +45,8 @@ public class GoogleVoiceProvider implements VoiceProvider<VoiceSelectionParams> 
         voiceMap.put(GoogleVoices.OLIVIA.getName(), VoiceSelectionParams.newBuilder().setLanguageCode("en-GB").setName("en-GB-Chirp3-HD-Aoede").build());
         voiceMap.put(GoogleVoices.RACHEL.getName(), VoiceSelectionParams.newBuilder().setLanguageCode("en-US").setName("en-US-Chirp3-HD-Zephyr").build());
         voiceMap.put(GoogleVoices.STEVE.getName(), VoiceSelectionParams.newBuilder().setLanguageCode("en-US").setName("en-US-Chirp3-HD-Algenib").build());
+        voiceMap.put(GoogleVoices.WAVENET_F.getName(), VoiceSelectionParams.newBuilder().setLanguageCode("en-GB").setName("en-GB-Wavenet-F").build());
+        voiceMap.put(GoogleVoices.WAVENET_N.getName(), VoiceSelectionParams.newBuilder().setLanguageCode("en-GB").setName("en-GB-Wavenet-N").build());
     }
 
     public static GoogleVoiceProvider getInstance() {
@@ -164,6 +166,11 @@ public class GoogleVoiceProvider implements VoiceProvider<VoiceSelectionParams> 
      * known to exist for that language.
      */
     private String localizedVoiceName(Language language, GoogleVoices voice) {
+        if (voice.isEnglishOnly()) {
+            // WHY: these are explicit en-GB provider voices. Replacing their locale prefix would invent a
+            // provider ID that does not exist, so another language uses its established safe gender fallback.
+            return safeVoiceName(language, voice.isMale());
+        }
         if (CHIRP3_HD_LANGUAGES.contains(language)) {
             String code = googleLanguageCode(language);
             List<AvailableVoice> offered = offeredVoices(code);

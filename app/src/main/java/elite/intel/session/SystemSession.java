@@ -18,6 +18,9 @@ import java.io.InputStreamReader;
 
 public class SystemSession {
 
+    public static final int GOOGLE_WAVENET_PITCH_MIN = -20;
+    public static final int GOOGLE_WAVENET_PITCH_MAX = 20;
+
     private Double rms = 0.0;
     private Double floor = 0.0;
     private static volatile SystemSession instance;
@@ -209,6 +212,22 @@ public class SystemSession {
 
     public Float getSpeechSpeed() {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getSpeechSpeed());
+    }
+
+    public int getGoogleWaveNetPitch() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getGoogleWaveNetPitch());
+    }
+
+    public void setGoogleWaveNetPitch(int pitch) {
+        if (pitch < GOOGLE_WAVENET_PITCH_MIN || pitch > GOOGLE_WAVENET_PITCH_MAX) {
+            throw new IllegalArgumentException("Google WaveNet pitch must be between -20 and 20 semitones");
+        }
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setGoogleWaveNetPitch(pitch);
+            dao.save(session);
+            return null;
+        });
     }
 
     public int getSttThreads() {
