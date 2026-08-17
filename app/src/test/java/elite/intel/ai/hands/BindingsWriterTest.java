@@ -923,34 +923,33 @@ class BindingsWriterTest {
     }
 
     @Test
-    void aControllerSlotIsRefusedUnlessTheEditAsksToReplaceIt() throws Exception {
+    void aControllerSlotIsNeverEdited() throws Exception {
+        // The commander bound this device in the game. No caller, and no flag, may take it.
         Path file = writeBinds(controllerOnlyBinds());
+        String original = Files.readString(file, StandardCharsets.UTF_8);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKeyWithModifier(
+        BindingSaveResult secondary = new BindingsWriter().assignKeyboardKeyWithModifier(
                 edit(file, "UpThrustButton", BindingSlotType.SECONDARY, "Key_E"),
                 new BindingModifier("Keyboard", "Key_LeftControl"));
+        BindingSaveResult primary = new BindingsWriter().assignKeyboardKey(
+                edit(file, "UpThrustButton", BindingSlotType.PRIMARY, "Key_E"));
 
-        assertEquals(BindingSaveResult.UNSUPPORTED_XML, result);
-        assertTrue(Files.readString(file, StandardCharsets.UTF_8).contains("Joy_7"),
-                "the controller binding must survive a refused edit");
+        assertEquals(BindingSaveResult.UNSUPPORTED_XML, secondary);
+        assertEquals(BindingSaveResult.UNSUPPORTED_XML, primary);
+        assertEquals(original, Files.readString(file, StandardCharsets.UTF_8),
+                "a refused edit must leave the controller bindings byte-for-byte intact");
     }
 
     @Test
-    void replacingAControllerSlotDropsItsDeviceIndexAndDeviceModifiers() throws Exception {
+    void clearingAControllerSlotIsAlsoRefused() throws Exception {
         Path file = writeBinds(controllerOnlyBinds());
+        String original = Files.readString(file, StandardCharsets.UTF_8);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKeyWithModifier(
-                replacingEdit(file, "UpThrustButton", BindingSlotType.SECONDARY, "Key_E"),
-                new BindingModifier("Keyboard", "Key_LeftControl"));
+        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+                edit(file, "UpThrustButton", BindingSlotType.SECONDARY, null));
 
-        String updated = Files.readString(file, StandardCharsets.UTF_8);
-        assertEquals(BindingSaveResult.SAVED, result);
-        assertTrue(updated.contains("<Secondary Device=\"Keyboard\" Key=\"Key_E\">"));
-        assertTrue(updated.contains("<Modifier Device=\"Keyboard\" Key=\"Key_LeftControl\" />"));
-        assertFalse(updated.contains("Joy_7"), "the replaced controller binding must be gone");
-        assertFalse(updated.contains("DeviceIndex=\"2\""), "the controller's DeviceIndex goes with it");
-        // The Primary controller binding is untouched.
-        assertTrue(updated.contains("<Primary Device=\"T16000MTHROTTLE\" DeviceIndex=\"0\" Key=\"Joy_4\" />"));
+        assertEquals(BindingSaveResult.UNSUPPORTED_XML, result);
+        assertEquals(original, Files.readString(file, StandardCharsets.UTF_8));
     }
 
     private String controllerOnlyBinds() {
@@ -964,16 +963,6 @@ class BindingsWriterTest {
                     </UpThrustButton>
                 </Root>
                 """;
-    }
-
-    private KeyboardBindingEdit replacingEdit(
-            Path file,
-            String bindingId,
-            BindingSlotType slotType,
-            String key
-    ) throws IOException {
-        return new KeyboardBindingEdit(
-                file, bindingId, slotType, key, Files.getLastModifiedTime(file), Files.size(file), true);
     }
 
     private KeyboardBindingEdit edit(

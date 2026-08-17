@@ -67,10 +67,10 @@ class MissingBindingAutoAssignerTest {
     }
 
     @Test
-    void bothControllerSlotsOnARequiredControlReplaceTheSecondary() throws Exception {
-        // EliteIntel drives CycleFireGroupNext through the keyboard, and Elite gives a control
-        // only two slots - so the Secondary controller assignment is given up for it. Primary
-        // (the commander's main device) is kept.
+    void bothControllerSlotsAreSkipped() throws Exception {
+        // Both slots hold a device the commander bound in the game. There is nothing to fill
+        // and nothing may be taken away, whether or not EliteIntel drives this control - it is
+        // reported and left exactly as the game wrote it.
         Map<String, ReadOnlyBindingSlots> slots = parse("""
                 <Root>
                     <CycleFireGroupNext>
@@ -82,30 +82,7 @@ class MissingBindingAutoAssignerTest {
 
         Plan plan = assigner.planAll(slots);
 
-        assertTrue(plan.skipped().isEmpty());
-        assertEquals(1, plan.edits().size());
-        PlannedEdit edit = plan.edits().get(0);
-        assertEquals(BindingSlotType.SECONDARY, edit.slotType());
-        assertTrue(edit.replacesController(), "replacing a controller must be flagged for the caller");
-        assertEquals(1, plan.replacements());
-    }
-
-    @Test
-    void bothControllerSlotsOnAnUnusedControlAreSkipped() throws Exception {
-        // RotateSettlementLeft is not in Bindings.GameCommand, so EliteIntel has no reason to
-        // take a slot from the commander's controller for it.
-        Map<String, ReadOnlyBindingSlots> slots = parse("""
-                <Root>
-                    <RotateSettlementLeft>
-                        <Primary Device="T16000M" DeviceIndex="0" Key="Joy_3" />
-                        <Secondary Device="044F0404" DeviceIndex="0" Key="Joy_4" />
-                    </RotateSettlementLeft>
-                </Root>
-                """);
-
-        Plan plan = assigner.planAll(slots);
-
-        assertTrue(plan.edits().isEmpty());
+        assertTrue(plan.edits().isEmpty(), "a controller assignment must never be planned away");
         assertEquals(1, plan.skipped().size());
         assertEquals(SkipReason.BOTH_SLOTS_OCCUPIED, plan.skipped().get(0).reason());
     }
@@ -113,7 +90,7 @@ class MissingBindingAutoAssignerTest {
     @Test
     void anExistingKeyboardBindingIsNeverReplaced() throws Exception {
         // Both slots are taken and one is a keyboard chord, so the control is already bound;
-        // the replacement path must never reach a key the commander chose.
+        // no plan may ever reach a key the commander chose.
         Map<String, ReadOnlyBindingSlots> slots = parse("""
                 <Root>
                     <CycleFireGroupNext>
@@ -130,21 +107,41 @@ class MissingBindingAutoAssignerTest {
     }
 
     @Test
-    void aFilledEmptySlotIsNotReportedAsAReplacement() throws Exception {
+    void everyPlannedEditTargetsAnEmptySlot() throws Exception {
+        // The invariant, over a file that mixes every slot shape: an edit only ever lands on a
+        // {NoDevice} slot. Nothing the commander bound - keyboard, HOTAS, mouse - is planned over.
         Map<String, ReadOnlyBindingSlots> slots = parse("""
                 <Root>
+                    <ToggleCargoScoop>
+                        <Primary Device="{NoDevice}" Key="" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </ToggleCargoScoop>
                     <UseBoostJuice>
                         <Primary Device="T16000MTHROTTLE" DeviceIndex="1" Key="Joy_POV1Right" />
                         <Secondary Device="{NoDevice}" Key="" />
                     </UseBoostJuice>
+                    <CycleFireGroupNext>
+                        <Primary Device="T16000M" DeviceIndex="0" Key="Joy_3" />
+                        <Secondary Device="044F0404" DeviceIndex="0" Key="Joy_4" />
+                    </CycleFireGroupNext>
+                    <LandingGearToggle>
+                        <Primary Device="Mouse" Key="Mouse_4" />
+                        <Secondary Device="Keyboard" Key="Key_L" />
+                    </LandingGearToggle>
                 </Root>
                 """);
 
         Plan plan = assigner.planAll(slots);
 
-        assertEquals(1, plan.edits().size());
-        assertFalse(plan.edits().get(0).replacesController());
-        assertEquals(0, plan.replacements());
+        assertFalse(plan.edits().isEmpty());
+        for (PlannedEdit edit : plan.edits()) {
+            ReadOnlyBindingSlots target = slots.get(edit.bindingId());
+            KeyBindingsParser.ReadOnlyBindingSlot slot = edit.slotType() == BindingSlotType.PRIMARY
+                    ? target.primary()
+                    : target.secondary();
+            assertEquals("{NoDevice}", slot.device(),
+                    "planned an edit over an existing assignment on " + edit.bindingId());
+        }
     }
 
     @Test
@@ -165,6 +162,33 @@ class MissingBindingAutoAssignerTest {
         for (PlannedEdit edit : plan.edits()) {
             assertFalse(BindingModifier.isSupportedKeyboardModifier("Keyboard", edit.key()),
                     "modifier assigned as the main key of " + edit.bindingId() + ": " + edit.key());
+        }
+    }
+
+    @Test
+    void everyAssignmentIsARealKeyNeverTheNumpadAndNeverABlankModifier() throws Exception {
+        // Drains the whole pool by asking for a key for every control EliteIntel drives.
+        StringBuilder xml = new StringBuilder("<Root>\n");
+        for (Bindings.GameCommand command : Bindings.GameCommand.values()) {
+            xml.append("<").append(command.getGameBinding()).append(">")
+                    .append("<Primary Device=\"{NoDevice}\" Key=\"\" />")
+                    .append("<Secondary Device=\"{NoDevice}\" Key=\"\" />")
+                    .append("</").append(command.getGameBinding()).append(">\n");
+        }
+        xml.append("</Root>\n");
+
+        Plan plan = assigner.planAll(parse(xml.toString()));
+
+        assertFalse(plan.edits().isEmpty());
+        for (PlannedEdit edit : plan.edits()) {
+            assertNotNull(edit.key());
+            assertFalse(edit.key().isBlank(), "blank main key on " + edit.bindingId());
+            assertFalse(edit.key().startsWith("Key_Numpad"),
+                    "numpad auto-assigned to " + edit.bindingId() + ": " + edit.key());
+            if (edit.modifier() != null) {
+                assertTrue(edit.modifier().isSupportedKeyboardModifier(),
+                        "blank or unsupported modifier on " + edit.bindingId() + ": " + edit.modifier());
+            }
         }
     }
 

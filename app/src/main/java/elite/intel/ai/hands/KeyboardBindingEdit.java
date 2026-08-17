@@ -18,24 +18,8 @@ public record KeyboardBindingEdit(
         BindingSlotType slotType,
         String key,
         FileTime expectedLastModified,
-        long expectedFileSize,
-        boolean replacesControllerSlot
+        long expectedFileSize
 ) {
-    /**
-     * An edit that only fills an empty slot or rewrites an existing keyboard one -
-     * the default, and the only kind the manual editor ever makes.
-     */
-    public KeyboardBindingEdit(
-            Path file,
-            String bindingId,
-            BindingSlotType slotType,
-            String key,
-            FileTime expectedLastModified,
-            long expectedFileSize
-    ) {
-        this(file, bindingId, slotType, key, expectedLastModified, expectedFileSize, false);
-    }
-
     /**
      * Clearing uses Elite Dangerous' built-in empty-slot representation:
      * {@code Device="{NoDevice}" Key=""}.
