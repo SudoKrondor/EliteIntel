@@ -1,7 +1,10 @@
 package elite.intel.ui.screen;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.KeyDetector;
+import elite.intel.ai.ProviderEnum;
 import elite.intel.ai.brain.ShipPersonality;
+import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoiceProvider;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
@@ -87,6 +90,10 @@ public class CommanderTabPanel extends JPanel {
             if (SystemSession.getInstance().useLocalTTS()) {
                 KokoroVoices v = KokoroVoices.valueOf(enumName);
                 return v.getDisplayName() + " - " + v.getDescription();
+            }
+            if (usesEdgeTts()) {
+                EdgeVoices voice = edgeVoice(enumName);
+                return voice == null ? enumName : voice.displayName() + " - " + voice.defaultShortName();
             }
             GoogleVoices v = GoogleVoices.valueOf(enumName);
             String base = v.getDisplayName() + " - " + googleVoiceDescriptor(v);
@@ -372,9 +379,17 @@ public class CommanderTabPanel extends JPanel {
         // Voice options depend on current TTS provider; rebuild editor on every call. Ship voices are
         // female-only (radio transmissions keep the full voice set), so the male voices are filtered out.
         boolean useLocal = SystemSession.getInstance().useLocalTTS();
-        String[] voiceOptions = useLocal
-                ? Arrays.stream(KokoroVoices.values()).filter(v -> !v.isMale()).map(Enum::name).toArray(String[]::new)
-                : Arrays.stream(GoogleVoices.values()).filter(v -> !v.isMale()).map(Enum::name).toArray(String[]::new);
+        String[] voiceOptions;
+        if (useLocal) {
+            voiceOptions = Arrays.stream(KokoroVoices.values())
+                    .filter(v -> !v.isMale()).map(Enum::name).toArray(String[]::new);
+        } else if (usesEdgeTts()) {
+            voiceOptions = Arrays.stream(EdgeVoices.values())
+                    .filter(v -> !v.male()).map(EdgeVoices::defaultShortName).toArray(String[]::new);
+        } else {
+            voiceOptions = Arrays.stream(GoogleVoices.values())
+                    .filter(v -> !v.isMale()).map(Enum::name).toArray(String[]::new);
+        }
         // labelFn shows "DisplayName - accent"; getCellEditorValue() still returns the raw enum name to store.
         fleetTable.getColumnModel().getColumn(COL_VOICE)
                 .setCellEditor(new HudComboCellEditor(new HudComboBox<>(voiceOptions, this::voiceLabel)));
@@ -393,12 +408,31 @@ public class CommanderTabPanel extends JPanel {
      * Normalizes a stored ship voice to a female voice for the active TTS provider. Ship voices are
      * female-only, so a legacy male (or otherwise invalid) stored voice resolves to the provider's default
      * female — keeping the fleet grid's displayed/selected voice a valid, female dropdown option and in step
-     * with what {@link SystemSession#getKokoroVoice()} / {@link SystemSession#getGoogleVoice()} actually speak.
+     * with what the active provider actually speaks.
      */
     static String normalizeVoiceToFemale(String voiceName) {
-        return SystemSession.getInstance().useLocalTTS()
-                ? KokoroVoices.femaleOrDefault(voiceName).name()
-                : GoogleVoices.femaleOrDefault(voiceName).name();
+        if (SystemSession.getInstance().useLocalTTS()) {
+            return KokoroVoices.femaleOrDefault(voiceName).name();
+        }
+        if (usesEdgeTts()) {
+            return EdgeVoices.femaleShortNameOrDefault(voiceName);
+        }
+        return GoogleVoices.femaleOrDefault(voiceName).name();
+    }
+
+    private static boolean usesEdgeTts() {
+        SystemSession session = SystemSession.getInstance();
+        return !session.useLocalTTS()
+                && KeyDetector.detectProvider(session.getTtsApiKey(), "TTS") == ProviderEnum.EDGE_TTS;
+    }
+
+    private static EdgeVoices edgeVoice(String name) {
+        return Arrays.stream(EdgeVoices.values())
+                .filter(voice -> voice.name().equalsIgnoreCase(name)
+                        || voice.displayName().equalsIgnoreCase(name)
+                        || voice.defaultShortName().equals(name))
+                .findFirst()
+                .orElse(null);
     }
 
     static String displayShipName(ShipDao.Ship ship) {

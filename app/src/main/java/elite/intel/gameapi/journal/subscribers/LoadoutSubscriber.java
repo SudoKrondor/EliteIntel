@@ -1,7 +1,10 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.KeyDetector;
+import elite.intel.ai.ProviderEnum;
 import elite.intel.ai.mouth.EventNarrator;
+import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.db.dao.ShipDao;
@@ -50,7 +53,10 @@ public class LoadoutSubscriber {
 
                 String shipDefaultVoice = KokoroVoices.DEFAULT_FEMALE.name();
                 if (!systemSession.useLocalTTS()) {
-                    shipDefaultVoice = GoogleVoices.DEFAULT_FEMALE.name();
+                    ProviderEnum provider = KeyDetector.detectProvider(systemSession.getTtsApiKey(), "TTS");
+                    shipDefaultVoice = provider == ProviderEnum.EDGE_TTS
+                            ? EdgeVoices.DEFAULT_FEMALE.defaultShortName()
+                            : GoogleVoices.DEFAULT_FEMALE.name();
                 }
                 shipManager.save(event.getShipId(), shipName, event.getCargoCapacity(), event.getShip(), shipDefaultVoice,
                         hasCommander ? commanderName : null);

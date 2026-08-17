@@ -13,6 +13,7 @@ import elite.intel.ai.brain.inference.xai.GrokAnalysisEndpoint;
 import elite.intel.ai.ears.EarsInterface;
 import elite.intel.ai.ears.parakeet.ParakeetSTTImpl;
 import elite.intel.ai.mouth.MouthInterface;
+import elite.intel.ai.mouth.edge.EdgeTTSImpl;
 import elite.intel.ai.mouth.google.GoogleTTSImpl;
 import elite.intel.ai.mouth.kokoro.KokoroTTS;
 import elite.intel.session.SystemSession;
@@ -64,17 +65,23 @@ public class ApiFactory {
     ///
     @SuppressWarnings({"SwitchStatementWithTooFewBranches", "EnhancedSwitchMigration"})
     public MouthInterface getMouthImpl() {
-        if (systemSession.useLocalTTS()) {
+        String apiKey = systemSession.getTtsApiKey();
+        ProviderEnum provider = KeyDetector.detectProvider(apiKey, "TTS");
+        return selectMouth(systemSession.useLocalTTS(), provider);
+    }
+
+    static MouthInterface selectMouth(boolean useLocalTts, ProviderEnum provider) {
+        if (useLocalTts) {
             KokoroTTS kokoro = KokoroTTS.getInstance();
             kokoro.setRole(KokoroTTS.Role.MAIN);
             return kokoro;
         }
 
-        String apiKey = SystemSession.getInstance().getTtsApiKey();
-        ProviderEnum provider = KeyDetector.detectProvider(apiKey, "TTS");
         switch (provider) {
             case GOOGLE_TTS:
                 return GoogleTTSImpl.getInstance();
+            case EDGE_TTS:
+                return EdgeTTSImpl.getInstance();
             // TODO: Add ElevenLabs, AWS Polly, etc.
             default:
                 KokoroTTS kokoro = KokoroTTS.getInstance();

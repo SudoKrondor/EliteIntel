@@ -1,5 +1,8 @@
 package elite.intel.ui.screen.settings;
 
+import elite.intel.ai.KeyDetector;
+import elite.intel.ai.ProviderEnum;
+import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.db.managers.ShipManager;
@@ -362,7 +365,14 @@ public class AiServicesSettingsPanel extends JPanel {
             if (!confirmed) {
                 return false; // abort entire save, stay in editing state
             }
-            String defaultVoice = newTtsLocal ? KokoroVoices.DEFAULT_FEMALE.name() : GoogleVoices.DEFAULT_FEMALE.name();
+            String defaultVoice;
+            if (newTtsLocal) {
+                defaultVoice = KokoroVoices.DEFAULT_FEMALE.name();
+            } else if (KeyDetector.detectProvider(newTtsKey, "TTS") == ProviderEnum.EDGE_TTS) {
+                defaultVoice = EdgeVoices.DEFAULT_FEMALE.defaultShortName();
+            } else {
+                defaultVoice = GoogleVoices.DEFAULT_FEMALE.name();
+            }
             ShipManager.getInstance().resetAllVoicesToDefault(defaultVoice);
         }
 

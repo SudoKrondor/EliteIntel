@@ -24,8 +24,9 @@ details, check out `DEVELOPERS.md` in the root. It covers the architecture (deco
 reflection) and principles like DRY and SRP. All PRs go through review.
 
 ## License
-The project is open-source under a [Creative Commons license CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en),
-so feel free to check out the code and contribute. (see [DEVELOPERS.md](DEVELOPERS.md) for details)
+The project is released under [CC0 1.0 Universal](LICENSE). Third-party components retain their own
+licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Feel free to check out the code and contribute. See [DEVELOPERS.md](DEVELOPERS.md) for details.
 
 ## Contact Developer / Join the Community
 If you run into issues, hit us up on GitHub issues or Feedback and bug reports are super welcome!

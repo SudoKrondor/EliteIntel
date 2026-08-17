@@ -1,6 +1,7 @@
 package elite.intel.session;
 
 import elite.intel.ai.brain.ShipPersonality;
+import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.db.dao.ShipDao;
@@ -82,5 +83,27 @@ class PerShipVoicePersonalityTest {
 
         assertEquals(KokoroVoices.NOVA, session.getKokoroVoice());
         assertEquals(GoogleVoices.DEFAULT_FEMALE, session.getGoogleVoice());
+        assertEquals(EdgeVoices.DEFAULT_FEMALE, session.getEdgeVoice());
+    }
+
+    @Test
+    void edgeUsesTheExistingCloudVoiceNameWithoutNewShipState() {
+        SystemSession session = SystemSession.getInstance();
+
+        saveShip(401, EdgeVoices.JENNIFER.name(), ShipPersonality.CASUAL.name());
+        makeActive(401);
+
+        assertEquals(EdgeVoices.JENNIFER, session.getEdgeVoice());
+        assertEquals(EdgeVoices.JENNIFER.defaultShortName(), session.getEdgeVoiceName());
+    }
+
+    @Test
+    void edgePreservesAnArbitraryProviderShortNameInTheExistingShipField() {
+        SystemSession session = SystemSession.getInstance();
+
+        saveShip(402, "en-US-AvaNeural", ShipPersonality.CASUAL.name());
+        makeActive(402);
+
+        assertEquals("en-US-AvaNeural", session.getEdgeVoiceName());
     }
 }

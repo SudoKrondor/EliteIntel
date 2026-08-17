@@ -73,9 +73,7 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
         return canBeInterrupted;
     }
 
-    /**
-     * Voice name (enum name). Null means use the session default.
-     */
+    /** Voice identifier for the active provider (enum name or provider-native ShortName); null uses the default. */
     public String getVoiceName() {
         return voiceName;
     }
