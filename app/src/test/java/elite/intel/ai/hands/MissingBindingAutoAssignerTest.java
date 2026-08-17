@@ -67,7 +67,10 @@ class MissingBindingAutoAssignerTest {
     }
 
     @Test
-    void bothControllerSlotsAreSkipped() throws Exception {
+    void bothControllerSlotsOnARequiredControlReplaceTheSecondary() throws Exception {
+        // EliteIntel drives CycleFireGroupNext through the keyboard, and Elite gives a control
+        // only two slots - so the Secondary controller assignment is given up for it. Primary
+        // (the commander's main device) is kept.
         Map<String, ReadOnlyBindingSlots> slots = parse("""
                 <Root>
                     <CycleFireGroupNext>
@@ -79,9 +82,90 @@ class MissingBindingAutoAssignerTest {
 
         Plan plan = assigner.planAll(slots);
 
+        assertTrue(plan.skipped().isEmpty());
+        assertEquals(1, plan.edits().size());
+        PlannedEdit edit = plan.edits().get(0);
+        assertEquals(BindingSlotType.SECONDARY, edit.slotType());
+        assertTrue(edit.replacesController(), "replacing a controller must be flagged for the caller");
+        assertEquals(1, plan.replacements());
+    }
+
+    @Test
+    void bothControllerSlotsOnAnUnusedControlAreSkipped() throws Exception {
+        // RotateSettlementLeft is not in Bindings.GameCommand, so EliteIntel has no reason to
+        // take a slot from the commander's controller for it.
+        Map<String, ReadOnlyBindingSlots> slots = parse("""
+                <Root>
+                    <RotateSettlementLeft>
+                        <Primary Device="T16000M" DeviceIndex="0" Key="Joy_3" />
+                        <Secondary Device="044F0404" DeviceIndex="0" Key="Joy_4" />
+                    </RotateSettlementLeft>
+                </Root>
+                """);
+
+        Plan plan = assigner.planAll(slots);
+
         assertTrue(plan.edits().isEmpty());
         assertEquals(1, plan.skipped().size());
         assertEquals(SkipReason.BOTH_SLOTS_OCCUPIED, plan.skipped().get(0).reason());
+    }
+
+    @Test
+    void anExistingKeyboardBindingIsNeverReplaced() throws Exception {
+        // Both slots are taken and one is a keyboard chord, so the control is already bound;
+        // the replacement path must never reach a key the commander chose.
+        Map<String, ReadOnlyBindingSlots> slots = parse("""
+                <Root>
+                    <CycleFireGroupNext>
+                        <Primary Device="T16000M" DeviceIndex="0" Key="Joy_3" />
+                        <Secondary Device="Keyboard" Key="Key_V" />
+                    </CycleFireGroupNext>
+                </Root>
+                """);
+
+        Plan plan = assigner.planAll(slots);
+
+        assertTrue(plan.edits().isEmpty());
+        assertTrue(plan.skipped().isEmpty());
+    }
+
+    @Test
+    void aFilledEmptySlotIsNotReportedAsAReplacement() throws Exception {
+        Map<String, ReadOnlyBindingSlots> slots = parse("""
+                <Root>
+                    <UseBoostJuice>
+                        <Primary Device="T16000MTHROTTLE" DeviceIndex="1" Key="Joy_POV1Right" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </UseBoostJuice>
+                </Root>
+                """);
+
+        Plan plan = assigner.planAll(slots);
+
+        assertEquals(1, plan.edits().size());
+        assertFalse(plan.edits().get(0).replacesController());
+        assertEquals(0, plan.replacements());
+    }
+
+    @Test
+    void noAssignmentIsEverAModifierOnItsOwn() throws Exception {
+        // Rule: a binding is a main key, optionally with modifiers - never "Left Alt" alone.
+        StringBuilder xml = new StringBuilder("<Root>\n");
+        for (Bindings.GameCommand command : Bindings.GameCommand.values()) {
+            xml.append("<").append(command.getGameBinding()).append(">")
+                    .append("<Primary Device=\"{NoDevice}\" Key=\"\" />")
+                    .append("<Secondary Device=\"{NoDevice}\" Key=\"\" />")
+                    .append("</").append(command.getGameBinding()).append(">\n");
+        }
+        xml.append("</Root>\n");
+
+        Plan plan = assigner.planAll(parse(xml.toString()));
+
+        assertFalse(plan.edits().isEmpty());
+        for (PlannedEdit edit : plan.edits()) {
+            assertFalse(BindingModifier.isSupportedKeyboardModifier("Keyboard", edit.key()),
+                    "modifier assigned as the main key of " + edit.bindingId() + ": " + edit.key());
+        }
     }
 
     @Test

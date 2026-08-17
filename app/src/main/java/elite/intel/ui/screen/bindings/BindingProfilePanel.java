@@ -395,7 +395,7 @@ public class BindingProfilePanel extends JPanel {
     private void applyPlanInBackground(MissingBindingAutoAssigner.Plan plan, Consumer<ApplyOutcome> onComplete) {
         if (plan.edits().isEmpty()) {
             // Nothing to write (every target was skipped); report without touching the file.
-            onComplete.accept(new ApplyOutcome(0, 0));
+            onComplete.accept(new ApplyOutcome(0, 0, 0));
             return;
         }
         Path file = activeBindingsFile.toPath();
@@ -427,6 +427,7 @@ public class BindingProfilePanel extends JPanel {
     private ApplyOutcome applyPlan(Path file, MissingBindingAutoAssigner.Plan plan) {
         int saved = 0;
         int failed = 0;
+        int replaced = 0;
         for (MissingBindingAutoAssigner.PlannedEdit edit : plan.edits()) {
             FileTime lastModified;
             long size;
@@ -440,21 +441,28 @@ public class BindingProfilePanel extends JPanel {
                 break;
             }
             KeyboardBindingEdit kbe = new KeyboardBindingEdit(
-                    file, edit.bindingId(), edit.slotType(), edit.key(), lastModified, size);
+                    file, edit.bindingId(), edit.slotType(), edit.key(), lastModified, size,
+                    edit.replacesController());
             BindingSaveResult result = edit.modifier() == null
                     ? bindingsWriter.assignKeyboardKey(kbe)
                     : bindingsWriter.assignKeyboardKeyWithModifier(kbe, edit.modifier());
             if (result == BindingSaveResult.SAVED) {
                 saved++;
+                if (edit.replacesController()) {
+                    replaced++;
+                }
             } else {
                 failed++;
             }
         }
-        return new ApplyOutcome(saved, failed);
+        return new ApplyOutcome(saved, failed, replaced);
     }
 
     private void showBatchSummary(ApplyOutcome outcome, MissingBindingAutoAssigner.Plan plan) {
         StringBuilder sb = new StringBuilder(getText("bindings.autofix.summary", outcome.saved()));
+        if (outcome.replaced() > 0) {
+            sb.append('\n').append(getText("bindings.autofix.replaced", outcome.replaced()));
+        }
         if (outcome.failed() > 0) {
             sb.append('\n').append(getText("bindings.autofix.failed", outcome.failed()));
         }
@@ -480,9 +488,12 @@ public class BindingProfilePanel extends JPanel {
 
     private void showSingleResult(String bindingId, ApplyOutcome outcome, MissingBindingAutoAssigner.Plan plan) {
         if (outcome.saved() > 0) {
+            String messageKey = outcome.replaced() > 0
+                    ? "bindings.autofix.single.replaced"
+                    : "bindings.autofix.single.success";
             JOptionPane.showMessageDialog(
                     this,
-                    getText("bindings.autofix.single.success", bindingId),
+                    getText(messageKey, bindingId),
                     getText("bindings.autofix.result.title"),
                     JOptionPane.INFORMATION_MESSAGE);
             return;
@@ -507,7 +518,10 @@ public class BindingProfilePanel extends JPanel {
                 this, getText(messageKey), getText("bindings.autofix.result.title"), JOptionPane.WARNING_MESSAGE);
     }
 
-    private record ApplyOutcome(int saved, int failed) {
+    /**
+     * @param replaced how many of the saved edits took a slot from a controller
+     */
+    private record ApplyOutcome(int saved, int failed, int replaced) {
     }
 
     private void revertFromGame() {

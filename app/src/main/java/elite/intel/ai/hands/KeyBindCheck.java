@@ -22,6 +22,10 @@ public class KeyBindCheck {
 
     public void check() {
         BindingsMonitor monitor = BindingsMonitor.getInstance();
+        // This runs right after the services start, which is when the monitor thread is still
+        // registering its WatchService - without this the check would read an unparsed map and
+        // report nothing at all.
+        monitor.ensureBindingsLoaded();
 
         List<String> newMissing = monitor.checkForMissingBindings();
         List<String> newConflicts = monitor.checkForConflictsAndPersist();

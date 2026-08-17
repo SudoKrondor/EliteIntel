@@ -13,21 +13,33 @@ import java.util.*;
  * caller is responsible for actually writing the edits (via {@link BindingsWriter})
  * and applying the draft.
  * <p>
- * Two invariants drive the design:
+ * Three invariants drive the design:
  * <ul>
- *   <li><b>Add, never replace.</b> An edit is only produced for an empty
- *       ({@code {NoDevice}}) slot. Controller (HOTAS/joystick/mouse) and existing
- *       keyboard assignments are never overwritten.</li>
+ *   <li><b>Never overwrite a keyboard binding.</b> An edit fills an empty
+ *       ({@code {NoDevice}}) slot, or - for a <em>required</em> control only -
+ *       replaces a controller (HOTAS/joystick/mouse) assignment. A key the
+ *       commander already bound is never touched.</li>
  *   <li><b>Never collide.</b> A chord (key + optional modifier) is used at most
  *       once: not if it already appears anywhere in the file, and not twice within
  *       one batch.</li>
+ *   <li><b>Never bind a modifier on its own.</b> Every assignment is a main key,
+ *       optionally with modifiers - never {@code Left Alt} by itself.</li>
  * </ul>
+ * <p>
+ * Elite Dangerous gives each control exactly two slots, so a required control with
+ * a controller in both of them cannot gain a keyboard binding without giving one
+ * up. EliteIntel drives its commands through the keyboard, so such a control is
+ * unusable to it; the Secondary slot is replaced (Primary - the commander's main
+ * device - is kept) and the replacement is reported separately from a plain fill.
+ * Controls outside {@link Bindings.GameCommand} are left alone and reported as
+ * {@link SkipReason#BOTH_SLOTS_OCCUPIED}.
  */
 public class MissingBindingAutoAssigner {
 
     public enum SkipReason {
         /**
-         * Both Primary and Secondary already hold a (non-keyboard) assignment.
+         * Both Primary and Secondary hold a controller assignment, and this control
+         * is not one EliteIntel drives, so neither is worth replacing.
          */
         BOTH_SLOTS_OCCUPIED,
         /**
@@ -40,7 +52,18 @@ public class MissingBindingAutoAssigner {
         NO_FREE_KEY
     }
 
-    public record PlannedEdit(String bindingId, BindingSlotType slotType, String key, BindingModifier modifier) {
+    /**
+     * @param replacesController {@code true} when this edit overwrites a controller
+     *                           assignment rather than filling an empty slot - the
+     *                           caller must both authorise the write and report it.
+     */
+    public record PlannedEdit(
+            String bindingId,
+            BindingSlotType slotType,
+            String key,
+            BindingModifier modifier,
+            boolean replacesController
+    ) {
     }
 
     public record SkippedBinding(String bindingId, SkipReason reason) {
@@ -51,6 +74,35 @@ public class MissingBindingAutoAssigner {
             edits = List.copyOf(edits);
             skipped = List.copyOf(skipped);
         }
+
+        /**
+         * How many planned edits give up a controller assignment.
+         */
+        public long replacements() {
+            return edits.stream().filter(PlannedEdit::replacesController).count();
+        }
+    }
+
+    /**
+     * The controls EliteIntel itself drives; only these are worth taking a slot from
+     * a controller for.
+     */
+    private final Set<String> requiredBindings;
+
+    public MissingBindingAutoAssigner() {
+        this(requiredGameBindings());
+    }
+
+    MissingBindingAutoAssigner(Set<String> requiredBindings) {
+        this.requiredBindings = Set.copyOf(requiredBindings);
+    }
+
+    private static Set<String> requiredGameBindings() {
+        Set<String> required = new HashSet<>();
+        for (Bindings.GameCommand command : Bindings.GameCommand.values()) {
+            required.add(command.getGameBinding());
+        }
+        return required;
     }
 
     /**
@@ -100,6 +152,11 @@ public class MissingBindingAutoAssigner {
             List<SkippedBinding> skipped
     ) {
         BindingSlotType slotType = chooseWritableSlot(binding);
+        boolean replacesController = false;
+        if (slotType == null) {
+            slotType = chooseReplaceableSlot(bindingId, binding);
+            replacesController = slotType != null;
+        }
         if (slotType == null) {
             skipped.add(new SkippedBinding(bindingId, slotSkipReason(binding)));
             return;
@@ -110,7 +167,7 @@ public class MissingBindingAutoAssigner {
             return;
         }
         occupied.add(chord);
-        edits.add(new PlannedEdit(bindingId, slotType, chord.key(), chord.modifier()));
+        edits.add(new PlannedEdit(bindingId, slotType, chord.key(), chord.modifier(), replacesController));
     }
 
     private List<String> unboundTargets(Map<String, ReadOnlyBindingSlots> slots) {
@@ -141,6 +198,37 @@ public class MissingBindingAutoAssigner {
         return null;
     }
 
+    /**
+     * The slot to take from a controller when no empty one is left. Only a control
+     * EliteIntel drives earns this; Secondary goes first so the commander keeps the
+     * Primary (main device) binding.
+     */
+    private BindingSlotType chooseReplaceableSlot(String bindingId, ReadOnlyBindingSlots binding) {
+        if (!requiredBindings.contains(bindingId)) {
+            return null;
+        }
+        if (isReplaceableController(binding.secondary())) {
+            return BindingSlotType.SECONDARY;
+        }
+        if (isReplaceableController(binding.primary())) {
+            return BindingSlotType.PRIMARY;
+        }
+        return null;
+    }
+
+    /**
+     * A slot holding a non-keyboard device. Keyboard slots are excluded here on
+     * purpose: this path only ever runs for a control with no keyboard binding at
+     * all, and a commander's own key assignment must never be overwritten.
+     */
+    private boolean isReplaceableController(ReadOnlyBindingSlot slot) {
+        return slot != null
+                && slot.device() != null
+                && !slot.device().isBlank()
+                && !"Keyboard".equals(slot.device())
+                && !"{NoDevice}".equals(slot.device());
+    }
+
     private SkipReason slotSkipReason(ReadOnlyBindingSlots binding) {
         boolean primaryOccupied = isNonEmptyOccupied(binding.primary());
         boolean secondaryOccupied = isNonEmptyOccupied(binding.secondary());
@@ -164,11 +252,19 @@ public class MissingBindingAutoAssigner {
 
     private SafeKeyboardKeys.Chord firstFreeChord(Set<SafeKeyboardKeys.Chord> occupied) {
         for (SafeKeyboardKeys.Chord chord : SafeKeyboardKeys.orderedChords()) {
-            if (!occupied.contains(chord)) {
+            if (!occupied.contains(chord) && !isModifierKey(chord.key())) {
                 return chord;
             }
         }
         return null;
+    }
+
+    /**
+     * Backstop for "never bind a modifier on its own": the safe pool holds no
+     * modifier tokens, so this only ever fires if that pool is widened by mistake.
+     */
+    private boolean isModifierKey(String key) {
+        return BindingModifier.isSupportedKeyboardModifier("Keyboard", key);
     }
 
     /**

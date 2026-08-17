@@ -58,7 +58,9 @@ public class BindingsMonitor {
     private final BindingsLoader bindingsLoader = new BindingsLoader();
     private final BindingConflictManager conflictManager = BindingConflictManager.getInstance();
     private Path bindingsDir;
-    private Map<String, KeyBindingsParser.KeyBinding> bindings;
+    // Written by the monitor thread's initial parse and read by callers on other threads
+    // (KeyBindCheck at startup, command execution), so publication must be visible.
+    private volatile Map<String, KeyBindingsParser.KeyBinding> bindings;
     private File currentBindsFile;
     private Thread processingThread;
     private volatile boolean running;
@@ -196,6 +198,23 @@ public class BindingsMonitor {
 
     public Map<String, KeyBindingsParser.KeyBinding> getBindings() {
         return bindings;
+    }
+
+    /**
+     * Parses the active binds file now if the monitor's own initial parse has not landed yet.
+     * <p>
+     * {@link #startMonitoring()} does that first parse on the monitor thread, after registering a
+     * WatchService, so a caller that runs immediately after service start - {@link KeyBindCheck} -
+     * would otherwise read a null map, skip silently, and never tell the commander which bindings
+     * are missing. Deliberately unsynchronized: {@code stopMonitoring()} joins the monitor thread
+     * while holding the instance lock, so taking that lock on a parse path could deadlock. A rare
+     * duplicate parse is harmless - both produce the same map.
+     */
+    public void ensureBindingsLoaded() {
+        if (bindings == null) {
+            log.info("Bindings not parsed yet; parsing on demand before the missing-binding check");
+            parseAndUpdateBindings();
+        }
     }
 
     public File getCurrentBindsFile() {

@@ -14,6 +14,17 @@ import static org.junit.jupiter.api.Assertions.*;
 class KeyBindingExecutorTest {
 
     @Test
+    void numpadKeysTheCommanderBoundThemselvesStillExecute() {
+        // Auto-assignment defers the numpad (a keyboard may not have one, and NumLock changes
+        // what it sends), but that is an assignment policy only: a numpad binding the commander
+        // made by hand must still be pressable.
+        for (String key : SafeKeyboardKeys.deferredKeys()) {
+            assertNotNull(KeyBindingExecutor.resolveKeyCode(key), "numpad key not executable: " + key);
+        }
+        assertNotNull(KeyBindingExecutor.resolveKeyCode("Key_Numpad_Enter"));
+    }
+
+    @Test
     void fdevBindingWithActionKeyParkedInModifierSlotTapsTheActionKey() {
         // Exactly the buggy Frontier binding: a modifier (LeftControl) sits in <Primary>,
         // and the real action key (Key_Y) is parked in a <Modifier> slot.

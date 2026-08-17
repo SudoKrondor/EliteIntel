@@ -18,6 +18,11 @@ import java.util.stream.Collectors;
  * parser feeds command execution and must remain a read-only, keyboard-only
  * boundary; write support should not make non-keyboard assignments executable
  * by accident.
+ * <p>
+ * A slot holding a controller assignment is refused unless the edit sets
+ * {@link KeyboardBindingEdit#replacesControllerSlot()}, which only the missing-binding
+ * auto-assigner does, and only for a required control that has no keyboard binding
+ * at all (see {@link MissingBindingAutoAssigner}).
  */
 public class BindingsWriter {
     private static final byte[] UTF_8_BOM = new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
@@ -93,7 +98,8 @@ public class BindingsWriter {
                 return slot.result();
             }
 
-            SlotXml slotXml = inspectSlot(encodedXml.xml(), slot.range(), edit.slotType());
+            SlotXml slotXml = inspectSlot(
+                    encodedXml.xml(), slot.range(), edit.slotType(), edit.replacesControllerSlot());
             if (!slotXml.supportedForV1Edit()) {
                 return BindingSaveResult.UNSUPPORTED_XML;
             }
@@ -212,9 +218,19 @@ public class BindingsWriter {
         return existing.equals(new HashSet<>(requestedModifiers));
     }
 
-    private SlotXml inspectSlot(String xml, TextRange slotRange, BindingSlotType slotType) {
+    /**
+     * @param replaceController when {@code true} the slot may currently hold a controller
+     *                          assignment, which this edit is authorised to overwrite. A
+     *                          controller slot carries {@code DeviceIndex} and device-side
+     *                          {@code <Modifier>} children; both go with the binding being
+     *                          replaced, so they are accepted here instead of failing closed.
+     */
+    private SlotXml inspectSlot(
+            String xml, TextRange slotRange, BindingSlotType slotType, boolean replaceController) {
         String startTag = startTag(xml, slotRange.start());
-        Set<String> allowedAttributes = Set.of("Device", "Key", "Hold");
+        Set<String> allowedAttributes = replaceController
+                ? Set.of("Device", "Key", "Hold", "DeviceIndex")
+                : Set.of("Device", "Key", "Hold");
         if (!allowedAttributes.containsAll(attributeNames(startTag))) {
             return SlotXml.unsupported();
         }
@@ -229,7 +245,8 @@ public class BindingsWriter {
         String holdAttr = attributeValue(startTag, "Hold");
         boolean selfClosing = isSelfClosingStartTag(xml, slotRange.start(), startTagEnd);
         if (selfClosing) {
-            return new SlotXml(device, key, List.of(), null, holdAttr, isEditableMainSlot(device, key));
+            return new SlotXml(device, key, List.of(), null, holdAttr,
+                    isEditableMainSlot(device, key, replaceController));
         }
 
         Matcher closingMatcher = closingTagPattern(slotType.xmlElementName()).matcher(xml);
@@ -251,9 +268,12 @@ public class BindingsWriter {
 
         String holdChild = firstSelfClosingElement(body, "Hold");
         List<ModifierXml> modifiers = modifierXmls(xml, startTagEnd + 1, closingMatcher.start());
-        boolean supportedModifiers = modifiers.stream().allMatch(ModifierXml::supportedForV1Edit);
+        // A controller slot's modifiers are device-side and are discarded with the binding
+        // being replaced, so they need not be keyboard-supported.
+        boolean supportedModifiers = replaceController && !isKeyboardSlot(device)
+                || modifiers.stream().allMatch(ModifierXml::supportedForV1Edit);
         return new SlotXml(device, key, modifiers, holdChild, holdAttr,
-                isEditableMainSlot(device, key) && supportedModifiers);
+                isEditableMainSlot(device, key, replaceController) && supportedModifiers);
     }
 
     /**
@@ -264,9 +284,24 @@ public class BindingsWriter {
         return matcher.find() ? matcher.group() : null;
     }
 
-    private boolean isEditableMainSlot(String device, String key) {
+    private boolean isEditableMainSlot(String device, String key, boolean replaceController) {
+        if (replaceController && isControllerSlot(device)) {
+            return true;
+        }
         return ("Keyboard".equals(device) && key != null && !key.isBlank() && !"Key_".equals(key))
                 || ("{NoDevice}".equals(device) && (key == null || key.isBlank()));
+    }
+
+    private boolean isKeyboardSlot(String device) {
+        return "Keyboard".equals(device);
+    }
+
+    /**
+     * A slot bound to a real non-keyboard device (HOTAS, joystick, mouse, gamepad).
+     */
+    private boolean isControllerSlot(String device) {
+        return device != null && !device.isBlank()
+                && !isKeyboardSlot(device) && !"{NoDevice}".equals(device);
     }
 
     private List<ModifierXml> modifierXmls(String xml, int bodyStart, int bodyEnd) {

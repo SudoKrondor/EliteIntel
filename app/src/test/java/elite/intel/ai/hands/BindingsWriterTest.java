@@ -922,6 +922,60 @@ class BindingsWriterTest {
         assertFalse(updated.contains("<Hold"));
     }
 
+    @Test
+    void aControllerSlotIsRefusedUnlessTheEditAsksToReplaceIt() throws Exception {
+        Path file = writeBinds(controllerOnlyBinds());
+
+        BindingSaveResult result = new BindingsWriter().assignKeyboardKeyWithModifier(
+                edit(file, "UpThrustButton", BindingSlotType.SECONDARY, "Key_E"),
+                new BindingModifier("Keyboard", "Key_LeftControl"));
+
+        assertEquals(BindingSaveResult.UNSUPPORTED_XML, result);
+        assertTrue(Files.readString(file, StandardCharsets.UTF_8).contains("Joy_7"),
+                "the controller binding must survive a refused edit");
+    }
+
+    @Test
+    void replacingAControllerSlotDropsItsDeviceIndexAndDeviceModifiers() throws Exception {
+        Path file = writeBinds(controllerOnlyBinds());
+
+        BindingSaveResult result = new BindingsWriter().assignKeyboardKeyWithModifier(
+                replacingEdit(file, "UpThrustButton", BindingSlotType.SECONDARY, "Key_E"),
+                new BindingModifier("Keyboard", "Key_LeftControl"));
+
+        String updated = Files.readString(file, StandardCharsets.UTF_8);
+        assertEquals(BindingSaveResult.SAVED, result);
+        assertTrue(updated.contains("<Secondary Device=\"Keyboard\" Key=\"Key_E\">"));
+        assertTrue(updated.contains("<Modifier Device=\"Keyboard\" Key=\"Key_LeftControl\" />"));
+        assertFalse(updated.contains("Joy_7"), "the replaced controller binding must be gone");
+        assertFalse(updated.contains("DeviceIndex=\"2\""), "the controller's DeviceIndex goes with it");
+        // The Primary controller binding is untouched.
+        assertTrue(updated.contains("<Primary Device=\"T16000MTHROTTLE\" DeviceIndex=\"0\" Key=\"Joy_4\" />"));
+    }
+
+    private String controllerOnlyBinds() {
+        return """
+                <Root>
+                    <UpThrustButton>
+                        <Primary Device="T16000MTHROTTLE" DeviceIndex="0" Key="Joy_4" />
+                        <Secondary Device="T16000MTHROTTLE" DeviceIndex="2" Key="Joy_7">
+                            <Modifier Device="T16000MTHROTTLE" DeviceIndex="1" Key="Joy_7" />
+                        </Secondary>
+                    </UpThrustButton>
+                </Root>
+                """;
+    }
+
+    private KeyboardBindingEdit replacingEdit(
+            Path file,
+            String bindingId,
+            BindingSlotType slotType,
+            String key
+    ) throws IOException {
+        return new KeyboardBindingEdit(
+                file, bindingId, slotType, key, Files.getLastModifiedTime(file), Files.size(file), true);
+    }
+
     private KeyboardBindingEdit edit(
             Path file,
             String bindingId,
