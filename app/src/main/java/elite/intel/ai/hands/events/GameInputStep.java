@@ -81,12 +81,6 @@ public final class GameInputStep {
         return new GameInputStep(Type.BINDING_UP, requireBindingId(bindingId), 0, null, 0, 0);
     }
 
-    /**
-     * Presses one raw physical key code through the low-level key processor.
-     */
-    public static GameInputStep rawKey(int keyCode) {
-        return new GameInputStep(Type.RAW_KEY, null, keyCode, null, 0, 0);
-    }
 
     /**
      * Presses a raw physical key with an optional modifier held and an optional hold duration.
