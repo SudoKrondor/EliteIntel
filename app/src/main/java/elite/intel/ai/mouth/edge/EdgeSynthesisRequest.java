@@ -5,9 +5,7 @@ record EdgeSynthesisRequest(
         String requestId,
         String text,
         EdgeVoice voice,
-        String rate,
-        String volume,
-        String pitch
+        String rate
 ) {
     EdgeSynthesisRequest {
         if (requestId == null || requestId.isBlank()) {

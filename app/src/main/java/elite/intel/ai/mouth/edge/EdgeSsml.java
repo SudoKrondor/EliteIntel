@@ -15,14 +15,48 @@ final class EdgeSsml {
     private EdgeSsml() {
     }
 
-    static String build(String text, String voiceName, String rate, String volume, String pitch) {
+    /**
+     * WHY: only the rate is a setting. Volume is deliberately neutral here and applied once to decoded PCM
+     * through {@code AudioDeClicker.applyVolume}, the same way the other engines do it, so the two cannot
+     * compound; pitch is neutral because the app's only pitch setting is Google WaveNet's, which Edge has no
+     * equivalent for.
+     */
+    private static final String NEUTRAL_VOLUME = "+0%";
+    private static final String NEUTRAL_PITCH = "+0Hz";
+
+    static String build(String text, String voiceName, String rate) {
         if (text == null || text.isBlank()) {
             throw new IllegalArgumentException("Edge SSML text must not be blank");
         }
         return "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>"
                 + "<voice name='" + escape(voiceName) + "'>"
-                + "<prosody pitch='" + pitch + "' rate='" + rate + "' volume='" + volume + "'>"
+                + "<prosody pitch='" + NEUTRAL_PITCH + "' rate='" + rate + "' volume='" + NEUTRAL_VOLUME + "'>"
                 + escape(text) + "</prosody></voice></speak>";
+    }
+
+    /**
+     * UTF-8 byte length of one code point once {@link #escape} has run, without building the escaped string.
+     * Escaping is per code point, so a scan can accumulate this instead of re-measuring a growing prefix.
+     * It has to agree with {@link #escape} exactly, and {@code EdgeSsmlTest} asserts that it does for every
+     * code point in the BMP.
+     */
+    static int escapedByteLength(int codePoint) {
+        if (isUnsupportedControl(codePoint)) {
+            return 1; // replaced by a single space
+        }
+        return switch (codePoint) {
+            case '&' -> 5;        // &amp;
+            case '<', '>' -> 4;   // &lt; &gt;
+            case '\"', '\'' -> 6;  // &quot; &apos;
+            default -> utf8Length(codePoint);
+        };
+    }
+
+    private static int utf8Length(int codePoint) {
+        if (codePoint < 0x80) return 1;
+        if (codePoint < 0x800) return 2;
+        if (codePoint < 0x10000) return 3;
+        return 4;
     }
 
     static String escape(String value) {
@@ -50,15 +84,6 @@ final class EdgeSsml {
     static String rate(float applicationSpeed) {
         int percent = Math.round(applicationSpeed * 100f);
         return signed(percent, "%");
-    }
-
-    static String volume(int applicationVolume) {
-        int bounded = Math.max(0, Math.min(100, applicationVolume));
-        return signed(bounded - 100, "%");
-    }
-
-    static String pitch(int hertz) {
-        return signed(hertz, "Hz");
     }
 
     static String protocolVoiceName(String shortName) {

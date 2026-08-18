@@ -14,20 +14,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 class EdgeTTSImplTest {
     private final List<EdgeTTSImpl> mouths = new ArrayList<>();
@@ -65,7 +57,6 @@ class EdgeTTSImplTest {
 
             assertEquals(List.of("One", "Two"), client.requests.stream().map(EdgeSynthesisRequest::text).toList());
             assertEquals(List.of("+25%", "+25%"), client.requests.stream().map(EdgeSynthesisRequest::rate).toList());
-            assertEquals(List.of("+0%", "+0%"), client.requests.stream().map(EdgeSynthesisRequest::volume).toList());
             assertEquals(2, output.played.size());
             assertEquals(1, firstCompletions.get());
             assertEquals(1, secondCompletions.get());

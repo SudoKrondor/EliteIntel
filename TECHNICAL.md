@@ -96,10 +96,8 @@ Two STT backends are supported behind a common interface:
 - **Google Cloud TTS** (cloud) - 14 voices across British, American, and Australian accents,
   selected at runtime via voice command.
 
-- **Microsoft Edge Read Aloud** (cloud) - an unofficial integration selected with the exact `edge://` TTS key
-  sentinel. It is not supported or endorsed by Microsoft. It uses native Java HTTP/WebSocket transport and an
-  in-process MP3 decoder; no Azure credentials or browser automation are involved. This is a private consumer
-  protocol and may require maintenance if Microsoft changes its endpoints, headers, token, or audio format.
+- **Microsoft Edge Read
+  Aloud** (cloud) - an unofficial integration, selected with the MICROSOFT EDGE control on the AI Services settings tab and stored as `game_session.ttsProvider`. No API key is involved. It is not supported or endorsed by Microsoft. It uses native Java HTTP/WebSocket transport and an in-process MP3 decoder; no Azure credentials or browser automation are involved. This is a private consumer protocol and may require maintenance if Microsoft changes its endpoints, headers, token, or audio format.
 
 ---
 

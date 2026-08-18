@@ -2,6 +2,7 @@ package elite.intel.ai.mouth.edge;
 
 import elite.intel.i18n.Language;
 
+import java.util.Comparator;
 import java.util.List;
 
 /** Resolves the per-ship voice model against the voices currently offered by Edge Read Aloud. */
@@ -23,13 +24,20 @@ final class EdgeVoiceProvider {
         availableVoices = List.of();
     }
 
+    /**
+     * Resolves the stored ship voice against what Edge currently offers, in three steps: the exact voice if it
+     * is on offer for this language, otherwise a female voice of the right language, otherwise a known-good
+     * voice for the language even when the voice list could not be fetched.
+     *
+     * @param selectedName a logical {@link EdgeVoices} name, or a provider-native ShortName a commander stored
+     *                     directly, or {@code null} for the default
+     */
     EdgeVoice resolve(String selectedName, Language language) {
-        EdgeVoices mapped = EdgeVoices.find(selectedName);
-        String desired = mapped == null ? selectedName : mapped.defaultShortName();
-        if (mapped != null && mapped.male()) {
-            mapped = EdgeVoices.DEFAULT_FEMALE;
-            desired = mapped.defaultShortName();
-        }
+        EdgeVoices known = EdgeVoices.find(selectedName);
+        // Ship voices are female-only; femaleOrDefault owns that rule, so it is not restated here.
+        EdgeVoices logical = known == null ? null : EdgeVoices.femaleOrDefault(selectedName);
+        String desired = logical == null ? selectedName : logical.defaultShortName();
+
         List<EdgeVoice> voices = availableVoices;
         if (desired != null) {
             String requested = desired;
@@ -44,21 +52,21 @@ final class EdgeVoiceProvider {
             }
         }
 
+        // The exact voice is not on offer for this language, so fall back to a female voice that is.
+        EdgeVoices position = logical == null ? EdgeVoices.DEFAULT_FEMALE : logical;
         List<EdgeVoice> candidates = voices.stream()
                 .filter(voice -> languageMatches(language, voice.locale()))
                 .filter(voice -> !voice.male())
-                .sorted((left, right) -> left.shortName().compareTo(right.shortName()))
+                .sorted(Comparator.comparing(EdgeVoice::shortName))
                 .toList();
         if (!candidates.isEmpty()) {
-            int selection = mapped == null || selectedName == null ? 0 : mapped.ordinal();
-            if (mapped == null && selectedName != null) {
-                selection = selectedName.hashCode();
-            }
-            return candidates.get(Math.floorMod(selection, candidates.size()));
+            // WHY: index by the logical voice's ordinal rather than always taking the first candidate, so a
+            // fleet whose ships carry different voices still sounds different in a language where none of the
+            // exact voices exist. A name we do not recognise has no position of its own and takes the default
+            // female's, which is where every other unknown voice in the app lands.
+            return candidates.get(Math.floorMod(position.ordinal(), candidates.size()));
         }
-        String fallback = language == Language.EN
-                ? (mapped == null ? EdgeVoices.DEFAULT_FEMALE.defaultShortName() : mapped.defaultShortName())
-                : localizedFallback(language);
+        String fallback = language == Language.EN ? position.defaultShortName() : localizedFallback(language);
         return fallbackVoice(fallback, locale(language));
     }
 

@@ -19,7 +19,7 @@ public interface GameSessionDao {
                                                              rmsThresholdHigh,
                                                              rmsThresholdLow, encryptedLLMKey, encryptedTTSKey,
                                                              speechSpeed, googleWaveNetPitch,
-                                                             useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, notificationVolume, sttThreads, voiceVolume,
+                                                             useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, ttsProvider, notificationVolume, sttThreads, voiceVolume,
                                                              lmStudioAddress, lmStudioCommandModel,
                                                              aiLanguage,
                                                              audioInputDevice, audioOutputDevice,
@@ -33,7 +33,7 @@ public interface GameSessionDao {
                                                       :rmsThresholdHigh,
                                                       :rmsThresholdLow, :encryptedLLMKey, :encryptedTTSKey,
                                                       :speechSpeed, :googleWaveNetPitch,
-                                                      :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :notificationVolume, :sttThreads, :voiceVolume,
+                                                      :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :ttsProvider, :notificationVolume, :sttThreads, :voiceVolume,
                                                       :lmStudioAddress, :lmStudioCommandModel,
                                                       :aiLanguage,
                                                       :audioInputDevice, :audioOutputDevice,
@@ -69,6 +69,7 @@ public interface GameSessionDao {
             session.setUseLocalCommandLlm(rs.getBoolean("useLocalCommandLlm"));
             session.setUseLocalQueryLlm(rs.getBoolean("useLocalQueryLlm"));
             session.setUseLocalTTS(rs.getBoolean("useLocalTTS"));
+            session.setTtsProvider(rs.getString("ttsProvider"));
             session.setNotificationVolume(rs.getFloat("notificationVolume"));
             session.setSttThreads(rs.getInt("sttThreads"));
             session.setVoiceVolume(rs.getInt("voiceVolume"));
@@ -108,7 +109,12 @@ public interface GameSessionDao {
         private Float notificationVolume;
         private boolean useLocalCommandLlm;
         private boolean useLocalQueryLlm;
+        /**
+         * Legacy local/cloud flag. {@link #ttsProvider} is the engine selection this build reads - this is
+         * kept in step with it purely so an older jar can still be rolled back onto the same database.
+         */
         private boolean useLocalTTS;
+        private String ttsProvider;
         private Integer sttThreads;
         private Integer voiceVolume;
         private String lmStudioAddress;
@@ -226,6 +232,14 @@ public interface GameSessionDao {
 
         public void setUseLocalTTS(boolean useLocalTTS) {
             this.useLocalTTS = useLocalTTS;
+        }
+
+        public String getTtsProvider() {
+            return ttsProvider;
+        }
+
+        public void setTtsProvider(String ttsProvider) {
+            this.ttsProvider = ttsProvider;
         }
 
         public Float getNotificationVolume() {

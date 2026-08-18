@@ -1,5 +1,6 @@
 package elite.intel.ui.screen.settings;
 
+import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.NotificationVolumeChangedEvent;
@@ -258,9 +259,12 @@ public class AudioSettingsPanel extends JPanel {
         }
     }
 
+    /**
+     * Only Google WaveNet reads the pitch, so the slider is live for that engine alone (section 0.6).
+     */
     private void updateGoogleWaveNetPitchEnablement() {
         if (googleWaveNetPitchSlider != null) {
-            googleWaveNetPitchSlider.setEnabled(!systemSession.useLocalTTS());
+            googleWaveNetPitchSlider.setEnabled(systemSession.getTtsProvider() == TtsProvider.GOOGLE);
         }
     }
 

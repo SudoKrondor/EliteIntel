@@ -1,5 +1,6 @@
 package elite.intel.ai.brain.commons;
 
+import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.Test;
@@ -10,18 +11,15 @@ class AiResponseLanguagePolicyTest {
     @Test
     void edgeCloudTtsKeepsTheConfiguredCyrillicLanguage() {
         SystemSession session = SystemSession.getInstance();
-        boolean previousLocal = session.useLocalTTS();
-        String previousKey = session.getTtsApiKey();
+        TtsProvider previousProvider = session.getTtsProvider();
         Language previousLanguage = session.getLanguage();
         try {
-            session.setUseLocalTTS(false);
-            session.setTtsApiKey("edge://");
+            session.setTtsProvider(TtsProvider.EDGE);
             session.setLanguage(Language.UK);
 
             assertEquals(Language.UK, AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(session));
         } finally {
-            session.setUseLocalTTS(previousLocal);
-            session.setTtsApiKey(previousKey);
+            session.setTtsProvider(previousProvider);
             session.setLanguage(previousLanguage);
         }
     }

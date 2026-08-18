@@ -10,34 +10,20 @@ import java.net.Authenticator;
 import java.net.CookieHandler;
 import java.net.ProxySelector;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpHeaders;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.WebSocket;
-import java.net.http.WebSocketHandshakeException;
+import java.net.http.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class EdgeReadAloudClientTest {
     private static final Instant NOW = Instant.parse("2024-01-02T03:04:05Z");
@@ -178,7 +164,7 @@ class EdgeReadAloudClientTest {
                 "Elite Intel test.",
                 new EdgeVoice(null, "en-US-EmmaMultilingualNeural", "Female", "en-US",
                         EdgeProtocolConstants.OUTPUT_FORMAT),
-                "+0%", "+0%", "+0Hz");
+                "+0%");
     }
 
     private static String query(URI uri, String name) {

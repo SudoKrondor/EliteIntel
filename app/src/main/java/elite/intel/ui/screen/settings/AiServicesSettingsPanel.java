@@ -1,7 +1,6 @@
 package elite.intel.ui.screen.settings;
 
-import elite.intel.ai.KeyDetector;
-import elite.intel.ai.ProviderEnum;
+import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
@@ -58,6 +57,7 @@ public class AiServicesSettingsPanel extends JPanel {
     private JCheckBox llmLockCheck;
 
     private HudSegmentedControl ttsSourceControl;
+    private JToggleButton ttsEdgeButton;
     private JPasswordField ttsKeyField;
     private JCheckBox ttsLockCheck;
 
@@ -75,7 +75,7 @@ public class AiServicesSettingsPanel extends JPanel {
     private boolean savedLlmLocal;
     private String savedLmAddress = "", savedLmCommand = "";
     private String savedAiKey = "", savedTtsKey = "";
-    private boolean savedTtsLocal;
+    private TtsProvider savedTtsProvider = TtsProvider.KOKORO;
 
     /** Suppresses dirty-marking while controls are populated programmatically. */
     private boolean loading = false;
@@ -151,8 +151,15 @@ public class AiServicesSettingsPanel extends JPanel {
                 new String[]{getText("settings.ai.voice.local"), getText("settings.ai.voice.cloud")}, SRC_CLOUD);
         tts.add(ttsSourceControl, BorderLayout.NORTH);
 
-        // Left column - LOCAL (Kokoro has no configuration). Right column - CLOUD Google TTS key.
-        JPanel ttsLeftCol = transparentPanel(new BorderLayout());
+        // Left column - the keyless engines: Kokoro needs no configuration, and Microsoft Edge is picked with
+        // the toggle below the switch. Right column - CLOUD Google TTS key.
+        JPanel ttsLeftCol = transparentPanel(new BorderLayout(0, HUD_GAP));
+        ttsEdgeButton = makeToggleButton(getText("settings.ai.voice.edge"));
+        JPanel ttsEdgeCol = transparentPanel(new BorderLayout(0, HUD_GAP));
+        ttsEdgeCol.add(ttsEdgeButton, BorderLayout.NORTH);
+        ttsEdgeCol.add(HudBanner.multiline(getText("settings.ai.voice.edge.hint"), StatusBadge.State.INFO),
+                BorderLayout.CENTER);
+        ttsLeftCol.add(ttsEdgeCol, BorderLayout.NORTH);
         ttsRightCol = transparentPanel(new GridBagLayout());
         GridBagConstraints tgc = baseGbc();
         ttsKeyField = makePasswordField();
@@ -208,6 +215,12 @@ public class AiServicesSettingsPanel extends JPanel {
             recomputeDirty();
             updateEnablement();
         });
+        // The Edge toggle is the third engine, so it supersedes the LOCAL/CLOUD switch while it is on
+        // (updateEnablement dims the switch and the Google key); turning it off hands the choice back.
+        ttsEdgeButton.addItemListener(e -> {
+            recomputeDirty();
+            updateEnablement();
+        });
         llmLockCheck.addItemListener(e -> updateEnablement());
         ttsLockCheck.addItemListener(e -> updateEnablement());
 
@@ -241,15 +254,18 @@ public class AiServicesSettingsPanel extends JPanel {
             loadFields();
 
             apiKeyField.setText(nz(systemSession.getAiApiKey(), ""));
-            ttsKeyField.setText(nz(systemSession.getTtsApiKey(), ""));
-            ttsSourceControl.setSelectedIndex(systemSession.useLocalTTS() ? SRC_LOCAL : SRC_CLOUD);
+            String storedTtsKey = nz(systemSession.getTtsApiKey(), "");
+            ttsKeyField.setText(storedTtsKey);
+            TtsProvider ttsProvider = systemSession.getTtsProvider();
+            ttsEdgeButton.setSelected(ttsProvider == TtsProvider.EDGE);
+            ttsSourceControl.setSelectedIndex(ttsProvider == TtsProvider.KOKORO ? SRC_LOCAL : SRC_CLOUD);
 
             savedLlmLocal = local;
             savedLmAddress = lmAddress;
             savedLmCommand = lmCommand;
             savedAiKey = nz(systemSession.getAiApiKey(), "");
-            savedTtsKey = nz(systemSession.getTtsApiKey(), "");
-            savedTtsLocal = systemSession.useLocalTTS();
+            savedTtsKey = storedTtsKey;
+            savedTtsProvider = ttsProvider;
 
             updateEnablement();
         } finally {
@@ -294,12 +310,16 @@ public class AiServicesSettingsPanel extends JPanel {
         apiKeyField.setEnabled(cloud && !llmLockCheck.isSelected());
         llmLockCheck.setEnabled(cloud);
 
-        boolean ttsCloud = ttsSourceControl.getSelectedIndex() == SRC_CLOUD;
+        // Edge is neither of the switch's two setups, so while it is selected the switch is inert and dimmed
+        // and the Google key is out of play - the toggle alone says what speaks.
+        boolean edge = ttsEdgeButton.isSelected();
+        ttsSourceControl.setEnabled(!edge);
+        boolean googleTts = !edge && ttsSourceControl.getSelectedIndex() == SRC_CLOUD;
         for (Component c : ttsRightCol.getComponents()) {
-            if (c instanceof JLabel) c.setEnabled(ttsCloud);
+            if (c instanceof JLabel) c.setEnabled(googleTts);
         }
-        ttsKeyField.setEnabled(ttsCloud && !ttsLockCheck.isSelected());
-        ttsLockCheck.setEnabled(ttsCloud);
+        ttsKeyField.setEnabled(googleTts && !ttsLockCheck.isSelected());
+        ttsLockCheck.setEnabled(googleTts);
     }
 
     /** Re-evaluates whether the working copy differs from the last saved snapshot. */
@@ -311,11 +331,10 @@ public class AiServicesSettingsPanel extends JPanel {
     private boolean isModified() {
         captureFields();
         boolean newLocal = llmSourceControl.getSelectedIndex() == SRC_LOCAL;
-        boolean newTtsLocal = ttsSourceControl.getSelectedIndex() == SRC_LOCAL;
         String newAiKey = new String(apiKeyField.getPassword());
         String newTtsKey = new String(ttsKeyField.getPassword());
         return newLocal != savedLlmLocal
-                || newTtsLocal != savedTtsLocal
+                || selectedTtsProvider() != savedTtsProvider
                 || !Objects.equals(newAiKey, savedAiKey)
                 || !Objects.equals(newTtsKey, savedTtsKey)
                 || !Objects.equals(lmAddress, savedLmAddress)
@@ -340,7 +359,7 @@ public class AiServicesSettingsPanel extends JPanel {
     // -------------------------------------------------------------------------
 
     /**
-     * Atomically persists the whole working copy. If the TTS source changed, a confirmation
+     * Atomically persists the whole working copy. If the TTS engine changed, a confirmation
      * dialog (voice reset) is shown first; declining it aborts the entire save and leaves the
      * panel in its edited state.
      *
@@ -350,12 +369,14 @@ public class AiServicesSettingsPanel extends JPanel {
         captureFields();
 
         boolean newLocal = llmSourceControl.getSelectedIndex() == SRC_LOCAL;
-        boolean newTtsLocal = ttsSourceControl.getSelectedIndex() == SRC_LOCAL;
+        TtsProvider newTtsProvider = selectedTtsProvider();
         String newAiKey = new String(apiKeyField.getPassword());
         String newTtsKey = new String(ttsKeyField.getPassword());
 
-        boolean oldTtsLocal = systemSession.useLocalTTS();
-        if (newTtsLocal != oldTtsLocal) {
+        // Every engine names its voices differently, so any engine change - not just local/cloud - invalidates
+        // the fleet's stored voices.
+        TtsProvider oldTtsProvider = systemSession.getTtsProvider();
+        if (newTtsProvider != oldTtsProvider) {
             boolean confirmed = HudConfirmDialog.confirm(
                     this,
                     getText("settings.audio.switchTts.title"),
@@ -365,14 +386,11 @@ public class AiServicesSettingsPanel extends JPanel {
             if (!confirmed) {
                 return false; // abort entire save, stay in editing state
             }
-            String defaultVoice;
-            if (newTtsLocal) {
-                defaultVoice = KokoroVoices.DEFAULT_FEMALE.name();
-            } else if (KeyDetector.detectProvider(newTtsKey, "TTS") == ProviderEnum.EDGE_TTS) {
-                defaultVoice = EdgeVoices.DEFAULT_FEMALE.defaultShortName();
-            } else {
-                defaultVoice = GoogleVoices.DEFAULT_FEMALE.name();
-            }
+            String defaultVoice = switch (newTtsProvider) {
+                case KOKORO -> KokoroVoices.DEFAULT_FEMALE.name();
+                case EDGE -> EdgeVoices.DEFAULT_FEMALE.name();
+                case GOOGLE -> GoogleVoices.DEFAULT_FEMALE.name();
+            };
             ShipManager.getInstance().resetAllVoicesToDefault(defaultVoice);
         }
 
@@ -385,13 +403,13 @@ public class AiServicesSettingsPanel extends JPanel {
                         || !Objects.equals(systemSession.getLmStudioCommandModel(), lmCommand);
         boolean brainChanged = newLocal != oldLocal
                 || localCfgChanged || !Objects.equals(oldAiKey, newAiKey);
-        boolean mouthChanged = newTtsLocal != oldTtsLocal || !Objects.equals(oldTtsKey, newTtsKey);
+        boolean mouthChanged = newTtsProvider != oldTtsProvider || !Objects.equals(oldTtsKey, newTtsKey);
 
         systemSession.setLmStudioSettings(lmAddress, lmCommand);
         systemSession.setUseLocalCommandLlm(newLocal);
         systemSession.setUseLocalQueryLlm(newLocal);
         systemSession.setAiApiKey(newAiKey);
-        systemSession.setUseLocalTTS(newTtsLocal);
+        systemSession.setTtsProvider(newTtsProvider);
         systemSession.setTtsApiKey(newTtsKey);
 
         UiBus.publish(new AppLogEvent("AI services config saved"));
@@ -406,7 +424,7 @@ public class AiServicesSettingsPanel extends JPanel {
         savedLmCommand = lmCommand;
         savedAiKey = newAiKey;
         savedTtsKey = newTtsKey;
-        savedTtsLocal = newTtsLocal;
+        savedTtsProvider = newTtsProvider;
 
         clearDirty();
         return true;
@@ -425,6 +443,16 @@ public class AiServicesSettingsPanel extends JPanel {
             loading = false;
         }
         save();
+    }
+
+    /**
+     * The engine the controls currently describe: the Edge toggle wins, otherwise the LOCAL/CLOUD switch.
+     */
+    private TtsProvider selectedTtsProvider() {
+        if (ttsEdgeButton.isSelected()) {
+            return TtsProvider.EDGE;
+        }
+        return ttsSourceControl.getSelectedIndex() == SRC_LOCAL ? TtsProvider.KOKORO : TtsProvider.GOOGLE;
     }
 
     private static String nz(String value, String fallback) {

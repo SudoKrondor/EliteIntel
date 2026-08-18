@@ -462,7 +462,7 @@ public class GoogleTTSImpl implements MouthInterface {
     }
 
     private void processVoiceRequest(VoiceRequest request) throws InterruptedException {
-        String text = request.text().replace("present", "detected").replace("_", " ").replace("*", "");
+        String text = StringUtls.sanitizeCloudSpeech(request.text());
         if (text == null || text.isEmpty()) {
             throw new IllegalArgumentException("Google TTS request contains no speakable text");
         }

@@ -1,6 +1,7 @@
 package elite.intel.session;
 
 import elite.intel.ai.brain.ShipPersonality;
+import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
@@ -58,11 +59,6 @@ public class SystemSession {
         return GoogleVoices.femaleOrDefault(ship == null ? null : ship.getVoice());
     }
 
-
-    public EdgeVoices getEdgeVoice() {
-        ShipDao.Ship ship = shipManager.getShip();
-        return EdgeVoices.femaleOrDefault(ship == null ? null : ship.getVoice());
-    }
 
     public String getEdgeVoiceName() {
         ShipDao.Ship ship = shipManager.getShip();
@@ -274,10 +270,18 @@ public class SystemSession {
         });
     }
 
-    public void setUseLocalTTS(boolean b) {
+    /**
+     * Selects the engine that voices the companion.
+     * <p>
+     * The legacy {@code useLocalTTS} flag is written alongside it. Nothing in this build reads that flag, but a
+     * commander who rolls back to an earlier jar lands on a database where it still describes their choice.
+     */
+    public void setTtsProvider(TtsProvider provider) {
+        TtsProvider selected = provider == null ? TtsProvider.KOKORO : provider;
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
-            session.setUseLocalTTS(b);
+            session.setTtsProvider(selected.name());
+            session.setUseLocalTTS(selected.isLocal());
             dao.save(session);
             return Void.class;
         });
@@ -293,8 +297,19 @@ public class SystemSession {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().isUseLocalQueryLlm());
     }
 
+    /**
+     * The engine that voices the companion. Never {@code null}.
+     */
+    public TtsProvider getTtsProvider() {
+        return Database.withDao(GameSessionDao.class, dao -> TtsProvider.fromStored(dao.get().getTtsProvider()));
+    }
+
+    /**
+     * Whether the companion is voiced by the local engine. Derived from {@link #getTtsProvider()}: the stored
+     * {@code useLocalTTS} flag is a rollback mirror, not a second source of truth, so it is never read here.
+     */
     public boolean useLocalTTS() {
-        return Database.withDao(GameSessionDao.class, dao -> dao.get().isUseLocalTTS());
+        return getTtsProvider().isLocal();
     }
 
     /**

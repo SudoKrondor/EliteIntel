@@ -56,7 +56,9 @@ final class EdgeProtocolMessageParser {
             if (colon <= 0) {
                 throw new EdgeProtocolException("Malformed Edge protocol header");
             }
-            headers.put(line.substring(0, colon).toLowerCase(Locale.ROOT), line.substring(colon + 1));
+            // WHY: Edge sends "Path:audio" with no space, but every consumer compares the value exactly, so an
+            // added space would surface as a bogus "unexpected text path" rather than as whitespace.
+            headers.put(line.substring(0, colon).toLowerCase(Locale.ROOT), line.substring(colon + 1).strip());
         }
         if (!headers.containsKey("path")) {
             throw new EdgeProtocolException("Edge protocol message is missing Path");

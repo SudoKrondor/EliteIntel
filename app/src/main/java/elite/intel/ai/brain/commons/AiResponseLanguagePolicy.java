@@ -1,7 +1,6 @@
 package elite.intel.ai.brain.commons;
 
-import elite.intel.ai.KeyDetector;
-import elite.intel.ai.ProviderEnum;
+import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
@@ -36,17 +35,11 @@ public final class AiResponseLanguagePolicy {
     }
 
     public static boolean isGoogleTtsConfiguredAndUsable(SystemSession systemSession) {
-        if (systemSession.useLocalTTS()) {
-            return false;
-        }
-        return KeyDetector.detectProvider(systemSession.getTtsApiKey(), "TTS") == ProviderEnum.GOOGLE_TTS;
+        return systemSession.getTtsProvider() == TtsProvider.GOOGLE;
     }
 
     private static boolean supportsConfiguredLanguage(SystemSession systemSession) {
-        if (systemSession.useLocalTTS()) {
-            return false;
-        }
-        ProviderEnum provider = KeyDetector.detectProvider(systemSession.getTtsApiKey(), "TTS");
-        return provider == ProviderEnum.GOOGLE_TTS || provider == ProviderEnum.EDGE_TTS;
+        TtsProvider provider = systemSession.getTtsProvider();
+        return provider == TtsProvider.GOOGLE || provider == TtsProvider.EDGE;
     }
 }

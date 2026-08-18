@@ -1,5 +1,4 @@
 package elite.intel.ui.widget;
-import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
@@ -18,7 +17,9 @@ public class HudToggleButton extends JToggleButton {
      * @param label visible button text
      */
     public HudToggleButton(String label) {
-        super(label);
+        // Upper case and the button font, like HudButton: every control in the HUD button family reads the same.
+        super(label != null ? label.toUpperCase() : "");
+        setFont(getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_BUTTON));
         setOpaque(false);
         setContentAreaFilled(false);
         setFocusPainted(false);

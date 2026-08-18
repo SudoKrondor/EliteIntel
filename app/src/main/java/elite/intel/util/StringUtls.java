@@ -240,6 +240,18 @@ public class StringUtls {
     }
 
     /**
+     * The extra pass the cloud mouths run over {@link #sanitizeTts(String, boolean)} output: "present" is spoken
+     * as "detected", and any underscore or asterisk that survived sanitization inside a word is dropped.
+     * <p>
+     * The rule predates both cloud engines and is preserved verbatim, in one place, so {@code GoogleTTSImpl} and
+     * {@code EdgeTTSImpl} cannot drift apart on what they say. Kokoro does not apply it.
+     */
+    public static String sanitizeCloudSpeech(String input) {
+        if (input == null) return "";
+        return input.replace("present", "detected").replace("_", " ").replace("*", "");
+    }
+
+    /**
      * Cleans LLM text for speech synthesis.
      * <p>
      * When {@code hardenForEspeak} is true (the no-arg overload, used by the espeak-ng-based Kokoro engine),

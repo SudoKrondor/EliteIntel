@@ -1,5 +1,6 @@
 package elite.intel.ui.screen;
 
+import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
@@ -30,17 +31,14 @@ class CommanderTabPanelVoiceLabelTest {
 
     private static void runAsEdge(Runnable body) {
         SystemSession session = SystemSession.getInstance();
-        boolean previousLocal = session.useLocalTTS();
-        String previousKey = session.getTtsApiKey();
+        TtsProvider previousProvider = session.getTtsProvider();
         Language previousLanguage = session.getLanguage();
         try {
-            session.setUseLocalTTS(false);
-            session.setTtsApiKey("edge://");
+            session.setTtsProvider(TtsProvider.EDGE);
             session.setLanguage(Language.EN); // the desired display text ("American female") is English-only
             body.run();
         } finally {
-            session.setUseLocalTTS(previousLocal);
-            session.setTtsApiKey(previousKey);
+            session.setTtsProvider(previousProvider);
             session.setLanguage(previousLanguage);
         }
     }
@@ -123,29 +121,26 @@ class CommanderTabPanelVoiceLabelTest {
     @Test
     void googleNormalizationIsUnaffectedByTheEdgeFix() {
         SystemSession session = SystemSession.getInstance();
-        boolean previousLocal = session.useLocalTTS();
-        String previousKey = session.getTtsApiKey();
+        TtsProvider previousProvider = session.getTtsProvider();
         try {
-            session.setUseLocalTTS(false);
-            session.setTtsApiKey(null); // no Edge key -> Google branch
+            session.setTtsProvider(TtsProvider.GOOGLE);
             assertEquals(GoogleVoices.femaleOrDefault(GoogleVoices.EMMA.name()).name(),
                     CommanderTabPanel.normalizeVoiceToFemale(GoogleVoices.EMMA.name()));
         } finally {
-            session.setUseLocalTTS(previousLocal);
-            session.setTtsApiKey(previousKey);
+            session.setTtsProvider(previousProvider);
         }
     }
 
     @Test
     void kokoroNormalizationIsUnaffectedByTheEdgeFix() {
         SystemSession session = SystemSession.getInstance();
-        boolean previousLocal = session.useLocalTTS();
+        TtsProvider previousProvider = session.getTtsProvider();
         try {
-            session.setUseLocalTTS(true);
+            session.setTtsProvider(TtsProvider.KOKORO);
             assertEquals(KokoroVoices.femaleOrDefault(KokoroVoices.NOVA.name()).name(),
                     CommanderTabPanel.normalizeVoiceToFemale(KokoroVoices.NOVA.name()));
         } finally {
-            session.setUseLocalTTS(previousLocal);
+            session.setTtsProvider(previousProvider);
         }
     }
 }

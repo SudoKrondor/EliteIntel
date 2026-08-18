@@ -5,11 +5,7 @@ import elite.intel.ai.mouth.AudioDeClicker;
 import elite.intel.ai.mouth.MainVoicePlaybackGate;
 import elite.intel.ai.mouth.MouthInterface;
 import elite.intel.ai.mouth.VocalisationHandle;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.ai.mouth.subscribers.events.BaseVoxEvent;
-import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
-import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
-import elite.intel.ai.mouth.subscribers.events.VocalisationSuccessfulEvent;
+import elite.intel.ai.mouth.subscribers.events.*;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.i18n.Language;
@@ -197,7 +193,7 @@ public final class EdgeTTSImpl implements MouthInterface {
     }
 
     private void enqueue(VocalisationRequestEvent event, VocalisationHandle handle) {
-        String text = preprocess(StringUtls.sanitizeTts(event.getText(), false));
+        String text = StringUtls.sanitizeCloudSpeech(StringUtls.sanitizeTts(event.getText(), false));
         List<String> sentences = EdgeSentenceSplitter.split(text);
         if (sentences.isEmpty()) {
             throw new IllegalArgumentException("Vocalisation text is blank after TTS sanitization");
@@ -263,8 +259,7 @@ public final class EdgeTTSImpl implements MouthInterface {
         }
         EdgeVoice voice = voiceProvider.resolve(task.selectedVoiceName(), task.language());
         EdgeSynthesisRequest request = new EdgeSynthesisRequest(
-                task.handle().requestId(), task.text(), voice, task.rate(),
-                EdgeSsml.volume(100), EdgeSsml.pitch(0));
+                task.handle().requestId(), task.text(), voice, task.rate());
         byte[] compressed;
         currentNetworkSynthesis.set(task);
         try {
@@ -524,10 +519,6 @@ public final class EdgeTTSImpl implements MouthInterface {
                  | NoSuchMethodException e) {
             log.error("Failed to publish Edge VocalisationSuccessfulEvent", e);
         }
-    }
-
-    private static String preprocess(String text) {
-        return text.replace("present", "detected").replace("_", " ").replace("*", "");
     }
 
     private static void validatePcm(byte[] pcm) {

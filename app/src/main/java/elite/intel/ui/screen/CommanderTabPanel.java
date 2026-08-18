@@ -1,9 +1,8 @@
 package elite.intel.ui.screen;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.KeyDetector;
-import elite.intel.ai.ProviderEnum;
 import elite.intel.ai.brain.ShipPersonality;
+import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoiceProvider;
 import elite.intel.ai.mouth.google.GoogleVoices;
@@ -40,10 +39,9 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.util.*;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -112,9 +110,10 @@ public class CommanderTabPanel extends JPanel {
      * voices apart; in any other language every Google voice is synthesized in that language (its Chirp3-HD
      * character), so only the localized gender is shown instead of a misleading English accent.
      * <p>
-     * Also reused for Edge (see {@link #edgeVoiceLabel}): {@link EdgeVoices} enum names intentionally match
-     * {@link GoogleVoices} one-for-one with the same accents, so the two providers show identical descriptors
-     * for the same logical identity rather than duplicating the "American female" / "British female" literals.
+     * Also reused for Edge (see {@link #edgeVoiceLabel}): every {@link EdgeVoices} name intentionally has a
+     * {@link GoogleVoices} twin with the same accent, so the two providers show identical descriptors for the
+     * same logical identity rather than duplicating the "American female" / "British female" literals. The
+     * correspondence is one-way (Google also carries the WaveNet pair) and {@code EdgeVoicesTest} pins it.
      */
     private static String googleVoiceDescriptor(GoogleVoices v) {
         if (SystemSession.getInstance().getLanguage() == Language.EN) {
@@ -427,32 +426,21 @@ public class CommanderTabPanel extends JPanel {
     }
 
     private static boolean usesEdgeTts() {
-        SystemSession session = SystemSession.getInstance();
-        return !session.useLocalTTS()
-                && KeyDetector.detectProvider(session.getTtsApiKey(), "TTS") == ProviderEnum.EDGE_TTS;
-    }
-
-    private static EdgeVoices edgeVoice(String name) {
-        return Arrays.stream(EdgeVoices.values())
-                .filter(voice -> voice.name().equalsIgnoreCase(name)
-                        || voice.displayName().equalsIgnoreCase(name)
-                        || voice.defaultShortName().equals(name))
-                .findFirst()
-                .orElse(null);
+        return SystemSession.getInstance().getTtsProvider() == TtsProvider.EDGE;
     }
 
     /**
      * Fleet-label for an Edge voice: "DisplayName - accent · gender" (e.g. "Mary - American female"), the same
      * friendly format Google already uses for the same logical identity - see {@link #googleVoiceDescriptor}.
-     * {@link EdgeVoices} and {@link GoogleVoices} enum names match one-for-one by design, so the descriptor is
-     * looked up from {@link GoogleVoices} rather than duplicating "American female" / "British female" literals
-     * in {@link EdgeVoices}. Edge's provider-native ShortName (e.g. "en-US-EmmaMultilingualNeural") is an
+     * Every {@link EdgeVoices} name has a {@link GoogleVoices} twin by design (pinned by {@code EdgeVoicesTest}),
+     * so the descriptor is looked up from {@link GoogleVoices} rather than duplicating "American female" /
+     * "British female" literals in {@link EdgeVoices}. Edge's provider-native ShortName (e.g. "en-US-EmmaMultilingualNeural") is an
      * implementation detail of how the logical name is resolved for synthesis and must never appear in this UI.
-     * Accepts either the logical enum name or a legacy ShortName (both resolve via {@link #edgeVoice}), so a
+     * Accepts either the logical enum name or a legacy ShortName (both resolve via {@link EdgeVoices#find}), so a
      * stored value in either form still renders as just the friendly logical label.
      */
     static String edgeVoiceLabel(String enumName) {
-        EdgeVoices voice = edgeVoice(enumName);
+        EdgeVoices voice = EdgeVoices.find(enumName);
         if (voice == null) return enumName;
         return voice.displayName() + " - " + googleVoiceDescriptor(GoogleVoices.valueOf(voice.name()));
     }

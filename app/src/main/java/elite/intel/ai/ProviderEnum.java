@@ -13,7 +13,6 @@ public enum ProviderEnum {
     MISTRAL("LLM"),
     GOOGLE_STT("STT"),
     GOOGLE_TTS("TTS"),
-    EDGE_TTS("TTS"),
     GEMINI("LLM"),
     OPENAI("LLM"),
     ANTHROPIC("LLM"),

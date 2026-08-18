@@ -1,9 +1,9 @@
 package elite.intel.ai.mouth.edge;
 
 /**
- * Maps the existing per-ship voice names to stable Edge Read Aloud voices. The enum names intentionally match
- * the cloud voice choices already persisted for Google, so selecting {@code edge://} needs no new UI control or
- * database representation.
+ * Maps the existing per-ship voice names to stable Edge Read Aloud voices. Every name here intentionally has a
+ * {@code GoogleVoices} twin, so switching a fleet to Edge reinterprets the voices already stored rather than
+ * needing a representation of its own. {@code EdgeVoicesTest} pins that correspondence.
  */
 public enum EdgeVoices {
     MARY("Mary", false, "en-US-EmmaMultilingualNeural"),
@@ -52,7 +52,11 @@ public enum EdgeVoices {
         return voice == null ? fallback : voice;
     }
 
-    static EdgeVoices find(String name) {
+    /**
+     * Resolves a stored voice name in any form this app has ever written for Edge: the logical enum name, the
+     * display name, or a provider-native ShortName. Returns {@code null} when the name is none of those.
+     */
+    public static EdgeVoices find(String name) {
         if (name == null || name.isBlank()) {
             return null;
         }

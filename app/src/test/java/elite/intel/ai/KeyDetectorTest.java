@@ -5,13 +5,16 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class KeyDetectorTest {
+
+    /**
+     * The Edge branch shipped a reserved "edge://" selector in the TTS key field. Selecting an engine is a
+     * setting of its own now, so this string is just an unrecognised key - the key detector must never route
+     * a provider selection again.
+     */
     @Test
-    void exactEdgeSentinelSelectsEdgeOnlyForTts() {
-        assertEquals(ProviderEnum.EDGE_TTS, KeyDetector.detectProvider("edge://", "TTS"));
+    void theRetiredEdgeSelectorIsJustAnUnknownKey() {
+        assertEquals(ProviderEnum.UNKNOWN, KeyDetector.detectProvider("edge://", "TTS"));
         assertEquals(ProviderEnum.UNKNOWN, KeyDetector.detectProvider("edge://", "LLM"));
-        assertEquals(ProviderEnum.UNKNOWN, KeyDetector.detectProvider("EDGE://", "TTS"));
-        assertEquals(ProviderEnum.UNKNOWN, KeyDetector.detectProvider(" edge://", "TTS"));
-        assertEquals(ProviderEnum.UNKNOWN, KeyDetector.detectProvider("edge:///", "TTS"));
     }
 
     @Test

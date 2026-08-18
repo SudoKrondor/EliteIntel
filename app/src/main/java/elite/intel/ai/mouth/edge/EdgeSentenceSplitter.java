@@ -1,6 +1,5 @@
 package elite.intel.ai.mouth.edge;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,51 +56,52 @@ final class EdgeSentenceSplitter {
 
     private static void splitOversized(String text, List<String> output) {
         String remaining = text.strip();
-        while (escapedBytes(remaining) > MAX_ESCAPED_TEXT_BYTES) {
-            int split = largestFittingWhitespace(remaining);
-            if (split <= 0) {
-                split = largestFittingCodePoint(remaining);
+        while (!remaining.isBlank()) {
+            int split = oversizedBoundary(remaining);
+            if (split < 0) {
+                output.add(remaining);
+                return;
             }
             add(remaining, 0, split, output);
             remaining = remaining.substring(split).strip();
         }
-        if (!remaining.isBlank()) {
-            output.add(remaining);
-        }
     }
 
-    private static int largestFittingWhitespace(String text) {
+    /**
+     * Index to cut at so the first piece fits Edge's escaped-byte cap, or -1 when all of {@code text} fits.
+     * Prefers the last whitespace inside the cap so a chunk breaks between words, and falls back to the last
+     * code point that fits when one unbroken run fills the whole budget.
+     * <p>
+     * The scan accumulates {@link EdgeSsml#escapedByteLength(int)} per code point rather than re-escaping a
+     * growing prefix, which is what keeps a long narration linear instead of quadratic in its length.
+     */
+    private static int oversizedBoundary(String text) {
+        int escaped = 0;
         int lastWhitespace = -1;
+        int lastFit = 0;
         int index = 0;
         while (index < text.length()) {
             int codePoint = text.codePointAt(index);
-            int next = index + Character.charCount(codePoint);
-            if (Character.isWhitespace(codePoint) && escapedBytes(text.substring(0, index)) <= MAX_ESCAPED_TEXT_BYTES) {
+            int cost = EdgeSsml.escapedByteLength(codePoint);
+            // Recorded before the cap check, not after: a cut here excludes the whitespace itself, so this is
+            // still a usable boundary when the whitespace is the very character that would cross the cap.
+            if (Character.isWhitespace(codePoint)) {
                 lastWhitespace = index;
             }
-            if (escapedBytes(text.substring(0, next)) > MAX_ESCAPED_TEXT_BYTES) {
-                break;
+            if (escaped + cost > MAX_ESCAPED_TEXT_BYTES) {
+                if (lastWhitespace > 0) {
+                    return lastWhitespace;
+                }
+                if (lastFit == 0) {
+                    throw new IllegalArgumentException("A single character exceeds Edge's SSML text limit");
+                }
+                return lastFit;
             }
-            index = next;
+            escaped += cost;
+            index += Character.charCount(codePoint);
+            lastFit = index;
         }
-        return lastWhitespace;
-    }
-
-    private static int largestFittingCodePoint(String text) {
-        int index = 0;
-        int lastFit = 0;
-        while (index < text.length()) {
-            int next = index + Character.charCount(text.codePointAt(index));
-            if (escapedBytes(text.substring(0, next)) > MAX_ESCAPED_TEXT_BYTES) {
-                break;
-            }
-            lastFit = next;
-            index = next;
-        }
-        if (lastFit == 0) {
-            throw new IllegalArgumentException("A single character exceeds Edge's SSML text limit");
-        }
-        return lastFit;
+        return -1;
     }
 
     private static int consumeSentenceEnd(String text, int index) {
@@ -137,10 +137,6 @@ final class EdgeSentenceSplitter {
     private static boolean isClosingPunctuation(int codePoint) {
         return codePoint == '\"' || codePoint == '\'' || codePoint == 0x2019 || codePoint == 0x201D
                 || codePoint == 0x00BB || codePoint == ')' || codePoint == ']' || codePoint == 0xFF09;
-    }
-
-    private static int escapedBytes(String text) {
-        return EdgeSsml.escape(text).getBytes(StandardCharsets.UTF_8).length;
     }
 
     private static void add(String text, int start, int end, List<String> result) {

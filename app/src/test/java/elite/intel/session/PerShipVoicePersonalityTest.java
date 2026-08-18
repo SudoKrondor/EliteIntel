@@ -83,7 +83,7 @@ class PerShipVoicePersonalityTest {
 
         assertEquals(KokoroVoices.NOVA, session.getKokoroVoice());
         assertEquals(GoogleVoices.DEFAULT_FEMALE, session.getGoogleVoice());
-        assertEquals(EdgeVoices.DEFAULT_FEMALE, session.getEdgeVoice());
+        assertEquals(EdgeVoices.DEFAULT_FEMALE.defaultShortName(), session.getEdgeVoiceName());
     }
 
     @Test
@@ -93,7 +93,6 @@ class PerShipVoicePersonalityTest {
         saveShip(401, EdgeVoices.JENNIFER.name(), ShipPersonality.CASUAL.name());
         makeActive(401);
 
-        assertEquals(EdgeVoices.JENNIFER, session.getEdgeVoice());
         assertEquals(EdgeVoices.JENNIFER.defaultShortName(), session.getEdgeVoiceName());
     }
 

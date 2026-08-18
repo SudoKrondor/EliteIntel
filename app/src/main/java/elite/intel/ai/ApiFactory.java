@@ -13,6 +13,7 @@ import elite.intel.ai.brain.inference.xai.GrokAnalysisEndpoint;
 import elite.intel.ai.ears.EarsInterface;
 import elite.intel.ai.ears.parakeet.ParakeetSTTImpl;
 import elite.intel.ai.mouth.MouthInterface;
+import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeTTSImpl;
 import elite.intel.ai.mouth.google.GoogleTTSImpl;
 import elite.intel.ai.mouth.kokoro.KokoroTTS;
@@ -63,31 +64,31 @@ public class ApiFactory {
     }
 
     ///
-    @SuppressWarnings({"SwitchStatementWithTooFewBranches", "EnhancedSwitchMigration"})
     public MouthInterface getMouthImpl() {
-        String apiKey = systemSession.getTtsApiKey();
-        ProviderEnum provider = KeyDetector.detectProvider(apiKey, "TTS");
-        return selectMouth(systemSession.useLocalTTS(), provider);
+        return selectMouth(systemSession.getTtsProvider(), systemSession.getTtsApiKey());
     }
 
-    static MouthInterface selectMouth(boolean useLocalTts, ProviderEnum provider) {
-        if (useLocalTts) {
-            KokoroTTS kokoro = KokoroTTS.getInstance();
-            kokoro.setRole(KokoroTTS.Role.MAIN);
-            return kokoro;
-        }
+    /**
+     * The engine is the stored selection, nothing else - a cloud key is what an engine needs, never what picks
+     * it. The one exception is a safety net, not a selection rule: Google is the only engine that cannot speak
+     * without a key, and it starts into silence when it has none, so the local engine stands in until a key is
+     * configured. The switch is exhaustive on purpose - a new engine has to be given an implementation here.
+     */
+    // TODO: Add ElevenLabs, AWS Polly, etc.
+    static MouthInterface selectMouth(TtsProvider provider, String ttsApiKey) {
+        return switch (provider) {
+            case GOOGLE -> KeyDetector.detectProvider(ttsApiKey, "TTS") == ProviderEnum.GOOGLE_TTS
+                    ? GoogleTTSImpl.getInstance()
+                    : mainKokoro();
+            case EDGE -> EdgeTTSImpl.getInstance();
+            case KOKORO -> mainKokoro();
+        };
+    }
 
-        switch (provider) {
-            case GOOGLE_TTS:
-                return GoogleTTSImpl.getInstance();
-            case EDGE_TTS:
-                return EdgeTTSImpl.getInstance();
-            // TODO: Add ElevenLabs, AWS Polly, etc.
-            default:
-                KokoroTTS kokoro = KokoroTTS.getInstance();
-                kokoro.setRole(KokoroTTS.Role.MAIN);
-                return kokoro;
-        }
+    private static KokoroTTS mainKokoro() {
+        KokoroTTS kokoro = KokoroTTS.getInstance();
+        kokoro.setRole(KokoroTTS.Role.MAIN);
+        return kokoro;
     }
 
     /// -- no choices here

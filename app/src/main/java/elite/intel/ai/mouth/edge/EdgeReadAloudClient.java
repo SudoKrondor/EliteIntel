@@ -1,12 +1,8 @@
 package elite.intel.ai.mouth.edge;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpHeaders;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.WebSocket;
-import java.net.http.WebSocketHandshakeException;
+import java.net.http.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -14,14 +10,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 /** Native Java HTTP/WebSocket transport for Microsoft Edge's consumer Read Aloud protocol. */
 final class EdgeReadAloudClient implements EdgeSynthesisClient {
@@ -164,8 +153,7 @@ final class EdgeReadAloudClient implements EdgeSynthesisClient {
 
         try {
             checkCancelled(request.requestId());
-            String ssml = EdgeSsml.build(
-                    request.text(), request.voice().protocolName(), request.rate(), request.volume(), request.pitch());
+            String ssml = EdgeSsml.build(request.text(), request.voice().protocolName(), request.rate());
             send(socket, EdgeSsml.speechConfig(Instant.now()));
             send(socket, EdgeSsml.ssmlMessage(ssml, Instant.now()));
             byte[] audio = listener.result().get(receiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -258,7 +246,7 @@ final class EdgeReadAloudClient implements EdgeSynthesisClient {
 
     private static final class SynthesisListener implements WebSocket.Listener {
         private final EdgeAudioStreamAssembler assembler = new EdgeAudioStreamAssembler();
-        private final java.io.ByteArrayOutputStream binaryFragments = new java.io.ByteArrayOutputStream();
+        private final ByteArrayOutputStream binaryFragments = new ByteArrayOutputStream();
         private final StringBuilder textFragments = new StringBuilder();
         private final CompletableFuture<byte[]> result = new CompletableFuture<>();
 
