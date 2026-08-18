@@ -5,6 +5,7 @@ import elite.intel.db.dao.TradeRouteDao;
 import elite.intel.db.util.Database;
 import elite.intel.gameapi.journal.events.MarketSellEvent;
 import elite.intel.gameapi.journal.subscribers.MarketSellEventSubscriber;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,6 +36,12 @@ class MarketSellLegRetirementTest {
             dao.clear();
             return null;
         });
+    }
+
+    @AfterEach
+    void stopTimers() {
+        // This subscriber narrates too; a briefing it armed must not fire into a sibling suite's recorder.
+        subscriber.shutdown();
     }
 
     /**

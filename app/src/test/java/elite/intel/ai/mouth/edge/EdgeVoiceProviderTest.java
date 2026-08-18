@@ -3,11 +3,11 @@ package elite.intel.ai.mouth.edge;
 import elite.intel.i18n.Language;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 class EdgeVoiceProviderTest {
     @Test
@@ -78,6 +78,51 @@ class EdgeVoiceProviderTest {
         assertEquals("en-US-AvaNeural", EdgeVoices.femaleShortNameOrDefault("en-US-AvaNeural"));
         assertEquals(EdgeVoices.DEFAULT_FEMALE.defaultShortName(),
                 EdgeVoices.femaleShortNameOrDefault("not-a-voice"));
+    }
+
+    /**
+     * Radio is the other side of a comms link, not the ship's voice, so the female-only rule that governs
+     * {@code resolve} must not reach it: a station answering in a male voice is the point.
+     */
+    @Test
+    void radioDrawsBothGendersFromTheLocaleAndKeepsTheDrawnVoice() {
+        EdgeVoiceProvider provider = new EdgeVoiceProvider();
+        provider.setAvailableVoices(List.of(
+                voice("ru-RU-SvetlanaNeural", "Female", "ru-RU"),
+                voice("ru-RU-DmitryNeural", "Male", "ru-RU"),
+                voice("uk-UA-PolinaNeural", "Female", "uk-UA")));
+
+        Set<String> drawn = new HashSet<>();
+        for (int i = 0; i < 500; i++) {
+            drawn.add(provider.randomRadioVoiceName(Language.RU));
+        }
+        assertEquals(Set.of("ru-RU-SvetlanaNeural", "ru-RU-DmitryNeural"), drawn,
+                "radio must stay in the commander's language and must include the male voice");
+        assertEquals("uk-UA-PolinaNeural", provider.randomRadioVoiceName(Language.UK));
+
+        assertEquals("ru-RU-DmitryNeural",
+                provider.resolveRadio("ru-RU-DmitryNeural", Language.RU).shortName());
+    }
+
+    /**
+     * The list is fetched on the first synthesis, so the first transmission of a session has no list yet.
+     */
+    @Test
+    void radioBeforeTheVoiceListArrivesUsesKnownVoicesForTheLocale() {
+        EdgeVoiceProvider provider = new EdgeVoiceProvider();
+
+        Set<String> russian = new HashSet<>();
+        Set<String> ukrainian = new HashSet<>();
+        for (int i = 0; i < 500; i++) {
+            russian.add(provider.randomRadioVoiceName(Language.RU));
+            ukrainian.add(provider.randomRadioVoiceName(Language.UK));
+        }
+        assertEquals(Set.of("ru-RU-SvetlanaNeural", "ru-RU-DmitryNeural"), russian);
+        assertEquals(Set.of("uk-UA-PolinaNeural", "uk-UA-OstapNeural"), ukrainian);
+
+        EdgeVoice unconfirmed = provider.resolveRadio("ru-RU-DmitryNeural", Language.RU);
+        assertEquals("ru-RU-DmitryNeural", unconfirmed.shortName());
+        assertEquals("ru-RU", unconfirmed.locale());
     }
 
     private static EdgeVoice voice(String shortName, String gender, String locale) {

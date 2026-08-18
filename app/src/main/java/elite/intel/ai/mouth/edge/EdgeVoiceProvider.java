@@ -4,6 +4,7 @@ import elite.intel.i18n.Language;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /** Resolves the per-ship voice model against the voices currently offered by Edge Read Aloud. */
 final class EdgeVoiceProvider {
@@ -68,6 +69,60 @@ final class EdgeVoiceProvider {
         }
         String fallback = language == Language.EN ? position.defaultShortName() : localizedFallback(language);
         return fallbackVoice(fallback, locale(language));
+    }
+
+    /**
+     * A voice for the next radio transmission in this language: any voice Edge offers for the locale, male or
+     * female. The female-only rule of {@link #resolve} is the ship's own voice speaking; a transmission is a
+     * stranger on a comms channel, and the variety is what makes the channel sound populated.
+     * <p>
+     * Drawn once per transmission by the caller (not per sentence), and taken from the live voice list when it
+     * has been fetched, so a locale Edge extends later widens the cast with no code change. Before the first
+     * successful list fetch it falls back to voices known to exist for the locale.
+     */
+    String randomRadioVoiceName(Language language) {
+        List<EdgeVoice> candidates = availableVoices.stream()
+                .filter(voice -> languageMatches(language, voice.locale()))
+                .sorted(Comparator.comparing(EdgeVoice::shortName))
+                .toList();
+        if (!candidates.isEmpty()) {
+            return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size())).shortName();
+        }
+        List<String> fallback = radioFallback(language);
+        return fallback.get(ThreadLocalRandom.current().nextInt(fallback.size()));
+    }
+
+    /**
+     * Resolves a radio voice by ShortName, keeping the drawn voice whatever its gender - unlike
+     * {@link #resolve}, which normalizes to the female ship voice. An unknown name (the voice list is not in
+     * yet) is requested as-is: it came from {@link #randomRadioVoiceName}, so it is a real voice for the
+     * locale even when we cannot confirm it against the list.
+     */
+    EdgeVoice resolveRadio(String shortName, Language language) {
+        String desired = shortName == null || shortName.isBlank()
+                ? localizedFallback(language)
+                : shortName;
+        return availableVoices.stream()
+                .filter(voice -> voice.shortName().equals(desired))
+                .findFirst()
+                // WHY: gender is metadata the voice list carries; with no list there is nothing to read it
+                // from, and radio - unlike the ship voice - never filters on it.
+                .orElseGet(() -> new EdgeVoice(
+                        EdgeSsml.protocolVoiceName(desired), desired, "Unknown", locale(language),
+                        EdgeProtocolConstants.OUTPUT_FORMAT));
+    }
+
+    /**
+     * Voices to draw radio from before the live list arrives. Both genders, and only ShortNames Edge Read
+     * Aloud is known to serve for the locale; every other language falls back to its single main-voice
+     * default, since Kokoro - not Edge - voices radio there.
+     */
+    private static List<String> radioFallback(Language language) {
+        return switch (language) {
+            case RU -> List.of("ru-RU-SvetlanaNeural", "ru-RU-DmitryNeural");
+            case UK -> List.of("uk-UA-PolinaNeural", "uk-UA-OstapNeural");
+            default -> List.of(localizedFallback(language));
+        };
     }
 
     private static EdgeVoice fallbackVoice(String shortName, String locale) {

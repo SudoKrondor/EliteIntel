@@ -50,11 +50,6 @@ public class KokoroTTS implements MouthInterface {
     private static final int SAMPLE_RATE = 24000;
     private static final int DEFAULT_SID = KokoroVoices.GEORGE.getSid();
     /**
-     * How long a radio transmission waits out ongoing main-voice speech before it plays anyway.
-     */
-    private static final long RADIO_MAIN_WAIT_MS = 15_000;
-
-    /**
      * MAIN: the primary voice engine (handles all narration, including radio, through one queue).
      * RADIO: a radio-only engine that runs alongside a non-Kokoro main mouth (e.g. Google), handling
      * only radio transmissions and ducking behind the main voice via {@link MainVoicePlaybackGate}.
@@ -241,8 +236,10 @@ public class KokoroTTS implements MouthInterface {
     @Subscribe
     public void onVoiceProcessEvent(VocalisationRequestEvent event) {
         // In RADIO role this engine runs alongside a non-Kokoro main mouth and voices radio only;
-        // normal narration belongs to the main mouth. In MAIN role it handles everything.
+        // normal narration belongs to the main mouth. In MAIN role it handles everything except radio in a
+        // Cyrillic locale, which Kokoro cannot pronounce and Edge voices instead (see RadioVoicing).
         if (role == Role.RADIO && !event.isRadio()) return;
+        if (event.isRadio() && !RadioVoicing.isRadioEngine(TtsProvider.KOKORO)) return;
         if (!running) {
             return;
         }
@@ -272,12 +269,17 @@ public class KokoroTTS implements MouthInterface {
                 return;
             }
             long generation = interruptGeneration.get();
+            // One voice for the whole transmission: the draw happens here, not per sentence, or a station
+            // would change speaker mid-message.
+            String voiceName = event.isRadio() && event.getVoiceName() == null
+                    ? KokoroVoices.randomRadioVoice(systemSession.getKokoroVoice().name()).name()
+                    : event.getVoiceName();
             for (int i = 0; i < sentences.size(); i++) {
                 boolean isLast = (i == sentences.size() - 1);
                 boolean isRadio = event.isRadio();
                 if (!Status.getInstance().isInMainShip()) isRadio = true;
                 if (!synthesisQueue.offer(new SynthesisTask(
-                        sentences.get(i), event.getVoiceName(), isRadio, generation, isLast, handle))) {
+                        sentences.get(i), voiceName, isRadio, generation, isLast, handle))) {
                     handle.fail(new IllegalStateException("Kokoro synthesis queue rejected vocalisation"));
                     return;
                 }
@@ -514,7 +516,7 @@ public class KokoroTTS implements MouthInterface {
         // Radio ducks behind the main voice: wait out any ongoing main-voice sentence, then play.
         // The main voice (Google, or Kokoro-as-MAIN) brackets its own playback so radio can see it.
         if (role == Role.RADIO) {
-            MainVoicePlaybackGate.awaitIdle(RADIO_MAIN_WAIT_MS);
+            MainVoicePlaybackGate.awaitIdleForRadio();
         } else {
             MainVoicePlaybackGate.begin();
         }

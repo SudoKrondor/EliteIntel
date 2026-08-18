@@ -1,5 +1,6 @@
 package elite.intel.ui.controller;
 
+import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ui.controller.AppController.ServiceType;
 import org.junit.jupiter.api.Test;
 
@@ -18,24 +19,33 @@ class AppControllerServicesTest {
 
     @Test
     void audioServicesAreAlwaysRegistered() {
-        for (boolean localTts : new boolean[]{false, true}) {
-            Set<ServiceType> types = AppController.buildServices(localTts).keySet();
-            assertTrue(types.contains(ServiceType.MOUTH), "MOUTH (TTS) must be registered, localTts=" + localTts);
-            assertTrue(types.contains(ServiceType.EARS), "EARS (STT) must be registered, localTts=" + localTts);
+        for (TtsProvider mainMouth : TtsProvider.values()) {
+            Set<ServiceType> types = AppController.buildServices(mainMouth, TtsProvider.KOKORO).keySet();
+            assertTrue(types.contains(ServiceType.MOUTH), "MOUTH (TTS) must be registered, mouth=" + mainMouth);
+            assertTrue(types.contains(ServiceType.EARS), "EARS (STT) must be registered, mouth=" + mainMouth);
         }
     }
 
     @Test
-    void radioMouthOnlyRegisteredWhenMainMouthIsNotKokoro() {
-        // Cloud/main mouth: radio is voiced by a dedicated always-on Kokoro engine.
-        assertTrue(AppController.buildServices(false).keySet().contains(ServiceType.RADIO_MOUTH));
-        // Local (Kokoro) main mouth: it voices radio through its own queue, no extra engine.
-        assertFalse(AppController.buildServices(true).keySet().contains(ServiceType.RADIO_MOUTH));
+    void radioMouthOnlyRegisteredWhenTheMainMouthIsNotTheRadioEngine() {
+        // Cloud main mouth, Latin-script language: radio is voiced by a dedicated always-on Kokoro engine.
+        assertTrue(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO)
+                .containsKey(ServiceType.RADIO_MOUTH));
+        // Kokoro main mouth, Cyrillic language: Kokoro cannot pronounce it, so Edge runs alongside for radio.
+        assertTrue(AppController.buildServices(TtsProvider.KOKORO, TtsProvider.EDGE)
+                .containsKey(ServiceType.RADIO_MOUTH));
+        // The main mouth IS the radio engine: it voices radio through its own queue, no extra engine. A second
+        // holder would hand the same singleton the RADIO role and silence all narration.
+        assertFalse(AppController.buildServices(TtsProvider.KOKORO, TtsProvider.KOKORO)
+                .containsKey(ServiceType.RADIO_MOUTH));
+        assertFalse(AppController.buildServices(TtsProvider.EDGE, TtsProvider.EDGE)
+                .containsKey(ServiceType.RADIO_MOUTH));
     }
 
     @Test
     void companionSubsystemIsRegistered() {
-        assertTrue(AppController.buildServices(false).keySet().contains(ServiceType.COMPANION));
+        assertTrue(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO)
+                .containsKey(ServiceType.COMPANION));
     }
 
     /**
@@ -45,10 +55,11 @@ class AppControllerServicesTest {
      */
     @Test
     void pushToTalkComesUpAfterTheDevicesAndTheMicrophone() {
-        for (boolean localTts : new boolean[]{false, true}) {
-            List<ServiceType> order = List.copyOf(AppController.buildServices(localTts).keySet());
+        for (TtsProvider mainMouth : TtsProvider.values()) {
+            List<ServiceType> order =
+                    List.copyOf(AppController.buildServices(mainMouth, TtsProvider.KOKORO).keySet());
             assertTrue(order.contains(ServiceType.PUSH_TO_TALK),
-                    "the controller button must work without opening settings, localTts=" + localTts);
+                    "the controller button must work without opening settings, mouth=" + mainMouth);
             assertTrue(order.indexOf(ServiceType.DEVICE) < order.indexOf(ServiceType.PUSH_TO_TALK));
             assertTrue(order.indexOf(ServiceType.EARS) < order.indexOf(ServiceType.PUSH_TO_TALK));
         }
@@ -56,7 +67,8 @@ class AppControllerServicesTest {
 
     @Test
     void audioComesUpBeforeTheCompanionAndJournal() {
-        List<ServiceType> order = List.copyOf(AppController.buildServices(false).keySet());
+        List<ServiceType> order =
+                List.copyOf(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO).keySet());
         // c5651efb intent: start Mouth and Ears before the journal/aux monitors and the LLM subsystem.
         assertTrue(order.indexOf(ServiceType.MOUTH) < order.indexOf(ServiceType.JOURNAL_PARSER));
         assertTrue(order.indexOf(ServiceType.EARS) < order.indexOf(ServiceType.JOURNAL_PARSER));
@@ -65,8 +77,9 @@ class AppControllerServicesTest {
 
     @Test
     void liveGameFileMonitorsStartAfterCompanionAndEventConsumers() {
-        for (boolean localTts : new boolean[]{false, true}) {
-            List<ServiceType> order = List.copyOf(AppController.buildServices(localTts).keySet());
+        for (TtsProvider mainMouth : TtsProvider.values()) {
+            List<ServiceType> order =
+                    List.copyOf(AppController.buildServices(mainMouth, TtsProvider.KOKORO).keySet());
             assertTrue(order.indexOf(ServiceType.COMPANION) < order.indexOf(ServiceType.JOURNAL_PARSER));
             assertTrue(order.indexOf(ServiceType.WEB_SOCKET) < order.indexOf(ServiceType.JOURNAL_PARSER));
             assertTrue(order.indexOf(ServiceType.MISSING_MISSION_MONITOR) < order.indexOf(ServiceType.JOURNAL_PARSER));

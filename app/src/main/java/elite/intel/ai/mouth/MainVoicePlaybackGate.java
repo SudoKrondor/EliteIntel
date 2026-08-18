@@ -16,6 +16,11 @@ package elite.intel.ai.mouth;
  */
 public final class MainVoicePlaybackGate {
 
+    /**
+     * How long a radio transmission waits out ongoing main-voice speech before it plays anyway.
+     */
+    private static final long RADIO_MAIN_WAIT_MS = 15_000;
+
     private static final Object LOCK = new Object();
     private static int active = 0;
 
@@ -42,10 +47,15 @@ public final class MainVoicePlaybackGate {
     }
 
     /**
-     * Blocks until no main-voice playback is active, or the timeout elapses (so a continuously
-     * speaking main voice cannot strand a radio transmission indefinitely).
+     * Blocks a radio-role engine until the main voice falls silent, capped so a continuously speaking main
+     * voice cannot strand a transmission indefinitely. Every radio engine ducks by the same rule, so the cap
+     * lives here rather than in each of them.
      */
-    public static void awaitIdle(long timeoutMs) {
+    public static void awaitIdleForRadio() {
+        awaitIdle(RADIO_MAIN_WAIT_MS);
+    }
+
+    private static void awaitIdle(long timeoutMs) {
         long deadline = System.currentTimeMillis() + timeoutMs;
         synchronized (LOCK) {
             while (active > 0) {

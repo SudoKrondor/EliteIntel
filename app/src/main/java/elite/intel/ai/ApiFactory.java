@@ -69,6 +69,16 @@ public class ApiFactory {
     }
 
     /**
+     * The engine the main mouth will actually be, which is the stored selection except when Google has no
+     * usable key and Kokoro stands in for it (see {@link #selectMouth}). Callers that reason about the main
+     * mouth - the radio engine decision, which must never hand the shared Kokoro singleton two roles - have to
+     * see the substitution, not the setting.
+     */
+    public TtsProvider getActiveTtsProvider() {
+        return resolveProvider(systemSession.getTtsProvider(), systemSession.getTtsApiKey());
+    }
+
+    /**
      * The engine is the stored selection, nothing else - a cloud key is what an engine needs, never what picks
      * it. The one exception is a safety net, not a selection rule: Google is the only engine that cannot speak
      * without a key, and it starts into silence when it has none, so the local engine stands in until a key is
@@ -76,13 +86,26 @@ public class ApiFactory {
      */
     // TODO: Add ElevenLabs, AWS Polly, etc.
     static MouthInterface selectMouth(TtsProvider provider, String ttsApiKey) {
-        return switch (provider) {
-            case GOOGLE -> KeyDetector.detectProvider(ttsApiKey, "TTS") == ProviderEnum.GOOGLE_TTS
-                    ? GoogleTTSImpl.getInstance()
-                    : mainKokoro();
-            case EDGE -> EdgeTTSImpl.getInstance();
+        return switch (resolveProvider(provider, ttsApiKey)) {
+            case GOOGLE -> GoogleTTSImpl.getInstance();
+            case EDGE -> mainEdge();
             case KOKORO -> mainKokoro();
         };
+    }
+
+    /**
+     * The stored selection, with the Google-without-a-key safety net applied.
+     */
+    static TtsProvider resolveProvider(TtsProvider provider, String ttsApiKey) {
+        boolean googleWithoutKey = provider == TtsProvider.GOOGLE
+                && KeyDetector.detectProvider(ttsApiKey, "TTS") != ProviderEnum.GOOGLE_TTS;
+        return googleWithoutKey ? TtsProvider.KOKORO : provider;
+    }
+
+    private static EdgeTTSImpl mainEdge() {
+        EdgeTTSImpl edge = EdgeTTSImpl.getInstance();
+        edge.setRole(EdgeTTSImpl.Role.MAIN);
+        return edge;
     }
 
     private static KokoroTTS mainKokoro() {

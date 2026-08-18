@@ -190,8 +190,8 @@ public class GoogleTTSImpl implements MouthInterface {
     }
 
     @Subscribe @Override public void onVoiceProcessEvent(VocalisationRequestEvent event) {
-        // Radio transmissions are always voiced by the Kokoro radio engine, even when Google is the
-        // main mouth; ignore them here so radio is not double-spoken.
+        // Radio is never Google's: a dedicated radio engine voices it (Kokoro, or Edge in the Cyrillic
+        // locales - see RadioVoicing), so ignore it here rather than double-speak it on a metered key.
         if (event.isRadio()) return;
         if (!running) {
             return;

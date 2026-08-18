@@ -1,16 +1,13 @@
 package elite.intel.ai.mouth.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.subscribers.events.*;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.PlayerSession;
-import elite.intel.session.SystemSession;
 
 public class VocalisationRouter {
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
-    private final SystemSession systemSession = SystemSession.getInstance();
 
     /// --- system speech (errors, warnings, greetings, EventNarrator safety callouts): voiced in every mode.
     @Subscribe
@@ -36,23 +33,17 @@ public class VocalisationRouter {
     // What remains is genuinely system speech (AI response, mission-critical, voice demo, radio), voiced by the
     // legacy TTS in every mode.
 
+    /**
+     * Radio is never the main mouth's job: it is voiced by whichever engine {@code RadioVoicing} names for the
+     * commander's language - Kokoro almost everywhere, Edge for the Cyrillic locales it cannot pronounce - on
+     * a random voice so the speaker on the other end sounds like a stranger. The voice is drawn by that engine
+     * (only it knows its own roster), so no voice is named here.
+     */
     @Subscribe
     public void onRadioTransmissionEvent(RadioTransmissionEvent event) {
-        boolean isCyrillic = systemSession.getLanguage().isCyrillicScript();
-        if (playerSession.isRadioTransmissionOn() && !isCyrillic) {
-            // Radio is always voiced by Kokoro (even when Google is the main mouth), on a distinct
-            // random voice from the commander's own voice so the two speakers sound different.
-            String ownVoice = systemSession.getKokoroVoice().name();
-            KokoroVoices[] allVoices = KokoroVoices.values();
-            KokoroVoices[] voices = java.util.Arrays.stream(allVoices)
-                    .filter(v -> !v.name().equals(ownVoice))
-                    .toArray(KokoroVoices[]::new);
-            String voice = voices.length > 0
-                    ? voices[(int) (Math.random() * voices.length)].name()
-                    : allVoices[0].name();
-            publishToMouth(new VocalisationRequestEvent(
-                    event.getText(), voice, RadioTransmissionEvent.class, true, true, event.getSource()));
-        }
+        if (!Boolean.TRUE.equals(playerSession.isRadioTransmissionOn())) return;
+        publishToMouth(new VocalisationRequestEvent(
+                event.getText(), null, RadioTransmissionEvent.class, true, true, event.getSource()));
     }
 
     private static void publishToMouth(VocalisationRequestEvent request) {

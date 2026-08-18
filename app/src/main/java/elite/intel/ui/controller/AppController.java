@@ -8,6 +8,9 @@ import elite.intel.ai.brain.vega.input.CompanionSubsystemGate;
 import elite.intel.ai.ears.*;
 import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.hands.KeyBindCheck;
+import elite.intel.ai.mouth.RadioVoicing;
+import elite.intel.ai.mouth.TtsProvider;
+import elite.intel.ai.mouth.edge.EdgeTTSImpl;
 import elite.intel.ai.mouth.kokoro.KokoroTTS;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
@@ -255,31 +258,26 @@ public class AppController {
             if (mouth == null) return;
             appendToLog("Restarting TTS service...");
 
-            // Radio is always voiced by Kokoro, so a dedicated radio engine is needed only when the main
-            // mouth is not Kokoro. The radio engine and a Kokoro main mouth share the Kokoro singleton, so
-            // ordering matters: retire an unneeded radio engine BEFORE (re)starting the main mouth, and
-            // leave an already-running radio engine untouched on a main-mouth-only change (no model reload).
-            boolean needRadio = !systemSession.useLocalTTS();
+            // A dedicated radio engine is needed only when the main mouth is not itself the radio engine.
+            // Which engine that is can change with either setting this restart reacts to (the TTS provider,
+            // or the language - Cyrillic moves radio to Edge), and every engine is a singleton shared with
+            // the main mouth, so the radio engine is always retired BEFORE the main mouth restarts: starting
+            // a main mouth while the same singleton still holds the RADIO role would silence all narration.
+            TtsProvider mainMouth = ApiFactory.getInstance().getActiveTtsProvider();
+            TtsProvider radioMouth = RadioVoicing.engine();
+            boolean needRadio = radioMouth != mainMouth;
+
             ServiceHolder radio = services.get(ServiceType.RADIO_MOUTH);
-            if (radio != null && !needRadio) {
-                radio.stop();
-                services.remove(ServiceType.RADIO_MOUTH);
-                radio = null;
-            }
+            if (radio != null) radio.stop();
+            if (!needRadio) services.remove(ServiceType.RADIO_MOUTH);
 
             mouth.stop();
             mouth.start();
 
             if (needRadio) {
-                if (radio == null) {
-                    radio = new ServiceHolder(() -> {
-                        KokoroTTS r = KokoroTTS.getInstance();
-                        r.setRole(KokoroTTS.Role.RADIO);
-                        return r;
-                    });
-                    services.put(ServiceType.RADIO_MOUTH, radio);
-                }
-                radio.start(); // no-op if the radio engine is already running
+                ServiceHolder fresh = new ServiceHolder(() -> radioEngine(radioMouth));
+                services.put(ServiceType.RADIO_MOUTH, fresh);
+                fresh.start();
             }
             appendToLog("TTS service restarted");
         }
@@ -395,7 +393,8 @@ public class AppController {
 
     private void initServices() {
         this.services.clear();
-        this.services.putAll(buildServices(systemSession.useLocalTTS()));
+        this.services.putAll(buildServices(
+                ApiFactory.getInstance().getActiveTtsProvider(), RadioVoicing.engine()));
     }
 
     private void stopServiceRegistry() {
@@ -430,12 +429,15 @@ public class AppController {
      * (the sole LLM service since the legacy command pipeline was removed). Live game-file monitors start
      * last so journal/status subscriber cascades cannot publish into a half-started speech/companion layer.
      * <p>
-     * Radio transmissions are always voiced by Kokoro. When Kokoro is also the main mouth
-     * ({@code useLocalTts}) it handles radio through its own queue and no extra service is needed.
-     * When the main mouth is a cloud provider, a dedicated {@link ServiceType#RADIO_MOUTH} runs the
-     * Kokoro engine in {@link KokoroTTS.Role#RADIO} alongside it.
+     * Radio transmissions are voiced by the engine {@link RadioVoicing} names for the commander's language,
+     * never by the main mouth as such. When that engine is also the main mouth it handles radio through its
+     * own queue and no extra service is needed; otherwise a dedicated {@link ServiceType#RADIO_MOUTH} runs it
+     * in its radio role alongside the main mouth.
+     *
+     * @param mainMouth the engine the main mouth will actually be (see {@code ApiFactory#getActiveTtsProvider})
+     * @param radioMouth the engine that voices radio (see {@link RadioVoicing#engine()})
      */
-    static LinkedHashMap<ServiceType, ServiceHolder> buildServices(boolean useLocalTts) {
+    static LinkedHashMap<ServiceType, ServiceHolder> buildServices(TtsProvider mainMouth, TtsProvider radioMouth) {
         LinkedHashMap<ServiceType, ServiceHolder> services = new LinkedHashMap<>();
         // Diagnostics swaps in a no-op EARS: the microphone/STT is never used (input comes from the file), and
         // skipping the heavy STT model load is a large startup win with no effect on the run. TTS is NOT
@@ -443,12 +445,8 @@ public class AppController {
         // companion voice stays audible and the chat panel shows replies, matching a live session.
         boolean diagnostics = DiagnosticsMode.isEnabled();
         services.put(ServiceType.MOUTH, new ServiceHolder(ApiFactory.getInstance()::getMouthImpl));
-        if (!useLocalTts) {
-            services.put(ServiceType.RADIO_MOUTH, new ServiceHolder(() -> {
-                KokoroTTS radio = KokoroTTS.getInstance();
-                radio.setRole(KokoroTTS.Role.RADIO);
-                return radio;
-            }));
+        if (radioMouth != mainMouth) {
+            services.put(ServiceType.RADIO_MOUTH, new ServiceHolder(() -> radioEngine(radioMouth)));
         }
         services.put(ServiceType.EARS, new ServiceHolder(
                 diagnostics ? DiagnosticsEars::new : ApiFactory.getInstance()::getEarsImpl));
@@ -484,6 +482,26 @@ public class AppController {
         services.put(ServiceType.AUXILIARY_FILES_MONITOR, new ServiceHolder(
                 diagnostics ? NoOpService::new : AuxiliaryFilesMonitor::new));
         return services;
+    }
+
+    /**
+     * The engine that voices radio, in its radio role. Google is deliberately absent: it is the paid main
+     * mouth, and radio chatter is not worth a commander's per-character bill.
+     */
+    private static ManagedService radioEngine(TtsProvider provider) {
+        return switch (provider) {
+            case KOKORO -> {
+                KokoroTTS radio = KokoroTTS.getInstance();
+                radio.setRole(KokoroTTS.Role.RADIO);
+                yield radio;
+            }
+            case EDGE -> {
+                EdgeTTSImpl radio = EdgeTTSImpl.getInstance();
+                radio.setRole(EdgeTTSImpl.Role.RADIO);
+                yield radio;
+            }
+            case GOOGLE -> throw new IllegalArgumentException("Google never voices radio transmissions");
+        };
     }
 
     static class ServiceHolder {

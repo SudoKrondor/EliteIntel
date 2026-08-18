@@ -278,7 +278,7 @@ class EdgeTTSImplTest {
     }
 
     @Test
-    void radioRequestsRemainUnclaimedForTheDedicatedKokoroRoute() {
+    void radioRequestsRemainUnclaimedWhereKokoroCanVoiceTheLanguage() {
         FakeClient client = new FakeClient();
         FakeOutput output = new FakeOutput();
         EdgeTTSImpl mouth = mouth(client, output, 0f, 100);
@@ -289,6 +289,50 @@ class EdgeTTSImplTest {
         mouth.onVoiceProcessEvent(radio);
 
         assertFalse(radio.handle().isHandled());
+        assertTrue(client.requests.isEmpty());
+    }
+
+    /**
+     * Kokoro has no Cyrillic front end, so Edge is the radio engine for Russian and Ukrainian: it must claim
+     * the transmission, speak it in a locale voice it drew itself rather than the ship's voice, and keep that
+     * one voice for every sentence of the message.
+     */
+    @Test
+    void radioInACyrillicLanguageIsClaimedAndSpokenInOneDrawnLocaleVoice() throws Exception {
+        FakeClient client = new FakeClient();
+        FakeOutput output = new FakeOutput();
+        EdgeTTSImpl mouth = mouth(client, output, new EdgeVoiceProvider(), Language.RU, 0f, 100);
+        mouth.start();
+        CompletableFuture<Void> completion = new CompletableFuture<>();
+        VocalisationRequestEvent radio = VocalisationRequestEvent.tracked(
+                "radio-ru", "one. two.", AiVoxResponseEvent.class, true, completion);
+
+        mouth.onVoiceProcessEvent(radio);
+
+        await(completion);
+        List<String> voices = client.requests.stream()
+                .map(request -> request.voice().shortName()).distinct().toList();
+        assertEquals(1, voices.size(), "a station must not change speaker mid-transmission");
+        assertTrue(voices.getFirst().startsWith("ru-RU-"), voices.getFirst());
+        assertNotEquals(EdgeVoices.MARY.defaultShortName(), voices.getFirst(),
+                "the transmission is a stranger, not the commander's own ship voice");
+        assertEquals(2, output.played.size());
+    }
+
+    @Test
+    void aRadioRoleEngineIgnoresNormalNarrationLeavingItToTheMainMouth() {
+        FakeClient client = new FakeClient();
+        FakeOutput output = new FakeOutput();
+        EdgeTTSImpl mouth = mouth(client, output, new EdgeVoiceProvider(), Language.RU, 0f, 100);
+        mouth.setRole(EdgeTTSImpl.Role.RADIO);
+        mouth.start();
+        CompletableFuture<Void> completion = new CompletableFuture<>();
+        VocalisationRequestEvent narration = VocalisationRequestEvent.tracked(
+                "narration", "course plotted", AiVoxResponseEvent.class, true, completion);
+
+        mouth.onVoiceProcessEvent(narration);
+
+        assertFalse(narration.handle().isHandled());
         assertTrue(client.requests.isEmpty());
     }
 
@@ -303,12 +347,36 @@ class EdgeTTSImplTest {
             float speed,
             int volume
     ) {
+        return mouth(client, output, decoder, new EdgeVoiceProvider(), Language.EN, speed, volume);
+    }
+
+    private EdgeTTSImpl mouth(
+            FakeClient client,
+            FakeOutput output,
+            EdgeVoiceProvider voiceProvider,
+            Language language,
+            float speed,
+            int volume
+    ) {
+        return mouth(client, output, compressed -> pcm((char) compressed[0]), voiceProvider, language,
+                speed, volume);
+    }
+
+    private EdgeTTSImpl mouth(
+            FakeClient client,
+            FakeOutput output,
+            EdgeAudioDecoder decoder,
+            EdgeVoiceProvider voiceProvider,
+            Language language,
+            float speed,
+            int volume
+    ) {
         EdgeTTSImpl mouth = new EdgeTTSImpl(
                 client,
                 decoder,
-                new EdgeVoiceProvider(),
+                voiceProvider,
                 output,
-                new Settings(EdgeVoices.MARY.defaultShortName(), Language.EN, speed, volume));
+                new Settings(EdgeVoices.MARY.defaultShortName(), language, speed, volume));
         mouths.add(mouth);
         return mouth;
     }

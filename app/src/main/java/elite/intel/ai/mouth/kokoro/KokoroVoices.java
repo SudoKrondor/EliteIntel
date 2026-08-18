@@ -1,5 +1,8 @@
 package elite.intel.ai.mouth.kokoro;
 
+import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * Speaker IDs for the kokoro-multi-lang-v1_0 model (53 voices).
  * <p>
@@ -101,6 +104,22 @@ public enum KokoroVoices {
      * separate channel and still draw from the full {@link #values()} set (male and female alike).
      */
     public static final KokoroVoices DEFAULT_FEMALE = BELLA;
+
+    /**
+     * A voice for the next radio transmission: any speaker in the model, male or female and in any of its
+     * accents, because the voice on the other end of a comms link is a stranger and the variety is the point.
+     * The commander's own voice is excluded so the two speakers never sound like the same person.
+     *
+     * @param ownVoiceName the commander's ship voice (an enum name), or {@code null} when none is resolvable
+     */
+    public static KokoroVoices randomRadioVoice(String ownVoiceName) {
+        KokoroVoices[] pool = Arrays.stream(values())
+                .filter(voice -> !voice.name().equals(ownVoiceName))
+                .toArray(KokoroVoices[]::new);
+        return pool.length == 0
+                ? DEFAULT_FEMALE
+                : pool[ThreadLocalRandom.current().nextInt(pool.length)];
+    }
 
     /**
      * Resolves a stored ship-voice name to a female voice: the named voice when it is a valid female voice,
