@@ -33,8 +33,14 @@ public class StationSearchClient extends SpanshClient {
         return GsonFactory.getGson().fromJson(performSearch(searchCriteria.toJson()), VistaGenomicsLocationDto.class);
     }
 
-    public TradeStationSearchResultDto searchTradeStation(TradeStationSearchCriteria initialStationCriteria) {
-        return GsonFactory.getGson().fromJson(performSearch(initialStationCriteria), TradeStationSearchResultDto.class);
+    /**
+     * Runs a stations search and hands back the page Spansh answered with, or null when it answered with
+     * nothing. Serves every caller that asks the stations endpoint about markets - the station a trade
+     * route starts from and the markets selling a given commodity are the same question with different
+     * filters.
+     */
+    public TradeStationSearchResultDto searchStations(TradeStationSearchCriteria criteria) {
+        return GsonFactory.getGson().fromJson(performSearch(criteria), TradeStationSearchResultDto.class);
     }
 
     public InterstellarFactorsResultDto searchInterstellarFactors(InterstellarFactorsSearchCriteria criteria) {

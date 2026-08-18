@@ -194,7 +194,7 @@ public class TradeProfileManager {
 
         TradeStationSearchCriteria anchorSearch = anchorSearchCriteria(criteria, galacticCoordinates);
         log.debug("Initial station criteria: {}", anchorSearch.toJson());
-        TradeStationSearchResultDto response = StationSearchClient.getInstance().searchTradeStation(anchorSearch);
+        TradeStationSearchResultDto response = StationSearchClient.getInstance().searchStations(anchorSearch);
 
         // A failed POST, a search that times out, and an empty body all arrive here as a null - Spansh
         // being unreachable is not a station we can plot from either way.

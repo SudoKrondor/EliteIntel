@@ -10,8 +10,8 @@ import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TradeProfileManager;
 import elite.intel.gameapi.inputs.RoutePlotter;
-import elite.intel.gameapi.search.edsm.commodity.CommoditySearchResult;
-import elite.intel.gameapi.search.edsm.commodity.EdsmCommoditySearch;
+import elite.intel.gameapi.search.spansh.commodity.CommoditySearchResult;
+import elite.intel.gameapi.search.spansh.commodity.SpanshCommoditySearch;
 import elite.intel.gameapi.search.spansh.traderoute.TradeRouteSearchCriteria;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
@@ -19,7 +19,6 @@ import elite.intel.util.StringUtls;
 
 import java.util.List;
 
-import static elite.intel.util.StringUtls.capitalizeWords;
 import static elite.intel.util.StringUtls.getIntSafely;
 
 /**
@@ -98,12 +97,10 @@ public final class FindCommodityCommand implements IntelCommand {
             return StringUtls.localizedResponse("handler.commodity.specify");
         }
 
-        String commodity =
-                capitalizeWords(
-                        FuzzySearch.fuzzyCommodityMatch(
-                                key.getAsString(), 3
-                        )
-                );
+        // Our own table's spelling, passed on untouched: Spansh matches a commodity name exactly, and
+        // title-casing it here quietly broke 23 goods - "Agri-Medicines" became "Agri-medicines",
+        // "H.E. Suits" became "H.e. Suits", and the market search found nothing anywhere in the galaxy.
+        String commodity = FuzzySearch.fuzzyCommodityMatch(key.getAsString(), 3);
 
         if (commodity == null) {
             return StringUtls.localizedResponse("handler.commodity.notFound", key.getAsString());
@@ -112,6 +109,11 @@ public final class FindCommodityCommand implements IntelCommand {
         String searchMode = StringUtls.localizedResponse(returnClosest ? "handler.commodity.modeNearest" : "handler.commodity.modeBest");
         CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.commodity.searching", searchMode, commodity, distance), false);
         TradeRouteSearchCriteria tradeProfileManagerCriteria = tradeProfileManager.getCriteria(false);
+        // Null until the game has told us which ship we are in, and a ship is what carries the hold the
+        // search sizes itself to.
+        if (tradeProfileManagerCriteria == null) {
+            return StringUtls.localizedResponse("handler.commodity.noCargoCapacity");
+        }
         int cargoCapacity = tradeProfileManagerCriteria.getMaxCargo();
         if (cargoCapacity == 0) {
             return StringUtls.localizedResponse("handler.commodity.noCargoCapacity");
@@ -120,12 +122,11 @@ public final class FindCommodityCommand implements IntelCommand {
         if (maxDistanceFromArrival == 0) {
             return StringUtls.localizedResponse("handler.commodity.maxDistanceFromArrivalNoSet");
         }
-        List<CommoditySearchResult> results = EdsmCommoditySearch.search(
+        List<CommoditySearchResult> results = SpanshCommoditySearch.search(
                 commodity,
                 starName,
                 distance,
-                maxDistanceFromArrival,
-                cargoCapacity,
+                tradeProfileManagerCriteria,
                 returnClosest
         );
         if (results.isEmpty()) {

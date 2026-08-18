@@ -22,6 +22,15 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
     @SerializedName("reference_coords")
     private ReferenceCoords referenceCoords;
 
+    /**
+     * The system distances are measured from, by name, as the alternative to {@link #referenceCoords}.
+     * Only one of the two is ever sent: coordinates when we know where the ship is in the galaxy, a name
+     * when all we have is the star we are parked at. Spansh answers a request carrying neither with
+     * distances measured from Sol, which is nobody's idea of "nearest".
+     */
+    @SerializedName("reference_system")
+    private String referenceSystem;
+
 
     @SerializedName("sort")
     private List<Object> sort = Collections.emptyList();
@@ -49,6 +58,10 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
 
     public void setReferenceCoords(ReferenceCoords referenceCoords) {
         this.referenceCoords = referenceCoords;
+    }
+
+    public void setReferenceSystem(String referenceSystem) {
+        this.referenceSystem = referenceSystem;
     }
 
     public void setFilters(Filters filters) {
@@ -196,6 +209,9 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
         @SerializedName("large_pads")
         private RangeFilter largePads;
 
+        @SerializedName("marketplace")
+        private List<Marketplace> marketplace;
+
 
         public UpdatedAt getUpdatedAt() {
             return updatedAt;
@@ -241,11 +257,90 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
             this.largePads = largePads;
         }
 
+        /**
+         * Goods the station's market must actually carry; see {@link Marketplace}.
+         */
+        public void setMarketplace(List<Marketplace> marketplace) {
+            this.marketplace = marketplace;
+        }
+
         public void setDistanceToStarSystem(Distance distanceToStarSystem) {
             this.distance = distanceToStarSystem;
         }
     }
 
+
+    /**
+     * A commodity the station's market must carry, and the terms it must carry it on.
+     * <p>
+     * The whole filter is one nested question about a SINGLE market entry, so supply and price are read
+     * against the same commodity rather than anywhere in the market: "has Gold, with at least a hold's
+     * worth in stock, at a price above zero" is one {@code Marketplace}, not three filters.
+     * <p>
+     * WHY the range fields are {@link RangeFilter}s and never a bare minimum: the endpoint accepts
+     * {@code {"comparison": ">=", "value": [500]}} without complaint and then matches NOTHING - measured
+     * against the live search, where the same query as a {@code <=>} range returned 550 stations. Every
+     * bound here is a range with both ends.
+     * <p>
+     * WHY there is no market filter without one of these: asked for a commodity alone, Spansh returns
+     * every station whose market lists it, stock or no stock - and a market listing Gold at supply 0 is
+     * a station the commander would fly to and buy nothing at.
+     */
+    public static class Marketplace {
+
+        /**
+         * Commodity names in Spansh's own vocabulary, from {@code /api/stations/field_values/marketplace}.
+         * Matched exactly: a name Spansh does not know matches no station rather than failing the search.
+         */
+        @SerializedName("commodity")
+        private final List<String> commodity;
+
+        @SerializedName("supply")
+        private RangeFilter supply;
+
+        @SerializedName("demand")
+        private RangeFilter demand;
+
+        @SerializedName("buy_price")
+        private RangeFilter buyPrice;
+
+        @SerializedName("sell_price")
+        private RangeFilter sellPrice;
+
+        public Marketplace(List<String> commodity) {
+            this.commodity = commodity;
+        }
+
+        /**
+         * Units the station must have in stock - what the commander buys.
+         */
+        public void setSupply(RangeFilter supply) {
+            this.supply = supply;
+        }
+
+        /**
+         * Units the station must be asking for - what the commander sells into.
+         */
+        public void setDemand(RangeFilter demand) {
+            this.demand = demand;
+        }
+
+        /**
+         * What the commander PAYS. Spansh names the fields from the station's side of the counter, so
+         * {@code buy_price} is the ask and {@code sell_price} is the bid; on the same market entry the
+         * ask is always the higher of the two.
+         */
+        public void setBuyPrice(RangeFilter buyPrice) {
+            this.buyPrice = buyPrice;
+        }
+
+        /**
+         * What the commander RECEIVES; see {@link #setBuyPrice}.
+         */
+        public void setSellPrice(RangeFilter sellPrice) {
+            this.sellPrice = sellPrice;
+        }
+    }
 
     public static class UpdatedAt {
         @SerializedName("comparison")

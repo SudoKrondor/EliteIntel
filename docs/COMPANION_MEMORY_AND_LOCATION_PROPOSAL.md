@@ -182,7 +182,7 @@ Local (your own docked) market data vs. other stations/systems (stale or absent 
 |---|---|---|
 | Station handle **with** `marketID` | local `StationMarketDao.get(marketID)` | per-dock snapshot → label **"as of \<dock time\>"** |
 | Station handle **without** `marketID` | none - answer "no market" | instant |
-| System handle (N stations) / "where can I buy/sell X" / "best market for Y" | **external** - `SpanshMarketClient` / `EdsmCommoditySearch` / `TradeRouteClient` (search package) | API "as of", bounded top-N |
+| System handle (N stations) / "where can I buy/sell X" / "best market for Y" | **external** - `SpanshMarketClient` / `SpanshCommoditySearch` / `TradeRouteClient` (search package) | API "as of", bounded top-N |
 
 The projection **contract is identical regardless of source**: local `StationMarketDto`, Spansh
 `StationMarketDto`, and EDSM `MarketDto`/`CommoditySearchResult` all normalize into the

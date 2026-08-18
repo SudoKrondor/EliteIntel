@@ -1,4 +1,4 @@
-package elite.intel.gameapi.search.edsm.commodity;
+package elite.intel.gameapi.search.spansh.commodity;
 
 import elite.intel.gameapi.gamestate.dtos.BaseJsonDto;
 import elite.intel.util.json.ToJsonConvertible;
