@@ -1,5 +1,14 @@
 package elite.intel.gameapi.inputs;
 
+import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_ACTIVATE;
+import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_CAM_ZOOM_IN;
+import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_GALAXY_MAP;
+import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_GALAXY_MAP_BUGGY;
+import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_GALAXY_MAP_HUMANOID;
+import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_UI_DOWN;
+import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_UI_LEFT;
+import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_UI_RIGHT;
+import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_UI_SELECT;
 import elite.intel.ai.hands.KeyProcessor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
@@ -12,10 +21,7 @@ import elite.intel.util.AudioPlayer;
 import elite.intel.util.PlayBeepEvent;
 import elite.intel.util.StringUtls;
 
-import static elite.intel.ai.hands.Bindings.GameCommand.*;
-
 public class RoutePlotter {
-
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();
@@ -25,6 +31,7 @@ public class RoutePlotter {
 
     public String plotRoute(String destination) {
         navigator.closeOpenPanel();
+
         if (destination == null || destination.isEmpty()) {
             return null;
         }
@@ -34,8 +41,8 @@ public class RoutePlotter {
             return StringUtls.localizedResponse("handler.route.alreadyPlotted", finalDestination);
         }
 
-
         GameInputStep gameInputStep;
+
         if (status.isOnFoot()) {
             gameInputStep = GameInputStep.bindingTap(BINDING_GALAXY_MAP_HUMANOID.getGameBinding());
         } else if (status.isInSrv()) {
@@ -47,11 +54,15 @@ public class RoutePlotter {
         GameControllerBus.publish(GameInputSequenceEvent.of(
                 gameInputStep,
                 GameInputStep.delay(3000),
+
+                // Establish a predictable Galaxy Map UI state.
                 GameInputStep.bindingHold(BINDING_CAM_ZOOM_IN.getGameBinding(), 500),
                 GameInputStep.bindingTap(BINDING_UI_LEFT.getGameBinding()),
                 GameInputStep.delay(200),
                 GameInputStep.bindingTap(BINDING_UI_RIGHT.getGameBinding()),
                 GameInputStep.delay(200),
+
+                // Activate the search field and enter the destination.
                 GameInputStep.bindingTap(BINDING_ACTIVATE.getGameBinding()),
                 GameInputStep.delay(200),
                 GameInputStep.text(destination),
@@ -65,8 +76,30 @@ public class RoutePlotter {
                 // whose bindings are near-default. Once focus is on the result list the text field is
                 // out of the way and the steps below are binding-driven again, as they should be.
                 GameInputStep.rawKey(KeyProcessor.KEY_DOWNARROW, 0, 0),
+                GameInputStep.delay(200),
+                
+                // Select the system and allow the Galaxy Map to centre on it.
                 GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding()),
-                GameInputStep.delay(1000),
+                GameInputStep.delay(1200),
+
+                // A small camera movement transitions the Galaxy Map into a state
+                // where the right-hand system actions can be navigated.
+                GameInputStep.bindingTap(BINDING_CAM_ZOOM_IN.getGameBinding()),
+                GameInputStep.delay(200),
+
+                // Move into the right-hand system actions menu.
+                GameInputStep.bindingTap(BINDING_UI_RIGHT.getGameBinding()),
+
+                // Navigate to Plot Route.
+                GameInputStep.bindingTap(BINDING_UI_DOWN.getGameBinding()),
+                GameInputStep.bindingTap(BINDING_UI_DOWN.getGameBinding()),
+                GameInputStep.bindingTap(BINDING_UI_DOWN.getGameBinding()),
+                GameInputStep.bindingTap(BINDING_UI_DOWN.getGameBinding()),
+                GameInputStep.bindingTap(BINDING_UI_DOWN.getGameBinding()),
+                GameInputStep.bindingTap(BINDING_UI_DOWN.getGameBinding()),
+                GameInputStep.bindingTap(BINDING_UI_DOWN.getGameBinding()),
+
+                // Activate Plot Route.
                 GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding())
         ));
 
