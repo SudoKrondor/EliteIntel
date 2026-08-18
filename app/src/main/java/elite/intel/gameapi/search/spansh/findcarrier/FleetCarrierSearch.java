@@ -6,6 +6,7 @@ import elite.intel.util.TimeUtils;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.List;
 
 public class FleetCarrierSearch {
 
@@ -22,8 +23,8 @@ public class FleetCarrierSearch {
         return instance;
     }
 
-
-    public FleetCarrierSearchResultsDto findFleetCarrier(int range, CarrierAccess carrierAccess, LocationDao.Coordinates coords) {
+    public FleetCarrierSearchResultsDto findFleetCarrier(int range, CarrierAccess carrierAccess,
+            LocationDao.Coordinates coords) {
         FleetCarrierSearchCriteriaDto criteria = new FleetCarrierSearchCriteriaDto();
         FleetCarrierSearchCriteriaDto.Filters filters = new FleetCarrierSearchCriteriaDto.Filters();
 
@@ -51,6 +52,7 @@ public class FleetCarrierSearch {
         referenceCoords.setY(coords.y());
         referenceCoords.setZ(coords.z());
         criteria.setReferenceCoords(referenceCoords);
+        criteria.setSort(List.of(new FleetCarrierSearchCriteriaDto.DistanceSort()));
 
         criteria.setSize(5);
         criteria.setPage(0);
