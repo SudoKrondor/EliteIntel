@@ -108,6 +108,21 @@ public class TraderAndBrokerSearchCriteria extends BaseJsonDto implements ToJson
         }
     }
 
+    /**
+     * Sorts Spansh station search results nearest-first before pagination.
+     */
+    public static class DistanceSort {
+
+        @SerializedName("distance")
+        private final Ascending distance = new Ascending();
+
+        private static class Ascending {
+
+            @SerializedName("direction")
+            private final String direction = "asc";
+        }
+    }
+
     public void setFilters(Filters filters) {
         this.filters = filters;
     }
