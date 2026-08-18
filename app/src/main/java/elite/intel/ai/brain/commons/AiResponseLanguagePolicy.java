@@ -15,7 +15,7 @@ public final class AiResponseLanguagePolicy {
      * Resolves the effective AI response language based on the system session configuration
      * and available Text-to-Speech (TTS) settings.
      * <p>
-     * Google TTS voices every language we ship, so it imposes nothing. The local Kokoro TTS constrains
+     * Google and Edge TTS voice every language we ship, so they impose nothing. The local Kokoro TTS constrains
      * only Cyrillic: its phonemizer cannot read the script at all, so RU/UK have to be answered in
      * English or they would not be spoken. Every other language is Latin-script and Kokoro speaks it,
      * using its nearest voice where it has no native one — German is voiced with an accent, which beats
@@ -28,7 +28,7 @@ public final class AiResponseLanguagePolicy {
     public static Language resolveEffectiveAiResponseLanguage(SystemSession systemSession) {
         Language sessionLanguage = systemSession.getLanguage();
 
-        if (isGoogleTtsConfiguredAndUsable(systemSession)) {
+        if (supportsConfiguredLanguage(systemSession)) {
             return sessionLanguage;
         }
 
@@ -40,5 +40,13 @@ public final class AiResponseLanguagePolicy {
             return false;
         }
         return KeyDetector.detectProvider(systemSession.getTtsApiKey(), "TTS") == ProviderEnum.GOOGLE_TTS;
+    }
+
+    private static boolean supportsConfiguredLanguage(SystemSession systemSession) {
+        if (systemSession.useLocalTTS()) {
+            return false;
+        }
+        ProviderEnum provider = KeyDetector.detectProvider(systemSession.getTtsApiKey(), "TTS");
+        return provider == ProviderEnum.GOOGLE_TTS || provider == ProviderEnum.EDGE_TTS;
     }
 }

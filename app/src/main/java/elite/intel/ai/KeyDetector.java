@@ -69,6 +69,9 @@ public class KeyDetector {
         if (key == null || key.isBlank()) {
             return ProviderEnum.UNKNOWN;
         }
+        if ("TTS".equals(category) && "edge://".equals(key)) {
+            return ProviderEnum.EDGE_TTS;
+        }
         List<ProviderEnum> matches = new ArrayList<>();
         for (Map.Entry<ProviderEnum, Pattern> entry : PATTERNS.entrySet()) {
             if (entry.getValue().matcher(key).matches() && entry.getKey().supportsCategory(category)) {

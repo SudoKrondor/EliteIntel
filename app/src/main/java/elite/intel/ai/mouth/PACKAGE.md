@@ -1,7 +1,7 @@
 # `elite.intel.ai.mouth` - Developer Reference
 
 The mouth package owns everything from a
-`VocalisationRequestEvent` to speaker output. It normalises the various vox event types produced by other packages, synthesises speech via one of two backends (offline Kokoro or Google Cloud), and publishes an authoritative playback lifecycle while STT remains active for barge-in.
+`VocalisationRequestEvent` to speaker output. It normalises the various vox event types produced by other packages, synthesises speech via offline Kokoro, Google Cloud, or the Edge consumer Read Aloud service, and publishes an authoritative playback lifecycle while STT remains active for barge-in.
 
 ---
 
@@ -41,6 +41,9 @@ AiVoxResponseEvent  NavigationVocalisationEvent  RadioTransmissionEvent  …
                                    Speaker
                           handle completion updates shared IsSpeakingEvent state
 ```
+
+`EdgeTTSImpl` is a third main-mouth branch with the same synthesis/playback queue shape as Google. Its transport
+returns MPEG, which is decoded and validated before the shared PCM sanitation, volume, and playback stages.
 
 ---
 
@@ -86,10 +89,9 @@ does not touch it.
 **`AiVoxResponseEvent` special handling**: If the event carries a
 `CompletableFuture`, `VocalisationRouter` passes it through to `VocalisationRequestEvent`; otherwise the request creates its own future. The eligible active Mouth claims the request's `VocalisationHandle` during the same EventBus dispatch. Guava queues reentrant posts, so the no-Mouth check runs through `GameEventBus.afterCurrentDispatch` only after the outer post has drained; checking immediately after a nested `publish` would reject the request before a Mouth sees it. Only the handle publishes `IsSpeakingEvent`, using a process-wide active-request count, so overlapping requests cannot report a false idle state. STT continues listening while the state is true and treats a commander transcript as barge-in.
 
-**`RadioTransmissionEvent` special handling**: The router uses `getRandomVoice()`
-on the active voice provider (Kokoro or Google), selecting any voice that is NOT the current session voice. Sets
-`isRadio=true` on the resulting
-`VocalisationRequestEvent`.
+**`RadioTransmissionEvent` special handling**: The router chooses a random Kokoro voice other than the current
+Kokoro session voice and sets `isRadio=true` on the resulting `VocalisationRequestEvent`. Cloud mouths ignore it;
+the Kokoro radio service owns this route.
 
 ---
 
@@ -109,7 +111,7 @@ An eligible running backend must call `event.handle().claimForPlayback()` before
 `ManagedService` provides `start()` and `stop()`. Implementations initialize their engine/workers and register
 on `GameEventBus` during `start()`, then unregister and settle owned handles during `stop()`.
 
-Current implementations: `KokoroTTS` (offline), `GoogleTTSImpl` (cloud).
+Current implementations: `KokoroTTS` (offline), `GoogleTTSImpl` (cloud), and `EdgeTTSImpl` (cloud).
 
 ---
 
@@ -268,6 +270,22 @@ Published after each sentence via
 
 ---
 
+## 5A. Edge Read Aloud Backend (`edge/`)
+
+`EdgeTTSImpl` follows the same two-queue and `VocalisationHandle` contract as the other mouths. The transport
+uses the consumer Read Aloud HTTP voice-list endpoint and WebSocket synthesis protocol. Escaped text is capped
+at 4096 UTF-8 bytes per request, MPEG frames are assembled before `EdgeMp3Decoder` converts them to 24 kHz,
+mono, signed PCM-16 little endian, and only that decoded PCM reaches `AudioDeClicker`.
+
+Application speech speed drives Edge's SSML prosody rate. SSML volume remains `+0%`; the application volume is
+applied exactly once to decoded PCM through `AudioDeClicker.applyVolume`. Edge is a main-mouth provider only;
+radio stays on the dedicated Kokoro route.
+
+The integration is unofficial and is not supported or endorsed by Microsoft. `dev.mccue:jlayer-decoder` is
+packaged under its own LGPL terms; see the repository's `THIRD_PARTY_NOTICES.md`.
+
+---
+
 ## 6. Audio Utilities
 
 ### `AudioDeClicker`
@@ -394,13 +412,16 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | `google/GoogleTTSImpl` | Cloud backend; Google Cloud TTS API |
 | `google/GoogleVoices` | 11 Google voice enum with gender and Chirp3-HD character |
 | `google/GoogleVoiceProvider` | Voice selection + non-EN language override |
+| `edge/EdgeTTSImpl` | Edge Read Aloud queueing, decoded-PCM volume, playback, and request lifecycle |
+| `edge/EdgeReadAloudClient` | HTTP/WebSocket protocol, clock-skew retry, timeouts, and cancellation |
+| `edge/EdgeMp3Decoder` | MPEG to validated 24 kHz mono PCM-16 LE decoding |
 | `google/VoiceProvider<T>` | Interface for voice provider implementations |
 | `AudioDeClicker` | Fade-in + volume scaling on PCM-16 LE |
 | `RadioFilter` | Bandpass + static noise shortwave radio effect |
 | `subscribers/events/VocalisationRequestEvent` | Normalised TTS event (origin, voice, flags, handle) |
 | `subscribers/events/AiVoxResponseEvent` | LLM spoken answer; carries optional CompletableFuture |
 | `subscribers/events/TTSInterruptEvent` | Global or request-id-targeted interrupt signal |
-| `subscribers/events/VocalisationSuccessfulEvent` | Per-sentence completion event (Google only) |
+| `subscribers/events/VocalisationSuccessfulEvent` | Per-sentence completion event (Google and Edge) |
 
 ## Key Constants
 
@@ -409,6 +430,8 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | `SAMPLE_RATE` | `24000` Hz | `KokoroTTS`, `GoogleTTSImpl`, `AudioDeClicker` |
 | Default Kokoro voice | `GEORGE` (sid=26) | `KokoroTTS` |
 | Default Google voice | `JENNIFER` | `GoogleVoiceProvider` |
+| Edge escaped-text limit | `4096` UTF-8 bytes | `EdgeSentenceSplitter` |
+| Default Edge voice | `en-US-EmmaMultilingualNeural` | `EdgeVoices` |
 | `NOISE_AMPLITUDE` | `50f` (~0.15% full scale) | `RadioFilter` |
 | `GAIN` | `1.4f` | `RadioFilter` |
 | HP cutoff | `300 Hz` | `RadioFilter` |

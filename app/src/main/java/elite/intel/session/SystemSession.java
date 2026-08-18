@@ -1,6 +1,7 @@
 package elite.intel.session;
 
 import elite.intel.ai.brain.ShipPersonality;
+import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.db.dao.ChatHistoryDao;
@@ -55,6 +56,17 @@ public class SystemSession {
     public GoogleVoices getGoogleVoice() {
         ShipDao.Ship ship = shipManager.getShip();
         return GoogleVoices.femaleOrDefault(ship == null ? null : ship.getVoice());
+    }
+
+
+    public EdgeVoices getEdgeVoice() {
+        ShipDao.Ship ship = shipManager.getShip();
+        return EdgeVoices.femaleOrDefault(ship == null ? null : ship.getVoice());
+    }
+
+    public String getEdgeVoiceName() {
+        ShipDao.Ship ship = shipManager.getShip();
+        return EdgeVoices.femaleShortNameOrDefault(ship == null ? null : ship.getVoice());
     }
 
 

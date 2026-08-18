@@ -165,6 +165,11 @@ If you want to implement a new command or query follow the established patterns.
     `-Djava.library.path`. No API key required.
   -
   `elite.intel.ai.mouth.google.GoogleTTSImpl` - cloud-based fallback via Google Cloud Text-to-Speech API. Requires a Google Cloud API key configured in the System settings tab.
+  - `elite.intel.ai.mouth.edge.EdgeTTSImpl` - unofficial cloud integration with the consumer Edge Read Aloud
+    service; it is not supported or endorsed by Microsoft. Select it
+    by entering the exact `edge://` sentinel as the TTS API key. It uses Java HTTP/WebSocket transport,
+    decodes the returned 24 kHz mono MP3 in process, and does not require an Azure subscription.
+    `dev.mccue:jlayer-decoder` is LGPL-licensed; see `THIRD_PARTY_NOTICES.md`.
 
 ### AI (LLM Integration)
 
@@ -196,7 +201,8 @@ The prompt size is capped at 8K tokens. Caching mechanisms are used where suppor
 
 ## Licensing
 
-If open-sourced, code falls under Creative Commons (e.g., CC BY-NC-SA 4.0). Attribute third-party work.
+The project is released under CC0 1.0 Universal; see `LICENSE`. Third-party components retain their own
+licenses and must be documented in `THIRD_PARTY_NOTICES.md` when distribution requires it.
 
 ## IDE Note: unused-declaration false positives
 
