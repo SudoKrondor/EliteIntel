@@ -11,7 +11,6 @@ import elite.intel.gameapi.search.spansh.station.traderandbroker.*;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.TimeUtils;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -63,7 +62,7 @@ public class TradersAndBrokersSearch {
         coordinates.setZ(galacticCoordinates.z());
 
         criteria.setReferenceCoords(coordinates);
-        criteria.setSort(new ArrayList<>());
+        criteria.setSort(List.of(new TraderAndBrokerSearchCriteria.DistanceSort()));
 
         TraderAndBrokerSearchCriteria.Filters filters = new TraderAndBrokerSearchCriteria.Filters();
         TraderAndBrokerSearchCriteria.Distance distance = new TraderAndBrokerSearchCriteria.Distance();
