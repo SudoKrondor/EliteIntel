@@ -5,6 +5,7 @@ import elite.intel.db.dao.RouteMonetisationDao.MonetisationTransaction;
 import elite.intel.db.managers.BountyManager;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.db.managers.MonetizeRouteManager;
+import elite.intel.db.managers.ShipRouteManager;
 import elite.intel.db.util.Database;
 import elite.intel.gameapi.journal.events.dto.BountyDto;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static elite.intel.ui.overlay.HudCards.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -38,6 +40,7 @@ class ObjectiveSourceCardTest {
     private final MissionManager missions = MissionManager.getInstance();
     private final BountyManager bounties = BountyManager.getInstance();
     private final MonetizeRouteManager monetized = MonetizeRouteManager.getInstance();
+    private final ShipRouteManager shipRoute = ShipRouteManager.getInstance();
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
     private final List<Long> savedMissions = new ArrayList<>();
@@ -48,6 +51,9 @@ class ObjectiveSourceCardTest {
         missions.clear();
         bounties.clear();
         monetized.clear();
+        // The massacre card now reads the plotted route, so a route left behind by another class
+        // would decide whether this one's cards appear.
+        shipRoute.clearRoute();
     }
 
     @AfterEach
@@ -216,6 +222,54 @@ class ObjectiveSourceCardTest {
         assertTrue(new MassacreObjectiveSource().currentObjective().isEmpty());
     }
 
+    // -- massacre stack vs. a plotted route ------------------------------------
+
+    /**
+     * A commander holding kill contracts is rarely holding only those. A route plotted to a delivery
+     * three systems over is them saying what they are doing right now, and the kill bar would
+     * otherwise sit on top of it for the whole flight - this card applies whenever any pirate
+     * contract is open, and it never used to ask where the ship was pointed.
+     */
+    @Test
+    void aRouteToAnotherMissionStandsTheKillBarDown() {
+        saveMission(massacreAt(20, 6, "Xue Davokje"));
+        saveMission(deliveryTo(21, "Col 285 Sector WF-E c12-13"));
+
+        assertTrue(massacreCard("Col 285 Sector WF-E c12-13").isEmpty(),
+                "the commander is flying the delivery, not the contract");
+        assertEquals("mission:21", new MissionObjectiveSource().currentObjective().orElseThrow().id(),
+                "and the generic card picks up the mission the route names");
+    }
+
+    @Test
+    void aRouteToTheHuntingGroundKeepsTheKillBar() {
+        saveMission(massacreAt(22, 6, "Xue Davokje"));
+        saveMission(deliveryTo(23, "Col 285 Sector WF-E c12-13"));
+
+        assertTrue(massacreCard("xue davokje").isPresent(),
+                "the route is the contract's own, so the shared kill count is still the better card");
+    }
+
+    /**
+     * A route to a material trader or an engineer says nothing about the mission board, and standing
+     * down for it would cost the kill bar for nothing.
+     */
+    @Test
+    void aRouteToSomewhereWithNoMissionKeepsTheKillBar() {
+        saveMission(massacreAt(24, 6, "Xue Davokje"));
+
+        assertTrue(massacreCard("Deciat").isPresent());
+    }
+
+    @Test
+    void withNothingPlottedTheKillBarStands() {
+        saveMission(massacreAt(25, 6, "Xue Davokje"));
+        saveMission(deliveryTo(26, "Col 285 Sector WF-E c12-13"));
+
+        assertTrue(massacreCard(null).isPresent());
+        assertTrue(massacreCard("  ").isPresent());
+    }
+
     // -- monetised route -------------------------------------------------------
 
     @Test
@@ -271,6 +325,24 @@ class ObjectiveSourceCardTest {
     private String redirectedMassacreJson(long id, int kills) {
         return massacreJson(id, kills).replaceFirst("}$",
                 ",\"redirectedAt\":\"%s\"}".formatted(Instant.now().minusSeconds(300).toString()));
+    }
+
+    /**
+     * The card as it renders for a given plotted route, through the source's own seam.
+     */
+    private Optional<HudObjective> massacreCard(String plottedRoute) {
+        return new MassacreObjectiveSource(missions, playerSession, () -> plottedRoute).currentObjective();
+    }
+
+    private String massacreAt(long id, int kills, String destinationSystem) {
+        return massacreJson(id, kills).replaceFirst("}$",
+                ",\"destinationSystem\":\"%s\"}".formatted(destinationSystem));
+    }
+
+    private String deliveryTo(long id, String destinationSystem) {
+        return missionJson(id, "MISSION_DELIVERY",
+                "\"commodityName\":\"Liquor\",\"count\":196,\"reward\":10,\"destinationSystem\":\"%s\""
+                        .formatted(destinationSystem));
     }
 
     private String massacreJson(long id, int kills, String provider) {

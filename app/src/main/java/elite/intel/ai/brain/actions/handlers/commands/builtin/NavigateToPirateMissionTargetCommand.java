@@ -7,9 +7,12 @@ import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.MissionType;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
+import elite.intel.gameapi.missions.MissionSelection;
+import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -49,11 +52,17 @@ public final class NavigateToPirateMissionTargetCommand implements IntelCommand 
             return StringUtls.localizedResponse("handler.pirate.noProvidersMassacre");
         }
 
-        MissionDto mission = missionManager.getMissions(missionTypes)
-                .values()
-                .stream().filter(v -> v.getMissionType().equals(MissionType.MISSION_PIRATE_MASSACRE)).findFirst().orElse(null);
+        // Shares the selection rule with the generic navigate command and the HUD card, so a stack of
+        // massacre contracts resolves to the same one everywhere instead of to whatever the map hands
+        // back first - and a contract with no destination is stepped over rather than plotted to.
+        MissionDto mission = MissionSelection.toPlotFor(
+                missionManager.getMissions(missionTypes).values().stream()
+                        .filter(Objects::nonNull)
+                        .filter(v -> MissionType.MISSION_PIRATE_MASSACRE.equals(v.getMissionType()))
+                        .toList(),
+                PlayerSession.getInstance().getPrimaryStarName()).orElse(null);
 
-        if(mission == null) return null;
+        if (mission == null) return null;
 
         RoutePlotter plotter = new RoutePlotter();
         return plotter.plotRoute(mission.getDestinationSystem());

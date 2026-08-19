@@ -1,12 +1,14 @@
 package elite.intel.ui.overlay;
 
 import elite.intel.db.managers.MissionManager;
+import elite.intel.db.managers.ShipRouteManager;
 import elite.intel.gameapi.journal.events.dto.BountyDto;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.gameapi.missions.MassacreProgress;
 import elite.intel.session.PlayerSession;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * Projects the pirate-massacre mission stack into a HUD objective with a real
@@ -20,28 +22,40 @@ import java.util.*;
  * Outranks the generic mission card - a stack of massacre missions is better
  * described by one shared kill count than by whichever single mission happens to
  * expire soonest.
+ * <p>
+ * It stands down for a plotted route that is not its own, though. A commander who
+ * takes massacre work rarely takes only massacre work, and a route plotted to a
+ * delivery three systems over is them stating what they are doing right now -
+ * which the kill bar would otherwise sit on top of for the whole flight, because
+ * this card applies whenever any pirate contract is open and never asked where
+ * the ship was pointed.
  */
 public class MassacreObjectiveSource implements HudObjectiveSource {
 
     private final MissionManager missionManager;
     private final PlayerSession playerSession;
+    private final Supplier<String> routeDestination;
 
     public MassacreObjectiveSource() {
-        this(MissionManager.getInstance(), PlayerSession.getInstance());
+        this(MissionManager.getInstance(), PlayerSession.getInstance(),
+                () -> ShipRouteManager.getInstance().getDestination());
     }
 
     /**
      * Seam for tests.
      */
-    MassacreObjectiveSource(MissionManager missionManager, PlayerSession playerSession) {
+    MassacreObjectiveSource(MissionManager missionManager, PlayerSession playerSession,
+                            Supplier<String> routeDestination) {
         this.missionManager = missionManager;
         this.playerSession = playerSession;
+        this.routeDestination = routeDestination;
     }
 
     @Override
     public Optional<HudObjective> currentObjective() {
         Map<Long, MissionDto> missions = missionManager.getMissions(missionManager.getPirateMissionTypes());
         if (missions == null || missions.isEmpty()) return Optional.empty();
+        if (standsDownFor(routeDestination.get(), missions.values())) return Optional.empty();
 
         Set<BountyDto> bounties = playerSession.getBounties();
         MassacreProgress progress = MassacreProgress.compute(
@@ -80,5 +94,29 @@ public class MassacreObjectiveSource implements HudObjectiveSource {
                 progress.targetFaction() == null ? null : progress.targetFaction().toUpperCase(),
                 rows,
                 HudObjective.PRIORITY_SPECIALISED));
+    }
+
+    /**
+     * Whether the plotted route belongs to some other mission, in which case this card gets out of the
+     * way and lets {@link MissionObjectiveSource} name the one being flown to.
+     * <p>
+     * Only a route that names a mission counts. A route to a material trader, an engineer or nowhere in
+     * particular says nothing about the mission board, and standing down for it would cost the kill bar
+     * for no gain - so the stand-down needs another mission actually ending there.
+     *
+     * @param destination where the plotted route ends, or null/blank when nothing is plotted
+     * @param massacres   the open pirate contracts
+     */
+    private boolean standsDownFor(String destination, Collection<MissionDto> massacres) {
+        if (destination == null || destination.isBlank()) return false;
+        if (massacres.stream().anyMatch(mission -> endsAt(mission, destination))) return false;
+
+        // Only now is the full board worth a read: the common case is a route to the hunting ground,
+        // which the check above already settled.
+        return missionManager.getMissions().values().stream().anyMatch(mission -> endsAt(mission, destination));
+    }
+
+    private static boolean endsAt(MissionDto mission, String system) {
+        return mission != null && system.equalsIgnoreCase(mission.getDestinationSystem());
     }
 }

@@ -3,6 +3,7 @@ package elite.intel.ui.overlay;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.db.managers.ShipRouteManager;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
+import elite.intel.gameapi.missions.MissionSelection;
 import elite.intel.session.PlayerSession;
 
 import java.time.Duration;
@@ -31,7 +32,7 @@ import java.util.function.Supplier;
  *       mission that was being flown is the one whose cargo is about to be
  *       handed over - so it stays on the card through the docking rather than
  *       being replaced by an unrelated one.</li>
- *   <li><b>{@link #GAME_LIST_ORDER}</b>, otherwise.</li>
+ *   <li><b>{@link MissionSelection#GAME_LIST_ORDER}</b>, otherwise.</li>
  * </ol>
  * Ties inside a tier fall through to the same order, so the card never depends
  * on map iteration order - which is what it used to do, by sorting a stack of
@@ -47,25 +48,6 @@ import java.util.function.Supplier;
  * the bar and the spoken answer cannot disagree.
  */
 public class MissionObjectiveSource implements HudObjectiveSource {
-
-    /**
-     * The order the game's transactions panel appears to list missions in:
-     * newest accepted first.
-     * <p>
-     * The journal never states this order. {@code Missions} reports the active
-     * set at login and nothing else reports it at all, so it is inferred from
-     * observation - with a stack of ten couriers accepted over seven minutes,
-     * the game's top entry was the last one accepted. It is deliberately one
-     * comparator so that a counter-observation is a one-line correction here
-     * rather than a rewrite.
-     * <p>
-     * Journal timestamps are fixed-width UTC ISO-8601, so comparing them as
-     * strings is comparing them as instants. Mission IDs rise over time too and
-     * break ties - and carry missions with no accepted time, which sort last.
-     */
-    static final Comparator<MissionDto> GAME_LIST_ORDER =
-            Comparator.comparing(MissionObjectiveSource::acceptedAt, Comparator.reverseOrder())
-                    .thenComparing(MissionDto::getMissionId, Comparator.reverseOrder());
 
     private final MissionManager missionManager;
     private final Supplier<String> routeDestination;
@@ -117,7 +99,7 @@ public class MissionObjectiveSource implements HudObjectiveSource {
     static Optional<MissionDto> featured(List<MissionDto> missions,
                                          String routeDestination,
                                          String currentSystem) {
-        List<MissionDto> ordered = missions.stream().sorted(GAME_LIST_ORDER).toList();
+        List<MissionDto> ordered = missions.stream().sorted(MissionSelection.GAME_LIST_ORDER).toList();
         if (ordered.isEmpty()) return Optional.empty();
 
         return firstBoundFor(ordered, routeDestination)
@@ -280,14 +262,6 @@ public class MissionObjectiveSource implements HudObjectiveSource {
                     + String.format(Locale.ROOT, "%02d", minutes) + HudText.get("overlay.card.duration.minutes");
         }
         return minutes + HudText.get("overlay.card.duration.minutes");
-    }
-
-    /**
-     * Empty rather than null so the comparator can sort on it; an unset accepted
-     * time sorts last under {@link #GAME_LIST_ORDER}.
-     */
-    private static String acceptedAt(MissionDto mission) {
-        return mission.getAcceptedAt() == null ? "" : mission.getAcceptedAt();
     }
 
     /**
