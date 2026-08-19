@@ -28,6 +28,12 @@ import static elite.intel.util.StringUtls.localizedEventPlural;
  * sort by the price of one commodity (a {@code buy_price} sort is accepted and quietly ignored), so the
  * cheapest is picked here, out of the nearest {@link #BEST_PRICE_CANDIDATES}. Trading the whole radius for
  * the near part of it is deliberate - the saving on a hold of cargo is rarely worth a hundred extra jumps.
+ * <p>
+ * WHY the trade profile does not choose the station types here: it sizes the hold and says what the ship
+ * can physically dock at, but its surface and carrier RULES are a trade route preference, and a commander
+ * asking where to buy mission cargo has not asked about trade routes. Gating this search on them made 140
+ * of the 440 goods in our commodities table unbuyable - see
+ * {@link TradeStationSearchCriteria.StationType#EVERY_TRADE_TYPE}.
  */
 public final class SpanshCommoditySearch {
 
@@ -74,7 +80,7 @@ public final class SpanshCommoditySearch {
      * @param commodityToFind the commodity by its English name; capitalisation is forgiven, see {@link #spellings}
      * @param refStarSystem   the system distances are measured from
      * @param maxDistanceLy   search radius in light years
-     * @param profile         the ship's trade profile - hold size, arrival distance, pad and station rules
+     * @param profile         the ship's trade profile, for hold size, arrival distance and pad size only
      */
     public static List<CommoditySearchResult> search(
             String commodityToFind, String refStarSystem, int maxDistanceLy,
@@ -130,13 +136,10 @@ public final class SpanshCommoditySearch {
             String commodityToFind, String refStarSystem, int maxDistanceLy,
             TradeRouteSearchCriteria profile, boolean returnClosest) {
 
-        List<String> stationTypes = new ArrayList<>(TradeStationSearchCriteria.StationType.ORBITAL_TRADE_TYPES);
-        if (profile.isAllowPlanetary())
-            stationTypes.addAll(TradeStationSearchCriteria.StationType.PLANETARY_TRADE_TYPES);
-        if (profile.isAllowFleetCarriers())
-            stationTypes.addAll(TradeStationSearchCriteria.StationType.CARRIER_TRADE_TYPES);
+        // Every market that exists, settlements and carriers included: see EVERY_TRADE_TYPE for why the
+        // profile's surface and carrier rules stop at the trade route and do not reach this search.
         TradeStationSearchCriteria.StationType stationType = new TradeStationSearchCriteria.StationType();
-        stationType.setTypes(stationTypes);
+        stationType.setTypes(TradeStationSearchCriteria.StationType.EVERY_TRADE_TYPE);
 
         /// NOTE: Spansh API is very inconsistent. The light year radius takes a min/max pair of STRINGS and
         /// is silently ignored when sent as a "<=>" range - unlike every other range filter here.

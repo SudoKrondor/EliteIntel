@@ -135,26 +135,40 @@ class CommodityMarketSearchTest {
 
     @Test
     void everyStationTypeWeAskForIsOneSpanshKnows() {
-        TradeRouteSearchCriteria profile = profile();
-        profile.setAllowPlanetary(true);
-        profile.setAllowFleetCarriers(true);
-
-        for (String type : stationTypesOf(profile)) {
+        for (String type : stationTypesOf(profile())) {
             assertTrue(SPANSH_STATION_TYPES.contains(type),
                     () -> "'" + type + "' is not in Spansh's station type vocabulary, so it matches nothing");
         }
     }
 
     @Test
-    void surfacePortsAndCarriersAreOfferedOnlyWhenTheProfileAllowsThem() {
-        assertFalse(stationTypesOf(profile()).contains("Planetary Port"));
-        assertFalse(stationTypesOf(profile()).contains("Drake-Class Carrier"),
-                "a carrier can jump away between the search and the arrival");
+    void everyKindOfMarketIsSearched() {
+        // Measured live: of the 440 goods in our commodities table, 140 are on sale at no starport anywhere
+        // in the galaxy. "Micro-weave Cooling Hoses" - a common mission cargo - is stocked by 2,661
+        // settlements and 231 carriers and by nothing else, so a search over starports alone can only report
+        // a good the commander is looking at in his own transaction panel as being nowhere to be found.
+        List<String> types = stationTypesOf(profile());
+
+        assertTrue(types.contains("Settlement"), () -> types.toString());
+        assertTrue(types.contains("Drake-Class Carrier"), () -> types.toString());
+        assertTrue(types.containsAll(TradeStationSearchCriteria.StationType.PLANETARY_TRADE_TYPES), () -> types.toString());
+        assertTrue(types.containsAll(TradeStationSearchCriteria.StationType.ORBITAL_TRADE_TYPES), () -> types.toString());
+    }
+
+    @Test
+    void theTradeProfilesStationRulesDoNotNarrowThisSearch() {
+        // They are settings for a route the commander flies repeatedly, reached through the trade route
+        // screen, and nothing on it says it also governs "where can I buy this". A commander with planetary
+        // ports switched off was told mission cargo did not exist anywhere in the galaxy.
+        TradeRouteSearchCriteria restrictive = profile();
+        restrictive.setAllowPlanetary(false);
+        restrictive.setAllowFleetCarriers(false);
 
         TradeRouteSearchCriteria permissive = profile();
         permissive.setAllowPlanetary(true);
         permissive.setAllowFleetCarriers(true);
-        assertTrue(stationTypesOf(permissive).containsAll(List.of("Planetary Port", "Drake-Class Carrier")));
+
+        assertEquals(stationTypesOf(permissive), stationTypesOf(restrictive));
     }
 
     @Test
@@ -169,6 +183,23 @@ class CommodityMarketSearchTest {
 
         assertFalse(filtersOf(criteriaOf(profile(), "Gold", 60, false)).has("large_pads"),
                 "a medium or small ship must still see outposts");
+    }
+
+    @Test
+    void whatTheShipCanPhysicallyDoStillNarrowsTheSearch() {
+        // The line between the two halves of the profile: a large ship cannot land on a small pad and a
+        // hold has a size, whatever the commander asked for - but where he is WILLING to trade is not a
+        // limit on where a good can be found.
+        TradeRouteSearchCriteria profile = profile();
+        profile.setRequiresLargePad(true);
+        profile.setMaxLsFromArrival(1500);
+
+        JsonObject filters = filtersOf(criteriaOf(profile, "Micro-weave Cooling Hoses", 60, false));
+
+        assertEquals(1, filters.getAsJsonObject("large_pads").getAsJsonArray("value").get(0).getAsInt());
+        assertEquals(1500, filters.getAsJsonObject("distance_to_arrival").getAsJsonArray("value").get(1).getAsInt());
+        assertEquals(HOLD, filters.getAsJsonArray("marketplace").get(0).getAsJsonObject()
+                .getAsJsonObject("supply").getAsJsonArray("value").get(0).getAsInt());
     }
 
     @Test
