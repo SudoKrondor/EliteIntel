@@ -29,7 +29,9 @@ import static elite.intel.ui.theme.HudPalette.*;
 /**
  * Unified AI services tab: routes the language model (LLM) and speech (TTS) each between a
  * LOCAL and a CLOUD source via {@link HudSegmentedControl} switches, with the active source's
- * configuration highlighted and the unused one dimmed (section 0.6).
+ * configuration highlighted and the unused one dimmed (section 0.6). Speech has three engines for
+ * those two slots: LOCAL is Kokoro, and CLOUD holds Google (API key) and Microsoft Edge (keyless),
+ * with the Edge toggle in the cloud column deciding which of the two speaks.
  * <p>
  * Persistence is transactional: no control writes to {@link SystemSession} on its own. All edits
  * live in an in-memory working copy and are committed atomically by {@link #save()} (the only point
@@ -64,6 +66,8 @@ public class AiServicesSettingsPanel extends JPanel {
     private JPanel localCol;
     private JPanel rightCol;
     private JPanel ttsRightCol;
+    private HudBanner ttsLocalHint;
+    private HudBanner ttsEdgeHint;
     private JButton saveButton;
     private JLabel unsavedLabel;
 
@@ -151,15 +155,13 @@ public class AiServicesSettingsPanel extends JPanel {
                 new String[]{getText("settings.ai.voice.local"), getText("settings.ai.voice.cloud")}, SRC_CLOUD);
         tts.add(ttsSourceControl, BorderLayout.NORTH);
 
-        // Left column - the keyless engines: Kokoro needs no configuration, and Microsoft Edge is picked with
-        // the toggle below the switch. Right column - CLOUD Google TTS key.
+        // Left column - LOCAL: Kokoro speaks on this machine and has nothing to configure, so the column
+        // only says so. Right column - CLOUD: Google (needs a key) or Microsoft Edge, chosen with the
+        // toggle under the key row.
         JPanel ttsLeftCol = transparentPanel(new BorderLayout(0, HUD_GAP));
-        ttsEdgeButton = makeToggleButton(getText("settings.ai.voice.edge"));
-        JPanel ttsEdgeCol = transparentPanel(new BorderLayout(0, HUD_GAP));
-        ttsEdgeCol.add(ttsEdgeButton, BorderLayout.NORTH);
-        ttsEdgeCol.add(HudBanner.multiline(getText("settings.ai.voice.edge.hint"), StatusBadge.State.INFO),
-                BorderLayout.CENTER);
-        ttsLeftCol.add(ttsEdgeCol, BorderLayout.NORTH);
+        ttsLocalHint = HudBanner.multiline(getText("settings.ai.voice.local.hint"), StatusBadge.State.INFO);
+        ttsLeftCol.add(ttsLocalHint, BorderLayout.NORTH);
+
         ttsRightCol = transparentPanel(new GridBagLayout());
         GridBagConstraints tgc = baseGbc();
         ttsKeyField = makePasswordField();
@@ -169,6 +171,14 @@ public class AiServicesSettingsPanel extends JPanel {
         ttsKeyRow.add(ttsLockCheck, BorderLayout.EAST);
         addLabel(ttsRightCol, getText("settings.ai.googleTtsKey"), tgc, 0);
         addField(ttsRightCol, ttsKeyRow, tgc, 1, 1.0);
+
+        // The keyless cloud voice: while this toggle is on, Google's key row is out of play.
+        ttsEdgeButton = makeToggleButton(getText("settings.ai.voice.edge"));
+        nextRow(tgc);
+        addSpanComponent(ttsRightCol, ttsEdgeButton, tgc);
+        ttsEdgeHint = HudBanner.multiline(getText("settings.ai.voice.edge.hint"), StatusBadge.State.INFO);
+        nextRow(tgc);
+        addSpanComponent(ttsRightCol, ttsEdgeHint, tgc);
 
         JPanel ttsRightWrap = transparentPanel(new BorderLayout());
         ttsRightWrap.add(ttsRightCol, BorderLayout.NORTH);
@@ -215,8 +225,8 @@ public class AiServicesSettingsPanel extends JPanel {
             recomputeDirty();
             updateEnablement();
         });
-        // The Edge toggle is the third engine, so it supersedes the LOCAL/CLOUD switch while it is on
-        // (updateEnablement dims the switch and the Google key); turning it off hands the choice back.
+        // The Edge toggle picks which cloud voice speaks; while it is on, updateEnablement dims the
+        // Google key row, and turning it off hands the cloud slot back to Google.
         ttsEdgeButton.addItemListener(e -> {
             recomputeDirty();
             updateEnablement();
@@ -310,11 +320,14 @@ public class AiServicesSettingsPanel extends JPanel {
         apiKeyField.setEnabled(cloud && !llmLockCheck.isSelected());
         llmLockCheck.setEnabled(cloud);
 
-        // Edge is neither of the switch's two setups, so while it is selected the switch is inert and dimmed
-        // and the Google key is out of play - the toggle alone says what speaks.
-        boolean edge = ttsEdgeButton.isSelected();
-        ttsSourceControl.setEnabled(!edge);
-        boolean googleTts = !edge && ttsSourceControl.getSelectedIndex() == SRC_CLOUD;
+        // LOCAL means Kokoro, with nothing to set. CLOUD holds both cloud voices, so its whole column
+        // lives or dies with the switch, and inside it the Edge toggle decides whether Google's key row
+        // is in play.
+        boolean ttsCloud = ttsSourceControl.getSelectedIndex() == SRC_CLOUD;
+        ttsLocalHint.setEnabled(!ttsCloud);
+        ttsEdgeButton.setEnabled(ttsCloud);
+        ttsEdgeHint.setEnabled(ttsCloud);
+        boolean googleTts = ttsCloud && !ttsEdgeButton.isSelected();
         for (Component c : ttsRightCol.getComponents()) {
             if (c instanceof JLabel) c.setEnabled(googleTts);
         }
@@ -446,13 +459,14 @@ public class AiServicesSettingsPanel extends JPanel {
     }
 
     /**
-     * The engine the controls currently describe: the Edge toggle wins, otherwise the LOCAL/CLOUD switch.
+     * The engine the controls currently describe: LOCAL is always Kokoro, and CLOUD is Google unless the
+     * Edge toggle claims it.
      */
     private TtsProvider selectedTtsProvider() {
-        if (ttsEdgeButton.isSelected()) {
-            return TtsProvider.EDGE;
+        if (ttsSourceControl.getSelectedIndex() == SRC_LOCAL) {
+            return TtsProvider.KOKORO;
         }
-        return ttsSourceControl.getSelectedIndex() == SRC_LOCAL ? TtsProvider.KOKORO : TtsProvider.GOOGLE;
+        return ttsEdgeButton.isSelected() ? TtsProvider.EDGE : TtsProvider.GOOGLE;
     }
 
     private static String nz(String value, String fallback) {
