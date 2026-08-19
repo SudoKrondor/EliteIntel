@@ -173,6 +173,10 @@ class EdgeTTSImplTest {
         FakeOutput output = new FakeOutput();
         output.blockPlayback();
         client.failText = "Two.";
+        // The failure must land while sentence one is on the speaker: the synthesis worker runs ahead of
+        // playback, and a failure raised before then would legitimately drop sentence one from the queue
+        // instead of interrupting it, which is a different behaviour from the one under test.
+        client.failOnlyAfter(output.playStarted);
         EdgeTTSImpl mouth = mouth(client, output, 0f, 100);
         mouth.start();
         CompletableFuture<Void> completion = new CompletableFuture<>();
@@ -447,6 +451,7 @@ class EdgeTTSImplTest {
         private final AtomicInteger voiceListAttempts = new AtomicInteger();
         private volatile String blockedRequest;
         private volatile String failText;
+        private volatile CountDownLatch failGate;
         private volatile boolean failVoiceList;
 
         @Override
@@ -469,6 +474,10 @@ class EdgeTTSImplTest {
                 releaseSynthesis.await();
             }
             if (failText != null && request.text().equalsIgnoreCase(failText)) {
+                CountDownLatch gate = failGate;
+                if (gate != null && !gate.await(2, TimeUnit.SECONDS)) {
+                    throw new IOException("simulated failure gate never opened");
+                }
                 throw new IOException("simulated network failure");
             }
             return new byte[]{(byte) request.text().charAt(0)};
@@ -488,6 +497,13 @@ class EdgeTTSImplTest {
 
         void blockRequest(String requestId) {
             blockedRequest = requestId;
+        }
+
+        /**
+         * Holds the simulated failure back until {@code gate} opens, so a failure races nothing.
+         */
+        void failOnlyAfter(CountDownLatch gate) {
+            failGate = gate;
         }
     }
 
