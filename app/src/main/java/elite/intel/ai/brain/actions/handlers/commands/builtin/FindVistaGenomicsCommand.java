@@ -65,6 +65,7 @@ public final class FindVistaGenomicsCommand implements IntelCommand {
         distance.setMax(range.intValue());
         filters.setDistance(distance);
         criteria.setFilters(filters);
+        criteria.setSort(List.of(new VistaSearchCriteria.DistanceSort()));
 
         LocationDao.Coordinates galacticCoordinates = LocationManager.getInstance().getGalacticCoordinates();
 

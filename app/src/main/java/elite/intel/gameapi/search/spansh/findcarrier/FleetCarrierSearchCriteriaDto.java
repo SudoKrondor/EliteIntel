@@ -73,6 +73,21 @@ public class FleetCarrierSearchCriteriaDto implements ToJsonConvertible {
         }
     }
 
+    /**
+     * Sorts Spansh carrier search results nearest-first before pagination.
+     */
+    public static class DistanceSort {
+
+        @SerializedName("distance")
+        private final Ascending distance = new Ascending();
+
+        private static class Ascending {
+
+            @SerializedName("direction")
+            private final String direction = "asc";
+        }
+    }
+
     public static class CarrierDockingAccess {
 
         @SerializedName("value")
@@ -126,12 +141,17 @@ public class FleetCarrierSearchCriteriaDto implements ToJsonConvertible {
 
     public static class UpdatedAt {
         @SerializedName("comparison")
-        private String comparison;           // e.g. "<=>"
+        private String comparison; // e.g. "<=>"
 
         @SerializedName("value")
-        private List<String> value;          // ISO-8601 strings
+        private List<String> value; // ISO-8601 strings
 
-        public void setComparison(String comparison) { this.comparison = comparison; }
-        public void setValue(List<String> value) { this.value = value; }
+        public void setComparison(String comparison) {
+            this.comparison = comparison;
+        }
+
+        public void setValue(List<String> value) {
+            this.value = value;
+        }
     }
 }

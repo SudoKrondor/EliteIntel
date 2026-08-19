@@ -61,6 +61,21 @@ public class VistaSearchCriteria extends BaseJsonDto implements ToJsonConvertibl
         }
     }
 
+    /**
+     * Sorts Spansh station search results nearest-first before pagination.
+     */
+    public static class DistanceSort {
+
+        @SerializedName("distance")
+        private final Ascending distance = new Ascending();
+
+        private static class Ascending {
+
+            @SerializedName("direction")
+            private final String direction = "asc";
+        }
+    }
+
     public static class ReferenceCoords {
 
         @SerializedName("x")
@@ -85,8 +100,6 @@ public class VistaSearchCriteria extends BaseJsonDto implements ToJsonConvertibl
         }
     }
 
-
-
     public static class Distance {
 
         @SerializedName("min")
@@ -103,7 +116,6 @@ public class VistaSearchCriteria extends BaseJsonDto implements ToJsonConvertibl
             this.max = max;
         }
     }
-
 
     public static class Service {
 
