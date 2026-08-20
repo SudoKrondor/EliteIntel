@@ -127,27 +127,33 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
          * Kept out of {@link #PLANETARY_TRADE_TYPES} - and so out of a trade route - because there are
          * 312,000 of them against 80,000 ports, and most of what they trade is on-foot goods rather than
          * the ship cargo a route moves. They belong in a commodity search all the same: measured live,
-         * "Micro-weave Cooling Hoses" is stocked by 2,661 settlements and 231 carriers and by nothing else.
+         * "Micro-weave Cooling Hoses" is stocked by 2,661 settlements and by no starport at all.
          */
         public static final List<String> SETTLEMENT_TRADE_TYPES = List.of("Settlement");
 
         /**
          * Player-owned, so offered only when the trade profile allows fleet carriers.
+         * <p>
+         * Deliberately NOT part of {@link #EVERY_STATIC_TRADE_TYPE}: a carrier jumps, and its owner may
+         * move it 500 ly the hour after Spansh last saw it, so it is no answer at all to "where can I buy
+         * this" - the commander flies to the system and finds empty space. A trade route is different only
+         * in that the commander opted into carriers there, knowing they wander.
          */
         public static final List<String> CARRIER_TRADE_TYPES = List.of("Drake-Class Carrier");
 
         /**
-         * Every type that can hold a ship commodity market.
+         * Every type that can hold a ship commodity market and STAYS WHERE IT IS - fleet carriers excepted,
+         * see {@link #CARRIER_TRADE_TYPES}.
          * <p>
          * For the search that answers "where does this good exist", which is a different question from
-         * "where would I run a trade route". The profile's surface and carrier rules shape a route the
-         * commander will fly repeatedly; a commander who asks where to buy 72 units of mission cargo has
-         * not asked about any of that, and would never guess that a trade route setting is why the answer
-         * came back empty. Measured live, 140 of the 440 goods in our commodities table are on sale at no
-         * starport anywhere in the galaxy, so narrowing that search by profile makes them unobtainable.
+         * "where would I run a trade route". The profile's surface rules shape a route the commander will
+         * fly repeatedly; a commander who asks where to buy 72 units of mission cargo has not asked about
+         * any of that, and would never guess that a trade route setting is why the answer came back empty.
+         * Measured live, 140 of the 440 goods in our commodities table are on sale at no starport anywhere
+         * in the galaxy, so narrowing that search by profile makes them unobtainable.
          */
-        public static final List<String> EVERY_TRADE_TYPE = Stream.of(
-                        ORBITAL_TRADE_TYPES, PLANETARY_TRADE_TYPES, SETTLEMENT_TRADE_TYPES, CARRIER_TRADE_TYPES)
+        public static final List<String> EVERY_STATIC_TRADE_TYPE = Stream.of(
+                        ORBITAL_TRADE_TYPES, PLANETARY_TRADE_TYPES, SETTLEMENT_TRADE_TYPES)
                 .flatMap(List::stream).toList();
 
         @SerializedName("value")

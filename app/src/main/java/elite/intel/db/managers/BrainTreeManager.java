@@ -60,7 +60,7 @@ public class BrainTreeManager {
 
         BrainTreeCriteria criteria = new BrainTreeCriteria();
         criteria.setPage(1);
-        criteria.setSize(50);
+        criteria.setSize(250);
         BrainTreeCriteria.Filters filters = new BrainTreeCriteria.Filters();
 
         BrainTreeCriteria.Distance distance = new BrainTreeCriteria.Distance();

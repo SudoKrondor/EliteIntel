@@ -9,11 +9,16 @@ import elite.intel.gameapi.search.spansh.traderoute.TradeRouteSearchCriteria;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
+import static elite.intel.util.StringUtls.localizedEvent;
 import static elite.intel.util.StringUtls.localizedEventPlural;
 
 /**
@@ -30,10 +35,18 @@ import static elite.intel.util.StringUtls.localizedEventPlural;
  * the near part of it is deliberate - the saving on a hold of cargo is rarely worth a hundred extra jumps.
  * <p>
  * WHY the trade profile does not choose the station types here: it sizes the hold and says what the ship
- * can physically dock at, but its surface and carrier RULES are a trade route preference, and a commander
- * asking where to buy mission cargo has not asked about trade routes. Gating this search on them made 140
- * of the 440 goods in our commodities table unbuyable - see
- * {@link TradeStationSearchCriteria.StationType#EVERY_TRADE_TYPE}.
+ * can physically dock at, but its surface RULES are a trade route preference, and a commander asking where
+ * to buy mission cargo has not asked about trade routes. Gating this search on them made 140 of the 440
+ * goods in our commodities table unbuyable - see
+ * {@link TradeStationSearchCriteria.StationType#EVERY_STATIC_TRADE_TYPE}.
+ * <p>
+ * WHY fleet carriers come second and only when nothing else has the good: a carrier jumps. Its owner can
+ * move it hundreds of light years between one Spansh sync and the commander arriving, so a static market is
+ * always the better answer and is preferred whenever one exists. But measured live, whole categories - the
+ * mined gems, the Thargoid parts, most of the rares - are sold by carriers and by NOTHING else: Alexandrite
+ * is stocked by 241 carriers and 0 starports, Thargoid Sensors by 339 and 0. Refusing to name a carrier
+ * would tell the commander those goods do not exist anywhere in the galaxy. So the carrier is offered, and
+ * {@link CommoditySearchResult#isFleetCarrier()} makes the caller say out loud that it may have moved on.
  */
 public final class SpanshCommoditySearch {
 
@@ -57,6 +70,20 @@ public final class SpanshCommoditySearch {
      */
     private static final int BEST_PRICE_CANDIDATES = 50;
     /**
+     * Human space is roughly this wide around Sol, so a sweep this far covers every fixed market there is.
+     * The last widening before the search gives up on stations and starts naming mobile ones.
+     */
+    private static final int INHABITED_BUBBLE_LY = 1000;
+    /**
+     * How recently Spansh must have seen a carrier for it to be worth flying to.
+     * <p>
+     * A carrier's recorded position is only its last sighting, and it jumps. Measured live, 147 carriers are
+     * listed as selling "Hardware Diagnostic Sensor" but only 13 were seen in the last day - so nine out of
+     * ten of those answers are a system the carrier has already left. This is the same window
+     * {@code FindNearestFleetCarrierCommand} has always used for the same reason.
+     */
+    private static final int CARRIER_SEEN_WITHIN_DAYS = 1;
+    /**
      * Stations to fetch when only the nearest one is wanted. The page comes back in distance order, so the
      * answer is the first row; the rest are here only so a station rejected below has a successor.
      */
@@ -67,6 +94,12 @@ public final class SpanshCommoditySearch {
      * "Fruit And Vegetables" - which matches nothing at all.
      */
     private static final Set<String> MINOR_WORDS = Set.of("and", "of", "the", "in", "a", "an", "to", "for", "on");
+
+    /**
+     * Spansh reads the window as ISO-8601 instants.
+     */
+    private static final DateTimeFormatter ISO =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC);
 
     private static final Logger log = LogManager.getLogger(SpanshCommoditySearch.class);
 
@@ -86,16 +119,127 @@ public final class SpanshCommoditySearch {
             String commodityToFind, String refStarSystem, int maxDistanceLy,
             TradeRouteSearchCriteria profile, boolean returnClosest) {
 
-        TradeStationSearchCriteria criteria = searchCriteria(commodityToFind, refStarSystem, maxDistanceLy, profile, returnClosest);
+        // A hold's worth, or the commander flies out for a part load. Guarded because a floor of zero would
+        // also match a market that lists the good and has none.
+        int holdFull = Math.max(1, profile.getMaxCargo());
+
+        List<CommoditySearchResult> markets = List.of();
+        List<Attempt> ladder = attempts(holdFull, maxDistanceLy);
+        for (int i = 0; i < ladder.size(); i++) {
+            Attempt attempt = ladder.get(i);
+            // Say what is about to be tried BEFORE trying it. The commander was told the search covers the
+            // radius he named; every step past that is the search answering a question he did not ask, and a
+            // silent escalation reads as a straight answer - which is how a carrier 50 ly away came back
+            // looking like the nearest market rather than the last resort.
+            if (i > 0) {
+                announceEscalation(ladder.get(i - 1), attempt);
+            }
+            markets = marketsSelling(attempt, commodityToFind, refStarSystem, profile, returnClosest);
+            if (!markets.isEmpty()) {
+                break;
+            }
+            log.debug("Nothing sells {} for {}; widening", commodityToFind, attempt);
+        }
+
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(
+                localizedEventPlural(markets.size(), "event.search.commodity.marketsFound")));
+
+        return markets;
+    }
+
+    /**
+     * The searches to try, in the order the commander would want them answered. Each is only run when the
+     * one before it found nothing, so an ordinary good in a sensible radius is still a single request.
+     * <p>
+     * The radius widens twice - to double the stated one, then to the whole inhabited bubble - before a
+     * fleet carrier is considered at all. A carrier IS a market, but a mobile one whose recorded position is
+     * only where Spansh last saw it, so it is the desperation option rather than a peer of the starports.
+     * Measured live from a commander's actual position: "Hardware Diagnostic Sensor" had nothing static
+     * inside 120 ly, and the old ladder named a carrier 50 ly away - while Kanwar Gateway, a Coriolis with a
+     * large pad and 5,477 units of it, sat at 202 ly and would still have been there on arrival.
+     * <p>
+     * WHY a full hold is looked for but not insisted on: measured live, "Neofabric Insulation" is sold by
+     * 1,726 markets, but by only FOUR holding 300 tonnes of it. Demanding the ship's whole capacity told a
+     * commander that an ordinary industrial good on sale 20 ly away does not exist, and the bigger his ship
+     * the more goods vanished. The stated radius is asked for a full load first and a part load second;
+     * past that the commander is already flying a long way, and what is there is what is there.
+     */
+    private static List<Attempt> attempts(int holdFull, int maxDistanceLy) {
+        List<String> staticTypes = TradeStationSearchCriteria.StationType.EVERY_STATIC_TRADE_TYPE;
+        List<String> carriers = TradeStationSearchCriteria.StationType.CARRIER_TRADE_TYPES;
+        // Guarded so a commander who asks for a galaxy-wide radius does not overflow it into a negative one.
+        int widened = maxDistanceLy > Integer.MAX_VALUE / 2 ? maxDistanceLy : maxDistanceLy * 2;
+        // Never NARROWS an already-wide ask: a commander who said 2000 ly keeps his 4000 ly second sweep.
+        int bubble = Math.max(widened, INHABITED_BUBBLE_LY);
+
+        List<Attempt> ladder = new ArrayList<>();
+        ladder.add(new Attempt(staticTypes, holdFull, maxDistanceLy, false));
+        ladder.add(new Attempt(staticTypes, SELLING_AT_ALL, maxDistanceLy, false));
+        if (widened > maxDistanceLy) {
+            ladder.add(new Attempt(staticTypes, SELLING_AT_ALL, widened, false));
+        }
+        if (bubble > widened) {
+            ladder.add(new Attempt(staticTypes, SELLING_AT_ALL, bubble, false));
+        }
+        // Last resort, and only carriers seen recently enough for the sighting to mean anything.
+        ladder.add(new Attempt(carriers, SELLING_AT_ALL, bubble, true));
+        return List.copyOf(ladder);
+    }
+
+    /**
+     * Voices the step from one attempt to the next, and only where it changes what the commander is being
+     * offered: a wider radius, or the move from fixed markets to mobile ones. Widening the stock floor at the
+     * same radius is not something he needs to hear about - the part-load note on the answer already says it.
+     */
+    private static void announceEscalation(Attempt previous, Attempt next) {
+        if (next.mustBeRecentlySeen() && !previous.mustBeRecentlySeen()) {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(
+                    localizedEvent("event.search.commodity.tryingCarriers")));
+        } else if (next.maxDistanceLy() > previous.maxDistanceLy()) {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent(
+                    "event.search.commodity.widening", previous.maxDistanceLy(), next.maxDistanceLy())));
+        }
+    }
+
+    /**
+     * Test seam: the attempt ladder is the search's contract, and its ORDER is the part worth pinning.
+     */
+    static List<Attempt> attemptsForTest(int holdFull, int maxDistanceLy) {
+        return attempts(holdFull, maxDistanceLy);
+    }
+
+    /**
+     * One search: which station types to ask about, how much stock a market must hold, and whether the
+     * station has to have been seen recently. Only a carrier needs that last one - a starport is still where
+     * Spansh last recorded it however long ago that was.
+     */
+    record Attempt(List<String> stationTypes, int minSupply, int maxDistanceLy, boolean mustBeRecentlySeen) {
+        @Override
+        public String toString() {
+            return (stationTypes.size() == 1 ? stationTypes.getFirst() : "static markets")
+                    + " with " + minSupply + "t within " + maxDistanceLy + " ly";
+        }
+    }
+
+    /**
+     * One search, over one set of station types, ranked.
+     * <p>
+     * Separate from {@link #search} so the fallback is a second call with different types rather than a
+     * flag threaded through the request building - and so the announcement is published once, over the
+     * markets the commander is actually being offered, not once per attempt.
+     */
+    private static List<CommoditySearchResult> marketsSelling(
+            Attempt attempt, String commodityToFind, String refStarSystem,
+            TradeRouteSearchCriteria profile, boolean returnClosest) {
+
+        TradeStationSearchCriteria criteria =
+                searchCriteria(commodityToFind, refStarSystem, profile, returnClosest, attempt);
         log.debug("Commodity search criteria: {}", criteria.toJson());
 
         TradeStationSearchResultDto response = StationSearchClient.getInstance().searchStations(criteria);
         // A failed POST, a search that times out and an empty body all arrive here as a null.
         List<TradeStationSearchResultDto.StationResult> stations =
                 response == null || response.getResults() == null ? List.of() : response.getResults();
-
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(
-                localizedEventPlural(stations.size(), "event.search.commodity.marketsFound")));
 
         return rank(stations, commodityToFind, returnClosest);
     }
@@ -133,25 +277,23 @@ public final class SpanshCommoditySearch {
      * hears that the commodity is nowhere to be found.
      */
     static TradeStationSearchCriteria searchCriteria(
-            String commodityToFind, String refStarSystem, int maxDistanceLy,
-            TradeRouteSearchCriteria profile, boolean returnClosest) {
+            String commodityToFind, String refStarSystem,
+            TradeRouteSearchCriteria profile, boolean returnClosest, Attempt attempt) {
 
-        // Every market that exists, settlements and carriers included: see EVERY_TRADE_TYPE for why the
-        // profile's surface and carrier rules stop at the trade route and do not reach this search.
+        // The types and the stock floor are the attempt's, because the same request is sent again with a
+        // wider one when it comes back empty - see attempts(). EVERY_STATIC_TRADE_TYPE says why the
+        // profile's surface rules stop at the trade route and do not reach this search.
         TradeStationSearchCriteria.StationType stationType = new TradeStationSearchCriteria.StationType();
-        stationType.setTypes(TradeStationSearchCriteria.StationType.EVERY_TRADE_TYPE);
+        stationType.setTypes(attempt.stationTypes());
 
         /// NOTE: Spansh API is very inconsistent. The light year radius takes a min/max pair of STRINGS and
         /// is silently ignored when sent as a "<=>" range - unlike every other range filter here.
         TradeStationSearchCriteria.Distance distance = new TradeStationSearchCriteria.Distance();
         distance.setMin(0);
-        distance.setMax(maxDistanceLy);
+        distance.setMax(attempt.maxDistanceLy());
 
-        // A hold's worth in stock, or the commander flies out for a part load. Guarded because a range
-        // starting at zero would also match markets that list the good and have none.
-        int holdFull = Math.max(1, profile.getMaxCargo());
         TradeStationSearchCriteria.Marketplace marketplace = new TradeStationSearchCriteria.Marketplace(spellings(commodityToFind));
-        marketplace.setSupply(new TradeStationSearchCriteria.RangeFilter(holdFull, UNBOUNDED));
+        marketplace.setSupply(new TradeStationSearchCriteria.RangeFilter(attempt.minSupply(), UNBOUNDED));
         marketplace.setBuyPrice(new TradeStationSearchCriteria.RangeFilter(SELLING_AT_ALL, UNBOUNDED));
 
         TradeStationSearchCriteria.Filters filters = new TradeStationSearchCriteria.Filters();
@@ -160,6 +302,15 @@ public final class SpanshCommoditySearch {
         filters.setDistanceToArrival(new TradeStationSearchCriteria.RangeFilter(0, profile.getMaxLsFromArrival()));
         filters.setServices(List.of(new TradeStationSearchCriteria.Service(List.of(TradeStationSearchCriteria.MARKET_SERVICE))));
         filters.setMarketplace(List.of(marketplace));
+        if (attempt.mustBeRecentlySeen()) {
+            // Only a sighting this recent says anything about where the carrier is NOW.
+            Instant now = Instant.now();
+            TradeStationSearchCriteria.UpdatedAt seen = new TradeStationSearchCriteria.UpdatedAt();
+            seen.setComparison("<=>");
+            seen.setValue(List.of(
+                    ISO.format(now.minus(CARRIER_SEEN_WITHIN_DAYS, ChronoUnit.DAYS)), ISO.format(now)));
+            filters.setUpdatedAt(seen);
+        }
         if (profile.isRequiresLargePad()) {
             filters.setLargePads(new TradeStationSearchCriteria.RangeFilter(1, LARGE_PADS_MANY));
         }
@@ -243,9 +394,11 @@ public final class SpanshCommoditySearch {
         CommoditySearchResult result = new CommoditySearchResult();
         result.setCommodity(entry.getCommodity());
         result.setPrice(entry.getBuyPrice());   // buy_price is what the commander pays
+        result.setSupply(entry.getSupply() == null ? 0 : entry.getSupply());
         result.setStarSystem(station.getSystemName());
         result.setStationName(station.getName());
         result.setStationType(station.getType());
+        result.setFleetCarrier(TradeStationSearchCriteria.StationType.CARRIER_TRADE_TYPES.contains(station.getType()));
         result.setDistanceFromPlayer(station.getDistance() == null ? 0 : station.getDistance());
         return result;
     }

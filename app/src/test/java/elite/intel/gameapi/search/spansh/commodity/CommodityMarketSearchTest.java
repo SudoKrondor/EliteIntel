@@ -49,12 +49,12 @@ class CommodityMarketSearchTest {
     }
 
     @Test
-    void theMarketMustHaveAHoldsWorthInStock() {
+    void theFirstSearchAsksForAHoldsWorthInStock() {
         JsonObject supply = marketplaceOf(profile(), "Gold").getAsJsonObject("supply");
 
         assertEquals("<=>", supply.get("comparison").getAsString());
         assertEquals(HOLD, supply.getAsJsonArray("value").get(0).getAsInt(),
-                "a market with less than a hold's worth sends the commander out for a part load");
+                "a full load is what the first attempt looks for; a later one settles for less");
         assertTrue(supply.getAsJsonArray("value").get(1).getAsInt() > HOLD,
                 "the upper bound must not exclude a market with plenty");
     }
@@ -142,24 +142,142 @@ class CommodityMarketSearchTest {
     }
 
     @Test
-    void everyKindOfMarketIsSearched() {
+    void everyKindOfMarketThatStaysPutIsSearched() {
         // Measured live: of the 440 goods in our commodities table, 140 are on sale at no starport anywhere
         // in the galaxy. "Micro-weave Cooling Hoses" - a common mission cargo - is stocked by 2,661
-        // settlements and 231 carriers and by nothing else, so a search over starports alone can only report
-        // a good the commander is looking at in his own transaction panel as being nowhere to be found.
+        // settlements and by no starport at all, so a search over starports alone can only report a good the
+        // commander is looking at in his own transaction panel as being nowhere to be found.
         List<String> types = stationTypesOf(profile());
 
         assertTrue(types.contains("Settlement"), () -> types.toString());
-        assertTrue(types.contains("Drake-Class Carrier"), () -> types.toString());
         assertTrue(types.containsAll(TradeStationSearchCriteria.StationType.PLANETARY_TRADE_TYPES), () -> types.toString());
         assertTrue(types.containsAll(TradeStationSearchCriteria.StationType.ORBITAL_TRADE_TYPES), () -> types.toString());
+    }
+
+    @Test
+    void theFirstSearchAsksForNoFleetCarrier() {
+        // A carrier jumps: its owner can move it hundreds of light years between Spansh's last sync and the
+        // commander arriving. So a market that stays put is always preferred, and the carrier is a fallback
+        // (see theFallbackAsksForFleetCarriersAlone), never a competitor on the first page.
+        List<String> types = stationTypesOf(profile());
+
+        assertFalse(types.contains("Drake-Class Carrier"), () -> types.toString());
+    }
+
+    @Test
+    void aPartLoadIsPreferredToReportingTheGoodAsNonexistent() {
+        // Measured live: 1,726 markets sell "Neofabric Insulation", but only FOUR hold 300 tonnes of it and
+        // none at all within 40 ly. Insisting on the ship's whole capacity told a commander that an ordinary
+        // industrial good on sale 20 ly away does not exist - and the bigger his ship, the more goods
+        // vanished. The widened attempt asks only that the market be selling.
+        JsonObject supply = filtersOf(criteriaOf(profile(), "Neofabric Insulation", 60, true,
+                TradeStationSearchCriteria.StationType.EVERY_STATIC_TRADE_TYPE, 1))
+                .getAsJsonArray("marketplace").get(0).getAsJsonObject().getAsJsonObject("supply");
+
+        assertEquals(1, supply.getAsJsonArray("value").get(0).getAsInt());
+    }
+
+    @Test
+    void theRadiusDoublesBeforeAnyFleetCarrierIsConsidered() {
+        // A carrier is a mobile station and its position is only where Spansh last saw it, so it is the last
+        // resort - after the fixed markets have been asked twice, at the stated radius and at double it.
+        // "Hardware Diagnostic Sensor" has 3 static markets in the galaxy against 147 carrier listings, and
+        // reaching for a carrier while a real starport sat outside the radius sent a commander to empty space.
+        List<String> order = SpanshCommoditySearch.attemptsForTest(HOLD, 100).stream()
+                .map(attempt -> (attempt.stationTypes().size() == 1 ? "carrier" : "static")
+                        + "@" + attempt.maxDistanceLy())
+                .toList();
+
+        assertEquals(List.of("static@100", "static@100", "static@200", "static@1000", "carrier@1000"), order,
+                "the bubble sweep must come before any carrier: measured live, nothing static sold Hardware "
+                        + "Diagnostic Sensor inside 120 ly, but Kanwar Gateway had 5,477 units at 202 ly");
+    }
+
+    @Test
+    void everyStaticAttemptIsExhaustedBeforeTheCarrierOne() {
+        List<SpanshCommoditySearch.Attempt> attempts = SpanshCommoditySearch.attemptsForTest(HOLD, 100);
+        int firstCarrier = attempts.indexOf(attempts.stream()
+                .filter(a -> a.stationTypes().equals(TradeStationSearchCriteria.StationType.CARRIER_TRADE_TYPES))
+                .findFirst().orElseThrow());
+
+        assertEquals(attempts.size() - 1, firstCarrier, "the carrier attempt must be the last one, not a peer");
+    }
+
+    @Test
+    void aWideAskIsNeverNarrowedByTheBubbleSweep() {
+        // A commander who said 2000 ly keeps his 4000 ly sweep; the bubble is a floor on how far the search
+        // widens, never a ceiling on what he asked for.
+        List<Integer> radii = SpanshCommoditySearch.attemptsForTest(HOLD, 2000).stream()
+                .map(SpanshCommoditySearch.Attempt::maxDistanceLy)
+                .toList();
+
+        assertEquals(List.of(2000, 2000, 4000, 4000), radii);
+    }
+
+    @Test
+    void aWidenedRadiusIsAskedForAsDoubleTheStatedOne() {
+        JsonObject distance = filtersOf(criteriaOf(profile(), "Gold", 200, false)).getAsJsonObject("distance");
+
+        assertEquals(200, distance.get("max").getAsInt(),
+                "each attempt carries its own radius; the doubling happens between attempts");
+    }
+
+    @Test
+    void onlyRecentlySeenCarriersAreOffered() {
+        // A carrier's recorded position is its last sighting, and it jumps. Measured live, 147 carriers are
+        // listed as selling "Hardware Diagnostic Sensor" and only 13 were seen within the day - so without
+        // this window nine in ten answers send the commander to a system the carrier has already left.
+        JsonObject carrierFilters = filtersOf(criteriaOf(profile(), "Gold", 60, true,
+                TradeStationSearchCriteria.StationType.CARRIER_TRADE_TYPES, 1));
+
+        assertTrue(carrierFilters.has("updated_at"), () -> carrierFilters.toString());
+        assertEquals(2, carrierFilters.getAsJsonObject("updated_at").getAsJsonArray("value").size());
+    }
+
+    @Test
+    void aStaticMarketIsNotAskedWhenItWasLastSeen() {
+        // A starport is where Spansh last recorded it however old the record is; filtering static markets by
+        // sighting age would discard real answers for no gain.
+        assertFalse(filtersOf(criteriaOf(profile(), "Gold", 60, true)).has("updated_at"));
+    }
+
+    @Test
+    void theFallbackAsksForFleetCarriersAlone() {
+        // Measured live: Alexandrite is stocked by 241 carriers and 0 starports, Thargoid Sensors by 339
+        // and 0. Without this second pass those goods are reported as existing nowhere in the galaxy.
+        List<String> types = stationTypesOf(profile(), TradeStationSearchCriteria.StationType.CARRIER_TRADE_TYPES);
+
+        assertEquals(List.of("Drake-Class Carrier"), types,
+                "the fallback re-asks the SAME question of carriers only; mixing the static types back in "
+                        + "would let a distant starport outrank the carrier that actually has the good");
+    }
+
+    @Test
+    void aCarrierMarketIsFlaggedSoTheCommanderCanBeWarned() {
+        // The flag is what the spoken line and the reminder key off. Inferring it from the station type at
+        // the call site instead would put Spansh's exact spelling of "Drake-Class Carrier" in two places.
+        List<CommoditySearchResult> carrierMarkets = SpanshCommoditySearch.rank(carrierPage(), "Alexandrite", true);
+
+        assertFalse(carrierMarkets.isEmpty(), "the captured carrier page sells Alexandrite");
+        assertTrue(carrierMarkets.getFirst().isFleetCarrier(),
+                () -> carrierMarkets.getFirst().getStationType() + " must be flagged as a carrier");
+    }
+
+    @Test
+    void aStaticMarketIsNotFlaggedAsACarrier() {
+        List<CommoditySearchResult> markets = SpanshCommoditySearch.rank(page(), "Gold", true);
+
+        assertFalse(markets.isEmpty());
+        assertFalse(markets.getFirst().isFleetCarrier(),
+                () -> markets.getFirst().getStationType() + " is not a carrier and must not be warned about");
     }
 
     @Test
     void theTradeProfilesStationRulesDoNotNarrowThisSearch() {
         // They are settings for a route the commander flies repeatedly, reached through the trade route
         // screen, and nothing on it says it also governs "where can I buy this". A commander with planetary
-        // ports switched off was told mission cargo did not exist anywhere in the galaxy.
+        // ports switched off was told mission cargo did not exist anywhere in the galaxy. (The carrier
+        // setting cannot widen this search either - see fleetCarriersAreNeverSearched.)
         TradeRouteSearchCriteria restrictive = profile();
         restrictive.setAllowPlanetary(false);
         restrictive.setAllowFleetCarriers(false);
@@ -288,7 +406,20 @@ class CommodityMarketSearchTest {
     }
 
     private static TradeStationSearchCriteria criteriaOf(TradeRouteSearchCriteria profile, String commodity, int maxLy, boolean nearest) {
-        return SpanshCommoditySearch.searchCriteria(commodity, "Sol", maxLy, profile, nearest);
+        return criteriaOf(profile, commodity, maxLy, nearest, TradeStationSearchCriteria.StationType.EVERY_STATIC_TRADE_TYPE);
+    }
+
+    private static TradeStationSearchCriteria criteriaOf(
+            TradeRouteSearchCriteria profile, String commodity, int maxLy, boolean nearest, List<String> stationTypes) {
+        return criteriaOf(profile, commodity, maxLy, nearest, stationTypes, profile.getMaxCargo());
+    }
+
+    private static TradeStationSearchCriteria criteriaOf(
+            TradeRouteSearchCriteria profile, String commodity, int maxLy, boolean nearest,
+            List<String> stationTypes, int minSupply) {
+        return SpanshCommoditySearch.searchCriteria(commodity, "Sol", profile, nearest,
+                new SpanshCommoditySearch.Attempt(stationTypes, minSupply, maxLy,
+                        stationTypes.equals(TradeStationSearchCriteria.StationType.CARRIER_TRADE_TYPES)));
     }
 
     private static JsonObject body(TradeStationSearchCriteria criteria) {
@@ -305,7 +436,11 @@ class CommodityMarketSearchTest {
     }
 
     private static List<String> stationTypesOf(TradeRouteSearchCriteria profile) {
-        JsonArray types = filtersOf(criteriaOf(profile, "Gold", 60, false))
+        return stationTypesOf(profile, TradeStationSearchCriteria.StationType.EVERY_STATIC_TRADE_TYPE);
+    }
+
+    private static List<String> stationTypesOf(TradeRouteSearchCriteria profile, List<String> stationTypes) {
+        JsonArray types = filtersOf(criteriaOf(profile, "Gold", 60, false, stationTypes))
                 .getAsJsonObject("type").getAsJsonArray("value");
         return types.asList().stream().map(com.google.gson.JsonElement::getAsString).toList();
     }
@@ -314,6 +449,20 @@ class CommodityMarketSearchTest {
      * Two stations off a real {@code /api/stations/search/recall} page, trimmed to the fields read here.
      * Daedalus is the nearer, Galileo the cheaper, so distance order and price order disagree.
      */
+    /**
+     * A fallback page: carriers only, as the second search comes back. Station names are the callsign-style
+     * ones Spansh serves, and the type is its exact spelling - the flag is matched against it.
+     */
+    private static List<TradeStationSearchResultDto.StationResult> carrierPage() {
+        String json = """
+                {"results":[
+                  {"name":"K7Q-BQL","system_name":"Deciat","type":"Drake-Class Carrier","distance":12.4,
+                   "distance_to_arrival":0.0,"has_market":true,
+                   "market":[{"commodity":"Alexandrite","buy_price":455000,"sell_price":447000,"supply":900,"demand":0}]}
+                ]}""";
+        return GsonFactory.getGson().fromJson(json, TradeStationSearchResultDto.class).getResults();
+    }
+
     private static List<TradeStationSearchResultDto.StationResult> page() {
         String json = """
                 {"results":[

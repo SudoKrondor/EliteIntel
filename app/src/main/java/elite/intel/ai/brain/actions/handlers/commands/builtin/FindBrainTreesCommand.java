@@ -72,9 +72,7 @@ public final class FindBrainTreesCommand implements IntelCommand {
 
     @Override
     public String execute(JsonObject params, String responseText) {
-        if (brainTreeManager.getCount() == 0) {
-            brainTreeManager.retrieveFromSpansh();
-        }
+        brainTreeManager.retrieveFromSpansh();
 
         JsonElement key = params.get(PARAM_KEY);
         if (key == null) {

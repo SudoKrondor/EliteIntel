@@ -11,6 +11,23 @@ public class CommoditySearchResult extends BaseJsonDto implements ToJsonConverti
     private String stationName;
     private String stationType;
 
+    /**
+     * True when this market is a fleet carrier, which is player-owned and JUMPS.
+     * <p>
+     * Carried on the result, and not left for the caller to infer from {@link #stationType}, because it is
+     * a warning the commander has to hear: the carrier was in this system when Spansh last synced and may
+     * be a thousand light years away by the time he arrives. It is also what a narration payload has to
+     * carry for the spoken line to mention it - an instruction to warn, with nothing in the payload saying
+     * whether there is anything to warn about, is an invitation to invent one.
+     */
+    private boolean fleetCarrier;
+
+    /**
+     * Units on sale. Carried because the search will settle for a part load rather than report an ordinary
+     * good as nonexistent, so how much is actually there is something the commander has to be told.
+     */
+    private long supply;
+
     /// transient
     private double distanceFromPlayer;
 
@@ -56,6 +73,22 @@ public class CommoditySearchResult extends BaseJsonDto implements ToJsonConverti
 
     public String getStationType() {
         return stationType;
+    }
+
+    public long getSupply() {
+        return supply;
+    }
+
+    public void setSupply(long supply) {
+        this.supply = supply;
+    }
+
+    public boolean isFleetCarrier() {
+        return fleetCarrier;
+    }
+
+    public void setFleetCarrier(boolean fleetCarrier) {
+        this.fleetCarrier = fleetCarrier;
     }
 
     public void setStationType(String stationType) {
