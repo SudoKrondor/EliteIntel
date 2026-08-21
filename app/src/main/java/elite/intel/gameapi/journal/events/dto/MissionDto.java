@@ -1,6 +1,7 @@
 package elite.intel.gameapi.journal.events.dto;
 
 import com.google.gson.JsonObject;
+import elite.intel.gameapi.JournalSymbol;
 import elite.intel.gameapi.MissionTargets;
 import elite.intel.gameapi.MissionType;
 import elite.intel.gameapi.gamestate.dtos.BaseJsonDto;
@@ -26,7 +27,7 @@ public class MissionDto extends BaseJsonDto {
     private MissionTargets missionTarget;
     private int killCount;
     private String target;
-    private String commodity;
+    private String commoditySymbol;
     private String commodityName;
     private long count;
     private String destinationStation;
@@ -61,6 +62,7 @@ public class MissionDto extends BaseJsonDto {
             setKillCount(event.getKillCount());
             setTarget(event.getTarget());
             setCommodityName(event.getCommodityLocalised());
+            setCommoditySymbol(JournalSymbol.normalize(event.getCommodity()));
             setCount(event.getCount());
             setDestinationStation(event.getDestinationStation());
         }
@@ -176,8 +178,16 @@ public class MissionDto extends BaseJsonDto {
         this.donated = donated;
     }
 
-    public void setCommodity(String commodity) {
-        this.commodity = commodity;
+    /**
+     * The bare journal symbol of the commodity the mission wants ("hazardousenvironmentsuits").
+     * <p>
+     * {@link #commodityName} is the game's localised name, written in whatever language the GAME is
+     * running in - which need not be the app's, and need not be one of the six the game supports at
+     * all. The symbol is language-free, so it is what joins a mission to the cargo hold and to the
+     * commodities table, and through that table to the English name Spansh searches by.
+     */
+    public void setCommoditySymbol(String commoditySymbol) {
+        this.commoditySymbol = commoditySymbol;
     }
 
     public void setCount(long count) {
@@ -259,8 +269,8 @@ public class MissionDto extends BaseJsonDto {
         return target;
     }
 
-    public String getCommodity() {
-        return commodity;
+    public String getCommoditySymbol() {
+        return commoditySymbol;
     }
 
     public long getCount() {

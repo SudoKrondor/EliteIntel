@@ -194,6 +194,24 @@ class CommodityMarketSearchTest {
     }
 
     @Test
+    void theFirstAttemptAsksForTheAmountWanted() {
+        // A mission still owing 20 tonnes after a part load wants 20, not a hold's worth. Asking for the
+        // full 300 first passes over every nearby market holding 25 and answers with a big one further out,
+        // and the commander is sent across the bubble for cargo that was two jumps away.
+        assertEquals(20, SpanshCommoditySearch.attemptsForTest(20, 100).getFirst().minSupply());
+        assertEquals(HOLD, SpanshCommoditySearch.attemptsForTest(HOLD, 100).getFirst().minSupply());
+    }
+
+    @Test
+    void aPartLoadIsStillOfferedWhenNobodyHoldsTheWholeAmount() {
+        // The second rung drops the floor to "selling at all" at the SAME radius, so buying what one market
+        // has is a real answer - the next search asks for whatever is left after that stop.
+        assertEquals(1, SpanshCommoditySearch.attemptsForTest(20, 100).get(1).minSupply());
+        assertEquals(100, SpanshCommoditySearch.attemptsForTest(20, 100).get(1).maxDistanceLy(),
+                "the part load is looked for where the commander asked, before the radius widens");
+    }
+
+    @Test
     void everyStaticAttemptIsExhaustedBeforeTheCarrierOne() {
         List<SpanshCommoditySearch.Attempt> attempts = SpanshCommoditySearch.attemptsForTest(HOLD, 100);
         int firstCarrier = attempts.indexOf(attempts.stream()
@@ -390,6 +408,32 @@ class CommodityMarketSearchTest {
     }
 
     @Test
+    void anOrbitalStationBeatsASettlementInsideTheSameRadius() {
+        // A settlement costs an approach, a descent, a glide and a pad hunt on top of the flying. Ranking
+        // on distance alone treats that as the same stop as a docking request and sends the commander
+        // down a gravity well to save a jump.
+        List<CommoditySearchResult> ranked = SpanshCommoditySearch.rank(mixedTypePage(), "Gold", true);
+
+        assertEquals(List.of("Orbis Starport", "Planetary Port", "Settlement"),
+                ranked.stream().map(CommoditySearchResult::getStationType).toList(),
+                "orbit first, then a surface port, then a settlement - however the distances fall");
+    }
+
+    @Test
+    void theStationTypeOutranksThePriceToo() {
+        // The settlement is the cheapest on this page. It is still the last stop offered: a few credits a
+        // tonne does not buy back the landing.
+        assertEquals("Orbis Starport",
+                SpanshCommoditySearch.rank(mixedTypePage(), "Gold", false).getFirst().getStationType());
+    }
+
+    @Test
+    void distanceStillDecidesBetweenStationsOfTheSameKind() {
+        assertEquals("Daedalus", SpanshCommoditySearch.rank(page(), "Gold", true).getFirst().getStationName(),
+                "both are orbital, so the nearer one wins as it always did");
+    }
+
+    @Test
     void aMarketThatDoesNotSellItIsNotAnAnswer() {
         // The marketplace filter has already answered this - but a row that arrives without the commodity,
         // or listing it at no price, must be dropped rather than reported at a price of zero.
@@ -459,6 +503,26 @@ class CommodityMarketSearchTest {
                   {"name":"K7Q-BQL","system_name":"Deciat","type":"Drake-Class Carrier","distance":12.4,
                    "distance_to_arrival":0.0,"has_market":true,
                    "market":[{"commodity":"Alexandrite","buy_price":455000,"sell_price":447000,"supply":900,"demand":0}]}
+                ]}""";
+        return GsonFactory.getGson().fromJson(json, TradeStationSearchResultDto.class).getResults();
+    }
+
+    /**
+     * One page holding all three docking kinds, with the distances and prices deliberately against the
+     * preference: the settlement is nearest AND cheapest, the orbital farthest and dearest.
+     */
+    private static List<TradeStationSearchResultDto.StationResult> mixedTypePage() {
+        String json = """
+                {"results":[
+                  {"name":"Boldyr Dredging Installation","system_name":"Mat Zemlya","type":"Settlement","distance":2.1,
+                   "distance_to_arrival":900.0,"has_market":true,
+                   "market":[{"commodity":"Gold","buy_price":30000,"sell_price":29000,"supply":400,"demand":0}]},
+                  {"name":"Hutton Orbital","system_name":"Alpha Centauri","type":"Planetary Port","distance":30.0,
+                   "distance_to_arrival":200.0,"has_market":true,
+                   "market":[{"commodity":"Gold","buy_price":33000,"sell_price":32000,"supply":400,"demand":0}]},
+                  {"name":"Daedalus","system_name":"Sol","type":"Orbis Starport","distance":88.0,
+                   "distance_to_arrival":157.0,"has_market":true,
+                   "market":[{"commodity":"Gold","buy_price":45091,"sell_price":44137,"supply":400,"demand":0}]}
                 ]}""";
         return GsonFactory.getGson().fromJson(json, TradeStationSearchResultDto.class).getResults();
     }

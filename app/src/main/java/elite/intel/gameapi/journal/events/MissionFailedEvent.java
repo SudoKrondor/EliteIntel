@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.events;
 
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import elite.intel.gameapi.MissionTitle;
 import elite.intel.util.TimestampFormatter;
 import elite.intel.util.json.GsonFactory;
 
@@ -43,8 +44,10 @@ public class MissionFailedEvent extends BaseEvent {
 
     @Override
     public String memorySummary() {
-        String missionName = localisedName != null && !localisedName.isBlank() ? localisedName : name;
-        return missionName == null || missionName.isBlank() ? "" : "mission failed: " + missionName;
+        if ((name == null || name.isBlank()) && (localisedName == null || localisedName.isBlank())) {
+            return "";
+        }
+        return "mission failed: " + MissionTitle.of(name, localisedName);
     }
 
     @Override

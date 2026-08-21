@@ -83,14 +83,15 @@ class MissionStackCardTest {
      * mission IDs is LP 149-14 - which is what was on screen while the game listed G 173-53.
      */
     @Test
-    void withNoRouteTheTopOfTheGameListIsShown() {
-        assertEquals("G 173-53", featured(null, null).getDestinationSystem(),
-                "the newest accepted mission is the one the game lists first");
+    void withNoRouteAndNoDeadlinesTheTopOfTheGameListIsShown() {
+        assertEquals("G 173-53", featured(null).getDestinationSystem(),
+                "nothing in this stack expires, so the newest accepted mission - the game's own first "
+                        + "entry - still decides it");
     }
 
     @Test
     void aPlottedRouteDecidesWhichMissionIsShown() {
-        MissionDto shown = featured("Umpilakap", null);
+        MissionDto shown = featured("Umpilakap");
 
         assertEquals("Umpilakap", shown.getDestinationSystem());
         assertEquals("Bushnell Refinery", shown.getDestinationStation());
@@ -98,21 +99,47 @@ class MissionStackCardTest {
 
     @Test
     void aRouteToSomewhereWithNoMissionFallsBackToTheListOrder() {
-        assertEquals("G 173-53", featured("Deciat", null).getDestinationSystem());
+        assertEquals("G 173-53", featured("Deciat").getDestinationSystem());
     }
 
     /**
-     * The game clears the nav route on arrival, so without this tier the card would jump to an
-     * unrelated mission exactly when the commander is about to hand the cargo over.
+     * With no route there is nothing stating where the ship is going, so the deadline decides - the
+     * mission running out first is the one worth looking at, whatever order the board was taken in.
      */
     @Test
-    void arrivingClearsTheRouteButNotTheMission() {
-        assertEquals("LFT 6", featured(null, "LFT 6").getDestinationSystem());
+    void withNoRouteTheSoonestDeadlineIsShown() {
+        List<MissionDto> stack = List.of(
+                expiring(1, "Deciat", "2026-08-09T12:00:00Z"),
+                expiring(2, "Sol", "2026-08-09T04:00:00Z"),
+                expiring(3, "Shinrarta Dezhra", "2026-08-10T00:00:00Z"));
+
+        assertEquals("Sol", MissionObjectiveSource.featured(stack, null).orElseThrow().getDestinationSystem());
     }
 
+    /**
+     * A mission that never expires does not outrank one that does, however recently it was taken.
+     */
     @Test
-    void aPlottedRouteOutranksWhereTheShipIsNow() {
-        assertEquals("Umpilakap", featured("Umpilakap", "LFT 6").getDestinationSystem());
+    void aDeadlineOutranksAMissionWithoutOne() {
+        List<MissionDto> stack = List.of(
+                courier(9, "Deciat", "Broglie Terminal", "23:59:59", 1000),
+                expiring(1, "Sol", "2026-08-10T00:00:00Z"));
+
+        assertEquals("Sol", MissionObjectiveSource.featured(stack, null).orElseThrow().getDestinationSystem());
+    }
+
+    /**
+     * The route is the commander saying where they are going, so it beats the deadline: flying to one
+     * drop while the card counts down another is how the wrong cargo gets handed over.
+     */
+    @Test
+    void aPlottedRouteOutranksTheSoonestDeadline() {
+        List<MissionDto> stack = List.of(
+                expiring(1, "Deciat", "2026-08-09T12:00:00Z"),
+                expiring(2, "Sol", "2026-08-09T04:00:00Z"));
+
+        assertEquals("Deciat",
+                MissionObjectiveSource.featured(stack, "Deciat").orElseThrow().getDestinationSystem());
     }
 
     /**
@@ -121,8 +148,8 @@ class MissionStackCardTest {
      */
     @Test
     void tiesInsideASystemResolveTheSameWayEveryTime() {
-        Optional<MissionDto> first = MissionObjectiveSource.featured(COURIER_STACK, "LP 245-10", null);
-        Optional<MissionDto> again = MissionObjectiveSource.featured(reversed(), "lp 245-10", null);
+        Optional<MissionDto> first = MissionObjectiveSource.featured(COURIER_STACK, "LP 245-10");
+        Optional<MissionDto> again = MissionObjectiveSource.featured(reversed(), "lp 245-10");
 
         assertEquals(first.orElseThrow().getMissionId(), again.orElseThrow().getMissionId());
         assertEquals("Wellman Hub", first.orElseThrow().getDestinationStation(),
@@ -131,7 +158,7 @@ class MissionStackCardTest {
 
     @Test
     void noMissionsMeansNoCard() {
-        assertTrue(MissionObjectiveSource.featured(List.of(), "Sol", "Sol").isEmpty());
+        assertTrue(MissionObjectiveSource.featured(List.of(), "Sol").isEmpty());
         assertTrue(source().currentObjective().isEmpty());
     }
 
@@ -139,11 +166,14 @@ class MissionStackCardTest {
 
     /**
      * Everything above drives the selection through the test seam, which would still pass if the
-     * suppliers on the real constructor read the wrong manager. This one plots an actual route and
-     * puts the ship in an actual system, so the wiring itself is on the hook.
+     * supplier on the real constructor read the wrong manager. This one plots an actual route, so the
+     * wiring itself is on the hook.
+     * <p>
+     * The ship is deliberately parked in a system one of the missions ends at: where the ship IS was
+     * once a selection tier of its own, and is not one any more.
      */
     @Test
-    void theRealCardReadsTheRouteAndThePositionItIsWiredTo() {
+    void theRealCardReadsTheRouteItIsWiredTo() {
         COURIER_STACK.forEach(this::save);
         plotRoute("LHS 3447", "Umpilakap");
         playerSession.setCurrentPrimaryStarName("LFT 6");
@@ -156,8 +186,8 @@ class MissionStackCardTest {
         shipRoute.clearRoute();
         card = new MissionObjectiveSource().currentObjective().orElseThrow();
 
-        assertEquals("LFT 6 - Lamarck Colony", card.subtitle(),
-                "with the route gone it falls to the system the ship is in");
+        assertEquals("G 173-53 - Wedge's Folly", card.subtitle(),
+                "with the route gone it falls to the expiry order, not to the system the ship sits in");
     }
 
     // -- what the card says about the rest of the stack -------------------------
@@ -241,11 +271,21 @@ class MissionStackCardTest {
     // -- fixtures --------------------------------------------------------------
 
     private MissionObjectiveSource source() {
-        return new MissionObjectiveSource(missions, () -> route, () -> here);
+        return new MissionObjectiveSource(missions, () -> route);
     }
 
-    private MissionDto featured(String routeDestination, String currentSystem) {
-        return MissionObjectiveSource.featured(COURIER_STACK, routeDestination, currentSystem).orElseThrow();
+    private MissionDto featured(String routeDestination) {
+        return MissionObjectiveSource.featured(COURIER_STACK, routeDestination).orElseThrow();
+    }
+
+    /**
+     * A courier with a deadline. The stack above carries none - it predates expiry being recorded -
+     * which is exactly the case the expiry order has to fall back out of.
+     */
+    private static MissionDto expiring(long id, String system, String expiry) {
+        MissionDto mission = courier(id, system, "Some Port", "03:00:00", 1000);
+        mission.setExpiry(expiry);
+        return mission;
     }
 
     private List<MissionDto> reversed() {

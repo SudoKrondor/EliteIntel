@@ -1,7 +1,9 @@
 package elite.intel.gameapi.journal.events;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import elite.intel.gameapi.MissionTitle;
 import elite.intel.util.TimestampFormatter;
 import elite.intel.util.json.GsonFactory;
 
@@ -89,7 +91,9 @@ public class MissionAcceptedEvent extends BaseEvent {
         this.missionID = event.missionID;
         this.target = event.target;
         this.count = event.count;
+        this.commodity = event.commodity;
         this.commodityLocalised = event.commodityLocalised;
+        this.destinationSettlement = event.destinationSettlement;
     }
 
     @Override
@@ -105,7 +109,7 @@ public class MissionAcceptedEvent extends BaseEvent {
 
     @Override
     public String llmDescription() {
-        return "Accepted a mission; carries the mission name, the giving faction, destination, and reward.";
+        return "Accepted a mission; carries the mission title, the giving faction, destination, and reward.";
     }
 
     @Override
@@ -130,6 +134,12 @@ public class MissionAcceptedEvent extends BaseEvent {
         return commodityLocalised;
     }
 
+    /**
+     * The commodity's FDev symbol ({@code $HazardousEnvironmentSuits_Name;}), for matching against
+     * cargo and market data. Hidden from the narration payload for the same reason the mission key
+     * is: it is an identifier, and anything in that payload can come back out of the speaker.
+     */
+    @JsonIgnore
     public String getCommodity() {
         return commodity;
     }
@@ -142,12 +152,29 @@ public class MissionAcceptedEvent extends BaseEvent {
         return faction;
     }
 
+    /**
+     * The raw journal key ({@code Mission_Collect_RankEmp}). Kept for mission-type lookup and
+     * hidden from the YAML the narrator is given: with it in the payload the LLM will happily
+     * announce the key instead of the mission.
+     */
+    @JsonIgnore
     public String getName() {
         return name;
     }
 
+    /**
+     * Hidden from the narration payload in favour of the single {@link #getMissionTitle()}.
+     */
+    @JsonIgnore
     public String getLocalisedName() {
         return localisedName;
+    }
+
+    /**
+     * The one mission name any consumer of this event should read out: see {@link MissionTitle}.
+     */
+    public String getMissionTitle() {
+        return MissionTitle.of(name, localisedName);
     }
 
     public String getTargetType() {

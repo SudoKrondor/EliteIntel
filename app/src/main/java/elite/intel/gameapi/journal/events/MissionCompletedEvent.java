@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.events;
 
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import elite.intel.gameapi.MissionTitle;
 import elite.intel.util.TimestampFormatter;
 import elite.intel.util.json.GsonFactory;
 
@@ -282,8 +283,9 @@ public class MissionCompletedEvent extends BaseEvent {
     public String toString() {
         return new StringJoiner("Mission completed: ")
                 .add("faction='" + faction + "'")
-                .add("name='" + name + "'")
-                .add("localisedName='" + localisedName + "'")
+                // The raw key stays out: this string is the narrator's payload, and anything in
+                // it can come back out of the speaker.
+                .add("mission='" + MissionTitle.of(name, localisedName) + "'")
                 .add("missionID=" + missionID)
                 .add("targetType='" + targetType + "'")
                 .add("targetTypeLocalised='" + targetTypeLocalised + "'")

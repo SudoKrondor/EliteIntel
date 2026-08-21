@@ -39,9 +39,11 @@ public class AnalyzeMissionQuery extends BaseQueryAnalyzer implements IntelQuery
         MissionType[] availableMissionTypes = missionManager.getAvailableMissionTypes();
         if (availableMissionTypes.length == 0) return process(StringUtls.localizedResponse("query.missions.none"));
 
-        Map<MissionType, Collection<MissionDto>> missions = Arrays.stream(availableMissionTypes).collect(
+        // Keyed by the family's spoken label, not the enum constant: MISSION_COLLECT_RANKEMP in the
+        // payload is a raw identifier the model will read straight back out to the commander.
+        Map<String, Collection<MissionDto>> missions = Arrays.stream(availableMissionTypes).collect(
                 Collectors.toMap(
-                        missionType -> missionType,
+                        MissionType::label,
                         missionType -> missionManager.getMissions(missionType).values(),
                         (a, b) -> b
                 )
@@ -60,7 +62,8 @@ public class AnalyzeMissionQuery extends BaseQueryAnalyzer implements IntelQuery
                   - reward: credit reward
                   - destinationSystem: system where the mission must be completed
                   - destinationStation: specific station destination (if applicable)
-                  - commodity / commodityName / count: cargo details for delivery missions
+                  - destinationSettlement: surface settlement destination (on-foot missions)
+                  - commodityName / count: cargo details for delivery missions
                   - killCount / target / missionTargetFaction: combat mission details
                   - expiry: when the mission expires
                   - isWing: whether this is a wing mission
@@ -74,7 +77,8 @@ public class AnalyzeMissionQuery extends BaseQueryAnalyzer implements IntelQuery
         return process(new AiDataStruct(instructions, new DataDto(missions, playerLocation.getStarName())), originalUserInput);
     }
 
-    record DataDto(Map<MissionType, Collection<MissionDto>> missions, String currentStarSystem) implements ToYamlConvertable {
+    record DataDto(Map<String, Collection<MissionDto>> missions,
+                   String currentStarSystem) implements ToYamlConvertable {
         @Override public String toYaml() {
             return YamlFactory.toYaml(this);
         }

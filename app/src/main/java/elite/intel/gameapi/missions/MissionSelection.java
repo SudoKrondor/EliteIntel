@@ -36,6 +36,22 @@ public final class MissionSelection {
                     .thenComparing(MissionDto::getMissionId, Comparator.reverseOrder());
 
     /**
+     * Soonest expiry first: the order a stack has to be worked in, whatever order it was accepted in.
+     * A mission running out in two hours is the one that matters, not the one taken last.
+     * <p>
+     * Journal expiry timestamps are fixed-width UTC ISO-8601, so comparing them as strings is comparing
+     * them as instants. Missions that never expire carry no {@code Expiry} at all and sort LAST rather
+     * than first, which is what an empty string would otherwise do. Anything still tied - two missions
+     * off the same board share an expiry to the second, and a stack stored before expiry was recorded
+     * has none at all - falls through to {@link #GAME_LIST_ORDER}, so the card keeps agreeing with the
+     * game's own list instead of resolving on a mission ID.
+     */
+    public static final Comparator<MissionDto> EXPIRY_ORDER =
+            Comparator.comparing((MissionDto mission) -> expiry(mission).isEmpty())
+                    .thenComparing(MissionSelection::expiry)
+                    .thenComparing(GAME_LIST_ORDER);
+
+    /**
      * Whether a route can be plotted to this mission at all.
      * <p>
      * Plenty of missions have nowhere to fly to. A donation is completed at the board it was taken
@@ -77,5 +93,13 @@ public final class MissionSelection {
      */
     private static String acceptedAt(MissionDto mission) {
         return mission.getAcceptedAt() == null ? "" : mission.getAcceptedAt();
+    }
+
+    /**
+     * Empty rather than null so the comparator can sort on it; an unset expiry sorts last under
+     * {@link #EXPIRY_ORDER}.
+     */
+    private static String expiry(MissionDto mission) {
+        return mission.getExpiry() == null ? "" : mission.getExpiry().trim();
     }
 }

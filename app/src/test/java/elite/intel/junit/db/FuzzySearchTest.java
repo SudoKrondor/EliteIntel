@@ -46,6 +46,29 @@ class FuzzySearchTest {
         assertEquals(4, FuzzySearch.levenshteinDistance("", "iron"));
     }
 
+    // ── commodity symbols (commodities is migration-seeded ref data) ──
+
+    @Test
+    void commoditySymbolResolvesToTheEnglishNameSpanshMatches() {
+        // The mission journal writes "$HazardousEnvironmentSuits_Name;"; Spansh only matches "H.E. Suits",
+        // and the commander's game may be running in any of six languages, so the symbol is the only bridge.
+        assertEquals("H.E. Suits", FuzzySearch.commodityNameForSymbol("hazardousenvironmentsuits"));
+        assertEquals("Haematite", FuzzySearch.commodityNameForSymbol("Haematite"));
+    }
+
+    @Test
+    void commoditySymbolLookupRoundTrips() {
+        String symbol = FuzzySearch.commoditySymbol("H.E. Suits");
+        assertEquals("H.E. Suits", FuzzySearch.commodityNameForSymbol(symbol));
+    }
+
+    @Test
+    void unknownCommoditySymbolIsNull() {
+        assertNull(FuzzySearch.commodityNameForSymbol("notacommodity"));
+        assertNull(FuzzySearch.commodityNameForSymbol(null));
+        assertNull(FuzzySearch.commodityNameForSymbol("  "));
+    }
+
     // ── fuzzyMaterialNameSearch (material_names is migration-seeded ref data) ──
 
     @Test

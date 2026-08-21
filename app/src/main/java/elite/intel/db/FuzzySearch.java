@@ -98,6 +98,16 @@ public class FuzzySearch {
     }
 
     /**
+     * The English commodity name for a game symbol - the reverse of {@link #commoditySymbol}, and the
+     * only way to get from a journal field to a name Spansh will match. Returns {@code null} when the
+     * symbol is unknown to the commodities table.
+     */
+    public static String commodityNameForSymbol(String symbol) {
+        if (symbol == null || symbol.isBlank()) return null;
+        return Database.withDao(CommodityDao.class, dao -> dao.getEnglishBySymbol(symbol));
+    }
+
+    /**
      * Resolves a spoken material name to its journal symbol (e.g. {@code focuscrystals}), matching
      * against the commander's own language plus any aliases. Returns {@code null} when nothing clears
      * the threshold.

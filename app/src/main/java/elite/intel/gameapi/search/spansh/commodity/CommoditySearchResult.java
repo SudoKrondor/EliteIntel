@@ -28,8 +28,25 @@ public class CommoditySearchResult extends BaseJsonDto implements ToJsonConverti
      */
     private long supply;
 
+    /**
+     * When Spansh last had this market's contents uploaded to it, ISO-8601, or null when it does not say.
+     * <p>
+     * Spansh is crowd-sourced: this is the age of the claim that the market sells the good, and it is what
+     * decides whether the commander's own last look at that market is the better answer. See
+     * {@link SpanshCommoditySearch#correctWithFirstHandData}.
+     */
+    private String marketUpdatedAt;
+
     /// transient
     private double distanceFromPlayer;
+
+    public String getMarketUpdatedAt() {
+        return marketUpdatedAt;
+    }
+
+    public void setMarketUpdatedAt(String marketUpdatedAt) {
+        this.marketUpdatedAt = marketUpdatedAt;
+    }
 
     public double getDistanceFromPlayer() {
         return distanceFromPlayer;

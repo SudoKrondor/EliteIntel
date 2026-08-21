@@ -1,6 +1,8 @@
 package elite.intel.gameapi.search.spansh.commodity;
 
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.db.FuzzySearch;
+import elite.intel.db.managers.StationMarketsManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.search.spansh.station.StationSearchClient;
 import elite.intel.gameapi.search.spansh.station.marketstation.TradeStationSearchCriteria;
@@ -12,11 +14,9 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static elite.intel.util.StringUtls.localizedEvent;
 import static elite.intel.util.StringUtls.localizedEventPlural;
@@ -64,6 +64,16 @@ public final class SpanshCommoditySearch {
      * The market has to be selling, not merely listing the good.
      */
     private static final int SELLING_AT_ALL = 1;
+    /**
+     * Ask for a hold's worth: what a caller that is filling the ship rather than topping up a mission wants.
+     */
+    public static final int WANT_FULL_HOLD = 0;
+    /**
+     * Docking effort tiers, in the order a commander would choose between them. See {@link #dockingEffort}.
+     */
+    private static final int IN_ORBIT = 0;
+    private static final int SURFACE_PORT = 1;
+    private static final int SETTLEMENT = 2;
     /**
      * Stations to weigh for price. Each result carries the station's ENTIRE market (~50 KB of it), so this
      * is a page size paid for in megabytes, not a free widening of the search.
@@ -118,13 +128,35 @@ public final class SpanshCommoditySearch {
     public static List<CommoditySearchResult> search(
             String commodityToFind, String refStarSystem, int maxDistanceLy,
             TradeRouteSearchCriteria profile, boolean returnClosest) {
+        return search(commodityToFind, refStarSystem, maxDistanceLy, profile, returnClosest, WANT_FULL_HOLD);
+    }
+
+    /**
+     * As {@link #search(String, String, int, TradeRouteSearchCriteria, boolean)}, for a caller that knows how
+     * much it actually needs.
+     * <p>
+     * A commander who names a good is filling the hold, so a hold's worth is what the search looks for first.
+     * A mission is not: it wants a stated number of units, and after a part load at one market it wants only
+     * the remainder. Looking for a full hold on behalf of a mission still owing 20 tonnes passes over every
+     * nearby market holding 25 and answers with a big one further out - so the amount wanted is what the
+     * first attempt asks for, capped by what the ship can carry.
+     *
+     * @param wantedUnits units the caller needs, or {@link #WANT_FULL_HOLD} for a hold's worth
+     */
+    public static List<CommoditySearchResult> search(
+            String commodityToFind, String refStarSystem, int maxDistanceLy,
+            TradeRouteSearchCriteria profile, boolean returnClosest, int wantedUnits) {
 
         // A hold's worth, or the commander flies out for a part load. Guarded because a floor of zero would
         // also match a market that lists the good and has none.
         int holdFull = Math.max(1, profile.getMaxCargo());
+        int wanted = wantedUnits <= WANT_FULL_HOLD ? holdFull : Math.min(wantedUnits, holdFull);
+
+        // Our own sightings are keyed by the game's symbol, not by the English name Spansh matches on.
+        String symbol = FuzzySearch.commoditySymbol(commodityToFind);
 
         List<CommoditySearchResult> markets = List.of();
-        List<Attempt> ladder = attempts(holdFull, maxDistanceLy);
+        List<Attempt> ladder = attempts(wanted, maxDistanceLy);
         for (int i = 0; i < ladder.size(); i++) {
             Attempt attempt = ladder.get(i);
             // Say what is about to be tried BEFORE trying it. The commander was told the search covers the
@@ -134,7 +166,9 @@ public final class SpanshCommoditySearch {
             if (i > 0) {
                 announceEscalation(ladder.get(i - 1), attempt);
             }
-            markets = marketsSelling(attempt, commodityToFind, refStarSystem, profile, returnClosest);
+            markets = correctWithFirstHandData(
+                    marketsSelling(attempt, commodityToFind, refStarSystem, profile, returnClosest),
+                    symbol, StationMarketsManager.getInstance()::lastSeen);
             if (!markets.isEmpty()) {
                 break;
             }
@@ -158,13 +192,14 @@ public final class SpanshCommoditySearch {
      * inside 120 ly, and the old ladder named a carrier 50 ly away - while Kanwar Gateway, a Coriolis with a
      * large pad and 5,477 units of it, sat at 202 ly and would still have been there on arrival.
      * <p>
-     * WHY a full hold is looked for but not insisted on: measured live, "Neofabric Insulation" is sold by
-     * 1,726 markets, but by only FOUR holding 300 tonnes of it. Demanding the ship's whole capacity told a
+     * WHY the wanted amount is looked for but not insisted on: measured live, "Neofabric Insulation" is sold
+     * by 1,726 markets, but by only FOUR holding 300 tonnes of it. Demanding the ship's whole capacity told a
      * commander that an ordinary industrial good on sale 20 ly away does not exist, and the bigger his ship
-     * the more goods vanished. The stated radius is asked for a full load first and a part load second;
-     * past that the commander is already flying a long way, and what is there is what is there.
+     * the more goods vanished. The stated radius is asked for the full amount first and a part load second;
+     * past that the commander is already flying a long way, and what is there is what is there. A part load
+     * is a real answer rather than a failure - buy what is there, and the next search asks for the remainder.
      */
-    private static List<Attempt> attempts(int holdFull, int maxDistanceLy) {
+    private static List<Attempt> attempts(int wanted, int maxDistanceLy) {
         List<String> staticTypes = TradeStationSearchCriteria.StationType.EVERY_STATIC_TRADE_TYPE;
         List<String> carriers = TradeStationSearchCriteria.StationType.CARRIER_TRADE_TYPES;
         // Guarded so a commander who asks for a galaxy-wide radius does not overflow it into a negative one.
@@ -173,7 +208,7 @@ public final class SpanshCommoditySearch {
         int bubble = Math.max(widened, INHABITED_BUBBLE_LY);
 
         List<Attempt> ladder = new ArrayList<>();
-        ladder.add(new Attempt(staticTypes, holdFull, maxDistanceLy, false));
+        ladder.add(new Attempt(staticTypes, wanted, maxDistanceLy, false));
         ladder.add(new Attempt(staticTypes, SELLING_AT_ALL, maxDistanceLy, false));
         if (widened > maxDistanceLy) {
             ladder.add(new Attempt(staticTypes, SELLING_AT_ALL, widened, false));
@@ -204,8 +239,8 @@ public final class SpanshCommoditySearch {
     /**
      * Test seam: the attempt ladder is the search's contract, and its ORDER is the part worth pinning.
      */
-    static List<Attempt> attemptsForTest(int holdFull, int maxDistanceLy) {
-        return attempts(holdFull, maxDistanceLy);
+    static List<Attempt> attemptsForTest(int wanted, int maxDistanceLy) {
+        return attempts(wanted, maxDistanceLy);
     }
 
     /**
@@ -245,6 +280,77 @@ public final class SpanshCommoditySearch {
     }
 
     /**
+     * Where the commander has already been, what they saw there wins.
+     * <p>
+     * Spansh is crowd-sourced, so a market it lists as selling a good may have been emptied - or may
+     * never have stocked it - since whoever uploaded that entry was last there. Measured live: Boldyr
+     * Dredging Installation in Mat Zemlya is listed as selling Silver at 25,961, and the game's own
+     * {@code Market.json} for that settlement reports {@code Stock: 0}. The commander flew there,
+     * found nothing, asked again - and was sent to the same settlement he was standing in.
+     * <p>
+     * {@code Market.json} is the game speaking rather than a stranger's upload, so a market our own
+     * eyes have emptied is dropped from the answer entirely; the ladder then widens as if nothing sold
+     * the good there, which is the truth. A sighting that found SOME stock corrects the supply figure
+     * instead of dropping the market - a part load is still worth flying to.
+     * <p>
+     * The sighting only wins while it is the fresher of the two. Once Spansh has been told about that
+     * market more recently than the commander last stood in it, its number is the newer one and the
+     * override lapses - which is what stops one empty visit blacklisting a market for good.
+     *
+     * @param commoditySymbol the good's journal symbol; null for a legacy good with none, which cannot
+     *                        be matched against a market snapshot and is therefore left alone
+     */
+    static List<CommoditySearchResult> correctWithFirstHandData(
+            List<CommoditySearchResult> markets, String commoditySymbol, MarketSightings sightings) {
+        if (commoditySymbol == null || markets.isEmpty()) return markets;
+
+        List<CommoditySearchResult> kept = new ArrayList<>();
+        for (CommoditySearchResult market : markets) {
+            Optional<StationMarketsManager.Sighting> seen =
+                    sightings.lastSeen(market.getStarSystem(), market.getStationName(), commoditySymbol);
+            if (seen.isEmpty() || !isFresherThanSpansh(seen.get(), market)) {
+                kept.add(market);
+                continue;
+            }
+            if (seen.get().stock() <= 0) {
+                log.debug("Skipping {} - {}: we were there at {} and it had no {}",
+                        market.getStarSystem(), market.getStationName(), seen.get().seenAt(), commoditySymbol);
+                continue;
+            }
+            market.setSupply(seen.get().stock());
+            kept.add(market);
+        }
+        return kept;
+    }
+
+    /**
+     * Whether our own look at the market is the newer of the two claims. A Spansh row with no timestamp
+     * at all loses: it is second-hand data of unknown age against something the game told us directly.
+     */
+    private static boolean isFresherThanSpansh(StationMarketsManager.Sighting seen, CommoditySearchResult market) {
+        Instant spansh = parseInstant(market.getMarketUpdatedAt());
+        return spansh == null || seen.seenAt() == null || !seen.seenAt().isBefore(spansh);
+    }
+
+    private static Instant parseInstant(String timestamp) {
+        if (timestamp == null || timestamp.isBlank()) return null;
+        try {
+            return Instant.parse(timestamp);
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Test seam over the stored {@code Market.json} snapshots, so the override can be exercised without
+     * a database.
+     */
+    @FunctionalInterface
+    interface MarketSightings {
+        Optional<StationMarketsManager.Sighting> lastSeen(String starSystem, String stationName, String commoditySymbol);
+    }
+
+    /**
      * Puts the answer the commander asked for at the head of the list: the nearest market, or the one
      * selling cheapest.
      * <p>
@@ -262,10 +368,31 @@ public final class SpanshCommoditySearch {
             results.add(asResult(station, entry));
         }
 
-        results.sort(returnClosest
-                ? Comparator.comparingDouble(CommoditySearchResult::getDistanceFromPlayer)
-                : Comparator.comparingDouble(CommoditySearchResult::getPrice));
+        results.sort(Comparator.comparingInt((CommoditySearchResult result) -> dockingEffort(result.getStationType()))
+                .thenComparing(returnClosest
+                        ? Comparator.comparingDouble(CommoditySearchResult::getDistanceFromPlayer)
+                        : Comparator.comparingDouble(CommoditySearchResult::getPrice)));
         return results;
+    }
+
+    /**
+     * How much of the commander's evening a market costs to reach, once the flying is done.
+     * <p>
+     * Distance is only half of what a stop costs. An orbital station is a docking request and a pad; a
+     * planetary port adds an approach, an orbital-cruise descent and a glide; an Odyssey settlement adds
+     * all of that plus hunting a pad on a surface installation. Ranking on distance alone treats those as
+     * the same stop and sends the commander down a gravity well to save a jump.
+     * <p>
+     * This is the FIRST sort key, ahead of both distance and price, so within the radius the commander
+     * asked for a station always beats a settlement. Deliberately: the radius is theirs to set, and
+     * narrowing it is how they say "no, the near one". A fleet carrier docks in space like any orbital,
+     * and only ever appears on the last rung of the ladder anyway.
+     */
+    private static int dockingEffort(String stationType) {
+        if (stationType == null) return SURFACE_PORT;
+        if (TradeStationSearchCriteria.StationType.SETTLEMENT_TRADE_TYPES.contains(stationType)) return SETTLEMENT;
+        if (TradeStationSearchCriteria.StationType.PLANETARY_TRADE_TYPES.contains(stationType)) return SURFACE_PORT;
+        return IN_ORBIT;
     }
 
     /**
@@ -400,6 +527,7 @@ public final class SpanshCommoditySearch {
         result.setStationType(station.getType());
         result.setFleetCarrier(TradeStationSearchCriteria.StationType.CARRIER_TRADE_TYPES.contains(station.getType()));
         result.setDistanceFromPlayer(station.getDistance() == null ? 0 : station.getDistance());
+        result.setMarketUpdatedAt(station.getMarketUpdatedAt());
         return result;
     }
 }

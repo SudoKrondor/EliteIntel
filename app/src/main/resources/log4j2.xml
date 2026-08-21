@@ -62,7 +62,7 @@
              back to a local summary). It is logged instead - but at the parent's error level
              the warn line would have been discarded, leaving the failure with nowhere to go
              at all. Edge-triggered: one line per failed batch, not per record. -->
-        <Logger name="elite.intel.ai.brain.vega.memory" level="warn"/>
+        <Logger name="elite.intel.ai.brain.vega.memory" level="debug"/>
         <Logger name="elite.intel.gameapi.JournalParser" level="error"/>
         <Logger name="elite.intel.gameapi.AuxiliaryFilesMonitor" level="error"/>
         <Logger name="elite.intel.gameapi.journal.subscribers" level="error"/>
@@ -72,7 +72,7 @@
         <Logger name="elite.intel.gameapi.search.edsm.EdsmApiClient" level="error"/>
         <Logger name="elite.intel.search.spansh.client" level="error"/>
         <Logger name="elite.intel.util.NavigationUtils" level="error"/>
-        <Logger name="elite.intel.ai.hands.KeyBindingsParser" level="error"/>
+        <Logger name="elite.intel.ai.hands" level="debug"/>
         <Logger name="elite.intel.ai.brain.inference" level="error"/>
         <Logger name="elite.intel.ai.ears" level="error"/>
         <Logger name="elite.intel.ai.mouth" level="error"/>

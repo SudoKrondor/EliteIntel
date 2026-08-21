@@ -33,6 +33,16 @@ public interface CommodityDao {
     @SqlQuery("SELECT symbol FROM commodities WHERE LOWER(commodity) = LOWER(:englishName) LIMIT 1")
     String getSymbolByEnglishName(@Bind("englishName") String englishName);
 
+    /**
+     * The reverse lookup: the English commodity name for a game symbol, whatever case the symbol
+     * arrives in. This is the bridge from a journal field to a Spansh query - Spansh matches the
+     * English name exactly, and a mission's own {@code Commodity_Localised} is written in the game's
+     * language, which is not necessarily English and not necessarily the app's language either.
+     * Returns {@code null} for legacy/Powerplay goods that carry no symbol.
+     */
+    @SqlQuery("SELECT commodity FROM commodities WHERE LOWER(symbol) = LOWER(:symbol) LIMIT 1")
+    String getEnglishBySymbol(@Bind("symbol") String symbol);
+
     // optional – one-time init if table empty
     @SqlQuery("SELECT COUNT(*) FROM commodities")
     int count();

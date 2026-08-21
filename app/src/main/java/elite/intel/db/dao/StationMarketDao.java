@@ -30,6 +30,14 @@ public interface StationMarketDao {
     @SqlQuery("SELECT * FROM station_markets WHERE stationName = :stationName LIMIT 1")
     StationMarketDao.StationMarket findForStation(@Bind("stationName") String stationName);
 
+    /**
+     * Every stored market with this station name. Station names are not unique across the galaxy, so
+     * the caller has to check the system too - which is inside the JSON rather than in a column, so
+     * the rows come back and the choosing happens in Java.
+     */
+    @SqlQuery("SELECT * FROM station_markets WHERE LOWER(stationName) = LOWER(:stationName)")
+    StationMarket[] findAllForStation(@Bind("stationName") String stationName);
+
     @SqlQuery("SELECT * FROM station_markets")
     StationMarket[] listAll();
 

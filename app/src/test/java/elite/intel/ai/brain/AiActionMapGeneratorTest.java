@@ -100,6 +100,7 @@ class AiActionMapGeneratorTest {
             "fighter_return_to_ship",
             "find_brain_trees",
             "find_commodity",
+            "find_mission_commodity",
             "find_encoded_material_trader",
             "find_guardian_technology_broker",
             "find_human_technology_broker",

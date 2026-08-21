@@ -1,5 +1,7 @@
 package elite.intel.gameapi;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 public enum MissionType {
     // Fighting
     MISSION_PIRATE_MASSACRE("Mission_Massacre", "pirates, massacre, pirate, bounty, hunt, kill, combat, criminals, faction, wing"),
@@ -89,6 +91,16 @@ public enum MissionType {
 
     public String getMissionType() {
         return this.missionType;
+    }
+
+    /**
+     * How this mission family is named to a commander. The constant name is an identifier, so
+     * {@code @JsonValue} keeps it out of the YAML that LLM prompts are built from - a prompt
+     * carrying MISSION_COLLECT_RANKEMP is a prompt that can be read back out loud.
+     */
+    @JsonValue
+    public String label() {
+        return MissionTitle.fromKey(missionType);
     }
 
     public String getKeywords() {
