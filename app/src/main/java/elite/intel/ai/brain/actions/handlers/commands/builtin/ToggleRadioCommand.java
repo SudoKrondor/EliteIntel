@@ -19,7 +19,12 @@ public final class ToggleRadioCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Turn radio-transmission (ambient comms chatter) playback on or off ('state').";
+        // WHY the "only radio" sentence: asked to "turn off the radio" the model used to answer that it
+        // had no such function and to use the comms panel - it read "radio" as the ship's comms rather
+        // than as this setting, and would only route once the commander named "radio chatter" exactly.
+        // Nothing else in the game or the app is called a radio, so an unqualified radio order is this one.
+        return "Turn the radio on or off ('state') - the ambient comms chatter VEGA plays between systems. "
+                + "This is the only radio there is, so an unqualified 'turn the radio on/off' means this command.";
     }
 
 

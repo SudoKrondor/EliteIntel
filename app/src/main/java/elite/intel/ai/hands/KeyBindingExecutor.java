@@ -289,6 +289,10 @@ public class KeyBindingExecutor {
      * any long-press action — and only tap the modifier. We therefore pool every key, hold the
      * ones that are actual Ctrl/Shift/Alt modifiers, and tap the single non-modifier trigger last.
      *
+     * <p>A chord of nothing but modifiers (e.g. {@code UI_Back} on Ctrl+Alt) is still legal and
+     * still has a trigger edge — the last key down completes it — so there the pooling has nothing
+     * to sort and the slot labels are taken at face value instead.
+     *
      * <p>Package-private and pure so the classification can be unit-tested without AWT.
      *
      * @param primaryKey     the {@code <Primary>} key token (may be {@code null})
@@ -319,8 +323,18 @@ public class KeyBindingExecutor {
         }
 
         if (triggers.isEmpty()) {
-            // Every key is a modifier: there is no key whose press forms the trigger edge.
-            return new NormalizedChord(null, heldModifiers, NormalizedChord.Status.NO_TRIGGER);
+            // Every key is a modifier - but that is still a real chord, not an unplayable one:
+            // Ctrl+Alt fires when Alt goes down with Ctrl already held. Re-classification by
+            // identity has nothing to sort here, so defer to the file's own labelling: <Primary>
+            // is the action key, the <Modifier> slots are held. Only a chord with no primary key
+            // at all has nothing to press, and KeyBindingsParser.toExecutableBinding already
+            // refuses to build one of those.
+            if (primaryKey == null || primaryKey.isBlank()) {
+                return new NormalizedChord(null, heldModifiers, NormalizedChord.Status.NO_TRIGGER);
+            }
+            List<String> heldAroundModifierTrigger = new ArrayList<>(pool);
+            heldAroundModifierTrigger.remove(primaryKey);
+            return new NormalizedChord(primaryKey, heldAroundModifierTrigger, NormalizedChord.Status.MODIFIER_ONLY);
         }
         if (triggers.size() == 1) {
             return new NormalizedChord(triggers.get(0), heldModifiers, NormalizedChord.Status.OK);
@@ -343,16 +357,18 @@ public class KeyBindingExecutor {
 
     /**
      * Logs any normalization caveat and reports whether the chord can be executed at all.
-     * {@code NO_TRIGGER} chords (every key is a modifier) have no trigger edge and are skipped.
+     * Only {@code NO_TRIGGER} chords - the ones with no key to press at all - are skipped.
      */
     private boolean warnAndCheckExecutable(NormalizedChord chord, KeyBindingsParser.KeyBinding binding) {
         switch (chord.status()) {
             case NO_TRIGGER -> {
-                log.warn("[exec] Unexecutable chord (key='{}', modifiers={}): every key is a modifier, " +
-                                "so there is no trigger key to press. Skipping.",
+                log.warn("[exec] Unexecutable chord (key='{}', modifiers={}): no key to press. Skipping.",
                         binding.key, java.util.Arrays.toString(binding.modifiers));
                 return false;
             }
+            case MODIFIER_ONLY -> log.debug("[exec] Modifier-only chord (key='{}', modifiers={}): " +
+                            "tapping the labelled primary '{}' and holding the rest.",
+                    binding.key, java.util.Arrays.toString(binding.modifiers), chord.triggerKey());
             case AMBIGUOUS -> log.warn("[exec] Ambiguous chord (key='{}', modifiers={}): multiple non-modifier keys. " +
                             "Tapping '{}' and holding the rest.",
                     binding.key, java.util.Arrays.toString(binding.modifiers), chord.triggerKey());
@@ -394,7 +410,24 @@ public class KeyBindingExecutor {
      * tap last, plus a status describing whether (and how cleanly) the chord can be executed.
      */
     record NormalizedChord(String triggerKey, List<String> modifierKeys, Status status) {
-        enum Status {OK, NO_TRIGGER, AMBIGUOUS}
+        enum Status {
+            /**
+             * One non-modifier key, everything else a real modifier.
+             */
+            OK,
+            /**
+             * No key to press at all - nothing was in the primary slot.
+             */
+            NO_TRIGGER,
+            /**
+             * Every key is a modifier; the labelled primary supplies the trigger edge.
+             */
+            MODIFIER_ONLY,
+            /**
+             * Two or more non-modifier keys; one was chosen as the trigger.
+             */
+            AMBIGUOUS
+        }
 
         NormalizedChord {
             modifierKeys = modifierKeys == null ? List.of() : List.copyOf(modifierKeys);

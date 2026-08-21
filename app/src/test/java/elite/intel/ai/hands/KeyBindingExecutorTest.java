@@ -62,11 +62,40 @@ class KeyBindingExecutorTest {
     }
 
     @Test
-    void allModifierChordHasNoTriggerEdge() {
-        // Every key is a modifier: there is no non-modifier whose press forms a trigger edge.
+    void allModifierChordTapsTheLabelledPrimary() {
+        // Every key is a modifier, which Elite still accepts: the chord fires when the primary
+        // goes down with the rest already held. Identity re-classification has nothing to sort,
+        // so the file's own <Primary> label decides the trigger.
         NormalizedChord chord = KeyBindingExecutor.normalizeChord(
                 "Key_RightControl",
                 new String[]{"Key_LeftControl", "Key_LeftShift", "Key_LeftAlt"});
+
+        assertEquals(NormalizedChord.Status.MODIFIER_ONLY, chord.status());
+        assertEquals("Key_RightControl", chord.triggerKey());
+        assertEquals(java.util.List.of("Key_LeftControl", "Key_LeftShift", "Key_LeftAlt"), chord.modifierKeys());
+    }
+
+    @Test
+    void commanderBoundUiBackToControlPlusAlt() {
+        // Reported from the field: UI_Back on Ctrl+Alt was skipped entirely, which left the app
+        // unable to close any panel or back out of any menu (UI_Back backs BINDING_EXIT_KEY).
+        NormalizedChord chord = KeyBindingExecutor.normalizeChord(
+                "Key_LeftAlt",
+                new String[]{"Key_LeftControl"});
+
+        assertEquals(NormalizedChord.Status.MODIFIER_ONLY, chord.status());
+        assertEquals("Key_LeftAlt", chord.triggerKey());
+        assertEquals(java.util.List.of("Key_LeftControl"), chord.modifierKeys());
+    }
+
+    @Test
+    void chordWithNoPrimaryKeyHasNothingToPress() {
+        // The only genuinely unexecutable shape left: nothing in the primary slot, so no key
+        // supplies the trigger edge. KeyBindingsParser refuses to build such a binding, so this
+        // guards the defensive branch rather than a reachable file.
+        NormalizedChord chord = KeyBindingExecutor.normalizeChord(
+                null,
+                new String[]{"Key_LeftControl", "Key_LeftShift"});
 
         assertEquals(NormalizedChord.Status.NO_TRIGGER, chord.status());
         assertNull(chord.triggerKey());

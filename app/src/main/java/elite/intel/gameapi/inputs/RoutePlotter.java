@@ -1,5 +1,6 @@
 package elite.intel.gameapi.inputs;
 
+import elite.intel.ai.hands.KeyProcessor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.managers.ShipRouteManager;
@@ -55,7 +56,15 @@ public class RoutePlotter {
                 GameInputStep.delay(200),
                 GameInputStep.text(destination),
                 GameInputStep.delay(250),
-                GameInputStep.bindingTap(BINDING_UI_DOWN.getGameBinding()),
+                // WHY a raw arrow rather than the UI_Down binding: this is the one step that has to
+                // move focus OUT of the search field, and a focused Elite text field takes keystrokes
+                // as text - it never consults the UI_* bindings. A commander who rebound UI navigation
+                // to a chord (Ctrl+S, Shift+S) therefore had the chord typed into the box instead:
+                // focus stayed put and every step after it was typed too. The arrow is what the field
+                // itself honours, and it is the stock UI_Down key, so this is a no-op for everyone
+                // whose bindings are near-default. Once focus is on the result list the text field is
+                // out of the way and the steps below are binding-driven again, as they should be.
+                GameInputStep.rawKey(KeyProcessor.KEY_DOWNARROW, 0, 0),
                 GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding()),
                 GameInputStep.delay(1000),
                 GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding())
