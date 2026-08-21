@@ -78,7 +78,7 @@
         <Logger name="elite.intel.ai.mouth" level="error"/>
         <Logger name="elite.intel.ai.brain" level="error"/>
         <Logger name="elite.intel.search" level="debug"/>
-        <Logger name="elite.intel.db" level="debug"/>
+        <Logger name="elite.intel.db" level="error"/>
         <Logger name="elite.intel.db.managers.SubSystemsManager" level="error"/>
         <Logger name="elite.intel.ai.brain.handlers" level="debug"/>
         <Logger name="elite.intel.ws" level="error"/>
