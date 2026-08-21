@@ -42,7 +42,8 @@ Microphone (any format)
     │
 [stripTrashPrefix]          remove filler tokens prepended by model
     │
-[push-to-talk gate]         discarded unless the button was held (when PTT is on)
+[MicrophoneGate.decide]     PTT: discarded unless the button was held
+    │                       asleep: discarded unless WakeBypass admits it
     │
     ▼
 UserInputEvent (transcript, "computer" stripped)
@@ -218,15 +219,29 @@ Parakeet occasionally prepends filler tokens (`mm-hmm`, `okay`, etc.) to real ut
 `stripTrashPrefix` strips any leading sequence matching `Reducer.trashSttWords`
 (punctuation-tolerant), then removes trailing punctuation from the remainder. Transcripts that are entirely trash are silently discarded.
 
-### Push-to-talk gating
+### Microphone gating (`MicrophoneGate`)
 
-When `SystemSession.isPushToTalkEnabled()` is true, the mapped controller button is the only thing that opens the microphone: a transcript reaches the AI only if the button was held while it was captured (`capturedWithPttHeld`). Anything else is room noise and is dropped here, before it costs an AI round trip.
+Two gates, and `MicrophoneGate.decide(capturedWithPttHeld, pushToTalkEnabled, sleeping)` says which one is in force for this transcript. Push-to-talk supersedes Sleep/Wake, so a commander who deliberately held the button is never refused by a sleep flag left over from a hands-free session.
 
-With push-to-talk off there is no second gate - the VAD thresholds above decide what counts as speech, and every transcript that survives trash filtering is dispatched.
+| Verdict | When | What happens |
+|---|---|---|
+| `OPEN_PUSH_TO_TALK` | the button was held while the utterance was captured (`capturedWithPttHeld`) | dispatched as a PTT capture |
+| `CLOSED_PUSH_TO_TALK` | `SystemSession.isPushToTalkEnabled()` and the button was not held | dropped as room noise |
+| `CLOSED_ASLEEP` | hands-free and `SystemSession.isSleeping()` | handed to `WakeBypass`, below |
+| `OPEN_HANDS_FREE` | neither gate is closed | dispatched normally |
 
-> Superseded: Sleep/Wake mode gated this stage until V1.1 maintenance. A commander told the companion to sleep and
-> only a **wake phrase** or a **listen-bypass prefix** got through. It went unused once push-to-talk landed, and was
-> removed from the UI, settings, database, STT and tool set.
+Anything dropped dies here, before it costs an AI round trip.
+
+### Sleep-mode gating (`WakeBypass`)
+
+While the Sleep/Wake gate is closed, `WakeBypass.admit(transcript)` returns what to route, or `null`:
+
+- an exact **wake
+  phrase** (`AiActionLocalizations.wakeBypassPhrases()`) is routed whole, so the model can send it to `WakeupCommand` and reopen the gate;
+- a **listen-bypass
+  prefix** (`AiActionLocalizations.listenBypassPrefixes()`) at the start, followed by real content, is stripped and the remainder routed - "listen, open the galaxy map" is an order to open the map.
+
+The prefix must be at the start, which is what stops "do not listen, open the map" from talking its way past a gate the commander deliberately closed. Longest prefix first, so "listen up …" is not first reduced by the shorter "listen" and left with a stray "up".
 
 ### TTS gate (`IsSpeakingEvent`)
 

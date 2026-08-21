@@ -413,15 +413,13 @@ public class ParakeetSTTImpl implements EarsInterface {
 
                 UiBus.publish(new AppLogEvent("STT: [" + finalTranscript + "]"));
 
-                // WHY: while push-to-talk is armed the button is the only thing that opens the
-                // microphone, so an utterance captured without it is room noise rather than an order
-                // and is dropped here, before it costs an AI round trip.
-                if (capturedWithPttHeld) {
-                    sendToAi(finalTranscript, true);
-                } else if (systemSession.isPushToTalkEnabled()) {
-                    log.debug("Discarding transcript captured with push-to-talk released: [{}]", finalTranscript);
-                } else {
-                    sendToAi(finalTranscript, false);
+                switch (MicrophoneGate.decide(capturedWithPttHeld,
+                        systemSession.isPushToTalkEnabled(), systemSession.isSleeping())) {
+                    case OPEN_PUSH_TO_TALK -> sendToAi(finalTranscript, true);
+                    case OPEN_HANDS_FREE -> sendToAi(finalTranscript, false);
+                    case CLOSED_PUSH_TO_TALK ->
+                            log.debug("Discarding transcript captured with push-to-talk released: [{}]", finalTranscript);
+                    case CLOSED_ASLEEP -> routePastSleepGate(finalTranscript);
                 }
             } finally {
                 stream.release();
@@ -468,6 +466,19 @@ public class ParakeetSTTImpl implements EarsInterface {
             sb.append(tokens[i]);
         }
         return sb.toString().replace("?", "").replace("!", "").replace(";", "").replace(":", "").replace(",", "").replace(".", "");
+    }
+
+    /**
+     * The only way a spoken word reaches the companion while she is asleep: {@link WakeBypass} decides, and
+     * everything it does not admit is dropped here rather than costing an AI round trip.
+     */
+    private void routePastSleepGate(String transcript) {
+        String admitted = WakeBypass.forCurrentLanguage().admit(transcript);
+        if (admitted == null) {
+            log.debug("Discarding transcript captured while asleep: [{}]", transcript);
+            return;
+        }
+        sendToAi(admitted, false);
     }
 
     private void sendToAi(String transcript, boolean pttCapture) {

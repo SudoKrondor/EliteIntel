@@ -208,6 +208,7 @@ class AiActionMapGeneratorTest {
             "show_status_panel",
             "show_storage_panel",
             "show_transactions_panel",
+            "sleep_ignore_do_not_monitor",
             "switch_to_analysis_mode",
             "switch_to_combat_mode",
             "target_destination",
@@ -237,6 +238,7 @@ class AiActionMapGeneratorTest {
             "transfer_power_to_shields",
             "transfer_power_to_ship_systems",
             "transfer_power_to_weapons",
+            "wakeup",
             "wing_nav_lock"
     );
 

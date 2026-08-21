@@ -115,6 +115,20 @@ public class AppController {
         systemSession.setVoiceVolume(event.getVolume());
     }
 
+    /**
+     * Answers every request to move the Sleep/Wake gate - the AI tab button, and the spoken "go to sleep" /
+     * "wake up" commands alike. Persists the new state, announces it so the views that show the gate are told
+     * by one place, then says it out loud.
+     */
+    @Subscribe
+    public void onToggleSleepWake(ToggleSleepWakeEvent event) {
+        appendToLog(event.sleeping() ? "Sleep mode on" : "Sleep mode off");
+        systemSession.setSleeping(event.sleeping());
+        UiBus.publish(new SleepWakeStateChangedEvent(event.sleeping()));
+        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech(
+                event.sleeping() ? "speech.sleepModeOn" : "speech.sleepModeOff")));
+    }
+
     @Subscribe
     private void recalibrateAudio(RecalibrateAudioEvent event) {
         SwingUtilities.invokeLater(() -> {
@@ -319,6 +333,7 @@ public class AppController {
                 KeyBindCheck.getInstance().check();
                 CustomCommandLoadAnnouncement.getInstance().announce();
                 LocalLlmModelCheck.getInstance().check();
+                announceSleepModeIfAsleep();
             } catch (RuntimeException | Error e) {
                 log.error("Service startup failed while lifecycle was STARTING", e);
                 stopServiceRegistry();
@@ -326,6 +341,24 @@ public class AppController {
                 throw e;
             }
         }
+    }
+
+    /**
+     * Says out loud that the microphone gate is shut, when the services come up with Sleep/Wake still asleep
+     * from a previous session. Spoken straight to TTS rather than through the companion, for the same reason
+     * {@link SetupCheck} does it: an app that silently ignores everything the commander says is
+     * indistinguishable from a broken one, so the warning must not depend on the path it is warning about.
+     * <p>
+     * Silent while push-to-talk is on, where the mapped button already gates the microphone and the stored
+     * sleep flag is not consulted at all.
+     */
+    private void announceSleepModeIfAsleep() {
+        if (systemSession.isPushToTalkEnabled() || !systemSession.isSleeping()) {
+            return;
+        }
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(
+                StringUtls.localizedSpeech("speech.sleepModeStartupNotice")));
+        appendToLog("Starting in sleep mode: voice input is ignored until a wake phrase or the WAKE UP button.");
     }
 
     @Subscribe

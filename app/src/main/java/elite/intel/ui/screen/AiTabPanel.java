@@ -54,6 +54,7 @@ public class AiTabPanel extends JPanel {
      */
     private static final Path APP_LOG_FILE = Path.of("logs", "elite-intel.log");
 
+    private JButton sleepWakeButton;
     private JButton hudOverlayButton;
     private JButton hudOverlaySettingsButton;
     private boolean hudOverlayVisible;
@@ -80,6 +81,10 @@ public class AiTabPanel extends JPanel {
      * Whether the push-to-talk gate is armed, so the STT badge can say what opens the microphone.
      */
     private boolean pttModeActive;
+    /**
+     * Whether the Sleep/Wake gate is closed. Display state only - {@code AppController} owns the setting.
+     */
+    private boolean sleeping;
     private String lastLlmProvider;
 
     // SYSTEM SUMMARY telemetry blocks
@@ -100,6 +105,7 @@ public class AiTabPanel extends JPanel {
         this.monoFont = monoFont;
         this.uiState = uiState; // stores the LLM connection status
         LlmSessionStatsTracker.getInstance(); // ensure tracker is registered before events flow
+        sleeping = SystemSession.getInstance().isSleeping();
         UiBus.register(this);
         buildUi();
         summaryClockTimer = new Timer(1_000, e -> tickSummaryClock());
@@ -125,6 +131,13 @@ public class AiTabPanel extends JPanel {
             UiBus.publish(new ToggleServicesEvent(!isServiceRunning.get()));
             startStopServicesButton.setEnabled(false);
         });
+
+        // Asks; does not write. AppController persists the setting and announces the result, which is what
+        // moves this button's label - so the label is right whoever flipped the gate.
+        sleepWakeButton = makeButtonSubtle(sleepWakeText());
+        sleepWakeButton.setToolTipText(getText("ai.action.sleepWake.tooltip"));
+        sleepWakeButton.addActionListener(e -> UiBus.publish(new ToggleSleepWakeEvent(!sleeping)));
+        sleepWakeButton.setEnabled(false);
 
         hudOverlayButton = makeButtonSubtle(hudOverlayText());
         hudOverlayButton.setToolTipText(getText("ai.hudOverlay.tooltip"));
@@ -240,7 +253,7 @@ public class AiTabPanel extends JPanel {
         JPanel bottom = transparentPanel(null);
         bottom.setLayout(new BoxLayout(bottom, BoxLayout.Y_AXIS));
 
-        for (JButton b : new JButton[]{startStopServicesButton,
+        for (JButton b : new JButton[]{startStopServicesButton, sleepWakeButton,
                 hudOverlayButton, hudOverlaySettingsButton, audioDevicesButton, recalibrateAudioButton,
                 updateAppButton}) {
             b.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -249,6 +262,8 @@ public class AiTabPanel extends JPanel {
 
         // top: runtime controls
         top.add(startStopServicesButton);
+        top.add(Box.createRigidArea(new Dimension(0, HUD_GAP)));
+        top.add(sleepWakeButton);
         top.add(Box.createRigidArea(new Dimension(0, HUD_GAP)));
         top.add(hudOverlayButton);
         top.add(Box.createRigidArea(new Dimension(0, HUD_GAP)));
@@ -423,7 +438,9 @@ public class AiTabPanel extends JPanel {
                 + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".json";
     }
 
-    public void initData(ServicesStateEvent.State serviceState) {
+    public void initData(boolean sleepingModeOn, ServicesStateEvent.State serviceState) {
+        this.sleeping = sleepingModeOn;
+        sleepWakeButton.setText(sleepWakeText());
         applyServiceState(serviceState);
     }
 
@@ -468,6 +485,9 @@ public class AiTabPanel extends JPanel {
         startStopServicesButton.setText(running ? getText("button.stopServices") : getText("button.startServices"));
         startStopServicesButton.setEnabled(!transitioning);
         recalibrateAudioButton.setEnabled(running);
+        // Sleep/Wake gates the hands-free microphone. Under push-to-talk the mapped button already does that,
+        // so there is nothing left for it to gate and it is offered as disabled rather than as a lie.
+        sleepWakeButton.setEnabled(running && !pttModeActive);
         refreshSttBadge();
         refreshLlmBadge();
         refreshTtsBadge();
@@ -523,9 +543,19 @@ public class AiTabPanel extends JPanel {
     }
 
     @Subscribe
+    public void onSleepWakeStateChanged(SleepWakeStateChangedEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            sleeping = event.sleeping();
+            sleepWakeButton.setText(sleepWakeText());
+            refreshSttBadge();
+        });
+    }
+
+    @Subscribe
     public void onPttModeChanged(PttModeChangedEvent event) {
         SwingUtilities.invokeLater(() -> {
             pttModeActive = event.isActive();
+            sleepWakeButton.setEnabled(isServiceRunning.get() && !pttModeActive);
             refreshSttBadge();
         });
     }
@@ -552,11 +582,7 @@ public class AiTabPanel extends JPanel {
     private JPanel buildQuickStatusPanel() {
         boolean running = isServiceRunning.get();
 
-        String sttText = !running ? getText("hud.state.standby")
-                : pttModeActive ? getText("hud.state.pushToTalk")
-                : getText("hud.state.listening");
-        StatusBadge.State sttState = (running && !pttModeActive) ? StatusBadge.State.OK : StatusBadge.State.IDLE;
-        sttBadge = new HudStatusReadout(getText("hud.stt"), sttText, sttState);
+        sttBadge = new HudStatusReadout(getText("hud.stt"), sttStateText(running), sttBadgeState(running));
 
         llmBadge = new HudStatusReadout(getText("hud.llm"),
                 running ? getText("hud.state.active") : getText("hud.state.standby"),
@@ -598,13 +624,22 @@ public class AiTabPanel extends JPanel {
 
     private void refreshSttBadge() {
         boolean running = isServiceRunning.get();
-        if (!running) {
-            sttBadge.setValue(getText("hud.state.standby"), StatusBadge.State.IDLE);
-        } else if (pttModeActive) {
-            sttBadge.setValue(getText("hud.state.pushToTalk"), StatusBadge.State.IDLE);
-        } else {
-            sttBadge.setValue(getText("hud.state.listening"), StatusBadge.State.OK);
-        }
+        sttBadge.setValue(sttStateText(running), sttBadgeState(running));
+    }
+
+    /**
+     * What the STT badge says, in the order the gates actually apply: nothing is listening while the services
+     * are down; push-to-talk supersedes Sleep/Wake, which is why it is asked first.
+     */
+    private String sttStateText(boolean running) {
+        if (!running) return getText("hud.state.standby");
+        if (pttModeActive) return getText("hud.state.pushToTalk");
+        return getText(sleeping ? "hud.state.sleeping" : "hud.state.listening");
+    }
+
+    private StatusBadge.State sttBadgeState(boolean running) {
+        boolean openToVoice = running && !pttModeActive && !sleeping;
+        return openToVoice ? StatusBadge.State.OK : StatusBadge.State.IDLE;
     }
 
     private void refreshLlmBadge() {
@@ -677,6 +712,11 @@ public class AiTabPanel extends JPanel {
             String text = event.inSync() ? getText("hud.keymap.inSync") : getText("hud.keymap.modified");
             keymapBadge.setValue(text, state);
         });
+    }
+
+    private String sleepWakeText() {
+        // sleeping -> offer to wake up; listening -> offer to sleep
+        return getText(sleeping ? "ai.action.wake" : "ai.action.sleep");
     }
 
     private String hudOverlayText() {

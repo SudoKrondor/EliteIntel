@@ -1879,4 +1879,27 @@ public class NaturalSpeechIntegrationTestIT {
                 "dove posso commerciare materiali grezzi", "traccia la rotta a un commerciante di materiali grezzi");
     }
 
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(10)
+    @MethodSource
+    void startListening(String input) throws InterruptedException {
+        assertRouted(input, WakeupCommand.ID);
+    }
+
+    static Stream<String> startListening() {
+        return Stream.of("riattivati", "svegliati", "ascoltami");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(11)
+    @MethodSource
+    void ignoreMe(String input) throws InterruptedException {
+        assertRouted(input, SleepCommand.ID);
+    }
+
+    static Stream<String> ignoreMe() {
+        return Stream.of("sospenditi", "vai in standby", "ignorami", "non ascoltarmi più",
+                "ignora i miei comandi", "ignora i comandi");
+    }
 }

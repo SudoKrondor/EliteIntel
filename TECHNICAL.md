@@ -145,12 +145,22 @@ endpoint, and never leave the user's machine in any other form.
 
 ### Microphone Gating
 
-Two ways in, chosen on the SETTINGS / PUSH TO TALK tab:
+Two ways in, chosen on the SETTINGS / PUSH TO TALK tab, and never both at once:
 
 - Built-in gate (the default) - the app listens continuously and its own noise gate decides what counts as speech. There is also a check box on the Player tab which, when UNCHECKED, makes the app ignore anything it cannot map to an action, so you can talk during play and
   **for the most part** it will only respond to a clear command or an implemented query.
 - Push to talk - map a controller button, and the microphone is open only while that button is held. Anything captured without it is discarded before it reaches the AI.
 
+#### Sleep / Wake
+
+On top of the built-in gate sits Sleep/Wake, driven by the SLEEP / WAKE UP button on the AI tab or by voice ("go to sleep", "wake up"). Asleep, the app ignores you completely - the transcript is discarded before it reaches the AI - with two exceptions:
+
+- a **wake phrase** ("wake", "wake up", "listen") wakes her again, and
+- **"listen
+  up"** followed by a request is a one-time bypass: the prefix is stripped and the request runs, without waking her for good.
+
+The state is remembered between runs, so if you shut down asleep the app says so out loud on the next start rather than sitting there silently ignoring you. Sleep/Wake is unavailable while push to talk is on:
+the mapped button already gates the microphone, so there is nothing left for it to gate.
 
 ### No Game Memory Access
 

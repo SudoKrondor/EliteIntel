@@ -30,6 +30,7 @@ They all follow the same naming pattern (using `de` as an example for German):
 | `i18n/ai_action_aliases_de.properties` | **Special file** - voice trigger phrases (see below) |
 | `…/de/GermanPromptRules.java` | Hints for the AI about how your language works |
 | `…/de/GermanInputNormalizerRules.java` | Synonym and paraphrase normalization |
+| `…/de/GermanAiActionAliases.java` | Wake-up word and "listen" prefix in your language |
 
 Language codes: `de` German · `fr` French · `es` Spanish · `it` Italian · `pt` Portuguese · `ru` Russian ·
 `uk` Ukrainian
@@ -187,7 +188,36 @@ When in doubt, add the synonym to the aliases file instead.
 
 ---
 
-## 5 - Integration test
+## 5 - AiActionAliases (Java file)
+
+**File:** `…/XX/GermanAiActionAliases.java`
+
+This small file defines two things, and both exist only for sleep mode - the state where the app ignores everything it hears.
+
+### Wake-up phrases (`wakeBypassPhrases`)
+
+The exact words a player says to wake the assistant from sleep mode. These must be an exact, complete match - nothing added before or after.
+
+Example (Russian): `"проснись"`, `"слушай"`, `"слушай меня"`, `"активируйся"`
+
+Keep the list short - 2-4 phrases is plenty.
+
+### Listen-prefix phrases (`listenBypassPrefixes`)
+
+These are words the player can put at the start of a command to signal that what follows is a live instruction - not small talk.
+
+Example (English): `"listen up"`, `"listen"`
+Example (Russian): `"слушай меня"`, `"слушай"`
+
+If the player says `"listen, open the galaxy map"`, the word `"listen"` is stripped and
+`"open the galaxy map"` is sent to the AI.
+
+Put longer phrases in both sets - the code sorts by length and tries the longest first, so
+`"слушай меня открой карту"` is not first reduced by the shorter `"слушай"` and left with a stray `"меня"`.
+
+---
+
+## 6 - Integration test
 
 **File:** `app/src/test/java/elite/intel/junit/prompt/NaturalSpeechIntegrationTestXX.java`
 (where `XX` is your language code - e.g. `FR`, `DE`, `RU`)
@@ -287,3 +317,4 @@ Start with the groups that cover the most important commands for your language (
 - [ ] Longer phrases come before shorter ones in the InputNormalizerRules file
 - [ ] `languageName()` is still in English
 - [ ] No `{placeholder}` has been removed or altered
+- [ ] Wake-up phrases match what a player would actually say in your language

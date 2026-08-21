@@ -418,6 +418,26 @@ public class SystemSession {
         return false;
     }
 
+    /**
+     * True while the Sleep/Wake gate is closed: the STT pipeline discards every transcript instead of routing
+     * it, so nothing the microphone hears reaches the companion.
+     * <p>
+     * Only consulted while push-to-talk is off. With push-to-talk on, the mapped button is already the only
+     * thing that opens the microphone, so this flag has nothing left to gate — see {@code ParakeetSTTImpl}.
+     */
+    public boolean isSleeping() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isSleepWake());
+    }
+
+    public void setSleeping(boolean sleeping) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setSleepWake(sleeping);
+            dao.save(session);
+            return null;
+        });
+    }
+
     public boolean isPushToTalkEnabled() {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().isPushToTalkEnabled());
     }

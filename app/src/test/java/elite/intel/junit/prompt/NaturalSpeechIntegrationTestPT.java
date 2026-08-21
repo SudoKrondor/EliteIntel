@@ -1292,4 +1292,26 @@ public class NaturalSpeechIntegrationTestPT {
      * }
      */
 
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(10)
+    @MethodSource
+    void startListening(String input) throws InterruptedException {
+        assertRouted(input, WakeupCommand.ID);
+    }
+
+    static Stream<String> startListening() {
+        return Stream.of("acorda", "acorde");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(11)
+    @MethodSource
+    void ignoreMe(String input) throws InterruptedException {
+        assertRouted(input, SleepCommand.ID);
+    }
+
+    static Stream<String> ignoreMe() {
+        return Stream.of("me ignore", "não monitore", "dormir");
+    }
 }

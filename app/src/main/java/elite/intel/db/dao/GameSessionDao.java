@@ -24,7 +24,7 @@ public interface GameSessionDao {
                                                              aiLanguage,
                                                              audioInputDevice, audioOutputDevice,
                                                              pushToTalkEnabled, pushToTalkControllerName,
-                                                             pushToTalkButtonIndex,
+                                                             pushToTalkButtonIndex, sleepWake,
                                                              noiseReductionEnabled, noiseReductionStrength,
                                                              overlayAlpha, overlayFontScale, overlayWidth, overlayX, overlayY,
                                                              overlayDisplayMode, overlayVrPosition
@@ -38,7 +38,7 @@ public interface GameSessionDao {
                                                       :aiLanguage,
                                                       :audioInputDevice, :audioOutputDevice,
                                                       :pushToTalkEnabled, :pushToTalkControllerName,
-                                                      :pushToTalkButtonIndex,
+                                                      :pushToTalkButtonIndex, :sleepWake,
                                                       :noiseReductionEnabled, :noiseReductionStrength,
                                                       :overlayAlpha, :overlayFontScale, :overlayWidth, :overlayX, :overlayY,
                                                       :overlayDisplayMode, :overlayVrPosition
@@ -81,6 +81,7 @@ public interface GameSessionDao {
             session.setPushToTalkEnabled(rs.getBoolean("pushToTalkEnabled"));
             session.setPushToTalkControllerName(rs.getString("pushToTalkControllerName"));
             session.setPushToTalkButtonIndex(rs.getInt("pushToTalkButtonIndex"));
+            session.setSleepWake(rs.getBoolean("sleepWake"));
             session.setNoiseReductionEnabled(rs.getBoolean("noiseReductionEnabled"));
             session.setNoiseReductionStrength(rs.getInt("noiseReductionStrength"));
             session.setOverlayAlpha(rs.getDouble("overlayAlpha"));
@@ -125,6 +126,10 @@ public interface GameSessionDao {
         private boolean pushToTalkEnabled;
         private String pushToTalkControllerName;
         private int pushToTalkButtonIndex = -1;
+        /**
+         * True while the Sleep/Wake gate is closed and the STT pipeline is discarding transcripts.
+         */
+        private boolean sleepWake = false;
         private boolean noiseReductionEnabled = false;
         private int noiseReductionStrength = 1;
         /**
@@ -328,6 +333,14 @@ public interface GameSessionDao {
 
         public void setPushToTalkButtonIndex(int pushToTalkButtonIndex) {
             this.pushToTalkButtonIndex = pushToTalkButtonIndex;
+        }
+
+        public boolean isSleepWake() {
+            return sleepWake;
+        }
+
+        public void setSleepWake(boolean sleepWake) {
+            this.sleepWake = sleepWake;
         }
 
         public boolean isNoiseReductionEnabled() {
