@@ -17,7 +17,7 @@ Microphone (any format)
 [AudioCalibrator]           measure noise floor + speech RMS → thresholds in SystemSession
     │
     ▼
-[captureLoop / VAD]         100ms frames, RMS gate, pre-roll, PTT
+[captureLoop]               100ms frames; PTT: button = window, else RMS gate + pre-roll
     │
     ├─ every frame ──▶ AudioMonitorEvent  (waveform visualizer, via AudioMonitorBus)
     │
@@ -143,7 +143,8 @@ On Windows, the bundled
 
 ## VAD State Machine
 
-The capture loop reads 100ms frames continuously. Each frame goes through the format-conversion and optional resampling chain (see pipeline above) before VAD.
+The capture loop reads 100ms frames continuously. Each frame goes through the format-conversion and optional resampling chain (see pipeline above) before VAD. The state machine below is the
+**hands-free** capture window; under push-to-talk the button replaces it entirely (see below).
 
 | Constant | Value | Meaning |
 |---|---|---|
@@ -154,9 +155,19 @@ The capture loop reads 100ms frames continuously. Each frame goes through the fo
 | `MIN_AUDIO_MS` | 1500 | Utterance padded to this length before inference |
 | `INFERENCE_TIMEOUT_SEC` | 4 | Watchdog timeout; executor replaced on hang |
 
-**Push-to-talk (PTT):** `PttButtonStateEvent` sets `pttHeld`. While held, any utterance is marked as PTT-captured (
-`capturedWithPttHeld`), latching even if the button goes down mid-utterance. On button release,
-`pttForceClose` is set to immediately close an open gate.
+**Push-to-talk (
+PTT):** while `SystemSession.isPushToTalkEnabled()`, the table above does not apply - the mapped controller button
+*is* the capture window and the VAD is not consulted at all:
+
+- with the button up, the frame is dropped: nothing is written to the collector and nothing enters the pre-roll, so a remark made before the press cannot be swept into the next capture;
+- the press opens the window (`PttButtonStateEvent` sets `pttHeld`, and `pttPressed` latches the edge so a press shorter than one frame is not missed), and every frame from then on is collected;
+- the release closes it - the frame the release lands in is collected first, so the last word is not clipped - and the capture goes straight to inference, marked `capturedWithPttHeld`;
+- `MAX_UTTERANCE_MS` still caps one capture; a button still held simply starts the next one.
+
+The button state is recorded here as a level the capture loop samples, never acted on in the subscriber:
+the gate is timed by the thread that owns the capture window, not by the thread that reads the button.
+
+Because a closed PTT window is not silence, `SpectralNoiseReducer.accumulateNoise` only takes frames at or below `RMS_THRESHOLD_LOW` while PTT is armed - otherwise speech made with the button up would teach the noise profile that the room sounds like a commander.
 
 **Frame monitor:** every processed frame publishes an `AudioMonitorEvent` (via
 `AudioMonitorBus`, not the main `EventBusManager`) containing raw PCM + RMS + thresholds. The waveform visualizer (
@@ -226,7 +237,7 @@ Two gates, and `MicrophoneGate.decide(capturedWithPttHeld, pushToTalkEnabled, sl
 | Verdict | When | What happens |
 |---|---|---|
 | `OPEN_PUSH_TO_TALK` | the button was held while the utterance was captured (`capturedWithPttHeld`) | dispatched as a PTT capture |
-| `CLOSED_PUSH_TO_TALK` | `SystemSession.isPushToTalkEnabled()` and the button was not held | dropped as room noise |
+| `CLOSED_PUSH_TO_TALK` | `SystemSession.isPushToTalkEnabled()` and the button was not held - a backstop, since the capture window under PTT *is* the button | dropped as room noise |
 | `CLOSED_ASLEEP` | hands-free and `SystemSession.isSleeping()` | handed to `WakeBypass`, below |
 | `OPEN_HANDS_FREE` | neither gate is closed | dispatched normally |
 

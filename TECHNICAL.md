@@ -149,7 +149,7 @@ Two ways in, chosen on the SETTINGS / PUSH TO TALK tab, and never both at once:
 
 - Built-in gate (the default) - the app listens continuously and its own noise gate decides what counts as speech. There is also a check box on the Player tab which, when UNCHECKED, makes the app ignore anything it cannot map to an action, so you can talk during play and
   **for the most part** it will only respond to a clear command or an implemented query.
-- Push to talk - map a controller button, and the microphone is open only while that button is held. Anything captured without it is discarded before it reaches the AI.
+- Push to talk - map a controller button, and the microphone is open only while that button is held. The button alone opens and closes the recording: nothing said before you press is in the buffer, the noise gate never opens a window of its own, and what you said while holding goes to speech recognition the moment you let go.
 
 #### Sleep / Wake
 

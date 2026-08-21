@@ -58,11 +58,21 @@ public class ParakeetSTTImpl implements EarsInterface {
     private final AtomicBoolean isStopping = new AtomicBoolean(false);
     private final AtomicBoolean isListening = new AtomicBoolean(false);
     private final AtomicBoolean isSpeaking = new AtomicBoolean(false);
+    /**
+     * The mapped controller button's current level: under push-to-talk this alone is the capture window.
+     */
     private final AtomicBoolean pttHeld = new AtomicBoolean(false);
-    private final AtomicBoolean pttForceClose = new AtomicBoolean(false);
+    /**
+     * Set on every press and consumed by the capture loop, so a press shorter than one frame is not missed.
+     */
+    private final AtomicBoolean pttPressed = new AtomicBoolean(false);
     private final java.util.concurrent.atomic.AtomicInteger pendingTranscriptions = new java.util.concurrent.atomic.AtomicInteger(0);
     private final SystemSession systemSession = SystemSession.getInstance();
     private final ByteArrayOutputStream audioCollector = new ByteArrayOutputStream();
+    /**
+     * The push-to-talk capture window: while it is armed, this and not the VAD says what a frame is for.
+     */
+    private final PushToTalkCaptureWindow pttWindow = new PushToTalkCaptureWindow(MAX_UTTERANCE_BYTES);
     private final ArrayDeque<byte[]> preRoll = new ArrayDeque<>();
 
     private ExecutorService transcriptionExecutor;
@@ -264,6 +274,7 @@ public class ParakeetSTTImpl implements EarsInterface {
             int consecutiveSilence = 0;
             audioCollector.reset();
             preRoll.clear();
+            pttWindow.reset();
 
             while (isListening.get() && line.isOpen()) {
                 int bytesRead = line.read(buffer, 0, buffer.length);
@@ -287,56 +298,94 @@ public class ParakeetSTTImpl implements EarsInterface {
                         copyOf(audio, audioLen), audioLen, rms, NOISE_FLOOR, RMS_THRESHOLD_HIGH)
                 );
 
-                preRoll.addLast(copyOf(audio, audioLen));
-                if (preRoll.size() > PRE_ROLL_FRAMES) preRoll.removeFirst();
+                boolean pushToTalk = systemSession.isPushToTalkEnabled();
+                boolean wasActive;
 
-                // Schmitt-trigger hysteresis: the gate opens only above the HIGH
-                // level, but stays open until rms falls below the lower CLOSE level
-                // for EXIT_SILENCE_FRAMES. Trailing quiet speech (between LOW and
-                // HIGH) keeps the gate open instead of clipping the tail of an
-                // utterance, while opening still requires a clear voice onset.
-                if (rms > RMS_THRESHOLD_HIGH) {
-                    consecutiveVoice++;
-                } else {
-                    consecutiveVoice = 0;
-                }
-                if (rms > RMS_THRESHOLD_LOW) {
-                    consecutiveSilence = 0;
-                } else {
-                    consecutiveSilence++;
-                }
-
-                boolean justActivated = false;
-                if (!isActive && consecutiveVoice >= ENTER_VOICE_FRAMES) {
-                    isActive = true;
-                    justActivated = true;
-                    capturedWithPttHeld = pttHeld.get();
-                    audioCollector.reset();
-                    for (byte[] frame : preRoll) audioCollector.write(frame, 0, frame.length);
+                if (pushToTalk) {
+                    // The button IS the capture window. Nothing heard with it up is kept - not in the
+                    // collector, not in the pre-roll - so a remark made before the press cannot be swept into
+                    // the next capture, and the VAD never opens a window of its own.
                     preRoll.clear();
-                    log.info("VAD: speech started (rms={}, threshold={})", (int) rms, (int) RMS_THRESHOLD_HIGH);
-                }
+                    consecutiveVoice = 0;
+                    consecutiveSilence = 0;
 
-                boolean wasActive = isActive;
-                if (isActive && consecutiveSilence >= EXIT_SILENCE_FRAMES) {
-                    isActive = false;
-                    log.debug("VAD: speech ended");
-                }
-                boolean forceClose = pttForceClose.compareAndSet(true, false);
-                if (forceClose && isActive) {
-                    isActive = false;
-                    log.info("PTT: button released, closing VAD");
-                }
-                if (isActive && !justActivated) {
-                    if (pttHeld.get()) capturedWithPttHeld = true; // latch: button pressed mid-utterance
-                    audioCollector.write(audio, 0, audioLen);
-                    if (audioCollector.size() >= MAX_UTTERANCE_BYTES) {
-                        isActive = false;
+                    // A press seen since the last frame counts as held even if the button is already back up,
+                    // so a tap shorter than one 100ms frame still captures the frame it happened in.
+                    boolean held = pttHeld.get() | pttPressed.compareAndSet(true, false);
+                    PushToTalkCaptureWindow.Frame frame = pttWindow.onFrame(held, audioLen);
+                    if (frame != PushToTalkCaptureWindow.Frame.DISCARD && !isActive) {
+                        capturedWithPttHeld = true;
+                        audioCollector.reset();
+                        log.info("PTT: button held, capture window open");
+                    }
+                    wasActive = frame != PushToTalkCaptureWindow.Frame.DISCARD;
+                    if (wasActive) {
+                        // The frame the release lands in is written before the window shuts, so the last word
+                        // is not clipped by a commander who lets go the instant they finish saying it.
+                        audioCollector.write(audio, 0, audioLen);
+                    }
+                    isActive = frame == PushToTalkCaptureWindow.Frame.COLLECT;
+                    if (frame == PushToTalkCaptureWindow.Frame.CLOSE_ON_RELEASE) {
+                        log.info("PTT: button released, capture window closed ({}ms captured)",
+                                audioCollector.size() * 1000 / (SAMPLE_RATE * 2));
+                    } else if (frame == PushToTalkCaptureWindow.Frame.CLOSE_ON_MAX_LENGTH) {
+                        log.warn("PTT: max utterance length ({}ms) reached with the button still held", MAX_UTTERANCE_MS);
+                    }
+                } else {
+                    // Nothing hands-free may act on a press, and neither a stale latch nor a window left open
+                    // by the mode change may open a phantom capture the next time push-to-talk is armed.
+                    pttPressed.set(false);
+                    pttWindow.reset();
+
+                    preRoll.addLast(copyOf(audio, audioLen));
+                    if (preRoll.size() > PRE_ROLL_FRAMES) preRoll.removeFirst();
+
+                    // Schmitt-trigger hysteresis: the gate opens only above the HIGH
+                    // level, but stays open until rms falls below the lower CLOSE level
+                    // for EXIT_SILENCE_FRAMES. Trailing quiet speech (between LOW and
+                    // HIGH) keeps the gate open instead of clipping the tail of an
+                    // utterance, while opening still requires a clear voice onset.
+                    if (rms > RMS_THRESHOLD_HIGH) {
+                        consecutiveVoice++;
+                    } else {
+                        consecutiveVoice = 0;
+                    }
+                    if (rms > RMS_THRESHOLD_LOW) {
                         consecutiveSilence = 0;
-                        log.warn("VAD: max utterance length ({}ms) reached, forcing gate close", MAX_UTTERANCE_MS);
+                    } else {
+                        consecutiveSilence++;
+                    }
+
+                    boolean justActivated = false;
+                    if (!isActive && consecutiveVoice >= ENTER_VOICE_FRAMES) {
+                        isActive = true;
+                        justActivated = true;
+                        capturedWithPttHeld = false;
+                        audioCollector.reset();
+                        for (byte[] frame : preRoll) audioCollector.write(frame, 0, frame.length);
+                        preRoll.clear();
+                        log.info("VAD: speech started (rms={}, threshold={})", (int) rms, (int) RMS_THRESHOLD_HIGH);
+                    }
+
+                    wasActive = isActive;
+                    if (isActive && consecutiveSilence >= EXIT_SILENCE_FRAMES) {
+                        isActive = false;
+                        log.debug("VAD: speech ended");
+                    }
+                    if (isActive && !justActivated) {
+                        audioCollector.write(audio, 0, audioLen);
+                        if (audioCollector.size() >= MAX_UTTERANCE_BYTES) {
+                            isActive = false;
+                            consecutiveSilence = 0;
+                            log.warn("VAD: max utterance length ({}ms) reached, forcing gate close", MAX_UTTERANCE_MS);
+                        }
                     }
                 }
-                if (!isActive && systemSession.isNoiseReductionEnabled()) {
+
+                // Under push-to-talk a closed window is not silence - it is everything said with the button
+                // up - so only frames at ambient level may teach the noise profile what the room sounds like.
+                boolean quietEnoughToProfileNoise = !isActive && (!pushToTalk || rms <= RMS_THRESHOLD_LOW);
+                if (quietEnoughToProfileNoise && systemSession.isNoiseReductionEnabled()) {
                     SpectralNoiseReducer.getInstance().accumulateNoise(audio, audioLen);
                 }
 
@@ -518,10 +567,15 @@ public class ParakeetSTTImpl implements EarsInterface {
         isSpeaking.set(event.isSpeaking());
     }
 
+    /**
+     * The push-to-talk button reported from {@link elite.intel.ai.ears.PushToTalkService}, recorded as a level
+     * the capture loop samples rather than acted on here: the gate must be timed by the thread that owns the
+     * capture window, never by the thread that reads the button.
+     */
     @Subscribe
     public void onPttButtonState(PttButtonStateEvent event) {
         pttHeld.set(event.isHeld());
-        if (!event.isHeld()) pttForceClose.set(true);
+        if (event.isHeld()) pttPressed.set(true);
     }
 
     private byte[] padAudio(byte[] pcm) {

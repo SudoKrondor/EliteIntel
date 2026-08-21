@@ -4,8 +4,10 @@ package elite.intel.ai.ears;
  * What stands between the microphone and the companion, decided once per finished utterance.
  * <p>
  * There are two gates and never more than one of them is in force. <b>Push-to-talk</b>, when enabled, makes
- * the mapped controller button the only thing that opens the microphone, so an utterance captured without it
- * is room noise rather than an order. <b>Sleep/Wake</b> is the hands-free gate: closed, she is not listening
+ * the mapped controller button the only thing that opens the microphone: the capture window in the STT loop
+ * is the button itself, so audio heard with the button up is never collected and never reaches a transcript.
+ * That makes {@link #CLOSED_PUSH_TO_TALK} a backstop rather than the everyday path - it catches an utterance
+ * that was already in flight when the mode changed under it. <b>Sleep/Wake</b> is the hands-free gate: closed, she is not listening
  * at all: the AI tab button reopens her, and so does a spoken wake phrase, which is the one thing a
  * sleeping companion still listens for. A listen-prefixed order ("listen, open the galaxy map") gets through
  * the same way, which is why {@link #CLOSED_ASLEEP} is a gate to be asked about a transcript rather than a
@@ -28,7 +30,8 @@ public enum MicrophoneGate {
      */
     OPEN_HANDS_FREE,
     /**
-     * Push-to-talk is armed and the button was not held for this utterance: the transcript is dropped.
+     * Push-to-talk is armed and the button was not held for this utterance - which now means the capture
+     * started before the mode did: the transcript is dropped.
      */
     CLOSED_PUSH_TO_TALK,
     /**
