@@ -41,7 +41,13 @@ public class KeyDetector {
             Map.entry(ProviderEnum.GROK, Pattern.compile("^xai-[a-zA-Z0-9_-]{40,100}$")),
             Map.entry(ProviderEnum.DEEPSEEK, Pattern.compile("^sk-[a-f0-9]{32}$")),
             Map.entry(ProviderEnum.MISTRAL, Pattern.compile("^[a-zA-Z0-9]{32}$")),
-            Map.entry(ProviderEnum.OPENAI, Pattern.compile("^sk-[a-zA-Z0-9_-]{161}$")),
+            // Every OpenAI key shape, not the one length a key happened to have when this
+            // was written: a legacy sk- key is 48 characters and a modern prefixed one has
+            // no fixed length at all, so pinning 161 rejected both. The prefixed branch and
+            // the 48-character legacy branch are each disjoint from DeepSeek's 32 hex
+            // characters, so widening this cannot make a DeepSeek key ambiguous.
+            Map.entry(ProviderEnum.OPENAI,
+                    Pattern.compile("^sk-(?:(?:proj|svcacct|admin)-[a-zA-Z0-9_-]{20,}|[a-zA-Z0-9]{48})$")),
             Map.entry(ProviderEnum.GOOGLE_STT, Pattern.compile("^AIzaSy[a-zA-Z0-9_-]{33}$")),
             Map.entry(ProviderEnum.GOOGLE_TTS, Pattern.compile("^AIzaSy[a-zA-Z0-9_-]{33}$")),
             Map.entry(ProviderEnum.GEMINI, Pattern.compile("^(AIzaSy[a-zA-Z0-9_-]{33}|AQ\\.[a-zA-Z0-9_.-]{30,150})$")),
