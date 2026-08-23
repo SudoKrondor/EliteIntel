@@ -8,6 +8,7 @@ import elite.intel.db.dao.RouteMonetisationDao.MonetisationTransaction;
 import elite.intel.db.dao.ShipSettingsDao;
 import elite.intel.db.managers.*;
 import elite.intel.gameapi.DiscoveryScanner;
+import elite.intel.gameapi.FuelScoop;
 import elite.intel.gameapi.gamestate.dtos.NavRouteDto;
 import elite.intel.gameapi.hge.HighGradeEmissionsAdvisor;
 import elite.intel.gameapi.journal.events.FSDJumpEvent;
@@ -62,6 +63,7 @@ public class JumpCompletedSubscriber {
             primaryStar.setStationGovernment(event.getSystemGovernmentLocalised());
             primaryStar.setAllegiance(event.getSystemAllegiance());
             primaryStar.setSecurity(event.getSystemSecurityLocalised());
+            if (event.getSystemFaction() != null) primaryStar.setSystemFaction(event.getSystemFaction().getName());
             primaryStar.setStarName(event.getStarSystem());
             primaryStar.setPlanetName(event.getBody());
             primaryStar.setLocationType(LocationDto.LocationType.PRIMARY_STAR);
@@ -109,7 +111,9 @@ public class JumpCompletedSubscriber {
                 List<NavRouteDto> route = shipRoute.getOrderedRoute();
                 int remainingJump = route.size();
                 if (remainingJump > 0 && globalSettings.getAnnounceRemainingJumps()) {
-                    boolean announceFuel = globalSettings.getAnnounceFuelAvailable();
+                    // The toggle alone is not enough: a ship with no fuel scoop cannot use a scoopable
+                    // star, and telling it "refuel possible" is worse than saying nothing. See FuelScoop.
+                    boolean announceFuel = FuelScoop.announceFuelStars();
                     route.stream().findFirst().ifPresent(nextStop -> {
                         sb.append(" ").append(localizedEvent("event.route.waypoint", nextStop.getName(), nextStop.getStarClass()));
                         if (announceFuel) {

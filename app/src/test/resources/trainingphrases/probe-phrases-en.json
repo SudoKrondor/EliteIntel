@@ -155,6 +155,18 @@
     "find somewhere to buy copper",
     "where can we trade bertrandite"
   ],
+  "find_fuel_station": [
+    "find me a fuel station",
+    "where can I refuel",
+    "I am low on fuel, find somewhere to dock",
+    "plot a route to a station that sells fuel",
+    "find the nearest gas station",
+    "we have no fuel scoop, find a place to refuel",
+    "where can I buy hydrogen fuel",
+    "find a station where I can top up the tank",
+    "take me somewhere I can refuel",
+    "find a fuel station within 30 light years"
+  ],
   "retract_hardpoints": [
     "retract hardpoints",
     "please retract hardpoints",

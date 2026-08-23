@@ -5,6 +5,7 @@ import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.HistoricalMissionScanner;
+import elite.intel.gameapi.MissionTitle;
 import elite.intel.gameapi.journal.events.MissionAcceptedEvent;
 import elite.intel.gameapi.journal.events.MissionsEvent;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
@@ -26,11 +27,26 @@ import static elite.intel.util.StringUtls.localizedSpeech;
 
 public class MissingMissionMonitor implements Runnable, ManagedService {
 
+    /**
+     * How long the monitor waits between looks. Long because the only thing that gives it work is a mission
+     * snapshot, and the game writes one at game load.
+     */
+    private static final long SCAN_PAUSE_MS = 10_000;
+
     private static volatile MissingMissionMonitor instance;
     private final Logger log = LogManager.getLogger(MissingMissionMonitor.class);
     private final MissionManager missionManager = MissionManager.getInstance();
     private final AtomicBoolean scanning = new AtomicBoolean(false);
-    private final List<MissionsEvent> missionEvent = new ArrayList<>();
+    /**
+     * The game's most recent mission log, and only that one.
+     * <p>
+     * WHY not every snapshot seen: this used to accumulate them and read the active list out of all of them
+     * at once, so a mission that was active at game load and completed an hour later was still "active"
+     * according to the first snapshot. The scan then found it missing from the database - because completing
+     * it had correctly removed it - and put it back, announcing it as an uncatalogued mission. Each snapshot
+     * supersedes the one before it; an older one describes a mission log that no longer exists.
+     */
+    private volatile MissionsEvent missionLog;
     private ScheduledExecutorService executor;
 
     private MissingMissionMonitor() {
@@ -90,19 +106,20 @@ public class MissingMissionMonitor implements Runnable, ManagedService {
 
     private void scan() {
         try {
+            // Sleep BEFORE the check, not after it: with the order reversed, an idle monitor returned
+            // immediately and run()'s loop called straight back into it, spinning a core flat out between
+            // the mission snapshots that are minutes or hours apart.
             //noinspection BusyWait
+            Thread.sleep(SCAN_PAUSE_MS);
+
             if (!scanning.get()) return;
 
-            Thread.sleep(10 * 1000);
-
-            List<Long> acceptedMissionIds = new ArrayList<>();
-            for (MissionsEvent event : missionEvent) {
-                List<MissionsEvent.Mission> activeMissions = event.getActive();
-                for (MissionsEvent.Mission mission : activeMissions) {
-                    acceptedMissionIds.add(mission.getMissionID());
-                }
+            MissionsEvent snapshot = missionLog;
+            List<Long> acceptedMissionIds = activeIds(snapshot);
+            if (acceptedMissionIds.isEmpty()) {
+                scanning.set(false); //the commander holds nothing; go back to sleep
+                return;
             }
-            if (acceptedMissionIds.isEmpty()) return;
 
             List<Long> existingMissionIds = new ArrayList<>(missionManager.getMissions().keySet());
             Set<Long> filtered = new HashSet<>(acceptedMissionIds);
@@ -114,7 +131,9 @@ public class MissingMissionMonitor implements Runnable, ManagedService {
                         localizedSpeech(
                                 "speech.warning.uncataloguedMissionDetected",
                                 PlayerSession.getInstance().getVariablePlayerName(),
-                                mission.getName()
+                                // The title, not the raw key: "Mission_Courier_RankEmp" is not something to
+                                // say out loud. MissionTitle prefers the game's own localised name.
+                                MissionTitle.of(mission.getName(), mission.getLocalisedName())
                         )
                 ));
                 missionManager.save(new MissionDto(mission));
@@ -125,8 +144,20 @@ public class MissingMissionMonitor implements Runnable, ManagedService {
         }
     }
 
+    /**
+     * The ids in the snapshot's active list, empty when there is no usable snapshot to read.
+     */
+    private static List<Long> activeIds(MissionsEvent snapshot) {
+        if (snapshot == null || snapshot.getActive() == null) return List.of();
+        List<Long> ids = new ArrayList<>();
+        for (MissionsEvent.Mission mission : snapshot.getActive()) {
+            ids.add(mission.getMissionID());
+        }
+        return ids;
+    }
+
     @Subscribe public void onMissionEvent(MissionsEvent event) {
-        this.missionEvent.add(event);
+        this.missionLog = event;
         scanning.set(true);
     }
 }

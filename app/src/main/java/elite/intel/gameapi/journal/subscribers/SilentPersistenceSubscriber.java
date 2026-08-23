@@ -105,6 +105,7 @@ public class SilentPersistenceSubscriber {
         dto.setSecurity(event.getSystemSecurityLocalised());
         dto.setStationName(event.getStationName());
         if (event.getStationFaction() != null) dto.setStationFaction(event.getStationFaction().getName());
+        if (event.getSystemFaction() != null) dto.setSystemFaction(event.getSystemFaction().getName());
         if ("FleetCarrier".equalsIgnoreCase(event.getStationType())) dto.setLocationType(FLEET_CARRIER);
 
         if (dto.getStarName() != null && !dto.getStarName().isEmpty()) {

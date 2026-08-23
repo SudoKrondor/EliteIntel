@@ -37,6 +37,7 @@ final class CarrierJumpLocationMapper {
         location.setStationGovernment(event.getSystemGovernmentLocalised());
         location.setSecurity(event.getSystemSecurityLocalised());
         location.setControllingPower(event.getControllingPower());
+        if (event.getSystemFaction() != null) location.setSystemFaction(event.getSystemFaction().getName());
         location.setPopulation(event.getPopulation());
         location.setPowerplayState(event.getPowerplayState());
         location.setPowerplayStateControlProgress(event.getPowerplayStateControlProgress());

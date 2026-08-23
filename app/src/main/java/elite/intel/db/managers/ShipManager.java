@@ -46,6 +46,19 @@ public class ShipManager {
     }
 
 
+    /**
+     * The pad the ship currently being flown needs, as {@code S}, {@code M} or {@code L}.
+     * <p>
+     * WHY an unknown ship reads as large where {@link #requireLargePad} reads as false: that one answers
+     * "must I insist on a large pad", and insisting on the strength of no information would hide outposts
+     * from every ship. This one answers "what will fit", and a search built on it sends the commander
+     * somewhere to land - so the cautious answer is the safe one.
+     */
+    public String requiredPadSize() {
+        ShipDao.Ship ship = getShip();
+        return ship == null ? ShipPadSizes.LARGE : ShipPadSizes.getPadSize(ship.getShipIdentifier());
+    }
+
     public boolean requireLargePad() {
         ShipDao.Ship ship = getShip();
         if (ship == null) return false;

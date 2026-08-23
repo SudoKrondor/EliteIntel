@@ -21,6 +21,12 @@ public class LocationDto implements ToJsonConvertible {
      */
     private static final Pattern RING_NAME = Pattern.compile(".* [A-Z] Ring");
 
+    /**
+     * What the journal writes in a faction name field for a fleet carrier, which has no faction. See
+     * {@link #named}.
+     */
+    private static final String CARRIER_HAS_NO_FACTION = "FleetCarrier";
+
     private List<MaterialDto> materials = new ArrayList<>();
     private List<SAASignalsFoundEvent.Signal> saaSignals = new ArrayList<>();
     private List<FSSBodySignalsEvent.Signal> fssSignals;
@@ -49,6 +55,7 @@ public class LocationDto implements ToJsonConvertible {
     private long marketID;
     private long systemAddress;
     private String stationFaction;
+    private String systemFaction;
     private String stationGovernment;
     private String stationAllegiance;
     private String stationEconomy;
@@ -399,12 +406,46 @@ public class LocationDto implements ToJsonConvertible {
         this.marketID = marketID;
     }
 
+    /**
+     * The faction running the station we are at, or null when there is not one.
+     */
     public String getStationFaction() {
-        return stationFaction;
+        return named(stationFaction);
     }
 
     public void setStationFaction(String stationFaction) {
-        this.stationFaction = stationFaction;
+        this.stationFaction = named(stationFaction);
+    }
+
+    /**
+     * The faction that controls the star system, or null while we have not been told.
+     * <p>
+     * Not the same thing as {@link #getStationFaction()}: a station is often run by a faction other than the
+     * one holding the system, and a fleet carrier is run by no faction at all. The journal reports this one
+     * as {@code SystemFaction} on Location, FSDJump and CarrierJump.
+     */
+    public String getSystemFaction() {
+        return named(systemFaction);
+    }
+
+    public void setSystemFaction(String systemFaction) {
+        this.systemFaction = named(systemFaction);
+    }
+
+    /**
+     * A faction name, or null when the journal is telling us there is not one.
+     * <p>
+     * WHY: a fleet carrier is a player-owned station with no minor faction behind it, and the journal says so
+     * by writing the literal {@code "StationFaction":{"Name":"FleetCarrier"}}. Read as a name, that sentinel
+     * came back out of the app as "the controlling faction there is FleetCarrier" - a faction that does not
+     * exist, stated as fact. Absent is the truth, and every reader here already handles absent.
+     * <p>
+     * Applied on the way in AND on the way out, because rows written before this rule existed are still in
+     * the database and still hold the sentinel.
+     */
+    private static String named(String faction) {
+        if (faction == null || faction.isBlank()) return null;
+        return CARRIER_HAS_NO_FACTION.equalsIgnoreCase(faction.strip()) ? null : faction;
     }
 
     public String getStationGovernment() {

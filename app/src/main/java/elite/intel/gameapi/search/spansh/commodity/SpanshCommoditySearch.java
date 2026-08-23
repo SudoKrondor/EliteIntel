@@ -4,6 +4,7 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.StationMarketsManager;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.search.spansh.station.DockingEffort;
 import elite.intel.gameapi.search.spansh.station.StationSearchClient;
 import elite.intel.gameapi.search.spansh.station.marketstation.TradeStationSearchCriteria;
 import elite.intel.gameapi.search.spansh.station.marketstation.TradeStationSearchResultDto;
@@ -68,12 +69,6 @@ public final class SpanshCommoditySearch {
      * Ask for a hold's worth: what a caller that is filling the ship rather than topping up a mission wants.
      */
     public static final int WANT_FULL_HOLD = 0;
-    /**
-     * Docking effort tiers, in the order a commander would choose between them. See {@link #dockingEffort}.
-     */
-    private static final int IN_ORBIT = 0;
-    private static final int SURFACE_PORT = 1;
-    private static final int SETTLEMENT = 2;
     /**
      * Stations to weigh for price. Each result carries the station's ENTIRE market (~50 KB of it), so this
      * is a page size paid for in megabytes, not a free widening of the search.
@@ -368,31 +363,11 @@ public final class SpanshCommoditySearch {
             results.add(asResult(station, entry));
         }
 
-        results.sort(Comparator.comparingInt((CommoditySearchResult result) -> dockingEffort(result.getStationType()))
+        results.sort(Comparator.comparingInt((CommoditySearchResult result) -> DockingEffort.of(result.getStationType()))
                 .thenComparing(returnClosest
                         ? Comparator.comparingDouble(CommoditySearchResult::getDistanceFromPlayer)
                         : Comparator.comparingDouble(CommoditySearchResult::getPrice)));
         return results;
-    }
-
-    /**
-     * How much of the commander's evening a market costs to reach, once the flying is done.
-     * <p>
-     * Distance is only half of what a stop costs. An orbital station is a docking request and a pad; a
-     * planetary port adds an approach, an orbital-cruise descent and a glide; an Odyssey settlement adds
-     * all of that plus hunting a pad on a surface installation. Ranking on distance alone treats those as
-     * the same stop and sends the commander down a gravity well to save a jump.
-     * <p>
-     * This is the FIRST sort key, ahead of both distance and price, so within the radius the commander
-     * asked for a station always beats a settlement. Deliberately: the radius is theirs to set, and
-     * narrowing it is how they say "no, the near one". A fleet carrier docks in space like any orbital,
-     * and only ever appears on the last rung of the ladder anyway.
-     */
-    private static int dockingEffort(String stationType) {
-        if (stationType == null) return SURFACE_PORT;
-        if (TradeStationSearchCriteria.StationType.SETTLEMENT_TRADE_TYPES.contains(stationType)) return SETTLEMENT;
-        if (TradeStationSearchCriteria.StationType.PLANETARY_TRADE_TYPES.contains(stationType)) return SURFACE_PORT;
-        return IN_ORBIT;
     }
 
     /**

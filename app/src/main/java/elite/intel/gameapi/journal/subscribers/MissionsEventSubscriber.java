@@ -3,42 +3,37 @@ package elite.intel.gameapi.journal.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.eventbus.UiBus;
-import elite.intel.gameapi.HistoricalMissionScanner;
 import elite.intel.gameapi.journal.events.MissionsEvent;
+import elite.intel.gameapi.missions.MissionReconciliation;
 import elite.intel.ui.event.AppLogEvent;
 
-import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static elite.intel.util.StringUtls.localizedEvent;
 
+/**
+ * Keeps our mission list honest against the game's own.
+ *
+ * <p>The {@code Missions} event is the whole mission log, so what it does not list, the commander does not
+ * have. See {@link MissionReconciliation} for why that is the test rather than the {@code Complete} and
+ * {@code Failed} lists this used to read.
+ *
+ * <p>The other direction - a mission the game holds and we have never seen - belongs to
+ * {@code MissingMissionMonitor}, which digs the accept event out of the journal history. Nothing is spoken
+ * here either; the outstanding-missions announcement is that monitor's job.
+ */
 @SuppressWarnings("unused")
 public class MissionsEventSubscriber {
 
     private final MissionManager missionManager = MissionManager.getInstance();
-    private final HistoricalMissionScanner missionScanner = HistoricalMissionScanner.getInstance();
 
     @Subscribe
-    /// NOTE: handled by MissingMissionMonitor
     public void onMissionsEventSubscriber(MissionsEvent event) {
         Thread.ofVirtual().start(() -> {
-            // Outstanding-missions announcement is owned by MissingMissionMonitor; nothing spoken here.
-            if (!event.getComplete().isEmpty() || !event.getFailed().isEmpty()) {
-                // Removes old and completed missions from the database.
-                Set<Long> existingMissionIds = missionManager.getMissions().keySet();
-                Set<Long> completedOrFailedIDs = new HashSet<>();
-                event.getComplete().forEach(m -> completedOrFailedIDs.add(m.getMissionID()));
-                event.getFailed().forEach(m -> completedOrFailedIDs.add(m.getMissionID()));
-
-                Set<Long> offset = existingMissionIds.stream()
-                        .filter(completedOrFailedIDs::contains)
-                        .collect(Collectors.toSet());
-
-                if (offset.isEmpty()) return;
-                offset.forEach(missionManager::remove);
-                UiBus.publish(new AppLogEvent(localizedEvent("event.missions.removedOld", offset.size())));
-            }
+            Set<Long> stale = MissionReconciliation.stale(missionManager.getMissions(), event);
+            if (stale.isEmpty()) return;
+            stale.forEach(missionManager::remove);
+            UiBus.publish(new AppLogEvent(localizedEvent("event.missions.removedOld", stale.size())));
         });
     }
 }
