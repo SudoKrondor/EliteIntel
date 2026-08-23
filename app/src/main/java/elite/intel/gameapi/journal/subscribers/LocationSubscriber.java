@@ -54,6 +54,7 @@ public class LocationSubscriber {
         dto.setStationName(event.getStationName());
 
         if (event.getStationFaction() != null) dto.setStationFaction(event.getStationFaction().getName());
+        if (event.getSystemFaction() != null) dto.setSystemFaction(event.getSystemFaction().getName());
 
         Thread.ofVirtual().start(() -> {
             dto.setTrafficDto(EdsmApiClient.searchTraffic(event.getStarSystem()));

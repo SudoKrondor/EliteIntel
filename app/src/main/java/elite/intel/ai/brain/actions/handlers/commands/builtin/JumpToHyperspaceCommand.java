@@ -6,9 +6,9 @@ import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
 import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.db.managers.GlobalSettingsManager;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameControllerBus;
+import elite.intel.gameapi.FuelScoop;
 import elite.intel.gameapi.data.FsdTarget;
 import elite.intel.gameapi.inputs.PreFtlChecks;
 import elite.intel.gameapi.inputs.UiNavCommon;
@@ -61,7 +61,9 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
             String starName = fsdTarget.getName() == null ? "unknown" : fsdTarget.getName();
             String starClass = fsdTarget.getStarClass() == null ? "unknown" : fsdTarget.getStarClass();
             String message;
-            if (GlobalSettingsManager.getInstance().getAnnounceFuelAvailable()) {
+            // Both halves matter: the commander asked to hear about fuel, and this ship can actually
+            // scoop it. Without a scoop "refuel possible" names a supply they cannot reach. See FuelScoop.
+            if (FuelScoop.announceFuelStars()) {
                 String fuelStatus = fsdTarget.getFuelStarStatus() == null ? "unknown" : fsdTarget.getFuelStarStatus();
                 message = StringUtls.localizedResponse("handler.fsd.jumping", starName, starClass, fuelStatus);
             } else {

@@ -13,8 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.function.BooleanSupplier;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 class MissionsEventSubscriberTest {
 
@@ -50,19 +49,33 @@ class MissionsEventSubscriberTest {
         assertFalse(missionManager.getMissions().containsKey(missionId));
     }
 
+    /**
+     * The game's mission log is the whole truth: a stored mission it does not list has ended, whether or not
+     * the ending was one we were running to see. This is what leaves a HUD card showing courier jobs that
+     * were handed in days ago with the app closed.
+     */
     @Test
-    void missionsNotInCompletedListAreRetained() throws InterruptedException {
-        long keptId = 900_003L;
-        long completedId = 900_004L;
+    void aMissionTheGameNoLongerListsIsRemovedEvenWhenNothingReportedItComplete() throws InterruptedException {
+        long droppedId = 900_003L;
+        missionAcceptedSubscriber.onMissionAcceptedEvent(genericMissionAccepted(droppedId));
+        awaitTrue(() -> missionManager.getMissions().containsKey(droppedId));
+
+        subscriber.onMissionsEventSubscriber(emptyMissionLog());
+
+        awaitTrue(() -> !missionManager.getMissions().containsKey(droppedId));
+        assertFalse(missionManager.getMissions().containsKey(droppedId));
+    }
+
+    @Test
+    void aMissionTheGameStillListsAsActiveIsRetained() throws InterruptedException {
+        long keptId = 900_005L;
         missionAcceptedSubscriber.onMissionAcceptedEvent(genericMissionAccepted(keptId));
-        missionAcceptedSubscriber.onMissionAcceptedEvent(genericMissionAccepted(completedId));
+        awaitTrue(() -> missionManager.getMissions().containsKey(keptId));
 
-        subscriber.onMissionsEventSubscriber(missionsEventWithComplete(completedId));
+        subscriber.onMissionsEventSubscriber(missionsEventWithActive(keptId));
 
-        awaitTrue(() -> !missionManager.getMissions().containsKey(completedId));
-        assertFalse(missionManager.getMissions().containsKey(completedId));
-        // keptId is active — not in complete/failed, so it should be retained
-        // (The subscriber only removes missions whose IDs appear in complete/failed AND in the DB.)
+        Thread.sleep(300);
+        assertTrue(missionManager.getMissions().containsKey(keptId));
     }
 
     private static MissionAcceptedEvent genericMissionAccepted(long missionId) {
@@ -89,6 +102,32 @@ class MissionsEventSubscriberTest {
         JsonArray complete = new JsonArray();
         complete.add(missionEntry(missionId, "Mission_Delivery"));
         j.add("Complete", complete);
+        return new MissionsEvent(j);
+    }
+
+    private static MissionsEvent missionsEventWithActive(long missionId) {
+        JsonObject j = new JsonObject();
+        j.addProperty("timestamp", Instant.now().toString());
+        j.addProperty("event", "Missions");
+        JsonArray active = new JsonArray();
+        active.add(missionEntry(missionId, "Mission_Delivery"));
+        j.add("Active", active);
+        j.add("Failed", new JsonArray());
+        j.add("Complete", new JsonArray());
+        return new MissionsEvent(j);
+    }
+
+    /**
+     * What the game writes for a commander holding nothing, taken verbatim from a diagnostics bundle whose
+     * overlay was still showing courier jobs.
+     */
+    private static MissionsEvent emptyMissionLog() {
+        JsonObject j = new JsonObject();
+        j.addProperty("timestamp", Instant.now().toString());
+        j.addProperty("event", "Missions");
+        j.add("Active", new JsonArray());
+        j.add("Failed", new JsonArray());
+        j.add("Complete", new JsonArray());
         return new MissionsEvent(j);
     }
 

@@ -60,7 +60,9 @@ public class AnalyzeCurrentLocationQuery extends BaseQueryAnalyzer implements In
                 - starSystemName: current star system
                 - planetName: current planet or body (if applicable)
                 - securityLevel: system security level
-                - stationFaction: faction controlling current station
+                - controllingFaction: the faction that controls the STAR SYSTEM (null when not known)
+                - stationFaction: the faction running the station we are docked at, which is often a different
+                  one, and is null at a fleet carrier because a carrier has no faction
                 - localPowers: powers active in this system
                 - deathsData: EDSM historical death statistics for this system
                 - trafficData: EDSM historical traffic statistics for this system
@@ -72,7 +74,8 @@ public class AnalyzeCurrentLocationQuery extends BaseQueryAnalyzer implements In
                 - If asked about docking or flight state: use flightStatus directly.
                 - If asked about temperature: state surfaceTemperatureInCelsius in degrees Celsius.
                 - If asked about day length: use dayLength directly. Do not recalculate.
-                - If any requested data is missing, say you do not have enough information.
+                - If any requested data is missing, say you do not have enough information. Never name a faction
+                  that is not in the data, and never offer stationFaction as the system's controlling faction.
                 """;
 
         double surfaceTemperatureInKelvin = Math.round(location.getSurfaceTemperature() * 100.0) / 100.0;
@@ -84,6 +87,7 @@ public class AnalyzeCurrentLocationQuery extends BaseQueryAnalyzer implements In
                                 playerSession.getPrimaryStarName(),
                                 location.getPlanetShortName(),
                                 location.getSecurity(),
+                                location.getSystemFaction(),
                                 location.getStationFaction(),
                                 location.getPowers() == null ? null : location.getPowers().toArray(String[]::new),
                                 deathsDto.getData() == null ? null : deathsDto.getData().getDeaths(),
@@ -120,6 +124,7 @@ public class AnalyzeCurrentLocationQuery extends BaseQueryAnalyzer implements In
             String planetName,
             String securityLevel,
             String controllingFaction,
+            String stationFaction,
             String[] localPowers,
             DeathsStats deathsData,
             TrafficStats trafficData,
