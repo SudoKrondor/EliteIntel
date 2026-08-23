@@ -14,10 +14,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 
 /**
  * Serializes all game input sequences through one worker so command handlers cannot interleave input steps.
- * Input-producing steps receive a small default post-input delay; explicit DELAY steps receive only their requested delay.
+ * Input-producing steps receive a small default post-input delay; explicit DELAY and WAIT_UNTIL steps receive only
+ * the time they ask for.
  * Nested publishes from the worker are executed inline to avoid self-deadlock on the single-worker queue.
  */
 public class InputSequenceExecutor {
@@ -25,6 +27,7 @@ public class InputSequenceExecutor {
     private static final Logger log = LogManager.getLogger(InputSequenceExecutor.class);
     private static final int DEFAULT_POST_INPUT_DELAY_MIN_MS = 99;
     private static final int DEFAULT_POST_INPUT_DELAY_MAX_MS = 201;
+    private static final int WAIT_UNTIL_POLL_MS = 50;
 
     private final BindingsMonitor monitor = BindingsMonitor.getInstance();
     private final KeyBindingExecutor bindingExecutor = KeyBindingExecutor.getInstance();
@@ -121,6 +124,15 @@ public class InputSequenceExecutor {
                 sleep(step.getDurationMs());
                 yield false;
             }
+            case WAIT_UNTIL -> {
+                if (!awaitCondition(step.getCondition(), step.getDurationMs(), WAIT_UNTIL_POLL_MS)) {
+                    // WHY: a timeout is a deliberate degradation, not a failure. The steps behind this one used
+                    // to run after a blind delay that could expire just as early, so continuing keeps the old
+                    // worst case while the log says the game never got where the sequence expected it.
+                    log.warn("Timed out after {}ms waiting for: {}", step.getDurationMs(), step.getConditionDescription());
+                }
+                yield false;
+            }
         };
     }
 
@@ -186,6 +198,27 @@ public class InputSequenceExecutor {
     private void handleNoKeyBindingFound(String bindingId) {
         log.warn("No binding found for action: {}", bindingId);
         GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedSpeech("speech.keyBindingNotFound", bindingId)));
+    }
+
+    /**
+     * Polls {@code condition} until it holds or {@code timeoutMs} elapses.
+     *
+     * @return true if the condition held before the deadline, false on timeout or interruption
+     */
+    static boolean awaitCondition(BooleanSupplier condition, int timeoutMs, int pollMs) {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        while (!condition.getAsBoolean()) {
+            if (System.currentTimeMillis() >= deadline) {
+                return false;
+            }
+            try {
+                Thread.sleep(Math.min(pollMs, Math.max(1, deadline - System.currentTimeMillis())));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+        return true;
     }
 
     private int defaultPostInputDelayMs() {
