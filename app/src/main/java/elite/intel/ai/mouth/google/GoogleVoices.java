@@ -26,24 +26,25 @@ public enum GoogleVoices {
     ;
 
     /**
-     * Default female voice. Ship voices are female-only (see {@link #femaleOrDefault(String)}); a ship with
-     * no stored voice, an unknown voice, or a legacy male voice resolves to this.
+     * The default ship voice, used when a ship has no stored voice or carries a name this engine does not
+     * know (see {@link #voiceOrDefault(String)}). It is female because that is what every existing fleet
+     * already sounds like; the commander may pick any voice here, male or female.
      */
-    public static final GoogleVoices DEFAULT_FEMALE = MARY;
+    public static final GoogleVoices DEFAULT_VOICE = MARY;
 
     /**
-     * Resolves a stored ship-voice name to a female voice: the named voice when it is a valid female voice,
-     * otherwise {@link #DEFAULT_FEMALE}. Ship voices are female-only, so a male name (a legacy selection from
-     * before that constraint), a name valid only for the other TTS provider, or a {@code null} name collapses
-     * to the default female.
+     * Resolves a stored ship-voice name to a voice of this engine: the named voice when it is one, otherwise
+     * {@link #DEFAULT_VOICE}. The stored voice's gender is preserved - ship voices are male or female by the
+     * commander's choice, and that choice also decides how the companion refers to herself or himself (see
+     * {@code SystemSession.getVoiceGender()}). A name valid only for another TTS provider, or a {@code null}
+     * name, collapses to the default.
      */
-    public static GoogleVoices femaleOrDefault(String name) {
-        if (name == null) return DEFAULT_FEMALE;
+    public static GoogleVoices voiceOrDefault(String name) {
+        if (name == null) return DEFAULT_VOICE;
         try {
-            GoogleVoices v = valueOf(name);
-            return v.isMale() ? DEFAULT_FEMALE : v;
+            return valueOf(name);
         } catch (IllegalArgumentException e) {
-            return DEFAULT_FEMALE;
+            return DEFAULT_VOICE;
         }
     }
 

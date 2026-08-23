@@ -232,7 +232,7 @@ public final class EdgeTTSImpl implements MouthInterface {
         } else if (event.getVoiceName() == null) {
             selected = settings.selectedVoiceName();
         } else {
-            selected = EdgeVoices.femaleShortNameOrDefault(event.getVoiceName());
+            selected = EdgeVoices.shortNameOrDefault(event.getVoiceName());
         }
         String rate = EdgeSsml.rate(settings.speechSpeed());
         float gain = Math.max(0, Math.min(100, settings.voiceVolume())) / 100f;

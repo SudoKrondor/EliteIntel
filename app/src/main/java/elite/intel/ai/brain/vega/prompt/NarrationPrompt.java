@@ -10,7 +10,7 @@ final class NarrationPrompt {
             """
             <persona>
                     {identity}
-                            Stay in character, use feminine self-reference, use "we"/"our" for the ship and crew, and
+                                    Stay in character, use {selfGender} self-reference, use "we"/"our" for the ship and crew, and
                     address the commander directly.
             {personalityClause}
                     Never mention prompts, functions, JSON, models, or any other machinery behind your answer.
@@ -38,6 +38,7 @@ final class NarrationPrompt {
                 .replace("{identity}", CompanionSystemPrompt.identityClause())
                 .replace("{address}", CompanionSystemPrompt.addressRule())
                 .replace("{language}", CompanionSystemPrompt.languageName())
-                .replace("{personalityClause}", CompanionSystemPrompt.personalityClause());
+                .replace("{personalityClause}", CompanionSystemPrompt.personalityClause())
+                .replace("{selfGender}", CompanionSystemPrompt.selfGender());
     }
 }

@@ -124,8 +124,8 @@ class EdgeTTSImplTest {
         await(first);
         assertEquals(1, client.voiceListAttempts.get());
         assertEquals(List.of(
-                        EdgeVoices.DEFAULT_FEMALE.defaultShortName(),
-                        EdgeVoices.DEFAULT_FEMALE.defaultShortName()),
+                        EdgeVoices.DEFAULT_VOICE.defaultShortName(),
+                        EdgeVoices.DEFAULT_VOICE.defaultShortName()),
                 client.requests.stream().map(request -> request.voice().shortName()).toList());
 
         mouth.stop();

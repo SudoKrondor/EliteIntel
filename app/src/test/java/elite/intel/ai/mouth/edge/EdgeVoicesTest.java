@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * caused it. This test fails at the edit instead.
  * <p>
  * The correspondence is one-way: Google may carry voices Edge does not offer (the WaveNet pair), and a stored
- * voice with no Edge twin resolves to {@link EdgeVoices#DEFAULT_FEMALE} through {@code femaleOrDefault}.
+ * voice with no Edge twin resolves to {@link EdgeVoices#DEFAULT_VOICE} through {@code voiceOrDefault}.
  */
 class EdgeVoicesTest {
 
@@ -32,11 +32,25 @@ class EdgeVoicesTest {
         }
     }
 
+    /**
+     * Ship voices are the commander's pick, male or female - but the default is not part of that change:
+     * a fleet nobody has touched must keep sounding exactly as it did, on every engine.
+     */
     @Test
-    void theDefaultFemaleIsFemaleAndSharedWithGoogle() {
-        assertTrue(!EdgeVoices.DEFAULT_FEMALE.male(), "the default ship voice has to be female");
-        assertEquals(GoogleVoices.DEFAULT_FEMALE.name(), EdgeVoices.DEFAULT_FEMALE.name(),
+    void theDefaultVoiceIsStillFemaleAndSharedWithGoogle() {
+        assertFalse(EdgeVoices.DEFAULT_VOICE.male(), "the default ship voice stays female");
+        assertEquals(GoogleVoices.DEFAULT_VOICE.name(), EdgeVoices.DEFAULT_VOICE.name(),
                 "switching engines must not move a fleet left on the default voice");
+    }
+
+    /**
+     * A male selection is a real selection: it must survive the ship-voice seam rather than collapse.
+     */
+    @Test
+    void aMaleSelectionKeepsItsOwnVoice() {
+        assertEquals(EdgeVoices.JAKE, EdgeVoices.voiceOrDefault(EdgeVoices.JAKE.name()));
+        assertEquals(EdgeVoices.JAKE, EdgeVoices.voiceOrDefault(EdgeVoices.JAKE.defaultShortName()));
+        assertEquals(EdgeVoices.DEFAULT_VOICE, EdgeVoices.voiceOrDefault("not-an-edge-voice"));
     }
 
     /**

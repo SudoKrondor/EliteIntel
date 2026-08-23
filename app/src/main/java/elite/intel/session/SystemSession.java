@@ -2,6 +2,7 @@ package elite.intel.session;
 
 import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.ai.mouth.TtsProvider;
+import elite.intel.ai.mouth.VoiceGender;
 import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
@@ -49,26 +50,52 @@ public class SystemSession {
     // the stored voice name and falls back to the provider's default when it isn't a valid voice there. The
     // companion and the legacy brain both read getAIPersonality(), so they follow the active ship's personality.
 
-    // Ship voices are female-only: femaleOrDefault() resolves the stored name to a female voice (the named
-    // voice if it's a valid female voice for this provider, otherwise the provider's default female). That
-    // seam also heals existing commanders whose ship still carries a legacy male voice. Radio transmissions
-    // are a separate channel and still use the full voice set (see VocalisationRouter).
+    // A ship voice is whatever the commander picked, male or female: voiceOrDefault() resolves the stored name
+    // against the active provider's own voices and falls back to that provider's default only when the name is
+    // not one of them (typically after a provider switch, since each engine names its voices differently).
+    // Radio transmissions are a separate channel and draw from the full voice set (see VocalisationRouter).
 
     public GoogleVoices getGoogleVoice() {
         ShipDao.Ship ship = shipManager.getShip();
-        return GoogleVoices.femaleOrDefault(ship == null ? null : ship.getVoice());
+        return GoogleVoices.voiceOrDefault(ship == null ? null : ship.getVoice());
     }
 
 
     public String getEdgeVoiceName() {
         ShipDao.Ship ship = shipManager.getShip();
-        return EdgeVoices.femaleShortNameOrDefault(ship == null ? null : ship.getVoice());
+        return EdgeVoices.shortNameOrDefault(ship == null ? null : ship.getVoice());
     }
 
 
     public KokoroVoices getKokoroVoice() {
         ShipDao.Ship ship = shipManager.getShip();
-        return KokoroVoices.femaleOrDefault(ship == null ? null : ship.getVoice());
+        return KokoroVoices.voiceOrDefault(ship == null ? null : ship.getVoice());
+    }
+
+
+    /**
+     * The gender the companion is heard as aboard the active ship: the gender of the voice that ship carries,
+     * read through the engine currently doing the speaking.
+     * <p>
+     * The commander picks a voice, never a gender - so this is derived, never stored. It exists because the
+     * companion prompt has to say whether to speak of itself in feminine or masculine forms, and a voice that
+     * sounds male while the prompt insists on feminine self-reference is the one mismatch a listener cannot
+     * miss. Voice and personality are per-ship, so this follows the ship the commander is flying.
+     * <p>
+     * A name the active engine does not know has no gender to read and resolves to that engine's default
+     * voice, which is female. For a voice belonging to another engine that is also the voice actually spoken.
+     * For an unrecognised Edge ShortName (one a commander stored directly) Edge still synthesises the stored
+     * ShortName, and only the roster it fetches at runtime knows that voice's gender - which is why the
+     * fleet grid stores logical names.
+     */
+    public VoiceGender getVoiceGender() {
+        ShipDao.Ship ship = shipManager.getShip();
+        String voice = ship == null ? null : ship.getVoice();
+        return switch (getTtsProvider()) {
+            case KOKORO -> VoiceGender.of(KokoroVoices.voiceOrDefault(voice).isMale());
+            case EDGE -> VoiceGender.of(EdgeVoices.voiceOrDefault(voice).male());
+            case GOOGLE -> VoiceGender.of(GoogleVoices.voiceOrDefault(voice).isMale());
+        };
     }
 
 

@@ -1,6 +1,8 @@
 package elite.intel.session;
 
 import elite.intel.ai.brain.ShipPersonality;
+import elite.intel.ai.mouth.TtsProvider;
+import elite.intel.ai.mouth.VoiceGender;
 import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
@@ -15,10 +17,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * Voice and personality are per-ship: each ship carries a single voice ({@code ship.voice}) and one
  * personality ({@code ship.personality}). {@link SystemSession} resolves both against the active ship
- * (the one named by the current loadout). Ship voices are female-only, so the getters resolve the stored
- * name against the active TTS provider's enum and fall back to that provider's default female when the
- * stored voice name isn't a valid female voice there (including a legacy male voice from before the
- * female-only constraint).
+ * (the one named by the current loadout). A ship voice is the commander's pick, male or female, so the
+ * getters resolve the stored name against the active TTS provider's enum and fall back to that provider's
+ * default only when the stored name is not one of that provider's voices - which is what a TTS provider
+ * switch leaves behind, since each engine names its voices differently.
+ * <p>
+ * {@link SystemSession#getVoiceGender()} reads the same per-ship voice, because the voice is also what tells
+ * the companion prompt whether to speak of itself in feminine or masculine forms.
  */
 class PerShipVoicePersonalityTest {
 
@@ -63,27 +68,66 @@ class PerShipVoicePersonalityTest {
     }
 
     @Test
-    void legacyMaleVoiceResolvesToDefaultFemale() {
+    void aMaleVoiceIsKeptAndReportedAsTheCompanionGender() {
         SystemSession session = SystemSession.getInstance();
+        TtsProvider previousProvider = session.getTtsProvider();
+        try {
+            session.setTtsProvider(TtsProvider.KOKORO);
 
-        // Ship voices are female-only; a ship still carrying a legacy male voice resolves to the default female.
-        saveShip(301, KokoroVoices.GEORGE.name(), ShipPersonality.CASUAL.name());
-        makeActive(301);
+            saveShip(301, KokoroVoices.GEORGE.name(), ShipPersonality.CASUAL.name());
+            makeActive(301);
+            assertEquals(KokoroVoices.GEORGE, session.getKokoroVoice());
+            // The voice is the only thing picked; the prompt's self-reference follows it.
+            assertEquals(VoiceGender.MALE, session.getVoiceGender());
 
-        assertEquals(KokoroVoices.DEFAULT_FEMALE, session.getKokoroVoice());
+            saveShip(302, KokoroVoices.NOVA.name(), ShipPersonality.CASUAL.name());
+            makeActive(302);
+            assertEquals(VoiceGender.FEMALE, session.getVoiceGender());
+
+            // A ship carrying a voice this engine does not know takes the default voice, which is female.
+            saveShip(303, GoogleVoices.JAKE.name(), ShipPersonality.CASUAL.name());
+            makeActive(303);
+            assertEquals(KokoroVoices.DEFAULT_VOICE, session.getKokoroVoice());
+            assertEquals(VoiceGender.FEMALE, session.getVoiceGender());
+        } finally {
+            session.setTtsProvider(previousProvider);
+        }
+    }
+
+    @Test
+    void voiceGenderIsReadThroughTheActiveTtsProvider() {
+        SystemSession session = SystemSession.getInstance();
+        TtsProvider previousProvider = session.getTtsProvider();
+        try {
+            saveShip(311, GoogleVoices.STEVE.name(), ShipPersonality.CASUAL.name());
+            makeActive(311);
+
+            session.setTtsProvider(TtsProvider.GOOGLE);
+            assertEquals(VoiceGender.MALE, session.getVoiceGender());
+
+            // The same stored name is an Edge voice too (the enums are twins), so Edge hears the same gender.
+            session.setTtsProvider(TtsProvider.EDGE);
+            assertEquals(VoiceGender.MALE, session.getVoiceGender());
+
+            // Kokoro has no voice by that name: it falls back to its default, and so does the gender.
+            session.setTtsProvider(TtsProvider.KOKORO);
+            assertEquals(VoiceGender.FEMALE, session.getVoiceGender());
+        } finally {
+            session.setTtsProvider(previousProvider);
+        }
     }
 
     @Test
     void voiceInvalidForActiveProviderFallsBackToProviderDefault() {
         SystemSession session = SystemSession.getInstance();
 
-        // A Kokoro voice name isn't a valid Google voice, so the Google getter falls back to its default female.
+        // A Kokoro voice name isn't a valid Google voice, so the Google getter falls back to its default.
         saveShip(201, KokoroVoices.NOVA.name(), ShipPersonality.CASUAL.name());
         makeActive(201);
 
         assertEquals(KokoroVoices.NOVA, session.getKokoroVoice());
-        assertEquals(GoogleVoices.DEFAULT_FEMALE, session.getGoogleVoice());
-        assertEquals(EdgeVoices.DEFAULT_FEMALE.defaultShortName(), session.getEdgeVoiceName());
+        assertEquals(GoogleVoices.DEFAULT_VOICE, session.getGoogleVoice());
+        assertEquals(EdgeVoices.DEFAULT_VOICE.defaultShortName(), session.getEdgeVoiceName());
     }
 
     @Test

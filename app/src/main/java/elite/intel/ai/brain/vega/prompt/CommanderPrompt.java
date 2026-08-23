@@ -21,7 +21,7 @@ final class CommanderPrompt {
             </persona>
 
             <communication_rules>
-                    Use "I" and feminine forms where grammatical gender applies. Address the commander as "you".
+                            Use "I" and {selfGender} forms where grammatical gender applies. Address the commander as "you".
                     Personality affects style only; it never permits refusal, argument, or withholding answers.
                             Never reuse an earlier reply's wording: if you already said it, say
                     only what is new. Never apologise or open with regret ("sorry", "I'm afraid"); name what is unavailable,
@@ -96,6 +96,7 @@ final class CommanderPrompt {
                 .replace("{identity}", CompanionSystemPrompt.identityClause())
                 .replace("{inputLanguage}", CompanionSystemPrompt.inputLanguageName())
                 .replace("{language}", CompanionSystemPrompt.languageName())
-                .replace("{personalityClause}", CompanionSystemPrompt.personalityClause());
+                .replace("{personalityClause}", CompanionSystemPrompt.personalityClause())
+                .replace("{selfGender}", CompanionSystemPrompt.selfGender());
     }
 }

@@ -27,16 +27,19 @@ final class EdgeVoiceProvider {
 
     /**
      * Resolves the stored ship voice against what Edge currently offers, in three steps: the exact voice if it
-     * is on offer for this language, otherwise a female voice of the right language, otherwise a known-good
-     * voice for the language even when the voice list could not be fetched.
+     * is on offer for this language, otherwise a voice of the same gender in the right language, otherwise a
+     * known-good voice for the language even when the voice list could not be fetched.
+     * <p>
+     * Gender is the commander's choice of voice and is preserved through every step: a ship set to a male
+     * voice must not land on a female one in a language whose exact voice Edge does not offer, because the
+     * same choice also tells the companion prompt how to speak of itself.
      *
      * @param selectedName a logical {@link EdgeVoices} name, or a provider-native ShortName a commander stored
      *                     directly, or {@code null} for the default
      */
     EdgeVoice resolve(String selectedName, Language language) {
         EdgeVoices known = EdgeVoices.find(selectedName);
-        // Ship voices are female-only; femaleOrDefault owns that rule, so it is not restated here.
-        EdgeVoices logical = known == null ? null : EdgeVoices.femaleOrDefault(selectedName);
+        EdgeVoices logical = known == null ? null : EdgeVoices.voiceOrDefault(selectedName);
         String desired = logical == null ? selectedName : logical.defaultShortName();
 
         List<EdgeVoice> voices = availableVoices;
@@ -45,7 +48,6 @@ final class EdgeVoiceProvider {
             EdgeVoice exact = voices.stream()
                     .filter(voice -> voice.shortName().equals(requested))
                     .filter(voice -> languageMatches(language, voice.locale()))
-                    .filter(voice -> !voice.male())
                     .findFirst()
                     .orElse(null);
             if (exact != null) {
@@ -53,22 +55,25 @@ final class EdgeVoiceProvider {
             }
         }
 
-        // The exact voice is not on offer for this language, so fall back to a female voice that is.
-        EdgeVoices position = logical == null ? EdgeVoices.DEFAULT_FEMALE : logical;
+        // The exact voice is not on offer for this language, so fall back to one of the same gender that is.
+        EdgeVoices position = logical == null ? EdgeVoices.DEFAULT_VOICE : logical;
+        boolean male = position.male();
         List<EdgeVoice> candidates = voices.stream()
                 .filter(voice -> languageMatches(language, voice.locale()))
-                .filter(voice -> !voice.male())
+                .filter(voice -> voice.male() == male)
                 .sorted(Comparator.comparing(EdgeVoice::shortName))
                 .toList();
         if (!candidates.isEmpty()) {
             // WHY: index by the logical voice's ordinal rather than always taking the first candidate, so a
             // fleet whose ships carry different voices still sounds different in a language where none of the
             // exact voices exist. A name we do not recognise has no position of its own and takes the default
-            // female's, which is where every other unknown voice in the app lands.
+            // voice's, which is where every other unknown voice in the app lands.
             return candidates.get(Math.floorMod(position.ordinal(), candidates.size()));
         }
-        String fallback = language == Language.EN ? position.defaultShortName() : localizedFallback(language);
-        return fallbackVoice(fallback, locale(language));
+        String fallback = language == Language.EN
+                ? position.defaultShortName()
+                : localizedFallback(language, male);
+        return fallbackVoice(fallback, locale(language), male);
     }
 
     /**
@@ -100,7 +105,7 @@ final class EdgeVoiceProvider {
      */
     EdgeVoice resolveRadio(String shortName, Language language) {
         String desired = shortName == null || shortName.isBlank()
-                ? localizedFallback(language)
+                ? localizedFallback(language, false)
                 : shortName;
         return availableVoices.stream()
                 .filter(voice -> voice.shortName().equals(desired))
@@ -121,13 +126,13 @@ final class EdgeVoiceProvider {
         return switch (language) {
             case RU -> List.of("ru-RU-SvetlanaNeural", "ru-RU-DmitryNeural");
             case UK -> List.of("uk-UA-PolinaNeural", "uk-UA-OstapNeural");
-            default -> List.of(localizedFallback(language));
+            default -> List.of(localizedFallback(language, false));
         };
     }
 
-    private static EdgeVoice fallbackVoice(String shortName, String locale) {
+    private static EdgeVoice fallbackVoice(String shortName, String locale, boolean male) {
         return new EdgeVoice(
-                EdgeSsml.protocolVoiceName(shortName), shortName, "Female", locale,
+                EdgeSsml.protocolVoiceName(shortName), shortName, male ? "Male" : "Female", locale,
                 EdgeProtocolConstants.OUTPUT_FORMAT);
     }
 
@@ -151,17 +156,22 @@ final class EdgeVoiceProvider {
         };
     }
 
-    private static String localizedFallback(Language language) {
+    /**
+     * A voice of the requested gender known to exist for the language, used when the live voice list has not
+     * arrived (or offers nothing matching). One name per gender per locale, all long-standing Edge Read Aloud
+     * voices, so the fallback never depends on a roster this build cannot see.
+     */
+    private static String localizedFallback(Language language, boolean male) {
         return switch (language) {
-            case EN -> "en-US-EmmaMultilingualNeural";
-            case RU -> "ru-RU-SvetlanaNeural";
-            case UK -> "uk-UA-PolinaNeural";
-            case DE -> "de-DE-KatjaNeural";
-            case FR -> "fr-FR-DeniseNeural";
-            case ES -> "es-ES-ElviraNeural";
-            case IT -> "it-IT-ElsaNeural";
-            case PT -> "pt-PT-RaquelNeural";
-            case PTBZ -> "pt-BR-FranciscaNeural";
+            case EN -> male ? "en-US-AndrewMultilingualNeural" : "en-US-EmmaMultilingualNeural";
+            case RU -> male ? "ru-RU-DmitryNeural" : "ru-RU-SvetlanaNeural";
+            case UK -> male ? "uk-UA-OstapNeural" : "uk-UA-PolinaNeural";
+            case DE -> male ? "de-DE-ConradNeural" : "de-DE-KatjaNeural";
+            case FR -> male ? "fr-FR-HenriNeural" : "fr-FR-DeniseNeural";
+            case ES -> male ? "es-ES-AlvaroNeural" : "es-ES-ElviraNeural";
+            case IT -> male ? "it-IT-DiegoNeural" : "it-IT-ElsaNeural";
+            case PT -> male ? "pt-PT-DuarteNeural" : "pt-PT-RaquelNeural";
+            case PTBZ -> male ? "pt-BR-AntonioNeural" : "pt-BR-FranciscaNeural";
         };
     }
 }

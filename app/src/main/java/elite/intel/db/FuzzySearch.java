@@ -86,6 +86,18 @@ public class FuzzySearch {
     }
 
     /**
+     * The localized display name for a non-localized game symbol - {@link #commodityNameForSymbol}
+     * followed by {@link #localizedCommodityName}. This is the pair a journal field needs when the
+     * game hands over a bare symbol with no {@code _Localised} sibling, as {@code MotherlodeMaterial}
+     * does. Returns {@code null} for a symbol the commodities table does not know, so the caller can
+     * decide what to say instead of speaking a database miss.
+     */
+    public static String localizedCommodityNameForSymbol(String symbol) {
+        String englishName = commodityNameForSymbol(symbol);
+        return englishName == null ? null : localizedCommodityName(englishName);
+    }
+
+    /**
      * Resolves the non-localized game symbol (FDevIDs {@code symbol}) for an English
      * commodity name (typically the result of {@link #fuzzyCommodityMatch}). This is the
      * value to compare — case-insensitively — against a Cargo event's {@code Name} field,
