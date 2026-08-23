@@ -42,6 +42,18 @@ public final class CompanionSystemPrompt implements SystemPromptText {
         return SystemSession.getInstance().getAIPersonality().getPersonalityClause();
     }
 
+    /**
+     * How the companion speaks of itself: the grammatical gender of the voice the active ship carries.
+     * <p>
+     * This was the word "feminine", written into both prompts as a constant, back when every ship voice was
+     * forced female. The fleet grid now offers each engine's male voices too, and a masculine voice narrating
+     * itself in feminine forms is immediately audible - in the languages with grammatical gender, on every
+     * sentence. One word either way, so the prompt budget is unchanged.
+     */
+    static String selfGender() {
+        return SystemSession.getInstance().getVoiceGender().isMale() ? "masculine" : "feminine";
+    }
+
     static String addressRule() {
         StringBuilder rule = new StringBuilder();
         PromptFactory.appendContext(rule, "the commander");

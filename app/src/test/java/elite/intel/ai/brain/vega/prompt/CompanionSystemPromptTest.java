@@ -1,8 +1,15 @@
 package elite.intel.ai.brain.vega.prompt;
 
 import elite.intel.ai.brain.CompanionIdentity;
+import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
+import elite.intel.ai.mouth.TtsProvider;
+import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.db.dao.ShipDao;
+import elite.intel.db.managers.ShipLoadoutManager;
+import elite.intel.db.managers.ShipManager;
+import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.Test;
@@ -71,7 +78,7 @@ class CompanionSystemPromptTest {
     }
 
     /**
-     * Both spoken sources must open by saying what she is: an AI, named, and not hedging about it.
+     * Both spoken sources must open by saying what the companion is: an AI, named, and not hedging about it.
      *
      * <p>WHY: the previous persona line ("the AI serving the commander aboard an Elite Dangerous starship")
      * named the role but never the nature, and the analysis path opened with "You are {shipName}, a ship" - so
@@ -81,7 +88,7 @@ class CompanionSystemPromptTest {
     @Test
     void bothSpokenPromptsOpenWithTheSameAiIdentity() {
         String identity = CompanionIdentity.identityClause();
-        assertTrue(identity.contains("artificial intelligence"), "she must be named as an AI, not merely 'the AI'");
+        assertTrue(identity.contains("artificial intelligence"), "the companion must be named as an AI, not merely 'the AI'");
         assertTrue(identity.contains(CompanionIdentity.name()));
         assertTrue(identity.contains("never pretend otherwise"));
 
@@ -249,8 +256,58 @@ class CompanionSystemPromptTest {
     @Test
     void addressesTheCommanderDirectlyInSecondPerson() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
-        assertTrue(text.contains("Use \"I\" and feminine forms"));
+        assertTrue(text.contains("Use \"I\" and feminine forms"),
+                "with no ship flown the default voice is female, so the default prompt still says feminine");
         assertTrue(text.contains("Address the commander as \"you\""));
+    }
+
+    /**
+     * How the companion speaks of itself follows the voice the active ship carries, in both spoken prompts.
+     *
+     * <p>WHY: the word was the literal "feminine" in both prompts, from when every ship voice was forced
+     * female. Commanders asked for the male voices each engine already has, and a masculine voice narrating
+     * itself in feminine forms is audible on every sentence in the languages with grammatical gender - which is
+     * most of the nine. The voice is the only thing picked; the gender is read back off it
+     * ({@code SystemSession.getVoiceGender()}), never stored separately, so the two can never drift apart.
+     */
+    @Test
+    void selfReferenceGenderFollowsTheActiveShipVoice() {
+        SystemSession session = SystemSession.getInstance();
+        TtsProvider previousProvider = session.getTtsProvider();
+        try {
+            session.setTtsProvider(TtsProvider.KOKORO);
+
+            flyShipWithVoice(901, KokoroVoices.NOVA.name());
+            assertTrue(prompt.staticRules(ThoughtSource.COMMANDER).contains("\"I\" and feminine forms"));
+            assertTrue(prompt.staticRules(ThoughtSource.EVENT).contains("use feminine self-reference"));
+
+            flyShipWithVoice(902, KokoroVoices.GEORGE.name());
+            assertTrue(prompt.staticRules(ThoughtSource.COMMANDER).contains("\"I\" and masculine forms"),
+                    "a male ship voice must not be told to speak of itself in feminine forms");
+            assertTrue(prompt.staticRules(ThoughtSource.EVENT).contains("use masculine self-reference"));
+        } finally {
+            ShipLoadoutManager.getInstance().clear();
+            session.setTtsProvider(previousProvider);
+        }
+    }
+
+    /**
+     * Seeds a ship carrying {@code voice} and makes it the ship the commander is flying.
+     */
+    private static void flyShipWithVoice(int shipId, String voice) {
+        ShipDao.Ship ship = new ShipDao.Ship();
+        ship.setShipId(shipId);
+        ship.setShipName("Prompt Test Ship " + shipId);
+        ship.setShipIdentifier("cobramkiii");
+        ship.setCargoCapacity(0);
+        ship.setVoice(voice);
+        ship.setPersonality(ShipPersonality.CASUAL.name());
+        ShipManager.getInstance().saveShip(ship);
+
+        ShipLoadOutDto loadout = new ShipLoadOutDto();
+        loadout.setShipId(shipId);
+        ShipLoadoutManager.getInstance().clear();
+        ShipLoadoutManager.getInstance().save(loadout);
     }
 
     @Test

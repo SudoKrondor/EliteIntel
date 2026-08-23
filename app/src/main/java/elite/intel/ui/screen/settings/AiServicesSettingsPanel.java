@@ -400,9 +400,9 @@ public class AiServicesSettingsPanel extends JPanel {
                 return false; // abort entire save, stay in editing state
             }
             String defaultVoice = switch (newTtsProvider) {
-                case KOKORO -> KokoroVoices.DEFAULT_FEMALE.name();
-                case EDGE -> EdgeVoices.DEFAULT_FEMALE.name();
-                case GOOGLE -> GoogleVoices.DEFAULT_FEMALE.name();
+                case KOKORO -> KokoroVoices.DEFAULT_VOICE.name();
+                case EDGE -> EdgeVoices.DEFAULT_VOICE.name();
+                case GOOGLE -> GoogleVoices.DEFAULT_VOICE.name();
             };
             ShipManager.getInstance().resetAllVoicesToDefault(defaultVoice);
         }

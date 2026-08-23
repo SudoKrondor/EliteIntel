@@ -381,19 +381,17 @@ public class CommanderTabPanel extends JPanel {
         fleetTableModel.setShips(ships);
         fleetTableModel.fireTableDataChanged();
 
-        // Voice options depend on current TTS provider; rebuild editor on every call. Ship voices are
-        // female-only (radio transmissions keep the full voice set), so the male voices are filtered out.
+        // Voice options depend on current TTS provider; rebuild editor on every call. Every voice the active
+        // engine has is offered, male and female alike - the picked voice also decides how the companion
+        // speaks of itself (see SystemSession.getVoiceGender()).
         boolean useLocal = SystemSession.getInstance().useLocalTTS();
         String[] voiceOptions;
         if (useLocal) {
-            voiceOptions = Arrays.stream(KokoroVoices.values())
-                    .filter(v -> !v.isMale()).map(Enum::name).toArray(String[]::new);
+            voiceOptions = Arrays.stream(KokoroVoices.values()).map(Enum::name).toArray(String[]::new);
         } else if (usesEdgeTts()) {
-            voiceOptions = Arrays.stream(EdgeVoices.values())
-                    .filter(v -> !v.male()).map(Enum::name).toArray(String[]::new);
+            voiceOptions = Arrays.stream(EdgeVoices.values()).map(Enum::name).toArray(String[]::new);
         } else {
-            voiceOptions = Arrays.stream(GoogleVoices.values())
-                    .filter(v -> !v.isMale()).map(Enum::name).toArray(String[]::new);
+            voiceOptions = Arrays.stream(GoogleVoices.values()).map(Enum::name).toArray(String[]::new);
         }
         // labelFn shows "DisplayName - accent"; getCellEditorValue() still returns the raw enum name to store.
         fleetTable.getColumnModel().getColumn(COL_VOICE)
@@ -410,19 +408,19 @@ public class CommanderTabPanel extends JPanel {
     }
 
     /**
-     * Normalizes a stored ship voice to a female voice for the active TTS provider. Ship voices are
-     * female-only, so a legacy male (or otherwise invalid) stored voice resolves to the provider's default
-     * female — keeping the fleet grid's displayed/selected voice a valid, female dropdown option and in step
-     * with what the active provider actually speaks.
+     * Normalizes a stored ship voice to a voice of the active TTS provider, keeping its gender: a voice
+     * belonging to another engine (or no voice at all) resolves to this provider's default. That keeps the
+     * fleet grid's displayed/selected voice a valid dropdown option and in step with what the active provider
+     * actually speaks.
      */
-    static String normalizeVoiceToFemale(String voiceName) {
+    static String normalizeVoice(String voiceName) {
         if (SystemSession.getInstance().useLocalTTS()) {
-            return KokoroVoices.femaleOrDefault(voiceName).name();
+            return KokoroVoices.voiceOrDefault(voiceName).name();
         }
         if (usesEdgeTts()) {
-            return EdgeVoices.femaleOrDefault(voiceName).name();
+            return EdgeVoices.voiceOrDefault(voiceName).name();
         }
-        return GoogleVoices.femaleOrDefault(voiceName).name();
+        return GoogleVoices.voiceOrDefault(voiceName).name();
     }
 
     private static boolean usesEdgeTts() {
@@ -512,7 +510,7 @@ public class CommanderTabPanel extends JPanel {
             return switch (col) {
                 case COL_SHIP -> displayShipName(ship);
                 case COL_SHIP_MAKE -> shipMakeName(ship);
-                case COL_VOICE -> normalizeVoiceToFemale(ship.getVoice());
+                case COL_VOICE -> normalizeVoice(ship.getVoice());
                 case COL_PERSONALITY -> ship.getPersonality();
                 case COL_GEAR -> ship;
                 default -> null;

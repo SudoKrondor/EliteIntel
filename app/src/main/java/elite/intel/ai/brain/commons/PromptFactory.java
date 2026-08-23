@@ -35,7 +35,7 @@ public class PromptFactory implements AiPromptFactory {
      * <p>
      * This block used to read "You are {shipName}, a ship in Elite Dangerous" - the model answered as the hull,
      * while the companion prompt answered as an AI named Vega, so a single session spoke with two identities
-     * depending on which path produced the line. The ship is now something she flies, not something she is.
+     * depending on which path produced the line. The ship is now something the companion flies, not something it is.
      */
     private void youAre(StringBuilder sb) {
         sb.append(CompanionIdentity.identityClause()).append(' ');
@@ -43,7 +43,17 @@ public class PromptFactory implements AiPromptFactory {
         if (ship != null) {
             sb.append("You serve aboard the commander's ship, ").append(ship).append(". ");
         }
-        sb.append("Refer to yourself as 'I' and to the ship's sensor data as 'ours'. ");
+        sb.append("Refer to yourself as 'I', in ").append(selfGender())
+                .append(" forms where grammatical gender applies, and to the ship's sensor data as 'ours'. ");
+    }
+
+    /**
+     * How the companion speaks of itself here: the grammatical gender of the active ship's voice, the same
+     * seam the companion prompts read. This path is spoken too, so a male voice answering a query in feminine
+     * forms is the same audible mismatch - and left unsaid, the model simply picks a gender per sentence.
+     */
+    private String selfGender() {
+        return systemSession.getVoiceGender().isMale() ? "masculine" : "feminine";
     }
 
     @Override

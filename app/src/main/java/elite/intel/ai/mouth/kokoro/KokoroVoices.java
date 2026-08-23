@@ -99,11 +99,11 @@ public enum KokoroVoices {
     ZH_YUNYANG(52, true, "Yunyang", "Chinese male");
 
     /**
-     * Default female voice. Ship voices are female-only (see {@link #femaleOrDefault(String)}); a ship with
-     * no stored voice, an unknown voice, or a legacy male voice resolves to this. Radio transmissions are a
-     * separate channel and still draw from the full {@link #values()} set (male and female alike).
+     * The default ship voice, used when a ship has no stored voice or carries a name this engine does not
+     * know (see {@link #voiceOrDefault(String)}). It is female because that is what every existing fleet
+     * already sounds like; the commander may pick any voice here, male or female.
      */
-    public static final KokoroVoices DEFAULT_FEMALE = BELLA;
+    public static final KokoroVoices DEFAULT_VOICE = BELLA;
 
     /**
      * A voice for the next radio transmission: any speaker in the model, male or female and in any of its
@@ -117,23 +117,24 @@ public enum KokoroVoices {
                 .filter(voice -> !voice.name().equals(ownVoiceName))
                 .toArray(KokoroVoices[]::new);
         return pool.length == 0
-                ? DEFAULT_FEMALE
+                ? DEFAULT_VOICE
                 : pool[ThreadLocalRandom.current().nextInt(pool.length)];
     }
 
     /**
-     * Resolves a stored ship-voice name to a female voice: the named voice when it is a valid female voice,
-     * otherwise {@link #DEFAULT_FEMALE}. Ship voices are female-only, so a male name (a legacy selection from
-     * before that constraint) or an unknown/{@code null} name collapses to the default female. This is the
-     * ship-voice seam only; radio picks from {@link #values()} directly and must not route through here.
+     * Resolves a stored ship-voice name to a voice of this engine: the named voice when it is one, otherwise
+     * {@link #DEFAULT_VOICE}. The stored voice's gender is preserved - ship voices are male or female by the
+     * commander's choice, and that choice also decides how the companion refers to herself or himself (see
+     * {@code SystemSession.getVoiceGender()}). An unknown name (a voice belonging to another engine) or
+     * {@code null} collapses to the default. This is the ship-voice seam only; radio picks from
+     * {@link #values()} directly and must not route through here.
      */
-    public static KokoroVoices femaleOrDefault(String name) {
-        if (name == null) return DEFAULT_FEMALE;
+    public static KokoroVoices voiceOrDefault(String name) {
+        if (name == null) return DEFAULT_VOICE;
         try {
-            KokoroVoices v = valueOf(name);
-            return v.isMale() ? DEFAULT_FEMALE : v;
+            return valueOf(name);
         } catch (IllegalArgumentException e) {
-            return DEFAULT_FEMALE;
+            return DEFAULT_VOICE;
         }
     }
 

@@ -25,22 +25,29 @@ class EdgeVoiceProviderTest {
         assertEquals("Full Jenny", voices.getFirst().protocolName());
     }
 
+    /**
+     * The commander picks a voice, and its gender is part of that pick - it also decides how the companion
+     * speaks of itself. A selection Edge does not offer for the language therefore degrades to a voice of the
+     * same gender, never across it, both against the live list and against the known-good fallbacks.
+     */
     @Test
-    void unavailableSelectionsUseDeterministicFemaleLocaleThenKnownFallback() {
+    void unavailableSelectionsUseDeterministicSameGenderLocaleThenKnownFallback() {
         EdgeVoiceProvider provider = new EdgeVoiceProvider();
         provider.setAvailableVoices(List.of(
                 voice("en-US-ZoeNeural", "Female", "en-US"),
                 voice("en-US-AdamNeural", "Male", "en-US"),
-                voice("de-DE-KatjaNeural", "Female", "de-DE")));
+                voice("de-DE-KatjaNeural", "Female", "de-DE"),
+                voice("de-DE-ConradNeural", "Male", "de-DE")));
 
         assertEquals("en-US-ZoeNeural", provider.resolve(EdgeVoices.MARY.name(), Language.EN).shortName());
-        assertEquals("en-US-ZoeNeural", provider.resolve(EdgeVoices.JAKE.name(), Language.EN).shortName());
+        assertEquals("en-US-AdamNeural", provider.resolve(EdgeVoices.JAKE.name(), Language.EN).shortName());
         assertEquals("de-DE-KatjaNeural", provider.resolve(EdgeVoices.MARY.name(), Language.DE).shortName());
+        assertEquals("de-DE-ConradNeural", provider.resolve(EdgeVoices.JAKE.name(), Language.DE).shortName());
 
         provider.clear();
         assertEquals("ru-RU-SvetlanaNeural",
                 provider.resolve(EdgeVoices.MARY.name(), Language.RU).shortName());
-        assertEquals("ru-RU-SvetlanaNeural",
+        assertEquals("ru-RU-DmitryNeural",
                 provider.resolve(EdgeVoices.JAKE.name(), Language.RU).shortName());
     }
 
@@ -59,30 +66,31 @@ class EdgeVoiceProviderTest {
     }
 
     @Test
-    void arbitraryPersistedShortNamesResolveWhenFemaleAndRejectMaleForMainVoice() {
+    void arbitraryPersistedShortNamesResolveToThemselvesWhateverTheirGender() {
         EdgeVoiceProvider provider = new EdgeVoiceProvider();
         provider.setAvailableVoices(List.of(
                 voice("en-US-AvaNeural", "Female", "en-US"),
                 voice("en-US-GuyNeural", "Male", "en-US")));
 
         assertEquals("en-US-AvaNeural", provider.resolve("en-US-AvaNeural", Language.EN).shortName());
-        assertEquals("en-US-AvaNeural", provider.resolve("en-US-GuyNeural", Language.EN).shortName());
+        // en-US-GuyNeural is JAKE's ShortName: a commander who stored it directly gets the voice they named.
+        assertEquals("en-US-GuyNeural", provider.resolve("en-US-GuyNeural", Language.EN).shortName());
     }
 
     @Test
-    void persistedGoogleAliasesDegradeDeterministicallyAndNativeShortNamesArePreserved() {
+    void persistedGoogleAliasesMapToTheirOwnVoiceAndNativeShortNamesArePreserved() {
         assertEquals(EdgeVoices.JENNIFER.defaultShortName(),
-                EdgeVoices.femaleShortNameOrDefault("JENNIFER"));
-        assertEquals(EdgeVoices.DEFAULT_FEMALE.defaultShortName(),
-                EdgeVoices.femaleShortNameOrDefault("JAKE"));
-        assertEquals("en-US-AvaNeural", EdgeVoices.femaleShortNameOrDefault("en-US-AvaNeural"));
-        assertEquals(EdgeVoices.DEFAULT_FEMALE.defaultShortName(),
-                EdgeVoices.femaleShortNameOrDefault("not-a-voice"));
+                EdgeVoices.shortNameOrDefault("JENNIFER"));
+        // A male selection keeps its own voice; only a name Edge cannot place falls back to the default.
+        assertEquals(EdgeVoices.JAKE.defaultShortName(), EdgeVoices.shortNameOrDefault("JAKE"));
+        assertEquals("en-US-AvaNeural", EdgeVoices.shortNameOrDefault("en-US-AvaNeural"));
+        assertEquals(EdgeVoices.DEFAULT_VOICE.defaultShortName(),
+                EdgeVoices.shortNameOrDefault("not-a-voice"));
     }
 
     /**
-     * Radio is the other side of a comms link, not the ship's voice, so the female-only rule that governs
-     * {@code resolve} must not reach it: a station answering in a male voice is the point.
+     * Radio is the other side of a comms link, not the ship's voice, so it ignores the ship's voice selection
+     * entirely and draws from the whole locale: a station answering in a voice of either gender is the point.
      */
     @Test
     void radioDrawsBothGendersFromTheLocaleAndKeepsTheDrawnVoice() {

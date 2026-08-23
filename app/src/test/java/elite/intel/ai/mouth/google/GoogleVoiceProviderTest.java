@@ -9,9 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Maps a selected voice to a real Google voice name. For a non-English language with Chirp3-HD coverage the
@@ -83,11 +81,18 @@ class GoogleVoiceProviderTest {
     }
 
     @Test
-    void waveNetVoicesAreFemaleShipVoices() {
+    void waveNetVoicesAreFemaleAndResolveToThemselves() {
         assertFalse(GoogleVoices.WAVENET_F.isMale());
         assertFalse(GoogleVoices.WAVENET_N.isMale());
-        assertEquals(GoogleVoices.WAVENET_F, GoogleVoices.femaleOrDefault("WAVENET_F"));
-        assertEquals(GoogleVoices.WAVENET_N, GoogleVoices.femaleOrDefault("WAVENET_N"));
+        assertEquals(GoogleVoices.WAVENET_F, GoogleVoices.voiceOrDefault("WAVENET_F"));
+        assertEquals(GoogleVoices.WAVENET_N, GoogleVoices.voiceOrDefault("WAVENET_N"));
+    }
+
+    @Test
+    void maleShipVoicesResolveToThemselvesAndTheDefaultStaysFemale() {
+        assertEquals(GoogleVoices.JAKE, GoogleVoices.voiceOrDefault("JAKE"));
+        assertEquals(GoogleVoices.DEFAULT_VOICE, GoogleVoices.voiceOrDefault("not-a-google-voice"));
+        assertFalse(GoogleVoices.DEFAULT_VOICE.isMale(), "the default ship voice stays female");
     }
 
     @Test

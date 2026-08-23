@@ -50,9 +50,9 @@ public class LoadoutSubscriber {
             if (ship == null) {
 
                 String shipDefaultVoice = switch (systemSession.getTtsProvider()) {
-                    case KOKORO -> KokoroVoices.DEFAULT_FEMALE.name();
-                    case EDGE -> EdgeVoices.DEFAULT_FEMALE.name();
-                    case GOOGLE -> GoogleVoices.DEFAULT_FEMALE.name();
+                    case KOKORO -> KokoroVoices.DEFAULT_VOICE.name();
+                    case EDGE -> EdgeVoices.DEFAULT_VOICE.name();
+                    case GOOGLE -> GoogleVoices.DEFAULT_VOICE.name();
                 };
                 shipManager.save(event.getShipId(), shipName, event.getCargoCapacity(), event.getShip(), shipDefaultVoice,
                         hasCommander ? commanderName : null);

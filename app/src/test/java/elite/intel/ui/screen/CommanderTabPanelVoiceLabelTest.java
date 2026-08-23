@@ -92,29 +92,31 @@ class CommanderTabPanelVoiceLabelTest {
     }
 
     @Test
-    void normalizeVoiceToFemaleKeepsTheLogicalNameForEdgeNotTheShortName() {
+    void normalizeVoiceKeepsTheLogicalNameForEdgeNotTheShortName() {
         runAsEdge(() -> {
             assertEquals(EdgeVoices.JENNIFER.name(),
-                    CommanderTabPanel.normalizeVoiceToFemale(EdgeVoices.JENNIFER.name()));
+                    CommanderTabPanel.normalizeVoice(EdgeVoices.JENNIFER.name()));
             // A raw/legacy ShortName still normalizes to a logical name, keeping the stored value in the
             // same vocabulary as the dropdown's option list (enum names, see initData()).
             assertEquals(EdgeVoices.MARY.name(),
-                    CommanderTabPanel.normalizeVoiceToFemale(EdgeVoices.MARY.defaultShortName()));
-            // Ship voices are female-only: a legacy male voice resolves to the default female's logical name.
-            assertEquals(EdgeVoices.DEFAULT_FEMALE.name(),
-                    CommanderTabPanel.normalizeVoiceToFemale(EdgeVoices.JAKE.name()));
+                    CommanderTabPanel.normalizeVoice(EdgeVoices.MARY.defaultShortName()));
+            // A male voice is a valid selection now, so it must stay selected rather than snap to the default.
+            assertEquals(EdgeVoices.JAKE.name(), CommanderTabPanel.normalizeVoice(EdgeVoices.JAKE.name()));
+            // Only a name this engine cannot place falls back to the default.
+            assertEquals(EdgeVoices.DEFAULT_VOICE.name(),
+                    CommanderTabPanel.normalizeVoice(KokoroVoices.BELLA.name()));
         });
     }
 
     @Test
     void normalizedEdgeSelectionStillResolvesToTheCorrectEdgeProviderVoice() {
         runAsEdge(() -> {
-            String normalized = CommanderTabPanel.normalizeVoiceToFemale(EdgeVoices.JENNIFER.name());
+            String normalized = CommanderTabPanel.normalizeVoice(EdgeVoices.JENNIFER.name());
             // This mirrors exactly how EdgeTTSImpl.enqueue() turns a fleet-grid voice selection into the
             // ShortName used for synthesis, proving the demo/play-preview path still reaches the right
             // Edge voice after the logical name round-trips through the fleet grid.
             assertEquals(EdgeVoices.JENNIFER.defaultShortName(),
-                    EdgeVoices.femaleShortNameOrDefault(normalized));
+                    EdgeVoices.shortNameOrDefault(normalized));
         });
     }
 
@@ -124,8 +126,10 @@ class CommanderTabPanelVoiceLabelTest {
         TtsProvider previousProvider = session.getTtsProvider();
         try {
             session.setTtsProvider(TtsProvider.GOOGLE);
-            assertEquals(GoogleVoices.femaleOrDefault(GoogleVoices.EMMA.name()).name(),
-                    CommanderTabPanel.normalizeVoiceToFemale(GoogleVoices.EMMA.name()));
+            assertEquals(GoogleVoices.EMMA.name(),
+                    CommanderTabPanel.normalizeVoice(GoogleVoices.EMMA.name()));
+            assertEquals(GoogleVoices.JAKE.name(),
+                    CommanderTabPanel.normalizeVoice(GoogleVoices.JAKE.name()));
         } finally {
             session.setTtsProvider(previousProvider);
         }
@@ -137,8 +141,10 @@ class CommanderTabPanelVoiceLabelTest {
         TtsProvider previousProvider = session.getTtsProvider();
         try {
             session.setTtsProvider(TtsProvider.KOKORO);
-            assertEquals(KokoroVoices.femaleOrDefault(KokoroVoices.NOVA.name()).name(),
-                    CommanderTabPanel.normalizeVoiceToFemale(KokoroVoices.NOVA.name()));
+            assertEquals(KokoroVoices.NOVA.name(),
+                    CommanderTabPanel.normalizeVoice(KokoroVoices.NOVA.name()));
+            assertEquals(KokoroVoices.GEORGE.name(),
+                    CommanderTabPanel.normalizeVoice(KokoroVoices.GEORGE.name()));
         } finally {
             session.setTtsProvider(previousProvider);
         }

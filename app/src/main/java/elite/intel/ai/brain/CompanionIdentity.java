@@ -1,18 +1,21 @@
 package elite.intel.ai.brain;
 
 /**
- * The single source of who the companion is: her name and the identity clause that opens every prompt
+ * The single source of who the companion is: its name and the identity clause that opens every prompt
  * whose output the commander hears.
  * <p>
- * She is an AI and says so. Earlier prompts pulled in two directions - the companion prompts called her
+ * It is an AI and says so. Earlier prompts pulled in two directions - the companion prompts called it
  * "the AI serving the commander", while the analysis prompt told the model it <em>was</em> the ship
  * ("You are {shipName}, a ship in Elite Dangerous") - so the same session could answer as a person-shaped
  * crew member in one turn and as the hull in the next. Both now open with this clause: one identity,
  * stated plainly, never hedged and never hidden.
  * <p>
- * Identity is not personality. This clause says <em>what she is</em>; {@link ShipPersonality} says how she
- * sounds. They are always emitted together - see {@link #identityAndPersonality(ShipPersonality)} - because
- * a personality clause on its own leaves the model to invent the speaker.
+ * Identity is not personality, and neither one is gender. This clause says <em>what it is</em>;
+ * {@link ShipPersonality} says how it sounds; the voice the active ship carries decides whether it speaks of
+ * itself in feminine or masculine forms ({@code SystemSession.getVoiceGender()}), so nothing here is
+ * gendered. Identity and personality are always emitted together - see
+ * {@link #identityAndPersonality(ShipPersonality)} - because a personality clause on its own leaves the model
+ * to invent the speaker.
  * <p>
  * Classification-only prompts (the reducers, {@code CustomCommandKeyGenerator}, memory compression) take no
  * identity: nothing they produce is ever spoken.
@@ -35,7 +38,7 @@ public final class CompanionIdentity {
     }
 
     /**
-     * Who she is, in one sentence pair: an AI, named, placed in the Elite Dangerous galaxy, unembarrassed.
+     * Who it is, in one sentence pair: an AI, named, placed in the Elite Dangerous galaxy, unembarrassed.
      */
     public static String identityClause() {
         return "You are " + NAME + ", an artificial intelligence: the companion AI of an independent commander "

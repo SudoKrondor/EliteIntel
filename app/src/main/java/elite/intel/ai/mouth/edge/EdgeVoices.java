@@ -18,7 +18,12 @@ public enum EdgeVoices {
     RACHEL("Rachel", false, "en-US-AvaMultilingualNeural"),
     STEVE("Steve", true, "en-US-BrianNeural");
 
-    public static final EdgeVoices DEFAULT_FEMALE = MARY;
+    /**
+     * The default ship voice, used when a ship has no stored voice or carries a name Edge does not know. It is
+     * female because that is what every existing fleet already sounds like; the commander may pick any voice
+     * here, male or female.
+     */
+    public static final EdgeVoices DEFAULT_VOICE = MARY;
 
     private final String displayName;
     private final boolean male;
@@ -30,21 +35,27 @@ public enum EdgeVoices {
         this.defaultShortName = defaultShortName;
     }
 
-    public static EdgeVoices femaleOrDefault(String name) {
-        EdgeVoices voice = fromName(name, DEFAULT_FEMALE);
-        return voice.male ? DEFAULT_FEMALE : voice;
+    /**
+     * Resolves a stored ship-voice name to an Edge voice, keeping its gender: the commander picks a male or a
+     * female voice, and that choice also decides how the companion refers to herself or himself (see
+     * {@code SystemSession.getVoiceGender()}). An unrecognised name takes {@link #DEFAULT_VOICE}.
+     */
+    public static EdgeVoices voiceOrDefault(String name) {
+        return fromName(name, DEFAULT_VOICE);
     }
 
-    /** Maps a legacy display/enum name to Edge's ShortName while preserving provider-native ShortNames. */
-    public static String femaleShortNameOrDefault(String name) {
+    /**
+     * Maps a display/enum name to Edge's ShortName while preserving provider-native ShortNames.
+     */
+    public static String shortNameOrDefault(String name) {
         EdgeVoices mapped = find(name);
         if (mapped != null) {
-            return mapped.male ? DEFAULT_FEMALE.defaultShortName : mapped.defaultShortName;
+            return mapped.defaultShortName;
         }
         if (name != null && !name.isBlank() && name.endsWith("Neural")) {
             return name;
         }
-        return DEFAULT_FEMALE.defaultShortName;
+        return DEFAULT_VOICE.defaultShortName;
     }
 
     static EdgeVoices fromName(String name, EdgeVoices fallback) {
