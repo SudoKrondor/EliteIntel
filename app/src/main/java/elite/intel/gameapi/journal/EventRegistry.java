@@ -47,6 +47,7 @@ public class EventRegistry {
         registerEvent("ScientificResearch", ScientificResearchEvent.class);
         registerEvent("ScanBaryCentre", ScanBaryCentreEvent.class);
         registerEvent("Docked", DockedEvent.class);
+        registerEvent("Undocked", UndockedEvent.class);
         registerEvent("DockingGranted", DockingGrantedEvent.class);
         registerEvent("DockSRV", DockSRVEvent.class);
         registerEvent("LaunchSRV", LaunchSRVEvent.class);
@@ -121,6 +122,8 @@ public class EventRegistry {
         registerEvent("RepairAll", RepairAllEvent.class);
         registerEvent("Repair", RepairEvent.class);
         registerEvent("RefuelAll", RefuelAllEvent.class);
+        registerEvent("ColonisationConstructionDepot", ColonisationConstructionDepotEvent.class);
+        registerEvent("ColonisationContribution", ColonisationContributionEvent.class);
         registerEvent("RefuelPartial", RefuelPartialEvent.class);
         registerEvent("BuyAmmo", BuyAmmoEvent.class);
         registerEvent("RestockVehicle", RestockVehicleEvent.class);

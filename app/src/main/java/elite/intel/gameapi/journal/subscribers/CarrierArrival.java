@@ -4,6 +4,7 @@ import elite.intel.db.managers.CarrierRouteLegs;
 import elite.intel.db.managers.FleetCarrierManager;
 import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.db.managers.LocationManager;
+import elite.intel.gameapi.carrier.OurCarriers;
 import elite.intel.gameapi.journal.events.CarrierStatsEvent;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -15,6 +16,8 @@ import elite.intel.session.PlayerSession;
 import elite.intel.util.FleetCarrierRouteCalculator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Optional;
 
 /**
  * What a carrier arrival costs and changes: the tritium burned, the leg reached, the scheduled departure it
@@ -192,9 +195,19 @@ final class CarrierArrival {
     /**
      * Applies the depot total a fuel deposit confirms, which the game states outright and we therefore treat
      * as a reading rather than as arithmetic.
+     * <p>
+     * Filed under the carrier the deposit names. Falling back to the fleet carrier when the id matches
+     * neither is not a guess but the old behaviour preserved: a carrier whose management panel has never
+     * been opened has no id on file, and for the great majority of commanders there is only ever one
+     * carrier for the reading to be about.
      */
-    static void applyFuelReading(int tons) {
+    static void applyFuelReading(long carrierId, int tons) {
         synchronized (LOCK) {
+            Optional<OurCarriers.Ours> named = OurCarriers.byId(carrierId);
+            if (named.isPresent()) {
+                named.get().update(carrier -> carrier.setMeasuredFuelLevel(tons));
+                return;
+            }
             FleetCarrierManager manager = FleetCarrierManager.getInstance();
             CarrierDataDto carrierData = manager.get();
             carrierData.setMeasuredFuelLevel(tons);

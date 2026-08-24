@@ -46,6 +46,26 @@ class CardPrecedenceTest {
         assertEquals("mining", winnerOf("mining", "ship-route"));
     }
 
+    /**
+     * Both colonisation cards sit at STANDING, so they lose to nothing above them and beat the plotted
+     * route - and between themselves the tie goes to the build, which says more than one leg of the
+     * shopping for it. Ties are broken by registration order, so this pins that order too.
+     */
+    @Test
+    void theConstructionSiteOutranksTheCommoditySearchItSentTheCommanderOn() {
+        assertEquals("construction-site", winnerOf("construction-site", "commodity-search", "ship-route"));
+    }
+
+    @Test
+    void aCommoditySearchOutranksThePlottedRouteItPlotted() {
+        assertEquals("commodity-search", winnerOf("commodity-search", "ship-route"));
+    }
+
+    @Test
+    void aMissionStillOutranksBothColonisationCards() {
+        assertEquals("mission", winnerOf("mission", "construction-site", "commodity-search"));
+    }
+
     @Test
     void aQuietHudShowsNothing() {
         assertTrue(NativeHudOverlay.highestPriority(List.of()).isEmpty());
@@ -78,6 +98,8 @@ class CardPrecedenceTest {
             case "TradeRouteObjectiveSource" -> "trade-route";
             case "MonetizedRouteObjectiveSource" -> "monetized-route";
             case "MiningObjectiveSource" -> "mining";
+            case "ConstructionSiteObjectiveSource" -> "construction-site";
+            case "CommoditySearchObjectiveSource" -> "commodity-search";
             case "ExobiologyObjectiveSource" -> "exobiology";
             case "ShipRouteObjectiveSource" -> "ship-route";
             default -> throw new AssertionError(
@@ -92,7 +114,8 @@ class CardPrecedenceTest {
     private static int priorityOf(String id) {
         return switch (id) {
             case "massacre-stack" -> HudObjective.PRIORITY_SPECIALISED;
-            case "mission", "trade-route", "monetized-route" -> HudObjective.PRIORITY_STANDING;
+            case "mission", "trade-route", "monetized-route", "construction-site", "commodity-search" ->
+                    HudObjective.PRIORITY_STANDING;
             default -> HudObjective.PRIORITY_AMBIENT;
         };
     }

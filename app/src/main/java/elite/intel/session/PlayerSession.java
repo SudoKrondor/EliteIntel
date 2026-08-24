@@ -5,6 +5,7 @@ import elite.intel.db.dao.ShipScansDao;
 import elite.intel.db.managers.*;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.carrier.CarrierStatsReading;
 import elite.intel.gameapi.data.FsdTarget;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.journal.events.CarrierStatsEvent;
@@ -749,8 +750,17 @@ public class PlayerSession {
         shipScans.clear();
     }
 
+    /**
+     * Files a carrier reading under the carrier it is about. The two live in different tables, and sending
+     * a squadron carrier's panel to the fleet carrier's row overwrote one ship's callsign, tank and
+     * balances with another's - see {@link CarrierStatsReading}.
+     */
     public void setCarrierStats(CarrierStatsEvent event) {
-        fleetCarriers.setCarrierStats(event);
+        if (CarrierStatsReading.isSquadron(event)) {
+            squadronCarriers.setCarrierStats(event);
+        } else {
+            fleetCarriers.setCarrierStats(event);
+        }
     }
 
 

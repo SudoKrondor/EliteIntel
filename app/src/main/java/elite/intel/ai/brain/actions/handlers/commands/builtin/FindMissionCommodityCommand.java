@@ -11,14 +11,15 @@ import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.JournalSymbol;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.gameapi.missions.MissionCargo;
+import elite.intel.gameapi.search.spansh.commodity.WantedCommodity;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 import elite.intel.util.json.GetNumberFromParam;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * "Find the cargo my mission needs" - the sibling of {@link FindCommodityCommand} that reads the
@@ -100,15 +101,16 @@ public final class FindMissionCommodityCommand implements IntelCommand {
         if (board.isEmpty()) {
             return StringUtls.localizedResponse("handler.missionCommodity.noCargoMissions");
         }
-        Optional<MissionCargo.Outstanding> next = board.stream()
+        // Only what the hold does not already cover, so the head of the list is the mission this trip is for.
+        List<MissionCargo.Outstanding> stillToBuy = board.stream()
                 .filter(item -> !item.isSatisfied())
-                .findFirst();
-        if (next.isEmpty()) {
+                .toList();
+        if (stillToBuy.isEmpty()) {
             // Every requirement covered is a real answer and a useful one - it means fly, not shop.
             return StringUtls.localizedResponse("handler.missionCommodity.allAcquired");
         }
 
-        MissionCargo.Outstanding outstanding = next.get();
+        MissionCargo.Outstanding outstanding = stillToBuy.getFirst();
         String commodity = FuzzySearch.commodityNameForSymbol(outstanding.symbol());
         if (commodity == null) {
             // A legacy or Powerplay good the commodities table carries no symbol for. The game's own
@@ -129,9 +131,33 @@ public final class FindMissionCommodityCommand implements IntelCommand {
                 FuzzySearch.localizedCommodityName(commodity),
                 outstanding.mission().getFaction()), false);
 
-        // The shortfall, not the mission's full count: after a part load at one market this asks for what is
-        // still missing, so the remainder can be picked up somewhere that only has that much.
-        return CommodityPurchaseSearch.findAndPlot(commodity, distance, returnClosest, outstanding.shortfall());
+        // The whole board, not just the mission at the head of it. A stack of source-and-return missions is
+        // taken all at once and flown one at a time; a hold with room for two of them should carry two. The
+        // search stays anchored on the soonest to expire, so the trip is still built around the deadline.
+        // Shortfalls rather than full counts: after a part load this asks for what is still missing, so the
+        // remainder can be picked up somewhere that only has that much.
+        return CommodityPurchaseSearch.findBasketAndPlot(shoppingList(stillToBuy, commodity), distance, returnClosest);
+    }
+
+    /**
+     * The board as a shopping list, soonest expiry first, with the anchor at the head.
+     * <p>
+     * A mission whose commodity cannot be named in the commodities table's spelling is dropped: Spansh
+     * matches on that name. Only the anchor gets the localised-name fallback, because it is the one mission
+     * the commander is actually being sent for and the only one worth failing the whole search over.
+     *
+     * @param stillToBuy outstanding requirements the hold does not already cover, soonest expiry first
+     */
+    static List<WantedCommodity> shoppingList(List<MissionCargo.Outstanding> stillToBuy, String anchorCommodity) {
+        List<WantedCommodity> wanted = new ArrayList<>();
+        MissionCargo.Outstanding anchor = stillToBuy.getFirst();
+        wanted.add(new WantedCommodity(anchor.symbol(), anchorCommodity, anchor.shortfall()));
+        for (MissionCargo.Outstanding item : stillToBuy.subList(1, stillToBuy.size())) {
+            String commodity = FuzzySearch.commodityNameForSymbol(item.symbol());
+            if (commodity == null) continue;
+            wanted.add(new WantedCommodity(item.symbol(), commodity, item.shortfall()));
+        }
+        return wanted;
     }
 
     /**

@@ -3,6 +3,7 @@ package elite.intel.db.managers;
 import elite.intel.db.dao.FleetCarrierDao;
 import elite.intel.db.dao.FleetCarrierDao.FleetCarrier;
 import elite.intel.db.util.Database;
+import elite.intel.gameapi.carrier.CarrierStatsReading;
 import elite.intel.gameapi.journal.events.CarrierStatsEvent;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.util.json.GsonFactory;
@@ -41,36 +42,8 @@ public class FleetCarrierManager {
 
 
     public void setCarrierStats(CarrierStatsEvent event) {
-        CarrierStatsEvent.Finance finance = event.getFinance();
         CarrierDataDto carrierData = get();
-        carrierData.setCallSign(event.getCallsign());
-        carrierData.setCarrierName(event.getName());
-        carrierData.setCarrierType(event.getCarrierType());
-        carrierData.setDockingAccess(event.getDockingAccess());
-        carrierData.setAllowNotorious(event.isAllowNotorious());
-        carrierData.setPendingDecommission(event.isPendingDecommission());
-        carrierData.setMeasuredFuelLevel(event.getFuelLevel());
-
-        if (event.getSpaceUsage() != null) {
-            CarrierStatsEvent.SpaceUsage spaceUsage = event.getSpaceUsage();
-            carrierData.setCargoSpaceUsed(spaceUsage.getCargo());
-            carrierData.setCargoSpaceReserved(spaceUsage.getCargoSpaceReserved());
-            carrierData.setShipRacks(spaceUsage.getShipPacks());
-            carrierData.setModulePacks(spaceUsage.getModulePacks());
-            carrierData.setFreeSpaceInCargo(spaceUsage.getFreeSpace());
-            carrierData.setCargoCapacity(spaceUsage.getTotalCapacity());
-        }
-
-        if (finance != null) {
-            carrierData.setTotalBalance(finance.getCarrierBalance());
-            carrierData.setReserveBalance(finance.getReserveBalance());
-            carrierData.setMarketBalance(finance.getAvailableBalance());
-            carrierData.setPioneerSupplyTax(finance.getTaxRatePioneerSupplies());
-            carrierData.setShipYardSupplyTax(finance.getTaxRateShipyard());
-            carrierData.setRearmSupplyTax(finance.getTaxRateRearm());
-            carrierData.setRepairSupplyTax(finance.getTaxRateRepair());
-            carrierData.setRefuelSupplyTax(finance.getTaxRateRefuel());
-        }
+        CarrierStatsReading.applyTo(carrierData, event);
         save(carrierData);
     }
 }

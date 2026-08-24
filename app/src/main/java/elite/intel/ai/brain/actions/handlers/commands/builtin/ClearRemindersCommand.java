@@ -3,6 +3,7 @@ package elite.intel.ai.brain.actions.handlers.commands.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
+import elite.intel.db.managers.CommoditySearchResultManager;
 import elite.intel.db.managers.MonetizeRouteManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TimedReminderManager;
@@ -19,12 +20,14 @@ public final class ClearRemindersCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Delete every reminder: the saved destination/target reminder, all timed reminders, and the monetize-route reminder.";
+        return "Delete every reminder: the saved destination/target reminder, all timed reminders, the "
+                + "monetize-route reminder, and the last commodity search result.";
     }
 
 
     private final ReminderManager destinationReminder = ReminderManager.getInstance();
     private final MonetizeRouteManager monetizeRouteManager = MonetizeRouteManager.getInstance();
+    private final CommoditySearchResultManager commoditySearchResult = CommoditySearchResultManager.getInstance();
 
     @Override
     public String id() {
@@ -41,6 +44,9 @@ public final class ClearRemindersCommand implements IntelCommand {
     public String execute(JsonObject params, String responseText) {
         destinationReminder.clear();
         monetizeRouteManager.clear();
+        // The twin of the destination reminder: written by the same search, and its overlay card would
+        // otherwise outlive the sentence the commander just asked to be rid of.
+        commoditySearchResult.clear();
         TimedReminderManager.getInstance().clearAll();
         return StringUtls.localizedResponse("handler.reminder.cleared");
     }

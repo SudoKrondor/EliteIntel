@@ -35,6 +35,24 @@ public class RoutePlotter {
     public RoutePlotter() {
     }
 
+    /**
+     * Plots a route and folds whatever the plotter has to say into the caller's own answer.
+     * <p>
+     * {@link #plotRoute} returns a sentence precisely when it did NOT plot a new route - the commander is
+     * already flying there, or named nowhere. Every caller that dropped that on the floor produced the same
+     * silent failure: an answer naming a destination, no galaxy map opening, and a commander with no way to
+     * tell a working search from a broken one.
+     *
+     * @param answer      what the command was going to say regardless
+     * @param destination the system to plot to
+     */
+    public String plotRouteAnd(String answer, String destination) {
+        String note = plotRoute(destination);
+        if (note == null || note.isBlank()) return answer;
+        if (answer == null || answer.isBlank()) return note;
+        return answer + " " + note;
+    }
+
     public String plotRoute(String destination) {
         navigator.closeOpenPanel();
         if (destination == null || destination.isEmpty()) {

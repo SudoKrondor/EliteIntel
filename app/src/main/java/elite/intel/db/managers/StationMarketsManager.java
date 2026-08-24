@@ -8,11 +8,24 @@ import elite.intel.util.json.GsonFactory;
 
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class StationMarketsManager {
     private static final StationMarketsManager INSTANCE = new StationMarketsManager();
+
+    /**
+     * The last answer {@link #stockedAt} gave, kept because the HUD asks the same question of the same port
+     * once a second and a carrier's {@code Market.json} runs to a hundred kilobytes - parsing that on a
+     * timer to learn something that changes only when the commander opens a market screen is work for
+     * nothing. Dropped wholesale on any write, which is exactly when it can have gone wrong.
+     */
+    private volatile Stocked memo;
+
+    private record Stocked(String stationName, MarketSnapshot snapshot) {
+    }
 
     private StationMarketsManager() {
     }
@@ -22,6 +35,7 @@ public class StationMarketsManager {
     }
 
     public void save(GameEvents.MarketEvent market) {
+        memo = null;
         Database.withDao(StationMarketDao.class, dao -> {
             StationMarketDao.StationMarket stationMarket = new StationMarketDao.StationMarket();
             stationMarket.setJson(market.toJson());
@@ -75,6 +89,67 @@ public class StationMarketsManager {
         return Optional.empty();
     }
 
+    /**
+     * Everything a market was holding the last time the commander opened it, keyed by journal symbol.
+     * <p>
+     * The whole snapshot rather than {@link #lastSeen}'s one commodity, for a caller weighing a shopping
+     * list against a hold - most of all the commander's own fleet carrier, whose stock is only ever visible
+     * to a third-party tool because the game wrote {@code Market.json} while they stood in it.
+     * <p>
+     * Only what is actually there: a carrier's market keeps listing a good at zero long after the last
+     * tonne of it was sold, and "we have none" is not stock.
+     *
+     * @param stationName the port, which for a carrier is its callsign
+     */
+    public Optional<MarketSnapshot> stockedAt(String stationName) {
+        if (stationName == null || stationName.isBlank()) return Optional.empty();
+
+        Stocked cached = memo;
+        if (cached != null && cached.stationName().equalsIgnoreCase(stationName)) {
+            return Optional.ofNullable(cached.snapshot());
+        }
+
+        Optional<MarketSnapshot> snapshot = readStockedAt(stationName);
+        // Remembered even when it is empty: a station we have no market for is asked about just as often,
+        // and the scan that proves it costs the same either way.
+        memo = new Stocked(stationName, snapshot.orElse(null));
+        return snapshot;
+    }
+
+    private Optional<MarketSnapshot> readStockedAt(String stationName) {
+        StationMarketDao.StationMarket[] rows = Database.withDao(StationMarketDao.class,
+                dao -> dao.findAllForStation(stationName));
+        if (rows == null || rows.length == 0) return Optional.empty();
+
+        for (StationMarketDao.StationMarket row : rows) {
+            GameEvents.MarketEvent market = GsonFactory.getGson().fromJson(row.getJson(), GameEvents.MarketEvent.class);
+            if (market == null || market.getItems() == null) continue;
+
+            Map<String, Integer> stock = new HashMap<>();
+            for (GameEvents.MarketEvent.MarketItem item : market.getItems()) {
+                if (item.getStock() <= 0) continue;
+                String symbol = JournalSymbol.normalize(item.getName());
+                if (symbol == null) continue;
+                stock.merge(symbol, item.getStock(), Integer::sum);
+            }
+            return Optional.of(new MarketSnapshot(market.getStarSystem(), market.getStationName(),
+                    parseInstant(market.getTimestamp()), stock));
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * What one market held, and when we looked.
+     *
+     * @param stockBySymbol units on sale per journal symbol; only goods actually in stock appear
+     */
+    public record MarketSnapshot(String starSystem, String stationName, Instant seenAt,
+                                 Map<String, Integer> stockBySymbol) {
+        public MarketSnapshot {
+            stockBySymbol = stockBySymbol == null ? Map.of() : Map.copyOf(stockBySymbol);
+        }
+    }
+
     private static int stockOf(GameEvents.MarketEvent market, String commoditySymbol) {
         return market.getItems().stream()
                 .filter(item -> commoditySymbol.equalsIgnoreCase(JournalSymbol.normalize(item.getName())))
@@ -93,6 +168,7 @@ public class StationMarketsManager {
     }
 
     public void clear() {
+        memo = null;
         Database.withDao(StationMarketDao.class, dao -> {
             dao.clear();
             return null;

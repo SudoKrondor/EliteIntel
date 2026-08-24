@@ -593,6 +593,11 @@ public class NativeHudOverlay {
                 new TradeRouteObjectiveSource(),
                 new MonetizedRouteObjectiveSource(),
                 new MiningObjectiveSource(),
+                new ConstructionSiteObjectiveSource(),
+                // After the construction card: it describes the same journey the route card does, plus what
+                // the commander is flying there to buy, so it beats that one - but a build being hauled to
+                // says more than one leg of the shopping for it, and ties go to whoever is registered first.
+                new CommoditySearchObjectiveSource(),
                 new ExobiologyObjectiveSource(),
                 // Last and weakest: where the commander is pointed, which is worth showing when nothing
                 // else is and worth nothing next to what they are actually doing. A destination the app
