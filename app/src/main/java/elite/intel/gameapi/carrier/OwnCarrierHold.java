@@ -80,25 +80,49 @@ public final class OwnCarrierHold {
      * docks at one and opens its market.
      */
     public static List<Held> ours() {
+        return ours(false);
+    }
+
+    /**
+     * The same two carriers, keeping one we know the position of but believe to be empty.
+     * <p>
+     * WHY a caller would want that: an empty carrier parked next to a commodity market is not nothing to
+     * say - it is a stockpiling run that has not started yet, and dropping it would leave the shopping card
+     * dark until the first tonne was aboard. Callers asking "who can SUPPLY this" want {@link #ours()}
+     * instead, where a carrier holding nothing is genuinely no answer.
+     */
+    public static List<Held> oursIncludingEmpty() {
+        return ours(true);
+    }
+
+    private static List<Held> ours(boolean includeEmpty) {
         List<Held> carriers = new ArrayList<>();
-        fleetCarrier().ifPresent(carriers::add);
-        squadronCarrier().ifPresent(carriers::add);
+        fleetCarrier(includeEmpty).ifPresent(carriers::add);
+        squadronCarrier(includeEmpty).ifPresent(carriers::add);
         return carriers;
     }
 
     public static Optional<Held> fleetCarrier() {
-        PlayerSession session = PlayerSession.getInstance();
-        // The carrier's position comes from the arrival events, never from the market snapshot: it jumps,
-        // and the snapshot records where it was standing when the commander last read its shelves.
-        return held(session.getFleetCarrierData(), session.getLastKnownCarrierLocation());
+        return fleetCarrier(false);
     }
 
     public static Optional<Held> squadronCarrier() {
-        CarrierDataDto squadron = SquadronCarrierManager.getInstance().get();
-        return held(squadron, squadron == null ? null : squadron.getStarName());
+        return squadronCarrier(false);
     }
 
-    private static Optional<Held> held(CarrierDataDto carrier, String starSystem) {
+    private static Optional<Held> fleetCarrier(boolean includeEmpty) {
+        PlayerSession session = PlayerSession.getInstance();
+        // The carrier's position comes from the arrival events, never from the market snapshot: it jumps,
+        // and the snapshot records where it was standing when the commander last read its shelves.
+        return held(session.getFleetCarrierData(), session.getLastKnownCarrierLocation(), includeEmpty);
+    }
+
+    private static Optional<Held> squadronCarrier(boolean includeEmpty) {
+        CarrierDataDto squadron = SquadronCarrierManager.getInstance().get();
+        return held(squadron, squadron == null ? null : squadron.getStarName(), includeEmpty);
+    }
+
+    private static Optional<Held> held(CarrierDataDto carrier, String starSystem, boolean includeEmpty) {
         if (carrier == null) return Optional.empty();
         String callSign = carrier.getCallSign();
         if (callSign == null || callSign.isBlank()) return Optional.empty();
@@ -114,7 +138,7 @@ public final class OwnCarrierHold {
         Map<String, Integer> stock = CarrierHoldLedger.isTracking(carrier)
                 ? CarrierHoldLedger.stockOf(carrier)
                 : snapshot.map(MarketSnapshot::stockBySymbol).orElse(Map.of());
-        if (stock.isEmpty()) return Optional.empty();
+        if (stock.isEmpty() && !includeEmpty) return Optional.empty();
 
         return Optional.of(new Held(callSign, starSystem, snapshot.map(MarketSnapshot::seenAt).orElse(null),
                 stock));

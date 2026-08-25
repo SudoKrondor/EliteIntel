@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.gameapi.journal.EventRegistry;
 import elite.intel.gameapi.journal.events.BaseEvent;
+import elite.intel.gameapi.journal.subscribers.DockedMarketSubscriber;
 import elite.intel.gameapi.journal.subscribers.SilentPersistenceSubscriber;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.FleetCarrierRouteCalculator;
@@ -64,6 +65,12 @@ public class JournalPreScanner {
         privateBus.register(finance);
         MaterialsPreScanAccumulator materials = new MaterialsPreScanAccumulator();
         privateBus.register(materials);
+        // The pad under the ship is held in memory only, so a commander who quits on one and comes back
+        // starts with no pad at all: the live bus never sees that session's Docked, and Location arrives
+        // only here. Everything that asks "which market am I standing in" - the construction card's shelves,
+        // the carrier ledger's attribution - was silently answered "none" until the next undocking. Replaying
+        // the docking events onto the marker costs one field write and leaves it where the journal left it.
+        privateBus.register(new DockedMarketSubscriber());
 
         for (Path file : toScan) {
             processFile(file, privateBus);
