@@ -11,17 +11,20 @@ import elite.intel.util.StringUtls;
 import java.util.List;
 
 /**
- * Stage-4b self-describing command for "toggle all announcements".
- * No parameters
- * beyond the LLM PARAM_STATE flag.
+ * Self-describing command for "toggle planetary approach announcements".
+ *
+ * <p>WHY separate from {@link ToggleRouteAnnouncementsCommand}: the approach briefing (gravity,
+ * atmosphere, temperature, materials) fires on every body a commander drops towards, which is a very
+ * different rhythm from route progress. Silencing one used to silence the other.
  */
 @RegisterCommand
-public final class ToggleAllAnnouncementsCommand implements IntelCommand {
-    public static final String ID = "toggle_all_announcements";
+public final class TogglePlanetaryApproachAnnouncementsCommand implements IntelCommand {
+    public static final String ID = "toggle_planetary_approach_announcements";
 
     @Override
     public String llmDescription() {
-        return "Turn all spoken announcement categories (discovery, route, planetary approach, radar, mining, navigation) on or off together; 'state' true = on.";
+        return "Turn planetary approach announcements - the gravity, atmosphere and temperature briefing "
+                + "given when approaching a planet or moon - on or off ('state').";
     }
 
 
@@ -44,7 +47,9 @@ public final class ToggleAllAnnouncementsCommand implements IntelCommand {
         return ID;
     }
 
-    /** App-side announcement setting (no game input); executable in any location. */
+    /**
+     * App-side announcement setting (no game input); executable in any location.
+     */
     @Override
     public boolean isVisibleForLLM(Status status) {
         return true;
@@ -61,14 +66,8 @@ public final class ToggleAllAnnouncementsCommand implements IntelCommand {
             return StringUtls.localizedResponse("handler.common.llmParamFailed");
         }
         boolean isOn = params.get(PARAM_STATE).getAsBoolean();
-        PlayerSession playerSession = PlayerSession.getInstance();
-        playerSession.setDiscoveryAnnouncementOn(isOn);
-        playerSession.setRouteAnnouncementOn(isOn);
-        playerSession.setPlanetaryApproachAnnouncementOn(isOn);
-        playerSession.setRadarContactAnnouncementOn(isOn);
-        playerSession.setMiningAnnouncementOn(isOn);
-        playerSession.setNavigationAnnouncementOn(isOn);
+        PlayerSession.getInstance().setPlanetaryApproachAnnouncementOn(isOn);
         String state = StringUtls.localizedResponse(isOn ? "handler.state.on" : "handler.state.off");
-        return StringUtls.localizedResponse("handler.announcements.all", state);
+        return StringUtls.localizedResponse("handler.announcements.planetaryApproach", state);
     }
 }

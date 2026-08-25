@@ -1,5 +1,6 @@
 package elite.intel.util;
 
+import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
@@ -10,10 +11,9 @@ import static elite.intel.gameapi.i18n.EventsTextProvider.getText;
  * representations for amounts. Primarily designed to assist in generating
  * easily understandable phrases for numerical bounties or values.
  * <p>
- * All spoken words and phrase templates are resolved from the {@code ed_events}
- * bundle at call time, so the output follows the active UI language. Composition
- * patterns (e.g. {@code tts.number.hundred}) use {@link java.text.MessageFormat}
- * placeholders so translators can reorder the parts per language.
+ * The phrase around the figure - the hedge, the scale noun, the currency - comes from the
+ * {@code ed_events} bundle, so it follows the active UI language. The figure itself is spelled
+ * out by {@link NumberWords}, which knows how each language builds a number.
  * <p>
  * Everything is spelled out in words - never digits. A TTS engine reading
  * {@code "1.02"} may voice it as "one dot zero two" or mangle the separator
@@ -49,7 +49,20 @@ public class TTSFriendlyNumberConverter {
      * {@link #formatCreditsForLlm(long)} instead, so the model receives it in the language it composes from.
      */
     public static String formatCreditsForSpeech(long credits) {
-        return formatCredits(credits, SystemSession.getInstance().getLanguage());
+        return formatCredits(credits, spokenLanguage());
+    }
+
+    /**
+     * The language the sentence this amount is embedded in will be spoken in.
+     * <p>
+     * Not simply the session language: the local Kokoro voice cannot read Cyrillic, so a Russian or
+     * Ukrainian commander on it is answered in English, and {@code StringUtls.localizedEvent} resolves the
+     * surrounding sentence that way. Reading the session language here instead put Russian numerals inside
+     * an English sentence - "Sold один тысяч три сотен двадцать units of Steel". One policy for both halves
+     * is what keeps a sentence in one language.
+     */
+    private static Language spokenLanguage() {
+        return AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
     }
 
     /**
@@ -61,18 +74,38 @@ public class TTSFriendlyNumberConverter {
         return formatCredits(credits, Language.EN);
     }
 
+    /**
+     * A plain count - tonnes of cargo, units sold - spelled out in words in the language the sentence around
+     * it will be spoken in, with no rounding and no currency word.
+     * <p>
+     * WHY words: the count reaches the sentence through {@link java.text.MessageFormat}, which groups a
+     * number by the reader's locale. A carrier hold of 1320 tonnes came out as "1,320" in English and
+     * "1.320" in German and Italian, and the separator is exactly what a TTS engine mishandles - the German
+     * voice read a tonnage as a decimal.
+     * <p>
+     * A count is spoken exactly rather than hedged like a credit amount: "about one thousand tonnes" would
+     * be wrong about cargo the commander can count.
+     */
+    public static String formatCountForSpeech(long count) {
+        return NumberWords.of(count, spokenLanguage());
+    }
+
     private static String formatCredits(long credits, Language language) {
         if (credits == 0) return getText(language, "tts.amount.zero");
         if (credits < 0) return getText(language, "tts.amount.negative", formatCredits(-credits, language));
 
         if (credits <= EXACT_LIMIT) {
-            return getText(language, "tts.amount.exact", numberToWords(credits, language));
+            return getText(language, "tts.amount.exact", NumberWords.of(credits, language));
         }
 
         // Nearest thousand, up to a million. Rounding 999,600 up lands on a million, so let it fall through.
+        // The rounded figure is spelled whole - 343,000, not 343 with a "thousand" pasted after it - because
+        // German and Italian join the scale onto the number ("dreihundertdreiundvierzigtausend",
+        // "trecentoquarantatremila") and Russian inflects it with the count. The template only hedges the
+        // figure and names the currency; the language decides how the thousand itself is said.
         long thousands = divideRounded(credits, 1_000L);
         if (thousands < 1_000L) {
-            return getText(language, "tts.amount.thousands", numberToWords(thousands, language));
+            return getText(language, "tts.amount.thousands", NumberWords.of(thousands * 1_000L, language));
         }
 
         // Nearest hundred thousand, expressed as millions with one decimal. Exactly one million takes a
@@ -84,7 +117,7 @@ public class TTSFriendlyNumberConverter {
             return getText(language, "tts.amount.million");
         }
         if (tenths < 10_000L) {
-            return getText(language, "tts.amount.millions", scaledToWords(tenths, 10, language));
+            return getText(language, "tts.amount.millions", NumberWords.of(tenths / 10.0, language));
         }
 
         // Nearest ten million, expressed as billions with two decimals. Exactly one billion is singular for
@@ -93,7 +126,7 @@ public class TTSFriendlyNumberConverter {
         if (hundredths == 100) {
             return getText(language, "tts.amount.billion");
         }
-        return getText(language, "tts.amount.billions", scaledToWords(hundredths, 100, language));
+        return getText(language, "tts.amount.billions", NumberWords.of(hundredths / 100.0, language));
     }
 
     /**
@@ -102,92 +135,4 @@ public class TTSFriendlyNumberConverter {
     private static long divideRounded(long value, long divisor) {
         return (value + divisor / 2) / divisor;
     }
-
-    /**
-     * Spells a fixed-point value out with its fractional digits, e.g. {@code 124 / 10} as
-     * "twelve point four" and {@code 102 / 100} as "one point zero two". A fraction of zero,
-     * or one whose digits are all trailing zeros, is dropped entirely - "twelve", not "twelve point zero".
-     */
-    private static String scaledToWords(long scaled, int scale, Language language) {
-        long whole = scaled / scale;
-        long fraction = scaled % scale;
-        String wholeWords = numberToWords(whole, language);
-        if (fraction == 0) return wholeWords;
-
-        // Fixed width so 102/100 keeps its leading zero ("zero two"), then trailing zeros go ("120" -> "1").
-        int width = String.valueOf(scale).length() - 1;
-        String digits = String.format("%0" + width + "d", fraction).replaceAll("0+$", "");
-
-        StringBuilder fractionWords = new StringBuilder();
-        for (char digit : digits.toCharArray()) {
-            if (!fractionWords.isEmpty()) fractionWords.append(' ');
-            fractionWords.append(digitWord(digit - '0', language));
-        }
-        return getText(language, "tts.number.point", wholeWords, fractionWords.toString());
-    }
-
-    private static String digitWord(int digit, Language language) {
-        return digit == 0 ? getText(language, "tts.number.zero") : unitsWord(digit, language);
-    }
-
-    /**
-     * Spells out 0..999,999 in words. Above that the caller has already reduced to a scale word.
-     */
-    private static String numberToWords(long n, Language language) {
-        if (n == 0) return getText(language, "tts.number.zero");
-        if (n < 1_000) return smallNumberToWords((int) n, language);
-
-        long thousands = n / 1_000;
-        long remainder = n % 1_000;
-        String base = getText(language, "tts.number.thousand", smallNumberToWords((int) thousands, language));
-        if (remainder == 0) return base;
-        return getText(language, "tts.number.thousandRemainder", base, smallNumberToWords((int) remainder, language));
-    }
-
-    // Converts 1..999 that are multiples of 1, 10, or 100 into words (compact)
-    private static String smallNumberToWords(int n, Language language) {
-        if (n == 0) return getText(language, "tts.number.zero");
-        // Handle exact hundreds and tens we produce via rounding
-        if (n >= 100) {
-            int hundreds = n / 100;
-            int remainder = n % 100;
-            String base = getText(language, "tts.number.hundred", unitsWord(hundreds, language));
-            if (remainder == 0) return base;
-            // remainder will be multiple of 10 in our usage
-            return getText(language, "tts.number.hundredRemainder", base, belowHundredToWords(remainder, language));
-        }
-        return belowHundredToWords(n, language);
-    }
-
-    private static String belowHundredToWords(int n, Language language) {
-        if (n >= 20) {
-            return tensWord(n, language);
-        } else if (n >= 10) {
-            return teensWord(n, language);
-        } else {
-            return unitsWord(n, language);
-        }
-    }
-
-    private static String unitsWord(int n, Language language) {
-        if (n >= 1 && n <= 9) return getText(language, "tts.number." + n);
-        return String.valueOf(n);
-    }
-
-    private static String teensWord(int n, Language language) {
-        if (n >= 10 && n <= 19) return getText(language, "tts.number." + n);
-        return String.valueOf(n);
-    }
-
-    private static String tensWord(int n, Language language) {
-        // Assumes n is a multiple of 10 (common after rounding), but handles 20..99
-        int tens = n / 10;
-        int ones = n % 10;
-        if (tens == 1) return teensWord(n, language); // 10..19
-        if (tens < 2 || tens > 9) return String.valueOf(n);
-        String tenWord = getText(language, "tts.number." + (tens * 10));
-        if (ones == 0) return tenWord;
-        return getText(language, "tts.number.tensWithOnes", tenWord, unitsWord(ones, language));
-    }
-
 }

@@ -229,6 +229,7 @@ class AiActionMapGeneratorTest {
             "toggle_lights_on_off",
             "toggle_mining_announcements",
             "toggle_night_vision_on_off",
+            "toggle_planetary_approach_announcements",
             "toggle_radar_announcements",
             "toggle_radio",
             "toggle_route_announcements",

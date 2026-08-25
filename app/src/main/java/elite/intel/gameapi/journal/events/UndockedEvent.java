@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.events;
 
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import elite.intel.gameapi.StationName;
 import elite.intel.util.json.GsonFactory;
 
 import java.time.Duration;
@@ -30,7 +31,7 @@ public class UndockedEvent extends BaseEvent {
     public UndockedEvent(JsonObject json) {
         super(json.get("timestamp").getAsString(), Duration.ofSeconds(30), "Undocked");
         UndockedEvent e = GsonFactory.getGson().fromJson(json, UndockedEvent.class);
-        this.stationName = e.stationName;
+        this.stationName = StationName.display(e.stationName);
         this.stationType = e.stationType;
         this.marketID = e.marketID;
         this.taxi = e.taxi;

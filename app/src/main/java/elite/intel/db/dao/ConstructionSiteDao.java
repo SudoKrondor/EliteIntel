@@ -1,5 +1,6 @@
 package elite.intel.db.dao;
 
+import elite.intel.gameapi.StationName;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.StatementContext;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
@@ -192,8 +193,15 @@ public interface ConstructionSiteDao {
             this.marketId = marketId;
         }
 
+        /**
+         * The depot as a human names it. Read through {@link StationName} rather than raw, because rows
+         * written before that normalisation existed still hold the decorated form - a colonisation ship
+         * stored as "$EXT_PANEL_ColonisationShip; Schroter's Progress" put the symbol on the HUD card and
+         * into "setting course for". JDBI binds the write through this same getter, so a row heals the
+         * next time the depot republishes its manifest.
+         */
         public String getStationName() {
-            return stationName;
+            return StationName.display(stationName);
         }
 
         public void setStationName(String stationName) {

@@ -1,5 +1,6 @@
 package elite.intel.db.dao;
 
+import elite.intel.gameapi.StationName;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.StatementContext;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
@@ -69,10 +70,12 @@ public interface DestinationReminderDao {
         }
 
         /**
-         * The port, when the reminder is for one; null for a reminder about a place.
+         * The port, when the reminder is for one; null for a reminder about a place. Read through
+         * {@link StationName} for the same reason the construction site is: an errand set before that
+         * normalisation existed still names its port with the game's UI symbol attached.
          */
         public String getStationName() {
-            return stationName;
+            return StationName.display(stationName);
         }
 
         public void setStationName(String stationName) {

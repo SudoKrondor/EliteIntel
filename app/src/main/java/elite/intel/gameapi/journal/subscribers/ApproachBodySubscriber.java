@@ -83,7 +83,7 @@ public class ApproachBodySubscriber {
             }
 
             locationManager.save(location);
-            if (!event.isReplay() && playerSession.isRouteAnnouncementOn()) {
+            if (!event.isReplay() && playerSession.isPlanetaryApproachAnnouncementOn()) {
                 String instructions = """
                             We are approaching planet/moon. Warn/Notify user with this data.
                             Temperature data is provided in C (Celsius)

@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.events;
 
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import elite.intel.gameapi.StationName;
 import elite.intel.util.TimestampFormatter;
 import elite.intel.util.json.GsonFactory;
 
@@ -115,7 +116,7 @@ public class DockedEvent extends BaseEvent {
     public DockedEvent(JsonObject json) {
         super(json.get("timestamp").getAsString(), Duration.ofSeconds(30), "Docked");
         DockedEvent event = GsonFactory.getGson().fromJson(json, DockedEvent.class);
-        this.stationName = event.stationName;
+        this.stationName = StationName.display(event.stationName);
         this.stationType = event.stationType;
         this.taxi = event.taxi;
         this.multicrew = event.multicrew;

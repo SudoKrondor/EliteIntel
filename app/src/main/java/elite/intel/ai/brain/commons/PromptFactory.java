@@ -137,9 +137,18 @@ public class PromptFactory implements AiPromptFactory {
      * honorific, deduped (falling back to "Commander" when none are known), chosen at random each time.
      * Reused by the companion prompt - only the addressee term differs ("me" for the ship's first-person
      * legacy prompt, "the commander" for the companion).
+     * <p>
+     * A commander who has turned addressing off gets the opposite instruction in the same slot - one line
+     * either way, so the prompt budget is unchanged. Stripping the address afterwards would not do: the
+     * model is told the forms, and a rule it was never given is one it cannot follow.
      */
     public static void appendContext(StringBuilder sb, String addressee) {
         PlayerSession playerSession = PlayerSession.getInstance();
+        if (Boolean.FALSE.equals(playerSession.isAddressMeOn())) {
+            sb.append("Never address ").append(addressee)
+                    .append(" by name, rank or title. Speak without any form of address.\n");
+            return;
+        }
         String alternativeName = playerSession.getAlternativeName();
         String playerName = alternativeName != null ? alternativeName : playerSession.getPlayerName();
         // Both forms are derived from the stored (language-independent) navy rank numbers rather than from

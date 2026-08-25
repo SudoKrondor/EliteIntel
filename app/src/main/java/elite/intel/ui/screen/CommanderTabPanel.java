@@ -156,8 +156,10 @@ public class CommanderTabPanel extends JPanel {
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
     private JTextField playerAltNameField;
+    private JCheckBox addressMeBox;
     private JCheckBox discoveryAnnouncementBox;
     private JCheckBox routeAnnouncementBox;
+    private JCheckBox planetaryApproachAnnouncementBox;
     private JCheckBox radarContactAnnouncementBox;
     private JCheckBox miningAnnouncementBox;
     private JCheckBox navigationAnnouncementBox;
@@ -197,6 +199,13 @@ public class CommanderTabPanel extends JPanel {
         playerAltNameField.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override public void focusLost(java.awt.event.FocusEvent e) { saveCommanderName(); }
         });
+
+        // Beside the name, because it decides what becomes of it: with this off the commander is not
+        // addressed at all - no name, no rank, no honorific - rather than addressed some other way.
+        addressMeBox = toggle("player.addressMe",
+                playerSession.isAddressMeOn(), playerSession::setAddressMeOn);
+        addressMeBox.setToolTipText(getText("player.addressMe.tooltip"));
+        addCheck(profile, addressMeBox, gbc);
 
         content.add(profileSection);
         content.add(Box.createVerticalStrut(HUD_GAP));
@@ -272,7 +281,7 @@ public class CommanderTabPanel extends JPanel {
     /**
      * Every spoken-announcement toggle, in one place.
      * <p>
-     * The first six are backed by {@link PlayerSession} and are the categories the
+     * The first seven are backed by {@link PlayerSession} and are the categories the
      * {@code toggle_all_announcements} voice command flips, so {@link #initData()} re-reads them: a voice
      * command may have changed one while the tab was not visible. The jump-related ones below them are backed
      * by {@link GlobalSettingsManager}, are read only here, and moved off the Ship Options tab so that a
@@ -286,6 +295,8 @@ public class CommanderTabPanel extends JPanel {
                 playerSession.isDiscoveryAnnouncementOn(), playerSession::setDiscoveryAnnouncementOn);
         routeAnnouncementBox = toggle("announcements.route",
                 playerSession.isRouteAnnouncementOn(), playerSession::setRouteAnnouncementOn);
+        planetaryApproachAnnouncementBox = toggle("announcements.planetaryApproach",
+                playerSession.isPlanetaryApproachAnnouncementOn(), playerSession::setPlanetaryApproachAnnouncementOn);
         radarContactAnnouncementBox = toggle("announcements.radarContact",
                 playerSession.isRadarContactAnnouncementOn(), playerSession::setRadarContactAnnouncementOn);
         miningAnnouncementBox = toggle("announcements.mining",
@@ -297,6 +308,7 @@ public class CommanderTabPanel extends JPanel {
 
         boxes.add(discoveryAnnouncementBox);
         boxes.add(routeAnnouncementBox);
+        boxes.add(planetaryApproachAnnouncementBox);
         boxes.add(radarContactAnnouncementBox);
         boxes.add(miningAnnouncementBox);
         boxes.add(navigationAnnouncementBox);
@@ -363,10 +375,12 @@ public class CommanderTabPanel extends JPanel {
     public void initData() {
         playerAltNameField.setText(
                 playerSession.getAlternativeName() != null ? playerSession.getAlternativeName() : "");
+        addressMeBox.setSelected(playerSession.isAddressMeOn());
 
         // A voice command (toggle_all_announcements and friends) can flip these behind the UI's back.
         discoveryAnnouncementBox.setSelected(playerSession.isDiscoveryAnnouncementOn());
         routeAnnouncementBox.setSelected(playerSession.isRouteAnnouncementOn());
+        planetaryApproachAnnouncementBox.setSelected(playerSession.isPlanetaryApproachAnnouncementOn());
         radarContactAnnouncementBox.setSelected(playerSession.isRadarContactAnnouncementOn());
         miningAnnouncementBox.setSelected(playerSession.isMiningAnnouncementOn());
         navigationAnnouncementBox.setSelected(playerSession.isNavigationAnnouncementOn());

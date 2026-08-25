@@ -7,8 +7,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Spoken-amount formatting resolves all words from the ed_events bundle. Assertions run against the English
@@ -66,7 +65,7 @@ class TTSFriendlyNumberConverterTest {
     @Test
     void amountsUpToAMillionRoundToTheNearestThousand() {
         assertEquals("about ten thousand credits", TTSFriendlyNumberConverter.formatCreditsForLlm(10_001));
-        assertEquals("about three hundred forty three thousand credits",
+        assertEquals("about three hundred forty-three thousand credits",
                 TTSFriendlyNumberConverter.formatCreditsForLlm(342_600));
     }
 
@@ -162,5 +161,71 @@ class TTSFriendlyNumberConverterTest {
             assertFalse(singular.contains("tts.amount"), language + " has no singular million key: " + singular);
             assertFalse(plural.contains("tts.amount"), language + " has no plural million key: " + plural);
         }
+    }
+
+    // --- Spoken counts ---
+
+    /**
+     * The tonnage that raised this: a carrier hold sold as 1320 tonnes reached the sentence as a number, and
+     * MessageFormat grouped it - "1,320" in English, "1.320" in German - which is what the voice stumbled on.
+     */
+    @Test
+    void countsAreSpelledOutRatherThanGrouped() {
+        assertEquals("one thousand three hundred twenty", TTSFriendlyNumberConverter.formatCountForSpeech(1320));
+        assertEquals("six hundred eighty", TTSFriendlyNumberConverter.formatCountForSpeech(680));
+        assertEquals("four", TTSFriendlyNumberConverter.formatCountForSpeech(4));
+        assertEquals("zero", TTSFriendlyNumberConverter.formatCountForSpeech(0));
+    }
+
+    /**
+     * A count is what it is: unlike a credit amount it is never rounded or hedged, because the commander can
+     * read the tonnage off his own hold.
+     */
+    @Test
+    void countsAreExactAndCarryNoCurrencyWord() {
+        String spoken = TTSFriendlyNumberConverter.formatCountForSpeech(1316);
+        assertEquals("one thousand three hundred sixteen", spoken);
+        assertFalse(spoken.contains("about"), "a count must not be hedged");
+        assertFalse(spoken.contains("credit"), "a count is not an amount of money");
+    }
+
+    @Test
+    void countsFollowTheActiveLanguage() {
+        SystemSession.getInstance().setLanguage(Language.DE);
+        assertFalse(TTSFriendlyNumberConverter.formatCountForSpeech(1320).contains("1.320"),
+                "the locale separator is exactly what must not reach the voice");
+        assertFalse(TTSFriendlyNumberConverter.formatCountForSpeech(1320).matches(".*\\d.*"),
+                "a spelled-out count carries no digits at all");
+    }
+
+    /**
+     * The scale word is not pasted onto the figure: German and Italian join it into the word itself, so a
+     * template that appended it produced "dreihundertdreiundvierzig tausend". The rounded magnitude is
+     * spelled whole and the language decides where the seam goes.
+     */
+    @Test
+    void theThousandScaleIsJoinedTheWayTheLanguageJoinsIt() {
+        SystemSession.getInstance().setLanguage(Language.DE);
+        String german = TTSFriendlyNumberConverter.formatCreditsForSpeech(343_218);
+        assertTrue(german.contains("dreihundertdreiundvierzigtausend"), german);
+        assertFalse(german.contains(" tausend"), "German joins the thousand onto the number: " + german);
+
+        SystemSession.getInstance().setLanguage(Language.IT);
+        String italian = TTSFriendlyNumberConverter.formatCreditsForSpeech(343_218);
+        assertFalse(italian.contains(" mila"), "Italian joins the thousand onto the number: " + italian);
+    }
+
+    /**
+     * French and Spanish keep the scale word separate, which is equally the language's business.
+     */
+    @Test
+    void romanceLanguagesThatSeparateTheScaleStillDo() {
+        SystemSession.getInstance().setLanguage(Language.FR);
+        assertEquals("environ trois cent quarante-trois mille crédits",
+                TTSFriendlyNumberConverter.formatCreditsForSpeech(343_218));
+
+        SystemSession.getInstance().setLanguage(Language.ES);
+        assertEquals("unos trescientos cuarenta y tres mil créditos",
+                TTSFriendlyNumberConverter.formatCreditsForSpeech(343_218));
     }
 }

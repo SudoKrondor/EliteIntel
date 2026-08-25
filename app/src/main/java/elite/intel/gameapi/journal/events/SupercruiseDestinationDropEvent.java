@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.events;
 
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import elite.intel.gameapi.StationName;
 import elite.intel.util.TimestampFormatter;
 import elite.intel.util.json.GsonFactory;
 
@@ -21,7 +22,7 @@ public class SupercruiseDestinationDropEvent extends BaseEvent {
     public SupercruiseDestinationDropEvent(JsonObject json) {
         super(json.get("timestamp").getAsString(), Duration.ofSeconds(30), "SupercruiseDestinationDrop");
         SupercruiseDestinationDropEvent event = GsonFactory.getGson().fromJson(json, SupercruiseDestinationDropEvent.class);
-        this.type = event.type;
+        this.type = StationName.display(event.type);
         this.threat = event.threat;
         this.marketID = event.marketID;
     }
