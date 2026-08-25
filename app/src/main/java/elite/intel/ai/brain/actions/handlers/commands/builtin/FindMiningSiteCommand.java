@@ -118,11 +118,9 @@ public final class FindMiningSiteCommand implements IntelCommand {
 
         Optional<StellarObjectSearchResultDto.Result> result = miningLocations.getResults().stream().findFirst();
         if (result.isPresent()) {
-            RoutePlotter routePlotter = new RoutePlotter();
-            routePlotter.plotRoute(result.get().getSystemName());
             String reminder = StringUtls.localizedResponse("handler.miningSite.found", result.get().getSystemName(), result.get().getBodyName());
             ReminderManager.getInstance().setReminder(reminder, result.get().getSystemName());
-            return reminder;
+            return new RoutePlotter().plotRouteAnd(reminder, result.get().getSystemName());
         } else {
             return StringUtls.localizedResponse("handler.miningSite.notFoundInRange");
         }

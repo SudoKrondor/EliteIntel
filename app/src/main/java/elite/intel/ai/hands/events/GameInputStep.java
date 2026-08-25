@@ -1,6 +1,7 @@
 package elite.intel.ai.hands.events;
 
 import java.util.Objects;
+import java.util.function.BooleanSupplier;
 
 /**
  * One semantic game input step inside a {@link GameInputSequenceEvent}.
@@ -15,7 +16,8 @@ public final class GameInputStep {
         BINDING_UP,
         RAW_KEY,
         TEXT,
-        DELAY
+        DELAY,
+        WAIT_UNTIL
     }
 
     private final Type type;
@@ -25,14 +27,29 @@ public final class GameInputStep {
     private final int modifierKeyCode;
     private final String text;
     private final int durationMs;
+    /**
+     * Condition a WAIT_UNTIL step blocks on; null for every other type.
+     */
+    private final BooleanSupplier condition;
+    /**
+     * What the WAIT_UNTIL condition means, for the timeout log line; null for every other type.
+     */
+    private final String conditionDescription;
 
     private GameInputStep(Type type, String bindingId, int keyCode, String text, int durationMs, int modifierKeyCode) {
+        this(type, bindingId, keyCode, text, durationMs, modifierKeyCode, null, null);
+    }
+
+    private GameInputStep(Type type, String bindingId, int keyCode, String text, int durationMs, int modifierKeyCode,
+                          BooleanSupplier condition, String conditionDescription) {
         this.type = Objects.requireNonNull(type, "type");
         this.bindingId = bindingId;
         this.keyCode = keyCode;
         this.modifierKeyCode = modifierKeyCode;
         this.text = text;
         this.durationMs = durationMs;
+        this.condition = condition;
+        this.conditionDescription = conditionDescription;
     }
 
     /**
@@ -107,6 +124,23 @@ public final class GameInputStep {
         return new GameInputStep(Type.DELAY, null, 0, null, requireNonNegative(delayMs, "delayMs"), 0);
     }
 
+    /**
+     * Blocks the sequence until the game itself reports the expected state, or until {@code timeoutMs} elapses.
+     * <p>
+     * This is the step for "the game must have caught up before the next keystroke means anything". A fixed
+     * {@link #delay(int)} guesses how long the machine needs; this one asks. A timeout is not an error - the
+     * executor logs it and carries on, exactly as the fixed delay always did.
+     *
+     * @param description what the sequence is waiting for, in plain words, for the timeout log line
+     * @param condition   evaluated repeatedly on the input worker; must be cheap and must not send input
+     * @param timeoutMs   how long to wait before giving up and continuing the sequence
+     */
+    public static GameInputStep waitUntil(String description, BooleanSupplier condition, int timeoutMs) {
+        return new GameInputStep(Type.WAIT_UNTIL, null, 0, null, requireNonNegative(timeoutMs, "timeoutMs"), 0,
+                Objects.requireNonNull(condition, "condition"),
+                requireDescription(description));
+    }
+
     public Type getType() {
         return type;
     }
@@ -132,8 +166,26 @@ public final class GameInputStep {
         return durationMs;
     }
 
+    /**
+     * Returns the condition of a WAIT_UNTIL step, or null for every other type.
+     */
+    public BooleanSupplier getCondition() {
+        return condition;
+    }
+
+    /**
+     * Returns the plain-words meaning of a WAIT_UNTIL condition, or null for every other type.
+     */
+    public String getConditionDescription() {
+        return conditionDescription;
+    }
+
+    /**
+     * Steps that drive the game earn the executor's post-input pacing delay. Steps that only wait have
+     * already spent their time and must not have more added on top.
+     */
     public boolean isInputProducing() {
-        return type != Type.DELAY;
+        return type != Type.DELAY && type != Type.WAIT_UNTIL;
     }
 
     private static String requireBindingId(String bindingId) {
@@ -141,6 +193,13 @@ public final class GameInputStep {
             throw new IllegalArgumentException("bindingId must not be blank");
         }
         return bindingId;
+    }
+
+    private static String requireDescription(String description) {
+        if (description == null || description.isBlank()) {
+            throw new IllegalArgumentException("description must not be blank");
+        }
+        return description;
     }
 
     private static int requireNonNegative(int value, String name) {

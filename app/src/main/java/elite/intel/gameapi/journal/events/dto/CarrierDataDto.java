@@ -15,7 +15,22 @@ public class CarrierDataDto implements ToJsonConvertible {
     private Long systemAddress;
     private long totalBalance;
     private long reserveBalance;
+    /**
+     * Spare tritium in the carrier's CARGO, as opposed to {@link #fuelSupply} in its tank. Tonnes the
+     * commander can still top the tank up with, so the route calculator counts it as range in hand.
+     * <p>
+     * The game never states it: a carrier's cargo reaches a third-party tool only through the goods its
+     * owner has put on the market. So this is the carrier's own tritium line where the market shows one,
+     * corrected by every tonne we watch move, and whatever the commander last told us where it does not -
+     * see {@code CarrierHoldLedger} and {@code SetCarrierFuelReserveCommand}.
+     */
     private int fuelReserve;
+    /**
+     * The game's own id for this carrier, which is also its MarketID. Zero until the commander opens its
+     * management panel, since {@code CarrierStats} is the only event that both names the carrier and says
+     * which one it is.
+     */
+    private long carrierId;
     private String callSign;
     private String carrierName;
     private String carrierType;
@@ -46,6 +61,15 @@ public class CarrierDataDto implements ToJsonConvertible {
     private boolean fuelSupplyMeasured = false;
     private double x,y,z;
     private final Map<String, Integer> commodity = new HashMap<>();
+    /**
+     * Whether {@link #commodity} is an account of the hold or merely an empty map we have never filled.
+     * <p>
+     * The two are not the same answer and cannot be told apart by looking: a carrier we have emptied holds
+     * nothing, and a carrier we have never looked at holds nothing we know of. The first must override the
+     * old market snapshot; the second must defer to it. Absent from an older saved carrier, so it reads
+     * false there - which is the safe way round.
+     */
+    private boolean holdTracked = false;
 
     public long getTotalBalance() {
         return totalBalance;
@@ -61,6 +85,14 @@ public class CarrierDataDto implements ToJsonConvertible {
 
     public void setReserveBalance(long reserveBalance) {
         this.reserveBalance = reserveBalance;
+    }
+
+    public long getCarrierId() {
+        return carrierId;
+    }
+
+    public void setCarrierId(long carrierId) {
+        this.carrierId = carrierId;
     }
 
     public String getCallSign() {
@@ -300,8 +332,35 @@ public class CarrierDataDto implements ToJsonConvertible {
         this.x = x;
     }
 
+    /**
+     * What the carrier is holding, keyed by bare journal symbol - seeded from its market screen and kept
+     * level by every {@code CargoTransfer} since. See {@code CarrierHoldLedger} for why it is maintained
+     * rather than read fresh, and for what it still cannot see.
+     */
     public Map<String, Integer> getCommodity() {
         return commodity == null ? new HashMap<>() : commodity;
+    }
+
+    /**
+     * Replaces the whole ledger with a fresh account of the hold, and marks it an account rather than a
+     * blank.
+     * <p>
+     * Deliberately not {@link #addCommodity} in a loop: that is for a MOVEMENT of cargo, and it reads a
+     * tritium line as fuel taken aboard. Re-reading the same market screen twice would then double the
+     * carrier's fuel reserve, so a wholesale account has to be a different verb from a delta.
+     */
+    public void replaceCommodities(Map<String, Integer> stock) {
+        this.commodity.clear();
+        this.holdTracked = true;
+        if (stock == null) return;
+        for (Map.Entry<String, Integer> entry : stock.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null || entry.getValue() <= 0) continue;
+            this.commodity.put(entry.getKey().toLowerCase(), entry.getValue());
+        }
+    }
+
+    public boolean isHoldTracked() {
+        return holdTracked;
     }
 
     public void addCommodity(String commodity, Integer amount) {
@@ -313,10 +372,6 @@ public class CarrierDataDto implements ToJsonConvertible {
             this.commodity.put(c, existingAmount);
         } else {
             this.commodity.put(c, amount);
-        }
-
-        if("tritium".equalsIgnoreCase(commodity)) {
-            this.fuelReserve = this.fuelReserve + amount;
         }
     }
 
@@ -341,6 +396,17 @@ public class CarrierDataDto implements ToJsonConvertible {
 
     public void setFuelReserve(int fuelReserve) {
         this.fuelReserve = fuelReserve;
+    }
+
+    /**
+     * Moves the spare-tritium figure by cargo we watched come aboard or leave, never below zero.
+     * <p>
+     * Separate from {@link #setFuelReserve} because the two answer different questions: that one is a
+     * statement of how much is there, this one a correction by how much it changed. Only a movement we
+     * actually saw may correct a figure the commander may have set by hand.
+     */
+    public void adjustFuelReserve(int tons) {
+        this.fuelReserve = Math.max(0, this.fuelReserve + tons);
     }
 
     /**

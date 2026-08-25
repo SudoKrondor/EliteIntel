@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -44,6 +45,11 @@ class DiagnosticsBundleTest {
         Path appLog = write(logs, "elite-intel.log", "app log line");
         write(logs, "elite-intel_2026-08-04_1.log", "previous session");
         write(journalDir, "Journal.2026-08-04T100000.01.log", "{\"event\":\"Fileheader\"}");
+        // The game's live state files sit beside the journal, and a complete bundle carries them too.
+        for (String state : List.of("Backpack.json", "Cargo.json", "Market.json", "ModulesInfo.json",
+                "NavRoute.json", "Outfitting.json", "ShipLocker.json", "Shipyard.json", "Status.json")) {
+            write(journalDir, state, "{}");
+        }
         write(bindingsDir, "Custom.4.0.binds", "<Root/>");
         Path zip = tmp.resolve("bundle.zip");
 
@@ -57,6 +63,7 @@ class DiagnosticsBundleTest {
         assertEquals("previous session", entries.get("elite-intel_2026-08-04_1.log"));
         assertEquals("{\"event\":\"Fileheader\"}", entries.get("Journal.2026-08-04T100000.01.log"));
         assertEquals("<Root/>", entries.get("Custom.4.0.binds"));
+        assertEquals("{}", entries.get("Status.json"));
     }
 
     /**
@@ -215,5 +222,61 @@ class DiagnosticsBundleTest {
         assertTrue(result.included().contains(DiagnosticsBundle.SESSION_LOG_ENTRY));
         assertTrue(result.omitted().stream().anyMatch(line -> line.startsWith("journal")),
                 () -> "omitted: " + result.omitted());
+    }
+
+    /**
+     * The journal says what HAPPENED; these say what IS. Half the questions a bug report raises are answered
+     * by comparing the two - what is in the hold right now against the market on the pad.
+     */
+    @Test
+    void theGamesLiveStateFilesTravelWithTheJournal(@TempDir Path tmp) throws IOException {
+        Path journalDir = Files.createDirectory(tmp.resolve("journal-state"));
+        Files.writeString(journalDir.resolve("Journal.2026-08-24T05.log"), "{}");
+        Files.writeString(journalDir.resolve("Status.json"), "{\"Flags\":16777224}");
+        Files.writeString(journalDir.resolve("Cargo.json"), "{\"Count\":640}");
+        Files.writeString(journalDir.resolve("Market.json"), "{\"MarketID\":4278665219}");
+
+        Path zip = tmp.resolve("state.zip");
+        DiagnosticsBundle.Result result = DiagnosticsBundle.writeTo(zip,
+                new DiagnosticsBundle.Sources("1.1.0", "log", null, journalDir, null));
+
+        Map<String, String> entries = unzip(zip);
+        assertEquals("{\"Flags\":16777224}", entries.get("Status.json"));
+        assertEquals("{\"Count\":640}", entries.get("Cargo.json"));
+        assertEquals("{\"MarketID\":4278665219}", entries.get("Market.json"));
+        assertTrue(result.included().containsAll(List.of("Status.json", "Cargo.json", "Market.json")));
+    }
+
+    /**
+     * One line for the lot. A Horizons commander who has never opened a shipyard is missing four of these
+     * perfectly normally, and a line each would make a healthy bundle read as a broken one.
+     */
+    @Test
+    void stateFilesTheGameNeverWroteAreReportedOnASingleLine(@TempDir Path tmp) throws IOException {
+        Path journalDir = Files.createDirectory(tmp.resolve("journal-sparse"));
+        Files.writeString(journalDir.resolve("Journal.2026-08-24T05.log"), "{}");
+        Files.writeString(journalDir.resolve("Status.json"), "{}");
+
+        Path zip = tmp.resolve("sparse.zip");
+        DiagnosticsBundle.Result result = DiagnosticsBundle.writeTo(zip,
+                new DiagnosticsBundle.Sources("1.1.0", "log", null, journalDir, null));
+
+        List<String> aboutState = result.omitted().stream().filter(line -> line.startsWith("game state")).toList();
+        assertEquals(1, aboutState.size(), aboutState.toString());
+        assertTrue(aboutState.getFirst().contains("Market.json"));
+        assertFalse(aboutState.getFirst().contains("Status.json"), "Status.json was there");
+    }
+
+    /**
+     * The journal entry has already said there is no directory; saying it twice tells no one anything.
+     */
+    @Test
+    void noJournalDirectoryMeansNoSecondComplaintAboutStateFiles(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("nodir.zip");
+        DiagnosticsBundle.Result result = DiagnosticsBundle.writeTo(zip,
+                new DiagnosticsBundle.Sources("1.1.0", "log", null, null, null));
+
+        assertTrue(result.omitted().stream().noneMatch(line -> line.startsWith("game state")),
+                result.omitted().toString());
     }
 }

@@ -1,35 +1,20 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.gameapi.carrier.CarrierHoldLedger;
 import elite.intel.gameapi.journal.events.CargoTransferEvent;
-import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
-import elite.intel.session.PlayerSession;
 
-import java.util.List;
-
+/**
+ * Keeps the carrier's hold level as the commander loads and unloads it.
+ * <p>
+ * The work is {@link CarrierHoldLedger}'s, including deciding WHICH carrier the move belongs to - this
+ * event names no station, and a transfer made planetside is an SRV's, not a carrier's.
+ */
 public class CargoTransferSubscriber {
-
-    private PlayerSession playerSession = PlayerSession.getInstance();
 
     @Subscribe
     public void onCargoTransfer(CargoTransferEvent event) {
-        Thread.ofVirtual().start(() -> {
-            List<CargoTransferEvent.Transfer> transfers = event.getTransfers();
-            CarrierDataDto carrierData = playerSession.getFleetCarrierData();
-
-            for (CargoTransferEvent.Transfer transfer : transfers) {
-                String commodity = transfer.getType();
-                int amount = transfer.getCount();
-
-                if ("tocarrier".equalsIgnoreCase(transfer.getDirection())) {
-                    carrierData.addCommodity(commodity, amount);
-                }
-
-                if ("toship".equalsIgnoreCase(transfer.getDirection())) {
-                    carrierData.removeCommodity(commodity, amount);
-                }
-            }
-            playerSession.setFleetCarrierData(carrierData);
-        });
+        if (event == null) return;
+        Thread.ofVirtual().start(() -> CarrierHoldLedger.transferred(event.getTransfers()));
     }
 }

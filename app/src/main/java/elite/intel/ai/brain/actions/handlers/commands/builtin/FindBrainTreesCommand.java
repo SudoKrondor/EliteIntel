@@ -90,17 +90,16 @@ public final class FindBrainTreesCommand implements IntelCommand {
         StellarObjectSearchResultDto.Result result = brainTreeManager.findNearestWithMaterial(material, coordinates.x(), coordinates.y(), coordinates.z());
         if (result == null) {
             return StringUtls.localizedResponse("handler.brainTrees.notFound");
-        } else {
-            double distance = calculateDistance(coordinates, result.getX(), result.getY(), result.getZ());
-            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.brainTrees.found", result.getSystemName(), distance, result.getBodyName()), false);
-            RoutePlotter plotter = new RoutePlotter();
-            plotter.plotRoute(result.getSystemName());
-            ReminderManager.getInstance().setReminder(
-                    StringUtls.localizedResponse("handler.brainTrees.reminder", result.getSystemName(), result.getBodyName()),
-                    result.getSystemName()
-            );
         }
-        return null;
+        double distance = calculateDistance(coordinates, result.getX(), result.getY(), result.getZ());
+        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.brainTrees.found", result.getSystemName(), distance, result.getBodyName()), false);
+        ReminderManager.getInstance().setReminder(
+                StringUtls.localizedResponse("handler.brainTrees.reminder", result.getSystemName(), result.getBodyName()),
+                result.getSystemName()
+        );
+        // The find itself was spoken as filler above, so the plotter's note is the only thing left to say -
+        // and it says something only when no new route was plotted.
+        return new RoutePlotter().plotRouteAnd(null, result.getSystemName());
     }
 
     private double calculateDistance(LocationDao.Coordinates coordinates, double x, double y, double z) {

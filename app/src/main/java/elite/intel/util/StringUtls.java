@@ -173,6 +173,12 @@ public class StringUtls {
     }
 
     private static String spokenNameOrCommander(String playerName, Language language) {
+        // A greeting is an address like any other. With addressing off the name is simply left out and the
+        // comma that carried it is tidied away in sanitizeTts, so "Good morning, Commander!" becomes
+        // "Good morning!" rather than "Good morning, !".
+        if (Boolean.FALSE.equals(PlayerSession.getInstance().isAddressMeOn())) {
+            return "";
+        }
         if (language == Language.EN) {
             return asciiTtsNameOrCommander(playerName);
         }
@@ -287,9 +293,34 @@ public class StringUtls {
         s = s.replaceAll("[\\p{C}\\p{So}\\p{Sk}]+", " ")         // drop controls, emojis, and standalone symbols
                 .replaceAll("\\p{M}+", "");                      // drop stray combining marks (e.g. IPA U+0329) NFC couldn't compose; precomposed accents are \p{L} and survive
         if (hardenForEspeak) s = s.replaceAll("\\.{2,}", " ");  // "..." → space (espeak-ng stof crash on multi-dot sequences)
-        s = personalizeGenericAddress(s.replaceAll("\\s{2,}", " ")) // collapse repeated spaces
+        s = tidyAddressPunctuation(personalizeGenericAddress(s.replaceAll("\\s{2,}", " "))) // collapse repeated spaces
                 .trim();
         return s;
+    }
+
+    /**
+     * Closes the gap an absent address leaves in a sentence written around one.
+     * <p>
+     * The templates carry the comma themselves - "Welcome back aboard, {0}." , "{0}, I detected a mission" -
+     * so a commander who has turned addressing off would otherwise hear "Welcome back aboard, ." and a
+     * sentence opening on a comma. These are no-ops on text that never lost anything, which is why they run
+     * unconditionally rather than behind the setting.
+     */
+    private static String tidyAddressPunctuation(String text) {
+        // An address at the head of the sentence takes the capital with it - "Commander, fuel is low"
+        // becomes "fuel is low" - so the word behind it is raised into the opening it inherited.
+        boolean openedOnItsAddress = text.stripLeading().startsWith(",");
+        String tidied = text.replaceAll("^[\\s,]+", "")   // sentence left starting on its address comma
+                .replaceAll("\\s+,", ",")                   // space stranded before the comma
+                .replaceAll(",\\s*(?=[.!?])", "")           // comma left leaning on the full stop
+                .replaceAll(",\\s*,", ",")                  // two commas that used to have an address between them
+                .replaceAll("\\s{2,}", " ");
+        return openedOnItsAddress ? capitalizeFirstLetter(tidied) : tidied;
+    }
+
+    private static String capitalizeFirstLetter(String text) {
+        if (text.isEmpty()) return text;
+        return Character.toUpperCase(text.charAt(0)) + text.substring(1);
     }
 
     /**
@@ -310,7 +341,10 @@ public class StringUtls {
         Matcher matcher = GENERIC_ADDRESS.matcher(text);
         StringBuilder personalized = new StringBuilder();
         while (matcher.find()) {
-            String form = " " + PlayerSession.getInstance().getVariablePlayerName();
+            // Empty when the commander has asked not to be addressed: the match swallowed the comma and the
+            // space in front of it, so replacing it with nothing removes the whole address cleanly.
+            String drawn = PlayerSession.getInstance().getVariablePlayerName();
+            String form = drawn.isEmpty() ? "" : " " + drawn;
             matcher.appendReplacement(personalized, Matcher.quoteReplacement(form));
         }
         matcher.appendTail(personalized);

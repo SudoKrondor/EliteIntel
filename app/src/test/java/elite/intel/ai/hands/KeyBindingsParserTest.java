@@ -112,4 +112,57 @@ class KeyBindingsParserTest {
         assertNotNull(binding, "the keyboard secondary should still be executable");
         assertFalse(binding.hold, "the joystick primary's hold must not carry over to the keyboard slot");
     }
+
+    @Test
+    void anActionWithAKeyboardSlotIsNotReportedAsHavingNoKeyboardBinding() throws Exception {
+        // The commander's real GalaxyMapOpen: a chorded keyboard primary and an empty secondary. The old
+        // condition warned for every action that simply had both slot elements, so this one was reported as
+        // unbound while the executor was pressing Shift+K for it in the same log.
+        File file = bindsFile("""
+                	<GalaxyMapOpen>
+                		<Primary Device="Keyboard" Key="Key_K">
+                			<Modifier Device="Keyboard" Key="Key_LeftShift" />
+                		</Primary>
+                		<Secondary Device="{NoDevice}" Key="" />
+                	</GalaxyMapOpen>
+                """);
+
+        KeyBindingsParser.ReadOnlyBindingSlots slots =
+                KeyBindingsParser.getInstance().parseReadOnlyBindingSlots(file).get("GalaxyMapOpen");
+
+        assertTrue(slots.primary().keyboardUsable(), "a chorded keyboard primary is pressable");
+        assertFalse(KeyBindingsParser.isBoundToNonKeyboardDeviceOnly(slots.primary(), slots.secondary()));
+    }
+
+    @Test
+    void anActionBoundOnlyToAGamepadIsReportedAsHavingNoKeyboardBinding() throws Exception {
+        File file = bindsFile("""
+                	<ShipSpotLightToggle>
+                		<Primary Device="{NoDevice}" Key="" />
+                		<Secondary Device="045E02E3" Key="GamePad_LBumper" />
+                	</ShipSpotLightToggle>
+                """);
+
+        KeyBindingsParser.ReadOnlyBindingSlots slots =
+                KeyBindingsParser.getInstance().parseReadOnlyBindingSlots(file).get("ShipSpotLightToggle");
+
+        assertTrue(KeyBindingsParser.isBoundToNonKeyboardDeviceOnly(slots.primary(), slots.secondary()),
+                "bound to something EliteIntel cannot press - that is the case worth a warning");
+    }
+
+    @Test
+    void anActionBoundNowhereIsLeftToTheMissingBindingCheck() throws Exception {
+        File file = bindsFile("""
+                	<ShipSpotLightToggle>
+                		<Primary Device="{NoDevice}" Key="" />
+                		<Secondary Device="{NoDevice}" Key="" />
+                	</ShipSpotLightToggle>
+                """);
+
+        KeyBindingsParser.ReadOnlyBindingSlots slots =
+                KeyBindingsParser.getInstance().parseReadOnlyBindingSlots(file).get("ShipSpotLightToggle");
+
+        assertFalse(KeyBindingsParser.isBoundToNonKeyboardDeviceOnly(slots.primary(), slots.secondary()),
+                "an unassigned action is the missing-binding check's business, not this warning's");
+    }
 }

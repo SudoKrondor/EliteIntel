@@ -5,6 +5,7 @@ import elite.intel.db.dao.ShipScansDao;
 import elite.intel.db.managers.*;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.carrier.CarrierStatsReading;
 import elite.intel.gameapi.data.FsdTarget;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.journal.events.CarrierStatsEvent;
@@ -623,6 +624,36 @@ public class PlayerSession {
         });
     }
 
+    public Boolean isPlanetaryApproachAnnouncementOn() {
+        return Database.withDao(PlayerDao.class, dao -> dao.get().isPlanetaryApproachAnnouncementOn());
+    }
+
+    public void setPlanetaryApproachAnnouncementOn(Boolean planetaryApproachAnnouncementOn) {
+        Database.withDao(PlayerDao.class, dao -> {
+            PlayerDao.Player player = dao.get();
+            player.setPlanetaryApproachAnnouncementOn(planetaryApproachAnnouncementOn);
+            dao.save(player);
+            return Void.class;
+        });
+    }
+
+    /**
+     * Whether the commander wants to be addressed at all. On by default; when off, every form of address
+     * is left out rather than swapped for a different one - see {@link #getVariablePlayerName()}.
+     */
+    public Boolean isAddressMeOn() {
+        return Database.withDao(PlayerDao.class, dao -> dao.get().isAddressMeOn());
+    }
+
+    public void setAddressMeOn(Boolean addressMeOn) {
+        Database.withDao(PlayerDao.class, dao -> {
+            PlayerDao.Player player = dao.get();
+            player.setAddressMeOn(addressMeOn);
+            dao.save(player);
+            return Void.class;
+        });
+    }
+
     public void addAnnouncedGenusPayment(String genus) {
         genusAnouncements.put(genus, true);
     }
@@ -749,8 +780,17 @@ public class PlayerSession {
         shipScans.clear();
     }
 
+    /**
+     * Files a carrier reading under the carrier it is about. The two live in different tables, and sending
+     * a squadron carrier's panel to the fleet carrier's row overwrote one ship's callsign, tank and
+     * balances with another's - see {@link CarrierStatsReading}.
+     */
     public void setCarrierStats(CarrierStatsEvent event) {
-        fleetCarriers.setCarrierStats(event);
+        if (CarrierStatsReading.isSquadron(event)) {
+            squadronCarriers.setCarrierStats(event);
+        } else {
+            fleetCarriers.setCarrierStats(event);
+        }
     }
 
 
@@ -825,7 +865,18 @@ public class PlayerSession {
      * One of the ways to address the commander - name, highest military rank or honorific - drawn at
      * random, so the companion varies how it speaks to them.
      */
+    /**
+     * One of the commander's forms of address - name, highest military rank, or honorific - drawn afresh
+     * each time, or the empty string when he has asked not to be addressed.
+     * <p>
+     * Empty rather than a neutral "Commander": the setting is not a preference between forms, it is not
+     * wanting one at all. Callers paste the result into a sentence, so the punctuation left behind by an
+     * absent address is tidied where the text is prepared for speech.
+     */
     public String getVariablePlayerName() {
+        if (Boolean.FALSE.equals(isAddressMeOn())) {
+            return "";
+        }
         // WHY: the speech-friendly alternative name replaces the in-game one rather than joining it as a
         // fourth form; listing both gave the name two of the four draws and made rank and honorific rare.
         String alternativeName = trimToNull(getAlternativeName());

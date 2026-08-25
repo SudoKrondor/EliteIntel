@@ -1,5 +1,6 @@
 package elite.intel.gameapi.journal.events.dto;
 
+import elite.intel.gameapi.StationName;
 import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
 import elite.intel.gameapi.journal.events.SAASignalsFoundEvent;
 import elite.intel.gameapi.search.edsm.dto.*;
@@ -271,10 +272,12 @@ public class LocationDto implements ToJsonConvertible {
     }
 
     /**
-     * Null-safe "is this location the named station"; an unknown station name is never a match.
+     * Null-safe "is this location the named station"; an unknown station name is never a match. Compares
+     * through {@link #getStationName()} so the answer cannot disagree with the name we show.
      */
     public boolean isAtStation(String station) {
-        return stationName != null && station != null && stationName.equalsIgnoreCase(station);
+        String name = getStationName();
+        return name != null && station != null && name.equalsIgnoreCase(station);
     }
 
     public void setStarName(String starName) {
@@ -382,8 +385,13 @@ public class LocationDto implements ToJsonConvertible {
         this.partialBioSamples = partialBioSamples;
     }
 
+    /**
+     * The station as a human names it. Rows stored before the journal's decorated form was normalised
+     * still hold it - the location row is where the depot card and "docked at" read their name from -
+     * so the peel happens here too rather than only at the event.
+     */
     public String getStationName() {
-        return stationName;
+        return StationName.display(stationName);
     }
 
     public void setStationName(String stationName) {

@@ -11,6 +11,7 @@ import elite.intel.gameapi.journal.events.MarketSellEvent;
 import elite.intel.gameapi.search.spansh.station.marketstation.TradeStopDto;
 import elite.intel.gameapi.search.spansh.traderoute.TradeCommodity;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.TTSFriendlyNumberConverter;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.ToJsonConvertible;
 
@@ -147,19 +148,26 @@ public class MarketSellEventSubscriber {
             // end at the same station, two of them took legs the commander had not flown yet.
             retireFlownLeg();
 
+            // Both figures are spelled out before they reach the sentence. A hold sold off a carrier is
+            // four and five digits - 1320 tonnes for 45,132,120 credits - and passing those as numbers let
+            // MessageFormat group them by locale, so the German and Italian voices were handed "1.320" and
+            // "45.132.120" to read. The amount is hedged the same way every other credit figure in the app
+            // is; the tonnage is not, because a count is something the commander can check.
             if (pending.size() == 1) {
                 MarketSellEvent e = pending.getFirst();
                 EventNarrator.say(
                         localizedEvent(
                                 "event.market.sold.units",
-                                e.getCount(),
+                                TTSFriendlyNumberConverter.formatCountForSpeech(e.getCount()),
                                 FuzzySearch.localizedCommodityName(e.getType()),
-                                e.getTotalSale()
+                                TTSFriendlyNumberConverter.formatCreditsForSpeech(e.getTotalSale())
                         )
                 );
             } else {
                 long total = pending.stream().mapToLong(MarketSellEvent::getTotalSale).sum();
-                EventNarrator.say(localizedEvent("event.market.sold.multiple", pending.size(), total));
+                EventNarrator.say(localizedEvent("event.market.sold.multiple",
+                        TTSFriendlyNumberConverter.formatCountForSpeech(pending.size()),
+                        TTSFriendlyNumberConverter.formatCreditsForSpeech(total)));
             }
 
             pending.clear();

@@ -2,6 +2,7 @@ package elite.intel.gameapi.gamestate.dtos;
 
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import elite.intel.gameapi.StationName;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.ToJsonConvertible;
 import elite.intel.util.yaml.ToYamlConvertable;
@@ -912,8 +913,11 @@ public class GameEvents {
             return marketID;
         }
 
+        /**
+         * The station as a human names it - see {@link StationName} for the colonisation-ship shape.
+         */
         public String getStationName() {
-            return stationName;
+            return StationName.display(stationName);
         }
 
         public String getStarSystem() {
@@ -1020,8 +1024,9 @@ public class GameEvents {
             return marketID;
         }
 
+        /** The station as a human names it - see {@link StationName} for the colonisation-ship shape. */
         public String getStationName() {
-            return stationName;
+            return StationName.display(stationName);
         }
 
         public String getStarSystem() {
@@ -1465,8 +1470,9 @@ public class GameEvents {
             return marketID;
         }
 
+        /** The station as a human names it - see {@link StationName} for the colonisation-ship shape. */
         public String getStationName() {
-            return stationName;
+            return StationName.display(stationName);
         }
 
         public String getStationType() {

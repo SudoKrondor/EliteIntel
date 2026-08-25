@@ -142,15 +142,68 @@ public final class SpanshCommoditySearch {
             String commodityToFind, String refStarSystem, int maxDistanceLy,
             TradeRouteSearchCriteria profile, boolean returnClosest, int wantedUnits) {
 
+        // Our own sightings are keyed by the game's symbol, not by the English name Spansh matches on.
+        String symbol = FuzzySearch.commoditySymbol(commodityToFind);
+
+        return climb(commodityToFind, refStarSystem, maxDistanceLy, profile, returnClosest, wantedUnits,
+                stations -> correctWithFirstHandData(
+                        rank(stations, commodityToFind, returnClosest),
+                        symbol, StationMarketsManager.getInstance()::lastSeen));
+    }
+
+    /**
+     * The markets that can fill the most of a shopping list, fullest first.
+     * <p>
+     * <b>Why this needs no second request.</b> The {@code marketplace} filter decides which STATIONS come
+     * back, but every row Spansh returns already carries that station's entire market - see
+     * {@link TradeStationSearchResultDto.StationResult#getMarket()}, and the page size that pays for it.
+     * {@link #search} throws all of it away except the one commodity it was asked about. Cross-referencing
+     * the rest of the list against what is already in hand costs nothing on the wire, and needs no guess
+     * about whether Spansh ANDs several {@code marketplace} filters - a guess that would fail by silently
+     * matching nothing rather than by erroring.
+     * <p>
+     * <b>Why the list is still anchored on one good.</b> The first entry drives the Spansh filter, so every
+     * candidate sells it; the rest are whatever those candidates happen to also stock. That is the right
+     * bias - the anchor is the reason for the trip, and a station that cannot supply it is no use however
+     * much else it has.
+     *
+     * @param wanted       what to buy and how much of each, in the caller's own priority order, anchor first
+     * @param holdCapacity tonnes the ship can carry; what the fill is measured against
+     * @return one entry per candidate market, ordered by how much of the hold it can fill
+     */
+    public static List<BasketResult> searchBasket(
+            List<WantedCommodity> wanted, String refStarSystem, int maxDistanceLy,
+            TradeRouteSearchCriteria profile, boolean returnClosest, int holdCapacity) {
+
+        List<WantedCommodity> list = mergeDuplicates(wanted);
+        if (list.isEmpty()) return List.of();
+        WantedCommodity anchor = list.getFirst();
+
+        return climb(anchor.commodity(), refStarSystem, maxDistanceLy, profile, returnClosest,
+                anchor.unitsWanted(),
+                stations -> rankBaskets(stations, list, holdCapacity, returnClosest,
+                        StationMarketsManager.getInstance()::lastSeen));
+    }
+
+    /**
+     * Runs the escalation ladder for one anchor commodity, handing each page to {@code collect} and stopping
+     * at the first rung that yields anything.
+     * <p>
+     * Shared by {@link #search} and {@link #searchBasket} so the two cannot drift: the ladder IS the search's
+     * behaviour - which radius is tried when, when a part load becomes acceptable, when a fleet carrier is
+     * finally considered - and a second copy of it would be a second set of answers to the same question.
+     */
+    private static <T> List<T> climb(
+            String anchorCommodity, String refStarSystem, int maxDistanceLy, TradeRouteSearchCriteria profile,
+            boolean returnClosest, int wantedUnits,
+            java.util.function.Function<List<TradeStationSearchResultDto.StationResult>, List<T>> collect) {
+
         // A hold's worth, or the commander flies out for a part load. Guarded because a floor of zero would
         // also match a market that lists the good and has none.
         int holdFull = Math.max(1, profile.getMaxCargo());
         int wanted = wantedUnits <= WANT_FULL_HOLD ? holdFull : Math.min(wantedUnits, holdFull);
 
-        // Our own sightings are keyed by the game's symbol, not by the English name Spansh matches on.
-        String symbol = FuzzySearch.commoditySymbol(commodityToFind);
-
-        List<CommoditySearchResult> markets = List.of();
+        List<T> markets = List.of();
         List<Attempt> ladder = attempts(wanted, maxDistanceLy);
         for (int i = 0; i < ladder.size(); i++) {
             Attempt attempt = ladder.get(i);
@@ -161,13 +214,11 @@ public final class SpanshCommoditySearch {
             if (i > 0) {
                 announceEscalation(ladder.get(i - 1), attempt);
             }
-            markets = correctWithFirstHandData(
-                    marketsSelling(attempt, commodityToFind, refStarSystem, profile, returnClosest),
-                    symbol, StationMarketsManager.getInstance()::lastSeen);
+            markets = collect.apply(stationsSelling(attempt, anchorCommodity, refStarSystem, profile, returnClosest));
             if (!markets.isEmpty()) {
                 break;
             }
-            log.debug("Nothing sells {} for {}; widening", commodityToFind, attempt);
+            log.debug("Nothing sells {} for {}; widening", anchorCommodity, attempt);
         }
 
         GameEventBus.publish(new MissionCriticalAnnouncementEvent(
@@ -252,13 +303,14 @@ public final class SpanshCommoditySearch {
     }
 
     /**
-     * One search, over one set of station types, ranked.
+     * One search, over one set of station types. Returns the raw page, each row carrying that station's
+     * whole market.
      * <p>
-     * Separate from {@link #search} so the fallback is a second call with different types rather than a
+     * Separate from {@link #climb} so the fallback is a second call with different types rather than a
      * flag threaded through the request building - and so the announcement is published once, over the
      * markets the commander is actually being offered, not once per attempt.
      */
-    private static List<CommoditySearchResult> marketsSelling(
+    private static List<TradeStationSearchResultDto.StationResult> stationsSelling(
             Attempt attempt, String commodityToFind, String refStarSystem,
             TradeRouteSearchCriteria profile, boolean returnClosest) {
 
@@ -268,10 +320,7 @@ public final class SpanshCommoditySearch {
 
         TradeStationSearchResultDto response = StationSearchClient.getInstance().searchStations(criteria);
         // A failed POST, a search that times out and an empty body all arrive here as a null.
-        List<TradeStationSearchResultDto.StationResult> stations =
-                response == null || response.getResults() == null ? List.of() : response.getResults();
-
-        return rank(stations, commodityToFind, returnClosest);
+        return response == null || response.getResults() == null ? List.of() : response.getResults();
     }
 
     /**
@@ -303,7 +352,7 @@ public final class SpanshCommoditySearch {
         for (CommoditySearchResult market : markets) {
             Optional<StationMarketsManager.Sighting> seen =
                     sightings.lastSeen(market.getStarSystem(), market.getStationName(), commoditySymbol);
-            if (seen.isEmpty() || !isFresherThanSpansh(seen.get(), market)) {
+            if (seen.isEmpty() || !isFresherThanSpansh(seen.get(), market.getMarketUpdatedAt())) {
                 kept.add(market);
                 continue;
             }
@@ -322,8 +371,8 @@ public final class SpanshCommoditySearch {
      * Whether our own look at the market is the newer of the two claims. A Spansh row with no timestamp
      * at all loses: it is second-hand data of unknown age against something the game told us directly.
      */
-    private static boolean isFresherThanSpansh(StationMarketsManager.Sighting seen, CommoditySearchResult market) {
-        Instant spansh = parseInstant(market.getMarketUpdatedAt());
+    private static boolean isFresherThanSpansh(StationMarketsManager.Sighting seen, String marketUpdatedAt) {
+        Instant spansh = parseInstant(marketUpdatedAt);
         return spansh == null || seen.seenAt() == null || !seen.seenAt().isBefore(spansh);
     }
 
@@ -368,6 +417,138 @@ public final class SpanshCommoditySearch {
                         ? Comparator.comparingDouble(CommoditySearchResult::getDistanceFromPlayer)
                         : Comparator.comparingDouble(CommoditySearchResult::getPrice)));
         return results;
+    }
+
+    /**
+     * One line per commodity, keeping the caller's order and summing what the repeats asked for.
+     * <p>
+     * A mission stack is where this bites: two Haematite contracts are two rows on the board and one good at
+     * the market. Left as two lines, the allocator would sell the commander the same tonnes twice - once
+     * against each - and the card would list Haematite under itself.
+     */
+    static List<WantedCommodity> mergeDuplicates(List<WantedCommodity> wanted) {
+        if (wanted == null) return List.of();
+        LinkedHashMap<String, WantedCommodity> merged = new LinkedHashMap<>();
+        for (WantedCommodity want : wanted) {
+            if (want == null || want.commodity() == null || want.unitsWanted() <= 0) continue;
+            merged.merge(want.commodity().toLowerCase(Locale.ROOT), want,
+                    (first, repeat) -> new WantedCommodity(first.symbol(), first.commodity(),
+                            first.unitsWanted() + repeat.unitsWanted()));
+        }
+        return List.copyOf(merged.values());
+    }
+
+    /**
+     * Weighs every candidate market against the whole shopping list and puts the fullest trip first.
+     * <p>
+     * <b>Fill outranks proximity, but only inside the radius the ladder already settled on.</b> The page
+     * being ranked is the one {@link #search} would have picked its single answer from, so preferring a
+     * fuller market can never send the commander further than asking for the anchor alone would have. What
+     * it can do is turn nine round trips for sixty tonnes each into two.
+     * <p>
+     * Docking effort still breaks the tie ahead of distance or price: a station and an outpost that fill the
+     * hold equally are not equal work.
+     */
+    static List<BasketResult> rankBaskets(
+            List<TradeStationSearchResultDto.StationResult> stations, List<WantedCommodity> wanted,
+            int holdCapacity, boolean returnClosest, MarketSightings sightings) {
+
+        List<BasketResult> results = new ArrayList<>();
+        for (TradeStationSearchResultDto.StationResult station : stations) {
+            BasketResult basket = fill(station, wanted, holdCapacity, sightings);
+            if (basket != null) results.add(basket);
+        }
+
+        results.sort(Comparator.comparingInt(BasketResult::totalUnits).reversed()
+                .thenComparingInt(result -> DockingEffort.of(result.stationType()))
+                .thenComparing(returnClosest
+                        ? Comparator.comparingDouble(BasketResult::distanceFromPlayer)
+                        : Comparator.comparingDouble(result -> result.anchor().price())));
+        return results;
+    }
+
+    /**
+     * Loads one market into the hold: the anchor first, then whatever else on the list it stocks, until the
+     * hold is full or the list runs out.
+     * <p>
+     * Null when the market cannot supply the anchor at all. That is not the same as stocking nothing: a
+     * market with four of the small lines and none of the steel is not where this trip is going, because the
+     * steel is why the trip exists. The Spansh filter has already required the anchor, so this only rejects
+     * a market our own eyes have since emptied.
+     * <p>
+     * The list is walked in the caller's order rather than re-sorted here. Every tonne weighs the same, so
+     * any order fills the hold equally; what the order decides is WHICH goods get the last of the space, and
+     * only the caller knows that - a construction site wants its long pole, a mission stack wants whatever
+     * expires first.
+     */
+    private static BasketResult fill(
+            TradeStationSearchResultDto.StationResult station, List<WantedCommodity> wanted,
+            int holdCapacity, MarketSightings sightings) {
+
+        if (station.getMarket() == null || wanted.isEmpty()) return null;
+
+        Map<String, TradeStationSearchResultDto.StationResult.MarketEntry> onSale = new HashMap<>();
+        for (TradeStationSearchResultDto.StationResult.MarketEntry entry : station.getMarket()) {
+            if (entry.getCommodity() == null) continue;
+            onSale.putIfAbsent(entry.getCommodity().toLowerCase(Locale.ROOT), entry);
+        }
+
+        int remaining = Math.max(1, holdCapacity);
+        List<BasketResult.BasketLine> lines = new ArrayList<>();
+        for (WantedCommodity want : wanted) {
+            if (remaining <= 0) break;
+            BasketResult.BasketLine line = lineFor(station, onSale, want, remaining, sightings);
+            if (line == null) {
+                // The anchor is the first entry, and a market that cannot supply it is not a candidate.
+                if (lines.isEmpty()) return null;
+                continue;
+            }
+            lines.add(line);
+            remaining -= line.unitsToBuy();
+        }
+        if (lines.isEmpty()) return null;
+
+        return new BasketResult(
+                station.getSystemName(),
+                station.getName(),
+                station.getType(),
+                TradeStationSearchCriteria.StationType.CARRIER_TRADE_TYPES.contains(station.getType()),
+                station.getDistance() == null ? 0 : station.getDistance(),
+                station.getMarketUpdatedAt(),
+                lines);
+    }
+
+    /**
+     * One good at one market: what it costs, how much is really there, and how much of it fits.
+     * <p>
+     * The supply is corrected the same way {@link #correctWithFirstHandData} corrects the single-commodity
+     * answer, and for the same reason - Spansh is crowd-sourced, and {@code Market.json} is the game
+     * speaking. Applied per line rather than per station: one emptied shelf should cost the commander that
+     * good, not the whole trip.
+     */
+    private static BasketResult.BasketLine lineFor(
+            TradeStationSearchResultDto.StationResult station,
+            Map<String, TradeStationSearchResultDto.StationResult.MarketEntry> onSale,
+            WantedCommodity want, int roomLeft, MarketSightings sightings) {
+
+        if (want.commodity() == null || want.unitsWanted() <= 0) return null;
+        TradeStationSearchResultDto.StationResult.MarketEntry entry =
+                onSale.get(want.commodity().toLowerCase(Locale.ROOT));
+        if (entry == null || entry.getBuyPrice() == null || entry.getBuyPrice() <= 0) return null;
+
+        long supply = entry.getSupply() == null ? 0 : entry.getSupply();
+        if (want.symbol() != null) {
+            Optional<StationMarketsManager.Sighting> seen =
+                    sightings.lastSeen(station.getSystemName(), station.getName(), want.symbol());
+            if (seen.isPresent() && isFresherThanSpansh(seen.get(), station.getMarketUpdatedAt())) {
+                supply = seen.get().stock();
+            }
+        }
+        if (supply <= 0) return null;
+
+        int units = (int) Math.min(Math.min(want.unitsWanted(), roomLeft), supply);
+        if (units <= 0) return null;
+        return new BasketResult.BasketLine(want.symbol(), entry.getCommodity(), entry.getBuyPrice(), supply, units);
     }
 
     /**

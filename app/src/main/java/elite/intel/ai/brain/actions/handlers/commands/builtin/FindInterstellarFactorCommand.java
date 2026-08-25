@@ -67,11 +67,8 @@ public final class FindInterstellarFactorCommand implements IntelCommand {
 
         String stationName = results.getFirst().getStationName();
         String starName = results.getFirst().getSystemName();
-        RoutePlotter routePlotter = new RoutePlotter();
-        routePlotter.plotRoute(starName);
-
         String announcement = StringUtls.localizedResponse("handler.interstellarFactors.visit", stationName, starName);
         reminderManager.setReminder(announcement, starName, stationName, ReminderContact.INTERSTELLAR_FACTORS);
-        return announcement;
+        return new RoutePlotter().plotRouteAnd(announcement, starName);
     }
 }

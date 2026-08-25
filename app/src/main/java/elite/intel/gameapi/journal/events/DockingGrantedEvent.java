@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.events;
 
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import elite.intel.gameapi.StationName;
 import elite.intel.util.json.GsonFactory;
 
 import java.time.Duration;
@@ -25,7 +26,7 @@ public class DockingGrantedEvent extends BaseEvent {
         DockingGrantedEvent event = GsonFactory.getGson().fromJson(json, DockingGrantedEvent.class);
         this.landingPad = event.landingPad;
         this.marketID = event.marketID;
-        this.stationName = event.stationName;
+        this.stationName = StationName.display(event.stationName);
         this.stationType = event.stationType;
     }
 

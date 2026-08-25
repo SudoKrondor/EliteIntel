@@ -27,6 +27,13 @@ public interface StationMarketDao {
     StationMarketDao.StationMarket get(@BindBean StationMarketDao.StationMarket marketId);
 
 
+    /**
+     * The market with this id. The only unambiguous handle a port has: station names repeat across the
+     * galaxy, and a carrier's name is its callsign rather than anything the commander chose.
+     */
+    @SqlQuery("SELECT * FROM station_markets WHERE marketId = :marketId")
+    StationMarket findByMarketId(@Bind("marketId") long marketId);
+
     @SqlQuery("SELECT * FROM station_markets WHERE stationName = :stationName LIMIT 1")
     StationMarketDao.StationMarket findForStation(@Bind("stationName") String stationName);
 

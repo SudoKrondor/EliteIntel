@@ -5,6 +5,7 @@ import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.ai.mouth.subscribers.events.RadioTransmissionEvent;
 import elite.intel.db.managers.CargoHoldManager;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.StationName;
 import elite.intel.gameapi.journal.events.ReceiveTextEvent;
 import elite.intel.session.PlayerSession;
 
@@ -57,9 +58,12 @@ public class TransmissionReceivedSubscriber {
                 if (event.getMessage().contains("$STATION_docking_granted;")) return;
 
                 // The sender as the game names it for a human: From is a symbol like
-                // "$ShipName_Police_Federation;" for anything that is not a commander.
+                // "$ShipName_Police_Federation;" for anything that is not a commander, and a colonisation
+                // ship signs its traffic control "$EXT_PANEL_ColonisationShip; Schroter's Progress" with no
+                // localised sibling at all - so the fallback goes through StationName rather than straight
+                // to the mouth.
                 String source = event.getFromLocalised() == null || event.getFromLocalised().isBlank()
-                        ? event.getFrom()
+                        ? StationName.display(event.getFrom())
                         : event.getFromLocalised();
 
                 if (isStation) {

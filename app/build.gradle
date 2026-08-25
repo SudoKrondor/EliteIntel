@@ -52,6 +52,14 @@ dependencies {
     //Utils
     implementation 'org.apache.commons:commons-lang3:3.18.0'
 
+    // Spelling numbers out in words, per language (ICU RuleBasedNumberFormat, SPELLOUT).
+    // Every credit amount and cargo count is spoken as words rather than digits, because a TTS engine
+    // handed "45.132.120" reads the locale's group separator as a decimal point. The rules are the hard
+    // part - German inverts ("fuenfundvierzig"), French counts in twenties ("quatre-vingt-dix-sept"),
+    // Italian elides ("ventotto"), and the Slavic and Iberian hundreds are irregular words - so they come
+    // from CLDR rather than from us.
+    implementation 'com.ibm.icu:icu4j:76.1'
+
     //Look and Feel
     implementation 'com.formdev:flatlaf:3.5.2'
 

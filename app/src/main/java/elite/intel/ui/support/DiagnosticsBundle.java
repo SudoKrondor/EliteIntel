@@ -55,6 +55,22 @@ public final class DiagnosticsBundle {
     public static final String SESSION_LOG_ENTRY = "session.log";
 
     /**
+     * The game's own live state files, which it keeps beside the journal and rewrites in place.
+     * <p>
+     * WHY they belong in a bundle: the journal is a record of what HAPPENED, and these are the only
+     * statement of what IS - what is in the hold right now, what the market on the pad is selling, where the
+     * plotted route goes. Half the questions a report raises are answered by comparing the two, and until
+     * now every one of those had to be asked in a follow-up.
+     * <p>
+     * Absent files are ordinary rather than suspicious: {@code Backpack.json} and {@code ShipLocker.json}
+     * belong to Odyssey, and the game writes {@code Market.json}, {@code Outfitting.json} and
+     * {@code Shipyard.json} only once the commander has opened those screens.
+     */
+    static final List<String> GAME_STATE_FILES = List.of(
+            "Backpack.json", "Cargo.json", "Market.json", "ModulesInfo.json", "NavRoute.json",
+            "Outfitting.json", "ShipLocker.json", "Shipyard.json", "Status.json");
+
+    /**
      * How much of any one file the bundle will carry, and so how much it will hold in memory at once.
      * <p>
      * 32 MB is well above a normal journal or a rolled 1 MB log, and well below the size at which reading one
@@ -123,6 +139,7 @@ public final class DiagnosticsBundle {
             copy(zip, "application log", appLog(sources.appLog()), included, omitted);
             copy(zip, "previous application log", previousAppLog(sources.appLog()), included, omitted);
             copy(zip, "journal", newestJournal(sources.journalDir()), included, omitted);
+            copyGameState(zip, sources.journalDir(), included, omitted);
             copy(zip, "bindings", activeBindings(sources.bindingsDir()), included, omitted);
 
             writeEntry(zip, INFO_ENTRY, manifest(sources, included, omitted).getBytes(StandardCharsets.UTF_8));
@@ -152,6 +169,39 @@ public final class DiagnosticsBundle {
         } catch (IOException e) {
             log.warn("Diagnostics bundle: could not read {} ({}): {}", label, source.path(), e.toString());
             omitted.add(label + " - could not read " + source.path() + ": " + e);
+        }
+    }
+
+    /**
+     * Adds the game's live state files, and says in one line which of them the game had not written.
+     * <p>
+     * One line rather than nine: a Horizons commander who has never opened a shipyard is missing four of
+     * these perfectly normally, and listing each would make a healthy bundle read as a broken one. Which
+     * ones DID arrive is already answered by the manifest's included list.
+     * <p>
+     * Nothing is reported when there is no journal directory at all - the journal entry has already said so,
+     * and saying it twice tells no one anything.
+     * <p>
+     * These are read exactly as they are found. The game rewrites {@code Status.json} several times a
+     * second, so a bundle saved at the wrong instant can catch a half-written file; there is no lock to take
+     * and a truncated snapshot still says more than no snapshot.
+     */
+    private static void copyGameState(ZipOutputStream zip, @Nullable Path journalDir,
+                                      List<String> included, List<String> omitted) {
+        if (journalDir == null || !Files.isDirectory(journalDir)) return;
+
+        List<String> neverWritten = new ArrayList<>();
+        for (String name : GAME_STATE_FILES) {
+            Path file = journalDir.resolve(name);
+            if (Files.isRegularFile(file)) {
+                copy(zip, name, Collected.of(file), included, omitted);
+            } else {
+                neverWritten.add(name);
+            }
+        }
+        if (!neverWritten.isEmpty()) {
+            omitted.add("game state - not written by the game in " + journalDir + ": "
+                    + String.join(", ", neverWritten));
         }
     }
 

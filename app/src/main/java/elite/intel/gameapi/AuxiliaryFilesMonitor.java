@@ -16,8 +16,12 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * AuxiliaryFilesMonitor is responsible for monitoring specific auxiliary files in the Elite Dangerous game directory.
@@ -61,9 +65,30 @@ public class AuxiliaryFilesMonitor implements Runnable, ManagedService {
     }
 
     private  Path directory;
-    private final Set<String> monitoredFileSet = new HashSet<>(MONITORED_FILES);
     private Thread processingThread;
     private volatile boolean isRunning;
+
+    /**
+     * The stamp - last-modified plus size - of the newest content we actually PARSED, per file.
+     * <p>
+     * A file whose stamp has moved is read again; one that fails to parse leaves its stamp unrecorded and
+     * is therefore read again on the next cycle. That retry is the point: the game writes these files while
+     * we may be halfway through reading them, and a 112KB {@code Market.json} is caught mid-write often
+     * enough to matter. Before this, such a read was logged and thrown away, and the market it described
+     * stayed unknown to the app until the commander next opened that screen - which is how a card that
+     * lists what a station sells came to show nothing at a station selling six of the things it wanted.
+     */
+    private final Map<String, String> parsed = new HashMap<>();
+
+    public AuxiliaryFilesMonitor() {
+    }
+
+    /**
+     * Seam for tests: the folder to read, which in the app comes from the commander's settings.
+     */
+    AuxiliaryFilesMonitor(Path directory) {
+        this.directory = directory;
+    }
 
     public synchronized void start() {
         this.directory = PlayerSession.getInstance().getJournalPath();
@@ -99,9 +124,6 @@ public class AuxiliaryFilesMonitor implements Runnable, ManagedService {
         try {
             readAndPublishInitialFiles();
             monitorFiles();
-        } catch (IOException e) {
-            log.error("IOException in AuxiliaryFilesMonitor", e);
-            UiBus.publish(new AppLogEvent("Check Journal directory settings. Stopping services."));
         } catch (InterruptedException e) {
             log.info("AuxiliaryFilesMonitor interrupted, shutting down");
             Thread.currentThread().interrupt(); // Restore interrupted status
@@ -111,60 +133,82 @@ public class AuxiliaryFilesMonitor implements Runnable, ManagedService {
         }
     }
 
-    private void monitorFiles() throws IOException, InterruptedException {
-        try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
-            directory.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_CREATE);
-            log.info("Auxiliary files monitor started, watching directory: {}", directory);
+    /**
+     * Reads what has changed, every cycle.
+     * <p>
+     * WHY this polls rather than waiting on a {@link java.nio.file.WatchService}: notifications for files
+     * written by another process arrive late, arrive coalesced, or do not arrive at all - the same class of
+     * problem that already forced {@code Status.json} onto a direct read. A missed notification here is not
+     * a delayed update but a permanently missed one, because nothing asks again until the game writes that
+     * file afresh. Ten stamps a cycle costs less than the one file we already read in full eight times a
+     * second.
+     */
+    private void monitorFiles() throws InterruptedException {
+        if (directory == null || !Files.isDirectory(directory)) {
+            // Said out loud rather than logged: nothing the app reads from the game works without this
+            // folder, and the commander is the only one who can point it somewhere real.
+            log.error("Journal directory is not readable: {}", directory);
+            UiBus.publish(new AppLogEvent("Check Journal directory settings. Stopping services."));
+            return;
+        }
+        log.info("Auxiliary files monitor started, watching directory: {}", directory);
 
-            while (isRunning) {
-                Thread.sleep(120);
+        while (isRunning) {
+            Thread.sleep(120);
 
-                if (Thread.currentThread().isInterrupted() || !isRunning) {
-                    log.info("Shutting down AuxiliaryFilesMonitor due to interruption or stop signal");
-                    return;
-                }
+            if (Thread.currentThread().isInterrupted() || !isRunning) {
+                log.info("Shutting down AuxiliaryFilesMonitor due to interruption or stop signal");
+                return;
+            }
 
-                // Non-blocking poll
-                // WatchService is fine for infrequently-changing files
-                // (Cargo.json, NavRoute.json, etc.). Status.json is handled separately below.
-                WatchKey key = watchService.poll();
-                if (key != null) {
-                    for (WatchEvent<?> event : key.pollEvents()) {
-                        WatchEvent.Kind<?> kind = event.kind();
-                        if (kind == StandardWatchEventKinds.ENTRY_MODIFY || kind == StandardWatchEventKinds.ENTRY_CREATE) {
-                            Path filePath = (Path) event.context();
-                            String fileName = filePath.toString();
-                            if (monitoredFileSet.contains(fileName) && !fileName.equals("Status.json")) {
-                                Path fullPath = directory.resolve(fileName);
-                                Object eventObject = readAndParseFile(fullPath, fileName);
-                                if (eventObject != null) {
-                                    GameEventBus.publish(eventObject);
-                                    log.info("Published update for file: {}", fileName);
-                                }
-                            }
-                        }
-                    }
-                    boolean valid = key.reset();
-                    if (!valid) {
-                        log.error("Watch key no longer valid; directory may be inaccessible");
-                        break;
-                    }
-                }
+            for (String fileName : MONITORED_FILES) {
+                // Status.json is read every cycle whatever its stamp says: SelectFireGroupByNatoHandler
+                // sleeps only 300ms between key presses and needs the current fire group inside that window.
+                if (fileName.equals("Status.json")) continue;
+                publishIfChanged(fileName);
+            }
 
-                // Status.json: read directly on every cycle instead of relying on WatchService
-                // ENTRY_MODIFY. WatchService notifications for files written by another process
-                // can be delayed or missed. The same class of issue that affected JournalParser.
-                // SelectFireGroupByNatoHandler sleeps only 300ms between key presses and needs
-                // status.getFireGroup() to reflect current game state within that window.
-                // A direct read every 120ms guarantees this on all platforms.
-                Path statusPath = directory.resolve("Status.json");
-                if (Files.exists(statusPath)) {
-                    Object statusEvent = readAndParseFile(statusPath, "Status.json");
-                    if (statusEvent != null) {
-                        GameEventBus.publish(statusEvent);
-                    }
+            Path statusPath = directory.resolve("Status.json");
+            if (Files.exists(statusPath)) {
+                Object statusEvent = readAndParseFile(statusPath, "Status.json");
+                if (statusEvent != null) {
+                    GameEventBus.publish(statusEvent);
                 }
             }
+        }
+    }
+
+    /**
+     * Publishes one file if its content has moved since the last time we parsed it.
+     *
+     * @return true when this call published the file
+     */
+    boolean publishIfChanged(String fileName) {
+        Path filePath = directory.resolve(fileName);
+        String stamp = stampOf(filePath);
+        if (stamp == null || stamp.equals(parsed.get(fileName))) return false;
+
+        Object eventObject = readAndParseFile(filePath, fileName);
+        // A failed read leaves the stamp unrecorded, so the next cycle tries the same file again - see the
+        // note on the parsed map.
+        if (eventObject == null) return false;
+
+        parsed.put(fileName, stamp);
+        GameEventBus.publish(eventObject);
+        log.info("Published update for file: {}", fileName);
+        return true;
+    }
+
+    /**
+     * Last-modified and size together, or null for a file that is not there. Size is in it because two
+     * writes can land inside one filesystem timestamp tick.
+     */
+    private static String stampOf(Path filePath) {
+        try {
+            if (!Files.exists(filePath)) return null;
+            return Files.getLastModifiedTime(filePath).toMillis() + ":" + Files.size(filePath);
+        } catch (IOException e) {
+            return null;
         }
     }
 
@@ -177,6 +221,7 @@ public class AuxiliaryFilesMonitor implements Runnable, ManagedService {
             if (Files.exists(filePath)) {
                 Object eventObject = readAndParseFile(filePath, fileName);
                 if (eventObject != null) {
+                    parsed.put(fileName, stampOf(filePath));
                     GameEventBus.publish(eventObject);
                     log.info("Published initial event for file: {}", fileName);
                 }
@@ -202,7 +247,9 @@ public class AuxiliaryFilesMonitor implements Runnable, ManagedService {
         } catch (IOException e) {
             log.error("Failed to read file: {}", filePath, e);
         } catch (JsonParseException e) {
-            log.warn("Skipping mid-write read of {}", filePath);
+            // Not fatal and not final: the stamp stays unrecorded, so the next cycle reads it again once the
+            // game has finished writing.
+            log.warn("Caught {} mid-write, will re-read", filePath.getFileName());
         }
         return null;
     }

@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.events;
 
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import elite.intel.gameapi.StationName;
 import elite.intel.util.json.GsonFactory;
 
 import java.time.Duration;
@@ -130,7 +131,7 @@ public class LocationEvent extends BaseEvent {
         LocationEvent event = GsonFactory.getGson().fromJson(json, LocationEvent.class);
         this.distFromStarLS = event.distFromStarLS;
         this.docked = event.docked;
-        this.stationName = event.stationName;
+        this.stationName = StationName.display(event.stationName);
         this.stationType = event.stationType;
         this.marketID = event.marketID;
         this.stationFaction = event.stationFaction;

@@ -80,8 +80,9 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
             boolean notAtTheSourceStation = location.getStationName() != null && !location.getStationName().equalsIgnoreCase(sourceStation);
 
             if (notInSourceSystem) {
-                message = StringUtls.localizedResponse("handler.tradeStop.travelAndBuy", sourceSystem, sourceStation, commodityList, destinationSystem, destinationStation);
-                routePlotter.plotRoute(sourceSystem);
+                message = routePlotter.plotRouteAnd(
+                        StringUtls.localizedResponse("handler.tradeStop.travelAndBuy", sourceSystem, sourceStation, commodityList, destinationSystem, destinationStation),
+                        sourceSystem);
             } else if (notAtTheSourceStation) {
                 message = StringUtls.localizedResponse("handler.tradeStop.inSystemBuyAtStation", sourceStation, commodityList, destinationSystem, destinationStation);
             } else {
@@ -92,8 +93,9 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
             boolean notAtTheDestinationStation = !location.isAtStation(destinationStation);
 
             if (notInDestinationSystem) {
-                message = StringUtls.localizedResponse("handler.tradeStop.travelToSell", destinationSystem, destinationStation);
-                routePlotter.plotRoute(destinationSystem);
+                message = routePlotter.plotRouteAnd(
+                        StringUtls.localizedResponse("handler.tradeStop.travelToSell", destinationSystem, destinationStation),
+                        destinationSystem);
             } else if (notAtTheDestinationStation) {
                 message = StringUtls.localizedResponse("handler.tradeStop.headToStation", destinationStation);
             } else {

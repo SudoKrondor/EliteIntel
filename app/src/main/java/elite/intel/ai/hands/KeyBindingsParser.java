@@ -186,12 +186,7 @@ public class KeyBindingsParser {
                             actionName, secondaryBinding.device(), secondaryBinding.key(), secondaryBinding.hold());
                 }
 
-                if (primaryList.getLength() > 0 && secondaryList.getLength() > 0) {
-                    log.warn("No keyboard binding for action '{}' (primary={}, secondary={})",
-                            actionName,
-                            ((Element) primaryList.item(0)).getAttribute("Device"),
-                            ((Element) secondaryList.item(0)).getAttribute("Device"));
-                }
+                warnIfBoundToNonKeyboardDeviceOnly(actionName, primaryBinding, secondaryBinding);
 
                 if (primaryBinding != null || secondaryBinding != null) {
                     bindings.put(actionName, new ReadOnlyBindingSlots(primaryBinding, secondaryBinding));
@@ -200,6 +195,51 @@ public class KeyBindingsParser {
         }
         log.info("Parsed {} read-only binding slots from file: {}", bindings.size(), file.getName());
         return bindings;
+    }
+
+    /**
+     * Reports an action the commander has bound, but only to a device EliteIntel cannot press.
+     * <p>
+     * WHY the narrow condition: this used to warn for every action carrying both a {@code <Primary>} and a
+     * {@code <Secondary>} element, which is nearly every action in the file - 345 of one commander's 352
+     * were keyboard-bound and warned about anyway. The line then claimed 'GalaxyMapOpen' had no keyboard
+     * binding while the executor was happily pressing Shift+K for it, which is worse than no line at all in
+     * a diagnostics bundle. An action with no assignment anywhere is not reported here either: that is the
+     * missing-binding check's job, and duplicating it would put the whole unbound half of the file in the log.
+     */
+    private void warnIfBoundToNonKeyboardDeviceOnly(String actionName, ReadOnlyBindingSlot primary, ReadOnlyBindingSlot secondary) {
+        if (!isBoundToNonKeyboardDeviceOnly(primary, secondary)) {
+            return;
+        }
+        log.warn("No keyboard binding for action '{}' - bound only to (primary={}, secondary={})",
+                actionName, describeSlot(primary), describeSlot(secondary));
+    }
+
+    /**
+     * True when the commander has assigned this action somewhere, but nothing EliteIntel can press.
+     */
+    static boolean isBoundToNonKeyboardDeviceOnly(ReadOnlyBindingSlot primary, ReadOnlyBindingSlot secondary) {
+        if (isKeyboardUsable(primary) || isKeyboardUsable(secondary)) {
+            return false;
+        }
+        return isAssigned(primary) || isAssigned(secondary);
+    }
+
+    private static boolean isKeyboardUsable(ReadOnlyBindingSlot slot) {
+        return slot != null && slot.keyboardUsable();
+    }
+
+    private static boolean isAssigned(ReadOnlyBindingSlot slot) {
+        return slot != null
+                && slot.device() != null && !slot.device().isBlank() && !"{NoDevice}".equals(slot.device())
+                && slot.key() != null && !slot.key().isBlank();
+    }
+
+    private static String describeSlot(ReadOnlyBindingSlot slot) {
+        if (!isAssigned(slot)) {
+            return "unassigned";
+        }
+        return slot.device() + ":" + slot.key();
     }
 
     private ReadOnlyBindingSlot readOnlySlot(Element slot, BindingSlotType slotType) {

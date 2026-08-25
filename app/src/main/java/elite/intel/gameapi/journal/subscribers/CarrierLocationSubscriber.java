@@ -28,11 +28,20 @@ public class CarrierLocationSubscriber {
         });
     }
 
+    /**
+     * Records where the squadron carrier has arrived, ON its existing record.
+     * <p>
+     * It used to build a fresh {@link CarrierDataDto} here, which quietly threw away everything the record
+     * held that an arrival says nothing about - the callsign, the cargo ledger, the spare tritium the
+     * commander had told us about. An arrival is news about WHERE the carrier is, and must not be read as
+     * news about what is aboard it.
+     */
     private void onSquadronCarrierArrived(CarrierLocationEvent event) {
         String starSystem = event.getStarSystem();
         SquadronCarrierRouteManager route = SquadronCarrierRouteManager.getInstance();
 
-        CarrierDataDto carrierData = new CarrierDataDto();
+        CarrierDataDto carrierData = playerSession.getSquadronCarrierData();
+        if (carrierData == null) carrierData = new CarrierDataDto();
         carrierData.setStarName(starSystem);
         carrierData.setSystemAddress(event.getSystemAddress());
 

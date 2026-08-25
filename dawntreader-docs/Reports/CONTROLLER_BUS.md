@@ -19,7 +19,7 @@ into actual keypresses inside Elite Dangerous:
 
 1. A command handler decides "press binding X" / "hold key Y" / "type this text" and
    publishes a `GameInputSequenceEvent` (a list of `GameInputStep`s — `BINDING_TAP`,
-   `BINDING_HOLD`, `RAW_KEY`, `TEXT`, `DELAY`) onto the bus.
+   `BINDING_HOLD`, `RAW_KEY`, `TEXT`, `DELAY`, `WAIT_UNTIL`) onto the bus.
 2. `InputSequenceExecutor` (registered on the bus) serializes every published
    sequence through one worker thread, so command handlers can never interleave
    keystrokes, and adds small randomized post-input delays between input-producing
@@ -54,8 +54,7 @@ into actual keypresses inside Elite Dangerous:
 - `elite.intel.eventbus.GameControllerBus` — the dedicated synchronous event bus
 - `elite.intel.ai.hands.events.GameInputSequenceEvent` — typed, immutable list of
   input steps
-- `elite.intel.ai.hands.events.GameInputStep` — one semantic input step (binding tap,
-  binding hold, raw key, text entry, or delay)
+- `elite.intel.ai.hands.events.GameInputStep` — one semantic input step (binding tap, binding hold, raw key, text entry, delay, or a bounded wait for the game to reach a state)
 - `elite.intel.ai.hands.InputSequenceExecutor` — subscribes to the bus, serializes
   and executes sequences on a single worker thread
 - `elite.intel.ai.hands.KeyBindingExecutor` — translates Elite Dangerous binding

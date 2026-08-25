@@ -64,7 +64,9 @@
              at all. Edge-triggered: one line per failed batch, not per record. -->
         <Logger name="elite.intel.ai.brain.vega.memory" level="debug"/>
         <Logger name="elite.intel.gameapi.JournalParser" level="error"/>
-        <Logger name="elite.intel.gameapi.AuxiliaryFilesMonitor" level="error"/>
+        <!-- warn, on purpose: a file caught mid-write is retried rather than dropped, and seeing how
+             often that happens is the only way to tell a slow disk from a stuck market. -->
+        <Logger name="elite.intel.gameapi.AuxiliaryFilesMonitor" level="warn"/>
         <Logger name="elite.intel.gameapi.journal.subscribers" level="error"/>
         <Logger name="elite.intel.gameapi.journal.subscribers.LocationTrackingSubscriber" level="error"/>
         <Logger name="elite.intel.gameapi.journal.subscribers.SilentPersistenceSubscriber" level="error"/>

@@ -25,6 +25,7 @@ public interface PlayerDao {
                        goods_sold_this_session, highest_single_transaction, in_game_name,
                        insurance_claims, is_mining_announcement_on, is_navigation_announcement_on,
                        is_radio_transmission_on, is_route_announcement_on,
+                       is_planetary_approach_announcement_on, is_address_me_on,
                        last_known_carrier_location, last_scan_id, market_profits,
                        personal_credits_available, player_highest_military_rank,
                        player_name, ships_owned, species_first_logged,
@@ -40,6 +41,7 @@ public interface PlayerDao {
                        :goodsSoldThisSession, :highestSingleTransaction, :inGameName,
                        :insuranceClaims, :miningAnnouncementOn, :navigationAnnouncementOn,
                        :radioTransmissionOn, :routeAnnouncementOn,
+                       :planetaryApproachAnnouncementOn, :addressMeOn,
                        :lastKnownCarrierLocation, :lastScanId, :marketProfits,
                        :personalCreditsAvailable, :playerHighestMilitaryRank,
                        :playerName, :shipsOwned, :speciesFirstLogged, :totalBountyClaimed, :totalDistanceTraveled,
@@ -69,6 +71,8 @@ public interface PlayerDao {
         private boolean isNavigationAnnouncementOn = true;
         private Boolean isRadioTransmissionOn = null;
         private boolean isRouteAnnouncementOn = true;
+        private boolean isPlanetaryApproachAnnouncementOn = true;
+        private boolean isAddressMeOn = true;
         private String lastKnownCarrierLocation = "";
         private long lastScanId = -1;
         private long marketProfits = 0;
@@ -265,6 +269,22 @@ public interface PlayerDao {
             isRouteAnnouncementOn = routeAnnouncementOn;
         }
 
+        public boolean isPlanetaryApproachAnnouncementOn() {
+            return isPlanetaryApproachAnnouncementOn;
+        }
+
+        public void setPlanetaryApproachAnnouncementOn(boolean planetaryApproachAnnouncementOn) {
+            isPlanetaryApproachAnnouncementOn = planetaryApproachAnnouncementOn;
+        }
+
+        public boolean isAddressMeOn() {
+            return isAddressMeOn;
+        }
+
+        public void setAddressMeOn(boolean addressMeOn) {
+            isAddressMeOn = addressMeOn;
+        }
+
         public String getLastKnownCarrierLocation() {
             return lastKnownCarrierLocation;
         }
@@ -448,6 +468,8 @@ public interface PlayerDao {
             p.setNavigationAnnouncementOn(rs.getBoolean("is_navigation_announcement_on"));
             p.setRadioTransmissionOn(rs.getObject("is_radio_transmission_on") != null && rs.getBoolean("is_radio_transmission_on"));
             p.setRouteAnnouncementOn(rs.getBoolean("is_route_announcement_on"));
+            p.setPlanetaryApproachAnnouncementOn(rs.getBoolean("is_planetary_approach_announcement_on"));
+            p.setAddressMeOn(rs.getBoolean("is_address_me_on"));
             p.setLastKnownCarrierLocation(rs.getString("last_known_carrier_location"));
             p.setLastScanId(rs.getLong("last_scan_id"));
             p.setMarketProfits(rs.getLong("market_profits"));

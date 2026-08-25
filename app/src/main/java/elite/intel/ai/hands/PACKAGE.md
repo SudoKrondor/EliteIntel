@@ -68,11 +68,14 @@ rawKey(KeyProcessor.KEY_ENTER)
 
 | Step type | Factory method | Notes |
 |---|---|---|
-| `BINDING_TAP` | `bindingTap(bindingId)` | Forced tap regardless of binding's `hold` flag - safe for UI navigation |
+| `BINDING_TAP` | `bindingTap(bindingId)` | Presses the binding as the `.binds` file configures it - a long-press action holds |
+| `BINDING_FORCED_TAP` | `bindingForcedTap(bindingId)` | Always taps, ignoring the binding's `hold` flag - for callers whose own contract is a tap |
 | `BINDING_HOLD` | `bindingHold(bindingId, holdMs)` | Holds the main key for the given duration |
-| `RAW_KEY` | `rawKey(keyCode)` / `rawKey(keyCode, modCode, holdMs)` | Bypasses binding lookup; uses `KeyProcessor` codes directly |
+| `BINDING_DOWN` / `BINDING_UP` | `bindingDown(bindingId)` / `bindingUp(bindingId)` | Press and release as separate steps, when an external signal decides the release moment |
+| `RAW_KEY` | `rawKey(keyCode, modCode, holdMs)` | Bypasses binding lookup; uses `KeyProcessor` codes directly |
 | `TEXT` | `text(string)` | Types characters via `KeyProcessor.enterText`; handles non-QWERTY layouts |
 | `DELAY` | `delay(ms)` | Explicit pause; does not trigger the default post-input delay |
+| `WAIT_UNTIL` | `waitUntil(description, condition, timeoutMs)` | Blocks until the game reports the expected state (polled every 50 ms), or until the timeout, which is logged and not fatal. Use instead of `delay` whenever the wait is for the game to catch up, so slow hardware is not left behind by a guessed duration |
 
 After every input-producing step (
 `isInputProducing() == true`) the executor automatically inserts a random 99–201 ms post-input delay so the game's DirectInput poller has time to see the key event before the next step fires.
@@ -321,7 +324,8 @@ Classifies a binding ID into a
 `GlobalSettingsManager` toggle.
 
 **`RoutePlotter.plotRoute(destination)`** - publishes a full galaxy-map navigation sequence:
-open galaxy map → zoom in → navigate to search → type destination → arrow-down → Enter → Enter.
+wait for any open map to close → open galaxy map → wait for `GuiFocus` to report it open → settle → zoom in → navigate to search → type destination → arrow-down → Enter → Enter. The two waits are
+`WAIT_UNTIL` steps rather than fixed delays: the map takes seconds to appear on slower hardware, and every step after it is worthless if it fires while the map is still opening.
 
 **`UiNavCommon`** - shared UI helpers: `close()` (handles open system/galaxy map, then
 `UI_Back`); `prepToKnownUiPositionWhileInTheShipAtStation()` (three UI_Down steps).
@@ -353,7 +357,7 @@ The authoritative registry of Elite Dangerous action names that EliteIntel comma
 |---|---|
 | `HandsService` | `ManagedService` entry point; starts/stops `BindingsMonitor` and `InputSequenceExecutor` |
 | `GameInputSequenceEvent` | Public game input API; list of `GameInputStep`s |
-| `GameInputStep` | One semantic input step (BINDING_TAP, BINDING_HOLD, RAW_KEY, TEXT, DELAY) |
+| `GameInputStep` | One semantic input step (BINDING_TAP, BINDING_FORCED_TAP, BINDING_HOLD, BINDING_DOWN, BINDING_UP, RAW_KEY, TEXT, DELAY, WAIT_UNTIL) |
 | `InputSequenceExecutor` | Serializes `GameInputSequenceEvent`s through one worker thread |
 | `KeyProcessor` | Low-level key dispatcher; routes to native or Robot |
 | `NativeKeyInput` | Platform key injection interface |

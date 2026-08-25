@@ -50,12 +50,16 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
         UiNavCommon.close();
 
         if (status.isFsdCharging()) return null;
+        if (status.isInSupercruise()) {
+            return StringUtls.localizedResponse("handler.supercruise.inSuperCruise");
+        }
 
         if (status.isFsdMassLocked()) {
             return StringUtls.localizedResponse("handler.supercruise.massLocked");
         } else if (status.isFsdCooldown()) {
             return StringUtls.localizedResponse("handler.supercruise.cooldown");
         }
+
 
         ///NOTE. this is commented out until FDev fixes the Status.json.
         /// Game has a bug status.isFighterOut() == true when nomad is equipped and returned to base.
