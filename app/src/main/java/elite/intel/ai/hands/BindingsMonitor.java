@@ -232,9 +232,29 @@ public class BindingsMonitor {
     }
 
     /**
+     * Descriptions of every <b>blocking</b> conflict currently in the binds file - the overlaps that stop
+     * EliteIntel driving the game outright (see {@link BindingConflictRules#isBlocking}).
+     * <p>
+     * A pure read with no persistence diff, deliberately: {@link #checkForConflictsAndPersist()} tells the
+     * commander about a conflict exactly once and is then silent forever, which is right for "this control
+     * may misbehave" and wrong for "route plotting cannot work". A commander who heard the line once, months
+     * ago, keeps a permanently broken setup and no longer has any way to find out - which is how a field
+     * report of "route plotting does not work for me" reached us with all four map/UI overlaps sitting in the
+     * file and not one word about them in the diagnostics bundle.
+     */
+    public List<String> blockingConflicts() {
+        return detectConflicts().stream()
+                .filter(BindingConflictScanner.Conflict::blocking)
+                .map(BindingConflictScanner.Conflict::description)
+                .toList();
+    }
+
+    /**
      * Detects binding conflicts among GameCommand bindings and persists them.
      * Returns descriptions of newly detected conflicts only - empty list means
-     * nothing changed.
+     * nothing changed. Blocking conflicts are excluded from both the persisted set and the returned list:
+     * {@link #blockingConflicts()} owns announcing those, on every start rather than once, so an
+     * "already told you" row for one would only ever silence it.
      */
     public List<String> checkForConflictsAndPersist() {
         List<String> newDescriptions = new ArrayList<>();
@@ -249,7 +269,9 @@ public class BindingsMonitor {
                     && !APP_CONTROLLED_ACTIONS.contains(c.actionB()))
                 continue;
             String conflictKey = BindingConflictRules.makeKey(c.actionA(), c.actionB());
-            if (currentConflictKeys.add(conflictKey)) {
+            if (currentConflictKeys.add(conflictKey) && !c.blocking()) {
+                // Still tracked in currentConflictKeys above so the stale-row sweep below stays correct;
+                // only kept out of the announce-once list.
                 currentConflictDescriptions.put(conflictKey, c.description());
             }
         }
