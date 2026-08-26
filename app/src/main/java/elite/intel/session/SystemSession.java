@@ -27,10 +27,11 @@ public class SystemSession {
     /**
      * Range of the pause the input executor holds after each keystroke it sends to the game, in
      * milliseconds. The minimum is the pacing this app has always used and stays the default; the
-     * maximum is for machines where the game drops keystrokes out of a fast sequence.
+     * maximum is the last resort for a machine so slow that the game drops keystrokes out of a
+     * sequence at any pacing short of it.
      */
     public static final int KEY_INPUT_DELAY_MIN_MS = 100;
-    public static final int KEY_INPUT_DELAY_MAX_MS = 200;
+    public static final int KEY_INPUT_DELAY_MAX_MS = 500;
 
     private Double rms = 0.0;
     private Double floor = 0.0;
@@ -604,6 +605,27 @@ public class SystemSession {
             session.setOverlayY(layout.y());
             session.setOverlayDisplayMode(layout.displayMode());
             session.setOverlayVrPosition(layout.vrPosition());
+            dao.save(session);
+            return null;
+        });
+    }
+
+    /**
+     * Whether the desktop HUD overlay was on screen when the app last ran, so it can come back up the
+     * way the commander left it.
+     * <p>
+     * Kept apart from {@link HudOverlayLayout} on purpose: that record is written wholesale every time
+     * the overlay is dragged or resized, and folding visibility into it would let a layout save decide
+     * whether the overlay exists.
+     */
+    public boolean isHudOverlayVisible() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isOverlayVisible());
+    }
+
+    public void setHudOverlayVisible(boolean visible) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setOverlayVisible(visible);
             dao.save(session);
             return null;
         });

@@ -30,8 +30,13 @@ public class InputSequenceExecutor {
      * Width of the randomised window above the configured delay floor. The floor is the commander's
      * pacing setting ({@link SystemSession#getKeyInputDelayMs()}); the spread on top of it keeps the
      * keystrokes from landing on a fixed rhythm, as they always have.
+     * <p>
+     * It is a fixed width rather than a fraction of the floor: the jitter exists to break up the
+     * rhythm, and a commander who drags the slider to the slow end is asking for a longer pause, not
+     * a less predictable one. Scaling it would make the pacing they picked the least accurate at
+     * exactly the end where they picked it to fix dropped keystrokes.
      */
-    private static final int POST_INPUT_DELAY_SPREAD_MS = 102;
+    private static final int POST_INPUT_DELAY_SPREAD_MS = 50;
     private static final int WAIT_UNTIL_POLL_MS = 50;
 
     private final BindingsMonitor monitor = BindingsMonitor.getInstance();
