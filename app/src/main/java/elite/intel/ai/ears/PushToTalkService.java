@@ -104,8 +104,13 @@ public final class PushToTalkService implements ManagedService {
             UiBus.publish(new PttButtonStateEvent(true));
             return;
         }
-        GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_1));
+        // Close the gate first. GameEventBus dispatches on this thread, and the capture loop records the
+        // frame the release lands in on purpose (so the last word is not clipped) - so a beep published
+        // ahead of the release can still be sounding inside that frame and land in the recording. That
+        // matters more than it looks: Amplifier normalizes to the peak, so a beep in the buffer sets the
+        // gain for the whole utterance and the commander's voice reaches the recogniser quiet.
         releaseGate();
+        GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_1));
     }
 
     /**

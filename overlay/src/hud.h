@@ -13,8 +13,19 @@
 #define EI_HUD_H
 
 #include <cairo/cairo.h>
+#include <limits.h>
 
 #define PROTOCOL_VERSION 1
+
+// "No position requested." Deliberately not -1, and not any small negative
+// number: a screen coordinate is legitimately negative on both platforms. A
+// monitor placed left of or above the primary one starts at a negative offset,
+// and a window nudged past the top or left edge sits at a negative coordinate
+// on its own. Using -1 as the sentinel made every such position unstorable -
+// the card came back centred with only its Y remembered - because the guard
+// that applied it could not tell the commander's coordinate from "unset".
+// Must match OverlayProtocol.POSITION_UNSET on the Java side.
+#define HUD_POS_UNSET INT_MIN
 
 #define MAX_ROWS   8
 // Exchanges kept on screen. Lines wrap, so a chatty reply is already several
@@ -91,7 +102,7 @@ typedef struct {
     double alpha;            // background alpha; text is always opaque
     double scale;
     int  width;
-    int  want_x, want_y;     // requested position; -1 means "leave as is"
+    int  want_x, want_y;     // requested position; HUD_POS_UNSET means "leave as is"
     VrPosition vr_position;  // VR only; the desktop shells ignore it
 
     /// Desktop only; the VR shell ignores both, the mirror of vr_position above.

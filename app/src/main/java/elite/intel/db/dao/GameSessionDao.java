@@ -138,8 +138,10 @@ public interface GameSessionDao {
         private double overlayAlpha = 0.25;
         private double overlayFontScale = 0;
         private int overlayWidth = 760;
-        private int overlayX = -1;
-        private int overlayY = -1;
+        // "Never positioned". Integer.MIN_VALUE rather than -1 because a screen coordinate is legitimately
+        // negative on a multi-monitor desktop - see OverlayProtocol.POSITION_UNSET, which this must match.
+        private int overlayX = Integer.MIN_VALUE;
+        private int overlayY = Integer.MIN_VALUE;
         private String overlayDisplayMode = "DESKTOP";
         private String overlayVrPosition = "BOTTOM";
 

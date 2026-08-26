@@ -265,10 +265,10 @@ int hud_run_desktop(int argc, char **argv) {
         int eof = 0;
         int dirty = pump_stdin(&eof);
 
-        if (model.want_x >= 0 || model.want_y >= 0) {
-            if (model.want_x >= 0) g_x = model.want_x;
-            if (model.want_y >= 0) g_y = model.want_y;
-            model.want_x = model.want_y = -1;
+        if (model.want_x != HUD_POS_UNSET || model.want_y != HUD_POS_UNSET) {
+            if (model.want_x != HUD_POS_UNSET) g_x = model.want_x;
+            if (model.want_y != HUD_POS_UNSET) g_y = model.want_y;
+            model.want_x = model.want_y = HUD_POS_UNSET;
             dirty = 1;
         }
         // Only flagged, never resized here: present() sizes the surface itself

@@ -1,11 +1,11 @@
 package elite.intel.ui.overlay;
 
+import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The overlay ships as a separate binary, so it can simply be absent: stripped by an installer, lost
@@ -47,5 +47,30 @@ class NativeHudOverlayLifecycleTest {
         assertDoesNotThrow(overlay::stop);
         assertDoesNotThrow(overlay::stop, "a double stop is a normal toggle sequence");
         assertFalse(overlay.isRunning());
+    }
+
+    /**
+     * The restore guard, which is where the bug actually lived. Persisting a negative coordinate always
+     * worked; what failed was applying one, because the guard read it as the "unset" sentinel and left the
+     * window at its centred default with only the y honoured.
+     */
+    @Test
+    void aNegativeStoredCoordinateCountsAsAPosition() {
+        SystemSession session = SystemSession.getInstance();
+        SystemSession.HudOverlayLayout previous = session.getHudOverlayLayout();
+        try {
+            session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(
+                    0.5, 1.0, 760, -3, 590, "DESKTOP", "TOP_RIGHT"));
+            assertTrue(new NativeHudOverlay(() -> Path.of("/nonexistent/elite-intel-overlay"))
+                    .hasStoredPosition(), "a card parked past the left edge has a position to restore");
+
+            session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(
+                    0.5, 1.0, 760, OverlayProtocol.POSITION_UNSET, OverlayProtocol.POSITION_UNSET,
+                    "DESKTOP", "TOP_RIGHT"));
+            assertFalse(new NativeHudOverlay(() -> Path.of("/nonexistent/elite-intel-overlay"))
+                    .hasStoredPosition(), "a never-positioned card must still open where it defaults to");
+        } finally {
+            session.setHudOverlayLayout(previous);
+        }
     }
 }

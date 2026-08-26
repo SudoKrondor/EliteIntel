@@ -432,7 +432,19 @@ public class ParakeetSTTImpl implements EarsInterface {
             if (systemSession.isNoiseReductionEnabled()) {
                 pcmBytes = SpectralNoiseReducer.getInstance().denoise(pcmBytes, systemSession.getNoiseReductionStrength());
             }
-            float[] samples = pcm16ToFloat(Amplifier.amplify(padAudio(trimLeadingLowEnergy(pcmBytes))));
+            // Everything a drop path below might need to explain itself. A phrase that vanishes leaves no
+            // other trace anywhere - no UI line, no event - so the reason has to travel with the transcript.
+            // The peak is here because Amplifier normalizes to a peak: one loud sample anywhere in the
+            // capture (a beep, a knock) sets the gain for the whole utterance and leaves the voice quiet.
+            byte[] conditioned = padAudio(trimLeadingLowEnergy(pcmBytes));
+            byte[] forDecoder = Amplifier.amplify(conditioned);
+            // Peak alone cannot tell speech from silence: one button click in an otherwise empty buffer
+            // reads the same as a spoken phrase. RMS is the sustained level, so the pair separates them -
+            // a high peak over a low RMS is a transient, not a voice.
+            String capture = String.format("captured %dms, %dms to decoder, peak %d, rms %d",
+                    durationMs(pcmBytes.length), durationMs(conditioned.length),
+                    peakOf(conditioned), (int) calculateRMS(conditioned, conditioned.length));
+            float[] samples = pcm16ToFloat(forDecoder);
 
             long timeStart = System.currentTimeMillis();
             OfflineStream stream = recognizer.createStream();
@@ -446,20 +458,31 @@ public class ParakeetSTTImpl implements EarsInterface {
                 String transcript = result.getText().toLowerCase().trim();
                 log.debug("Parakeet transcription took {} ms", System.currentTimeMillis() - timeStart);
 
-                if (transcript.isBlank() || transcript.length() < 3) return;
+                if (transcript.isBlank() || transcript.length() < 3) {
+                    log.info("STT dropped (nothing a phrase could be made of): [{}] - {}", transcript, capture);
+                    // Keep exactly what the decoder was given. This is the one failure the numbers above
+                    // cannot explain on their own, and listening to it answers in seconds what another
+                    // session of logs only narrows down.
+                    DumpAudioForTesting.getInstance().dumpFailedCapture(forDecoder, SAMPLE_RATE, "empty");
+                    return;
+                }
 
                 // Case 1: pure trash → nothing left after stripping → block
                 // Case 2: trash prefix + real content → strip prefix, pass remainder
                 String finalTranscript = stripTrashPrefix(transcript);
-                if (finalTranscript.isBlank()) return;
+                if (finalTranscript.isBlank()) {
+                    log.info("STT dropped (all trash after prefix strip): [{}] - {}", transcript, capture);
+                    return;
+                }
 
                 // Laughter is what the engine returns for noise it cannot map to words, so it is
                 // never something the commander said - drop it before it costs an AI round trip.
                 if (LaughterFilter.isLaughter(finalTranscript)) {
-                    log.debug("Discarding laughter transcript: [{}]", finalTranscript);
+                    log.info("STT dropped (laughter): [{}] - {}", finalTranscript, capture);
                     return;
                 }
 
+                log.info("STT accepted: [{}] - {}", finalTranscript, capture);
                 UiBus.publish(new AppLogEvent("STT: [" + finalTranscript + "]"));
 
                 switch (MicrophoneGate.decide(capturedWithPttHeld,
@@ -467,7 +490,7 @@ public class ParakeetSTTImpl implements EarsInterface {
                     case OPEN_PUSH_TO_TALK -> sendToAi(finalTranscript, true);
                     case OPEN_HANDS_FREE -> sendToAi(finalTranscript, false);
                     case CLOSED_PUSH_TO_TALK ->
-                            log.debug("Discarding transcript captured with push-to-talk released: [{}]", finalTranscript);
+                            log.info("STT dropped (captured with push-to-talk released): [{}]", finalTranscript);
                     case CLOSED_ASLEEP -> routePastSleepGate(finalTranscript);
                 }
             } finally {
@@ -524,7 +547,7 @@ public class ParakeetSTTImpl implements EarsInterface {
     private void routePastSleepGate(String transcript) {
         String admitted = WakeBypass.forCurrentLanguage().admit(transcript);
         if (admitted == null) {
-            log.debug("Discarding transcript captured while asleep: [{}]", transcript);
+            log.info("STT dropped (asleep, not a wake phrase): [{}]", transcript);
             return;
         }
         sendToAi(admitted, false);
@@ -611,6 +634,25 @@ public class ParakeetSTTImpl implements EarsInterface {
         System.arraycopy(pcm, offset, trimmed, 0, trimmed.length);
         log.debug("Leading trim: removed {}ms of low-energy audio", offset * 1000 / (SAMPLE_RATE * 2));
         return trimmed;
+    }
+
+    /**
+     * Duration of a 16 kHz PCM-16 mono buffer of {@code byteCount} bytes, in milliseconds.
+     */
+    private static int durationMs(int byteCount) {
+        return byteCount * 1000 / (SAMPLE_RATE * 2);
+    }
+
+    /**
+     * Largest sample magnitude in a PCM-16 LE buffer: what {@link Amplifier} will normalize against.
+     */
+    private static int peakOf(byte[] pcm) {
+        int peak = 0;
+        for (int i = 0; i + 1 < pcm.length; i += 2) {
+            int abs = Math.abs((short) ((pcm[i + 1] << 8) | (pcm[i] & 0xFF)));
+            if (abs > peak) peak = abs;
+        }
+        return peak;
     }
 
     private double calculateRMS(byte[] buffer, int length) {

@@ -62,6 +62,17 @@ public final class OverlayProtocol {
                 + TAB + "width=" + width;
     }
 
+    /**
+     * "No position stored." Deliberately not {@code -1}: a screen coordinate is legitimately negative on
+     * both platforms - a monitor placed left of or above the primary one starts at a negative offset, and a
+     * window nudged past the top or left edge sits at a negative coordinate on its own. While the sentinel
+     * was {@code -1}, the guards that applied a stored position could not tell such a coordinate from
+     * "unset", so an overlay parked at a negative x came back centred with only its y remembered.
+     * <p>
+     * Must match {@code HUD_POS_UNSET} in {@code overlay/src/hud.h}.
+     */
+    public static final int POSITION_UNSET = Integer.MIN_VALUE;
+
     public static String position(int x, int y) {
         return "CFG" + TAB + "x=" + x + TAB + "y=" + y;
     }

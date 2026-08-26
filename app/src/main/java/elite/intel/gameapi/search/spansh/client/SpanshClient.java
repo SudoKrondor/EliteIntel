@@ -3,10 +3,7 @@ package elite.intel.gameapi.search.spansh.client;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.vega.CompanionRuntime;
-import elite.intel.eventbus.AudioBeepCueBus;
 import elite.intel.tools.ws.WebSocketBroadcaster;
-import elite.intel.util.AudioPlayer;
-import elite.intel.util.PlayBeepEvent;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.ToJsonConvertible;
 import org.apache.logging.log4j.LogManager;
@@ -161,7 +158,7 @@ public class SpanshClient {
                     .build();
 
             log.info("polling search {} (attempt {}) url: {}", searchRefId, attempt, req.uri());
-            AudioBeepCueBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_3));
+            ///AudioBeepCueBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_3));
 
             HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
 

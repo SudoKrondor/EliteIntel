@@ -164,10 +164,10 @@ int hud_run_desktop(int argc, char **argv) {
             if (hud_tick_typewriter()) dirty = 1;
         }
 
-        if (model.want_x >= 0 || model.want_y >= 0) {
-            if (model.want_x >= 0) x = model.want_x;
-            if (model.want_y >= 0) y = model.want_y;
-            model.want_x = model.want_y = -1;
+        if (model.want_x != HUD_POS_UNSET || model.want_y != HUD_POS_UNSET) {
+            if (model.want_x != HUD_POS_UNSET) x = model.want_x;
+            if (model.want_y != HUD_POS_UNSET) y = model.want_y;
+            model.want_x = model.want_y = HUD_POS_UNSET;
             XMoveWindow(dpy, win, x, y);
             dirty = 1;                  // same reason as the drag above
         }

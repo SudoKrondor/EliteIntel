@@ -65,8 +65,8 @@ public class NativeHudOverlay {
     /**
      * Last known screen position, or -1 for "wherever the overlay opens".
      */
-    private volatile int windowX = -1;
-    private volatile int windowY = -1;
+    private volatile int windowX = OverlayProtocol.POSITION_UNSET;
+    private volatile int windowY = OverlayProtocol.POSITION_UNSET;
     /**
      * Where the card hangs in the headset. Ignored by a desktop child, which is
      * placed by dragging it.
@@ -199,7 +199,9 @@ public class NativeHudOverlay {
         send(OverlayProtocol.handshake());
         send(OverlayProtocol.config(backgroundAlpha, fontScale, width));
         send(OverlayProtocol.vrPosition(vrPosition));
-        if (windowX >= 0 || windowY >= 0) send(OverlayProtocol.position(windowX, windowY));
+        // Both or neither: saveLayout writes the pair together, so a half-set position is not a position
+        // the commander ever chose, and moving the window to one axis of it would be a guess.
+        if (hasStoredPosition()) send(OverlayProtocol.position(windowX, windowY));
         lastObjective = null;
         children.forEach(this::startOutputReader);
         children.forEach(this::startErrorReader);
@@ -400,6 +402,13 @@ public class NativeHudOverlay {
      */
     private void logMode(Child child, String line) {
         log.info("HUD overlay ({}): {}", child.role(), line.replace('\t', ' '));
+    }
+
+    /**
+     * Package-visible so the negative-coordinate case can be guarded without spawning a child process.
+     */
+    boolean hasStoredPosition() {
+        return windowX != OverlayProtocol.POSITION_UNSET && windowY != OverlayProtocol.POSITION_UNSET;
     }
 
     private void rememberPosition(Point position) {
