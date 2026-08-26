@@ -9,7 +9,7 @@
 #include <sys/time.h>
 
 Model model = {
-    .alpha = 0.25, .scale = 1.0, .width = 760, .want_x = -1, .want_y = -1,
+    .alpha = 0.25, .scale = 1.0, .width = 760, .want_x = HUD_POS_UNSET, .want_y = HUD_POS_UNSET,
     // Below centre: the placement the VR overlay had before it was settable, so
     // a commander who never opens the setting sees no change.
     .vr_position = HUD_VR_BOTTOM,

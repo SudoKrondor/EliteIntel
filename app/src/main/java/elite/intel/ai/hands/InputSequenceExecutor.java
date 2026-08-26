@@ -6,6 +6,7 @@ import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.session.SystemSession;
 import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,8 +26,12 @@ import java.util.function.BooleanSupplier;
 public class InputSequenceExecutor {
 
     private static final Logger log = LogManager.getLogger(InputSequenceExecutor.class);
-    private static final int DEFAULT_POST_INPUT_DELAY_MIN_MS = 99;
-    private static final int DEFAULT_POST_INPUT_DELAY_MAX_MS = 201;
+    /**
+     * Width of the randomised window above the configured delay floor. The floor is the commander's
+     * pacing setting ({@link SystemSession#getKeyInputDelayMs()}); the spread on top of it keeps the
+     * keystrokes from landing on a fixed rhythm, as they always have.
+     */
+    private static final int POST_INPUT_DELAY_SPREAD_MS = 102;
     private static final int WAIT_UNTIL_POLL_MS = 50;
 
     private final BindingsMonitor monitor = BindingsMonitor.getInstance();
@@ -80,13 +85,16 @@ public class InputSequenceExecutor {
     }
 
     private void execute(GameInputSequenceEvent event) {
+        // Read the pacing once per sequence: it is a settings read, and the steps of one sequence
+        // belong together anyway - a slider moved mid-sequence takes effect on the next command.
+        int delayFloorMs = configuredDelayFloorMs();
         for (GameInputStep step : event.getSteps()) {
             if (Thread.currentThread().isInterrupted()) {
                 return;
             }
             boolean executed = executeStep(step);
             if (step.isInputProducing() && executed) {
-                sleep(defaultPostInputDelayMs());
+                sleep(postInputDelayMs(random, delayFloorMs));
             }
         }
     }
@@ -221,9 +229,26 @@ public class InputSequenceExecutor {
         return true;
     }
 
-    private int defaultPostInputDelayMs() {
-        return DEFAULT_POST_INPUT_DELAY_MIN_MS
-                + random.nextInt(DEFAULT_POST_INPUT_DELAY_MAX_MS - DEFAULT_POST_INPUT_DELAY_MIN_MS + 1);
+    /**
+     * The commander's pacing setting, or the shipped floor if it cannot be read. WHY the fallback:
+     * a settings read that fails must not abort a sequence half-executed, leaving the game in a
+     * panel the commander did not ask for.
+     */
+    private int configuredDelayFloorMs() {
+        try {
+            return SystemSession.getInstance().getKeyInputDelayMs();
+        } catch (RuntimeException e) {
+            log.warn("Could not read the key input pacing setting, using {}ms: {}",
+                    SystemSession.KEY_INPUT_DELAY_MIN_MS, e.getMessage());
+            return SystemSession.KEY_INPUT_DELAY_MIN_MS;
+        }
+    }
+
+    /**
+     * The pause after one keystroke: the configured floor plus a draw from the randomised spread.
+     */
+    static int postInputDelayMs(Random random, int delayFloorMs) {
+        return delayFloorMs + random.nextInt(POST_INPUT_DELAY_SPREAD_MS);
     }
 
     private void sleep(int delayMs) {

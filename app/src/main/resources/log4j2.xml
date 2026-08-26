@@ -76,7 +76,12 @@
         <Logger name="elite.intel.util.NavigationUtils" level="error"/>
         <Logger name="elite.intel.ai.hands" level="debug"/>
         <Logger name="elite.intel.ai.brain.inference" level="error"/>
-        <Logger name="elite.intel.ai.ears" level="error"/>
+        <!-- info, on purpose, and louder than elite.intel. A push-to-talk press that produces nothing
+             leaves no trace anywhere else: the transcript is dropped inside transcribeAndDispatch without
+             reaching the UI or an event, so at error level a commander reporting "it missed what I said"
+             could only ever send a log with nothing about the capture in it. Every line here is
+             edge-triggered - one per utterance, never per audio frame - so a session costs a few dozen. -->
+        <Logger name="elite.intel.ai.ears" level="info"/>
         <Logger name="elite.intel.ai.mouth" level="error"/>
         <Logger name="elite.intel.ai.brain" level="error"/>
         <Logger name="elite.intel.search" level="debug"/>

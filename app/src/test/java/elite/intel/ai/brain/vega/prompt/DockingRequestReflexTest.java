@@ -81,6 +81,17 @@ class DockingRequestReflexTest {
     }
 
     /**
+     * The last of the three acoustic forms the map covers. It had the correction but not the guard, so a
+     * trimmed map could have dropped it silently while the other two kept the test green.
+     */
+    @Test
+    void theMisheardLensingFormNormalizesIntoTheSameReflex() {
+        String normalized = PhoneticInputNormalizer.normalize("request lensing permission");
+        assertEquals("request landing permission", normalized);
+        assertEquals("request_docking", resolve(normalized).orElseThrow().actionId());
+    }
+
+    /**
      * The phrasings either side of the reported one, so the fix is not one lucky string.
      */
     @Test
