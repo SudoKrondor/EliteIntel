@@ -16,7 +16,7 @@ import java.time.Duration;
 
 public class GeminiClient extends BaseAiClient implements Client {
 
-    public static final String MODEL_FLASH = "gemini-3.1-flash-lite-preview";
+    public static final String MODEL_FLASH = "gemini-3.1-flash-lite";
     private static final String API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
     private static final GeminiClient instance = new GeminiClient();
 
