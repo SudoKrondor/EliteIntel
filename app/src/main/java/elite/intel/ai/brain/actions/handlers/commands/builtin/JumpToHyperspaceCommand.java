@@ -12,7 +12,6 @@ import elite.intel.gameapi.FuelScoop;
 import elite.intel.gameapi.data.FsdTarget;
 import elite.intel.gameapi.inputs.PreFtlChecks;
 import elite.intel.gameapi.inputs.UiNavCommon;
-import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
@@ -54,7 +53,6 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
         GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_TARGET_NEXT_ROUTE_SYSTEM.getGameBinding())));
         UiNavCommon.close();
         GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.delay(150)));
-        LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
 
         FsdTarget fsdTarget = playerSession.getFsdTarget();
         if (fsdTarget != null) {
