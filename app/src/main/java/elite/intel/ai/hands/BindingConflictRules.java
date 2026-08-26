@@ -67,6 +67,25 @@ public class BindingConflictRules {
     }
 
     /**
+     * True when a conflict is <b>blocking</b>: it stops EliteIntel from driving the game at all, not merely
+     * "may interfere". Today that is exactly the map-camera-versus-UI-navigation overlap.
+     * <p>
+     * WHY this one is in a class of its own: route plotting - the single most-used function - walks the galaxy
+     * map to its search field with {@code UI_Left}/{@code UI_Right}/{@code UI_Select} taps. A commander doing
+     * that by hand recovers from the collision without noticing, because they click the field with the mouse.
+     * EliteIntel has no mouse; the keyboard walk is the only way in. So when the same chord also pans the map,
+     * focus never reaches the search field, the system name is typed into nothing, and no route is plotted -
+     * silently, with every keystroke reporting success. Frontier's own defaults land on this, which is why it
+     * is announced on every start rather than once (see {@code KeyBindCheck}).
+     * <p>
+     * The remedy is separation, not a specific layout: W/A/S/D for the map and the arrow keys for the
+     * interface is fine, and so is the reverse. The same keys for both is not.
+     */
+    public static boolean isBlocking(String a, String b) {
+        return isMapVersusUiNavigation(a, b);
+    }
+
+    /**
      * True when one action drives the galaxy/system map camera and the other is UI panel navigation.
      * <p>
      * This is the one case where the context model's "only one context is active" assumption breaks.

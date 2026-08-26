@@ -150,6 +150,68 @@ class BindingConflictScannerTest {
     }
 
     @Test
+    void mapVersusUiConflictIsMarkedBlocking() {
+        // Blocking = EliteIntel cannot drive the game at all, not "may interfere". RoutePlotter walks the
+        // galaxy map to its search field with UI_Left/UI_Right/UI_Select; if those chords also pan the map,
+        // focus never lands in the field and the system name is typed into nothing.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "CamTranslateForward", Set.of("Key_W"),
+                "UI_Up", Set.of("Key_W")));
+
+        assertEquals(1, conflicts.size());
+        assertTrue(conflicts.get(0).blocking());
+    }
+
+    @Test
+    void ordinaryConflictsAreNotBlocking() {
+        // Everything else stays "may interfere": announced once, not on every start.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "UI_Up", Set.of("Key_W"),
+                "UI_Down", Set.of("Key_W"),
+                "DeployHardpointToggle", Set.of("Key_U"),
+                "LandingGearToggle", Set.of("Key_U")));
+
+        assertEquals(2, conflicts.size());
+        assertTrue(conflicts.stream().noneMatch(Conflict::blocking));
+    }
+
+    @Test
+    void theFieldReportedWasdLayoutIsBlockingOnAllFourAxes() {
+        // Verbatim from the commander bundle of 2026-08-26: UI_* primaries on a gamepad with W/A/S/D added
+        // as keyboard secondaries, on top of Frontier's own W/A/S/D map pan. Two plot attempts, every
+        // keystroke reporting success, and no NavRoute event in the journal either time.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "CamTranslateForward", Set.of("Key_W"),
+                "CamTranslateBackward", Set.of("Key_S"),
+                "CamTranslateLeft", Set.of("Key_A"),
+                "CamTranslateRight", Set.of("Key_D"),
+                "UI_Up", Set.of("Key_W"),
+                "UI_Down", Set.of("Key_S"),
+                "UI_Left", Set.of("Key_A"),
+                "UI_Right", Set.of("Key_D")));
+
+        assertEquals(4, conflicts.size());
+        assertTrue(conflicts.stream().allMatch(Conflict::blocking));
+    }
+
+    @Test
+    void separatingMapKeysFromUiKeysClearsTheBlockingConflict() {
+        // The remedy is separation, not a particular layout: W/A/S/D for the map with the arrow keys for the
+        // interface is clean, and so is the reverse. Only sharing the chords is not.
+        assertTrue(BindingConflictScanner.scanKeysets(bindings(
+                "CamTranslateForward", Set.of("Key_W"),
+                "CamTranslateLeft", Set.of("Key_A"),
+                "UI_Up", Set.of("Key_UpArrow"),
+                "UI_Left", Set.of("Key_LeftArrow"))).isEmpty());
+
+        assertTrue(BindingConflictScanner.scanKeysets(bindings(
+                "CamTranslateForward", Set.of("Key_UpArrow"),
+                "CamTranslateLeft", Set.of("Key_LeftArrow"),
+                "UI_Up", Set.of("Key_W"),
+                "UI_Left", Set.of("Key_A"))).isEmpty());
+    }
+
+    @Test
     void mapCameraStillDoesNotConflictWithAShipAction() {
         // Ship controls ARE disabled while the map is open - only the UI_* overlap is new.
         List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(

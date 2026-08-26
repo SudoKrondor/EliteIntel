@@ -29,14 +29,18 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("division", "toggle night vision");
         m.put("her style", "hostile");
         m.put("hair style", "hostile");
-        m.put("did", "deploy");
+        // Longest phrase first: the normalizer rewrites the whole transcript at each step, so "did" -> "deploy"
+        // placed above "did ploy" would leave "deploy ploy" behind and the two-word rule could never fire.
         m.put("did ploy", "deploy");
+        m.put("did", "deploy");
         m.put("do they play", "deploy");
         m.put("perimeter", "enter");
         m.put("exit this window", "exit");
-        m.put("spectrum scan", "scan system");
+        // Same ordering rule as "did ploy" above: "spectrum scan" is a substring of both full-spectrum forms
+        // (the hyphen counts as a word boundary), so the FSS phrases have to be corrected first.
         m.put("full spectrum scan", "FSS");
         m.put("full-spectrum scan", "FSS");
+        m.put("spectrum scan", "scan system");
         m.put("nicolai has", "equalize");
         m.put("mitigation", "navigation");
         m.put("codec", "codex");
@@ -54,7 +58,6 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("are two", "power to");
         m.put("motor car of", "recover");
         m.put("allocation", "location");
-        m.put("distance", "distance");
         m.put("fields", "shields");
         m.put("power two", "power to");
         // Unstressed "to" reaches the transcript as "of" or "two", and the article is usually spoken even
