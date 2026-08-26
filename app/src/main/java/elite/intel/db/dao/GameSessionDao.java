@@ -19,6 +19,7 @@ public interface GameSessionDao {
                                                              rmsThresholdHigh,
                                                              rmsThresholdLow, encryptedLLMKey, encryptedTTSKey,
                                                              speechSpeed, googleWaveNetPitch,
+                                                             keyInputDelayMs,
                                                              useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, ttsProvider, notificationVolume, sttThreads, voiceVolume,
                                                              lmStudioAddress, lmStudioCommandModel,
                                                              aiLanguage,
@@ -33,6 +34,7 @@ public interface GameSessionDao {
                                                       :rmsThresholdHigh,
                                                       :rmsThresholdLow, :encryptedLLMKey, :encryptedTTSKey,
                                                       :speechSpeed, :googleWaveNetPitch,
+                                                      :keyInputDelayMs,
                                                       :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :ttsProvider, :notificationVolume, :sttThreads, :voiceVolume,
                                                       :lmStudioAddress, :lmStudioCommandModel,
                                                       :aiLanguage,
@@ -65,6 +67,7 @@ public interface GameSessionDao {
 
             session.setSpeechSpeed(rs.getFloat("speechSpeed"));
             session.setGoogleWaveNetPitch(rs.getInt("googleWaveNetPitch"));
+            session.setKeyInputDelayMs(rs.getInt("keyInputDelayMs"));
 
             session.setUseLocalCommandLlm(rs.getBoolean("useLocalCommandLlm"));
             session.setUseLocalQueryLlm(rs.getBoolean("useLocalQueryLlm"));
@@ -107,6 +110,10 @@ public interface GameSessionDao {
 
         private Float speechSpeed;
         private int googleWaveNetPitch;
+        /**
+         * Floor of the pause the input executor holds after each keystroke, in milliseconds.
+         */
+        private int keyInputDelayMs;
         private Float notificationVolume;
         private boolean useLocalCommandLlm;
         private boolean useLocalQueryLlm;
@@ -215,6 +222,14 @@ public interface GameSessionDao {
 
         public void setGoogleWaveNetPitch(int googleWaveNetPitch) {
             this.googleWaveNetPitch = googleWaveNetPitch;
+        }
+
+        public int getKeyInputDelayMs() {
+            return keyInputDelayMs;
+        }
+
+        public void setKeyInputDelayMs(int keyInputDelayMs) {
+            this.keyInputDelayMs = keyInputDelayMs;
         }
 
         public boolean isUseLocalCommandLlm() {

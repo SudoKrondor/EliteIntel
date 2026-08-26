@@ -24,6 +24,14 @@ public class SystemSession {
     public static final int GOOGLE_WAVENET_PITCH_MIN = -20;
     public static final int GOOGLE_WAVENET_PITCH_MAX = 20;
 
+    /**
+     * Range of the pause the input executor holds after each keystroke it sends to the game, in
+     * milliseconds. The minimum is the pacing this app has always used and stays the default; the
+     * maximum is for machines where the game drops keystrokes out of a fast sequence.
+     */
+    public static final int KEY_INPUT_DELAY_MIN_MS = 100;
+    public static final int KEY_INPUT_DELAY_MAX_MS = 200;
+
     private Double rms = 0.0;
     private Double floor = 0.0;
     private static volatile SystemSession instance;
@@ -260,6 +268,26 @@ public class SystemSession {
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
             session.setGoogleWaveNetPitch(pitch);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    /**
+     * Floor of the post-keystroke pause, in milliseconds - see {@link #KEY_INPUT_DELAY_MIN_MS}.
+     */
+    public int getKeyInputDelayMs() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getKeyInputDelayMs());
+    }
+
+    public void setKeyInputDelayMs(int delayMs) {
+        if (delayMs < KEY_INPUT_DELAY_MIN_MS || delayMs > KEY_INPUT_DELAY_MAX_MS) {
+            throw new IllegalArgumentException(
+                    "Key input delay must be between " + KEY_INPUT_DELAY_MIN_MS + " and " + KEY_INPUT_DELAY_MAX_MS + " ms");
+        }
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setKeyInputDelayMs(delayMs);
             dao.save(session);
             return null;
         });

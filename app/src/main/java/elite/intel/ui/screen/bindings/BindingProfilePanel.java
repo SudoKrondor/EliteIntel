@@ -5,6 +5,7 @@ import elite.intel.ai.hands.*;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.SystemSession;
 import elite.intel.ui.dialog.AssignKeyboardBindingDialog;
 import elite.intel.ui.dialog.ClearKeyboardBindingDialog;
 import elite.intel.ui.event.BindingsSummaryChangedEvent;
@@ -41,11 +42,16 @@ import static elite.intel.ui.theme.HudPalette.*;
 public class BindingProfilePanel extends JPanel {
 
     private static final int SCROLL_UNIT_ROWS = 2;
+    /**
+     * Pacing slider granularity: 10ms notches between the FAST and SLOW ends.
+     */
+    private static final int KEY_INPUT_PACING_STEP_MS = 10;
 
     private final BindingsLoader loader = new BindingsLoader();
     private final KeyBindingsParser parser = KeyBindingsParser.getInstance();
     private final BindingsMonitor monitor = BindingsMonitor.getInstance();
     private final PlayerSession playerSession = PlayerSession.getInstance();
+    private final SystemSession systemSession = SystemSession.getInstance();
     private final KeyboardKeyAvailabilityService availabilityService = new KeyboardKeyAvailabilityService();
     private final BindingsWriter bindingsWriter = new BindingsWriter();
     private final BindingSlotDisplayFormatter slotFormatter = new BindingSlotDisplayFormatter();
@@ -179,7 +185,10 @@ public class BindingProfilePanel extends JPanel {
         setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
         JPanel details = compactProfilePanel();
-        add(bindingProfileCard(details), BorderLayout.NORTH);
+        JPanel header = transparentPanel(new BorderLayout(0, 2));
+        header.add(bindingProfileCard(details), BorderLayout.NORTH);
+        header.add(keyInputPacingRow(), BorderLayout.CENTER);
+        add(header, BorderLayout.NORTH);
 
         usedBindingsPanel = groupedTablesPanel();
         missingBindingsPanel = groupedTablesPanel();
@@ -622,6 +631,65 @@ public class BindingProfilePanel extends JPanel {
         keyboardOnlyBanner = new HudBanner(getText("bindings.keyboardOnlyHint"),
                 StatusBadge.State.STANDBY, true);
         return keyboardOnlyBanner;
+    }
+
+    /**
+     * Pacing of the keystrokes this app sends to the game, sitting directly under the keyboard-only
+     * banner because it governs exactly what that banner describes.
+     * <p>
+     * The slider sets the floor of the pause held after each keystroke of a sequence; the executor
+     * adds its own randomised spread on top. FAST is the pacing every build so far has used and stays
+     * the default - SLOW is for machines where the game drops keystrokes out of a sequence it cannot
+     * keep up with.
+     */
+    private JPanel keyInputPacingRow() {
+        JPanel row = transparentPanel(new GridBagLayout());
+        row.setBorder(new EmptyBorder(0, 6, 0, 6));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(0, 0, 0, 7);
+
+        gbc.gridx = 0;
+        row.add(sliderRowLabel(getText("bindings.keyInputPacing"), LABEL_COL_WIDTH), gbc);
+
+        gbc.gridx = 1;
+        row.add(sliderRowLabel(getText("bindings.keyInputPacing.fast"), 0), gbc);
+
+        HudSlider slider = new HudSlider(
+                SystemSession.KEY_INPUT_DELAY_MIN_MS,
+                SystemSession.KEY_INPUT_DELAY_MAX_MS,
+                KEY_INPUT_PACING_STEP_MS,
+                systemSession.getKeyInputDelayMs());
+        slider.setToolTipText(getText("bindings.keyInputPacing.tooltip"));
+        slider.addChangeListener(e -> systemSession.setKeyInputDelayMs(slider.getValue()));
+        gbc.gridx = 2;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        row.add(slider, gbc);
+
+        gbc.gridx = 3;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        row.add(sliderRowLabel(getText("bindings.keyInputPacing.slow"), 0), gbc);
+
+        return row;
+    }
+
+    /**
+     * Label for the pacing row, dropped by the slider's value area so it sits level with the track
+     * rather than with the value printed above the thumb. A {@code width} of 0 leaves the label at
+     * its natural width.
+     */
+    private static JLabel sliderRowLabel(String text, int width) {
+        JLabel label = hudReadoutLabel(text);
+        label.setBorder(new EmptyBorder(HUD_SLIDER_VALUE_AREA, 0, 0, 0));
+        if (width > 0) {
+            sizeFieldLabel(label, width);
+        }
+        return label;
     }
 
     private JPanel groupedTablesPanel() {
