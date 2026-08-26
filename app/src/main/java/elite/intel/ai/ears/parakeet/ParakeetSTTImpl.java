@@ -54,6 +54,11 @@ public class ParakeetSTTImpl implements EarsInterface {
     private static final double LEADING_TRIM_THRESHOLD_FACTOR = 3.0; // trim leading frames below NOISE_FLOOR * this
     private static final int MAX_UTTERANCE_MS = 8000;
     private static final int MAX_UTTERANCE_BYTES = SAMPLE_RATE * 2 * MAX_UTTERANCE_MS / 1000;
+    // How long recording continues past the button release. A commander lets go of the button while saying
+    // the last word rather than after it, and the frame the release lands in only covers the final 100ms of
+    // that - "FTL" reached the recogniser as a severed "f" and was dropped as too short to be a phrase.
+    private static final int PTT_RELEASE_TAIL_MS = 500;
+    private static final int PTT_RELEASE_TAIL_BYTES = SAMPLE_RATE * 2 * PTT_RELEASE_TAIL_MS / 1000;
 
     private final AtomicBoolean isStopping = new AtomicBoolean(false);
     private final AtomicBoolean isListening = new AtomicBoolean(false);
@@ -72,7 +77,7 @@ public class ParakeetSTTImpl implements EarsInterface {
     /**
      * The push-to-talk capture window: while it is armed, this and not the VAD says what a frame is for.
      */
-    private final PushToTalkCaptureWindow pttWindow = new PushToTalkCaptureWindow(MAX_UTTERANCE_BYTES);
+    private final PushToTalkCaptureWindow pttWindow = new PushToTalkCaptureWindow(MAX_UTTERANCE_BYTES, PTT_RELEASE_TAIL_BYTES);
     private final ArrayDeque<byte[]> preRoll = new ArrayDeque<>();
 
     private ExecutorService transcriptionExecutor;
@@ -320,14 +325,14 @@ public class ParakeetSTTImpl implements EarsInterface {
                     }
                     wasActive = frame != PushToTalkCaptureWindow.Frame.DISCARD;
                     if (wasActive) {
-                        // The frame the release lands in is written before the window shuts, so the last word
-                        // is not clipped by a commander who lets go the instant they finish saying it.
+                        // The window keeps handing back COLLECT for the release tail, so the last word is not
+                        // clipped by a commander who lets go the instant they finish saying it.
                         audioCollector.write(audio, 0, audioLen);
                     }
                     isActive = frame == PushToTalkCaptureWindow.Frame.COLLECT;
                     if (frame == PushToTalkCaptureWindow.Frame.CLOSE_ON_RELEASE) {
-                        log.info("PTT: button released, capture window closed ({}ms captured)",
-                                audioCollector.size() * 1000 / (SAMPLE_RATE * 2));
+                        log.info("PTT: button released, capture window closed ({}ms captured, including a {}ms tail)",
+                                audioCollector.size() * 1000 / (SAMPLE_RATE * 2), PTT_RELEASE_TAIL_MS);
                     } else if (frame == PushToTalkCaptureWindow.Frame.CLOSE_ON_MAX_LENGTH) {
                         log.warn("PTT: max utterance length ({}ms) reached with the button still held", MAX_UTTERANCE_MS);
                     }
@@ -463,7 +468,9 @@ public class ParakeetSTTImpl implements EarsInterface {
                     // Keep exactly what the decoder was given. This is the one failure the numbers above
                     // cannot explain on their own, and listening to it answers in seconds what another
                     // session of logs only narrows down.
-                    DumpAudioForTesting.getInstance().dumpFailedCapture(forDecoder, SAMPLE_RATE, "empty");
+
+                    ///NOTE ENABLE FOR LOCAL MANUAL DEBUGGING ONLY
+                    //DumpAudioForTesting.getInstance().dumpFailedCapture(forDecoder, SAMPLE_RATE, "empty");
                     return;
                 }
 

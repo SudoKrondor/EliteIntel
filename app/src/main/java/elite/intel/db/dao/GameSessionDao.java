@@ -28,7 +28,7 @@ public interface GameSessionDao {
                                                              pushToTalkButtonIndex, sleepWake,
                                                              noiseReductionEnabled, noiseReductionStrength,
                                                              overlayAlpha, overlayFontScale, overlayWidth, overlayX, overlayY,
-                                                             overlayDisplayMode, overlayVrPosition
+                                                             overlayDisplayMode, overlayVrPosition, overlayVisible
                                                 )
                                   VALUES (1, :kokoroVoice, :googleVoice,
                                                       :rmsThresholdHigh,
@@ -43,7 +43,7 @@ public interface GameSessionDao {
                                                       :pushToTalkButtonIndex, :sleepWake,
                                                       :noiseReductionEnabled, :noiseReductionStrength,
                                                       :overlayAlpha, :overlayFontScale, :overlayWidth, :overlayX, :overlayY,
-                                                      :overlayDisplayMode, :overlayVrPosition
+                                                      :overlayDisplayMode, :overlayVrPosition, :overlayVisible
                                           )
             """)
     void save(@BindBean GameSessionDao.GameSession data);
@@ -94,6 +94,7 @@ public interface GameSessionDao {
             session.setOverlayY(rs.getInt("overlayY"));
             session.setOverlayDisplayMode(rs.getString("overlayDisplayMode"));
             session.setOverlayVrPosition(rs.getString("overlayVrPosition"));
+            session.setOverlayVisible(rs.getBoolean("overlayVisible"));
             return session;
         }
     }
@@ -151,6 +152,7 @@ public interface GameSessionDao {
         private int overlayY = Integer.MIN_VALUE;
         private String overlayDisplayMode = "DESKTOP";
         private String overlayVrPosition = "BOTTOM";
+        private boolean overlayVisible = false;
 
 
         /**
@@ -436,6 +438,14 @@ public interface GameSessionDao {
          */
         public String getOverlayVrPosition() {
             return overlayVrPosition;
+        }
+
+        public boolean isOverlayVisible() {
+            return overlayVisible;
+        }
+
+        public void setOverlayVisible(boolean overlayVisible) {
+            this.overlayVisible = overlayVisible;
         }
 
         public void setOverlayVrPosition(String overlayVrPosition) {

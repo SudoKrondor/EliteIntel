@@ -75,7 +75,7 @@ class InputSequenceExecutorTest {
         // The floor is what the commander picked - the spread only ever adds to it, so dragging the
         // slider towards SLOW can never hand the game a pause faster than the one it was set to.
         assertEquals(floor, lowest, "no pause may fall below the configured floor");
-        assertEquals(floor + 101, highest, "the spread above the floor is unchanged from the shipped 100-300ms window");
+        assertEquals(floor + 49, highest, "the jitter above the floor overran its 50ms cap");
     }
 
     @Test
@@ -84,7 +84,22 @@ class InputSequenceExecutorTest {
 
         for (int i = 0; i < 10_000; i++) {
             int delay = InputSequenceExecutor.postInputDelayMs(random, SystemSession.KEY_INPUT_DELAY_MIN_MS);
-            assertTrue(delay >= 100 && delay <= 300, "default pacing drifted from the 100-300ms window: " + delay);
+            assertTrue(delay >= 100 && delay < 150, "default pacing drifted from the 100-149ms window: " + delay);
+        }
+    }
+
+    @Test
+    void theJitterStaysInsideItsCapAtEveryPacingTheSliderCanReach() {
+        // The jitter is there to break up the rhythm, not to widen it: whatever pacing the commander
+        // picked, the pause they actually get must stay recognisably that pacing.
+        Random random = new Random(99);
+
+        for (int floor = SystemSession.KEY_INPUT_DELAY_MIN_MS; floor <= SystemSession.KEY_INPUT_DELAY_MAX_MS; floor += 10) {
+            for (int i = 0; i < 500; i++) {
+                int delay = InputSequenceExecutor.postInputDelayMs(random, floor);
+                assertTrue(delay >= floor, "pause " + delay + "ms fell below the " + floor + "ms floor");
+                assertTrue(delay - floor < 50, "jitter of " + (delay - floor) + "ms above the " + floor + "ms floor exceeded 50ms");
+            }
         }
     }
 }
