@@ -28,11 +28,15 @@ public final class BindingConflictScanner {
     /**
      * One detected conflict between two actions, ordered so {@code actionA < actionB}.
      *
+     * @param chord    the shared key-set both actions are bound to, in Elite's raw tokens
+     *                 ({@code Key_W}, {@code Key_LeftControl}, ...). Kept raw so the domain stays
+     *                 free of presentation; render it with {@link BindingChordSpeech} for the voice
+     *                 warning, or {@code BindingSlotDisplayFormatter} for the Bindings tab.
      * @param blocking whether this conflict stops EliteIntel driving the game outright rather than merely
      *                 risking interference - see {@link BindingConflictRules#isBlocking}. A blocking conflict
      *                 is announced on every start, not once.
      */
-    public record Conflict(String actionA, String actionB, String description, boolean blocking) {
+    public record Conflict(String actionA, String actionB, Set<String> chord, String description, boolean blocking) {
     }
 
     /**
@@ -84,7 +88,7 @@ public final class BindingConflictScanner {
                 if (BindingConflictRules.isSafeOverlap(a, b)) {
                     continue; // different vehicle state or a sub-mode overlay → never co-fire
                 }
-                conflicts.add(new Conflict(a, b, BindingConflictRules.describe(a, b),
+                conflicts.add(new Conflict(a, b, Set.copyOf(ksA), BindingConflictRules.describe(a, b),
                         BindingConflictRules.isBlocking(a, b)));
             }
         }

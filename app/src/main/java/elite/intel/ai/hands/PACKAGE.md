@@ -331,7 +331,9 @@ wait for any open map to close → open galaxy map → wait for `GuiFocus` to re
 `UI_Back`); `prepToKnownUiPositionWhileInTheShipAtStation()` (three UI_Down steps).
 
 **`KeyBindCheck.check()`
-** - triggers missing/conflict detection and publishes voice announcements summarizing the counts.
+** - triggers missing/conflict detection and publishes the voice announcements. Missing bindings and ordinary conflicts are announced as counts; a
+**blocking** conflict instead names the chords in collision (via
+`BindingChordSpeech`), because the commander has to know which keys to move, and Frontier's W/A/S/D default is not necessarily theirs.
 
 **`EliteKeyboardKeys`
 ** - static allow-list of keyboard token strings the MVP editor can assign. Kept static so the UI dropdown can show keys that are not yet in the active file.
@@ -372,6 +374,7 @@ The authoritative registry of Elite Dangerous action names that EliteIntel comma
 | `BindingsWriter` | Surgical text-based XML slot editor; atomic write |
 | `BindingsApplyService` | Validate → backup → atomic apply to game directory |
 | `BindingConflictRules` | Safe-overlap logic and curated dangerous-pair descriptions |
+| `BindingChordSpeech` | Renders a chord as speakable words ("Left Control plus W") for the spoken warnings |
 | `BindingGroupClassifier` | Classifies binding IDs into display groups |
 | `EliteKeyboardKeys` | Static allow-list of assignable key tokens for the UI |
 | `Bindings.GameCommand` | Enum of all game action names EliteIntel may invoke |

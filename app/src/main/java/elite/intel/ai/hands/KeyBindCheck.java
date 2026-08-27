@@ -33,7 +33,7 @@ public class KeyBindCheck {
 
         List<String> newMissing = monitor.checkForMissingBindings();
         List<String> newConflicts = monitor.checkForConflictsAndPersist();
-        List<String> blocking = monitor.blockingConflicts();
+        List<BindingConflictScanner.Conflict> blocking = monitor.blockingConflicts();
 
         // Blocking conflicts first, and unconditionally: this is the one binding problem that stops
         // EliteIntel driving the game at all rather than degrading it, and the commander cannot discover
@@ -41,14 +41,21 @@ public class KeyBindCheck {
         // every start for as long as it is in the file, because a once-only warning leaves a permanently
         // broken setup permanently silent. See BindingConflictRules#isBlocking.
         if (!blocking.isEmpty()) {
+            // The keys are named rather than described as "W A S D": Frontier's default lands there, but a
+            // commander who has already remapped hears a layout that is not theirs and stops listening.
+            List<String> conflictingKeys = BindingChordSpeech.distinctChords(
+                    blocking.stream().map(BindingConflictScanner.Conflict::chord).toList());
             GameEventBus.publish(new AiVoxResponseEvent(
-                    StringUtls.localizedSpeech("speech.bindingConflictsBlocking")
+                    // The count drives singular/plural wording in every locale; the joined list is what is read out.
+                    StringUtls.localizedSpeech("speech.bindingConflictsBlocking",
+                            conflictingKeys.size(), String.join(", ", conflictingKeys))
             ));
             blocking.forEach(c -> {
-                UiBus.publish(new AppLogEvent("BLOCKING binding conflict: " + c));
+                String line = "[" + BindingChordSpeech.describe(c.chord()) + "] " + c.description();
+                UiBus.publish(new AppLogEvent("BLOCKING binding conflict: " + line));
                 // ERROR so the line survives into elite-intel.log and the diagnostics bundle, which is
                 // where a support request starts. A config the app cannot work around is an error here.
-                log.error("Blocking binding conflict: {}", c);
+                log.error("Blocking binding conflict: {}", line);
             });
         }
 

@@ -232,8 +232,9 @@ public class BindingsMonitor {
     }
 
     /**
-     * Descriptions of every <b>blocking</b> conflict currently in the binds file - the overlaps that stop
-     * EliteIntel driving the game outright (see {@link BindingConflictRules#isBlocking}).
+     * Every <b>blocking</b> conflict currently in the binds file - the overlaps that stop EliteIntel
+     * driving the game outright (see {@link BindingConflictRules#isBlocking}). Returned whole, chord
+     * included, because the warning names the keys the commander actually has to move.
      * <p>
      * A pure read with no persistence diff, deliberately: {@link #checkForConflictsAndPersist()} tells the
      * commander about a conflict exactly once and is then silent forever, which is right for "this control
@@ -242,10 +243,9 @@ public class BindingsMonitor {
      * report of "route plotting does not work for me" reached us with all four map/UI overlaps sitting in the
      * file and not one word about them in the diagnostics bundle.
      */
-    public List<String> blockingConflicts() {
+    public List<BindingConflictScanner.Conflict> blockingConflicts() {
         return detectConflicts().stream()
                 .filter(BindingConflictScanner.Conflict::blocking)
-                .map(BindingConflictScanner.Conflict::description)
                 .toList();
     }
 
