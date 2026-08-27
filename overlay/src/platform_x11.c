@@ -110,11 +110,31 @@ int hud_run_desktop(int argc, char **argv) {
 
     Atom wtype = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
     // NOTIFICATION says "transient, not a real window" and window lists honour
-    // that by leaving it out; NORMAL is what puts capture mode in the list a
-    // commander picks from. Keep-above goes with it: this window is going to be
-    // read in a headset, not on the desktop it is sitting on.
-    Atom kind = XInternAtom(dpy, model.capture ? "_NET_WM_WINDOW_TYPE_NORMAL"
-                                               : "_NET_WM_WINDOW_TYPE_NOTIFICATION", False);
+    // that by leaving it out - but ONLY a managed window needs to say so, and
+    // saying it while override-redirect is actively harmful.
+    //
+    // Harmful because a compositor does not merely file a notification window
+    // away, it ANIMATES it. KWin's sliding-popups effect slides notification
+    // windows in and out, and it does that to override-redirect windows too, by
+    // translating them: a commander on Plasma saw the HUD ease upward on its own
+    // in decelerating steps - 59px, then 15px, same x, same size - every time
+    // something re-triggered the slide. From a video that is an overlay drifting
+    // about "as if blown by a light wind", and no amount of looking at this
+    // program's own XMoveWindow calls explains it, because none of them ran.
+    //
+    // And the hint was never buying anything here: an override-redirect window is
+    // unmanaged, so it is already absent from _NET_CLIENT_LIST, wmctrl and every
+    // window list built from them - verified. It is only in --managed mode, where
+    // the window manager really does own the window, that NOTIFICATION does the
+    // job the comment above describes and keeps it off the taskbar.
+    //
+    // So: NORMAL whenever this shell owns its own placement, NOTIFICATION only
+    // when it has handed placement to the window manager. Capture mode is NORMAL
+    // for its own reason - it must appear in the list a capture tool picks from.
+    int self_placed = !managed && !model.capture;
+    Atom kind = XInternAtom(dpy, (model.capture || self_placed)
+                                     ? "_NET_WM_WINDOW_TYPE_NORMAL"
+                                     : "_NET_WM_WINDOW_TYPE_NOTIFICATION", False);
     XChangeProperty(dpy, win, wtype, XA_ATOM, 32, PropModeReplace, (unsigned char *) &kind, 1);
     if (!model.capture) {
         Atom wstate = XInternAtom(dpy, "_NET_WM_STATE", False);

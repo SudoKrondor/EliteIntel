@@ -54,6 +54,7 @@ public class PlayerSession {
     private final TargetLocationManager targetLocationManager = TargetLocationManager.getInstance();
     private final FsdTargetManager fsdTargetManager = FsdTargetManager.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
+    private final SuitInventory suitInventory = SuitInventory.getInstance();
     private boolean shipAutoDeparted = false;
 
     private PlayerSession() {
@@ -246,6 +247,22 @@ public class PlayerSession {
 
     public GameEvents.CargoEvent getShipCargo() {
         return cargoHold.get();
+    }
+
+    /**
+     * The Odyssey micro-resources the commander is actually holding right now. See
+     * {@link SuitInventory} for which of the game's two snapshots of them counts.
+     */
+    public List<GameEvents.MicroResource> getSuitInventory() {
+        return suitInventory.items();
+    }
+
+    public void setBackpack(GameEvents.BackpackEvent event) {
+        suitInventory.setBackpack(event);
+    }
+
+    public void setShipLocker(GameEvents.ShipLockerEvent event) {
+        suitInventory.setShipLocker(event);
     }
 
     /**

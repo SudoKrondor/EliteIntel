@@ -96,7 +96,7 @@ public final class FindMissionCommodityCommand implements IntelCommand {
 
         List<MissionCargo.Outstanding> board = MissionCargo.outstanding(
                 withCommoditySymbols(missionManager.getMissions().values()),
-                MissionCargo.heldBySymbol(playerSession.getShipCargo()));
+                MissionCargo.heldBySymbol(playerSession.getShipCargo(), playerSession.getSuitInventory()));
 
         if (board.isEmpty()) {
             return StringUtls.localizedResponse("handler.missionCommodity.noCargoMissions");
