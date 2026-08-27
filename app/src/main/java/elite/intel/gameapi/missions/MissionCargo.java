@@ -13,6 +13,9 @@ import java.util.*;
  * ordinary cargo, so no {@code CargoDepot} update ties the purchase to the mission and no
  * {@code Cargo.json} row carries its MissionID. The only way to know what is still owed is to compare
  * each mission's requirement against the hold, which is what this does.
+ * <p>
+ * "The hold" means every container a mission commodity can sit in, not just the ship's - see
+ * {@link #heldBySymbol} for why an on-foot mission is invisible to {@code Cargo.json}.
  */
 public final class MissionCargo {
 
@@ -69,15 +72,37 @@ public final class MissionCargo {
     }
 
     /**
-     * The hold as a symbol-to-count map. The journal writes inventory names lower-cased, which is the
-     * same shape {@link elite.intel.gameapi.JournalSymbol} normalises a mission's commodity to.
+     * Everything the commander is holding that a mission could be asking for, as a symbol-to-count
+     * map. The journal writes inventory names lower-cased, which is the same shape
+     * {@link elite.intel.gameapi.JournalSymbol} normalises a mission's commodity to.
+     * <p>
+     * The suit inventory is in here because an on-foot mission - salvage a Chemical Sample from a
+     * crash site, collect four Health Monitors - is handed in as a commodity like any other, but the
+     * item it asks for is a micro-resource that never enters the cargo hold. Measured against
+     * {@code Cargo.json} alone such a mission reads zero from acceptance to hand-over, however far
+     * along it actually is.
+     * <p>
+     * WHY: both go into one pool. Ship commodity symbols and Odyssey micro-resource symbols are
+     * separate namespaces in the journal (checked against the 398 commodity symbols seeded in
+     * {@code 01014__schema.sql}), so nothing a mission can ask for is ambiguous between them.
+     *
+     * @param cargo          the ship's hold, or null when none has been seen
+     * @param suitInventory  the live micro-resources, from {@code PlayerSession.getSuitInventory()},
+     *                       which is what decides between the backpack and the ship's locker
      */
-    public static Map<String, Integer> heldBySymbol(GameEvents.CargoEvent cargo) {
+    public static Map<String, Integer> heldBySymbol(GameEvents.CargoEvent cargo,
+                                                    List<GameEvents.MicroResource> suitInventory) {
         Map<String, Integer> held = new HashMap<>();
-        if (cargo == null || cargo.getInventory() == null) return held;
-        for (GameEvents.Inventory item : cargo.getInventory()) {
+        if (cargo != null && cargo.getInventory() != null) {
+            for (GameEvents.Inventory item : cargo.getInventory()) {
+                if (item == null || item.getName() == null) continue;
+                held.merge(item.getName().toLowerCase(Locale.ROOT), (int) item.getCount(), Integer::sum);
+            }
+        }
+        if (suitInventory == null) return held;
+        for (GameEvents.MicroResource item : suitInventory) {
             if (item == null || item.getName() == null) continue;
-            held.merge(item.getName().toLowerCase(Locale.ROOT), (int) item.getCount(), Integer::sum);
+            held.merge(item.getName().toLowerCase(Locale.ROOT), item.getCount(), Integer::sum);
         }
         return held;
     }

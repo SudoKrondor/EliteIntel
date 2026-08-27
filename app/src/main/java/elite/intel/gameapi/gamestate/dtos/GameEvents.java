@@ -544,19 +544,71 @@ public class GameEvents {
         }
     }
 
+    /**
+     * One line of the Odyssey micro-resource inventory, as written to {@code Backpack.json} and
+     * {@code ShipLocker.json}. Both files write Items, Components, Consumables and Data in this one
+     * shape, so all eight lists share it.
+     * <p>
+     * These are how an on-foot salvage or collect objective is measured at all: the item it asks for
+     * never reaches the ship's cargo hold, so {@code Cargo.json} reports nothing for it. It is joined
+     * to a mission by its bare symbol, the same way cargo is - see {@code MissionCargo.heldBySymbol}.
+     */
+    public static class MicroResource {
+        @SerializedName("Name")
+        private String name;
+        @SerializedName("Name_Localised")
+        private String nameLocalised;
+        @SerializedName("OwnerID")
+        private int ownerID;
+        @SerializedName("Count")
+        private int count;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getNameLocalised() {
+            return nameLocalised;
+        }
+
+        public void setNameLocalised(String nameLocalised) {
+            this.nameLocalised = nameLocalised;
+        }
+
+        public int getOwnerID() {
+            return ownerID;
+        }
+
+        public void setOwnerID(int ownerID) {
+            this.ownerID = ownerID;
+        }
+
+        public int getCount() {
+            return count;
+        }
+
+        public void setCount(int count) {
+            this.count = count;
+        }
+    }
+
     public static class BackpackEvent {
         @SerializedName("timestamp")
         private String timestamp;
         @SerializedName("event")
         private String event;
         @SerializedName("Items")
-        private List<Object> items;
+        private List<MicroResource> items;
         @SerializedName("Components")
-        private List<Object> components;
+        private List<MicroResource> components;
         @SerializedName("Consumables")
-        private List<Object> consumables;
+        private List<MicroResource> consumables;
         @SerializedName("Data")
-        private List<Object> data;
+        private List<MicroResource> data;
 
 
         public void setTimestamp(String timestamp) {
@@ -567,19 +619,19 @@ public class GameEvents {
             this.event = event;
         }
 
-        public void setItems(List<Object> items) {
+        public void setItems(List<MicroResource> items) {
             this.items = items;
         }
 
-        public void setComponents(List<Object> components) {
+        public void setComponents(List<MicroResource> components) {
             this.components = components;
         }
 
-        public void setConsumables(List<Object> consumables) {
+        public void setConsumables(List<MicroResource> consumables) {
             this.consumables = consumables;
         }
 
-        public void setData(List<Object> data) {
+        public void setData(List<MicroResource> data) {
             this.data = data;
         }
 
@@ -592,19 +644,19 @@ public class GameEvents {
             return event;
         }
 
-        public List<Object> getItems() {
+        public List<MicroResource> getItems() {
             return items;
         }
 
-        public List<Object> getComponents() {
+        public List<MicroResource> getComponents() {
             return components;
         }
 
-        public List<Object> getConsumables() {
+        public List<MicroResource> getConsumables() {
             return consumables;
         }
 
-        public List<Object> getData() {
+        public List<MicroResource> getData() {
             return data;
         }
 
@@ -1083,114 +1135,18 @@ public class GameEvents {
     }
 
     public static class ShipLockerEvent {
-        public static class Component {
-            @SerializedName("Name")
-            private String name;
-            @SerializedName("Name_Localised")
-            private String nameLocalised;
-            @SerializedName("OwnerID")
-            private int ownerID;
-            @SerializedName("Count")
-            private int count;
-
-            public void setName(String name) {
-                this.name = name;
-            }
-
-            public void setNameLocalised(String nameLocalised) {
-                this.nameLocalised = nameLocalised;
-            }
-
-            public void setOwnerID(int ownerID) {
-                this.ownerID = ownerID;
-            }
-
-            public void setCount(int count) {
-                this.count = count;
-            }
-
-            // Getters
-            public String getName() {
-                return name;
-            }
-
-            public String getNameLocalised() {
-                return nameLocalised;
-            }
-
-            public int getOwnerID() {
-                return ownerID;
-            }
-
-            public int getCount() {
-                return count;
-            }
-
-            public String toJson() {
-                return GsonFactory.getGson().toJson(this);
-            }
-        }
-
-        public static class Consumable {
-            @SerializedName("Name")
-            private String name;
-            @SerializedName("Name_Localised")
-            private String nameLocalised;
-            @SerializedName("OwnerID")
-            private int ownerID;
-            @SerializedName("Count")
-            private int count;
-
-            public void setName(String name) {
-                this.name = name;
-            }
-
-            public void setNameLocalised(String nameLocalised) {
-                this.nameLocalised = nameLocalised;
-            }
-
-            public void setOwnerID(int ownerID) {
-                this.ownerID = ownerID;
-            }
-
-            public void setCount(int count) {
-                this.count = count;
-            }
-
-            // Getters
-            public String getName() {
-                return name;
-            }
-
-            public String getNameLocalised() {
-                return nameLocalised;
-            }
-
-            public int getOwnerID() {
-                return ownerID;
-            }
-
-            public int getCount() {
-                return count;
-            }
-
-            public String toJson() {
-                return GsonFactory.getGson().toJson(this);
-            }
-        }
-
         @SerializedName("timestamp")
         private String timestamp;
         @SerializedName("event")
         private String event;
         @SerializedName("Items")
-        private List<Object> items;
+        private List<MicroResource> items;
         @SerializedName("Components")
-        private List<Component> components;
+        private List<MicroResource> components;
         @SerializedName("Consumables")
-        private List<Consumable> consumables;
+        private List<MicroResource> consumables;
         @SerializedName("Data")
-        private List<Object> data;
+        private List<MicroResource> data;
 
 
         public void setTimestamp(String timestamp) {
@@ -1201,19 +1157,19 @@ public class GameEvents {
             this.event = event;
         }
 
-        public void setItems(List<Object> items) {
+        public void setItems(List<MicroResource> items) {
             this.items = items;
         }
 
-        public void setComponents(List<Component> components) {
+        public void setComponents(List<MicroResource> components) {
             this.components = components;
         }
 
-        public void setConsumables(List<Consumable> consumables) {
+        public void setConsumables(List<MicroResource> consumables) {
             this.consumables = consumables;
         }
 
-        public void setData(List<Object> data) {
+        public void setData(List<MicroResource> data) {
             this.data = data;
         }
 
@@ -1226,19 +1182,19 @@ public class GameEvents {
             return event;
         }
 
-        public List<Object> getItems() {
+        public List<MicroResource> getItems() {
             return items;
         }
 
-        public List<Component> getComponents() {
+        public List<MicroResource> getComponents() {
             return components;
         }
 
-        public List<Consumable> getConsumables() {
+        public List<MicroResource> getConsumables() {
             return consumables;
         }
 
-        public List<Object> getData() {
+        public List<MicroResource> getData() {
             return data;
         }
 

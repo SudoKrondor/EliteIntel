@@ -2,7 +2,6 @@ package elite.intel.ui.overlay;
 
 import elite.intel.db.managers.MissionManager;
 import elite.intel.db.managers.ShipRouteManager;
-import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.gameapi.missions.MissionCargo;
 import elite.intel.gameapi.missions.MissionSelection;
@@ -57,12 +56,13 @@ public class MissionObjectiveSource implements HudObjectiveSource {
 
     private final MissionManager missionManager;
     private final Supplier<String> routeDestination;
-    private final Supplier<GameEvents.CargoEvent> shipCargo;
+    private final Supplier<Map<String, Integer>> heldBySymbol;
 
     public MissionObjectiveSource() {
         this(MissionManager.getInstance(),
                 () -> ShipRouteManager.getInstance().getDestination(),
-                () -> PlayerSession.getInstance().getShipCargo());
+                () -> MissionCargo.heldBySymbol(PlayerSession.getInstance().getShipCargo(),
+                        PlayerSession.getInstance().getSuitInventory()));
     }
 
     /**
@@ -70,7 +70,7 @@ public class MissionObjectiveSource implements HudObjectiveSource {
      */
     MissionObjectiveSource(MissionManager missionManager,
                            Supplier<String> routeDestination) {
-        this(missionManager, routeDestination, () -> null);
+        this(missionManager, routeDestination, Map::of);
     }
 
     /**
@@ -78,10 +78,10 @@ public class MissionObjectiveSource implements HudObjectiveSource {
      */
     MissionObjectiveSource(MissionManager missionManager,
                            Supplier<String> routeDestination,
-                           Supplier<GameEvents.CargoEvent> shipCargo) {
+                           Supplier<Map<String, Integer>> heldBySymbol) {
         this.missionManager = missionManager;
         this.routeDestination = routeDestination;
-        this.shipCargo = shipCargo;
+        this.heldBySymbol = heldBySymbol;
     }
 
     @Override
@@ -227,9 +227,15 @@ public class MissionObjectiveSource implements HudObjectiveSource {
      * Absent rather than empty when the commodity has no symbol: a mission stored
      * before symbols were recorded cannot be measured, and a bar reading zero
      * would say the hold is empty rather than that we do not know.
+     * <p>
+     * "The hold" is every container the item can be in, which for an on-foot
+     * mission is the backpack or the ship's locker and never the cargo hold: a
+     * salvage run measured against {@code Cargo.json} alone read 0/1 with the
+     * sample already collected and the mission already redirected to its
+     * hand-in. See {@link MissionCargo#heldBySymbol}.
      */
     private void addCargoProgressRow(List<HudRow> rows, MissionDto mission, List<MissionDto> missions) {
-        MissionCargo.outstanding(missions, MissionCargo.heldBySymbol(shipCargo.get())).stream()
+        MissionCargo.outstanding(missions, heldBySymbol.get()).stream()
                 .filter(item -> item.mission().getMissionId() == mission.getMissionId())
                 .findFirst()
                 .ifPresent(item -> rows.add(HudRow.progress(

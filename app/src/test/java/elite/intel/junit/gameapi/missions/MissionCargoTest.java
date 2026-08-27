@@ -125,7 +125,7 @@ class MissionCargoTest {
                   { "Name":"Drones", "Count":18, "Stolen":0 } ] }
                 """);
 
-        Map<String, Integer> held = MissionCargo.heldBySymbol(cargo);
+        Map<String, Integer> held = MissionCargo.heldBySymbol(cargo, List.of());
 
         assertEquals(72, held.get("haematite"));
         assertEquals(18, held.get("drones"));
@@ -134,7 +134,25 @@ class MissionCargoTest {
     @Test
     @DisplayName("an empty hold is not a crash")
     void emptyHold() {
-        assertTrue(MissionCargo.heldBySymbol(null).isEmpty());
-        assertTrue(MissionCargo.heldBySymbol(hold("{ \"event\":\"Cargo\", \"Count\":0 }")).isEmpty());
+        assertTrue(MissionCargo.heldBySymbol(null, null).isEmpty());
+        assertTrue(MissionCargo.heldBySymbol(hold("{ \"event\":\"Cargo\", \"Count\":0 }"), List.of()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("the suit inventory pools with the cargo hold, because a mission can ask for either")
+    void suitInventoryPoolsWithTheHold() {
+        GameEvents.CargoEvent cargo = hold("""
+                { "event":"Cargo", "Vessel":"Ship", "Count":1, "Inventory":[
+                  { "Name":"haematite", "Count":72, "Stolen":0 } ] }
+                """);
+        GameEvents.ShipLockerEvent locker = GsonFactory.getGson().fromJson("""
+                { "event":"ShipLocker", "Items":[
+                  { "Name":"chemicalsample", "Name_Localised":"Chemical Sample", "Count":2 } ] }
+                """, GameEvents.ShipLockerEvent.class);
+
+        Map<String, Integer> held = MissionCargo.heldBySymbol(cargo, locker.getItems());
+
+        assertEquals(72, held.get("haematite"));
+        assertEquals(2, held.get("chemicalsample"), "an on-foot mission item the cargo hold never sees");
     }
 }
