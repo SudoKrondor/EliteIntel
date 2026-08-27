@@ -56,6 +56,17 @@
              line here is edge-triggered, never per-frame, so the cost is a handful
              of lines a session. -->
         <Logger name="elite.intel.ui.overlay" level="info"/>
+        <!-- Also louder than elite.intel. The startup configuration check logs ONLY when it has
+             something to complain about - no LLM model chosen, an unreadable journal or bindings
+             directory - so a healthy install writes nothing here at all. That makes it free, and
+             it answers the first question every report raises: what was this commander actually
+             configured with? -->
+        <Logger name="elite.intel.setup" level="info"/>
+        <!-- Also louder than elite.intel. Four lines a session: the SDL3 init, and one per
+             controller as it appears or goes away, carrying the device name, axis and button
+             counts. "Push-to-talk does nothing" and "my HOTAS stopped working" are both answered
+             by whether the device was ever seen, and nothing else in the bundle records that. -->
+        <Logger name="elite.intel.devices" level="info"/>
         <!-- Also louder than elite.intel, for the same reason as the overlay above. Memory
              consolidation used to announce its failures out loud, which told the commander
              about housekeeping they can do nothing about (the batch is retried, and falls
@@ -82,14 +93,28 @@
              could only ever send a log with nothing about the capture in it. Every line here is
              edge-triggered - one per utterance, never per audio frame - so a session costs a few dozen. -->
         <Logger name="elite.intel.ai.ears" level="info"/>
-        <Logger name="elite.intel.ai.mouth" level="error"/>
+        <!-- warn, not error: every warn under here is a FAILURE and none of them fire per
+             utterance - Kokoro playback errors, a voice list that could not be enumerated, a
+             request that could not be queued. At error level "the voice stopped working"
+             arrived with nothing under it, because the thing that broke logged a warn. -->
+        <Logger name="elite.intel.ai.mouth" level="warn"/>
         <Logger name="elite.intel.ai.brain" level="error"/>
+        <!-- The companion pipeline, louder than the brain it sits in, and the single most
+             valuable thing in a bundle: "the LLM round failed", "the response had defect X,
+             retrying via Y", "the model asked for more tool calls than the turn allows". A
+             commander reporting "it ignored me" or "it did the wrong thing" is reporting one
+             of those lines, and at error level none of them were written down. Edge-triggered
+             on a failed or salvaged turn, never per turn. -->
+        <Logger name="elite.intel.ai.brain.vega" level="warn"/>
         <Logger name="elite.intel.search" level="debug"/>
         <Logger name="elite.intel.db" level="debug"/>
         <Logger name="elite.intel.db.managers.SubSystemsManager" level="error"/>
         <Logger name="elite.intel.ai.brain.handlers" level="debug"/>
         <Logger name="elite.intel.ws" level="error"/>
-        <Logger name="elite.intel.ui.overlay" level="error"/>
+        <!-- warn, on purpose: the two lines under here are "that panel's key is unbound" and
+             "the panel did not open, retrying", which is the visible half of a binding problem -
+             the commander sees a command do nothing. See the binding-conflict reports. -->
+        <Logger name="elite.intel.session" level="warn"/>
 
         <!-- Root logger -->
         <Root level="debug">

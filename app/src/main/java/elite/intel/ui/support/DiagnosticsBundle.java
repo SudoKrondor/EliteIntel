@@ -5,6 +5,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
+import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -346,6 +348,66 @@ public final class DiagnosticsBundle {
         }
     }
 
+    /**
+     * The windowing system the app is actually running under, on the platforms that have more than one.
+     * <p>
+     * WHY this is worth four lines: an overlay that "moves about on its own" was eventually traced to a
+     * compositor animating the window because of a hint the overlay set on itself - a bug that existed only
+     * under one desktop, on one version of it, and could not be reproduced by anyone running anything else.
+     * Establishing which desktop and which display server took several rounds of asking, and every one of
+     * those rounds was a day. It is one line in a manifest.
+     * <p>
+     * Blank on Windows and macOS, where the answer is never in doubt and a line saying so is noise.
+     */
+    private static String desktop() {
+        String sessionType = System.getenv("XDG_SESSION_TYPE");
+        String currentDesktop = System.getenv("XDG_CURRENT_DESKTOP");
+        if (sessionType == null && currentDesktop == null) return "";
+
+        // Both, when both are set: an app on a Wayland session still reaches X11 through Xwayland, and
+        // "wayland session, X11 display :0" is a different situation from either half on its own.
+        StringBuilder text = new StringBuilder("Desktop: ")
+                .append(currentDesktop == null ? "unknown" : currentDesktop)
+                .append(" (").append(sessionType == null ? "unknown" : sessionType).append(')');
+        String x11 = System.getenv("DISPLAY");
+        String wayland = System.getenv("WAYLAND_DISPLAY");
+        if (x11 != null) text.append("  X11 display ").append(x11);
+        if (wayland != null) text.append("  Wayland display ").append(wayland);
+        return text.append('\n').toString();
+    }
+
+    /**
+     * Every monitor, with its position in the desktop and its scale factor.
+     * <p>
+     * WHY: the HUD overlay is placed in coordinates that span all displays, so half of what can go wrong with
+     * it is a property of the layout rather than of the app - a card that opens on the seam between two
+     * screens, a gap above a shorter monitor that belongs to no display at all, a scale factor that makes
+     * every coordinate fractional. None of that is visible in a log, and asking a commander to describe
+     * their monitor arrangement gets prose rather than numbers.
+     * <p>
+     * Reported for every commander, not only the ones with two screens, because "one monitor" is itself the
+     * answer to the first question asked of any layout-shaped report.
+     */
+    private static String displays() {
+        try {
+            GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+            StringBuilder text = new StringBuilder("Displays: ").append(screens.length).append('\n');
+            for (GraphicsDevice screen : screens) {
+                GraphicsConfiguration config = screen.getDefaultConfiguration();
+                Rectangle bounds = config.getBounds();
+                AffineTransform scale = config.getDefaultTransform();
+                text.append(String.format("  %-14s %dx%d at %+d%+d  scale %.2gx%.2g%n",
+                        screen.getIDstring(), bounds.width, bounds.height, bounds.x, bounds.y,
+                        scale.getScaleX(), scale.getScaleY()));
+            }
+            return text.toString();
+        } catch (RuntimeException headlessOrDriverFailure) {
+            // Never fatal: this is the one part of the manifest that asks the graphics stack a question, and
+            // a bundle is most wanted precisely when that stack is the thing misbehaving.
+            return "Displays: could not be queried (" + headlessOrDriverFailure + ")\n";
+        }
+    }
+
     private static String manifest(Sources sources, List<String> included, List<String> omitted) {
         StringBuilder text = new StringBuilder()
                 .append("Elite Intel diagnostics bundle\n")
@@ -355,6 +417,10 @@ public final class DiagnosticsBundle {
                 .append(' ').append(System.getProperty("os.version"))
                 .append(" (").append(System.getProperty("os.arch")).append(")\n")
                 .append("Java: ").append(System.getProperty("java.version")).append('\n')
+                .append("Locale: ").append(java.util.Locale.getDefault())
+                .append("  Timezone: ").append(java.time.ZoneId.systemDefault()).append('\n')
+                .append(desktop())
+                .append(displays())
                 .append("\nIncluded:\n");
         if (included.isEmpty()) {
             text.append("  (nothing)\n");
