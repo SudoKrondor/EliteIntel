@@ -29,7 +29,7 @@ public class ShipManager {
             ship.setCargoCapacity(cargoCapacity);
             ship.setShipIdentifier(shipMake);
             ship.setVoice(voice);
-            ship.setPersonality(ShipPersonality.PROFESSIONAL.name());
+            ship.setPersonality(ShipPersonality.DEFAULT.name());
             ship.setCommanderName(commanderName);
             dao.save(ship);
             return Void.TYPE;

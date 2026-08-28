@@ -3,10 +3,7 @@ package elite.intel.ui.screen.settings;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
-import elite.intel.ui.event.NotificationVolumeChangedEvent;
-import elite.intel.ui.event.SpeechSpeedChangeEvent;
-import elite.intel.ui.event.SttThreadsChangedEvent;
-import elite.intel.ui.event.SttVolumeChangedEvent;
+import elite.intel.ui.event.*;
 import elite.intel.ui.support.AudioDeviceCombo;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.*;
@@ -14,6 +11,7 @@ import elite.intel.ui.widget.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.HierarchyEvent;
+import java.util.Objects;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -111,7 +109,10 @@ public class AudioSettingsPanel extends JPanel {
      * 4-column layout:
      *   Row 0 — Mic [dropdown]   Speaker [dropdown]
      *   Row 1 — [☑ Enable Noise Reduction]   [Low][Medium][High]
-     *   Row 2 — restart-required banner
+     * <p>
+     * There is no "changes take effect on next service start" banner: picking a device now restarts the
+     * one service that reads it (see {@link #onInputDeviceSelected()}). The banner sat under the whole
+     * section and read as if it governed the volume sliders below it too, which take effect immediately.
      */
     private HudSection buildDevicesSection() {
         HudSection section = HudSection.flat(getText("audio.devices.section.devices"), new GridBagLayout());
@@ -119,14 +120,8 @@ public class AudioSettingsPanel extends JPanel {
 
         inputCombo = AudioDeviceCombo.input(systemSession.getAudioInputDevice());
         outputCombo = AudioDeviceCombo.output(systemSession.getAudioOutputDevice());
-        inputCombo.addActionListener(e -> {
-            if (!syncingDevices)
-                systemSession.setAudioInputDevice(AudioDeviceCombo.normalize((String) inputCombo.getSelectedItem()));
-        });
-        outputCombo.addActionListener(e -> {
-            if (!syncingDevices)
-                systemSession.setAudioOutputDevice(AudioDeviceCombo.normalize((String) outputCombo.getSelectedItem()));
-        });
+        inputCombo.addActionListener(e -> onInputDeviceSelected());
+        outputCombo.addActionListener(e -> onOutputDeviceSelected());
 
         // Cols: 0=Mic label  1=input combo  2=Speaker label  3=output combo
         // Cols 1 and 3 share available width equally; cols 0 and 2 are natural-width labels.
@@ -186,16 +181,6 @@ public class AudioSettingsPanel extends JPanel {
         g.insets = new Insets(6, HUD_GAP * 2, 6, 6);
         form.add(noiseStrengthControl, g);
 
-        // Row 2 — note: device changes need a service restart
-        g.gridy = 2;
-        g.gridx = 0;
-        g.gridwidth = 4;
-        g.weightx = 1;
-        g.fill = GridBagConstraints.HORIZONTAL;
-        g.anchor = GridBagConstraints.WEST;
-        g.insets = new Insets(HUD_GAP, 6, 6, 6);
-        form.add(new HudBanner(getText("audio.devices.note"), StatusBadge.State.STANDBY, true), g);
-
         return section;
     }
 
@@ -246,6 +231,41 @@ public class AudioSettingsPanel extends JPanel {
         noiseStrengthControl.setSelectedIndex(systemSession.getNoiseReductionStrength());
         noiseStrengthControl.setEnabled(nrEnabled);
         updateGoogleWaveNetPitchEnablement();
+    }
+
+    /**
+     * Applies a newly picked microphone by restarting STT, which is where the input device is resolved
+     * ({@code ParakeetSTTImpl} reads it when it starts, not per utterance).
+     * <p>
+     * WHY this cannot fire on app start, when the services are being started for the first time: the
+     * combo is populated with its saved selection BEFORE this listener is attached; {@link #syncDevices()}
+     * - called by {@link #initData()} and whenever the panel is shown again - sets {@code syncingDevices}
+     * across its programmatic re-selection; and a pick that lands on the device already stored returns
+     * here before publishing, since a JComboBox fires on every pick, not only on a change. Below all
+     * three, {@code AppController} ignores a restart request while services are stopped, so nothing on
+     * this path can start a service that was not already running.
+     */
+    private void onInputDeviceSelected() {
+        if (syncingDevices) return;
+        String selected = AudioDeviceCombo.normalize((String) inputCombo.getSelectedItem());
+        if (Objects.equals(selected, systemSession.getAudioInputDevice())) return;
+
+        systemSession.setAudioInputDevice(selected);
+        UiBus.publish(new RestartEarsEvent());
+    }
+
+    /**
+     * Applies a newly picked speaker by restarting TTS. Every engine holds a PERSISTENT output line -
+     * Kokoro and Google open theirs once and keep it - so a new speaker is not picked up by simply
+     * speaking again. Same three guards as {@link #onInputDeviceSelected()}.
+     */
+    private void onOutputDeviceSelected() {
+        if (syncingDevices) return;
+        String selected = AudioDeviceCombo.normalize((String) outputCombo.getSelectedItem());
+        if (Objects.equals(selected, systemSession.getAudioOutputDevice())) return;
+
+        systemSession.setAudioOutputDevice(selected);
+        UiBus.publish(new RestartMouthEvent());
     }
 
     /** Re-reads the persisted device selection into the pickers without re-triggering a save. */

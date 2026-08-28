@@ -64,6 +64,7 @@ class AiActionMapGeneratorTest {
             "cancel_navigation",
             "cancel_trade_route",
             "clear_active_missions",
+            "clear_fleet_carrier_route",
             "clear_mining_targets",
             "clear_neutron_route",
             "clear_reminders",

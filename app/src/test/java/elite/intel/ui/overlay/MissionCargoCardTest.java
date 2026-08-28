@@ -7,6 +7,7 @@ import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.journal.events.MissionAcceptedEvent;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.gameapi.missions.MissionCargo;
+import elite.intel.session.SuitInventory;
 import elite.intel.util.json.GsonFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,9 +86,17 @@ class MissionCargoCardTest {
      * What {@code PlayerSession.getSuitInventory()} would hand over: the live micro-resources.
      */
     private void carrying(String itemsJson) {
-        suitInventory.addAll(GsonFactory.getGson().fromJson(
-                "{\"event\":\"ShipLocker\",\"Items\":[" + itemsJson + "]}",
-                GameEvents.ShipLockerEvent.class).getItems());
+        carrying("Items", itemsJson);
+    }
+
+    /**
+     * The same, for a micro-resource the game files under one of its other three categories - a
+     * Micro Supercapacitor is a Component, not an Item.
+     */
+    private void carrying(String category, String itemsJson) {
+        suitInventory.addAll(SuitInventory.carried(GsonFactory.getGson().fromJson(
+                "{\"event\":\"ShipLocker\",\"" + category + "\":[" + itemsJson + "]}",
+                GameEvents.ShipLockerEvent.class)));
     }
 
     @Test
@@ -161,6 +170,21 @@ class MissionCargoCardTest {
         assertEquals(1, row.current());
         assertEquals(3, row.max());
         assertEquals(HudRow.State.NORMAL, row.state());
+    }
+
+    @Test
+    @DisplayName("an on-foot item the game files as a Component counts too")
+    void componentSalvageCounts() {
+        // The reported bug: "Pull the Micro Supercapacitor from wreckage" read 0/1 with eleven of them
+        // in the locker. A Micro Supercapacitor is a Component, and only the Items list was being read.
+        acceptOnFoot(1064520662, "MicroSuperCapacitor", "Micro Supercapacitor", 1);
+        carrying("Components", "{\"Name\":\"microsupercapacitor\",\"Name_Localised\":\"Micro Supercapacitor\",\"OwnerID\":0,\"Count\":11}");
+
+        HudRow row = rowOf(source().currentObjective().orElseThrow(), "IN HOLD");
+
+        assertEquals(1, row.current());
+        assertEquals(1, row.max());
+        assertEquals(HudRow.State.GOOD, row.state());
     }
 
     @Test

@@ -54,7 +54,7 @@ class CompanionSystemPromptTest {
      * <p>WHY: {@code CommanderPrompt} interpolates {@code SystemSession.getAIPersonality()}, which is the
      * <em>active ship's</em> personality, and those clauses run from 34 words (PROFESSIONAL) to 140 (ROGUE).
      * Counting the whole string made this assertion depend on which ship the commander last flew: under Gradle
-     * the in-memory DB has no ship and falls back to CASUAL (595 words, passes), while an IDE run against a
+     * the in-memory DB has no ship and falls back to PROFESSIONAL (589 words, passes), while an IDE run against a
      * real DB could land on ROGUE (695, fails) for a prompt nobody had touched. Subtracting the clause makes
      * the number depend only on the prompt we write - it is exactly 555 for every personality.
      */

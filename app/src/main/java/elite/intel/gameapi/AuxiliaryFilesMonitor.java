@@ -200,13 +200,21 @@ public class AuxiliaryFilesMonitor implements Runnable, ManagedService {
     }
 
     /**
-     * Last-modified and size together, or null for a file that is not there. Size is in it because two
-     * writes can land inside one filesystem timestamp tick.
+     * Last-modified and size together, or null for a file that is not there.
+     * <p>
+     * WHY the full {@link java.time.Instant} rather than {@code toMillis()}: truncating to milliseconds
+     * discards precision the filesystem already recorded, and two different contents of the SAME SIZE
+     * written inside one millisecond then look identical - a market swapped for another market whose
+     * MarketID has as many digits reads as "nothing has moved" and is never published. Measured on ext4:
+     * back-to-back rewrites share a millisecond 197 times in 200, and a nanosecond never.
+     * <p>
+     * Size stays in the stamp for filesystems that keep coarser times than that (FAT's two-second
+     * granularity being the worst of them), where it is the only thing left to tell two writes apart.
      */
     private static String stampOf(Path filePath) {
         try {
             if (!Files.exists(filePath)) return null;
-            return Files.getLastModifiedTime(filePath).toMillis() + ":" + Files.size(filePath);
+            return Files.getLastModifiedTime(filePath).toInstant() + ":" + Files.size(filePath);
         } catch (IOException e) {
             return null;
         }

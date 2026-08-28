@@ -128,6 +128,83 @@ class FleetCarrierRouteManagerTest {
         assertEquals(20, route.getTotalFuelRequired(), "the tritium for the leg already flown is not still owed");
     }
 
+    // -- a re-plot that was overtaken while Spansh was answering -------------------
+
+    /**
+     * The re-plot that follows an off-route arrival runs detached, because it calls Spansh and must not
+     * hold up the arrival announcement. That announcement ("N jumps left") is exactly what prompts a
+     * commander to abandon a route he stopped following, so the clear and the plot genuinely overlap.
+     * Storing the plot afterwards would put the route back, seconds after he was told it was cleared.
+     */
+    @Test
+    void aPlotIsDroppedWhenTheRouteWasAbandonedWhileItWasBeingCalculated() {
+        session.setLastKnownCarrierLocation("Deciat");
+        route.setFleetCarrierRoute(plot("Maia", "Merope"));
+
+        long generation = route.generation();   // the re-plot reads this, then calls Spansh
+        route.clear();                          // ... and the commander abandons the route meanwhile
+
+        assertFalse(route.setFleetCarrierRouteIfUnchanged(plot("Sol", "Colonia"), generation),
+                "a plot must not outlive the route it was repairing");
+        assertTrue(route.getFleetCarrierRoute().isEmpty(), "an abandoned route must stay abandoned");
+    }
+
+    @Test
+    void aPlotIsStoredWhenNothingTouchedTheRouteWhileItWasBeingCalculated() {
+        session.setLastKnownCarrierLocation("Deciat");
+        route.setFleetCarrierRoute(plot("Maia", "Merope"));
+
+        long generation = route.generation();
+
+        assertTrue(route.setFleetCarrierRouteIfUnchanged(plot("Sol", "Colonia"), generation),
+                "an uncontested repair must still land");
+        assertEquals(List.of("Sol", "Colonia"), storedNames());
+    }
+
+    /**
+     * A jump that lands on a plotted leg while the re-plot is out moves the route on, so the plot was
+     * made from a system the carrier has already left.
+     */
+    @Test
+    void aPlotIsDroppedWhenAnArrivalConsumedALegWhileItWasBeingCalculated() {
+        session.setLastKnownCarrierLocation("Deciat");
+        route.setFleetCarrierRoute(plot("Maia", "Merope", "Colonia"));
+
+        long generation = route.generation();
+        route.removeLeg("Maia");
+
+        assertFalse(route.setFleetCarrierRouteIfUnchanged(plot("Sol"), generation));
+        assertEquals(List.of("Merope", "Colonia"), storedNames(), "the consumed route stands as it is");
+    }
+
+    /**
+     * The counterpart: an off-route arrival consumes nothing, so it must not invalidate the very
+     * re-plot it triggered.
+     */
+    @Test
+    void anArrivalThatConsumedNothingLeavesAnInFlightPlotValid() {
+        session.setLastKnownCarrierLocation("Deciat");
+        route.setFleetCarrierRoute(plot("Maia", "Merope"));
+
+        long generation = route.generation();
+        route.removeLeg("Shinrarta Dezhra");
+
+        assertTrue(route.setFleetCarrierRouteIfUnchanged(plot("Sol"), generation));
+        assertEquals(List.of("Sol"), storedNames());
+    }
+
+    @Test
+    void aFailedPlotIsNotStoredAndDoesNotCountAsAChange() {
+        session.setLastKnownCarrierLocation("Deciat");
+        route.setFleetCarrierRoute(plot("Maia", "Merope"));
+
+        long generation = route.generation();
+
+        assertFalse(route.setFleetCarrierRouteIfUnchanged(Map.of(), generation));
+        assertEquals(List.of("Maia", "Merope"), storedNames(), "the standing route is left alone");
+        assertEquals(generation, route.generation(), "a plot that stored nothing changed nothing");
+    }
+
     private static Map<Integer, CarrierJump> plot(String... systemNames) {
         Map<Integer, CarrierJump> plotted = new LinkedHashMap<>();
         for (int i = 0; i < systemNames.length; i++) {
