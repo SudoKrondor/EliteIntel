@@ -43,18 +43,40 @@ public final class SuitInventory {
     }
 
     /**
-     * Everything the commander is actually carrying.
+     * Everything the commander is actually carrying, all four micro-resource categories pooled.
      * <p>
      * The ship's locker always counts. The backpack counts only while the commander is on foot:
      * boarding folds its contents into the locker <em>without</em> rewriting {@code Backpack.json},
      * so once aboard that file still lists what was carried and adding it in would double it.
+     * <p>
+     * WHY all four categories and not just Items: which list an item lands in is the game's own
+     * classification and has nothing to do with whether a mission can ask for it. "Grab the Suit
+     * Schematic" wants an Item, "Pull the Micro Supercapacitor from wreckage" a Component, a data
+     * salvage Data. Reading Items alone reported no progress at all for the other three.
      */
     public List<GameEvents.MicroResource> items() {
-        List<GameEvents.MicroResource> items = new ArrayList<>();
-        if (shipLocker != null && shipLocker.getItems() != null) items.addAll(shipLocker.getItems());
-        if (backpack == null || backpack.getItems() == null) return items;
-        if (Status.getInstance().isOnFoot()) items.addAll(backpack.getItems());
+        List<GameEvents.MicroResource> items = new ArrayList<>(carried(shipLocker));
+        if (Status.getInstance().isOnFoot()) items.addAll(carried(backpack));
         return items;
+    }
+
+    /**
+     * One snapshot's four categories as a single list, without the rule about which snapshot is live -
+     * that is {@link #items()}. A file not seen yet, or a category the game wrote as empty, reads as
+     * nothing carried rather than as a failure.
+     */
+    public static List<GameEvents.MicroResource> carried(GameEvents.MicroResourceSnapshot snapshot) {
+        if (snapshot == null) return List.of();
+        List<GameEvents.MicroResource> carried = new ArrayList<>();
+        addAll(carried, snapshot.getItems());
+        addAll(carried, snapshot.getComponents());
+        addAll(carried, snapshot.getConsumables());
+        addAll(carried, snapshot.getData());
+        return carried;
+    }
+
+    private static void addAll(List<GameEvents.MicroResource> carried, List<GameEvents.MicroResource> category) {
+        if (category != null) carried.addAll(category);
     }
 
     public void setBackpack(GameEvents.BackpackEvent event) {

@@ -21,6 +21,12 @@ class SuitInventoryTest {
 
     private static final String SAMPLE =
             "{\"Name\":\"chemicalsample\",\"Name_Localised\":\"Chemical Sample\",\"OwnerID\":0,\"MissionID\":1064450663,\"Count\":1}";
+    private static final String MEDKIT =
+            "{\"Name\":\"healthpack\",\"Name_Localised\":\"Medkit\",\"OwnerID\":0,\"Count\":1}";
+    private static final String LOGS =
+            "{\"Name\":\"surveilleancelogs\",\"Name_Localised\":\"Surveillance Logs\",\"OwnerID\":0,\"Count\":2}";
+    private static final String CAPACITOR =
+            "{\"Name\":\"microsupercapacitor\",\"Name_Localised\":\"Micro Supercapacitor\",\"OwnerID\":0,\"Count\":11}";
 
     private final SuitInventory inventory = SuitInventory.getInstance();
 
@@ -75,6 +81,31 @@ class SuitInventoryTest {
         assertEquals(List.of("chemicalsample"), names(PlayerSession.getInstance().getSuitInventory()));
     }
 
+    @Test
+    @DisplayName("an item the game files as a Component counts like anything else carried")
+    void componentsCount() {
+        // The reported bug: "Pull the Micro Supercapacitor from wreckage" reads 0/1 with eleven of them
+        // in the locker, because a Micro Supercapacitor is filed under Components and only Items was read.
+        inventory.setShipLocker(locker("Components", CAPACITOR));
+
+        assertEquals(List.of("microsupercapacitor"), names(inventory.items()));
+    }
+
+    @Test
+    @DisplayName("all four categories of both snapshots are pooled")
+    void everyCategoryCounts() {
+        onFoot();
+        inventory.setShipLocker(GsonFactory.getGson().fromJson(
+                "{\"event\":\"ShipLocker\",\"Items\":[" + SAMPLE + "],\"Components\":[" + CAPACITOR + "]}",
+                GameEvents.ShipLockerEvent.class));
+        inventory.setBackpack(GsonFactory.getGson().fromJson(
+                "{\"event\":\"Backpack\",\"Consumables\":[" + MEDKIT + "],\"Data\":[" + LOGS + "]}",
+                GameEvents.BackpackEvent.class));
+
+        assertEquals(List.of("chemicalsample", "microsupercapacitor", "healthpack", "surveilleancelogs"),
+                names(inventory.items()));
+    }
+
     // -- fixtures --------------------------------------------------------------
 
     private static List<String> names(List<GameEvents.MicroResource> items) {
@@ -87,8 +118,16 @@ class SuitInventoryTest {
     }
 
     private static GameEvents.ShipLockerEvent locker(String itemsJson) {
+        return locker("Items", itemsJson);
+    }
+
+    /**
+     * The game files a micro-resource under one of Items, Components, Consumables or Data.
+     */
+    private static GameEvents.ShipLockerEvent locker(String category, String itemsJson) {
         return GsonFactory.getGson().fromJson(
-                "{\"event\":\"ShipLocker\",\"Items\":[" + itemsJson + "]}", GameEvents.ShipLockerEvent.class);
+                "{\"event\":\"ShipLocker\",\"" + category + "\":[" + itemsJson + "]}",
+                GameEvents.ShipLockerEvent.class);
     }
 
     private static void onFoot() {

@@ -545,6 +545,24 @@ public class GameEvents {
     }
 
     /**
+     * One of the game's two snapshots of the Odyssey suit inventory: {@code Backpack.json} while the
+     * commander carries something, {@code ShipLocker.json} once it is stowed. Both files write the
+     * same four categories, and a mission item can be in any of them - a Suit Schematic is an Item, a
+     * Micro Supercapacitor a Component, a Surveillance Log Data - so anything measuring a mission has
+     * to read all four rather than guess. Named here so that rule can be written once.
+     */
+    public interface MicroResourceSnapshot {
+
+        List<MicroResource> getItems();
+
+        List<MicroResource> getComponents();
+
+        List<MicroResource> getConsumables();
+
+        List<MicroResource> getData();
+    }
+
+    /**
      * One line of the Odyssey micro-resource inventory, as written to {@code Backpack.json} and
      * {@code ShipLocker.json}. Both files write Items, Components, Consumables and Data in this one
      * shape, so all eight lists share it.
@@ -596,7 +614,7 @@ public class GameEvents {
         }
     }
 
-    public static class BackpackEvent {
+    public static class BackpackEvent implements MicroResourceSnapshot {
         @SerializedName("timestamp")
         private String timestamp;
         @SerializedName("event")
@@ -1134,7 +1152,7 @@ public class GameEvents {
         }
     }
 
-    public static class ShipLockerEvent {
+    public static class ShipLockerEvent implements MicroResourceSnapshot {
         @SerializedName("timestamp")
         private String timestamp;
         @SerializedName("event")
