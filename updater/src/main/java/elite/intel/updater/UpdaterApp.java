@@ -13,6 +13,8 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -53,6 +55,10 @@ public class UpdaterApp {
 
     private static final String GITHUB_API = "https://api.github.com/repos/SudoKrondor/EliteIntel/releases/latest";
     private static final String MAIN_JAR = "elite_intel.jar";
+    /**
+     * install4j's Unix launcher, sitting in the install root next to the jar.
+     */
+    private static final String UNIX_LAUNCHER = "elite-intel";
 
     // -- UI components ---------------------------------------------------------
     private JFrame frame;
@@ -491,13 +497,60 @@ public class UpdaterApp {
 
     // -- Step 4 – relaunch main app --------------------------------------------
 
+    private static boolean isLinux() {
+        return System.getProperty("os.name", "").toLowerCase().contains("linux");
+    }
+
+    /**
+     * Finds a java binary to relaunch with. A bundled-runtime install has no
+     * system JDK at all, so the old bare {@code "java"} fallback left the
+     * commander with an updated - but never restarted - installation.
+     * <p>
+     * In preference order: the runtime running this updater
+     * ({@code java.home}, which the main app resolved for us and is the bundled
+     * JRE on an install4j install), {@code <installDir>/jre/bin/java} (the
+     * install4j bundled-JRE layout), {@code <installDir>/jdk/bin/java} (the
+     * older zip/installer.sh layout), {@code $JAVA_HOME/bin/java}, and finally
+     * {@code "java"} on PATH.
+     */
     private String resolveJavaCommand() {
-        if (System.getProperty("os.name", "").toLowerCase().contains("linux")) {
-            Path bundled = Path.of(installDir, "jdk", "bin", "java");
-            if (Files.exists(bundled))
-                return bundled.toAbsolutePath().toString();
+        if (!isLinux()) return "java";
+
+        List<Path> candidates = new ArrayList<>();
+
+        String javaHome = System.getProperty("java.home", "");
+        if (!javaHome.isBlank()) candidates.add(Path.of(javaHome, "bin", "java"));
+
+        candidates.add(Path.of(installDir, "jre", "bin", "java"));
+        candidates.add(Path.of(installDir, "jdk", "bin", "java"));
+
+        String envHome = System.getenv("JAVA_HOME");
+        if (envHome != null && !envHome.isBlank()) candidates.add(Path.of(envHome, "bin", "java"));
+
+        for (Path candidate : candidates) {
+            if (Files.isRegularFile(candidate) && Files.isExecutable(candidate))
+                return candidate.toAbsolutePath().toString();
         }
         return "java";
+    }
+
+    /**
+     * On Linux, prefer install4j's own launcher when it is present: it starts
+     * the bundled JRE with the same VM options as a normal start (-Xmx6g, the
+     * sherpa-onnx library path) and re-creates the Steam symlinks. Only when
+     * there is no launcher - a plain zip install - do we invoke java directly.
+     */
+    private List<String> buildRelaunchCommand(Path jar) {
+        if (isLinux()) {
+            Path launcher = Path.of(installDir, UNIX_LAUNCHER);
+            if (Files.isRegularFile(launcher) && Files.isExecutable(launcher))
+                return List.of(launcher.toAbsolutePath().toString());
+        }
+        return List.of(
+                resolveJavaCommand(),
+                "-Djava.library.path=native/sherpa-onnx",
+                "-jar", jar.toAbsolutePath().toString()
+        );
     }
 
     private void relaunch() throws IOException {
@@ -505,12 +558,10 @@ public class UpdaterApp {
         if (!Files.exists(jar))
             throw new IOException("Cannot find " + jar + " after extraction.");
 
-        String javaCmd = resolveJavaCommand();
-        ProcessBuilder pb = new ProcessBuilder(
-                javaCmd,
-                "-Djava.library.path=native/sherpa-onnx",
-                "-jar", jar.toAbsolutePath().toString()
-        );
+        List<String> command = buildRelaunchCommand(jar);
+        log("Relaunch command: " + String.join(" ", command));
+
+        ProcessBuilder pb = new ProcessBuilder(command);
         pb.directory(jar.getParent().toFile());
         pb.start();     // fire-and-forget
 

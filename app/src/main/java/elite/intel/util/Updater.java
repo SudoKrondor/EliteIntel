@@ -9,6 +9,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -80,8 +81,8 @@ public class Updater {
                 return false;
             }
 
+            List<String> command = buildLaunchCommand(updaterJar);
             try {
-                List<String> command = buildLaunchCommand(updaterJar);
                 ProcessBuilder pb = new ProcessBuilder(command);
                 pb.directory(JAR_DIR.toFile());
                 pb.inheritIO();    // updater writes to its own window, not ours
@@ -90,7 +91,7 @@ public class Updater {
 
             } catch (IOException e) {
                 UiBus.publish(new AppLogEvent(
-                        "Failed to launch updater: " + e.getMessage()));
+                        "Failed to launch updater with '" + command.get(0) + "': " + e.getMessage()));
                 return false;
             }
         });
@@ -139,9 +140,9 @@ public class Updater {
 
     /**
      * Builds the OS-appropriate command to launch the updater jar.
-     * On Windows we use {@code javaw} (no console window); on Linux/macOS we
-     * prefer the bundled JDK installed at {@code <installDir>/jdk/bin/java} by
-     * installer.sh, falling back to whatever {@code java} is on PATH.
+     * On Windows we use {@code javaw} (no console window); on Linux we resolve
+     * a concrete java binary - see {@link #resolveLinuxJava(Path)} - because a
+     * bundled-runtime install has no {@code java} on PATH at all.
      */
     private static List<String> buildLaunchCommand(Path updaterJar) {
         List<String> cmd = new ArrayList<>();
@@ -156,10 +157,40 @@ public class Updater {
     private static String resolveJavaExecutable() {
         OS os = OsDetector.getOs();
         if (os == OS.WINDOWS) return "javaw";
-        if (os == OS.LINUX) {
-            Path bundled = JAR_DIR.resolve("jdk/bin/java");
-            if (bundled.toFile().exists())
-                return bundled.toAbsolutePath().toString();
+        return resolveLinuxJava(JAR_DIR);
+    }
+
+    /**
+     * Finds a java binary on Linux, where a bundled-runtime install may have no
+     * system JDK at all - a bare {@code "java"} then fails with "Cannot run
+     * program java" and the updater silently never appears.
+     * <p>
+     * In preference order:
+     * <ol>
+     *   <li>the runtime running us right now ({@code java.home}) - for an
+     *       install4j install that is the bundled JRE, so it always matches
+     *       what the launcher used;</li>
+     *   <li>{@code <installDir>/jre/bin/java} - the install4j bundled-JRE layout;</li>
+     *   <li>{@code <installDir>/jdk/bin/java} - the older zip/installer.sh layout;</li>
+     *   <li>{@code $JAVA_HOME/bin/java};</li>
+     *   <li>{@code "java"} on PATH, as a last resort.</li>
+     * </ol>
+     */
+    private static String resolveLinuxJava(Path installDir) {
+        List<Path> candidates = new ArrayList<>();
+
+        String javaHome = System.getProperty("java.home", "");
+        if (!javaHome.isBlank()) candidates.add(Path.of(javaHome, "bin", "java"));
+
+        candidates.add(installDir.resolve("jre").resolve("bin").resolve("java"));
+        candidates.add(installDir.resolve("jdk").resolve("bin").resolve("java"));
+
+        String envHome = System.getenv("JAVA_HOME");
+        if (envHome != null && !envHome.isBlank()) candidates.add(Path.of(envHome, "bin", "java"));
+
+        for (Path candidate : candidates) {
+            if (Files.isRegularFile(candidate) && Files.isExecutable(candidate))
+                return candidate.toAbsolutePath().toString();
         }
         return "java";
     }

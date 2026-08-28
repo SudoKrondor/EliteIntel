@@ -99,15 +99,20 @@ public class CarrierJumpCompleteSubscriber {
 
             // WHY the figure arrives pre-worded: whether the depot level is known or merely worked out is
             // ours to decide, not the model's, and it must not quietly firm up an estimate into a fact.
+            // WHY the payload is worded rather than keyed: the model reads it as prose and will happily
+            // read a field name back out loud - a commander was told his carrier held "1000 tons
+            // fuelSupply". Every label here is therefore a phrase a human would say.
             String instructions = """
                         Notify user about new carrier location.
-                        Example: Carrier jump complete!. New location <starSystem>, remaining fuel supply <fuelSupply>. Fuel in reserve <fuelReserve> tons.
-                        Quote fuelSupply exactly as given, keeping the word "approximately" when it is there.
+                        Example: Carrier jump complete!. New location <system>, remaining fuel supply <tons>. Fuel in reserve <tons> tons.
+                        Quote the fuel supply exactly as given, keeping the word "approximately" when it is there.
+                        Never read a label out as written; say it the way a person would.
                     """;
             CompanionRuntime.narrator().narrate(
-                    "Carrier Location: " + event.getStarSystem()
-                            + " fuelSupply " + CarrierFuelPhrase.of(postJumpCarrierData)
-                            + " fuelReserve:" + postJumpCarrierData.getFuelReserve() + remainingRoute,
+                    "Carrier arrived in " + event.getStarSystem()
+                            + ". Fuel supply: " + CarrierFuelPhrase.of(postJumpCarrierData)
+                            + ". Fuel in reserve: " + postJumpCarrierData.getFuelReserve() + " tons."
+                            + remainingRoute,
                             instructions
                     );
             DeferredNotificationManager.getInstance().scheduleNotification(localizedEvent("event.carrier.jumpCooldownComplete"), FOUR_MINUTES);
