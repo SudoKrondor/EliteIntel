@@ -1,20 +1,23 @@
 package elite.intel.ui.dialog;
 
+import elite.intel.eventbus.UiBus;
+import elite.intel.session.SystemSession;
+import elite.intel.ui.event.RestartEarsEvent;
+import elite.intel.ui.event.RestartMouthEvent;
 import elite.intel.ui.support.AudioDeviceCombo;
 import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudSection;
 
-import elite.intel.session.SystemSession;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.util.Objects;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
-import static elite.intel.ui.theme.HudPalette.*;
-import static elite.intel.ui.theme.HudForms.*;
+import static elite.intel.ui.theme.HudForms.baseGbc;
+import static elite.intel.ui.theme.HudForms.sizeFieldLabel;
 
 public class AudioInterfaceDialog extends JDialog {
 
@@ -29,11 +32,23 @@ public class AudioInterfaceDialog extends JDialog {
 
         HudComboBox<String> inputCombo = AudioDeviceCombo.input(savedInput);
         HudComboBox<String> outputCombo = AudioDeviceCombo.output(savedOutput);
-        // Persist on change - no Save button (listeners added after the initial selection is set).
-        inputCombo.addActionListener(e ->
-                session.setAudioInputDevice(AudioDeviceCombo.normalize((String) inputCombo.getSelectedItem())));
-        outputCombo.addActionListener(e ->
-                session.setAudioOutputDevice(AudioDeviceCombo.normalize((String) outputCombo.getSelectedItem())));
+        // Persist on change - no Save button (listeners added after the initial selection is set) - and
+        // restart the one service that reads the device, exactly as the AUDIO settings panel does: this is
+        // the second door to the same two settings, so it must not leave the commander waiting for a
+        // restart the other door no longer needs. The stored-value comparison is what makes re-picking the
+        // device already in use a no-op, since a JComboBox fires on every pick.
+        inputCombo.addActionListener(e -> {
+            String selected = AudioDeviceCombo.normalize((String) inputCombo.getSelectedItem());
+            if (Objects.equals(selected, session.getAudioInputDevice())) return;
+            session.setAudioInputDevice(selected);
+            UiBus.publish(new RestartEarsEvent());
+        });
+        outputCombo.addActionListener(e -> {
+            String selected = AudioDeviceCombo.normalize((String) outputCombo.getSelectedItem());
+            if (Objects.equals(selected, session.getAudioOutputDevice())) return;
+            session.setAudioOutputDevice(selected);
+            UiBus.publish(new RestartMouthEvent());
+        });
 
         JPanel form = transparentPanel(new GridBagLayout());
 
@@ -65,17 +80,6 @@ public class AudioInterfaceDialog extends JDialog {
         gbc.weightx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         form.add(outputCombo, gbc);
-
-        // Note
-        gbc.gridy = 2;
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        gbc.weightx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        JLabel note = new JLabel(getText("audio.devices.note"));
-        note.setForeground(HUD_COLOR_ROLE_SECONDARY_TEXT);
-        note.setFont(note.getFont().deriveFont(note.getFont().getSize() * 0.9f));
-        form.add(note, gbc);
 
         JButton back = makeButtonSubtle(getText("button.back"));      // dismiss = subtle
         back.addActionListener(e -> dispose());

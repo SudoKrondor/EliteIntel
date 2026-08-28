@@ -42,6 +42,17 @@ public enum ShipPersonality {
                 - Do not include laughter such as "hehe" or ха ха ха in response - TTS can't handle it.
             """);
 
+    /**
+     * The personality a ship gets when nobody has chosen one - a fresh install, or a ship
+     * the commander has not touched in the fleet grid.
+     * <p>
+     * Kept in one place because three parties have to agree on it: {@code ShipManager} stamps it
+     * on a newly seen ship, {@code SystemSession#getAIPersonality()} falls back to it when there
+     * is no ship row (or an unreadable one), and the {@code ship.personality} column declares it
+     * as its SQL default in migration 00042.
+     */
+    public static final ShipPersonality DEFAULT = PROFESSIONAL;
+
     private final String behaviorClause;
 
     ShipPersonality(String behaviorClause) {

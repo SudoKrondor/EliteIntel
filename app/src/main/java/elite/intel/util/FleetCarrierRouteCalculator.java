@@ -58,6 +58,24 @@ public class FleetCarrierRouteCalculator {
     }
 
     /**
+     * What became of an automatic re-plot.
+     */
+    public enum ReplotOutcome {
+        /**
+         * The repaired route was stored.
+         */
+        STORED,
+        /**
+         * Spansh found no route, so the stored one was left standing.
+         */
+        NO_ROUTE,
+        /**
+         * The route was abandoned or moved on while Spansh was answering, so the plot was dropped.
+         */
+        ABANDONED
+    }
+
+    /**
      * Plots from one system to another and stores the result, saying nothing to anyone.
      *
      * <p>WHY separate from {@link #calculate()}: that one is the commander's own request, so it reads
@@ -67,6 +85,37 @@ public class FleetCarrierRouteCalculator {
      * @return false when Spansh found no route, in which case the stored route is left standing.
      */
     public static boolean plotAndStore(String origin, String destination) {
+        Map<Integer, CarrierJump> plotted = plot(origin, destination);
+        if (plotted.isEmpty()) return false;
+
+        FleetCarrierRouteManager.getInstance().setFleetCarrierRoute(plotted);
+        return true;
+    }
+
+    /**
+     * The same repair, for a caller that started it in the background and may have been overtaken.
+     *
+     * <p>WHY it exists alongside {@link #plotAndStore}: Spansh takes seconds to answer, and a re-plot
+     * waits out that answer on a thread of its own so the commander hears about his carrier's arrival
+     * immediately. That is exactly the moment he is most likely to abandon the route, and storing the
+     * answer regardless would put back what he had just been told was cleared. The route is only
+     * replaced if it is still the one this repair set out to fix.
+     *
+     * @param expectedGeneration {@code FleetCarrierRouteManager.generation()} read before plotting
+     */
+    public static ReplotOutcome replot(String origin, String destination, long expectedGeneration) {
+        Map<Integer, CarrierJump> plotted = plot(origin, destination);
+        if (plotted.isEmpty()) return ReplotOutcome.NO_ROUTE;
+
+        return FleetCarrierRouteManager.getInstance().setFleetCarrierRouteIfUnchanged(plotted, expectedGeneration)
+                ? ReplotOutcome.STORED
+                : ReplotOutcome.ABANDONED;
+    }
+
+    /**
+     * Asks Spansh for a route, storing nothing. Empty when it found none.
+     */
+    private static Map<Integer, CarrierJump> plot(String origin, String destination) {
         CarrierDataDto carrierData = PlayerSession.getInstance().getFleetCarrierData();
 
         int tritiumInReserve = carrierData.getFuelReserve();
@@ -80,11 +129,7 @@ public class FleetCarrierRouteCalculator {
                 fuelSupply
         );
 
-        Map<Integer, CarrierJump> plotted = new SpanshCarrierRouteClient().calculateRoute(criteria);
-        if (plotted.isEmpty()) return false;
-
-        FleetCarrierRouteManager.getInstance().setFleetCarrierRoute(plotted);
-        return true;
+        return new SpanshCarrierRouteClient().calculateRoute(criteria);
     }
 
     /**

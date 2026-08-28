@@ -139,10 +139,10 @@ public class Updater {
     // -- Private helpers -------------------------------------------------------
 
     /**
-     * Builds the OS-appropriate command to launch the updater jar.
-     * On Windows we use {@code javaw} (no console window); on Linux we resolve
-     * a concrete java binary - see {@link #resolveLinuxJava(Path)} - because a
-     * bundled-runtime install has no {@code java} on PATH at all.
+     * Builds the command to launch the updater jar. On every platform we
+     * resolve a concrete java binary rather than trusting PATH - see
+     * {@link #resolveJavaExecutable()} - because a bundled-runtime install has
+     * no {@code java} on PATH at all.
      */
     private static List<String> buildLaunchCommand(Path updaterJar) {
         List<String> cmd = new ArrayList<>();
@@ -154,44 +154,59 @@ public class Updater {
         return cmd;
     }
 
-    private static String resolveJavaExecutable() {
-        OS os = OsDetector.getOs();
-        if (os == OS.WINDOWS) return "javaw";
-        return resolveLinuxJava(JAR_DIR);
-    }
-
     /**
-     * Finds a java binary on Linux, where a bundled-runtime install may have no
-     * system JDK at all - a bare {@code "java"} then fails with "Cannot run
-     * program java" and the updater silently never appears.
+     * Finds a java binary to launch the updater with.
+     * <p>
+     * A bundled-runtime install has no system JDK at all, so a bare
+     * {@code "java"} / {@code "javaw"} fails with "Cannot run program ..." and
+     * the updater silently never appears. That is the *normal* case on Windows:
+     * the install4j media set bundles a JRE, so a commander who installed
+     * EliteIntel has no reason to own one on PATH.
      * <p>
      * In preference order:
      * <ol>
      *   <li>the runtime running us right now ({@code java.home}) - for an
      *       install4j install that is the bundled JRE, so it always matches
      *       what the launcher used;</li>
-     *   <li>{@code <installDir>/jre/bin/java} - the install4j bundled-JRE layout;</li>
-     *   <li>{@code <installDir>/jdk/bin/java} - the older zip/installer.sh layout;</li>
-     *   <li>{@code $JAVA_HOME/bin/java};</li>
-     *   <li>{@code "java"} on PATH, as a last resort.</li>
+     *   <li>{@code <installDir>/jre/bin} - the install4j bundled-JRE layout;</li>
+     *   <li>{@code <installDir>/jdk/bin} - the older zip/installer.sh layout;</li>
+     *   <li>{@code $JAVA_HOME/bin};</li>
+     *   <li>the bare executable name, letting the OS search PATH, as a last resort.</li>
      * </ol>
+     * Within each candidate runtime Windows prefers {@code javaw.exe} (no
+     * console window) and falls back to {@code java.exe} in the same runtime.
      */
-    private static String resolveLinuxJava(Path installDir) {
-        List<Path> candidates = new ArrayList<>();
+    private static String resolveJavaExecutable() {
+        List<String> names = OsDetector.getOs() == OS.WINDOWS
+                ? List.of("javaw.exe", "java.exe")
+                : List.of("java");
+
+        for (Path binDir : javaBinDirectories(JAR_DIR)) {
+            for (String name : names) {
+                Path candidate = binDir.resolve(name);
+                if (Files.isRegularFile(candidate) && Files.isExecutable(candidate))
+                    return candidate.toAbsolutePath().toString();
+            }
+        }
+        return names.get(0);
+    }
+
+    /**
+     * The {@code bin} directories that may hold a usable runtime, most
+     * trustworthy first. See {@link #resolveJavaExecutable()} for the order.
+     */
+    private static List<Path> javaBinDirectories(Path installDir) {
+        List<Path> dirs = new ArrayList<>();
 
         String javaHome = System.getProperty("java.home", "");
-        if (!javaHome.isBlank()) candidates.add(Path.of(javaHome, "bin", "java"));
+        if (!javaHome.isBlank()) dirs.add(Path.of(javaHome, "bin"));
 
-        candidates.add(installDir.resolve("jre").resolve("bin").resolve("java"));
-        candidates.add(installDir.resolve("jdk").resolve("bin").resolve("java"));
+        dirs.add(installDir.resolve("jre").resolve("bin"));
+        dirs.add(installDir.resolve("jdk").resolve("bin"));
 
         String envHome = System.getenv("JAVA_HOME");
-        if (envHome != null && !envHome.isBlank()) candidates.add(Path.of(envHome, "bin", "java"));
+        if (envHome != null && !envHome.isBlank()) dirs.add(Path.of(envHome, "bin"));
 
-        for (Path candidate : candidates) {
-            if (Files.isRegularFile(candidate) && Files.isExecutable(candidate))
-                return candidate.toAbsolutePath().toString();
-        }
-        return "java";
+        return dirs;
     }
 }

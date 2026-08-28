@@ -108,15 +108,21 @@ public class SystemSession {
     }
 
 
+    /**
+     * The active ship's personality, or {@link ShipPersonality#DEFAULT} when there is no ship yet
+     * (a fresh install, before the first Loadout) or the stored name is unreadable. The fallback
+     * matches what {@code ShipManager} stamps on a new ship, so a commander who never opens the
+     * fleet grid hears one consistent personality.
+     */
     public ShipPersonality getAIPersonality() {
         ShipDao.Ship ship = shipManager.getShip();
-        if (ship == null) return ShipPersonality.CASUAL;
+        if (ship == null) return ShipPersonality.DEFAULT;
         String personality = ship.getPersonality();
-        if (personality == null) return ShipPersonality.CASUAL;
+        if (personality == null) return ShipPersonality.DEFAULT;
         try {
             return ShipPersonality.valueOf(personality);
         } catch (IllegalArgumentException e) {
-            return ShipPersonality.CASUAL;
+            return ShipPersonality.DEFAULT;
         }
     }
 

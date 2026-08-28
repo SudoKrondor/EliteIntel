@@ -59,6 +59,10 @@ public class UpdaterApp {
      * install4j's Unix launcher, sitting in the install root next to the jar.
      */
     private static final String UNIX_LAUNCHER = "elite-intel";
+    /**
+     * install4j's Windows launcher, the same executable name with a .exe suffix.
+     */
+    private static final String WINDOWS_LAUNCHER = "elite-intel.exe";
 
     // -- UI components ---------------------------------------------------------
     private JFrame frame;
@@ -501,56 +505,86 @@ public class UpdaterApp {
         return System.getProperty("os.name", "").toLowerCase().contains("linux");
     }
 
-    /**
-     * Finds a java binary to relaunch with. A bundled-runtime install has no
-     * system JDK at all, so the old bare {@code "java"} fallback left the
-     * commander with an updated - but never restarted - installation.
-     * <p>
-     * In preference order: the runtime running this updater
-     * ({@code java.home}, which the main app resolved for us and is the bundled
-     * JRE on an install4j install), {@code <installDir>/jre/bin/java} (the
-     * install4j bundled-JRE layout), {@code <installDir>/jdk/bin/java} (the
-     * older zip/installer.sh layout), {@code $JAVA_HOME/bin/java}, and finally
-     * {@code "java"} on PATH.
-     */
-    private String resolveJavaCommand() {
-        if (!isLinux()) return "java";
-
-        List<Path> candidates = new ArrayList<>();
-
-        String javaHome = System.getProperty("java.home", "");
-        if (!javaHome.isBlank()) candidates.add(Path.of(javaHome, "bin", "java"));
-
-        candidates.add(Path.of(installDir, "jre", "bin", "java"));
-        candidates.add(Path.of(installDir, "jdk", "bin", "java"));
-
-        String envHome = System.getenv("JAVA_HOME");
-        if (envHome != null && !envHome.isBlank()) candidates.add(Path.of(envHome, "bin", "java"));
-
-        for (Path candidate : candidates) {
-            if (Files.isRegularFile(candidate) && Files.isExecutable(candidate))
-                return candidate.toAbsolutePath().toString();
-        }
-        return "java";
+    private static boolean isWindows() {
+        return System.getProperty("os.name", "").toLowerCase().contains("win");
     }
 
     /**
-     * On Linux, prefer install4j's own launcher when it is present: it starts
-     * the bundled JRE with the same VM options as a normal start (-Xmx6g, the
-     * sherpa-onnx library path) and re-creates the Steam symlinks. Only when
+     * Finds a java binary to relaunch with. A bundled-runtime install has no
+     * system JDK at all, so the old bare {@code "java"} fallback left the
+     * commander with an updated - but never restarted - installation. On
+     * Windows that is the ordinary case rather than the exception: the
+     * install4j media set bundles a JRE, so nothing put java on PATH.
+     * <p>
+     * In preference order: the runtime running this updater
+     * ({@code java.home}, which the main app resolved for us and is the bundled
+     * JRE on an install4j install), {@code <installDir>/jre/bin} (the
+     * install4j bundled-JRE layout), {@code <installDir>/jdk/bin} (the
+     * older zip/installer.sh layout), {@code $JAVA_HOME/bin}, and finally the
+     * bare executable name on PATH.
+     * <p>
+     * Within each candidate runtime Windows prefers {@code javaw.exe} - the
+     * relaunched app is a GUI, so a console window would just sit behind it -
+     * and falls back to {@code java.exe} in the same runtime.
+     */
+    private String resolveJavaCommand() {
+        List<String> names = isWindows()
+                ? List.of("javaw.exe", "java.exe")
+                : List.of("java");
+
+        for (Path binDir : javaBinDirectories()) {
+            for (String name : names) {
+                Path candidate = binDir.resolve(name);
+                if (Files.isRegularFile(candidate) && Files.isExecutable(candidate))
+                    return candidate.toAbsolutePath().toString();
+            }
+        }
+        return names.get(0);
+    }
+
+    /**
+     * The {@code bin} directories that may hold a usable runtime, most
+     * trustworthy first. See {@link #resolveJavaCommand()} for the order.
+     */
+    private List<Path> javaBinDirectories() {
+        List<Path> dirs = new ArrayList<>();
+
+        String javaHome = System.getProperty("java.home", "");
+        if (!javaHome.isBlank()) dirs.add(Path.of(javaHome, "bin"));
+
+        dirs.add(Path.of(installDir, "jre", "bin"));
+        dirs.add(Path.of(installDir, "jdk", "bin"));
+
+        String envHome = System.getenv("JAVA_HOME");
+        if (envHome != null && !envHome.isBlank()) dirs.add(Path.of(envHome, "bin"));
+
+        return dirs;
+    }
+
+    /**
+     * Prefer install4j's own launcher when it is present: it starts the bundled
+     * JRE with the same VM options as a normal start (-Xmx6g, the sherpa-onnx
+     * library path) and, on Linux, re-creates the Steam symlinks. Only when
      * there is no launcher - a plain zip install - do we invoke java directly.
      */
     private List<String> buildRelaunchCommand(Path jar) {
-        if (isLinux()) {
-            Path launcher = Path.of(installDir, UNIX_LAUNCHER);
-            if (Files.isRegularFile(launcher) && Files.isExecutable(launcher))
-                return List.of(launcher.toAbsolutePath().toString());
-        }
+        Path launcher = installLauncher();
+        if (launcher != null)
+            return List.of(launcher.toAbsolutePath().toString());
+
         return List.of(
                 resolveJavaCommand(),
                 "-Djava.library.path=native/sherpa-onnx",
                 "-jar", jar.toAbsolutePath().toString()
         );
+    }
+
+    private Path installLauncher() {
+        String name = isWindows() ? WINDOWS_LAUNCHER : isLinux() ? UNIX_LAUNCHER : null;
+        if (name == null) return null;
+
+        Path launcher = Path.of(installDir, name);
+        return Files.isRegularFile(launcher) && Files.isExecutable(launcher) ? launcher : null;
     }
 
     private void relaunch() throws IOException {

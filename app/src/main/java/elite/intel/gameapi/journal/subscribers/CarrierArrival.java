@@ -74,6 +74,7 @@ final class CarrierArrival {
         boolean carrierMoved;
         boolean coordinatesNeedResolving;
         boolean replotNeeded;
+        long routeGeneration;
 
         // Everything the two events race on, and nothing else: reading whether the carrier moved and acting
         // on that answer is one indivisible step, but it touches no network.
@@ -131,6 +132,11 @@ final class CarrierArrival {
             // WHY: arriving somewhere that was not a plotted leg means the route no longer starts where
             // we are, so it has to be re-plotted from here. An on-route arrival needs no Spansh call.
             replotNeeded = carrierMoved && completedLeg == null && routePlotted;
+
+            // WHY read in here, before the lock is dropped: it stamps the route this repair is for, and
+            // the re-plot below stores its answer only if that is still the route on file. Read any
+            // later and a clear landing in between would be stamped as though we had seen it.
+            routeGeneration = route.generation();
         }
 
         // WHY out here: both of these reach the network, and a lock held across a call that can hang would
@@ -144,7 +150,7 @@ final class CarrierArrival {
             // The arrival announcement is written on the calling thread, so leaving it inline made the
             // commander wait out a route calculation before being told his carrier had arrived at all.
             String destination = FleetCarrierRouteManager.getInstance().getFinalDestination();
-            Thread.ofVirtual().start(() -> replotFrom(starSystem, destination));
+            Thread.ofVirtual().start(() -> replotFrom(starSystem, destination, routeGeneration));
         }
     }
 
@@ -228,14 +234,24 @@ final class CarrierArrival {
      * not ask for a re-plot and did not put that system on his clipboard; silently replacing whatever
      * he had copied is not ours to do. This is also why the repair stays quiet: it reports through the
      * log, and the arrival itself is announced elsewhere.
+     *
+     * @param routeGeneration the route this repair is for, read before the Spansh call. The plot is
+     *                        stored only while that is still the route on file, so abandoning the
+     *                        route mid-call cannot be undone by the answer arriving afterwards.
      */
-    private static void replotFrom(String carrierSystem, String finalDestination) {
+    private static void replotFrom(String carrierSystem, String finalDestination, long routeGeneration) {
         if (finalDestination == null || finalDestination.isBlank()) return;
 
         log.info("Carrier arrived off-route at {}; re-plotting to {}", carrierSystem, finalDestination);
-        if (!FleetCarrierRouteCalculator.plotAndStore(carrierSystem, finalDestination)) {
-            log.warn("Could not re-plot the carrier route from {} to {}; the stored route still starts"
-                    + " elsewhere", carrierSystem, finalDestination);
+        switch (FleetCarrierRouteCalculator.replot(carrierSystem, finalDestination, routeGeneration)) {
+            case STORED -> log.debug("Carrier route re-plotted from {} to {}", carrierSystem, finalDestination);
+            case NO_ROUTE -> log.warn("Could not re-plot the carrier route from {} to {}; the stored route"
+                    + " still starts elsewhere", carrierSystem, finalDestination);
+            // WHY this is not a warning: the commander abandoned the route himself while Spansh was
+            // answering, and nothing is wrong. Storing the plot would undo the clear he was just told
+            // had happened.
+            case ABANDONED -> log.info("Carrier route was abandoned or moved on while re-plotting from"
+                    + " {}; the plot was discarded", carrierSystem);
         }
     }
 

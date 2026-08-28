@@ -19,6 +19,29 @@ public class FleetCarrierRouteManager {
 
     private static volatile FleetCarrierRouteManager instance;
 
+    /**
+     * How many times the stored route has been replaced, consumed or abandoned.
+     *
+     * <p>WHY it exists: the re-plot that follows an off-route arrival runs detached, because it calls
+     * Spansh and must not hold up the arrival announcement. The commander can abandon the route while
+     * that call is still out - and that is the likeliest moment for him to do it, since the arrival he
+     * is hearing about is what tells him the route is still there. Storing the answer afterwards would
+     * put back the route he was just told had been cleared. A plotter therefore reads this before it
+     * starts and hands it back with the result, so a route that moved underneath it is recognised and
+     * the plot dropped.
+     */
+    private long generation;
+
+    /**
+     * Guards {@link #generation} together with the write it counts, so a plot cannot be checked against
+     * a generation and then stored across someone else's clear.
+     *
+     * <p>WHY a lock of its own rather than the arrival owner's: the detached plotter never takes that
+     * one. {@code CarrierArrival} holds its lock across {@link #removeLeg}, so this one is only ever
+     * acquired after it and never before, and the two cannot deadlock.
+     */
+    private final Object routeLock = new Object();
+
     private FleetCarrierRouteManager() {
         // enforce singleton pattern.
     }
@@ -43,7 +66,42 @@ public class FleetCarrierRouteManager {
      */
     public void setFleetCarrierRoute(Map<Integer, CarrierJump> fleetCarrierRoute) {
         if (fleetCarrierRoute == null || fleetCarrierRoute.isEmpty()) return;
+        synchronized (routeLock) {
+            store(fleetCarrierRoute);
+        }
+    }
 
+    /**
+     * Stores a plot made on the app's own initiative, unless the route changed while it was being
+     * calculated.
+     *
+     * <p>An automatic re-plot is a repair of one particular route, not a standing instruction to keep
+     * one plotted. If that route was abandoned, consumed or replaced since {@code expectedGeneration}
+     * was read, the plot describes a voyage nobody is on any more and is dropped. See
+     * {@link #generation}.
+     *
+     * @param expectedGeneration the value {@link #generation()} returned before the plot was started
+     * @return true when the plot was stored, false when the route had moved on and it was dropped
+     */
+    public boolean setFleetCarrierRouteIfUnchanged(Map<Integer, CarrierJump> fleetCarrierRoute, long expectedGeneration) {
+        if (fleetCarrierRoute == null || fleetCarrierRoute.isEmpty()) return false;
+        synchronized (routeLock) {
+            if (generation != expectedGeneration) return false;
+            store(fleetCarrierRoute);
+            return true;
+        }
+    }
+
+    /**
+     * The route as it stands, for a caller that is about to go away and come back with a plot.
+     */
+    public long generation() {
+        synchronized (routeLock) {
+            return generation;
+        }
+    }
+
+    private void store(Map<Integer, CarrierJump> fleetCarrierRoute) {
         List<CarrierJump> plotted = new ArrayList<>(new TreeMap<>(fleetCarrierRoute).values());
         List<CarrierJump> remaining = CarrierRouteLegs.stillToFly(plotted, currentCarrierSystem());
 
@@ -51,6 +109,7 @@ public class FleetCarrierRouteManager {
             dao.replaceAll(remaining.stream().map(FleetCarrierRouteManager::dtoToEntity).toList());
             return null;
         });
+        generation++;
     }
 
     /**
@@ -116,25 +175,33 @@ public class FleetCarrierRouteManager {
         String arrival = CarrierRouteLegs.normalise(starName);
         if (arrival == null) return;
 
-        Database.withDao(FleetCarrierRouteDao.class, dao -> {
-            List<CarrierJump> stored = dao.getAll().stream()
-                    .sorted(Comparator.comparing(FleetCarrierRouteDao.FleetCarrierRouteLeg::getLeg))
-                    .map(FleetCarrierRouteManager::entityToDto)
-                    .toList();
+        synchronized (routeLock) {
+            boolean consumed = Database.withDao(FleetCarrierRouteDao.class, dao -> {
+                List<CarrierJump> stored = dao.getAll().stream()
+                        .sorted(Comparator.comparing(FleetCarrierRouteDao.FleetCarrierRouteLeg::getLeg))
+                        .map(FleetCarrierRouteManager::entityToDto)
+                        .toList();
 
-            List<CarrierJump> remaining = CarrierRouteLegs.stillToFly(stored, arrival);
-            if (remaining.size() == stored.size()) return null; // off-route arrival: nothing consumed
+                List<CarrierJump> remaining = CarrierRouteLegs.stillToFly(stored, arrival);
+                if (remaining.size() == stored.size()) return false; // off-route arrival: nothing consumed
 
-            dao.replaceAll(remaining.stream().map(FleetCarrierRouteManager::dtoToEntity).toList());
-            return null;
-        });
+                dao.replaceAll(remaining.stream().map(FleetCarrierRouteManager::dtoToEntity).toList());
+                return true;
+            });
+            // WHY counted: a plot made before this arrival was plotted from a system the carrier has
+            // now left, so it is as stale as one made before a clear.
+            if (consumed) generation++;
+        }
     }
 
     public void clear() {
-        Database.withDao(FleetCarrierRouteDao.class, dao -> {
-            dao.clear();
-            return null;
-        });
+        synchronized (routeLock) {
+            Database.withDao(FleetCarrierRouteDao.class, dao -> {
+                dao.clear();
+                return null;
+            });
+            generation++;
+        }
     }
 
     /**
