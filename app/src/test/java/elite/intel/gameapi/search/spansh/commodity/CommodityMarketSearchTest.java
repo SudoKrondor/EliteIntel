@@ -198,15 +198,15 @@ class CommodityMarketSearchTest {
         // A mission still owing 20 tonnes after a part load wants 20, not a hold's worth. Asking for the
         // full 300 first passes over every nearby market holding 25 and answers with a big one further out,
         // and the commander is sent across the bubble for cargo that was two jumps away.
-        assertEquals(20, SpanshCommoditySearch.attemptsForTest(20, 100).getFirst().minSupply());
-        assertEquals(HOLD, SpanshCommoditySearch.attemptsForTest(HOLD, 100).getFirst().minSupply());
+        assertEquals(20, SpanshCommoditySearch.attemptsForTest(20, 100).getFirst().minUnits());
+        assertEquals(HOLD, SpanshCommoditySearch.attemptsForTest(HOLD, 100).getFirst().minUnits());
     }
 
     @Test
     void aPartLoadIsStillOfferedWhenNobodyHoldsTheWholeAmount() {
         // The second rung drops the floor to "selling at all" at the SAME radius, so buying what one market
         // has is a real answer - the next search asks for whatever is left after that stop.
-        assertEquals(1, SpanshCommoditySearch.attemptsForTest(20, 100).get(1).minSupply());
+        assertEquals(1, SpanshCommoditySearch.attemptsForTest(20, 100).get(1).minUnits());
         assertEquals(100, SpanshCommoditySearch.attemptsForTest(20, 100).get(1).maxDistanceLy(),
                 "the part load is looked for where the commander asked, before the radius widens");
     }

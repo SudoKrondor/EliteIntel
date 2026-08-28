@@ -11,7 +11,7 @@ import elite.intel.gameapi.search.edsm.dto.SystemBodiesDto;
 import elite.intel.gameapi.search.edsm.dto.data.BodyData;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
-import elite.intel.util.LocationUtils;
+import elite.intel.util.GravityCalculator;
 
 import java.util.List;
 import java.util.Map;
@@ -99,11 +99,10 @@ public class ApproachBodySubscriber {
     private void useOurData(LocationDto location, StringBuilder sb) {
         double surfaceGravity = formatDouble(location.getGravity());
 
-        if (surfaceGravity > 1000) {
+        if (surfaceGravity > GravityCalculator.MAX_PLAUSIBLE_GRAVITY_G) {
+            // Nothing in the game comes close, so the stored figure is not a gravity. Say so rather than narrate it:
+            // recomputing here used to paper over EDSM radii being stored in km (see migration 01041).
             sb.append(" ").append(localizedEvent("event.approach.body.gravityAnomaly"));
-            /// 9.80665 * massEM / Math.pow(radiusKm / 6371.0, 2);
-            double g = LocationUtils.gravityFix(location.getMassEM(), location.getRadius());
-            sb.append(" ").append(localizedEvent("event.approach.body.calculatedGravity", formatDouble(g)));
         } else {
             sb.append(" ").append(localizedEvent("event.approach.body.surfaceGravity", surfaceGravity));
             if (surfaceGravity > 1) {
@@ -119,13 +118,22 @@ public class ApproachBodySubscriber {
         if (materials != null && !materials.isEmpty()) {
             sb.append(" ").append(localizedEvent("event.approach.body.materials", materials.size()));
         }
-        double surfaceTemperature = location.getSurfaceTemperature();
-        double temperatureInC = surfaceTemperature - 273;
-        location.setSurfaceTemperature(temperatureInC);
-        sb.append(" ").append(localizedEvent("event.approach.body.temperature", (int) temperatureInC));
+        appendTemperature(sb, location.getSurfaceTemperature());
         if (location.isTidalLocked()) sb.append(" ").append(localizedEvent("event.approach.body.tidalLocked"));
     }
 
+
+    /**
+     * Appends the surface temperature converted to Celsius for the narration. The location keeps the journal's Kelvin
+     * value: converting in place and saving it back subtracted another 273 on every approach of the same body.
+     */
+    private void appendTemperature(StringBuilder sb, double surfaceTemperatureKelvin) {
+        if (surfaceTemperatureKelvin > 0) {
+            sb.append(" ").append(localizedEvent("event.approach.body.temperature", (int) (surfaceTemperatureKelvin - 273)));
+        } else {
+            sb.append(" ").append(localizedEvent("event.approach.body.temperatureUnknown"));
+        }
+    }
 
     private void extractDataFromEdsm(BodyData bodyData, LocationDto location, StringBuilder sb) {
         double gravity = formatDouble(bodyData.getGravity());
@@ -136,7 +144,7 @@ public class ApproachBodySubscriber {
         }
         double surfaceTemperatureKelvin = bodyData.getSurfaceTemperature();
         location.setSurfaceTemperature(surfaceTemperatureKelvin);
-        sb.append(" ").append(localizedEvent("event.approach.body.temperature", (int) (surfaceTemperatureKelvin - 273)));
+        appendTemperature(sb, surfaceTemperatureKelvin);
         if (bodyData.getAtmosphereType() != null && !bodyData.getAtmosphereType().isEmpty()) {
             sb.append(" ").append(localizedEvent("event.approach.body.atmosphere", bodyData.getAtmosphereType()));
         }

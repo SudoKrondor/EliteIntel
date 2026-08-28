@@ -1,7 +1,5 @@
 package elite.intel.ai.brain.vega.memory.facts.sources;
 
-import elite.intel.ai.brain.vega.memory.facts.sources.CurrentBodyFactSource;
-import elite.intel.ai.brain.vega.memory.facts.sources.FactLine;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,6 +26,13 @@ class CurrentBodyFactSourceTest {
                 CurrentBodyFactSource.format("1 a", null, false, 0.28, null, 0, 0, 0, false, false, false, 0));
         assertEquals("current body 1 a: gravity 1g",
                 CurrentBodyFactSource.format("1 a", null, false, 1.0, null, 0, 0, 0, false, false, false, 0));
+    }
+
+    @Test
+    void omitsAGravityThatIsNotAGravity() {
+        // EDSM radii were stored in km and fed to a metres formula, leaving gravities like this in the table.
+        assertEquals("current body 1 a: Icy body",
+                CurrentBodyFactSource.format("1 a", "Icy body", false, 355396.56, null, 0, 0, 0, false, false, false, 0));
     }
 
     @Test

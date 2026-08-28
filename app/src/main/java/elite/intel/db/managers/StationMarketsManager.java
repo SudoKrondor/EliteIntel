@@ -41,6 +41,10 @@ public class StationMarketsManager {
 
     public void save(GameEvents.MarketEvent market) {
         memo = null;
+        // Every board carries the galactic average of everything on it, and this is the one place every
+        // Market.json passes through - so the averages are learned here rather than at a second listener
+        // that could fall out of step with what was actually stored.
+        CommodityMeanPriceManager.getInstance().harvest(market);
         Database.withDao(StationMarketDao.class, dao -> {
             StationMarketDao.StationMarket stationMarket = new StationMarketDao.StationMarket();
             stationMarket.setJson(market.toJson());
@@ -54,11 +58,20 @@ public class StationMarketsManager {
     /**
      * What the game itself told us a market had, the last time the commander stood in it.
      *
-     * @param stock units on sale; zero when the market listed the good without stocking it, and when it
-     *              did not list it at all - a market that sells none of something is the same answer
-     *              either way
+     * @param stock  units on sale; zero when the market listed the good without stocking it, and when it
+     *               did not list it at all - a market that sells none of something is the same answer
+     *               either way
+     * @param demand units the market was asking for, on the same terms. The other half of the pair: a
+     *               market the commander SELLS into is one with demand, and it normally has no stock of
+     *               the good at all, so stock alone cannot say whether it is worth flying to
+     * @param buyPrice  what the board charged the commander, or 0 when it was not selling the good
+     * @param sellPrice what the board offered the commander, or 0 when it was not buying it. The prices
+     *                  matter as much as the quantities: a Spansh row 10 days old quoted Bari Gateway at
+     *                  57,844 for Tritium when the game was paying 53,992, which over a full hold is
+     *                  3.4 million credits of difference between what was promised and what was there
      */
-    public record Sighting(String starSystem, String stationName, Instant seenAt, int stock) {
+    public record Sighting(String starSystem, String stationName, Instant seenAt, int stock, int demand,
+                           int buyPrice, int sellPrice) {
     }
 
     /**
@@ -88,8 +101,13 @@ public class StationMarketsManager {
                     && !starSystem.equalsIgnoreCase(market.getStarSystem())) {
                 continue;
             }
+            GameEvents.MarketEvent.MarketItem item = itemOf(market, commoditySymbol);
             return Optional.of(new Sighting(market.getStarSystem(), market.getStationName(),
-                    parseInstant(market.getTimestamp()), stockOf(market, commoditySymbol)));
+                    parseInstant(market.getTimestamp()),
+                    item == null ? 0 : item.getStock(),
+                    item == null ? 0 : item.getDemand(),
+                    item == null ? 0 : item.getBuyPrice(),
+                    item == null ? 0 : item.getSellPrice()));
         }
         return Optional.empty();
     }
@@ -189,12 +207,15 @@ public class StationMarketsManager {
         }
     }
 
-    private static int stockOf(GameEvents.MarketEvent market, String commoditySymbol) {
+    /**
+     * The market's own line for one good, or null when it did not carry it. Both halves of the counter come
+     * off the same line, so it is found once rather than scanned for each figure.
+     */
+    private static GameEvents.MarketEvent.MarketItem itemOf(GameEvents.MarketEvent market, String commoditySymbol) {
         return market.getItems().stream()
                 .filter(item -> commoditySymbol.equalsIgnoreCase(JournalSymbol.normalize(item.getName())))
-                .mapToInt(GameEvents.MarketEvent.MarketItem::getStock)
                 .findFirst()
-                .orElse(0);
+                .orElse(null);
     }
 
     private static Instant parseInstant(String timestamp) {

@@ -47,6 +47,35 @@ class CommoditySearchCardTest {
         return card(market, List.of(line("Steel", 487, 4120, 0)), plotted);
     }
 
+    /**
+     * The same card, read the other way round: the price is what the commander is PAID and the tonnage is
+     * what the market WANTS. Without the side on the row a commander flying out to unload 300 tonnes of
+     * tritium would be told the station has 300 tonnes of it in stock.
+     */
+    @Test
+    void aSellResultSaysItIsSellingAndTotalsWhatGoesOut() {
+        FoundMarket market = bujoldTerminal();
+        market.setCommodity("Tritium");
+        market.setSide("SELL");
+        market.setPrice(55000);
+        market.setSupply(9100);
+
+        HudObjective objective = card(market, List.of(line("Tritium", 55000, 9100, 300)), "Sterope").orElseThrow();
+
+        assertEquals("SELL CARGO", objective.title());
+        assertTrue(labels(objective).contains("TO SELL"),
+                "a single good still totals on a sell card: it is the load leaving the hold");
+        assertEquals("300 T", valueOf(objective, "TO SELL"));
+    }
+
+    @Test
+    void aRowWrittenBeforeSearchingHadADirectionIsABuy() {
+        FoundMarket market = bujoldTerminal();
+        market.setSide(null);
+
+        assertEquals("COMMODITY FOUND", card(market, "Sterope").orElseThrow().title());
+    }
+
     @Test
     void aSingleGoodReadsAsOneErrand() {
         HudObjective objective = card(bujoldTerminal(), "Sterope").orElseThrow();

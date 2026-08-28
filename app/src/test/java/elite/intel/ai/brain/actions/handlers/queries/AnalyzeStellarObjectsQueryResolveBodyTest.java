@@ -20,7 +20,7 @@ class AnalyzeStellarObjectsQueryResolveBodyTest {
                 shortName,
                 AnalyzeStellarObjectsQuery.toPhonetic(shortName),
                 "PLANET", "High metal content body", null, "Test System",
-                false, false, 0, 0, "None", null, 0, 0, false, false, false);
+                false, false, null, 0L, "None", null, 0, 0, false, false, false);
     }
 
     // A representative multi-star system: A/B/C/D planets, plus a moon that must win over its planet.

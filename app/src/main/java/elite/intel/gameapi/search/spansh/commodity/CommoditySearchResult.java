@@ -37,8 +37,26 @@ public class CommoditySearchResult extends BaseJsonDto implements ToJsonConverti
      */
     private String marketUpdatedAt;
 
+    /**
+     * True when the price and quantity on this result came from a market board the commander opened
+     * themselves, rather than from Spansh's crowd-sourced copy of it.
+     * <p>
+     * Carried so the answer can stop hedging when it does not need to: a Spansh row is a claim of unknown
+     * age - measured live, Bari Gateway was quoted at 57,844 for Tritium from a row 10 days old while the
+     * game was paying 53,992 - but a figure the game itself gave us needs no such warning.
+     */
+    private boolean seenFirstHand;
+
     /// transient
     private double distanceFromPlayer;
+
+    public boolean isSeenFirstHand() {
+        return seenFirstHand;
+    }
+
+    public void setSeenFirstHand(boolean seenFirstHand) {
+        this.seenFirstHand = seenFirstHand;
+    }
 
     public String getMarketUpdatedAt() {
         return marketUpdatedAt;

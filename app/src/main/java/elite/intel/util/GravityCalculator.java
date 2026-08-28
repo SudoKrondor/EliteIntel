@@ -14,8 +14,11 @@ public class GravityCalculator {
     private static final BigDecimal EARTH_MASS = new BigDecimal("5.972E24");
     // Earth's surface gravity (m/s²)
     private static final BigDecimal EARTH_GRAVITY = new BigDecimal("9.80665");
-    // Threshold for detecting journal gravity error (factor of ~9.8)
-    private static final BigDecimal GRAVITY_ERROR_FACTOR = new BigDecimal("9.0");
+    /**
+     * No body in the game comes within two orders of magnitude of this, so a stored figure above it is not a gravity
+     * at all -- it is a unit fault, such as a radius in kilometres fed to a formula expecting metres.
+     */
+    public static final double MAX_PLAUSIBLE_GRAVITY_G = 1000;
 
     /**
      * Converts mass (in Earth masses) and radius (in meters) to surface gravity (in Earth gravities).
@@ -44,6 +47,13 @@ public class GravityCalculator {
         BigDecimal relativeGravity = gravity.divide(EARTH_GRAVITY, 4, RoundingMode.HALF_UP);
 
         return relativeGravity.setScale(2, RoundingMode.HALF_UP).doubleValue();
-        //return relativeGravity.doubleValue();
+    }
+
+    /**
+     * Whether a stored surface gravity can be believed. Zero is the "not recorded" value every writer uses, and
+     * anything above {@link #MAX_PLAUSIBLE_GRAVITY_G} is a unit fault rather than a reading.
+     */
+    public static boolean isPlausible(double gravityG) {
+        return gravityG > 0 && gravityG <= MAX_PLAUSIBLE_GRAVITY_G;
     }
 }

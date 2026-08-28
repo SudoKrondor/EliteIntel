@@ -12,31 +12,31 @@ import elite.intel.util.json.GetNumberFromParam;
 
 import java.util.List;
 
-
 /**
- * Self-describing "find commodity" command.
- * Owns its own execution: body migrated 1:1 from the legacy FindCommodityHandler,
- * routed through CommandRegistry via the self-describing model.
+ * "Where can I sell this?" - the mirror of {@link FindCommodityCommand}, and its own tool rather than a
+ * flag on that one.
+ * <p>
+ * <b>Why a separate command.</b> The reducer scores topic and blurs polarity: "where can I sell tritium"
+ * and "where can I buy tritium" embed almost identically, so both tools are offered for either question
+ * and the model reads the descriptions to choose. A single tool with a direction parameter would face the
+ * same model with the same ambiguity and no second description to distinguish it - and a wrong boolean is
+ * silent, where a wrong tool at least names itself in the log. Both descriptions therefore say their
+ * direction in capitals and name the other tool.
  * <p>
  * Its job ends at turning what the commander said into a name the commodities table knows;
- * {@link CommodityTradeSearch} does the searching, and {@link FindMissionCommodityCommand} reaches
- * the same place from the mission board instead of from a spoken name.
+ * {@link CommodityTradeSearch#findSaleAndPlot} does the searching, on the same escalation ladder, reminder
+ * and route as the buy search.
  */
 @RegisterCommand
-public final class FindCommodityCommand implements IntelCommand {
-    public static final String ID = "find_commodity";
+public final class SellCommodityCommand implements IntelCommand {
+    public static final String ID = "find_where_to_sell_commodity";
 
     @Override
     public String llmDescription() {
-        // The BUY-only sentence earns its place: the reducer scores topic, not direction, so a sell question
-        // ("where can I sell my gold", "ou vendre l'or") offers this tool at the top of the band too, and
-        // answering it with a buy search sends the commander to a market that wants payment for what he
-        // came to unload. Naming the sibling is what turns "do not do this" into an answer.
-        return "Find where to BUY the commodity in 'key' within 'max_distance' ly and plot a route to it; "
-                + "'state' true = nearest market, false = best-price market. "
-                + "BUYING ONLY: for where to SELL cargo, call find_where_to_sell_commodity instead.";
+        return "Find where to SELL the commodity in 'key' - a market with demand for it, within "
+                + "'max_distance' ly - and plot a route to it; 'state' true = nearest buyer, false = "
+                + "best-paying buyer. SELLING ONLY: for where to BUY a commodity, call find_commodity instead.";
     }
-
 
     private static final String PARAM_KEY = "key";
     private static final String PARAM_MAX_DISTANCE = "max_distance";
@@ -47,8 +47,8 @@ public final class FindCommodityCommand implements IntelCommand {
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
                 PARAM_KEY, "string", true,
-                "The commodity (market good) to search for, e.g. gold, tritium, painite.",
-                List.of("gold", "tritium"),
+                "The commodity (market good) to sell, e.g. gold, tritium, painite.",
+                List.of("tritium", "gold"),
                 "Extract the commodity name verbatim in lower case; do not translate.");
         key.validate();
         ActionParameterSpec maxDistance = new ActionParameterSpec(
@@ -56,11 +56,11 @@ public final class FindCommodityCommand implements IntelCommand {
                 "Maximum galactic search radius in light years (ly). If omitted, a default range is used.",
                 List.of("80", "150"),
                 "Extract the distance limit in light years if the commander states one, ALWAYS as digits: "
-                        + "the 80 in 'find gold within 80 ly', and 200 for 'within two hundred light years'.");
+                        + "the 80 in 'where can I sell gold within 80 ly', and 200 for 'within two hundred light years'.");
         maxDistance.validate();
         ActionParameterSpec state = new ActionParameterSpec(
                 PARAM_STATE, "boolean", false,
-                "Search mode: true = nearest market (by distance); false = best price / where to buy.",
+                "Search mode: true = nearest buyer (by distance); false = best price paid.",
                 List.of("true", "false"),
                 "Set true when the commander says 'nearest' or 'closest'; otherwise false.");
         state.validate();
@@ -72,7 +72,8 @@ public final class FindCommodityCommand implements IntelCommand {
         return ID;
     }
 
-    /// Route plotting available anywhere in the game
+    /// Route plotting available anywhere in the game; asking where a good sells is a planning question
+    /// the commander may ask with an empty hold.
     @Override
     public boolean isVisibleForLLM(Status status) {
         return true;
@@ -97,13 +98,12 @@ public final class FindCommodityCommand implements IntelCommand {
         }
 
         // Our own table's spelling, passed on untouched: Spansh matches a commodity name exactly, and
-        // title-casing it here quietly broke 23 goods - "Agri-Medicines" became "Agri-medicines",
-        // "H.E. Suits" became "H.e. Suits", and the market search found nothing anywhere in the galaxy.
+        // title-casing it here quietly broke 23 goods - see FindCommodityCommand.
         String commodity = FuzzySearch.fuzzyCommodityMatch(key.getAsString(), 3);
 
         if (commodity == null) {
             return StringUtls.localizedResponse("handler.commodity.notFound", key.getAsString());
         }
-        return CommodityTradeSearch.findAndPlot(commodity, distance, returnClosest);
+        return CommodityTradeSearch.findSaleAndPlot(commodity, distance, returnClosest);
     }
 }
