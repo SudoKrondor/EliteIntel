@@ -67,7 +67,7 @@ public class AnalyzeCurrentLocationQuery extends BaseQueryAnalyzer implements In
                 - deathsData: EDSM historical death statistics for this system
                 - trafficData: EDSM historical traffic statistics for this system
                 - planetRadius: radius of current planet in kilometers
-                - surfaceTemperatureInCelsius: surface temperature of current planet
+                - surfaceTemperatureInCelsius: surface temperature of current planet (absent when unknown)
                 - dayLength: pre-formatted solar day length for current planet
                 
                 Rules:
@@ -79,6 +79,8 @@ public class AnalyzeCurrentLocationQuery extends BaseQueryAnalyzer implements In
                 """;
 
         double surfaceTemperatureInKelvin = Math.round(location.getSurfaceTemperature() * 100.0) / 100.0;
+        // Below absolute zero means we never recorded a temperature for this body; omit it rather than speak nonsense.
+        Double surfaceTemperatureInCelsius = surfaceTemperatureInKelvin > 0 ? surfaceTemperatureInKelvin - 273 : null;
         return process(
                 new AiDataStruct(
                         instructions,
@@ -92,8 +94,8 @@ public class AnalyzeCurrentLocationQuery extends BaseQueryAnalyzer implements In
                                 location.getPowers() == null ? null : location.getPowers().toArray(String[]::new),
                                 deathsDto.getData() == null ? null : deathsDto.getData().getDeaths(),
                                 trafficDto.getData() == null ? null : trafficDto.getData().getTraffic(),
-                                (int) location.getRadius(),
-                                (surfaceTemperatureInKelvin - 273),
+                                (int) Math.round(location.getRadius() / 1000.0), // stored in metres, prompt asks for km
+                                surfaceTemperatureInCelsius,
                                 computeSolarDayLength(location)
                         )
                 ),
@@ -129,7 +131,7 @@ public class AnalyzeCurrentLocationQuery extends BaseQueryAnalyzer implements In
             DeathsStats deathsData,
             TrafficStats trafficData,
             double planetRadius,
-            double surfaceTemperatureInCelsius,
+            Double surfaceTemperatureInCelsius,
             String dayLength
     ) implements ToYamlConvertable {
         @Override public String toYaml() {

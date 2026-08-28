@@ -33,7 +33,7 @@ class FirstHandMarketDataTest {
 
     private static SpanshCommoditySearch.MarketSightings sawStock(int stock, Instant seenAt) {
         return (system, station, symbol) ->
-                Optional.of(new StationMarketsManager.Sighting(system, station, seenAt, stock));
+                Optional.of(new StationMarketsManager.Sighting(system, station, seenAt, stock, 0, 0, 0));
     }
 
     private static final SpanshCommoditySearch.MarketSightings NEVER_BEEN_THERE =

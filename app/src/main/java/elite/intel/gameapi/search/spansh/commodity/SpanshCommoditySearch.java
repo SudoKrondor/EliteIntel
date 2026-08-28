@@ -15,7 +15,9 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -23,7 +25,14 @@ import static elite.intel.util.StringUtls.localizedEvent;
 import static elite.intel.util.StringUtls.localizedEventPlural;
 
 /**
- * Finds the markets selling a commodity, through one Spansh stations search.
+ * Finds the markets trading a commodity - selling it to the commander, or buying it from them - through one
+ * Spansh stations search.
+ * <p>
+ * WHY one search serves both directions: a station's market entry carries both halves of every pair, so
+ * "where can I buy tritium" and "where can I sell tritium" are the same request with the other half read.
+ * Which half is {@link TradeSide}, and it is the ONLY difference: the escalation ladder, the first-hand
+ * market override and the ranking are one behaviour, and a second copy of them would be a second set of
+ * answers to the same question.
  * <p>
  * WHY one search and not a scan: this used to walk EDSM - every system in range, then every station in
  * every system, then every market in every station, filtering the commodity out in Java. Spansh answers
@@ -62,9 +71,10 @@ public final class SpanshCommoditySearch {
      */
     private static final int UNBOUNDED = Integer.MAX_VALUE;
     /**
-     * The market has to be selling, not merely listing the good.
+     * The market has to be trading the good, not merely listing it: one tonne in stock when the commander
+     * is buying, one tonne of demand when they are selling.
      */
-    private static final int SELLING_AT_ALL = 1;
+    private static final int TRADING_AT_ALL = 1;
     /**
      * Ask for a hold's worth: what a caller that is filling the ship rather than topping up a mission wants.
      */
@@ -112,8 +122,8 @@ public final class SpanshCommoditySearch {
     }
 
     /**
-     * Markets within {@code maxDistanceLy} selling {@code commodityToFind}, best candidate first: nearest
-     * when {@code returnClosest}, cheapest otherwise.
+     * Markets within {@code maxDistanceLy} selling {@code commodityToFind} a hold's worth of it, best
+     * candidate first: nearest when {@code returnClosest}, cheapest otherwise.
      *
      * @param commodityToFind the commodity by its English name; capitalisation is forgiven, see {@link #spellings}
      * @param refStarSystem   the system distances are measured from
@@ -141,14 +151,35 @@ public final class SpanshCommoditySearch {
     public static List<CommoditySearchResult> search(
             String commodityToFind, String refStarSystem, int maxDistanceLy,
             TradeRouteSearchCriteria profile, boolean returnClosest, int wantedUnits) {
+        return search(commodityToFind, refStarSystem, maxDistanceLy, profile, returnClosest, wantedUnits,
+                TradeSide.BUY);
+    }
+
+    /**
+     * As above, on a stated side of the counter.
+     * <p>
+     * Selling, {@code wantedUnits} is the load to shift rather than the load to acquire, and "best" means
+     * the market paying most rather than charging least. Everything else - the ladder, the part-trade
+     * fallback, the carrier last resort, the first-hand override - is the same, because it is the same
+     * question about the same index.
+     *
+     * @param side which half of each market entry to read; see {@link TradeSide}
+     */
+    public static List<CommoditySearchResult> search(
+            String commodityToFind, String refStarSystem, int maxDistanceLy,
+            TradeRouteSearchCriteria profile, boolean returnClosest, int wantedUnits, TradeSide side) {
 
         // Our own sightings are keyed by the game's symbol, not by the English name Spansh matches on.
         String symbol = FuzzySearch.commoditySymbol(commodityToFind);
 
-        return climb(commodityToFind, refStarSystem, maxDistanceLy, profile, returnClosest, wantedUnits,
-                stations -> correctWithFirstHandData(
-                        rank(stations, commodityToFind, returnClosest),
-                        symbol, StationMarketsManager.getInstance()::lastSeen));
+        // Corrected BEFORE ranking, not after: a first-hand price that arrives once the page is already
+        // sorted leaves the order deciding on figures no longer in the results.
+        return climb(commodityToFind, refStarSystem, maxDistanceLy, profile, returnClosest, wantedUnits, side,
+                stations -> sortBest(
+                        correctWithFirstHandData(
+                                asResults(stations, commodityToFind, side),
+                                symbol, StationMarketsManager.getInstance()::lastSeen, side),
+                        returnClosest, side));
     }
 
     /**
@@ -180,7 +211,7 @@ public final class SpanshCommoditySearch {
         WantedCommodity anchor = list.getFirst();
 
         return climb(anchor.commodity(), refStarSystem, maxDistanceLy, profile, returnClosest,
-                anchor.unitsWanted(),
+                anchor.unitsWanted(), TradeSide.BUY,
                 stations -> rankBaskets(stations, list, holdCapacity, returnClosest,
                         StationMarketsManager.getInstance()::lastSeen));
     }
@@ -195,7 +226,7 @@ public final class SpanshCommoditySearch {
      */
     private static <T> List<T> climb(
             String anchorCommodity, String refStarSystem, int maxDistanceLy, TradeRouteSearchCriteria profile,
-            boolean returnClosest, int wantedUnits,
+            boolean returnClosest, int wantedUnits, TradeSide side,
             java.util.function.Function<List<TradeStationSearchResultDto.StationResult>, List<T>> collect) {
 
         // A hold's worth, or the commander flies out for a part load. Guarded because a floor of zero would
@@ -212,13 +243,13 @@ public final class SpanshCommoditySearch {
             // silent escalation reads as a straight answer - which is how a carrier 50 ly away came back
             // looking like the nearest market rather than the last resort.
             if (i > 0) {
-                announceEscalation(ladder.get(i - 1), attempt);
+                announceEscalation(ladder.get(i - 1), attempt, side);
             }
-            markets = collect.apply(stationsSelling(attempt, anchorCommodity, refStarSystem, profile, returnClosest));
+            markets = collect.apply(stationsTrading(attempt, anchorCommodity, refStarSystem, profile, returnClosest, side));
             if (!markets.isEmpty()) {
                 break;
             }
-            log.debug("Nothing sells {} for {}; widening", anchorCommodity, attempt);
+            log.debug("Nothing trades {} for {}; widening", anchorCommodity, attempt);
         }
 
         GameEventBus.publish(new MissionCriticalAnnouncementEvent(
@@ -255,15 +286,15 @@ public final class SpanshCommoditySearch {
 
         List<Attempt> ladder = new ArrayList<>();
         ladder.add(new Attempt(staticTypes, wanted, maxDistanceLy, false));
-        ladder.add(new Attempt(staticTypes, SELLING_AT_ALL, maxDistanceLy, false));
+        ladder.add(new Attempt(staticTypes, TRADING_AT_ALL, maxDistanceLy, false));
         if (widened > maxDistanceLy) {
-            ladder.add(new Attempt(staticTypes, SELLING_AT_ALL, widened, false));
+            ladder.add(new Attempt(staticTypes, TRADING_AT_ALL, widened, false));
         }
         if (bubble > widened) {
-            ladder.add(new Attempt(staticTypes, SELLING_AT_ALL, bubble, false));
+            ladder.add(new Attempt(staticTypes, TRADING_AT_ALL, bubble, false));
         }
         // Last resort, and only carriers seen recently enough for the sighting to mean anything.
-        ladder.add(new Attempt(carriers, SELLING_AT_ALL, bubble, true));
+        ladder.add(new Attempt(carriers, TRADING_AT_ALL, bubble, true));
         return List.copyOf(ladder);
     }
 
@@ -272,10 +303,12 @@ public final class SpanshCommoditySearch {
      * offered: a wider radius, or the move from fixed markets to mobile ones. Widening the stock floor at the
      * same radius is not something he needs to hear about - the part-load note on the answer already says it.
      */
-    private static void announceEscalation(Attempt previous, Attempt next) {
+    private static void announceEscalation(Attempt previous, Attempt next, TradeSide side) {
         if (next.mustBeRecentlySeen() && !previous.mustBeRecentlySeen()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(
-                    localizedEvent("event.search.commodity.tryingCarriers")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent(
+                    side == TradeSide.SELL
+                            ? "event.search.commodity.tryingCarriersToSell"
+                            : "event.search.commodity.tryingCarriers")));
         } else if (next.maxDistanceLy() > previous.maxDistanceLy()) {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent(
                     "event.search.commodity.widening", previous.maxDistanceLy(), next.maxDistanceLy())));
@@ -290,15 +323,15 @@ public final class SpanshCommoditySearch {
     }
 
     /**
-     * One search: which station types to ask about, how much stock a market must hold, and whether the
-     * station has to have been seen recently. Only a carrier needs that last one - a starport is still where
+     * One search: which station types to ask about, how many tonnes a market must have on our side of the
+     * counter - stock when buying, demand when selling - and whether the station has to have been seen recently. Only a carrier needs that last one - a starport is still where
      * Spansh last recorded it however long ago that was.
      */
-    record Attempt(List<String> stationTypes, int minSupply, int maxDistanceLy, boolean mustBeRecentlySeen) {
+    record Attempt(List<String> stationTypes, int minUnits, int maxDistanceLy, boolean mustBeRecentlySeen) {
         @Override
         public String toString() {
             return (stationTypes.size() == 1 ? stationTypes.getFirst() : "static markets")
-                    + " with " + minSupply + "t within " + maxDistanceLy + " ly";
+                    + " with " + minUnits + "t within " + maxDistanceLy + " ly";
         }
     }
 
@@ -310,12 +343,12 @@ public final class SpanshCommoditySearch {
      * flag threaded through the request building - and so the announcement is published once, over the
      * markets the commander is actually being offered, not once per attempt.
      */
-    private static List<TradeStationSearchResultDto.StationResult> stationsSelling(
+    private static List<TradeStationSearchResultDto.StationResult> stationsTrading(
             Attempt attempt, String commodityToFind, String refStarSystem,
-            TradeRouteSearchCriteria profile, boolean returnClosest) {
+            TradeRouteSearchCriteria profile, boolean returnClosest, TradeSide side) {
 
         TradeStationSearchCriteria criteria =
-                searchCriteria(commodityToFind, refStarSystem, profile, returnClosest, attempt);
+                searchCriteria(commodityToFind, refStarSystem, profile, returnClosest, attempt, side);
         log.debug("Commodity search criteria: {}", criteria.toJson());
 
         TradeStationSearchResultDto response = StationSearchClient.getInstance().searchStations(criteria);
@@ -346,6 +379,16 @@ public final class SpanshCommoditySearch {
      */
     static List<CommoditySearchResult> correctWithFirstHandData(
             List<CommoditySearchResult> markets, String commoditySymbol, MarketSightings sightings) {
+        return correctWithFirstHandData(markets, commoditySymbol, sightings, TradeSide.BUY);
+    }
+
+    /**
+     * As above, reading our own snapshot on the side being traded: the stock we saw when buying, the demand
+     * we saw when selling. Reading stock on a sell search would drop every market that wants the good and
+     * has none of it, which is every market worth selling to.
+     */
+    static List<CommoditySearchResult> correctWithFirstHandData(
+            List<CommoditySearchResult> markets, String commoditySymbol, MarketSightings sightings, TradeSide side) {
         if (commoditySymbol == null || markets.isEmpty()) return markets;
 
         List<CommoditySearchResult> kept = new ArrayList<>();
@@ -356,12 +399,21 @@ public final class SpanshCommoditySearch {
                 kept.add(market);
                 continue;
             }
-            if (seen.get().stock() <= 0) {
-                log.debug("Skipping {} - {}: we were there at {} and it had no {}",
-                        market.getStarSystem(), market.getStationName(), seen.get().seenAt(), commoditySymbol);
+            long unitsWeSaw = side == TradeSide.SELL ? seen.get().demand() : seen.get().stock();
+            if (unitsWeSaw <= 0) {
+                log.debug("Skipping {} - {}: we were there at {} and it had no {} to trade ({})",
+                        market.getStarSystem(), market.getStationName(), seen.get().seenAt(), commoditySymbol, side);
                 continue;
             }
-            market.setSupply(seen.get().stock());
+            market.setSupply(unitsWeSaw);
+            // The price is corrected on the same terms as the quantity, and matters more: Spansh quoted Bari
+            // Gateway at 57,844 for Tritium from a row 10 days old while the game was paying 53,992, and the
+            // commander flew there on the strength of the higher number.
+            int priceWeSaw = side == TradeSide.SELL ? seen.get().sellPrice() : seen.get().buyPrice();
+            if (priceWeSaw > 0) {
+                market.setPrice(priceWeSaw);
+                market.setSeenFirstHand(true);
+            }
             kept.add(market);
         }
         return kept;
@@ -376,13 +428,44 @@ public final class SpanshCommoditySearch {
         return spansh == null || seen.seenAt() == null || !seen.seenAt().isBefore(spansh);
     }
 
-    private static Instant parseInstant(String timestamp) {
+    /**
+     * Spansh stamps its market rows {@code 2026-08-18 04:56:12+00} - a space instead of the T, and an
+     * offset of {@code +00} rather than a Z. {@link Instant#parse} throws on every one of them.
+     * <p>
+     * That mattered silently. A row whose timestamp would not parse counted as having no timestamp at all,
+     * so {@link #isFresherThanSpansh} said yes to everything and the commander's own sighting won however
+     * old it was - the exact "one empty visit blacklists a market for good" the override was written to
+     * avoid. It also made the age of a quote unknowable, which is the number that says whether to believe
+     * the price.
+     */
+    private static final DateTimeFormatter SPANSH_TIMESTAMP = new DateTimeFormatterBuilder()
+            .appendPattern("yyyy-MM-dd").appendLiteral(' ').appendPattern("HH:mm:ss")
+            .optionalStart().appendFraction(ChronoField.NANO_OF_SECOND, 1, 9, true).optionalEnd()
+            .appendPattern("[XXX][XX][X]")
+            .toFormatter();
+
+    static Instant parseInstant(String timestamp) {
         if (timestamp == null || timestamp.isBlank()) return null;
         try {
             return Instant.parse(timestamp);
         } catch (DateTimeParseException e) {
-            return null;
+            try {
+                return Instant.from(SPANSH_TIMESTAMP.parse(timestamp));
+            } catch (RuntimeException other) {
+                return null;
+            }
         }
+    }
+
+    /**
+     * How stale Spansh's word on this market is, or empty when it does not say. The price is the whole
+     * answer to "where do I sell this", and a price nobody has re-uploaded in ten days is a different claim
+     * from one uploaded this morning.
+     */
+    public static OptionalLong daysSinceUpdate(String marketUpdatedAt) {
+        Instant updated = parseInstant(marketUpdatedAt);
+        return updated == null ? OptionalLong.empty()
+                : OptionalLong.of(Math.max(0, ChronoUnit.DAYS.between(updated, Instant.now())));
     }
 
     /**
@@ -404,19 +487,46 @@ public final class SpanshCommoditySearch {
      */
     static List<CommoditySearchResult> rank(
             List<TradeStationSearchResultDto.StationResult> stations, String commodityToFind, boolean returnClosest) {
+        return rank(stations, commodityToFind, returnClosest, TradeSide.BUY);
+    }
 
+    /**
+     * As above, on a stated side of the counter. "Best price" means the LOWEST when the commander is paying
+     * and the HIGHEST when they are being paid, so the side chooses the direction of the same sort.
+     */
+    static List<CommoditySearchResult> rank(
+            List<TradeStationSearchResultDto.StationResult> stations, String commodityToFind,
+            boolean returnClosest, TradeSide side) {
+        return sortBest(asResults(stations, commodityToFind, side), returnClosest, side);
+    }
+
+    /**
+     * The page as results, in the order Spansh sent them - every station that actually trades the good on
+     * this side. Split from the sort so a first-hand correction can land between the two.
+     */
+    static List<CommoditySearchResult> asResults(
+            List<TradeStationSearchResultDto.StationResult> stations, String commodityToFind, TradeSide side) {
         List<CommoditySearchResult> results = new ArrayList<>();
         for (TradeStationSearchResultDto.StationResult station : stations) {
-            TradeStationSearchResultDto.StationResult.MarketEntry entry = sellsIt(station, commodityToFind);
+            TradeStationSearchResultDto.StationResult.MarketEntry entry = tradesIt(station, commodityToFind, side);
             if (entry == null) continue;
-            results.add(asResult(station, entry));
+            results.add(asResult(station, entry, side));
         }
+        return results;
+    }
 
-        results.sort(Comparator.comparingInt((CommoditySearchResult result) -> DockingEffort.of(result.getStationType()))
+    /**
+     * Puts the answer the commander asked for at the head: the nearest market, or the one trading best.
+     */
+    static List<CommoditySearchResult> sortBest(
+            List<CommoditySearchResult> results, boolean returnClosest, TradeSide side) {
+        List<CommoditySearchResult> sorted = new ArrayList<>(results);
+        Comparator<CommoditySearchResult> byPrice = Comparator.comparingDouble(CommoditySearchResult::getPrice);
+        sorted.sort(Comparator.comparingInt((CommoditySearchResult result) -> DockingEffort.of(result.getStationType()))
                 .thenComparing(returnClosest
                         ? Comparator.comparingDouble(CommoditySearchResult::getDistanceFromPlayer)
-                        : Comparator.comparingDouble(CommoditySearchResult::getPrice)));
-        return results;
+                        : (side.dearerIsBetter() ? byPrice.reversed() : byPrice)));
+        return sorted;
     }
 
     /**
@@ -562,6 +672,15 @@ public final class SpanshCommoditySearch {
     static TradeStationSearchCriteria searchCriteria(
             String commodityToFind, String refStarSystem,
             TradeRouteSearchCriteria profile, boolean returnClosest, Attempt attempt) {
+        return searchCriteria(commodityToFind, refStarSystem, profile, returnClosest, attempt, TradeSide.BUY);
+    }
+
+    /**
+     * As above, on a stated side of the counter.
+     */
+    static TradeStationSearchCriteria searchCriteria(
+            String commodityToFind, String refStarSystem, TradeRouteSearchCriteria profile,
+            boolean returnClosest, Attempt attempt, TradeSide side) {
 
         // The types and the stock floor are the attempt's, because the same request is sent again with a
         // wider one when it comes back empty - see attempts(). EVERY_STATIC_TRADE_TYPE says why the
@@ -575,9 +694,20 @@ public final class SpanshCommoditySearch {
         distance.setMin(0);
         distance.setMax(attempt.maxDistanceLy());
 
+        // The commander's half of each pair, and ONLY that half: asking a sell search for supply would
+        // return the markets already holding the good rather than the ones that want it.
         TradeStationSearchCriteria.Marketplace marketplace = new TradeStationSearchCriteria.Marketplace(spellings(commodityToFind));
-        marketplace.setSupply(new TradeStationSearchCriteria.RangeFilter(attempt.minSupply(), UNBOUNDED));
-        marketplace.setBuyPrice(new TradeStationSearchCriteria.RangeFilter(SELLING_AT_ALL, UNBOUNDED));
+        TradeStationSearchCriteria.RangeFilter units =
+                new TradeStationSearchCriteria.RangeFilter(attempt.minUnits(), UNBOUNDED);
+        TradeStationSearchCriteria.RangeFilter tradingAtAll =
+                new TradeStationSearchCriteria.RangeFilter(TRADING_AT_ALL, UNBOUNDED);
+        if (side == TradeSide.SELL) {
+            marketplace.setDemand(units);
+            marketplace.setSellPrice(tradingAtAll);
+        } else {
+            marketplace.setSupply(units);
+            marketplace.setBuyPrice(tradingAtAll);
+        }
 
         TradeStationSearchCriteria.Filters filters = new TradeStationSearchCriteria.Filters();
         filters.setStationType(stationType);
@@ -661,23 +791,23 @@ public final class SpanshCommoditySearch {
      * the entry is where the price and the exact commodity name come from, so it has to be found anyway,
      * and a row that somehow arrives without one is dropped rather than reported at a price of zero.
      */
-    private static TradeStationSearchResultDto.StationResult.MarketEntry sellsIt(
-            TradeStationSearchResultDto.StationResult station, String commodity) {
+    private static TradeStationSearchResultDto.StationResult.MarketEntry tradesIt(
+            TradeStationSearchResultDto.StationResult station, String commodity, TradeSide side) {
         if (station.getMarket() == null) return null;
         return station.getMarket().stream()
                 .filter(entry -> commodity.equalsIgnoreCase(entry.getCommodity()))
-                .filter(entry -> entry.getBuyPrice() != null && entry.getBuyPrice() > 0)
+                .filter(entry -> side.priceOn(entry) != null && side.priceOn(entry) > 0)
                 .findFirst()
                 .orElse(null);
     }
 
     private static CommoditySearchResult asResult(
             TradeStationSearchResultDto.StationResult station,
-            TradeStationSearchResultDto.StationResult.MarketEntry entry) {
+            TradeStationSearchResultDto.StationResult.MarketEntry entry, TradeSide side) {
         CommoditySearchResult result = new CommoditySearchResult();
         result.setCommodity(entry.getCommodity());
-        result.setPrice(entry.getBuyPrice());   // buy_price is what the commander pays
-        result.setSupply(entry.getSupply() == null ? 0 : entry.getSupply());
+        result.setPrice(side.priceOn(entry));   // what the commander pays, or is paid
+        result.setSupply(side.unitsOn(entry));
         result.setStarSystem(station.getSystemName());
         result.setStationName(station.getName());
         result.setStationType(station.getType());

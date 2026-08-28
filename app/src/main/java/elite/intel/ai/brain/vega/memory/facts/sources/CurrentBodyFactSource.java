@@ -9,6 +9,7 @@ import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.PlayerSituation;
 import elite.intel.session.Status;
+import elite.intel.util.GravityCalculator;
 import elite.intel.util.SolarDayCalculator;
 
 import java.util.*;
@@ -128,11 +129,12 @@ public final class CurrentBodyFactSource implements MemoryFactSource {
     }
 
     /**
-     * Surface gravity in Earth gravities ("g"), or null when unknown. The app stores gravity already converted to G
-     * (see {@link elite.intel.util.LocationUtils#gravityFix}), not the journal's raw m/s2 field.
+     * Surface gravity in Earth gravities ("g"), or null when unknown. The app stores gravity already converted to G by
+     * {@link GravityCalculator}, not the journal's raw m/s2 field. A figure {@link GravityCalculator#isPlausible}
+     * rejects is not a gravity at all, so it is reported as unknown rather than spoken.
      */
     private static String gravity(double gravityG) {
-        if (gravityG <= 0) {
+        if (!GravityCalculator.isPlausible(gravityG)) {
             return null;
         }
         String s = String.format(Locale.ROOT, "%.2f", gravityG).replaceAll("0+$", "").replaceAll("\\.$", "");

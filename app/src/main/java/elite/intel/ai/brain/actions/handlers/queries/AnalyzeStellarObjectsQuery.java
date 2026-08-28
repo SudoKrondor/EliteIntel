@@ -6,6 +6,7 @@ import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto.LocationType;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.GravityCalculator;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -201,8 +202,8 @@ public class AnalyzeStellarObjectsQuery extends BaseQueryAnalyzer implements Int
                   - starClass: star spectral class (M, K, G, F, A, B, O are fuel-scoopable)
                   - isLandable: whether the surface can be landed on
                   - isTerraformable: terraforming candidate
-                  - gravity: surface gravity (zero means no data)
-                  - surfaceTemperature: in Celsius
+                  - gravity: surface gravity in Earth gravities, e.g. 0.35 (absent when unknown)
+                  - surfaceTemperature: in Celsius (absent when unknown)
                   - atmosphere: atmosphere type or None
                   - parentPlanetName: parent body if this is a moon
                   - distanceFromStar: distance from primary star in light seconds
@@ -275,8 +276,8 @@ public class AnalyzeStellarObjectsQuery extends BaseQueryAnalyzer implements Int
                     location.getStarName(),
                     location.isLandable(),
                     location.isTerraformable(),
-                    Math.round(location.getGravity()),
-                    Math.round(( location.getSurfaceTemperature() - 273 ) ), // Convert Kelvin to Celsius
+                    toEarthGravities(location.getGravity()),
+                    toCelsius(location.getSurfaceTemperature()),
                     location.getAtmosphere(),
                     location.getParentBodyName(),
                     Math.round(location.getDistance()),
@@ -309,6 +310,21 @@ public class AnalyzeStellarObjectsQuery extends BaseQueryAnalyzer implements Int
         return new StellarObjectsData<>(result, summary);
     }
 
+    /**
+     * Surface gravity rounded to two decimals, or null when unknown. Rounding to a whole number reported every body
+     * under half a g -- which is most landables -- as the zero the prompt reads as "no data".
+     */
+    static Double toEarthGravities(double gravityG) {
+        return GravityCalculator.isPlausible(gravityG) ? Math.round(gravityG * 100.0) / 100.0 : null;
+    }
+
+    /**
+     * Kelvin to Celsius, or null when the body has no recorded temperature (the journal stores Kelvin, so <= 0 is unknown).
+     */
+    static Long toCelsius(double surfaceTemperatureKelvin) {
+        return surfaceTemperatureKelvin > 0 ? Math.round(surfaceTemperatureKelvin - 273) : null;
+    }
+
     record LocationData(String stellarObjectName,
                         String stellarObjectPhonetic,
                         String objectClass,
@@ -317,8 +333,8 @@ public class AnalyzeStellarObjectsQuery extends BaseQueryAnalyzer implements Int
                         String starName,
                         boolean isLandable,
                         boolean isTerraformable,
-                        double gravity,
-                        double surfaceTemperature,
+                        Double gravity,
+                        Long surfaceTemperature,
                         String atmosphere,
                         String parentPlanetName,
                         double distanceFromStar,

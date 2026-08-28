@@ -221,8 +221,19 @@ public class BodyData extends BaseJsonDto implements ToJsonConvertible {
         return earthMasses;
     }
 
+    /**
+     * EDSM's raw radius, in KILOMETRES. The journal's {@code Radius} is in metres, so the two are a factor of 1000
+     * apart: use {@link #getRadiusMeters()} for anything that stores a radius or computes gravity from one.
+     */
     public double getRadius() {
         return radius;
+    }
+
+    /**
+     * EDSM's radius converted to metres, the unit every LocationDto radius and gravity calculation uses.
+     */
+    public double getRadiusMeters() {
+        return radius * 1000.0;
     }
 
     public double getSurfacePressure() {

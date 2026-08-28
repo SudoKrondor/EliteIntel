@@ -200,8 +200,9 @@ public class JumpCompletedSubscriber {
             stellarObject.setMaterials(toMaterials(data.getMaterials()));
             stellarObject.setPlanetName(data.getName());
             stellarObject.setMassEM(data.getEarthMasses());
-            stellarObject.setRadius(data.getRadius());
-            Double surfaceGravity = calculateSurfaceGravity(data.getEarthMasses(), data.getRadius());
+            double radiusMeters = data.getRadiusMeters(); // EDSM reports km, the journal and LocationDto use metres
+            stellarObject.setRadius(radiusMeters);
+            Double surfaceGravity = calculateSurfaceGravity(data.getEarthMasses(), radiusMeters);
             stellarObject.setGravity(surfaceGravity == null ? 0 : surfaceGravity);
             stellarObject.setSurfaceTemperature(data.getSurfaceTemperature()); // Keep Kelvin
             stellarObject.setTidalLocked(data.isRotationalPeriodTidallyLocked());

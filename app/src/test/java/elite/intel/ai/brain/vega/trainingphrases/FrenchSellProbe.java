@@ -22,11 +22,15 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * "Où vendre X" asks where to SELL. Nothing we have answers that, and find_commodity searches where to BUY,
- * so the honest outcome is that a sell question offers no market search at all. Deleting the sell aliases is
- * only half of that: embeddings capture topic and blur polarity, so buying and selling gold look alike to
- * the reducer. This prints what actually survives, for both the sell question and the buy question that
- * must keep working.
+ * "Où vendre X" asks where to SELL, which {@code find_where_to_sell_commodity} now answers - but embeddings
+ * capture topic and blur polarity, so buying and selling gold still look alike to the reducer and BOTH tools
+ * are offered for either question. That is by design: the model reads the two descriptions, which each state
+ * their direction in capitals and name the other. This prints what actually survives the floor and the band,
+ * for the sell question and the buy question alike.
+ *
+ * <p>Written when a sell search did not exist and the honest outcome was to offer nothing at all. What it
+ * watches for now is the reverse failure: a sell question that offers ONLY the buy tool, which would send
+ * the commander to a market wanting payment for what they came to unload.
  */
 @Tag("embedding-manual")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

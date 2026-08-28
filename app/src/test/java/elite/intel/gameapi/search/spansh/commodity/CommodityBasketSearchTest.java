@@ -166,7 +166,7 @@ class CommodityBasketSearchTest {
     void ourOwnLookAtAnEmptyShelfDropsThatGoodAndKeepsTheRest() {
         SpanshCommoditySearch.MarketSightings sawNoCopper = (system, station, symbol) ->
                 "copper".equals(symbol) && "Kanwar Gateway".equals(station)
-                        ? Optional.of(new StationMarketsManager.Sighting(system, station, Instant.now(), 0))
+                        ? Optional.of(new StationMarketsManager.Sighting(system, station, Instant.now(), 0, 0, 0, 0))
                         : Optional.empty();
 
         BasketResult best = SpanshCommoditySearch
@@ -184,7 +184,7 @@ class CommodityBasketSearchTest {
     void ourOwnLookAtAnEmptyAnchorShelfDropsTheStation() {
         SpanshCommoditySearch.MarketSightings sawNoCeramics = (system, station, symbol) ->
                 "ceramiccomposites".equals(symbol) && "Kanwar Gateway".equals(station)
-                        ? Optional.of(new StationMarketsManager.Sighting(system, station, Instant.now(), 0))
+                        ? Optional.of(new StationMarketsManager.Sighting(system, station, Instant.now(), 0, 0, 0, 0))
                         : Optional.empty();
 
         List<BasketResult> ranked =

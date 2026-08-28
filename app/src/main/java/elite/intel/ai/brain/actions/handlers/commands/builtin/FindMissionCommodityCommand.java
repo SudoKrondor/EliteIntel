@@ -28,7 +28,7 @@ import java.util.List;
  * Source-and-return missions are taken in stacks and can only be flown one at a time, so the command
  * has to choose: {@link MissionCargo} picks the mission expiring soonest whose cargo is not already in
  * the hold, which is the order the stack has to be worked in anyway. From there it is the same search
- * the commander gets by naming a good, via {@link CommodityPurchaseSearch}.
+ * the commander gets by naming a good, via {@link CommodityTradeSearch}.
  * <p>
  * The mission's own {@code Commodity_Localised} is deliberately not what is searched for. It is written
  * in the language the GAME is running in - one of six - while the app speaks nine, and Spansh matches
@@ -92,7 +92,7 @@ public final class FindMissionCommodityCommand implements IntelCommand {
     public String execute(JsonObject params, String responseText) {
         JsonElement stateEl = params == null ? null : params.get(PARAM_STATE);
         boolean returnClosest = stateEl != null && !stateEl.isJsonNull() && stateEl.getAsBoolean();
-        int distance = GetNumberFromParam.extractRangeParameter(params, CommodityPurchaseSearch.defaultRange()).intValue();
+        int distance = GetNumberFromParam.extractRangeParameter(params, CommodityTradeSearch.defaultRange()).intValue();
 
         List<MissionCargo.Outstanding> board = MissionCargo.outstanding(
                 withCommoditySymbols(missionManager.getMissions().values()),
@@ -136,7 +136,7 @@ public final class FindMissionCommodityCommand implements IntelCommand {
         // search stays anchored on the soonest to expire, so the trip is still built around the deadline.
         // Shortfalls rather than full counts: after a part load this asks for what is still missing, so the
         // remainder can be picked up somewhere that only has that much.
-        return CommodityPurchaseSearch.findBasketAndPlot(shoppingList(stillToBuy, commodity), distance, returnClosest);
+        return CommodityTradeSearch.findBasketAndPlot(shoppingList(stillToBuy, commodity), distance, returnClosest);
     }
 
     /**

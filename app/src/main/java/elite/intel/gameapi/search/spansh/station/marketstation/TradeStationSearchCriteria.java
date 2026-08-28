@@ -358,9 +358,10 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
         }
 
         /**
-         * What the commander PAYS. Spansh names the fields from the station's side of the counter, so
-         * {@code buy_price} is the ask and {@code sell_price} is the bid; on the same market entry the
-         * ask is always the higher of the two.
+         * What the commander PAYS. Spansh names its prices from the COMMANDER's side of the counter, the
+         * same way the game's own {@code Market.json} does and to the same credit - so {@code buy_price} is
+         * the price to buy AT, not the price the station bought at. On an entry trading both ways it is
+         * always the higher of the two. See {@link elite.intel.gameapi.search.spansh.commodity.TradeSide}.
          */
         public void setBuyPrice(RangeFilter buyPrice) {
             this.buyPrice = buyPrice;

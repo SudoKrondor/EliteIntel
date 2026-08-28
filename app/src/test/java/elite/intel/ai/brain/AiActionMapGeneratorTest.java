@@ -101,6 +101,7 @@ class AiActionMapGeneratorTest {
             "fighter_return_to_ship",
             "find_brain_trees",
             "find_commodity",
+            "find_where_to_sell_commodity",
             "find_fuel_station",
             "find_mission_commodity",
             "find_construction_site_commodity",

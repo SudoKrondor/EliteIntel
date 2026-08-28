@@ -93,20 +93,36 @@ public class CommoditySearchObjectiveSource implements HudObjectiveSource {
             rows.add(HudRow.of(HudText.get("overlay.card.row.moreGoods"),
                     String.valueOf(shopping.size() - MAX_GOODS_LISTED)));
         }
+        boolean selling = isSelling(market);
         int totalUnits = shopping.stream().mapToInt(FoundLine::getUnitsToBuy).sum();
-        if (totalUnits > 0 && shopping.size() > 1) {
-            rows.add(HudRow.of(HudText.get("overlay.card.row.toLoad"),
+        if (totalUnits > 0 && (selling || shopping.size() > 1)) {
+            rows.add(HudRow.of(HudText.get(selling ? "overlay.card.row.toSell" : "overlay.card.row.toLoad"),
                     HudText.amount(totalUnits, "overlay.card.unit.tonnes"), HudRow.State.GOOD));
         }
 
         return Optional.of(new HudObjective(
                 "commodity-search",
-                HudText.get(shopping.size() > 1
-                        ? "overlay.card.title.shoppingList"
-                        : "overlay.card.title.commoditySearch"),
+                HudText.get(title(selling, shopping.size())),
                 null,
                 rows,
                 HudObjective.PRIORITY_STANDING));
+    }
+
+    /**
+     * Which card this is. A sell result is always a single good - only the buy search works from a
+     * standing list - so the shopping-list title cannot apply to one.
+     */
+    private static String title(boolean selling, int goods) {
+        if (selling) return "overlay.card.title.sellCargo";
+        return goods > 1 ? "overlay.card.title.shoppingList" : "overlay.card.title.commoditySearch";
+    }
+
+    /**
+     * Whether the figures on this card read the selling way round: the price is what the commander is paid
+     * and the tonnage is what the market wants. Rows written before the search had a direction are buys.
+     */
+    private static boolean isSelling(FoundMarket market) {
+        return "SELL".equalsIgnoreCase(market.getSide());
     }
 
     /**

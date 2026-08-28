@@ -127,7 +127,7 @@ public final class FindConstructionCommodityCommand implements IntelCommand {
 
         JsonElement stateEl = params == null ? null : params.get(PARAM_STATE);
         boolean returnClosest = stateEl != null && !stateEl.isJsonNull() && stateEl.getAsBoolean();
-        int distance = GetNumberFromParam.extractRangeParameter(params, CommodityPurchaseSearch.defaultRange()).intValue();
+        int distance = GetNumberFromParam.extractRangeParameter(params, CommodityTradeSearch.defaultRange()).intValue();
 
         List<ConstructionCargo.Outstanding> manifest = ConstructionCargo.outstanding(
                 constructionSiteManager.requirements(site.getMarketId()),
@@ -176,7 +176,7 @@ public final class FindConstructionCommodityCommand implements IntelCommand {
             return fromOurOwnHold;
         }
 
-        return CommodityPurchaseSearch.findBasketAndPlot(shoppingList, distance, returnClosest);
+        return CommodityTradeSearch.findBasketAndPlot(shoppingList, distance, returnClosest);
     }
 
     /**
@@ -193,7 +193,7 @@ public final class FindConstructionCommodityCommand implements IntelCommand {
      */
     private String collectFromCarrier(List<WantedCommodity> shoppingList) {
         String currentSystem = playerSession.getPrimaryStarName();
-        int holdCapacity = CommodityPurchaseSearch.holdCapacity();
+        int holdCapacity = CommodityTradeSearch.holdCapacity();
 
         Optional<CarrierSupply.Loaded> best =
                 CarrierSupply.best(OwnCarrierHold.ours(), shoppingList, holdCapacity, currentSystem);

@@ -24,8 +24,8 @@ public interface CommoditySearchResultDao {
 
     @SqlUpdate("""
             INSERT OR REPLACE INTO commodity_search_result
-                (id, commodity, starSystem, stationName, stationType, price, supply, fleetCarrier, foundAt)
-            VALUES (1, :commodity, :starSystem, :stationName, :stationType, :price, :supply, :fleetCarrier, :foundAt)
+                (id, commodity, starSystem, stationName, stationType, price, supply, fleetCarrier, foundAt, side)
+            VALUES (1, :commodity, :starSystem, :stationName, :stationType, :price, :supply, :fleetCarrier, :foundAt, :side)
             """)
     void save(@BindBean FoundMarket market);
 
@@ -152,6 +152,12 @@ public interface CommoditySearchResultDao {
             return unitsToBuy;
         }
 
+        /**
+         * Tonnes to move at this market, whichever way they are moving: bought on a buy card, sold on a
+         * sell one. The column keeps its original name because renaming a column in SQLite means rebuilding
+         * the table, and the market's own {@code side} already says which it is.
+         */
+
         public void setUnitsToBuy(int unitsToBuy) {
             this.unitsToBuy = unitsToBuy;
         }
@@ -169,6 +175,7 @@ public interface CommoditySearchResultDao {
             market.setSupply(rs.getLong("supply"));
             market.setFleetCarrier(rs.getBoolean("fleetCarrier"));
             market.setFoundAt(rs.getString("foundAt"));
+            market.setSide(rs.getString("side"));
             return market;
         }
     }
@@ -182,6 +189,7 @@ public interface CommoditySearchResultDao {
         private long supply;
         private boolean fleetCarrier;
         private String foundAt;
+        private String side;
 
         public FoundMarket() {
         }
@@ -234,7 +242,8 @@ public interface CommoditySearchResultDao {
         }
 
         /**
-         * Units on sale when Spansh last heard; zero when it did not say.
+         * Units the market can trade on the commander's side of the counter when Spansh last heard: stock
+         * to buy, or tonnage wanted to sell. Zero when it did not say. See {@link #getSide()}.
          */
         public long getSupply() {
             return supply;
@@ -253,6 +262,21 @@ public interface CommoditySearchResultDao {
 
         public void setFleetCarrier(boolean fleetCarrier) {
             this.fleetCarrier = fleetCarrier;
+        }
+
+        /**
+         * {@code BUY} or {@code SELL} - which way round the figures on this card read.
+         * <p>
+         * The whole row means something different either way: the price is what the commander pays or is
+         * paid, and {@code supply} is stock or demand. Null on a row written before searching had a
+         * direction at all, which was always a buy.
+         */
+        public String getSide() {
+            return side;
+        }
+
+        public void setSide(String side) {
+            this.side = side;
         }
 
         public String getFoundAt() {
