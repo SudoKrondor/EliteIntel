@@ -66,14 +66,14 @@ public final class CompanionSubsystemGate implements ManagedService {
             return;
         }
         String input = event.getUserInput();
-        // Mirror the legacy command path: surface the commander's spoken words to the UI/OBS listeners.
-        if (input != null && !input.isBlank()) {
-            GameEventBus.publish(new NormalizedUserInputEvent(input));
-        }
         if (CompanionConfig.isConfirmationCodeWord(input)) {
+            // The code word never reaches the dispatcher, so this branch echoes it to the UI/OBS listeners
+            // itself. It is matched literally, so the raw transcript is exactly what the companion acted on.
+            GameEventBus.publish(new NormalizedUserInputEvent(input));
             runtimeGraph.confirmationCoordinator().confirm();
             return;
         }
+        // Everything else is echoed by the dispatcher, which alone knows the canonical form of the words.
         runtimeGraph.thoughtDispatcher().submitCommanderInput(input);
     }
 

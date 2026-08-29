@@ -67,16 +67,6 @@ class PromptComposerTest {
     }
 
     @Test
-    void eventRecordIsNotReplayedAsSyntheticChatHistory() {
-        List<LlmMessage> messages = composeCommander(List.of(
-                MemoryRecord.event(Instant.EPOCH, "alexandrite and void opals detected"))).messages();
-
-        assertEquals(2, messages.size());
-        assertTrue(messages.stream().map(LlmMessage::content)
-                .noneMatch("alexandrite and void opals detected"::equals));
-    }
-
-    @Test
     void queryRecordReplaysAsCompletedCommanderCompanionPair() {
         List<LlmMessage> messages = composeCommander(List.of(MemoryRecord.query(
                 Instant.EPOCH, "where are we", "in Sol")))
@@ -133,14 +123,6 @@ class PromptComposerTest {
         List<String> roles = new ArrayList<>(turns.size());
         turns.forEach(turn -> roles.add(turn.getAsJsonObject().get("role").getAsString()));
         return List.copyOf(roles);
-    }
-
-    @Test
-    void savedTextRecordIsIgnoredBecauseItIsNotHistory() {
-        List<LlmMessage> messages = composeCommander(List.of(
-                MemoryRecord.savedText(Instant.EPOCH, "remember this"))).messages();
-
-        assertEquals(2, messages.size());
     }
 
     @Test

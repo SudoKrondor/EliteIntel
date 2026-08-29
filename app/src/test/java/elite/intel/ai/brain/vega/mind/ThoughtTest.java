@@ -9,7 +9,6 @@ import elite.intel.ai.brain.vega.execution.ExecutionGateway;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
 import elite.intel.ai.brain.vega.memory.CompanionMemoryPolicy;
 import elite.intel.ai.brain.vega.memory.MemoryGateway;
-import elite.intel.ai.brain.vega.memory.MemorySearchResult;
 import elite.intel.ai.brain.vega.memory.MemorySnapshot;
 import elite.intel.ai.brain.vega.model.GameStateSnapshot;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
@@ -329,21 +328,24 @@ class ThoughtTest {
         assertTrue(speech.requests.stream().noneMatch(request -> request.text().contains("late answer")));
     }
 
+    /**
+     * Session memory is the window the next commander prompt replays, and a gameplay narration was never
+     * replayed into one - so it is voiced and nothing is stored.
+     */
     @Test
-    void eventNarrationPublishesOneEventRecord() {
+    void eventNarrationIsVoicedButNotStored() {
         llm.results.add(ok(call(SpeakFunction.ID, text("Signals found."))));
 
         Thought.eventReaction(Urgency.NORMAL, "three biological signals", "Report briefly", dependencies()).run();
 
-        assertEquals(1, memory.writes.size());
-        MemoryRecord record = memory.writes.get(0);
-        assertEquals(MemoryKind.EVENT, record.kind());
-        assertEquals(1, record.entryCount());
-        assertEquals("Signals found.", record.entries().get(0).content());
+        assertTrue(memory.writes.isEmpty());
+        assertEquals(List.of(SpeakFunction.ID), execution.toolNames());
+        assertEquals("Signals found.",
+                execution.requests.get(0).arguments().get(SpeakFunction.PARAM_TEXT).getAsString());
     }
 
     @Test
-    void eventNarrationBoundsTransientPayloadAndStoresOnlyTheFinalLine() {
+    void eventNarrationBoundsTheTransientPayloadItSendsToTheModel() {
         llm.results.add(ok(call(SpeakFunction.ID, text("Bounded report."))));
         String eventData = "d".repeat(CompanionMemoryPolicy.eventDataMaxChars() + 500);
         String instructions = "i".repeat(CompanionMemoryPolicy.eventInstructionsMaxChars() + 500);
@@ -354,18 +356,16 @@ class ThoughtTest {
         assertFalse(currentInput.contains(eventData));
         assertFalse(currentInput.contains(instructions));
         assertTrue(currentInput.contains("..."));
-        assertEquals("Bounded report.", memory.writes.getFirst().eventFact());
+        assertEquals("Bounded report.",
+                execution.requests.get(0).arguments().get(SpeakFunction.PARAM_TEXT).getAsString());
     }
 
     @Test
-    void verbatimEventPublishesAndVoicesOneEventRecordWithoutLlm() {
+    void verbatimEventVoicesWithoutAnLlmRoundAndStoresNothing() {
         Thought.eventVerbatim(Urgency.NORMAL, "Surface scan complete.", dependencies()).run();
 
         assertTrue(llm.requests.isEmpty());
-        assertEquals(1, memory.writes.size());
-        assertEquals(MemoryKind.EVENT, memory.writes.get(0).kind());
-        assertEquals(1, memory.writes.get(0).entryCount());
-        assertEquals("Surface scan complete.", memory.writes.get(0).entries().get(0).content());
+        assertTrue(memory.writes.isEmpty());
         assertEquals(List.of("Surface scan complete."),
                 speech.requests.stream().map(SpeechRequest::text).toList());
     }
@@ -711,7 +711,7 @@ class ThoughtTest {
         }
 
         @Override
-        public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+        public CompletableFuture<String> completePlainText(LlmRequest request) {
             return CompletableFuture.completedFuture(null);
         }
     }
@@ -765,30 +765,8 @@ class ThoughtTest {
         }
 
         @Override
-        public MemorySearchResult recallMatching(String query, int limit) {
-            return MemorySearchResult.empty();
-        }
-
-        @Override
-        public Map<MemoryKind, String> longTermSummaries() {
-            return Map.copyOf(summaries);
-        }
-
-        @Override
-        public void commitConsolidation(
-                MemoryKind kind, List<MemoryRecord> batch, String summary
-        ) {
-            summaries.put(kind, summary);
-        }
-
-        @Override
-        public List<MemoryRecord> savedTextRecords() {
-            return List.of();
-        }
-
-        @Override
         public MemorySnapshot snapshot() {
-            return new MemorySnapshot(List.of(), Map.of(), Map.of(), Map.copyOf(summaries), List.of());
+            return new MemorySnapshot(List.of());
         }
     }
 

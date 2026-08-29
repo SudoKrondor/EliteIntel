@@ -1,7 +1,5 @@
 package elite.intel.ai.brain.vega.memory;
 
-import elite.intel.ai.brain.vega.memory.CompanionMemoryPolicy;
-import elite.intel.ai.brain.vega.memory.RecentMemory;
 import elite.intel.ai.brain.vega.model.memory.MemoryKind;
 import elite.intel.ai.brain.vega.model.memory.MemoryRecord;
 import org.junit.jupiter.api.Test;
@@ -43,8 +41,8 @@ class RecentMemoryTest {
     @Test
     void delayedCompressedRecordIsInsertedByItsOriginalTimestamp() {
         RecentMemory memory = new RecentMemory(text -> 0);
-        MemoryRecord later = MemoryRecord.event(Instant.ofEpochSecond(2), "later");
-        MemoryRecord delayed = MemoryRecord.event(Instant.ofEpochSecond(1), "compressed later");
+        MemoryRecord later = MemoryRecord.dialogue(Instant.ofEpochSecond(2), "later", "ok");
+        MemoryRecord delayed = MemoryRecord.dialogue(Instant.ofEpochSecond(1), "compressed later", "ok");
 
         memory.add(later);
         memory.add(delayed);

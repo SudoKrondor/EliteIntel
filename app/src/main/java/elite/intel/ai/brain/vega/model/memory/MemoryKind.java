@@ -1,26 +1,15 @@
 package elite.intel.ai.brain.vega.model.memory;
 
 /**
- * The retention contract of a completed companion-memory record.
- * Each kind has one fixed shape and one fixed eviction policy; the model does not classify it.
+ * The shape of a completed companion-memory record. Each kind has one fixed shape; the model does not classify it.
+ * <p>
+ * Both surviving kinds are replayed as conversation turns in the next prompt. A gameplay EVENT kind existed here
+ * until the retained history was removed: the prompt never replayed one, so every event record spent a slot and a
+ * share of the window's token budget evicting an exchange that would have been replayed.
  */
 public enum MemoryKind {
     /** A completed commander/companion conversational exchange. */
     DIALOGUE,
     /** A completed commander query and its spoken answer. */
-    QUERY,
-    /** A final fact produced from a gameplay event. */
-    EVENT,
-    /** Commander-provided text explicitly saved verbatim through the {@code remember(text)} command. */
-    SAVED_TEXT;
-
-    /** Whether records of this kind move from recent memory into retained memory. */
-    public boolean movesToMidTerm() {
-        return this == DIALOGUE || this == EVENT;
-    }
-
-    /** Whether retained records of this kind are eligible for long-term summarization. */
-    public boolean hasLongTermSummary() {
-        return movesToMidTerm();
-    }
+    QUERY
 }

@@ -3,14 +3,13 @@ package elite.intel.ai.brain.vega.input;
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.IntelAction;
-import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
 import elite.intel.ai.brain.actions.handlers.QueryHandlerFactory;
+import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.ai.brain.vega.diag.CompanionDiagnostics;
 import elite.intel.ai.brain.vega.execution.ExecutionGateway;
-import elite.intel.ai.brain.vega.input.CompanionSubsystemGate;
 import elite.intel.ai.brain.vega.memory.facts.MemoryFactSourceRegistry;
 import elite.intel.ai.brain.vega.mind.ThoughtDispatcher;
 import elite.intel.ai.brain.vega.model.GameStateSnapshot;
@@ -162,7 +161,7 @@ public final class CompanionRoutingHarness {
         // Routing-only execution. Game COMMANDS and QUERIES are recorded but NEVER executed - running them
         // would press keys (commands) or call third-party REST APIs (queries: EDSM/Spansh). But SYSTEM
         // FUNCTIONS are internal companion mechanics with no external game side effect, so they run for real.
-        // Every tool name is still recorded. memory_search is a game query and therefore remains recording-only.
+        // Every tool name is still recorded; game queries remain recording-only.
         ExecutionGateway recording = request -> {
             String toolName = request.toolName();
             firstToolNanos.compareAndSet(0L, System.nanoTime());

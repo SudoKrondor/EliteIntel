@@ -7,8 +7,8 @@ import java.util.*;
 /**
  * Single owner of the live pre-turn {@code <facts>} candidate list gathered from registered
  * {@link MemoryFactSource} plugins. Facts are bounded per source and in total so the block stays lean for the small
- * companion model and no single plugin dominates. Durable session memory is deliberately excluded; explicit recall
- * goes only through the existing {@code memory_search} query.
+ * companion model and no single plugin dominates. Stored conversation is deliberately excluded: the block carries
+ * live game state only.
  */
 public final class MergedFactCandidates {
 

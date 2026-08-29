@@ -4,9 +4,6 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.vega.CompanionRuntimeGeneration;
 import elite.intel.ai.brain.vega.diag.CompanionMemoryDump;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
-import elite.intel.ai.brain.vega.memory.CompanionMemoryPolicy;
-import elite.intel.ai.brain.vega.memory.OversizedMemoryCompressor;
-import elite.intel.ai.brain.vega.memory.SessionMemoryGateway;
 import elite.intel.ai.brain.vega.model.llm.LlmRequest;
 import elite.intel.ai.brain.vega.model.llm.LlmResult;
 import elite.intel.ai.brain.vega.model.llm.LlmToolInvocation;
@@ -17,15 +14,9 @@ import elite.intel.ai.brain.vega.tools.SpeakFunction;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class OversizedMemoryCompressorTest {
 
@@ -94,11 +85,11 @@ class OversizedMemoryCompressorTest {
                 memory, llm, new CompanionRuntimeGeneration(), Runnable::run);
         memory.setOversizedMemoryListener(compressor);
 
-        memory.write(MemoryRecord.event(Instant.EPOCH,
-                "event detail ".repeat(CompanionMemoryPolicy.entryMaxChars())));
+        memory.write(MemoryRecord.dialogue(Instant.EPOCH,
+                "what is the route", "route detail ".repeat(CompanionMemoryPolicy.entryMaxChars())));
 
         assertEquals("Route continues from Kharan through Sinufee to Cubeo.",
-                memory.readRecentHistory().getFirst().eventFact());
+                memory.readRecentHistory().getFirst().companionText());
     }
 
     @Test
@@ -111,13 +102,13 @@ class OversizedMemoryCompressorTest {
                 memory, llm, new CompanionRuntimeGeneration(), Runnable::run);
         memory.setOversizedMemoryListener(compressor);
 
-        memory.write(MemoryRecord.event(Instant.EPOCH,
-                "event detail ".repeat(CompanionMemoryPolicy.entryMaxChars())));
+        memory.write(MemoryRecord.dialogue(Instant.EPOCH,
+                "what is the route", "route detail ".repeat(CompanionMemoryPolicy.entryMaxChars())));
 
         MemoryRecord stored = memory.readRecentHistory().getFirst();
-        assertEquals(MemoryKind.EVENT, stored.kind());
-        assertTrue(stored.eventFact().length() <= CompanionMemoryPolicy.entryMaxChars());
-        assertTrue(stored.eventFact().endsWith("..."));
+        assertEquals(MemoryKind.DIALOGUE, stored.kind());
+        assertTrue(stored.companionText().length() <= CompanionMemoryPolicy.entryMaxChars());
+        assertTrue(stored.companionText().endsWith("..."));
     }
 
     @Test
@@ -130,8 +121,8 @@ class OversizedMemoryCompressorTest {
                 memory, llm, generation, worker);
         memory.setOversizedMemoryListener(compressor);
 
-        memory.write(MemoryRecord.event(Instant.EPOCH,
-                "event detail ".repeat(CompanionMemoryPolicy.entryMaxChars())));
+        memory.write(MemoryRecord.dialogue(Instant.EPOCH,
+                "what is the route", "route detail ".repeat(CompanionMemoryPolicy.entryMaxChars())));
         assertTrue(llm.started.await(1, TimeUnit.SECONDS));
 
         compressor.close();
@@ -139,8 +130,8 @@ class OversizedMemoryCompressorTest {
 
         assertTrue(worker.awaitTermination(1, TimeUnit.SECONDS));
         assertTrue(memory.readRecentHistory().isEmpty());
-        assertFalse(compressor.onOversized(MemoryRecord.event(
-                Instant.ofEpochSecond(1), "x".repeat(CompanionMemoryPolicy.entryMaxChars() + 1))));
+        assertFalse(compressor.onOversized(MemoryRecord.dialogue(
+                Instant.ofEpochSecond(1), "later", "x".repeat(CompanionMemoryPolicy.entryMaxChars() + 1))));
     }
 
     private static LlmResult speakResult(String text) {
@@ -167,7 +158,7 @@ class OversizedMemoryCompressorTest {
         }
 
         @Override
-        public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+        public CompletableFuture<String> completePlainText(LlmRequest request) {
             throw new UnsupportedOperationException();
         }
     }
@@ -183,7 +174,7 @@ class OversizedMemoryCompressorTest {
         }
 
         @Override
-        public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+        public CompletableFuture<String> completePlainText(LlmRequest request) {
             throw new UnsupportedOperationException();
         }
     }

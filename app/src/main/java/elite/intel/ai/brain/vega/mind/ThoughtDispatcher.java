@@ -9,7 +9,9 @@ import elite.intel.ai.brain.vega.model.GameStateSnapshot;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
 import elite.intel.ai.brain.vega.model.Urgency;
 import elite.intel.ai.brain.vega.prompt.ReflexResolver;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
+import elite.intel.gameapi.NormalizedUserInputEvent;
 import elite.intel.ui.controller.ManagedService;
 import elite.intel.ui.event.CommanderMatchInputChangedEvent;
 import org.apache.logging.log4j.LogManager;
@@ -131,6 +133,9 @@ public final class ThoughtDispatcher implements ManagedService {
      * safe command, with every argument the alias supplies, becomes a deterministic {@code ReflexThought} (no
      * LLM); everything else becomes a full {@code CommanderThought}. The intake line names which of the two
      * matched, {@code (exact)} or {@code (fuzzy)}.
+     * <p>
+     * The canonical form is also what is echoed to the listeners of {@code NormalizedUserInputEvent} (chat log,
+     * HUD overlay, diagnostics log), so what the commander sees quoted back is what the companion routed on.
      */
     public void submitCommanderInput(String input) {
         if (input == null || input.isBlank()) {
@@ -155,6 +160,12 @@ public final class ThoughtDispatcher implements ManagedService {
                 .withPendingClarification(pendingClarification);
         dependencies.state().setLastCommanderMatchInput(matchInput); // observer snapshot only; this turn owns context
         UiBus.publish(new CommanderMatchInputChangedEvent(matchInput, gameStateSnapshot));
+        // The chat log, the HUD overlay and the diagnostics log show the words the companion actually acted on,
+        // not the raw transcript. An acoustic correction made here ("request lensing permission" -> "request
+        // landing permission") otherwise reads as a mishearing the companion somehow got right anyway.
+        if (!matchInput.isBlank()) {
+            GameEventBus.publish(new NormalizedUserInputEvent(matchInput));
+        }
         // Exact-alias reflex: try the commander's actual words FIRST, then the acoustically corrected form. The raw
         // phrase keeps a deliberately authored alias authoritative if a correction ever overlaps with it.
         Optional<ReflexResolver.Reflex> reflexCommand = reflexResolver.resolve(rawStripped, gameStateSnapshot);

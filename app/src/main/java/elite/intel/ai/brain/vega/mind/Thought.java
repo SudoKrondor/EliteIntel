@@ -420,21 +420,9 @@ public abstract class Thought {
         }
     }
 
-    /** Stores a successful final event narration without retaining its potentially large source data. */
-    protected void recordEventResult(String result) {
-        if (isStopped() || result == null || result.isBlank()) {
-            return;
-        }
-        MemoryRecord record = MemoryRecord.event(Instant.now(), result);
-        boolean recorded = publishSettlement(() -> dependencies.memoryGateway().write(record));
-        if (recorded) {
-            CompanionDiagnostics.debug(trace, "memory", "record event");
-        }
-    }
-
     /** The text a {@code speak} invocation carries (the words to vocalize), or empty when absent. */
     protected static String spokenTextOf(LlmToolInvocation speak) {
-        return JsonUtils.getAsStringOrEmpty(speak.arguments(), SpeakFunction.PARAM_TEXT);
+        return SpeakFunction.textOf(speak.arguments());
     }
 
     /** Applies the shared memory and speech policy for completed game-tool outcomes. */

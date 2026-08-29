@@ -24,7 +24,7 @@ import java.util.concurrent.TimeoutException;
  * <p>
  * It lives in {@code companion.llm} (not with the custom-command code) on purpose: it rides the surviving
  * companion LLM plumbing - {@link CompanionLlmGatewayFactory} for provider selection and the gateway's
- * plain-text {@link LlmGateway#compressMidTermMemory} turn (no tools) for a text-in/text-out call across
+ * plain-text {@link LlmGateway#completePlainText} turn (no tools) for a text-in/text-out call across
  * every wired provider. Placing it here keeps a one-way dependency ({@code companion.llm} → custom-command
  * for {@link CustomCommandKeyDeriver}); the reverse edge would be a package cycle.
  * <p>
@@ -102,7 +102,7 @@ public final class CustomCommandKeyGenerator {
 
         String raw;
         try {
-            raw = gateway.compressMidTermMemory(request).get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            raw = gateway.completePlainText(request).get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
             throw new KeyGenerationException("The language model did not respond in time. Please try again.");
         } catch (InterruptedException e) {

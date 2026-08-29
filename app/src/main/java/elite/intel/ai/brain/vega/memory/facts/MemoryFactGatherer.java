@@ -6,6 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -13,8 +14,8 @@ import java.util.List;
  * isolates a failing or contract-violating source (it drops only its own facts, never the caller's turn), and
  * returns them flat, each tagged with its source {@link MemoryFactSource#id()} as provenance. It applies no cap and no
  * de-duplication - each consumer applies its own policy.
- * Registered sources contribute only live current-state facts to the per-turn block ({@link MergedFactCandidates});
- * durable-memory search remains owned by the existing {@code memory_search} query.
+ * Registered sources contribute only live current-state facts to the per-turn block
+ * ({@link MergedFactCandidates}).
  */
 public final class MemoryFactGatherer {
 
@@ -38,8 +39,11 @@ public final class MemoryFactGatherer {
         if (sources == null || sources.isEmpty()) {
             return List.of();
         }
+        // Subject-relevant sources first, standing context after: the block's total cap is small, and a fact that
+        // answers the commander's actual subject must not be crowded out by one that speaks every turn.
         List<MemoryFactSource> relevant = sources.stream()
                 .filter(source -> isRelevant(source, context))
+                .sorted(Comparator.comparing(MemoryFactSource::isAmbient))
                 .toList();
         CompanionDiagnostics.debugAmbient("facts", "ambient relevance -> "
                 + relevant.stream().map(MemoryFactSource::id).toList());

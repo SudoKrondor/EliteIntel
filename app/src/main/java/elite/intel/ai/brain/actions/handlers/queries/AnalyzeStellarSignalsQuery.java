@@ -7,6 +7,7 @@ import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
 import elite.intel.gameapi.journal.events.SAASignalsFoundEvent;
 import elite.intel.gameapi.journal.events.dto.FssSignalDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
+import elite.intel.gameapi.signals.SystemSignals;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
@@ -191,23 +192,25 @@ public class AnalyzeStellarSignalsQuery extends BaseQueryAnalyzer implements Int
         Map<String, Integer> typeCounts = new LinkedHashMap<>();
         Set<String> gameCodeSeen = new LinkedHashSet<>();
 
-        for (LocationDto location : locations) {
-            for (FssSignalDto signal : location.getDetectedSignals()) {
-                String type = signal.getSignalType();
-                String rawName = signal.getSignalName();
-                String localised = signal.getSignalNameLocalised();
-                String displayName = (localised != null && !localised.isBlank()) ? localised : rawName;
+        // Through SystemSignals so a signal filed against two body records counts once: the carrier line is a
+        // bare number, and a system holding one carrier was reporting two. See SystemSignals for why the rows
+        // disagree in the first place.
+        for (SystemSignals.Sighting sighting : SystemSignals.distinct(locations)) {
+            FssSignalDto signal = sighting.signal();
+            String type = signal.getSignalType();
+            String rawName = signal.getSignalName();
+            String localised = signal.getSignalNameLocalised();
+            String displayName = (localised != null && !localised.isBlank()) ? localised : rawName;
 
-                boolean isCarrier = "FleetCarrier".equalsIgnoreCase(type) || "SquadronCarrier".equalsIgnoreCase(type);
-                boolean isGameCode = rawName != null && rawName.startsWith("$");
+            boolean isCarrier = "FleetCarrier".equalsIgnoreCase(type) || "SquadronCarrier".equalsIgnoreCase(type);
+            boolean isGameCode = rawName != null && rawName.startsWith("$");
 
-                if (isCarrier) {
-                    typeCounts.merge(type, 1, Integer::sum);
-                } else if (isGameCode) {
-                    if (displayName != null && !displayName.isBlank()) gameCodeSeen.add(displayName);
-                } else if (displayName != null && !displayName.isBlank()) {
-                    named.add(new DiscoveredSignal(location.getPlanetName(), displayName, type));
-                }
+            if (isCarrier) {
+                typeCounts.merge(type, 1, Integer::sum);
+            } else if (isGameCode) {
+                if (displayName != null && !displayName.isBlank()) gameCodeSeen.add(displayName);
+            } else if (displayName != null && !displayName.isBlank()) {
+                named.add(new DiscoveredSignal(sighting.recordedAgainst(), displayName, type));
             }
         }
 

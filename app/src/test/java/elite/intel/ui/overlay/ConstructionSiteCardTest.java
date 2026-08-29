@@ -64,6 +64,16 @@ class ConstructionSiteCardTest {
     }
 
     /**
+     * Witt Hub's manifest as the game's construction panel showed it mid-shuttle: the REQUIRED column, with
+     * steel already most of the way delivered.
+     */
+    private static List<Requirement> wittHub() {
+        return List.of(
+                line("steel", 8434, 6160), line("titanium", 7921, 880), line("water", 1609, 0),
+                line("fruitandvegetables", 145, 0), line("waterpurifiers", 105, 0));
+    }
+
+    /**
      * A Type-9 sized hold, which is the ship this feature is flown in.
      */
     private static final int HOLD = 640;
@@ -110,6 +120,17 @@ class ConstructionSiteCardTest {
                                                        Set<String> stockedHere, Map<String, Integer> stash) {
         return new ConstructionSiteObjectiveSource(() -> site(0.026187, Instant.now().toString()),
                 marketId -> manifest, () -> hold, () -> HOLD, () -> shop(stockedHere),
+                (ignored, alsoIgnored) -> Optional.of(new Stash("GHY-L8X", stash))).currentObjective();
+    }
+
+    /**
+     * The shuttle run between a carrier and the depot: a carrier is working the build, and there is no
+     * commodity market anywhere on the trip, so the card is the loading order rather than a shopping list.
+     */
+    private static Optional<HudObjective> shuttleCard(List<Requirement> manifest, Map<String, Integer> hold,
+                                                      Map<String, Integer> stash) {
+        return new ConstructionSiteObjectiveSource(() -> site(0.67271, Instant.now().toString()),
+                marketId -> manifest, () -> hold, () -> 880, () -> shop(Set.of()),
                 (ignored, alsoIgnored) -> Optional.of(new Stash("GHY-L8X", stash))).currentObjective();
     }
 
@@ -234,6 +255,190 @@ class ConstructionSiteCardTest {
                 "the only one on the shelves leads, straight after the progress bar");
         assertEquals("CERAMIC COMPOSITES", labels(objective).get(2),
                 "and the rest keep largest-shortfall order behind it");
+    }
+
+    /**
+     * Witt Hub as the game's own construction panel shows it, read on the shuttle leg: steel 2,274 required,
+     * titanium 7,041, water 1,609, and the small tail behind them. The commander wants their progress against
+     * those same numbers, not a tonnage to buy at a market they are nowhere near.
+     */
+    @Test
+    void theShuttleRunShowsWhatIsHeldOverWhatIsNeeded() {
+        HudObjective objective = shuttleCard(wittHub(), Map.of(), Map.of("steel", 1600)).orElseThrow();
+
+        assertEquals("1,600/2,274 T", valueOf(objective, "STEEL"),
+                "what is held over what the site still wants - the panel's own REQUIRED figure");
+    }
+
+    /**
+     * A good nothing has been bought of yet has no first half to show, so it stands on the requirement alone -
+     * the same shape the rest of the card uses for "none of this aboard".
+     */
+    @Test
+    void aGoodNotStartedShowsTheBareRequirement() {
+        HudObjective objective = shuttleCard(wittHub(), Map.of(), Map.of("steel", 1600)).orElseThrow();
+
+        assertEquals("7,041 T", valueOf(objective, "TITANIUM"));
+    }
+
+    @Test
+    void theShuttleRunListsTheRestByDescendingDeficit() {
+        HudObjective objective = shuttleCard(wittHub(), Map.of(), Map.of("steel", 1600)).orElseThrow();
+
+        assertEquals(List.of("PROGRESS", "STEEL", "TITANIUM", "WATER", "FRUIT AND VEGETABLES",
+                        "WATER PURIFIERS", "OUTSTANDING"), labels(objective),
+                "steel is under way so it leads; everything else follows it largest first");
+    }
+
+    /**
+     * Cargo already complete on the carrier is the whole reason the commander is flying to the depot. A list
+     * of "what is left to buy" would drop it on the grounds that there is nothing left to buy.
+     */
+    @Test
+    void aGoodFullyAboardTheCarrierStaysOnTheDeliveryList() {
+        HudObjective objective = shuttleCard(wittHub(), Map.of(), Map.of("steel", 2274)).orElseThrow();
+
+        assertEquals("2,274/2,274 T", valueOf(objective, "STEEL"), "bought in full, and still to be delivered");
+        assertEquals(HudRow.State.GOOD, rowOf(objective, "STEEL").state());
+    }
+
+    /**
+     * In flight towards a market with no carrier on the job, the next purchase is exactly what the commander
+     * is about to act on, so the trip allocation stays.
+     */
+    @Test
+    void noCarrierMeansTheTripAllocationSurvivesAwayFromAMarket() {
+        HudObjective objective = card(site(0.67271, Instant.now().toString()), wittHub(), Map.of(), 880)
+                .orElseThrow();
+
+        assertEquals("880 T", valueOf(objective, "TITANIUM"), "one hold of the largest shortfall");
+    }
+
+    /**
+     * The Witt Hub shuttle run, from the live case: steel is part delivered and the rest of it is sitting on
+     * the carrier, so steel's remaining 3,154 has fallen behind titanium's 7,041. The commander is mid-job on
+     * steel, and a card that switches them to titanium is telling them to start a second front.
+     */
+    @Test
+    void aGoodAlreadyStartedLeadsTheLargerDeficit() {
+        List<Requirement> wittHub = List.of(
+                line("titanium", 7921, 880), line("aluminium", 4177, 0), line("steel", 8434, 5280));
+
+        HudObjective objective = shuttleCard(wittHub, Map.of(), Map.of("steel", 1600)).orElseThrow();
+
+        assertEquals("STEEL", labels(objective).get(1),
+                "the steel on the carrier is bought and waiting - finish it before opening titanium");
+    }
+
+    /**
+     * Tonnes in the ship's own hold say the same thing as tonnes on the carrier: this job is under way.
+     */
+    @Test
+    void aGoodPartlyInTheHoldAlsoLeads() {
+        List<Requirement> wittHub = List.of(
+                line("titanium", 7921, 880), line("steel", 8434, 5280));
+
+        HudObjective objective = card(site(0.67, Instant.now().toString()), wittHub, Map.of("steel", 400), 880)
+                .orElseThrow();
+
+        assertEquals("STEEL", labels(objective).get(1));
+    }
+
+    /**
+     * Nothing started, so nothing to finish - the largest shortfall is the whole of the answer again.
+     */
+    @Test
+    void withNothingStartedTheLargestDeficitStillLeads() {
+        List<Requirement> wittHub = List.of(
+                line("titanium", 7921, 880), line("aluminium", 4177, 0), line("steel", 8434, 5280));
+
+        HudObjective objective = shuttleCard(wittHub, Map.of(), Map.of()).orElseThrow();
+
+        assertEquals("TITANIUM", labels(objective).get(1));
+    }
+
+    /**
+     * Two jobs under way rank between themselves the way everything else does, and both still lead the good
+     * nobody has touched - even when that one is short by far the most.
+     */
+    @Test
+    void twoStartedGoodsKeepDeficitOrderBetweenThem() {
+        List<Requirement> tail = List.of(
+                line("titanium", 7921, 0), line("aluminium", 4577, 4177), line("steel", 8434, 8134));
+
+        HudObjective objective = shuttleCard(tail, Map.of(),
+                Map.of("steel", 1600, "aluminium", 200)).orElseThrow();
+
+        assertEquals(List.of("ALUMINIUM", "STEEL", "TITANIUM"), labels(objective).subList(1, 4),
+                "aluminium is 400 short against steel's 300, and titanium's 7,921 waits behind both");
+    }
+
+    /**
+     * Witt Hub read from The Chocolate Factory, which is where this came from: a Panther Mk II against a
+     * build every one of whose big lines outsizes its hold. The trip is 880 tonnes of steel and always will
+     * be, so a card that stops there names one good at a market selling three of the four the site wants.
+     */
+    @Test
+    void whatElseThisMarketSellsFollowsTheTrip() {
+        List<Requirement> wittHub = List.of(
+                line("steel", 8434, 0), line("titanium", 7921, 0), line("aluminium", 4177, 0),
+                line("water", 1609, 0), line("ceramiccomposites", 1207, 0));
+
+        HudObjective objective = card(site(0.558048, Instant.now().toString()), wittHub, Map.of(), 880,
+                Set.of("steel", "titanium", "aluminium")).orElseThrow();
+
+        assertEquals("880 T", valueOf(objective, "STEEL"), "the trip is still one hold of the leading good");
+        assertEquals(List.of("PROGRESS", "STEEL", "ALSO HERE", "TITANIUM", "ALUMINIUM", "OUTSTANDING"),
+                labels(objective), "and what else is on these shelves follows it, under its own heading");
+        assertEquals("7,921 T", valueOf(objective, "TITANIUM"),
+                "at its own outstanding shortfall - it is a shopping note, not a second trip");
+        assertEquals(SHOP.toUpperCase(), valueOf(objective, "ALSO HERE"), "named, so the pad is not in doubt");
+    }
+
+    /**
+     * The heading is the whole distinction between "buy this now" and "this is also on the shelves", so a
+     * card that never crosses into the second group must not draw it.
+     */
+    @Test
+    void aTripThatCoversTheShelvesDrawsNoAlsoHereHeading() {
+        List<Requirement> small = List.of(line("steel", 200, 0), line("titanium", 150, 0));
+
+        HudObjective objective = card(site(0.5, Instant.now().toString()), small, Map.of(), HOLD,
+                Set.of("steel", "titanium")).orElseThrow();
+
+        assertEquals(List.of("PROGRESS", "STEEL", "TITANIUM", "OUTSTANDING"), labels(objective));
+        assertEquals("200 T", valueOf(objective, "STEEL"));
+        assertEquals("150 T", valueOf(objective, "TITANIUM"), "both fit, so both are this trip");
+    }
+
+    /**
+     * Goods the port cannot supply are no use to a commander standing at its commodity screen - the trip
+     * lists them because the next port is where they get bought, but the shopping note must not.
+     */
+    @Test
+    void onlyGoodsThisMarketSellsFollowTheTrip() {
+        List<Requirement> wittHub = List.of(
+                line("steel", 8434, 0), line("water", 1609, 0), line("titanium", 7921, 0));
+
+        HudObjective objective = card(site(0.558048, Instant.now().toString()), wittHub, Map.of(), 880,
+                Set.of("steel", "titanium")).orElseThrow();
+
+        assertEquals(List.of("PROGRESS", "STEEL", "ALSO HERE", "TITANIUM", "OUTSTANDING"), labels(objective));
+        assertFalse(labels(objective).contains("WATER"), "not on these shelves, so not a note about them");
+    }
+
+    /**
+     * Knowing nothing about the shelves, there is nothing to say about them - and the trip is still the
+     * trip.
+     */
+    @Test
+    void anUnknownMarketAddsNoShoppingNote() {
+        List<Requirement> wittHub = List.of(line("steel", 8434, 0), line("titanium", 7921, 0));
+
+        HudObjective objective = card(site(0.558048, Instant.now().toString()), wittHub, Map.of(), 880,
+                Set.of()).orElseThrow();
+
+        assertEquals(List.of("PROGRESS", "STEEL", "OUTSTANDING"), labels(objective));
     }
 
     /**

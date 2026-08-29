@@ -105,6 +105,57 @@ class MemoryFactGathererTest {
                 MemoryFactGatherer.gatherRelevant(ctx(), List.of(relevant, irrelevant)));
     }
 
+    /**
+     * The block's total cap is small, so the order the sources are asked in decides who loses a slot. A fact that
+     * answers the commander's actual subject must outrank one that speaks on every turn.
+     */
+    @Test
+    void gatherRelevantPutsSubjectSourcesBeforeStandingContext() {
+        MemoryFactSource ambient = new MemoryFactSource() {
+            @Override
+            public String id() {
+                return "ambient";
+            }
+
+            @Override
+            public boolean isRelevant(MemoryFactContext context) {
+                return true;
+            }
+
+            @Override
+            public boolean isAmbient() {
+                return true;
+            }
+
+            @Override
+            public List<String> factsFor(MemoryFactContext context) {
+                return List.of("standing context");
+            }
+        };
+        MemoryFactSource subject = new MemoryFactSource() {
+            @Override
+            public String id() {
+                return "subject";
+            }
+
+            @Override
+            public boolean isRelevant(MemoryFactContext context) {
+                return true;
+            }
+
+            @Override
+            public List<String> factsFor(MemoryFactContext context) {
+                return List.of("what was asked about");
+            }
+        };
+
+        // Registered ambient-first, so only the ordering rule can put the subject source in front.
+        assertEquals(List.of(
+                        new Fact("what was asked about", "subject"),
+                        new Fact("standing context", "ambient")),
+                MemoryFactGatherer.gatherRelevant(ctx(), List.of(ambient, subject)));
+    }
+
     @Test
     void gatherRelevantIsolatesAThrowingRelevanceCheck() {
         MemoryFactSource broken = new MemoryFactSource() {

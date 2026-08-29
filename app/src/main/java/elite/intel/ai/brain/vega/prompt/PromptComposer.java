@@ -97,21 +97,19 @@ public final class PromptComposer {
         return new ComposedPrompt(List.copyOf(messages), List.copyOf(systemTools), PromptCacheProfile.NARRATION);
     }
 
-    /** Replays conversation pairs while keeping facts and saved text out of chat roles. */
+    /**
+     * Replays conversation pairs while keeping facts out of chat roles.
+     */
     private List<LlmMessage> buildHistoryMessages(List<MemoryRecord> recentRecords) {
         List<LlmMessage> out = new ArrayList<>();
         if (recentRecords == null || recentRecords.isEmpty()) {
             return out;
         }
+        // Every stored kind is a commander/companion pair, and every one of them is replayed: session memory
+        // holds nothing that this method would have to skip.
         for (MemoryRecord record : recentRecords) {
-            switch (record.kind()) {
-                case DIALOGUE, QUERY -> {
-                    out.add(LlmMessage.of(LlmMessageRole.USER, record.commanderText()));
-                    out.add(LlmMessage.of(LlmMessageRole.ASSISTANT, record.companionText()));
-                }
-                case EVENT -> { /* Relevant events are supplied through the trusted facts block. */ }
-                case SAVED_TEXT -> { /* Saved text bypasses recent history. */ }
-            }
+            out.add(LlmMessage.of(LlmMessageRole.USER, record.commanderText()));
+            out.add(LlmMessage.of(LlmMessageRole.ASSISTANT, record.companionText()));
         }
         return List.copyOf(out);
     }

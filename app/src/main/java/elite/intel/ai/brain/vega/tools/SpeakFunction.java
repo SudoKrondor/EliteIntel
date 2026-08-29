@@ -24,6 +24,15 @@ public final class SpeakFunction implements SystemFunction {
     public static final String PARAM_TEXT = "text";
     private static final String STATUS_SPOKEN = "spoken";
 
+    /**
+     * The words a {@code speak} invocation carries, with any response envelope the model wrapped them in
+     * removed (see {@link SpokenTextEnvelope}). Every reader of {@link #PARAM_TEXT} goes through here so the
+     * line that is spoken and the line that is remembered are the same one.
+     */
+    public static String textOf(JsonObject arguments) {
+        return SpokenTextEnvelope.unwrap(JsonUtils.getAsStringOrEmpty(arguments, PARAM_TEXT));
+    }
+
     @Override
     public String id() {
         return ID;
@@ -54,7 +63,7 @@ public final class SpeakFunction implements SystemFunction {
      */
     @Override
     public JsonObject handle(String action, JsonObject params, String text) {
-        String toSpeak = JsonUtils.getAsStringOrEmpty(params, PARAM_TEXT);
+        String toSpeak = textOf(params);
         CompanionRuntime.speech().submit(new SpeechRequest(UUID.randomUUID().toString(), toSpeak, Urgency.NORMAL));
         JsonObject result = new JsonObject();
         result.addProperty(SystemFunctionResultFields.STATUS, STATUS_SPOKEN);

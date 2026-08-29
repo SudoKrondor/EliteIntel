@@ -45,7 +45,7 @@ public enum KokoroVoices {
     MICHAEL(16, true, "Michael", "American male"),
     ONYX(17, true, "Onyx", "American male"),
     PUCK(18, true, "Puck", "American male"),
-    SANTA_AM(19, true, "Santa", "American male"),
+    //SANTA_AM(19, true, "Santa", "American male"),
 
     // --- British Female (bf_) ---
     ALICE(20, false, "Alice", "British female"),

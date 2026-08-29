@@ -29,7 +29,10 @@ import java.util.stream.Stream;
  *   <li><b>No language model at all.</b> Points at the free Mistral tier or the local Gemma model, at the
  *       website for instructions, and at audio calibration.</li>
  *   <li><b>No journal files</b> where the app is looking. Without them it knows nothing about the game.</li>
- *   <li><b>No bindings files</b> where the app is looking. Without them it cannot fly anything.</li>
+ *   <li><b>No bindings files</b> where the app is looking. Without them it cannot fly anything. This one
+ *       splits in two: a folder that is not Elite's bindings folder at all (fix the setting), and Elite's
+ *       own folder holding only a {@code StartPreset} because the commander still runs a stock preset and
+ *       has never saved custom controls (fix it in the game, not in the setting).</li>
  * </ul>
  * <p>
  * Every line is published as a {@link VocalisationRequestEvent} straight to the TTS engine rather than routed
@@ -95,7 +98,12 @@ public class SetupCheck {
 
         Path bindings = bindingsDir.get();
         if (!hasBindingsFiles(bindings)) {
-            warn("speech.setup.noBindings", "No .binds files found in " + bindings);
+            if (isEliteBindingsFolder(bindings)) {
+                warn("speech.setup.noSavedBindings", "Bindings folder " + bindings
+                        + " is Elite's own, but holds no .binds file: the commander is on a stock preset and has never saved custom controls.");
+            } else {
+                warn("speech.setup.noBindings", "No .binds files found in " + bindings);
+            }
         }
     }
 
@@ -160,6 +168,26 @@ public class SetupCheck {
         }
         try {
             return !bindingsLoader.listAllBindsFiles(dir).isEmpty();
+        } catch (IOException unreadable) {
+            log.warn("Cannot read bindings directory {}: {}", dir, unreadable.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * True when {@code dir} is Elite's own bindings folder - it holds a {@code StartPreset.*.start} - even though
+     * no {@code .binds} file has been saved into it. Frontier's stock presets (Keyboard, ControlPad, ...) live in
+     * the game install, and the game writes a {@code .binds} here only once the commander edits and saves their
+     * controls, so this is the "folder is right, controls were never customised" case. It needs a different fix
+     * from the wrong-folder mistake, and telling such a commander to correct a folder that is already correct
+     * sends them to change the one setting that is not the problem.
+     */
+    boolean isEliteBindingsFolder(Path dir) {
+        if (dir == null || !Files.isDirectory(dir)) {
+            return false;
+        }
+        try {
+            return bindingsLoader.findStartPresetFile(dir).isPresent();
         } catch (IOException unreadable) {
             log.warn("Cannot read bindings directory {}: {}", dir, unreadable.getMessage());
             return false;

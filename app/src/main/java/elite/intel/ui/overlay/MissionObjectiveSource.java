@@ -103,29 +103,11 @@ public class MissionObjectiveSource implements HudObjectiveSource {
     // -- selection -------------------------------------------------------------
 
     /**
-     * The mission the card is about, or empty when there are none.
-     * <p>
-     * Pure, so the precedence between the plotted route and the expiry order can
-     * be tested without a database or a route.
-     *
-     * @param missions         the active stack, already free of nulls
-     * @param routeDestination the end of the plotted route, or null when none is plotted
+     * The mission the card is about, or empty when there are none. The rule itself lives in
+     * {@link MissionSelection#featured} so the card and the companion's mission fact always name the same one.
      */
     static Optional<MissionDto> featured(List<MissionDto> missions, String routeDestination) {
-        List<MissionDto> ordered = missions.stream().sorted(MissionSelection.EXPIRY_ORDER).toList();
-        if (ordered.isEmpty()) return Optional.empty();
-
-        return firstBoundFor(ordered, routeDestination)
-                .or(() -> Optional.of(ordered.getFirst()));
-    }
-
-    /**
-     * The soonest-expiring mission heading for {@code system}, so that a system
-     * holding several of them always resolves to the same one.
-     */
-    private static Optional<MissionDto> firstBoundFor(List<MissionDto> ordered, String system) {
-        if (system == null || system.isBlank()) return Optional.empty();
-        return ordered.stream().filter(mission -> system.equalsIgnoreCase(mission.getDestinationSystem())).findFirst();
+        return MissionSelection.featured(missions, routeDestination);
     }
 
     // -- rows ------------------------------------------------------------------
