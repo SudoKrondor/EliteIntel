@@ -1,11 +1,9 @@
 package elite.intel.ai.brain.vega.memory.facts;
 
-import elite.intel.ai.brain.vega.memory.facts.MemoryFactContext;
-import elite.intel.ai.brain.vega.memory.facts.MemoryFactSource;
-import elite.intel.ai.brain.vega.memory.facts.sources.CommanderProfileFactSource;
 import elite.intel.ai.brain.vega.memory.facts.sources.CurrentBodyFactSource;
 import elite.intel.ai.brain.vega.memory.facts.sources.CurrentStationFactSource;
 import elite.intel.ai.brain.vega.memory.facts.sources.CurrentSystemFactSource;
+import elite.intel.ai.brain.vega.memory.facts.sources.SystemSignalsFactSource;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.AfterEach;
@@ -37,7 +35,7 @@ class MemoryFactSourceRelevanceTest {
         assertTrue(new CurrentSystemFactSource().isRelevant(ctx("какой уровень безопасности в этой системе")));
         assertTrue(new CurrentStationFactSource().isRelevant(ctx("какие услуги есть на этой станции")));
         assertTrue(new CurrentBodyFactSource().isRelevant(ctx("какие материалы на этой планете")));
-        assertTrue(new CommanderProfileFactSource().isRelevant(ctx("какой у меня ранг пилота")));
+        assertTrue(new SystemSignalsFactSource().isRelevant(ctx("какие сигналы в системе")));
     }
 
     @Test
@@ -47,7 +45,7 @@ class MemoryFactSourceRelevanceTest {
         assertTrue(new CurrentSystemFactSource().isRelevant(location));
         assertTrue(new CurrentStationFactSource().isRelevant(location));
         assertTrue(new CurrentBodyFactSource().isRelevant(location));
-        assertFalse(new CommanderProfileFactSource().isRelevant(location));
+        assertFalse(new SystemSignalsFactSource().isRelevant(location));
     }
 
     @Test
@@ -79,6 +77,6 @@ class MemoryFactSourceRelevanceTest {
                 new CurrentSystemFactSource(),
                 new CurrentStationFactSource(),
                 new CurrentBodyFactSource(),
-                new CommanderProfileFactSource());
+                new SystemSignalsFactSource());
     }
 }

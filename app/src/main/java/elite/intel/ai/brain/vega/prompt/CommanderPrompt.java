@@ -65,17 +65,13 @@ final class CommanderPrompt {
                       ELSE IF you know every required parameter's value: call that action with all the values you know.
                       ELSE: call request_input for one missing required parameter.
 
-                    ELSE IF any offered game function other than memory_search fits the input:
+                            ELSE IF any offered game function fits the input:
                               Choose the single most probable one; several plausible candidates are not a reason to ask.
                       A value the commander already spoke fills its parameter: extract it verbatim, never request_input to
                       refine or subcategorize it.
                       IF you know every required parameter's value: call that function.
                       ELSE IF request_input is listed: call it with the exact action_id and missing parameter_name.
                       ELSE: call your chosen function with no arguments.
-
-            ELSE IF the commander explicitly asks to recall, search, list, or count remembered information:
-              IF memory_search is offered: call memory_search.
-              ELSE: call speak and say the remembered information is unavailable.
 
             ELSE IF one trusted fact fully answers the request:
               call speak with that fact.

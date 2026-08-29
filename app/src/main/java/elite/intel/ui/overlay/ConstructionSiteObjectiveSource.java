@@ -37,6 +37,24 @@ import java.util.stream.Collectors;
  * decides it within each group, and nothing is hidden for being unavailable, because the next port is where
  * it will be bought.
  * <p>
+ * <b>Why the shuttle run gets a different card.</b> Between a stockpiled carrier and the depot there is
+ * nothing to buy, so sizing a list to the hold answers a question nobody is asking. The commander on that leg
+ * wants the job: each good as what they hold over what the site still wants, largest first - the same figures
+ * the game's own construction panel is showing them at that moment.
+ * <p>
+ * <b>Why a good already started leads the loading order.</b> The deficit decides what to haul only until
+ * something is under way: tonnes already bought sit in a hold somewhere waiting to be delivered, and
+ * finishing them beats opening a second front. So the loading order puts what is part bought - in the ship
+ * or on the carrier - ahead of what has not been touched, and the largest shortfall decides among equals.
+ * See {@link #partlyBoughtFirst}. The shopping list deliberately does NOT do this; {@code ConstructionShopping}
+ * says why, and it comes down to the two lists being read at different ends of the job.
+ * <p>
+ * <b>Why the trip is not the whole card.</b> Sizing the list to one hold is what makes its tonnages honest,
+ * and on a large build it is also what empties the card: every remaining line is bigger than a hold, so the
+ * loading order collapses to a single good and says nothing about the shelves the commander is standing at.
+ * The trip therefore keeps its allocation, and whatever else this market sells that the build wants follows
+ * it under an ALSO HERE heading at its own outstanding shortfall - see {@link #alsoOnTheseShelves}.
+ * <p>
  * <b>Why the card has a second shape.</b> Hauling with a carrier splits the job in two: fill the carrier
  * at a market, then jump the whole stockpile out to the build and shuttle it down. Sized to the ship's hold,
  * the card answers the wrong half - a commander whose carrier already holds 2,000 of the 2,542 tonnes of
@@ -196,9 +214,20 @@ public class ConstructionSiteObjectiveSource implements HudObjectiveSource {
     }
 
     /**
-     * The commodity rows: the shopping list when the commander is out filling a carrier for this build, and
-     * the trip's loading order the rest of the time.
-     * <p>
+     * The commodity rows, in one of three shapes, decided by what the commander can actually do where they
+     * are standing:
+     * <ul>
+     *   <li><b>Shopping list</b> - at a market with a carrier working the build. What these shelves sell that
+     *       the site still wants, over what is already bought.</li>
+     *   <li><b>Loading order</b> - at a market with no carrier on the job. What this trip buys, sized to the
+     *       hold, and what else is on these shelves after it.</li>
+     *   <li><b>Delivery list</b> - a carrier holding cargo for this build, and no market anywhere on the trip:
+     *       the carrier-to-depot shuttle. Nothing can be bought, so a trip allocation answers a question nobody
+     *       is asking; what the commander wants is the job itself - each good as what they hold over what the
+     *       site still wants, largest first. See {@link ConstructionShopping#toDeliver}. No shop on its own is
+     *       not enough, because that is also the commander in flight TOWARDS a market, where sizing the next
+     *       purchase to the hold is the whole point.</li>
+     * </ul>
      * A shopping list that comes back empty is not a shopping trip worth drawing - this market sells nothing
      * the build wants - so the card falls back to the loading order rather than showing the commander a
      * progress bar with nothing under it.
@@ -208,17 +237,37 @@ public class ConstructionSiteObjectiveSource implements HudObjectiveSource {
         Set<String> stillWanted = manifest.stream()
                 .map(ConstructionCargo.Outstanding::symbol)
                 .collect(Collectors.toUnmodifiableSet());
+        // Read whether or not there is a shop, because the loading order needs it too: a good already part
+        // bought is usually part bought ON THE CARRIER, and the shuttle run between a carrier and a depot
+        // passes no commodity market at all.
+        Optional<Stash> stash = stockpile.apply(current, stillWanted);
         if (shop.isPresent() && budget > 0) {
-            Goods shopping = stockpile.apply(current, stillWanted)
-                    .map(stash -> shoppingList(manifest, shop.get(), stash, budget))
+            Goods shopping = stash
+                    .map(carrier -> shoppingList(manifest, shop.get(), carrier, budget))
                     .orElse(null);
             if (shopping != null) return shopping;
+        }
+        // The shuttle run: a carrier is holding cargo for this build and there is no market anywhere on the
+        // trip. Both halves are needed. No shop alone is also the commander in flight towards one, where the
+        // trip allocation is exactly what they are about to act on; a carrier with no shop is the leg between
+        // the stockpile and the depot, where nothing can be bought and the job itself is the answer.
+        if (stash.isPresent() && shop.isEmpty() && budget > 0) {
+            List<ConstructionShopping.Line> toDeliver = ConstructionShopping.toDeliver(manifest, stash.get());
+            if (!toDeliver.isEmpty()) return new Goods(rows(toDeliver, budget), null);
         }
 
         List<HudRow> rows = new ArrayList<>();
         Set<String> onTheShelves = shop.map(Shop::stock).orElse(Set.of());
-        for (Load load : loadingOrder(stillToBuy, holdCapacity.getAsInt(), onTheShelves,
-                Math.min(budget, MAX_GOODS_LISTED))) {
+        boolean headed = false;
+        for (Load load : loadingOrder(partlyBoughtFirst(stillToBuy, stash), holdCapacity.getAsInt(),
+                onTheShelves, Math.min(budget, MAX_GOODS_LISTED))) {
+            // The heading is what keeps the trip's tonnes from reading as an order for the whole shortfall,
+            // so it goes in the moment the list stops being about this hold. It costs the row the budget
+            // already set aside for a shop we turn out to name.
+            if (!load.thisTrip() && !headed) {
+                rows.add(alsoOnSale(shop));
+                headed = true;
+            }
             rows.add(HudRow.of(load.name().toUpperCase(), loadValue(load),
                     load.held() > 0 ? HudRow.State.GOOD : HudRow.State.NORMAL));
         }
@@ -285,6 +334,18 @@ public class ConstructionSiteObjectiveSource implements HudObjectiveSource {
     }
 
     /**
+     * The line dividing the trip from the rest of the shelves, naming the market the goods under it are on.
+     * The name is worth the space here for the same reason the shopping list carries it: a list of goods
+     * says nothing until the commander knows which pad they are on. A shop we hold no name for still gets
+     * the heading, because separating the two groups is the part that matters.
+     */
+    private static HudRow alsoOnSale(Optional<Shop> shop) {
+        String name = shop.map(current -> StationName.display(current.stationName())).orElse(null);
+        return HudRow.of(HudText.get("overlay.card.row.alsoHere"),
+                name == null || name.isBlank() ? "" : name.toUpperCase());
+    }
+
+    /**
      * The pad these goods are bought at. Null for a shop we hold no name for, in which case the list stands
      * on its own rather than under a blank line.
      */
@@ -304,9 +365,13 @@ public class ConstructionSiteObjectiveSource implements HudObjectiveSource {
     }
 
     /**
-     * One good, the tonnes of it this trip would buy, and the tonnes of it already aboard.
+     * One good, the tonnes of it in question, and the tonnes of it already aboard.
+     *
+     * @param thisTrip true when {@code tonnes} is what this trip would buy, false when the hold was already
+     *                 full and {@code tonnes} is the good's whole remaining shortfall - a good the commander
+     *                 can buy where they are standing, but not on this run
      */
-    private record Load(String name, int tonnes, int held) {
+    private record Load(String name, int tonnes, int held, boolean thisTrip) {
     }
 
     /**
@@ -349,18 +414,82 @@ public class ConstructionSiteObjectiveSource implements HudObjectiveSource {
                                            Set<String> stockedHere, int budget) {
         if (capacity <= 0) {
             ConstructionCargo.Outstanding first = stillToBuy.getFirst();
-            return List.of(new Load(displayName(first), first.shortfall(), first.held()));
+            return List.of(new Load(displayName(first), first.shortfall(), first.held(), true));
         }
         List<Load> order = new ArrayList<>();
+        Set<String> allocated = new HashSet<>();
         int remaining = capacity;
         for (ConstructionCargo.Outstanding line : soldHereFirst(stillToBuy, stockedHere)) {
             if (remaining <= 0 || order.size() == budget) break;
             int tonnes = Math.min(line.shortfall(), remaining);
             if (tonnes <= 0) continue;
-            order.add(new Load(displayName(line), tonnes, line.held()));
+            order.add(new Load(displayName(line), tonnes, line.held(), true));
+            allocated.add(line.symbol());
             remaining -= tonnes;
         }
+        order.addAll(alsoOnTheseShelves(stillToBuy, stockedHere, allocated, budget - order.size()));
         return order;
+    }
+
+    /**
+     * The goods on these shelves the build still wants that the trip has no room for.
+     * <p>
+     * WHY the card says them at all: the loading order describes one hold, and on a large build every
+     * remaining line is bigger than one - measured at The Chocolate Factory, where a Panther's 880 tonnes
+     * went entirely to steel and the card named nothing else, while the shelves in front of the commander
+     * also held titanium and aluminium the site was 7,921 and 4,177 tonnes short of. Sizing the list to the
+     * hold is what makes the trip figure honest; it is also what blinds the card at exactly the moment it is
+     * being read at a commodity screen. So the trip keeps its allocation, and what else can be bought here
+     * is named after it under its own heading, at its own outstanding shortfall - a shopping note, not a
+     * second loading order.
+     * <p>
+     * Only goods this market actually sells qualify: the build's long tail is mostly things the port cannot
+     * supply, and listing those would spend the card on what the commander cannot act on standing here.
+     *
+     * @param allocated the goods the trip already named, which must not be said twice
+     * @param budget    rows left after the trip has taken its own
+     */
+    private static List<Load> alsoOnTheseShelves(List<ConstructionCargo.Outstanding> stillToBuy,
+                                                 Set<String> stockedHere, Set<String> allocated, int budget) {
+        if (budget <= 0 || stockedHere == null || stockedHere.isEmpty()) return List.of();
+        List<Load> also = new ArrayList<>();
+        // stillToBuy arrives largest-shortfall first, and that is the order to buy them in next.
+        for (ConstructionCargo.Outstanding line : stillToBuy) {
+            if (also.size() == budget) break;
+            if (!stockedHere.contains(line.symbol()) || allocated.contains(line.symbol())) continue;
+            also.add(new Load(displayName(line), line.shortfall(), line.held(), false));
+        }
+        return also;
+    }
+
+    /**
+     * The manifest reordered so that goods the commander has already started on lead the ones they have not
+     * touched, each group otherwise keeping the order it came in - largest shortfall first.
+     * <p>
+     * WHY the deficit is not the whole answer: working the largest shortfall first is what shortens the job,
+     * but only until a job is under way. Measured live at Witt Hub, a commander part way through moving steel
+     * off their carrier - 3,154 tonnes of it still to deliver, with more sitting in the carrier's hold - was
+     * shown titanium, because titanium's 7,041 was now the larger number. The steel they were mid-shuttle on
+     * had fallen off the card. A good that is already bought is not a decision the card should be reopening:
+     * the tonnes are paid for and in a hold somewhere, and finishing them is the cheaper move than starting
+     * something else. So part-bought leads, and the deficit decides among equals.
+     * <p>
+     * This does not make the list restless the way ordering by deficit did. A good only ever moves UP by
+     * being started, and what is bought stays bought, so a row promoted here does not slide back.
+     *
+     * @param stash the carrier working this build, when one is - the tonnes are as bought as the ones in the
+     *              ship's hold, and on a carrier run they are where nearly all of them are
+     */
+    private static List<ConstructionCargo.Outstanding> partlyBoughtFirst(
+            List<ConstructionCargo.Outstanding> stillToBuy, Optional<Stash> stash) {
+        List<ConstructionCargo.Outstanding> started = new ArrayList<>();
+        List<ConstructionCargo.Outstanding> untouched = new ArrayList<>();
+        for (ConstructionCargo.Outstanding line : stillToBuy) {
+            int bought = line.held() + stash.map(carrier -> carrier.stockOf(line.symbol())).orElse(0);
+            (bought > 0 ? started : untouched).add(line);
+        }
+        started.addAll(untouched);
+        return started;
     }
 
     /**

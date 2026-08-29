@@ -13,7 +13,7 @@ public class RemindTargetDestinationQuery extends BaseQueryAnalyzer implements I
     public String llmDescription() {
         return "Report the commander's active reminder: the errand they saved for themselves - where to travel, "
                 + "what to buy or pick up there, where to sell it. Use this for any question about the current "
-                + "errand or plan, not memory_search.";
+                + "errand or plan.";
     }
 
 

@@ -4,8 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.ShipPersonality;
-import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.QueryHandlerFactory;
+import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.queries.IntelQuery;
 import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import elite.intel.ai.brain.inference.lmstudio.LMStudioClient;
@@ -13,20 +13,18 @@ import elite.intel.ai.brain.inference.mistral.MistralClient;
 import elite.intel.ai.brain.vega.CompanionConfig;
 import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.ai.brain.vega.execution.ExecutionGateway;
-import elite.intel.ai.brain.vega.input.CompanionSubsystemGate;
 import elite.intel.ai.brain.vega.llm.*;
 import elite.intel.ai.brain.vega.memory.MemoryGateway;
+import elite.intel.ai.brain.vega.memory.facts.MemoryFactSourceRegistry;
 import elite.intel.ai.brain.vega.mind.CompanionState;
 import elite.intel.ai.brain.vega.mind.ThoughtDispatcher;
 import elite.intel.ai.brain.vega.model.memory.MemoryEntry;
-import elite.intel.ai.brain.vega.model.memory.MemoryKind;
 import elite.intel.ai.brain.vega.model.memory.MemoryRecord;
 import elite.intel.ai.brain.vega.tools.SystemFunction;
 import elite.intel.ai.brain.vega.tools.SystemFunctionRegistry;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.db.util.Database;
-import elite.intel.ai.brain.vega.memory.facts.MemoryFactSourceRegistry;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.gameapi.journal.events.BaseEvent;
@@ -372,38 +370,6 @@ public final class CompanionEvalHarness {
         return spokenTexts().stream().anyMatch(s -> s.toLowerCase(Locale.ROOT).contains(needle));
     }
 
-    // --- memory-area scoring (shared by the memory evals) ---
-
-    /**
-     * Where a fact matched by a distinctive token currently lives across the memory areas.
-     */
-    public String locateTier(String token) {
-        String tok = token.toLowerCase(Locale.ROOT);
-        List<String> tiers = new ArrayList<>();
-        var snapshot = memory.snapshot();
-        if (recordsContain(snapshot.recent(), tok)) {
-            tiers.add("recent");
-        }
-        for (MemoryKind kind : MemoryKind.values()) {
-            if (recordsContain(snapshot.retainedByKind().getOrDefault(kind, List.of()), tok)) {
-                tiers.add("retained[" + kind.name().toLowerCase(Locale.ROOT) + "]");
-            }
-            String summary = snapshot.summaries().get(kind);
-            if (summary != null && contains(summary, tok)) {
-                tiers.add("summary[" + kind.name().toLowerCase(Locale.ROOT) + "]");
-            }
-        }
-        if (recordsContain(snapshot.savedTexts(), tok)) {
-            tiers.add("saved_text");
-        }
-        return tiers.isEmpty() ? "LOST" : String.join("+", tiers);
-    }
-
-    private static boolean recordsContain(List<MemoryRecord> records, String tokenLower) {
-        return records.stream().flatMap(record -> record.entries().stream())
-                .anyMatch(entry -> contains(entry.content(), tokenLower));
-    }
-
     /**
      * The raw body of the last LLM request this turn, for inspecting its history, context, and live facts.
      */
@@ -438,10 +404,6 @@ public final class CompanionEvalHarness {
 
     private static String str(JsonObject o, String key) {
         return o.has(key) && !o.get(key).isJsonNull() ? o.get(key).getAsString() : "";
-    }
-
-    private static boolean contains(String haystack, String needleLower) {
-        return haystack != null && haystack.toLowerCase(Locale.ROOT).contains(needleLower);
     }
 
     // --- memory-fill tracing (shared by every theme eval) ---
@@ -593,38 +555,4 @@ public final class CompanionEvalHarness {
         };
     }
 
-    /**
-     * Every stored entry across recent, retained, pending and explicitly saved memory.
-     */
-    public List<MemoryEntry> allEntries() {
-        return allRecords().stream().flatMap(record -> record.entries().stream()).toList();
-    }
-
-    /**
-     * Distribution of stored records by their host-assigned retention kind.
-     */
-    public String memoryDistributionBlock() {
-        Map<MemoryKind, Long> byKind = allRecords().stream()
-                .collect(java.util.stream.Collectors.groupingBy(
-                        MemoryRecord::kind, () -> new EnumMap<>(MemoryKind.class),
-                        java.util.stream.Collectors.counting()));
-        StringBuilder b = new StringBuilder("\n---- memory distribution by kind ----\n");
-        byKind.forEach((kind, count) -> b.append("  ")
-                .append(kind.name().toLowerCase(Locale.ROOT)).append(": ").append(count).append('\n'));
-        List<MemoryRecord> savedTexts = memory.savedTextRecords();
-        b.append("saved texts (").append(savedTexts.size()).append("):\n");
-        for (MemoryRecord record : savedTexts) {
-            b.append("  ").append(record.entries().get(0).content()).append('\n');
-        }
-        return b.toString();
-    }
-
-    private List<MemoryRecord> allRecords() {
-        var snapshot = memory.snapshot();
-        List<MemoryRecord> records = new ArrayList<>(snapshot.recent());
-        snapshot.retainedByKind().values().forEach(records::addAll);
-        snapshot.pendingByKind().values().forEach(records::addAll);
-        records.addAll(snapshot.savedTexts());
-        return List.copyOf(records);
-    }
 }

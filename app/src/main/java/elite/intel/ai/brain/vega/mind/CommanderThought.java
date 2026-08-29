@@ -105,8 +105,7 @@ public final class CommanderThought extends Thought {
             List<LlmToolDefinition> tools = prompt.tools();
             PromptCacheProfile profile = prompt.profile();
 
-            // Single-round by design: one LLM call selects the settling function(s). Explicit memory_search is an
-            // existing terminal game query; durable memory is never injected before this call.
+            // Single-round by design: one LLM call selects the settling function(s).
             if (isStopped()) {
                 discardIncompleteTurn();
                 return CompletableFuture.completedFuture(null);

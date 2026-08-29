@@ -35,6 +35,11 @@ public final class CurrentSituationFactSource implements MemoryFactSource {
     }
 
     @Override
+    public boolean isAmbient() {
+        return true;
+    }
+
+    @Override
     public List<String> factsFor(MemoryFactContext context) {
         return List.of(format(currentSituation()));
     }

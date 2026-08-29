@@ -7,7 +7,7 @@ import java.util.List;
  * exactly like commands and queries. The source decides whether its current-state facts belong in the per-turn
  * {@code <facts>} block, and the aggregator tags each returned line with the source's {@link #id()} as provenance so
  * one source cannot spoof another's origin. Implementations must be stateless and cheap because they run during
- * prompt composition. Durable-memory recall is not part of this contract; it belongs to {@code memory_search}.
+ * prompt composition. Sources report live current state only; they never replay stored conversation.
  */
 public interface MemoryFactSource {
 
@@ -19,6 +19,15 @@ public interface MemoryFactSource {
      * method owns its subject and relevance policy. The safe default is opt-out for search-only sources.
      */
     default boolean isRelevant(MemoryFactContext context) {
+        return false;
+    }
+
+    /**
+     * Whether this source speaks on every commander turn rather than in answer to a subject. Ambient sources are
+     * gathered after the subject-relevant ones, so that when the block fills up the fact the commander actually
+     * asked about is the one that survives and the standing context is what gets dropped.
+     */
+    default boolean isAmbient() {
         return false;
     }
 

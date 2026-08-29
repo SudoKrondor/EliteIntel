@@ -84,7 +84,7 @@ public final class CompanionLlmGateway implements LlmGateway {
     }
 
     @Override
-    public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+    public CompletableFuture<String> completePlainText(LlmRequest request) {
         // Plain-text turn (request carries no tools): render -> send -> extract text; null on bad output.
         return submitCancellable(request, () -> {
             ensureActive();

@@ -8,7 +8,6 @@ import elite.intel.ai.brain.vega.CompanionRuntimeGraph;
 import elite.intel.ai.brain.vega.execution.ExecutionGateway;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
 import elite.intel.ai.brain.vega.memory.MemoryGateway;
-import elite.intel.ai.brain.vega.memory.MemorySearchResult;
 import elite.intel.ai.brain.vega.memory.MemorySnapshot;
 import elite.intel.ai.brain.vega.mind.CompanionState;
 import elite.intel.ai.brain.vega.model.llm.LlmRequest;
@@ -89,7 +88,7 @@ public final class CompanionRuntimeTestSupport {
         }
 
         @Override
-        public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+        public CompletableFuture<String> completePlainText(LlmRequest request) {
             return CompletableFuture.failedFuture(new UnsupportedOperationException("LLM is not used by this test"));
         }
     }
@@ -108,27 +107,6 @@ public final class CompanionRuntimeTestSupport {
 
         @Override
         public List<MemoryRecord> readRecentHistory() {
-            return List.of();
-        }
-
-        @Override
-        public MemorySearchResult recallMatching(String query, int limit) {
-            return MemorySearchResult.empty();
-        }
-
-        @Override
-        public Map<MemoryKind, String> longTermSummaries() {
-            return Map.of();
-        }
-
-        @Override
-        public void commitConsolidation(
-                MemoryKind kind, List<MemoryRecord> batch, String summary
-        ) {
-        }
-
-        @Override
-        public List<MemoryRecord> savedTextRecords() {
             return List.of();
         }
 

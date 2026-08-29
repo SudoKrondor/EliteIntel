@@ -157,8 +157,7 @@ class CompanionSystemPromptTest {
         assertTrue(normalized.contains("never to hedge between candidates"));
         assertOrdered(normalized,
                 "IF <pending_clarification> continues",
-                "ELSE IF any offered game function other than memory_search fits the input",
-                "ELSE IF the commander explicitly asks to recall",
+                "ELSE IF any offered game function fits the input",
                 "ELSE IF one trusted fact fully answers the request: call speak",
                 "ELSE: call speak for truthful text-only answers");
         assertTrue(normalized.contains("Only request_input opens a continuation"));
@@ -339,7 +338,6 @@ class CompanionSystemPromptTest {
         assertFalse(text.contains("<communication_rules>"));
         assertFalse(text.contains("<function_calling>"));
         assertFalse(text.contains("<safety>"));
-        assertFalse(text.contains("memory_search"));
         assertTrue(text.contains("<language>"));
     }
 

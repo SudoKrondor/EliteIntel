@@ -28,23 +28,11 @@ public record MemoryRecord(Instant timestamp, MemoryKind kind, List<MemoryEntry>
                 new MemoryEntry(MemorySource.COMPANION, companion)));
     }
 
-    /** Creates a gameplay-event fact from the successful final narration or verbatim announcement. */
-    public static MemoryRecord event(Instant timestamp, String fact) {
-        return new MemoryRecord(timestamp, MemoryKind.EVENT,
-                List.of(new MemoryEntry(MemorySource.EVENT, fact)));
-    }
-
     /** Creates a completed commander query and its spoken answer without retaining execution details. */
     public static MemoryRecord query(Instant timestamp, String commander, String companion) {
         return new MemoryRecord(timestamp, MemoryKind.QUERY, List.of(
                 new MemoryEntry(MemorySource.COMMANDER, commander),
                 new MemoryEntry(MemorySource.COMPANION, companion)));
-    }
-
-    /** Creates text explicitly saved verbatim by the commander. */
-    public static MemoryRecord savedText(Instant timestamp, String text) {
-        return new MemoryRecord(timestamp, MemoryKind.SAVED_TEXT,
-                List.of(new MemoryEntry(MemorySource.COMMANDER, text)));
     }
 
     /** Returns a copy with transformed entries while preserving completion time and kind. */
@@ -69,23 +57,9 @@ public record MemoryRecord(Instant timestamp, MemoryKind kind, List<MemoryEntry>
         return entries.get(1).content();
     }
 
-    /** Returns the final EVENT fact. */
-    public String eventFact() {
-        requireKind(MemoryKind.EVENT);
-        return entries.get(0).content();
-    }
-
-    /** Returns text explicitly saved by the commander. */
-    public String savedText() {
-        requireKind(MemoryKind.SAVED_TEXT);
-        return entries.get(0).content();
-    }
-
     private static void validateShape(MemoryKind kind, List<MemoryEntry> entries) {
         switch (kind) {
             case DIALOGUE, QUERY -> requireSources(kind, entries, MemorySource.COMMANDER, MemorySource.COMPANION);
-            case EVENT -> requireSources(kind, entries, MemorySource.EVENT);
-            case SAVED_TEXT -> requireSources(kind, entries, MemorySource.COMMANDER);
         }
     }
 

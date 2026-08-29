@@ -140,7 +140,7 @@ public final class OversizedMemoryCompressor implements OversizedMemoryListener,
         if (!SpeakFunction.ID.equals(invocation.name())) {
             return null;
         }
-        return JsonUtils.getAsStringOrEmpty(invocation.arguments(), SpeakFunction.PARAM_TEXT);
+        return SpeakFunction.textOf(invocation.arguments());
     }
 
     private static String oneLine(String text) {

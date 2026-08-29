@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -140,7 +139,6 @@ class AiActionMapGeneratorTest {
             "query_bio_scans_and_samples_in_star_system",
             "query_biome_analysis",
             "query_cargo_hold_contents",
-            "memory_search",
             "query_carrier_departure_eta",
             "query_construction_site_progress",
             "query_carrier_status",
@@ -279,15 +277,6 @@ class AiActionMapGeneratorTest {
         assertTrue(missing.isEmpty() && unexpected.isEmpty(),
                 "Built-in composition drift. Missing (snapshot, not generated): "
                         + missing + " ; Unexpected (generated, not in snapshot): " + unexpected);
-    }
-
-    @Test
-    void companionOnlyRememberIsAbsentFromLegacyActionMap() {
-        Map<String, String> actionMap = new AiActionMapGenerator().generate(
-                Status.getInstance(), true,
-                SystemSession.getInstance().conversationalModeOn());
-
-        assertFalse(actionMap.containsValue("remember"));
     }
 
     /**

@@ -6,8 +6,6 @@ package elite.intel.ai.brain.vega.model.memory;
  */
 public enum MemorySource {
     COMMANDER,
-    EVENT,
-    SYSTEM,
     /** The companion's own reply in a completed dialogue or query record. */
     COMPANION;
 

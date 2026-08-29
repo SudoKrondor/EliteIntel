@@ -10,7 +10,6 @@ import elite.intel.ai.brain.vega.execution.GenerationBoundExecutionGateway;
 import elite.intel.ai.brain.vega.input.BargeInController;
 import elite.intel.ai.brain.vega.llm.CompanionLlmGatewayFactory;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
-import elite.intel.ai.brain.vega.memory.MidTermToLongTermConsolidator;
 import elite.intel.ai.brain.vega.memory.OversizedMemoryCompressor;
 import elite.intel.ai.brain.vega.memory.SessionMemoryGateway;
 import elite.intel.ai.brain.vega.mind.CompanionState;
@@ -50,7 +49,6 @@ public final class CompanionRuntimeGraphFactory {
         GenerationBoundExecutionGateway executionGateway = null;
         GenerationBoundSpeechGateway speechGateway = null;
         SessionMemoryGateway memoryGateway = null;
-        MidTermToLongTermConsolidator memoryConsolidator = null;
         OversizedMemoryCompressor oversizedMemoryCompressor = null;
         ThoughtDispatcher thoughtDispatcher = null;
 
@@ -70,11 +68,8 @@ public final class CompanionRuntimeGraphFactory {
             executionGateway = new GenerationBoundExecutionGateway(rawExecutionGateway, runtimeGeneration);
 
             memoryGateway = new SessionMemoryGateway();
-            memoryConsolidator = new MidTermToLongTermConsolidator(
-                    memoryGateway, llmGateway, runtimeGeneration);
             oversizedMemoryCompressor = new OversizedMemoryCompressor(
                     memoryGateway, llmGateway, runtimeGeneration);
-            memoryGateway.setPendingConsolidationListener(memoryConsolidator);
             memoryGateway.setOversizedMemoryListener(oversizedMemoryCompressor);
 
             DangerousActionPolicy dangerousActionPolicy = new CommandFlagDangerousActionPolicy();
@@ -111,19 +106,15 @@ public final class CompanionRuntimeGraphFactory {
                     thoughtDispatcher,
                     confirmationCoordinator,
                     bargeInController,
-                    memoryConsolidator,
                     oversizedMemoryCompressor);
         } catch (RuntimeException | Error assemblyFailure) {
             if (memoryGateway != null) {
                 SessionMemoryGateway partiallyBuiltMemoryGateway = memoryGateway;
                 runCleanupAfterAssemblyFailure(assemblyFailure,
-                        () -> partiallyBuiltMemoryGateway.setPendingConsolidationListener(null));
-                runCleanupAfterAssemblyFailure(assemblyFailure,
                         () -> partiallyBuiltMemoryGateway.setOversizedMemoryListener(null));
             }
             closeResourceAfterAssemblyFailure(assemblyFailure, thoughtDispatcher);
             closeResourceAfterAssemblyFailure(assemblyFailure, oversizedMemoryCompressor);
-            closeResourceAfterAssemblyFailure(assemblyFailure, memoryConsolidator);
             closeResourceAfterAssemblyFailure(assemblyFailure, speechGateway);
             closeResourceAfterAssemblyFailure(assemblyFailure,
                     executionGateway != null ? executionGateway : rawExecutionGateway);

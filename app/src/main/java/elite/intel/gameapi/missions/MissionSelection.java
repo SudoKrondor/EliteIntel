@@ -52,6 +52,46 @@ public final class MissionSelection {
                     .thenComparing(GAME_LIST_ORDER);
 
     /**
+     * The mission the app means by "the mission" when it has to name one: the HUD's card, and the companion's
+     * mission fact both read it from here, so the card and the spoken answer cannot name different missions.
+     * <p>
+     * Two rules, in order:
+     * <ol>
+     *   <li><b>The plotted route's destination.</b> A plotted route is the commander stating where they are
+     *       going, and it beats every guess this method could make. A mission whose destination system is the
+     *       end of the route is the one being flown.</li>
+     *   <li><b>{@link #EXPIRY_ORDER}</b> when no route is plotted, or when the route ends somewhere no mission
+     *       does: with nothing stating where the ship is going, the mission that matters is the one running out
+     *       first.</li>
+     * </ol>
+     * Ties inside either rule fall through to {@link #GAME_LIST_ORDER}, so the answer never depends on map
+     * iteration order.
+     *
+     * @param missions         the active stack, already free of nulls
+     * @param routeDestination the end of the plotted route, or null when none is plotted
+     */
+    public static Optional<MissionDto> featured(List<MissionDto> missions, String routeDestination) {
+        List<MissionDto> ordered = missions.stream().sorted(EXPIRY_ORDER).toList();
+        if (ordered.isEmpty()) {
+            return Optional.empty();
+        }
+        return firstBoundFor(ordered, routeDestination).or(() -> Optional.of(ordered.getFirst()));
+    }
+
+    /**
+     * The soonest-expiring mission heading for {@code system}, so that a system holding several of them always
+     * resolves to the same one.
+     */
+    private static Optional<MissionDto> firstBoundFor(List<MissionDto> ordered, String system) {
+        if (system == null || system.isBlank()) {
+            return Optional.empty();
+        }
+        return ordered.stream()
+                .filter(mission -> system.equalsIgnoreCase(mission.getDestinationSystem()))
+                .findFirst();
+    }
+
+    /**
      * Whether a route can be plotted to this mission at all.
      * <p>
      * Plenty of missions have nowhere to fly to. A donation is completed at the board it was taken

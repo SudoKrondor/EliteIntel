@@ -29,13 +29,13 @@ public interface LlmGateway extends AutoCloseable {
     CompletableFuture<LlmResult> submit(LlmRequest request);
 
     /**
-     * Runs a plain-text compression turn (no tools) for mid-term to long-term memory consolidation.
+     * Runs a plain text-in/text-out turn (no tools), for the callers that want a phrase back rather than an action.
      *
-     * @return a future completing with the model's summary text, or {@code null} when the response is
+     * @return a future completing with the model's text, or {@code null} when the response is
      *         empty/malformed; no tool-calling contract applies to this turn, and cancellation follows
      *         the same queued/in-flight behavior as {@link #submit(LlmRequest)}
      */
-    CompletableFuture<String> compressMidTermMemory(LlmRequest request);
+    CompletableFuture<String> completePlainText(LlmRequest request);
 
     /**
      * Releases any resources the gateway owns (e.g. an executor). No-op by default.

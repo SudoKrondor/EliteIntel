@@ -5,7 +5,6 @@ import elite.intel.ai.brain.vega.execution.ExecutionGateway;
 import elite.intel.ai.brain.vega.input.BargeInController;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
 import elite.intel.ai.brain.vega.memory.MemoryGateway;
-import elite.intel.ai.brain.vega.memory.MidTermToLongTermConsolidator;
 import elite.intel.ai.brain.vega.memory.OversizedMemoryCompressor;
 import elite.intel.ai.brain.vega.memory.SessionMemoryGateway;
 import elite.intel.ai.brain.vega.mind.CompanionState;
@@ -41,7 +40,6 @@ public final class CompanionRuntimeGraph implements AutoCloseable {
     private final ConfirmationCoordinator confirmationCoordinator;
     private final BargeInController bargeInController;
     private final SessionMemoryGateway sessionMemoryGateway;
-    private final MidTermToLongTermConsolidator memoryConsolidator;
     private final OversizedMemoryCompressor oversizedMemoryCompressor;
     private final GenerationBoundSpeechGateway generationBoundSpeechGateway;
     private final AtomicBoolean started;
@@ -63,12 +61,12 @@ public final class CompanionRuntimeGraph implements AutoCloseable {
             ThoughtDispatcher thoughtDispatcher,
             ConfirmationCoordinator confirmationCoordinator,
             BargeInController bargeInController,
-            MidTermToLongTermConsolidator memoryConsolidator,
             OversizedMemoryCompressor oversizedMemoryCompressor
     ) {
         this(runtimeGeneration, llmGateway, speechGateway, executionGateway, memoryGateway, actionReducer,
                 companionState, narrator, thoughtDispatcher, confirmationCoordinator, bargeInController,
-                memoryGateway, memoryConsolidator, oversizedMemoryCompressor, speechGateway, false);
+                memoryGateway, oversizedMemoryCompressor, speechGateway, false);
+
     }
 
     /** Test-only composition seam used by the test-source runtime installer. */
@@ -83,7 +81,7 @@ public final class CompanionRuntimeGraph implements AutoCloseable {
             CompanionNarrator narrator
     ) {
         this(runtimeGeneration, llmGateway, speechGateway, executionGateway, memoryGateway, actionReducer,
-                companionState, narrator, null, null, null, null, null, null,
+                companionState, narrator, null, null, null, null, null,
                 speechGateway instanceof GenerationBoundSpeechGateway generationBoundSpeechGateway
                         ? generationBoundSpeechGateway
                         : null,
@@ -103,7 +101,6 @@ public final class CompanionRuntimeGraph implements AutoCloseable {
             ConfirmationCoordinator confirmationCoordinator,
             BargeInController bargeInController,
             SessionMemoryGateway sessionMemoryGateway,
-            MidTermToLongTermConsolidator memoryConsolidator,
             OversizedMemoryCompressor oversizedMemoryCompressor,
             GenerationBoundSpeechGateway generationBoundSpeechGateway,
             boolean initiallyStarted
@@ -120,7 +117,6 @@ public final class CompanionRuntimeGraph implements AutoCloseable {
         this.confirmationCoordinator = confirmationCoordinator;
         this.bargeInController = bargeInController;
         this.sessionMemoryGateway = sessionMemoryGateway;
-        this.memoryConsolidator = memoryConsolidator;
         this.oversizedMemoryCompressor = oversizedMemoryCompressor;
         this.generationBoundSpeechGateway = generationBoundSpeechGateway;
         this.started = new AtomicBoolean(initiallyStarted);
@@ -204,7 +200,6 @@ public final class CompanionRuntimeGraph implements AutoCloseable {
         Throwable cleanupFailure = null;
         cleanupFailure = runCleanup(cleanupFailure, () -> {
             if (sessionMemoryGateway != null) {
-                sessionMemoryGateway.setPendingConsolidationListener(null);
                 sessionMemoryGateway.setOversizedMemoryListener(null);
             }
         });
@@ -225,7 +220,6 @@ public final class CompanionRuntimeGraph implements AutoCloseable {
             }
         });
         cleanupFailure = runCleanup(cleanupFailure, () -> closeIfPresent(oversizedMemoryCompressor));
-        cleanupFailure = runCleanup(cleanupFailure, () -> closeIfPresent(memoryConsolidator));
         cleanupFailure = runCleanup(cleanupFailure, executionGateway::close);
         cleanupFailure = runCleanup(cleanupFailure, llmGateway::close);
 

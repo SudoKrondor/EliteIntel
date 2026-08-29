@@ -3,7 +3,6 @@ package elite.intel.ai.brain.vega.input;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.ai.brain.vega.CompanionRuntimeGraph;
-import elite.intel.ai.brain.vega.input.CompanionSubsystemGate;
 import elite.intel.ai.brain.vega.CompanionRuntimeTestSupport;
 import elite.intel.ai.brain.vega.execution.ExecutionGateway;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
@@ -17,12 +16,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CompanionSubsystemGateTest {
 
@@ -33,7 +27,6 @@ class CompanionSubsystemGateTest {
             "companion-llm",
             "companion-action",
             "companion-query",
-            "companion-consolidator",
             "companion-memory-compressor");
 
     private CompanionSubsystemGate gate;
@@ -91,7 +84,7 @@ class CompanionSubsystemGateTest {
             }
 
             @Override
-            public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+            public CompletableFuture<String> completePlainText(LlmRequest request) {
                 return CompletableFuture.completedFuture(null);
             }
         };

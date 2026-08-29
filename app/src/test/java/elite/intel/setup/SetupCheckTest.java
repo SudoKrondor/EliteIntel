@@ -138,6 +138,24 @@ class SetupCheckTest {
         assertFalse(checkWith(false, dir, dir).hasBindingsFiles(null));
     }
 
+    @Test
+    void aStockPresetFolderIsRecognisedAsElitesOwn(@TempDir Path dir) throws IOException {
+        // Elite's folder, no .binds: the commander runs a stock preset and has never saved custom controls.
+        Files.writeString(dir.resolve("StartPreset.4.start"), "ControlPad\n");
+
+        SetupCheck check = checkWith(false, dir, dir);
+
+        assertFalse(check.hasBindingsFiles(dir));
+        assertTrue(check.isEliteBindingsFolder(dir));
+    }
+
+    @Test
+    void aFolderWithoutAStartPresetIsNotElitesOwn(@TempDir Path dir) {
+        assertFalse(checkWith(false, dir, dir).isEliteBindingsFolder(dir));
+        assertFalse(checkWith(false, dir, dir).isEliteBindingsFolder(dir.resolve("nope")));
+        assertFalse(checkWith(false, dir, dir).isEliteBindingsFolder(null));
+    }
+
     // ── what actually gets said ──────────────────────────────────────────────
 
     /**
@@ -154,6 +172,20 @@ class SetupCheckTest {
                         text("speech.setup.noJournals"),
                         text("speech.setup.noBindings")),
                 spoken);
+    }
+
+    /**
+     * The bindings folder is right and the setting needs no touching, so the commander must not be told to go
+     * and change it - the fix for a never-customised stock preset is in the game.
+     */
+    @Test
+    void anUncustomisedStockPresetIsNotBlamedOnTheFolderSetting(@TempDir Path dir) throws IOException {
+        Files.createFile(dir.resolve("Journal.2026-08-11T200621.01.log"));
+        Files.writeString(dir.resolve("StartPreset.4.start"), "ControlPad\n");
+
+        List<String> spoken = capture(() -> checkWith(false, dir, dir).check());
+
+        assertEquals(List.of(text("speech.setup.noSavedBindings")), spoken);
     }
 
     @Test

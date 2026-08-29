@@ -38,7 +38,10 @@ public final class MemoryFactSourceRegistry {
                 new SubTypesScanner()
         );
         Set<String> seenIds = new HashSet<>();
-        Set<Class<?>> annotated = reflections.getTypesAnnotatedWith(RegisterMemoryFactSource.class);
+        // Reflection hands back an unordered set, and the facts block has a hard total cap - so without an order
+        // of our own, which source loses a slot when the block is full would vary between runs of the same build.
+        List<Class<?>> annotated = new ArrayList<>(reflections.getTypesAnnotatedWith(RegisterMemoryFactSource.class));
+        annotated.sort(Comparator.comparing(Class::getSimpleName));
         for (Class<?> type : annotated) {
             try {
                 Object instance = type.getDeclaredConstructor().newInstance();

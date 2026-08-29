@@ -14,7 +14,8 @@ import java.util.Set;
 
 /**
  * Voices one gameplay reaction. Narration mode converts bounded transient event data into a line; verbatim mode
- * uses an already finished line. In either mode, only that final line becomes the single EVENT fact.
+ * uses an already finished line. Neither mode stores anything: session memory is the conversation window the next
+ * commander prompt replays, and a gameplay narration was never replayed into it.
  */
 public final class EventThought extends Thought {
 
@@ -41,13 +42,14 @@ public final class EventThought extends Thought {
         }
     }
 
-    /** Voices and records the finished EVENT fact without an LLM round. */
+    /**
+     * Voices the finished line without an LLM round.
+     */
     private void runVerbatim() {
         voice(verbatimText, urgency() == Urgency.URGENT);
-        recordEventResult(verbatimText);
     }
 
-    /** Voices and records one valid LLM narration; a failed or interrupted round records nothing. */
+    /** Voices one valid LLM narration; a failed or interrupted round voices nothing. */
     private void runNarration() {
         ComposedPrompt prompt = composeInitialPrompt();
         LlmResult result = submitRound(prompt.messages(), prompt.tools(), prompt.profile());
@@ -57,7 +59,6 @@ public final class EventThought extends Thought {
         LlmToolInvocation invocation = result.toolInvocations().get(0);
         if (SpeakFunction.ID.equals(invocation.name())) {
             execute(invocation);
-            recordEventResult(spokenTextOf(invocation));
         }
     }
 

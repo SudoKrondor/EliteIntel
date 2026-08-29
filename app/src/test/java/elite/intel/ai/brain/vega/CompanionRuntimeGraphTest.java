@@ -1,14 +1,10 @@
 package elite.intel.ai.brain.vega;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.vega.CompanionNarrator;
-import elite.intel.ai.brain.vega.CompanionRuntimeGeneration;
-import elite.intel.ai.brain.vega.CompanionRuntimeGraph;
 import elite.intel.ai.brain.vega.execution.ExecutionGateway;
 import elite.intel.ai.brain.vega.execution.GenerationBoundExecutionGateway;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
 import elite.intel.ai.brain.vega.memory.MemoryGateway;
-import elite.intel.ai.brain.vega.memory.MemorySearchResult;
 import elite.intel.ai.brain.vega.memory.MemorySnapshot;
 import elite.intel.ai.brain.vega.mind.CompanionState;
 import elite.intel.ai.brain.vega.mind.DispatcherCompanionNarrator;
@@ -17,7 +13,6 @@ import elite.intel.ai.brain.vega.model.Urgency;
 import elite.intel.ai.brain.vega.model.execution.ExecutionRequest;
 import elite.intel.ai.brain.vega.model.llm.LlmRequest;
 import elite.intel.ai.brain.vega.model.llm.LlmResult;
-import elite.intel.ai.brain.vega.model.memory.MemoryKind;
 import elite.intel.ai.brain.vega.model.memory.MemoryRecord;
 import elite.intel.ai.brain.vega.model.speech.SpeechRequest;
 import elite.intel.ai.brain.vega.speech.GenerationBoundSpeechGateway;
@@ -26,13 +21,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CompanionRuntimeGraphTest {
 
@@ -125,7 +117,7 @@ class CompanionRuntimeGraphTest {
         }
 
         @Override
-        public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+        public CompletableFuture<String> completePlainText(LlmRequest request) {
             return new CompletableFuture<>();
         }
 
@@ -183,27 +175,6 @@ class CompanionRuntimeGraphTest {
 
         @Override
         public List<MemoryRecord> readRecentHistory() {
-            return List.of();
-        }
-
-        @Override
-        public MemorySearchResult recallMatching(String query, int limit) {
-            return MemorySearchResult.empty();
-        }
-
-        @Override
-        public Map<MemoryKind, String> longTermSummaries() {
-            return Map.of();
-        }
-
-        @Override
-        public void commitConsolidation(
-                MemoryKind kind, List<MemoryRecord> batch, String summary
-        ) {
-        }
-
-        @Override
-        public List<MemoryRecord> savedTextRecords() {
             return List.of();
         }
     }

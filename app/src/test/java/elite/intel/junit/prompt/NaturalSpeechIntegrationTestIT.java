@@ -72,23 +72,6 @@ public class NaturalSpeechIntegrationTestIT {
     static Stream<String> interrupt() {
         return Stream.of("stai zitto", "silenzio", "chiudi la bocca", "smettila di parlare");
     }
-    @ParameterizedTest(name = "[{index}] \"{0}\"")
-    @Order(12)
-    @MethodSource
-    void remember(String input) throws InterruptedException {
-        assertRouted(input, RememberCommand.ID);
-        assertFalse(harness.lastArgument(RememberCommand.ID, RememberCommand.PARAM_TEXT)
-                .orElseThrow().isBlank());
-    }
-
-    static Stream<String> remember() {
-        return Stream.of(
-                "ricordati che il nostro codice di attracco è Sierra Nine Four",
-                "memorizza che il nostro codice di attracco è Sierra Nine Four",
-                "non dimenticare che il nostro codice di attracco è Sierra Nine Four",
-                "salva in memoria che il punto d'incontro è Hutton Orbital",
-                "annota che il codice d'accesso della carrier è Delta Seven");
-    }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(13)

@@ -1,7 +1,5 @@
 package elite.intel.ai.brain.vega.llm;
 
-import elite.intel.ai.brain.vega.llm.CustomCommandKeyGenerator;
-import elite.intel.ai.brain.vega.llm.LlmGateway;
 import elite.intel.ai.brain.vega.model.llm.LlmRequest;
 import elite.intel.ai.brain.vega.model.llm.LlmResult;
 import org.junit.jupiter.api.Test;
@@ -11,9 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CustomCommandKeyGeneratorTest {
 
@@ -28,7 +24,7 @@ class CustomCommandKeyGeneratorTest {
             }
 
             @Override
-            public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+            public CompletableFuture<String> completePlainText(LlmRequest request) {
                 return CompletableFuture.completedFuture(text.apply(request));
             }
         };
@@ -92,7 +88,7 @@ class CustomCommandKeyGeneratorTest {
             }
 
             @Override
-            public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+            public CompletableFuture<String> completePlainText(LlmRequest request) {
                 return CompletableFuture.failedFuture(new TimeoutException("logical deadline"));
             }
         };

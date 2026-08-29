@@ -33,6 +33,26 @@ class CurrentStationFactSourceTest {
                 CurrentStationFactSource.format("x", null, null, null, 1));
     }
 
+    /**
+     * The cap covers the head as well, so a head built from an unbounded journal string cannot carry the line past
+     * the limit the facts block relies on.
+     */
+    @Test
+    void anOversizedHeadIsShortenedRatherThanBreakingTheCap() {
+        String line = CurrentStationFactSource.format("A very long station name ".repeat(20), "outpost", null, null, 0);
+
+        assertTrue(line.length() <= FactLine.MAX_CHARS);
+        assertTrue(line.endsWith("..."));
+    }
+
+    @Test
+    void shortenedKeepsWholeWordsAndLeavesShortTextAlone() {
+        assertEquals("station name", FactLine.shortened("station name", 20));
+        assertEquals("the quick...", FactLine.shortened("the quick brown fox", 12));
+        // A single word with no boundary to cut at still has to fit.
+        assertEquals("abcdefg...", FactLine.shortened("abcdefghijklmnop", 10));
+    }
+
     @Test
     void emptyWhenNoNameAndNoAttributes() {
         assertTrue(CurrentStationFactSource.format("", null, null, null, 0).isEmpty());

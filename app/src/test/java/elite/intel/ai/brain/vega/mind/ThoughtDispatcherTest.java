@@ -8,12 +8,7 @@ import elite.intel.ai.brain.vega.confirm.ConfirmationCoordinator;
 import elite.intel.ai.brain.vega.execution.ExecutionGateway;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
 import elite.intel.ai.brain.vega.memory.MemoryGateway;
-import elite.intel.ai.brain.vega.memory.MemorySearchResult;
 import elite.intel.ai.brain.vega.memory.MemorySnapshot;
-import elite.intel.ai.brain.vega.mind.CompanionState;
-import elite.intel.ai.brain.vega.mind.ThoughtDependencies;
-import elite.intel.ai.brain.vega.mind.ThoughtDispatcher;
-import elite.intel.ai.brain.vega.mind.UrgencyPolicy;
 import elite.intel.ai.brain.vega.model.GameStateSnapshot;
 import elite.intel.ai.brain.vega.model.Urgency;
 import elite.intel.ai.brain.vega.model.execution.ExecutionRequest;
@@ -36,7 +31,6 @@ import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -98,7 +92,7 @@ class ThoughtDispatcherTest {
             }
 
             @Override
-            public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+            public CompletableFuture<String> completePlainText(LlmRequest request) {
                 return CompletableFuture.completedFuture(null);
             }
         };
@@ -137,7 +131,7 @@ class ThoughtDispatcherTest {
             }
 
             @Override
-            public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+            public CompletableFuture<String> completePlainText(LlmRequest request) {
                 return CompletableFuture.completedFuture(null);
             }
         };
@@ -176,7 +170,7 @@ class ThoughtDispatcherTest {
             }
 
             @Override
-            public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+            public CompletableFuture<String> completePlainText(LlmRequest request) {
                 return CompletableFuture.completedFuture(null);
             }
         };
@@ -221,7 +215,7 @@ class ThoughtDispatcherTest {
                 }
 
                 @Override
-                public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+                public CompletableFuture<String> completePlainText(LlmRequest request) {
                     return CompletableFuture.completedFuture(null);
                 }
             };
@@ -269,7 +263,7 @@ class ThoughtDispatcherTest {
             }
 
             @Override
-            public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+            public CompletableFuture<String> completePlainText(LlmRequest request) {
                 return CompletableFuture.completedFuture(null);
             }
         };
@@ -312,7 +306,7 @@ class ThoughtDispatcherTest {
                 }
 
                 @Override
-                public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+                public CompletableFuture<String> completePlainText(LlmRequest request) {
                     return CompletableFuture.completedFuture(null);
                 }
             };
@@ -399,7 +393,7 @@ class ThoughtDispatcherTest {
             }
 
             @Override
-            public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+            public CompletableFuture<String> completePlainText(LlmRequest request) {
                 return CompletableFuture.completedFuture(null);
             }
         };
@@ -418,12 +412,9 @@ class ThoughtDispatcherTest {
         assertEquals(Set.of(SpeakFunction.ID),
                 requests.get(0).tools().stream().map(tool -> tool.name()).collect(java.util.stream.Collectors.toSet()),
                 "an event reaction offers only speak");
-        assertEquals(1, memory.writes.size(), "the completed event is one atomic record");
-        MemoryRecord event = memory.writes.get(0);
-        assertEquals(MemoryKind.EVENT, event.kind());
-        assertEquals(1, event.entryCount());
-        assertEquals(MemorySource.EVENT, event.entries().get(0).source());
-        assertEquals("Signals detected on the ring, Commander.", event.entries().get(0).content());
+        // A gameplay narration is voiced, never stored: the window exists to be replayed, and a narration
+        // was never replayed into a prompt.
+        assertTrue(memory.writes.isEmpty(), "an event reaction stores nothing");
     }
 
     @Test
@@ -563,7 +554,7 @@ class ThoughtDispatcherTest {
             }
 
             @Override
-            public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+            public CompletableFuture<String> completePlainText(LlmRequest request) {
                 return CompletableFuture.completedFuture(null);
             }
         };
@@ -625,7 +616,7 @@ class ThoughtDispatcherTest {
             }
 
             @Override
-            public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+            public CompletableFuture<String> completePlainText(LlmRequest request) {
                 return CompletableFuture.completedFuture(null);
             }
         };
@@ -718,7 +709,7 @@ class ThoughtDispatcherTest {
         }
 
         @Override
-        public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+        public CompletableFuture<String> completePlainText(LlmRequest request) {
             return CompletableFuture.completedFuture(null);
         }
     }
@@ -742,7 +733,7 @@ class ThoughtDispatcherTest {
         }
 
         @Override
-        public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+        public CompletableFuture<String> completePlainText(LlmRequest request) {
             return CompletableFuture.completedFuture(null);
         }
     }
@@ -761,7 +752,7 @@ class ThoughtDispatcherTest {
         }
 
         @Override
-        public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+        public CompletableFuture<String> completePlainText(LlmRequest request) {
             return CompletableFuture.completedFuture(null);
         }
     }
@@ -780,29 +771,8 @@ class ThoughtDispatcherTest {
         }
 
         @Override
-        public MemorySearchResult recallMatching(String query, int limit) {
-            return MemorySearchResult.empty();
-        }
-
-        @Override
-        public Map<MemoryKind, String> longTermSummaries() {
-            return Map.of();
-        }
-
-        @Override
-        public void commitConsolidation(
-                MemoryKind kind, List<MemoryRecord> batch, String summary
-        ) {
-        }
-
-        @Override
-        public List<MemoryRecord> savedTextRecords() {
-            return List.of();
-        }
-
-        @Override
         public MemorySnapshot snapshot() {
-            return new MemorySnapshot(List.of(), Map.of(), Map.of(), Map.of(), List.of());
+            return new MemorySnapshot(List.of());
         }
 
         List<MemoryEntry> entries() {
