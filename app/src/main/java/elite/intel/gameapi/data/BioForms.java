@@ -14,9 +14,22 @@ import java.util.*;
  * via longest-known-prefix match.</p>
  *
  * <p>Symbol stems and colony ranges are sourced from EDCD/EDDI (CC0-compatible facts) and verified
- * against real journals; credit values, colony ranges and biome-prediction strings are the project's
- * own curated data. Callers may pass a raw journal symbol, a bare stem, or an English display name -
- * all three normalize to the same key.</p>
+ * against real journals; colony ranges and biome-prediction strings are the project's own curated
+ * data. Callers may pass a raw journal symbol, a bare stem, or an English display name - all three
+ * normalize to the same key.</p>
+ *
+ * <p><b>Credit values were audited on 2026-08-30</b> against two independent community tables
+ * (EDCD/EDDI {@code DataDefinitions/OrganicSpecies.cs} and EDMC-BioScan's per-genus rulesets) and
+ * against 188 real {@code SellOrganicData} rows covering 40 species. 102 of 117 already agreed to
+ * the credit; 15 did not and were corrected. Three of the fifteen were exactly 16,777,215 - that is
+ * {@code 0xFFFFFF}, a 24-bit clamp inherited from whatever produced the original table, not a game
+ * value; one of those (Concha Biconcavis) is clamped in BioScan too, so EDDI is the only source that
+ * carries its real figure.</p>
+ *
+ * <p><b>The first-discovery bonus is always exactly 4x the base value</b> - Vista Genomics pays 5x in
+ * total for a first log. Measured, not assumed: all 182 bonus-bearing rows in those journals gave a
+ * ratio of exactly 4.000. Keep the invariant when editing a value, and prefer correcting a row
+ * against a real sale over any table, ours included.</p>
  */
 public class BioForms {
 
@@ -78,12 +91,12 @@ public class BioForms {
 
         // Amphora Plant
         genus("Vents", "Amphora Plant", 100, "Planet:Any|Atmosphere:None|Gravity:Any|Temperature:Any|Volcanism:None|System:Star Type A,Earth-Like World,Ammonia World,Gas Giant with Life,>12000Ls from star");
-        species("Vents", "Vents", "Amphora Plant", 3626400, 14505600, 100);
+        species("Vents", "Vents", "Amphora Plant", 1628800, 6515200, 100);
 
         // Anemone
         genus("Sphere", "Anemone", 100, "Planet:Any|Atmosphere:None,Thin|Gravity:Any|Temperature:Any|Volcanism:None|System:Star Type varies by species");
         species("Sphere", "SphereEFGH", "Anemone Blatteum Bioluminescent", 1499900, 5999600, 100);
-        species("Sphere", "SphereABCD_01", "Anemone Croceum", 3399800, 13599200, 100);
+        species("Sphere", "SphereABCD_01", "Anemone Croceum", 1499900, 5999600, 100);
         species("Sphere", "Sphere", "Anemone Luteolum", 1499900, 5999600, 100);
         species("Sphere", "SphereEFGH_02", "Anemone Prasinum Bioluminescent", 1499900, 5999600, 100);
         species("Sphere", "SphereABCD_02", "Anemone Puniceum", 1499900, 5999600, 100);
@@ -93,10 +106,10 @@ public class BioForms {
 
         // Bacterium
         genus("Bacterial", "Bacterium", 500, "Planet:Any|Atmosphere:Any|Gravity:Any|Temperature:Any|Volcanism:Any|System:Any");
-        species("Bacterial", "Bacterial_02", "Bacterium Nebulus", 9116600, 36466400, 500);
+        species("Bacterial", "Bacterial_02", "Bacterium Nebulus", 5289900, 21159600, 500);
         species("Bacterial", "Bacterial_04", "Bacterium Acies", 1000000, 4000000, 500);
         species("Bacterial", "Bacterial_11", "Bacterium Omentum", 4638900, 18555600, 500);
-        species("Bacterial", "Bacterial_03", "Bacterium Scopulum", 8633800, 34535200, 500);
+        species("Bacterial", "Bacterial_03", "Bacterium Scopulum", 4934500, 19738000, 500);
         species("Bacterial", "Bacterial_13", "Bacterium Verrata", 3897000, 15588000, 500);
         species("Bacterial", "Bacterial_10", "Bacterium Bullaris", 1152500, 4610000, 500);
         species("Bacterial", "Bacterial_05", "Bacterium Vesicula", 1000000, 4000000, 500);
@@ -113,12 +126,12 @@ public class BioForms {
 
         // Brain Tree
         genus("Brancae", "Brain Tree", 100, "Planet:Any|Atmosphere:Any|Gravity:Any|Temperature:100-500K|Volcanism:None|System:Earth-Like World,Gas Giant with Water-based Life,Roseum Any");
-        species("Brancae", "SeedEFGH_01", "Brain Tree Aureum", 3565100, 14260400, 100);
-        species("Brancae", "SeedABCD_01", "Brain Tree Gypseeum", 3565100, 14260400, 100);
-        species("Brancae", "SeedEFGH_03", "Brain Tree Lindigoticum", 3565100, 14260400, 100);
+        species("Brancae", "SeedEFGH_01", "Brain Tree Aureum", 1593700, 6374800, 100);
+        species("Brancae", "SeedABCD_01", "Brain Tree Gypseeum", 1593700, 6374800, 100);
+        species("Brancae", "SeedEFGH_03", "Brain Tree Lindigoticum", 1593700, 6374800, 100);
         species("Brancae", "SeedEFGH", "Brain Tree Lividum", 1593700, 6374800, 100);
-        species("Brancae", "SeedABCD_02", "Brain Tree Ostrinum", 3565100, 14260400, 100);
-        species("Brancae", "SeedEFGH_02", "Brain Tree Puniceum", 3565100, 14260400, 100);
+        species("Brancae", "SeedABCD_02", "Brain Tree Ostrinum", 1593700, 6374800, 100);
+        species("Brancae", "SeedEFGH_02", "Brain Tree Puniceum", 1593700, 6374800, 100);
         species("Brancae", "Seed", "Brain Tree Roseum", 1593700, 6374800, 100);
         species("Brancae", "SeedABCD_03", "Brain Tree Viride", 1593700, 6374800, 100);
 
@@ -139,13 +152,13 @@ public class BioForms {
         // Concha
         genus("Conchas", "Concha", 150, "Planet:Rocky,High Metal Content|Atmosphere:Ammonia,Nitrogen,CO2,CO2-Rich,Water,Water-Rich|Gravity:Any|Temperature:180-195K|Volcanism:None|System:Any");
         species("Conchas", "Conchas_02", "Concha Aureolas", 7774700, 31098800, 150);
-        species("Conchas", "Conchas_04", "Concha Biconcavis", 16777215, 67108860, 150);
+        species("Conchas", "Conchas_04", "Concha Biconcavis", 19010800, 76043200, 150);
         species("Conchas", "Conchas_03", "Concha Labiata", 2352400, 9409600, 150);
         species("Conchas", "Conchas_01", "Concha Renibus", 4572400, 18289600, 150);
 
         // Crystalline Shard
         genus("Ground_Struct_Ice", "Crystalline Shard", 100, "Planet:Any|Atmosphere:None|Gravity:Any|Temperature:Any|Volcanism:None|System:Star Type A,F,G,K,M,S,Earth-Like World,Ammonia World,Gas Giant with Life,>12000Ls from star");
-        species("Ground_Struct_Ice", "Ground_Struct_Ice", "Crystalline Shard", 3626400, 14505600, 100);
+        species("Ground_Struct_Ice", "Ground_Struct_Ice", "Crystalline Shard", 1628800, 6515200, 100);
 
         // Electricae
         genus("Electricae", "Electricae", 1000, "Planet:Icy|Atmosphere:Helium,Neon,Argon|Gravity:<=0.27|Temperature:Any|Volcanism:None|System:Any");
@@ -156,7 +169,7 @@ public class BioForms {
         genus("Fonticulus", "Fonticulua", 500, "Planet:Icy|Atmosphere:Argon,Argon-Rich,Methane,Oxygen,Nitrogen,Neon,Neon-Rich|Gravity:Any|Temperature:Any|Volcanism:None|System:Any");
         species("Fonticulus", "Fonticulus_02", "Fonticulua Campestris", 1000000, 4000000, 500);
         species("Fonticulus", "Fonticulus_06", "Fonticulua Digitos", 1804100, 7216400, 500);
-        species("Fonticulus", "Fonticulus_05", "Fonticulua Fluctus", 16777215, 67108860, 500);
+        species("Fonticulus", "Fonticulus_05", "Fonticulua Fluctus", 20000000, 80000000, 500);
         species("Fonticulus", "Fonticulus_04", "Fonticulua Lapida", 3111000, 12444000, 500);
         species("Fonticulus", "Fonticulus_01", "Fonticulua Segmentatus", 19010800, 76043200, 500);
         species("Fonticulus", "Fonticulus_03", "Fonticulua Upupam", 5727600, 22910400, 500);
@@ -202,7 +215,7 @@ public class BioForms {
 
         // Sinuous Tuber
         genus("Tubers", "Sinuous Tuber", 100, "Planet:Any|Atmosphere:None|Gravity:Any|Temperature:Any|Volcanism:Any|System:Galactic Core Preferred");
-        species("Tubers", "TubeABCD_02", "Sinuous Tuber Albidum", 3425600, 13702400, 100);
+        species("Tubers", "TubeABCD_02", "Sinuous Tuber Albidum", 1514500, 6058000, 100);
         species("Tubers", "TubeEFGH", "Sinuous Tuber Blatteum", 1514500, 6058000, 100);
         species("Tubers", "TubeABCD_03", "Sinuous Tuber Caeruleum", 1514500, 6058000, 100);
         species("Tubers", "TubeEFGH_01", "Sinuous Tuber Lindigoticum", 1514500, 6058000, 100);
@@ -214,7 +227,7 @@ public class BioForms {
         // Stratum
         genus("Stratum", "Stratum", 500, "Planet:Rocky,High Metal Content|Atmosphere:SO2,CO2,CO2-Rich,Ammonia,Water,Water-Rich|Gravity:Any|Temperature:>=165K|Volcanism:None|System:Any");
         species("Stratum", "Stratum_04", "Stratum Araneamus", 2448900, 9795600, 500);
-        species("Stratum", "Stratum_06", "Stratum Cucumisis", 16777215, 67108860, 500);
+        species("Stratum", "Stratum_06", "Stratum Cucumisis", 16202800, 64811200, 500);
         species("Stratum", "Stratum_01", "Stratum Excutitus", 2448900, 9795600, 500);
         species("Stratum", "Stratum_08", "Stratum Frigus", 2637500, 10550000, 500);
         species("Stratum", "Stratum_03", "Stratum Laminamus", 2788300, 11153200, 500);
@@ -245,7 +258,7 @@ public class BioForms {
         species("Tussocks", "Tussocks_07", "Tussock Serrati", 4447100, 17788400, 200);
         species("Tussocks", "Tussocks_13", "Tussock Stigmasis", 19010800, 76043200, 200);
         species("Tussocks", "Tussocks_12", "Tussock Triticum", 7774700, 31098800, 200);
-        species("Tussocks", "Tussocks_02", "Tussock Ventusa", 3277700, 13110800, 200);
+        species("Tussocks", "Tussocks_02", "Tussock Ventusa", 3227700, 12910800, 200);
         species("Tussocks", "Tussocks_14", "Tussock Virgam", 14313700, 57254800, 200);
 
         SPECIES_STEMS_LONGEST_FIRST.addAll(SPECIES.keySet());

@@ -41,6 +41,11 @@ public class AnalyzeBioSamplesPlanetSurfaceQuery extends BaseQueryAnalyzer imple
         if (currentLocation.getBodyId() < 0) {
             return process(StringUtls.localizedResponse("query.bio.noLocation"));
         }
+        if (currentLocation.isBioScansCompleted()) {
+            // Sampled out, and the sample list this would otherwise be derived from is cleared by a
+            // sale - so without this the answer flips back to "everything still to do" after selling.
+            return process(StringUtls.localizedResponse("query.bio.surveyAlreadyComplete"));
+        }
         List<BioSampleDto> partialScans = currentLocation.getPartialBioSamples();
         List<GenusDto> genusListForCurrentLocation = currentLocation.getGenus();
         List<ExoBio.DataDto> completedScansForThisLocation = completedScansForPlanet(playerSession.getBioCompletedSamples(), currentLocation.getPlanetName());

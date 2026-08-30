@@ -79,6 +79,15 @@
              often that happens is the only way to tell a slow disk from a stuck market. -->
         <Logger name="elite.intel.gameapi.AuxiliaryFilesMonitor" level="warn"/>
         <Logger name="elite.intel.gameapi.journal.subscribers" level="error"/>
+        <!-- info, and louder than elite.intel, or this logger writes nothing at all. Exobiology
+             payouts are fixed game constants that the journal states only at the moment of sale, so
+             everything spoken before then comes from a table curated by hand - and a hand-curated
+             table drifts silently. The 2026-08-30 audit found 15 wrong rows in 117 (three of them
+             the constant 0xFFFFFF, a 24-bit clamp) and nothing in the app had ever noticed. These
+             lines are how the next drift arrives: in a commander's diagnostics bundle, already
+             carrying the corrected figure. Edge-triggered on a SALE - a few times a session at
+             most, one summary line plus one per disagreeing row. -->
+        <Logger name="elite.intel.gameapi.data.BioFormsValueAudit" level="info"/>
         <Logger name="elite.intel.gameapi.journal.subscribers.LocationTrackingSubscriber" level="error"/>
         <Logger name="elite.intel.gameapi.journal.subscribers.SilentPersistenceSubscriber" level="error"/>
         <Logger name="elite.intel.gameapi.journal.EventRegistry" level="error"/>

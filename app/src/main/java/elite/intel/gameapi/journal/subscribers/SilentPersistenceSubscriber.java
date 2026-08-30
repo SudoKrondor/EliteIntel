@@ -293,8 +293,13 @@ public class SilentPersistenceSubscriber {
         location.setTidalLocked(event.isTidalLock());
         location.setAtmosphere(event.getAtmosphereType());
         location.setDistance(event.getDistanceFromArrivalLS());
-        location.setOurDiscovery(!event.isWasDiscovered());
-        location.setWeMappedIt(!event.isWasMapped());
+        // Same guard the live path applies: a nav beacon's discovery flags describe how this scan
+        // learned about the body, not who charted it, and it reports WasDiscovered:false for bodies
+        // settled decades ago. See ScanEventSubscriber#carriesNoDiscoveryInformation.
+        if (!ScanEventSubscriber.carriesNoDiscoveryInformation(event)) {
+            location.setOurDiscovery(!event.isWasDiscovered());
+            location.setWeMappedIt(!event.isWasMapped());
+        }
         location.setOrbitalPeriod(event.getOrbitalPeriod());
         location.setRotationPeriod(event.getRotationPeriod());
         location.setAxialTilt(event.getAxialTilt());

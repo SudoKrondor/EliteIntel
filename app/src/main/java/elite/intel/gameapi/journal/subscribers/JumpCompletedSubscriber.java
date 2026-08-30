@@ -214,7 +214,14 @@ public class JumpCompletedSubscriber {
                 stellarObject.setZ(starPos[2]);
             }
             if (data.getDiscovery() != null) {
-                stellarObject.setOurDiscovery(data.getDiscovery().getCommander() == null);
+                // EDSM can only contradict a discovery claim, never make one. It holds what commanders
+                // chose to upload, so "no discoverer recorded" covers most of the galaxy and reading it
+                // as "nobody got here first" flagged ordinary charted bodies as ours - which then paid a
+                // first-discovery bonus into every exobiology projection for them. A named commander is
+                // real evidence; silence is not, and the journal's own WasDiscovered settles those.
+                if (data.getDiscovery().getCommander() != null) {
+                    stellarObject.setOurDiscovery(false);
+                }
                 stellarObject.setDiscoveredBy(data.getDiscovery().getCommander());
                 stellarObject.setDiscoveredOn(data.getDiscovery().getDate());
             }

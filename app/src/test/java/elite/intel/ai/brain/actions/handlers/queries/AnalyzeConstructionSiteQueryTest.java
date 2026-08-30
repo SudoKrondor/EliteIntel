@@ -11,9 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The tonnages this query hands the model. Everything asserted here is a figure the model is told to read
@@ -135,6 +133,41 @@ class AnalyzeConstructionSiteQueryTest {
                 "a journal symbol in the payload is a journal symbol read out loud");
         assertEquals(105, lineFor(lines, "Water Purifiers").stillToBuyTonnes(),
                 "the smallest line on the build, and still answerable");
+    }
+
+    /**
+     * The payload is serialized with nulls omitted, so a field that is absent is one the model cannot
+     * narrate. A build merely under way used to arrive as {@code complete: false, failed: false} beside a
+     * site count, and the answer to "how much steel do we still need" opened with "the build is not
+     * finished and has not failed. We are hauling builds to eleven other locations." Both of those are
+     * sentences about nothing, and they arrived before the number the commander asked for.
+     */
+    @Test
+    @DisplayName("a build merely under way carries no state for the model to read out")
+    void anInProgressSoloBuildOmitsTheBoilerplate() {
+        String yaml = new AnalyzeConstructionSiteQuery.DataDto(
+                "Orbital Construction Site: Margheriti Gateway", "Hyades Sector CQ-Y d80", 34,
+                null, 1, null, 3, 8_500, "Langford Prospect",
+                AnalyzeConstructionSiteQuery.report(wittHub(Map.of()), null, Set.of())).toYaml();
+
+        assertFalse(yaml.contains("buildState"), "nothing to say about a build that is simply under way");
+        assertFalse(yaml.contains("otherSitesTracked"), "no other builds means no sentence about them");
+        assertTrue(yaml.contains("percentComplete: 34"), "the figures a status answer needs are still there");
+    }
+
+    /**
+     * The other half: when there IS something to say, it is present and it is one word.
+     */
+    @Test
+    @DisplayName("a finished build and other sites in flight are both reported")
+    void aFinishedBuildAndOtherSitesArePresent() {
+        String yaml = new AnalyzeConstructionSiteQuery.DataDto(
+                "Margheriti Gateway", "Hyades Sector CQ-Y d80", 100,
+                "complete", 0, 11, 0, 0, null,
+                List.of()).toYaml();
+
+        assertTrue(yaml.contains("buildState: \"complete\"") || yaml.contains("buildState: complete"), yaml);
+        assertTrue(yaml.contains("otherSitesTracked: 11"), yaml);
     }
 
     /**

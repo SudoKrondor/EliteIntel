@@ -23,10 +23,12 @@ import java.util.*;
  * route always keeps the card. There is only room for one.
  * <p>
  * Every poll re-derives the card from stored state - the genuses a DSS wrote to
- * the body, less the samples the scans recorded - so nothing here has to be
- * remembered or persisted, and the card is the same after a restart as it was
- * before one. The DSS itself needs no wiring: the poll that follows it finds the
- * body because the row now has genuses on it.
+ * the body, less the samples the scans recorded - so the card is the same after a
+ * restart as it was before one. The DSS itself needs no wiring: the poll that
+ * follows it finds the body because the row now has genuses on it. The one thing
+ * the derivation cannot recover is a survey that has been finished and sold, since
+ * selling clears the samples; the body carries a completion flag for that case and
+ * a flagged body never gets a card.
  * <p>
  * The card follows the commander rather than the scan: the body being stood on
  * wins, then a body with samples already started, then the rest in body order.
@@ -126,6 +128,10 @@ public class ExobiologyObjectiveSource implements HudObjectiveSource {
         if (body == null || body.getPlanetName() == null || body.getPlanetName().isBlank()) {
             return Optional.empty();
         }
+        // A body sampled out stays sampled out, and the stored flag is the only thing that still says
+        // so after a sale: selling clears the completed samples the remainder below is derived from,
+        // which brought the whole genus list back onto the card as work to do.
+        if (body.isBioScansCompleted()) return Optional.empty();
         List<GenusDto> detected = body.getGenus();
         if (detected == null || detected.isEmpty()) return Optional.empty();
 
@@ -149,7 +155,7 @@ public class ExobiologyObjectiveSource implements HudObjectiveSource {
                 // colonies to walk to, which is the only number that matters then.
                 rows.add(HudRow.progress(label, sampled, SAMPLES_PER_GENUS, HudRow.State.WARN));
             } else {
-                rows.add(HudRow.of(label, payout(genus)));
+                rows.add(HudRow.of(label, payout(genus, body.isOurDiscovery())));
             }
         }
         if (remaining.size() > shown) {
@@ -218,9 +224,13 @@ public class ExobiologyObjectiveSource implements HudObjectiveSource {
 
     /**
      * Blank rather than "0 cr" when we hold no payout figure for the genus.
+     * <p>
+     * The first-discovery bonus is counted only on a body we charted ourselves. Elsewhere it is a
+     * maybe - the journal never says whether another commander has already sampled here - and a row
+     * with one number on it has no room to say "maybe", so the certain figure is the one shown.
      */
-    private static String payout(GenusDto genus) {
-        long reward = genus.getRewardInCredits() + genus.getBonusCreditsForFirstDiscovery();
+    private static String payout(GenusDto genus, boolean ourDiscovery) {
+        long reward = genus.getRewardInCredits() + (ourDiscovery ? genus.getBonusCreditsForFirstDiscovery() : 0);
         return reward > 0 ? HudText.credits(reward) : "";
     }
 

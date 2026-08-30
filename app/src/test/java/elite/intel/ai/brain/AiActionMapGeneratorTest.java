@@ -106,6 +106,7 @@ class AiActionMapGeneratorTest {
             "find_construction_site_commodity",
             "navigate_to_construction_site",
             "dismiss_construction_site",
+            "set_current_body_exobiology_survey_complete",
             "find_encoded_material_trader",
             "find_guardian_technology_broker",
             "find_human_technology_broker",

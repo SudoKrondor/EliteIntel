@@ -105,12 +105,46 @@ class ExobiologyObjectiveCardTest {
         GenusDto bacterium = genus("Bacterium", "$Codex_Ent_Bacterial_Genus_Name;");
         bacterium.setRewardInCredits(1_000_000);
         bacterium.setBonusCreditsForFirstDiscovery(500_000);
+        LocationDto body = bodyWith(bacterium);
+        body.setOurDiscovery(true);
 
-        HudObjective card = ExobiologyObjectiveSource.card(bodyWith(bacterium), List.of(), ID).orElseThrow();
+        HudObjective card = ExobiologyObjectiveSource.card(body, List.of(), ID).orElseThrow();
         HudRow genusRow = card.rows().get(1);
 
         assertFalse(genusRow.hasProgress());
         assertEquals("1,500,000 cr", genusRow.value());
+    }
+
+    /**
+     * Vista Genomics pays the bonus for the first log of an organism, which is a different question
+     * from who charted the body - another commander can have found the planet and never landed on it,
+     * or landed and sampled it out. On a body we did not chart the answer is unknowable, so the row
+     * quotes only what the sample is certainly worth rather than a figure that may never arrive.
+     */
+    @Test
+    void aBodySomeoneElseChartedQuotesNoFirstDiscoveryBonus() {
+        GenusDto bacterium = genus("Bacterium", "$Codex_Ent_Bacterial_Genus_Name;");
+        bacterium.setRewardInCredits(1_000_000);
+        bacterium.setBonusCreditsForFirstDiscovery(500_000);
+        LocationDto body = bodyWith(bacterium);
+        body.setOurDiscovery(false);
+
+        HudObjective card = ExobiologyObjectiveSource.card(body, List.of(), ID).orElseThrow();
+
+        assertEquals("1,000,000 cr", card.rows().get(1).value());
+    }
+
+    /**
+     * The completed samples the remainder is derived from are session state that a sale clears, so
+     * without the flag on the body a sold-off survey came back onto the card as work still to do.
+     */
+    @Test
+    void aBodyFlaggedSampledOutShowsNoCardEvenWithNoSamplesLeftInSession() {
+        LocationDto body = bodyWith(genus("Bacterium", "$Codex_Ent_Bacterial_Genus_Name;"),
+                genus("Fonticulua", "$Codex_Ent_Fonticulus_Genus_Name;"));
+        body.setBioScansCompleted(true);
+
+        assertTrue(ExobiologyObjectiveSource.card(body, List.of(), ID).isEmpty());
     }
 
     /**
@@ -122,10 +156,12 @@ class ExobiologyObjectiveCardTest {
         GenusDto bacterium = genus("Bacterium", "$Codex_Ent_Bacterial_Genus_Name;");
         bacterium.setRewardInCredits(1_000_000);
         bacterium.setBonusCreditsForFirstDiscovery(500_000);
+        LocationDto body = bodyWith(bacterium);
+        body.setOurDiscovery(true);
 
         SystemSession.getInstance().setLanguage(Language.IT);
 
-        HudObjective card = ExobiologyObjectiveSource.card(bodyWith(bacterium), List.of(), ID).orElseThrow();
+        HudObjective card = ExobiologyObjectiveSource.card(body, List.of(), ID).orElseThrow();
 
         assertEquals("1.500.000 cr", card.rows().get(1).value());
     }

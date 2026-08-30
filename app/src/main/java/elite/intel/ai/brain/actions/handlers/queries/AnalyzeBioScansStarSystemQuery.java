@@ -3,10 +3,10 @@ package elite.intel.ai.brain.actions.handlers.queries;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
 import elite.intel.gameapi.journal.events.dto.BioSampleDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.ExoBio;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -80,6 +80,10 @@ public class AnalyzeBioScansStarSystemQuery extends BaseQueryAnalyzer implements
         Collection<LocationDto> locations = locationManager.findAllBySystemAddress(playerSession.getLocationData().getSystemAddress());
 
         for (LocationDto location : locations) {
+            // A body recorded as sampled out is finished for good, and the sample count below cannot
+            // show that on its own: selling organic data clears the samples it counts, after which a
+            // finished body reads as untouched and comes back as outstanding work.
+            if (location.isBioScansCompleted()) continue;
             int detected = bioSignalsDetected(location);
             int completed = getCompletedSamples(location.getPlanetName());
             if (detected > 0) {
@@ -124,22 +128,11 @@ public class AnalyzeBioScansStarSystemQuery extends BaseQueryAnalyzer implements
     }
 
     /**
-     * Bio signals known for this body, taking the higher of the two independent sources: the FSS signal list and the
-     * body's own {@code bioSignals} count (set by DSS/SAA). Either can be absent - a body sampled on foot without an
-     * FSS pass has no signal list at all - and a zero from an absent source must not be read as "no organics here".
+     * Bio signals known for this body. Shared with the command that records a survey as already done by
+     * hand, which needs the same answer to decide whether a body is one biology applies to at all.
      */
     static int bioSignalsDetected(LocationDto location) {
-        int fromFssSignals = 0;
-        List<FSSBodySignalsEvent.Signal> fssSignals = location.getFssSignals();
-        if (fssSignals != null) {
-            for (FSSBodySignalsEvent.Signal signal : fssSignals) {
-                String type = signal.getTypeLocalised();
-                if (type != null && type.toLowerCase().contains("bio")) {
-                    fromFssSignals += signal.getCount();
-                }
-            }
-        }
-        return Math.max(fromFssSignals, location.getBioSignals());
+        return ExoBio.bioSignalsDetected(location);
     }
 
     /**

@@ -6,12 +6,8 @@ import elite.intel.db.FuzzySearch;
 import elite.intel.db.dao.ConstructionSiteDao.Site;
 import elite.intel.db.managers.ConstructionSiteManager;
 import elite.intel.gameapi.StationName;
-import elite.intel.gameapi.colonisation.CarrierStockpile;
+import elite.intel.gameapi.colonisation.*;
 import elite.intel.gameapi.colonisation.CarrierStockpile.Stash;
-import elite.intel.gameapi.colonisation.ConstructionCargo;
-import elite.intel.gameapi.colonisation.ConstructionShopping;
-import elite.intel.gameapi.colonisation.ManifestAge;
-import elite.intel.gameapi.colonisation.ShoppingShelves;
 import elite.intel.gameapi.colonisation.ShoppingShelves.Shop;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
@@ -58,7 +54,10 @@ public class AnalyzeConstructionSiteQuery extends BaseQueryAnalyzer implements I
                 + "complete the build is, which commodities it still needs and how many tonnes of each, how "
                 + "much is already bought for it in the ship or on the carrier, and how many tonnes of a "
                 + "commodity are left to buy at this market. Use for questions about the construction site, "
-                + "the colony build, what the site still needs, or how much of something to buy for it.";
+                + "the colony build or what the site still needs, and for EVERY question asking how much or "
+                + "how many tonnes of something the build wants - including a commodity the commander names, "
+                + "as in 'how much steel do we still need to buy'. It reports figures only: it never searches "
+                + "markets and never plots a route.";
     }
 
     @Override
@@ -86,21 +85,21 @@ public class AnalyzeConstructionSiteQuery extends BaseQueryAnalyzer implements I
                 shop.map(Shop::stock).orElse(Set.of()));
 
         String instructions = """
-                Report progress on the colonisation construction site.
+                Answer the commander's question about the colonisation construction site, then stop.
+                The HUD already shows the site and its progress, so never volunteer a status report.
                 
                 Data fields:
                 - siteName: the construction site's name. Say it as written. This is the site the commander
                   was last docked at, which is the one "the construction site" always means.
-                - sitesTracked: how many builds the commander is hauling to. Mention that there are others
-                  ONLY when this is greater than 1, and only in passing.
-                - starSystem: the system it is in; may be null if never recorded.
+                - starSystem: the system it is in; may be absent.
                 - percentComplete: build completion, already rounded, 0-100.
-                - complete / failed: build state flags.
-                - lastSeenUtc: when this manifest was read off the site's own panel, ISO-8601 UTC.
-                - staleHours: whole hours since then, already computed.
+                - buildState: present ONLY when the build is finished or has failed. Say it when present.
+                - staleHours: whole hours since this manifest was read off the site's own panel.
+                - otherSitesTracked: other builds the commander is also hauling to. Present only when there
+                  are some, and only worth a word if they ask about other builds.
                 - outstandingCommodities: how many commodities still want tonnes.
                 - totalTonnesOutstanding: tonnes still wanted across all of them.
-                - marketName: the market the commander can buy from right now; null when there is none, and
+                - marketName: the market the commander can buy from right now; absent when there is none, and
                   then nothing can be bought "here" and there is no "here" to speak of.
                 - lines: goods already part bought first, then the largest requirement. For each -
                   commodity (say this name), outstandingTonnes (what the site still wants in total),
@@ -108,29 +107,32 @@ public class AnalyzeConstructionSiteQuery extends BaseQueryAnalyzer implements I
                   left to buy - ALREADY SUBTRACTED, never work it out yourself), soldHere (whether marketName
                   stocks it), paymentPerTonne (credits the depot pays).
                 
-                Lead with the percentage and the site name. Name the next two or three commodities with
-                their stillToBuyTonnes. If staleHours is 1 or more, say the figures are from the last
-                visit and may have moved - other commanders deliver to the same site. If complete is
-                true, say the build is finished. If failed is true, say the build failed.
+                Shape the answer to the question asked:
+                - HOW MUCH of something, or what to buy next: open with the tonnage. The number is the first
+                  thing out of your mouth, and one sentence is the whole answer.
+                - Asked about one commodity: answer about that one only.
+                - Asked what to buy HERE: use only lines whose soldHere is true, and say plainly that a good
+                  with soldHere false is not sold at marketName rather than giving its tonnage as if it
+                  could be bought.
+                - Only when asked how the build is GOING, or for its status: percentComplete and siteName,
+                  then two or three commodities with their stillToBuyTonnes.
                 
-                Asked about one commodity, answer about that one only. Asked what to buy HERE, use only
-                lines whose soldHere is true, and say plainly that a good with soldHere false is not sold
-                at marketName rather than giving its tonnage as if it could be bought.
+                When staleHours is 1 or more, hang "as of {staleHours} hours ago" off the end of the figure
+                you give - a trailing clause, never an opening one. Other commanders deliver to this site.
                 A commodity whose stillToBuyTonnes is 0 is already bought in full and needs delivering,
                 not buying.
-                Do not read out any figure that is not in the data.
+                A field that is absent has nothing to say: it is never a negative to report. Do not read out
+                any figure that is not in the data.
                 """;
 
         long totalOutstanding = manifest.stream().mapToLong(ConstructionCargo.Outstanding::outstanding).sum();
         return process(new AiDataStruct(instructions, new DataDto(
                 site.getStationName(),
-                constructionSiteManager.siteCount(),
                 site.getStarSystem(),
                 (int) Math.round(site.getProgress() * 100),
-                site.isComplete(),
-                site.isFailed(),
-                site.getVisitedAt(),
+                buildState(site),
                 ManifestAge.hoursSince(site.getVisitedAt()),
+                otherSitesTracked(),
                 manifest.size(),
                 totalOutstanding,
                 marketName(shop),
@@ -160,6 +162,24 @@ public class AnalyzeConstructionSiteQuery extends BaseQueryAnalyzer implements I
                         onTheShelves.contains(line.symbol()),
                         line.good().payment()))
                 .toList();
+    }
+
+    /**
+     * The one word worth saying about a build's state, or null while it is simply under way.
+     */
+    private static String buildState(Site site) {
+        if (site.isFailed()) return "failed";
+        if (site.isComplete()) return "complete";
+        return null;
+    }
+
+    /**
+     * Builds other than this one, or null when this is the only one - so "we are also hauling to eleven
+     * other locations" cannot turn up in the answer to a question about a single commodity.
+     */
+    private Integer otherSitesTracked() {
+        int others = constructionSiteManager.siteCount() - 1;
+        return others > 0 ? others : null;
     }
 
     /**
@@ -206,9 +226,17 @@ public class AnalyzeConstructionSiteQuery extends BaseQueryAnalyzer implements I
         }
     }
 
-    record DataDto(String siteName, int sitesTracked, String starSystem, int percentComplete, boolean complete,
-                   boolean failed,
-                   String lastSeenUtc, long staleHours, int outstandingCommodities, long totalTonnesOutstanding,
+    /**
+     * WHY several fields are nullable rather than false or zero: the payload is serialized with nulls
+     * omitted, so a null field is one the model never sees and therefore cannot narrate. A build that is
+     * merely in progress used to arrive as {@code complete: false, failed: false}, and the answer to "how
+     * much steel do we need" opened with "the build is not finished and has not failed" - a sentence about
+     * two things that had not happened. State that is only worth saying when it is true is now only present
+     * when it is true.
+     */
+    record DataDto(String siteName, String starSystem, int percentComplete, String buildState,
+                   long staleHours, Integer otherSitesTracked,
+                   int outstandingCommodities, long totalTonnesOutstanding,
                    String marketName, List<LineDto> lines) implements ToYamlConvertable {
         @Override
         public String toYaml() {
