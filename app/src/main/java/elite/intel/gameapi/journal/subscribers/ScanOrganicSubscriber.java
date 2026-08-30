@@ -14,6 +14,8 @@ import elite.intel.gameapi.journal.events.dto.TargetLocation;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 import elite.intel.util.ExoBio;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Locale;
@@ -25,6 +27,8 @@ import static elite.intel.util.StringUtls.localizedEvent;
 import static elite.intel.util.StringUtls.subtractString;
 
 public class ScanOrganicSubscriber {
+
+    private static final Logger log = LogManager.getLogger(ScanOrganicSubscriber.class);
 
     private final String scan1 = "Log";
     private final String scan2 = "Sample";
@@ -123,8 +127,18 @@ public class ScanOrganicSubscriber {
                 List<GenusDto> allSpecies = currentLocation.getGenus();
                 List<ExoBio.DataDto> completedSpecies = completedScansForPlanet(playerSession.getBioCompletedSamples(), currentLocation.getPlanetName());
                 List<GenusDto> remainingSpecies = calculateGenusNotYetScanned(completedSpecies, allSpecies);
-                if (remainingSpecies.isEmpty()) {
+                if (allSpecies.isEmpty()) {
+                    // No DSS on this body, so there is no genus list to count down against. An empty
+                    // remainder here means "we do not know what else is here", not "that was the last
+                    // one" - saying the survey is complete after the first organism was simply wrong.
+                    log.debug("Organic survey on {}: no detected genus list, completion unknown", currentLocation.getPlanetName());
+                } else if (remainingSpecies.isEmpty()) {
                     sb.append(" ").append(localizedEvent("event.organic.surveyComplete"));
+                    // A body is sampled out exactly once; recording it here is what keeps the overlay
+                    // and the next DSS from re-offering a survey that is finished, even after a sale
+                    // has cleared the completed-sample list this remainder was derived from.
+                    locationManager.updateBody(event.getSystemAddress(), event.getBody(),
+                            location -> location.markBioScansCompleted());
                 } else {
                     sb.append(" ").append(localizedEvent("event.organic.remainingGenus")).append(" ");
                     for (GenusDto entry : remainingSpecies) {

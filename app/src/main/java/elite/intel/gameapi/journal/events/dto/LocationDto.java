@@ -78,6 +78,7 @@ public class LocationDto implements ToJsonConvertible {
     private double orbitalCruiseEntryAltitude;
     private boolean ourDiscovery = false;
     private boolean weMappedIt = false;
+    private boolean bioScansCompleted = false;
     private String volcanism;
     private boolean isHomeSystem;
     private String discoveredBy;
@@ -673,9 +674,52 @@ public class LocationDto implements ToJsonConvertible {
         return ourDiscovery;
     }
 
+    /**
+     * Who charted this body first, as the journal reports it.
+     *
+     * <p>WHY this is a plain setter and not the latch it used to be: the latch ("once ours, always
+     * ours") made a wrong {@code true} permanent, and one writer produces wrong {@code true}s
+     * routinely. EDSM has no discovery record for most of the galaxy, so
+     * {@code discovery.getCommander() == null} read as "nobody found it before us" for any body
+     * simply missing from EDSM; the journal's own {@code WasDiscovered:true} arriving afterwards
+     * could then never correct it, and the body kept paying an unearned first-discovery bonus into
+     * every exobiology projection. The journal is the authority here and must be able to say no.
+     */
     public void setOurDiscovery(boolean ourDiscovery) {
-        if (this.ourDiscovery == true) return;
         this.ourDiscovery = ourDiscovery;
+    }
+
+    /**
+     * True once every genus a surface scan found on this body has been sampled to completion.
+     *
+     * <p>Persisted rather than re-derived on demand because the derivation's other half does not
+     * survive a sale: completed samples live in the session and {@code SellOrganicData} clears them,
+     * after which "detected genuses minus samples taken" re-reads as a body with nothing done on it.
+     * The overlay then re-offered a survey the commander had already finished and sold.
+     */
+    public boolean isBioScansCompleted() {
+        return bioScansCompleted;
+    }
+
+    /**
+     * Records a finished survey from evidence, and only ever in that direction: a body can be sampled
+     * out exactly once and never goes back to having organics left, so a later read of a sample list
+     * a sale has emptied must not un-complete it. Every automatic writer uses this.
+     */
+    public void markBioScansCompleted() {
+        this.bioScansCompleted = true;
+    }
+
+    /**
+     * Sets the flag either way, which only the commander gets to do.
+     *
+     * <p>The one-way rule above is about <em>evidence</em>: nothing we can derive should ever be able
+     * to un-finish a survey. A commander saying "that was wrong, put it back" is not derived evidence,
+     * it is the correction for a phrase we misheard or a boolean the model guessed - and without a way
+     * back a single misfire would retire a body from exobiology permanently.
+     */
+    public void setBioScansCompleted(boolean bioScansCompleted) {
+        this.bioScansCompleted = bioScansCompleted;
     }
 
     public void setMaterials(List<MaterialDto> materials) {

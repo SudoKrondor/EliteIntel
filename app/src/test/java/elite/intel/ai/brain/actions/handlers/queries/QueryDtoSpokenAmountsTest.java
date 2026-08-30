@@ -59,8 +59,9 @@ class QueryDtoSpokenAmountsTest {
         Map<String, Object> bounties = parse(new AnalyzeBountiesCollectedQuery.DataDto(4_980_000L).toYaml());
         assertEquals("about five million credits", bounties.get("totalBountiesSpoken"));
 
-        Map<String, Object> profits = parse(new AnalyzeExplorationProfitsQuery.DataDto(342_600L, 0L).toYaml());
+        Map<String, Object> profits = parse(new AnalyzeExplorationProfitsQuery.DataDto(342_600L, 0L, 1_500_000L).toYaml());
         assertEquals("about three hundred forty-three thousand credits", profits.get("potentialProfitSpoken"));
         assertEquals("zero credits", profits.get("acquiredProfitSpoken"));
+        assertEquals("about one point five million credits", profits.get("unconfirmedFirstDiscoveryBonusSpoken"));
     }
 }

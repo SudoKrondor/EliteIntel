@@ -6,6 +6,7 @@ import elite.intel.gameapi.search.spansh.commodity.WantedCommodity;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -55,6 +56,33 @@ public final class CarrierSupply {
             remaining -= units;
         }
         return lines;
+    }
+
+    /**
+     * The shopping list with the carrier's own stock taken off it: what still has to be BOUGHT once
+     * everything already paid for and sitting on the carrier has been counted. Empty means the carrier
+     * covers the list outright, which is the only case in which nothing has to be bought at all.
+     * <p>
+     * <b>Why this is not {@link #loadable}.</b> That one is capped by the ship's hold, so it answers "what
+     * does this trip collect" - and the two were being read as one answer. A carrier holding 1,760 tonnes of
+     * a good the build wanted 1,858 of fills an 880 tonne hold twice over, so the trip looked complete and
+     * the commander was told there was no need to buy any, standing at the market that sold the missing 98.
+     * A hold-full is never a statement about the build.
+     * <p>
+     * Largest remaining buy first, the same order the manifest itself is in, because after the carrier is
+     * counted it is the largest REMAINING line that the market run is for.
+     */
+    public static List<WantedCommodity> shortfallAfter(Held carrier, List<WantedCommodity> wanted) {
+        if (wanted == null) return List.of();
+        List<WantedCommodity> remaining = new ArrayList<>();
+        for (WantedCommodity want : wanted) {
+            if (want == null || want.unitsWanted() <= 0) continue;
+            int shortBy = want.unitsWanted() - (carrier == null ? 0 : carrier.stockOf(want.symbol()));
+            if (shortBy <= 0) continue;
+            remaining.add(new WantedCommodity(want.symbol(), want.commodity(), shortBy));
+        }
+        remaining.sort(Comparator.comparingInt(WantedCommodity::unitsWanted).reversed());
+        return remaining;
     }
 
     /**

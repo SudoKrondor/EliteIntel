@@ -220,4 +220,57 @@ class CarrierSupplyTest {
 
         assertFalse(CarrierSupply.isInSystem(carrier, null));
     }
+
+    /**
+     * Witt Hub wanted 1,858 more tonnes of Aluminium, 1,760 of them were already on the carrier, and the
+     * commander was told there was no need to buy any while standing at the market that sold the other 98.
+     * A hold-full is not a statement about the build.
+     */
+    @Test
+    void aHoldFullTwiceOverStillLeavesTheBuildShort() {
+        Held carrier = carrierAt(HERE, Map.of("aluminium", 1760));
+        List<WantedCommodity> wanted = List.of(want("aluminium", "Aluminium", 1858));
+
+        assertEquals(880, CarrierSupply.loadable(carrier, wanted, 880).getFirst().unitsToLoad(),
+                "one trip fills the hold");
+
+        List<WantedCommodity> remaining = CarrierSupply.shortfallAfter(carrier, wanted);
+        assertEquals(1, remaining.size());
+        assertEquals(98, remaining.getFirst().unitsWanted(), "and 98 tonnes still have to be bought");
+        assertEquals("Aluminium", remaining.getFirst().commodity());
+        assertEquals("aluminium", remaining.getFirst().symbol());
+    }
+
+    @Test
+    void aCarrierThatCoversTheListLeavesNothingToBuy() {
+        Held carrier = carrierAt(HERE, Map.of("ceramiccomposites", 85, "polymers", 900, "copper", 85));
+
+        assertTrue(CarrierSupply.shortfallAfter(carrier, longTail()).isEmpty(),
+                "covered outright is the only case where nothing has to be bought");
+    }
+
+    @Test
+    void whatTheCarrierDoesNotHoldSurvivesWhole() {
+        Held carrier = carrierAt(HERE, Map.of("ceramiccomposites", 900));
+
+        List<WantedCommodity> remaining = CarrierSupply.shortfallAfter(carrier, longTail());
+
+        assertEquals(2, remaining.size());
+        assertEquals("Polymers", remaining.getFirst().commodity(), "largest remaining buy leads");
+        assertEquals(170, remaining.getFirst().unitsWanted());
+        assertEquals(85, remaining.get(1).unitsWanted());
+    }
+
+    /**
+     * The market run has to cover the whole list when no carrier of ours is in the answer - the alternative
+     * is silently shopping for less than the build wants.
+     */
+    @Test
+    void noCarrierTakesNothingOffTheList() {
+        List<WantedCommodity> remaining = CarrierSupply.shortfallAfter(null, longTail());
+
+        assertEquals(3, remaining.size());
+        assertEquals(170, remaining.getFirst().unitsWanted());
+        assertTrue(CarrierSupply.shortfallAfter(null, null).isEmpty());
+    }
 }
