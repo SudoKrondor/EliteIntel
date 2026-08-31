@@ -70,6 +70,16 @@ public final class DataDirectoryValidator {
         return true;
     }
 
+    /**
+     * Warns that a folder the commander just chose could not be used at all, so their previous setting
+     * still stands. Distinct from {@link #validateAndWarn}: that one reports a real folder holding the
+     * wrong things, this one reports a choice that was never a folder.
+     */
+    public static void warnUnusable(DirectoryKind kind) {
+        log.warn("Rejected an unusable {} folder choice", kind.key);
+        warn("speech.warning." + kind.key + "DirectoryUnusable");
+    }
+
     private static boolean containsMatchingFile(Path directory, String suffix) {
         try (Stream<Path> entries = Files.list(directory)) {
             return entries.anyMatch(p -> p.getFileName().toString().toLowerCase().endsWith(suffix));
