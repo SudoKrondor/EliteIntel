@@ -8,11 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The guarantees the jukebox schema itself has to make, checked against a freshly migrated database
@@ -112,8 +108,8 @@ class JukeboxSchemaTest {
 
     private static String loadMigration() {
         try (InputStream input = JukeboxSchemaTest.class.getResourceAsStream(
-                "/db-migration/01100__jukebox.sql")) {
-            assertNotNull(input, "migration 01100__jukebox.sql is missing from the classpath");
+                "/db-migration/01044__jukebox.sql")) {
+            assertNotNull(input, "migration 01044__jukebox.sql is missing from the classpath");
             return new String(input.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new IllegalStateException("Could not read the jukebox migration", e);
