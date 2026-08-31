@@ -148,6 +148,43 @@ class JukeboxPlayerTest {
         assertEquals(0, player.positionMs());
     }
 
+    @Test
+    void movingThePlayHeadCarriesOnFromWhereItWasPut() {
+        player.play();
+        await(() -> player.positionMs() > 0, "playback never advanced");
+
+        player.seekTo(60_000);
+
+        await(() -> player.positionMs() > 60_000, "playback did not carry on from the new play-head");
+        assertEquals(PlaybackState.PLAYING, player.state());
+        assertTrue(output.wasFlushed(),
+                "the audio already queued has to go, or the move is heard a fifth of a second late");
+    }
+
+    @Test
+    void movingThePlayHeadOfAPausedTrackDoesNotStartItPlaying() {
+        player.play();
+        await(() -> player.positionMs() > 0, "playback never advanced");
+        player.pause();
+
+        player.seekTo(30_000);
+
+        assertEquals(PlaybackState.PAUSED, player.state(), "moving the play-head is not a play button");
+        assertEquals(30_000L, player.positionMs());
+
+        player.play();
+
+        await(() -> player.positionMs() > 30_000, "playback resumed somewhere other than the new play-head");
+    }
+
+    @Test
+    void thePlayHeadCannotBeMovedWhenNothingIsSelected() {
+        player.seekTo(10_000);
+
+        assertEquals(PlaybackState.STOPPED, player.state());
+        assertEquals(0, player.positionMs(), "there is no track to be ten seconds into");
+    }
+
     // ---------------------------------------------------------------- moving through the playlist
 
     @Test

@@ -54,6 +54,12 @@ public class JukeboxTabPanel extends JPanel {
     private static final int COLUMN_ALBUM = 3;
     private static final int COLUMN_DURATION = 4;
 
+    /**
+     * How often the play-head is re-read while a track runs. Twice a second: a second hand that never
+     * looks stuck, for two field reads.
+     */
+    private static final int PLAY_HEAD_REFRESH_MS = 500;
+
     private final JukeboxManager library = JukeboxManager.getInstance();
     private final JukeboxPlayer player = JukeboxPlayer.getInstance();
 
@@ -63,9 +69,12 @@ public class JukeboxTabPanel extends JPanel {
     private JLabel statusLabel;
     private JButton playPauseButton;
     private HudSlider volumeSlider;
+    private HudSlider seekBar;
     private HudSegmentedControl orderControl;
 
     private Long nowPlayingId;
+    private long nowPlayingDurationMs;
+    private boolean followingThePlayer;
 
     public JukeboxTabPanel() {
         setLayout(new BorderLayout(0, HudPalette.HUD_GAP));
@@ -133,10 +142,11 @@ public class JukeboxTabPanel extends JPanel {
     }
 
     /**
-     * Bottom: the transport, the order, and the music's own volume.
+     * Bottom: the play-head, the transport, the order, and the music's own volume.
      */
     private JComponent buildPlaybackSection() {
-        HudSection section = HudSection.flat(getText("jukebox.section.playback"), new BorderLayout(HudPalette.HUD_GAP, 0));
+        HudSection section = HudSection.flat(getText("jukebox.section.playback"),
+                new BorderLayout(HudPalette.HUD_GAP, HudPalette.HUD_GAP));
 
         JPanel transport = new JPanel(new FlowLayout(FlowLayout.LEFT, HudPalette.HUD_GAP, 0));
         transport.setOpaque(false);
@@ -164,9 +174,82 @@ public class JukeboxTabPanel extends JPanel {
         volumeSlider.setPreferredSize(new Dimension(200, volumeSlider.getPreferredSize().height));
         right.add(volumeSlider);
 
+        section.body().add(buildSeekBar(), BorderLayout.NORTH);
         section.body().add(transport, BorderLayout.WEST);
         section.body().add(right, BorderLayout.EAST);
         return section;
+    }
+
+    /**
+     * The play-head: how far into the track playback has got, and where the commander can put it.
+     * <p>
+     * WHY the seek waits for the thumb to be let go: moving the play-head reopens the file and winds it
+     * forward to the target, so acting on every step of a drag would ask the decoder for fifty jumps the
+     * commander never wanted to hear. Nothing is played while the thumb moves - they land where they let
+     * go, which is what a seek bar is for, and cheaper than scrubbing for the same result.
+     */
+    private JComponent buildSeekBar() {
+        seekBar = new HudSlider(0, 0, 1, 0);
+        seekBar.setValueFormatter(this::formatPlayHead);
+        seekBar.setEnabled(false);
+        seekBar.addChangeListener(e -> {
+            if (followingThePlayer || seekBar.isAdjusting()) return;
+            player.seekTo(seekBar.getValue() * 1000L);
+        });
+        new javax.swing.Timer(PLAY_HEAD_REFRESH_MS, e -> followPlayHead()).start();
+        return seekBar;
+    }
+
+    /**
+     * Reads the play-head off the player and moves the bar to it.
+     * <p>
+     * WHY it is polled rather than pushed: the position moves hundreds of times a second, and an event for
+     * each would be hundreds of events a second to say something the bar can simply ask for when it is
+     * about to repaint. It asks for nothing at all while the tab is out of sight.
+     */
+    private void followPlayHead() {
+        if (!isShowing() || seekBar.isAdjusting()) return;
+        moveSeekBar(() -> seekBar.setValue((int) (player.positionMs() / 1000)));
+    }
+
+    /**
+     * Sizes the bar to the track now playing and points it at the current position.
+     * <p>
+     * A file the tag reader has not been over yet has no known length, and a bar with a made-up end would
+     * drop the play-head somewhere the commander did not choose - so it stays disabled until the length is
+     * known, which is the same rule the playlist's Time column follows.
+     */
+    private void syncSeekBarToTrack() {
+        JukeboxDao.Track track = nowPlayingId == null ? null : model.trackAt(model.rowOf(nowPlayingId));
+        Long durationMs = track == null ? null : track.getDurationMs();
+        nowPlayingDurationMs = durationMs == null ? 0 : durationMs;
+        moveSeekBar(() -> {
+            seekBar.setMaximum((int) (nowPlayingDurationMs / 1000));
+            seekBar.setValue((int) (player.positionMs() / 1000));
+        });
+        seekBar.setEnabled(nowPlayingDurationMs > 0);
+    }
+
+    /**
+     * Moves the bar to follow the player rather than the other way round, so the change it fires is not
+     * mistaken for the commander asking to seek.
+     */
+    private void moveSeekBar(Runnable move) {
+        followingThePlayer = true;
+        try {
+            move.run();
+        } finally {
+            followingThePlayer = false;
+        }
+    }
+
+    private String formatPlayHead(int seconds) {
+        if (nowPlayingDurationMs <= 0) return "--:--";
+        return formatClock(seconds) + " / " + formatClock(nowPlayingDurationMs / 1000);
+    }
+
+    private static String formatClock(long totalSeconds) {
+        return String.format("%d:%02d", totalSeconds / 60, totalSeconds % 60);
     }
 
     private JButton transportButton(String label, Runnable action) {
@@ -240,6 +323,9 @@ public class JukeboxTabPanel extends JPanel {
         model.replaceWith(library.playlist());
         restoreSelection(selected);
         updateEmptyHint();
+        // The tag reader fills the durations in behind the commander, and the bar cannot open until the
+        // length of what is playing arrives.
+        syncSeekBarToTrack();
     }
 
     private Set<Long> selectedTrackIds() {
@@ -492,6 +578,7 @@ public class JukeboxTabPanel extends JPanel {
         SwingUtilities.invokeLater(() -> {
             nowPlayingId = event.getTrackId();
             setPlayPauseLabel(event.getState() == PlaybackState.PLAYING);
+            syncSeekBarToTrack();
             playlist.repaint();
         });
     }
@@ -499,6 +586,7 @@ public class JukeboxTabPanel extends JPanel {
     private void syncFromPlayer() {
         nowPlayingId = player.currentTrackId().orElse(null);
         setPlayPauseLabel(player.isPlaying());
+        syncSeekBarToTrack();
     }
 
     /**
@@ -639,8 +727,7 @@ public class JukeboxTabPanel extends JPanel {
          */
         private String formatDuration(Long durationMs) {
             if (durationMs == null || durationMs <= 0) return "";
-            long totalSeconds = durationMs / 1000;
-            return String.format("%d:%02d", totalSeconds / 60, totalSeconds % 60);
+            return formatClock(durationMs / 1000);
         }
     }
 }

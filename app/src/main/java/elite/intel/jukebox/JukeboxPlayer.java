@@ -196,6 +196,30 @@ public final class JukeboxPlayer {
     }
 
     /**
+     * Moves the play-head to a point in the track the commander picked off the seek bar.
+     * <p>
+     * WHY it reopens the file rather than scrubbing: the decoder can only run forwards, so a jump is a
+     * fresh read positioned at the target, and the sound card's buffer is thrown away so the move is heard
+     * at once instead of a fifth of a second later. Nothing is played while the thumb is dragged - the
+     * commander lands where they let go, which is what a seek bar is for.
+     * <p>
+     * Seeking a paused or stopped track only moves the play-head; playback resumes there when they ask
+     * for it.
+     */
+    public void seekTo(long ms) {
+        synchronized (lock) {
+            if (currentTrackId == null) return;
+            long target = Math.max(0, ms);
+            resumeFromMs = target;
+            positionMs = target;
+            trackSwitchPending = true;
+            library.rememberPosition(currentTrackId, target);
+            lock.notifyAll();
+        }
+        flushOutput();
+    }
+
+    /**
      * Plays one track from its beginning - what double-clicking the playlist does.
      */
     public void playTrack(long trackId) {
