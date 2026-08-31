@@ -1,11 +1,14 @@
 package elite.intel.jukebox;
 
+import elite.intel.ai.ears.PushToTalkHoldTap;
 import elite.intel.ai.mouth.VoiceLevelTap;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 /**
- * Pulls the music down while the companion speaks, and lets it back up afterwards.
+ * Pulls the music down while the companion speaks - or while the commander is holding the push-to-talk
+ * button - and lets it back up afterwards.
  * <p>
  * A side-chain compressor: the companion's voice is the side-chain input and the music is what gets
  * compressed. The music's own loudness is deliberately not part of the calculation - a quiet passage
@@ -21,6 +24,12 @@ import java.util.function.DoubleSupplier;
  * stays present underneath the voice - the commander asked for a duck, not a mute. Below that ceiling the
  * duck is proportional: set speech volume to a third and the music barely moves, because
  * {@link VoiceLevelTap} measures the voice after the volume control rather than before it.
+ * <p>
+ * <b>The second reason to duck.</b> A held push-to-talk button ducks the music too, at a fixed depth rather
+ * than off a curve - there is no level to follow, only a button that is down or up. It is the same duck the
+ * commander already knows from the companion speaking, arriving and leaving on the same attack and release,
+ * because a second kind of duck that moved differently would read as a fault - see
+ * {@link #PUSH_TO_TALK_REDUCTION_DB}.
  */
 public final class MusicDucker {
 
@@ -60,7 +69,22 @@ public final class MusicDucker {
      */
     static final double MAX_GAIN_REDUCTION_DB = 12.0;
 
+    /**
+     * How far the music comes down while the push-to-talk button is held.
+     * <p>
+     * WHY there is a duck here at all: push-to-talk is the mode for a commander on speakers rather than
+     * headphones, so the jukebox is playing into the room the microphone is listening to. An audiobook or a
+     * song with words is competing with them for the recogniser the whole time they are speaking.
+     * <p>
+     * WHY it is a flat figure and not a curve: the button carries no level to follow. It is deliberately set
+     * to the same depth the loudest speech reaches, so the two reasons to duck feel like one behaviour -
+     * press the button and the music gets out of the way exactly as far, and as smoothly, as it does when she
+     * answers.
+     */
+    static final double PUSH_TO_TALK_REDUCTION_DB = 12.0;
+
     private final DoubleSupplier voiceLevelDbfs;
+    private final BooleanSupplier pushToTalkHeld;
 
     private double gainReductionDb;
 
@@ -68,14 +92,23 @@ public final class MusicDucker {
      * A ducker driven by the live companion voice.
      */
     public MusicDucker() {
-        this(VoiceLevelTap::currentLevelDbfs);
+        this(VoiceLevelTap::currentLevelDbfs, PushToTalkHoldTap::isHeld);
     }
 
     /**
-     * A ducker driven by any level source, so the response can be tested without playing audio.
+     * A ducker driven by any level source, with the push-to-talk button up throughout.
      */
     public MusicDucker(DoubleSupplier voiceLevelDbfs) {
+        this(voiceLevelDbfs, () -> false);
+    }
+
+    /**
+     * A ducker driven by any level source and any button, so the response can be tested without playing
+     * audio or holding a controller.
+     */
+    public MusicDucker(DoubleSupplier voiceLevelDbfs, BooleanSupplier pushToTalkHeld) {
         this.voiceLevelDbfs = voiceLevelDbfs;
+        this.pushToTalkHeld = pushToTalkHeld;
     }
 
     /**
@@ -90,7 +123,7 @@ public final class MusicDucker {
      */
     public float advance(double elapsedSeconds) {
         if (elapsedSeconds <= 0 || !Double.isFinite(elapsedSeconds)) return currentGain();
-        double target = targetGainReductionDb(voiceLevelDbfs.getAsDouble());
+        double target = targetGainReductionDb();
         double timeConstantMs = target > gainReductionDb ? ATTACK_MS : RELEASE_MS;
         double approach = 1.0 - Math.exp(-(elapsedSeconds * 1000.0) / timeConstantMs);
         gainReductionDb += approach * (target - gainReductionDb);
@@ -119,10 +152,20 @@ public final class MusicDucker {
     }
 
     /**
-     * The compression curve: how far down the music belongs for a given voice level, before the envelope
-     * decides how quickly to get there.
+     * How far down the music belongs right now, before the envelope decides how quickly to get there.
+     * <p>
+     * The deeper of the two reasons wins rather than the two adding up: a commander who presses the button
+     * while she is still talking asked for the music out of the way, not for it gone.
      */
-    private static double targetGainReductionDb(double voiceLevelDbfs) {
+    private double targetGainReductionDb() {
+        double voiceTarget = compressionCurveDb(voiceLevelDbfs.getAsDouble());
+        return pushToTalkHeld.getAsBoolean() ? Math.max(voiceTarget, PUSH_TO_TALK_REDUCTION_DB) : voiceTarget;
+    }
+
+    /**
+     * The compression curve: how far down the music belongs for a given voice level.
+     */
+    private static double compressionCurveDb(double voiceLevelDbfs) {
         if (!Double.isFinite(voiceLevelDbfs) || voiceLevelDbfs <= THRESHOLD_DBFS) return 0.0;
         double overshoot = voiceLevelDbfs - THRESHOLD_DBFS;
         return Math.min(overshoot * (1.0 - 1.0 / RATIO), MAX_GAIN_REDUCTION_DB);

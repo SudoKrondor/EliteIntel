@@ -60,6 +60,24 @@ public class JukeboxTabPanel extends JPanel {
      */
     private static final int PLAY_HEAD_REFRESH_MS = 500;
 
+    /**
+     * What the number column shows against the track that is playing. Not localised: a play triangle
+     * means the same thing in every language the app speaks.
+     */
+    private static final String NOW_PLAYING_MARKER = "\u25B6";
+
+    /**
+     * The transport discs are drawn at the nav icon size inside a button one row high, which leaves the
+     * ring of fill around them that reads as a key on a cockpit panel rather than a sticker on one.
+     */
+    private static final int TRANSPORT_ICON = HudPalette.HUD_ICON_NAV;
+
+    /**
+     * The discs take the button's text colour, so the knocked-out symbol shows the fill through it and
+     * stays readable at rest, hovered and pressed - the three fills a primary HUD button paints.
+     */
+    private static final Color TRANSPORT_TINT = HudPalette.HUD_COLOR_ROLE_BUTTON_TEXT;
+
     private final JukeboxManager library = JukeboxManager.getInstance();
     private final JukeboxPlayer player = JukeboxPlayer.getInstance();
 
@@ -68,6 +86,8 @@ public class JukeboxTabPanel extends JPanel {
     private JTextField folderField;
     private JLabel statusLabel;
     private JButton playPauseButton;
+    private final ImageIcon playIcon = HudTransportIcons.play(TRANSPORT_ICON, TRANSPORT_TINT);
+    private final ImageIcon pauseIcon = HudTransportIcons.pause(TRANSPORT_ICON, TRANSPORT_TINT);
     private HudSlider volumeSlider;
     private HudSlider seekBar;
     private HudSegmentedControl orderControl;
@@ -129,7 +149,8 @@ public class JukeboxTabPanel extends JPanel {
         playlist.setAutoCreateRowSorter(false);
         playlist.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         playlist.setDefaultRenderer(Object.class, new TrackCellRenderer());
-        playlist.getColumnModel().getColumn(COLUMN_NUMBER).setMaxWidth(56);
+        // Wide enough for the play marker as well as the ordinal.
+        playlist.getColumnModel().getColumn(COLUMN_NUMBER).setMaxWidth(72);
         playlist.getColumnModel().getColumn(COLUMN_DURATION).setMaxWidth(80);
         playlist.addMouseListener(new PlaylistMouse());
         installDragToReorder();
@@ -150,12 +171,15 @@ public class JukeboxTabPanel extends JPanel {
 
         JPanel transport = new JPanel(new FlowLayout(FlowLayout.LEFT, HudPalette.HUD_GAP, 0));
         transport.setOpaque(false);
-        transport.add(transportButton(getText("jukebox.previous"), player::previous));
-        playPauseButton = transportButton(getText("jukebox.play"), player::togglePlayPause);
-        setPlayPauseLabel(false);
+        transport.add(transportButton(HudTransportIcons.rewind(TRANSPORT_ICON, TRANSPORT_TINT),
+                getText("jukebox.previous"), player::previous));
+        playPauseButton = transportButton(playIcon, getText("jukebox.play"), player::togglePlayPause);
+        setPlayPauseIcon(false);
         transport.add(playPauseButton);
-        transport.add(transportButton(getText("jukebox.stop"), player::stop));
-        transport.add(transportButton(getText("jukebox.next"), player::next));
+        transport.add(transportButton(HudTransportIcons.stop(TRANSPORT_ICON, TRANSPORT_TINT),
+                getText("jukebox.stop"), player::stop));
+        transport.add(transportButton(HudTransportIcons.forward(TRANSPORT_ICON, TRANSPORT_TINT),
+                getText("jukebox.next"), player::next));
 
         orderControl = new HudSegmentedControl(
                 new String[]{getText("jukebox.order.sequential"), getText("jukebox.order.random")},
@@ -252,8 +276,18 @@ public class JukeboxTabPanel extends JPanel {
         return String.format("%d:%02d", totalSeconds / 60, totalSeconds % 60);
     }
 
-    private JButton transportButton(String label, Runnable action) {
-        JButton button = AppTheme.makeButton(label);
+    /**
+     * One transport control: the HUD's own button, carrying a disc instead of a word.
+     * <p>
+     * WHY the word survives as the tooltip: the icons are the only label a commander gets, and a play
+     * triangle is obvious while a rewind chevron beside a forward one is not - the tooltip is where
+     * "previous" is still spelled out, in their language.
+     */
+    private JButton transportButton(Icon icon, String tooltip, Runnable action) {
+        HudButton button = new HudButton("", true);
+        button.setSquareSide(HudPalette.HUD_BUTTON_HEIGHT);
+        button.setIcon(icon);
+        button.setToolTipText(tooltip);
         button.addActionListener(e -> action.run());
         return button;
     }
@@ -576,28 +610,63 @@ public class JukeboxTabPanel extends JPanel {
     @Subscribe
     public void onJukeboxStateChanged(JukeboxStateChangedEvent event) {
         SwingUtilities.invokeLater(() -> {
+            boolean movedOn = !Objects.equals(nowPlayingId, event.getTrackId());
             nowPlayingId = event.getTrackId();
-            setPlayPauseLabel(event.getState() == PlaybackState.PLAYING);
+            setPlayPauseIcon(event.getState() == PlaybackState.PLAYING);
+            showOrder(event.getOrder());
             syncSeekBarToTrack();
             playlist.repaint();
+            if (movedOn) selectNowPlaying();
         });
     }
 
     private void syncFromPlayer() {
         nowPlayingId = player.currentTrackId().orElse(null);
-        setPlayPauseLabel(player.isPlaying());
+        setPlayPauseIcon(player.isPlaying());
+        showOrder(library.playbackOrder());
         syncSeekBarToTrack();
+        // Opening the tab onto a track the jukebox resumed should point at it too, not at row one.
+        selectNowPlaying();
     }
 
     /**
-     * Swaps the one button that changes what it says as playback starts and stops.
+     * Points the order selector at the order the player is actually using.
      * <p>
-     * WHY the upper-casing is repeated here: {@code HudButton} capitalises the label it is constructed
-     * with, so every other button on the tab is upper case for free. Setting the text afterwards goes
-     * straight to Swing and skips that, which left a mixed-case "Play" sitting between PREVIOUS and STOP.
+     * WHY the player is asked rather than the click: "randomise the playlist" is a voice command, so the
+     * selector has to be told what happened by the player either way - and a selector that only ever
+     * followed its own clicks would sit on SEQUENTIAL while the jukebox shuffled.
+     * {@code setSelectedIndex} fires no listener, so this cannot loop back into the player.
      */
-    private void setPlayPauseLabel(boolean playing) {
-        playPauseButton.setText(getText(playing ? "jukebox.pause" : "jukebox.play").toUpperCase());
+    private void showOrder(PlaybackOrder order) {
+        if (order == null) return;
+        orderControl.setSelectedIndex(order == PlaybackOrder.RANDOM ? 1 : 0);
+    }
+
+    /**
+     * Selects the track that just started and brings it into view.
+     * <p>
+     * WHY the selection moves rather than only the marker: the selected row is what the commander reads as
+     * "this one", and leaving it on whatever they clicked last had the list pointing at a track the jukebox
+     * had already finished with. It costs a multi-selection when a track changes underneath one, which is
+     * the rarer moment of the two.
+     */
+    private void selectNowPlaying() {
+        if (nowPlayingId == null) return;
+        int row = model.rowOf(nowPlayingId);
+        if (row < 0) return;
+        playlist.setRowSelectionInterval(row, row);
+        playlist.scrollRectToVisible(playlist.getCellRect(row, 0, true));
+    }
+
+    /**
+     * Swaps the one control that changes as playback starts and stops.
+     * <p>
+     * Both discs are built once and kept: this runs on every state the player publishes, and reducing a
+     * 512px image on each of them would be work to arrive back at the same two pictures.
+     */
+    private void setPlayPauseIcon(boolean playing) {
+        playPauseButton.setIcon(playing ? pauseIcon : playIcon);
+        playPauseButton.setToolTipText(getText(playing ? "jukebox.pause" : "jukebox.play"));
     }
 
     private static JMenuItem item(String label, Runnable action) {
@@ -638,16 +707,24 @@ public class JukeboxTabPanel extends JPanel {
     }
 
     /**
-     * Paints the track that is playing in the information colour, and unavailable files dimmed.
+     * Marks the track that is playing, and dims unavailable files.
+     * <p>
+     * WHY the marker and not only the colour: the colour is a foreground the selection fill overrides, and
+     * the row the commander clicked last stays selected long after the jukebox has moved on - so with the
+     * colour alone the list appeared to say the wrong track was playing. The marker sits in the number
+     * column and reads in either state.
      */
     private final class TrackCellRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean selected,
                                                        boolean focused, int row, int column) {
-            Component cell = super.getTableCellRendererComponent(table, value, selected, focused, row, column);
             JukeboxDao.Track track = model.trackAt(row);
+            boolean nowPlaying = track != null && nowPlayingId != null && track.getId() == nowPlayingId;
+            Object shown = nowPlaying && column == COLUMN_NUMBER ? NOW_PLAYING_MARKER + " " + value : value;
+
+            Component cell = super.getTableCellRendererComponent(table, shown, selected, focused, row, column);
             if (selected) return cell;
-            if (track != null && nowPlayingId != null && track.getId() == nowPlayingId) {
+            if (nowPlaying) {
                 cell.setForeground(HudPalette.HUD_COLOR_ROLE_INFORMATION);
             } else if (track != null && track.isMissing()) {
                 cell.setForeground(HudPalette.HUD_COLOR_ROLE_DISABLED);

@@ -101,6 +101,7 @@ public final class PushToTalkService implements ManagedService {
         if (event.pressed()) {
             announcePress();
             holdingDeviceId = event.deviceId();
+            PushToTalkHoldTap.observe(true);
             UiBus.publish(new PttButtonStateEvent(true));
             return;
         }
@@ -133,6 +134,9 @@ public final class PushToTalkService implements ManagedService {
     }
 
     private void releaseGate() {
+        // Lifted ahead of the guard: every path out of a hold has to reach the ducked music, and a duck left
+        // standing because the gate was already considered closed would be a jukebox stuck quiet for good.
+        PushToTalkHoldTap.observe(false);
         if (holdingDeviceId == NO_DEVICE) {
             return;
         }
