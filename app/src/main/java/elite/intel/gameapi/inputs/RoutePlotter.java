@@ -101,14 +101,26 @@ public class RoutePlotter {
                 GameInputStep.delay(200),
                 GameInputStep.text(destination),
                 GameInputStep.delay(250),
-                // WHY a raw arrow rather than the UI_Down binding: this is the one step that has to
-                // move focus OUT of the search field, and a focused Elite text field takes keystrokes
-                // as text - it never consults the UI_* bindings. A commander who rebound UI navigation
-                // to a chord (Ctrl+S, Shift+S) therefore had the chord typed into the box instead:
-                // focus stayed put and every step after it was typed too. The arrow is what the field
-                // itself honours, and it is the stock UI_Down key, so this is a no-op for everyone
-                // whose bindings are near-default. Once focus is on the result list the text field is
-                // out of the way and the steps below are binding-driven again, as they should be.
+                // WHY a raw arrow rather than the UI_Down binding, and why this is the ONE step that
+                // breaks the binding-driven rule the rest of this sequence follows.
+                //
+                // The step has to move focus OUT of the search field. A focused Elite text field
+                // consumes any keystroke that produces a PRINTABLE CHARACTER and never gets as far as
+                // the UI_* bindings - so UI_Down on a bare letter (S) or on Shift+letter (Shift+S)
+                // types that letter after the system name and focus never leaves the box. Every step
+                // below is then typed too, and no route is plotted: silently, with every keystroke
+                // reporting success. A non-printing chord (Ctrl+W/A/S/D, verified in game 2026-08-31)
+                // does reach the binding, which is why UI_Down appears to work for some commanders and
+                // not others - the modifier, not the binding, is what decides it.
+                //
+                // The Down arrow produces no character on any layout, so it is the only key that is
+                // safe to send here regardless of what the commander bound. It is also the stock
+                // UI_Down key, so this is a no-op for anyone near default.
+                //
+                // This does NOT rescue a commander who moved UI navigation off the arrows entirely
+                // (bundle 2026-08-31: W/A/S/D for the UI, arrows given to power distribution). Nothing
+                // we can send rescues that - it is a bindings problem, and KeyBindCheck warns about it
+                // on every start rather than this line trying to guess a key on their behalf.
                 GameInputStep.rawKey(KeyProcessor.KEY_DOWNARROW, 0, 0),
                 GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding()),
                 GameInputStep.delay(1000),
