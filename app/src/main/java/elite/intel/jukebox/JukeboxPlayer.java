@@ -275,9 +275,14 @@ public final class JukeboxPlayer {
         volume = library.volume();
     }
 
+    /**
+     * WHY this publishes: the order can be changed by voice as well as by the tab's own selector, and the
+     * selector has no other way to hear that the commander asked for a shuffle.
+     */
     public void setPlaybackOrder(PlaybackOrder newOrder) {
         library.setPlaybackOrder(newOrder);
         order = library.playbackOrder();
+        publishState();
     }
 
     public PlaybackState state() {
@@ -583,7 +588,7 @@ public final class JukeboxPlayer {
             snapshot = state;
             trackId = currentTrackId;
         }
-        UiBus.publish(new JukeboxStateChangedEvent(snapshot, trackId));
+        UiBus.publish(new JukeboxStateChangedEvent(snapshot, trackId, order));
     }
 
     /**
