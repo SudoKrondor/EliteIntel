@@ -158,6 +158,75 @@ class MusicDuckerTest {
                 "50 ms is a twentieth of the release, so the music has barely started to return");
     }
 
+    // ---------------------------------------------------------------- the push-to-talk button
+
+    @Test
+    void holdingThePushToTalkButtonDucksTheMusicWithNothingSpeaking() {
+        Button button = new Button();
+        MusicDucker ducker = new MusicDucker(() -> VoiceLevelTap.SILENCE_DBFS, button);
+
+        button.press();
+        advance(ducker, 0.5);
+
+        assertEquals(MusicDucker.PUSH_TO_TALK_REDUCTION_DB, ducker.gainReductionDb(), 0.05,
+                "a commander on speakers is talking over their own music, whether or not she is");
+    }
+
+    @Test
+    void theButtonDucksOnTheSameAttackAsTheVoice() {
+        Button button = new Button();
+        MusicDucker ducker = new MusicDucker(() -> VoiceLevelTap.SILENCE_DBFS, button);
+
+        button.press();
+        advance(ducker, MusicDucker.ATTACK_MS / 1000.0);
+
+        double proportionOfTarget = ducker.gainReductionDb() / MusicDucker.PUSH_TO_TALK_REDUCTION_DB;
+        assertEquals(0.63, proportionOfTarget, 0.05,
+                "the music has to be out of the way before the first word reaches the microphone");
+    }
+
+    @Test
+    void releasingTheButtonBringsTheMusicBackOnTheSameReleaseAsTheVoice() {
+        Button button = new Button();
+        MusicDucker ducker = new MusicDucker(() -> VoiceLevelTap.SILENCE_DBFS, button);
+        button.press();
+        advance(ducker, 0.5);
+        double ducked = ducker.gainReductionDb();
+
+        button.release();
+        advance(ducker, 0.05);
+
+        assertTrue(ducker.gainReductionDb() > ducked * 0.9,
+                "a twentieth of the release has barely started to lift the duck");
+
+        advance(ducker, 8.0);
+
+        assertEquals(1.0f, ducker.currentGain(), 0.01f,
+                "the button up is the whole signal: the music comes all the way back");
+    }
+
+    @Test
+    void speakingWhileTheButtonIsHeldDucksOnceRatherThanTwice() {
+        Button button = new Button();
+        MusicDucker ducker = new MusicDucker(() -> -1.0, button);
+
+        button.press();
+        advance(ducker, 2.0);
+
+        assertEquals(MusicDucker.MAX_GAIN_REDUCTION_DB, ducker.gainReductionDb(), 0.05,
+                "the deeper reason wins - two reasons to duck must not add up into a mute");
+    }
+
+    @Test
+    void aVoiceStillDucksWhileTheButtonIsUp() {
+        MusicDucker ducker = new MusicDucker(() -> MusicDucker.THRESHOLD_DBFS + 12, () -> false);
+
+        advance(ducker, 2.0);
+
+        assertEquals(11.0, ducker.gainReductionDb(), 0.05,
+                "push-to-talk is an addition to the speech duck, not a replacement for it");
+    }
+
     // ---------------------------------------------------------------- robustness
 
     @Test
@@ -220,6 +289,27 @@ class MusicDuckerTest {
         double remainder = seconds - wholeBlocks * BLOCK_SECONDS;
         if (remainder > 1e-9) {
             ducker.advance(remainder);
+        }
+    }
+
+    /**
+     * A push-to-talk button that goes up and down while the ducker is running, the way
+     * {@code PushToTalkHoldTap} does - the ducker re-reads it on every block.
+     */
+    private static final class Button implements java.util.function.BooleanSupplier {
+        private boolean held;
+
+        void press() {
+            held = true;
+        }
+
+        void release() {
+            held = false;
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            return held;
         }
     }
 
