@@ -1,6 +1,7 @@
 package elite.intel.ai.mouth.edge;
 
 import elite.intel.ai.ears.AudioDeviceEnumerator;
+import elite.intel.ai.mouth.VoiceLevelTap;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.DataLine;
@@ -87,6 +88,7 @@ final class JavaSoundEdgeAudioOutput implements EdgeAudioOutput {
             int length = Math.min(bufferBytes, pcm.length - offset);
             length -= length % frameSize;
             if (length > 0) {
+                VoiceLevelTap.observe(pcm, offset, length, format);
                 current.write(pcm, offset, length);
             }
         }

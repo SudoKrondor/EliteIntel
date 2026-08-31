@@ -36,6 +36,13 @@ dependencies {
     implementation 'com.google.api.grpc:proto-google-cloud-speech-v1p1beta1:0.135.0'
     implementation 'com.google.api.grpc:grpc-google-cloud-speech-v1p1beta1:0.135.0'
 
+    // MP3 tag reading for the jukebox playlist (title / artist / album / track number / duration).
+    // LGPL-2.1. Chosen over the smaller MIT mp3agic because it also reads FLAC, MP4/M4A and Ogg tags,
+    // which is where this is going the moment commanders find the feature - playing those formats still
+    // needs decoders JLayer does not have, but the tag layer will not have to be replaced to get there.
+    // It is also the only one of the two that derives a reliable duration for a variable-bitrate file.
+    implementation 'net.jthink:jaudiotagger:3.0.1'
+
     // Gson for JSON parsing
     implementation 'com.google.code.gson:gson:2.13.1'
 

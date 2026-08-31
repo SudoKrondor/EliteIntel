@@ -1,23 +1,14 @@
 package elite.intel.ui.widget;
-import static elite.intel.ui.theme.HudPalette.*;
 
-import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 
-import javax.swing.JComponent;
-import javax.swing.UIManager;
+import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.function.IntFunction;
 
 /**
  * HUD range slider rendered in the in-game Elite Dangerous form (HUD section 4).
@@ -37,10 +28,11 @@ import java.awt.event.MouseEvent;
 public class HudSlider extends JComponent {
 
     private final int min;
-    private final int max;
     private final int step;
+    private int max;
     private int value;
     private boolean dragging;
+    private IntFunction<String> valueFormatter = String::valueOf;
 
     /**
      * @param min   lowest selectable value (inclusive)
@@ -80,7 +72,12 @@ public class HudSlider extends JComponent {
 
             @Override
             public void mouseReleased(MouseEvent e) {
+                if (!dragging) return;
                 dragging = false;
+                // WHY an event with nothing changed: it is the only moment a listener can tell the drag
+                // is over. One that acts on every step - a seek that reopens a file, a setting written to
+                // the database - waits for this one and ignores the rest.
+                fireStateChanged();
             }
         };
         addMouseListener(mouse);
@@ -100,6 +97,35 @@ public class HudSlider extends JComponent {
             repaint();
             fireStateChanged();
         }
+    }
+
+    /**
+     * Raises the top of the range, for a slider whose extent is not known when it is built - the length of
+     * the track being played, say. The value is re-clamped, and moves (firing a change) only if it now
+     * falls outside the range.
+     */
+    public void setMaximum(int newMaximum) {
+        int next = Math.max(min, newMaximum);
+        if (next == max) return;
+        max = next;
+        setValue(value);
+        repaint();
+    }
+
+    /**
+     * @return true while the thumb is being dragged, so a listener can act on the settled value only
+     */
+    public boolean isAdjusting() {
+        return dragging;
+    }
+
+    /**
+     * Replaces the plain number drawn above the thumb - a play-head reads better as {@code 1:23 / 4:05}
+     * than as {@code 83}.
+     */
+    public void setValueFormatter(IntFunction<String> formatter) {
+        valueFormatter = formatter == null ? String::valueOf : formatter;
+        repaint();
     }
 
     /** Registers a listener notified whenever the value changes (programmatically or by drag). */
@@ -222,7 +248,7 @@ public class HudSlider extends JComponent {
             // Value above the thumb, centred on it and clamped within the component bounds.
             g2.setFont(getFont());
             FontMetrics fm = g2.getFontMetrics();
-            String text = String.valueOf(value);
+            String text = valueFormatter.apply(value);
             int textW = fm.stringWidth(text);
             int textX = Math.max(0, Math.min(thumbX - textW / 2, w - textW));
             int baseline = ty - 2 - fm.getDescent();
