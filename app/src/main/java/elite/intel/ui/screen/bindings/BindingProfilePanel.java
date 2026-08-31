@@ -544,8 +544,11 @@ public class BindingProfilePanel extends JPanel {
             chooser.setCurrentDirectory(new File(current).getParentFile());
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             String path = chooser.getSelectedFile().getAbsolutePath();
-            playerSession.setBindingsDir(path);
-            bindingsDirField.setText(path);
+            if (!playerSession.setBindingsDir(path)) {
+                DataDirectoryValidator.warnUnusable(DataDirectoryValidator.DirectoryKind.BINDINGS);
+                return;
+            }
+            bindingsDirField.setText(playerSession.getBindingsDir().toString());
             DataDirectoryValidator.validateAndWarn(playerSession.getBindingsDir(), DataDirectoryValidator.DirectoryKind.BINDINGS);
             initData();
         }

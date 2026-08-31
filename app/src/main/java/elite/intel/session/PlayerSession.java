@@ -18,10 +18,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.apache.commons.lang3.StringUtils.trimToNull;
@@ -735,48 +732,81 @@ public class PlayerSession {
         });
     }
 
-    public void setJournalPath(String path) {
+    /**
+     * Stores a chosen journal folder.
+     *
+     * @return false when the choice was not usable, in which case nothing was stored and the previous
+     * setting still stands - the caller should tell the commander rather than report success
+     */
+    public boolean setJournalPath(String path) {
+        Optional<String> folder = DirectorySetting.sanitize(path);
+        if (folder.isEmpty()) {
+            return false;
+        }
         Database.withDao(PlayerDao.class, dao -> {
             PlayerDao.Player player = dao.get();
-            player.setJournalDirectory(path);
+            player.setJournalDirectory(folder.get());
             dao.save(player);
             return Void.class;
         });
+        return true;
     }
 
+    /**
+     * The configured journal folder, or this platform's usual one when nothing usable is stored.
+     * <p>
+     * Never throws. This is read while the settings panel is being built, so a value it could not survive
+     * would stop the window opening - and the settings panel is the only place the setting can be put
+     * right. See {@link DirectorySetting}.
+     */
     public Path getJournalPath() {
-        return Database.withDao(PlayerDao.class, dao -> {
-            String directory = trimToNull(dao.get().getJournalDirectory());
-            if (OsDetector.getOs() == OsDetector.OS.WINDOWS) {
-                return directory == null ? Paths.get(System.getProperty("user.home"), "Saved Games", "Frontier Developments", "Elite Dangerous") : Paths.get(directory);
-            } else if (OsDetector.getOs() == OsDetector.OS.LINUX) {
-                return directory == null ? Paths.get(System.getProperty("user.home"), ".var", "app", "elite.intel.app", "ed-journal") : Paths.get(directory);
-            } else {
-                return directory == null ? Paths.get(System.getProperty("user.home"), "Library", "Application Support", "Frontier Developments", "Elite Dangerous") : Paths.get(directory);
-            }
-        });
+        return Database.withDao(PlayerDao.class, dao ->
+                DirectorySetting.resolve(trimToNull(dao.get().getJournalDirectory()), defaultJournalPath()));
     }
 
-    public void setBindingsDir(String path) {
+    private static Path defaultJournalPath() {
+        if (OsDetector.getOs() == OsDetector.OS.WINDOWS) {
+            return Paths.get(System.getProperty("user.home"), "Saved Games", "Frontier Developments", "Elite Dangerous");
+        } else if (OsDetector.getOs() == OsDetector.OS.LINUX) {
+            return Paths.get(System.getProperty("user.home"), ".var", "app", "elite.intel.app", "ed-journal");
+        }
+        return Paths.get(System.getProperty("user.home"), "Library", "Application Support", "Frontier Developments", "Elite Dangerous");
+    }
+
+    /**
+     * Stores a chosen bindings folder.
+     *
+     * @return false when the choice was not usable; nothing was stored and the previous setting stands
+     */
+    public boolean setBindingsDir(String path) {
+        Optional<String> folder = DirectorySetting.sanitize(path);
+        if (folder.isEmpty()) {
+            return false;
+        }
         Database.withDao(PlayerDao.class, dao -> {
             PlayerDao.Player player = dao.get();
-            player.setBindingsDirectory(path);
+            player.setBindingsDirectory(folder.get());
             dao.save(player);
             return Void.class;
         });
+        return true;
     }
 
+    /**
+     * The configured bindings folder, or this platform's usual one. Never throws; see {@link DirectorySetting}.
+     */
     public Path getBindingsDir() {
-        return Database.withDao(PlayerDao.class, dao -> {
-            String directory = trimToNull(dao.get().getBindingsDirectory());
-            if (OsDetector.getOs() == OsDetector.OS.WINDOWS) {
-                return directory == null ? Paths.get(System.getProperty("user.home"), "AppData", "Local", "Frontier Developments", "Elite Dangerous", "Options", "Bindings") : Paths.get(directory);
-            } else if (OsDetector.getOs() == OsDetector.OS.LINUX) {
-                return directory == null ? Paths.get(System.getProperty("user.home"), ".var", "app", "elite.intel.app", "ed-bindings") : Paths.get(directory);
-            } else {
-                return directory == null ? Paths.get(System.getProperty("user.home"), "Library", "Application Support", "Frontier Developments", "Elite Dangerous", "Options", "Bindings") : Paths.get(directory);
-            }
-        });
+        return Database.withDao(PlayerDao.class, dao ->
+                DirectorySetting.resolve(trimToNull(dao.get().getBindingsDirectory()), defaultBindingsDir()));
+    }
+
+    private static Path defaultBindingsDir() {
+        if (OsDetector.getOs() == OsDetector.OS.WINDOWS) {
+            return Paths.get(System.getProperty("user.home"), "AppData", "Local", "Frontier Developments", "Elite Dangerous", "Options", "Bindings");
+        } else if (OsDetector.getOs() == OsDetector.OS.LINUX) {
+            return Paths.get(System.getProperty("user.home"), ".var", "app", "elite.intel.app", "ed-bindings");
+        }
+        return Paths.get(System.getProperty("user.home"), "Library", "Application Support", "Frontier Developments", "Elite Dangerous", "Options", "Bindings");
     }
 
     public void setAlternativeName(String alternativeName) {

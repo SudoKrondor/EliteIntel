@@ -102,8 +102,15 @@ public class CommonSettingsPanel extends JPanel {
         if (!current.isBlank()) chooser.setCurrentDirectory(new File(current).getParentFile());
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             String path = chooser.getSelectedFile().getAbsolutePath();
-            playerSession.setJournalPath(path);
-            journalDirField.setText(path);
+            // A quoted path pasted into the chooser's file-name box comes back appended to the folder on
+            // show, quotes and all. Storing that made every later read throw and the window stop opening,
+            // so a choice that cannot be used is refused here rather than saved.
+            if (!playerSession.setJournalPath(path)) {
+                UiBus.publish(new AppLogEvent(getText("player.journalDirectory.unusable")));
+                DataDirectoryValidator.warnUnusable(DataDirectoryValidator.DirectoryKind.JOURNAL);
+                return;
+            }
+            journalDirField.setText(playerSession.getJournalPath().toString());
             UiBus.publish(new AppLogEvent("Journal directory updated"));
             DataDirectoryValidator.validateAndWarn(playerSession.getJournalPath(), DataDirectoryValidator.DirectoryKind.JOURNAL);
         }
