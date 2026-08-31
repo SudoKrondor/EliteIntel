@@ -33,6 +33,7 @@ public class AppView extends JFrame implements AppViewInterface {
     private static final String ICON_ACTIONS = "/images/keys-binding.png";
     private static final String ICON_BINDINGS = "/images/keyboard.png";
     private static final String ICON_SETTINGS = "/images/settings.png";
+    private static final String ICON_JUKEBOX = "/images/speaker.png";
     private static final String ICON_STATS = "/images/stats.png";
     private static final String CREDITS_ICON = "/images/release.png";
 
@@ -44,6 +45,7 @@ public class AppView extends JFrame implements AppViewInterface {
     private ActionsTabPanel actionsTabPanel;
     private BindingsTabPanel bindingsTabPanel;
     private SettingsTabPanel settingsTabPanel;
+    private JukeboxTabPanel jukeboxTabPanel;
     private UsageStatsTabPanel usageStatsTabPanel;
     private MarkdownViewPanel creditsPanel;
     private InputMonitorTabPanel inputMonitorTabPanel;
@@ -96,6 +98,7 @@ public class AppView extends JFrame implements AppViewInterface {
         ImageIcon actionsIcon = scaledIcon(ICON_ACTIONS);
         ImageIcon bindingsIcon = scaledIcon(ICON_BINDINGS);
         ImageIcon settingsIcon = scaledIcon(ICON_SETTINGS);
+        ImageIcon jukeboxIcon = scaledIcon(ICON_JUKEBOX);
         ImageIcon statsIcon = scaledIcon(ICON_STATS);
         ImageIcon creditsIcon = scaledIcon(CREDITS_ICON);
         if (uiState == null) {
@@ -106,6 +109,7 @@ public class AppView extends JFrame implements AppViewInterface {
         actionsTabPanel = new ActionsTabPanel();
         bindingsTabPanel = new BindingsTabPanel();
         settingsTabPanel = new SettingsTabPanel();
+        jukeboxTabPanel = new JukeboxTabPanel();
         usageStatsTabPanel = new UsageStatsTabPanel();
         creditsPanel = new MarkdownViewPanel("credits.md");
         inputMonitorTabPanel = new InputMonitorTabPanel();
@@ -115,6 +119,7 @@ public class AppView extends JFrame implements AppViewInterface {
         tabs.addTab(getText("tab.actions"), actionsIcon, actionsTabPanel);
         tabs.addTab(getText("tab.bindings"), bindingsIcon, bindingsTabPanel);
         tabs.addTab(getText("tab.settings"), settingsIcon, settingsTabPanel);
+        tabs.addTab(getText("tab.jukebox"), jukeboxIcon, jukeboxTabPanel);
         tabs.addTab(getText("tab.stats"), statsIcon, usageStatsTabPanel);
         //tabs.addTab("Credits", creditsIcon, creditsPanel);
 

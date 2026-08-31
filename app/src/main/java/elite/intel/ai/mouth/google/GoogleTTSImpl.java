@@ -593,6 +593,7 @@ public class GoogleTTSImpl implements MouthInterface {
                     break;
                 }
                 int len = Math.min(bufferBytes, request.audioData().length - i);
+                VoiceLevelTap.observe(request.audioData(), i, len, format);
                 persistentLine.write(request.audioData(), i, len);
             }
             if (interruptRequested.get()) {

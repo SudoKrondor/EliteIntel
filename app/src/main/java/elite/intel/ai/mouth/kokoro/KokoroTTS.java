@@ -537,6 +537,7 @@ public class KokoroTTS implements MouthInterface {
                 int remaining = audioData.length - offset;
                 int thisChunk = (Math.min(CHUNK, remaining) / frameSize) * frameSize;
                 if (thisChunk == 0) break;
+                VoiceLevelTap.observe(audioData, offset, thisChunk, fmt);
                 persistentLine.write(audioData, offset, thisChunk);
             }
 
