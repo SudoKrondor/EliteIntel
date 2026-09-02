@@ -12,7 +12,7 @@ import elite.intel.ui.dialog.AudioInterfaceDialog;
 import elite.intel.ui.event.*;
 import elite.intel.ui.overlay.HudOverlaySettingsDialog;
 import elite.intel.ui.overlay.NativeHudOverlay;
-import elite.intel.ui.support.DiagnosticsBundle;
+import elite.intel.ui.support.SupportBundle;
 import elite.intel.ui.telemetry.LlmSessionStatsSnapshot;
 import elite.intel.ui.telemetry.LlmSessionStatsTracker;
 import elite.intel.ui.theme.HudGlyphs;
@@ -356,7 +356,7 @@ public class AiTabPanel extends JPanel {
     private HudGlyphButton buildSaveLogButton() {
         return new HudGlyphButton(HudGlyphs::paintHudSaveGlyph,
                 HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
-                getText("ai.section.systemMessages.save.tooltip"), this::saveDiagnosticsBundle,
+                getText("ai.section.systemMessages.save.tooltip"), this::saveSupportBundle,
                 HudPalette.HUD_ICON_HEADER_ACTION);
     }
 
@@ -412,7 +412,7 @@ public class AiTabPanel extends JPanel {
      * commander is probably reporting. Every outcome is reported as a SYSTEM LOG line, so feedback stays
      * inside the HUD instead of a native popup.
      */
-    private void saveDiagnosticsBundle() {
+    private void saveSupportBundle() {
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle(getText("ai.section.systemMessages.save.title"));
         chooser.setSelectedFile(new File(defaultBundleFileName()));
@@ -427,7 +427,7 @@ public class AiTabPanel extends JPanel {
         File target = chosen;
 
         // Read the transcript on the EDT: it is Swing state, and the worker must not touch it.
-        DiagnosticsBundle.Sources sources = new DiagnosticsBundle.Sources(
+        SupportBundle.Sources sources = new SupportBundle.Sources(
                 SystemSession.getInstance().readVersionFromResources(),
                 systemPanel.exportText(),
                 APP_LOG_FILE,
@@ -444,9 +444,9 @@ public class AiTabPanel extends JPanel {
      * the worker in silence. The commander would watch the file chooser close and never learn whether a
      * bundle exists - in the one feature whose whole job is explaining a failure.
      */
-    private void writeBundle(File target, DiagnosticsBundle.Sources sources) {
+    private void writeBundle(File target, SupportBundle.Sources sources) {
         try {
-            DiagnosticsBundle.Result result = DiagnosticsBundle.writeTo(target.toPath(), sources);
+            SupportBundle.Result result = SupportBundle.writeTo(target.toPath(), sources);
             // The file exists either way, so it is always reported as saved. What could not be collected
             // goes in the same line rather than in a separate "nothing worked" message that would have to
             // contradict the zip sitting on disk.
@@ -463,10 +463,10 @@ public class AiTabPanel extends JPanel {
     }
 
     /**
-     * Timestamped default file name, e.g. {@code elite_intel_debug_20260704_132155.zip}.
+     * Timestamped default file name, e.g. {@code elite_intel_support_20260704_132155.zip}.
      */
     private static String defaultBundleFileName() {
-        return "elite_intel_debug_"
+        return "elite_intel_support_"
                 + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".zip";
     }
 

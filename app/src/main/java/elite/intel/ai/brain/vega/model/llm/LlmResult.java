@@ -6,8 +6,11 @@ import java.util.List;
  * Result of an {@code LlmGateway} consciousness call. In the consciousness loop a valid response is
  * always one or more tool-calls; anything else (plain text, empty, malformed, unknown tool, invalid
  * schema) yields {@link Status#INVALID_RESPONSE} after the gateway's single repair/retry attempt.
+ * A call that never reached a response at all - the provider was unreachable, overloaded, or refused the
+ * exchange - yields {@link Status#SERVICE_UNAVAILABLE}, so a caller can tell "the model answered badly"
+ * from "the service did not answer" when it tells the commander what happened.
  *
- * @param status           OK or INVALID_RESPONSE
+ * @param status           OK, INVALID_RESPONSE, or SERVICE_UNAVAILABLE
  * @param toolInvocations  tool invocations in LLM response order (empty when INVALID_RESPONSE)
  * @param finishReason     the provider's stop reason (OpenAI/LM Studio {@code finish_reason}, Anthropic
  *                         {@code stop_reason}, Gemini {@code finishReason}), or null - diagnostic only: it tells
@@ -24,7 +27,13 @@ public record LlmResult(
 ) {
     public enum Status {
         OK,
-        INVALID_RESPONSE
+        INVALID_RESPONSE,
+        /**
+         * No response was parsed because the transport failed: the provider was unreachable, overloaded
+         * (5xx/429), or rejected the exchange outright (auth/request shape). Distinct from
+         * {@link #INVALID_RESPONSE}, which means the provider did answer and the answer was unusable.
+         */
+        SERVICE_UNAVAILABLE
     }
 
     /**

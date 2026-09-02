@@ -364,7 +364,7 @@ class CompanionLlmGatewayTest {
 
         LlmResult result = gateway.submit(request(tool("speak"))).get();
 
-        assertEquals(LlmResult.Status.INVALID_RESPONSE, result.status());
+        assertEquals(LlmResult.Status.SERVICE_UNAVAILABLE, result.status());
         assertEquals(1, sends.get());
     }
 
@@ -381,6 +381,48 @@ class CompanionLlmGatewayTest {
 
         assertTrue(result.isValid());
         assertEquals(2, sends.get());
+    }
+
+    /**
+     * The blip that motivated the ladder: a provider shedding load answers 503 to the first sends and
+     * recovers a moment later, so the turn must survive rather than end on the first failed resend.
+     */
+    @Test
+    void transientTransportFailureKeepsResendingAlongTheBackoffLadder() throws Exception {
+        AtomicInteger sends = new AtomicInteger();
+        LlmTransport transport = outcomeTransport(sends,
+                AiTransportResult.failure(AiTransportResult.FailureKind.TRANSIENT, 503, "overloaded"),
+                AiTransportResult.failure(AiTransportResult.FailureKind.TRANSIENT, 503, "overloaded"),
+                AiTransportResult.failure(AiTransportResult.FailureKind.TRANSIENT, 503, "overloaded"),
+                AiTransportResult.success(new JsonObject()));
+        CompanionLlmGateway gateway = new CompanionLlmGateway(
+                new ScriptedAdapter(calls("speak")), transport, Runnable::run);
+
+        LlmResult result = gateway.submit(request(tool("speak"))).get();
+
+        assertTrue(result.isValid());
+        assertEquals(4, sends.get());
+    }
+
+    /**
+     * The ladder is bounded: an outage that outlives it ends the turn as an unreachable service, not as an
+     * unusable response, so the commander is told the provider is down rather than that the request is impossible.
+     */
+    @Test
+    void transientTransportFailureOutlivingTheLadderReportsServiceUnavailable() throws Exception {
+        AtomicInteger sends = new AtomicInteger();
+        AiTransportResult overloaded =
+                AiTransportResult.failure(AiTransportResult.FailureKind.TRANSIENT, 503, "overloaded");
+        LlmTransport transport = outcomeTransport(sends,
+                overloaded, overloaded, overloaded, overloaded);
+        CompanionLlmGateway gateway = new CompanionLlmGateway(
+                new ScriptedAdapter(calls("speak")), transport, Runnable::run);
+
+        LlmResult result = gateway.submit(request(tool("speak"))).get();
+
+        assertEquals(LlmResult.Status.SERVICE_UNAVAILABLE, result.status());
+        assertFalse(result.isValid());
+        assertEquals(4, sends.get()); // the initial send plus the whole ladder, and no protocol repair
     }
 
     @Test

@@ -68,11 +68,11 @@ class PlaylistFileImporterTest {
 
     @Test
     void formatsThisBuildCannotPlayAreLeftOut(@TempDir Path folder) throws IOException {
-        music(folder, "playable.mp3");
-        Path playlist = write(folder, "list.m3u", "playable.mp3\nlossless.flac\nvideo.mkv\n");
+        music(folder, "playable.mp3", "lossless.flac", "podcast.wma");
+        Path playlist = write(folder, "list.m3u", "playable.mp3\nlossless.flac\npodcast.wma\nvideo.mkv\n");
 
-        assertEquals(1, PlaylistFileImporter.read(playlist).size(),
-                "adding a FLAC would flag it missing a moment later, which reads as a bug");
+        assertEquals(2, PlaylistFileImporter.read(playlist).size(),
+                "adding a track no decoder handles would flag it missing a moment later, which reads as a bug");
     }
 
     @Test

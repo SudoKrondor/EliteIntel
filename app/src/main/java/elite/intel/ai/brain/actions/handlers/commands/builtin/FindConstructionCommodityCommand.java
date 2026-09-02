@@ -9,13 +9,12 @@ import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.dao.ConstructionSiteDao.Site;
 import elite.intel.db.managers.ConstructionSiteManager;
-import elite.intel.db.managers.ReminderManager;
-import elite.intel.gameapi.carrier.CarrierSupply;
-import elite.intel.gameapi.carrier.OwnCarrierHold;
 import elite.intel.gameapi.colonisation.ActiveConstructionSite;
+import elite.intel.gameapi.colonisation.CarrierStockpile;
+import elite.intel.gameapi.colonisation.CarrierStockpile.Stash;
 import elite.intel.gameapi.colonisation.ConstructionCargo;
+import elite.intel.gameapi.colonisation.ConstructionShopping;
 import elite.intel.gameapi.colonisation.ManifestAge;
-import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.search.spansh.commodity.WantedCommodity;
 import elite.intel.session.DockedMarket;
 import elite.intel.session.PlayerSession;
@@ -24,8 +23,9 @@ import elite.intel.util.StringUtls;
 import elite.intel.util.json.GetNumberFromParam;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +36,14 @@ import java.util.stream.Collectors;
  * carries, so this is asked once per trip and picks the <b>largest shortfall</b>: Steel at 2542 tonnes is
  * many runs in any ship, while the nine tonnes of Fruit and Vegetables at the bottom of the manifest will
  * fit in the corner of a hold on some later one. Working the long pole first is what shortens the job.
+ * <p>
+ * <b>The carrier is subtracted, not reported.</b> A commander hauling with a carrier stockpiles the
+ * materials on it first, so a good part of the manifest is usually bought already and sitting in their own
+ * hold - and a search that ignored that sent them to buy 1,858 tonnes of Aluminium with 1,760 of them in
+ * the next orbit. But the question asked is where to BUY, and what is aboard is on the HUD card in front of
+ * them: reciting it back was chatter that buried the one figure they wanted. So the carrier's stock comes
+ * off every tonnage this speaks and is never named, with one exception - when it covers the whole of what
+ * is left there is nothing to buy at all, and saying so IS the answer.
  * <p>
  * <b>Why the gate is the build, not the pad.</b> This and {@link FindCommodityCommand} are near-identical
  * requests in plain language - "find me some steel" versus "find steel for the site" - so something has to
@@ -71,10 +79,10 @@ public final class FindConstructionCommodityCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Find where to get the cargo the colonisation construction site the commander is hauling to "
-                + "still needs, and plot a route to it. Checks the commander's own fleet carrier before any "
-                + "market. Takes NO commodity name: it reads the build's own manifest and picks the "
-                + "commodity with the largest outstanding tonnage that is not already in the hold. Use this "
+        return "Find where to BUY the cargo the colonisation construction site the commander is hauling to "
+                + "still needs, and plot a route to that market. Takes NO commodity name: it reads the "
+                + "build's own manifest and picks the commodity with the largest tonnage still to buy, "
+                + "counting what is already in the ship's hold and on the commander's own carrier. Use this "
                 + "whenever the wanted cargo is described as construction, colonisation or build-site cargo "
                 + "or materials, wherever the ship happens to be. For a commodity the commander NAMES, use "
                 + "the ordinary commodity search instead. This answers WHERE to buy, never HOW MUCH: a "
@@ -138,186 +146,129 @@ public final class FindConstructionCommodityCommand implements IntelCommand {
         if (manifest.isEmpty()) {
             return StringUtls.localizedResponse("handler.construction.complete", siteName(site));
         }
-        // Only what the hold does not already cover, so the head of the list is the good this trip is for.
-        List<ConstructionCargo.Outstanding> stillToBuy = manifest.stream()
-                .filter(line -> !line.isSatisfied())
-                .toList();
-        if (stillToBuy.isEmpty()) {
-            // The hold already covers everything the site still wants. That is an answer, and a useful
-            // one: it means fly back and unload, not go shopping.
+        // Nothing left once the SHIP'S hold is counted means the cargo is already moving: fly it back, do
+        // not go shopping. Settled before the carrier is consulted, so that the two "nothing to buy"
+        // answers stay the different errands they are - and so that a list closed below can only have been
+        // closed by the carrier.
+        if (manifest.stream().allMatch(ConstructionCargo.Outstanding::isSatisfied)) {
             return StringUtls.localizedResponse("handler.construction.holdCovers", siteName(site));
         }
 
-        ConstructionCargo.Outstanding outstanding = stillToBuy.getFirst();
-        String commodity = commodityName(outstanding);
-        if (commodity == null) {
-            return StringUtls.localizedResponse("handler.construction.unknownCommodity",
-                    outstanding.gameName() == null ? outstanding.symbol() : outstanding.gameName());
+        // Our own carrier before anyone's market. This is the whole point of hauling with a carrier:
+        // stockpile the materials, park it at the build, and shuttle. Tonnes already sitting on it are
+        // bought and paid for, so telling the commander to buy them again is the wrong answer.
+        //
+        // The same stockpile the HUD card and the progress query count, deliberately: the card is where the
+        // commander READS what is aboard, so a spoken figure worked out any other way would contradict the
+        // screen in front of them.
+        Stash stash = CarrierStockpile.forBuild(site, symbols(manifest)).orElse(null);
+        List<ConstructionShopping.Line> stillToBuy =
+                longPoleFirst(ConstructionShopping.stillToAcquire(manifest, stash));
+
+        if (stillToBuy.isEmpty()) {
+            // The hold was ruled out above, so a list closed here was closed by the carrier - which is the
+            // reason the carrier is consulted at all. Nothing to search for, and nowhere to send them.
+            return carrierCoversIt(stash, site);
         }
 
-        // Spoken in the commander's language, not the game's: the manifest names the good in whatever
-        // language the game client runs in, and the search needs it in English regardless.
-        CompanionRuntime.narrator().filler(StringUtls.localizedResponse(
-                "handler.construction.sourcing",
-                outstanding.shortfall(),
-                FuzzySearch.localizedCommodityName(commodity),
-                siteName(site)) + sourcingCaveat(site), false);
-
-        // The WHOLE outstanding list, not just the largest line. The search is still anchored on that line -
+        // What is aboard the carrier is NOT said out loud. The commander asked where to BUY, the card
+        // already shows the stockpile, and reciting it was the chatter that buried the answer. It earns its
+        // place here by being subtracted from the tonnages below, which is what they act on.
+        //
+        // The WHOLE remaining list, not just the largest line. The search is still anchored on that line -
         // it is the reason for the trip - but a build's long tail is nine or ten commodities of sixty tonnes
         // each, and a hold that can take all of them in one run should. The shortfalls, not the site's full
         // requirements: asking Spansh for 2542 tonnes of steel would pass over every market that can fill
         // this ship.
-        List<WantedCommodity> shoppingList = shoppingList(stillToBuy, commodity);
-
-        // Our own carrier before anyone's market. This is the whole point of hauling with a carrier:
-        // stockpile the materials, park it at the build, and shuttle. Sending the commander to buy steel
-        // they already own in the next orbit is the wrong answer, and it is what they got before this.
-        CarrierLeg carrier = collectFromCarrier(shoppingList);
-        if (carrier.answer() != null) {
-            return carrier.answer();
+        List<WantedCommodity> shoppingList = shoppingList(stillToBuy);
+        if (shoppingList.isEmpty()) {
+            ConstructionCargo.Outstanding unknown = stillToBuy.getFirst().good();
+            return StringUtls.localizedResponse("handler.construction.unknownCommodity",
+                    unknown.gameName() == null ? unknown.symbol() : unknown.gameName());
         }
 
-        // What the carrier could not cover, which is the whole list when there is no carrier in this.
-        return CommodityTradeSearch.findBasketAndPlot(carrier.stillToBuy(), distance, returnClosest);
+        // Spoken in the commander's language, not the game's: the manifest names the good in whatever
+        // language the game client runs in, and the search needs it in English regardless.
+        WantedCommodity anchor = shoppingList.getFirst();
+        CompanionRuntime.narrator().filler(StringUtls.localizedResponse(
+                "handler.construction.sourcing",
+                anchor.unitsWanted(),
+                FuzzySearch.localizedCommodityName(anchor.commodity()),
+                siteName(site)) + sourcingCaveat(site), false);
+
+        return CommodityTradeSearch.findBasketAndPlot(shoppingList, distance, returnClosest);
     }
 
     /**
-     * What our own carrier does to this errand.
-     *
-     * @param answer     the spoken answer when the carrier settles the question on its own, else null
-     * @param stillToBuy what a market run has left to cover once the carrier's stock is counted
+     * Nothing to buy, because our own carrier is already holding all of it.
+     * <p>
+     * <b>Why this is not a route.</b> The commander asked where to BUY, and the answer is that they need
+     * not: the cargo is theirs, and what to do with it - shuttle it, or jump the carrier out to the depot -
+     * is a decision they make, not one a commodity search should make for them by plotting somewhere.
+     * <p>
+     * Deliberately construction-only. Every other commodity search means "where can I buy this", and a hold
+     * we already own is not a market - answering "you have some" to a purchase question would be a
+     * non-sequitur. A construction run is different: the goods only have to reach the depot, so where they
+     * come from is exactly what the commander wants settled.
      */
-    private record CarrierLeg(String answer, List<WantedCommodity> stillToBuy) {
-    }
-
-    /**
-     * Sends the commander to their own carrier when it can supply what the build needs, and hands back what
-     * a market run still has to cover when it cannot.
-     * <p>
-     * <b>Supplying the trip is not the same as covering the build.</b> The load is capped by the ship's
-     * hold, so a carrier holding twice a hold-full always fills it - which is why "the carrier answers this"
-     * used to end the errand outright, and why a commander with 1,760 tonnes of Aluminium aboard was told
-     * there was no need to buy any of the 1,858 the site wanted, standing at the market selling the other
-     * 98. What the carrier does to the SHOPPING is a question about its whole stock, and only a stock that
-     * covers the list outright means nothing has to be bought.
-     * <p>
-     * Deliberately construction-only. Every other commodity search means "where can I BUY this", and the
-     * commander's own hold is not a market - answering "you already have some" to a purchase question would
-     * be a non-sequitur. A construction run is different: the goods only have to reach the depot, and where
-     * they come from is exactly what the commander wants decided for them.
-     * <p>
-     * Both carriers are weighed, not just the first one carrying anything: a fleet carrier holding leftover
-     * trade goods must not mask a squadron carrier loaded with the materials being asked about.
-     */
-    private CarrierLeg collectFromCarrier(List<WantedCommodity> shoppingList) {
-        String currentSystem = playerSession.getPrimaryStarName();
-        int holdCapacity = CommodityTradeSearch.holdCapacity();
-
-        Optional<CarrierSupply.Loaded> best =
-                CarrierSupply.best(OwnCarrierHold.ours(), shoppingList, holdCapacity, currentSystem);
-        if (best.isEmpty()) return new CarrierLeg(null, shoppingList);
-
-        CarrierSupply.Loaded carrier = best.get();
-        String goods = carrier.loadable().stream()
-                .map(line -> StringUtls.localizedResponse("handler.commodity.basketItem",
-                        line.unitsToLoad(), FuzzySearch.localizedCommodityName(line.commodity())))
-                .collect(Collectors.joining(", "));
-
-        if (!CarrierSupply.worthGoing(carrier.carrier(), carrier.loadable(), holdCapacity, currentSystem)) {
-            // Said out loud rather than silently discarded: the commander is the one who knows whether a few
-            // tonnes justifies the jumps, and cannot weigh it against a market run they were never told
-            // about. The search carries on outward regardless - against the whole list, because a carrier
-            // the commander is not being sent to buys nothing for them.
-            CompanionRuntime.narrator().filler(StringUtls.localizedResponse(
-                    "handler.construction.carrierTooFar",
-                    carrier.carrier().callSign(), goods, carrier.carrier().starSystem()), false);
-            return new CarrierLeg(null, shoppingList);
-        }
-
-        // Everything aboard, not the hold-full this trip would take: what the carrier does to the SHOPPING
-        // is a question about its whole stock, and confusing the two is what told a commander with 1,760
-        // tonnes aboard that there was no need to buy the 98 the build was still short of.
-        List<WantedCommodity> afterTheCarrier =
-                CarrierSupply.shortfallAfter(carrier.carrier(), shoppingList);
-
-        if (carrier.here()) {
-            String aboard = withSnapshotAge(carrier, StringUtls.localizedResponse(
-                    "handler.construction.carrierHere",
-                    carrier.carrier().callSign(), goods, carrier.tonnes()));
-            if (afterTheCarrier.isEmpty()) {
-                // Nothing to plot and nothing to buy: the carrier is in this system, which is a supercruise
-                // hop rather than a route, and it holds the whole of what is left. Saying so is the answer.
-                return new CarrierLeg(aboard + " "
-                        + StringUtls.localizedResponse("handler.construction.carrierNoNeedToBuy"), shoppingList);
-            }
-            // The stockpile is part of the answer, not all of it. Say what is aboard and then go on and find
-            // the market for the remainder: the commander is usually standing at one, and a shortfall they
-            // are not told about is one they fly away from.
-            CompanionRuntime.narrator().filler(aboard + " " + stillToBuy(afterTheCarrier), false);
-            return new CarrierLeg(null, afterTheCarrier);
-        }
-
-        String answer = withSnapshotAge(carrier, StringUtls.localizedResponse(
-                "handler.construction.carrierElsewhere",
-                carrier.carrier().callSign(), carrier.carrier().starSystem(), goods, carrier.tonnes()));
-        if (!afterTheCarrier.isEmpty()) {
-            // The route to the carrier still stands - that cargo is bought and paid for - but the build is
-            // not served by it alone, and the sentence must not imply otherwise.
-            answer = answer + " " + stillToBuy(afterTheCarrier);
-        }
-        ReminderManager.getInstance().setReminder(answer, carrier.carrier().starSystem(),
-                carrier.carrier().callSign(), null);
-        return new CarrierLeg(new RoutePlotter().plotRouteAnd(answer, carrier.carrier().starSystem()),
-                shoppingList);
-    }
-
-    /**
-     * The largest thing still to buy once the carrier has been counted, named and measured.
-     * <p>
-     * One good rather than a total across the manifest: the commander hears this at a commodity screen, where
-     * a number without a name is not something they can act on, and the market run that follows is anchored
-     * on this same line.
-     */
-    private static String stillToBuy(List<WantedCommodity> afterTheCarrier) {
-        WantedCommodity largest = afterTheCarrier.getFirst();
-        return StringUtls.localizedResponse("handler.construction.carrierShortBy",
-                largest.unitsWanted(), FuzzySearch.localizedCommodityName(largest.commodity()));
-    }
-
-    /**
-     * Says how old our look at the carrier's shelves is, when it is old enough to matter.
-     * <p>
-     * The game reports a carrier's cargo exactly once, while the commander is standing in its market, and
-     * never mentions anything moved on or off afterwards. An old snapshot is therefore a claim about the
-     * past, and the commander is the only one who can judge whether it still holds - so they are told rather
-     * than sent somewhere on a flat assertion. Same principle as speaking only measured carrier fuel flatly.
-     */
-    private static String withSnapshotAge(CarrierSupply.Loaded carrier, String answer) {
-        if (!CarrierSupply.snapshotIsStale(carrier.carrier())) return answer;
+    private static String carrierCoversIt(Stash stash, Site site) {
+        String answer = stash.starSystem() == null || stash.starSystem().isBlank()
+                ? StringUtls.localizedResponse("handler.construction.carrierCoversIt",
+                siteName(site), stash.callSign())
+                : StringUtls.localizedResponse("handler.construction.carrierCoversItAt",
+                siteName(site), stash.callSign(), stash.starSystem());
+        if (!stash.snapshotIsStale()) return answer;
+        // Said out loud rather than asserted flatly: the game reports a carrier's cargo exactly once, in its
+        // own market, and never mentions what anyone bought off its sell orders afterwards. "Nothing left to
+        // buy" off an old snapshot is how a commander flies to the depot short. Same principle as speaking
+        // only measured carrier fuel flatly.
         return answer + " " + StringUtls.localizedResponse("handler.construction.carrierSnapshotOld",
-                ManifestAge.hoursSince(carrier.carrier().seenAt().toString()));
+                ManifestAge.hoursSince(stash.seenAt().toString()));
     }
 
     /**
-     * The manifest as a shopping list, largest shortfall first, with the anchor at the head.
+     * Every commodity the site still wants, as bare journal symbols - which carrier is working this build is
+     * decided against the whole manifest, exactly as the HUD card decides it.
+     */
+    private static Set<String> symbols(List<ConstructionCargo.Outstanding> manifest) {
+        return manifest.stream()
+                .map(ConstructionCargo.Outstanding::symbol)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    /**
+     * The shopping list in the order a trip is planned in: the largest tonnage STILL TO BUY first.
+     * <p>
+     * Not the order {@link ConstructionShopping} hands back, which is the site's total requirement and is
+     * fixed that way on purpose - the HUD card must not reshuffle under the commander's hands while they
+     * shop. A search has the opposite need: its anchor is the good this trip is actually for, and after the
+     * carrier is counted that is whatever is left in the largest quantity. A build wanting 1,858 tonnes of
+     * Aluminium with 1,760 of them already on the carrier is a 98 tonne errand, and must not out-rank the
+     * 600 tonnes of Steel nobody has bought yet.
+     */
+    static List<ConstructionShopping.Line> longPoleFirst(List<ConstructionShopping.Line> lines) {
+        return lines.stream()
+                .sorted(Comparator
+                        .comparingInt(ConstructionShopping.Line::stillToBuy).reversed()
+                        // A stable tie-break, so the same manifest always names the same commodity.
+                        .thenComparing(ConstructionShopping.Line::symbol))
+                .toList();
+    }
+
+    /**
+     * The remaining lines as a shopping list, in the order they were given.
      * <p>
      * Lines whose commodity cannot be named in the commodities table's spelling are dropped: Spansh matches
-     * on that name, so a line it cannot be given is a line no market can be searched for. The anchor is
-     * passed in already resolved because it has a fallback the others do not need - it is the one line the
-     * commander is actually being sent for.
-     *
-     * @param stillToBuy the outstanding lines the hold does not already cover, largest shortfall first;
-     *                   the head of this list is the anchor, which is why the caller filters before calling
+     * on that name, so a line it cannot be given is a line no market can be searched for. An empty result
+     * therefore means the whole of what is left is unnameable, which the caller reports rather than
+     * searching for nothing.
      */
-    static List<WantedCommodity> shoppingList(List<ConstructionCargo.Outstanding> stillToBuy, String anchorCommodity) {
+    static List<WantedCommodity> shoppingList(List<ConstructionShopping.Line> stillToBuy) {
         List<WantedCommodity> wanted = new ArrayList<>();
-        ConstructionCargo.Outstanding anchor = stillToBuy.getFirst();
-        wanted.add(new WantedCommodity(anchor.symbol(), anchorCommodity, anchor.shortfall()));
-        for (ConstructionCargo.Outstanding line : stillToBuy.subList(1, stillToBuy.size())) {
-            String commodity = FuzzySearch.commodityNameForSymbol(line.symbol());
+        for (ConstructionShopping.Line line : stillToBuy) {
+            String commodity = commodityName(line.good());
             if (commodity == null) continue;
-            wanted.add(new WantedCommodity(line.symbol(), commodity, line.shortfall()));
+            wanted.add(new WantedCommodity(line.symbol(), commodity, line.stillToBuy()));
         }
         return wanted;
     }

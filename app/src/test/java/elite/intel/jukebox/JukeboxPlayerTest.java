@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -189,7 +190,12 @@ class JukeboxPlayerTest {
 
     @Test
     void aFinishedTrackRollsOnToTheNextOne() {
-        files.lengthInBlocks(3);
+        // WHY only the first track is short: with every track a few blocks long the player runs the whole
+        // list in under fifty milliseconds, so "the second track is playing" would be true for about six of
+        // them - a window a polling test misses on any machine busy enough to widen its own sleep, which is
+        // every build server. Ending one track into a second that keeps playing makes the state asked about
+        // a resting one rather than something glimpsed in flight.
+        files.lengthInBlocks("/music/one.mp3", 3);
 
         player.play();
 
@@ -386,11 +392,23 @@ class JukeboxPlayerTest {
         private final Set<String> openedPaths = ConcurrentHashMap.newKeySet();
         private final Set<String> unopenable = ConcurrentHashMap.newKeySet();
         private final AtomicLong attempts = new AtomicLong();
+        private final Map<String, Integer> blocksByPath = new ConcurrentHashMap<>();
         private volatile int blocks = Integer.MAX_VALUE;
         private volatile short sample = 8_000;
 
+        /**
+         * How long every track runs. The default is endless, so a test that says nothing about length gets
+         * a player that stays where it was put.
+         */
         void lengthInBlocks(int count) {
             blocks = count;
+        }
+
+        /**
+         * How long one named track runs, leaving the rest of the list endless.
+         */
+        void lengthInBlocks(String path, int count) {
+            blocksByPath.put(path, count);
         }
 
         void sampleValue(short value) {
@@ -417,7 +435,7 @@ class JukeboxPlayerTest {
                 throw new IOException("no such file: " + path);
             }
             openedPaths.add(path);
-            return new ConstantToneSource(blocks, sample, startMs);
+            return new ConstantToneSource(blocksByPath.getOrDefault(path, blocks), sample, startMs);
         }
     }
 

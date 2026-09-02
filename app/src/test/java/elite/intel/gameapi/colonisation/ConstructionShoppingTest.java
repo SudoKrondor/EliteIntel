@@ -121,4 +121,51 @@ class ConstructionShoppingTest {
 
         assertTrue(ConstructionShopping.stillToAcquire(nomenRelay(Map.of()), carrier(everything)).isEmpty());
     }
+
+    /**
+     * Witt Hub wanted 1,858 more tonnes of Aluminium, 1,760 of them were already on the carrier, and the
+     * commander was told there was no need to buy any while standing at the market that sold the other 98.
+     * A hold-full is never a statement about the build - what is left to buy is a question about the whole
+     * stock, and this is the figure the search and the card both spend.
+     */
+    @Test
+    void whatIsLeftToBuyIsMeasuredAgainstTheWholeStockpile() {
+        List<Outstanding> wittHub = ConstructionCargo.outstanding(
+                List.of(line("aluminium", 1858, 0)), Map.of());
+
+        ConstructionShopping.Line line =
+                ConstructionShopping.stillToAcquire(wittHub, carrier(Map.of("aluminium", 1760))).getFirst();
+
+        assertEquals(1858, line.needed());
+        assertEquals(1760, line.owned());
+        assertEquals(98, line.stillToBuy());
+        assertFalse(line.isCovered());
+    }
+
+    /**
+     * Tonnes in the hold and tonnes on the carrier are both paid for and both bound for the depot, so they
+     * come off the same figure.
+     */
+    @Test
+    void theHoldAndTheCarrierCountAgainstTheSameLine() {
+        List<Outstanding> wittHub = ConstructionCargo.outstanding(
+                List.of(line("aluminium", 1858, 0)), Map.of("aluminium", 98));
+
+        assertEquals(0, ConstructionShopping.stillToAcquire(wittHub, carrier(Map.of("aluminium", 1760))).size(),
+                "nothing left to buy once both are counted");
+        assertEquals(1858, ConstructionShopping.toDeliver(wittHub, carrier(Map.of("aluminium", 1760)))
+                .getFirst().owned(), "and all of it is already ours to deliver");
+    }
+
+    /**
+     * Over-buying a good finishes it; it never turns into a negative errand that could out-rank a real one.
+     */
+    @Test
+    void aGoodBoughtTwiceOverIsSimplyFinished() {
+        List<Outstanding> wittHub = ConstructionCargo.outstanding(
+                List.of(line("aluminium", 1858, 0)), Map.of());
+
+        assertEquals(0, ConstructionShopping.toDeliver(wittHub, carrier(Map.of("aluminium", 9000)))
+                .getFirst().stillToBuy());
+    }
 }

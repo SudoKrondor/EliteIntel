@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Stream;
 
 /**
@@ -25,13 +24,11 @@ public final class MusicFolderScanner {
      */
     private static final int MAX_DEPTH = 8;
 
-    private static final String EXTENSION = ".mp3";
-
     private MusicFolderScanner() {
     }
 
     /**
-     * Every MP3 under {@code root}, in path order.
+     * Every playable file under {@code root}, in path order.
      *
      * @throws IOException when the folder cannot be read at all - an unmounted drive, or one the commander
      *                     has no permission for. A folder containing no music is not an error, it is an
@@ -46,16 +43,11 @@ public final class MusicFolderScanner {
         // circles, and a link into another library would import it without the commander asking.
         try (Stream<Path> walk = Files.walk(root, MAX_DEPTH)) {
             walk.filter(Files::isRegularFile)
-                    .filter(MusicFolderScanner::isPlayable)
+                    .filter(AudioSources::isPlayable)
                     .map(path -> path.toAbsolutePath().toString())
                     .forEach(found::add);
         }
         found.sort(Comparator.naturalOrder());
         return found;
-    }
-
-    private static boolean isPlayable(Path path) {
-        Path name = path.getFileName();
-        return name != null && name.toString().toLowerCase(Locale.ROOT).endsWith(EXTENSION);
     }
 }
