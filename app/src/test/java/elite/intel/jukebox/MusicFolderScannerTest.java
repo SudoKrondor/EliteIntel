@@ -44,23 +44,26 @@ class MusicFolderScannerTest {
     }
 
     @Test
-    void anythingThatIsNotAnMp3IsLeftAlone(@TempDir Path root) throws IOException {
+    void anythingThereIsNoDecoderForIsLeftAlone(@TempDir Path root) throws IOException {
         write(root, "song.mp3");
+        write(root, "album.flac");
         write(root, "cover.jpg");
         write(root, "notes.txt");
-        write(root, "album.flac");
+        write(root, "podcast.wma");
 
         List<String> found = MusicFolderScanner.findTracks(root);
 
-        assertEquals(1, found.size(), "only MP3 plays today, so only MP3 goes in the playlist");
+        assertEquals(2, found.size(),
+                "the playable formats go in; the artwork, the sleeve notes and a format with no decoder do not");
     }
 
     @Test
     void theExtensionIsMatchedWhateverItsCase(@TempDir Path root) throws IOException {
         write(root, "shouty.MP3");
         write(root, "mixed.Mp3");
+        write(root, "ripped.FLAC");
 
-        assertEquals(2, MusicFolderScanner.findTracks(root).size(),
+        assertEquals(3, MusicFolderScanner.findTracks(root).size(),
                 "a file ripped on Windows may well be named .MP3 and is no less playable for it");
     }
 

@@ -20,10 +20,21 @@ import java.util.logging.Logger;
  */
 final class JAudioTaggerTagReader implements TrackTagReader {
 
+    /**
+     * Held in a field, not just configured and forgotten.
+     * <p>
+     * WHY the reference has to be kept: {@code LogManager} holds its loggers weakly, so one nothing else
+     * refers to is collected along with the level set on it, and the next {@code getLogger} call builds a
+     * fresh one that has never been silenced. The flood would then come back part way through a scan -
+     * likeliest on a big library, which is both the case that presses on memory and the case the silence
+     * is for.
+     */
+    private static final Logger TAGGER_LOG = Logger.getLogger("org.jaudiotagger");
+
     static {
         // jaudiotagger narrates every field it reads through java.util.logging, at INFO. Left alone it
         // buries the application's own log under thousands of lines the first time a library is scanned.
-        Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF);
+        TAGGER_LOG.setLevel(Level.OFF);
     }
 
     @Override

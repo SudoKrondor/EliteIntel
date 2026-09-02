@@ -32,8 +32,9 @@ import java.util.Optional;
  * move exactly the same cargo a transfer would, and both name the market they happened at.
  * <p>
  * <b>What it still cannot see</b> is somebody else buying off the carrier's sell orders, which is why
- * {@link CarrierSupply#snapshotIsStale} still measures age from the last market read rather than the last
- * transfer. A ledger that is right about our own hauling is not the same as a ledger that is right.
+ * {@link elite.intel.gameapi.colonisation.CarrierStockpile.Stash#snapshotIsStale()} still measures age from
+ * the last market read rather than the last transfer. A ledger that is right about our own hauling is not
+ * the same as a ledger that is right.
  * <p>
  * <b>Tritium is the one line that means something beyond cargo.</b> A carrier burns it to jump, and the
  * tonnes sitting in its hold are the tonnes its tank can still be topped up with - which is why the ledger

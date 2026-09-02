@@ -21,8 +21,10 @@ import java.util.stream.Collectors;
  * Provider-neutral {@link LlmGateway}: orchestrates render -> send -> parse via the injected
  * {@link LlmProviderAdapter} and {@link LlmTransport}, enforces the tool-call-only contract, and does one
  * protocol repair for an invalid model response before reporting {@link LlmResult.Status#INVALID_RESPONSE}.
- * A transient transport failure gets one jittered resend, while a permanent transport failure skips protocol
- * repair. Every valid response contains at least one and at most {@link LlmRequest#maxToolCalls()} offered
+ * A transient transport failure gets a short ladder of jittered resends, while a permanent one skips protocol
+ * repair; either way a call that never reached a response reports {@link LlmResult.Status#SERVICE_UNAVAILABLE}
+ * rather than INVALID_RESPONSE, so the caller can say the service is unreachable instead of blaming the
+ * commander's request. Every valid response contains at least one and at most {@link LlmRequest#maxToolCalls()} offered
  * function calls whose arguments match their exact schema - the caller declares how many it can settle, so a
  * longer response is a defect rather than a bonus.
  * <p>
@@ -42,8 +44,17 @@ public final class CompanionLlmGateway implements LlmGateway {
     private static final Logger log = LogManager.getLogger(CompanionLlmGateway.class);
 
     private static final LlmResult INVALID = new LlmResult(LlmResult.Status.INVALID_RESPONSE, List.of());
-    private static final long TRANSIENT_RETRY_MIN_DELAY_MILLIS = 250;
-    private static final long TRANSIENT_RETRY_MAX_DELAY_MILLIS = 750;
+    private static final LlmResult UNAVAILABLE = new LlmResult(LlmResult.Status.SERVICE_UNAVAILABLE, List.of());
+
+    /**
+     * Jittered backoff ladder for a transient transport failure, as {@code {minMillis, maxMillis}} per resend.
+     * A cloud provider shedding load answers 429/503 with "please retry", and the blip is usually shorter than
+     * the commander's patience, so the ladder widens rather than giving up after one quick resend. It is
+     * deliberately short: the whole ladder adds at most 5.25 s of sleeping to a turn, a tenth of the logical
+     * deadline that bounds the round, so an outage that outlives it still fails the turn well inside the
+     * thought watchdog rather than holding the sole worker.
+     */
+    private static final long[][] TRANSIENT_RETRY_BACKOFF_MILLIS = {{250, 750}, {750, 1500}, {2000, 3000}};
     private final LlmProviderAdapter adapter;
     private final LlmTransport transport;
     private final Executor executor;
@@ -291,29 +302,39 @@ public final class CompanionLlmGateway implements LlmGateway {
         }
     }
 
-    /** Runs one delayed retry only for a typed transient transport failure, within the owning logical deadline. */
+    /**
+     * Sends the body, resending it on a typed transient transport failure along
+     * {@link #TRANSIENT_RETRY_BACKOFF_MILLIS} until one send lands or the ladder runs out. Only a TRANSIENT
+     * failure is resent: a permanent one (bad key, bad request shape) would fail identically every time, and a
+     * cancelled one must create no further physical attempt. The owning logical deadline still bounds the whole
+     * ladder, and every sleep is interruptible so cancellation ends the round rather than waiting it out.
+     */
     private AiTransportResult sendTransportWithTransientRetry(LlmRequest request, String body, int attemptNumber) {
-        AiTransportResult firstOutcome = transport.sendOutcome(body);
-        if (!(firstOutcome instanceof AiTransportResult.Failure failure)
-                || failure.kind() != AiTransportResult.FailureKind.TRANSIENT) {
-            return firstOutcome;
-        }
-        long delayMillis = ThreadLocalRandom.current().nextLong(
-                TRANSIENT_RETRY_MIN_DELAY_MILLIS, TRANSIENT_RETRY_MAX_DELAY_MILLIS + 1);
         String trace = request.trace() != null ? request.trace() : CompanionDiagnostics.SYSTEM;
-        CompanionDiagnostics.debug(trace, "llm-http", "attempt=" + attemptNumber + " transient transport"
-                + transportStatus(failure) + " -> retry in " + delayMillis + " ms");
-        try {
-            Thread.sleep(delayMillis);
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
-            throw new CancellationException("LLM request interrupted during transport retry delay");
+        AiTransportResult outcome = transport.sendOutcome(body);
+        for (long[] backoff : TRANSIENT_RETRY_BACKOFF_MILLIS) {
+            if (!(outcome instanceof AiTransportResult.Failure failure)
+                    || failure.kind() != AiTransportResult.FailureKind.TRANSIENT) {
+                return outcome;
+            }
+            long delayMillis = ThreadLocalRandom.current().nextLong(backoff[0], backoff[1] + 1);
+            CompanionDiagnostics.debug(trace, "llm-http", "attempt=" + attemptNumber + " transient transport"
+                    + transportStatus(failure) + " -> retry in " + delayMillis + " ms");
+            try {
+                Thread.sleep(delayMillis);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new CancellationException("LLM request interrupted during transport retry delay");
+            }
+            ensureActive();
+            outcome = transport.sendOutcome(body);
         }
-        ensureActive();
-        return transport.sendOutcome(body);
+        return outcome;
     }
 
-    /** Turns a non-parseable transport outcome into the gateway's terminal protocol result. */
+    /**
+     * Turns a non-parseable transport outcome into the gateway's terminal "no answer from the service" result.
+     */
     private LlmResult transportFailureResult(LlmRequest request, Attempt attempt) {
         AiTransportResult.Failure failure = attempt.transportFailure();
         if (failure.kind() == AiTransportResult.FailureKind.CANCELLED) {
@@ -321,10 +342,10 @@ public final class CompanionLlmGateway implements LlmGateway {
         }
         String trace = request.trace() != null ? request.trace() : CompanionDiagnostics.SYSTEM;
         CompanionDiagnostics.debug(trace, "llm-http", "transport " + failure.kind()
-                + transportStatus(failure) + " -> INVALID without protocol repair");
-        log.warn("LLM transport failed with {}{}; returning INVALID_RESPONSE without protocol repair",
+                + transportStatus(failure) + " -> SERVICE_UNAVAILABLE without protocol repair");
+        log.warn("LLM transport failed with {}{}; returning SERVICE_UNAVAILABLE without protocol repair",
                 failure.kind(), transportStatus(failure));
-        return INVALID;
+        return UNAVAILABLE;
     }
 
     private static Defect transportDefect(AiTransportResult.Failure failure) {

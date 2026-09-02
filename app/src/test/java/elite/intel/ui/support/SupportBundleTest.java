@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * The bundle is the whole bug report, so what matters is that it survives the state it is collected in:
  * the commander pressing the button is, by definition, in a session where something is wrong.
  */
-class DiagnosticsBundleTest {
+class SupportBundleTest {
 
     private static Map<String, String> unzip(Path zip) throws IOException {
         Map<String, String> entries = new HashMap<>();
@@ -53,12 +53,12 @@ class DiagnosticsBundleTest {
         write(bindingsDir, "Custom.4.0.binds", "<Root/>");
         Path zip = tmp.resolve("bundle.zip");
 
-        DiagnosticsBundle.Result result = DiagnosticsBundle.writeTo(zip,
-                new DiagnosticsBundle.Sources("1.1.0", "system log line", appLog, journalDir, bindingsDir));
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.1.0", "system log line", appLog, journalDir, bindingsDir));
 
         Map<String, String> entries = unzip(zip);
         assertTrue(result.omitted().isEmpty(), () -> "omitted: " + result.omitted());
-        assertEquals("system log line", entries.get(DiagnosticsBundle.SESSION_LOG_ENTRY));
+        assertEquals("system log line", entries.get(SupportBundle.SESSION_LOG_ENTRY));
         assertEquals("app log line", entries.get("elite-intel.log"));
         assertEquals("previous session", entries.get("elite-intel_2026-08-04_1.log"));
         assertEquals("{\"event\":\"Fileheader\"}", entries.get("Journal.2026-08-04T100000.01.log"));
@@ -80,8 +80,8 @@ class DiagnosticsBundleTest {
         Files.setLastModifiedTime(newer, java.nio.file.attribute.FileTime.fromMillis(2_000));
         Path zip = tmp.resolve("bundle.zip");
 
-        DiagnosticsBundle.writeTo(zip,
-                new DiagnosticsBundle.Sources("1.1.0", "log", appLog, null, null));
+        SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.1.0", "log", appLog, null, null));
 
         Map<String, String> entries = unzip(zip);
         assertEquals("current session", entries.get("elite-intel.log"));
@@ -99,13 +99,13 @@ class DiagnosticsBundleTest {
         Path appLog = write(logs, "elite-intel.log", "first session");
         Path zip = tmp.resolve("bundle.zip");
 
-        DiagnosticsBundle.Result result = DiagnosticsBundle.writeTo(zip,
-                new DiagnosticsBundle.Sources("1.1.0", "system log line", appLog, null, null));
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.1.0", "system log line", appLog, null, null));
 
         assertTrue(result.omitted().stream().noneMatch(line -> line.contains("previous application log")),
                 () -> "omitted: " + result.omitted());
         // Still said out loud in the bundle, so "none existed" cannot be read as "collection failed".
-        assertTrue(unzip(zip).get(DiagnosticsBundle.INFO_ENTRY).contains("No previous (rolled) application log"));
+        assertTrue(unzip(zip).get(SupportBundle.INFO_ENTRY).contains("No previous (rolled) application log"));
     }
 
     /**
@@ -121,8 +121,8 @@ class DiagnosticsBundleTest {
         Files.setLastModifiedTime(newer, java.nio.file.attribute.FileTime.fromMillis(2_000));
         Path zip = tmp.resolve("bundle.zip");
 
-        DiagnosticsBundle.writeTo(zip,
-                new DiagnosticsBundle.Sources("1.1.0", "log", null, journalDir, null));
+        SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.1.0", "log", null, journalDir, null));
 
         Map<String, String> entries = unzip(zip);
         assertTrue(entries.containsKey("Journal.new.log"));
@@ -138,13 +138,13 @@ class DiagnosticsBundleTest {
         Path appLog = write(tmp, "elite-intel.log", "app log line");
         Path zip = tmp.resolve("bundle.zip");
 
-        DiagnosticsBundle.Result result = DiagnosticsBundle.writeTo(zip,
-                new DiagnosticsBundle.Sources("1.1.0", "system log line", appLog,
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.1.0", "system log line", appLog,
                         tmp.resolve("no-such-journal-dir"), null));
 
         Map<String, String> entries = unzip(zip);
         assertEquals("app log line", entries.get("elite-intel.log"));
-        assertEquals("system log line", entries.get(DiagnosticsBundle.SESSION_LOG_ENTRY));
+        assertEquals("system log line", entries.get(SupportBundle.SESSION_LOG_ENTRY));
         assertEquals(2, result.included().size(), () -> "included: " + result.included());
         assertEquals(2, result.omitted().size(), () -> "omitted: " + result.omitted());
     }
@@ -160,10 +160,10 @@ class DiagnosticsBundleTest {
     void namesEveryOmissionInsideTheBundle(@TempDir Path tmp) throws IOException {
         Path zip = tmp.resolve("bundle.zip");
 
-        DiagnosticsBundle.Result result = DiagnosticsBundle.writeTo(zip,
-                new DiagnosticsBundle.Sources("1.1.0", "", null, null, null));
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.1.0", "", null, null, null));
 
-        String info = unzip(zip).get(DiagnosticsBundle.INFO_ENTRY);
+        String info = unzip(zip).get(SupportBundle.INFO_ENTRY);
         assertNotNull(info);
         assertTrue(info.contains("1.1.0"), info);
         assertTrue(result.included().isEmpty(), () -> "included: " + result.included());
@@ -183,7 +183,7 @@ class DiagnosticsBundleTest {
         Path file = write(tmp, "small.log", "line one\nline two\n");
 
         assertEquals("line one\nline two\n",
-                new String(DiagnosticsBundle.readTail(file, 1024), StandardCharsets.UTF_8));
+                new String(SupportBundle.readTail(file, 1024), StandardCharsets.UTF_8));
     }
 
     /**
@@ -194,7 +194,7 @@ class DiagnosticsBundleTest {
     void anOversizedFileIsCutToItsTailAndSaysSo(@TempDir Path tmp) throws IOException {
         Path file = write(tmp, "huge.log", "oldest\nolder\nmiddle\nnewer\nnewest\n");
 
-        String kept = new String(DiagnosticsBundle.readTail(file, 20), StandardCharsets.UTF_8);
+        String kept = new String(SupportBundle.readTail(file, 20), StandardCharsets.UTF_8);
 
         assertTrue(kept.startsWith("### Elite Intel:"), kept);
         assertTrue(kept.contains("huge.log"), kept);
@@ -215,11 +215,11 @@ class DiagnosticsBundleTest {
         Files.createDirectory(journalDir.resolve("Journal.trap.log"));
         Path zip = tmp.resolve("bundle.zip");
 
-        DiagnosticsBundle.Result result = DiagnosticsBundle.writeTo(zip,
-                new DiagnosticsBundle.Sources("1.1.0", "system log line", null, journalDir, null));
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.1.0", "system log line", null, journalDir, null));
 
         assertFalse(unzip(zip).containsKey("Journal.trap.log"));
-        assertTrue(result.included().contains(DiagnosticsBundle.SESSION_LOG_ENTRY));
+        assertTrue(result.included().contains(SupportBundle.SESSION_LOG_ENTRY));
         assertTrue(result.omitted().stream().anyMatch(line -> line.startsWith("journal")),
                 () -> "omitted: " + result.omitted());
     }
@@ -237,8 +237,8 @@ class DiagnosticsBundleTest {
         Files.writeString(journalDir.resolve("Market.json"), "{\"MarketID\":4278665219}");
 
         Path zip = tmp.resolve("state.zip");
-        DiagnosticsBundle.Result result = DiagnosticsBundle.writeTo(zip,
-                new DiagnosticsBundle.Sources("1.1.0", "log", null, journalDir, null));
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.1.0", "log", null, journalDir, null));
 
         Map<String, String> entries = unzip(zip);
         assertEquals("{\"Flags\":16777224}", entries.get("Status.json"));
@@ -258,8 +258,8 @@ class DiagnosticsBundleTest {
         Files.writeString(journalDir.resolve("Status.json"), "{}");
 
         Path zip = tmp.resolve("sparse.zip");
-        DiagnosticsBundle.Result result = DiagnosticsBundle.writeTo(zip,
-                new DiagnosticsBundle.Sources("1.1.0", "log", null, journalDir, null));
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.1.0", "log", null, journalDir, null));
 
         List<String> aboutState = result.omitted().stream().filter(line -> line.startsWith("game state")).toList();
         assertEquals(1, aboutState.size(), aboutState.toString());
@@ -273,8 +273,8 @@ class DiagnosticsBundleTest {
     @Test
     void noJournalDirectoryMeansNoSecondComplaintAboutStateFiles(@TempDir Path tmp) throws IOException {
         Path zip = tmp.resolve("nodir.zip");
-        DiagnosticsBundle.Result result = DiagnosticsBundle.writeTo(zip,
-                new DiagnosticsBundle.Sources("1.1.0", "log", null, null, null));
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.1.0", "log", null, null, null));
 
         assertTrue(result.omitted().stream().noneMatch(line -> line.startsWith("game state")),
                 result.omitted().toString());

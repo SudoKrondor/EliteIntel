@@ -43,7 +43,7 @@ public final class PlaylistFileImporter {
      * <p>
      * Entries are resolved against the playlist's own folder, which is how relative paths in an M3U are
      * meant to be read and what makes a playlist that travels with its music still work. Remote entries
-     * are skipped: this plays files, not streams. Anything that is not an MP3 is skipped too - it would
+     * are skipped: this plays files, not streams. Anything there is no decoder for is skipped too - it would
      * otherwise be added and then immediately flagged as missing, which reads as a bug rather than as the
      * "cannot play this yet" it actually is.
      *
@@ -60,7 +60,7 @@ public final class PlaylistFileImporter {
             String entry = line.trim();
             if (entry.isEmpty() || entry.startsWith(COMMENT_PREFIX) || isRemote(entry)) continue;
             Path resolved = resolve(folder, entry);
-            if (resolved == null || !isPlayable(resolved)) continue;
+            if (resolved == null || !AudioSources.isPlayable(resolved)) continue;
             tracks.add(resolved.toString());
         }
         return tracks;
@@ -96,10 +96,5 @@ public final class PlaylistFileImporter {
             // A playlist written on another operating system can name paths this one cannot express.
             return null;
         }
-    }
-
-    private static boolean isPlayable(Path file) {
-        Path name = file.getFileName();
-        return name != null && name.toString().toLowerCase(Locale.ROOT).endsWith(".mp3");
     }
 }

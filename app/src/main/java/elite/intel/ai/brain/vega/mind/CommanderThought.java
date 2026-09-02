@@ -116,7 +116,7 @@ public final class CommanderThought extends Thought {
                 return CompletableFuture.completedFuture(null);
             }
             if (result == null || !result.isValid()) {
-                onInvalidResponse();
+                onUnusableResponse(result);
                 return CompletableFuture.completedFuture(null);
             }
 
@@ -142,7 +142,8 @@ public final class CommanderThought extends Thought {
             return executeBatch(tools, calls);
         } catch (RuntimeException unexpected) {
             // An unexpected failure (e.g. during prompt assembly) is diagnosed and voiced, but is not dialogue.
-            onInvalidResponse();
+            // It is ours, not the provider's, so it keeps the plain execution-failure phrase.
+            onUnusableResponse(null);
             throw unexpected;
         }
     }
@@ -567,15 +568,25 @@ public final class CommanderThought extends Thought {
     }
 
     /**
-     * Handles an unrecoverable LLM response: speaks a fixed service phrase (no LLM) and leaves
+     * Handles a turn that produced nothing to settle: speaks a fixed service phrase (no LLM) and leaves
      * conversational memory untouched. The turn ends.
+     * <p>
+     * A provider that never answered ({@link LlmResult.Status#SERVICE_UNAVAILABLE}) says so, because the
+     * generic "I can't do that right now" is the phrase for a request that is impossible here and now -
+     * hearing it after a 503 sends the commander hunting for a broken feature instead of simply asking again.
+     * Everything else - an unusable model response, or a failure inside this turn's own code, for which
+     * {@code result} is null - keeps the plain execution-failure phrase.
      */
-    private void onInvalidResponse() {
+    private void onUnusableResponse(LlmResult result) {
         if (!isRuntimeActive()) {
             return;
         }
-        CompanionDiagnostics.info(trace(), "settle", "cannot execute (unrecoverable LLM response)");
-        String phrase = executionFailurePhrase();
+        boolean serviceUnreachable = result != null
+                && result.status() == LlmResult.Status.SERVICE_UNAVAILABLE;
+        CompanionDiagnostics.info(trace(), "settle", serviceUnreachable
+                ? "cannot execute (LLM service unreachable)"
+                : "cannot execute (unrecoverable LLM response)");
+        String phrase = serviceUnreachable ? serviceUnreachablePhrase() : executionFailurePhrase();
         dependencies.speechGateway().submit(new SpeechRequest(newId(), phrase, urgency()));
     }
 

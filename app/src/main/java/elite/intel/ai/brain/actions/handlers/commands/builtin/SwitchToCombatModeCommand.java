@@ -9,6 +9,7 @@ import elite.intel.eventbus.GameControllerBus;
 import elite.intel.session.Status;
 
 import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_ACTIVATE_COMBAT_MODE;
+import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_ACTIVATE_COMBAT_MODE_BUGGY;
 
 /**
  * Stage-4b self-describing command for "switch to combat mode".
@@ -42,8 +43,14 @@ public final class SwitchToCombatModeCommand implements IntelCommand {
                 GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_ACTIVATE_COMBAT_MODE.getGameBinding())));
             }
 
+            // The SRV has its OWN HUD toggle binding. Tapping the ship's one from inside a buggy sends a
+            // key the SRV does not listen to: the keystroke reports success, the HUD does not change, and
+            // the commander is told nothing - which read as "combat mode is broken in the Rhino" when it
+            // was equally broken in a Scarab and had been all along. The mirror command,
+            // SwitchToAnalysisModeCommand, always used the buggy binding here, which is why switching the
+            // other way worked.
             if (status.isInSrv()) {
-                GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_ACTIVATE_COMBAT_MODE.getGameBinding())));
+                GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_ACTIVATE_COMBAT_MODE_BUGGY.getGameBinding())));
             }
         }
         return null;

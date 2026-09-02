@@ -59,6 +59,26 @@ public class KeyBindCheck {
             });
         }
 
+        // Second, and also unconditionally: UI direction keys a focused text field eats as text. Same
+        // class of problem as a blocking conflict - route plotting cannot work and playing the game will
+        // never reveal it - but it is a property of one binding rather than a clash between two, so it is
+        // detected separately. See UiNavigationTextTrap.
+        List<UiNavigationTextTrap.TrappedBinding> textTrapped = monitor.textTrappedUiNavigation();
+        if (!textTrapped.isEmpty()) {
+            List<String> trappedKeys = BindingChordSpeech.distinctChords(
+                    textTrapped.stream().map(UiNavigationTextTrap.TrappedBinding::chord).toList());
+            GameEventBus.publish(new AiVoxResponseEvent(
+                    StringUtls.localizedSpeech("speech.bindingUiNavTypesText",
+                            trappedKeys.size(), String.join(", ", trappedKeys))
+            ));
+            textTrapped.forEach(t -> {
+                String line = "[" + BindingChordSpeech.describe(t.chord()) + "] " + t.action()
+                        + " types a character, so a focused search box keeps the keystroke";
+                UiBus.publish(new AppLogEvent("BLOCKING binding problem: " + line));
+                log.error("UI navigation typed into text field: {}", line);
+            });
+        }
+
         if (!newMissing.isEmpty()) {
             GameEventBus.publish(new AiVoxResponseEvent(
                     StringUtls.localizedSpeech("speech.bindingsMissing", newMissing.size())

@@ -250,6 +250,18 @@ public class BindingsMonitor {
     }
 
     /**
+     * UI direction keys that a focused Elite text field would swallow as text - see
+     * {@link UiNavigationTextTrap}.
+     * <p>
+     * A pure read announced on every start, for the same reason as {@link #blockingConflicts()}: it stops
+     * route plotting outright rather than degrading it, and the commander cannot discover it by playing
+     * because by hand they click the search result with the mouse.
+     */
+    public List<UiNavigationTextTrap.TrappedBinding> textTrappedUiNavigation() {
+        return UiNavigationTextTrap.scan(getBindings());
+    }
+
+    /**
      * Detects binding conflicts among GameCommand bindings and persists them.
      * Returns descriptions of newly detected conflicts only - empty list means
      * nothing changed. Blocking conflicts are excluded from both the persisted set and the returned list:

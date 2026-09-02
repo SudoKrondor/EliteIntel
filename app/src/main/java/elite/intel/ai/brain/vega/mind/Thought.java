@@ -51,6 +51,10 @@ public abstract class Thought {
     private static final AtomicInteger TRACE_SEQ = new AtomicInteger();
     /** Existing localized service phrase for a command/query/macro execution that could not complete. */
     private static final String CANNOT_EXECUTE_KEY = "handler.common.cantDoNow";
+    /**
+     * Localized service phrase for a turn lost because the LLM provider never answered, not because the request was impossible.
+     */
+    private static final String SERVICE_UNREACHABLE_KEY = "handler.common.aiServiceUnreachable";
 
     /** Stable per-thought diagnostic tag ({@code SOURCE#n}), correlating every SYSTEM LOG line of this one thought. */
     private final String trace;
@@ -533,8 +537,21 @@ public abstract class Thought {
 
     /** Returns the fixed localized phrase used when a command, query, or macro execution fails. */
     protected static String executionFailurePhrase() {
+        return servicePhrase(CANNOT_EXECUTE_KEY);
+    }
+
+    /**
+     * Returns the fixed localized phrase for a turn the provider never answered. Distinct from
+     * {@link #executionFailurePhrase()} on purpose: "I can't do that right now" reads as a refusal of the
+     * request the commander just made, which sends them looking for a fault in a feature that is working.
+     */
+    protected static String serviceUnreachablePhrase() {
+        return servicePhrase(SERVICE_UNREACHABLE_KEY);
+    }
+
+    private static String servicePhrase(String key) {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
-        return ResponseTextProvider.getText(language, CANNOT_EXECUTE_KEY);
+        return ResponseTextProvider.getText(language, key);
     }
 
     /** Voices a non-blank phrase through the speech gateway (mission-critical -> urgent/preempting channel). */

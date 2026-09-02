@@ -25,6 +25,14 @@ public class CommitCrimeEvent extends BaseEvent {
     @SerializedName("Bounty")
     private long bounty;
 
+    /**
+     * The journal reports a penalty as EITHER a bounty or a fine, never both: a murder carries
+     * {@code Bounty}, while a lesser offence such as failing to submit to police carries {@code Fine}
+     * and no bounty at all. Reading only the bounty announced every fine as "a bounty of zero credits".
+     */
+    @SerializedName("Fine")
+    private long fine;
+
     public CommitCrimeEvent(JsonObject json) {
         super(json.get("timestamp").getAsString(), Duration.ofSeconds(30), "CommitCrime");
         CommitCrimeEvent event = GsonFactory.getGson().fromJson(json, CommitCrimeEvent.class);
@@ -33,6 +41,7 @@ public class CommitCrimeEvent extends BaseEvent {
         this.victim = event.victim;
         this.victimLocalised = event.victimLocalised;
         this.bounty = event.bounty;
+        this.fine = event.fine;
     }
 
     @Override
@@ -85,6 +94,27 @@ public class CommitCrimeEvent extends BaseEvent {
         return bounty;
     }
 
+    public long getFine() {
+        return fine;
+    }
+
+    /**
+     * The victim as a person is named, or {@code null} when the crime has no victim (a data transfer, an
+     * illegal cargo scan). The localised name is the one to speak; the raw field is a
+     * {@code $npc_name_decorate:#name=...;} token whenever the game supplied a localised one beside it,
+     * and a plain name (an on-foot settlement worker) whenever it did not.
+     */
+    public String getSpokenVictim() {
+        if (victimLocalised != null && !victimLocalised.isBlank()) return victimLocalised;
+        if (victim == null || victim.isBlank()) return null;
+        if (!victim.startsWith("$")) return victim;
+        // A token reached us with no localised sibling. The readable name is the last "=name;" segment.
+        int nameStart = victim.lastIndexOf('=');
+        if (nameStart < 0) return null;
+        String name = victim.substring(nameStart + 1).replace(";", "").trim();
+        return name.isEmpty() ? null : name;
+    }
+
     public String getFormattedTimestamp(boolean useLocalTime) {
         return TimestampFormatter.formatTimestamp(getTimestamp().toString(), useLocalTime);
     }
@@ -96,6 +126,7 @@ public class CommitCrimeEvent extends BaseEvent {
                 .add("faction='" + faction + "'")
                 .add("victim='" + (victimLocalised != null ? victimLocalised : victim) + "'")
                 .add("bounty=" + bounty)
+                .add("fine=" + fine)
                 .toString();
     }
 }

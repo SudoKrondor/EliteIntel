@@ -29,6 +29,11 @@ public class ShipSettingsPopup {
                 shipSettings::getHonkTrigger,
                 shipSettings::setHonkTrigger
         ));
+        // Directly under the honk row, where the commander is already setting up how this hull behaves.
+        rows.add(new VehicleBaySettingsPanel(
+                shipSettings::getVehicleBay,
+                shipSettings::setVehicleBay
+        ));
         rows.add(new CheckboxRow(
                 getText("automation.hgeMaterialAlert"),
                 shipSettings::isHgeAlerts,

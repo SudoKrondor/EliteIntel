@@ -55,7 +55,8 @@ public final class RecoverSrvVehicleGetOnBoardShipCommand implements IntelComman
                 // Recover SRV.
                 GameInputStep.bindingTap(ui_down),
                 GameInputStep.bindingTap(ui_right),
-                GameInputStep.bindingTap(activate)
+                GameInputStep.bindingTap(activate),
+                GameInputStep.bindingTap(activate) // << Rhino needs two taps
         ));
         navigator.assumeDefaultState(StatusFlags.GuiFocus.CENTRAL_PANEL);
         return null;
