@@ -68,37 +68,22 @@ public final class OwnCarrierHold {
     }
 
     /**
-     * Every carrier the commander owns that has a callsign, a known position and something aboard. A
-     * commander can own one fleet carrier and one squadron carrier, and no more.
+     * Every carrier the commander owns that has a callsign and a known position, one we believe to be empty
+     * included. A commander can own one fleet carrier and one squadron carrier, and no more.
      * <p>
      * BOTH are returned rather than the first that happens to be carrying something. A fleet carrier holding
      * nothing but a few tonnes of leftover trade goods would otherwise mask a squadron carrier loaded with
      * exactly the construction materials the commander is looking for - the caller has to weigh them against
      * the list before it can know which one is the answer.
      * <p>
-     * Empty when neither is carrying anything we know about, which is the ordinary state until the commander
-     * docks at one and opens its market.
-     */
-    public static List<Held> ours() {
-        return ours(false);
-    }
-
-    /**
-     * The same two carriers, keeping one we know the position of but believe to be empty.
-     * <p>
-     * WHY a caller would want that: an empty carrier parked next to a commodity market is not nothing to
-     * say - it is a stockpiling run that has not started yet, and dropping it would leave the shopping card
-     * dark until the first tonne was aboard. Callers asking "who can SUPPLY this" want {@link #ours()}
-     * instead, where a carrier holding nothing is genuinely no answer.
+     * WHY an empty one is kept: a carrier parked next to a commodity market with nothing aboard is not
+     * nothing to say - it is a stockpiling run that has not started yet, and dropping it would leave the
+     * shopping card dark until the first tonne was loaded.
      */
     public static List<Held> oursIncludingEmpty() {
-        return ours(true);
-    }
-
-    private static List<Held> ours(boolean includeEmpty) {
         List<Held> carriers = new ArrayList<>();
-        fleetCarrier(includeEmpty).ifPresent(carriers::add);
-        squadronCarrier(includeEmpty).ifPresent(carriers::add);
+        fleetCarrier(true).ifPresent(carriers::add);
+        squadronCarrier(true).ifPresent(carriers::add);
         return carriers;
     }
 

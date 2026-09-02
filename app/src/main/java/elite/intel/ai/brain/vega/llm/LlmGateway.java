@@ -8,8 +8,10 @@ import java.util.concurrent.CompletableFuture;
 /**
  * The single door to the language models for companion mode. Queues {@code LlmRequest}s (never
  * {@code Thought}s), performs native tool-calling, and enforces the tool-call-only contract with one protocol
- * repair for invalid model output. A transient HTTP failure gets at most one jittered resend; permanent
- * transport failures report {@code INVALID_RESPONSE} without a protocol repair.
+ * repair for invalid model output. A transient HTTP failure gets a short ladder of jittered resends; a
+ * transport failure that outlives the ladder - and any permanent one - reports
+ * {@code SERVICE_UNAVAILABLE} without a protocol repair, which is how a caller tells an unreachable
+ * provider from a provider that answered badly.
  * <p>
  * Threading: implementations are asynchronous and return immediately with a future.
  * <p>
@@ -23,7 +25,8 @@ public interface LlmGateway extends AutoCloseable {
      * Submits a request for asynchronous processing.
      *
      * @return a future completing with the result ({@link LlmResult.Status#INVALID_RESPONSE} on
-     *         unrecoverable bad responses); cancel it to skip a queued request or interrupt its in-flight
+     *         unrecoverable bad responses, {@link LlmResult.Status#SERVICE_UNAVAILABLE} when the provider
+     *         never answered); cancel it to skip a queued request or interrupt its in-flight
      *         physical provider exchange
      */
     CompletableFuture<LlmResult> submit(LlmRequest request);

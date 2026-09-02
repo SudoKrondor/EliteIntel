@@ -44,7 +44,7 @@ public final class JukeboxPlayer {
     private static final int HISTORY_LIMIT = 64;
 
     private static final JukeboxPlayer INSTANCE = new JukeboxPlayer(
-            JukeboxManager.getInstance(), JavaSoundMusicOutput::new, Mp3AudioSource::open, new MusicDucker());
+            JukeboxManager.getInstance(), JavaSoundMusicOutput::new, AudioSources::open, new MusicDucker());
 
     static {
         // WHY a JVM hook rather than a call in the window's close handler: the position is only worth

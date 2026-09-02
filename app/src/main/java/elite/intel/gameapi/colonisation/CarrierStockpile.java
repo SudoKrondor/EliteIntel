@@ -5,6 +5,8 @@ import elite.intel.gameapi.carrier.OwnCarrierHold;
 import elite.intel.gameapi.carrier.OwnCarrierHold.Held;
 import elite.intel.session.PlayerSession;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,17 +46,39 @@ public final class CarrierStockpile {
     }
 
     /**
+     * How old a look at a carrier's shelves may be before the commander is warned it might have moved on.
+     * <p>
+     * Longer than the construction manifest's hour, because the two go stale for different reasons. A
+     * depot's numbers change because OTHER commanders are delivering to it, constantly and invisibly. A
+     * carrier's change only through the owner's own hauling - or someone buying off its sell orders - so
+     * within a session the commander already knows what they loaded. Across sessions they may well not,
+     * which is what this window is sized to catch.
+     */
+    public static final int SNAPSHOT_STALE_AFTER_HOURS = 6;
+
+    /**
      * What one carrier is holding for a build, by bare journal symbol.
      * <p>
      * Empty is a real answer rather than the absence of one: a carrier just parked at the market has nothing
      * aboard yet, and that is precisely the moment the whole list is still to buy.
      *
-     * @param callSign the carrier the tonnes are on, which is also its station name
+     * @param callSign   the carrier the tonnes are on, which is also its station name
+     * @param starSystem where the carrier is NOW, or null when we never learned it
+     * @param seenAt     when the commander last read that carrier's market, or null when they never have -
+     *                   see {@link #snapshotIsStale()}
      */
-    public record Stash(String callSign, Map<String, Integer> stockBySymbol) {
+    public record Stash(String callSign, String starSystem, Instant seenAt, Map<String, Integer> stockBySymbol) {
 
         public Stash {
             stockBySymbol = stockBySymbol == null ? Map.of() : Map.copyOf(stockBySymbol);
+        }
+
+        /**
+         * A stash known only by what is aboard it, for the callers - and the tests - that never name the
+         * carrier or date the look.
+         */
+        public Stash(String callSign, Map<String, Integer> stockBySymbol) {
+            this(callSign, null, null, stockBySymbol);
         }
 
         public int stockOf(String symbol) {
@@ -63,6 +87,19 @@ public final class CarrierStockpile {
 
         public boolean isEmpty() {
             return stockBySymbol.isEmpty();
+        }
+
+        /**
+         * True when the last look at these shelves is old enough to be worth a caveat.
+         * <p>
+         * The game tells a third-party tool what a carrier holds exactly once, when the commander stands in
+         * its market. Nothing reports cargo moved on or off by anyone else afterwards, so an old snapshot is
+         * a claim about the past - and telling a commander there is nothing left to buy on the strength of
+         * one is how they arrive at the depot short.
+         */
+        public boolean snapshotIsStale() {
+            return seenAt != null
+                    && Duration.between(seenAt, Instant.now()).toHours() >= SNAPSHOT_STALE_AFTER_HOURS;
         }
     }
 
@@ -97,7 +134,8 @@ public final class CarrierStockpile {
                 best = carrier;
             }
         }
-        return Optional.ofNullable(best).map(carrier -> new Stash(carrier.callSign(), carrier.stockBySymbol()));
+        return Optional.ofNullable(best).map(carrier -> new Stash(carrier.callSign(), carrier.starSystem(),
+                carrier.seenAt(), carrier.stockBySymbol()));
     }
 
     /**

@@ -5,13 +5,13 @@ import elite.intel.gameapi.carrier.OwnCarrierHold.Held;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Finding the carrier a build is being stockpiled on.
@@ -160,5 +160,52 @@ class CarrierStockpileTest {
                 List.of(carrier(CARRIER, MARKET_SYSTEM, Map.of()))).isEmpty());
         assertEquals(400, CarrierStockpile.forBuild(nowhere, WANTED, MARKET_SYSTEM,
                 List.of(carrier(CARRIER, MARKET_SYSTEM, Map.of("steel", 400)))).orElseThrow().stockOf("steel"));
+    }
+
+    /**
+     * Where the carrier is and when we last read its shelves both survive the lookup: the commander is told
+     * there is nothing left to buy off this stash, and both facts are what makes that claim checkable.
+     */
+    @Test
+    void theStashCarriesWhereItIsAndWhenWeLastLooked() {
+        Instant seen = Instant.now().minus(2, ChronoUnit.HOURS);
+        CarrierStockpile.Stash stash = stash(
+                new Held(CARRIER, MARKET_SYSTEM, seen, Map.of("steel", 400))).orElseThrow();
+
+        assertEquals(MARKET_SYSTEM, stash.starSystem());
+        assertEquals(seen, stash.seenAt());
+    }
+
+    /**
+     * The game reports a carrier's cargo exactly once, while the commander stands in its market, and never
+     * mentions what anyone bought off its sell orders afterwards. Telling them there is nothing left to buy
+     * on the strength of a days-old look is how they arrive at the depot short.
+     */
+    @Test
+    void anOldLookAtTheShelvesIsFlaggedAsOld() {
+        CarrierStockpile.Stash stash = stash(new Held(CARRIER, MARKET_SYSTEM,
+                Instant.now().minus(CarrierStockpile.SNAPSHOT_STALE_AFTER_HOURS + 1, ChronoUnit.HOURS),
+                Map.of("steel", 400))).orElseThrow();
+
+        assertTrue(stash.snapshotIsStale());
+    }
+
+    @Test
+    void aLookFromThisSessionCarriesNoCaveat() {
+        assertFalse(stash(carrier(CARRIER, MARKET_SYSTEM, Map.of("steel", 400)))
+                .orElseThrow().snapshotIsStale(), "within a session the commander knows what they loaded");
+    }
+
+    /**
+     * A carrier saved before we ever timestamped a market read is not thereby ancient - it is undated, and
+     * inventing an age would have the companion warn about perfectly good figures.
+     */
+    @Test
+    void aCarrierWeHaveNeverTimestampedIsNotCalledStale() {
+        CarrierStockpile.Stash stash = stash(
+                new Held(CARRIER, MARKET_SYSTEM, null, Map.of("steel", 400))).orElseThrow();
+
+        assertNull(stash.seenAt());
+        assertFalse(stash.snapshotIsStale());
     }
 }

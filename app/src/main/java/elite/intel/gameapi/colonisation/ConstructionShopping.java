@@ -44,6 +44,14 @@ public final class ConstructionShopping {
         }
 
         /**
+         * Tonnes still to BUY of it: what the site wants less everything already paid for, in the hold and
+         * on the carrier alike. Never negative - a good we over-bought is simply finished.
+         */
+        public int stillToBuy() {
+            return Math.max(0, needed() - owned);
+        }
+
+        /**
          * Nothing left to buy of this one.
          */
         public boolean isCovered() {

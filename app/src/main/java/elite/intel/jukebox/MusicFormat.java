@@ -9,8 +9,10 @@ import javax.sound.sampled.AudioFormat;
  * 32 kHz files, in mono and stereo. Opening the output line at each file's format would renegotiate the
  * sound device between tracks - a gap, a click, and on some devices a format the driver simply refuses -
  * and would reset the duck envelope at every track change. Everything is converted to this format instead,
- * and the line is opened once and kept. 44.1 kHz is the rate almost every MP3 already uses, so the common
- * case converts nothing at all.
+ * and the line is opened once and kept. 44.1 kHz is the rate almost every MP3 already uses, so for those
+ * the common case converts nothing at all. Lossless files are the reason the conversion has to be real
+ * work rather than a formality: 96 kHz is ordinary in a FLAC library, and played to this line unconverted
+ * it would run at better than twice speed.
  */
 public final class MusicFormat {
 

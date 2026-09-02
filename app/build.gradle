@@ -43,6 +43,26 @@ dependencies {
     // It is also the only one of the two that derives a reliable duration for a variable-bitrate file.
     implementation 'net.jthink:jaudiotagger:3.0.1'
 
+    // FLAC decoding for the jukebox. LGPL-2.1, pure Java, chosen for the same reason JLayer was: no
+    // native library to ship per platform and no Java Sound codec provider that may or may not be
+    // installed. Its low-level frame API is used rather than its Java Sound SPI, so seeking goes through
+    // the file's own seek table instead of a stream that only reads forwards.
+    implementation 'org.jflac:jflac-codec:1.5.2'
+
+    // AAC decoding for the jukebox, for the .m4a an iTunes library is full of and the .m4b an audiobook
+    // comes as. Apache-2.0, pure Java: a JAAD fork carried by the radiorecorder project, preferred over
+    // the otherwise identical com.tianscar:javasound-aac because that one's upstream repository has
+    // disappeared, and because this build registers NO Java Sound SPI provider - the other one installs
+    // itself into AudioSystem globally, where it would sit in front of every stream the TTS engines open.
+    // It also shades its own dependencies, so nothing transitive arrives with it.
+    implementation 'de.sfuhrm:radiorecorder-aac:1.11.1'
+
+    // Ogg Vorbis decoding for the jukebox. LGPL-2.0-or-later, pure Java, and the only pure-Java Vorbis
+    // decoder there is - the Apache-licensed org.gagravarr:vorbis-java parses Ogg containers and tags but
+    // has no decoder in it at all. This artifact carries com.jcraft.jogg as well as com.jcraft.jorbis, so
+    // the container comes with it, and it registers no Java Sound SPI provider.
+    implementation 'com.googlecode.soundlibs:jorbis:0.0.17.4'
+
     // Gson for JSON parsing
     implementation 'com.google.code.gson:gson:2.13.1'
 

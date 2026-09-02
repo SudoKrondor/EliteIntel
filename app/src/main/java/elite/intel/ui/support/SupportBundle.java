@@ -42,9 +42,9 @@ import java.util.zip.ZipOutputStream;
  * who saw the message on screen, and "no journal in it" and "no journal at all"
  * are very different bug reports.
  */
-public final class DiagnosticsBundle {
+public final class SupportBundle {
 
-    private static final Logger log = LogManager.getLogger(DiagnosticsBundle.class);
+    private static final Logger log = LogManager.getLogger(SupportBundle.class);
 
     /**
      * Manifest naming the app version, the collection time, and anything that could not be collected.
@@ -80,7 +80,7 @@ public final class DiagnosticsBundle {
      */
     static final long MAX_SOURCE_BYTES = 32L * 1024 * 1024;
 
-    private DiagnosticsBundle() {
+    private SupportBundle() {
     }
 
     /**
@@ -410,7 +410,7 @@ public final class DiagnosticsBundle {
 
     private static String manifest(Sources sources, List<String> included, List<String> omitted) {
         StringBuilder text = new StringBuilder()
-                .append("Elite Intel diagnostics bundle\n")
+                .append("Elite Intel support bundle\n")
                 .append("Created: ").append(java.time.ZonedDateTime.now()).append('\n')
                 .append("App version: ").append(sources.appVersion()).append('\n')
                 .append("OS: ").append(System.getProperty("os.name"))
