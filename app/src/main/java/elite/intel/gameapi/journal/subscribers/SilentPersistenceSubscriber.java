@@ -83,33 +83,35 @@ public class SilentPersistenceSubscriber {
         dto.setGovernment(event.getSystemGovernmentLocalised());
         dto.setPopulation(event.getPopulation());
         dto.setSecurity(event.getSystemSecurity());
-        dto.setStationAllegiance(event.getStationAllegiance());
-        dto.setStationEconomy(event.getStationEconomyLocalised());
-        dto.setStationGovernment(event.getStationGovernmentLocalised());
-        dto.setStationServices(event.getStationServices());
         dto.setStarName(event.getStarSystem());
-        dto.setStationType(event.getStationType());
         dto.setDistance(event.getDistFromStarLS());
         dto.setEconomy(event.getSystemEconomyLocalised());
         dto.setSecondEconomy(event.getSystemSecondEconomyLocalised());
 
+        // Mirrors LocationSubscriber exactly - the pre-scan and live writers must not disagree about a body.
+        // Only when the journal's body type maps to something: determineType answers null for "Planet", and
+        // assigning that erases the classification a scan established.
         String bodyType = event.getBodyType() != null ? event.getBodyType().toLowerCase(Locale.ROOT) : "";
-        dto.setLocationType(LocationDto.determineType(bodyType, event.getDistFromStarLS() > 0));
+        LocationDto.LocationType type = LocationDto.determineType(bodyType, event.getDistFromStarLS() > 0);
+        if (type != null) {
+            dto.setLocationType(type);
+        }
 
-        dto.setStationType(event.getStationType());
         dto.setPopulation(event.getPopulation());
         dto.setPowerplayState(event.getPowerplayState());
         dto.setPowerplayStateControlProgress(event.getPowerplayStateControlProgress());
         dto.setPowerplayStateReinforcement(event.getPowerplayStateReinforcement());
         dto.setPowerplayStateUndermining(event.getPowerplayStateUndermining());
         dto.setSecurity(event.getSystemSecurityLocalised());
-        dto.setStationName(event.getStationName());
-        if (event.getStationFaction() != null) dto.setStationFaction(event.getStationFaction().getName());
         if (event.getSystemFaction() != null) dto.setSystemFaction(event.getSystemFaction().getName());
-        if ("FleetCarrier".equalsIgnoreCase(event.getStationType())) dto.setLocationType(FLEET_CARRIER);
 
         if (dto.getStarName() != null && !dto.getStarName().isEmpty()) {
             locationManager.save(dto);
+            // The station standing here is not the body this event names, so it gets a record of its own -
+            // written after the body, for the same reason as in LocationSubscriber.
+            if (event.isDocked()) {
+                DockedStationRecord.of(event).store();
+            }
             // Update the player's current-location pointer so queries like
             // "where are we" resolve correctly on a fresh DB.
             playerSession.setCurrentPrimaryStarName(event.getStarSystem());

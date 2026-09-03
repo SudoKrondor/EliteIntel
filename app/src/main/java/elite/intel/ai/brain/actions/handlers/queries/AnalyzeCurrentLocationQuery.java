@@ -38,9 +38,11 @@ public class AnalyzeCurrentLocationQuery extends BaseQueryAnalyzer implements In
         DeathsDto deathsDto = EdsmApiClient.searchDeaths(location.getStarName());
         TrafficDto trafficDto = EdsmApiClient.searchTraffic(location.getStarName());
 
+        // The station is looked up separately: it is not the body this location record describes.
+        LocationDto dockedAt = locationManager.findCurrentStation();
         String station = "none";
-        if (status.isDocked() && location.getStationName() != null || location.getStationName() != null) {
-            station = "Docked at " + location.getStationName() + " " + location.getStationType();
+        if (dockedAt.getStationName() != null) {
+            station = "Docked at " + dockedAt.getStationName() + " " + dockedAt.getStationType();
         }
 
         String flightStatus;

@@ -33,15 +33,15 @@ public class ApproachBodySubscriber {
             Status status = Status.getInstance();
             double orbitalCruiseEntryAltitude = status.getStatus().getAltitude();
             StringBuilder sb = new StringBuilder();
-            LocationDto location = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBodyID());
+            LocationDto location = findBody(event);
 
             if (location.getPlanetName() == null || location.getPlanetName().isEmpty()) {
                 location.setPlanetName(event.getBody());
                 location.setPlanetShortName(event.getBody());
             }
 
-            String locationType = location.getLocationType() == null ? "" : location.getLocationType().name();
-            sb.append(localizedEvent("event.approach.body.entering", locationType, location.getPlanetName()));
+            restoreBodyType(location);
+            sb.append(localizedEvent("event.approach.body.entering", bodyNoun(location.getLocationType()), location.getPlanetName()));
 
             String currentSystem = event.getStarSystem();
             location.setStarName(currentSystem);
@@ -95,6 +95,56 @@ public class ApproachBodySubscriber {
         }); // end virtual thread
     }
 
+
+    /**
+     * The record of the body being approached, looked up by NAME first. A station's record - a fleet carrier parked
+     * here, or a port on this very body - is stored under the BodyID we last dropped at, so an ID lookup can hand
+     * back the station instead of the body: that is how a moon came to be narrated as a FLEET_CARRIER. The ID lookup
+     * stays as the fallback for a body we have no record of yet.
+     */
+    private LocationDto findBody(ApproachBodyEvent event) {
+        LocationDto byName = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBody());
+        boolean found = byName.getPlanetName() != null && !byName.getPlanetName().isEmpty();
+        if (found) {
+            // A record written before the body was scanned can carry no BodyID; the approach supplies it.
+            if (byName.getBodyId() <= 0 && event.getBodyID() != null) byName.setBodyId(event.getBodyID());
+            return byName;
+        }
+        if (event.getBodyID() == null) return byName;
+        return locationManager.findBySystemAddress(event.getSystemAddress(), event.getBodyID());
+    }
+
+    /**
+     * We are in orbital cruise around this body, so its record is a body's record whatever a docking has written
+     * onto it. Docking stores the station under the body we dropped at, which can leave the body itself typed
+     * STATION or FLEET_CARRIER; correct it here so later readers - and the narrator - are not told a planet is a
+     * carrier. A moon is the one we can still tell apart: only a moon's scan records a parent body.
+     */
+    static void restoreBodyType(LocationDto location) {
+        LocationDto.LocationType type = location.getLocationType();
+        boolean typedAsAPlace = LocationDto.LocationType.STATION == type
+                || LocationDto.LocationType.FLEET_CARRIER == type
+                || LocationDto.LocationType.MARKET == type
+                || LocationDto.LocationType.FACILITY == type;
+        if (!typedAsAPlace) return;
+        Long parentBodyId = location.getParentBodyId();
+        boolean isMoon = parentBodyId != null && parentBodyId > 0;
+        location.setLocationType(isMoon ? LocationDto.LocationType.MOON : LocationDto.LocationType.PLANET);
+    }
+
+    /**
+     * The body's kind as a word the commander would use, never the enum constant: the narrator reads this payload
+     * out loud, so handing it LocationType.name() is what put "FLEET_CARRIER" into the report. A type that is not a
+     * body kind contributes no word at all.
+     */
+    static String bodyNoun(LocationDto.LocationType type) {
+        if (type == null) return "";
+        return switch (type) {
+            case PLANET -> localizedEvent("event.approach.body.type.planet");
+            case MOON -> localizedEvent("event.approach.body.type.moon");
+            default -> "";
+        };
+    }
 
     private void useOurData(LocationDto location, StringBuilder sb) {
         double surfaceGravity = formatDouble(location.getGravity());

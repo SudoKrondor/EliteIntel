@@ -247,7 +247,10 @@ public class AnalyzeStellarObjectsQuery extends BaseQueryAnalyzer implements Int
         int numberOfStars = 0;
         int numberOfStations = 0;
         for (LocationDto location : locations) {
-            boolean isPlanetaryRing = location.getPlanetName().contains("Ring");
+            // A station's record carries no planet name, and a place we have only flown past has no
+            // classification yet: neither is worth an exception in the middle of a system report.
+            String planetName = location.getPlanetName() == null ? "" : location.getPlanetName();
+            boolean isPlanetaryRing = planetName.contains("Ring");
             LocationType locationType = location.getLocationType();
 
             if (LocationType.STAR == locationType || LocationType.PRIMARY_STAR == locationType) {
@@ -270,7 +273,7 @@ public class AnalyzeStellarObjectsQuery extends BaseQueryAnalyzer implements Int
             result.add(new LocationData(
                     shortName,
                     toPhonetic(shortName),
-                    "UNKNOWN".equals(locationType.name()) ? "" : locationType.name(),
+                    locationType == null || LocationType.UNCLASSIFIED == locationType ? "" : locationType.name(),
                     isPlanetaryRing ? "Planetary Ring" : location.getPlanetClass(),
                     location.getStarClass(),
                     location.getStarName(),
