@@ -2,6 +2,10 @@
 ## AI Voice Assistant for Elite Dangerous
 
 
+ ⚠️️ANNOUNCEMENT: Mistral Cloud is off-line ⚠️
+---
+
+### [Mistral status](https://status.mistral.ai/)
 
 ![EliteIntel app](images/v1.1.png)
 
