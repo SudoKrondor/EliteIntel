@@ -63,6 +63,9 @@ public class GeminiAnalysisEndpoint extends AiEndPoint implements AiAnalysisInte
             log.debug("Gemini analysis call:\n{}", jsonString);
 
             JsonObject rawResponse = processAiPrompt(jsonString, client);
+            if (isHttpErrorResponse(rawResponse)) {
+                return rawResponse; // transport failure: the sentinel already carries the localized phrase
+            }
             if (rawResponse == null) {
                 log.error("Null response from Gemini analysis API");
                 return client.createErrorResponse("Analysis error.");

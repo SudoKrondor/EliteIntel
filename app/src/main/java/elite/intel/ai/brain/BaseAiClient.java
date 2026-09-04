@@ -2,8 +2,8 @@ package elite.intel.ai.brain;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.eventbus.GameEventBus;
+import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
+import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.session.SystemSession;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,6 +17,9 @@ import java.util.concurrent.ExecutionException;
 
 public class BaseAiClient {
     private static final Logger log = LogManager.getLogger(BaseAiClient.class);
+    private static final String SERVICE_UNREACHABLE_KEY = "handler.common.aiServiceUnreachable";
+    private static final String SERVICE_REJECTED_KEY = "handler.common.aiServiceRejected";
+    private static final String UNUSABLE_RESPONSE_KEY = "handler.common.cantDoNow";
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1)
             .build();
@@ -48,15 +51,13 @@ public class BaseAiClient {
         if (outcome instanceof AiTransportResult.Success success) {
             return success.response();
         }
-        AiTransportResult.Failure failure = (AiTransportResult.Failure) outcome;
-        announceLegacyHttpFailure(failure);
-        return createErrorResponse(legacyErrorMessage(failure));
+        return createErrorResponse(transportFailurePhrase((AiTransportResult.Failure) outcome));
     }
 
     /**
      * Sends one JSON HTTP request without choosing any user-facing narration. Callers receive a typed transport
      * outcome and own their retry and speech policies; the legacy {@link #sendJsonRequest(HttpRequest)} wrapper
-     * retains its existing error-object behavior for older callers.
+     * folds a failure into an error object carrying the phrase its callers should speak.
      */
     protected AiTransportResult sendTransportRequest(HttpRequest request) {
         currentRequestThread = Thread.currentThread();
@@ -97,31 +98,44 @@ public class BaseAiClient {
         }
     }
 
-    private void announceLegacyHttpFailure(AiTransportResult.Failure failure) {
-        Integer code = failure.statusCode();
-        if (code == null) {
-            return;
-        }
-        if (code == 400 && !systemSession.useLocalCommandLlm()) {
-            GameEventBus.publish(new AiVoxResponseEvent("Bad Request. Unsupported request format or invalid API key"));
-        } else if (code == 429) {
-            GameEventBus.publish(new AiVoxResponseEvent("Too Many Requests. Please try again later."));
-        } else if (code == 401) {
-            GameEventBus.publish(new AiVoxResponseEvent("Invalid API Key. Please check your API Key and try again."));
-        } else if (code == 500) {
-            GameEventBus.publish(new AiVoxResponseEvent("Internal Server Error. Please try again later."));
-        }
+    /**
+     * Returns what the commander hears for a transport failure that never produced a usable response, as a
+     * localized phrase describing OUR side of the exchange rather than the provider's status code.
+     * <p>
+     * A provider is free to answer a status code that means something else entirely: Mistral answered 429
+     * throughout the free-tier outage of 2026-09-04, a condition with nothing to do with request volume.
+     * Repeating "too many requests" therefore blames the commander for an outage and sends them hunting for
+     * a quota that does not exist. Only the failures the commander can actually act on - a rejected key or a
+     * request shape the provider will never accept - earn a phrase of their own; the status code and the
+     * provider's own body stay in the ERROR log, where a diagnosis belongs.
+     * <p>
+     * A cancelled request says nothing at all: the commander interrupted it themselves.
+     */
+    private String transportFailurePhrase(AiTransportResult.Failure failure) {
+        return switch (failure.kind()) {
+            case CANCELLED -> "";
+            case MALFORMED_RESPONSE -> servicePhrase(UNUSABLE_RESPONSE_KEY);
+            case TRANSIENT, PERMANENT -> servicePhrase(
+                    isCommanderActionable(failure.statusCode()) ? SERVICE_REJECTED_KEY : SERVICE_UNREACHABLE_KEY);
+        };
     }
 
-    private static String legacyErrorMessage(AiTransportResult.Failure failure) {
-        if (failure.statusCode() != null) {
-            return "HTTP " + failure.statusCode();
+    /**
+     * True for the refusals a commander can fix from the settings tab: 401/403 is always the API key, and a
+     * cloud 400 is either the key or a request body that provider will never accept. A local host answering
+     * 400 is our own request shape and nothing the commander configured, so it stays a service failure.
+     */
+    private boolean isCommanderActionable(Integer statusCode) {
+        if (statusCode == null) {
+            return false;
         }
-        return switch (failure.kind()) {
-            case CANCELLED -> "LLM Call Failed";
-            case MALFORMED_RESPONSE -> "LLM response is malformed";
-            case TRANSIENT, PERMANENT -> failure.diagnostic();
-        };
+        return statusCode == 401 || statusCode == 403
+                || (statusCode == 400 && !systemSession.useLocalCommandLlm());
+    }
+
+    private static String servicePhrase(String key) {
+        return ResponseTextProvider.getText(
+                AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance()), key);
     }
 
     private static AiTransportResult.FailureKind httpFailureKind(int statusCode) {

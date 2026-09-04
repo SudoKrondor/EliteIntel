@@ -18,7 +18,7 @@ import java.time.Duration;
 
 public class MistralClient extends BaseAiClient implements Client {
 
-    public static final String MODEL = "mistral-small-2506";
+    public static final String MODEL = "mistral-small-latest";
     private static final String API_URL = "https://api.mistral.ai/v1/chat/completions";
     private static final MistralClient instance = new MistralClient();
 
