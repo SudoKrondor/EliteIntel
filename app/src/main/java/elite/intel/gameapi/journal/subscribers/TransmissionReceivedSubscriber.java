@@ -6,6 +6,7 @@ import elite.intel.ai.mouth.subscribers.events.RadioTransmissionEvent;
 import elite.intel.db.managers.CargoHoldManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.StationName;
+import elite.intel.gameapi.carrier.OurCarriers;
 import elite.intel.gameapi.journal.events.ReceiveTextEvent;
 import elite.intel.session.PlayerSession;
 
@@ -66,16 +67,26 @@ public class TransmissionReceivedSubscriber {
                         ? StationName.display(event.getFrom())
                         : event.getFromLocalised();
 
+                // Our own carrier's traffic control speaks with the voice the commander gave it, if any.
+                // Matched on the raw From, which is where the callsign is: a carrier signs its transmissions
+                // with its name and callsign together ("LONE WOLF GHY-L8X").
+                String voice = OurCarriers.radioVoiceOf(event.getFrom());
+                // Nobody else draws a voice a carrier answers on, or a passing station would reply in the
+                // commander's own carrier's voice.
+                Set<String> reserved = OurCarriers.assignedVoices();
+
                 if (isStation) {
                     if (!event.getMessageLocalised().toLowerCase().contains("fire zone")) {
                         // One resolution of the sender for both: the spoken line and the label on screen
                         // name the same station, rather than disagreeing whenever the journal localises it.
                         GameEventBus.publish(new RadioTransmissionEvent(
                                 localizedEvent("event.transmission.trafficControl", source, event.getMessageLocalised()),
-                                localizedEvent("event.trafficControl.speaker", source)));
+                                localizedEvent("event.trafficControl.speaker", source),
+                                voice, reserved));
                     }
                 } else {
-                    GameEventBus.publish(new RadioTransmissionEvent(event.getMessageLocalised(), source));
+                    GameEventBus.publish(new RadioTransmissionEvent(
+                            event.getMessageLocalised(), source, voice, reserved));
                 }
             }
         });

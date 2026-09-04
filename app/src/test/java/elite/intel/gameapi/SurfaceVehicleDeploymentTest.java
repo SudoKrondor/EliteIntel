@@ -20,8 +20,8 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class SurfaceVehicleDeploymentTest {
 
-    private static final ShipSituation LANDED_ON_SURFACE = new ShipSituation(true, 0, true);
-    private static final ShipSituation HOVERING_IN_BAND = new ShipSituation(false, 25, true);
+    private static final ShipSituation LANDED_ON_SURFACE = new ShipSituation(true);
+    private static final ShipSituation HOVERING = new ShipSituation(false);
 
     @Test
     void aShipWithNoHangarIsToldSoRatherThanHavingKeysPressedAtIt() {
@@ -114,7 +114,7 @@ class SurfaceVehicleDeploymentTest {
     @Test
     void aBuggyNeedsTheShipOnTheGround() {
         Decision decision = SurfaceVehicleDeployment.decide(
-                true, bays(SCARAB, null, null, null), 1, null, HOVERING_IN_BAND);
+                true, bays(SCARAB, null, null, null), 1, null, HOVERING);
 
         assertEquals(Refusal.NOT_LANDED, decision.refusal());
     }
@@ -129,56 +129,46 @@ class SurfaceVehicleDeploymentTest {
         }
     }
 
+    /**
+     * The Rhino is not gated on the ship's state at all. The altitude band it drops from was measured, and
+     * the reading this decision saw disagreed with the commander at the controls often enough that the
+     * refusal fired on nearly every deployment made from inside the band - so the check came back out and
+     * the game is left to refuse a drop it cannot make.
+     */
     @Test
-    void theRhinoIsDroppedFromAHoverAndNotFromTheGround() {
-        // The rule the update introduced: landed is the wrong state for this one, not the right one.
-        Decision landed = SurfaceVehicleDeployment.decide(
-                true, bays(RHINO, null, null, null), 1, null, LANDED_ON_SURFACE);
-        assertEquals(Refusal.WRONG_ALTITUDE, landed.refusal(),
-                "a landed ship cannot drop a Rhino, however the altitude reads");
-
-        Decision hovering = SurfaceVehicleDeployment.decide(
-                true, bays(RHINO, null, null, null), 1, null, HOVERING_IN_BAND);
-        assertTrue(hovering.isAllowed());
-        assertEquals(RHINO, hovering.vehicle());
-    }
-
-    @Test
-    void theRhinoBandIsInclusiveAtBothEnds() {
-        for (double altitude : new double[]{20, 30}) {
+    void theRhinoIsNeverRefusedForTheShipsState() {
+        for (ShipSituation situation : List.of(LANDED_ON_SURFACE, HOVERING)) {
             Decision decision = SurfaceVehicleDeployment.decide(
-                    true, bays(RHINO, null, null, null), 1, null, new ShipSituation(false, altitude, true));
+                    true, bays(RHINO, null, null, null), 1, null, situation);
 
-            assertTrue(decision.isAllowed(), altitude + " m is inside the band and should deploy");
+            assertTrue(decision.isAllowed(), "the Rhino should deploy from " + situation);
+            assertEquals(RHINO, decision.vehicle());
         }
     }
 
     @Test
-    void outsideTheRhinoBandIsRefusedAtEitherEnd() {
-        for (double altitude : new double[]{19.9, 30.1, 0, 500}) {
-            Decision decision = SurfaceVehicleDeployment.decide(
-                    true, bays(RHINO, null, null, null), 1, null, new ShipSituation(false, altitude, true));
-
-            assertEquals(Refusal.WRONG_ALTITUDE, decision.refusal(), altitude + " m should be refused");
-        }
-    }
-
-    @Test
-    void anAltitudeNowhereNearAPlanetDoesNotCountAsTheBand() {
-        // Altitude is only meaningful over a body. Without that, a number in range is a coincidence.
-        Decision decision = SurfaceVehicleDeployment.decide(
-                true, bays(RHINO, null, null, null), 1, null, new ShipSituation(false, 25, false));
-
-        assertEquals(Refusal.WRONG_ALTITUDE, decision.refusal());
-    }
-
-    @Test
-    void aRhinoInAHigherBayIsStillAltitudeGated() {
-        // The vehicle governs the condition, not the bay number.
+    void aRhinoInAHigherBayIsStillTheBayThatOpens() {
+        // The vehicle governs the condition, not the bay number - and the Rhino's condition is now none.
         Decision decision = SurfaceVehicleDeployment.decide(
                 true, bays(SCARAB, SCARAB, RHINO, null), 3, null, LANDED_ON_SURFACE);
 
-        assertEquals(Refusal.WRONG_ALTITUDE, decision.refusal());
+        assertTrue(decision.isAllowed());
+        assertEquals(3, decision.bay());
+        assertEquals(RHINO, decision.vehicle());
+    }
+
+    /**
+     * The buggies keep their gate: it reads the landed flag, which is the one thing about the ship's state
+     * that has never been in doubt.
+     */
+    @Test
+    void theBuggiesStillNeedTheGround() {
+        for (SurfaceVehicle buggy : List.of(SCARAB, SCORPION)) {
+            Decision decision = SurfaceVehicleDeployment.decide(
+                    true, bays(buggy, null, null, null), 1, null, HOVERING);
+
+            assertEquals(Refusal.NOT_LANDED, decision.refusal(), buggy + " needs the ship on the ground");
+        }
     }
 
     // ---- naming the vehicle instead of the bay ------------------------------------------------
@@ -217,14 +207,16 @@ class SurfaceVehicleDeploymentTest {
 
     @Test
     void aVehicleNamedByItselfIsStillStateGated() {
-        // Looking the bay up does not exempt it from the rule that governs that vehicle.
+        // Looking the bay up does not exempt it from the rule that governs that vehicle - and the Rhino,
+        // which has no rule left, is found and deployed from wherever the ship happens to be.
+        Decision scarabHovering = SurfaceVehicleDeployment.decide(
+                true, bays(SCARAB, RHINO, null, null), null, SCARAB, HOVERING);
+        assertEquals(Refusal.NOT_LANDED, scarabHovering.refusal());
+
         Decision rhinoOnTheGround = SurfaceVehicleDeployment.decide(
                 true, bays(SCARAB, RHINO, null, null), null, RHINO, LANDED_ON_SURFACE);
-        assertEquals(Refusal.WRONG_ALTITUDE, rhinoOnTheGround.refusal());
-
-        Decision scarabHovering = SurfaceVehicleDeployment.decide(
-                true, bays(SCARAB, RHINO, null, null), null, SCARAB, HOVERING_IN_BAND);
-        assertEquals(Refusal.NOT_LANDED, scarabHovering.refusal());
+        assertTrue(rhinoOnTheGround.isAllowed());
+        assertEquals(2, rhinoOnTheGround.bay());
     }
 
     @Test

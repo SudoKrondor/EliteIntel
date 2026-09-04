@@ -5,6 +5,7 @@ import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.SignalName;
 import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
@@ -59,7 +60,10 @@ public class AnalyzeGeologyInStarSystemQuery extends BaseQueryAnalyzer implement
             if(location.getFssSignals() == null) continue;
             List<FSSBodySignalsEvent.Signal> fssSignals = location.getFssSignals();
             for(FSSBodySignalsEvent.Signal signal :fssSignals){
-                if(signal.getTypeLocalised().toLowerCase().contains("geo")){
+                // Through SignalName: a type the game sent no translation for still reads as "Geological",
+                // and asking the raw field alone threw on it.
+                String type = SignalName.display(signal.getTypeLocalised(), signal.getType());
+                if (type != null && type.toLowerCase().contains("geo")) {
                     result.put(location.getPlanetShortName(), signal.getCount());
                 }
             }

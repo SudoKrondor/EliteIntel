@@ -3,6 +3,7 @@ package elite.intel.gameapi.journal.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.db.managers.LocationManager;
+import elite.intel.gameapi.SignalName;
 import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
 import elite.intel.gameapi.journal.events.dto.FssSignalDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -37,7 +38,7 @@ public class FSSBodySignalsSubscriber {
             for (FSSBodySignalsEvent.Signal s : signals) {
                 FssSignalDto signal = new FssSignalDto();
                 signal.setSignalName(event.getEvent());
-                signal.setSignalType(s.getTypeLocalised());
+                signal.setSignalType(SignalName.display(s.getTypeLocalised(), s.getType()));
                 if ("$SAA_SignalType_Biological;".equalsIgnoreCase(s.getType())) {
                     bioSignals = bioSignals + s.getCount();
                 }

@@ -3,7 +3,9 @@ package elite.intel.db.managers;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.util.Database;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
+import elite.intel.session.DockedMarket;
 import elite.intel.session.LocationData;
+import elite.intel.session.PlayerSession;
 import elite.intel.util.NavigationUtils;
 import elite.intel.util.json.GsonFactory;
 
@@ -60,13 +62,55 @@ public class LocationManager {
         }
     }
 
+    /**
+     * Atomically read-modify-write the record stored under {@code locationName} - the table's own unique key,
+     * and the one {@link #save} upserts on - while holding the body's write lock.
+     * <p>
+     * WHY by name rather than by BodyID: docking stores a station under the BodyID of the body we dropped at,
+     * so a system with a station (or a fleet carrier parked at a body) has two records answering to the same
+     * BodyID, and an ID lookup can hand back the wrong one. A caller that knows the place's name - the journal
+     * always reports it - can address exactly the record its save will land on.
+     * <p>
+     * A record found under that name but belonging to another system is not adopted: station names are unique
+     * per system, not across the galaxy, and merging a namesake's gravity and materials into this one would be
+     * worse than starting a fresh record.
+     */
+    public void updateNamedBody(long systemAddress, long bodyId, String locationName, Consumer<LocationDto> mutator) {
+        synchronized (lockFor(systemAddress, bodyId)) {
+            LocationDto stored = findByLocationName(locationName);
+            boolean sameSystem = stored != null && (stored.getSystemAddress() == 0 || stored.getSystemAddress() == systemAddress);
+            LocationDto location = sameSystem ? stored : new LocationDto(bodyId, systemAddress);
+            mutator.accept(location);
+            save(location);
+        }
+    }
+
+    private LocationDto findByLocationName(String locationName) {
+        return Database.withDao(LocationDao.class, dao -> {
+            LocationDao.Location location = dao.findByLocationName(locationName);
+            return location == null ? null : GsonFactory.getGson().fromJson(location.getJson(), LocationDto.class);
+        });
+    }
+
     public void save(LocationDto location) {
         if (location.getStarName() == null) return;
+
+        // WHY blank rather than null: planetName starts out as "" and setPlanetName(null) is a no-op, so a
+        // station's record never had a null planet name to fall through on. Every one of them was written
+        // under the empty name instead, and locationName is the table's unique key - so they all landed on
+        // one row, each station overwriting the last. A record with no name at all is not stored: there is
+        // nothing to find it by, and the row it used to occupy belonged to whatever was saved before it.
+        String locationName = hasText(location.getPlanetName()) ? location.getPlanetName() : location.getStationName();
+        if (!hasText(locationName)) return;
+
         Database.withDao(LocationDao.class, dao -> {
-            String locationName = location.getPlanetName() == null ? location.getStationName() : location.getPlanetName();
             dao.upsert(location.getBodyId(), locationName, location.getStarName(), location.getSystemAddress(), location.toJson());
             return null;
         });
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     public LocationDao.Coordinates getGalacticCoordinates() {
@@ -104,6 +148,24 @@ public class LocationManager {
             LocationDao.Location location = dao.findPrimaryBySystemAddress(systemAddress, bodyId);
             return location == null ? new LocationDto(bodyId, systemAddress) : GsonFactory.getGson().fromJson(location.getJson(), LocationDto.class);
         });
+    }
+
+    /**
+     * The record of the port the ship is standing on, or the current location when it is not on one.
+     * <p>
+     * Not the same question as "where am I": a fleet carrier, an orbital construction depot and a planetary
+     * port are not the body the drop left us at, and the current location is that body. {@link DockedMarket}
+     * holds the MarketID the journal gave on arrival - the one thing that names the pad unambiguously - and
+     * the station is filed under it. The fallback is the answer callers used to get, for when we are in open
+     * space or the station has no record yet.
+     */
+    public LocationDto findCurrentStation() {
+        long marketId = DockedMarket.getInstance().marketId();
+        if (marketId != 0) {
+            LocationDto station = findByMarketId(marketId);
+            if (station.getSystemAddress() > 0) return station;
+        }
+        return findByLocationData(PlayerSession.getInstance().getLocationData());
     }
 
     public LocationDto findByLocationData(LocationData<Long, Long> locationData) {

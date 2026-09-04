@@ -1,5 +1,6 @@
 package elite.intel.util;
 
+import elite.intel.gameapi.SignalName;
 import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
 import elite.intel.gameapi.journal.events.dto.BioSampleDto;
 import elite.intel.gameapi.journal.events.dto.GenusDto;
@@ -52,7 +53,7 @@ public class ExoBio {
         List<FSSBodySignalsEvent.Signal> fssSignals = location.getFssSignals();
         if (fssSignals != null) {
             for (FSSBodySignalsEvent.Signal signal : fssSignals) {
-                String type = signal.getTypeLocalised();
+                String type = SignalName.display(signal.getTypeLocalised(), signal.getType());
                 if (type != null && type.toLowerCase().contains("bio")) {
                     fromFssSignals += signal.getCount();
                 }

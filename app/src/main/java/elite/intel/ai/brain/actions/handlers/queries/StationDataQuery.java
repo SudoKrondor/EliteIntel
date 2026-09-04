@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
-import elite.intel.session.PlayerSession;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -24,12 +23,11 @@ public class StationDataQuery extends BaseQueryAnalyzer implements IntelQuery {
     @Override public String id() { return ID; }
 
 
-    private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
 
-        LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
+        LocationDto location = locationManager.findCurrentStation();
 
         String instructions = """
                 Answer the user's question about the current station.

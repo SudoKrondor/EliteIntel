@@ -665,11 +665,13 @@ public class BuiltInCommandsTabPanel extends JPanel {
      */
     private String placeName(PlayerSituation situation, LocationDto location) {
         if (location == null) return null;
-        String station = trimToNull(location.getStationName());
         String body = trimToNull(location.getPlanetShortName());
         String system = trimToNull(location.getStarName());
         return switch (situation) {
-            case IN_SHIP_DOCKED, ON_FOOT_STATION, ON_FOOT_HANGAR, ON_FOOT_SOCIAL -> firstNonNull(station, system);
+            // The station has a record of its own - the current location is the body we dropped at - and it is
+            // only worth the lookup in the situations that are actually at one.
+            case IN_SHIP_DOCKED, ON_FOOT_STATION, ON_FOOT_HANGAR, ON_FOOT_SOCIAL ->
+                    firstNonNull(trimToNull(locationManager.findCurrentStation().getStationName()), system);
             case IN_SHIP_LANDED, ON_FOOT_PLANET, IN_SRV, IN_SHIP_ORBIT, IN_SHIP_GLIDE -> firstNonNull(body, system);
             default -> system;
         };

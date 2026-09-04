@@ -13,9 +13,9 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 
 /**
  * Stage-4b self-describing command for "dismiss ship to orbit".
- * The legacy handler is
- * shared with "return to surface" and does not branch on action, so both commands carry
- * an identical body 1:1.
+ * <p>
+ * The keystrokes are the same as {@link ReturnToSurfaceCommand}'s - Frontier binds recall and dismiss to one
+ * toggle - but the spoken answer is not: each command says what was asked of it.
  */
 @RegisterCommand
 public final class DismissShipToOrbitCommand implements IntelCommand {
@@ -54,10 +54,9 @@ public final class DismissShipToOrbitCommand implements IntelCommand {
         } else if (status.isInMainShip()) {
             return StringUtls.localizedResponse("speech.shipDismissRejected");
         }
-        if (status.isLanded()) {
-            return StringUtls.localizedResponse("speech.shipDismissed");
-        } else {
-            return StringUtls.localizedResponse("speech.shipRecall");
-        }
+        // The answer is the commander's own order, not a guess at which way the toggle went. Reading it off
+        // the landed flag answered "coming back to get you" to every dismissal made while the ship was not
+        // sitting beside them - which is most of them.
+        return StringUtls.localizedResponse("speech.shipDismissed");
     }
 }

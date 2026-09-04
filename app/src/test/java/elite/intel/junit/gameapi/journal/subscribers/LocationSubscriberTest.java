@@ -93,6 +93,75 @@ class LocationSubscriberTest {
         assertEquals(10, saved.getDeathsDto().getData().getDeaths().getTotal());
     }
 
+    /**
+     * A commander who quits on a carrier's pad and comes back gets a {@code Location} event naming the BODY the
+     * carrier is parked at, with the carrier in the station fields. Writing those onto the body typed a moon as
+     * a FLEET_CARRIER - and it was narrated as one on the next approach.
+     */
+    @Test
+    void aCarrierParkedAtTheBodyDoesNotRelabelTheBody() throws InterruptedException {
+        long sysAddr = 2283077046962L;
+        String star = "Hyades Sector MH-V c2-8";
+        String moon = star + " 7 a";
+        long marketId = 3712500736L;
+
+        LocationDto body = new LocationDto(25L, sysAddr);
+        body.setStarName(star);
+        body.setPlanetName(moon);
+        body.setLocationType(LocationDto.LocationType.MOON);
+        locationManager.save(body);
+
+        subscriber.onLocationEvent(dockedAtCarrier(star, sysAddr, moon, "GHY-L8X", marketId));
+
+        awaitTrue(() -> locationManager.findByMarketId(marketId).getStationName() != null);
+
+        LocationDto stillTheMoon = locationManager.findBySystemAddress(sysAddr, moon);
+        assertEquals(LocationDto.LocationType.MOON, stillTheMoon.getLocationType());
+        assertNull(stillTheMoon.getStationName());
+
+        LocationDto carrier = locationManager.findByMarketId(marketId);
+        assertEquals(LocationDto.LocationType.FLEET_CARRIER, carrier.getLocationType());
+        assertEquals("GHY-L8X", carrier.getStationName());
+    }
+
+    /**
+     * Shaped after a verbatim docked Location line: the Body is the moon, the station is the carrier on it.
+     */
+    private static LocationEvent dockedAtCarrier(String starSystem, long systemAddress, String body,
+                                                 String stationName, long marketId) {
+        JsonObject j = new JsonObject();
+        j.addProperty("timestamp", Instant.now().plusSeconds(1).toString());
+        j.addProperty("event", "Location");
+        j.addProperty("Docked", true);
+        j.addProperty("StarSystem", starSystem);
+        j.addProperty("SystemAddress", systemAddress);
+        j.addProperty("Body", body);
+        j.addProperty("BodyID", 25L);
+        j.addProperty("BodyType", "Planet");
+        j.addProperty("DistFromStarLS", 11241.5);
+        j.addProperty("SystemAllegiance", "Independent");
+        j.addProperty("SystemSecurity", "Low");
+        j.addProperty("Population", 0L);
+        j.addProperty("StationName", stationName);
+        j.addProperty("StationType", "FleetCarrier");
+        j.addProperty("MarketID", marketId);
+        j.addProperty("StationEconomy", "$economy_Carrier;");
+        j.addProperty("StationEconomy_Localised", "Private Enterprise");
+        JsonObject faction = new JsonObject();
+        faction.addProperty("Name", "FleetCarrier");
+        j.add("StationFaction", faction);
+        JsonArray services = new JsonArray();
+        services.add("dock");
+        services.add("refuel");
+        j.add("StationServices", services);
+        JsonArray starPos = new JsonArray();
+        starPos.add(119.90625);
+        starPos.add(-87.6875);
+        starPos.add(-184.625);
+        j.add("StarPos", starPos);
+        return new LocationEvent(j);
+    }
+
     private static LocationEvent locationEvent(String starSystem, long systemAddress, String body,
                                                String bodyType, String allegiance) {
         JsonObject j = new JsonObject();

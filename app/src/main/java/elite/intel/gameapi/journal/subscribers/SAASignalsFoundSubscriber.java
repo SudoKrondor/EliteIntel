@@ -3,6 +3,7 @@ package elite.intel.gameapi.journal.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.db.managers.LocationManager;
+import elite.intel.gameapi.SignalName;
 import elite.intel.gameapi.data.BioForms;
 import elite.intel.gameapi.journal.events.SAASignalsFoundEvent;
 import elite.intel.gameapi.journal.events.dto.GenusDto;
@@ -28,7 +29,8 @@ public class SAASignalsFoundSubscriber {
         Status status = Status.getInstance();
         if (status.isInMainShip() && !status.isLanded() && !status.isDocked()) {
             String instructions = """
-                        Report the signals detected on this body. List each signal type briefly.
+                        Report the signals detected on this body. List each signal type briefly, with how
+                        many of it were found.
                         If biological signals are present, name each genus and state the average projected payout.
                         State a first-discovery bonus only if the sensor data gives one, and keep any doubt it
                         expresses about it - never present an uncertain bonus as earnings.
@@ -62,7 +64,14 @@ public class SAASignalsFoundSubscriber {
                 int liveSignals = event.getGenuses() != null ? event.getGenuses().size() : 0;
                 sb.append(" ").append(localizedEvent("event.signals.found")).append(" ");
                 for (SAASignalsFoundEvent.Signal signal : signals) {
-                    sb.append(" ").append(localizedEvent("event.signals.type", signal.getType()));
+                    // The game's own wording, never the symbol - see SignalName. The mining update added
+                    // $PlanetaryMiningLocation_Name; and the narrator read it out as it stood.
+                    String type = SignalName.display(signal.getTypeLocalised(), signal.getType());
+                    // With the count: a body can carry 29 mining locations and 2 geological sites, and which
+                    // is worth the detour is the whole question the report is there to answer.
+                    if (type != null) {
+                        sb.append(" ").append(localizedEvent("event.signals.type", type, signal.getCount()));
+                    }
                 }
 
                 if (liveSignals > 0) {
@@ -167,10 +176,15 @@ public class SAASignalsFoundSubscriber {
         return true;
     }
 
+    /**
+     * A ring's reserves. Named the way the game names them, because this list is read back to the commander:
+     * "Low Temp. Diamonds", not the LowTemperatureDiamond the event is keyed by.
+     */
     private List<MaterialDto> toMaterials(List<SAASignalsFoundEvent.Signal> signals) {
         ArrayList<MaterialDto> materialDtos = new ArrayList<>();
         for (SAASignalsFoundEvent.Signal signal : signals) {
-            materialDtos.add(new MaterialDto(signal.getType(), 100, true));
+            String name = SignalName.display(signal.getTypeLocalised(), signal.getType());
+            if (name != null) materialDtos.add(new MaterialDto(name, 100, true));
         }
         return materialDtos;
     }

@@ -2,6 +2,7 @@ package elite.intel.ui.screen;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.ShipPersonality;
+import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoiceProvider;
@@ -15,6 +16,7 @@ import elite.intel.db.managers.ShipManager;
 import elite.intel.db.managers.ShipSettingsManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
+import elite.intel.gameapi.carrier.OurCarriers;
 import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
@@ -43,6 +45,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -51,6 +54,12 @@ import static elite.intel.ui.theme.HudPalette.*;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 
 public class CommanderTabPanel extends JPanel {
+
+    /**
+     * The carrier voice column's "no voice picked" entry: traffic control is a different stranger every time,
+     * which is what every station on the channel sounds like and what carriers sounded like before this.
+     */
+    static final String RANDOM_VOICE = "";
 
     private static final int COL_SHIP = 0;
     private static final int COL_SHIP_MAKE = 1;
@@ -166,6 +175,12 @@ public class CommanderTabPanel extends JPanel {
     private JCheckBox radioTransmissionBox;
     private JTable fleetTable;
     private FleetTableModel fleetTableModel;
+    /**
+     * Voice column for carrier rows: the radio engine's roster, rebuilt whenever the fleet grid reloads.
+     */
+    private final ComboColumnRenderer carrierVoiceRenderer = new ComboColumnRenderer(this::radioVoiceLabel);
+    private final TableCellRenderer emptyCellRenderer = new HudTable.ValueCellRenderer();
+    private TableCellEditor carrierVoiceEditor;
     /** Per-voice quality tier label (enum name -> localized "HD"/"Standard") for the current language, filled off-EDT. */
     private final Map<String, String> voiceQualityLabels = new ConcurrentHashMap<>();
 
@@ -221,7 +236,27 @@ public class CommanderTabPanel extends JPanel {
         HudSection fleetSection = HudSection.flat(getText("player.section.fleetVoice"), new BorderLayout());
 
         fleetTableModel = new FleetTableModel(playerSession);
-        fleetTable = new JTable(fleetTableModel);
+        // Carrier rows share the grid but not its editors: their voices come from the radio engine's roster,
+        // and they have neither a personality nor per-ship settings to open.
+        fleetTable = new JTable(fleetTableModel) {
+            @Override
+            public TableCellRenderer getCellRenderer(int row, int col) {
+                if (!fleetTableModel.rowAt(row).isCarrier()) return super.getCellRenderer(row, col);
+                return switch (col) {
+                    case COL_VOICE -> carrierVoiceRenderer;
+                    case COL_PERSONALITY, COL_GEAR -> emptyCellRenderer;
+                    default -> super.getCellRenderer(row, col);
+                };
+            }
+
+            @Override
+            public TableCellEditor getCellEditor(int row, int col) {
+                if (col == COL_VOICE && carrierVoiceEditor != null && fleetTableModel.rowAt(row).isCarrier()) {
+                    return carrierVoiceEditor;
+                }
+                return super.getCellEditor(row, col);
+            }
+        };
         HudTable.style(fleetTable);
         fleetTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
@@ -392,8 +427,18 @@ public class CommanderTabPanel extends JPanel {
                 : ShipManager.getInstance().getAllShips();
         ships.sort((a, b) -> displayShipName(a).compareToIgnoreCase(displayShipName(b)));
 
-        fleetTableModel.setShips(ships);
+        List<FleetRow> rows = new ArrayList<>(ships.size() + 2);
+        ships.forEach(ship -> rows.add(new ShipRow(ship)));
+        // The carriers go last rather than into the name sort: there are at most two of them, and a
+        // commander looking for their carrier expects it in the same place every time.
+        OurCarriers.known().forEach(carrier -> rows.add(new CarrierRow(carrier)));
+
+        fleetTableModel.setRows(rows);
         fleetTableModel.fireTableDataChanged();
+
+        // The radio engine follows the language, so this roster is rebuilt with the rest of the grid.
+        carrierVoiceEditor = new HudComboCellEditor(new HudComboBox<>(
+                radioVoiceOptions(), this::radioVoiceLabel, RANDOM_VOICE::equals));
 
         // Voice options depend on current TTS provider; rebuild editor on every call. Every voice the active
         // engine has is offered, male and female alike - the picked voice also decides how the companion
@@ -435,6 +480,33 @@ public class CommanderTabPanel extends JPanel {
             return EdgeVoices.voiceOrDefault(voiceName).name();
         }
         return GoogleVoices.voiceOrDefault(voiceName).name();
+    }
+
+    /**
+     * The voices a carrier's traffic control can be given: the radio engine's roster, not the main mouth's.
+     * A transmission is voiced by whichever engine {@code RadioVoicing} names for the commander's language -
+     * Kokoro almost everywhere, Edge for the Cyrillic locales - so a Google voice picked here would name a
+     * speaker the engine that has to say the line has never heard of.
+     */
+    private static String[] radioVoiceOptions() {
+        Stream<String> voices = RadioVoicing.engine() == TtsProvider.EDGE
+                ? Arrays.stream(EdgeVoices.values()).map(Enum::name)
+                : Arrays.stream(KokoroVoices.values()).map(Enum::name);
+        return Stream.concat(Stream.of(RANDOM_VOICE), voices).toArray(String[]::new);
+    }
+
+    /**
+     * A carrier voice as a label, resolved against the radio engine rather than the active TTS provider.
+     */
+    private String radioVoiceLabel(String enumName) {
+        if (enumName == null || enumName.isEmpty()) return getText("player.fleet.voice.random");
+        try {
+            if (RadioVoicing.engine() == TtsProvider.EDGE) return edgeVoiceLabel(enumName);
+            KokoroVoices v = KokoroVoices.valueOf(enumName);
+            return v.getDisplayName() + " - " + v.getDescription();
+        } catch (IllegalArgumentException e) {
+            return enumName;
+        }
     }
 
     private static boolean usesEdgeTts() {
@@ -479,11 +551,108 @@ public class CommanderTabPanel extends JPanel {
 
     // -------------------------------------------------------------------------
 
+    /**
+     * One line of the fleet grid. Ships and carriers share the voice column and nothing else: a carrier is
+     * not a companion, so it has no personality and no per-ship settings, only the voice its traffic control
+     * answers on. See {@link CarrierRow}.
+     */
+    private interface FleetRow {
+        String name();
+
+        /**
+         * What kind of thing this is, for the second column: the ship's make, or which carrier it is.
+         */
+        String kind();
+
+        String voice();
+
+        /**
+         * Stores the picked voice and returns the line to audition it with.
+         */
+        String applyVoice(String voiceName, String commanderName);
+
+        default boolean isCarrier() {
+            return false;
+        }
+
+        default ShipDao.Ship ship() {
+            return null;
+        }
+    }
+
+    private record ShipRow(ShipDao.Ship ship) implements FleetRow {
+        @Override
+        public String name() {
+            return displayShipName(ship);
+        }
+
+        @Override
+        public String kind() {
+            return shipMakeName(ship);
+        }
+
+        @Override
+        public String voice() {
+            return normalizeVoice(ship.getVoice());
+        }
+
+        @Override
+        public String applyVoice(String voiceName, String commanderName) {
+            ship.setVoice(voiceName);
+            ShipManager.getInstance().saveShip(ship);
+            String speakerName = trimToNull(name());
+            return StringUtls.shipIntroduction(commanderName, speakerName == null ? voiceName : speakerName);
+        }
+    }
+
+    /**
+     * A fleet or squadron carrier. Its voice is a radio-engine voice, not a ship voice: traffic control comes
+     * over the comms channel, which the main mouth never speaks on (see {@code RadioVoicing}). The stored
+     * value is null when the commander has not picked one, which is what draws a stranger at random - the
+     * behaviour every transmission had before this column existed.
+     */
+    private record CarrierRow(OurCarriers.Ours carrier) implements FleetRow {
+        @Override
+        public String name() {
+            String carrierName = trimToNull(carrier.data().getCarrierName());
+            String callSign = trimToNull(carrier.data().getCallSign());
+            if (carrierName == null) return callSign == null ? getText("player.fleet.unknown") : callSign;
+            return callSign == null ? carrierName : carrierName + " " + callSign;
+        }
+
+        @Override
+        public String kind() {
+            return getText(carrier.kind() == OurCarriers.Kind.FLEET
+                    ? "player.fleet.fleetCarrier"
+                    : "player.fleet.squadronCarrier");
+        }
+
+        @Override
+        public String voice() {
+            String stored = carrier.data().getVoice();
+            return stored == null ? RANDOM_VOICE : stored;
+        }
+
+        @Override
+        public String applyVoice(String voiceName, String commanderName) {
+            boolean random = RANDOM_VOICE.equals(voiceName);
+            carrier.update(data -> data.setVoice(random ? null : voiceName));
+            return random
+                    ? null
+                    : StringUtls.carrierTrafficControl(commanderName, carrier.data().getCarrierName());
+        }
+
+        @Override
+        public boolean isCarrier() {
+            return true;
+        }
+    }
+
     /** Table model for the fleet voice configuration grid. */
     private static class FleetTableModel extends AbstractTableModel {
         private final PlayerSession playerSession;
         private final String[] columnNames;
-        private List<ShipDao.Ship> ships = Collections.emptyList();
+        private List<FleetRow> rows = Collections.emptyList();
 
         FleetTableModel(PlayerSession playerSession) {
             this.playerSession = playerSession;
@@ -496,11 +665,15 @@ public class CommanderTabPanel extends JPanel {
             };
         }
 
-        void setShips(List<ShipDao.Ship> ships) {
-            this.ships = ships;
+        void setRows(List<FleetRow> rows) {
+            this.rows = rows;
         }
 
-        @Override public int getRowCount()    { return ships.size(); }
+        FleetRow rowAt(int row) {
+            return rows.get(row);
+        }
+
+        @Override public int getRowCount()    { return rows.size(); }
 
         @Override
         public int getColumnCount() {
@@ -515,39 +688,40 @@ public class CommanderTabPanel extends JPanel {
 
         @Override
         public boolean isCellEditable(int row, int col) {
-            return col >= COL_VOICE;
+            if (col < COL_VOICE) return false;
+            // A carrier has a voice and nothing else to configure here.
+            return col == COL_VOICE || !rows.get(row).isCarrier();
         }
 
         @Override
         public Object getValueAt(int row, int col) {
-            ShipDao.Ship ship = ships.get(row);
+            FleetRow fleetRow = rows.get(row);
             return switch (col) {
-                case COL_SHIP -> displayShipName(ship);
-                case COL_SHIP_MAKE -> shipMakeName(ship);
-                case COL_VOICE -> normalizeVoice(ship.getVoice());
-                case COL_PERSONALITY -> ship.getPersonality();
-                case COL_GEAR -> ship;
+                case COL_SHIP -> fleetRow.name();
+                case COL_SHIP_MAKE -> fleetRow.kind();
+                case COL_VOICE -> fleetRow.voice();
+                case COL_PERSONALITY -> fleetRow.isCarrier() ? "" : fleetRow.ship().getPersonality();
+                case COL_GEAR -> fleetRow.ship();
                 default -> null;
             };
         }
 
         @Override
         public void setValueAt(Object value, int row, int col) {
-            ShipDao.Ship ship = ships.get(row);
+            FleetRow fleetRow = rows.get(row);
             switch (col) {
                 case COL_VOICE -> {
                     String voiceName = (String) value;
-                    ship.setVoice(voiceName);
-                    String speakerName = trimToNull(displayShipName(ship));
-                    if (speakerName == null) speakerName = voiceName;
-                    String tts = StringUtls.shipIntroduction(
-                            playerSession.getConfiguredPlayerName(), speakerName);
-                    GameEventBus.publish(new AiVoxDemoEvent(tts, voiceName));
-                    ShipManager.getInstance().saveShip(ship);
+                    String audition = fleetRow.applyVoice(voiceName, playerSession.getConfiguredPlayerName());
+                    // A carrier is auditioned over the radio, because that is the only way it is ever heard.
+                    if (audition != null) {
+                        GameEventBus.publish(new AiVoxDemoEvent(audition, voiceName, fleetRow.isCarrier()));
+                    }
                 }
                 case COL_PERSONALITY -> {
-                    ship.setPersonality((String) value);
-                    ShipManager.getInstance().saveShip(ship);
+                    if (fleetRow.isCarrier()) return;
+                    fleetRow.ship().setPersonality((String) value);
+                    ShipManager.getInstance().saveShip(fleetRow.ship());
                 }
             }
             fireTableCellUpdated(row, col);

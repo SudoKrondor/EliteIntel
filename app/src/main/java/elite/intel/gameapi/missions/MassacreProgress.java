@@ -37,16 +37,23 @@ import java.util.*;
  * mission here, rolls its provider onto the next one, and lets the whole stack
  * read as complete.
  *
- * @param killsRemainingByFaction kills left on each provider's ACTIVE mission
- * @param completedByFaction      missions each provider has had completed
- * @param killsRemaining          kills still to make to clear the whole stack
- * @param killsRequired           kills the whole stack needs from scratch,
- *                                so {@code killsRequired - killsRemaining} is
- *                                progress so far
- * @param targetFaction           the faction being hunted; null when idle
+ * @param killsRemainingByFaction  kills left on each provider's ACTIVE mission
+ * @param queueRemainingByFaction  kills left on everything a provider has given
+ *                                 us - its active mission plus the ones queued
+ *                                 behind it. This is what a provider still costs
+ *                                 the commander, and unlike the stack total it
+ *                                 DOES add up, because same-provider missions run
+ *                                 one at a time
+ * @param completedByFaction       missions each provider has had completed
+ * @param killsRemaining           kills still to make to clear the whole stack
+ * @param killsRequired            kills the whole stack needs from scratch,
+ *                                 so {@code killsRequired - killsRemaining} is
+ *                                 progress so far
+ * @param targetFaction            the faction being hunted; null when idle
  */
 public record MassacreProgress(
         Map<String, Integer> killsRemainingByFaction,
+        Map<String, Integer> queueRemainingByFaction,
         Map<String, Integer> completedByFaction,
         long killsRemaining,
         long killsRequired,
@@ -56,7 +63,7 @@ public record MassacreProgress(
      * No active massacre missions.
      */
     public static final MassacreProgress NONE =
-            new MassacreProgress(Map.of(), Map.of(), 0, 0, null);
+            new MassacreProgress(Map.of(), Map.of(), Map.of(), 0, 0, null);
 
     public boolean hasMissions() {
         return targetFaction != null;
@@ -128,14 +135,21 @@ public record MassacreProgress(
         applyHistoricalKills(bounties, targetFaction, activeMission, activeRemaining, activeSince);
 
         Map<String, Integer> killsRemainingByFaction = new LinkedHashMap<>();
+        Map<String, Integer> queueRemainingByFaction = new LinkedHashMap<>();
         for (String faction : byProvider.keySet()) {
             killsRemainingByFaction.put(faction, activeRemaining.getOrDefault(faction, 0));
+            // What is left of this provider's queue: its active mission, plus every mission still
+            // waiting behind it at full price. The drain loop above already polled the active one
+            // off, so what remains in the deque is exactly the not-yet-started tail.
+            int queued = pendingByFaction.get(faction).stream().mapToInt(MissionDto::getKillCount).sum();
+            queueRemainingByFaction.put(faction, activeRemaining.getOrDefault(faction, 0) + queued);
         }
 
         long remaining = simulateStackCost(byProvider, new LinkedHashMap<>(activeRemaining), pendingByFaction);
 
         return new MassacreProgress(
                 Collections.unmodifiableMap(killsRemainingByFaction),
+                Collections.unmodifiableMap(queueRemainingByFaction),
                 Collections.unmodifiableMap(completedByFaction),
                 remaining, required, targetFaction);
     }

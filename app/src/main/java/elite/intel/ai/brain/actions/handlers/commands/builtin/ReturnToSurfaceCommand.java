@@ -54,10 +54,8 @@ public final class ReturnToSurfaceCommand implements IntelCommand {
         } else if (status.isInMainShip()) {
             return StringUtls.localizedResponse("speech.shipDismissRejected");
         }
-        if (status.isLanded()) {
-            return StringUtls.localizedResponse("speech.shipDismissed");
-        } else {
-            return StringUtls.localizedResponse("speech.shipRecall");
-        }
+        // The commander asked for the ship back, so that is what is confirmed - see DismissShipToOrbitCommand,
+        // which shares these keystrokes and answers with its own line.
+        return StringUtls.localizedResponse("speech.shipRecall");
     }
 }

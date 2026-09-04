@@ -19,7 +19,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -228,7 +230,11 @@ public final class EdgeTTSImpl implements MouthInterface {
         // change speaker mid-message.
         String selected;
         if (event.isRadio()) {
-            selected = voiceProvider.randomRadioVoiceName(language);
+            // A radio request that names a voice comes from a speaker the commander has assigned one to -
+            // their own carrier's traffic control. Everyone else on the channel stays a stranger.
+            selected = event.getVoiceName() == null
+                    ? voiceProvider.randomRadioVoiceName(language, reservedShortNames(event.getReservedVoices()))
+                    : EdgeVoices.shortNameOrDefault(event.getVoiceName());
         } else if (event.getVoiceName() == null) {
             selected = settings.selectedVoiceName();
         } else {
@@ -243,6 +249,20 @@ public final class EdgeTTSImpl implements MouthInterface {
                     event.getOriginType(), generation, i == sentences.size() - 1, handle));
         }
         publishAccepted(event);
+    }
+
+    /**
+     * The reserved voices as Edge ShortNames, which is what the draw works in. A name this engine does not
+     * know is dropped rather than defaulted: {@code shortNameOrDefault} would answer with the default voice,
+     * and reserving that would quietly exclude the one voice every locale is guaranteed to have.
+     */
+    private static Set<String> reservedShortNames(Set<String> voiceNames) {
+        Set<String> shortNames = new HashSet<>();
+        for (String name : voiceNames) {
+            EdgeVoices voice = EdgeVoices.find(name);
+            if (voice != null) shortNames.add(voice.defaultShortName());
+        }
+        return shortNames;
     }
 
     private void publishAccepted(VocalisationRequestEvent event) {

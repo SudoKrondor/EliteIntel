@@ -3,6 +3,7 @@ package elite.intel.ai.brain.actions.handlers.queries;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
 import elite.intel.db.managers.LocationManager;
+import elite.intel.gameapi.SignalName;
 import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
 import elite.intel.gameapi.journal.events.SAASignalsFoundEvent;
 import elite.intel.gameapi.journal.events.dto.FssSignalDto;
@@ -168,7 +169,7 @@ public class AnalyzeStellarSignalsQuery extends BaseQueryAnalyzer implements Int
             List<FSSBodySignalsEvent.Signal> fss = location.getFssSignals();
             if (fss != null) {
                 for (FSSBodySignalsEvent.Signal s : fss) {
-                    String type = s.getTypeLocalised();
+                    String type = SignalName.display(s.getTypeLocalised(), s.getType());
                     if (type != null && !type.isBlank()) hotspots.merge(type, s.getCount(), Integer::sum);
                 }
             }
