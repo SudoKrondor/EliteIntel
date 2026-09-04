@@ -113,6 +113,29 @@ class EdgeVoiceProviderTest {
     }
 
     /**
+     * A voice given to a carrier's traffic control is not drawn for anyone else - unless it is the only voice
+     * the locale has, which Ukrainian very nearly is: silence would be a worse answer than a repeat.
+     */
+    @Test
+    void radioSkipsAVoiceReservedForACarrier() {
+        EdgeVoiceProvider provider = new EdgeVoiceProvider();
+        provider.setAvailableVoices(List.of(
+                voice("ru-RU-SvetlanaNeural", "Female", "ru-RU"),
+                voice("ru-RU-DmitryNeural", "Male", "ru-RU"),
+                voice("uk-UA-PolinaNeural", "Female", "uk-UA")));
+
+        Set<String> drawn = new HashSet<>();
+        for (int i = 0; i < 500; i++) {
+            drawn.add(provider.randomRadioVoiceName(Language.RU, Set.of("ru-RU-DmitryNeural")));
+        }
+        assertEquals(Set.of("ru-RU-SvetlanaNeural"), drawn);
+
+        assertEquals("uk-UA-PolinaNeural",
+                provider.randomRadioVoiceName(Language.UK, Set.of("uk-UA-PolinaNeural")),
+                "the locale's only voice is still spoken rather than nothing at all");
+    }
+
+    /**
      * The list is fetched on the first synthesis, so the first transmission of a session has no list yet.
      */
     @Test

@@ -106,6 +106,24 @@ public class StringUtls {
                 safeShipName);
     }
 
+    /**
+     * A carrier's traffic control greeting the commander, used to audition the voice assigned to it. The
+     * line the carrier actually says on a docking grant, so what the commander hears in the fleet grid is
+     * what they will hear on approach.
+     */
+    public static String carrierTrafficControl(String playerName, String carrierName) {
+        Language language = effectiveTtsLanguage();
+        String spokenName = spokenNameOrCommander(playerName, language);
+        String safeCarrierName = carrierName == null || carrierName.isBlank()
+                ? MultiLingualTextProvider.getText(language, "speech.shipFallback")
+                : carrierName;
+        return MultiLingualTextProvider.getText(
+                language,
+                "speech.carrierTrafficControl",
+                spokenName,
+                safeCarrierName);
+    }
+
     public static String localizedSpeech(String key, Object... args) {
         return MultiLingualTextProvider.getText(effectiveTtsLanguage(), key, args);
     }

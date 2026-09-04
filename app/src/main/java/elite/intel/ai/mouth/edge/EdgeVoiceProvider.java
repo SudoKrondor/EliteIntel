@@ -4,6 +4,7 @@ import elite.intel.i18n.Language;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 /** Resolves the per-ship voice model against the voices currently offered by Edge Read Aloud. */
@@ -86,15 +87,35 @@ final class EdgeVoiceProvider {
      * successful list fetch it falls back to voices known to exist for the locale.
      */
     String randomRadioVoiceName(Language language) {
+        return randomRadioVoiceName(language, Set.of());
+    }
+
+    /**
+     * The same draw, skipping voices that belong to a named speaker - a carrier whose traffic control the
+     * commander has given a voice. Reserving is best-effort by design: the Cyrillic locales this engine
+     * serves have very few voices (Ukrainian has one), so a reservation that would leave nothing to say is
+     * dropped rather than silencing the channel.
+     *
+     * @param reserved ShortNames spoken for elsewhere
+     */
+    String randomRadioVoiceName(Language language, Set<String> reserved) {
         List<EdgeVoice> candidates = availableVoices.stream()
                 .filter(voice -> languageMatches(language, voice.locale()))
                 .sorted(Comparator.comparing(EdgeVoice::shortName))
                 .toList();
+        List<EdgeVoice> free = candidates.stream()
+                .filter(voice -> !reserved.contains(voice.shortName()))
+                .toList();
+        if (!free.isEmpty()) {
+            return free.get(ThreadLocalRandom.current().nextInt(free.size())).shortName();
+        }
         if (!candidates.isEmpty()) {
             return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size())).shortName();
         }
         List<String> fallback = radioFallback(language);
-        return fallback.get(ThreadLocalRandom.current().nextInt(fallback.size()));
+        List<String> freeFallback = fallback.stream().filter(name -> !reserved.contains(name)).toList();
+        List<String> pool = freeFallback.isEmpty() ? fallback : freeFallback;
+        return pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
     }
 
     /**

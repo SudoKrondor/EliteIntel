@@ -8,6 +8,7 @@ import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.gameapi.PreScanOnly;
+import elite.intel.gameapi.SignalName;
 import elite.intel.gameapi.journal.ScanBodyClassifier;
 import elite.intel.gameapi.journal.events.*;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
@@ -353,7 +354,9 @@ public class SilentPersistenceSubscriber {
             if (event.getSignals() != null && !event.getSignals().isEmpty()) {
                 List<MaterialDto> materials = new ArrayList<>();
                 for (SAASignalsFoundEvent.Signal signal : event.getSignals()) {
-                    materials.add(new MaterialDto(signal.getType(), 100, true));
+                    // Mirrors SAASignalsFoundSubscriber.toMaterials - the two must not disagree about a name.
+                    String reserve = SignalName.display(signal.getTypeLocalised(), signal.getType());
+                    if (reserve != null) materials.add(new MaterialDto(reserve, 100, true));
                 }
                 location.setMaterials(materials);
             }

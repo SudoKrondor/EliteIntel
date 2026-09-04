@@ -3,6 +3,7 @@ package elite.intel.ai.mouth.subscribers.events;
 import elite.intel.ai.mouth.VocalisationHandle;
 
 import javax.annotation.Nullable;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -13,25 +14,30 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
     private final boolean canBeInterrupted;
     private final boolean isRadio;
     private final String speaker;
+    private final Set<String> reservedVoices;
     private final VocalisationHandle handle;
 
     public VocalisationRequestEvent(String textToVoice, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted) {
-        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, null);
+        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, null, Set.of());
     }
 
     public VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted) {
-        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, false, null, null);
+        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, false, null, null, Set.of());
     }
 
     public VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, boolean isRadio, @Nullable String speaker) {
-        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, isRadio, speaker, null);
+        this(textToVoice, voiceName, originType, canBeInterrupted, isRadio, speaker, Set.of());
+    }
+
+    public VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, boolean isRadio, @Nullable String speaker, Set<String> reservedVoices) {
+        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, isRadio, speaker, null, reservedVoices);
     }
 
     /**
      * Used when a completion signal is required (e.g. when routing a customCommand SPEAK request).
      */
     public VocalisationRequestEvent(String textToVoice, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, @Nullable CompletableFuture<Void> completionFuture) {
-        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, completionFuture);
+        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of());
     }
 
     /** Creates a tracked companion request while preserving its correlation id through the Mouth pipeline. */
@@ -43,7 +49,7 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
             CompletableFuture<Void> completionFuture
     ) {
         return new VocalisationRequestEvent(
-                requestId, textToVoice, null, originType, canBeInterrupted, false, null, completionFuture);
+                requestId, textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of());
     }
 
     private VocalisationRequestEvent(
@@ -54,10 +60,12 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
             boolean canBeInterrupted,
             boolean isRadio,
             @Nullable String speaker,
-            @Nullable CompletableFuture<Void> completionFuture
+            @Nullable CompletableFuture<Void> completionFuture,
+            Set<String> reservedVoices
     ) {
         super(textToVoice, false);
         this.voiceName = voiceName;
+        this.reservedVoices = reservedVoices;
         this.originType = originType;
         this.canBeInterrupted = canBeInterrupted;
         this.isRadio = isRadio;
@@ -92,6 +100,14 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
      */
     public @Nullable String getSpeaker() {
         return speaker;
+    }
+
+    /**
+     * Voices already spoken for by a named speaker, which the random radio draw must skip. Empty for
+     * everything that is not a radio transmission, and for a transmission with a voice of its own.
+     */
+    public Set<String> getReservedVoices() {
+        return reservedVoices;
     }
 
     /** The request-scoped lifecycle claimed and settled by the active Mouth. */
