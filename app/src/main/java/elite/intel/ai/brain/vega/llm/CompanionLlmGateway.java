@@ -55,6 +55,15 @@ public final class CompanionLlmGateway implements LlmGateway {
      * thought watchdog rather than holding the sole worker.
      */
     private static final long[][] TRANSIENT_RETRY_BACKOFF_MILLIS = {{250, 750}, {750, 1500}, {2000, 3000}};
+
+    /**
+     * Ceiling on a {@code Retry-After} the provider asked for. Its advice replaces the jittered rung when it is
+     * longer, because a rate limiter knows its own cooldown - but only up to the widest rung. A companion that
+     * goes silent for the ten seconds a saturated provider might ask for is worse company than one that admits
+     * the service is unreachable, and the ladder's whole budget is what keeps the sole worker inside the
+     * thought watchdog.
+     */
+    private static final long MAX_HONOURED_RETRY_AFTER_MILLIS = 3_000;
     private final LlmProviderAdapter adapter;
     private final LlmTransport transport;
     private final Executor executor;
@@ -317,9 +326,10 @@ public final class CompanionLlmGateway implements LlmGateway {
                     || failure.kind() != AiTransportResult.FailureKind.TRANSIENT) {
                 return outcome;
             }
-            long delayMillis = ThreadLocalRandom.current().nextLong(backoff[0], backoff[1] + 1);
+            long delayMillis = retryDelayMillis(failure, backoff);
             CompanionDiagnostics.debug(trace, "llm-http", "attempt=" + attemptNumber + " transient transport"
-                    + transportStatus(failure) + " -> retry in " + delayMillis + " ms");
+                    + transportStatus(failure) + " -> retry in " + delayMillis + " ms"
+                    + (failure.retryAfterMillis() != null ? " (Retry-After: " + failure.retryAfterMillis() + " ms)" : ""));
             try {
                 Thread.sleep(delayMillis);
             } catch (InterruptedException interrupted) {
@@ -330,6 +340,23 @@ public final class CompanionLlmGateway implements LlmGateway {
             outcome = transport.sendOutcome(body);
         }
         return outcome;
+    }
+
+    /**
+     * The wait before one resend: the jittered rung, or the provider's own {@code Retry-After} when it asked for
+     * longer than the rung and no more than {@link #MAX_HONOURED_RETRY_AFTER_MILLIS}. Advice shorter than the
+     * rung is not taken - resending sooner than our own ladder would only spend another attempt on a provider
+     * that has just refused one.
+     * <p>
+     * Package-private so the policy can be asserted without waiting out a real ladder.
+     */
+    static long retryDelayMillis(AiTransportResult.Failure failure, long[] backoff) {
+        long jittered = ThreadLocalRandom.current().nextLong(backoff[0], backoff[1] + 1);
+        Long advised = failure.retryAfterMillis();
+        if (advised == null || advised <= jittered) {
+            return jittered;
+        }
+        return Math.min(advised, MAX_HONOURED_RETRY_AFTER_MILLIS);
     }
 
     /**

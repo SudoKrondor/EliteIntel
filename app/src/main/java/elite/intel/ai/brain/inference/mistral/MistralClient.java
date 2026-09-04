@@ -15,12 +15,24 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 public class MistralClient extends BaseAiClient implements Client {
 
     public static final String MODEL = "mistral-small-2506";
     private static final String API_URL = "https://api.mistral.ai/v1/chat/completions";
     private static final MistralClient instance = new MistralClient();
+
+    /**
+     * Minimum spacing between two sends to Mistral, over its free tier's one request per second. The margin
+     * covers the round trip's own jitter; {@link SendRateGate} explains why the companion needs the gate at all.
+     */
+    private static final long MIN_SEND_INTERVAL_MILLIS = 1_100;
+
+    /**
+     * Every send from this client passes the gate, so the companion and the query analyser share one budget.
+     */
+    private final SendRateGate sendGate = new SendRateGate(MIN_SEND_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
 
     private MistralClient() {
     }
@@ -55,6 +67,10 @@ public class MistralClient extends BaseAiClient implements Client {
 
     /** Sends a companion request without converting a transport failure into legacy speech JSON. */
     public AiTransportResult sendCompanionRequest(String request) {
+        if (!sendGate.awaitSlot()) {
+            return AiTransportResult.failure(AiTransportResult.FailureKind.CANCELLED, null,
+                    "Request cancelled while waiting for the Mistral send slot");
+        }
         long t0 = System.nanoTime();
         AiTransportResult outcome = sendTransportRequest(buildRequest(request));
         if (outcome instanceof AiTransportResult.Success success) {
@@ -65,6 +81,9 @@ public class MistralClient extends BaseAiClient implements Client {
 
     @Override
     public JsonObject sendJsonRequest(String request) {
+        if (!sendGate.awaitSlot()) {
+            return createErrorResponse("LLM Call Failed");
+        }
         long t0 = System.nanoTime();
         JsonObject response = super.sendJsonRequest(buildRequest(request));
         reportResponse(response, System.nanoTime() - t0);

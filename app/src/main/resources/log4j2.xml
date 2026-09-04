@@ -108,6 +108,13 @@
              arrived with nothing under it, because the thing that broke logged a warn. -->
         <Logger name="elite.intel.ai.mouth" level="warn"/>
         <Logger name="elite.intel.ai.brain" level="error"/>
+        <!-- warn, and louder than the brain above it, or the change that put transient HTTP
+             failures at warn would have deleted them from the bundle instead of calming them
+             down. A 429 or a 503 is resent along the gateway's ladder and the turn usually
+             survives, so it is not an error - but it is exactly what a commander reporting
+             "it went quiet for a moment" is reporting, and the rate-limit diagnosis needs to
+             see how many there were and how close together. Edge-triggered on a failed send. -->
+        <Logger name="elite.intel.ai.brain.BaseAiClient" level="warn"/>
         <!-- The companion pipeline, louder than the brain it sits in, and the single most
              valuable thing in a bundle: "the LLM round failed", "the response had defect X,
              retrying via Y", "the model asked for more tool calls than the turn allows". A

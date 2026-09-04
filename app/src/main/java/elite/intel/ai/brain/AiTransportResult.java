@@ -17,11 +17,27 @@ public sealed interface AiTransportResult permits AiTransportResult.Success, AiT
         }
     }
 
-    /** A failed or unusable HTTP exchange, with no provider response available for normal parsing. */
-    record Failure(FailureKind kind, Integer statusCode, String diagnostic) implements AiTransportResult {
+    /**
+     * A failed or unusable HTTP exchange, with no provider response available for normal parsing.
+     * {@code retryAfterMillis} carries the provider's own advice from a {@code Retry-After} header when it sent
+     * one, and is null otherwise - a rate limiter that names its own cooldown knows better than a blind ladder.
+     */
+    record Failure(FailureKind kind, Integer statusCode, String diagnostic, Long retryAfterMillis)
+            implements AiTransportResult {
+
         public Failure {
             Objects.requireNonNull(kind, "kind");
             diagnostic = diagnostic == null ? "" : diagnostic;
+            if (retryAfterMillis != null && retryAfterMillis < 0) {
+                retryAfterMillis = null; // a past date or a negative delta advises nothing
+            }
+        }
+
+        /**
+         * Creates a failure the provider gave no retry advice for.
+         */
+        public Failure(FailureKind kind, Integer statusCode, String diagnostic) {
+            this(kind, statusCode, diagnostic, null);
         }
     }
 
@@ -44,6 +60,13 @@ public sealed interface AiTransportResult permits AiTransportResult.Success, AiT
 
     /** Creates a failed outcome without exposing a raw response body to callers. */
     static Failure failure(FailureKind kind, Integer statusCode, String diagnostic) {
-        return new Failure(kind, statusCode, diagnostic);
+        return new Failure(kind, statusCode, diagnostic, null);
+    }
+
+    /**
+     * Creates a failed outcome carrying the provider's own {@code Retry-After} advice, in milliseconds.
+     */
+    static Failure failure(FailureKind kind, Integer statusCode, String diagnostic, Long retryAfterMillis) {
+        return new Failure(kind, statusCode, diagnostic, retryAfterMillis);
     }
 }

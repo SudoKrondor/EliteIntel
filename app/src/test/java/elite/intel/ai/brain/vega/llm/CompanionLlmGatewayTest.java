@@ -523,4 +523,32 @@ class CompanionLlmGatewayTest {
             return null;
         }
     }
+
+    /**
+     * A rate limiter that names its own cooldown is obeyed rather than guessed at - but only up to the ladder's
+     * ceiling, because a companion that goes silent for the ten seconds a saturated provider might ask for is
+     * worse company than one that admits the service is unreachable.
+     */
+    @Test
+    void retryAfterAdviceIsHonouredUpToTheLaddersCeiling() {
+        long[] shortestRung = {250, 750};
+
+        assertEquals(3_000, CompanionLlmGateway.retryDelayMillis(rateLimited(10_000L), shortestRung),
+                "advice longer than the ceiling must be clamped, not obeyed");
+        assertEquals(1_500, CompanionLlmGateway.retryDelayMillis(rateLimited(1_500L), shortestRung),
+                "advice inside the ceiling must be taken over the jittered rung");
+
+        long ignoredAdvice = CompanionLlmGateway.retryDelayMillis(rateLimited(10L), shortestRung);
+        assertTrue(ignoredAdvice >= 250 && ignoredAdvice <= 750,
+                "advice shorter than the rung must not shorten the wait, was " + ignoredAdvice);
+
+        long unadvised = CompanionLlmGateway.retryDelayMillis(rateLimited(null), shortestRung);
+        assertTrue(unadvised >= 250 && unadvised <= 750,
+                "a provider that advises nothing must leave the rung alone, was " + unadvised);
+    }
+
+    private static AiTransportResult.Failure rateLimited(Long retryAfterMillis) {
+        return new AiTransportResult.Failure(
+                AiTransportResult.FailureKind.TRANSIENT, 429, "rate limited", retryAfterMillis);
+    }
 }

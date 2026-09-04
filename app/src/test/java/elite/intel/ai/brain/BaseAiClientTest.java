@@ -9,6 +9,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -17,11 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class BaseAiClientTest {
 
@@ -110,16 +111,82 @@ class BaseAiClientTest {
         assertEquals(statusCode, failure.statusCode());
     }
 
+    /**
+     * A rate-limited provider that names its own cooldown is worth more than a blind ladder, so the header is
+     * carried on the failure in both of its legal forms - and an unusable one advises nothing rather than zero.
+     */
+    @Test
+    void transientFailureCarriesTheProvidersRetryAfterAdvice() {
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create("http://localhost/unused")).build();
+
+        assertEquals(2_000L, retryAfterOf(request, Map.of("Retry-After", List.of("2"))));
+        assertNull(retryAfterOf(request, Map.of()));
+        assertNull(retryAfterOf(request, Map.of("Retry-After", List.of("soon"))));
+        assertNull(retryAfterOf(request, Map.of("Retry-After", List.of("-5"))));
+
+        String httpDate = DateTimeFormatter.RFC_1123_DATE_TIME.format(
+                ZonedDateTime.ofInstant(Instant.now().plusSeconds(30), ZoneOffset.UTC));
+        Long fromDate = retryAfterOf(request, Map.of("Retry-After", List.of(httpDate)));
+        assertNotNull(fromDate);
+        assertTrue(fromDate > 20_000 && fromDate <= 30_000, "HTTP-date advice was " + fromDate + " ms");
+
+        String past = DateTimeFormatter.RFC_1123_DATE_TIME.format(
+                ZonedDateTime.ofInstant(Instant.now().minusSeconds(30), ZoneOffset.UTC));
+        assertEquals(0L, retryAfterOf(request, Map.of("Retry-After", List.of(past))));
+    }
+
+    private static Long retryAfterOf(HttpRequest request, Map<String, List<String>> headers) {
+        ControlledClient client = new ControlledClient();
+        client.exchange.complete(httpResponse(429, "rate limited", headers));
+
+        AiTransportResult.Failure failure = assertInstanceOf(AiTransportResult.Failure.class,
+                client.sendOutcome(request));
+        assertEquals(AiTransportResult.FailureKind.TRANSIENT, failure.kind());
+        return failure.retryAfterMillis();
+    }
+
     private static HttpResponse<String> httpResponse(int statusCode, String body) {
+        return httpResponse(statusCode, body, Map.of());
+    }
+
+    private static HttpResponse<String> httpResponse(
+            int statusCode,
+            String body,
+            Map<String, List<String>> headers
+    ) {
         return new HttpResponse<>() {
             @Override public int statusCode() { return statusCode; }
             @Override public HttpRequest request() { return null; }
             @Override public Optional<HttpResponse<String>> previousResponse() { return Optional.empty(); }
-            @Override public HttpHeaders headers() { return HttpHeaders.of(Map.of(), (name, value) -> true); }
+
+            @Override
+            public HttpHeaders headers() {
+                return HttpHeaders.of(headers, (name, value) -> true);
+            }
             @Override public String body() { return body; }
             @Override public Optional<javax.net.ssl.SSLSession> sslSession() { return Optional.empty(); }
             @Override public URI uri() { return URI.create("http://localhost/unused"); }
             @Override public HttpClient.Version version() { return HttpClient.Version.HTTP_1_1; }
         };
+    }
+
+    /**
+     * A 429 is only interpretable next to the traffic that earned it and the provider's own limit headers, so
+     * both travel with the line. Read back through the failure the caller sees rather than through the log.
+     */
+    @Test
+    void rateLimitHeadersAreReportedVerbatim() {
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create("http://localhost/unused")).build();
+        ControlledClient client = new ControlledClient();
+        client.exchange.complete(httpResponse(429, "rate limited", Map.of(
+                "ratelimitbysize-remaining", List.of("0"),
+                "Retry-After", List.of("7"),
+                "content-type", List.of("application/json"))));
+
+        AiTransportResult.Failure failure = assertInstanceOf(AiTransportResult.Failure.class,
+                client.sendOutcome(request));
+
+        assertEquals(7_000L, failure.retryAfterMillis());
+        assertEquals(429, failure.statusCode());
     }
 }
