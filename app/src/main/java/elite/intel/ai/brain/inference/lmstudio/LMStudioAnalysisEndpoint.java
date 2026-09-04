@@ -73,6 +73,9 @@ public class LMStudioAnalysisEndpoint extends AiEndPoint implements AiAnalysisIn
             log.debug("LM Studio analysis call:\n{}", gson.toJson(prompt));
 
             JsonObject root = processAiPrompt(gson.toJson(prompt), client);
+            if (isHttpErrorResponse(root)) {
+                return root; // transport failure: the sentinel already carries the localized phrase
+            }
             StructuredResponse sr = checkResponse(root);
             if (!sr.isSuccessful()) {
                 JsonObject err = new JsonObject();

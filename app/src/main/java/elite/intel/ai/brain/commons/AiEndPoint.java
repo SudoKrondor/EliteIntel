@@ -3,8 +3,6 @@ package elite.intel.ai.brain.commons;
 import com.google.gson.*;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.Client;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.tools.ws.WebSocketBroadcaster;
 import elite.intel.util.json.GsonFactory;
 import org.apache.logging.log4j.LogManager;
@@ -59,7 +57,9 @@ public abstract class AiEndPoint {
 
         JsonElement element = message.get("content");
         if (element == null) {
-            GameEventBus.publish(new AiVoxResponseEvent("No content in API response message: " + response.toString().replace("\n", "")));
+            // The body goes to the log, never to the speaker: reading a provider's raw JSON aloud tells the
+            // commander nothing and buries whatever they actually asked for.
+            log.error("No content in API response message:\n{}", response);
             throw new RuntimeException("No content in API response message");
         }
         String content = element.getAsString();
@@ -75,10 +75,10 @@ public abstract class AiEndPoint {
     }
 
     /**
-     * Returns true when the response is a BaseAiClient HTTP-error sentinel
-     * (has text_to_speech_response, no choices). The error was already logged
-     * and a TTS event already published by BaseAiClient - callers should return
-     * null silently rather than logging a second misleading error.
+     * Returns true when the response is the {@code BaseAiClient} transport-failure sentinel (carries
+     * text_to_speech_response, carries no choices). The status code and the provider's body are already in
+     * the ERROR log and the sentinel already carries the localized phrase the commander should hear, so a
+     * caller must hand it straight back rather than masking it with an analysis error of its own.
      */
     protected boolean isHttpErrorResponse(JsonObject response) {
         return response.has(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE) && !response.has("choices");

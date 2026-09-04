@@ -49,6 +49,9 @@ public class DeepSeekAnalysisEndpoint extends AiEndPoint implements AiAnalysisIn
             String jsonString = gson.toJson(prompt);
 
             JsonObject response = processAiPrompt(jsonString, client);
+            if (isHttpErrorResponse(response)) {
+                return response; // transport failure: the sentinel already carries the localized phrase
+            }
 
             JsonArray choices = response.getAsJsonArray("choices");
             if (choices == null || choices.isEmpty()) {

@@ -1,6 +1,9 @@
 package elite.intel.ai.brain;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
+import elite.intel.ai.brain.i18n.ResponseTextProvider;
+import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -17,11 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class BaseAiClientTest {
 
@@ -66,8 +65,9 @@ class BaseAiClientTest {
 
         assertFalse(worker.isAlive(), "interrupt must release the synchronous provider wrapper");
         assertTrue(client.exchange.cancelCalled.get(), "interrupt must cancel the retained HTTP future");
-        assertEquals("LLM Call Failed",
-                response.get().get(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE).getAsString());
+        // A cancelled request says nothing: the commander interrupted it themselves, so there is no failure
+        // to announce over whatever they interrupted it with.
+        assertEquals("", response.get().get(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE).getAsString());
     }
 
     @Test
@@ -94,6 +94,41 @@ class BaseAiClientTest {
                 offline.sendOutcome(request));
         assertEquals(AiTransportResult.FailureKind.TRANSIENT, networkFailure.kind());
         assertNull(networkFailure.statusCode());
+    }
+
+    /**
+     * A provider's status code describes the provider's bookkeeping, not the commander's situation: Mistral
+     * answered 429 for a disabled free tier, which is an outage and not a rate limit. So a failed exchange
+     * must speak our own condition - unreachable, or refused and worth checking the key - and never repeat
+     * the code or the wording that came back with it.
+     */
+    @Test
+    void transportFailureSpeaksOurConditionNeverTheProvidersStatusCode() {
+        String unreachable = spokenPhraseFor(429);
+
+        assertEquals(localized("handler.common.aiServiceUnreachable"), unreachable);
+        assertEquals(unreachable, spokenPhraseFor(503), "an outage answered 429 reads the same as one answered 503");
+        assertFalse(unreachable.contains("429"), "the status code belongs in the log, not in the commander's ear");
+        assertFalse(unreachable.toLowerCase().contains("too many"),
+                "429 during an outage must not accuse the commander of sending too many requests");
+
+        String rejected = spokenPhraseFor(401);
+        assertEquals(localized("handler.common.aiServiceRejected"), rejected);
+        assertNotEquals(unreachable, rejected, "a rejected key is actionable and must not sound like an outage");
+        assertEquals(rejected, spokenPhraseFor(403));
+    }
+
+    private static String spokenPhraseFor(int statusCode) {
+        ControlledClient client = new ControlledClient();
+        client.exchange.complete(httpResponse(statusCode, "{\"message\":\"Requests rate limit exceeded\"}"));
+
+        return client.sendJsonRequest(HttpRequest.newBuilder().uri(URI.create("http://localhost/unused")).build())
+                .get(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE).getAsString();
+    }
+
+    private static String localized(String key) {
+        return ResponseTextProvider.getText(
+                AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance()), key);
     }
 
     private static void assertHttpFailureKind(
