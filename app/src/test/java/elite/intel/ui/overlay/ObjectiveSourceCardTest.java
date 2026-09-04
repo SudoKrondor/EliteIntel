@@ -222,6 +222,140 @@ class ObjectiveSourceCardTest {
         assertTrue(new MassacreObjectiveSource().currentObjective().isEmpty());
     }
 
+    // -- who the missions came from --------------------------------------------
+
+    /**
+     * The board the provider rows exist for. Faction A holds one 81-kill contract, Faction B two 40s
+     * taken at two of its own outposts, Faction C a single 10 - and the whole stack still costs 81,
+     * because one kill counts for all of them.
+     * <p>
+     * The total alone cannot answer the question at the board: a second contract from Faction A
+     * would queue behind its 81 and blow through a self-imposed limit, while one from a provider not
+     * yet in the stack might cost nothing extra. Naming the providers is what makes that visible.
+     */
+    @Test
+    void aStackNamesEveryProviderItWasBuiltFrom() {
+        saveTheBoard();
+
+        HudObjective card = new MassacreObjectiveSource().currentObjective().orElseThrow();
+
+        assertEquals(List.of("PIRATES (EST)", "FACTION A", "FACTION B", "FACTION C", "MISSIONS", "REWARD"),
+                labels(card));
+        assertEquals(81, rowOf(card, "PIRATES (EST)").max(), "the stack costs its longest chain");
+        assertEquals("81", valueOf(card, "FACTION A"));
+        assertEquals("80", valueOf(card, "FACTION B"), "its two contracts queue, so they add up");
+        assertEquals("10", valueOf(card, "FACTION C"));
+    }
+
+    /**
+     * The stack keeps the one progress bar. Repeating it per provider would say the same thing five
+     * times over and crowd out the name, which is the reason the rows are there.
+     */
+    @Test
+    void onlyTheStackGetsABar() {
+        saveTheBoard();
+
+        HudObjective card = new MassacreObjectiveSource().currentObjective().orElseThrow();
+
+        assertTrue(rowOf(card, "PIRATES (EST)").hasProgress());
+        for (String provider : List.of("FACTION A", "FACTION B", "FACTION C")) {
+            assertFalse(rowOf(card, provider).hasProgress(), provider);
+        }
+    }
+
+    /**
+     * Ten kills come off every provider at once. Faction C is the one to watch: it stops one short of
+     * its ten rather than reading complete, because a bounty is not proof of mission credit.
+     */
+    @Test
+    void oneKillComesOffEveryProvidersCount() {
+        saveTheBoard();
+        saveBounties(10);
+
+        HudObjective card = new MassacreObjectiveSource().currentObjective().orElseThrow();
+
+        assertEquals(10, rowOf(card, "PIRATES (EST)").current());
+        assertEquals("71", valueOf(card, "FACTION A"));
+        assertEquals("70", valueOf(card, "FACTION B"),
+                "its active 40 is down to 30 and the 40 behind it has not started");
+        assertEquals("1", valueOf(card, "FACTION C"), "held one short of its ten");
+        assertEquals(HudRow.State.NORMAL, rowOf(card, "FACTION C").state(),
+                "nothing the game confirmed, so nothing reads as done");
+    }
+
+    /**
+     * A provider whose contracts the game has redirected is finished with, and the row says so
+     * outright - a green zero is a worse way to say the same thing.
+     */
+    @Test
+    void aProviderTheGameConfirmedReadsComplete() {
+        saveMission(redirectedMassacreJson(30, 4).replace(PROVIDER, "Done Faction"));
+        saveMission(massacreJson(31, 9, "Owed Faction"));
+
+        HudObjective card = new MassacreObjectiveSource().currentObjective().orElseThrow();
+
+        assertEquals("COMPLETE", valueOf(card, "DONE FACTION"));
+        assertEquals(HudRow.State.GOOD, rowOf(card, "DONE FACTION").state());
+        assertEquals("9", valueOf(card, "OWED FACTION"));
+        assertEquals(HudRow.State.NORMAL, rowOf(card, "OWED FACTION").state());
+    }
+
+    /**
+     * One provider's queue IS the stack, so its count would be a copy of the total above it.
+     */
+    @Test
+    void aLoneProviderGetsNoRowOfItsOwn() {
+        saveMission(massacreJson(32, 6, PROVIDER));
+        saveMission(massacreJson(33, 4, PROVIDER));
+
+        assertEquals(List.of("PIRATES (EST)", "MISSIONS", "REWARD"),
+                labels(new MassacreObjectiveSource().currentObjective().orElseThrow()));
+    }
+
+    /**
+     * The renderer keeps eight rows and drops the rest where it parses them, so an unbudgeted list
+     * would cost the reward line - written under the providers - rather than its own tail.
+     */
+    @Test
+    void alongProviderListIsCutToWhatTheCardHolds() {
+        for (int i = 0; i < 6; i++) saveMission(massacreJson(40 + i, 5 + i, "Provider " + i));
+
+        HudObjective card = new MassacreObjectiveSource().currentObjective().orElseThrow();
+
+        assertEquals(8, card.rows().size(), "MAX_ROWS in hud.h");
+        assertEquals(List.of("PIRATES (EST)", "PROVIDER 0", "PROVIDER 1", "PROVIDER 2", "PROVIDER 3",
+                "MORE PROVIDERS", "MISSIONS", "REWARD"), labels(card));
+        assertEquals("+2", valueOf(card, "MORE PROVIDERS"));
+    }
+
+    /**
+     * Nothing on a card wraps or clips, so a faction name past the label column would be drawn into
+     * its own count. Most real ED faction names fit; the long ones have to be cut somewhere.
+     */
+    @Test
+    void aProviderNameTooLongForItsRowIsCutBackToAWord() {
+        assertEquals("XUE DAVOKJE BLUE COUNCIL",
+                MassacreObjectiveSource.providerLabel("Xue Davokje Blue Council"),
+                "a name this long still stands as it is");
+        assertEquals("INDEPENDENT DETENTION…",
+                MassacreObjectiveSource.providerLabel("Independent Detention Foundation"),
+                "cut at the last word that still leaves something to recognise it by");
+        assertEquals("ALLIANCE OF SEEDIANSI…",
+                MassacreObjectiveSource.providerLabel("Alliance of Seediansi Metallurgic Ltd"));
+        // Contrived: at 24 characters a real faction name nearly always has a word boundary late
+        // enough to cut at. The mid-word branch is still reachable, and cutting mid-word beats
+        // dropping back to a stub that could match half the board.
+        assertEquals("KREMAINN INTERSTELLARIN…",
+                MassacreObjectiveSource.providerLabel("Kremainn Interstellarindustries"),
+                "no word boundary late enough, so more of the name beats a tidier cut");
+
+        for (String name : List.of("Test Providers", "Xue Davokje Blue Council",
+                "Independent Detention Foundation", "Alliance of Seediansi Metallurgic Ltd",
+                "Kremainn Interstellarindustries")) {
+            assertTrue(MassacreObjectiveSource.providerLabel(name).length() <= 24, name);
+        }
+    }
+
     // -- massacre stack vs. a plotted route ------------------------------------
 
     /**
@@ -343,6 +477,16 @@ class ObjectiveSourceCardTest {
         return missionJson(id, "MISSION_DELIVERY",
                 "\"commodityName\":\"Liquor\",\"count\":196,\"reward\":10,\"destinationSystem\":\"%s\""
                         .formatted(destinationSystem));
+    }
+
+    /**
+     * Faction A: one 81. Faction B: two 40s from two of its own outposts. Faction C: one 10.
+     */
+    private void saveTheBoard() {
+        saveMission(massacreJson(50, 81, "Faction A"));
+        saveMission(massacreJson(51, 40, "Faction B"));
+        saveMission(massacreJson(52, 40, "Faction B"));
+        saveMission(massacreJson(53, 10, "Faction C"));
     }
 
     private String massacreJson(long id, int kills, String provider) {

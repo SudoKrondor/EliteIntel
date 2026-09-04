@@ -59,6 +59,9 @@ public class OpenAiAnalysisEndPoint extends AiEndPoint implements AiAnalysisInte
             log.debug("Analysis call:\n\n{}\n\n", jsonString);
 
             JsonObject response = processAiPrompt(jsonString, client);
+            if (isHttpErrorResponse(response)) {
+                return response; // transport failure: the sentinel already carries the localized phrase
+            }
 
             JsonElement jsonElement = response.get("usage");
             if(jsonElement != null) {

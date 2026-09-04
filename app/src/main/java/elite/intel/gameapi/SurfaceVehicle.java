@@ -26,21 +26,11 @@ public enum SurfaceVehicle {
     SCORPION(Deployment.LANDED, "Scorpion"),
 
     /**
-     * <b>The one that breaks the old rule.</b> The Rhino is dropped rather than driven out, so the ship has
-     * to be hovering above the surface instead of sitting on it - which is why deployment can no longer be
-     * gated on "landed" alone.
+     * <b>The one that breaks the old rule.</b> The Rhino is dropped rather than driven out, so the ship is
+     * hovering above the surface instead of sitting on it - which is why deployment can no longer be gated
+     * on "landed" alone.
      */
     RHINO(Deployment.HOVERING, "Rhino");
-
-    /**
-     * The lowest the ship may hover and still drop a Rhino, in metres.
-     */
-    public static final double RHINO_MIN_ALTITUDE_METRES = 20;
-
-    /**
-     * The highest the ship may hover and still drop a Rhino, in metres.
-     */
-    public static final double RHINO_MAX_ALTITUDE_METRES = 30;
 
     /**
      * What the ship has to be doing for this vehicle to leave the bay.
@@ -51,7 +41,8 @@ public enum SurfaceVehicle {
          */
         LANDED,
         /**
-         * Holding station above the surface, between the two Rhino altitudes.
+         * Holding station above the surface rather than sitting on it. Not gated on how high: see
+         * {@code SurfaceVehicleDeployment.ShipSituation}.
          */
         HOVERING
     }
@@ -77,15 +68,6 @@ public enum SurfaceVehicle {
      */
     public String displayName() {
         return displayName;
-    }
-
-    /**
-     * Whether an altitude is within the band this vehicle is dropped from. Always true for the vehicles
-     * that are driven out of a landed ship, where altitude means nothing.
-     */
-    public boolean altitudeAllows(double altitudeMetres) {
-        return deployment != Deployment.HOVERING
-                || (altitudeMetres >= RHINO_MIN_ALTITUDE_METRES && altitudeMetres <= RHINO_MAX_ALTITUDE_METRES);
     }
 
     /**

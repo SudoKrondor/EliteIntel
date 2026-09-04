@@ -272,7 +272,7 @@ public class KokoroTTS implements MouthInterface {
             // One voice for the whole transmission: the draw happens here, not per sentence, or a station
             // would change speaker mid-message.
             String voiceName = event.isRadio() && event.getVoiceName() == null
-                    ? KokoroVoices.randomRadioVoice(systemSession.getKokoroVoice().name()).name()
+                    ? KokoroVoices.randomRadioVoice(systemSession.getKokoroVoice().name(), event.getReservedVoices()).name()
                     : event.getVoiceName();
             for (int i = 0; i < sentences.size(); i++) {
                 boolean isLast = (i == sentences.size() - 1);

@@ -1,6 +1,7 @@
 package elite.intel.ai.mouth.kokoro;
 
 import java.util.Arrays;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -113,12 +114,26 @@ public enum KokoroVoices {
      * @param ownVoiceName the commander's ship voice (an enum name), or {@code null} when none is resolvable
      */
     public static KokoroVoices randomRadioVoice(String ownVoiceName) {
+        return randomRadioVoice(ownVoiceName, Set.of());
+    }
+
+    /**
+     * The same draw, also skipping voices that belong to a named speaker - a carrier whose traffic control
+     * the commander has given a voice. Recognising that voice is the whole point of assigning it, and a
+     * passing station answering in it takes that away.
+     *
+     * @param reserved enum names spoken for elsewhere; an empty pool falls back to ignoring them, because a
+     *                 language with one usable voice must still be able to say something
+     */
+    public static KokoroVoices randomRadioVoice(String ownVoiceName, Set<String> reserved) {
         KokoroVoices[] pool = Arrays.stream(values())
                 .filter(voice -> !voice.name().equals(ownVoiceName))
+                .filter(voice -> reserved == null || !reserved.contains(voice.name()))
                 .toArray(KokoroVoices[]::new);
-        return pool.length == 0
-                ? DEFAULT_VOICE
-                : pool[ThreadLocalRandom.current().nextInt(pool.length)];
+        if (pool.length > 0) {
+            return pool[ThreadLocalRandom.current().nextInt(pool.length)];
+        }
+        return reserved == null || reserved.isEmpty() ? DEFAULT_VOICE : randomRadioVoice(ownVoiceName);
     }
 
     /**

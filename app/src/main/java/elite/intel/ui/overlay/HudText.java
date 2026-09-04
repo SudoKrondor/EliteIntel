@@ -42,6 +42,15 @@ final class HudText {
     }
 
     /**
+     * A bare figure - a count of something the row's label already names, so it carries no unit.
+     * Grouped all the same: a stack can run to four digits, and a commander reading 1,000 in one row
+     * and 1.000 in the next would be reading two different numbers.
+     */
+    static String count(long value) {
+        return LocalizedNumbers.grouped(value);
+    }
+
+    /**
      * Credits, which is what most figures on a card are.
      */
     static String credits(long value) {

@@ -5,14 +5,12 @@ import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.search.edsm.dto.MarketDto;
-import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
 public class AnalyzeLocalMarketsHandler extends BaseQueryAnalyzer implements IntelQuery {
 
-    private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
 
     @Override public String id() { return "analyze_local_markets_handler"; }
@@ -20,7 +18,7 @@ public class AnalyzeLocalMarketsHandler extends BaseQueryAnalyzer implements Int
     @Override
     public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
         //GameEventBus.publish(new AiVoxResponseEvent("Analyzing local market data. Stand by."));
-        LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
+        LocationDto currentLocation = locationManager.findCurrentStation();
         MarketDto market = currentLocation.getMarket();
         if (market == null || market.getData() == null) {
             return process(StringUtls.localizedResponse("query.market.noData"));

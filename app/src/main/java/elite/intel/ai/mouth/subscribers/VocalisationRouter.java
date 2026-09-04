@@ -22,10 +22,15 @@ public class VocalisationRouter {
         publishToMouth(new VocalisationRequestEvent(event.getText(), MissionCriticalAnnouncementEvent.class, false));
     }
 
+    /**
+     * A voice audition, spoken by the engine that will actually use it: the main mouth for a ship voice, and
+     * the radio engine with its transmission filter for a carrier's traffic control. A radio audition is not
+     * gated on the radio toggle - the commander asked to hear this one by picking it.
+     */
     @Subscribe
     public void onVoiceDemoEvent(AiVoxDemoEvent event) {
         publishToMouth(new VocalisationRequestEvent(
-                event.getText(), event.getVoiceName(), AiVoxDemoEvent.class, true));
+                event.getText(), event.getVoiceName(), AiVoxDemoEvent.class, true, event.isRadio(), null));
     }
 
     // The companion no longer routes any speech through here: spontaneous callouts and command/query/macro
@@ -37,13 +42,15 @@ public class VocalisationRouter {
      * Radio is never the main mouth's job: it is voiced by whichever engine {@code RadioVoicing} names for the
      * commander's language - Kokoro almost everywhere, Edge for the Cyrillic locales it cannot pronounce - on
      * a random voice so the speaker on the other end sounds like a stranger. The voice is drawn by that engine
-     * (only it knows its own roster), so no voice is named here.
+     * (only it knows its own roster) unless the transmission names one, which happens for the one speaker the
+     * commander is not meeting for the first time: their own carrier's traffic control.
      */
     @Subscribe
     public void onRadioTransmissionEvent(RadioTransmissionEvent event) {
         if (!Boolean.TRUE.equals(playerSession.isRadioTransmissionOn())) return;
         publishToMouth(new VocalisationRequestEvent(
-                event.getText(), null, RadioTransmissionEvent.class, true, true, event.getSource()));
+                event.getText(), event.getVoiceName(), RadioTransmissionEvent.class, true, true,
+                event.getSource(), event.getReservedVoices()));
     }
 
     private static void publishToMouth(VocalisationRequestEvent request) {

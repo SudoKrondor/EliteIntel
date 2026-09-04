@@ -200,7 +200,105 @@ class MassacreProgressTest {
         assertEquals(4, progress.killsRemaining());
     }
 
+    // -- what each provider still costs --------------------------------------
+
+    /**
+     * The board the overlay was built for. Three providers hunting the same pirates: A holding one
+     * 81-kill contract, B two 40s taken from two of its own outposts, C a single 10.
+     * <p>
+     * The whole stack costs 81 - the longest chain - but that total says nothing about which board
+     * to walk up to next, which is the decision in front of a commander building a stack. Per
+     * provider it is 81, 80 and 10, and B's 80 is the point: its two contracts queue, so a second
+     * mission from a provider already in the stack is paid for in full. That is how a run meant to
+     * be 60 kills becomes 200.
+     */
+    @Test
+    @DisplayName("each provider's queue is priced in full, even though the stack shares its kills")
+    void everyProviderCarriesItsOwnQueueTotal() {
+        MassacreProgress progress = MassacreProgress.compute(theBoard(), List.of());
+
+        assertEquals(81, progress.killsRequired(), "the stack costs its longest chain");
+        assertEquals(81, progress.queueRemainingByFaction().get("Faction A"));
+        assertEquals(80, progress.queueRemainingByFaction().get("Faction B"), "two 40s queue");
+        assertEquals(10, progress.queueRemainingByFaction().get("Faction C"));
+    }
+
+    /**
+     * Ten kills advance every provider at once - that is what a stack IS - so each queue drops by
+     * ten. C stops one short of zero rather than reading complete: a bounty is not proof of mission
+     * credit, and only the game's own redirect finishes a contract.
+     */
+    @Test
+    void oneKillAdvancesEveryProvidersQueue() {
+        MassacreProgress progress = MassacreProgress.compute(
+                theBoard(), bounties("Pirates", 10, "2026-07-01T01:00:00Z"));
+
+        assertEquals(10, progress.killsDone());
+        assertEquals(71, progress.queueRemainingByFaction().get("Faction A"));
+        assertEquals(70, progress.queueRemainingByFaction().get("Faction B"),
+                "its active 40 is down to 30 and the 40 behind it has not started");
+        assertEquals(1, progress.queueRemainingByFaction().get("Faction C"),
+                "held one short until the game redirects it");
+    }
+
+    /**
+     * A provider's queued mission is not discounted when the one in front of it finishes: the
+     * successor starts at its full count, and the queue total has to keep saying so.
+     */
+    @Test
+    void aFinishedMissionLeavesItsSuccessorAtFullPrice() {
+        List<MissionDto> stack = List.of(
+                redirected(mission(1, "Alpha", "Pirates", 5, "2026-07-01T00:00:00Z"),
+                        "2026-07-01T01:00:00Z"),
+                mission(2, "Alpha", "Pirates", 7, "2026-07-01T00:00:00Z"));
+
+        MassacreProgress progress = MassacreProgress.compute(stack, List.of());
+
+        assertEquals(7, progress.queueRemainingByFaction().get("Alpha"),
+                "the 5 is done; the 7 behind it has not been touched");
+    }
+
+    /**
+     * Redirect every one of a provider's missions and it owes nothing - which is the only way a
+     * provider reads as complete, since kills alone never get there.
+     */
+    @Test
+    void aProviderWithNothingLeftOwesNothing() {
+        List<MissionDto> stack = List.of(
+                redirected(mission(1, "Alpha", "Pirates", 5, "2026-07-01T00:00:00Z"),
+                        "2026-07-01T01:00:00Z"),
+                mission(2, "Beta", "Pirates", 9, "2026-07-01T00:00:00Z"));
+
+        MassacreProgress progress = MassacreProgress.compute(stack, List.of());
+
+        assertEquals(0, progress.queueRemainingByFaction().get("Alpha"));
+        assertEquals(9, progress.queueRemainingByFaction().get("Beta"));
+    }
+
+    /**
+     * The card writes the providers in the order this map hands them back and rewrites itself when
+     * that order changes, so acceptance order has to survive the computation.
+     */
+    @Test
+    void providersComeBackInTheOrderTheirFirstContractWasAccepted() {
+        assertEquals(List.of("Faction A", "Faction B", "Faction C"),
+                List.copyOf(MassacreProgress.compute(theBoard(), List.of())
+                        .queueRemainingByFaction().keySet()));
+    }
+
     // -- fixtures ------------------------------------------------------------
+
+    /**
+     * Faction A: one 81. Faction B: two 40s from two of its outposts. Faction C: one 10.
+     */
+    private static List<MissionDto> theBoard() {
+        return List.of(
+                mission(1, "Faction A", "Pirates", 81, "2026-07-01T00:00:00Z"),
+                mission(2, "Faction B", "Pirates", 40, "2026-07-01T00:01:00Z"),
+                mission(3, "Faction B", "Pirates", 40, "2026-07-01T00:02:00Z"),
+                mission(4, "Faction C", "Pirates", 10, "2026-07-01T00:03:00Z"));
+    }
+
 
     private static MissionDto mission(long id, String provider, String target, int kills, String acceptedAt) {
         String json = "{"

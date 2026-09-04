@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.ApproachSettlementEvent;
 import elite.intel.session.PlayerSession;
 
@@ -18,7 +19,15 @@ public class ApproachSettlementSubscriber {
         Thread.ofVirtual().start(() -> {
             StringBuilder sb = new StringBuilder(settlementFacts(event));
 
-            String availableData = LocalServicesData.setLocalServicesData(event.getMarketID());
+            // The settlement is a place of its own, not the body it stands on: give it its own record before
+            // anything is filed against it. The event names the body but not the system, so that comes from
+            // the system's own record, and from the session when the system has none yet.
+            String starSystem = currentStarSystem(event.getSystemAddress());
+            DockedStationRecord settlement = DockedStationRecord.of(event, starSystem);
+            settlement.store();
+
+            String availableData = LocalServicesData.forStation(
+                    event.getSystemAddress(), starSystem, settlement.recordKey(), event.getMarketID());
             if (!availableData.isEmpty()) sb.append(" ").append(localizedEvent("event.approach.settlement.moreData"));
 
             if (playerSession.isRouteAnnouncementOn()) {
@@ -30,6 +39,13 @@ public class ApproachSettlementSubscriber {
                 CompanionRuntime.narrator().narrate(sb.toString(), instructions);
             }
         });
+    }
+
+    private String currentStarSystem(long systemAddress) {
+        String fromSystemRecord = LocationManager.getInstance().findBySystemAddress(systemAddress).getStarName();
+        return fromSystemRecord == null || fromSystemRecord.isBlank()
+                ? playerSession.getPrimaryStarName()
+                : fromSystemRecord;
     }
 
     /**

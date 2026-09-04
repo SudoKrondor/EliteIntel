@@ -9,12 +9,12 @@ import elite.intel.ai.hands.Bindings;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.dao.ShipSettingsDao;
-import elite.intel.db.managers.ShipSettingsManager;
 import elite.intel.db.managers.ShipLoadoutManager;
+import elite.intel.db.managers.ShipSettingsManager;
 import elite.intel.eventbus.GameControllerBus;
+import elite.intel.gameapi.ShipVehicleHangar;
 import elite.intel.gameapi.SurfaceVehicle;
 import elite.intel.gameapi.SurfaceVehicleDeployment;
-import elite.intel.gameapi.ShipVehicleHangar;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
 import elite.intel.session.Status;
 import elite.intel.session.StatusFlags;
@@ -33,10 +33,9 @@ import java.util.List;
  * one step down the list per bay.
  *
  * <p><b>And why the ship's state is no longer one check.</b> The Scarab and Scorpion are driven out of a
- * ship sitting on the surface. The Rhino is dropped from one hovering above it. "Landed" was the whole
- * gate before and is now only two thirds of it, which is also why this command is offered to the model
- * while hovering and answers for itself, rather than disappearing from the offered set at the exact
- * altitude the Rhino needs.
+ * ship sitting on the surface. The Rhino is dropped from one hovering above it, so "landed" cannot be the
+ * gate for all three - which is also why this command is offered to the model while hovering and answers
+ * for itself, rather than disappearing from the offered set at the moment the Rhino is wanted.
  *
  * <p>The Nomad is not deployed from here. It flies, it has its own bay, and none of these conditions
  * describe it.
@@ -208,15 +207,12 @@ public final class DeployVehicleSrvCommand implements IntelCommand {
     }
 
     private SurfaceVehicleDeployment.ShipSituation situation() {
-        return new SurfaceVehicleDeployment.ShipSituation(
-                status.isLanded(),
-                status.getStatus().getAltitude(),
-                status.hasLatLong());
+        return new SurfaceVehicleDeployment.ShipSituation(status.isLanded());
     }
 
     /**
      * Turns a refusal into the one thing the commander can act on. Each carries what they need to fix it:
-     * the altitude band, the bay number that was heard, or where the setting lives.
+     * the bay number that was heard, where the setting lives, or that the ship has to be on the ground.
      */
     private static String refusal(SurfaceVehicleDeployment.Decision decision) {
         return switch (decision.refusal()) {
@@ -226,9 +222,6 @@ public final class DeployVehicleSrvCommand implements IntelCommand {
                     decision.requestedBay(), SurfaceVehicleDeployment.MAX_BAYS);
             case BAY_EMPTY -> StringUtls.localizedResponse("handler.vehicle.bayEmpty", decision.requestedBay());
             case NOT_LANDED -> StringUtls.localizedResponse("handler.vehicle.notLanded");
-            case WRONG_ALTITUDE -> StringUtls.localizedResponse("handler.vehicle.wrongAltitude",
-                    (int) SurfaceVehicle.RHINO_MIN_ALTITUDE_METRES,
-                    (int) SurfaceVehicle.RHINO_MAX_ALTITUDE_METRES);
             case VEHICLE_NOT_LOADED -> StringUtls.localizedResponse("handler.vehicle.notLoaded",
                     decision.requestedVehicle().displayName());
             case BAY_HOLDS_OTHER -> StringUtls.localizedResponse("handler.vehicle.bayHoldsOther",

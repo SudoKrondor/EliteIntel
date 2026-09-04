@@ -28,21 +28,17 @@ public class LocationSubscriber {
         dto.setGovernment(event.getSystemGovernmentLocalised());
         dto.setPopulation(event.getPopulation());
         dto.setSecurity(event.getSystemSecurity());
-        dto.setStationAllegiance(event.getStationAllegiance());
-        dto.setStationEconomy(event.getStationEconomyLocalised());
-        dto.setStationGovernment(event.getStationGovernmentLocalised());
-        dto.setStationServices(event.getStationServices());
         dto.setStarName(event.getStarSystem());
-        dto.setStationType(event.getStationType());
         dto.setDistance(event.getDistFromStarLS());
         dto.setEconomy(event.getSystemEconomyLocalised());
         dto.setSecondEconomy(event.getSystemSecondEconomyLocalised());
-        dto.setLocationType(LocationDto.determineType(event.getBodyType().toLowerCase(Locale.ROOT), event.getDistFromStarLS() > 0));
 
-
-        dto.setStationType(event.getStationType());
-        if ("FleetCarrier".equalsIgnoreCase(event.getStationType())) {
-            dto.setLocationType(LocationDto.LocationType.FLEET_CARRIER);
+        // Only when the journal's body type maps to something: determineType answers null for "Planet", and
+        // assigning that erased the classification a scan had established, on every startup.
+        LocationDto.LocationType bodyType =
+                LocationDto.determineType(event.getBodyType().toLowerCase(Locale.ROOT), event.getDistFromStarLS() > 0);
+        if (bodyType != null) {
+            dto.setLocationType(bodyType);
         }
 
         dto.setPopulation(event.getPopulation());
@@ -51,9 +47,7 @@ public class LocationSubscriber {
         dto.setPowerplayStateReinforcement(event.getPowerplayStateReinforcement());
         dto.setPowerplayStateUndermining(event.getPowerplayStateUndermining());
         dto.setSecurity(event.getSystemSecurityLocalised());
-        dto.setStationName(event.getStationName());
 
-        if (event.getStationFaction() != null) dto.setStationFaction(event.getStationFaction().getName());
         if (event.getSystemFaction() != null) dto.setSystemFaction(event.getSystemFaction().getName());
 
         Thread.ofVirtual().start(() -> {
@@ -64,6 +58,14 @@ public class LocationSubscriber {
                 //have to check for star name (primary star of the system). Sometimes the star name is empty.
                 //do not save locations without star name.
                 locationManager.save(dto);
+            }
+
+            // After the body, never onto it: this is the arrival of a commander who quit on a pad, and the
+            // station standing here is not the body the event names. Written last so that where the two are
+            // the same record - an orbital station, whose Body IS its own name - the station's fields land on
+            // top of the body write rather than under it.
+            if (event.isDocked()) {
+                DockedStationRecord.of(event).store();
             }
         });
     }

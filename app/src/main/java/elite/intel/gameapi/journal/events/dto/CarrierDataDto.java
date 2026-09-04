@@ -34,6 +34,12 @@ public class CarrierDataDto implements ToJsonConvertible {
     private String callSign;
     private String carrierName;
     private String carrierType;
+    /**
+     * The voice this carrier's traffic control speaks with, or null for a stranger drawn at random - the
+     * behaviour every transmission had before a carrier could be given one. A radio-engine voice name (see
+     * {@code RadioVoicing}), not a ship voice: transmissions are never voiced by the main mouth.
+     */
+    private String voice;
     private String dockingAccess;
     private boolean allowNotorious;
     private boolean isPendingDecommission;
@@ -109,6 +115,14 @@ public class CarrierDataDto implements ToJsonConvertible {
 
     public void setCarrierName(String carrierName) {
         this.carrierName = carrierName;
+    }
+
+    public String getVoice() {
+        return voice;
+    }
+
+    public void setVoice(String voice) {
+        this.voice = voice;
     }
 
     public String getCarrierType() {

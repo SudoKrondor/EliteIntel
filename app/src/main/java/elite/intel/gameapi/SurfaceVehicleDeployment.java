@@ -59,11 +59,7 @@ public final class SurfaceVehicleDeployment {
         /**
          * A Scarab or Scorpion, and the ship is not sitting on the surface.
          */
-        NOT_LANDED,
-        /**
-         * A Rhino, and the ship is not hovering within the band it drops from.
-         */
-        WRONG_ALTITUDE
+        NOT_LANDED
     }
 
     /**
@@ -99,13 +95,15 @@ public final class SurfaceVehicleDeployment {
 
     /**
      * The ship's situation, as far as this decision is concerned.
+     * <p>
+     * Altitude used to be part of it. It was measured - a Rhino drops from 20-30 m - but the reading this
+     * decision got did not agree with the commander at the controls: the refusal fired on nearly every
+     * deployment made from inside the band. A gate that says no to the thing it was written to allow is
+     * worse than no gate, and the game refuses a drop it cannot make anyway.
      *
-     * @param landed         the ship is sitting on the surface - landed, which is not docked
-     * @param altitudeMetres height above the surface, meaningful only while {@code overSurface}
-     * @param overSurface    the ship is close enough to a body to have a latitude and longitude at all,
-     *                       which is what separates "hovering too high" from "not at a planet"
+     * @param landed the ship is sitting on the surface - landed, which is not docked
      */
-    public record ShipSituation(boolean landed, double altitudeMetres, boolean overSurface) {
+    public record ShipSituation(boolean landed) {
     }
 
     private SurfaceVehicleDeployment() {
@@ -170,20 +168,17 @@ public final class SurfaceVehicleDeployment {
 
     /**
      * The last gate: whether the ship is doing what this particular vehicle needs.
+     * <p>
+     * Only the vehicles that need a landed ship are gated. A Rhino is dropped from a hover and is not
+     * checked at all - see {@link ShipSituation} for why the altitude band was taken back out - so the one
+     * thing that can still refuse it is the game.
      */
     private static Decision gate(int bay, SurfaceVehicle vehicle, ShipSituation situation) {
         return switch (vehicle.deployment()) {
             case LANDED -> situation.landed()
                     ? Decision.allow(bay, vehicle)
                     : Decision.refuse(Refusal.NOT_LANDED, bay);
-            // A landed ship reports an altitude of zero and would otherwise read as "too low to drop",
-            // which is true but unhelpful: the band is what matters, and being on the ground is outside it
-            // either way. Being nowhere near a planet is the same refusal for the same reason.
-            case HOVERING -> !situation.landed()
-                    && situation.overSurface()
-                    && vehicle.altitudeAllows(situation.altitudeMetres())
-                    ? Decision.allow(bay, vehicle)
-                    : Decision.refuse(Refusal.WRONG_ALTITUDE, bay);
+            case HOVERING -> Decision.allow(bay, vehicle);
         };
     }
 

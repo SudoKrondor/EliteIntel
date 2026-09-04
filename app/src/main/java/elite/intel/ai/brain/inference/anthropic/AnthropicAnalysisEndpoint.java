@@ -106,6 +106,9 @@ public class AnthropicAnalysisEndpoint extends AiEndPoint implements AiAnalysisI
             log.debug("Anthropic analysis call:\n{}", gson.toJson(prompt));
 
             JsonObject root = processAiPrompt(gson.toJson(prompt), client);
+            if (isHttpErrorResponse(root)) {
+                return root; // transport failure: the sentinel already carries the localized phrase
+            }
             if (root == null) {
                 return buildError("No response from Claude analysis endpoint");
             }

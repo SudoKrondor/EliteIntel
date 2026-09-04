@@ -77,7 +77,8 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
         String message;
         if (!cargoLoaded) {
             boolean notInSourceSystem = !location.isInSystem(sourceSystem);
-            boolean notAtTheSourceStation = location.getStationName() != null && !location.getStationName().equalsIgnoreCase(sourceStation);
+            String dockedAt = locationManager.findCurrentStation().getStationName();
+            boolean notAtTheSourceStation = dockedAt != null && !dockedAt.equalsIgnoreCase(sourceStation);
 
             if (notInSourceSystem) {
                 message = routePlotter.plotRouteAnd(
