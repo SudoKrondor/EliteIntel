@@ -64,16 +64,42 @@ public class BindingsMonitor {
     private File currentBindsFile;
     private Thread processingThread;
     private volatile boolean running;
+    /**
+     * Identity of the file contents behind the current {@link #bindings}, so the watch loop can tell a
+     * second notification about a write it already read from a genuinely new one. Elite writes the
+     * .binds file more than once per save and each write arrives as its own ENTRY_MODIFY, which without
+     * this re-parses an identical file, republishes {@link BindingsUpdatedEvent} and prints a second
+     * "Key bindings updated" line - noise in the middle of the one activity that generates these events,
+     * a commander sitting in the controls menu rebinding.
+     */
+    private String parsedFileFingerprint;
 
     /**
-     * Action names the app itself can press; used to scope conflict voice alerts.
+     * The Elite controls a built-in command presses - {@link Bindings.GameCommand#isDrivenByApp()}.
+     * The single source for both things this class reports on: which unbound controls are worth naming
+     * at startup, and which conflicts are worth interrupting the commander about.
+     * <p>
+     * Deliberately NOT the whole {@code GameCommand} list. That list is Elite's entire control set, carried
+     * so the bindings editor can show every control and a custom command step can name any of them; measured
+     * against a commander's own binds file it calls well over a hundred controls missing - emotes, vanity
+     * cameras, Galnet audio, turret pitch - and flags every vanilla-vs-vanilla overlap between them. A
+     * commander rebinding their controls then heard "a hundred and forty-two required bindings unassigned",
+     * and read a wall of names that buried the seventeen actually stopping a command from working.
+     * <p>
+     * A binding a <em>custom</em> command taps is not included: the commander is told about that one by name
+     * at the moment the sequence runs (see {@code InputSequenceExecutor#handleNoKeyBindingFound}), which is
+     * both later and more precise than a startup list, and reaching the custom command registry from here
+     * would point {@code ai.hands} back at {@code ai.brain}. The bindings panel still shows every control and
+     * every conflict, which is where a commander goes looking for the full picture.
      */
-    private static final Set<String> APP_CONTROLLED_ACTIONS = appControlledActions();
+    private static final Set<String> APP_DRIVEN_ACTIONS = appDrivenActions();
 
-    private static Set<String> appControlledActions() {
-        Set<String> actions = new HashSet<>();
+    private static Set<String> appDrivenActions() {
+        Set<String> actions = new LinkedHashSet<>();
         for (Bindings.GameCommand cmd : Bindings.GameCommand.values()) {
-            actions.add(cmd.getGameBinding());
+            if (cmd.isDrivenByApp()) {
+                actions.add(cmd.getGameBinding());
+            }
         }
         return actions;
     }
@@ -154,8 +180,13 @@ public class BindingsMonitor {
                             if (activeFileWasModified || activeFileChanged) {
                                 currentBindsFile = activeFile;
                                 Thread.sleep(300); // wait for the game to finish writing
-                                parseAndUpdateBindings();
-                                log.info("Reloaded bindings from: {}", currentBindsFile.getName());
+                                if (fingerprintOf(activeFile).equals(parsedFileFingerprint)) {
+                                    log.debug("Ignoring repeat change event for unchanged file: {}",
+                                            activeFile.getName());
+                                } else {
+                                    parseAndUpdateBindings();
+                                    log.info("Reloaded bindings from: {}", currentBindsFile.getName());
+                                }
                             }
                         }
                     }
@@ -184,6 +215,7 @@ public class BindingsMonitor {
         try {
             currentBindsFile = bindingsLoader.getLatestBindsFile();
             bindings = parser.parseBindings(currentBindsFile);
+            parsedFileFingerprint = fingerprintOf(currentBindsFile);
             GameEventBus.publish(
                     new AppLogEvent("SYSTEM: Key bindings updated from file " + currentBindsFile.getAbsolutePath()));
             UiBus.publish(new BindingsUpdatedEvent());
@@ -193,6 +225,22 @@ public class BindingsMonitor {
                     currentBindsFile != null ? currentBindsFile.getName() : "null", e);
             GameEventBus.publish(
                     new AiVoxResponseEvent(localizedSpeech("speech.warning.bindingsUpdateFailed")));
+        }
+    }
+
+    /**
+     * Last-modified time (to the finest resolution the filesystem reports) plus size - enough to tell
+     * two writes apart without reading the file, and cheap enough to run on every change event.
+     * An unreadable file yields a value that matches nothing, so the caller parses and reports the
+     * real failure rather than silently skipping.
+     */
+    private String fingerprintOf(File file) {
+        try {
+            Path path = file.toPath();
+            return Files.getLastModifiedTime(path) + ":" + Files.size(path);
+        } catch (IOException e) {
+            log.debug("Could not fingerprint bindings file {}; treating it as changed", file.getName(), e);
+            return "unreadable:" + System.nanoTime();
         }
     }
 
@@ -263,28 +311,30 @@ public class BindingsMonitor {
 
     /**
      * Detects binding conflicts among GameCommand bindings and persists them.
-     * Returns descriptions of newly detected conflicts only - empty list means
-     * nothing changed. Blocking conflicts are excluded from both the persisted set and the returned list:
+     * Returns the newly detected conflicts only - empty list means nothing changed. Whole conflicts
+     * rather than their descriptions, so the caller can name the two actions itself and report a run of
+     * them compactly. Blocking conflicts are excluded from both the persisted set and the returned list:
      * {@link #blockingConflicts()} owns announcing those, on every start rather than once, so an
      * "already told you" row for one would only ever silence it.
      */
-    public List<String> checkForConflictsAndPersist() {
-        List<String> newDescriptions = new ArrayList<>();
+    public List<BindingConflictScanner.Conflict> checkForConflictsAndPersist() {
+        List<BindingConflictScanner.Conflict> newConflicts = new ArrayList<>();
 
         Set<String> currentConflictKeys = new HashSet<>();
-        Map<String, String> currentConflictDescriptions = new LinkedHashMap<>();
+        Map<String, BindingConflictScanner.Conflict> currentConflictDescriptions = new LinkedHashMap<>();
         for (BindingConflictScanner.Conflict c : detectConflicts()) {
-            // Announce only conflicts that touch an app-controlled command, so voice alerts stay
+            // Announce only conflicts that touch a control EliteIntel presses, so voice alerts stay
             // meaningful and do not flood on unrelated vanilla-vs-vanilla overlaps. The UI surfaces
-            // the full set live.
-            if (!APP_CONTROLLED_ACTIONS.contains(c.actionA())
-                    && !APP_CONTROLLED_ACTIONS.contains(c.actionB()))
+            // the full set live. Rows persisted for pairs that no longer pass this filter are swept
+            // out by the stale-row pass below, so the store follows the scope on its own.
+            if (!APP_DRIVEN_ACTIONS.contains(c.actionA())
+                    && !APP_DRIVEN_ACTIONS.contains(c.actionB()))
                 continue;
             String conflictKey = BindingConflictRules.makeKey(c.actionA(), c.actionB());
             if (currentConflictKeys.add(conflictKey) && !c.blocking()) {
                 // Still tracked in currentConflictKeys above so the stale-row sweep below stays correct;
                 // only kept out of the announce-once list.
-                currentConflictDescriptions.put(conflictKey, c.description());
+                currentConflictDescriptions.put(conflictKey, c);
             }
         }
 
@@ -294,10 +344,10 @@ public class BindingsMonitor {
                         .map(r -> r.getConflictKey())
                         .toList());
 
-        for (Map.Entry<String, String> entry : currentConflictDescriptions.entrySet()) {
+        for (Map.Entry<String, BindingConflictScanner.Conflict> entry : currentConflictDescriptions.entrySet()) {
             if (!persistedKeys.contains(entry.getKey())) {
-                conflictManager.save(entry.getKey(), entry.getValue());
-                newDescriptions.add(entry.getValue());
+                conflictManager.save(entry.getKey(), entry.getValue().description());
+                newConflicts.add(entry.getValue());
             }
         }
 
@@ -307,7 +357,7 @@ public class BindingsMonitor {
             }
         }
 
-        return newDescriptions;
+        return newConflicts;
     }
 
     /**
@@ -320,12 +370,13 @@ public class BindingsMonitor {
     }
 
     /**
-     * Computes the humanized names of all required game bindings that are currently
-     * missing from the active binds file. Pure read over the freshly parsed bindings -
-     * no persistence (the legacy DB-backed missing-binding store was removed; the binds
-     * editor UI and startup notification both work off the live parse).
+     * Computes the humanized names of the controls EliteIntel presses that are currently
+     * missing from the active binds file - see {@link #requiredGameBindings()} for what counts.
+     * Pure read over the freshly parsed bindings - no persistence (the legacy DB-backed
+     * missing-binding store was removed; the binds editor UI and startup notification both
+     * work off the live parse).
      *
-     * @return a list of humanized names of required key bindings that are missing.
+     * @return a list of humanized names of the app-driven key bindings that are missing.
      */
     public List<String> checkForMissingBindings() {
         Map<String, KeyBindingsParser.KeyBinding> currentBindings = getBindings();
@@ -357,11 +408,11 @@ public class BindingsMonitor {
                 .toList();
     }
 
+    /**
+     * The controls the startup missing-binding check measures the binds file against - see
+     * {@link #APP_DRIVEN_ACTIONS}.
+     */
     private List<String> requiredGameBindings() {
-        Set<String> checkedGameBindings = new LinkedHashSet<>();
-        for (Bindings.GameCommand command : Bindings.GameCommand.values()) {
-            checkedGameBindings.add(command.getGameBinding());
-        }
-        return new ArrayList<>(checkedGameBindings);
+        return new ArrayList<>(APP_DRIVEN_ACTIONS);
     }
 }
