@@ -8,6 +8,7 @@ import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class KeyBindCheck {
@@ -32,7 +33,7 @@ public class KeyBindCheck {
         monitor.ensureBindingsLoaded();
 
         List<String> newMissing = monitor.checkForMissingBindings();
-        List<String> newConflicts = monitor.checkForConflictsAndPersist();
+        List<BindingConflictScanner.Conflict> newConflicts = monitor.checkForConflictsAndPersist();
         List<BindingConflictScanner.Conflict> blocking = monitor.blockingConflicts();
 
         // Blocking conflicts first, and unconditionally: this is the one binding problem that stops
@@ -83,15 +84,35 @@ public class KeyBindCheck {
             GameEventBus.publish(new AiVoxResponseEvent(
                     StringUtls.localizedSpeech("speech.bindingsMissing", newMissing.size())
             ));
-            newMissing.forEach(m -> UiBus.publish(new AppLogEvent("Missing binding: " + m)));
+            // One line naming them all, not one line each. The commander needs to know that controls are
+            // unbound and which ones, once; a line per control pushed everything else out of the system log
+            // at exactly the moment it mattered - a commander sitting in the controls menu rebinding. The
+            // bindings panel is where the list is worked through row by row.
+            UiBus.publish(new AppLogEvent(
+                    "Missing bindings (" + newMissing.size() + "): " + String.join(", ", newMissing)));
         }
 
         if (!newConflicts.isEmpty()) {
-            int count = newConflicts.size();
             GameEventBus.publish(new AiVoxResponseEvent(
-                    StringUtls.localizedSpeech("speech.bindingConflicts", count)
+                    StringUtls.localizedSpeech("speech.bindingConflicts", newConflicts.size())
             ));
-            newConflicts.forEach(c -> UiBus.publish(new AppLogEvent("Binding conflict: " + c)));
+            // A curated pair keeps its own line - those name a consequence worth reading in full, like
+            // hardpoints also dropping the landing gear. The rest are plain overlaps, and a commander
+            // reassigning their controls produced fifty-one lines of "... and may interfere" in one burst,
+            // which buried everything else in the system log; they collapse into a single list of pairs.
+            List<String> plainOverlaps = new ArrayList<>();
+            for (BindingConflictScanner.Conflict c : newConflicts) {
+                if (BindingConflictRules.hasCuratedDescription(c.actionA(), c.actionB())) {
+                    UiBus.publish(new AppLogEvent("Binding conflict: " + c.description()));
+                } else {
+                    plainOverlaps.add(StringUtls.humanizeBindingName(c.actionA())
+                            + " + " + StringUtls.humanizeBindingName(c.actionB()));
+                }
+            }
+            if (!plainOverlaps.isEmpty()) {
+                UiBus.publish(new AppLogEvent("Binding conflicts, these pairs share a key ("
+                        + plainOverlaps.size() + "): " + String.join(", ", plainOverlaps)));
+            }
         }
     }
 }

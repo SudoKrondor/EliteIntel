@@ -32,6 +32,16 @@ public class BindingConflictRules {
         DESCRIPTIONS.put(makeKey(a, b), description);
     }
 
+    /**
+     * True when {@link #describe} has specific wording for this pair rather than the generic
+     * "share a key and may interfere". Those are the pairs with a consequence worth stating in
+     * full - deploying hardpoints also dropping the landing gear - so the startup report gives
+     * them a line of their own while the generic overlaps collapse into a list.
+     */
+    public static boolean hasCuratedDescription(String a, String b) {
+        return DESCRIPTIONS.containsKey(makeKey(a, b));
+    }
+
     public static String describe(String a, String b) {
         String d = DESCRIPTIONS.get(makeKey(a, b));
         if (d != null) return d;
