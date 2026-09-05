@@ -1,7 +1,6 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.journal.events.ShipTargetedEvent;
@@ -37,10 +36,6 @@ public class ShipTargetedEventSubscriber {
     @Subscribe public void onShipTargetedEvent(ShipTargetedEvent event) {
 
         log.debug(event.toJson());
-
-        if (!event.isTargetLocked() && playerSession.isRadarContactAnnouncementOn()) {
-            CompanionRuntime.narrator().announce(localizedEvent("event.target.contactLost"), true);
-        }
 
         String pilotRankLocalized = localizedCombatRank(event.getPilotRank());
 
