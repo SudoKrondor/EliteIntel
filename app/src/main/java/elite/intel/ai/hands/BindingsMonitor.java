@@ -310,6 +310,19 @@ public class BindingsMonitor {
     }
 
     /**
+     * Controls already bound to a key or chord that must never be assigned - the key the commander has
+     * on the game menu, or an OS combination like Alt+F4. See {@link ReservedKeyChords}.
+     * <p>
+     * A pure read announced on every start, for the same reason as {@link #blockingConflicts()}: it is a
+     * permanent property of the file that playing the game does not reveal, and the chord stays reserved
+     * for as long as it sits there. EliteIntel refuses to assign one, but Elite's own controls screen
+     * does not, so the file has to be read as well.
+     */
+    public List<ReservedKeyChords.ReservedBinding> reservedChordBindings() {
+        return ReservedKeyChords.scan(getBindings());
+    }
+
+    /**
      * Detects binding conflicts among GameCommand bindings and persists them.
      * Returns the newly detected conflicts only - empty list means nothing changed. Whole conflicts
      * rather than their descriptions, so the caller can name the two actions itself and report a run of

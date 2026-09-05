@@ -163,6 +163,40 @@ class BindingConflictScannerTest {
     }
 
     @Test
+    void selectSharingAKeyWithQuickCommsIsABlockingConflictInEveryVehicle() {
+        // UI_Select is context "ui" and QuickCommsPanel is context "ship", so the context model would
+        // clear this pair: the comms panel is the exception, reachable while a panel is open. Every tap
+        // of Select would also open the chat text box, which then eats what EliteIntel types next.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "UI_Select", Set.of("Key_Space"),
+                "QuickCommsPanel", Set.of("Key_Space"),
+                "QuickCommsPanel_Buggy", Set.of("Key_Space"),
+                "QuickCommsPanel_Humanoid", Set.of("Key_Space")));
+
+        assertEquals(
+                List.of("QuickCommsPanel*UI_Select",
+                        "QuickCommsPanel_Buggy*UI_Select",
+                        "QuickCommsPanel_Humanoid*UI_Select"),
+                conflicts.stream()
+                        .filter(Conflict::blocking)
+                        .map(c -> c.actionA() + "*" + c.actionB())
+                        .sorted()
+                        .toList());
+        assertTrue(conflicts.stream().allMatch(Conflict::blocking));
+    }
+
+    @Test
+    void quickCommsDoesNotConflictWithOtherUiNavigationKeys() {
+        // Only Select is the problem: EliteIntel commits its choices with it. Sharing a key with a
+        // direction key is an ordinary same-key overlap, cleared by the context model like any other.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "UI_Up", Set.of("Key_Space"),
+                "QuickCommsPanel", Set.of("Key_Space")));
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
     void ordinaryConflictsAreNotBlocking() {
         // Everything else stays "may interfere": announced once, not on every start.
         List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(

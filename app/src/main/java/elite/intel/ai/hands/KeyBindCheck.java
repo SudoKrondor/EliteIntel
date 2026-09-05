@@ -80,6 +80,28 @@ public class KeyBindCheck {
             });
         }
 
+        // Third, and also unconditionally: keys and chords that must never be bound to anything - the key
+        // the commander has on the game menu, Alt+F4, Linux Ctrl+Alt+F*. EliteIntel refuses to assign one,
+        // but Elite's own controls screen has no such rule, so a file written there can already hold one.
+        // Same class of problem again - the commander cannot tell from playing why that one control
+        // behaves oddly, only that the game keeps pausing. See ReservedKeyChords.
+        List<ReservedKeyChords.ReservedBinding> reserved = monitor.reservedChordBindings();
+        if (!reserved.isEmpty()) {
+            List<String> reservedKeys = BindingChordSpeech.distinctChords(
+                    reserved.stream().map(ReservedKeyChords.ReservedBinding::chord).toList());
+            GameEventBus.publish(new AiVoxResponseEvent(
+                    StringUtls.localizedSpeech("speech.bindingReservedChord",
+                            reservedKeys.size(), String.join(", ", reservedKeys))
+            ));
+            reserved.forEach(r -> {
+                String line = "[" + BindingChordSpeech.describe(r.chord()) + "] "
+                        + StringUtls.humanizeBindingName(r.action())
+                        + " is on a chord that " + r.reason();
+                UiBus.publish(new AppLogEvent("Reserved binding: " + line));
+                log.error("Reserved chord in use: {}", line);
+            });
+        }
+
         if (!newMissing.isEmpty()) {
             GameEventBus.publish(new AiVoxResponseEvent(
                     StringUtls.localizedSpeech("speech.bindingsMissing", newMissing.size())

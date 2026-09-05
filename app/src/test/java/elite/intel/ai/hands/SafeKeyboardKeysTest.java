@@ -87,7 +87,7 @@ class SafeKeyboardKeysTest {
         long combos = 0;
         for (String key : keys) {
             for (BindingModifier modifier : SafeKeyboardKeys.safeModifiers()) {
-                if (!ReservedKeyChords.isReserved(key, List.of(modifier.key()))) {
+                if (!ReservedKeyChords.isOsReserved(key, List.of(modifier.key()))) {
                     combos++;
                 }
             }
@@ -96,7 +96,7 @@ class SafeKeyboardKeysTest {
     }
 
     private static long plainCount(List<String> keys) {
-        return keys.stream().filter(key -> !ReservedKeyChords.isReserved(key, List.of())).count();
+        return keys.stream().filter(key -> !ReservedKeyChords.isOsReserved(key, List.of())).count();
     }
 
     @Test

@@ -24,6 +24,8 @@ import java.util.*;
  *       one batch.</li>
  *   <li><b>Never bind a modifier on its own.</b> Every assignment is a main key,
  *       optionally with modifiers - never {@code Left Alt} by itself.</li>
+ *   <li><b>Never touch the game menu.</b> Elite's {@code Pause} control is left unbound, and whatever
+ *       key a commander has put on it is taken out of the pool entirely - see {@link ReservedKeyChords}.</li>
  * </ul>
  * <p>
  * Elite Dangerous gives each control exactly two slots, so a control with a device
@@ -47,7 +49,13 @@ public class MissingBindingAutoAssigner {
         /**
          * The safe key pool was exhausted before this action could be assigned.
          */
-        NO_FREE_KEY
+        NO_FREE_KEY,
+        /**
+         * The game-menu control ({@code Pause}), which is left unbound on purpose - see
+         * {@link ReservedKeyChords}. {@code Esc} already opens that menu, and a key put here stops
+         * being usable for anything else, so this is the one unbound control we do not fill.
+         */
+        GAME_MENU_LEFT_UNBOUND
     }
 
     public record PlannedEdit(String bindingId, BindingSlotType slotType, String key, BindingModifier modifier) {
@@ -69,10 +77,11 @@ public class MissingBindingAutoAssigner {
      */
     public Plan planAll(Map<String, ReadOnlyBindingSlots> slots) {
         Set<SafeKeyboardKeys.Chord> occupied = new HashSet<>(occupiedChords(slots));
+        Set<String> gameMenuKeys = ReservedKeyChords.gameMenuKeysFromSlots(slots);
         List<PlannedEdit> edits = new ArrayList<>();
         List<SkippedBinding> skipped = new ArrayList<>();
         for (String bindingId : unboundTargets(slots)) {
-            assignOne(bindingId, slots.get(bindingId), occupied, edits, skipped);
+            assignOne(bindingId, slots.get(bindingId), occupied, gameMenuKeys, edits, skipped);
         }
         return new Plan(edits, skipped);
     }
@@ -98,7 +107,7 @@ public class MissingBindingAutoAssigner {
             return new Plan(edits, skipped);
         }
         Set<SafeKeyboardKeys.Chord> occupied = new HashSet<>(occupiedChords(slots));
-        assignOne(bindingId, binding, occupied, edits, skipped);
+        assignOne(bindingId, binding, occupied, ReservedKeyChords.gameMenuKeysFromSlots(slots), edits, skipped);
         return new Plan(edits, skipped);
     }
 
@@ -106,15 +115,24 @@ public class MissingBindingAutoAssigner {
             String bindingId,
             ReadOnlyBindingSlots binding,
             Set<SafeKeyboardKeys.Chord> occupied,
+            Set<String> gameMenuKeys,
             List<PlannedEdit> edits,
             List<SkippedBinding> skipped
     ) {
+        // The game menu is the one control we deliberately leave unbound: Esc opens it anyway, and a key
+        // sitting on it is spent - Elite fires the menu on that key however it is modified. Reported as a
+        // skip rather than passed over silently, so the commander who runs auto-fix and still sees it in
+        // the Missing list is told why. See ReservedKeyChords.
+        if (ReservedKeyChords.GAME_MENU_ACTION.equals(bindingId)) {
+            skipped.add(new SkippedBinding(bindingId, SkipReason.GAME_MENU_LEFT_UNBOUND));
+            return;
+        }
         BindingSlotType slotType = chooseWritableSlot(binding);
         if (slotType == null) {
             skipped.add(new SkippedBinding(bindingId, slotSkipReason(binding)));
             return;
         }
-        SafeKeyboardKeys.Chord chord = firstFreeChord(occupied);
+        SafeKeyboardKeys.Chord chord = firstFreeChord(occupied, gameMenuKeys);
         if (chord == null) {
             skipped.add(new SkippedBinding(bindingId, SkipReason.NO_FREE_KEY));
             return;
@@ -172,9 +190,9 @@ public class MissingBindingAutoAssigner {
         return slot != null && !isWritableEmpty(slot);
     }
 
-    private SafeKeyboardKeys.Chord firstFreeChord(Set<SafeKeyboardKeys.Chord> occupied) {
+    private SafeKeyboardKeys.Chord firstFreeChord(Set<SafeKeyboardKeys.Chord> occupied, Set<String> gameMenuKeys) {
         for (SafeKeyboardKeys.Chord chord : SafeKeyboardKeys.orderedChords()) {
-            if (!occupied.contains(chord) && isAssignable(chord)) {
+            if (!occupied.contains(chord) && isAssignable(chord, gameMenuKeys)) {
                 return chord;
             }
         }
@@ -186,10 +204,15 @@ public class MissingBindingAutoAssigner {
      * later widening of {@link SafeKeyboardKeys} cannot quietly break them: a real main key,
      * never a modifier on its own, never a blank modifier, and never the numpad (a commander
      * may not have one - they bind those by hand).
+     * <p>
+     * The game-menu key is filtered here rather than in the pool because it comes from the file, not
+     * from a constant. Note it is the whole key that goes: the {@code occupied} set only holds the one
+     * chord the game menu literally occupies, which would still leave Alt+P and Shift+P free to hand
+     * out on a file whose {@code Pause} is on {@code Key_P} - and Elite opens the menu on all three.
      */
-    private boolean isAssignable(SafeKeyboardKeys.Chord chord) {
+    private boolean isAssignable(SafeKeyboardKeys.Chord chord, Set<String> gameMenuKeys) {
         String key = chord.key();
-        if (key == null || key.isBlank() || isModifierKey(key) || isNumpadKey(key)) {
+        if (key == null || key.isBlank() || isModifierKey(key) || isNumpadKey(key) || gameMenuKeys.contains(key)) {
             return false;
         }
         return chord.modifier() == null || chord.modifier().isSupportedKeyboardModifier();
