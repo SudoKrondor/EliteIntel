@@ -150,9 +150,10 @@ public class RoutePlotter {
                 // we can send rescues that - it is a bindings problem, and KeyBindCheck warns about it
                 // on every start rather than this line trying to guess a key on their behalf.
                 GameInputStep.rawKey(KeyProcessor.KEY_DOWNARROW, 0, 0),
+                GameInputStep.delay(200),
+                // Select the system and allow the Galaxy Map to centre on it.
                 GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding()),
-                GameInputStep.delay(1000),
-                GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding())
+                GameInputStep.delay(1200)
         ));
 
         GameControllerBus.publish(new GameInputSequenceEvent(steps));
