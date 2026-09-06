@@ -35,6 +35,24 @@ public final class LocalizedNumbers {
     }
 
     /**
+     * The same, in a language named explicitly rather than read from the session - for a figure that sits
+     * inside a sentence whose language is already decided (see {@code DisplayNumerals}).
+     */
+    public static String grouped(long value, Language language) {
+        return NumberFormat.getIntegerInstance(locale(language)).format(value);
+    }
+
+    /**
+     * A number that has a fractional part, grouped and with the language's own decimal mark: {@code 1.02} in
+     * English, {@code 1,02} in German. Two fraction digits at most, which is all the credit rounding produces.
+     */
+    public static String decimal(double value, Language language) {
+        NumberFormat format = NumberFormat.getNumberInstance(locale(language));
+        format.setMaximumFractionDigits(2);
+        return format.format(value);
+    }
+
+    /**
      * The locale to format numbers in, for callers that need a {@link NumberFormat} of their own.
      */
     public static Locale locale() {
