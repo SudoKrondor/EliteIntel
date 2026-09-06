@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -60,6 +61,77 @@ class KokoroRadioVoiceTest {
         Set<KokoroVoices> expected = everyoneExcept(OWN);
         expected.removeAll(carriers);
         assertEquals(expected, drawn, "everyone else still speaks");
+    }
+
+    // -- one speaker, one voice ------------------------------------------------
+
+    /**
+     * The complaint this answers: a pirate is named on every line they transmit, so a fresh draw per
+     * transmission made one attacker sound like several, which mid-fight reads as several attackers.
+     */
+    @Test
+    void aNamedSpeakerKeepsOneVoice() {
+        KokoroVoices first = KokoroVoices.radioVoiceFor("Dave Knowles", OWN.name(), Set.of());
+
+        for (int i = 0; i < DRAWS; i++) {
+            assertEquals(first, KokoroVoices.radioVoiceFor("Dave Knowles", OWN.name(), Set.of()));
+        }
+        // The name as the journal spells it, not as we happen to have trimmed it.
+        assertEquals(first, KokoroVoices.radioVoiceFor("  dave knowles  ", OWN.name(), Set.of()));
+    }
+
+    @Test
+    void differentSpeakersSpreadAcrossTheCast() {
+        Set<KokoroVoices> heard = EnumSet.noneOf(KokoroVoices.class);
+        for (int i = 0; i < 200; i++) {
+            heard.add(KokoroVoices.radioVoiceFor("Pilot " + i, OWN.name(), Set.of()));
+        }
+
+        assertTrue(heard.size() > KokoroVoices.values().length / 2,
+                "a wing of pirates must not collapse onto a handful of voices, was " + heard.size());
+    }
+
+    @Test
+    void aNamedSpeakerNeverTakesTheCommandersOrACarriersVoice() {
+        Set<KokoroVoices> carriers = twoVoicesOtherThan(OWN);
+        Set<String> reserved = carriers.stream().map(Enum::name).collect(Collectors.toSet());
+
+        for (int i = 0; i < 200; i++) {
+            KokoroVoices drawn = KokoroVoices.radioVoiceFor("Pilot " + i, OWN.name(), reserved);
+            assertNotEquals(OWN, drawn);
+            assertFalse(carriers.contains(drawn), "a carrier's voice is nobody else's");
+        }
+    }
+
+    /**
+     * Giving a carrier a voice mid-session must not re-cast everyone else: the walk moves only the speakers
+     * that actually landed on the newly reserved voice.
+     */
+    @Test
+    void reservingOneVoiceLeavesTheOtherSpeakersWhereTheyWere() {
+        List<String> speakers = IntStream.range(0, 200).mapToObj(i -> "Pilot " + i).toList();
+        Map<String, KokoroVoices> before = speakers.stream()
+                .collect(Collectors.toMap(name -> name, name -> KokoroVoices.radioVoiceFor(name, OWN.name(), Set.of())));
+
+        KokoroVoices givenToACarrier = before.get(speakers.get(0));
+        Set<String> reserved = Set.of(givenToACarrier.name());
+        long moved = speakers.stream()
+                .filter(name -> before.get(name) != KokoroVoices.radioVoiceFor(name, OWN.name(), reserved))
+                .count();
+
+        assertEquals(speakers.stream().filter(name -> before.get(name) == givenToACarrier).count(), moved,
+                "only the speakers who had that voice should have moved");
+    }
+
+    /**
+     * A transmission nobody is attributed to is a stranger, and strangers stay strangers.
+     */
+    @Test
+    void anUnattributedTransmissionStillDrawsAtRandom() {
+        Set<KokoroVoices> drawn = draw(() -> KokoroVoices.radioVoiceFor(null, OWN.name(), Set.of()));
+        drawn.addAll(draw(() -> KokoroVoices.radioVoiceFor("  ", OWN.name(), Set.of())));
+
+        assertEquals(everyoneExcept(OWN), drawn);
     }
 
     /**

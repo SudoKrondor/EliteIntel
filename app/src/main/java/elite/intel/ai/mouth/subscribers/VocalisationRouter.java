@@ -50,7 +50,7 @@ public class VocalisationRouter {
         if (!Boolean.TRUE.equals(playerSession.isRadioTransmissionOn())) return;
         publishToMouth(new VocalisationRequestEvent(
                 event.getText(), event.getVoiceName(), RadioTransmissionEvent.class, true, true,
-                event.getSource(), event.getReservedVoices()));
+                event.getSource(), event.getReservedVoices(), event.getSpeakerKey()));
     }
 
     private static void publishToMouth(VocalisationRequestEvent request) {

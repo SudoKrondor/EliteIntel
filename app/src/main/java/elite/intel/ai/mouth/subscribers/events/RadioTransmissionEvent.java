@@ -7,6 +7,7 @@ public class RadioTransmissionEvent extends BaseVoxEvent {
 
     private final String source;
     private final String voiceName;
+    private final String speakerKey;
     private final Set<String> reservedVoices;
 
     /**
@@ -22,6 +23,11 @@ public class RadioTransmissionEvent extends BaseVoxEvent {
         this(textToVoice, source, voiceName, Set.of());
     }
 
+    public RadioTransmissionEvent(String textToVoice, @Nullable String source, @Nullable String voiceName,
+                                  Set<String> reservedVoices) {
+        this(textToVoice, source, voiceName, reservedVoices, null);
+    }
+
     /**
      * @param voiceName the radio-engine voice this speaker has been given, or null to draw a stranger at
      *                  random. Only the commander's own carriers can be assigned one: everyone else on the
@@ -32,11 +38,18 @@ public class RadioTransmissionEvent extends BaseVoxEvent {
      *                       Supplied by the publisher rather than looked up here: the mouth knows about
      *                       engines and voices, and nothing about carriers.
      */
+    /**
+     * @param speakerKey who is transmitting, as one particular individual the commander will hear again - an
+     *                   NPC pilot's name. Null for anyone the channel has no individual behind: a station, a
+     *                   police wing, a construction site. A key keeps that speaker on one voice; without one
+     *                   the engine draws a stranger per transmission, which is what those senders are.
+     */
     public RadioTransmissionEvent(String textToVoice, @Nullable String source, @Nullable String voiceName,
-                                  Set<String> reservedVoices) {
+                                  Set<String> reservedVoices, @Nullable String speakerKey) {
         super(textToVoice, true);
         this.source = source;
         this.voiceName = voiceName;
+        this.speakerKey = speakerKey;
         this.reservedVoices = reservedVoices == null ? Set.of() : Set.copyOf(reservedVoices);
     }
 
@@ -46,6 +59,10 @@ public class RadioTransmissionEvent extends BaseVoxEvent {
 
     public @Nullable String getVoiceName() {
         return voiceName;
+    }
+
+    public @Nullable String getSpeakerKey() {
+        return speakerKey;
     }
 
     public Set<String> getReservedVoices() {

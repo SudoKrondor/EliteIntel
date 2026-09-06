@@ -399,13 +399,18 @@ public class KokoroTTS implements MouthInterface {
      * the whole reason it was given a voice. One fixed default keeps it one speaker until the commander picks
      * again.
      * <p>
-     * A transmission that names no voice at all is a stranger on the channel and still draws one at random.
+     * A transmission that names no voice is voiced by whoever the speaker's name maps to, so one NPC keeps one
+     * voice; a transmission with no speaker either is a stranger, and draws at random.
      */
     private String resolveVoiceName(VocalisationRequestEvent event) {
         String named = event.getVoiceName();
         if (named == null) {
+            // Keyed on the individual behind the transmission, so the same pirate keeps one voice for the
+            // whole encounter instead of sounding like a fresh attacker on every line. Only an NPC pilot
+            // carries a key; a station or a police wing has none and stays a stranger.
             return event.isRadio()
-                    ? KokoroVoices.randomRadioVoice(systemSession.getKokoroVoice().name(), event.getReservedVoices()).name()
+                    ? KokoroVoices.radioVoiceFor(event.getSpeakerKey(), systemSession.getKokoroVoice().name(),
+                    event.getReservedVoices()).name()
                     : null;
         }
         if (!isInTheCast(named)) {

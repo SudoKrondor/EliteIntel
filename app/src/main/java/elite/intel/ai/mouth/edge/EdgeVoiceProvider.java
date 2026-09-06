@@ -4,6 +4,7 @@ import elite.intel.i18n.Language;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -99,23 +100,42 @@ final class EdgeVoiceProvider {
      * @param reserved ShortNames spoken for elsewhere
      */
     String randomRadioVoiceName(Language language, Set<String> reserved) {
-        List<EdgeVoice> candidates = availableVoices.stream()
+        List<String> pool = radioPool(language, reserved);
+        return pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+    }
+
+    /**
+     * The same pool, but keyed on the speaker so one of them always draws the same voice - a pirate is named
+     * on every line they send, and a fresh draw each time makes one attacker sound like several. A blank
+     * speaker is a stranger and still draws at random.
+     * <p>
+     * The mapping holds for as long as the pool does. It shifts when the live voice list first arrives and
+     * replaces the fallback, and it can shift for the Cyrillic locales this engine serves, whose pools are
+     * tiny (Ukrainian has one voice, so every speaker shares it either way).
+     */
+    String radioVoiceNameFor(Language language, String speaker, Set<String> reserved) {
+        if (speaker == null || speaker.isBlank()) return randomRadioVoiceName(language, reserved);
+        List<String> pool = radioPool(language, reserved);
+        return pool.get(Math.floorMod(speaker.trim().toLowerCase(Locale.ROOT).hashCode(), pool.size()));
+    }
+
+    /**
+     * Who is available to voice a transmission, in a stable order: the locale's voices that nobody has
+     * reserved, else all of them, else the known-good fallback for the locale. Reserving is best-effort by
+     * design - see {@link #randomRadioVoiceName(Language, Set)}.
+     */
+    private List<String> radioPool(Language language, Set<String> reserved) {
+        List<String> candidates = availableVoices.stream()
                 .filter(voice -> languageMatches(language, voice.locale()))
-                .sorted(Comparator.comparing(EdgeVoice::shortName))
+                .map(EdgeVoice::shortName)
+                .sorted()
                 .toList();
-        List<EdgeVoice> free = candidates.stream()
-                .filter(voice -> !reserved.contains(voice.shortName()))
-                .toList();
-        if (!free.isEmpty()) {
-            return free.get(ThreadLocalRandom.current().nextInt(free.size())).shortName();
-        }
-        if (!candidates.isEmpty()) {
-            return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size())).shortName();
-        }
+        List<String> free = candidates.stream().filter(name -> !reserved.contains(name)).toList();
+        if (!free.isEmpty()) return free;
+        if (!candidates.isEmpty()) return candidates;
         List<String> fallback = radioFallback(language);
         List<String> freeFallback = fallback.stream().filter(name -> !reserved.contains(name)).toList();
-        List<String> pool = freeFallback.isEmpty() ? fallback : freeFallback;
-        return pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+        return freeFallback.isEmpty() ? fallback : freeFallback;
     }
 
     /**

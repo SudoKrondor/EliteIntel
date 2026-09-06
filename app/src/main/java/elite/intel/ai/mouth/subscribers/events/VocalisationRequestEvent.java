@@ -14,15 +14,16 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
     private final boolean canBeInterrupted;
     private final boolean isRadio;
     private final String speaker;
+    private final String speakerKey;
     private final Set<String> reservedVoices;
     private final VocalisationHandle handle;
 
     public VocalisationRequestEvent(String textToVoice, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted) {
-        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, null, Set.of());
+        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, null, Set.of(), null);
     }
 
     public VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted) {
-        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, false, null, null, Set.of());
+        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, false, null, null, Set.of(), null);
     }
 
     public VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, boolean isRadio, @Nullable String speaker) {
@@ -30,14 +31,18 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
     }
 
     public VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, boolean isRadio, @Nullable String speaker, Set<String> reservedVoices) {
-        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, isRadio, speaker, null, reservedVoices);
+        this(textToVoice, voiceName, originType, canBeInterrupted, isRadio, speaker, reservedVoices, null);
+    }
+
+    public VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, boolean isRadio, @Nullable String speaker, Set<String> reservedVoices, @Nullable String speakerKey) {
+        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, isRadio, speaker, null, reservedVoices, speakerKey);
     }
 
     /**
      * Used when a completion signal is required (e.g. when routing a customCommand SPEAK request).
      */
     public VocalisationRequestEvent(String textToVoice, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, @Nullable CompletableFuture<Void> completionFuture) {
-        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of());
+        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of(), null);
     }
 
     /** Creates a tracked companion request while preserving its correlation id through the Mouth pipeline. */
@@ -49,7 +54,7 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
             CompletableFuture<Void> completionFuture
     ) {
         return new VocalisationRequestEvent(
-                requestId, textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of());
+                requestId, textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of(), null);
     }
 
     private VocalisationRequestEvent(
@@ -61,7 +66,8 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
             boolean isRadio,
             @Nullable String speaker,
             @Nullable CompletableFuture<Void> completionFuture,
-            Set<String> reservedVoices
+            Set<String> reservedVoices,
+            @Nullable String speakerKey
     ) {
         super(textToVoice, false);
         this.voiceName = voiceName;
@@ -70,6 +76,7 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
         this.canBeInterrupted = canBeInterrupted;
         this.isRadio = isRadio;
         this.speaker = speaker;
+        this.speakerKey = speakerKey;
         this.handle = new VocalisationHandle(requestId, canBeInterrupted, completionFuture);
     }
 
@@ -91,6 +98,16 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
      */
     public boolean isRadio() {
         return isRadio;
+    }
+
+    /**
+     * The one individual behind this transmission, when there is one: an NPC pilot's name, which keeps them on
+     * a single voice for as long as they keep talking. Null for a station, a police wing or anyone else the
+     * channel has no individual behind, and the engine then draws a stranger per transmission. Deliberately
+     * separate from {@link #getSpeaker()}, which is display text and is localized.
+     */
+    public @Nullable String getSpeakerKey() {
+        return speakerKey;
     }
 
     /**

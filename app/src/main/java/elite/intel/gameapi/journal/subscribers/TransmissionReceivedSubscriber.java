@@ -74,6 +74,10 @@ public class TransmissionReceivedSubscriber {
                 // Nobody else draws a voice a carrier answers on, or a passing station would reply in the
                 // commander's own carrier's voice.
                 Set<String> reserved = OurCarriers.assignedVoices();
+                // One NPC pilot is an individual the commander hears again and has to recognise mid-fight, so
+                // their name keeps them on one voice. A station or a police wing is signed with what it is
+                // rather than who, has no name here, and goes on drawing a stranger per transmission.
+                String pilot = event.getNpcPilotName();
 
                 if (isStation) {
                     if (!event.getMessageLocalised().toLowerCase().contains("fire zone")) {
@@ -82,11 +86,11 @@ public class TransmissionReceivedSubscriber {
                         GameEventBus.publish(new RadioTransmissionEvent(
                                 localizedEvent("event.transmission.trafficControl", source, event.getMessageLocalised()),
                                 localizedEvent("event.trafficControl.speaker", source),
-                                voice, reserved));
+                                voice, reserved, pilot));
                     }
                 } else {
                     GameEventBus.publish(new RadioTransmissionEvent(
-                            event.getMessageLocalised(), source, voice, reserved));
+                            event.getMessageLocalised(), source, voice, reserved, pilot));
                 }
             }
         });
