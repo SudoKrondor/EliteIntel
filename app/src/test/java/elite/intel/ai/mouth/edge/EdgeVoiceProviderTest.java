@@ -156,6 +156,48 @@ class EdgeVoiceProviderTest {
         assertEquals("ru-RU", unconfirmed.locale());
     }
 
+    /**
+     * A pirate is named on every line they transmit, so drawing afresh each time made one attacker sound like
+     * several. Keyed on the speaker, one name keeps one voice - and an unattributed transmission is still a
+     * stranger drawn at random.
+     */
+    @Test
+    void aNamedSpeakerKeepsOneVoiceWhileStrangersStillVary() {
+        EdgeVoiceProvider provider = new EdgeVoiceProvider();
+        provider.setAvailableVoices(List.of(
+                voice("ru-RU-SvetlanaNeural", "Female", "ru-RU"),
+                voice("ru-RU-DmitryNeural", "Male", "ru-RU")));
+
+        String first = provider.radioVoiceNameFor(Language.RU, "Dave Knowles", Set.of());
+        Set<String> strangers = new HashSet<>();
+        for (int i = 0; i < 500; i++) {
+            assertEquals(first, provider.radioVoiceNameFor(Language.RU, "Dave Knowles", Set.of()));
+            assertEquals(first, provider.radioVoiceNameFor(Language.RU, " dave knowles ", Set.of()));
+            strangers.add(provider.radioVoiceNameFor(Language.RU, null, Set.of()));
+        }
+        assertEquals(Set.of("ru-RU-SvetlanaNeural", "ru-RU-DmitryNeural"), strangers);
+    }
+
+    /**
+     * A carrier's voice is still nobody else's, and the locale with a single voice still speaks rather than
+     * falling silent.
+     */
+    @Test
+    void aNamedSpeakerStillSkipsAReservedVoice() {
+        EdgeVoiceProvider provider = new EdgeVoiceProvider();
+        provider.setAvailableVoices(List.of(
+                voice("ru-RU-SvetlanaNeural", "Female", "ru-RU"),
+                voice("ru-RU-DmitryNeural", "Male", "ru-RU"),
+                voice("uk-UA-PolinaNeural", "Female", "uk-UA")));
+
+        for (int i = 0; i < 100; i++) {
+            assertEquals("ru-RU-SvetlanaNeural",
+                    provider.radioVoiceNameFor(Language.RU, "Pilot " + i, Set.of("ru-RU-DmitryNeural")));
+        }
+        assertEquals("uk-UA-PolinaNeural",
+                provider.radioVoiceNameFor(Language.UK, "Dave Knowles", Set.of("uk-UA-PolinaNeural")));
+    }
+
     private static EdgeVoice voice(String shortName, String gender, String locale) {
         return new EdgeVoice(null, shortName, gender, locale, EdgeProtocolConstants.OUTPUT_FORMAT);
     }

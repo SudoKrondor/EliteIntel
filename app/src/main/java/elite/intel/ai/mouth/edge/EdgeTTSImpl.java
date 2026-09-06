@@ -233,7 +233,10 @@ public final class EdgeTTSImpl implements MouthInterface {
             // A radio request that names a voice comes from a speaker the commander has assigned one to -
             // their own carrier's traffic control. Everyone else on the channel stays a stranger.
             selected = event.getVoiceName() == null
-                    ? voiceProvider.randomRadioVoiceName(language, reservedShortNames(event.getReservedVoices()))
+                    // Keyed on the individual behind it, so one pirate keeps one voice across the lines they
+                    // send. A station or a police wing carries no key and stays a stranger.
+                    ? voiceProvider.radioVoiceNameFor(language, event.getSpeakerKey(),
+                    reservedShortNames(event.getReservedVoices()))
                     : EdgeVoices.shortNameOrDefault(event.getVoiceName());
         } else if (event.getVoiceName() == null) {
             selected = settings.selectedVoiceName();

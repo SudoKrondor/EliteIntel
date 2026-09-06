@@ -9,6 +9,12 @@ import java.time.Duration;
 import java.util.Set;
 
 public class ReceiveTextEvent extends BaseEvent {
+
+    /**
+     * How the game signs a transmission from one named NPC pilot: {@code $npc_name_decorate:#name=NAME;}.
+     */
+    private static final String NPC_NAME_PREFIX = "$npc_name_decorate:#name=";
+
     @SerializedName("From")
     public String from;
 
@@ -94,6 +100,25 @@ public class ReceiveTextEvent extends BaseEvent {
     @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
+    }
+
+    /**
+     * The pilot's name when this transmission came from one particular NPC, or null when it came from anyone
+     * else on the channel.
+     * <p>
+     * The game signs an individual NPC's transmissions {@code $npc_name_decorate:#name=Dave Knowles;} and
+     * signs everyone else with what they are rather than who: {@code $ShipName_Police_Federation;}, a station
+     * name, a construction site. That difference is the whole distinction the radio voicing needs - a pilot
+     * the commander is fighting keeps one voice across the lines they send, while a police wing or a station
+     * stays a stranger and draws afresh, because there is no individual there to recognise.
+     */
+    public String getNpcPilotName() {
+        if (from == null || !from.contains(NPC_NAME_PREFIX)) return null;
+        if (fromLocalised != null && !fromLocalised.isBlank()) return fromLocalised;
+        int start = from.indexOf(NPC_NAME_PREFIX) + NPC_NAME_PREFIX.length();
+        int end = from.indexOf(';', start);
+        String name = (end < 0 ? from.substring(start) : from.substring(start, end)).trim();
+        return name.isEmpty() ? null : name;
     }
 
     public String getFrom() {

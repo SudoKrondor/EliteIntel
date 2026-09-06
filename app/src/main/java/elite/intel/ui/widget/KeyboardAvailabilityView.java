@@ -33,6 +33,12 @@ public class KeyboardAvailabilityView extends JPanel {
 
     private final String bindingId;
     private final Map<String, KeyBindingsParser.KeyBinding> existingBindings;
+    /**
+     * The keys the commander has on the game menu, which no other control may use - read once, because
+     * the binding map behind this view does not change while the dialog is open. Empty while the game
+     * menu itself is being edited: that control is the one place its own key belongs.
+     */
+    private final Set<String> gameMenuKeys;
     private final Map<String, JLabel> mainKeyCells = new HashMap<>();
     private final Map<String, JLabel> modifierCells = new HashMap<>();
     private Set<String> heldModifiers = Set.of();
@@ -44,6 +50,9 @@ public class KeyboardAvailabilityView extends JPanel {
     public KeyboardAvailabilityView(String bindingId, Map<String, KeyBindingsParser.KeyBinding> existingBindings) {
         this.bindingId = bindingId;
         this.existingBindings = existingBindings == null ? Map.of() : existingBindings;
+        this.gameMenuKeys = ReservedKeyChords.GAME_MENU_ACTION.equals(bindingId)
+                ? Set.of()
+                : ReservedKeyChords.gameMenuKeys(this.existingBindings);
         setOpaque(false);
         setLayout(new GridBagLayout());
         buildRows();
@@ -305,9 +314,10 @@ public class KeyboardAvailabilityView extends JPanel {
         if (!EliteKeyboardKeys.isAssignable(token)) {
             return HUD_COLOR_ROLE_DISABLED;
         }
-        // OS-reserved chords (Alt+F4, Linux Ctrl+Alt+F*) can never be assigned: flag amber so the
-        // user sees why the key turns unavailable when the reserved modifiers are held.
-        if (ReservedKeyChords.isReserved(token, heldModifiers)) {
+        // Reserved keys and chords (the game-menu key, Alt+F4, Linux Ctrl+Alt+F*) can never be assigned:
+        // flag amber so the user sees why a key is unavailable - the game-menu key on its own, the OS
+        // chords as soon as their modifiers are held.
+        if (ReservedKeyChords.isReserved(token, heldModifiers, gameMenuKeys)) {
             return HUD_COLOR_ROLE_WARNING;
         }
         boolean conflicts = BindingConflictScanner.candidateConflict(

@@ -132,10 +132,14 @@ public final class SafeKeyboardKeys {
 
     /**
      * Keeps OS-reserved chords (e.g. Alt+F4) out of the auto-assign pool.
+     * <p>
+     * Only the OS half of {@link ReservedKeyChords} can be applied here: this pool is a constant, and
+     * the other half - the key the commander has on the game menu - is read out of their {@code .binds}
+     * file. {@link MissingBindingAutoAssigner} filters the pool for that as it draws from it.
      */
     private static void addUnlessReserved(List<Chord> chords, Chord chord) {
         List<String> modifierKeys = chord.modifier() == null ? List.of() : List.of(chord.modifier().key());
-        if (!ReservedKeyChords.isReserved(chord.key(), modifierKeys)) {
+        if (!ReservedKeyChords.isOsReserved(chord.key(), modifierKeys)) {
             chords.add(chord);
         }
     }

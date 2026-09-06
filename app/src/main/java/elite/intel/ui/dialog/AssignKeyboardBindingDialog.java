@@ -51,7 +51,16 @@ public class AssignKeyboardBindingDialog extends JDialog {
     /** Holder for the candidate-conflict banner: its text names the colliding binding, so the banner is rebuilt on change. */
     private final JPanel conflictSlot;
     private final HudBanner reservedBanner;
+    /**
+     * Its own banner rather than a second use of {@link #reservedBanner}: "reserved combination" says nothing about a key that is reserved on its own.
+     */
+    private final HudBanner gameMenuKeyBanner;
     private final Map<String, KeyBindingsParser.KeyBinding> existingBindings;
+    /**
+     * The keys the commander has on the game menu, which no other control may use. Empty when this dialog
+     * is editing the game-menu control itself - that is the one binding its own key belongs to.
+     */
+    private final Set<String> gameMenuKeys;
     /**
      * Bindings this one already collides with on load (its current chord), shown as a red banner. Empty if none.
      */
@@ -90,6 +99,9 @@ public class AssignKeyboardBindingDialog extends JDialog {
         this.currentSlot = currentSlot;
         this.availabilityService = availabilityService;
         this.existingBindings = existingBindings == null ? Map.of() : existingBindings;
+        this.gameMenuKeys = ReservedKeyChords.GAME_MENU_ACTION.equals(bindingId)
+                ? Set.of()
+                : ReservedKeyChords.gameMenuKeys(this.existingBindings);
         this.existingConflicts = existingConflicts == null ? Set.of() : existingConflicts;
         this.existingConflictChord = existingConflictChord == null ? "" : existingConflictChord;
         this.originalKey = currentKeyboardKey(currentSlot);
@@ -112,6 +124,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
         this.alreadyInUseBanner = HudBanner.multiline(getText("bindings.assign.alreadyInUse"), StatusBadge.State.OFFLINE);
         this.conflictSlot = transparentPanel(new BorderLayout());
         this.reservedBanner = HudBanner.multiline(getText("bindings.assign.reserved"), StatusBadge.State.OFFLINE);
+        this.gameMenuKeyBanner = HudBanner.multiline(getText("bindings.assign.gameMenuKey"), StatusBadge.State.OFFLINE);
         this.keyboardView = new KeyboardAvailabilityView(bindingId, this.existingBindings);
         this.keyboardView.setCurrentKey(originalKey);
         buildUi();
@@ -229,6 +242,13 @@ public class AssignKeyboardBindingDialog extends JDialog {
         reservedBanner.setVisible(false);
         content.add(reservedBanner, gbc);
 
+        nextRow(gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gameMenuKeyBanner.setVisible(false);
+        content.add(gameMenuKeyBanner, gbc);
+
         // Live QWERTY availability map: spans both columns, recolors as modifiers are held.
         nextRow(gbc);
         gbc.gridx = 0;
@@ -341,7 +361,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
 
     private void saveSelection() {
         boolean blockingConflict = selectedConflict() != null;
-        if (!isChanged() || !isValidKey() || isSelectedCombinationOccupied() || blockingConflict || isReservedChord()) {
+        if (!isChanged() || !isValidKey() || isSelectedCombinationOccupied() || blockingConflict
+                || isReservedChord() || isGameMenuKey()) {
             return;
         }
         selection = cleared
@@ -352,27 +373,42 @@ public class AssignKeyboardBindingDialog extends JDialog {
 
     private void updateSaveState() {
         boolean invalidKey = !cleared && selectedKey != null && !isValidKey();
-        boolean reserved = isReservedChord();
+        boolean gameMenuKey = isGameMenuKey();
+        boolean reserved = gameMenuKey || isReservedChord();
         // A reserved chord is unassignable on principle; an exact occupancy shows its own message.
         // Suppress the lesser warnings when a higher-priority one already explains the block.
         boolean occupied = !reserved && !cleared && selectedKey != null && isSelectedCombinationOccupied();
         BindingConflictScanner.CandidateConflict conflict = (reserved || occupied) ? null : selectedConflict();
         invalidKeyBanner.setVisible(invalidKey);
-        reservedBanner.setVisible(reserved);
+        // The two reserved messages are exclusive: the game-menu one names a key, the other a combination.
+        reservedBanner.setVisible(reserved && !gameMenuKey);
+        gameMenuKeyBanner.setVisible(gameMenuKey);
         alreadyInUseBanner.setVisible(occupied);
         updateConflictBanner(conflict);
         saveButton.setEnabled(isChanged() && isValidKey() && !reserved && !occupied && conflict == null);
     }
 
     /**
-     * True when the pending chord is reserved by the OS (e.g. Alt+F4) and must not be assigned.
+     * True when the pending chord is reserved (e.g. Alt+F4) and must not be assigned. The game-menu key
+     * is excluded here so {@link #isGameMenuKey()} can put its own message on it.
      */
     private boolean isReservedChord() {
         if (cleared || selectedKey == null || !isValidKey()) {
             return false;
         }
         List<String> modifierKeys = selectedModifiers.stream().map(BindingModifier::key).toList();
-        return ReservedKeyChords.isReserved(selectedKey, modifierKeys);
+        return ReservedKeyChords.isOsReserved(selectedKey, modifierKeys);
+    }
+
+    /**
+     * True when the pending key is the one the commander has on the game menu. Modifiers are not
+     * consulted: Elite opens the menu on that key however it is modified - see {@link ReservedKeyChords}.
+     */
+    private boolean isGameMenuKey() {
+        if (cleared || selectedKey == null || !isValidKey()) {
+            return false;
+        }
+        return gameMenuKeys.contains(selectedKey);
     }
 
     private void updateConflictBanner(BindingConflictScanner.CandidateConflict conflict) {

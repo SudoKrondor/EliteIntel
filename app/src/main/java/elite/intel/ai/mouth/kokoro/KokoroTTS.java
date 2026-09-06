@@ -29,6 +29,7 @@ import javax.sound.sampled.SourceDataLine;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -271,9 +272,7 @@ public class KokoroTTS implements MouthInterface {
             long generation = interruptGeneration.get();
             // One voice for the whole transmission: the draw happens here, not per sentence, or a station
             // would change speaker mid-message.
-            String voiceName = event.isRadio() && event.getVoiceName() == null
-                    ? KokoroVoices.randomRadioVoice(systemSession.getKokoroVoice().name(), event.getReservedVoices()).name()
-                    : event.getVoiceName();
+            String voiceName = resolveVoiceName(event);
             for (int i = 0; i < sentences.size(); i++) {
                 boolean isLast = (i == sentences.size() - 1);
                 boolean isRadio = event.isRadio();
@@ -388,6 +387,44 @@ public class KokoroTTS implements MouthInterface {
         }
     }
 
+    /**
+     * The voice for one whole transmission, or {@code null} to use the ship's own.
+     * <p>
+     * A name this engine no longer carries collapses to {@link KokoroVoices#DEFAULT_VOICE}. The cast in
+     * {@link KokoroVoices} is curated - a voice that breaks immersion is removed from it - but a carrier that
+     * was given that voice still has the name stored in the database. Resolving it strictly would throw on the
+     * synthesis thread and drop the line, so that carrier would fall silent for good with only a warning in the
+     * log. Drawing a stranger instead would be worse in its own way: the draw happens once per transmission, so
+     * the commander's own carrier would answer in a different voice every message, and being recognisable is
+     * the whole reason it was given a voice. One fixed default keeps it one speaker until the commander picks
+     * again.
+     * <p>
+     * A transmission that names no voice is voiced by whoever the speaker's name maps to, so one NPC keeps one
+     * voice; a transmission with no speaker either is a stranger, and draws at random.
+     */
+    private String resolveVoiceName(VocalisationRequestEvent event) {
+        String named = event.getVoiceName();
+        if (named == null) {
+            // Keyed on the individual behind the transmission, so the same pirate keeps one voice for the
+            // whole encounter instead of sounding like a fresh attacker on every line. Only an NPC pilot
+            // carries a key; a station or a police wing has none and stays a stranger.
+            return event.isRadio()
+                    ? KokoroVoices.radioVoiceFor(event.getSpeakerKey(), systemSession.getKokoroVoice().name(),
+                    event.getReservedVoices()).name()
+                    : null;
+        }
+        if (!isInTheCast(named)) {
+            log.warn("Kokoro no longer carries the voice '{}'; speaking as {} until it is picked again",
+                    named, KokoroVoices.DEFAULT_VOICE.name());
+            return KokoroVoices.DEFAULT_VOICE.name();
+        }
+        return named;
+    }
+
+    private static boolean isInTheCast(String voiceName) {
+        return Arrays.stream(KokoroVoices.values()).anyMatch(voice -> voice.name().equals(voiceName));
+    }
+
     // -- Stage 1: Synthesis thread ---------------------------------------------
 
     private void processSynthesisQueue() {
@@ -401,7 +438,7 @@ public class KokoroTTS implements MouthInterface {
                 }
 
                 KokoroVoices voice = task.voiceName() != null
-                        ? KokoroVoices.valueOf(task.voiceName())
+                        ? KokoroVoices.voiceOrDefault(task.voiceName())
                         : systemSession.getKokoroVoice();
                 int sid = voice.getSid();
 

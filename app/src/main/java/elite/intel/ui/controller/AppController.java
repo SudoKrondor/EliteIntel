@@ -24,6 +24,7 @@ import elite.intel.gameapi.JournalParser;
 import elite.intel.gameapi.journal.MissingMissionMonitor;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
+import elite.intel.setup.GameEditionCheck;
 import elite.intel.setup.SetupCheck;
 import elite.intel.tools.ws.WebSocketBroadcaster;
 import elite.intel.ui.event.*;
@@ -333,6 +334,7 @@ public class AppController {
                 KeyBindCheck.getInstance().check();
                 CustomCommandLoadAnnouncement.getInstance().announce();
                 LocalLlmModelCheck.getInstance().check();
+                GameEditionCheck.getInstance().check();
                 announceSleepModeIfAsleep();
             } catch (RuntimeException | Error e) {
                 log.error("Service startup failed while lifecycle was STARTING", e);

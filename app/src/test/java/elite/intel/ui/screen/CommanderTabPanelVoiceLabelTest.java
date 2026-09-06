@@ -135,6 +135,41 @@ class CommanderTabPanelVoiceLabelTest {
         }
     }
 
+    /**
+     * A carrier can hold a voice that has since been removed from the curated Kokoro cast. The grid has to show
+     * the default it will actually be heard in - not the stale name, which the non-editable combo would reject
+     * and quietly replace with whatever was selected instead, and not "Random", which would promise a stranger
+     * per transmission when the channel is going to use one fixed voice.
+     * <p>
+     * A carrier with nothing stored is the separate case that really is "not picked", and keeps drawing a
+     * stranger.
+     */
+    @Test
+    void aCarrierVoiceThatHasLeftTheRadioRosterShowsTheVoiceItWillBeHeardIn() {
+        SystemSession session = SystemSession.getInstance();
+        TtsProvider previousProvider = session.getTtsProvider();
+        Language previousLanguage = session.getLanguage();
+        try {
+            session.setTtsProvider(TtsProvider.KOKORO);
+            session.setLanguage(Language.EN); // RadioVoicing hands the Cyrillic locales to Edge instead
+
+            // The commander's pick is kept whenever the engine still carries it.
+            assertEquals(KokoroVoices.GEORGE.name(), CommanderTabPanel.carrierVoiceCell(KokoroVoices.GEORGE.name()));
+            // Named as a string on purpose: the point is a name that no longer compiles against the enum,
+            // which is what a commander who picked it before it was removed still has in the database.
+            assertEquals(KokoroVoices.DEFAULT_VOICE.name(), CommanderTabPanel.carrierVoiceCell("ZH_YUNYANG"),
+                    "a voice removed from the cast is heard as the default, so it must be shown as the default");
+            assertEquals(CommanderTabPanel.RANDOM_VOICE, CommanderTabPanel.carrierVoiceCell(null),
+                    "never picked - still a stranger per transmission");
+            assertEquals(CommanderTabPanel.RANDOM_VOICE, CommanderTabPanel.carrierVoiceCell(""));
+            // Not tested against another engine's roster: the three engines share enum names by design
+            // (see this class's header), so a Google name is often a Kokoro name too.
+        } finally {
+            session.setTtsProvider(previousProvider);
+            session.setLanguage(previousLanguage);
+        }
+    }
+
     @Test
     void kokoroNormalizationIsUnaffectedByTheEdgeFix() {
         SystemSession session = SystemSession.getInstance();

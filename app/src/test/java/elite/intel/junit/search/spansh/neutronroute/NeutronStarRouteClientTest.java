@@ -77,7 +77,7 @@ class NeutronStarRouteClientTest {
     void calculateRoute_sendsEfficiencyRangeFromToAndSuperchargeParams() {
         stubJobAndResult(ROUTE_RESULT_JSON);
 
-        client.calculateRoute(new NeutronStarRouteCalculatorCriteria("Sol", "Sagittarius A*", 60, 50.0, 4));
+        client.calculateRoute(new NeutronStarRouteCalculatorCriteria("Sol", "Sagittarius A*", 60, 50.0, false));
 
         wm.verify(postRequestedFor(urlEqualTo("/api/route"))
                 .withRequestBody(containing("efficiency=60"))
@@ -88,10 +88,29 @@ class NeutronStarRouteClientTest {
     }
 
     @Test
+    void calculateRoute_sendsSuperchargeAsSixAndItsAbsenceAsFour() {
+        // Spansh's supercharge is a tick box that travels as a number, and only these two are states it
+        // offers. Six is on, four is off - there is no third value and no scale in between.
+        stubJobAndResult(ROUTE_RESULT_JSON);
+
+        client.calculateRoute(new NeutronStarRouteCalculatorCriteria("Sol", "Colonia", 70, 60.0, true));
+
+        wm.verify(postRequestedFor(urlEqualTo("/api/route"))
+                .withRequestBody(containing("efficiency=70"))
+                .withRequestBody(containing("supercharge_multiplier=6")));
+
+        wm.resetRequests();
+        client.calculateRoute(new NeutronStarRouteCalculatorCriteria("Sol", "Colonia", 70, 60.0, false));
+
+        wm.verify(postRequestedFor(urlEqualTo("/api/route"))
+                .withRequestBody(containing("supercharge_multiplier=4")));
+    }
+
+    @Test
     void calculateRoute_urlEncodesSpacesInSystemNames() {
         stubJobAndResult(ROUTE_RESULT_JSON);
 
-        client.calculateRoute(new NeutronStarRouteCalculatorCriteria("Alpha Centauri", "Sag A*", 60, 50.0, 4));
+        client.calculateRoute(new NeutronStarRouteCalculatorCriteria("Alpha Centauri", "Sag A*", 60, 50.0, true));
 
         wm.verify(postRequestedFor(urlEqualTo("/api/route"))
                 .withRequestBody(containing("from=Alpha+Centauri")));
@@ -104,7 +123,7 @@ class NeutronStarRouteClientTest {
         stubJobAndResult(ROUTE_RESULT_JSON);
 
         NeutronStarRoute route = client.calculateRoute(
-                new NeutronStarRouteCalculatorCriteria("Sol", "Sagittarius A*", 60, 50.0, 4));
+                new NeutronStarRouteCalculatorCriteria("Sol", "Sagittarius A*", 60, 50.0, true));
 
         assertNotNull(route);
         assertNotNull(route.getResult());
@@ -118,7 +137,7 @@ class NeutronStarRouteClientTest {
         stubJobAndResult(ROUTE_RESULT_JSON);
 
         NeutronStarRoute route = client.calculateRoute(
-                new NeutronStarRouteCalculatorCriteria("Sol", "Sagittarius A*", 60, 50.0, 4));
+                new NeutronStarRouteCalculatorCriteria("Sol", "Sagittarius A*", 60, 50.0, true));
 
         assertNotNull(route.getResult().getSystemJumps());
         assertEquals(2, route.getResult().getSystemJumps().size());
@@ -147,7 +166,7 @@ class NeutronStarRouteClientTest {
                 .willReturn(okJson(ROUTE_RESULT_JSON)));
 
         NeutronStarRoute route = client.calculateRoute(
-                new NeutronStarRouteCalculatorCriteria("Sol", "Sagittarius A*", 60, 50.0, 4));
+                new NeutronStarRouteCalculatorCriteria("Sol", "Sagittarius A*", 60, 50.0, true));
 
         assertNotNull(route);
         wm.verify(2, getRequestedFor(urlEqualTo("/api/results/" + JOB_ID)));
@@ -161,7 +180,7 @@ class NeutronStarRouteClientTest {
                 .willReturn(aResponse().withStatus(500)));
 
         NeutronStarRoute route = client.calculateRoute(
-                new NeutronStarRouteCalculatorCriteria("Sol", "Sagittarius A*", 60, 50.0, 4));
+                new NeutronStarRouteCalculatorCriteria("Sol", "Sagittarius A*", 60, 50.0, true));
 
         assertNull(route);
     }

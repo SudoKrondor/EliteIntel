@@ -375,6 +375,84 @@ class MissingBindingAutoAssignerTest {
         }
     }
 
+    @Test
+    void theGameMenuIsLeftUnboundAndItsKeyIsTakenOutOfThePool() throws Exception {
+        // Pause on Key_P: P is spent, with or without modifiers, so nothing else may be given it.
+        StringBuilder xml = new StringBuilder("""
+                <Root>
+                    <Pause>
+                        <Primary Device="Keyboard" Key="Key_P" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </Pause>
+                """);
+        for (int i = 0; i < 40; i++) {
+            xml.append("<Action").append(i).append('>')
+                    .append("<Primary Device=\"{NoDevice}\" Key=\"\" />")
+                    .append("<Secondary Device=\"{NoDevice}\" Key=\"\" />")
+                    .append("</Action").append(i).append(">\n");
+        }
+        xml.append("</Root>\n");
+
+        Plan plan = assigner.planAll(parse(xml.toString()));
+
+        assertEquals(40, plan.edits().size());
+        for (PlannedEdit edit : plan.edits()) {
+            assertNotEquals("Key_P", edit.key(), "the game-menu key was handed to " + edit.bindingId());
+        }
+    }
+
+    @Test
+    void anUnboundGameMenuIsSkippedRatherThanFilled() throws Exception {
+        Map<String, ReadOnlyBindingSlots> slots = parse("""
+                <Root>
+                    <Pause>
+                        <Primary Device="{NoDevice}" Key="" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </Pause>
+                    <ToggleCargoScoop>
+                        <Primary Device="{NoDevice}" Key="" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </ToggleCargoScoop>
+                </Root>
+                """);
+
+        Plan plan = assigner.planAll(slots);
+
+        // Escape opens that menu anyway; a key here would be spent for nothing.
+        assertEquals(List.of("ToggleCargoScoop"), plan.edits().stream().map(PlannedEdit::bindingId).toList());
+        assertEquals(List.of(new SkippedBinding("Pause", SkipReason.GAME_MENU_LEFT_UNBOUND)), plan.skipped());
+
+        // And the same answer through the per-row button, which is where the commander asks for it.
+        assertEquals(List.of(new SkippedBinding("Pause", SkipReason.GAME_MENU_LEFT_UNBOUND)),
+                assigner.planOne("Pause", slots).skipped());
+    }
+
+    @Test
+    void bothGameMenuSlotsAreTakenOutOfThePool() throws Exception {
+        // Only the Primary reaches the executable map, but both keys open the menu.
+        StringBuilder xml = new StringBuilder("""
+                <Root>
+                    <Pause>
+                        <Primary Device="Keyboard" Key="Key_P" />
+                        <Secondary Device="Keyboard" Key="Key_G" />
+                    </Pause>
+                """);
+        for (int i = 0; i < 40; i++) {
+            xml.append("<Action").append(i).append('>')
+                    .append("<Primary Device=\"{NoDevice}\" Key=\"\" />")
+                    .append("<Secondary Device=\"{NoDevice}\" Key=\"\" />")
+                    .append("</Action").append(i).append(">\n");
+        }
+        xml.append("</Root>\n");
+
+        Plan plan = assigner.planAll(parse(xml.toString()));
+
+        for (PlannedEdit edit : plan.edits()) {
+            assertNotEquals("Key_P", edit.key());
+            assertNotEquals("Key_G", edit.key());
+        }
+    }
+
     private Map<String, ReadOnlyBindingSlots> parse(String xml) throws Exception {
         Path file = tempDir.resolve("test-" + System.nanoTime() + ".binds");
         Files.write(file, xml.getBytes(StandardCharsets.UTF_8));

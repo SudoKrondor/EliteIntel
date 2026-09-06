@@ -3,6 +3,7 @@ package elite.intel.ai.hands;
 import elite.intel.util.StringUtls;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -14,18 +15,35 @@ import java.util.Map;
  */
 public class BindingConflictRules {
 
+    private static final String UI_SELECT = "UI_Select";
+
+    /**
+     * The quick comms panel in all three vehicle contexts. Elite gives the ship, SRV and on-foot
+     * variants separate action names, and the chord clashes the same way in each.
+     */
+    private static final List<String> QUICK_COMMS_ACTIONS = List.of(
+            "QuickCommsPanel", "QuickCommsPanel_Buggy", "QuickCommsPanel_Humanoid");
+
     private static final Map<String, String> DESCRIPTIONS = new HashMap<>();
 
     static {
-        // NOTE: UI_* navigation keys are NOT listed here. The UI panel is its own input context
-        // (the game disables ship controls while a panel is open), so UI_* never co-fires with a
-        // ship action - see contextOf(). Two UI_* actions on one chord still conflict (same context).
+        // NOTE: UI_* navigation keys are otherwise NOT listed here. The UI panel is its own input
+        // context (the game disables ship controls while a panel is open), so UI_* never co-fires with
+        // a ship action - see contextOf(). Two UI_* actions on one chord still conflict (same context).
+        // The quick comms pairs below are the exception, and say why.
 
         // Dangerous hardware action pairs
         put("DeployHardpointToggle", "LandingGearToggle", "Deploying hardpoints will also toggle landing gear");
         put("DeployHardpointToggle", "ToggleCargoScoop", "Deploying hardpoints will also toggle the cargo scoop");
         put("LandingGearToggle", "ToggleCargoScoop", "Toggling landing gear will also toggle the cargo scoop");
         put("Supercruise", "Hyperspace", "Supercruise and hyperspace share a key - jump type will depend on target");
+
+        // The interface Select key opening the chat box as well - see isSelectVersusQuickComms().
+        for (String comms : QUICK_COMMS_ACTIONS) {
+            put(UI_SELECT, comms, "Select and the quick comms panel share a key - every interface selection"
+                    + " EliteIntel makes also opens the chat text box, which then swallows the keys that follow"
+                    + " and can broadcast them");
+        }
     }
 
     private static void put(String a, String b, String description) {
@@ -58,9 +76,10 @@ public class BindingConflictRules {
     /**
      * Returns true when two actions sharing a key is safe and should not be flagged.
      * <p>
-     * Unsafe first: {@link #isMapVersusUiNavigation} - the galaxy/system map is the one overlay where
-     * two families are live <em>simultaneously</em>, so it is checked before the mutual-exclusion
-     * rules below (which would otherwise clear it twice over).
+     * Unsafe first: {@link #isMapVersusUiNavigation} and {@link #isSelectVersusQuickComms} - the two
+     * cases where families the context model treats as mutually exclusive are in fact live
+     * <em>simultaneously</em>, so they are checked before the mutual-exclusion rules below (which
+     * would otherwise clear them twice over).
      * <p>
      * Safe cases:
      * - Different input contexts (ship / buggy / humanoid / UI / construction) - mutually exclusive,
@@ -72,15 +91,18 @@ public class BindingConflictRules {
      */
     public static boolean isSafeOverlap(String a, String b) {
         if (isMapVersusUiNavigation(a, b)) return false;
+        if (isSelectVersusQuickComms(a, b)) return false;
         if (isSubStateModeAction(a) || isSubStateModeAction(b)) return true;
         return !contextOf(a).equals(contextOf(b));
     }
 
     /**
      * True when a conflict is <b>blocking</b>: it stops EliteIntel from driving the game at all, not merely
-     * "may interfere". Today that is exactly the map-camera-versus-UI-navigation overlap.
+     * "may interfere". Today that is the map-camera-versus-UI-navigation overlap
+     * ({@link #isMapVersusUiNavigation}) and Select sharing a key with the quick comms panel
+     * ({@link #isSelectVersusQuickComms}).
      * <p>
-     * WHY this one is in a class of its own: route plotting - the single most-used function - walks the galaxy
+     * WHY the map overlap is in a class of its own: route plotting - the single most-used function - walks the galaxy
      * map to its search field with {@code UI_Left}/{@code UI_Right}/{@code UI_Select} taps. A commander doing
      * that by hand recovers from the collision without noticing, because they click the field with the mouse.
      * EliteIntel has no mouse; the keyboard walk is the only way in. So when the same chord also pans the map,
@@ -92,7 +114,27 @@ public class BindingConflictRules {
      * interface is fine, and so is the reverse. The same keys for both is not.
      */
     public static boolean isBlocking(String a, String b) {
-        return isMapVersusUiNavigation(a, b);
+        return isMapVersusUiNavigation(a, b) || isSelectVersusQuickComms(a, b);
+    }
+
+    /**
+     * True when one action is {@code UI_Select} and the other is the quick comms panel (in any of its
+     * three vehicle variants).
+     * <p>
+     * The second break in the context model, for the same reason as {@link #isMapVersusUiNavigation}:
+     * the comms panel is reachable <em>while</em> an interface panel is open, so "UI and ship controls
+     * are never live together" does not hold for this pair and {@link #contextOf} would clear it.
+     * <p>
+     * WHY it is blocking rather than an overlap that "may interfere": Select is how EliteIntel commits
+     * every choice it makes in the interface - the galaxy map search field, the route, panel entries.
+     * With the comms panel on the same chord, each of those taps also drops a focused chat text box on
+     * screen, which takes the keyboard. The system name EliteIntel types next goes into chat instead of
+     * the search field, so nothing is plotted - and what was typed can be sent to other commanders.
+     * A commander doing the same thing by hand never sees it, because they click with the mouse.
+     */
+    private static boolean isSelectVersusQuickComms(String a, String b) {
+        return (UI_SELECT.equals(a) && QUICK_COMMS_ACTIONS.contains(b))
+                || (UI_SELECT.equals(b) && QUICK_COMMS_ACTIONS.contains(a));
     }
 
     /**

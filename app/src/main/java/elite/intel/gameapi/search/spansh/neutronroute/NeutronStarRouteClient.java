@@ -16,6 +16,15 @@ public class NeutronStarRouteClient extends SpanshClient {
     private static final String BASE_URL = "https://spansh.co.uk/api/route";
     private static final String RESULTS_URL = "https://spansh.co.uk/api/results/";
 
+    /**
+     * How Spansh encodes its supercharge checkbox. It is a tick box on the form and a number in the
+     * request, with exactly two values it ever sends - 6 for ticked, 4 for unticked. The numbers are not
+     * a multiplier we get to choose; anything else is not a state the planner offers, so the two live
+     * here as the encoding of a yes and a no rather than as a caller's parameter.
+     */
+    private static final int SUPERCHARGE_ON = 6;
+    private static final int SUPERCHARGE_OFF = 4;
+
     public NeutronStarRouteClient() {
         super(BASE_URL, RESULTS_URL);
     }
@@ -26,7 +35,7 @@ public class NeutronStarRouteClient extends SpanshClient {
                 + "&range=" + rangeStr
                 + "&from=" + URLEncoder.encode(criteria.from(), StandardCharsets.UTF_8)
                 + "&to=" + URLEncoder.encode(criteria.to(), StandardCharsets.UTF_8)
-                + "&supercharge_multiplier=" + criteria.superchargeMultiplier();
+                + "&supercharge_multiplier=" + (criteria.supercharge() ? SUPERCHARGE_ON : SUPERCHARGE_OFF);
 
         log.info("Requesting neutron star route from {} to {}", criteria.from(), criteria.to());
         JsonObject result = performSearch(new Request(query));
