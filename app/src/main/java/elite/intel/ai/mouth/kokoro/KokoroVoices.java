@@ -5,18 +5,25 @@ import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Speaker IDs for the kokoro-multi-lang-v1_0 model (53 voices).
+ * Speaker IDs for the kokoro-multi-lang-v1_0 model, which carries 53 of them.
  * <p>
- * Voice prefix key:
+ * <b>The cast is curated, and smaller than the model.</b> A voice that breaks immersion - a whisper, a Santa,
+ * an accent that has no business on a comms link - is commented out below rather than deleted, so its speaker
+ * ID stays visible and is never handed to another voice. Nothing may assume a contiguous range, a count, or
+ * the presence of any particular voice: derive from {@link #values()}. A name that has left the cast is still
+ * stored in the databases of commanders who were using it, which is what {@link #voiceOrDefault(String)} and
+ * {@code KokoroTTS.resolveVoiceName} exist to absorb.
+ * <p>
+ * Voice prefix key, for the groups the cast still draws on:
  *   af_ = American Female   am_ = American Male
  *   bf_ = British Female    bm_ = British Male
  *   ef_ = Spanish Female    em_ = Spanish Male
  *   ff_ = French Female
  *   hf_ = Hindi Female      hm_ = Hindi Male
  *   if_ = Italian Female    im_ = Italian Male
- *   jf_ = Japanese Female   jm_ = Japanese Male
  *   pf_ = Portuguese Female pm_ = Portuguese Male
- *   zf_ = Chinese Female    zm_ = Chinese Male
+ * <p>
+ * The model also ships Japanese (jf_ / jm_) and Chinese (zf_ / zm_) speakers; both groups are held out.
  * <p>
  * The fleet grid renders each voice by its raw enum name; voices are not localized.
  * <p>
@@ -31,7 +38,7 @@ public enum KokoroVoices {
     HEART(3, false, "Heart", "American female"),
     JESSICA(4, false, "Jessica", "American female"),
     KORE(5, false, "Kore", "American female"),
-    NICOLE(6, false, "Nicole", "American female - whispering"),
+    //NICOLE(6, false, "Nicole", "American female - whispering"),
     NOVA(7, false, "Nova", "American female"),
     RIVER(8, false, "River", "American female"),
     SARAH(9, false, "Sarah", "American female"),
@@ -78,33 +85,33 @@ public enum KokoroVoices {
     IT_NICOLA(36, true, "Nicola", "Italian male"),
 
     // --- Japanese (jf_ / jm_) ---
-    JA_ALPHA(37, false, "Alpha", "Japanese female"),
-    JA_GONGITSUNE(38, false, "Gongitsune", "Japanese female"),
-    JA_NEZUMI(39, false, "Nezumi", "Japanese female"),
-    JA_TEBUKURO(40, false, "Tebukuro", "Japanese female"),
-    JA_KUMO(41, true, "Kumo", "Japanese male"),
+//    JA_ALPHA(37, false, "Alpha", "Japanese female"),
+//    JA_GONGITSUNE(38, false, "Gongitsune", "Japanese female"),
+//    JA_NEZUMI(39, false, "Nezumi", "Japanese female"),
+//    JA_TEBUKURO(40, false, "Tebukuro", "Japanese female"),
+//    JA_KUMO(41, true, "Kumo", "Japanese male"),
 
     // --- Portuguese (pf_ / pm_) ---
     PT_DORA(42, false, "Dora", "Portuguese female"),
-    PT_ALEX(43, true, "Alex", "Portuguese male"),
-    PT_SANTA(44, true, "Santa", "Portuguese male"),
+    PT_ALEX(43, true, "Alex", "Portuguese male");
+    //PT_SANTA(44, true, "Santa", "Portuguese male");
 
     // --- Chinese (zf_ / zm_) ---
-    ZH_XIAOBEI(45, false, "Xiaobei", "Chinese female"),
-    ZH_XIAONI(46, false, "Xiaoni", "Chinese female"),
-    ZH_XIAOXIAO(47, false, "Xiaoxiao", "Chinese female"),
-    ZH_XIAOYI(48, false, "Xiaoyi", "Chinese female"),
-    ZH_YUNJIAN(49, true, "Yunjian", "Chinese male"),
-    ZH_YUNXI(50, true, "Yunxi", "Chinese male"),
-    ZH_YUNXIA(51, false, "Yunxia", "Chinese female"),
-    ZH_YUNYANG(52, true, "Yunyang", "Chinese male");
+//    ZH_XIAOBEI(45, false, "Xiaobei", "Chinese female"),
+//    ZH_XIAONI(46, false, "Xiaoni", "Chinese female"),
+//    ZH_XIAOXIAO(47, false, "Xiaoxiao", "Chinese female"),
+//    ZH_XIAOYI(48, false, "Xiaoyi", "Chinese female"),
+//    ZH_YUNJIAN(49, true, "Yunjian", "Chinese male"),
+//    ZH_YUNXI(50, true, "Yunxi", "Chinese male"),
+//    ZH_YUNXIA(51, false, "Yunxia", "Chinese female"),
+//    ZH_YUNYANG(52, true, "Yunyang", "Chinese male");
 
     /**
      * The default ship voice, used when a ship has no stored voice or carries a name this engine does not
      * know (see {@link #voiceOrDefault(String)}). It is female because that is what every existing fleet
      * already sounds like; the commander may pick any voice here, male or female.
      */
-    public static final KokoroVoices DEFAULT_VOICE = BELLA;
+    public static final KokoroVoices DEFAULT_VOICE = ISABELLA;
 
     /**
      * A voice for the next radio transmission: any speaker in the model, male or female and in any of its

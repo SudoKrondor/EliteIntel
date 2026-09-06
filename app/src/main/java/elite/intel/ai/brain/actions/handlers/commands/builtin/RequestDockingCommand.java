@@ -48,9 +48,7 @@ public final class RequestDockingCommand implements IntelCommand {
             GameControllerBus.publish(GameInputSequenceEvent.of(
                     // Navigate within contacts to the station entry.
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_DOWN.getGameBinding()),
-                    GameInputStep.delay(250), // wait for slow UI on weaker hardware
                     GameInputStep.bindingHold(Bindings.GameCommand.BINDING_UI_UP.getGameBinding(), 700), // scroll up to the top (and hope our station is there)
-                    GameInputStep.delay(250), // wait for slow UI on weaker hardware
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_RIGHT.getGameBinding()),
                     GameInputStep.delay(700),
                     // Request docking.

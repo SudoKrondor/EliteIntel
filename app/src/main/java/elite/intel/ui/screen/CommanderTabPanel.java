@@ -489,10 +489,45 @@ public class CommanderTabPanel extends JPanel {
      * speaker the engine that has to say the line has never heard of.
      */
     private static String[] radioVoiceOptions() {
-        Stream<String> voices = RadioVoicing.engine() == TtsProvider.EDGE
+        return Stream.concat(Stream.of(RANDOM_VOICE), radioVoiceRoster()).toArray(String[]::new);
+    }
+
+    /**
+     * Every voice the engine that speaks radio currently carries, by enum name.
+     */
+    private static Stream<String> radioVoiceRoster() {
+        return RadioVoicing.engine() == TtsProvider.EDGE
                 ? Arrays.stream(EdgeVoices.values()).map(Enum::name)
                 : Arrays.stream(KokoroVoices.values()).map(Enum::name);
-        return Stream.concat(Stream.of(RANDOM_VOICE), voices).toArray(String[]::new);
+    }
+
+    /**
+     * A carrier's stored voice as the fleet grid must show it - the carrier equivalent of
+     * {@link #normalizeVoice}, which does the same job for a ship, against the radio engine's roster rather
+     * than the active provider's.
+     * <p>
+     * No voice stored means the commander never picked one, which is shown as {@code RANDOM_VOICE} and draws a
+     * stranger per transmission. A voice the radio engine no longer carries is a different thing: the Kokoro
+     * cast is curated by hand and a voice that breaks immersion is removed from it, so a carrier can hold a
+     * name that is no longer offered. That is shown as the engine's default, because that is what
+     * {@code KokoroTTS.resolveVoiceName} will actually speak it in - the grid must not promise a voice the
+     * channel will not use.
+     * <p>
+     * Showing the stale name instead would be worse than cosmetic: these combos are not editable, and
+     * {@code JComboBox.setSelectedItem} silently <em>rejects</em> a value its model does not hold, leaving
+     * whatever was selected before - so opening that dropdown and clicking away would reassign the carrier to a
+     * voice the commander never picked.
+     */
+    static String carrierVoiceCell(String stored) {
+        if (stored == null || stored.isBlank()) return RANDOM_VOICE;
+        if (isRadioVoice(stored)) return stored;
+        return RadioVoicing.engine() == TtsProvider.EDGE
+                ? EdgeVoices.DEFAULT_VOICE.name()
+                : KokoroVoices.DEFAULT_VOICE.name();
+    }
+
+    private static boolean isRadioVoice(String voiceName) {
+        return voiceName != null && radioVoiceRoster().anyMatch(voiceName::equals);
     }
 
     /**
@@ -629,8 +664,7 @@ public class CommanderTabPanel extends JPanel {
 
         @Override
         public String voice() {
-            String stored = carrier.data().getVoice();
-            return stored == null ? RANDOM_VOICE : stored;
+            return carrierVoiceCell(carrier.data().getVoice());
         }
 
         @Override

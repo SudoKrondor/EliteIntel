@@ -19,7 +19,10 @@ public class EventRegistry {
     private static final Logger log = LogManager.getLogger(EventRegistry.class);
     private static final Map<String, Class<? extends BaseEvent>> eventMap = new HashMap<>();
     private static final Set<String> NON_TIMED_EVENTS = Set.of(
-            "LoadGame", "Commander", "Statistics", "Loadout", "Rank", "Materials", "EngineerProgress", "CarrierStats", "SquadronStartup"
+            "LoadGame", "Commander", "Statistics", "Loadout", "Rank", "Materials", "EngineerProgress", "CarrierStats", "SquadronStartup",
+            // Written at game launch; the commander can sit in the launcher for minutes before the next line
+            // is logged, and it is the only statement of which edition is running. See FileheaderEvent.
+            "Fileheader"
     );
     private static final Set<String> LONG_THRESHOLD_EVENTS = Set.of(
             "ProspectedAsteroid", "FSDJump"
@@ -79,6 +82,7 @@ public class EventRegistry {
         registerEvent("LaunchFighter", LaunchFighterEvent.class);
         registerEvent("DockFighter", DockFighterEvent.class);
         registerEvent("Liftoff", LiftoffEvent.class);
+        registerEvent("Fileheader", FileheaderEvent.class);
         registerEvent("LoadGame", LoadGameEvent.class);
         registerEvent("Loadout", LoadoutEvent.class);
         registerEvent("Location", LocationEvent.class);
