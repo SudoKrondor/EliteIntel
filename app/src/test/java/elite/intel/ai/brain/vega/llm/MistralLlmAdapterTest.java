@@ -49,7 +49,7 @@ class MistralLlmAdapterTest {
         assertEquals("any", json.get("tool_choice").getAsString());
         assertEquals(PromptCacheProfile.COMMANDER.cacheKey(), json.get("prompt_cache_key").getAsString());
         assertFalse(json.has("response_format"), "tool-calling must not use legacy JSON mode");
-        assertTrue(json.has("model"));
+        assertEquals("ministral-8b-2512", json.get("model").getAsString());
 
         JsonObject function = json.getAsJsonArray("tools").get(0).getAsJsonObject().getAsJsonObject("function");
         assertEquals("speak", function.get("name").getAsString());
