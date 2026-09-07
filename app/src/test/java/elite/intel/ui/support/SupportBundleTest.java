@@ -38,6 +38,50 @@ class SupportBundleTest {
     }
 
     @Test
+    void carriesTheMicrophoneReportWhenOneIsSupplied(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.1.0", "log", null, null, null, () -> "Verdict: all good"));
+
+        assertEquals("Verdict: all good", unzip(zip).get(SupportBundle.MIC_DIAGNOSTICS_ENTRY));
+        assertTrue(result.included().contains(SupportBundle.MIC_DIAGNOSTICS_ENTRY));
+    }
+
+    @Test
+    void aMicrophoneReportThatThrowsCostsOnlyItself(@TempDir Path tmp) throws IOException {
+        Path journalDir = Files.createDirectory(tmp.resolve("journal"));
+        write(journalDir, "Journal.01.log", "journal line");
+        Path zip = tmp.resolve("bundle.zip");
+
+        // The machine whose audio subsystem throws on being enumerated is exactly the machine being asked
+        // about, so the bundle has to survive it and still carry the journal and the logs.
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.1.0", "log", null, journalDir, null,
+                        () -> {
+                            throw new IllegalStateException("no audio subsystem");
+                        }));
+
+        Map<String, String> entries = unzip(zip);
+        assertFalse(entries.containsKey(SupportBundle.MIC_DIAGNOSTICS_ENTRY));
+        assertTrue(entries.containsKey("Journal.01.log"), "one failed source must not cost the rest");
+        assertTrue(result.omitted().stream().anyMatch(line -> line.contains("no audio subsystem")));
+    }
+
+    @Test
+    void aCallerWithNoAudioPipelineIsNotAnIncompleteBundle(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.1.0", "log", null, null, null));
+
+        assertFalse(result.included().contains(SupportBundle.MIC_DIAGNOSTICS_ENTRY));
+        // Silent, like any legitimately absent source: reporting it would make every bundle from a caller
+        // that has no microphone to ask read as a broken one.
+        assertTrue(result.omitted().stream().noneMatch(line -> line.startsWith("microphone diagnostics")));
+    }
+
+    @Test
     void collectsEverySource(@TempDir Path tmp) throws IOException {
         Path logs = Files.createDirectory(tmp.resolve("logs"));
         Path journalDir = Files.createDirectory(tmp.resolve("journal"));

@@ -122,7 +122,8 @@ public class ParakeetSTTImpl implements EarsInterface {
 
         Double high = systemSession.getRmsThresholdHigh();
         Double low = systemSession.getRmsThresholdLow();
-        if (high == 0 || low == 0) {
+        boolean calibrationWasStored = high != 0 && low != 0;
+        if (!calibrationWasStored) {
             RmsTupple<Double, Double> cal = AudioCalibrator.calibrateRMS(format, inputMixerInfo);
             this.RMS_THRESHOLD_HIGH = cal.getRmsHigh();
             this.NOISE_FLOOR = cal.getRmsLow();
@@ -132,6 +133,15 @@ public class ParakeetSTTImpl implements EarsInterface {
         }
         // Derive the gate-close level from the persisted (floor, open) pair.
         this.RMS_THRESHOLD_LOW = NOISE_FLOOR + (RMS_THRESHOLD_HIGH - NOISE_FLOOR) * GATE_CLOSE_FRACTION;
+
+        // Handed over here rather than re-derived when a support bundle is written: probing the audio system
+        // again would answer for whatever it reports at that moment, which is not necessarily what this
+        // capture is running on. See MicLevelRecorder.
+        MicLevelRecorder.getInstance().captureStarted(MicLevelRecorder.describeCapture(
+                systemSession.getAudioInputDevice(),
+                inputMixerInfo == null ? null : inputMixerInfo.getName(),
+                captureFormat, bufferSize,
+                NOISE_FLOOR, RMS_THRESHOLD_HIGH, RMS_THRESHOLD_LOW, calibrationWasStored));
 
         recognizer = buildRecognizer();
         log.info("Parakeet recognizer loaded from {}", AppPaths.getParakeetModelDir());
@@ -173,6 +183,7 @@ public class ParakeetSTTImpl implements EarsInterface {
             recognizer.release();
             recognizer = null;
         }
+        MicLevelRecorder.getInstance().captureStopped();
         isStopping.set(false);
         GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputDisabled")));
     }
