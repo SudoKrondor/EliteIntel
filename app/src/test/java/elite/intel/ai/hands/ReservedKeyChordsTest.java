@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -166,5 +167,26 @@ class ReservedKeyChordsTest {
                         && c.modifier() != null
                         && ("Key_LeftAlt".equals(c.modifier().key()) || "Key_RightAlt".equals(c.modifier().key())));
         assertFalse(hasAltF4, "Auto-fix pool must not contain Alt+F4");
+    }
+
+    @Test
+    void eachFoundBindingCarriesTheRuleThatDecidesTheFix() {
+        Map<String, KeyBindingsParser.KeyBinding> bindings = new LinkedHashMap<>();
+        bindings.put("Pause", binding("Key_P"));
+        bindings.put("EjectAllCargo", binding("Key_P", "Key_LeftControl"));
+        bindings.put("CloseWindow", binding("Key_F4", "Key_LeftAlt"));
+
+        Map<String, ReservedKeyChords.Rule> byAction = ReservedKeyChords.scan(bindings).stream()
+                .collect(Collectors.toMap(
+                        ReservedKeyChords.ReservedBinding::action, ReservedKeyChords.ReservedBinding::rule));
+
+        // The two are fixed differently: one clears the game menu, the other moves the control.
+        assertEquals(ReservedKeyChords.Rule.GAME_MENU, byAction.get("EjectAllCargo"));
+        assertEquals(ReservedKeyChords.Rule.OS_CLAIMED, byAction.get("CloseWindow"));
+        assertNotEquals(
+                ReservedKeyChords.Rule.GAME_MENU.remedy(), ReservedKeyChords.Rule.OS_CLAIMED.remedy());
+        for (ReservedKeyChords.Rule rule : ReservedKeyChords.Rule.values()) {
+            assertFalse(rule.remedy().isBlank(), rule + " has no remedy for the log line");
+        }
     }
 }

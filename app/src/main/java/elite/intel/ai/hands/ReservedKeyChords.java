@@ -59,6 +59,40 @@ public final class ReservedKeyChords {
             "Key_F7", "Key_F8", "Key_F9", "Key_F10", "Key_F11", "Key_F12");
 
     /**
+     * Which of the two rules claimed this chord, and with it what the commander has to do about it.
+     * <p>
+     * The remedies are not interchangeable, which is why the rule is carried rather than inferred from the
+     * chord: the game-menu rule is fixed by clearing one control the commander gets nothing from, and the
+     * operating-system rules are fixed by moving the offending control to another key. Telling a commander
+     * with four controls on the menu key to rebind all four is four times the work and leaves the key still
+     * spent - and telling one with Alt+F4 to clear their game menu does nothing at all.
+     */
+    public enum Rule {
+        /**
+         * The key the commander has on {@code Pause}; cleared, not worked around.
+         */
+        GAME_MENU("the fix is to clear the game menu binding in Elite's controls - Escape opens that menu anyway"),
+        /**
+         * Claimed by the OS before the game sees it; the control has to move.
+         */
+        OS_CLAIMED("the fix is to bind that control to a different key in Elite's controls");
+
+        private final String remedy;
+
+        Rule(String remedy) {
+            this.remedy = remedy;
+        }
+
+        /**
+         * What to do about it, as a sentence fragment for the log line and the diagnostics bundle. The
+         * spoken warning says the same thing in the commander's own language and does not use this.
+         */
+        public String remedy() {
+            return remedy;
+        }
+    }
+
+    /**
      * One control already bound to a reserved key or chord in the commander's file.
      *
      * @param action the Elite action name ({@code QuickCommsPanel}, ...)
@@ -66,8 +100,17 @@ public final class ReservedKeyChords {
      * @param reason what that chord does instead of - or as well as - the control, as a sentence fragment
      *               completing "&lt;control&gt; is on a chord that ..."; carried on the record because only
      *               the scan knows which of the two rules matched, and they are not interchangeable
+     * @param rule   which rule matched, which is what decides the remedy - see {@link Rule}
      */
-    public record ReservedBinding(String action, Set<String> chord, String reason) {
+    public record ReservedBinding(String action, Set<String> chord, String reason, Rule rule) {
+    }
+
+    /**
+     * One matched rule and the reason text that goes with it. Internal to this class: {@link #scan} needs
+     * both, while every other caller only asks whether a chord is free, so the public shape stays a nullable
+     * reason string.
+     */
+    record Match(Rule rule, String reason) {
     }
 
     private ReservedKeyChords() {
@@ -141,14 +184,14 @@ public final class ReservedKeyChords {
                 continue; // unbound, or bound only to a device we cannot press
             }
             List<String> modifiers = binding.modifiers == null ? List.of() : Arrays.asList(binding.modifiers);
-            String reason = reason(binding.key, modifiers, menuKeys);
-            if (reason == null) {
+            Match match = match(binding.key, modifiers, menuKeys, IS_LINUX);
+            if (match == null) {
                 continue;
             }
             Set<String> chord = new LinkedHashSet<>();
             chord.add(binding.key);
             chord.addAll(modifiers);
-            found.add(new ReservedBinding(entry.getKey(), chord, reason));
+            found.add(new ReservedBinding(entry.getKey(), chord, match.reason(), match.rule()));
         }
         return List.copyOf(found);
     }
@@ -196,17 +239,27 @@ public final class ReservedKeyChords {
      * OS passed explicitly so the platform-specific rules are deterministically testable.
      */
     static String reason(String mainKey, Collection<String> modifierKeys, Collection<String> gameMenuKeys, boolean linux) {
+        Match match = match(mainKey, modifierKeys, gameMenuKeys, linux);
+        return match == null ? null : match.reason();
+    }
+
+    /**
+     * The matched rule and its reason, or {@code null} when the chord is free to assign. The single place
+     * the rules are evaluated; {@link #reason} is the view of it that callers who only need the text use.
+     */
+    static Match match(String mainKey, Collection<String> modifierKeys, Collection<String> gameMenuKeys, boolean linux) {
         Set<String> keys = keyset(mainKey, modifierKeys);
         boolean hasAlt = keys.stream().anyMatch(ALT_KEYS::contains);
         if (hasAlt && keys.contains("Key_F4")) {
-            return "closes the game window";
+            return new Match(Rule.OS_CLAIMED, "closes the game window");
         }
         if (isReservedKeyset(keys, linux)) {
-            return "switches to a virtual terminal and leaves the game session";
+            return new Match(Rule.OS_CLAIMED, "switches to a virtual terminal and leaves the game session");
         }
         if (mainKey != null && gameMenuKeys != null && gameMenuKeys.contains(mainKey)) {
             // Elite matches the game-menu key on the key alone, so the modifiers on this chord change nothing.
-            return "is the key the game menu is on, so pressing it pauses the game and opens the options screen";
+            return new Match(Rule.GAME_MENU,
+                    "is the key the game menu is on, so pressing it pauses the game and opens the options screen");
         }
         return null;
     }
