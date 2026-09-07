@@ -22,6 +22,7 @@ public class LoadGameEventSubscriber {
     @Subscribe
     public void onEvent(LoadGameEvent event) {
         Thread.ofVirtual().start(() -> {
+            playerSession.clearShipScans();
             String alternativeName = trimToNull(playerSession.getAlternativeName());
             playerSession.setPlayerName(alternativeName != null ? alternativeName : event.getCommander());
             playerSession.setInGameName(event.getCommander());
