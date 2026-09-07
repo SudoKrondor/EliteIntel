@@ -84,6 +84,10 @@ public class PlayerSession {
         return shipScans.get(key);
     }
 
+    public void removeShipScan(String key) {
+        shipScans.remove(key);
+    }
+
 
     public void addBountyReward(long reward) {
         Database.withDao(PlayerDao.class, dao -> {

@@ -26,6 +26,9 @@ public interface ShipScansDao {
     @SqlQuery("SELECT scan FROM ship_scans WHERE key = :key")
     String get(@Bind("key") String key);
 
+    @SqlUpdate("DELETE FROM ship_scans WHERE key = :key")
+    void remove(@Bind("key") String key);
+
     @SqlUpdate("DELETE FROM ship_scans")
     void clear();
 

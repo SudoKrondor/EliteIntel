@@ -22,7 +22,9 @@ public class BountyEventSubscriber {
     @Subscribe
     public void onBountyEvent(BountyEvent event) {
         Thread.ofVirtual().start(() -> {
-            playerSession.clearShipScans();
+            ShipScanIdentity.fromRaw(
+                    event.getPilotName(), event.getTarget(), event.getVictimFaction())
+                    .ifPresent(identity -> playerSession.removeShipScan(identity.key()));
 
             BountyDto sessionData = new BountyDto();
             sessionData.setPilotName(event.getPilotName());

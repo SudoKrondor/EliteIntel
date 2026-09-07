@@ -1,16 +1,23 @@
 package elite.intel.junit.gameapi.journal.subscribers;
 
+import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.BountyEvent;
+import elite.intel.gameapi.journal.events.ShipTargetedEvent;
 import elite.intel.gameapi.journal.events.dto.BountyDto;
 import elite.intel.gameapi.journal.subscribers.BountyEventSubscriber;
+import elite.intel.gameapi.journal.subscribers.ShipTargetedEventSubscriber;
 import elite.intel.session.PlayerSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BooleanSupplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,6 +70,80 @@ class BountyEventSubscriberTest {
         assertEquals(2, session.getBounties().size());
     }
 
+    @Test
+    void bountyForDifferentTargetDoesNotResetCompletedScanAnnouncement() throws InterruptedException {
+        session.clearShipScans();
+        ShipTargetedEventSubscriber targetSubscriber = new ShipTargetedEventSubscriber();
+        List<String> announcements = new CopyOnWriteArrayList<>();
+        Object recorder = new Object() {
+            @Subscribe
+            public void onAnnouncement(MissionCriticalAnnouncementEvent announcement) {
+                announcements.add(announcement.getText());
+            }
+        };
+        GameEventBus.register(recorder);
+
+        try {
+            ShipTargetedEvent targetA = shipTargeted(
+                    "$Pirate_Alpha;", "Pirate Alpha", "sidewinder", "Sidewinder", "Gang A");
+            targetSubscriber.onShipTargetedEvent(targetA);
+            assertEquals(1, announcements.size(), "the completed scan should announce target A");
+            String targetAAnnouncement = announcements.getFirst();
+
+            subscriber.onBountyEvent(event(
+                    "$Pirate_Beta;", "cobra", "Gang B", 10_000L, "Empire", 10_000L));
+            awaitTrue(() -> announcements.size() >= 2);
+
+            targetSubscriber.onShipTargetedEvent(targetA);
+
+            long targetAAnnouncements = announcements.stream()
+                    .filter(targetAAnnouncement::equals)
+                    .count();
+            assertEquals(1L, targetAAnnouncements,
+                    "an unrelated bounty must not make a completed scan announce again: " + announcements);
+        } finally {
+            GameEventBus.unregister(recorder);
+            session.clearShipScans();
+        }
+    }
+
+    @Test
+    void bountyForSameTargetResetsOnlyThatCompletedScanAnnouncement() throws InterruptedException {
+        session.clearShipScans();
+        ShipTargetedEventSubscriber targetSubscriber = new ShipTargetedEventSubscriber();
+        List<String> announcements = new CopyOnWriteArrayList<>();
+        Object recorder = new Object() {
+            @Subscribe
+            public void onAnnouncement(MissionCriticalAnnouncementEvent announcement) {
+                announcements.add(announcement.getText());
+            }
+        };
+        GameEventBus.register(recorder);
+
+        try {
+            ShipTargetedEvent targetA = shipTargeted(
+                    "$Pirate_Alpha;", "Pirate Alpha", "sidewinder", "Sidewinder", "Gang A");
+            targetSubscriber.onShipTargetedEvent(targetA);
+            assertEquals(1, announcements.size(), "the completed scan should announce target A");
+            String targetAAnnouncement = announcements.getFirst();
+
+            subscriber.onBountyEvent(event(
+                    "$Pirate_Alpha;", "sidewinder", "Gang A", 12_000L, "Federation", 12_000L));
+            awaitTrue(() -> announcements.size() >= 2);
+
+            targetSubscriber.onShipTargetedEvent(targetA);
+
+            long targetAAnnouncements = announcements.stream()
+                    .filter(targetAAnnouncement::equals)
+                    .count();
+            assertEquals(2L, targetAAnnouncements,
+                    "destroying target A must make a later target A scan announce again: " + announcements);
+        } finally {
+            GameEventBus.unregister(recorder);
+            session.clearShipScans();
+        }
+    }
+
     private static BountyEvent event(String pilotName, String target, String victimFaction,
                                      long totalReward, String rewardFaction, long rewardAmount) {
         JsonObject j = new JsonObject();
@@ -81,6 +162,26 @@ class BountyEventSubscriberTest {
         j.add("Rewards", rewards);
 
         return new BountyEvent(j);
+    }
+
+    private static ShipTargetedEvent shipTargeted(String pilotName, String localizedPilotName,
+                                                   String ship, String localizedShip, String faction) {
+        JsonObject j = new JsonObject();
+        j.addProperty("timestamp", Instant.now().toString());
+        j.addProperty("event", "ShipTargeted");
+        j.addProperty("TargetLocked", true);
+        j.addProperty("Ship", ship);
+        j.addProperty("Ship_Localised", localizedShip);
+        j.addProperty("ScanStage", 3);
+        j.addProperty("PilotName", pilotName);
+        j.addProperty("PilotName_Localised", localizedPilotName);
+        j.addProperty("PilotRank", "Competent");
+        j.addProperty("ShieldHealth", 100);
+        j.addProperty("HullHealth", 100);
+        j.addProperty("LegalStatus", "Wanted");
+        j.addProperty("Faction", faction);
+        j.addProperty("Bounty", 12_000);
+        return new ShipTargetedEvent(j);
     }
 
     private static void awaitTrue(BooleanSupplier condition) throws InterruptedException {

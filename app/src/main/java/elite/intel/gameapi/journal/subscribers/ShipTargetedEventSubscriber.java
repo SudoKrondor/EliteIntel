@@ -5,7 +5,6 @@ import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.journal.events.ShipTargetedEvent;
 import elite.intel.session.PlayerSession;
-import elite.intel.util.Md5Utils;
 import elite.intel.util.Ranks;
 import elite.intel.util.TTSFriendlyNumberConverter;
 import org.apache.logging.log4j.LogManager;
@@ -70,11 +69,14 @@ public class ShipTargetedEventSubscriber {
                 info.append(' ').append(localizedEvent("event.target.hull", String.format("%.0f", hullHealth)));
             }
 
-            String data = buildCanonicalShipString(event);
-            String key = Md5Utils.generateMd5(data);
+            ShipScanIdentity identity = ShipScanIdentity.fromRaw(
+                    event.getPilotName(), event.getShip(), event.getFaction()).orElse(null);
+            if (identity == null) return;
+
+            String key = identity.key();
             if (playerSession.getShipScan(key) == null || playerSession.getShipScan(key).isEmpty()) {
                 //new scan
-                playerSession.putShipScan(key, data);
+                playerSession.putShipScan(key, identity.preimage());
                 EventNarrator.critical(info.toString());
             }
         }
@@ -91,15 +93,6 @@ public class ShipTargetedEventSubscriber {
         int rankNumber = PILOT_COMBAT_RANKS.indexOf(pilotRank.trim());
         if (rankNumber < 0) return null;
         return Ranks.getCombatRankMap().get(rankNumber);
-    }
-
-
-    private String buildCanonicalShipString(ShipTargetedEvent event) {
-        String pilot = event.getPilotNameLocalised();
-        String shipType = event.getShipLocalised();
-        String faction = event.getFaction();
-        String legalStatus = event.getLegalStatus();
-        return pilot + "|" + shipType + "|" + faction + "|" + legalStatus;
     }
 
     private String isMissionTargetOrNull(ShipTargetedEvent event) {

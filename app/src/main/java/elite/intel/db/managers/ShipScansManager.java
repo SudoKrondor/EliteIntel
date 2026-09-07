@@ -29,6 +29,13 @@ public class ShipScansManager {
         return Database.withDao(ShipScansDao.class, dao -> dao.get(key));
     }
 
+    public void remove(String key) {
+        Database.withDao(ShipScansDao.class, dao -> {
+            dao.remove(key);
+            return null;
+        });
+    }
+
     public void clear() {
         Database.withDao(ShipScansDao.class, dao ->{
             dao.clear();
