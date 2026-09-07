@@ -12,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static elite.intel.util.StringUtls.localizedEvent;
@@ -69,16 +70,15 @@ public class ShipTargetedEventSubscriber {
                 info.append(' ').append(localizedEvent("event.target.hull", String.format("%.0f", hullHealth)));
             }
 
-            ShipScanIdentity identity = ShipScanIdentity.fromRaw(
-                    event.getPilotName(), event.getShip(), event.getFaction()).orElse(null);
-            if (identity == null) return;
-
-            String key = identity.key();
-            if (playerSession.getShipScan(key) == null || playerSession.getShipScan(key).isEmpty()) {
-                //new scan
-                playerSession.putShipScan(key, identity.preimage());
-                EventNarrator.critical(info.toString());
+            Optional<ShipScanIdentity> identity = ShipScanIdentity.fromRaw(
+                    event.getPilotName(), event.getShip(), event.getFaction());
+            if (identity.isPresent()) {
+                ShipScanIdentity scanIdentity = identity.orElseThrow();
+                String existingScan = playerSession.getShipScan(scanIdentity.key());
+                if (existingScan != null && !existingScan.isEmpty()) return;
+                playerSession.putShipScan(scanIdentity.key(), scanIdentity.preimage());
             }
+            EventNarrator.critical(info.toString());
         }
     }
 
