@@ -20,11 +20,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ShipScanLifecycleTest {
 
@@ -34,6 +30,7 @@ class ShipScanLifecycleTest {
     private static final String PILOT_B = "$Pirate_Beta;";
     private static final String SHIP_B = "cobra";
     private static final String FACTION_B = "Gang B";
+    private static final String LOAD_GAME_COMMANDER = "CMDR Scan Reset";
 
     private final PlayerSession session = PlayerSession.getInstance();
     private final ShipTargetedEventSubscriber targetSubscriber = new ShipTargetedEventSubscriber();
@@ -140,6 +137,7 @@ class ShipScanLifecycleTest {
         awaitTrue(() -> session.getShipScan(legacyKey) == null,
                 "LoadGame did not clear the prior session's ship-scan cache");
         assertNull(session.getShipScan(legacyKey));
+        awaitLoadGameSessionWrites();
     }
 
     private void rememberTargetAnnouncement() {
@@ -156,6 +154,21 @@ class ShipScanLifecycleTest {
         // the virtual-thread work from leaking announcements into the next test's recorder.
         assertTrue(bountyNarrated.await(2, TimeUnit.SECONDS),
                 "the bounty subscriber's virtual thread did not finish");
+    }
+
+    /**
+     * Waits out the session writes that follow the scan clear.
+     * <p>
+     * The clear is the FIRST thing {@code LoadGameEventSubscriber}'s virtual thread does, so the assertion
+     * above is satisfied while that same unjoined thread is still writing the commander's name and ship into
+     * the process-wide {@link PlayerSession} and its shared database. Returning there would leak those writes
+     * into whichever test runs next, which is the failure mode {@code app/build.gradle} documents for the
+     * quarantined subscriber tests - and this class deliberately is not quarantined. The in-game name is the
+     * last of those writes with a getter to wait on.
+     */
+    private void awaitLoadGameSessionWrites() throws InterruptedException {
+        awaitTrue(() -> LOAD_GAME_COMMANDER.equals(session.getInGameName()),
+                "the LoadGame subscriber's virtual thread did not finish its session writes");
     }
 
     private long targetAnnouncementCount() {
@@ -202,7 +215,7 @@ class ShipScanLifecycleTest {
     private static LoadGameEvent loadGame() {
         JsonObject json = baseEvent("LoadGame");
         json.addProperty("FID", "F1234567");
-        json.addProperty("Commander", "CMDR Scan Reset");
+        json.addProperty("Commander", LOAD_GAME_COMMANDER);
         json.addProperty("Ship", "sidewinder");
         json.addProperty("ShipID", 1);
         json.addProperty("ShipName", "Test Ship");

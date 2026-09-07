@@ -12,7 +12,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import static elite.intel.util.StringUtls.localizedEvent;
@@ -70,13 +69,23 @@ public class ShipTargetedEventSubscriber {
                 info.append(' ').append(localizedEvent("event.target.hull", String.format("%.0f", hullHealth)));
             }
 
-            Optional<ShipScanIdentity> identity = ShipScanIdentity.fromRaw(
-                    event.getPilotName(), event.getShip(), event.getFaction());
-            if (identity.isPresent()) {
-                ShipScanIdentity scanIdentity = identity.orElseThrow();
-                String existingScan = playerSession.getShipScan(scanIdentity.key());
+            // WHY: the dedupe is an optimisation on top of the callout, never a gate on it. A contact whose
+            // raw identity is incomplete cannot be keyed, so it is announced every time rather than silenced:
+            // hearing the same contact twice costs the commander a repeated sentence, missing it once costs
+            // them the contact. A guard rather than a routine path - a real journal of 2132 events held no
+            // stage-3 Wanted scan missing any of the three components.
+            ShipScanIdentity identity = ShipScanIdentity.fromRaw(
+                    event.getPilotName(), event.getShip(), event.getFaction()).orElse(null);
+            if (identity == null) {
+                // Logged like the eviction miss in BountyEventSubscriber, so both ends of the identity
+                // contract report the same way when the journal does not carry what it needs.
+                log.debug("Ship-scan dedupe skipped for ShipTargeted; incomplete raw identity:"
+                                + " PilotName={}, Ship={}, Faction={}",
+                        event.getPilotName(), event.getShip(), event.getFaction());
+            } else {
+                String existingScan = playerSession.getShipScan(identity.key());
                 if (existingScan != null && !existingScan.isEmpty()) return;
-                playerSession.putShipScan(scanIdentity.key(), scanIdentity.preimage());
+                playerSession.putShipScan(identity.key(), identity.preimage());
             }
             EventNarrator.critical(info.toString());
         }
