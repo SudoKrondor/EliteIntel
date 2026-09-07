@@ -471,6 +471,7 @@ public class BindingProfilePanel extends JPanel {
         appendReason(sb, plan, MissingBindingAutoAssigner.SkipReason.NO_FREE_KEY, "bindings.autofix.skipped.noFreeKey");
         appendReason(sb, plan, MissingBindingAutoAssigner.SkipReason.NO_EDITABLE_SLOT, "bindings.autofix.skipped.notEditable");
         appendReason(sb, plan, MissingBindingAutoAssigner.SkipReason.GAME_MENU_LEFT_UNBOUND, "bindings.autofix.skipped.gameMenu");
+        appendReason(sb, plan, MissingBindingAutoAssigner.SkipReason.LEFT_UNBOUND_ON_PURPOSE, "bindings.autofix.skipped.onPurpose");
 
         JOptionPane.showMessageDialog(
                 this, sb.toString(), getText("bindings.autofix.result.title"), JOptionPane.INFORMATION_MESSAGE);
@@ -513,6 +514,7 @@ public class BindingProfilePanel extends JPanel {
             case NO_FREE_KEY -> "bindings.autofix.single.skipped.noFreeKey";
             case NO_EDITABLE_SLOT -> "bindings.autofix.single.skipped.notEditable";
             case GAME_MENU_LEFT_UNBOUND -> "bindings.autofix.single.skipped.gameMenu";
+            case LEFT_UNBOUND_ON_PURPOSE -> "bindings.autofix.single.skipped.onPurpose";
         };
         JOptionPane.showMessageDialog(
                 this, getText(messageKey), getText("bindings.autofix.result.title"), JOptionPane.WARNING_MESSAGE);

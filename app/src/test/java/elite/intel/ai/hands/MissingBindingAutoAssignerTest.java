@@ -428,6 +428,39 @@ class MissingBindingAutoAssignerTest {
     }
 
     @Test
+    void ejectAllCargoIsSkippedRatherThanFilled() throws Exception {
+        Map<String, ReadOnlyBindingSlots> slots = parse("""
+                <Root>
+                    <EjectAllCargo>
+                        <Primary Device="{NoDevice}" Key="" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </EjectAllCargo>
+                    <EjectAllCargo_Buggy>
+                        <Primary Device="{NoDevice}" Key="" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </EjectAllCargo_Buggy>
+                    <ToggleCargoScoop>
+                        <Primary Device="{NoDevice}" Key="" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </ToggleCargoScoop>
+                </Root>
+                """);
+
+        Plan plan = assigner.planAll(slots);
+
+        // Emptying the hold into space cannot be undone, and no built-in command presses it.
+        assertEquals(List.of("ToggleCargoScoop"), plan.edits().stream().map(PlannedEdit::bindingId).toList());
+        assertEquals(List.of(
+                        new SkippedBinding("EjectAllCargo", SkipReason.LEFT_UNBOUND_ON_PURPOSE),
+                        new SkippedBinding("EjectAllCargo_Buggy", SkipReason.LEFT_UNBOUND_ON_PURPOSE)),
+                plan.skipped());
+
+        // And the same answer through the per-row button, which is where the commander asks for it.
+        assertEquals(List.of(new SkippedBinding("EjectAllCargo", SkipReason.LEFT_UNBOUND_ON_PURPOSE)),
+                assigner.planOne("EjectAllCargo", slots).skipped());
+    }
+
+    @Test
     void bothGameMenuSlotsAreTakenOutOfThePool() throws Exception {
         // Only the Primary reaches the executable map, but both keys open the menu.
         StringBuilder xml = new StringBuilder("""
