@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class KeyBindCheck {
 
@@ -87,16 +88,11 @@ public class KeyBindCheck {
         // behaves oddly, only that the game keeps pausing. See ReservedKeyChords.
         List<ReservedKeyChords.ReservedBinding> reserved = monitor.reservedChordBindings();
         if (!reserved.isEmpty()) {
-            List<String> reservedKeys = BindingChordSpeech.distinctChords(
-                    reserved.stream().map(ReservedKeyChords.ReservedBinding::chord).toList());
-            GameEventBus.publish(new AiVoxResponseEvent(
-                    StringUtls.localizedSpeech("speech.bindingReservedChord",
-                            reservedKeys.size(), String.join(", ", reservedKeys))
-            ));
+            speakReservedWarnings(reserved, ReservedKeyChords.gameMenuKeys(monitor.getBindings()));
             reserved.forEach(r -> {
                 String line = "[" + BindingChordSpeech.describe(r.chord()) + "] "
                         + StringUtls.humanizeBindingName(r.action())
-                        + " is on a chord that " + r.reason();
+                        + " is on a chord that " + r.reason() + "; " + r.rule().remedy();
                 UiBus.publish(new AppLogEvent("Reserved binding: " + line));
                 log.error("Reserved chord in use: {}", line);
             });
@@ -135,6 +131,39 @@ public class KeyBindCheck {
                 UiBus.publish(new AppLogEvent("Binding conflicts, these pairs share a key ("
                         + plainOverlaps.size() + "): " + String.join(", ", plainOverlaps)));
             }
+        }
+    }
+
+    /**
+     * Speaks one warning per rule the file broke, because the two rules are fixed differently and a
+     * warning that does not name the fix sends the commander looking for one.
+     * <p>
+     * The game-menu case names the key their own {@code Pause} sits on and tells them to clear that one
+     * control - not to rebind everything sharing the key, which is more work and leaves the key spent. The
+     * operating-system case tells them to move the control instead, which is the only thing that helps
+     * there. Both lines are spoken when a file manages both, which no field report has yet produced.
+     */
+    private void speakReservedWarnings(
+            List<ReservedKeyChords.ReservedBinding> reserved,
+            Set<String> gameMenuKeys
+    ) {
+        for (ReservedKeyChords.Rule rule : ReservedKeyChords.Rule.values()) {
+            List<ReservedKeyChords.ReservedBinding> matching =
+                    reserved.stream().filter(r -> r.rule() == rule).toList();
+            if (matching.isEmpty()) {
+                continue;
+            }
+            List<String> chords = BindingChordSpeech.distinctChords(
+                    matching.stream().map(ReservedKeyChords.ReservedBinding::chord).toList());
+            String spokenChords = String.join(", ", chords);
+            GameEventBus.publish(new AiVoxResponseEvent(switch (rule) {
+                // The menu key is read back to them: "your game menu is on P" is what makes the rest of
+                // the sentence - and the fix - make sense to a commander who never bound these on purpose.
+                case GAME_MENU -> StringUtls.localizedSpeech("speech.bindingReservedGameMenu",
+                        matching.size(), BindingChordSpeech.describe(gameMenuKeys), spokenChords);
+                case OS_CLAIMED -> StringUtls.localizedSpeech("speech.bindingReservedOsChord",
+                        matching.size(), spokenChords);
+            }));
         }
     }
 }

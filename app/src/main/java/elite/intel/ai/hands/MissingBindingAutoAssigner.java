@@ -26,6 +26,7 @@ import java.util.*;
  *       optionally with modifiers - never {@code Left Alt} by itself.</li>
  *   <li><b>Never touch the game menu.</b> Elite's {@code Pause} control is left unbound, and whatever
  *       key a commander has put on it is taken out of the pool entirely - see {@link ReservedKeyChords}.</li>
+ *   <li><b>Never arm a control that throws the cargo away.</b> See {@link #LEFT_TO_THE_COMMANDER}.</li>
  * </ul>
  * <p>
  * Elite Dangerous gives each control exactly two slots, so a control with a device
@@ -55,8 +56,28 @@ public class MissingBindingAutoAssigner {
          * {@link ReservedKeyChords}. {@code Esc} already opens that menu, and a key put here stops
          * being usable for anything else, so this is the one unbound control we do not fill.
          */
-        GAME_MENU_LEFT_UNBOUND
+        GAME_MENU_LEFT_UNBOUND,
+        /**
+         * A control listed in {@link #LEFT_TO_THE_COMMANDER}: destructive enough that it is only
+         * ever bound deliberately, by hand.
+         */
+        LEFT_UNBOUND_ON_PURPOSE
     }
+
+    /**
+     * Controls this application will not hand a key to, however unbound they are.
+     * <p>
+     * Ejecting the cargo cannot be undone and cannot be done by halves: the hold empties into space,
+     * and on a full trade run that is the whole run. EliteIntel drives none of these - no built-in
+     * command presses them ({@code Bindings.GameCommand#isDrivenByApp} is false for both) - so a key
+     * assigned here buys the commander nothing and leaves an irreversible control sitting on a chord
+     * they never chose and will not remember. A commander who wants one binds it themselves, which is
+     * the point at which they have decided they want it.
+     * <p>
+     * Distinct from {@link SkipReason#GAME_MENU_LEFT_UNBOUND}, which is about a key being spent for
+     * nothing; this is about what the control does when it is pressed.
+     */
+    static final Set<String> LEFT_TO_THE_COMMANDER = Set.of("EjectAllCargo", "EjectAllCargo_Buggy");
 
     public record PlannedEdit(String bindingId, BindingSlotType slotType, String key, BindingModifier modifier) {
     }
@@ -125,6 +146,12 @@ public class MissingBindingAutoAssigner {
         // the Missing list is told why. See ReservedKeyChords.
         if (ReservedKeyChords.GAME_MENU_ACTION.equals(bindingId)) {
             skipped.add(new SkippedBinding(bindingId, SkipReason.GAME_MENU_LEFT_UNBOUND));
+            return;
+        }
+        // Reported as a skip for the same reason: the commander who runs auto-fix and still sees it in
+        // the Missing list is told why, rather than left thinking auto-fix missed one.
+        if (LEFT_TO_THE_COMMANDER.contains(bindingId)) {
+            skipped.add(new SkippedBinding(bindingId, SkipReason.LEFT_UNBOUND_ON_PURPOSE));
             return;
         }
         BindingSlotType slotType = chooseWritableSlot(binding);

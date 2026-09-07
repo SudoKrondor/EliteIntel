@@ -35,6 +35,39 @@ class MultiLingualTextProviderTest {
     }
 
     @Test
+    void reservedChordWarningsNameTheFixInEveryLanguage() {
+        for (Language language : Language.values()) {
+            // The game-menu line has to carry the menu key twice and the offending chords once; a broken
+            // choice sub-pattern or a bare apostrophe swallows one of them and the fix stops making sense.
+            String menuOne = assertDoesNotThrow(
+                    () -> MultiLingualTextProvider.getText(
+                            language, "speech.bindingReservedGameMenu", 1, "P", "Left Control plus P"),
+                    language + " game menu singular");
+            String menuMany = assertDoesNotThrow(
+                    () -> MultiLingualTextProvider.getText(
+                            language, "speech.bindingReservedGameMenu", 4, "P",
+                            "Left Alt plus P, Left Control plus P, Left Shift plus P, Right Shift plus P"),
+                    language + " game menu plural");
+            String osOne = assertDoesNotThrow(
+                    () -> MultiLingualTextProvider.getText(
+                            language, "speech.bindingReservedOsChord", 1, "Left Alt plus F4"),
+                    language + " os singular");
+            String osMany = assertDoesNotThrow(
+                    () -> MultiLingualTextProvider.getText(
+                            language, "speech.bindingReservedOsChord", 2, "Left Alt plus F4, Right Alt plus F4"),
+                    language + " os plural");
+
+            assertTrue(menuOne.contains("Left Control plus P"), language + " did not name the offending chord");
+            assertTrue(menuMany.contains("Right Shift plus P"), language + " did not name the offending chords");
+            assertTrue(osOne.contains("Left Alt plus F4"), language + " did not name the OS chord");
+            for (String rendered : new String[]{menuOne, menuMany, osOne, osMany}) {
+                assertFalse(rendered.contains("{"), language + " was not formatted");
+                assertFalse(rendered.contains("|"), language + " was split incorrectly");
+            }
+        }
+    }
+
+    @Test
     void blockingConflictWarningNamesTheKeysInBothNumbersInEveryLanguage() {
         for (Language language : Language.values()) {
             String one = assertDoesNotThrow(
