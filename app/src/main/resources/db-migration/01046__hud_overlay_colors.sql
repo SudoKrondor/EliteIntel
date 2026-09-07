@@ -1,0 +1,21 @@
+-- Commander-chosen text colours for the HUD overlay card.
+--
+-- The overlay has always drawn its title, row states and the three conversation lanes in a fixed
+-- palette compiled into the binary. Commanders asked to change them -- for colour vision, for a
+-- cockpit that already runs a non-default HUD tint, or simply for taste -- so the palette now
+-- travels over the overlay protocol like transparency and text size already do, and this column is
+-- where it lives between runs.
+--
+-- One TEXT column rather than a column per role: the palette is read and written whole, never a
+-- role at a time, and a new role would otherwise cost a migration of its own. The form is
+-- name=RRGGBB pairs joined by a semicolon, e.g. primary=FF7100 followed by radio=B78CD9.
+--
+-- Empty is the default and means "every role at its shipped colour". Only roles the commander
+-- actually changed are written, so a default retuned in a later release still reaches everyone who
+-- never overrode it, and the reset button in the settings dialog simply clears this column.
+--
+-- NOTE: no semicolon may appear inside these comments. Migrations are split on a semicolon at end
+-- of line before comments are stripped, so one here would cut the file mid-comment and hand SQLite
+-- a statement with no SQL in it.
+ALTER TABLE game_session
+    ADD COLUMN overlayColors TEXT NOT NULL DEFAULT '';

@@ -9,6 +9,8 @@ import elite.intel.ui.widget.HudSlider;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.util.EnumMap;
+import java.util.Map;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
@@ -53,6 +55,18 @@ public class HudOverlaySettingsDialog extends JDialog {
      */
     private static final int SCALE_COMMIT_MS = 200;
 
+    /**
+     * Colour swatch size. Wide enough to judge a tone rather than a speck, and
+     * short enough that two columns of four still fit the dialog's own width.
+     */
+    private static final int SWATCH_WIDTH = 46;
+    private static final int SWATCH_HEIGHT = 18;
+
+    /**
+     * Colour roles laid out in two columns, so eight of them cost four rows.
+     */
+    private static final int COLOR_COLUMNS = 2;
+
     private final NativeHudOverlay overlay;
 
     private HudComboBox<HudDisplayMode> displayCombo;
@@ -63,6 +77,8 @@ public class HudOverlaySettingsDialog extends JDialog {
     private HudSlider alphaSlider;
     private HudSlider scaleSlider;
     private Timer scaleCommit;
+    private final Map<HudOverlayColor, Swatch> swatches = new EnumMap<>(HudOverlayColor.class);
+    private JButton resetColors;
 
     public HudOverlaySettingsDialog(NativeHudOverlay overlay) {
         super((Frame) null, getText("overlay.settings.title"), false);
@@ -146,10 +162,134 @@ public class HudOverlaySettingsDialog extends JDialog {
         HudForms.addLabel(root, getText("overlay.settings.textSize"), gbc);
         HudForms.addField(root, scaleSlider, gbc, 1, 1.0);
 
+        // The colours themselves are applied live, like the sliders above, so this
+        // heading carries the one control that is not: a way back out of a palette
+        // the commander cannot read.
+        resetColors = AppTheme.makeButtonSubtle(getText("overlay.settings.color.reset"));
+        resetColors.setToolTipText(getText("overlay.settings.color.reset.tooltip"));
+        resetColors.addActionListener(e -> resetColors());
+        gbc.gridy++;
+        HudForms.addLabel(root, getText("overlay.settings.color"), gbc);
+        HudForms.addField(root, resetColors, gbc, 1, 1.0);
+
+        gbc.gridy++;
+        HudForms.addSpanComponent(root, colorGrid(), gbc);
+        showResetState();
+
         JButton close = AppTheme.makeButtonSubtle(getText("button.close"));
         close.addActionListener(e -> dispose());
         gbc.gridy++;
         HudForms.addField(root, close, gbc, 1, 1.0);
+    }
+
+    /**
+     * One swatch per colour role, in two columns.
+     * <p>
+     * Every role is offered, including the three conversation lanes, because the
+     * point of the whole control is a commander who cannot tell two of them apart
+     * - and which two that is, is not ours to guess.
+     */
+    private JPanel colorGrid() {
+        HudOverlayColor[] roles = HudOverlayColor.values();
+        JPanel grid = new JPanel(new GridLayout(
+                (roles.length + COLOR_COLUMNS - 1) / COLOR_COLUMNS, COLOR_COLUMNS,
+                HudPalette.HUD_GAP, HudPalette.HUD_GAP_TIGHT));
+        grid.setOpaque(false);
+        for (HudOverlayColor role : roles) grid.add(colorRow(role));
+        return grid;
+    }
+
+    private JPanel colorRow(HudOverlayColor role) {
+        Swatch swatch = new Swatch(overlay.getColor(role));
+        swatch.addActionListener(e -> chooseColor(role, swatch));
+        swatches.put(role, swatch);
+
+        // The shared field-label treatment (upper case, section 5.1), so these read
+        // as the same kind of label as the rows above them.
+        JLabel label = AppTheme.hudReadoutLabel(getText(role.labelKey()));
+
+        JPanel row = new JPanel(new BorderLayout(HudPalette.HUD_GAP_TIGHT, 0));
+        row.setOpaque(false);
+        row.add(swatch, BorderLayout.WEST);
+        row.add(label, BorderLayout.CENTER);
+        return row;
+    }
+
+    /**
+     * Applied on OK and not on every step of the chooser: unlike transparency,
+     * which is judged against the game behind it, a colour is judged against the
+     * swatch in front of the commander, and repainting the card for each drag of
+     * a hue slider is a write per pixel of travel.
+     */
+    private void chooseColor(HudOverlayColor role, Swatch swatch) {
+        Color chosen = AppTheme.showColorChooser(this, getText("overlay.settings.color.choose"), swatch.getColor());
+        if (chosen == null) return;
+        overlay.setColor(role, chosen);
+        swatch.setColor(overlay.getColor(role));
+        showResetState();
+    }
+
+    /**
+     * Reads every swatch back from the overlay rather than from the defaults, so
+     * this row says what is actually being drawn even if a role could not be set.
+     */
+    private void resetColors() {
+        overlay.resetColors();
+        swatches.forEach((role, swatch) -> swatch.setColor(overlay.getColor(role)));
+        showResetState();
+    }
+
+    /**
+     * Greys the reset control out while there is nothing to undo, so it says
+     * whether this palette is the shipped one - which the swatches alone cannot,
+     * a commander having no way to know a colour is the default by looking at it.
+     */
+    private void showResetState() {
+        resetColors.setEnabled(overlay.hasCustomColors());
+    }
+
+    /**
+     * A block of one colour, clickable.
+     * <p>
+     * A button so it is reachable by keyboard and announces itself as something
+     * to press, but painted rather than themed: the HUD button styling would
+     * cover the very thing the control exists to show.
+     */
+    private static final class Swatch extends JButton {
+
+        private Color color;
+
+        Swatch(Color color) {
+            this.color = color;
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setFocusPainted(false);
+            setPreferredSize(new Dimension(SWATCH_WIDTH, SWATCH_HEIGHT));
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
+
+        Color getColor() {
+            return color;
+        }
+
+        void setColor(Color color) {
+            this.color = color;
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setColor(color);
+            g2.fillRect(1, 1, getWidth() - 2, getHeight() - 2);
+            // Framed, because a swatch set to the dialog's own background would
+            // otherwise look like a missing control rather than a dark colour.
+            g2.setColor(hasFocus()
+                    ? HudPalette.HUD_COLOR_ROLE_INPUT_FOCUS
+                    : HudPalette.HUD_COLOR_ROLE_FRAME_BORDER);
+            g2.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
+            g2.dispose();
+        }
     }
 
     /**

@@ -48,7 +48,7 @@ public class KeyboardSettingsDialog extends JDialog {
         backgroundColorButton.setBackground(chosenBackgroundColor);
         backgroundColorButton.setOpaque(true);
         backgroundColorButton.addActionListener(e -> {
-            Color c = JColorChooser.showDialog(this, getText("inputMonitor.keyboard.chooseBackgroundColor"), chosenBackgroundColor);
+            Color c = AppTheme.showColorChooser(this, getText("inputMonitor.keyboard.chooseBackgroundColor"), chosenBackgroundColor);
             if (c != null) {
                 chosenBackgroundColor = c;
                 backgroundColorButton.setBackground(c);
@@ -63,7 +63,7 @@ public class KeyboardSettingsDialog extends JDialog {
         textColorButton.setBackground(chosenTextColor);
         textColorButton.setOpaque(true);
         textColorButton.addActionListener(e -> {
-            Color c = JColorChooser.showDialog(this, getText("inputMonitor.keyboard.chooseTextColor"), chosenTextColor);
+            Color c = AppTheme.showColorChooser(this, getText("inputMonitor.keyboard.chooseTextColor"), chosenTextColor);
             if (c != null) {
                 chosenTextColor = c;
                 textColorButton.setBackground(c);

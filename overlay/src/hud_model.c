@@ -27,6 +27,17 @@ Model model = {
     // being label-left / value-right before the lean can usefully go further.
     .tilt = 0.15,
     .tilt_width = 620,
+    // Indexed by ColorRole, so the order here is the order of that enum.
+    .palette = {
+        [HUD_COL_PRIMARY]  = HUD_RGB(HUD_COL_DEFAULT_PRIMARY),
+        [HUD_COL_SUCCESS]  = HUD_RGB(HUD_COL_DEFAULT_SUCCESS),
+        [HUD_COL_WARNING]  = HUD_RGB(HUD_COL_DEFAULT_WARNING),
+        [HUD_COL_DANGER]   = HUD_RGB(HUD_COL_DEFAULT_DANGER),
+        [HUD_COL_DISABLED] = HUD_RGB(HUD_COL_DEFAULT_DISABLED),
+        [HUD_COL_USER]     = HUD_RGB(HUD_COL_DEFAULT_USER),
+        [HUD_COL_AI]       = HUD_RGB(HUD_COL_DEFAULT_AI),
+        [HUD_COL_RADIO]    = HUD_RGB(HUD_COL_DEFAULT_RADIO),
+    },
 };
 
 /// Wire names for VrPosition, in enum order. The protocol carries the name
@@ -35,6 +46,16 @@ Model model = {
 static const char *const VR_POSITION_NAMES[] = {
     "top", "top_right", "right", "bottom_right",
     "bottom", "bottom_left", "left", "top_left",
+};
+
+/// Wire names for the palette roles, in ColorRole order. The CFG key is this
+/// name with a `col_` prefix, e.g. `col_radio=B78CD9`. Names rather than indices
+/// for the same reason as the positions above: the line stays readable in a log,
+/// and a role this binary does not know is ignored instead of landing on
+/// whichever slot happened to sit at that number.
+static const char *const HUD_COLOR_NAMES[HUD_COL_COUNT] = {
+    "primary", "success", "warning", "danger",
+    "disabled", "user", "ai", "radio",
 };
 
 // -- helpers -----------------------------------------------------------------
@@ -119,6 +140,28 @@ static VrPosition parse_vr_position(const char *value, VrPosition current) {
     return current;
 }
 
+/// Applies `col_<role>=RRGGBB`, quietly ignoring anything it cannot use.
+///
+/// A role this binary has never heard of, or six characters that are not hex,
+/// leaves the palette alone rather than drawing the card in whatever a partial
+/// parse produced - an unreadable HUD is worse than an unchanged one, and the
+/// commander cannot see this end of the pipe to know why.
+static void apply_color(const char *role, const char *value) {
+    unsigned int rgb;
+    char tail;
+    // The %c catches trailing junk: sscanf is happy to stop early, so "FF7100xx"
+    // would otherwise parse as FF7100 and a truncated "FF71" as 0xFF71.
+    if (strlen(value) != 6 || sscanf(value, "%6x%c", &rgb, &tail) != 1) return;
+
+    for (int i = 0; i < HUD_COL_COUNT; i++) {
+        if (strcmp(role, HUD_COLOR_NAMES[i])) continue;
+        model.palette[i].r = ((rgb >> 16) & 0xFF) / 255.0;
+        model.palette[i].g = ((rgb >> 8) & 0xFF) / 255.0;
+        model.palette[i].b = (rgb & 0xFF) / 255.0;
+        return;
+    }
+}
+
 static void apply_cfg(char *fields[], int n) {
     for (int i = 1; i < n; i++) {
         char *eq = strchr(fields[i], '=');
@@ -135,6 +178,7 @@ static void apply_cfg(char *fields[], int n) {
         // job while this is still an experiment. tilt=0 restores the flat card.
         else if (!strcmp(k, "tilt"))      model.tilt = atof(v);
         else if (!strcmp(k, "tiltwidth")) model.tilt_width = atoi(v);
+        else if (!strncmp(k, "col_", 4))  apply_color(k + 4, v);
     }
 }
 

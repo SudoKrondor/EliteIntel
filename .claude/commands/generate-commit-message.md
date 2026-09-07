@@ -1,5 +1,10 @@
 ---
 description: Draft a human-readable commit message describing what changed, written to commit-message.txt
+
+This file is for me to work with. I will copy and paste the parts where they need to go.
+
+The commit-message.txt will contain two parts. One will be pasted in to the commit message, the other will be used during the version bump tag to let users know what changes where introduced.
+
 argument-hint: "[ticket key e.g. KAN-XYZ] [--staged]"
 ---
 
@@ -46,14 +51,11 @@ Format:
 
 Example shape (illustrative, not a template to copy verbatim):
 
-# 4. Write instructions for testers
+# 4. Write update summary for users.
 
-This record is instructions for testers on what areas of the application require test for regression, changes or bug-fixes It should be written in a bullet form in plain, non-technical language. You do not need to include steps. Just list functionality to be tested in a bullet form. Format:
+This record is instructions Users in plain English explaining what functionality has been added/changed
 
 ```
-#Installers updated
----
-FOR TESTERS
 ---
 
 - Item 
@@ -62,9 +64,6 @@ FOR TESTERS
 - Item
 
 ---
-
-- [Linux](https://drive.google.com/file/d/1xLNPM8bOhpFs-mCFytTS8L4H7ZDyRc1z/view?usp=drive_link)
-- [Windows](https://drive.google.com/file/d/1DIpmKt2LhiFToAqZdUQ_CPbYsaMuttXF/view?usp=drive_link)
 ```
 # 5. Output
 

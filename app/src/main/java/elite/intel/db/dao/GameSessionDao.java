@@ -28,7 +28,8 @@ public interface GameSessionDao {
                                                              pushToTalkButtonIndex, sleepWake,
                                                              noiseReductionEnabled, noiseReductionStrength,
                                                              overlayAlpha, overlayFontScale, overlayWidth, overlayX, overlayY,
-                                                             overlayDisplayMode, overlayVrPosition, overlayVisible
+                                                             overlayDisplayMode, overlayVrPosition, overlayVisible,
+                                                             overlayColors
                                                 )
                                   VALUES (1, :kokoroVoice, :googleVoice,
                                                       :rmsThresholdHigh,
@@ -43,7 +44,8 @@ public interface GameSessionDao {
                                                       :pushToTalkButtonIndex, :sleepWake,
                                                       :noiseReductionEnabled, :noiseReductionStrength,
                                                       :overlayAlpha, :overlayFontScale, :overlayWidth, :overlayX, :overlayY,
-                                                      :overlayDisplayMode, :overlayVrPosition, :overlayVisible
+                                                      :overlayDisplayMode, :overlayVrPosition, :overlayVisible,
+                                                      :overlayColors
                                           )
             """)
     void save(@BindBean GameSessionDao.GameSession data);
@@ -95,6 +97,7 @@ public interface GameSessionDao {
             session.setOverlayDisplayMode(rs.getString("overlayDisplayMode"));
             session.setOverlayVrPosition(rs.getString("overlayVrPosition"));
             session.setOverlayVisible(rs.getBoolean("overlayVisible"));
+            session.setOverlayColors(rs.getString("overlayColors"));
             return session;
         }
     }
@@ -153,6 +156,11 @@ public interface GameSessionDao {
         private String overlayDisplayMode = "DESKTOP";
         private String overlayVrPosition = "BOTTOM";
         private boolean overlayVisible = false;
+        /**
+         * Commander-chosen overlay text colours as {@code name=RRGGBB} pairs, empty for "all shipped
+         * colours". Only overridden roles are stored - see {@link elite.intel.ui.overlay.HudOverlayColor}.
+         */
+        private String overlayColors = "";
 
 
         /**
@@ -446,6 +454,20 @@ public interface GameSessionDao {
 
         public void setOverlayVisible(boolean overlayVisible) {
             this.overlayVisible = overlayVisible;
+        }
+
+        /**
+         * The overlay palette overrides, as stored. Text, and parsed leniently, so a role written by a
+         * newer build cannot break an older one - it is dropped and the rest of the palette still applies.
+         */
+        public String getOverlayColors() {
+            return overlayColors;
+        }
+
+        public void setOverlayColors(String overlayColors) {
+            // NOT NULL DEFAULT '' in the schema, but a row read through a mapper that predates the
+            // column still hands back null, and the parser must not have to know that.
+            this.overlayColors = overlayColors == null ? "" : overlayColors;
         }
 
         public void setOverlayVrPosition(String overlayVrPosition) {

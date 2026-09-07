@@ -582,9 +582,12 @@ public class SystemSession {
      *                  rather than the enum so the session layer does not depend on the UI layer,
      *                  and so a value written by a newer build is something an older one can fall
      *                  back from rather than fail on
+     * @param colors    commander-chosen overlay text colours as stored, empty for the shipped palette.
+     *                  Text for the same reason as {@code displayMode}, and parsed leniently, so a role
+     *                  a newer build introduced costs an older one that role and not the whole palette
      */
     public record HudOverlayLayout(double alpha, double fontScale, int width, int x, int y,
-                                   String displayMode, String vrPosition) {
+                                   String displayMode, String vrPosition, String colors) {
     }
 
     public HudOverlayLayout getHudOverlayLayout() {
@@ -597,7 +600,8 @@ public class SystemSession {
                     session.getOverlayX(),
                     session.getOverlayY(),
                     session.getOverlayDisplayMode(),
-                    session.getOverlayVrPosition());
+                    session.getOverlayVrPosition(),
+                    session.getOverlayColors());
         });
     }
 
@@ -611,6 +615,7 @@ public class SystemSession {
             session.setOverlayY(layout.y());
             session.setOverlayDisplayMode(layout.displayMode());
             session.setOverlayVrPosition(layout.vrPosition());
+            session.setOverlayColors(layout.colors());
             dao.save(session);
             return null;
         });

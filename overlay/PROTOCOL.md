@@ -31,6 +31,15 @@ Configuration. Any subset, any order, at any time.
 | `x`,`y` | window position in screen pixels          |
 | `width` | window width in pixels; height follows content |
 | `vrpos` | where the card hangs in the headset: `top`, `top_right`, `right`, `bottom_right`, `bottom`, `bottom_left`, `left`, `top_left`. Ignored by the desktop shells; an unknown name leaves the card where it is |
+| `col_<role>` | text colour for one role, as `RRGGBB` — no `#`, no alpha. Roles: `primary`, `success`, `warning`, `danger`, `disabled`, `user`, `ai`, `radio`. An unknown role, or a value that is not six hex digits, leaves that colour as it was |
+
+The colours are the commander's, set in the overlay settings dialog, and the app sends **all eight every time
+** — there is no "back to default" verb, so a reset is an ordinary palette line carrying the shipped colours. Sending them one line at a time would work equally well; one line is used because a CFG line is read as at most 16 tab-separated fields and eight colours plus the verb is nine.
+
+The card's
+**background** is not in that list. Its colour is fixed in the binary and `alpha` is the control over it, so a card cannot be made opaque and bright enough to hide the cockpit behind it.
+
+An overlay built before colours existed ignores every `col_` key, exactly as it ignores any other key it does not know, and draws the palette it was compiled with. That is why adding them did not bump the protocol version.
 
 ```
 OBJ <title> <subtitle>

@@ -8,24 +8,20 @@
 #include <string.h>
 
 // -- palette (mirrors HudPalette roles; see ED_HUD_REFERENCE.md) -------------
-
-typedef struct { double r, g, b; } Rgb;
-
-static const Rgb COL_PRIMARY  = {1.00, 0.44, 0.00};
-static const Rgb COL_SUCCESS  = {0.31, 0.77, 0.42};
-static const Rgb COL_WARNING  = {1.00, 0.69, 0.00};
-static const Rgb COL_DANGER   = {0.85, 0.31, 0.31};
-static const Rgb COL_DISABLED = {0.43, 0.29, 0.16};
-static const Rgb COL_USER     = {0.31, 0.77, 0.42};
-static const Rgb COL_AI       = {0.45, 0.64, 0.71};
-// Radio traffic: somebody else on the channel, not the ship's own AI. Violet,
-// matched to COL_AI's brightness and saturation rather than picked by eye - all
-// three lanes sit near 0.61 relative luminance at ~0.36 saturation, so only the
-// hue tells them apart (~134, ~196, ~274 degrees). Mirrors
-// HUD_COLOR_ROLE_RADIO_TRANSMISSION_LOG_TEXT (0xB78CD9) in HudPalette.java.
-static const Rgb COL_RADIO    = {0.72, 0.55, 0.85};
-//static const Rgb COL_PANEL    = {0.06, 0.09, 0.13};
+//
+// Text colours are the commander's, not ours: they live in the model, are set by
+// `CFG col_<role>=RRGGBB`, and their shipped values are the HUD_COL_DEFAULT_*
+// table in hud.h. col() is how this file asks for one.
+//
+// The panel stays a constant here. It is the one surface the commander already
+// has a control for - `CFG alpha` says how much of the game shows through it -
+// and a colour picker on top of that would let a card be made opaque and bright
+// enough to hide the cockpit behind it.
 static const Rgb COL_PANEL    = {0.01569,  0.02745,  0.03529};
+
+static Rgb col(ColorRole role) {
+    return model.palette[role];
+}
 
 static int sz(int base) { return (int) (base * model.scale + 0.5); }
 
@@ -35,18 +31,18 @@ static void set_rgb(cairo_t *cr, Rgb c, double a) {
 
 static Rgb color_for_speaker(Speaker k) {
     switch (k) {
-        case SPK_COMMANDER: return COL_USER;
-        case SPK_RADIO:     return COL_RADIO;
-        default:            return COL_AI;
+        case SPK_COMMANDER: return col(HUD_COL_USER);
+        case SPK_RADIO:     return col(HUD_COL_RADIO);
+        default:            return col(HUD_COL_AI);
     }
 }
 
 static Rgb color_for(State s) {
     switch (s) {
-        case ST_GOOD:     return COL_SUCCESS;
-        case ST_WARN:     return COL_WARNING;
-        case ST_CRITICAL: return COL_DANGER;
-        default:          return COL_PRIMARY;
+        case ST_GOOD:     return col(HUD_COL_SUCCESS);
+        case ST_WARN:     return col(HUD_COL_WARNING);
+        case ST_CRITICAL: return col(HUD_COL_DANGER);
+        default:          return col(HUD_COL_PRIMARY);
     }
 }
 
@@ -129,17 +125,17 @@ int hud_render(cairo_t *cr, int width, int draw) {
     int right   = width - pad;
 
     if (model.obj.present) {
-        if (draw) draw_at(cr, title, pad, y, model.obj.title, COL_PRIMARY);
+        if (draw) draw_at(cr, title, pad, y, model.obj.title, col(HUD_COL_PRIMARY));
         y += title_h;
 
         if (model.obj.subtitle[0]) {
-            if (draw) draw_at(cr, body, pad, y, model.obj.subtitle, COL_DISABLED);
+            if (draw) draw_at(cr, body, pad, y, model.obj.subtitle, col(HUD_COL_DISABLED));
             y += body_h + sz(4);
         }
 
         for (int i = 0; i < model.obj.row_count; i++) {
             Row *r = &model.obj.rows[i];
-            if (draw) draw_at(cr, body, pad, y, r->label, COL_DISABLED);
+            if (draw) draw_at(cr, body, pad, y, r->label, col(HUD_COL_DISABLED));
 
             if (r->max > 0) {
                 char readout[64];
@@ -154,7 +150,7 @@ int hud_render(cairo_t *cr, int width, int draw) {
                     double bw = right - bx - tw - sz(12);
                     if (bw > 0) {
                         double bh = sz(7), by = y + body_h * 0.5 - bh * 0.5;
-                        set_rgb(cr, COL_DISABLED, 1.0);
+                        set_rgb(cr, col(HUD_COL_DISABLED), 1.0);
                         cairo_rectangle(cr, bx, by, bw, bh);
                         cairo_fill(cr);
                         double frac = r->current / (double) r->max;
@@ -173,7 +169,7 @@ int hud_render(cairo_t *cr, int width, int draw) {
 
         y += sz(6);
         if (draw) {
-            set_rgb(cr, COL_DISABLED, 0.6);
+            set_rgb(cr, col(HUD_COL_DISABLED), 0.6);
             cairo_set_line_width(cr, 1.0);
             cairo_move_to(cr, pad, y + 0.5);
             cairo_line_to(cr, right, y + 0.5);

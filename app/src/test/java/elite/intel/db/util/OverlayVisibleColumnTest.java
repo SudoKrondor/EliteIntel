@@ -72,7 +72,7 @@ class OverlayVisibleColumnTest {
         SystemSession.HudOverlayLayout layout = session.getHudOverlayLayout();
         session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(
                 layout.alpha(), layout.fontScale(), layout.width(), 640, 480,
-                layout.displayMode(), layout.vrPosition()));
+                layout.displayMode(), layout.vrPosition(), ""));
 
         assertTrue(session.isHudOverlayVisible(), "moving the overlay must not hide it");
         assertEquals(640, session.getHudOverlayLayout().x(), "the layout save itself must still land");
