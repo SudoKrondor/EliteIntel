@@ -3,11 +3,13 @@ description: Draft a human-readable commit message describing what changed, writ
 
 ---
 
-Compare current version to previous tag. Version is in app/src/main/resources/version.txt the tag is same format as version. For example. if current version v-1.1.0016 previous tag is v-1.1.0015
+Compare current version to previous tag.
 
 Do NOT stage or commit anything; just write the draft to a file and print it. The user commits manually.
 
 # 1. Gather the change set
+
+Version is in app/src/main/resources/version.txt The tag is same format as version. For example is version.txt reads v-1.1.0015 compare that tag to the current branch.
 
 Run the diff, provide information in plain English targeted at non-technical users describing the changes in the new release.
 

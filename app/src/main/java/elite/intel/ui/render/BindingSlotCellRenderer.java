@@ -1,5 +1,6 @@
 package elite.intel.ui.render;
 
+import elite.intel.ai.hands.BindingDisplayNames;
 import elite.intel.ui.support.BindingsGroupTableFactory;
 import elite.intel.ui.widget.HudTable;
 
@@ -15,7 +16,12 @@ import static elite.intel.ui.theme.HudPalette.*;
  * The comparison uses the localized "Not defined" text because the table model
  * stores already formatted display values, not raw slot objects.
  * <p>
- * Column 0 (the action name) is tinted by the binding's status: red when the binding is in a
+ * Column 0 holds the raw .binds XML tag - every click, selection and conflict lookup reads the
+ * binding id straight out of the model - but it is <em>drawn</em> as the control's in-game name
+ * ({@link BindingDisplayNames}), so the table can be read against the game's own control screen
+ * without the model ever carrying a display string.
+ * <p>
+ * Column 0 is also tinted by the binding's status: red when the binding is in a
  * conflict ({@code hasConflict}), cyan when it carries a soft ship/SRV-twin recommendation
  * ({@code hasRecommendation}), green otherwise. A real conflict outranks a recommendation.
  */
@@ -41,6 +47,11 @@ public class BindingSlotCellRenderer extends HudTable.CellRenderer {
     ) {
         JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
         label.setHorizontalAlignment(column == 0 ? SwingConstants.LEFT : SwingConstants.RIGHT);
+        if (column == 0) {
+            String bindingId = String.valueOf(value);
+            label.setText(BindingDisplayNames.label(bindingId));
+            label.setToolTipText(bindingId);
+        }
         boolean notDefined = elite.intel.ui.i18n.MultiLingualTextProvider
                 .getText("bindings.status.notDefined")
                 .equals(value);

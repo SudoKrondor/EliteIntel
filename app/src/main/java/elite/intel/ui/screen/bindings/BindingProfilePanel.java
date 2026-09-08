@@ -14,10 +14,11 @@ import elite.intel.ui.event.KeymapSyncStateChangedEvent;
 import elite.intel.ui.support.*;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.*;
-import elite.intel.util.StringUtls;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
@@ -77,6 +78,7 @@ public class BindingProfilePanel extends JPanel {
     private JButton revertButton;
     private JButton fixAllButton;
     private JCheckBox conflictsOnlyCheck;
+    private JTextField bindingSearchField;
 
     private Map<String, KeyBindingsParser.ReadOnlyBindingSlots> currentSlots = Map.of();
     /**
@@ -200,7 +202,10 @@ public class BindingProfilePanel extends JPanel {
         tabs.addTab(getText("bindings.missingBindings"), nestedTabContent(missingBindingsScrollPane));
         tabs.addChangeListener(e -> selectionController.clearSelection());
 
-        add(tabs, BorderLayout.CENTER);
+        JPanel tablesArea = transparentPanel(new BorderLayout(0, 2));
+        tablesArea.add(bindingSearchRow(), BorderLayout.NORTH);
+        tablesArea.add(tabs, BorderLayout.CENTER);
+        add(tablesArea, BorderLayout.CENTER);
 
         add(buildFooter(), BorderLayout.SOUTH);
     }
@@ -493,7 +498,7 @@ public class BindingProfilePanel extends JPanel {
         if (outcome.saved() > 0) {
             JOptionPane.showMessageDialog(
                     this,
-                    getText("bindings.autofix.single.success", bindingId),
+                    getText("bindings.autofix.single.success", BindingDisplayNames.label(bindingId)),
                     getText("bindings.autofix.result.title"),
                     JOptionPane.INFORMATION_MESSAGE);
             return;
@@ -699,6 +704,52 @@ public class BindingProfilePanel extends JPanel {
         return label;
     }
 
+    /**
+     * Search-as-you-type over both tables, sitting directly above them because it narrows exactly
+     * what they show. Every keystroke re-renders; the tables are rebuilt from an in-memory map, so
+     * there is nothing to debounce.
+     */
+    private JPanel bindingSearchRow() {
+        JPanel row = transparentPanel(new GridBagLayout());
+        row.setBorder(new EmptyBorder(0, 6, 2, 6));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(0, 0, 0, 7);
+
+        JLabel searchLabel = hudReadoutLabel(getText("bindings.search.label"));
+        sizeFieldLabel(searchLabel, LABEL_COL_WIDTH);
+        gbc.gridx = 0;
+        row.add(searchLabel, gbc);
+
+        bindingSearchField = makeTextField();
+        bindingSearchField.setToolTipText(getText("bindings.search.tooltip"));
+        bindingSearchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                renderBindingTables();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                renderBindingTables();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                renderBindingTables();
+            }
+        });
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        row.add(bindingSearchField, gbc);
+
+        return row;
+    }
+
     private JPanel groupedTablesPanel() {
         JPanel panel = transparentPanel(null);
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -722,13 +773,18 @@ public class BindingProfilePanel extends JPanel {
         return panel;
     }
 
-    private Map<BindingGroup, List<Object[]>> groupedBindings(
+    /**
+     * Buckets the given controls under the game's own section headings, each bucket in the order
+     * the game lists its rows (see {@link BindingDisplayNames}), so a commander can read this
+     * table and their control screen side by side.
+     */
+    private Map<BindingSection, List<Object[]>> groupedBindings(
             List<String> bindingIds,
             Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots,
             BindingsGroupTableFactory.RowAction rowAction
     ) {
-        Map<BindingGroup, List<Object[]>> grouped = groupedRows();
-        for (String bindingId : bindingIds) {
+        Map<BindingSection, List<Object[]>> grouped = groupedRows();
+        for (String bindingId : inGameOrder(bindingIds)) {
             KeyBindingsParser.ReadOnlyBindingSlots bindingSlots = slots.get(bindingId);
             String primary = slotFormatter.formatSlot(bindingSlots == null ? null : bindingSlots.primary());
             String secondary = slotFormatter.formatSlot(bindingSlots == null ? null : bindingSlots.secondary());
@@ -737,9 +793,21 @@ public class BindingProfilePanel extends JPanel {
                 case CLEAR -> new Object[]{bindingId, primary, secondary, getText("bindings.column.clear.action")};
                 case NONE -> new Object[]{bindingId, primary, secondary};
             };
-            grouped.get(BindingGroupClassifier.classify(bindingId)).add(row);
+            grouped.get(BindingDisplayNames.lookup(bindingId).section()).add(row);
         }
         return grouped;
+    }
+
+    /**
+     * Orders controls the way the game's control screen lists them, falling back to the label for
+     * the unmapped tail so those stay in a stable, readable order rather than an arbitrary one.
+     */
+    private static List<String> inGameOrder(List<String> bindingIds) {
+        return bindingIds.stream()
+                .sorted(Comparator
+                        .comparingInt((String id) -> BindingDisplayNames.lookup(id).order())
+                        .thenComparing(BindingDisplayNames::label, String.CASE_INSENSITIVE_ORDER))
+                .toList();
     }
 
     /**
@@ -757,8 +825,8 @@ public class BindingProfilePanel extends JPanel {
                 missing.add(entry.getKey());
             }
         }
-        used.sort(String::compareToIgnoreCase);
-        missing.sort(String::compareToIgnoreCase);
+        // Left unsorted on purpose: groupedBindings puts them in the game's own row order, and the
+        // counts these lists also feed do not care about order.
         return new BindingPartition(used, missing);
     }
 
@@ -822,7 +890,7 @@ public class BindingProfilePanel extends JPanel {
 
         renderGroupedTables(
                 usedBindingsPanel,
-                groupedBindings(filterConflictsOnly(usedBindings), currentSlots, BindingsGroupTableFactory.RowAction.CLEAR),
+                groupedBindings(filterRows(usedBindings), currentSlots, BindingsGroupTableFactory.RowAction.CLEAR),
                 BindingsGroupTableFactory.RowAction.CLEAR,
                 getText("bindings.column.action"),
                 getText("bindings.column.primary"),
@@ -832,7 +900,7 @@ public class BindingProfilePanel extends JPanel {
 
         renderGroupedTables(
                 missingBindingsPanel,
-                groupedBindings(filterConflictsOnly(missingBindings), currentSlots, BindingsGroupTableFactory.RowAction.AUTO_FIX),
+                groupedBindings(filterRows(missingBindings), currentSlots, BindingsGroupTableFactory.RowAction.AUTO_FIX),
                 BindingsGroupTableFactory.RowAction.AUTO_FIX,
                 getText("bindings.column.action"),
                 getText("bindings.column.primary"),
@@ -883,11 +951,43 @@ public class BindingProfilePanel extends JPanel {
     /**
      * When the filter is on, narrows the ids to those that participate in a conflict; otherwise a no-op.
      */
+    /**
+     * Both view filters, in one place so the two tables always narrow the same way: the
+     * conflicts-only checkbox and the search field. Purely a view concern - the tab counts and the
+     * Fix Missing enabled state are computed from the unfiltered lists.
+     */
+    private List<String> filterRows(List<String> bindingIds) {
+        return filterBySearch(filterConflictsOnly(bindingIds));
+    }
+
     private List<String> filterConflictsOnly(List<String> bindingIds) {
         if (conflictsOnlyCheck == null || !conflictsOnlyCheck.isSelected()) {
             return bindingIds;
         }
         return bindingIds.stream().filter(conflictsByBinding::containsKey).toList();
+    }
+
+    /**
+     * Narrows the ids to those whose in-game section, group, name or raw XML tag contain what has
+     * been typed. Literal, case-insensitive substring matching - what is typed is what is looked
+     * for - and the tag is in the haystack so a commander who arrived here from a forum post
+     * naming {@code ExplorationSAANextGenus} can still find the row.
+     */
+    private List<String> filterBySearch(List<String> bindingIds) {
+        if (bindingSearchField == null) {
+            return bindingIds;
+        }
+        String query = bindingSearchField.getText().trim().toLowerCase();
+        if (query.isEmpty()) {
+            return bindingIds;
+        }
+        return bindingIds.stream()
+                .filter(id -> BindingDisplayNames.searchText(id, sectionLabelFor(id)).contains(query))
+                .toList();
+    }
+
+    private static String sectionLabelFor(String bindingId) {
+        return getText(BindingDisplayNames.lookup(bindingId).section().getLabelKey());
     }
 
     /**
@@ -920,7 +1020,7 @@ public class BindingProfilePanel extends JPanel {
         body.add(titleLabel);
 
         for (String partner : partners) {
-            JLabel item = new JLabel("• " + StringUtls.humanizeBindingName(partner));
+            JLabel item = new JLabel("• " + BindingDisplayNames.label(partner));
             item.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
             item.setAlignmentX(Component.LEFT_ALIGNMENT);
             body.add(item);
@@ -955,25 +1055,24 @@ public class BindingProfilePanel extends JPanel {
         return null;
     }
 
-    private Map<BindingGroup, List<Object[]>> groupedRows() {
-        Map<BindingGroup, List<Object[]>> grouped = new EnumMap<>(BindingGroup.class);
-        for (BindingGroup group : BindingGroup.values()) {
-            grouped.put(group, new ArrayList<>());
+    private Map<BindingSection, List<Object[]>> groupedRows() {
+        Map<BindingSection, List<Object[]>> grouped = new EnumMap<>(BindingSection.class);
+        for (BindingSection section : BindingSection.values()) {
+            grouped.put(section, new ArrayList<>());
         }
         return grouped;
     }
 
-    private void renderGroupedTables(JPanel targetPanel, Map<BindingGroup, List<Object[]>> grouped,
+    private void renderGroupedTables(JPanel targetPanel, Map<BindingSection, List<Object[]>> grouped,
                                      BindingsGroupTableFactory.RowAction rowAction, String... columnNames) {
         targetPanel.removeAll();
-        for (BindingGroup group : BindingGroup.values()) {
-            List<Object[]> rows = grouped.getOrDefault(group, List.of()).stream()
-                    .sorted(Comparator.comparing(row -> row[0].toString(), String.CASE_INSENSITIVE_ORDER))
-                    .toList();
+        for (BindingSection section : BindingSection.values()) {
+            // Already in the game's own row order - groupedBindings sorted them, so leave them alone.
+            List<Object[]> rows = grouped.getOrDefault(section, List.of());
             if (rows.isEmpty())
                 continue;
 
-            targetPanel.add(sectionHeader(group));
+            targetPanel.add(sectionHeader(section));
             targetPanel.add(tableFactory.groupTable(rows, outerScrollPaneFor(targetPanel), rowAction, columnNames));
             targetPanel.add(Box.createVerticalStrut(6));
         }
@@ -982,8 +1081,8 @@ public class BindingProfilePanel extends JPanel {
         targetPanel.repaint();
     }
 
-    private JComponent sectionHeader(BindingGroup group) {
-        JLabel label = hudGroupLabel(getText(group.getLabelKey()).toUpperCase());
+    private JComponent sectionHeader(BindingSection section) {
+        JLabel label = hudGroupLabel(getText(section.getLabelKey()).toUpperCase());
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
         label.setBorder(new EmptyBorder(10, 8, 10, 0));
         return label;

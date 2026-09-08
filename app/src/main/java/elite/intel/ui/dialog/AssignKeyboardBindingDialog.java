@@ -6,7 +6,6 @@ import elite.intel.ui.support.BindingSlotDisplayFormatter;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.*;
 import elite.intel.util.KeyCaptureMapper;
-import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -284,7 +283,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
             gbc.fill = GridBagConstraints.HORIZONTAL;
             gbc.insets = new Insets(8, 6, 3, 6);
             String partners = String.join(", ",
-                    existingConflicts.stream().map(StringUtls::humanizeBindingName).toList());
+                    existingConflicts.stream().map(BindingDisplayNames::label).toList());
             HudBanner existingConflictBanner = HudBanner.multiline(
                     getText("bindings.conflict.popup.title", existingConflictChord) + " " + partners,
                     StatusBadge.State.OFFLINE);
@@ -422,7 +421,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
         // Name the binding it collides with so the user knows what the conflict is; the banner is
         // rebuilt (not mutated) because its text is dynamic.
         HudBanner banner = HudBanner.multiline(
-                getText("bindings.assign.conflict", StringUtls.humanizeBindingName(conflict.otherBinding())),
+                getText("bindings.assign.conflict", BindingDisplayNames.label(conflict.otherBinding())),
                 StatusBadge.State.OFFLINE);
         conflictSlot.add(banner, BorderLayout.CENTER);
         conflictSlot.setVisible(true);

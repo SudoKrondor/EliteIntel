@@ -152,7 +152,8 @@ public class RoutePlotter {
                 GameInputStep.rawKey(KeyProcessor.KEY_DOWNARROW, 0, 0),
                 GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding()),
                 GameInputStep.delay(1000),
-                GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding())
+                GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding()),
+                GameInputStep.bindingHold(BINDING_CAM_YAW_LEFT.getGameBinding(), 20)
         ));
 
         GameControllerBus.publish(new GameInputSequenceEvent(steps));
