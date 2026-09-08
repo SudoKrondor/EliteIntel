@@ -303,12 +303,7 @@ public class CommanderTabPanel extends JPanel {
         boxes.add(toggle("automation.autoGearUpOnTakeOff", mgr.getAutoGearUpOnTakeOff(), mgr::setAutoGearUpOnTakeOff));
         boxes.add(toggle("automation.autoExitUiBeforeOpeningAnotherPanel", mgr.getAutoExitUiBeforeOpeningAnotherWindow(), mgr::setAutoExitUiBeforeOpeningAnotherWindow));
         boxes.add(toggle("automation.autoLightsOffForSrvDeployment", mgr.getAutoLightsOffForSrvDeployment(), mgr::setAutoLightsOffForSrvDeployment));
-
-        JCheckBox fighterDocking = toggle("automation.requestFighterDockOnFtl",
-                mgr.getAutoFighterOutFighterDocking(), mgr::setAutoFighterOutFighterDocking);
-        fighterDocking.setToolTipText("Disabled until FDev fixes Nomad related bug");
-        fighterDocking.setEnabled(false); ///NOTE disabled until FDev fixes their bug
-        boxes.add(fighterDocking);
+        boxes.add(toggle("automation.autoPlotNextNeutronJump", mgr.getAutoPlotNextNeutronJump(), mgr::setAutoPlotNextNeutronJump));
 
         return threeColumnGrid(boxes);
     }

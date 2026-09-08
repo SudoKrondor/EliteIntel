@@ -138,17 +138,17 @@ public class GlobalSettingsManager {
         return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAutoLightsOffForSrvDeployment());
     }
 
-    public void setAutoFighterOutFighterDocking(boolean autoFighterOutFighterDocking) {
+    public void setAutoPlotNextNeutronJump(boolean autoPlotNextNeutronJump) {
         Database.withDao(GlobalSettingsDao.class, dao -> {
             GlobalSettingsDao.GlobalSettings settings = dao.get();
-            settings.setAutoFighterOutFighterDocking(autoFighterOutFighterDocking);
+            settings.setAutoPlotNextNeutronJump(autoPlotNextNeutronJump);
             dao.save(settings);
             return Void.TYPE;
         });
     }
 
-    public boolean getAutoFighterOutFighterDocking() {
-        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAutoFighterOutFighterDocking());
+    public boolean getAutoPlotNextNeutronJump() {
+        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAutoPlotNextNeutronJump());
     }
 
     public void setAnnounceJumpRoute(boolean announceJumpRoute) {

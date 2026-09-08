@@ -75,6 +75,7 @@ public class EventRegistry {
         registerEvent("EngineerProgress", EngineerProgressEvent.class);
         registerEvent("Friends", FriendsEvent.class);
         registerEvent("FSDJump", FSDJumpEvent.class);
+        registerEvent("JetConeBoost", JetConeBoostEvent.class);
         registerEvent("FSDTarget", FSDTargetEvent.class);
         registerEvent("FSSSignalDiscovered", FSSSignalDiscoveredEvent.class);
         registerEvent("FSSDiscoveryScan", FSSDiscoveryScanEvent.class);

@@ -146,8 +146,8 @@ public class HudCheckBox extends JCheckBox {
             g2.fillRect(markerZoneW, 0, HudPalette.HUD_SEP_W, h);
 
             // Pass `on` rather than `on && enabled`: a disabled toggle must still show whether it is
-            // checked, otherwise a permanently-disabled setting (requestFighterDockOnFtl) renders as
-            // an empty box and reads as "off". Greying is already carried by markerColor.
+            // checked, or a setting that cannot be changed right now renders as an empty box and reads
+            // as "off" when it is on. Greying is already carried by markerColor.
             HudGlyphs.paintHudCheckMarker(g2, markerX, markerY, markerSize, markerColor, on);
 
             // Label text in the text zone, vertically centred
