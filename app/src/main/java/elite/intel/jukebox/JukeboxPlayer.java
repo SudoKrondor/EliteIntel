@@ -232,7 +232,8 @@ public final class JukeboxPlayer {
     }
 
     /**
-     * Moves to the next track, by playlist order or at random depending on the setting.
+     * Moves to the next track, by playlist order or at random depending on the setting, rolling round to
+     * the top of the playlist after the last track.
      */
     public void next() {
         Long id = nextTrackId();
@@ -255,7 +256,7 @@ public final class JukeboxPlayer {
             id = history.pollLast();
         }
         if (id == null) {
-            id = neighbourTrackId(-1);
+            id = precedingTrackId();
         }
         if (id == null) return;
         synchronized (lock) {
@@ -266,6 +267,19 @@ public final class JukeboxPlayer {
             lock.notifyAll();
         }
         publishState();
+    }
+
+    /**
+     * Starts the playlist again from its first track - "play from the top".
+     * <p>
+     * WHY a transport call of its own rather than {@code playTrack(firstTrackId())} at the call site: the
+     * first track is the playlist's business, and a caller that reads the playlist to find it would be the
+     * second place that has to know what "the top" means once the rows can be sorted.
+     */
+    public void playFromTop() {
+        Long first = firstTrackId();
+        if (first == null) return;
+        playTrack(first);
     }
 
     // ---------------------------------------------------------------- settings
@@ -489,18 +503,42 @@ public final class JukeboxPlayer {
     // ---------------------------------------------------------------- picking tracks
 
     private Long nextTrackId() {
-        return order == PlaybackOrder.RANDOM ? randomTrackId() : neighbourTrackId(1);
+        return order == PlaybackOrder.RANDOM ? randomTrackId() : followingTrackId();
     }
 
-    private Long neighbourTrackId(int offset) {
+    /**
+     * The row below the current one, rolling round to the first track after the last.
+     * <p>
+     * WHY it wraps: a playlist that stops dead at the end leaves the commander in silence exactly when they
+     * are least able to do anything about it - hours into a trip with both hands on the stick. Asking for
+     * music once should keep it coming.
+     * <p>
+     * WHY this does not spin forever over a broken playlist: the only caller that can loop without playing
+     * anything is {@link #skipToNextAfterFailure()}, and it counts failures against the playlist's length
+     * and gives up after one pass.
+     */
+    private Long followingTrackId() {
         List<JukeboxDao.Track> playlist = library.playlist();
         if (playlist.isEmpty()) return null;
-        Long current = currentTrackId().orElse(null);
-        int index = indexOf(playlist, current);
+        int index = indexOf(playlist, currentTrackId().orElse(null));
         if (index < 0) return playlist.get(0).getId();
-        int wanted = index + offset;
-        if (wanted < 0 || wanted >= playlist.size()) return null;
-        return playlist.get(wanted).getId();
+        return playlist.get((index + 1) % playlist.size()).getId();
+    }
+
+    /**
+     * The row above the current one, or nothing when the first track is playing.
+     * <p>
+     * WHY this one does not roll round the way {@link #followingTrackId()} does: rolling forwards keeps the
+     * music coming, which is what the commander asked for by starting it. Rolling backwards off the top of
+     * the list would take them somewhere they never played on the way here.
+     */
+    private Long precedingTrackId() {
+        List<JukeboxDao.Track> playlist = library.playlist();
+        if (playlist.isEmpty()) return null;
+        int index = indexOf(playlist, currentTrackId().orElse(null));
+        if (index < 0) return playlist.get(0).getId();
+        if (index == 0) return null;
+        return playlist.get(index - 1).getId();
     }
 
     private Long randomTrackId() {
