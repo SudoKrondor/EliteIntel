@@ -5,6 +5,7 @@ import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegist
 import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.ai.brain.vega.diag.CompanionMemoryDump;
 import elite.intel.ai.brain.vega.memory.MemoryGateway;
+import elite.intel.ai.ears.MicDiagnosticsReport;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
@@ -432,7 +433,10 @@ public class AiTabPanel extends JPanel {
                 systemPanel.exportText(),
                 APP_LOG_FILE,
                 PlayerSession.getInstance().getJournalPath(),
-                PlayerSession.getInstance().getBindingsDir());
+                PlayerSession.getInstance().getBindingsDir(),
+                // Passed unevaluated on purpose: rendering it enumerates the machine's audio devices, which
+                // blocks, and this runs on the EDT. The bundle worker calls it.
+                MicDiagnosticsReport::render);
 
         Thread.ofVirtual().name("diagnostics-bundle").start(() -> writeBundle(target, sources));
     }

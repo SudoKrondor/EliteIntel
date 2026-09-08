@@ -31,7 +31,7 @@ public final class CarrierRouteLegs {
      * The legs still to fly, renumbered from 1 so that leg 1 is always the next jump.
      *
      * <p>A carrier sitting somewhere the route never mentions has flown off-route: nothing is
-     * dropped, and the caller re-plots from where it now is.
+     * dropped, and the caller voids the route - the commander is not on that voyage any more.
      *
      * @param plottedLegs   the full plotted route, in leg order.
      * @param currentSystem the system the carrier is in; null or blank truncates nothing.
@@ -57,7 +57,8 @@ public final class CarrierRouteLegs {
     /**
      * WHY case- and whitespace-insensitive: Spansh and the journal are the two sources of a system
      * name and they are not guaranteed to agree on spacing or case. An exact match that misses reads
-     * an arrival as off-route, leaves the arrival leg in the table, and re-plots for nothing.
+     * an arrival as off-route, leaves the arrival leg in the table, and throws away a route the
+     * carrier is in fact still flying.
      */
     public static boolean isSameSystem(String one, String other) {
         if (one == null || other == null) return false;

@@ -13,7 +13,6 @@ import elite.intel.gameapi.search.edsm.dto.StarSystemDto;
 import elite.intel.gameapi.search.edsm.dto.data.StarSystemCoordinates;
 import elite.intel.gameapi.search.spansh.carrierroute.CarrierJump;
 import elite.intel.session.PlayerSession;
-import elite.intel.util.FleetCarrierRouteCalculator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -21,20 +20,23 @@ import java.util.Optional;
 
 /**
  * What a carrier arrival costs and changes: the tritium burned, the leg reached, the scheduled departure it
- * ends, and the re-plot an off-route arrival forces.
+ * ends, and whether the plotted route survives it.
  *
  * <p>WHY a single owner rather than a step in each subscriber: the game reports one arrival twice when the
  * commander rode along, as CarrierLocation and then CarrierJump, and each subscriber does its work on its own
  * virtual thread. The whole sequence turns on one read - "is the system it reports different from the one on
  * file?" - and both events answer it by writing that same field. Whichever thread wrote first made the other
  * believe the carrier had never moved, so the jump was never charged, the scheduled departure was never
- * cleared, and an off-route arrival was never re-plotted. The commander heard the level his depot held
+ * cleared, and an off-route arrival never voided the route. The commander heard the level his depot held
  * <em>before</em> the jump, which after departing full reads as the depot's exact capacity.
  *
  * <p>So the decision runs under one lock and is idempotent: the first event through does the bookkeeping, and
  * the second finds the carrier already recorded here and costs nothing. The lock covers only the decision and
- * the writes it implies; resolving coordinates and re-plotting reach the network and are done outside it, so
- * a slow lookup can never stall the arrival behind it or the announcement waiting on it.
+ * the writes it implies; resolving coordinates reaches the network and is done outside it, so a slow lookup
+ * can never stall the arrival behind it or the announcement waiting on it.
+ *
+ * <p>Nothing here plots a route. The commander's own {@code calculate_fleet_carrier_route} is the only thing
+ * in the app that writes legs, so an arrival can consume a route or void one, never create one.
  */
 final class CarrierArrival {
 
@@ -44,6 +46,40 @@ final class CarrierArrival {
      * Serialises the two events that describe one arrival.
      */
     private static final Object LOCK = new Object();
+
+    /**
+     * What the last arrival did to the plotted voyage, for the announcement to report.
+     */
+    enum VoyageStatus {
+        /**
+         * No route was plotted, so this arrival says nothing about one.
+         */
+        NO_ROUTE,
+        /**
+         * A plotted leg was reached and more remain.
+         */
+        EN_ROUTE,
+        /**
+         * The last plotted leg was reached: the voyage is over.
+         */
+        DESTINATION_REACHED,
+        /**
+         * The carrier arrived somewhere the route never mentioned, so the route was dropped.
+         */
+        ROUTE_ABANDONED
+    }
+
+    /**
+     * The system the status below was recorded for, and that status.
+     *
+     * <p>WHY recorded rather than worked out by the announcement: the two events that describe one
+     * arrival reach this class in either order, and only the first one finds the route as it was
+     * before the arrival. By the time CarrierJumpCompleteSubscriber writes its announcement the legs
+     * are already consumed or the route already dropped, so the table can no longer say which
+     * happened. Keyed by system so the second event of the same arrival reads the first one's answer.
+     */
+    private static String lastArrivalSystem;
+    private static VoyageStatus lastArrivalStatus = VoyageStatus.NO_ROUTE;
 
     private CarrierArrival() {
     }
@@ -73,8 +109,6 @@ final class CarrierArrival {
     static void recordFleetArrival(String starSystem, Long systemAddress, double[] authoritativeStarPos) {
         boolean carrierMoved;
         boolean coordinatesNeedResolving;
-        boolean replotNeeded;
-        long routeGeneration;
 
         // Everything the two events race on, and nothing else: reading whether the carrier moved and acting
         // on that answer is one indivisible step, but it touches no network.
@@ -90,7 +124,11 @@ final class CarrierArrival {
 
             FleetCarrierRouteManager route = FleetCarrierRouteManager.getInstance();
             CarrierJump completedLeg = route.findByPrimaryStar(starSystem);
-            boolean routePlotted = !route.getFleetCarrierRoute().isEmpty();
+            // WHY the raw count and not the route a read hands out: that one is truncated at the
+            // carrier's own system, so a route the carrier is already sitting at the end of reads as
+            // no route at all - and its dead rows would then survive this arrival and come back as
+            // leg 1 the next time the carrier moves.
+            boolean routePlotted = route.hasStoredLegs();
 
             CarrierDataDto carrierData = playerSession.getFleetCarrierData();
             carrierData.setStarName(starSystem);
@@ -122,21 +160,30 @@ final class CarrierArrival {
             // that a position report also repairs a route left stale by a jump made while we were down.
             route.removeLeg(starSystem);
 
-            // WHY a position report stops here: a pending departure is still pending, and a route that
-            // already starts where the carrier is needs no Spansh call. Clearing the timer and re-plotting
-            // on every LoadGame would forget a scheduled jump and spend a network round trip to arrive at
-            // the route we already have.
+            // WHY a position report stops here: the game writes an arrival event at every LoadGame, where
+            // a pending departure is still pending and the route is still the one the carrier is on.
+            // Clearing the timer on every replay would forget a scheduled jump, and voiding the route on
+            // one would throw away a voyage the carrier has not deviated from.
             if (carrierMoved) {
                 playerSession.setCarrierDepartureTime(null);
             }
-            // WHY: arriving somewhere that was not a plotted leg means the route no longer starts where
-            // we are, so it has to be re-plotted from here. An on-route arrival needs no Spansh call.
-            replotNeeded = carrierMoved && completedLeg == null && routePlotted;
 
-            // WHY read in here, before the lock is dropped: it stamps the route this repair is for, and
-            // the re-plot below stores its answer only if that is still the route on file. Read any
-            // later and a clear landing in between would be stamped as though we had seen it.
-            routeGeneration = route.generation();
+            // WHY the route is dropped rather than re-plotted from here: Spansh plots a carrier's legs
+            // to the ton, so a carrier that arrives somewhere the route never mentioned has not drifted
+            // off it - the commander changed his mind and jumped elsewhere, and the voyage he plotted is
+            // not the one he is on. Re-plotting instead made an abandoned route immortal: it survived
+            // every manual jump, was quoted back at him as "N jumps left" on each one, and re-plotted
+            // itself to the same destination from wherever he landed - including at startup, which is
+            // where a commander who had cleared it got it back.
+            boolean routeAbandoned = carrierMoved && completedLeg == null && routePlotted;
+            if (routeAbandoned) {
+                route.clear();
+            }
+
+            if (carrierMoved) {
+                lastArrivalSystem = CarrierRouteLegs.normalise(starSystem);
+                lastArrivalStatus = recordedStatus(route, completedLeg, routeAbandoned);
+            }
         }
 
         // WHY out here: both of these reach the network, and a lock held across a call that can hang would
@@ -145,12 +192,33 @@ final class CarrierArrival {
         if (coordinatesNeedResolving) {
             resolveAndCommitCoordinates(starSystem, systemAddress);
         }
-        if (replotNeeded) {
-            // WHY detached: this is a quiet repair of a route nobody is reading yet, and it calls Spansh.
-            // The arrival announcement is written on the calling thread, so leaving it inline made the
-            // commander wait out a route calculation before being told his carrier had arrived at all.
-            String destination = FleetCarrierRouteManager.getInstance().getFinalDestination();
-            Thread.ofVirtual().start(() -> replotFrom(starSystem, destination, routeGeneration));
+    }
+
+    /**
+     * What this arrival did to the voyage, read once while the route is still settled under the lock.
+     */
+    private static VoyageStatus recordedStatus(FleetCarrierRouteManager route,
+                                               CarrierJump completedLeg,
+                                               boolean routeAbandoned) {
+        if (routeAbandoned) return VoyageStatus.ROUTE_ABANDONED;
+        if (completedLeg == null) return VoyageStatus.NO_ROUTE;
+        return route.getFleetCarrierRoute().isEmpty()
+                ? VoyageStatus.DESTINATION_REACHED
+                : VoyageStatus.EN_ROUTE;
+    }
+
+    /**
+     * What the arrival in {@code starSystem} did to the plotted voyage.
+     *
+     * <p>{@link VoyageStatus#NO_ROUTE} for any system this class did not record an arrival for, which
+     * is the right answer for the case that produces it: a one-off jump the commander scheduled
+     * himself, with no route to report on either side of it.
+     */
+    static VoyageStatus voyageStatusAt(String starSystem) {
+        synchronized (LOCK) {
+            return CarrierRouteLegs.isSameSystem(lastArrivalSystem, starSystem)
+                    ? lastArrivalStatus
+                    : VoyageStatus.NO_ROUTE;
         }
     }
 
@@ -223,36 +291,6 @@ final class CarrierArrival {
 
     private static boolean coordinatesUnknown(CarrierDataDto carrierData) {
         return carrierData.getX() == 0 && carrierData.getY() == 0 && carrierData.getZ() == 0;
-    }
-
-    /**
-     * Re-plots the route from the system the carrier has just arrived in, keeping the destination it
-     * was already heading for.
-     *
-     * <p>WHY not the commander-facing {@code calculate()}: that one takes its destination from the
-     * clipboard, so driving it from here meant writing the destination there first. The commander did
-     * not ask for a re-plot and did not put that system on his clipboard; silently replacing whatever
-     * he had copied is not ours to do. This is also why the repair stays quiet: it reports through the
-     * log, and the arrival itself is announced elsewhere.
-     *
-     * @param routeGeneration the route this repair is for, read before the Spansh call. The plot is
-     *                        stored only while that is still the route on file, so abandoning the
-     *                        route mid-call cannot be undone by the answer arriving afterwards.
-     */
-    private static void replotFrom(String carrierSystem, String finalDestination, long routeGeneration) {
-        if (finalDestination == null || finalDestination.isBlank()) return;
-
-        log.info("Carrier arrived off-route at {}; re-plotting to {}", carrierSystem, finalDestination);
-        switch (FleetCarrierRouteCalculator.replot(carrierSystem, finalDestination, routeGeneration)) {
-            case STORED -> log.debug("Carrier route re-plotted from {} to {}", carrierSystem, finalDestination);
-            case NO_ROUTE -> log.warn("Could not re-plot the carrier route from {} to {}; the stored route"
-                    + " still starts elsewhere", carrierSystem, finalDestination);
-            // WHY this is not a warning: the commander abandoned the route himself while Spansh was
-            // answering, and nothing is wrong. Storing the plot would undo the clear he was just told
-            // had happened.
-            case ABANDONED -> log.info("Carrier route was abandoned or moved on while re-plotting from"
-                    + " {}; the plot was discarded", carrierSystem);
-        }
     }
 
     /**

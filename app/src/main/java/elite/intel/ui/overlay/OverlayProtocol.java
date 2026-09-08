@@ -4,6 +4,7 @@ import java.awt.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -60,6 +61,28 @@ public final class OverlayProtocol {
         return "CFG" + TAB + "alpha=" + trim(alpha)
                 + TAB + "scale=" + trim(scale)
                 + TAB + "width=" + width;
+    }
+
+    /**
+     * The whole text palette, e.g. {@code CFG col_primary=FF7100 col_success=4FC56B ...}.
+     * <p>
+     * Every role every time, not just the ones the commander changed: the overlay
+     * has no "back to default" verb, and giving it one would mean two ways to say
+     * the same thing. Sending the resolved palette means a reset is an ordinary
+     * palette line carrying the shipped colours, and a child that starts late in
+     * {@link HudDisplayMode#BOTH} is coloured by the same line as the first one.
+     * <p>
+     * One line rather than one per role, because the overlay reads at most 16
+     * tab-separated fields per line and eight colours plus the verb is nine.
+     */
+    public static String colors(Map<HudOverlayColor, Color> palette) {
+        StringBuilder line = new StringBuilder("CFG");
+        for (HudOverlayColor role : HudOverlayColor.values()) {
+            Color color = palette.getOrDefault(role, role.defaultColor());
+            line.append(TAB).append("col_").append(role.wireName())
+                    .append('=').append(HudOverlayColor.hex(color));
+        }
+        return line.toString();
     }
 
     /**

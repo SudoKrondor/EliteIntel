@@ -48,7 +48,7 @@ class CarrierRouteLegsTest {
 
     /**
      * A carrier that jumped somewhere the route never mentioned has flown off-route. Nothing is
-     * consumed; the caller re-plots from where it now is.
+     * consumed; the caller voids the route.
      */
     @Test
     void carrierOffRouteConsumesNothing() {

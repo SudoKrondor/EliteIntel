@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.plaf.BorderUIResource;
 import javax.swing.plaf.FontUIResource;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
@@ -230,6 +232,26 @@ public class AppView extends JFrame implements AppViewInterface {
         UIManager.put("TabbedPane.background", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         UIManager.put("TabbedPane.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         UIManager.put("TabbedPane.contentAreaColor", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+        // The selected tab of a STOCK JTabbedPane - the ones inside dialogs the JDK builds for us, such
+        // as JColorChooser. FlatLaf paints the selected tab in TabbedPane.focusColor, a pale blue, and
+        // leaves selectedForeground unset so the label falls back to the near-white foreground above:
+        // white on white, and the tab a commander is looking at is the one they cannot read. The app's
+        // own tabs never hit this - HudTabbedPane installs a UI that paints its tabs itself - which is
+        // why it stayed invisible until a colour picker put a stock tab strip on screen.
+        UIManager.put("TabbedPane.focusColor", HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND);
+        UIManager.put("TabbedPane.hoverColor", HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND);
+        UIManager.put("TabbedPane.selectedForeground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+        UIManager.put("TabbedPane.underlineColor", HudPalette.HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_UNDERLINE);
+        UIManager.put("TabbedPane.disabledForeground", HudPalette.HUD_COLOR_ROLE_DISABLED);
+        UIManager.put("TabbedPane.disabledUnderlineColor", HudPalette.HUD_COLOR_ROLE_DISABLED);
+        // Same story one control along: a TitledBorder built by the JDK - the "Preview" frame inside
+        // JColorChooser is the only one in the app - takes its title from TitledBorder.titleColor, which
+        // the light look-and-feel leaves black, on our dark background. The app draws its own titled
+        // frames with HudTitledCard and never builds one of these, so this only ever dresses a dialog we
+        // did not lay out ourselves.
+        UIManager.put("TitledBorder.titleColor", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+        UIManager.put("TitledBorder.border", new BorderUIResource(
+                new LineBorder(HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_BORDER_THICKNESS)));
         UIManager.put("Label.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         UIManager.put("CheckBox.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         UIManager.put("RadioButton.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);

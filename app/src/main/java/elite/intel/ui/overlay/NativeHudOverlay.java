@@ -74,6 +74,13 @@ public class NativeHudOverlay {
     private HudVrPosition vrPosition = HudVrPosition.DEFAULT;
 
     /**
+     * Text colours the commander changed, by role. Only overrides are held, so a
+     * role left alone keeps whatever the shipped default becomes; every send
+     * resolves the whole palette (see {@link OverlayProtocol#colors}).
+     */
+    private final Map<HudOverlayColor, Color> colorOverrides = new EnumMap<>(HudOverlayColor.class);
+
+    /**
      * Where the child binary lives. A seam, so tests can point it at nothing.
      */
     private final Supplier<Path> binaryLocator;
@@ -105,6 +112,7 @@ public class NativeHudOverlay {
         windowY = stored.y();
         displayMode = parseDisplayMode(stored.displayMode());
         vrPosition = HudVrPosition.parse(stored.vrPosition());
+        colorOverrides.putAll(HudOverlayColor.parseOverrides(stored.colors()));
     }
 
     /**
@@ -198,6 +206,7 @@ public class NativeHudOverlay {
 
         send(OverlayProtocol.handshake());
         send(OverlayProtocol.config(backgroundAlpha, fontScale, width));
+        send(OverlayProtocol.colors(colorOverrides));
         send(OverlayProtocol.vrPosition(vrPosition));
         // Both or neither: saveLayout writes the pair together, so a half-set position is not a position
         // the commander ever chose, and moving the window to one axis of it would be a guess.
@@ -443,7 +452,8 @@ public class NativeHudOverlay {
     private void saveLayout() {
         systemSession.setHudOverlayLayout(new SystemSession.HudOverlayLayout(
                 backgroundAlpha, fontScale, width, windowX, windowY,
-                displayMode.name(), vrPosition.name()));
+                displayMode.name(), vrPosition.name(),
+                HudOverlayColor.formatOverrides(colorOverrides)));
     }
 
     public double getFontScale() {
@@ -456,6 +466,52 @@ public class NativeHudOverlay {
 
     public HudVrPosition getVrPosition() {
         return vrPosition;
+    }
+
+    /**
+     * The colour a role is drawn in right now: the commander's choice, or the
+     * shipped default where they have not made one.
+     */
+    public Color getColor(HudOverlayColor role) {
+        return colorOverrides.getOrDefault(role, role.defaultColor());
+    }
+
+    /**
+     * Recolours one role, live. Applied straight away like the transparency
+     * slider, and for the same reason: the commander is judging it against the
+     * cockpit behind it, and a colour they cannot see land is one they cannot
+     * choose.
+     */
+    public synchronized void setColor(HudOverlayColor role, Color color) {
+        if (role == null || color == null || color.equals(getColor(role))) return;
+        // Stored as an override only while it differs from the default, so
+        // "reset" and "picked the default by hand" cannot drift apart.
+        if (color.equals(role.defaultColor())) colorOverrides.remove(role);
+        else colorOverrides.put(role, color);
+        send(OverlayProtocol.colors(colorOverrides));
+        saveLayout();
+    }
+
+    /**
+     * Puts every role back to its shipped colour.
+     * <p>
+     * The way out of a palette that cannot be read - a commander who has drawn
+     * their text in the background colour cannot see the dialog rows they would
+     * need to fix one at a time.
+     */
+    public synchronized void resetColors() {
+        if (colorOverrides.isEmpty()) return;
+        colorOverrides.clear();
+        send(OverlayProtocol.colors(colorOverrides));
+        saveLayout();
+    }
+
+    /**
+     * Whether any role is off its shipped colour, so the reset control can say
+     * whether it has anything to undo.
+     */
+    public boolean hasCustomColors() {
+        return !colorOverrides.isEmpty();
     }
 
     /**

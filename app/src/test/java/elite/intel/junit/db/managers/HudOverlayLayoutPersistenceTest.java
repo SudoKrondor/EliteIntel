@@ -32,7 +32,7 @@ class HudOverlayLayoutPersistenceTest {
 
     @Test
     void aTunedLayoutIsReadBackWholeAndUnchanged() {
-        SystemSession.HudOverlayLayout tuned = new SystemSession.HudOverlayLayout(0.42, 1.25, 900, 1920, 40, "BOTH", "TOP_RIGHT");
+        SystemSession.HudOverlayLayout tuned = new SystemSession.HudOverlayLayout(0.42, 1.25, 900, 1920, 40, "BOTH", "TOP_RIGHT", "");
 
         session.setHudOverlayLayout(tuned);
 
@@ -44,7 +44,7 @@ class HudOverlayLayoutPersistenceTest {
      */
     @Test
     void anOffPrimaryPositionSurvives() {
-        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.25, 1.0, 760, -1200, 300, "DESKTOP", "BOTTOM"));
+        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.25, 1.0, 760, -1200, 300, "DESKTOP", "BOTTOM", ""));
 
         SystemSession.HudOverlayLayout stored = session.getHudOverlayLayout();
         assertEquals(-1200, stored.x());
@@ -62,7 +62,7 @@ class HudOverlayLayoutPersistenceTest {
     @Test
     void theUnsetDefaultsAreDistinguishableFromChosenValues() {
         session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(
-                0.25, 0, 760, OverlayProtocol.POSITION_UNSET, OverlayProtocol.POSITION_UNSET, "DESKTOP", "BOTTOM"));
+                0.25, 0, 760, OverlayProtocol.POSITION_UNSET, OverlayProtocol.POSITION_UNSET, "DESKTOP", "BOTTOM", ""));
 
         SystemSession.HudOverlayLayout stored = session.getHudOverlayLayout();
         assertEquals(0d, stored.fontScale(), "0 means the commander never chose a text size");
@@ -76,7 +76,7 @@ class HudOverlayLayoutPersistenceTest {
      */
     @Test
     void aPositionJustPastTheLeftEdgeIsNotMistakenForUnset() {
-        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.5, 1.0, 760, -3, 590, "DESKTOP", "TOP_RIGHT"));
+        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.5, 1.0, 760, -3, 590, "DESKTOP", "TOP_RIGHT", ""));
 
         SystemSession.HudOverlayLayout stored = session.getHudOverlayLayout();
         assertEquals(-3, stored.x());
@@ -91,7 +91,7 @@ class HudOverlayLayoutPersistenceTest {
      */
     @Test
     void theChosenDisplayModeSurvivesARestart() {
-        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.25, 1.0, 760, -1, -1, "VR", "BOTTOM"));
+        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.25, 1.0, 760, -1, -1, "VR", "BOTTOM", ""));
 
         assertEquals("VR", session.getHudOverlayLayout().displayMode());
     }
@@ -115,7 +115,7 @@ class HudOverlayLayoutPersistenceTest {
     @Test
     void theChosenVrPlacementSurvivesARestart() {
         session.setHudOverlayLayout(
-                new SystemSession.HudOverlayLayout(0.25, 1.0, 760, -1, -1, "VR", "TOP_LEFT"));
+                new SystemSession.HudOverlayLayout(0.25, 1.0, 760, -1, -1, "VR", "TOP_LEFT", ""));
 
         assertEquals("TOP_LEFT", session.getHudOverlayLayout().vrPosition());
     }

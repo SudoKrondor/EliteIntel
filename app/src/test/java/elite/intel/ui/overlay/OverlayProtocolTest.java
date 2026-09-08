@@ -7,8 +7,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -201,6 +200,91 @@ class OverlayProtocolTest {
                 Arrays.stream(HudVrPosition.values()).map(HudVrPosition::wireName).toList(),
                 inTheOverlay,
                 "VR_POSITION_NAMES in overlay/src/hud_model.c must match HudVrPosition, in order");
+    }
+
+    @Test
+    void theWholePaletteTravelsOnOneLine() {
+        String line = OverlayProtocol.colors(Map.of(HudOverlayColor.RADIO, new Color(0x102030)));
+
+        String[] fields = line.split("\t", -1);
+        assertEquals("CFG", fields[0]);
+        assertEquals(HudOverlayColor.values().length + 1, fields.length,
+                "every role is sent every time, so a reset needs no verb of its own");
+        // hud_handle_command splits a line into at most 16 fields and keeps the
+        // rest of the line in the last one, so a palette that outgrew that would
+        // arrive as a colour with several colours glued onto it.
+        assertTrue(fields.length <= 16, "a CFG line is read as at most 16 fields");
+        assertTrue(line.contains("\tcol_radio=102030"), line);
+    }
+
+    @Test
+    void aRoleTheCommanderNeverTouchedIsSentAtItsDefault() {
+        String line = OverlayProtocol.colors(Map.of());
+
+        for (HudOverlayColor role : HudOverlayColor.values()) {
+            assertTrue(line.contains("\tcol_" + role.wireName() + "="
+                            + HudOverlayColor.hex(role.defaultColor())),
+                    role + " missing from " + line);
+        }
+    }
+
+    /**
+     * The same standing hazard as the placements above, one layer down: the C
+     * side matches a colour key by name and falls back to its own compiled-in
+     * table for anything it does not recognise. A role renamed on one side only
+     * would leave that colour silently stuck at the default, with nothing logged
+     * and only the commander's own eyes to catch it.
+     */
+    @Test
+    void everyColorRoleIsOneTheOverlayKnows() {
+        assertEquals(
+                Arrays.stream(HudOverlayColor.values()).map(HudOverlayColor::wireName).toList(),
+                namesFromTheCSide("HUD_COLOR_NAMES[HUD_COL_COUNT]", cSource("hud_model.c")),
+                "HUD_COLOR_NAMES in overlay/src/hud_model.c must match HudOverlayColor, in order");
+    }
+
+    /**
+     * Both ends also carry their own copy of the shipped palette - the binary
+     * needs one for the runs where no app is driving it - so the two can drift
+     * apart into a HUD that changes colour the moment the app connects to it.
+     */
+    @Test
+    void theShippedPaletteIsTheSameOnBothSides() {
+        String header = cSource("hud.h");
+        for (HudOverlayColor role : HudOverlayColor.values()) {
+            String macro = "HUD_COL_DEFAULT_" + role.name();
+            Matcher value = Pattern.compile("#define\\s+" + macro + "\\s+0x([0-9A-Fa-f]{6})").matcher(header);
+            assertTrue(value.find(), macro + " has gone from overlay/src/hud.h");
+            assertEquals(HudOverlayColor.hex(role.defaultColor()), value.group(1).toUpperCase(Locale.ROOT),
+                    macro + " must match " + role + " in HudOverlayColor");
+        }
+    }
+
+    private static String cSource(String name) {
+        Path source = Stream.of(Path.of("overlay/src/" + name), Path.of("../overlay/src/" + name))
+                .filter(Files::isRegularFile)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(
+                        "overlay/src/" + name + " not found from " + Path.of("").toAbsolutePath()));
+        try {
+            return Files.readString(source, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new AssertionError("cannot read " + source, e);
+        }
+    }
+
+    /**
+     * The quoted names of a C string table, in declaration order.
+     */
+    private static List<String> namesFromTheCSide(String declaration, String text) {
+        int start = text.indexOf(declaration);
+        assertTrue(start > 0, declaration + " has gone from the overlay sources");
+        String table = text.substring(text.indexOf('{', start), text.indexOf('}', start));
+
+        List<String> names = new ArrayList<>();
+        Matcher quoted = Pattern.compile("\"([a-z_]+)\"").matcher(table);
+        while (quoted.find()) names.add(quoted.group(1));
+        return names;
     }
 
     private static List<String> vrPositionNamesFromTheCSide() {

@@ -73,7 +73,7 @@ public class AxesSettingsDialog extends JDialog {
         colorButton.setBackground(chosenColor);
         colorButton.setOpaque(true);
         colorButton.addActionListener(e -> {
-            Color c = JColorChooser.showDialog(this, getText("inputMonitor.axes.chooseColor"), chosenColor);
+            Color c = AppTheme.showColorChooser(this, getText("inputMonitor.axes.chooseColor"), chosenColor);
             if (c != null) {
                 chosenColor = c;
                 colorButton.setBackground(c);

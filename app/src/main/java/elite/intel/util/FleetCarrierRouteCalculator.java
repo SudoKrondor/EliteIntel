@@ -16,6 +16,15 @@ import java.util.Map;
 import static elite.intel.util.StringUtls.localizedEvent;
 import static elite.intel.util.StringUtls.localizedEventPlural;
 
+/**
+ * Plots the commander's fleet carrier route, and is the only thing in the app that ever writes one.
+ *
+ * <p>WHY that matters enough to say here: the app used to re-plot a route by itself whenever the carrier
+ * turned up somewhere the route did not mention - on arrival, and again during the startup replay. Since
+ * the destination it re-plotted to was read from the very route it was replacing, a route the commander
+ * had stopped following could not be got rid of: clearing it only meant the next jump, or the next app
+ * start, put it back, at the cost of a Spansh call each time. An arrival now voids such a route instead.
+ */
 public class FleetCarrierRouteCalculator {
 
     public static String calculate() {
@@ -37,11 +46,13 @@ public class FleetCarrierRouteCalculator {
             return localizedEvent("event.carrier.route.locationUnavailable");
         }
 
-        if (!plotAndStore(origin, destination)) {
+        Map<Integer, CarrierJump> plotted = plot(origin, destination);
+        if (plotted.isEmpty()) {
             // WHY nothing was stored: an unplottable destination must leave the current route
             // standing, and must not be reported against the legs of the route it failed to replace.
             return localizedEvent("event.carrier.route.navFailed", destination);
         }
+        routeManager.setFleetCarrierRoute(plotted);
 
         // WHY read back rather than count the plot: the manager drops the legs the carrier has
         // already flown, so only the stored route knows what is still ahead of it.
@@ -55,61 +66,6 @@ public class FleetCarrierRouteCalculator {
                    + " "
                    + localizedEvent("event.carrier.route.nextStep");
         }
-    }
-
-    /**
-     * What became of an automatic re-plot.
-     */
-    public enum ReplotOutcome {
-        /**
-         * The repaired route was stored.
-         */
-        STORED,
-        /**
-         * Spansh found no route, so the stored one was left standing.
-         */
-        NO_ROUTE,
-        /**
-         * The route was abandoned or moved on while Spansh was answering, so the plot was dropped.
-         */
-        ABANDONED
-    }
-
-    /**
-     * Plots from one system to another and stores the result, saying nothing to anyone.
-     *
-     * <p>WHY separate from {@link #calculate()}: that one is the commander's own request, so it reads
-     * his clipboard for the destination and speaks while it works. An automatic re-plot has its
-     * destination already, must not touch the clipboard, and may run before the companion is up.
-     *
-     * @return false when Spansh found no route, in which case the stored route is left standing.
-     */
-    public static boolean plotAndStore(String origin, String destination) {
-        Map<Integer, CarrierJump> plotted = plot(origin, destination);
-        if (plotted.isEmpty()) return false;
-
-        FleetCarrierRouteManager.getInstance().setFleetCarrierRoute(plotted);
-        return true;
-    }
-
-    /**
-     * The same repair, for a caller that started it in the background and may have been overtaken.
-     *
-     * <p>WHY it exists alongside {@link #plotAndStore}: Spansh takes seconds to answer, and a re-plot
-     * waits out that answer on a thread of its own so the commander hears about his carrier's arrival
-     * immediately. That is exactly the moment he is most likely to abandon the route, and storing the
-     * answer regardless would put back what he had just been told was cleared. The route is only
-     * replaced if it is still the one this repair set out to fix.
-     *
-     * @param expectedGeneration {@code FleetCarrierRouteManager.generation()} read before plotting
-     */
-    public static ReplotOutcome replot(String origin, String destination, long expectedGeneration) {
-        Map<Integer, CarrierJump> plotted = plot(origin, destination);
-        if (plotted.isEmpty()) return ReplotOutcome.NO_ROUTE;
-
-        return FleetCarrierRouteManager.getInstance().setFleetCarrierRouteIfUnchanged(plotted, expectedGeneration)
-                ? ReplotOutcome.STORED
-                : ReplotOutcome.ABANDONED;
     }
 
     /**

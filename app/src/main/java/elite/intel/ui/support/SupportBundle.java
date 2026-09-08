@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -55,6 +56,16 @@ public final class SupportBundle {
      * The in-app SYSTEM LOG transcript, which exists only in memory until now.
      */
     public static final String SESSION_LOG_ENTRY = "session.log";
+
+    /**
+     * What the microphone is doing: the device and format the capture negotiated, and a summary of the levels
+     * it has heard. Levels only, never audio - see {@code MicLevelRecorder} for why.
+     * <p>
+     * WHY it is in here: "the app does not hear me" is the one report the logs cannot answer. Nothing about
+     * it reaches the application log, and every cause looks identical from the commander's chair, so without
+     * this the whole diagnosis was a chain of questions they had no way to answer.
+     */
+    public static final String MIC_DIAGNOSTICS_ENTRY = "mic-diagnostics.txt";
 
     /**
      * The game's own live state files, which it keeps beside the journal and rewrites in place.
@@ -94,9 +105,22 @@ public final class SupportBundle {
      *                    rolled sibling is taken as well, since the appender rolls on startup
      * @param journalDir  the configured journal directory; the newest {@code .log} in it is taken
      * @param bindingsDir the configured bindings directory; the active preset's file is taken
+     * @param micDiagnostics rendered on demand rather than passed as text, because it enumerates the system's
+     *                       audio devices and compares them against the saved one - work that blocks, and that
+     *                       must not run on the EDT where the caller assembles the rest of this. Null when the
+     *                       caller has no audio pipeline.
      */
     public record Sources(String appVersion, String sessionLog,
-                          @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir) {
+                          @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
+                          @Nullable Supplier<String> micDiagnostics) {
+
+        /**
+         * Sources with no microphone diagnostics, for a caller that has no audio pipeline to ask.
+         */
+        public Sources(String appVersion, String sessionLog,
+                       @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir) {
+            this(appVersion, sessionLog, appLog, journalDir, bindingsDir, null);
+        }
     }
 
     /**
@@ -143,6 +167,7 @@ public final class SupportBundle {
             copy(zip, "journal", newestJournal(sources.journalDir()), included, omitted);
             copyGameState(zip, sources.journalDir(), included, omitted);
             copy(zip, "bindings", activeBindings(sources.bindingsDir()), included, omitted);
+            writeMicDiagnostics(zip, sources.micDiagnostics(), included, omitted);
 
             writeEntry(zip, INFO_ENTRY, manifest(sources, included, omitted).getBytes(StandardCharsets.UTF_8));
         }
@@ -172,6 +197,39 @@ public final class SupportBundle {
             log.warn("Diagnostics bundle: could not read {} ({}): {}", label, source.path(), e.toString());
             omitted.add(label + " - could not read " + source.path() + ": " + e);
         }
+    }
+
+    /**
+     * Adds the microphone report, or records why there is none.
+     * <p>
+     * The supplier is called inside the try because this one source is computed rather than read: it probes
+     * the machine's audio devices, and a machine whose audio subsystem is broken enough to swallow the
+     * commander's voice is exactly the machine most likely to throw here. Letting that escape would cost the
+     * whole bundle - including the journal and the logs - to save one section of it.
+     */
+    private static void writeMicDiagnostics(ZipOutputStream zip, @Nullable Supplier<String> micDiagnostics,
+                                            List<String> included, List<String> omitted) throws IOException {
+        // Silent rather than reported, on the same rule as an absent Collected: a caller with no audio
+        // pipeline to ask is not an incomplete bundle, and saying so would make every healthy one read as one.
+        if (micDiagnostics == null) {
+            return;
+        }
+        String report;
+        try {
+            report = micDiagnostics.get();
+        } catch (RuntimeException | LinkageError e) {
+            log.warn("Diagnostics bundle: could not collect microphone diagnostics", e);
+            omitted.add("microphone diagnostics - could not be collected: " + e);
+            return;
+        }
+        // A supplier that ran and produced nothing IS worth reporting, unlike an absent one: the renderer
+        // always has something to say, so an empty answer means it failed to say it.
+        if (report == null || report.isBlank()) {
+            omitted.add("microphone diagnostics - the report came back empty");
+            return;
+        }
+        writeEntry(zip, MIC_DIAGNOSTICS_ENTRY, report.getBytes(StandardCharsets.UTF_8));
+        included.add(MIC_DIAGNOSTICS_ENTRY);
     }
 
     /**

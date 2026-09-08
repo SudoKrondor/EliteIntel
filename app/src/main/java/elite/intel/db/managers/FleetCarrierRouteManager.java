@@ -14,31 +14,21 @@ import java.util.*;
  * the carrier is sitting in can never be handed out as a leg — not from a fresh plot, not from a
  * route the previous run left in the table, and not from a leg an arrival failed to clear. See
  * {@link CarrierRouteLegs} for the rule itself.
+ *
+ * <p>Legs get here one way only: the commander asking for a route to be plotted. Arrivals consume legs
+ * and void the route, and nothing in the app plots one on its own initiative - an automatic re-plot made
+ * an abandoned route immortal, because the route it read the destination from was the one it put back.
  */
 public class FleetCarrierRouteManager {
 
     private static volatile FleetCarrierRouteManager instance;
 
     /**
-     * How many times the stored route has been replaced, consumed or abandoned.
+     * Serialises whole-table writes, so a plot, a consumed leg and a clear cannot interleave.
      *
-     * <p>WHY it exists: the re-plot that follows an off-route arrival runs detached, because it calls
-     * Spansh and must not hold up the arrival announcement. The commander can abandon the route while
-     * that call is still out - and that is the likeliest moment for him to do it, since the arrival he
-     * is hearing about is what tells him the route is still there. Storing the answer afterwards would
-     * put back the route he was just told had been cleared. A plotter therefore reads this before it
-     * starts and hands it back with the result, so a route that moved underneath it is recognised and
-     * the plot dropped.
-     */
-    private long generation;
-
-    /**
-     * Guards {@link #generation} together with the write it counts, so a plot cannot be checked against
-     * a generation and then stored across someone else's clear.
-     *
-     * <p>WHY a lock of its own rather than the arrival owner's: the detached plotter never takes that
-     * one. {@code CarrierArrival} holds its lock across {@link #removeLeg}, so this one is only ever
-     * acquired after it and never before, and the two cannot deadlock.
+     * <p>WHY a lock of its own rather than the arrival owner's: {@code CarrierArrival} holds its lock
+     * across {@link #removeLeg} and {@link #clear}, so this one is only ever acquired after it and
+     * never before, and the two cannot deadlock.
      */
     private final Object routeLock = new Object();
 
@@ -71,36 +61,6 @@ public class FleetCarrierRouteManager {
         }
     }
 
-    /**
-     * Stores a plot made on the app's own initiative, unless the route changed while it was being
-     * calculated.
-     *
-     * <p>An automatic re-plot is a repair of one particular route, not a standing instruction to keep
-     * one plotted. If that route was abandoned, consumed or replaced since {@code expectedGeneration}
-     * was read, the plot describes a voyage nobody is on any more and is dropped. See
-     * {@link #generation}.
-     *
-     * @param expectedGeneration the value {@link #generation()} returned before the plot was started
-     * @return true when the plot was stored, false when the route had moved on and it was dropped
-     */
-    public boolean setFleetCarrierRouteIfUnchanged(Map<Integer, CarrierJump> fleetCarrierRoute, long expectedGeneration) {
-        if (fleetCarrierRoute == null || fleetCarrierRoute.isEmpty()) return false;
-        synchronized (routeLock) {
-            if (generation != expectedGeneration) return false;
-            store(fleetCarrierRoute);
-            return true;
-        }
-    }
-
-    /**
-     * The route as it stands, for a caller that is about to go away and come back with a plot.
-     */
-    public long generation() {
-        synchronized (routeLock) {
-            return generation;
-        }
-    }
-
     private void store(Map<Integer, CarrierJump> fleetCarrierRoute) {
         List<CarrierJump> plotted = new ArrayList<>(new TreeMap<>(fleetCarrierRoute).values());
         List<CarrierJump> remaining = CarrierRouteLegs.stillToFly(plotted, currentCarrierSystem());
@@ -109,7 +69,6 @@ public class FleetCarrierRouteManager {
             dao.replaceAll(remaining.stream().map(FleetCarrierRouteManager::dtoToEntity).toList());
             return null;
         });
-        generation++;
     }
 
     /**
@@ -176,7 +135,7 @@ public class FleetCarrierRouteManager {
         if (arrival == null) return;
 
         synchronized (routeLock) {
-            boolean consumed = Database.withDao(FleetCarrierRouteDao.class, dao -> {
+            Database.withDao(FleetCarrierRouteDao.class, dao -> {
                 List<CarrierJump> stored = dao.getAll().stream()
                         .sorted(Comparator.comparing(FleetCarrierRouteDao.FleetCarrierRouteLeg::getLeg))
                         .map(FleetCarrierRouteManager::entityToDto)
@@ -188,10 +147,19 @@ public class FleetCarrierRouteManager {
                 dao.replaceAll(remaining.stream().map(FleetCarrierRouteManager::dtoToEntity).toList());
                 return true;
             });
-            // WHY counted: a plot made before this arrival was plotted from a system the carrier has
-            // now left, so it is as stale as one made before a clear.
-            if (consumed) generation++;
         }
+    }
+
+    /**
+     * Whether the table holds any leg at all, including ones the carrier has already flown past.
+     *
+     * <p>WHY it exists next to {@link #getFleetCarrierRoute()}: that one is truncated at the carrier's
+     * own system, so a carrier sitting on the last leg of a route reads as having no route. The
+     * question "was there a route for this arrival to void" has to count the rows, or those rows
+     * survive the arrival and come back as leg 1 the next time the carrier moves.
+     */
+    public boolean hasStoredLegs() {
+        return Database.withDao(FleetCarrierRouteDao.class, dao -> !dao.getAll().isEmpty());
     }
 
     public void clear() {
@@ -200,7 +168,6 @@ public class FleetCarrierRouteManager {
                 dao.clear();
                 return null;
             });
-            generation++;
         }
     }
 

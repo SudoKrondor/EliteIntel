@@ -3,13 +3,10 @@ package elite.intel.gameapi;
 import com.google.common.eventbus.EventBus;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.gameapi.journal.EventRegistry;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.gameapi.journal.subscribers.DockedMarketSubscriber;
 import elite.intel.gameapi.journal.subscribers.SilentPersistenceSubscriber;
-import elite.intel.session.PlayerSession;
-import elite.intel.util.FleetCarrierRouteCalculator;
 import elite.intel.util.json.GsonFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,9 +25,10 @@ import java.util.stream.Collectors;
  * and ship data. Runs on its own thread; publishes only to a private EventBus
  * so no live subscribers (TTS, game input, EDSM) are ever triggered.
  *
- * <p>One deliberate exception, after the replay and never during it: a carrier that jumped off its
- * plotted route while the app was down gets that route re-plotted. See
- * {@link #replotCarrierRouteIfLeftBehind}.
+ * <p>Makes no network calls at all. It used to make exactly one - re-plotting a carrier route the
+ * carrier had jumped off while the app was down - and that call was how a route the commander had
+ * cleared came back at the next start, because the destination it re-plotted to was read from the
+ * route it was replacing. The replay voids such a route now instead.
  */
 public class JournalPreScanner {
 
@@ -59,8 +57,7 @@ public class JournalPreScanner {
         List<Path> toScan = all.subList(Math.max(0, all.size() - JOURNALS_TO_SCAN), all.size());
 
         EventBus privateBus = new EventBus("pre-scan");
-        SilentPersistenceSubscriber persistence = new SilentPersistenceSubscriber();
-        privateBus.register(persistence);
+        privateBus.register(new SilentPersistenceSubscriber());
         FinancePreScanAccumulator finance = new FinancePreScanAccumulator();
         privateBus.register(finance);
         MaterialsPreScanAccumulator materials = new MaterialsPreScanAccumulator();
@@ -78,39 +75,8 @@ public class JournalPreScanner {
 
         finance.persist();
         materials.persist();
-        replotCarrierRouteIfLeftBehind(persistence);
 
         log.info("JournalPreScanner: done");
-    }
-
-    /**
-     * The one network call this class makes, and only when the journal proves the carrier jumped off
-     * its plotted route while the app was down.
-     *
-     * <p>WHY it is worth the exception: the stored route then runs from a system the carrier has left,
-     * so every leg it reports is unreachable, and nothing repairs that until the next live arrival,
-     * which may be hours away or may never come while this route is current. WHY here rather than in
-     * the subscriber: the subscriber makes no network calls, and waiting until the replay is finished
-     * plots from the carrier's final position instead of once per intermediate hop.
-     */
-    private static void replotCarrierRouteIfLeftBehind(SilentPersistenceSubscriber persistence) {
-        if (!persistence.carrierRouteNeedsReplot()) return;
-
-        FleetCarrierRouteManager route = FleetCarrierRouteManager.getInstance();
-        if (route.getFleetCarrierRoute().isEmpty()) return;
-
-        String destination = route.getFinalDestination();
-        if (destination == null || destination.isBlank()) return;
-
-        String carrierSystem = PlayerSession.getInstance().getCurrentFleetCarrierSystem();
-        if (carrierSystem == null) return;
-
-        log.info("JournalPreScanner: carrier left its route while we were down; re-plotting {} -> {}",
-                carrierSystem, destination);
-        if (!FleetCarrierRouteCalculator.plotAndStore(carrierSystem, destination)) {
-            log.warn("JournalPreScanner: could not re-plot the carrier route from {} to {}; the stored"
-                    + " route still starts elsewhere", carrierSystem, destination);
-        }
     }
 
     private static void processFile(Path file, EventBus bus) {

@@ -38,6 +38,55 @@
 #define MAX_LINE   8192
 #define TYPEWRITER_MS 25
 
+/// One colour of the card, as cairo wants it: linear 0-1 per channel.
+typedef struct { double r, g, b; } Rgb;
+
+/// A colour the commander can change, and its slot in the palette.
+///
+/// The roles are the ones the renderer actually asks for, not every colour on
+/// screen: the card's own background is set by `CFG alpha` and stays out of
+/// this list, because a commander who dims the backdrop has already said what
+/// they want behind the text.
+///
+/// Wire names are `col_<role>` in HUD_COLOR_NAMES order, so a role maps onto a
+/// slot by index and the names cannot drift out of step with the enum the way a
+/// switch would. Must match HudOverlayColor on the Java side.
+typedef enum {
+    HUD_COL_PRIMARY,     // objective title, and any row value with no state
+    HUD_COL_SUCCESS,     // a row reading "good"
+    HUD_COL_WARNING,     // a row reading "warn"
+    HUD_COL_DANGER,      // a row reading "critical"
+    HUD_COL_DISABLED,    // subtitle, row labels, the empty part of a progress bar
+    HUD_COL_USER,        // the commander's own words
+    HUD_COL_AI,          // the ship AI's reply
+    HUD_COL_RADIO,       // station control, carriers, other commanders
+    HUD_COL_COUNT
+} ColorRole;
+
+/// The shipped colour of each role, as 0xRRGGBB.
+///
+/// These are the defaults a commander gets before they touch anything, and the
+/// app sends the whole palette on every start - so this table only decides what
+/// the binary draws when it is driven by hand (test-feed.sh) or by an app too
+/// old to send colours. It mirrors HudPalette.java, which is where the same
+/// colours are defined for the desktop window.
+#define HUD_COL_DEFAULT_PRIMARY  0xFF7100
+#define HUD_COL_DEFAULT_SUCCESS  0x4FC56B
+#define HUD_COL_DEFAULT_WARNING  0xFFB000
+#define HUD_COL_DEFAULT_DANGER   0xD94F4F
+#define HUD_COL_DEFAULT_DISABLED 0x6E4A28
+#define HUD_COL_DEFAULT_USER     0x4FC56B
+#define HUD_COL_DEFAULT_AI       0x72A2B4
+// Radio traffic: somebody else on the channel, not the ship's own AI. Violet,
+// matched to the AI colour's brightness and saturation rather than picked by eye
+// - all three lanes sit near 0.61 relative luminance at ~0.36 saturation, so
+// only the hue tells them apart (~134, ~196, ~274 degrees).
+#define HUD_COL_DEFAULT_RADIO    0xB78CD9
+
+/// 0xRRGGBB as an Rgb initialiser, so the defaults above read as the hex a
+/// commander sees in the settings dialog rather than as three rounded decimals.
+#define HUD_RGB(hex) { ((hex) >> 16 & 0xFF) / 255.0, ((hex) >> 8 & 0xFF) / 255.0, ((hex) & 0xFF) / 255.0 }
+
 typedef enum { ST_NORMAL, ST_GOOD, ST_WARN, ST_CRITICAL } State;
 
 typedef struct {
@@ -112,6 +161,11 @@ typedef struct {
     /// monitor, which a headset does not have.
     double tilt;             // shear at the screen edge; 0 disables the effect
     int    tilt_width;       // logical card width while tilted, see hud_tilt.c
+
+    /// Text colours, indexed by ColorRole. Set by `CFG col_<role>=RRGGBB`; the
+    /// app sends the whole palette on start, so a commander's choices survive a
+    /// restart of either side.
+    Rgb palette[HUD_COL_COUNT];
 
     /// Draw for a capture tool rather than for the commander's own eyes.
     ///

@@ -700,6 +700,39 @@ public class AppTheme {
         return new HudTabbedPane(HudTabbedPane.Level.STANDARD);
     }
 
+    // -- Colour chooser --------------------------------------------------------
+
+    /**
+     * The JDK's own colour chooser, dressed enough to sit in this app, shown modally.
+     * Returns the chosen colour, or {@code null} if the commander cancelled - the
+     * same contract as {@link JColorChooser#showDialog}.
+     * <p>
+     * Only the tab strip is touched. {@link #applyDarkPalette} would walk the whole
+     * chooser and repaint the preview swatches and the sample text in the app's own
+     * colours - painting over the one part of the dialog whose job is to show the
+     * colour being picked. The tab strip needs its background set on the component
+     * because the pane keeps the look-and-feel's near-white default there, which
+     * leaves a pale band beside the tabs on an otherwise dark dialog; the selected
+     * tab's own white-on-white text is fixed globally, in the UI defaults.
+     */
+    public static Color showColorChooser(Component parent, String title, Color initial) {
+        JColorChooser chooser = new JColorChooser(initial == null ? HUD_COLOR_ROLE_PRIMARY_ACTION : initial);
+        for (Component child : chooser.getComponents()) {
+            if (child instanceof JTabbedPane tabs) {
+                tabs.setOpaque(true);
+                tabs.setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+            }
+        }
+
+        // One-element array rather than a field: the listener runs on this thread,
+        // inside the modal setVisible below, before the value is read.
+        Color[] chosen = new Color[1];
+        JDialog dialog = JColorChooser.createDialog(parent, title, true, chooser,
+                e -> chosen[0] = chooser.getColor(), null);
+        dialog.setVisible(true);
+        return chosen[0];
+    }
+
     // -- Dark palette ----------------------------------------------------------
 
     public static void applyDarkPalette(Component c) {
