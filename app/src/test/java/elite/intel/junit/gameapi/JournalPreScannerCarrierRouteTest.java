@@ -19,17 +19,20 @@ import java.util.Map;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * A fleet carrier jumps on its own schedule, with or without the commander in the game. When it jumps
  * off its plotted route while the app is down, the arrival reaches the app only through the startup
- * replay: the live parser drops journal lines older than app start. Without a repair there, the stored
- * route keeps running from a system the carrier has left, and every leg it reports is unreachable.
+ * replay: the live parser drops journal lines older than app start. So the replay is the only place
+ * that can notice the carrier is no longer on the voyage the table describes.
  *
- * <p>The pre-scan itself makes no network calls, so the re-plot happens after the replay, once, from
- * the carrier's final position.
+ * <p>It used to react by re-plotting the route from the carrier's new position, which was the one
+ * network call the pre-scan made. That is what made an abandoned route impossible to be rid of: the
+ * destination came from the very route being replaced, so a commander who cleared it got it back at his
+ * next start, at the cost of a Spansh call, and then again after every jump. Spansh plots carrier legs
+ * to the ton, so an arrival off the route is never a deviation - it is the commander jumping somewhere
+ * else because he changed his mind. The route is therefore voided, and the pre-scan calls nobody.
  */
 class JournalPreScannerCarrierRouteTest {
 
@@ -66,8 +69,10 @@ class JournalPreScannerCarrierRouteTest {
     }
 
     @Test
-    @DisplayName("a carrier that left its route while the app was down has the route re-plotted from where it now is")
-    void anOffRouteArrivalLearnedAtStartupReplotsTheRoute(@TempDir Path journalDir) throws IOException {
+    @DisplayName("a carrier that left its route while the app was down has that route voided, with no Spansh call")
+    void anOffRouteArrivalLearnedAtStartupVoidsTheRoute(@TempDir Path journalDir) throws IOException {
+        // Stubbed on purpose: a call would succeed, so verifying that none was made is a real assertion
+        // rather than an artefact of an unreachable server.
         System.setProperty("spansh.base.url", wm.baseUrl());
         stubJobAndResult(REPLOTTED_ROUTE);
 
@@ -83,17 +88,16 @@ class JournalPreScannerCarrierRouteTest {
 
         assertEquals("Eephaik CX-V b31-9", session.getCurrentFleetCarrierSystem(),
                 "the replay has to have followed the carrier first");
-        Map<Integer, CarrierJump> replotted = route.getFleetCarrierRoute();
-        assertEquals(2, replotted.size(), "the route should be the freshly plotted one");
-        assertEquals("Blua Eaec WW-E d11-32", replotted.get(1).getSystemName(),
-                "leg 1 must be reachable from where the carrier actually is");
+        assertFalse(route.hasStoredLegs(),
+                "the carrier is not on that voyage any more, and nothing may plot one for it");
         assertNull(route.findByPrimaryStar("Dryooe Flyou GB-I c24-147"),
                 "the abandoned route's legs must be gone");
+        wm.verify(0, postRequestedFor(urlEqualTo("/api/fleetcarrier/route")));
     }
 
     @Test
-    @DisplayName("a carrier still sitting where its route starts is left alone, and Spansh is not called")
-    void aPositionReportDoesNotReplot(@TempDir Path journalDir) throws IOException {
+    @DisplayName("a carrier still sitting where its route starts keeps it, and Spansh is not called")
+    void aPositionReportLeavesTheRouteStanding(@TempDir Path journalDir) throws IOException {
         System.setProperty("spansh.base.url", wm.baseUrl());
         stubJobAndResult(REPLOTTED_ROUTE);
 

@@ -50,7 +50,6 @@ public class SilentPersistenceSubscriber {
 
     // Seeded before the replay starts, then advanced by each replayed arrival. See recordArrival.
     private String lastKnownCarrierSystem = playerSession.getCurrentFleetCarrierSystem();
-    private boolean carrierRouteNeedsReplot = false;
 
     @Subscribe
     public void onLoadGame(LoadGameEvent event) {
@@ -230,8 +229,8 @@ public class SilentPersistenceSubscriber {
     }
 
     /**
-     * Retires the scheduled departure this arrival completed, and notes whether it left the plotted
-     * route behind.
+     * Retires the scheduled departure this arrival completed, and voids the plotted route if the
+     * carrier left it behind.
      *
      * <p>WHY tracked in a field rather than read back from the session: this class also writes
      * {@code lastKnownCarrierLocation}, and a handler that reads the value it is about to write cannot
@@ -241,29 +240,29 @@ public class SilentPersistenceSubscriber {
      * LoadGame, where the carrier has not gone anywhere and a pending jump is still pending. Clearing
      * on every replay would forget it. A departure the carrier has demonstrably made is over, and
      * leaving it on file leaves the app counting down to a jump that already happened.
+     *
+     * <p>WHY the route is dropped here rather than repaired after the replay: it used to be re-plotted,
+     * which is the one network call the pre-scan made - and since the destination came from the route
+     * being replaced, a route the commander had cleared came back at the next start. A carrier that
+     * jumped somewhere the route never mentioned is not on that voyage any more, and the app has
+     * nothing to say about a voyage the commander abandoned.
      */
     private void recordArrival(String starSystem) {
         String arrival = CarrierRouteLegs.normalise(starSystem);
         if (CarrierRouteLegs.isSameSystem(lastKnownCarrierSystem, arrival)) return;
 
-        // WHY read before the route is consulted anywhere else: the arrival leg is still in the table
-        // at this point, and it is the only thing that tells an on-route arrival from an off-route one.
-        boolean arrivedOffRoute = FleetCarrierRouteManager.getInstance().findByPrimaryStar(arrival) == null;
-        carrierRouteNeedsReplot = arrivedOffRoute;
         lastKnownCarrierSystem = arrival;
-
         playerSession.setCarrierDepartureTime(null);
-        log.debug("PreScan: carrier moved to {} while we were down; off-route: {}", arrival, arrivedOffRoute);
-    }
 
-    /**
-     * Whether the replay found the carrier somewhere its plotted route does not run from, which no
-     * later live event will repair on its own. Answered after the replay, by
-     * {@link elite.intel.gameapi.JournalPreScanner}, because re-plotting needs the network this class
-     * must not touch.
-     */
-    public boolean carrierRouteNeedsReplot() {
-        return carrierRouteNeedsReplot;
+        // WHY consulted before anything else writes the route: the arrival leg is still in the table at
+        // this point, and it is the only thing that tells an on-route arrival from an off-route one.
+        FleetCarrierRouteManager route = FleetCarrierRouteManager.getInstance();
+        boolean arrivedOffRoute = route.findByPrimaryStar(arrival) == null;
+        if (arrivedOffRoute && route.hasStoredLegs()) {
+            log.debug("PreScan: carrier jumped to {} off its plotted route while we were down; route voided", arrival);
+            route.clear();
+        }
+        log.debug("PreScan: carrier moved to {} while we were down; off-route: {}", arrival, arrivedOffRoute);
     }
 
     @Subscribe

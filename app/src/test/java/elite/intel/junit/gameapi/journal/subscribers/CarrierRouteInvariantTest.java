@@ -189,8 +189,8 @@ class CarrierRouteInvariantTest {
 
     /**
      * The game writes CarrierLocation at every LoadGame, where the carrier has not moved. Treating it
-     * as an arrival burned a leg's tritium, cancelled a scheduled jump and re-plotted over the
-     * commander's clipboard, every time he restarted the game.
+     * as an arrival burned a leg's tritium, cancelled a scheduled jump and threw away the route,
+     * every time he restarted the game.
      *
      * <p>WHY the EDSM count is asserted rather than only the session state: an arrival for a system
      * that is no longer a route leg resolves its coordinates over the network before it touches the

@@ -109,21 +109,27 @@ class PreScanCarrierLocationTest {
                 "the carrier has not moved, so its scheduled jump is still ahead of it");
     }
 
+    /**
+     * The route used to be re-plotted from wherever the carrier had ended up, which is what made an
+     * abandoned route immortal: it was re-plotted to the destination read out of the very route being
+     * replaced, so clearing it only meant the next app start put it back - and spent a Spansh call
+     * doing it. Spansh plots carrier legs to the ton, so a system the route never mentioned is not a
+     * deviation: the commander changed his mind.
+     */
     @Test
-    void anOffRouteArrivalLearnedAtStartupMarksTheRouteForReplotting() {
+    void anOffRouteArrivalLearnedAtStartupVoidsTheRoute() {
         FleetCarrierRouteManager route = FleetCarrierRouteManager.getInstance();
         route.clear();
         session.setLastKnownCarrierLocation("Eephaik LY-R b47-6");
         route.setFleetCarrierRoute(Map.of(1, leg("Dryooe Flyou GB-I c24-147"), 2, leg("Colonia")));
 
         EventBus privateBus = new EventBus("pre-scan-test");
-        SilentPersistenceSubscriber persistence = new SilentPersistenceSubscriber();
-        privateBus.register(persistence);
+        privateBus.register(new SilentPersistenceSubscriber());
 
         privateBus.post(carrierLocation("Eephaik CX-V b31-9", 20299220533521L));
 
-        assertTrue(persistence.carrierRouteNeedsReplot(),
-                "the stored route no longer runs from where the carrier is");
+        assertFalse(route.hasStoredLegs(),
+                "the carrier jumped somewhere the route never mentioned; that voyage is over");
         route.clear();
     }
 
@@ -135,31 +141,29 @@ class PreScanCarrierLocationTest {
         route.setFleetCarrierRoute(Map.of(1, leg("Dryooe Flyou GB-I c24-147"), 2, leg("Colonia")));
 
         EventBus privateBus = new EventBus("pre-scan-test");
-        SilentPersistenceSubscriber persistence = new SilentPersistenceSubscriber();
-        privateBus.register(persistence);
+        privateBus.register(new SilentPersistenceSubscriber());
 
         // The carrier flew the leg it was plotted to fly.
         privateBus.post(carrierLocation("Dryooe Flyou GB-I c24-147", 20299220533521L));
 
-        assertFalse(persistence.carrierRouteNeedsReplot(),
-                "reads already truncate a route at the carrier's own system; nothing to re-plot");
+        assertEquals("Colonia", route.getFinalDestination(),
+                "an on-route arrival leaves the voyage standing");
         route.clear();
     }
 
     @Test
-    void aPositionReportDoesNotMarkTheRouteForReplotting() {
+    void aPositionReportLeavesTheRouteAlone() {
         FleetCarrierRouteManager route = FleetCarrierRouteManager.getInstance();
         route.clear();
         session.setLastKnownCarrierLocation("Eephaik CX-V b31-9");
         route.setFleetCarrierRoute(Map.of(1, leg("Dryooe Flyou GB-I c24-147"), 2, leg("Colonia")));
 
         EventBus privateBus = new EventBus("pre-scan-test");
-        SilentPersistenceSubscriber persistence = new SilentPersistenceSubscriber();
-        privateBus.register(persistence);
+        privateBus.register(new SilentPersistenceSubscriber());
 
         privateBus.post(carrierLocation("Eephaik CX-V b31-9", 20299220533521L));
 
-        assertFalse(persistence.carrierRouteNeedsReplot(), "the carrier has not moved");
+        assertEquals("Colonia", route.getFinalDestination(), "the carrier has not moved");
         route.clear();
     }
 

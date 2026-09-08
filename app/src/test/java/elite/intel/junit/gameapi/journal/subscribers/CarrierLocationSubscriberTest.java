@@ -110,19 +110,22 @@ class CarrierLocationSubscriberTest {
     }
 
     /**
-     * An arrival somewhere the plotted route does not run from leaves every remaining leg unreachable,
-     * so the route is re-plotted from where the carrier now is, towards the destination it was already
-     * heading for.
+     * A carrier that turns up somewhere the plotted route never mentioned is not on that voyage any
+     * more, so the route is dropped - not re-plotted from where it landed.
      *
-     * <p>The re-plot is driven with an explicit destination rather than through the commander-facing
-     * {@code calculate()}, which reads the clipboard: an automatic repair must not replace whatever the
-     * commander had copied. The clipboard itself is deliberately not asserted here, because reading the
-     * system clipboard from a test depends on the desktop environment. What is asserted is that Spansh
-     * is asked to plot from the arrival system, which is the whole reason the destination has to travel
-     * as an argument.
+     * <p>WHY that is the right reading: Spansh plots a carrier's legs to the ton, so an arrival off
+     * the route is never a deviation, it is the commander changing his mind and jumping elsewhere.
+     * Re-plotting instead made an abandoned route immortal, because the destination it re-plotted to
+     * was read out of the very route it was replacing: clearing the route only meant the next jump put
+     * it back, and it cost a Spansh call every time. One commander spent weeks being told "one jump
+     * remaining" after single jumps he had scheduled himself, to a system he had long since stopped
+     * caring about.
+     *
+     * <p>The Spansh route endpoint is stubbed on purpose: a call to it would succeed, so verifying
+     * that none was made is a real assertion rather than an artefact of an unreachable server.
      */
     @Test
-    void anOffRouteArrivalReplotsFromWhereTheCarrierNowIs() throws InterruptedException {
+    void anOffRouteArrivalVoidsTheRouteAndCallsNobody() throws InterruptedException {
         System.setProperty("spansh.base.url", wm.baseUrl());
         stubSpanshRoute();
 
@@ -134,17 +137,31 @@ class CarrierLocationSubscriberTest {
         subscriber.onCarrierLocationEvent(
                 carrierLocationEvent("Eephaik CX-V b31-9", "FleetCarrier", 3712500736L, 20299220533521L));
 
-        awaitTrue(() -> !wm.findAll(postRequestedFor(urlEqualTo("/api/fleetcarrier/route"))).isEmpty());
+        awaitTrue(() -> !route.hasStoredLegs());
 
-        wm.verify(postRequestedFor(urlEqualTo("/api/fleetcarrier/route"))
-                .withRequestBody(containing("source=Eephaik+CX-V+b31-9"))
-                .withRequestBody(containing("destinations=Colonia")));
-
-        awaitTrue(() -> "Blua Eaec WW-E d11-32".equals(routeLegName(route, 1)));
-        assertEquals("Blua Eaec WW-E d11-32", routeLegName(route, 1),
-                "leg 1 must be reachable from where the carrier actually is");
+        assertTrue(route.getFleetCarrierRoute().isEmpty(), "the voyage the commander abandoned is over");
+        wm.verify(0, postRequestedFor(urlEqualTo("/api/fleetcarrier/route")));
         route.clear();
         System.clearProperty("spansh.base.url");
+    }
+
+    /**
+     * The counterpart: the carrier flew the leg it was plotted to fly, so the voyage stands and only
+     * that leg is consumed.
+     */
+    @Test
+    void anOnRouteArrivalConsumesItsLegAndLeavesTheRestStanding() throws InterruptedException {
+        FleetCarrierRouteManager route = FleetCarrierRouteManager.getInstance();
+        route.clear();
+        session.setLastKnownCarrierLocation("Sol");
+        route.setFleetCarrierRoute(Map.of(1, leg("Deciat", 120), 2, leg("Colonia", 95)));
+
+        subscriber.onCarrierLocationEvent(carrierLocationEvent("Deciat", "FleetCarrier", 3712500736L));
+
+        awaitTrue(() -> "Colonia".equals(routeLegName(route, 1)));
+
+        assertEquals(1, route.getFleetCarrierRoute().size(), "only the flown leg is retired");
+        route.clear();
     }
 
     private static String routeLegName(FleetCarrierRouteManager route, int legNumber) {

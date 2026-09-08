@@ -10,12 +10,15 @@ import elite.intel.util.StringUtls;
 /**
  * Abandons the plotted fleet carrier route.
  *
- * <p>WHY it has to exist: a plotted route is consumed one leg at a time by arrivals, and an arrival in a
- * system the route never mentions consumes nothing and re-plots from there to the same final destination.
- * A commander who plots a route and then stops following it therefore keeps that route forever - it
- * survives every manual jump, is quoted back at him on every arrival ("N jumps left"), and re-plots itself
- * from wherever he lands. Nothing else in the app clears it, so without this command the only way out was
- * to fly the route to its end.
+ * <p>WHY it has to exist: a plotted route is consumed one leg at a time by arrivals, so a commander who
+ * plots a route and then simply stops flying it has no other way to say so. An arrival off the route now
+ * voids it, which covers the case where he jumps elsewhere instead; this covers the case where he changes
+ * his mind while sitting still.
+ *
+ * <p>It used to be the only way out of a much worse hole: an off-route arrival re-plotted the route from
+ * wherever the carrier had landed, towards the destination read out of the route it was replacing, so an
+ * abandoned route survived every manual jump and every restart, and even this command only held until the
+ * next one.
  */
 @RegisterCommand
 public final class ClearFleetCarrierRouteCommand implements IntelCommand {
