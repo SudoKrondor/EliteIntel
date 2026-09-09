@@ -304,6 +304,59 @@ class BindingConflictScannerTest {
         assertTrue(conflicts.isEmpty());
     }
 
+    @Test
+    void theLampsShareOneKeyAcrossEveryContextWithoutComplaint() {
+        // The layout commanders actually fly: one key for "the light", wherever they are. Elite names the
+        // control three times because it is bound per vehicle, and only one of them can fire at a time.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "ShipSpotLightToggle", Set.of("Key_L"),
+                "HeadlightsBuggyButton", Set.of("Key_L"),
+                "HumanoidToggleFlashlightButton", Set.of("Key_L")));
+
+        assertTrue(conflicts.isEmpty(), "one lamp key for every vehicle is a choice, not a clash: " + conflicts);
+    }
+
+    @Test
+    void nightVisionSharesOneKeyBetweenVehicleAndFootWithoutComplaint() {
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "NightVisionToggle", Set.of("Key_N"),
+                "HumanoidToggleNightVisionButton", Set.of("Key_N")));
+
+        assertTrue(conflicts.isEmpty(), conflicts.toString());
+    }
+
+    @Test
+    void aLampOnTheSameKeyAsNightVisionStillConflicts() {
+        // Two different controls, worked separately - and EliteIntel taps both of them before a jump, so
+        // on one key its lights-off tap would flip night vision back on.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "ShipSpotLightToggle", Set.of("Key_L"),
+                "NightVisionToggle", Set.of("Key_L")));
+
+        assertEquals(1, conflicts.size(), "a lamp and night vision are not the same control");
+    }
+
+    @Test
+    void aLampOnTheSameKeyAsSomethingElseStillConflicts() {
+        // The relaxation covers a lighting control against itself and nothing else - a spot light that
+        // also drops the landing gear is still worth a word.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "ShipSpotLightToggle", Set.of("Key_L"),
+                "LandingGearToggle", Set.of("Key_L")));
+
+        assertEquals(1, conflicts.size(), "only the lamps are exempt, not the key they sit on");
+    }
+
+    @Test
+    void theSrvLampIsNotRefusedTheKeyTheShipLampAlreadyHas() {
+        // The editor's save-guard reads the same rule. The SRV headlights are spelled without a _Buggy
+        // suffix, so the context model reads them as a ship action - the family is what clears the pair.
+        CandidateConflict conflict = BindingConflictScanner.candidateConflict(
+                "HeadlightsBuggyButton", Set.of("Key_L"), bindings("ShipSpotLightToggle", Set.of("Key_L")));
+
+        assertNull(conflict);
+    }
+
     // --- recommendVehicleTwins: nudging ship/SRV twins onto the same key ---
 
     @Test

@@ -64,6 +64,7 @@ class AiActionMapGeneratorTest {
             "play_previous_music_track",
             "shuffle_music_tracks",
             "play_music_track_by_name",
+            "restart_music_playlist_from_first_track",
             "activate_ui_control",
             "add_mining_target",
             "calculate_fleet_carrier_route",

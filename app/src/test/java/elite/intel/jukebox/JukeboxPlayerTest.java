@@ -204,13 +204,39 @@ class JukeboxPlayerTest {
     }
 
     @Test
-    void theEndOfThePlaylistStopsPlaybackInSequentialOrder() {
-        files.lengthInBlocks(2);
+    void theEndOfThePlaylistRollsRoundToTheFirstTrack() {
+        // Only the last track is short, for the same reason as the test above: the first track has to be
+        // still playing when the assertion runs, or the wrap is a state glimpsed in flight.
+        files.lengthInBlocks("/music/three.mp3", 3);
 
         player.playTrack(trackId(2));
 
-        await(() -> player.state() == PlaybackState.STOPPED,
-                "sequential playback should finish at the end of the list, not wrap round");
+        await(() -> player.currentTrackId().orElse(-1L) == trackId(0),
+                "the last track should roll round to the top of the playlist, not stop the music");
+        assertEquals(PlaybackState.PLAYING, player.state());
+    }
+
+    @Test
+    void playingFromTheTopStartsTheListAgainAtItsFirstTrack() {
+        player.playTrack(trackId(2));
+        await(() -> player.currentTrackId().orElse(-1L) == trackId(2), "third track never started");
+
+        player.playFromTop();
+
+        await(() -> player.currentTrackId().orElse(-1L) == trackId(0),
+                "play from the top did not go back to the first track");
+        assertEquals(PlaybackState.PLAYING, player.state());
+    }
+
+    @Test
+    void previousDoesNotRollBackwardsOffTheTopOfThePlaylist() {
+        player.playTrack(trackId(0));
+        await(() -> files.opened().contains("/music/one.mp3"), "first track never opened");
+
+        player.previous();
+
+        assertEquals(trackId(0), player.currentTrackId().orElse(-1L),
+                "going back from the first track would land somewhere the commander never played");
     }
 
     @Test

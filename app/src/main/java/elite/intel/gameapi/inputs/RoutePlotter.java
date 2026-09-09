@@ -152,7 +152,14 @@ public class RoutePlotter {
                 GameInputStep.rawKey(KeyProcessor.KEY_DOWNARROW, 0, 0),
                 GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding()),
                 GameInputStep.delay(1000),
-                GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding())
+                GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding()),
+                // WHY a camera nudge at the end: the galaxy map does not repaint the plotted course
+                // until something moves the camera, so without this the route is live but the map
+                // still shows the old one. 20ms is a twitch - short enough not to move the view
+                // anywhere the commander would notice, long enough to trigger the redraw.
+                // This is why BINDING_CAM_YAW_LEFT is marked DRIVEN: the commander must be warned
+                // at startup when it is unbound, or the map silently stops refreshing here.
+                GameInputStep.bindingHold(BINDING_CAM_YAW_LEFT.getGameBinding(), 20)
         ));
 
         GameControllerBus.publish(new GameInputSequenceEvent(steps));

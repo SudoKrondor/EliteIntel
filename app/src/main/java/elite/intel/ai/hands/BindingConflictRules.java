@@ -5,13 +5,15 @@ import elite.intel.util.StringUtls;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Curated descriptions for known-dangerous binding pairs.
  * Also owns the context-group logic used by conflict detection: which actions live in mutually
  * exclusive input contexts ({@link #contextOf}) and which live in modal sub-state overlays
  * ({@link #isSubStateModeAction}). Two actions can only conflict when they share both a context and
- * an exact chord.
+ * an exact chord - and one lighting control bound the same way in every context (the lamps, or night
+ * vision) is exempt even then ({@link #LAMP_ACTIONS}, {@link #NIGHT_VISION_ACTIONS}).
  */
 public class BindingConflictRules {
 
@@ -23,6 +25,37 @@ public class BindingConflictRules {
      */
     private static final List<String> QUICK_COMMS_ACTIONS = List.of(
             "QuickCommsPanel", "QuickCommsPanel_Buggy", "QuickCommsPanel_Humanoid");
+
+    /**
+     * The lamps: ship spot light, SRV headlights, on-foot torch.
+     * <p>
+     * One control the commander thinks of as "the light", which Elite happens to name three times because
+     * it is bound per vehicle. Commanders put all three on one key on purpose and want no report about it:
+     * only one of them can fire at a time anyway, and each is a toggle that shows its effect at once.
+     * <p>
+     * Listed by name rather than matched on a word, for the reason {@link #isMapCameraAction} is: the
+     * action set is Frontier's, and a future update naming something else "light" must not join this
+     * family without someone deciding it should. Note that Elite spells the SRV headlights
+     * {@code HeadlightsBuggyButton} - no {@code _Buggy} suffix - so {@link #contextOf} reads it as a ship
+     * action, which is what made the ship lamp and the SRV lamp look like a same-context clash; this
+     * family clears the pair whichever context they land in.
+     */
+    private static final Set<String> LAMP_ACTIONS = Set.of(
+            "ShipSpotLightToggle",
+            "HeadlightsBuggyButton",
+            "HumanoidToggleFlashlightButton");
+
+    /**
+     * Night vision, in a vehicle and on foot - the same control under two names, exempt among itself for
+     * the same reason as {@link #LAMP_ACTIONS}.
+     * <p>
+     * A lamp and night vision are NOT one family: they are two different controls, they are meant to be
+     * worked separately, and EliteIntel taps both itself - it turns the lights and night vision off before
+     * a jump. On one key those taps flip each other back, so that pair stays reported.
+     */
+    private static final Set<String> NIGHT_VISION_ACTIONS = Set.of(
+            "NightVisionToggle",
+            "HumanoidToggleNightVisionButton");
 
     private static final Map<String, String> DESCRIPTIONS = new HashMap<>();
 
@@ -92,8 +125,22 @@ public class BindingConflictRules {
     public static boolean isSafeOverlap(String a, String b) {
         if (isMapVersusUiNavigation(a, b)) return false;
         if (isSelectVersusQuickComms(a, b)) return false;
+        if (isSameLightingControl(a, b)) return true;
         if (isSubStateModeAction(a) || isSubStateModeAction(b)) return true;
         return !contextOf(a).equals(contextOf(b));
+    }
+
+    /**
+     * True when both actions are the same lighting control wearing different names for different
+     * contexts - two lamps ({@link #LAMP_ACTIONS}) or two night vision toggles
+     * ({@link #NIGHT_VISION_ACTIONS}). That is a deliberate layout, not a clash.
+     * <p>
+     * A lamp against night vision is neither, and stays reported: those are two controls the commander
+     * works separately, and EliteIntel taps both of them for a jump.
+     */
+    private static boolean isSameLightingControl(String a, String b) {
+        return (LAMP_ACTIONS.contains(a) && LAMP_ACTIONS.contains(b))
+                || (NIGHT_VISION_ACTIONS.contains(a) && NIGHT_VISION_ACTIONS.contains(b));
     }
 
     /**

@@ -21,12 +21,12 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * The voice side of the jukebox: six commands, no more.
+ * The voice side of the jukebox: seven commands, no more.
  *
- * <p>Six is a deliberate ceiling. The reflex resolver dispatches only when one action beats the next by a
+ * <p>Seven is a deliberate ceiling. The reflex resolver dispatches only when one action beats the next by a
  * clear margin, so a family of near-identical commands defeats it and sends every utterance to the local
  * model - the failure that turned ten carrier queries into three. Each of these says something the others
- * do not.
+ * do not: restarting the playlist is the one thing "play music", which resumes, can never mean.
  */
 class JukeboxCommandsTest {
 
@@ -36,7 +36,8 @@ class JukeboxCommandsTest {
             NextMusicTrackCommand.ID,
             PreviousMusicTrackCommand.ID,
             ShuffleMusicCommand.ID,
-            PlayMusicTrackByNameCommand.ID);
+            PlayMusicTrackByNameCommand.ID,
+            RestartMusicPlaylistCommand.ID);
 
     @BeforeAll
     static void boot() throws Exception {
@@ -107,7 +108,8 @@ class JukeboxCommandsTest {
         assertTrue(JukeboxManager.getInstance().playlist().isEmpty(), "this test needs an empty library");
 
         for (String id : List.of(PlayMusicCommand.ID, NextMusicTrackCommand.ID,
-                PreviousMusicTrackCommand.ID, PlayMusicTrackByNameCommand.ID)) {
+                PreviousMusicTrackCommand.ID, PlayMusicTrackByNameCommand.ID,
+                RestartMusicPlaylistCommand.ID)) {
             com.google.gson.JsonObject params = new com.google.gson.JsonObject();
             params.addProperty("key", "anything");
             String spoken = command(id).execute(params, "");

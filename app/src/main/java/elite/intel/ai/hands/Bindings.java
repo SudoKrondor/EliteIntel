@@ -179,7 +179,7 @@ public class Bindings {
         BINDING_CAM_TRANSLATE_RIGHT("CamTranslateRight"),
         BINDING_CAM_TRANSLATE_UP("CamTranslateUp"),
         BINDING_CAM_TRANSLATE_ZHOLD("CamTranslateZHold"),
-        BINDING_CAM_YAW_LEFT("CamYawLeft"),
+        BINDING_CAM_YAW_LEFT("CamYawLeft", DRIVEN),
         BINDING_CAM_YAW_RIGHT("CamYawRight"),
         BINDING_CHARGE_ECM("ChargeECM"),
         BINDING_COMMANDER_CREATOR_REDO("CommanderCreator_Redo"),

@@ -26,7 +26,7 @@ public interface GlobalSettingsDao {
                                                                 autoGearUpOnTakeOff,
                                                                 autoExitUiBeforeOpeningAnotherWindow,
                                                                 autoLightsOffForSrvDeployment,
-                                                                autoFighterOutFighterDocking,
+                                                                autoPlotNextNeutronJump,
                                                                 announceJumpRoute,
                                                                 announceJumpTraffic,
                                                                 announceJumpDeaths,
@@ -41,7 +41,7 @@ public interface GlobalSettingsDao {
                                 :autoGearUpOnTakeOff,
                                 :autoExitUiBeforeOpeningAnotherWindow,
                                 :autoLightsOffForSrvDeployment,
-                                :autoFighterOutFighterDocking,
+                                :autoPlotNextNeutronJump,
                                 :announceJumpRoute,
                                 :announceJumpTraffic,
                                 :announceJumpDeaths,
@@ -64,7 +64,7 @@ public interface GlobalSettingsDao {
             entity.setAutoGearUpOnTakeOff(rs.getBoolean("autoGearUpOnTakeOff"));
             entity.setAutoExitUiBeforeOpeningAnotherWindow(rs.getBoolean("autoExitUiBeforeOpeningAnotherWindow"));
             entity.setAutoLightsOffForSrvDeployment(rs.getBoolean("autoLightsOffForSrvDeployment"));
-            entity.setAutoFighterOutFighterDocking(rs.getBoolean("autoFighterOutFighterDocking"));
+            entity.setAutoPlotNextNeutronJump(rs.getBoolean("autoPlotNextNeutronJump"));
             entity.setAnnounceJumpRoute(rs.getBoolean("announceJumpRoute"));
             entity.setAnnounceJumpTraffic(rs.getBoolean("announceJumpTraffic"));
             entity.setAnnounceJumpDeaths(rs.getBoolean("announceJumpDeaths"));
@@ -85,7 +85,7 @@ public interface GlobalSettingsDao {
         boolean autoGearUpOnTakeOff;
         boolean autoExitUiBeforeOpeningAnotherWindow;
         boolean autoLightsOffForSrvDeployment;
-        boolean autoFighterOutFighterDocking;
+        boolean autoPlotNextNeutronJump;
         boolean announceJumpRoute;
         boolean announceJumpTraffic;
         boolean announceJumpDeaths;
@@ -164,12 +164,12 @@ public interface GlobalSettingsDao {
             this.autoLightsOffForSrvDeployment = autoLightsOffForSrvDeployment;
         }
 
-        public boolean isAutoFighterOutFighterDocking() {
-            return autoFighterOutFighterDocking;
+        public boolean isAutoPlotNextNeutronJump() {
+            return autoPlotNextNeutronJump;
         }
 
-        public void setAutoFighterOutFighterDocking(boolean autoFighterOutFighterDocking) {
-            this.autoFighterOutFighterDocking = autoFighterOutFighterDocking;
+        public void setAutoPlotNextNeutronJump(boolean autoPlotNextNeutronJump) {
+            this.autoPlotNextNeutronJump = autoPlotNextNeutronJump;
         }
 
         public boolean isAnnounceJumpRoute() {
