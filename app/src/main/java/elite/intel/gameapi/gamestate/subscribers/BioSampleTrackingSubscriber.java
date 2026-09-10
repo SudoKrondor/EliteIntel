@@ -1,7 +1,7 @@
 package elite.intel.gameapi.gamestate.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.gamestate.status_events.PlayerMovedEvent;
 import elite.intel.gameapi.journal.BioSampleDistanceCalculator;
@@ -66,9 +66,9 @@ public class BioSampleTrackingSubscriber {
 
             if (wasFarEnough != isFarEnough) {
                 if (isFarEnough) {
-                    CompanionRuntime.narrator().narrate(vehicle + " is now far enough to take the new sample.", "State that minimum separation distance from the previous bio colony has been reached and a new sample can now be taken.");
+                    VegaRuntime.narrator().narrate(vehicle + " is now far enough to take the new sample.", "State that minimum separation distance from the previous bio colony has been reached and a new sample can now be taken.");
                 } else {
-                    CompanionRuntime.narrator().narrate(vehicle + " is moved too close to previous colony to take new sample. insufficient bio diversity.", "Warn that we have moved within minimum separation distance of the previous bio colony and a new sample cannot be taken at this position.");
+                    VegaRuntime.narrator().narrate(vehicle + " is moved too close to previous colony to take new sample. insufficient bio diversity.", "Warn that we have moved within minimum separation distance of the previous bio colony and a new sample cannot be taken at this position.");
                 }
             }
         }

@@ -60,9 +60,9 @@ public final class GuiCommandRunner {
 
     /**
      * Dispatches a GUI-selected command straight to its handler, bypassing STT/LLM classification: the UI
-     * already resolved the action id and any params. Uses the same shared handler map as the companion
+     * already resolved the action id and any params. Uses the same shared handler map as VEGA
      * execution gateway ({@link CommandHandlerFactory}, built-ins + custom commands), so it is independent
-     * of the companion runtime lifecycle (the button can fire while services are stopped). Commands that opt out
+     * of VEGA runtime lifecycle (the button can fire while services are stopped). Commands that opt out
      * of the GUI context are rejected before acknowledgement. Built-in commands speak an affirmative preamble;
      * custom commands do not (see {@code CommandDetailsDialog#runCommand}).
      */

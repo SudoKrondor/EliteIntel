@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Guards "group bravo", which stopped switching fire groups.
  *
  * <p>The utterance reached the reducer and scored 0.847 - the best of all 162 candidates, but under the
- * absolute {@code SEM_FLOOR} of 0.85, so the turn was offered no game tools at all and the companion
+ * absolute {@code SEM_FLOOR} of 0.85, so the turn was offered no game tools at all and VEGA
  * answered conversationally ("Group Bravo, this is Vega. Go ahead."). The margin was 0.003, because a
  * {@code string} parameter block is deleted from the embedding text: the aliases embedded as "fire group",
  * which shares no word with what the commander actually said.

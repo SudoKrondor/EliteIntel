@@ -17,6 +17,7 @@ import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeTTSImpl;
 import elite.intel.ai.mouth.google.GoogleTTSImpl;
 import elite.intel.ai.mouth.kokoro.KokoroTTS;
+import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
 /**
@@ -65,7 +66,7 @@ public class ApiFactory {
 
     ///
     public MouthInterface getMouthImpl() {
-        return selectMouth(systemSession.getTtsProvider(), systemSession.getTtsApiKey());
+        return selectMouth(systemSession.getTtsProvider(), systemSession.getTtsApiKey(), systemSession.getLanguage());
     }
 
     /**
@@ -75,7 +76,7 @@ public class ApiFactory {
      * see the substitution, not the setting.
      */
     public TtsProvider getActiveTtsProvider() {
-        return resolveProvider(systemSession.getTtsProvider(), systemSession.getTtsApiKey());
+        return resolveProvider(systemSession.getTtsProvider(), systemSession.getTtsApiKey(), systemSession.getLanguage());
     }
 
     /**
@@ -85,8 +86,8 @@ public class ApiFactory {
      * configured. The switch is exhaustive on purpose - a new engine has to be given an implementation here.
      */
     // TODO: Add ElevenLabs, AWS Polly, etc.
-    static MouthInterface selectMouth(TtsProvider provider, String ttsApiKey) {
-        return switch (resolveProvider(provider, ttsApiKey)) {
+    static MouthInterface selectMouth(TtsProvider provider, String ttsApiKey, Language language) {
+        return switch (resolveProvider(provider, ttsApiKey, language)) {
             case GOOGLE -> GoogleTTSImpl.getInstance();
             case EDGE -> mainEdge();
             case KOKORO -> mainKokoro();
@@ -94,12 +95,14 @@ public class ApiFactory {
     }
 
     /**
-     * The stored selection, with the Google-without-a-key safety net applied.
+     * The stored selection, with the Google-without-a-key safety net applied - and that safety net itself
+     * corrected for the language, because standing Kokoro in for a keyless Google would leave a Cyrillic
+     * commander silent rather than merely unpaid (see {@link TtsProvider#forLanguage}).
      */
-    static TtsProvider resolveProvider(TtsProvider provider, String ttsApiKey) {
+    static TtsProvider resolveProvider(TtsProvider provider, String ttsApiKey, Language language) {
         boolean googleWithoutKey = provider == TtsProvider.GOOGLE
                 && KeyDetector.detectProvider(ttsApiKey, "TTS") != ProviderEnum.GOOGLE_TTS;
-        return googleWithoutKey ? TtsProvider.KOKORO : provider;
+        return TtsProvider.forLanguage(googleWithoutKey ? TtsProvider.KOKORO : provider, language);
     }
 
     private static EdgeTTSImpl mainEdge() {

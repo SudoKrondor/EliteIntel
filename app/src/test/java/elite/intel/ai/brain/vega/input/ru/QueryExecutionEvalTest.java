@@ -1,13 +1,9 @@
 package elite.intel.ai.brain.vega.input.ru;
 
-import elite.intel.ai.brain.vega.input.CompanionEvalHarness;
-import elite.intel.ai.brain.vega.input.CompanionEvalHarness.Executed;
+import elite.intel.ai.brain.vega.input.VegaEvalHarness;
+import elite.intel.ai.brain.vega.input.VegaEvalHarness.Executed;
 import elite.intel.i18n.Language;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +21,7 @@ class QueryExecutionEvalTest {
     private record Case(String input, String expectedTool, boolean targeted) {
     }
 
-    private final CompanionEvalHarness h = new CompanionEvalHarness("companion-ru-queries-eval-trace.txt", Language.RU);
+    private final VegaEvalHarness h = new VegaEvalHarness("vega-ru-queries-eval-trace.txt", Language.RU);
 
     private final List<Case> cases = List.of(
             new Case("где мы сейчас находимся", "query_current_location", false),

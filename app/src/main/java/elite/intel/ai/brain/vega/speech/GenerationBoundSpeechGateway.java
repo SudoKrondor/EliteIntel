@@ -1,6 +1,6 @@
 package elite.intel.ai.brain.vega.speech;
 
-import elite.intel.ai.brain.vega.CompanionRuntimeGeneration;
+import elite.intel.ai.brain.vega.VegaRuntimeGeneration;
 import elite.intel.ai.brain.vega.model.speech.SpeechRequest;
 
 import java.util.Set;
@@ -17,14 +17,14 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class GenerationBoundSpeechGateway implements SpeechGateway, AutoCloseable {
 
     private final SpeechGateway delegate;
-    private final CompanionRuntimeGeneration runtimeGeneration;
+    private final VegaRuntimeGeneration runtimeGeneration;
     private final Set<CompletableFuture<Void>> ownedUtterances = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean closed = new AtomicBoolean();
 
     /** Wraps speech submissions so their completions belong to {@code runtimeGeneration}. */
     public GenerationBoundSpeechGateway(
             SpeechGateway delegate,
-            CompanionRuntimeGeneration runtimeGeneration
+            VegaRuntimeGeneration runtimeGeneration
     ) {
         this.delegate = java.util.Objects.requireNonNull(delegate, "delegate");
         this.runtimeGeneration = java.util.Objects.requireNonNull(runtimeGeneration, "runtimeGeneration");

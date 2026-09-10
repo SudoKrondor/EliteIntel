@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * These two classes are read from EDSM's JSON by Gson and written out as YAML by Jackson, and that
- * YAML is narration source: {@code StartJumpSubscriber} hands it to the companion on approach, so a
+ * YAML is narration source: {@code StartJumpSubscriber} hands it to VEGA on approach, so a
  * property name here is a word the commander hears. Both directions are pinned, because the two sets
  * of annotations are easy to change one without the other.
  */

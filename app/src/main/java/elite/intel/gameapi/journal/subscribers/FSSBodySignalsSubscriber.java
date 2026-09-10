@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.SignalName;
 import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
@@ -56,9 +56,9 @@ public class FSSBodySignalsSubscriber {
 
             if (playerSession.isDiscoveryAnnouncementOn()) {
                 if (bioSignals > 0)
-                    CompanionRuntime.narrator().announce(localizedEventPlural(bioSignals, "event.fss.body.bioSignals"), false);
+                    VegaRuntime.narrator().announce(localizedEventPlural(bioSignals, "event.fss.body.bioSignals"), false);
                 if (geoSignals > 0)
-                    CompanionRuntime.narrator().announce(localizedEventPlural(geoSignals, "event.fss.body.geoSignals"), false);
+                    VegaRuntime.narrator().announce(localizedEventPlural(geoSignals, "event.fss.body.geoSignals"), false);
             }
         });
     }

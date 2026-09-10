@@ -14,7 +14,7 @@ import elite.intel.util.StringUtls;
  * local LLM whose served model is not the one this version is built around.
  * <p>
  * V1.0 targeted {@code tulu3.1:8b-supernova}; V1.1 is developed around {@code gemma-4-e4b} because the
- * companion pipeline needs tool calling. The served model can be namespaced (e.g. {@code google/gemma-4-e4b}),
+ * VEGA pipeline needs tool calling. The served model can be namespaced (e.g. {@code google/gemma-4-e4b}),
  * so the match is a case-insensitive substring on the root name {@code gemma-4-e4b}. Cloud LLMs are not
  * checked - only a configured local model is. Runs on every startup and nags every time it fails, by design.
  */
@@ -39,8 +39,8 @@ public class LocalLlmModelCheck {
      * Warns if a local LLM is configured with an unsupported model. No-op when a cloud LLM is in use.
      * <p>
      * The warning is published as a {@link VocalisationRequestEvent} straight to the TTS engine rather than
-     * routed through {@code VocalisationRouter}/the companion: this warning is <em>about</em> a broken model,
-     * so voicing it must not depend on the companion or the model itself. Going direct to the mouth bypasses
+     * routed through {@code VocalisationRouter}/VEGA: this warning is <em>about</em> a broken model,
+     * so voicing it must not depend on VEGA or the model itself. Going direct to the mouth bypasses
      * both the router's mode logic and any LLM round-trip. The line is spoken uninterruptible and logged.
      */
     public void check() {

@@ -6,26 +6,15 @@ import elite.intel.ai.brain.vega.clarify.PendingClarification;
 import elite.intel.ai.brain.vega.llm.AnthropicLlmAdapter;
 import elite.intel.ai.brain.vega.llm.GeminiLlmAdapter;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
-import elite.intel.ai.brain.vega.model.llm.LlmMessage;
-import elite.intel.ai.brain.vega.model.llm.LlmMessageRole;
-import elite.intel.ai.brain.vega.model.llm.LlmRequest;
-import elite.intel.ai.brain.vega.model.llm.LlmToolDefinition;
-import elite.intel.ai.brain.vega.model.llm.PromptCacheProfile;
+import elite.intel.ai.brain.vega.model.llm.*;
 import elite.intel.ai.brain.vega.model.memory.MemoryRecord;
-import elite.intel.ai.brain.vega.prompt.ComposedPrompt;
-import elite.intel.ai.brain.vega.prompt.Fact;
-import elite.intel.ai.brain.vega.prompt.PromptComposer;
-import elite.intel.ai.brain.vega.prompt.PromptXml;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class PromptComposerTest {
 
@@ -67,7 +56,7 @@ class PromptComposerTest {
     }
 
     @Test
-    void queryRecordReplaysAsCompletedCommanderCompanionPair() {
+    void queryRecordReplaysAsCompletedCommanderVegaPair() {
         List<LlmMessage> messages = composeCommander(List.of(MemoryRecord.query(
                 Instant.EPOCH, "where are we", "in Sol")))
                 .messages();

@@ -1,6 +1,6 @@
 package elite.intel.ai.brain.vega.memory.facts;
 
-import elite.intel.ai.brain.vega.diag.CompanionDiagnostics;
+import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
 import elite.intel.ai.brain.vega.prompt.Fact;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,7 +45,7 @@ public final class MemoryFactGatherer {
                 .filter(source -> isRelevant(source, context))
                 .sorted(Comparator.comparing(MemoryFactSource::isAmbient))
                 .toList();
-        CompanionDiagnostics.debugAmbient("facts", "ambient relevance -> "
+        VegaDiagnostics.debugAmbient("facts", "ambient relevance -> "
                 + relevant.stream().map(MemoryFactSource::id).toList());
         return collect(relevant, context);
     }

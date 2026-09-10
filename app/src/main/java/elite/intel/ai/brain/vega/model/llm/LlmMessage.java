@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * One message in a thought's local message flow / an LLM request, in the OpenAI/Mistral chat format.
  * Distinct from {@code MemoryEntry}: this is the live LLM-protocol transcript of a single turn, not the
- * completed record history (see COMPANION_ARCHITECTURE.md, section 9).
+ * completed record history (see docs/VEGA_ARCHITECTURE.md, "What the prompt contains").
  * <p>
  * Two fields are role-specific: {@code toolCallId} is set only for {@link LlmMessageRole#TOOL} result
  * messages (linking the result to the assistant tool-call that produced it within the current

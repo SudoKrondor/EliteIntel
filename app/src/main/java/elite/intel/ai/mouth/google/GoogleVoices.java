@@ -35,7 +35,7 @@ public enum GoogleVoices {
     /**
      * Resolves a stored ship-voice name to a voice of this engine: the named voice when it is one, otherwise
      * {@link #DEFAULT_VOICE}. The stored voice's gender is preserved - ship voices are male or female by the
-     * commander's choice, and that choice also decides how the companion refers to herself or himself (see
+     * commander's choice, and that choice also decides how VEGA refers to herself or himself (see
      * {@code SystemSession.getVoiceGender()}). A name valid only for another TTS provider, or a {@code null}
      * name, collapses to the default.
      */

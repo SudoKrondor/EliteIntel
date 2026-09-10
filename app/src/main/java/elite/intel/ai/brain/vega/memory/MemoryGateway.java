@@ -5,7 +5,7 @@ import elite.intel.ai.brain.vega.model.memory.MemoryRecord;
 import java.util.List;
 
 /**
- * The single door to the companion's session memory. Callers publish only completed {@link MemoryRecord records};
+ * The single door to VEGA's session memory. Callers publish only completed {@link MemoryRecord records};
  * the gateway owns their storage and whole-record eviction. Everything it holds is replayed in the next prompt -
  * memory that nothing reads is not collected.
  */

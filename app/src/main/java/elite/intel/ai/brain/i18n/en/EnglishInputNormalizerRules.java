@@ -6,7 +6,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
-/** English STT acoustic corrections and input filters used by companion routing. */
+/**
+ * English STT acoustic corrections and input filters used by VEGA routing.
+ */
 public class EnglishInputNormalizerRules implements InputNormalizerProvider {
 
     @Override

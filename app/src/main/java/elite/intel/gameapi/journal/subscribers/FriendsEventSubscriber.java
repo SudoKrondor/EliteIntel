@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.gameapi.journal.events.FriendsEvent;
 
 import java.util.LinkedHashMap;
@@ -44,6 +44,6 @@ public class FriendsEventSubscriber {
         });
         pending.clear();
         String instructions = "Report each friend's name and their new status (online, offline, etc.). One friend per sentence.";
-        CompanionRuntime.narrator().narrate("Friends: " + data, instructions);
+        VegaRuntime.narrator().narrate("Friends: " + data, instructions);
     }
 }

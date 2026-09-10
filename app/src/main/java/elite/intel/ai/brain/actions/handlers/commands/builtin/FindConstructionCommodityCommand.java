@@ -5,16 +5,12 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.dao.ConstructionSiteDao.Site;
 import elite.intel.db.managers.ConstructionSiteManager;
-import elite.intel.gameapi.colonisation.ActiveConstructionSite;
-import elite.intel.gameapi.colonisation.CarrierStockpile;
+import elite.intel.gameapi.colonisation.*;
 import elite.intel.gameapi.colonisation.CarrierStockpile.Stash;
-import elite.intel.gameapi.colonisation.ConstructionCargo;
-import elite.intel.gameapi.colonisation.ConstructionShopping;
-import elite.intel.gameapi.colonisation.ManifestAge;
 import elite.intel.gameapi.search.spansh.commodity.WantedCommodity;
 import elite.intel.session.DockedMarket;
 import elite.intel.session.PlayerSession;
@@ -190,7 +186,7 @@ public final class FindConstructionCommodityCommand implements IntelCommand {
         // Spoken in the commander's language, not the game's: the manifest names the good in whatever
         // language the game client runs in, and the search needs it in English regardless.
         WantedCommodity anchor = shoppingList.getFirst();
-        CompanionRuntime.narrator().filler(StringUtls.localizedResponse(
+        VegaRuntime.narrator().filler(StringUtls.localizedResponse(
                 "handler.construction.sourcing",
                 anchor.unitsWanted(),
                 FuzzySearch.localizedCommodityName(anchor.commodity()),

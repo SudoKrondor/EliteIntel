@@ -57,13 +57,41 @@ public class BindingConflictRules {
             "NightVisionToggle",
             "HumanoidToggleNightVisionButton");
 
+    /**
+     * The controls that change what the interface is showing: the four panel-focus keys and the two
+     * map-open toggles, in each vehicle context Elite names them for.
+     * <p>
+     * The third break in the context model, for the same reason as {@link #isMapVersusUiNavigation}
+     * and {@link #isSelectVersusQuickComms}: these keys stay live <em>while a panel or map is open</em>
+     * - that is how a commander switches from the right panel to the left one, or drops into the galaxy
+     * map without closing what they were looking at first. So "UI and vehicle controls are never live
+     * together" does not hold for this family, and {@link #contextOf} would clear an SRV map key sharing
+     * a chord with {@code UI_Down} as two different contexts.
+     * <p>
+     * Listed by name rather than matched on a prefix, for the reason {@link #isMapCameraAction} is: the
+     * action set is Frontier's. A control they add later has to be opted in here by someone who has
+     * decided it belongs.
+     * <p>
+     * The quick comms panel is deliberately absent even though it behaves the same way: it has its own
+     * rule ({@link #isSelectVersusQuickComms}), which reports it against {@code UI_Select} alone and
+     * leaves it an ordinary overlap against the direction keys.
+     */
+    private static final Set<String> INTERFACE_SWITCH_ACTIONS = Set.of(
+            "FocusLeftPanel", "FocusLeftPanel_Buggy",
+            "FocusCommsPanel", "FocusCommsPanel_Buggy", "FocusCommsPanel_Humanoid",
+            "FocusRadarPanel", "FocusRadarPanel_Buggy",
+            "FocusRightPanel", "FocusRightPanel_Buggy",
+            "GalaxyMapOpen", "GalaxyMapOpen_Buggy", "GalaxyMapOpen_Humanoid",
+            "SystemMapOpen", "SystemMapOpen_Buggy", "SystemMapOpen_Humanoid");
+
     private static final Map<String, String> DESCRIPTIONS = new HashMap<>();
 
     static {
         // NOTE: UI_* navigation keys are otherwise NOT listed here. The UI panel is its own input
         // context (the game disables ship controls while a panel is open), so UI_* never co-fires with
         // a ship action - see contextOf(). Two UI_* actions on one chord still conflict (same context).
-        // The quick comms pairs below are the exception, and say why.
+        // The quick comms pairs below are the exception, and say why; the panel-focus and map-open keys
+        // are the other one, described generically in describe() rather than pair by pair here.
 
         // Dangerous hardware action pairs
         put("DeployHardpointToggle", "LandingGearToggle", "Deploying hardpoints will also toggle landing gear");
@@ -103,16 +131,24 @@ public class BindingConflictRules {
                     + " share a key - inside the galaxy/system map both are live at once, so map movement"
                     + " and panel navigation will fight each other";
         }
+        if (isInterfaceSwitchVersusUiNavigation(a, b)) {
+            String panel = INTERFACE_SWITCH_ACTIONS.contains(a) ? a : b;
+            String ui = INTERFACE_SWITCH_ACTIONS.contains(a) ? b : a;
+            return StringUtls.humanizeBindingName(panel) + " and " + StringUtls.humanizeBindingName(ui)
+                    + " share a key - the panel and map keys stay live while a panel is open, so every step"
+                    + " EliteIntel takes through the interface also fires "
+                    + StringUtls.humanizeBindingName(panel) + " and the walk never reaches what it was sent for";
+        }
         return StringUtls.humanizeBindingName(a) + " and " + StringUtls.humanizeBindingName(b) + " share a key and may interfere";
     }
 
     /**
      * Returns true when two actions sharing a key is safe and should not be flagged.
      * <p>
-     * Unsafe first: {@link #isMapVersusUiNavigation} and {@link #isSelectVersusQuickComms} - the two
-     * cases where families the context model treats as mutually exclusive are in fact live
-     * <em>simultaneously</em>, so they are checked before the mutual-exclusion rules below (which
-     * would otherwise clear them twice over).
+     * Unsafe first: {@link #isMapVersusUiNavigation}, {@link #isSelectVersusQuickComms} and
+     * {@link #isInterfaceSwitchVersusUiNavigation} - the three cases where families the context model
+     * treats as mutually exclusive are in fact live <em>simultaneously</em>, so they are checked before
+     * the mutual-exclusion rules below (which would otherwise clear them twice over).
      * <p>
      * Safe cases:
      * - Different input contexts (ship / buggy / humanoid / UI / construction) - mutually exclusive,
@@ -125,6 +161,7 @@ public class BindingConflictRules {
     public static boolean isSafeOverlap(String a, String b) {
         if (isMapVersusUiNavigation(a, b)) return false;
         if (isSelectVersusQuickComms(a, b)) return false;
+        if (isInterfaceSwitchVersusUiNavigation(a, b)) return false;
         if (isSameLightingControl(a, b)) return true;
         if (isSubStateModeAction(a) || isSubStateModeAction(b)) return true;
         return !contextOf(a).equals(contextOf(b));
@@ -146,8 +183,9 @@ public class BindingConflictRules {
     /**
      * True when a conflict is <b>blocking</b>: it stops EliteIntel from driving the game at all, not merely
      * "may interfere". Today that is the map-camera-versus-UI-navigation overlap
-     * ({@link #isMapVersusUiNavigation}) and Select sharing a key with the quick comms panel
-     * ({@link #isSelectVersusQuickComms}).
+     * ({@link #isMapVersusUiNavigation}), Select sharing a key with the quick comms panel
+     * ({@link #isSelectVersusQuickComms}), and a panel-focus or map-open key sharing a chord with UI
+     * navigation ({@link #isInterfaceSwitchVersusUiNavigation}).
      * <p>
      * WHY the map overlap is in a class of its own: route plotting - the single most-used function - walks the galaxy
      * map to its search field with {@code UI_Left}/{@code UI_Right}/{@code UI_Select} taps. A commander doing
@@ -161,7 +199,9 @@ public class BindingConflictRules {
      * interface is fine, and so is the reverse. The same keys for both is not.
      */
     public static boolean isBlocking(String a, String b) {
-        return isMapVersusUiNavigation(a, b) || isSelectVersusQuickComms(a, b);
+        return isMapVersusUiNavigation(a, b)
+                || isSelectVersusQuickComms(a, b)
+                || isInterfaceSwitchVersusUiNavigation(a, b);
     }
 
     /**
@@ -198,6 +238,30 @@ public class BindingConflictRules {
     private static boolean isMapVersusUiNavigation(String a, String b) {
         return (isMapCameraAction(a) && isUiNavigationAction(b))
                 || (isMapCameraAction(b) && isUiNavigationAction(a));
+    }
+
+    /**
+     * True when one action changes what the interface is showing - a panel-focus key or a map-open
+     * toggle, in any vehicle context ({@link #INTERFACE_SWITCH_ACTIONS}) - and the other is UI panel
+     * navigation.
+     * <p>
+     * WHY it is blocking rather than an overlap that "may interfere": every panel EliteIntel opens it
+     * then walks with {@code UI_*} taps - the role panel to recover an SRV, the right panel to a module,
+     * the galaxy map to its search field. These keys are not disabled while that panel is open, so a
+     * shared chord means each step of the walk also switches panel or throws the map up over it. The
+     * walk then runs on blind against whatever is now on screen, every keystroke reporting success.
+     * <p>
+     * A commander doing it by hand never sees it: they are looking at the screen and simply stop when
+     * the map appears. Reported from a support bundle of 2026-09-09, where {@code UI_Down} and
+     * {@code GalaxyMapOpen_Buggy} were both on {@code Ctrl+S} - so every attempt to recover an SRV, and
+     * every attempt to open the role panel, opened the galaxy map instead.
+     * <p>
+     * The remedy is separation, as with {@link #isMapVersusUiNavigation}: the interface keys and the
+     * panel/map keys have to be different chords. Which layout they use is theirs to pick.
+     */
+    private static boolean isInterfaceSwitchVersusUiNavigation(String a, String b) {
+        return (INTERFACE_SWITCH_ACTIONS.contains(a) && isUiNavigationAction(b))
+                || (INTERFACE_SWITCH_ACTIONS.contains(b) && isUiNavigationAction(a));
     }
 
     /**
@@ -259,7 +323,8 @@ public class BindingConflictRules {
      * The mutually exclusive input context an action belongs to. Only one is ever active, so two
      * actions in different contexts can share a key without ever co-firing:
      * <ul>
-     *   <li>{@code ui} - panel/menu navigation (UI_* keys); ship controls are disabled while a panel is open;</li>
+     *   <li>{@code ui} - panel/menu navigation (UI_* keys); ship controls are disabled while a panel is open,
+     *       with the three exceptions checked ahead of this in {@link #isSafeOverlap};</li>
      *   <li>{@code construction} - the colonisation/construction panel, a separate UI panel;</li>
      *   <li>{@code buggy} - SRV (_Buggy) controls;</li>
      *   <li>{@code humanoid} - on-foot controls;</li>

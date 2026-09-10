@@ -57,7 +57,7 @@ public class SystemSession {
     // Voice and personality are per-ship: each ship carries one voice (ship.voice, interpreted against the
     // active TTS provider's enum) and one personality (ship.personality). Switching TTS provider reinterprets
     // the stored voice name and falls back to the provider's default when it isn't a valid voice there. The
-    // companion and the legacy brain both read getAIPersonality(), so they follow the active ship's personality.
+    // VEGA and the legacy brain both read getAIPersonality(), so they follow the active ship's personality.
 
     // A ship voice is whatever the commander picked, male or female: voiceOrDefault() resolves the stored name
     // against the active provider's own voices and falls back to that provider's default only when the name is
@@ -83,11 +83,11 @@ public class SystemSession {
 
 
     /**
-     * The gender the companion is heard as aboard the active ship: the gender of the voice that ship carries,
+     * The gender VEGA is heard as aboard the active ship: the gender of the voice that ship carries,
      * read through the engine currently doing the speaking.
      * <p>
      * The commander picks a voice, never a gender - so this is derived, never stored. It exists because the
-     * companion prompt has to say whether to speak of itself in feminine or masculine forms, and a voice that
+     * VEGA prompt has to say whether to speak of itself in feminine or masculine forms, and a voice that
      * sounds male while the prompt insists on feminine self-reference is the one mismatch a listener cannot
      * miss. Voice and personality are per-ship, so this follows the ship the commander is flying.
      * <p>
@@ -333,7 +333,7 @@ public class SystemSession {
     }
 
     /**
-     * Selects the engine that voices the companion.
+     * Selects the engine that voices VEGA.
      * <p>
      * The legacy {@code useLocalTTS} flag is written alongside it. Nothing in this build reads that flag, but a
      * commander who rolls back to an earlier jar lands on a database where it still describes their choice.
@@ -360,14 +360,23 @@ public class SystemSession {
     }
 
     /**
-     * The engine that voices the companion. Never {@code null}.
+     * The engine that voices VEGA, corrected for the commander's language. Never {@code null}.
+     * <p>
+     * WHY the correction lives on the read rather than the write: Kokoro cannot voice Cyrillic at all, so a
+     * Russian or Ukrainian commander with Kokoro stored has no voice - and that is exactly the state every
+     * database upgraded from a build that let them pick it is in. Reading the stored value through
+     * {@link TtsProvider#forLanguage} makes the unusable combination unrepresentable for every caller at once
+     * (the mouth, the fleet grid's voice roster, the settings panel) without a migration, and hands Kokoro
+     * back untouched if the commander later switches to a Latin-script language.
      */
     public TtsProvider getTtsProvider() {
-        return Database.withDao(GameSessionDao.class, dao -> TtsProvider.fromStored(dao.get().getTtsProvider()));
+        TtsProvider stored = Database.withDao(GameSessionDao.class,
+                dao -> TtsProvider.fromStored(dao.get().getTtsProvider()));
+        return TtsProvider.forLanguage(stored, getLanguage());
     }
 
     /**
-     * Whether the companion is voiced by the local engine. Derived from {@link #getTtsProvider()}: the stored
+     * Whether VEGA is voiced by the local engine. Derived from {@link #getTtsProvider()}: the stored
      * {@code useLocalTTS} flag is a rollback mirror, not a second source of truth, so it is never read here.
      */
     public boolean useLocalTTS() {
@@ -482,7 +491,7 @@ public class SystemSession {
 
     /**
      * True while the Sleep/Wake gate is closed: the STT pipeline discards every transcript instead of routing
-     * it, so nothing the microphone hears reaches the companion.
+     * it, so nothing the microphone hears reaches VEGA.
      * <p>
      * Only consulted while push-to-talk is off. With push-to-talk on, the mapped button is already the only
      * thing that opens the microphone, so this flag has nothing left to gate — see {@code ParakeetSTTImpl}.

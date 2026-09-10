@@ -94,7 +94,7 @@ public final class AppPaths {
 
     /**
      * Optional file holding a language code (e.g. {@code RU}) the tester writes before launch. The command
-     * language must be set at startup, before the companion is built: its semantic reducer freezes the language
+     * language must be set at startup, before VEGA is built: its semantic reducer freezes the language
      * at construction, so switching afterwards would not reach it.
      */
     public static Path getDiagnosticsLanguageFile() throws IOException {

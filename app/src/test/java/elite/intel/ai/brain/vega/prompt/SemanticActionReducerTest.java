@@ -1,15 +1,12 @@
 package elite.intel.ai.brain.vega.prompt;
 
-import elite.intel.ai.embed.SemanticPhraseMatcher;
-import elite.intel.ai.embed.SemanticQuery;
-import elite.intel.ai.embed.TextEmbedder;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.vega.model.GameStateSnapshot;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
 import elite.intel.ai.brain.vega.model.llm.LlmToolDefinition;
-import elite.intel.ai.brain.vega.prompt.CompanionActionReducer;
-import elite.intel.ai.brain.vega.prompt.GameToolCandidates;
-import elite.intel.ai.brain.vega.prompt.SemanticActionReducer;
+import elite.intel.ai.embed.SemanticPhraseMatcher;
+import elite.intel.ai.embed.SemanticQuery;
+import elite.intel.ai.embed.TextEmbedder;
 import elite.intel.session.PlayerSituation;
 import elite.intel.session.Status;
 import org.junit.jupiter.api.Test;
@@ -23,9 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Verifies meaning-based selection in isolation (candidates injected, a synthetic embedder, no model/singletons):
@@ -78,11 +73,11 @@ class SemanticActionReducerTest {
             "GO_NAV", new float[]{1, 0, 0});
 
     private SemanticActionReducer reducerWith(Supplier<SemanticPhraseMatcher> matcherSupplier,
-                                              CompanionActionReducer fallback) {
+                                              VegaActionReducer fallback) {
         return new SemanticActionReducer(allowed -> catalog, matcherSupplier, fallback);
     }
 
-    private SemanticActionReducer reducer(CompanionActionReducer fallback) {
+    private SemanticActionReducer reducer(VegaActionReducer fallback) {
         SemanticPhraseMatcher matcher = new SemanticPhraseMatcher(embedder(VECTORS));
         return reducerWith(() -> matcher, fallback);
     }
@@ -94,7 +89,7 @@ class SemanticActionReducerTest {
     /**
      * A fallback that must never be reached when semantic selection runs; flips a flag if it is.
      */
-    private static CompanionActionReducer unusedFallback(AtomicBoolean used) {
+    private static VegaActionReducer unusedFallback(AtomicBoolean used) {
         return (categories, input) -> {
             used.set(true);
             return List.of();
@@ -260,7 +255,7 @@ class SemanticActionReducerTest {
         GameStateSnapshot turnState = GameStateSnapshot.capture(Status.detached(PlayerSituation.IN_SHIP_DEEP_SPACE));
         AtomicReference<GameStateSnapshot> observed = new AtomicReference<>();
         List<LlmToolDefinition> sentinel = List.of(catalog.get(1).tool());
-        CompanionActionReducer fallback = new CompanionActionReducer() {
+        VegaActionReducer fallback = new VegaActionReducer() {
             @Override
             public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> categories, String input) {
                 return sentinel;

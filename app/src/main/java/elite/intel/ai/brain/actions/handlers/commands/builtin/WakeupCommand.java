@@ -20,9 +20,9 @@ public final class WakeupCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Start listening to voice commands: the commander is telling the companion to wake up, pay attention, "
+        return "Start listening to voice commands: the commander is telling VEGA to wake up, pay attention, "
                 + "or begin accepting voice input. Being told to listen is this action, not conversation - call it "
-                + "even when the companion appears to be awake already.";
+                + "even when VEGA appears to be awake already.";
     }
 
     @Override
@@ -31,7 +31,7 @@ public final class WakeupCommand implements IntelCommand {
     }
 
     /**
-     * Must stay reachable everywhere: it is what wakes the companion from sleep. Withheld only under
+     * Must stay reachable everywhere: it is what wakes VEGA from sleep. Withheld only under
      * push-to-talk, where there is no sleep to wake from.
      */
     @Override

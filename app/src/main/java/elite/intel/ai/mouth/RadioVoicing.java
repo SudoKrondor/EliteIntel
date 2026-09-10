@@ -1,5 +1,6 @@
 package elite.intel.ai.mouth;
 
+import elite.intel.gameapi.GameLanguage;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
@@ -27,7 +28,7 @@ public final class RadioVoicing {
      * Google is never a radio engine - it is the paid main mouth, and radio is chatter, not narration.
      */
     public static TtsProvider engineFor(Language language) {
-        return language.isCyrillicScript() ? TtsProvider.EDGE : TtsProvider.KOKORO;
+        return TtsProvider.forLanguage(TtsProvider.KOKORO, language);
     }
 
     /**
@@ -42,5 +43,27 @@ public final class RadioVoicing {
      */
     public static boolean isRadioEngine(TtsProvider provider) {
         return engine() == provider;
+    }
+
+    /**
+     * Whether radio transmissions can be voiced at all in this game session.
+     * <p>
+     * A transmission is the only thing we say that we did not write: the words are the game client's own, in
+     * the client's language, which is independent of the language the commander set here. A Russian client
+     * therefore hands Cyrillic to an engine chosen for a commander who may not be running Cyrillic at all, and
+     * the result is either silence or a voice reading a script it cannot pronounce. The channel is closed
+     * instead, and the commander is shown why rather than left with a toggle that does nothing.
+     * <p>
+     * Russian is the whole of the Cyrillic case: Frontier ships no Ukrainian client.
+     * <p>
+     * WHY the channel is closed rather than handed to Edge, which could pronounce it: where it would cost
+     * nothing - a Latin-script commander, whose main mouth is a different engine, so radio would run as a
+     * separate RADIO-role service that the main voice never waits on - is the rare case. In the common one,
+     * a Russian commander on a Russian client, Edge is already the main mouth, and this engine puts narration
+     * and radio through ONE queue (see {@code EdgeTTSImpl.Role}), so chatter would queue in front of the
+     * commander's answers. Reopening it means giving radio its own Edge instance, not flipping this method.
+     */
+    public static boolean isAvailable() {
+        return !GameLanguage.getInstance().isCyrillicScript();
     }
 }

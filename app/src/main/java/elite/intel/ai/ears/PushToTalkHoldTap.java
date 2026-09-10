@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Whether the commander is holding the push-to-talk button right now, published by {@link PushToTalkService}.
  * <p>
- * The companion's own use of the button is timed by the capture loop off {@code PttButtonStateEvent} and does
+ * VEGA's own use of the button is timed by the capture loop off {@code PttButtonStateEvent} and does
  * not need this. This exists for the other listener: a commander on speakers rather than headphones has the
  * jukebox playing into the same room the microphone is in, so an audiobook or a song with words is sitting on
  * top of every word they say. The music comes down while the button is held.

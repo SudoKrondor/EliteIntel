@@ -108,8 +108,10 @@ public class GrokClient extends BaseAiClient implements Client {
         return error;
     }
 
-    /** Sends a companion request without converting a transport failure into legacy speech JSON. */
-    public AiTransportResult sendCompanionRequest(String request) {
+    /**
+     * Sends a VEGA request without converting a transport failure into legacy speech JSON.
+     */
+    public AiTransportResult sendVegaRequest(String request) {
         long t0 = System.nanoTime();
         AiTransportResult outcome = sendTransportRequest(buildRequest(request));
         if (outcome instanceof AiTransportResult.Success success) {

@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
  * Localised names occasionally arrive with a literal {@code &NBSP;} in them, for example
  * {@code "NearestDestination_Localised":"Crash Site [Threat&NBSP;1]"}. Left alone it survives all the
  * way to the commander: the prompt builder correctly escapes the ampersand on its way into the XML
- * payload, the model copies the string it was given back into its answer, and the companion says
+ * payload, the model copies the string it was given back into its answer, and VEGA says
  * "Crash Site, Threat ampersand N B S P one".
  * <p>
  * WHY this sits on the shared Gson rather than at a call site: every journal event and auxiliary file

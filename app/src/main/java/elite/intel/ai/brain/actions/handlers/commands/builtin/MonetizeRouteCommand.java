@@ -3,7 +3,7 @@ package elite.intel.ai.brain.actions.handlers.commands.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.MonetizeRouteManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.ShipManager;
@@ -45,7 +45,7 @@ public final class MonetizeRouteCommand implements IntelCommand {
         if (shipManager.getShip() == null || shipManager.getShip().getCargoCapacity() < 1) {
             return StringUtls.localizedResponse("handler.tradeRoute.shipNoCapacity");
         }
-        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.tradeRoute.searchingMarkets"), false);
+        VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.tradeRoute.searchingMarkets"), false);
 
         MonetizeRoute.TradeTransaction tradeTuple = monetizeRouteManager.monetizeRoute();
 

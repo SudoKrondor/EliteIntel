@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.journal.events.MissionRedirectedEvent;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
@@ -41,7 +41,7 @@ public class MissionRedirectedSubscriber {
                          - IF new station is present announce new destination station.
                          Example: Mission for <faction> is redirected to <New System> - <New Station>
                     """;
-            CompanionRuntime.narrator().narrate(
+            VegaRuntime.narrator().narrate(
                             new MissionRedirectData(mission.getFaction(), newDestinationSystem, newDestinationStation).toYaml(),
                             instructions
                     );

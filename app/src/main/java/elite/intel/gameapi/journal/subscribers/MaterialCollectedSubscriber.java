@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.dao.MaterialNameDao;
 import elite.intel.db.managers.MaterialManager;
 import elite.intel.gameapi.journal.events.MaterialCollectedEvent;
@@ -55,7 +55,7 @@ public class MaterialCollectedSubscriber {
                     ? pending.getFirst()
                     : localizedEventPlural(pending.size(), "event.material.batchCollected");
             pending.clear();
-            CompanionRuntime.narrator().announce(announcement, false);
+            VegaRuntime.narrator().announce(announcement, false);
         }
     }
 }

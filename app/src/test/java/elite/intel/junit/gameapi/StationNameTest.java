@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Pins the one journal shape that made a UI symbol reach the HUD and the companion's mouth: a colonisation
+ * Pins the one journal shape that made a UI symbol reach the HUD and VEGA's mouth: a colonisation
  * ship names itself "$EXT_PANEL_ColonisationShip; Schroter's Progress", and the commander knows it as
  * "Schroter's Progress".
  */

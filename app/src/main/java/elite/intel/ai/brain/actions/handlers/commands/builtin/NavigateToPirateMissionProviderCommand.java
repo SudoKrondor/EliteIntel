@@ -3,7 +3,7 @@ package elite.intel.ai.brain.actions.handlers.commands.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.LocationManager;
@@ -62,11 +62,11 @@ public final class NavigateToPirateMissionProviderCommand implements IntelComman
         }
 
         // Non-terminal announcement: the route plotting below must still run, so declare the line via
-        // CompanionRuntime.narrator().filler (voiced, not remembered) instead of returning here.
+        // VegaRuntime.narrator().filler (voiced, not remembered) instead of returning here.
         if (location.isInSystem(targetSystem)) {
-            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.checkPorts", targetSystem), false);
+            VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.checkPorts", targetSystem), false);
         } else {
-            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.headTo", destination, targetSystem), false);
+            VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.headTo", destination, targetSystem), false);
         }
 
         if (destination == null) {

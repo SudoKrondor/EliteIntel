@@ -12,7 +12,7 @@ import elite.intel.gameapi.journal.events.dto.LocationDto;
  *     <li>retrograde rotation shortens the apparent day, prograde lengthens it.</li>
  * </ul>
  * Returns {@code 0} when the inputs are missing or the result is not physically meaningful, so call sites present it
- * as "unknown". Both {@code query_current_location} and the companion body-fact source read through here.
+ * as "unknown". Both {@code query_current_location} and VEGA body-fact source read through here.
  */
 public final class SolarDayCalculator {
 

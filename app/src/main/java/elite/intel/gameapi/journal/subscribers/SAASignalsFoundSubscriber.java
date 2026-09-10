@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.SignalName;
 import elite.intel.gameapi.data.BioForms;
@@ -36,7 +36,7 @@ public class SAASignalsFoundSubscriber {
                         expresses about it - never present an uncertain bonus as earnings.
                         If the sensor data says the survey here is already complete, say so and list no genus.
                     """;
-            CompanionRuntime.narrator().narrate(sb, instructions);
+            VegaRuntime.narrator().narrate(sb, instructions);
         }
     }
 

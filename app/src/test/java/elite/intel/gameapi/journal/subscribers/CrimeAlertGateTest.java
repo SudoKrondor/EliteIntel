@@ -10,7 +10,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * How much the companion says while the commander works a settlement.
+ * How much VEGA says while the commander works a settlement.
  *
  * <p>The spree here is the reported one, replayed from the journal line for line: an on-foot assassination
  * contract in Almeida-Vega Horticultural Biome that produced twenty crimes against Gaura Energy

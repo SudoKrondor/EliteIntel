@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * One completed, indivisible unit of companion memory. Storage and eviction always operate on the whole record,
+ * One completed, indivisible unit of VEGA memory. Storage and eviction always operate on the whole record,
  * so a completed pair or event fact can never be observed or retained only in part.
  *
  * @param timestamp completion time used for ordering and recency ranking
@@ -21,18 +21,20 @@ public record MemoryRecord(Instant timestamp, MemoryKind kind, List<MemoryEntry>
         validateShape(kind, entries);
     }
 
-    /** Creates a completed commander/companion dialogue pair. */
-    public static MemoryRecord dialogue(Instant timestamp, String commander, String companion) {
+    /**
+     * Creates a completed commander/VEGA dialogue pair.
+     */
+    public static MemoryRecord dialogue(Instant timestamp, String commander, String vega) {
         return new MemoryRecord(timestamp, MemoryKind.DIALOGUE, List.of(
                 new MemoryEntry(MemorySource.COMMANDER, commander),
-                new MemoryEntry(MemorySource.COMPANION, companion)));
+                new MemoryEntry(MemorySource.VEGA, vega)));
     }
 
     /** Creates a completed commander query and its spoken answer without retaining execution details. */
-    public static MemoryRecord query(Instant timestamp, String commander, String companion) {
+    public static MemoryRecord query(Instant timestamp, String commander, String vega) {
         return new MemoryRecord(timestamp, MemoryKind.QUERY, List.of(
                 new MemoryEntry(MemorySource.COMMANDER, commander),
-                new MemoryEntry(MemorySource.COMPANION, companion)));
+                new MemoryEntry(MemorySource.VEGA, vega)));
     }
 
     /** Returns a copy with transformed entries while preserving completion time and kind. */
@@ -51,15 +53,17 @@ public record MemoryRecord(Instant timestamp, MemoryKind kind, List<MemoryEntry>
         return entries.get(0).content();
     }
 
-    /** Returns the companion side of a DIALOGUE or QUERY pair. */
-    public String companionText() {
+    /**
+     * Returns VEGA side of a DIALOGUE or QUERY pair.
+     */
+    public String vegaText() {
         requireKind(MemoryKind.DIALOGUE, MemoryKind.QUERY);
         return entries.get(1).content();
     }
 
     private static void validateShape(MemoryKind kind, List<MemoryEntry> entries) {
         switch (kind) {
-            case DIALOGUE, QUERY -> requireSources(kind, entries, MemorySource.COMMANDER, MemorySource.COMPANION);
+            case DIALOGUE, QUERY -> requireSources(kind, entries, MemorySource.COMMANDER, MemorySource.VEGA);
         }
     }
 

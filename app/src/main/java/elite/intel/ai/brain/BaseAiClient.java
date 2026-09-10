@@ -64,7 +64,7 @@ public class BaseAiClient {
         CompletableFuture<HttpResponse<String>> exchange = null;
         try {
             // Keep the provider-facing API synchronous, but retain the physical exchange future so interrupting
-            // a companion gateway task cancels the socket-level request instead of only abandoning its result.
+            // a VEGA gateway task cancels the socket-level request instead of only abandoning its result.
             exchange = sendAsync(request);
             HttpResponse<String> response = exchange.get();
             int code = response.statusCode();

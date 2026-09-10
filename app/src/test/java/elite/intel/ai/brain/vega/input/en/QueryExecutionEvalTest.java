@@ -1,12 +1,8 @@
 package elite.intel.ai.brain.vega.input.en;
 
-import elite.intel.ai.brain.vega.input.CompanionEvalHarness;
-import elite.intel.ai.brain.vega.input.CompanionEvalHarness.Executed;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import elite.intel.ai.brain.vega.input.VegaEvalHarness;
+import elite.intel.ai.brain.vega.input.VegaEvalHarness.Executed;
+import org.junit.jupiter.api.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +10,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
- * Theme 2 (English): does the companion understand and execute commander QUERIES? For each phrase it scores,
+ * Theme 2 (English): does VEGA understand and execute commander QUERIES? For each phrase it scores,
  * from the recorded tool-calls, whether the expected query tool was called. Most built-in queries read the
  * current ship/galaxy state and take no formal parameters (the spoken target is resolved later by the
  * query's own analysis stage), so a "query with parameters" is mostly N/A here - the {@code targeted} flag
@@ -32,7 +28,7 @@ class QueryExecutionEvalTest {
     private record Case(String input, String expectedTool, boolean targeted, String argContains) {
     }
 
-    private final CompanionEvalHarness h = new CompanionEvalHarness("companion-queries-eval-trace.txt");
+    private final VegaEvalHarness h = new VegaEvalHarness("vega-queries-eval-trace.txt");
 
     private final List<Case> cases = List.of(
             new Case("what is our current location", "query_current_location", false, null),

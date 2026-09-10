@@ -32,8 +32,8 @@ public final class RecentMemory {
     public List<MemoryRecord> evictOverflow() {
         List<MemoryRecord> evicted = new ArrayList<>();
         while (!records.isEmpty()
-                && (records.size() > CompanionMemoryPolicy.recentRecordLimit()
-                || (estimatedTokens > CompanionMemoryPolicy.recentTokenBudget() && records.size() > 1))) {
+                && (records.size() > VegaMemoryPolicy.recentRecordLimit()
+                || (estimatedTokens > VegaMemoryPolicy.recentTokenBudget() && records.size() > 1))) {
             MemoryRecord oldest = records.remove(0);
             estimatedTokens -= cost(oldest);
             evicted.add(oldest);
@@ -42,10 +42,10 @@ public final class RecentMemory {
     }
 
     private int cost(MemoryRecord record) {
-        int tokens = CompanionMemoryPolicy.recordFramingTokens();
+        int tokens = VegaMemoryPolicy.recordFramingTokens();
         for (MemoryEntry entry : record.entries()) {
             tokens += tokenEstimator.estimate(entry.content())
-                    + CompanionMemoryPolicy.entryFramingTokens();
+                    + VegaMemoryPolicy.entryFramingTokens();
         }
         return tokens;
     }

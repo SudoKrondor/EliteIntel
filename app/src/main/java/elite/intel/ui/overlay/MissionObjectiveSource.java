@@ -104,7 +104,7 @@ public class MissionObjectiveSource implements HudObjectiveSource {
 
     /**
      * The mission the card is about, or empty when there are none. The rule itself lives in
-     * {@link MissionSelection#featured} so the card and the companion's mission fact always name the same one.
+     * {@link MissionSelection#featured} so the card and VEGA's mission fact always name the same one.
      */
     static Optional<MissionDto> featured(List<MissionDto> missions, String routeDestination) {
         return MissionSelection.featured(missions, routeDestination);

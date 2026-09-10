@@ -1,9 +1,5 @@
 package elite.intel.ai.brain.vega.model.memory;
 
-import elite.intel.ai.brain.vega.model.memory.MemoryEntry;
-import elite.intel.ai.brain.vega.model.memory.MemoryKind;
-import elite.intel.ai.brain.vega.model.memory.MemoryRecord;
-import elite.intel.ai.brain.vega.model.memory.MemorySource;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -16,7 +12,7 @@ class MemoryRecordTest {
 
     @Test
     void factoriesCreateProtocolValidShapes() {
-        assertEquals(List.of(MemorySource.COMMANDER, MemorySource.COMPANION),
+        assertEquals(List.of(MemorySource.COMMANDER, MemorySource.VEGA),
                 MemoryRecord.dialogue(Instant.EPOCH, "hello", "hello").entries().stream()
                         .map(MemoryEntry::source).toList());
         assertEquals(2, MemoryRecord.query(Instant.EPOCH, "cargo?", "empty").entryCount());

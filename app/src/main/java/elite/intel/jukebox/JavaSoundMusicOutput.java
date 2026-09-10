@@ -8,7 +8,7 @@ import javax.sound.sampled.Mixer;
 import javax.sound.sampled.SourceDataLine;
 
 /**
- * The jukebox's own output line, on the same speaker the commander chose for the companion's voice.
+ * The jukebox's own output line, on the same speaker the commander chose for VEGA's voice.
  * <p>
  * A line of its own rather than a share of the speech engine's: the two are mixed by the operating system,
  * which is what allows music to keep playing underneath speech instead of taking turns with it. The device

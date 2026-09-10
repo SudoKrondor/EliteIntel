@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.BrainTreeManager;
@@ -92,7 +92,7 @@ public final class FindBrainTreesCommand implements IntelCommand {
             return StringUtls.localizedResponse("handler.brainTrees.notFound");
         }
         double distance = calculateDistance(coordinates, result.getX(), result.getY(), result.getZ());
-        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.brainTrees.found", result.getSystemName(), distance, result.getBodyName()), false);
+        VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.brainTrees.found", result.getSystemName(), distance, result.getBodyName()), false);
         ReminderManager.getInstance().setReminder(
                 StringUtls.localizedResponse("handler.brainTrees.reminder", result.getSystemName(), result.getBodyName()),
                 result.getSystemName()

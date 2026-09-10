@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * switch leaves behind, since each engine names its voices differently.
  * <p>
  * {@link SystemSession#getVoiceGender()} reads the same per-ship voice, because the voice is also what tells
- * the companion prompt whether to speak of itself in feminine or masculine forms.
+ * VEGA prompt whether to speak of itself in feminine or masculine forms.
  */
 class PerShipVoicePersonalityTest {
 
@@ -68,7 +68,7 @@ class PerShipVoicePersonalityTest {
     }
 
     @Test
-    void aMaleVoiceIsKeptAndReportedAsTheCompanionGender() {
+    void aMaleVoiceIsKeptAndReportedAsVegaGender() {
         SystemSession session = SystemSession.getInstance();
         TtsProvider previousProvider = session.getTtsProvider();
         try {

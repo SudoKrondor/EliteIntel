@@ -92,7 +92,7 @@ class GameToolCandidatesTest {
     }
 
     @Test
-    void actionsUnavailableToCompanionCommanderAreExcluded() {
+    void actionsUnavailableToVegaCommanderAreExcluded() {
         IntelAction legacyOnly = new IntelAction() {
             @Override
             public String id() {
@@ -101,7 +101,7 @@ class GameToolCandidatesTest {
 
             @Override
             public boolean isAvailableIn(IntelActionContext context) {
-                return context != IntelActionContext.COMPANION_COMMANDER;
+                return context != IntelActionContext.VEGA_COMMANDER;
             }
 
             @Override

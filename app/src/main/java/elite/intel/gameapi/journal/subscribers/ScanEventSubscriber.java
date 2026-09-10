@@ -2,7 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.commons.BiomeAnalyzer;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.ScanBodyClassifier;
 import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
@@ -240,7 +240,7 @@ public class ScanEventSubscriber {
      */
     private void announceOnce(ScanEvent event, String message) {
         if (isFirstAnnouncementForBody(event.getSystemAddress(), event.getBodyID())) {
-            CompanionRuntime.narrator().announce(message, false);
+            VegaRuntime.narrator().announce(message, false);
         }
     }
 

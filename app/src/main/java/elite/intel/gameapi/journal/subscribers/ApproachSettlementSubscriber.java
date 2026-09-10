@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.ApproachSettlementEvent;
 import elite.intel.session.PlayerSession;
@@ -36,7 +36,7 @@ public class ApproachSettlementSubscriber {
                             Provide very brief summary for the settlement data.
                             Do not list every service.
                         """;
-                CompanionRuntime.narrator().narrate(sb.toString(), instructions);
+                VegaRuntime.narrator().narrate(sb.toString(), instructions);
             }
         });
     }
@@ -49,7 +49,7 @@ public class ApproachSettlementSubscriber {
     }
 
     /**
-     * The settlement as the journal described it, as labelled facts for the companion to summarise.
+     * The settlement as the journal described it, as labelled facts for VEGA to summarise.
      * Only the facts the event actually carried, see {@link #appendFact}.
      */
     static String settlementFacts(ApproachSettlementEvent event) {
@@ -83,7 +83,7 @@ public class ApproachSettlementSubscriber {
      * settlement held by a faction with no superpower behind it carries no {@code StationAllegiance}
      * at all, which is the ordinary case rather than an odd one: three of the four settlements
      * approached in the session that exposed this had none. Appending the label regardless put
-     * "Allegiance: null." into the payload, and the companion faithfully announced "null allegiance".
+     * "Allegiance: null." into the payload, and VEGA faithfully announced "null allegiance".
      */
     private static void appendFact(StringBuilder sb, String key, String value) {
         if (value == null || value.isBlank()) return;
@@ -94,7 +94,7 @@ public class ApproachSettlementSubscriber {
      * The game's own wording for a symbol-keyed field, falling back to the raw symbol on the rare
      * event that does not carry the translation.
      *
-     * <p>WHY: the payload used to state "$economy_Extraction;" and leave the companion to turn that
+     * <p>WHY: the payload used to state "$economy_Extraction;" and leave VEGA to turn that
      * back into a word. It reads well enough in English and is guesswork in every other language,
      * while the event carries the game's own translation right beside the symbol. The symbol stays
      * the machine key, so the engineer test above still matches on it.

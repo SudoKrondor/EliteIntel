@@ -20,7 +20,7 @@ public final class SleepCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Put the companion to sleep so it stops listening and responding until explicitly woken.";
+        return "Put VEGA to sleep so it stops listening and responding until explicitly woken.";
     }
 
     @Override
@@ -29,7 +29,7 @@ public final class SleepCommand implements IntelCommand {
     }
 
     /**
-     * Companion-side control, executable in any location - but pointless under push-to-talk, where the mapped
+     * VEGA-side control, executable in any location - but pointless under push-to-talk, where the mapped
      * button already gates the microphone and the sleep flag is not consulted at all. Withheld there rather
      * than offered as a tool that would do nothing.
      */

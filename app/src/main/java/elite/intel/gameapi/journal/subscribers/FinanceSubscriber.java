@@ -1,8 +1,8 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.ai.brain.vega.SpokenAmounts;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.journal.events.*;
 import elite.intel.session.PlayerSession;
@@ -23,8 +23,8 @@ import elite.intel.ui.event.CreditsUpdatedEvent;
  * If another journal event is found to move money, add it here (and to
  * {@code FinancePreScanAccumulator}).
  *
- * <p>This is also where the spoken financial announcements live: notable events hand the companion English
- * data + instruction via {@code CompanionRuntime.narrator().narrate(...)} so the LLM speaks a
+ * <p>This is also where the spoken financial announcements live: notable events hand VEGA English
+ * data + instruction via {@code VegaRuntime.narrator().narrate(...)} so the LLM speaks a
  * personality-styled summary in the user's chosen language - no fixed templates, no localization bundle needed. {@code MarketSell} is the deliberate exception: its
  * announcement stays in {@code MarketSellEventSubscriber} because it is tied to the
  * trade-route feature.
@@ -210,7 +210,7 @@ public class FinanceSubscriber {
      * Every announcement here carries money, so the spoken-amount rule always rides along with it.
      */
     private void announce(String data, String instruction) {
-        CompanionRuntime.narrator().narrate(data, withSpokenAmountRule(instruction));
+        VegaRuntime.narrator().narrate(data, withSpokenAmountRule(instruction));
     }
 
     /**
@@ -222,7 +222,7 @@ public class FinanceSubscriber {
 
     // --- Announcement payloads. Each pairs an event's serialized YAML with a spoken sibling for every amount
     // the announcement voices. Kept as pure methods so a test can check the field names match the payload and
-    // the spoken figure matches the value, without standing up the companion runtime. ---
+    // the spoken figure matches the value, without standing up VEGA runtime. ---
 
     static String voucherPayload(RedeemVoucherEvent e) {
         return e.toYaml() + SpokenAmounts.yamlLine("amount", e.getAmount());

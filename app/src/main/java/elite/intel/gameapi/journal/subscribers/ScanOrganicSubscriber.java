@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.dao.CodexEntryDao.CodexEntry;
 import elite.intel.db.managers.CodexEntryManager;
 import elite.intel.db.managers.LocationManager;
@@ -40,7 +40,7 @@ public class ScanOrganicSubscriber {
 
     private static void announce(String sb) {
         if (PlayerSession.getInstance().isDiscoveryAnnouncementOn()) {
-            CompanionRuntime.narrator().narrate(sb, """
+            VegaRuntime.narrator().narrate(sb, """
                         Use ONLY facts from sensorData-no invention, external knowledge, or additions like planet/system/payment/bonus/vehicles/scan stages.
                         Rephrase to natural, immersive speech:
                             - Key elements ONLY: genus/species logged, distance/completion if stated.

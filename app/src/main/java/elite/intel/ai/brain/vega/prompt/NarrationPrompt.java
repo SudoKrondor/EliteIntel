@@ -35,10 +35,10 @@ final class NarrationPrompt {
     /** Renders the EVENT rules with current identity, personality, and language settings. */
     static String render() {
         return TEXT
-                .replace("{identity}", CompanionSystemPrompt.identityClause())
-                .replace("{address}", CompanionSystemPrompt.addressRule())
-                .replace("{language}", CompanionSystemPrompt.languageName())
-                .replace("{personalityClause}", CompanionSystemPrompt.personalityClause())
-                .replace("{selfGender}", CompanionSystemPrompt.selfGender());
+                .replace("{identity}", VegaSystemPrompt.identityClause())
+                .replace("{address}", VegaSystemPrompt.addressRule())
+                .replace("{language}", VegaSystemPrompt.languageName())
+                .replace("{personalityClause}", VegaSystemPrompt.personalityClause())
+                .replace("{selfGender}", VegaSystemPrompt.selfGender());
     }
 }

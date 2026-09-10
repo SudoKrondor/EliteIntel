@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.ApproachBodyEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -90,7 +90,7 @@ public class ApproachBodySubscriber {
                             Gravity around equal to or less than 1G is safe. Issue a gravity warning if gravity is higher than 1G.
                             If there is no atmosphere report as "Atmosphere: none".
                         """;
-                CompanionRuntime.narrator().narrate(sb.toString(), instructions);
+                VegaRuntime.narrator().narrate(sb.toString(), instructions);
             }
         }); // end virtual thread
     }

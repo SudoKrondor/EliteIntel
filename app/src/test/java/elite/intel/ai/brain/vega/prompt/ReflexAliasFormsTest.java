@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Data guard for the companion reflex fast-path ({@link ReflexResolver}). The short ship/panel/map commands the
+ * Data guard for VEGA reflex fast-path ({@link ReflexResolver}). The short ship/panel/map commands the
  * commander blurts must each carry a bare spoken form ("landing gear", "supercruise", "optimal speed", "galaxy
  * map", ...) that belongs to exactly one command, so the reflex gate executes them deterministically instead of
  * dropping to the probabilistic LLM round. Reverting a value to the old "show, open or display X" phrasing (which

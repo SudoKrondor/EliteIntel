@@ -40,6 +40,7 @@ import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import java.awt.*;
+import java.awt.event.HierarchyEvent;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -186,6 +187,14 @@ public class CommanderTabPanel extends JPanel {
 
     public CommanderTabPanel() {
         buildUi();
+        // The game may be launched - or relaunched in another language - long after this panel was built, and
+        // the header that says so arrives on the game bus, not this one. Re-reading the answer each time the
+        // tab is shown keeps the radio toggle honest without a UI event for it.
+        addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) {
+                applyRadioTransmissionAvailability();
+            }
+        });
         UiBus.register(this);
     }
 
@@ -335,6 +344,7 @@ public class CommanderTabPanel extends JPanel {
                 playerSession.isNavigationAnnouncementOn(), playerSession::setNavigationAnnouncementOn);
         radioTransmissionBox = toggle("announcements.radioTransmissions",
                 playerSession.isRadioTransmissionOn(), playerSession::setRadioTransmissionOn);
+        applyRadioTransmissionAvailability();
 
         boxes.add(discoveryAnnouncementBox);
         boxes.add(routeAnnouncementBox);
@@ -351,6 +361,23 @@ public class CommanderTabPanel extends JPanel {
         boxes.add(toggle("automation.announceFuelAvailable", mgr.getAnnounceFuelAvailable(), mgr::setAnnounceFuelAvailable));
 
         return threeColumnGrid(boxes);
+    }
+
+    /**
+     * Shows the radio toggle as the channel actually is. A game client writing Cyrillic gives us NPC lines no
+     * voice here can read aloud, so the transmissions are off whatever the stored setting says - and the box
+     * says so, unticked and dead with a tooltip, rather than sitting ticked over a channel that never speaks.
+     * <p>
+     * The stored setting is deliberately left alone: the client language is the game's state, not the
+     * commander's choice, and a commander who switches their client back to English must get their radio back
+     * without having to remember they once had it.
+     */
+    private void applyRadioTransmissionAvailability() {
+        boolean available = RadioVoicing.isAvailable();
+        radioTransmissionBox.setEnabled(available);
+        if (!available) radioTransmissionBox.setSelected(false);
+        radioTransmissionBox.setToolTipText(
+                available ? null : getText("announcements.radioTransmissions.unavailable"));
     }
 
     /**
@@ -415,6 +442,7 @@ public class CommanderTabPanel extends JPanel {
         miningAnnouncementBox.setSelected(playerSession.isMiningAnnouncementOn());
         navigationAnnouncementBox.setSelected(playerSession.isNavigationAnnouncementOn());
         radioTransmissionBox.setSelected(playerSession.isRadioTransmissionOn());
+        applyRadioTransmissionAvailability();
 
         String commanderName = playerSession.getInGameName();
         List<ShipDao.Ship> ships = (commanderName != null && !commanderName.isBlank())
@@ -436,7 +464,7 @@ public class CommanderTabPanel extends JPanel {
                 radioVoiceOptions(), this::radioVoiceLabel, RANDOM_VOICE::equals));
 
         // Voice options depend on current TTS provider; rebuild editor on every call. Every voice the active
-        // engine has is offered, male and female alike - the picked voice also decides how the companion
+        // engine has is offered, male and female alike - the picked voice also decides how VEGA
         // speaks of itself (see SystemSession.getVoiceGender()).
         boolean useLocal = SystemSession.getInstance().useLocalTTS();
         String[] voiceOptions;
@@ -583,7 +611,7 @@ public class CommanderTabPanel extends JPanel {
 
     /**
      * One line of the fleet grid. Ships and carriers share the voice column and nothing else: a carrier is
-     * not a companion, so it has no personality and no per-ship settings, only the voice its traffic control
+     * not crewed by VEGA, so it has no personality and no per-ship settings, only the voice its traffic control
      * answers on. See {@link CarrierRow}.
      */
     private interface FleetRow {

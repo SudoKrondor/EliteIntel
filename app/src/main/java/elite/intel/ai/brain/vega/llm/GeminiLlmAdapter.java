@@ -18,13 +18,13 @@ import java.util.List;
  *   <li>turns live in {@code contents} with roles {@code user}/{@code model} (no "assistant"/"tool" roles);</li>
  *   <li>an assistant tool-call is a {@code {functionCall:{name, args}}} part and a tool result is a
  *       {@code {functionResponse:{name, response}}} part - linked by function <em>name</em>, not an id, and
- *       consecutive companion {@code TOOL} results are coalesced into one user turn;</li>
+ *       consecutive VEGA {@code TOOL} results are coalesced into one user turn;</li>
  *   <li>a thinking model (Gemini 3) attaches a {@code thoughtSignature} to each {@code functionCall} part and
  *       <em>requires</em> it sent back verbatim when that call is replayed in history, else the next request is
  *       rejected (HTTP 400). The neutral {@link LlmToolInvocation} has no provider-opaque slot, so {@link #parse}
  *       packs both the function name and the signature into the invocation id ({@code name  signature});
  *       {@link #modelTurn} re-emits the signature and {@link #functionResponsePart} reads back the name. This is
- *       confined to this adapter - the id is opaque to the rest of companion (it only round-trips it as the
+ *       confined to this adapter - the id is opaque to the rest of VEGA (it only round-trips it as the
  *       {@code tool_call_id}).</li>
  *   <li>tools are {@code {functionDeclarations:[{name, description, parameters}]}}, the parameter schema uses
  *       <em>uppercase</em> OpenAPI type names ({@code STRING}/{@code OBJECT}), and a forced call is
@@ -156,7 +156,7 @@ public final class GeminiLlmAdapter implements LlmProviderAdapter {
     }
 
     /**
-     * Gemini links a result to its call by function name; companion carries that name in the tool-call id.
+     * Gemini links a result to its call by function name; VEGA carries that name in the tool-call id.
      */
     private JsonObject functionResponsePart(LlmMessage m) {
         JsonObject response = new JsonObject();

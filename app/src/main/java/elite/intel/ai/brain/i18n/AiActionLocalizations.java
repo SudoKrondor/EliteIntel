@@ -38,7 +38,7 @@ public final class AiActionLocalizations {
 
     /**
      * Phrases that reopen the Sleep/Wake gate, in the commander's language. The one thing a sleeping
-     * companion still listens for - see {@code ParakeetSTTImpl}.
+     * VEGA still listens for - see {@code ParakeetSTTImpl}.
      */
     public static Set<String> wakeBypassPhrases() {
         return provider().wakeBypassPhrases();

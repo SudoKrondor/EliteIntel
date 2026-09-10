@@ -62,8 +62,10 @@ public class LMStudioClient extends BaseAiClient implements Client {
         return err;
     }
 
-    /** Sends a companion request without converting a transport failure into legacy speech JSON. */
-    public synchronized AiTransportResult sendCompanionRequest(String request) {
+    /**
+     * Sends a VEGA request without converting a transport failure into legacy speech JSON.
+     */
+    public synchronized AiTransportResult sendVegaRequest(String request) {
         long t0 = System.nanoTime();
         UiBus.publish(new AppLogEvent("LM Studio request -> model: " + requestedModel(request)));
         AiTransportResult outcome = sendTransportRequest(buildRequest(request));

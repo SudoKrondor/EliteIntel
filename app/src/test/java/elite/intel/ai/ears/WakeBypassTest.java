@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The Sleep/Wake gate is the whole feature: while it is closed nothing the commander says should reach the
- * companion except the words that reopen it. These cases run against the real {@link WakeBypass} the STT
+ * VEGA except the words that reopen it. These cases run against the real {@link WakeBypass} the STT
  * pipeline calls — an earlier version of this suite re-implemented the matching in its own helpers, which
  * would have gone on passing had the pipeline's copy drifted.
  * <p>

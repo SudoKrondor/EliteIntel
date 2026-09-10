@@ -1,7 +1,7 @@
 package elite.intel.ai.brain.vega.input.ru;
 
 import elite.intel.ai.brain.ShipPersonality;
-import elite.intel.ai.brain.vega.input.CompanionEvalHarness;
+import elite.intel.ai.brain.vega.input.VegaEvalHarness;
 import elite.intel.i18n.Language;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -56,9 +56,9 @@ class PersonalitySwitchEvalTest {
 
         for (ShipPersonality personality : PERSONALITIES) {
             // Fresh harness per personality = fresh memory, so no earlier reply can echo into this block.
-            CompanionEvalHarness h = new CompanionEvalHarness(
-                    "companion-ru-personality-" + personality.name().toLowerCase(Locale.ROOT) + "-trace.txt",
-                    Language.RU, CompanionEvalHarness.Backend.MISTRAL);
+            VegaEvalHarness h = new VegaEvalHarness(
+                    "vega-ru-personality-" + personality.name().toLowerCase(Locale.ROOT) + "-trace.txt",
+                    Language.RU, VegaEvalHarness.Backend.MISTRAL);
             h.boot();
             try {
                 h.setPersonality(personality);

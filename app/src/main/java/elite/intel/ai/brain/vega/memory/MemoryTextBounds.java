@@ -10,7 +10,7 @@ final class MemoryTextBounds {
 
     /** Keeps short text verbatim and shortens oversized text at the nearest preceding word boundary. */
     static String entry(String content) {
-        return bound(content, CompanionMemoryPolicy.entryMaxChars());
+        return bound(content, VegaMemoryPolicy.entryMaxChars());
     }
 
     private static String bound(String content, int maxChars) {

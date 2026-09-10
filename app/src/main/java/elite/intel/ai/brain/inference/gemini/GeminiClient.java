@@ -54,8 +54,8 @@ public class GeminiClient extends BaseAiClient implements Client {
     }
 
     /**
-     * Companion-mode transport entry: pins {@code model} into the request URL for this call, then sends.
-     * Companion builds the request body itself (native tool-calling) and never runs the legacy
+     * VEGA-mode transport entry: pins {@code model} into the request URL for this call, then sends.
+     * VEGA builds the request body itself (native tool-calling) and never runs the legacy
      * {@link #createPrompt} path that sets {@link #currentModel}, so it must select the model here.
      */
     public JsonObject sendJsonRequest(String request, String model) {
@@ -63,8 +63,10 @@ public class GeminiClient extends BaseAiClient implements Client {
         return sendJsonRequest(request);
     }
 
-    /** Sends a companion request for the supplied model without converting a transport failure into legacy speech JSON. */
-    public AiTransportResult sendCompanionRequest(String request, String model) {
+    /**
+     * Sends a VEGA request for the supplied model without converting a transport failure into legacy speech JSON.
+     */
+    public AiTransportResult sendVegaRequest(String request, String model) {
         this.currentModel = model;
         long t0 = System.nanoTime();
         AiTransportResult outcome = sendTransportRequest(buildRequest(request));

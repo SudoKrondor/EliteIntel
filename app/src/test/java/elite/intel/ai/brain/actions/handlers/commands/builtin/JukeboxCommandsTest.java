@@ -87,7 +87,7 @@ class JukeboxCommandsTest {
     /**
      * These stay offered even with an empty playlist.
      * <p>
-     * The tempting alternative - hiding them until a folder is chosen - makes the companion answer "play
+     * The tempting alternative - hiding them until a folder is chosen - makes VEGA answer "play
      * music" with a claim that it has no such function, which is untrue and leaves the commander no wiser.
      * Answering "there is no music in your playlist yet" names the actual problem. It also keeps the set of
      * offered tools independent of the library's contents, which a frozen composition snapshot depends on.
@@ -99,7 +99,7 @@ class JukeboxCommandsTest {
 
         for (String id : JUKEBOX_COMMANDS) {
             assertTrue(command(id).isVisibleForLLM(status),
-                    id + " vanishes when the playlist is empty, so the companion would deny it exists");
+                    id + " vanishes when the playlist is empty, so VEGA would deny it exists");
         }
     }
 

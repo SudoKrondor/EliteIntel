@@ -18,7 +18,7 @@ import java.util.List;
  *   <li>{@code max_tokens} is required;</li>
  *   <li>an assistant tool-call is a {@code content} block {@code {type:"tool_use", id, name, input}}, and a
  *       tool result is a {@code {type:"tool_result", tool_use_id, content}} block carried in a <em>user</em>
- *       turn - so consecutive companion {@code TOOL} messages are coalesced into one user turn (the API
+ *       turn - so consecutive VEGA {@code TOOL} messages are coalesced into one user turn (the API
  *       forbids two user turns in a row);</li>
  *   <li>tools are {@code {name, description, input_schema}} and a forced call is {@code tool_choice:{type:"any"}};</li>
  *   <li>the response is a top-level {@code content} block array ({@code tool_use} blocks, or {@code text}).</li>

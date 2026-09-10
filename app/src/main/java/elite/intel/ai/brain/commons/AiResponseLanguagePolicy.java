@@ -19,6 +19,11 @@ public final class AiResponseLanguagePolicy {
      * English or they would not be spoken. Every other language is Latin-script and Kokoro speaks it,
      * using its nearest voice where it has no native one — German is voiced with an accent, which beats
      * answering a German commander in English.
+     * <p>
+     * In practice a Cyrillic commander no longer reaches that fallback: {@code SystemSession.getTtsProvider()}
+     * withdraws Kokoro from them entirely (see {@link elite.intel.ai.mouth.TtsProvider#forLanguage}), so they
+     * are on Edge or Google and are answered in their own language. The English branch stays as the guard that
+     * makes this method true of any engine, not only of today's three.
      *
      * @param systemSession the session containing system language and TTS configuration details
      * @return the session's language, except when the local TTS would have to voice Cyrillic, in which

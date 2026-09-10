@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.MissionTitle;
 import elite.intel.gameapi.journal.events.MissionFailedEvent;
@@ -34,7 +34,7 @@ public class MissionFailedSubscriber {
             // The title, never the raw key: a mission we stored before the journal gave us a localised name
             // would otherwise be announced as "Mission_Collect_RankEmp".
             String title = MissionTitle.of(event.getName(), event.getLocalisedName());
-            CompanionRuntime.narrator().narrate(
+            VegaRuntime.narrator().narrate(
                     "Notify: mission failed: " + title + ". Destination was " + mission.getDestinationSystem()
                             + ". Reward lost: " + mission.getReward() + " credits.",
                     "Tell the commander this mission has been lost, most likely by running out of time. "

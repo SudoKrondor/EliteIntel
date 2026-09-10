@@ -18,9 +18,9 @@ public class ConnectionCheckQuery extends BaseQueryAnalyzer implements IntelQuer
     @Override
     public JsonObject handle(String action, JsonObject params, String responseText) {
         // A connectivity probe must actually round-trip the LLM, so it calls the analysis endpoint directly
-        // instead of the mode-aware BaseQueryAnalyzer.process(AiData): in companion mode that method skips the
+        // instead of the mode-aware BaseQueryAnalyzer.process(AiData): in VEGA that method skips the
         // LLM call (returns raw data for the consciousness to narrate), which would make every check report a
-        // false failure. Companion and legacy share the same provider config, so this probes the live endpoint.
+        // false failure. VEGA and legacy share the same provider config, so this probes the live endpoint.
         boolean reachable = ApiFactory.getInstance().getAnalysisEndpoint().verifyConnection();
         String key = reachable ? "speech.connectionSuccessful" : "speech.connectionFailed";
         UiBus.publish(new LlmConnectionStatusEvent(reachable));

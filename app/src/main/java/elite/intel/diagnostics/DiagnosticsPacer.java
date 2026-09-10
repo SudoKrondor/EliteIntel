@@ -5,14 +5,14 @@ import elite.intel.ai.ears.IsSpeakingEvent;
 import elite.intel.eventbus.GameEventBus;
 
 /**
- * Paces file-injected phrases to conversation speed so the companion LLM and TTS finish a turn before the
+ * Paces file-injected phrases to conversation speed so VEGA LLM and TTS finish a turn before the
  * next phrase is fed - if phrases were dumped in faster than the model can answer, the run would not reflect
  * real use. Tracks TTS state via {@link IsSpeakingEvent} and turn activity via {@link #markActivity()}
  * (pinged by {@link DiagnosticsExecutionGateway} on each dispatched tool, so a silent command turn still
  * signals progress). {@link #awaitTurnSettled()} then blocks the tailer until the turn has both started and
  * gone quiet.
  * <p>
- * Singleton because the boot-time tailer and the companion-time execution gateway are created in different
+ * Singleton because the boot-time tailer and VEGA-time execution gateway are created in different
  * places yet must share one turn state.
  */
 public final class DiagnosticsPacer {

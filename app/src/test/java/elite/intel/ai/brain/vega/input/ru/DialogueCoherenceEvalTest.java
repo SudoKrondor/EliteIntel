@@ -1,28 +1,24 @@
 package elite.intel.ai.brain.vega.input.ru;
 
-import elite.intel.ai.brain.vega.input.CompanionEvalHarness;
+import elite.intel.ai.brain.vega.input.VegaEvalHarness;
 import elite.intel.i18n.Language;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
- * Theme (Russian): dialogue coherence - whether the companion keeps the conversational thread across many
+ * Theme (Russian): dialogue coherence - whether VEGA keeps the conversational thread across many
  * turns. The script is one continuous chat kept deliberately OFF any Elite game topic (naming, mood, a story),
- * so the turns stay in the companion's chat/persona lane and are not hijacked by the query layer answering with
+ * so the turns stay in VEGA's chat/persona lane and are not hijacked by the query layer answering with
  * route/cargo/fuel data. Coherence rests purely on resolving anaphora and ellipsis ("оно", "так", "дальше")
  * against the accumulated conversation. The final probe re-asks what the chat started about (the seed's topic),
  * so the chain also exercises long-range recall - phrased without "напомни", which misroutes to the reminders
  * feature rather than recalling the thread.
  * <p>
  * This eval is a pure recorder: coherence is a semantic property no hardcoded string cue can score, so the test
- * only drives the scripted conversation and writes the full transcript (each commander turn and the companion's
+ * only drives the scripted conversation and writes the full transcript (each commander turn and VEGA's
  * spoken reply) to the trace. The one assertion is that the live model was actually reached; judging whether the
  * dialogue holds together is done by a human/reviewer reading the transcript, not by the test. Opt-in
  * ({@code @Tag("local-integration")}); LM Studio must be up.
@@ -31,9 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class DialogueCoherenceEvalTest {
 
-    private final CompanionEvalHarness h = new CompanionEvalHarness("companion-ru-dialogue-coherence-trace.txt", Language.RU);
+    private final VegaEvalHarness h = new VegaEvalHarness("vega-ru-dialogue-coherence-trace.txt", Language.RU);
 
-    // The seed opens an off-game banter topic (renaming the companion); the whole chat thread hangs off it.
+    // The seed opens an off-game banter topic (renaming VEGA); the whole chat thread hangs off it.
     private static final String SEED = "слушай, мне кажется, тебе нужно имя покруче, чем Вега";
 
     // Ten elliptical / anaphoric follow-ups, none of which names a game fact. Each depends on the running
@@ -85,7 +81,7 @@ class DialogueCoherenceEvalTest {
     }
 
     /**
-     * The companion's spoken reply for the current turn, joined, or a visible marker when it fell silent.
+     * VEGA's spoken reply for the current turn, joined, or a visible marker when it fell silent.
      */
     private String spoken() {
         String said = String.join(" ", h.spokenTexts()).strip();

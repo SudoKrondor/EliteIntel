@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.FSSSignalDiscoveredEvent;
@@ -72,7 +72,7 @@ public class FSSSignalDiscoveredSubscriber {
     }
 
     private void publishVoice(String message) {
-        CompanionRuntime.narrator().announce(message, false);
+        VegaRuntime.narrator().announce(message, false);
     }
 
 

@@ -2,7 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.SupercruiseDestinationDropEvent;
@@ -27,7 +27,7 @@ public class SuperCruiseDropSubscriber {
                             - level 3 - 5 threat level medium
                             - level 6 - 8 threat level high
                         """;
-                CompanionRuntime.narrator().narrate(" Dropped from supercruise. Threat level: " + event.getThreat() + ". ", instructions);
+                VegaRuntime.narrator().narrate(" Dropped from supercruise. Threat level: " + event.getThreat() + ". ", instructions);
             }
 
 

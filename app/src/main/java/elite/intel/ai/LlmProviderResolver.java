@@ -4,7 +4,7 @@ import elite.intel.session.SystemSession;
 
 /**
  * Single source of truth for resolving the active cloud LLM provider from configuration. Both
- * {@link ApiFactory} (for the legacy command/query endpoints) and companion mode use this, so the
+ * {@link ApiFactory} (for the legacy command/query endpoints) and VEGA use this, so the
  * detection logic is written once.
  * <p>
  * The local host (LM Studio) is not resolved here: the local toggle differs by role

@@ -67,7 +67,7 @@ public class TTSFriendlyNumberConverter {
 
     /**
      * Same rounding as {@link #formatCreditsForSpeech(long)}, but always in English, for amounts embedded in
-     * event payloads handed to the companion LLM. Those payloads are English by contract; the model
+     * event payloads handed to VEGA LLM. Those payloads are English by contract; the model
      * translates the finished phrase into the commander's language along with the rest of the sentence.
      */
     public static String formatCreditsForLlm(long credits) {

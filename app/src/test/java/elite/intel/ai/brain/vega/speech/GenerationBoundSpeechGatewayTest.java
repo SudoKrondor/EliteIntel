@@ -1,10 +1,8 @@
 package elite.intel.ai.brain.vega.speech;
 
-import elite.intel.ai.brain.vega.CompanionRuntimeGeneration;
+import elite.intel.ai.brain.vega.VegaRuntimeGeneration;
 import elite.intel.ai.brain.vega.model.Urgency;
 import elite.intel.ai.brain.vega.model.speech.SpeechRequest;
-import elite.intel.ai.brain.vega.speech.GenerationBoundSpeechGateway;
-import elite.intel.ai.brain.vega.speech.SpeechGateway;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
@@ -18,7 +16,7 @@ class GenerationBoundSpeechGatewayTest {
     void closeCancelsOwnedUtteranceAndRejectsNewSpeech() {
         RecordingSpeechGateway delegate = new RecordingSpeechGateway();
         GenerationBoundSpeechGateway gateway = new GenerationBoundSpeechGateway(
-                delegate, new CompanionRuntimeGeneration());
+                delegate, new VegaRuntimeGeneration());
 
         CompletableFuture<Void> pendingUtterance = gateway.submit(request("utterance-1"));
         gateway.close();

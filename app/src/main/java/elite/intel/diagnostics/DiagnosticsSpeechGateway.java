@@ -1,14 +1,14 @@
 package elite.intel.diagnostics;
 
 import elite.intel.ai.brain.vega.model.speech.SpeechRequest;
-import elite.intel.ai.brain.vega.speech.CompanionSpeechGateway;
 import elite.intel.ai.brain.vega.speech.SpeechGateway;
+import elite.intel.ai.brain.vega.speech.VegaSpeechGateway;
 
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Diagnostics-mode {@link SpeechGateway}: a thin decorator over the real {@link CompanionSpeechGateway} so the
- * companion voice is fully audible and the chat panel shows every reply, exactly as in normal operation - the
+ * Diagnostics-mode {@link SpeechGateway}: a thin decorator over the real {@link VegaSpeechGateway} so the
+ * VEGA voice is fully audible and the chat panel shows every reply, exactly as in normal operation - the
  * harness must be indistinguishable from a live session for everything the operator sees and hears. It only
  * skips the microphone (STT), never the speaker.
  * <p>
@@ -16,8 +16,8 @@ import java.util.concurrent.CompletableFuture;
  * {@code IsSpeakingEvent} transitions (which drive the {@code DIAG speaking} markers and pacer settling), a
  * {@link elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent} the active Mouth voices, and the
  * {@code AiResponseLogEvent} that Mouth publishes to populate the chat panel. The returned future is the real
- * playback future, so a caller that blocks on speech (a bridged narration's {@code spokenSignal}, the mid-term
- * consolidator) waits for actual audio just like in production.
+ * playback future, so a caller that blocks on speech (a bridged narration's {@code spokenSignal}) waits for
+ * actual audio just like in production.
  * <p>
  * Additionally pings {@link DiagnosticsPacer#markActivity()} so a speak-only turn (pure conversation, or a
  * query answer - neither emits a {@code DIAG dispatch}) registers turn activity even in the brief window
@@ -26,7 +26,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public final class DiagnosticsSpeechGateway implements SpeechGateway {
 
-    private final SpeechGateway delegate = new CompanionSpeechGateway();
+    private final SpeechGateway delegate = new VegaSpeechGateway();
 
     @Override
     public CompletableFuture<Void> submit(SpeechRequest request) {

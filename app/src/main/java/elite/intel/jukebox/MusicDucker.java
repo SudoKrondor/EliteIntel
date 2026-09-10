@@ -7,10 +7,10 @@ import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 /**
- * Pulls the music down while the companion speaks - or while the commander is holding the push-to-talk
+ * Pulls the music down while VEGA speaks - or while the commander is holding the push-to-talk
  * button - and lets it back up afterwards.
  * <p>
- * A side-chain compressor: the companion's voice is the side-chain input and the music is what gets
+ * A side-chain compressor: VEGA's voice is the side-chain input and the music is what gets
  * compressed. The music's own loudness is deliberately not part of the calculation - a quiet passage
  * ducks by exactly as much as a loud one, so the commander hears speech over a steady bed rather than
  * over music that pumps in time with itself.
@@ -27,7 +27,7 @@ import java.util.function.DoubleSupplier;
  * <p>
  * <b>The second reason to duck.</b> A held push-to-talk button ducks the music too, at a fixed depth rather
  * than off a curve - there is no level to follow, only a button that is down or up. It is the same duck the
- * commander already knows from the companion speaking, arriving and leaving on the same attack and release,
+ * commander already knows from VEGA speaking, arriving and leaving on the same attack and release,
  * because a second kind of duck that moved differently would read as a fault - see
  * {@link #PUSH_TO_TALK_REDUCTION_DB}.
  */
@@ -89,7 +89,7 @@ public final class MusicDucker {
     private double gainReductionDb;
 
     /**
-     * A ducker driven by the live companion voice.
+     * A ducker driven by the live VEGA voice.
      */
     public MusicDucker() {
         this(VoiceLevelTap::currentLevelDbfs, PushToTalkHoldTap::isHeld);

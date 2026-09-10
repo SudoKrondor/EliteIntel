@@ -7,7 +7,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.*;
 
 /**
- * The one thing a sleeping companion still listens for.
+ * The one thing a sleeping VEGA still listens for.
  * <p>
  * Two shapes get past a closed Sleep/Wake gate, and nothing else does:
  * <ul>

@@ -3,7 +3,7 @@ package elite.intel.ai.brain.vega.memory.facts;
 import java.util.List;
 
 /**
- * A pluggable source of live facts for the companion, discovered by annotation ({@link RegisterMemoryFactSource})
+ * A pluggable source of live facts for VEGA, discovered by annotation ({@link RegisterMemoryFactSource})
  * exactly like commands and queries. The source decides whether its current-state facts belong in the per-turn
  * {@code <facts>} block, and the aggregator tags each returned line with the source's {@link #id()} as provenance so
  * one source cannot spoof another's origin. Implementations must be stateless and cheap because they run during

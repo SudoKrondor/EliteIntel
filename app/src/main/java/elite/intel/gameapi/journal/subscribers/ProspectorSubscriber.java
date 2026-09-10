@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.FuzzySearch;
 import elite.intel.gameapi.journal.events.ProspectedAsteroidEvent;
 import elite.intel.session.PlayerSession;
@@ -24,8 +24,8 @@ public class ProspectorSubscriber {
             if (phrase.isEmpty()) return;
 
             // A core is worth cutting in for: it is rare, and the rock drifts out of range while the
-            // companion finishes whatever it was saying.
-            CompanionRuntime.narrator().announce(phrase, event.isCore());
+            // VEGA finishes whatever it was saying.
+            VegaRuntime.narrator().announce(phrase, event.isCore());
         });
     }
 

@@ -7,7 +7,7 @@ import elite.intel.ai.brain.actions.ActionParameterSpec;
 import java.util.List;
 
 /**
- * Renders a companion tool's {@link ActionParameterSpec} list into a parameter schema, shared by every native
+ * Renders a VEGA tool's {@link ActionParameterSpec} list into a parameter schema, shared by every native
  * tool-calling adapter. OpenAI-compatible {@code function.parameters} and Anthropic {@code input_schema} both
  * use the same standard JSON-Schema object (lowercase types) via {@link #jsonSchemaObject}; Gemini's
  * {@code functionDeclarations[].parameters} uses the same shape but uppercase OpenAPI type names, so its
@@ -15,7 +15,7 @@ import java.util.List;
  * <p>
  * Examples and the extraction hint fold into each property's {@code description}, because none of these
  * schemas has a dedicated field for them (mirroring the legacy {@code CommandParamRules} format); otherwise
- * the companion model never sees the "'target drive' -> drive" style hints the legacy prompt relied on.
+ * VEGA model never sees the "'target drive' -> drive" style hints the legacy prompt relied on.
  */
 final class ToolParameterSchema {
 

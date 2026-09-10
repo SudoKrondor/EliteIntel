@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The side-chain compressor that pulls music down under the companion's voice.
+ * The side-chain compressor that pulls music down under VEGA's voice.
  *
  * <p>Every number here is a coded constant rather than a control on the Jukebox tab, so these tests are
  * where the tuning is pinned down: the curve, the limit that keeps music audible instead of muting it,
@@ -65,7 +65,7 @@ class MusicDuckerTest {
     }
 
     @Test
-    void turningTheCompanionDownDucksTheMusicLess() {
+    void turningVegaDownDucksTheMusicLess() {
         MusicDucker loud = duckerAt(MusicDucker.THRESHOLD_DBFS + 24);
         MusicDucker quiet = duckerAt(MusicDucker.THRESHOLD_DBFS + 2);
 
@@ -97,7 +97,7 @@ class MusicDuckerTest {
         assertTrue(atHalfVolume.gainReductionDb() > 4 && atHalfVolume.gainReductionDb() < 9,
                 "halfway down the slider the duck should ease off, not switch off");
         assertEquals(0.0, atAQuarterVolume.gainReductionDb(), 0.0001,
-                "a companion turned down this far is already quieter than the music it would duck");
+                "a VEGA turned down this far is already quieter than the music it would duck");
     }
 
     // ---------------------------------------------------------------- the envelope

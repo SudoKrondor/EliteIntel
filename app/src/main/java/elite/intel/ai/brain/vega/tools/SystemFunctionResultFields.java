@@ -1,11 +1,11 @@
 package elite.intel.ai.brain.vega.tools;
 
 /**
- * JSON field names of the result objects returned by companion system-function {@code handle}s (and the
+ * JSON field names of the result objects returned by VEGA system-function {@code handle}s (and the
  * dispatch status the {@code ExecutionGateway} builds for side-effect tools). Single source of truth for
  * these keys so a handle that writes a field and a test/reader that reads it cannot drift.
  * <p>
- * These are companion tool-result fields only; legacy {@code IntelAction} (command/query) result formats
+ * These are VEGA tool-result fields only; legacy {@code IntelAction} (command/query) result formats
  * do not use them.
  */
 public final class SystemFunctionResultFields {

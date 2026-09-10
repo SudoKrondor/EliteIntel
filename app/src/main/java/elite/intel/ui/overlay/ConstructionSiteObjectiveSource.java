@@ -302,7 +302,7 @@ public class ConstructionSiteObjectiveSource implements HudObjectiveSource {
      * <p>
      * <b>Bought out, and the card looks ahead.</b> Once everything this system can sell is aboard, the useful
      * answer is what the build still wants that cannot be bought here - the commander then chooses between
-     * flying the stockpile in and moving it to another market, and the companion says as much out loud (see
+     * flying the stockpile in and moving it to another market, and VEGA says as much out loud (see
      * {@code ConstructionShoppingAnnouncer}). The heading changes with the list: naming the pad the
      * commander has just emptied, over goods it does not sell, would send them back to it. Only if there is
      * nothing left to acquire at all does the card stand on the finished goods, because a card of green

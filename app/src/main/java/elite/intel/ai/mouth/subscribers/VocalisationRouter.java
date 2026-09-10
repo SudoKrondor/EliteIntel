@@ -1,6 +1,7 @@
 package elite.intel.ai.mouth.subscribers;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.subscribers.events.*;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.PlayerSession;
@@ -33,8 +34,8 @@ public class VocalisationRouter {
                 event.getText(), event.getVoiceName(), AiVoxDemoEvent.class, true, event.isRadio(), null));
     }
 
-    // The companion no longer routes any speech through here: spontaneous callouts and command/query/macro
-    // outcomes are voiced by the companion directly (CompanionNarrator / recordOutcome / the speech gateway).
+    // VEGA no longer routes any speech through here: spontaneous callouts and command/query/macro
+    // outcomes are voiced by VEGA directly (VegaNarrator / recordOutcome / the speech gateway).
     // What remains is genuinely system speech (AI response, mission-critical, voice demo, radio), voiced by the
     // legacy TTS in every mode.
 
@@ -44,9 +45,13 @@ public class VocalisationRouter {
      * a random voice so the speaker on the other end sounds like a stranger. The voice is drawn by that engine
      * (only it knows its own roster) unless the transmission names one, which happens for the one speaker the
      * commander is not meeting for the first time: their own carrier's traffic control.
+     * <p>
+     * Silent when the game client writes its prose in a script no voice here can read - see
+     * {@link RadioVoicing#isAvailable()}, which is the same answer the toggle in the Commander tab shows.
      */
     @Subscribe
     public void onRadioTransmissionEvent(RadioTransmissionEvent event) {
+        if (!RadioVoicing.isAvailable()) return;
         if (!Boolean.TRUE.equals(playerSession.isRadioTransmissionOn())) return;
         publishToMouth(new VocalisationRequestEvent(
                 event.getText(), event.getVoiceName(), RadioTransmissionEvent.class, true, true,

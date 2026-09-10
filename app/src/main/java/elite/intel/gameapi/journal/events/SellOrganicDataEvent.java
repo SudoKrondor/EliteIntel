@@ -16,7 +16,7 @@ import java.util.function.ToLongFunction;
  *
  * <p>WHY this event computes its own totals ({@link #getTotalValue()}, {@link #getTotalBonus()},
  * {@link #getTotalCredits()}, {@link #getSaleByGenus()}) rather than leaving them to the caller:
- * the event is serialized straight into the companion's narration payload, and a per-row
+ * the event is serialized straight into VEGA's narration payload, and a per-row
  * {@code Value}/{@code Bonus} table asks the LLM to do the arithmetic. It does that badly. A real
  * ten-row sale worth 221,670,000 credits was announced as 132,500,000 because the model collapsed
  * duplicate variant rows while summing. Every figure the narration needs is precomputed here.

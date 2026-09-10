@@ -1,7 +1,7 @@
 package elite.intel.ai.brain.vega.input.ru;
 
-import elite.intel.ai.brain.vega.input.CompanionEvalHarness;
-import elite.intel.ai.brain.vega.input.CompanionEvalHarness.Executed;
+import elite.intel.ai.brain.vega.input.VegaEvalHarness;
+import elite.intel.ai.brain.vega.input.VegaEvalHarness.Executed;
 import elite.intel.i18n.Language;
 import org.junit.jupiter.api.*;
 
@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
- * Theme 1 (Russian): does the companion understand and execute commander COMMANDS, including parameterized
+ * Theme 1 (Russian): does VEGA understand and execute commander COMMANDS, including parameterized
  * ones, while the session language is pinned to RU before prompt construction, and does the reflex fast-path
  * fire for verbatim, safe, parameterless phrases WITHOUT reaching the LLM? Mirrors the English theme-1 test:
  * for each phrase it scores, from the recorded tool-calls, whether the expected command tool was called and
@@ -33,7 +33,7 @@ class CommandExecutionEvalTest {
     private record Case(String input, String expectedTool, String argContains, boolean reflex) {
     }
 
-    private final CompanionEvalHarness h = new CompanionEvalHarness("companion-ru-commands-eval-trace.txt", Language.RU);
+    private final VegaEvalHarness h = new VegaEvalHarness("vega-ru-commands-eval-trace.txt", Language.RU);
 
     private final List<Case> cases = List.of(
             // LLM path: paraphrases / digit-vs-word / parameters need the model to classify or extract.
@@ -80,7 +80,7 @@ class CommandExecutionEvalTest {
             new Case("грузозаборник", "toggle_cargo_scoop", null, true),
             new Case("выпусти шасси", "deploy_landing_gear", null, true),
             new Case("убери оружие", "retract_hardpoints", null, true),
-            // Name-addressed commands: a Russian commander addresses the companion as "Вега" (Cyrillic) - what
+            // Name-addressed commands: a Russian commander addresses VEGA as "Вега" (Cyrillic) - what
             // Russian STT returns, NOT the canonical Latin "Vega". On the LLM path the name is just an extra
             // token (no command trains on it), so the right tool still fires (reflex=false). The reflex
             // fast-path is preserved too: the dispatcher's name strip recognizes the Cyrillic form, so
@@ -149,7 +149,7 @@ class CommandExecutionEvalTest {
     }
 
     /**
-     * A command repeated verbatim must fire every single time: the companion never skips it as
+     * A command repeated verbatim must fire every single time: VEGA never skips it as
      * "already done" just because an identical command appears in recent history
      * context. Says the unambiguous imperative "целься в двигатели" (target the drive) three times in one
      * conversation and asserts target_subsystem executed on every turn.

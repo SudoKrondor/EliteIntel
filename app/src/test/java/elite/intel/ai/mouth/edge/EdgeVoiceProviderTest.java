@@ -26,7 +26,7 @@ class EdgeVoiceProviderTest {
     }
 
     /**
-     * The commander picks a voice, and its gender is part of that pick - it also decides how the companion
+     * The commander picks a voice, and its gender is part of that pick - it also decides how VEGA
      * speaks of itself. A selection Edge does not offer for the language therefore degrades to a voice of the
      * same gender, never across it, both against the live list and against the known-good fallbacks.
      */

@@ -4,7 +4,7 @@ import javax.sound.sampled.AudioFormat;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * How loud the companion is speaking right now, published by whichever Mouth is writing to the speaker.
+ * How loud VEGA is speaking right now, published by whichever Mouth is writing to the speaker.
  * <p>
  * This is the side-chain input for ducking music under speech. It is a detector and nothing more: it
  * measures, it does not decide. What a listener does with the level - how hard to duck, how fast to
@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * <b>Where the measurement is taken, and why it matters.</b> Every engine applies the commander's speech
  * volume in software ({@link AudioDeClicker#applyVolume}) and then the radio filter, well before the audio
  * reaches the sound card. Observing at the line write therefore sees the signal as it will actually be
- * heard: a commander who sets speech volume to zero and reads the companion off the HUD overlay produces
+ * heard: a commander who sets speech volume to zero and reads VEGA off the HUD overlay produces
  * silent PCM here, so nothing ducks, with no special case for it anywhere.
  * <p>
  * <b>Timing.</b> Engines write in chunks of about a tenth of a second, and a write lands in the line
@@ -66,7 +66,7 @@ public final class VoiceLevelTap {
     }
 
     /**
-     * The companion's current speech level in dBFS, or {@link #SILENCE_DBFS} when nothing has been written
+     * VEGA's current speech level in dBFS, or {@link #SILENCE_DBFS} when nothing has been written
      * recently enough to still count.
      */
     public static double currentLevelDbfs() {
@@ -95,7 +95,7 @@ public final class VoiceLevelTap {
     /**
      * WHY RMS rather than peak: the threshold and ratio describe programme level, and speech has a high
      * crest factor - a peak detector reads a good 12 dB hotter than the voice sounds and would sit pinned
-     * against the duck limit whenever the companion spoke, turning a compressor into a gate. RMS also
+     * against the duck limit whenever VEGA spoke, turning a compressor into a gate. RMS also
      * keeps the duck proportional to the commander's speech volume, which is the whole point of measuring
      * after the volume is applied rather than before.
      */

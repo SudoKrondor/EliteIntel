@@ -1,6 +1,6 @@
 package elite.intel.ai.brain.vega.input.ru;
 
-import elite.intel.ai.brain.vega.input.CompanionEvalHarness;
+import elite.intel.ai.brain.vega.input.VegaEvalHarness;
 import elite.intel.ai.brain.vega.memory.facts.MemoryFactContext;
 import elite.intel.ai.brain.vega.memory.facts.MemoryFactSourceRegistry;
 import elite.intel.ai.brain.vega.memory.facts.MergedFactCandidates;
@@ -14,11 +14,7 @@ import elite.intel.session.PlayerSession;
 import elite.intel.session.PlayerSituation;
 import elite.intel.session.Status;
 import elite.intel.session.StatusFlags;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 
 import java.util.List;
 import java.util.Locale;
@@ -28,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Theme (Russian): the current-system fact source. Seeds a known current system (Sol, Federation, high security) into
- * the live game state, then asks the companion about it. Recorder-style: hard-asserts only that the live model was
+ * the live game state, then asks VEGA about it. Recorder-style: hard-asserts only that the live model was
  * reached and the source produced a fact directly; traces whether relevance selection keeps the system fact while
  * dropping the unrelated commander profile, and whether the model answers from it or via a {@code query_*}. Opt-in;
  * LM Studio must be up, and (per localIntegrationTest) the app DB is the real one, so the seed is best-effort.
@@ -37,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class LocationFactsEvalTest {
 
-    private final CompanionEvalHarness h = new CompanionEvalHarness("companion-ru-location-facts-trace.txt", Language.RU);
+    private final VegaEvalHarness h = new VegaEvalHarness("vega-ru-location-facts-trace.txt", Language.RU);
 
     @BeforeAll
     void boot() throws Exception {

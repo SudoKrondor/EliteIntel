@@ -14,7 +14,7 @@ class RecentMemoryTest {
     @Test
     void countOverflowEvictsOldestWholeRecord() {
         RecentMemory memory = new RecentMemory(text -> 0);
-        for (int i = 0; i <= CompanionMemoryPolicy.recentRecordLimit(); i++) {
+        for (int i = 0; i <= VegaMemoryPolicy.recentRecordLimit(); i++) {
             memory.add(MemoryRecord.dialogue(Instant.ofEpochSecond(i), "order " + i, "reply " + i));
         }
 
@@ -22,7 +22,7 @@ class RecentMemoryTest {
 
         assertEquals(1, evicted.size());
         assertEquals(Instant.EPOCH, evicted.get(0).timestamp());
-        assertEquals(CompanionMemoryPolicy.recentRecordLimit(), memory.records().size());
+        assertEquals(VegaMemoryPolicy.recentRecordLimit(), memory.records().size());
     }
 
     @Test

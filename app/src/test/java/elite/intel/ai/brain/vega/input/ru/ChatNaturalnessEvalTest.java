@@ -1,12 +1,8 @@
 package elite.intel.ai.brain.vega.input.ru;
 
-import elite.intel.ai.brain.vega.input.CompanionEvalHarness;
+import elite.intel.ai.brain.vega.input.VegaEvalHarness;
 import elite.intel.i18n.Language;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Theme (Russian): reproduces the "unnatural replies" seen in the running app - the companion narrating the
+ * Theme (Russian): reproduces the "unnatural replies" seen in the running app - VEGA narrating the
  * commander in the third person ("командир хочет знать...") and, on a semantically similar later turn,
  * repeating its own earlier reply VERBATIM in lower case (the form it is stored as in memory). The script is
  * twenty chat turns arranged as near-duplicate pairs (a question then its rephrase), each pair giving the model
@@ -32,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ChatNaturalnessEvalTest {
 
-    private final CompanionEvalHarness h = new CompanionEvalHarness("companion-ru-chat-naturalness-trace.txt", Language.RU);
+    private final VegaEvalHarness h = new VegaEvalHarness("vega-ru-chat-naturalness-trace.txt", Language.RU);
 
     // 20 chat turns, arranged as near-duplicate pairs (a question and its rephrase/repeat) so the model is
     // repeatedly given a fresh chance to echo its own earlier reply verbatim.
@@ -58,7 +54,7 @@ class ChatNaturalnessEvalTest {
             "может, сделаем паузу?",
             "спасибо тебе, вега");
 
-    // Third-person narration of the commander (the unnatural pattern): the companion talking ABOUT the
+    // Third-person narration of the commander (the unnatural pattern): VEGA talking ABOUT the
     // commander instead of TO them.
     private static final List<String> THIRD_PERSON_MARKERS = List.of(
             "командир хочет", "командир спрашивает", "командир говорит", "командир интересуется",

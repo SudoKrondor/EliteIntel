@@ -86,13 +86,15 @@ final class CommanderPrompt {
             </function_calling>
             """;
 
-    /** Renders the static rules with the current companion and language settings. */
+    /**
+     * Renders the static rules with the current VEGA and language settings.
+     */
     static String render() {
         return TEXT
-                .replace("{identity}", CompanionSystemPrompt.identityClause())
-                .replace("{inputLanguage}", CompanionSystemPrompt.inputLanguageName())
-                .replace("{language}", CompanionSystemPrompt.languageName())
-                .replace("{personalityClause}", CompanionSystemPrompt.personalityClause())
-                .replace("{selfGender}", CompanionSystemPrompt.selfGender());
+                .replace("{identity}", VegaSystemPrompt.identityClause())
+                .replace("{inputLanguage}", VegaSystemPrompt.inputLanguageName())
+                .replace("{language}", VegaSystemPrompt.languageName())
+                .replace("{personalityClause}", VegaSystemPrompt.personalityClause())
+                .replace("{selfGender}", VegaSystemPrompt.selfGender());
     }
 }

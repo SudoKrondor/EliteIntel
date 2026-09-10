@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit coverage for each event's {@code memorySummary()} (the readable line the EVENT "knowing" channel writes
- * to companion memory): the populated case and, where the event guards on missing data, the empty case.
+ * to VEGA memory): the populated case and, where the event guards on missing data, the empty case.
  * Events are built from a journal {@link JsonObject} the same way the parser builds them.
  */
 class EventMemorySummaryTest {

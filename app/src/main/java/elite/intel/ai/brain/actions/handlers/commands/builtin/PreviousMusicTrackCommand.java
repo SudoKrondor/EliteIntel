@@ -28,7 +28,7 @@ public final class PreviousMusicTrackCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         if (JukeboxManager.getInstance().size() == 0) {
-            // WHY answer rather than be hidden: a command withdrawn from the model makes the companion say
+            // WHY answer rather than be hidden: a command withdrawn from the model makes VEGA say
             // it has no such function, which is both untrue and useless. Naming the actual problem tells the
             // commander exactly what to do about it.
             return StringUtls.localizedResponse("handler.jukebox.noMusic");

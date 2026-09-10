@@ -3,7 +3,7 @@ package elite.intel.ai.brain.vega;
 import elite.intel.util.TTSFriendlyNumberConverter;
 
 /**
- * Credit amounts as the companion should say them.
+ * Credit amounts as VEGA should say them.
  *
  * <p>A ten-digit balance read out digit by digit is noise: the commander wants "about one point zero two
  * billion", not "one billion twenty three million three hundred nine thousand two hundred forty five". The
@@ -11,7 +11,7 @@ import elite.intel.util.TTSFriendlyNumberConverter;
  * copy every number from the payload exactly as written - that rule is what stops it inventing figures, and it
  * stays intact. The model receives an already-rounded, already-spelled-out phrase and only translates it.
  *
- * <p>Payloads carry both forms: the raw numeric field, and a {@code ...Spoken} companion field. {@link #RULE}
+ * <p>Payloads carry both forms: the raw numeric field, and a {@code ...Spoken} sibling field. {@link #RULE}
  * tells the model to speak the latter and touch the former only when the commander asks for the exact figure,
  * so precision is hedged in speech but never actually lost.
  */

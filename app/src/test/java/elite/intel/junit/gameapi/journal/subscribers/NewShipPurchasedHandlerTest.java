@@ -1,9 +1,9 @@
 package elite.intel.junit.gameapi.journal.subscribers;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.vega.CompanionNarrator;
-import elite.intel.ai.brain.vega.CompanionRuntimeGraph;
-import elite.intel.ai.brain.vega.CompanionRuntimeTestSupport;
+import elite.intel.ai.brain.vega.VegaNarrator;
+import elite.intel.ai.brain.vega.VegaRuntimeGraph;
+import elite.intel.ai.brain.vega.VegaRuntimeTestSupport;
 import elite.intel.gameapi.journal.events.ShipyardBuyEvent;
 import elite.intel.gameapi.journal.subscribers.NewShipPurchasedHandler;
 import org.junit.jupiter.api.AfterEach;
@@ -16,16 +16,16 @@ class NewShipPurchasedHandlerTest {
 
     private final NewShipPurchasedHandler handler = new NewShipPurchasedHandler();
     private final CapturingNarrator narrator = new CapturingNarrator();
-    private CompanionRuntimeGraph runtimeGraph;
+    private VegaRuntimeGraph runtimeGraph;
 
     @BeforeEach
     void installNarrator() {
-        runtimeGraph = CompanionRuntimeTestSupport.installNarrator(narrator);
+        runtimeGraph = VegaRuntimeTestSupport.installNarrator(narrator);
     }
 
     @AfterEach
     void clearNarrator() {
-        CompanionRuntimeTestSupport.uninstall(runtimeGraph);
+        VegaRuntimeTestSupport.uninstall(runtimeGraph);
     }
 
     private ShipyardBuyEvent buyEvent(String shipType) {
@@ -74,8 +74,10 @@ class NewShipPurchasedHandlerTest {
                 "Raw lowercase codename should not appear in message");
     }
 
-    /** Captures the data the handler hands the companion to narrate, so the test can assert on the message. */
-    private static final class CapturingNarrator implements CompanionNarrator {
+    /**
+     * Captures the data the handler hands VEGA to narrate, so the test can assert on the message.
+     */
+    private static final class CapturingNarrator implements VegaNarrator {
         String data;
 
         @Override public void filler(String text, boolean urgent) { }

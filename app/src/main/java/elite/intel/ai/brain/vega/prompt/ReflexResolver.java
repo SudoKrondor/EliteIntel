@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * The companion's reflex gate (§2.5/§5.1): decides, before any thought is born, whether a commander utterance
+ * VEGA's reflex gate (§2.5/§5.1): decides, before any thought is born, whether a commander utterance
  * is a pure reflex - an input that matches a training phrase, word for word or as a damaged transcript of one,
  * and resolves to exactly one safe action whose arguments are already known. Such an input is executed directly (no LLM, a {@code ReflexThought});
  * everything else falls through to the full {@link CommanderThought}.

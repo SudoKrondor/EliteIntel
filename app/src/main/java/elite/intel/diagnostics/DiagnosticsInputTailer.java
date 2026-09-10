@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Watches the diagnostics phrase input file and feeds each newly appended line into the companion the same
+ * Watches the diagnostics phrase input file and feeds each newly appended line into VEGA the same
  * way the microphone does, at conversation speed. Two line kinds:
  * <ul>
  *   <li>a plain-text line becomes a {@link UserInputEvent} - a spoken phrase;</li>
@@ -123,7 +123,7 @@ public final class DiagnosticsInputTailer implements ManagedService {
      * {@code @visible <actionId>} sets the game context to the first probe state where that action is visible
      * (the deterministic, test-style way to set "where we are" — preferred over guessing a context);
      * {@code @status <context>} sets a named context manually; {@code @fighter on|off} toggles the fighter-out
-     * gate. Directives take effect immediately and produce no companion turn.
+     * gate. Directives take effect immediately and produce no VEGA turn.
      */
     private long applyDirective(String line) {
         String body = line.substring(1).trim();

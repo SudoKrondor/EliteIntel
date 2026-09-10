@@ -12,8 +12,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SessionMemoryGatewayTest {
 
-    private static MemoryRecord dialogue(long second, String commander, String companion) {
-        return MemoryRecord.dialogue(Instant.ofEpochSecond(second), commander, companion);
+    private static MemoryRecord dialogue(long second, String commander, String vega) {
+        return MemoryRecord.dialogue(Instant.ofEpochSecond(second), commander, vega);
     }
 
     @Test
@@ -35,13 +35,13 @@ class SessionMemoryGatewayTest {
         SessionMemoryGateway gateway = new SessionMemoryGateway(text -> 0);
         MemoryRecord oldest = MemoryRecord.query(Instant.EPOCH, "cargo?", "eight tonnes");
         gateway.write(oldest);
-        for (int i = 1; i <= CompanionMemoryPolicy.recentRecordLimit(); i++) {
+        for (int i = 1; i <= VegaMemoryPolicy.recentRecordLimit(); i++) {
             gateway.write(dialogue(i, "order " + i, "reply " + i));
         }
 
         MemorySnapshot snapshot = gateway.snapshot();
 
-        assertEquals(CompanionMemoryPolicy.recentRecordLimit(), snapshot.recent().size());
+        assertEquals(VegaMemoryPolicy.recentRecordLimit(), snapshot.recent().size());
         assertFalse(snapshot.recent().contains(oldest));
         assertTrue(snapshot.recent().stream().noneMatch(record -> record.kind() == MemoryKind.QUERY));
     }
@@ -49,11 +49,11 @@ class SessionMemoryGatewayTest {
     @Test
     void ordinaryEntriesAreBoundedBeforeStorage() {
         SessionMemoryGateway gateway = new SessionMemoryGateway(text -> 0);
-        gateway.write(dialogue(0, "x".repeat(CompanionMemoryPolicy.entryMaxChars() + 20), "done"));
+        gateway.write(dialogue(0, "x".repeat(VegaMemoryPolicy.entryMaxChars() + 20), "done"));
 
         String stored = gateway.readRecentHistory().get(0).entries().get(0).content();
 
-        assertEquals(CompanionMemoryPolicy.entryMaxChars(), stored.length());
+        assertEquals(VegaMemoryPolicy.entryMaxChars(), stored.length());
         assertTrue(stored.endsWith("..."));
     }
 
@@ -63,7 +63,7 @@ class SessionMemoryGatewayTest {
         List<MemoryRecord> deferred = new ArrayList<>();
         gateway.setOversizedMemoryListener(deferred::add);
         MemoryRecord query = MemoryRecord.query(
-                Instant.EPOCH, "route?", "leg ".repeat(CompanionMemoryPolicy.entryMaxChars()));
+                Instant.EPOCH, "route?", "leg ".repeat(VegaMemoryPolicy.entryMaxChars()));
 
         gateway.write(query);
 
@@ -83,16 +83,16 @@ class SessionMemoryGatewayTest {
 
         assertEquals(MemoryKind.QUERY, stored.kind());
         assertEquals(2, stored.entryCount());
-        assertTrue(stored.companionText().length() <= CompanionMemoryPolicy.entryMaxChars());
-        assertTrue(stored.companionText().endsWith("..."));
-        assertFalse(stored.companionText().endsWith("le..."),
+        assertTrue(stored.vegaText().length() <= VegaMemoryPolicy.entryMaxChars());
+        assertTrue(stored.vegaText().endsWith("..."));
+        assertFalse(stored.vegaText().endsWith("le..."),
                 "fallback should prefer a complete word over a mid-word cut");
     }
 
     @Test
     void snapshotCollectionsAreImmutable() {
         SessionMemoryGateway gateway = new SessionMemoryGateway(text -> 0);
-        for (int i = 0; i <= CompanionMemoryPolicy.recentRecordLimit(); i++) {
+        for (int i = 0; i <= VegaMemoryPolicy.recentRecordLimit(); i++) {
             gateway.write(dialogue(i, "order " + i, "reply " + i));
         }
 

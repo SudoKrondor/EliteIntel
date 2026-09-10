@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The finance announcements are spoken by the companion, so every credit figure they voice must reach the LLM
+ * The finance announcements are spoken by VEGA, so every credit figure they voice must reach the LLM
  * already rounded and spelled out. Each announcement pairs an event's serialized YAML with a {@code ...Spoken}
  * sibling per amount; if the field name passed for a sibling does not match a field the payload actually
  * carries, the model gets a spoken value it cannot tie back to its number. These tests build each event and

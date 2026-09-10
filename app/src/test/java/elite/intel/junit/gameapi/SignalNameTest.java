@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Every signal type a detailed surface scan reported across two months of journals, in the two shapes
- * Frontier writes them. The mining update added {@code $PlanetaryMiningLocation_Name;}, and the companion
+ * Frontier writes them. The mining update added {@code $PlanetaryMiningLocation_Name;}, and VEGA
  * read the symbol out loud: "we got a $SAA_SignalType_Geological signal and a $PlanetaryMiningLocation_Name
  * signal here".
  */

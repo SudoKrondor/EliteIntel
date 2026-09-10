@@ -3,7 +3,7 @@ package elite.intel.ai.brain.actions.handlers.commands.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.TradeProfileManager;
 import elite.intel.db.managers.TradeRouteManager;
 import elite.intel.gameapi.search.spansh.traderoute.TradeRouteResponse;
@@ -56,7 +56,7 @@ public final class CalculateTradeRouteCommand implements IntelCommand {
             return null;
         }
         // Start-of-processing filler: voiced while the search runs, never remembered.
-        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.tradeRoute.calculating", criteria.getStation()), false);
+        VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.tradeRoute.calculating", criteria.getStation()), false);
 
         if (criteria.getStartingCapital() == 0) {
             String shipName = playerSession.getShipLoadout().getShipName();
@@ -96,7 +96,7 @@ public final class CalculateTradeRouteCommand implements IntelCommand {
             outcome = StringUtls.localizedResponse("handler.tradeRoute.found", totalProfit);
         }
 
-        CompanionRuntime.narrator().announce(outcome, false);
+        VegaRuntime.narrator().announce(outcome, false);
         return null;
     }
 }

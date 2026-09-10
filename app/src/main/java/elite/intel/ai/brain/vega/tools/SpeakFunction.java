@@ -2,7 +2,7 @@ package elite.intel.ai.brain.vega.tools;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
 import elite.intel.ai.brain.vega.model.Urgency;
 import elite.intel.ai.brain.vega.model.speech.SpeechRequest;
@@ -20,7 +20,9 @@ public final class SpeakFunction implements SystemFunction {
 
     public static final String ID = "speak";
 
-    /** Argument carrying the text to vocalize; read by the {@code Thought} to record the companion's words. */
+    /**
+     * Argument carrying the text to vocalize; read by the {@code Thought} to record VEGA's words.
+     */
     public static final String PARAM_TEXT = "text";
     private static final String STATUS_SPOKEN = "spoken";
 
@@ -58,13 +60,13 @@ public final class SpeakFunction implements SystemFunction {
     }
 
     /**
-     * Vocalizes the {@code text} through the companion {@link SpeechGateway}.
+     * Vocalizes the {@code text} through VEGA {@link SpeechGateway}.
      * Fire-and-return: it does not block on playback (TTS runs async).
      */
     @Override
     public JsonObject handle(String action, JsonObject params, String text) {
         String toSpeak = textOf(params);
-        CompanionRuntime.speech().submit(new SpeechRequest(UUID.randomUUID().toString(), toSpeak, Urgency.NORMAL));
+        VegaRuntime.speech().submit(new SpeechRequest(UUID.randomUUID().toString(), toSpeak, Urgency.NORMAL));
         JsonObject result = new JsonObject();
         result.addProperty(SystemFunctionResultFields.STATUS, STATUS_SPOKEN);
         return result;

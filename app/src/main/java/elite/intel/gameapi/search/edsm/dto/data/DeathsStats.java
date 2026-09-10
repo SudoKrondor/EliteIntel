@@ -9,7 +9,7 @@ import java.util.StringJoiner;
 
 /**
  * EDSM's death counts for a system. Named for speech for the same reason as
- * {@link TrafficStats} — this goes to the companion as YAML and the property names are spoken.
+ * {@link TrafficStats} — this goes to VEGA as YAML and the property names are spoken.
  */
 public class DeathsStats implements ToYamlConvertable {
     @SerializedName("total")

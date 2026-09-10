@@ -8,13 +8,13 @@ import java.util.Set;
  * Per-language input filters and acoustic STT corrections.
  * <p>
  * One implementation per language lives in this package, so language-specific STT
- * behaviour remains isolated from companion routing.
+ * behaviour remains isolated from VEGA routing.
  */
 public interface InputNormalizerProvider {
 
     /**
      * Builds ordered acoustic STT corrections only. These corrections are safe to apply to command-match text,
-     * while broader synonym substitutions remain unavailable to the companion routing pipeline.
+     * while broader synonym substitutions remain unavailable to VEGA routing pipeline.
      *
      * @return a {@link LinkedHashMap} mapping recognized acoustic confusions to the intended words or phrases.
      */

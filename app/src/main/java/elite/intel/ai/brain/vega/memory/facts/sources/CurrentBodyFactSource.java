@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Context-gated fact source for the body the commander is at: it contributes only when the current situation is at or
  * near a body (landed, gliding, in orbit, on a ring, in an SRV, or on foot on a planet), classified by
- * {@link Status#getSituation}. When active it grounds the companion in the body's character (class, landable, gravity,
+ * {@link Status#getSituation}. When active it grounds VEGA in the body's character (class, landable, gravity,
  * atmosphere, temperature, bio/geo signals, terraformable, rings) as one compact, length-capped line. The ambient
  * source admits itself for location, stellar-body, biome, or surface-material subjects; it stays silent away from a
  * body and coexists with {@link CurrentSystemFactSource} under the block's per-source and total caps.

@@ -14,7 +14,7 @@ import java.time.Instant;
 public abstract class BaseEvent implements ToJsonConvertible, ToYamlConvertable {
 
     /**
-     * How much this event matters for companion attention. Drives (in a later step) whether the event
+     * How much this event matters for VEGA attention. Drives (in a later step) whether the event
      * wakes the consciousness and how it is surfaced: {@code LOW} = background, do not wake; {@code NORMAL}
      * = notable, the consciousness may comment; {@code HIGH} = urgent, always surfaced.
      */
@@ -64,7 +64,7 @@ public abstract class BaseEvent implements ToJsonConvertible, ToYamlConvertable 
     public abstract String getEventType();
 
     /**
-     * How much this event matters for companion attention. Defaults to {@link Importance#LOW}; curated
+     * How much this event matters for VEGA attention. Defaults to {@link Importance#LOW}; curated
      * upward per event type as the gameplay taxonomy is filled in.
      */
     public Importance importance() {
@@ -72,7 +72,7 @@ public abstract class BaseEvent implements ToJsonConvertible, ToYamlConvertable 
     }
 
     /**
-     * Short, English, provider-facing description of what this event means, for the companion/LLM. Defaults
+     * Short, English, provider-facing description of what this event means, for VEGA/LLM. Defaults
      * to the journal event type name; overridden per event type with a human-readable summary as curated.
      */
     public String llmDescription() {
@@ -80,13 +80,13 @@ public abstract class BaseEvent implements ToJsonConvertible, ToYamlConvertable 
     }
 
     /**
-     * Short, readable line recording this event as a lived experience for the companion's memory (the
+     * Short, readable line recording this event as a lived experience for VEGA's memory (the
      * "knowing" channel, {@code EventThought}), e.g. {@code "docked at Jameson Memorial in Shinrarta Dezhra"}.
      * Built from this event's own fields, and empty when the key fields are missing. The default is empty: an
      * event is remembered only when it overrides this with a non-blank line.
      * <p>
      * To avoid a duplicate entry, an event whose <em>fact</em> is already voiced and remembered as the
-     * companion's own words via the curated narration layer (a {@code [COMPANION]} entry) leaves this empty.
+     * VEGA's own words via the curated narration layer (a {@code [VEGA]} entry) leaves this empty.
      * Narration of a mere <em>side effect</em> does not count: a credit-balance callout (e.g. from
      * {@code FinanceSubscriber} for a module/ship sale) is not the act, so such events still provide a summary
      * so the act itself is remembered.

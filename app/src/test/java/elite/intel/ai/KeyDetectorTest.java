@@ -20,7 +20,7 @@ class KeyDetectorTest {
     /**
      * The OpenAI pattern used to demand exactly 161 characters after "sk-", which is one key's
      * length rather than a format. A legacy key is 48 characters and a project key has no fixed
-     * length, so both fell through to UNKNOWN and companion mode refused to start.
+     * length, so both fell through to UNKNOWN and VEGA refused to start.
      */
     @Test
     void everyOpenAiKeyShapeIsDetected() {

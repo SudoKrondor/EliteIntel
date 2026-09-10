@@ -15,17 +15,17 @@ import java.util.concurrent.TimeoutException;
 /**
  * Generates a custom command's English {@code actionKey} from its trigger phrases via the LLM.
  * <p>
- * The action key must be an ASCII snake_case identifier: in companion mode it becomes the LLM tool name
+ * The action key must be an ASCII snake_case identifier: in VEGA it becomes the LLM tool name
  * ({@code GameToolCandidates} → {@link LlmToolDefinition}), and provider
  * tool-name schemas (OpenAI, Anthropic, Gemini, ...) accept only {@code [a-zA-Z0-9_-]}. A Java-derived key
  * that preserved the commander's own script (e.g. Cyrillic {@code лететь_к_миссии}) is rejected by those
  * APIs, so a non-English commander's custom command would never call. Deriving the key in-language cannot
  * solve this; only the model can translate the intent to an English identifier. That is what this does.
  * <p>
- * It lives in {@code companion.llm} (not with the custom-command code) on purpose: it rides the surviving
- * companion LLM plumbing - {@link CompanionLlmGatewayFactory} for provider selection and the gateway's
+ * It lives in {@code vega.llm} (not with the custom-command code) on purpose: it rides the surviving
+ * VEGA LLM plumbing - {@link VegaLlmGatewayFactory} for provider selection and the gateway's
  * plain-text {@link LlmGateway#completePlainText} turn (no tools) for a text-in/text-out call across
- * every wired provider. Placing it here keeps a one-way dependency ({@code companion.llm} → custom-command
+ * every wired provider. Placing it here keeps a one-way dependency ({@code vega.llm} → custom-command
  * for {@link CustomCommandKeyDeriver}); the reverse edge would be a package cycle.
  * <p>
  * When no provider is wired (an unconfigured or unsupported cloud provider) the factory throws and this
@@ -70,7 +70,7 @@ public final class CustomCommandKeyGenerator {
 
         LlmGateway gateway;
         try {
-            gateway = CompanionLlmGatewayFactory.create();
+            gateway = VegaLlmGatewayFactory.create();
         } catch (UnsupportedOperationException e) {
             // The factory throws this (with its supported-provider message) when the configured provider has
             // no wired adapter; pass that guidance straight through to the commander. Any other runtime

@@ -12,7 +12,7 @@ import java.util.StringJoiner;
  *
  * <p>The two sets of annotations serve opposite directions and are both load-bearing: Gson's
  * {@link SerializedName} reads EDSM's JSON coming in, while Jackson's {@link JsonProperty} names the
- * fields going out as YAML. That YAML is handed to the companion as narration source, so a property
+ * fields going out as YAML. That YAML is handed to VEGA as narration source, so a property
  * name here is read out loud — {@code thisWeek} was being spoken as one word. Every name in this
  * class has to be something a person would say.
  *

@@ -7,9 +7,9 @@ import elite.intel.ai.brain.vega.confirm.ConfirmationCoordinator;
 import elite.intel.ai.brain.vega.confirm.DangerousActionPolicy;
 import elite.intel.ai.brain.vega.execution.ExecutionGateway;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
-import elite.intel.ai.brain.vega.memory.CompanionMemoryPolicy;
 import elite.intel.ai.brain.vega.memory.MemoryGateway;
 import elite.intel.ai.brain.vega.memory.MemorySnapshot;
+import elite.intel.ai.brain.vega.memory.VegaMemoryPolicy;
 import elite.intel.ai.brain.vega.model.GameStateSnapshot;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
 import elite.intel.ai.brain.vega.model.Urgency;
@@ -22,9 +22,9 @@ import elite.intel.ai.brain.vega.model.memory.MemoryKind;
 import elite.intel.ai.brain.vega.model.memory.MemoryRecord;
 import elite.intel.ai.brain.vega.model.memory.MemorySource;
 import elite.intel.ai.brain.vega.model.speech.SpeechRequest;
-import elite.intel.ai.brain.vega.prompt.CompanionActionReducer;
 import elite.intel.ai.brain.vega.prompt.IntelActionAccessPolicy;
 import elite.intel.ai.brain.vega.prompt.PromptComposer;
+import elite.intel.ai.brain.vega.prompt.VegaActionReducer;
 import elite.intel.ai.brain.vega.speech.SpeechGateway;
 import elite.intel.ai.brain.vega.tools.IntelActionTypeResolver;
 import elite.intel.ai.brain.vega.tools.IntelActionTypeResolver.IntelActionType;
@@ -47,7 +47,7 @@ class ThoughtTest {
     private final FakeExecution execution = new FakeExecution();
     private final FakeMemory memory = new FakeMemory();
     private final RecordingReducer reducer = new RecordingReducer();
-    private final CompanionState state = new CompanionState();
+    private final VegaState state = new VegaState();
     private final ConfirmationCoordinator confirmation = new ConfirmationCoordinator();
     private final ClarificationCoordinator clarification = new ClarificationCoordinator();
     private DangerousActionPolicy dangerous = invocation -> false;
@@ -74,7 +74,7 @@ class ThoughtTest {
         assertEquals(1, memory.writes.size());
         MemoryRecord record = memory.writes.get(0);
         assertEquals(MemoryKind.DIALOGUE, record.kind());
-        assertEquals(List.of(MemorySource.COMMANDER, MemorySource.COMPANION),
+        assertEquals(List.of(MemorySource.COMMANDER, MemorySource.VEGA),
                 record.entries().stream().map(entry -> entry.source()).toList());
         assertEquals("set speed to 50", record.entries().get(0).content());
         assertEquals("on it", record.entries().get(1).content());
@@ -268,7 +268,7 @@ class ThoughtTest {
 
         Thought.commander(Urgency.NORMAL, "show the current route", dependencies(types)).run();
 
-        assertEquals(fullAnswer, memory.writes.getFirst().companionText(),
+        assertEquals(fullAnswer, memory.writes.getFirst().vegaText(),
                 "the memory gateway, not the thought, owns eventual gist compression");
         assertEquals(List.of(fullAnswer), speech.requests.stream().map(SpeechRequest::text).toList());
     }
@@ -347,8 +347,8 @@ class ThoughtTest {
     @Test
     void eventNarrationBoundsTheTransientPayloadItSendsToTheModel() {
         llm.results.add(ok(call(SpeakFunction.ID, text("Bounded report."))));
-        String eventData = "d".repeat(CompanionMemoryPolicy.eventDataMaxChars() + 500);
-        String instructions = "i".repeat(CompanionMemoryPolicy.eventInstructionsMaxChars() + 500);
+        String eventData = "d".repeat(VegaMemoryPolicy.eventDataMaxChars() + 500);
+        String instructions = "i".repeat(VegaMemoryPolicy.eventInstructionsMaxChars() + 500);
 
         Thought.eventReaction(Urgency.NORMAL, eventData, instructions, dependencies()).run();
 
@@ -770,7 +770,7 @@ class ThoughtTest {
         }
     }
 
-    private static final class RecordingReducer implements CompanionActionReducer {
+    private static final class RecordingReducer implements VegaActionReducer {
         private List<LlmToolDefinition> tools = List.of();
         private List<LlmToolDefinition> catalog = List.of();
 

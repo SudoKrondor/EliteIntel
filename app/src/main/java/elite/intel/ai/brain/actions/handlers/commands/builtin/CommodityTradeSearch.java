@@ -1,6 +1,6 @@
 package elite.intel.ai.brain.actions.handlers.commands.builtin;
 
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.dao.CommoditySearchResultDao.FoundLine;
 import elite.intel.db.dao.CommoditySearchResultDao.FoundMarket;
@@ -105,7 +105,7 @@ final class CommodityTradeSearch {
         String starName = PlayerSession.getInstance().getPrimaryStarName();
 
         String searchMode = StringUtls.localizedResponse(returnClosest ? "handler.commodity.modeNearest" : "handler.commodity.modeBest");
-        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.commodity.searching", searchMode, commodity, distance), false);
+        VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.commodity.searching", searchMode, commodity, distance), false);
         TradeRouteSearchCriteria criteria = tradeProfileManager.getCriteria(false);
         // Null until the game has told us which ship we are in, and a ship is what carries the hold the
         // search sizes itself to.
@@ -157,7 +157,7 @@ final class CommodityTradeSearch {
         }
         reminder += againstGalacticAverage(commodity, result.getPrice());
         reminder += howOldThatPriceIs(result);
-        CompanionRuntime.narrator().filler(reminder, false);
+        VegaRuntime.narrator().filler(reminder, false);
         ReminderManager.getInstance().setReminder(reminder, result.getStarSystem(), result.getStationName(), null);
         // The reminder is prose for the voice; the stock and the unit price are inside that sentence and
         // nowhere a HUD card can read them. Store the result itself so the overlay can show what was found
@@ -195,7 +195,7 @@ final class CommodityTradeSearch {
 
         String searchMode = StringUtls.localizedResponse(
                 returnClosest ? "handler.commodity.modeNearest" : "handler.commodity.modeBest");
-        CompanionRuntime.narrator().filler(StringUtls.localizedResponse(
+        VegaRuntime.narrator().filler(StringUtls.localizedResponse(
                 "handler.commodity.searchingBuyer", searchMode, commodity, distance), false);
 
         TradeRouteSearchCriteria criteria = TradeProfileManager.getInstance().getCriteria(false);
@@ -236,7 +236,7 @@ final class CommodityTradeSearch {
         }
         reminder += againstGalacticAverage(commodity, result.getPrice());
         reminder += howOldThatPriceIs(result);
-        CompanionRuntime.narrator().filler(reminder, false);
+        VegaRuntime.narrator().filler(reminder, false);
         ReminderManager.getInstance().setReminder(reminder, result.getStarSystem(), result.getStationName(), null);
         recordForOverlay(result, TradeSide.SELL, toSell);
 
@@ -382,7 +382,7 @@ final class CommodityTradeSearch {
 
         String searchMode = StringUtls.localizedResponse(
                 returnClosest ? "handler.commodity.modeNearest" : "handler.commodity.modeBest");
-        CompanionRuntime.narrator().filler(StringUtls.localizedResponse(
+        VegaRuntime.narrator().filler(StringUtls.localizedResponse(
                 "handler.commodity.searching", searchMode, anchor.commodity(), distance), false);
 
         List<BasketResult> markets = SpanshCommoditySearch.searchBasket(
@@ -394,7 +394,7 @@ final class CommodityTradeSearch {
 
         BasketResult market = markets.getFirst();
         String reminder = spokenAnswer(market, distance);
-        CompanionRuntime.narrator().filler(reminder, false);
+        VegaRuntime.narrator().filler(reminder, false);
         ReminderManager.getInstance().setReminder(reminder, market.starSystem(), market.stationName(), null);
         recordForOverlay(market);
 

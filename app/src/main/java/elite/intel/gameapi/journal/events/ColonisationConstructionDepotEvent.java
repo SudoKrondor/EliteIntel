@@ -108,7 +108,7 @@ public class ColonisationConstructionDepotEvent extends BaseEvent {
     }
 
     /**
-     * Repeats every few seconds while docked; background context, never something to wake the companion.
+     * Repeats every few seconds while docked; background context, never something to wake VEGA.
      */
     @Override
     public Importance importance() {

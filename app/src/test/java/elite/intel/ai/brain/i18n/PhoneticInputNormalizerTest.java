@@ -8,7 +8,9 @@ import java.util.LinkedHashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/** Verifies that companion routing receives only safe, whole-phrase acoustic corrections. */
+/**
+ * Verifies that VEGA routing receives only safe, whole-phrase acoustic corrections.
+ */
 class PhoneticInputNormalizerTest {
 
     @Test

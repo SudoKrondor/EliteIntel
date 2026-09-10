@@ -4,12 +4,11 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
-import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.eventbus.GameControllerBus;
+import elite.intel.gameapi.inputs.UiNavCommon;
 import elite.intel.session.Status;
 import elite.intel.session.ui.UINavigator;
 
-import static elite.intel.ai.hands.Bindings.GameCommand.*;
 
 /**
  * Stage-4b self-describing command for "open galaxy map".
@@ -37,16 +36,9 @@ public final class DisplayOpenGalaxyMapCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         navigator.closeOpenPanel();
-        Status status = Status.getInstance();
-        if (status.isInMainShip() || status.isInFighter()) {
-            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_GALAXY_MAP.getGameBinding())));
-        }
-
-        if (status.isInSrv()) {
-            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_GALAXY_MAP_BUGGY.getGameBinding())));
-        } if(status.isOnFoot()){
-            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_GALAXY_MAP_HUMANOID.getGameBinding())));
-        }
+        // Context-correct binding, and the ship one as the fallback: the old chain tapped nothing at all
+        // in any state that was neither ship, fighter, SRV nor on foot.
+        GameControllerBus.publish(GameInputSequenceEvent.single(UiNavCommon.galaxyMapToggleStep()));
         return null;
     }
 }

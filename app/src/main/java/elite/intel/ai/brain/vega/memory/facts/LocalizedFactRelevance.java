@@ -3,7 +3,7 @@ package elite.intel.ai.brain.vega.memory.facts;
 import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
 import elite.intel.ai.brain.vega.prompt.AliasEmbeddingText;
-import elite.intel.ai.brain.vega.prompt.CompanionWordMatch;
+import elite.intel.ai.brain.vega.prompt.VegaWordMatch;
 import elite.intel.session.SystemSession;
 
 import java.util.*;
@@ -52,7 +52,7 @@ public final class LocalizedFactRelevance {
         for (int start = 0; start <= input.size() - phrase.size(); start++) {
             boolean matches = true;
             for (int offset = 0; offset < phrase.size(); offset++) {
-                if (!CompanionWordMatch.similar(input.get(start + offset), phrase.get(offset))) {
+                if (!VegaWordMatch.similar(input.get(start + offset), phrase.get(offset))) {
                     matches = false;
                     break;
                 }
@@ -67,7 +67,7 @@ public final class LocalizedFactRelevance {
     private static int matchedWords(Set<String> inputWords, Set<String> phraseWords) {
         int matched = 0;
         for (String phraseWord : phraseWords) {
-            if (inputWords.stream().anyMatch(input -> CompanionWordMatch.similar(input, phraseWord))) {
+            if (inputWords.stream().anyMatch(input -> VegaWordMatch.similar(input, phraseWord))) {
                 matched++;
             }
         }

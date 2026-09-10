@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.managers.DeferredNotificationManager;
 import elite.intel.db.managers.FleetCarrierRouteManager;
@@ -97,7 +97,7 @@ public class CarrierJumpCompleteSubscriber {
                         Quote the fuel supply exactly as given, keeping the word "approximately" when it is there.
                         Never read a label out as written; say it the way a person would.
                     """;
-            CompanionRuntime.narrator().narrate(
+            VegaRuntime.narrator().narrate(
                     "Carrier arrived in " + event.getStarSystem()
                             + ". Fuel supply: " + CarrierFuelPhrase.of(postJumpCarrierData)
                             + ". Fuel in reserve: " + postJumpCarrierData.getFuelReserve() + " tons."

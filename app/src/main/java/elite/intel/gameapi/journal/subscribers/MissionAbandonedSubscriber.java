@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.journal.events.MissionAbandonedEvent;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
@@ -18,7 +18,7 @@ public class MissionAbandonedSubscriber {
             if (mission != null) {
                 missionManager.remove(event.getMissionID());
                 String missionDetails = mission.getMissionDescription();
-                CompanionRuntime.narrator().narrate("Notify: Mission \"" + missionDetails + "\" Abandoned: " + mission, "Notify user of mission abandonment, provide short summary from the data received.");
+                VegaRuntime.narrator().narrate("Notify: Mission \"" + missionDetails + "\" Abandoned: " + mission, "Notify user of mission abandonment, provide short summary from the data received.");
             }
         });
     }

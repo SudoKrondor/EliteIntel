@@ -5,13 +5,7 @@ import elite.intel.db.util.Database;
 import elite.intel.jukebox.PlaybackOrder;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * The commander's music library: which files are in the playlist, what order they sit in, and where
@@ -257,7 +251,7 @@ public final class JukeboxManager {
     }
 
     /**
-     * Music volume, 0-100. Separate from the companion's speech volume by design.
+     * Music volume, 0-100. Separate from VEGA's speech volume by design.
      */
     public int volume() {
         return clampVolume(state().getVolume());

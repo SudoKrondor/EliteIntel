@@ -9,7 +9,7 @@ import java.util.Locale;
  * names one {@code "$EXT_PANEL_ColonisationShip; Schroter's Progress"} - a UI symbol, a semicolon, and
  * only then the name the commander knows it by. Everything downstream treats {@code StationName} as text
  * to display, so the symbol reached the HUD card, the memory line ("docked at $EXT_PANEL_..."), and the
- * companion's mouth.
+ * VEGA's mouth.
  * <p>
  * The symbol is not a translation key we hold, and the game does not send a {@code _Localised} sibling for
  * it, so there is nothing to look up - the readable half is already in the string, sitting after the

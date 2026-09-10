@@ -8,9 +8,9 @@ import elite.intel.session.Status;
 
 /**
  * Applies a game context to {@link Status} so state-gated commands become visible to the router in
- * diagnostics mode. The companion path enforces {@code isVisibleForLLM}, which reads the live {@link Status}
+ * diagnostics mode. VEGA path enforces {@code isVisibleForLLM}, which reads the live {@link Status}
  * flags, so a command such as "drop from supercruise" only routes when the supercruise flag is set. Two ways
- * to set it, both mirroring {@code CompanionRoutingHarness}:
+ * to set it, both mirroring {@code VegaRoutingHarness}:
  * <ul>
  *   <li>{@link #applyVisibleFor(String)} — the preferred, deterministic one: given the EXPECTED action id, it
  *       probes the same {@link #PROBE_STATES} the routing test does and picks the first context in which that
@@ -30,7 +30,7 @@ final class DiagnosticsContext {
     private static final long FLAG2_ON_FOOT = 1L;
 
     /**
-     * Candidate {@code {flags, flags2}} contexts, tried in order (mirrors {@code CompanionRoutingHarness}):
+     * Candidate {@code {flags, flags2}} contexts, tried in order (mirrors {@code VegaRoutingHarness}):
      * main-ship-in-normal-space first so state-independent and main-ship commands take it, then the rarer
      * gated contexts.
      */
