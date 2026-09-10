@@ -56,7 +56,7 @@ class AiActionMapGeneratorTest {
      */
     private static final List<String> SNAPSHOT_BUILTIN_IDS = List.of(
             // Jukebox: the commander's own music. Always offered - with an empty playlist these answer
-            // "there is no music yet" rather than being withdrawn, which would have the companion claim it
+            // "there is no music yet" rather than being withdrawn, which would have VEGA claim it
             // has no such function.
             "play_music",
             "pause_music_playback",

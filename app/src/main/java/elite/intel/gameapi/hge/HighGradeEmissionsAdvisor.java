@@ -1,6 +1,6 @@
 package elite.intel.gameapi.hge;
 
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.dao.ShipSettingsDao;
 import elite.intel.db.managers.ShipSettingsManager;
@@ -84,7 +84,7 @@ public final class HighGradeEmissionsAdvisor {
     }
 
     private static void speak(List<String> symbols) {
-        CompanionRuntime.narrator().announce(localizedEvent("event.hge.materials", spokenNames(symbols)), false);
+        VegaRuntime.narrator().announce(localizedEvent("event.hge.materials", spokenNames(symbols)), false);
     }
 
     /**

@@ -1,6 +1,6 @@
 package elite.intel.ai.brain.vega.mind;
 
-import elite.intel.ai.brain.vega.diag.CompanionDiagnostics;
+import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -73,7 +73,7 @@ final class ThoughtLane {
         long now = System.currentTimeMillis();
         live.forEach((thought, start) -> {
             if (now - start > millis) {
-                CompanionDiagnostics.debug(thought.trace(), "watchdog",
+                VegaDiagnostics.debug(thought.trace(), "watchdog",
                         "force-interrupt after " + (now - start) + " ms (>" + millis + ")");
                 thought.interrupt();
             }
@@ -107,15 +107,15 @@ final class ThoughtLane {
             String laneThread = Thread.currentThread().getName();
             live.put(thought, startMillis);
             log.info("Lane {}: {} ({}) thought started", laneThread, thought.source(), thought.urgency());
-            CompanionDiagnostics.debug(thought.trace(), "start", thought.urgency() + " on " + laneThread);
+            VegaDiagnostics.debug(thought.trace(), "start", thought.urgency() + " on " + laneThread);
             // Bind this thought's trace to the lane thread so leaf components it calls (reducer, memory recall)
-            // tag their own diagnostic lines with it (see CompanionDiagnostics.enterThought).
-            CompanionDiagnostics.enterThought(thought.trace());
+            // tag their own diagnostic lines with it (see VegaDiagnostics.enterThought).
+            VegaDiagnostics.enterThought(thought.trace());
             CompletableFuture<Void> completion;
             try {
                 completion = thought.startLifecycle();
             } finally {
-                CompanionDiagnostics.exitThought();
+                VegaDiagnostics.exitThought();
             }
             completion.whenComplete((ignored, failure) ->
                     finishThought(thought, laneThread, startNanos, failure));
@@ -128,10 +128,10 @@ final class ThoughtLane {
         pending.decrementAndGet();
         long runMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
         if (failure != null) {
-            log.error("Companion thought failed on lane {}", laneThread, failure);
+            log.error("VEGA thought failed on lane {}", laneThread, failure);
         }
         log.info("Lane {}: {} thought finished in {} ms", laneThread, thought.source(), runMillis);
-        CompanionDiagnostics.debug(thought.trace(), "done",
+        VegaDiagnostics.debug(thought.trace(), "done",
                 "run=" + runMillis + " ms turn=" + thought.elapsedSinceAcceptanceMillis() + " ms");
     }
 
@@ -151,7 +151,7 @@ final class ThoughtLane {
                 task.run();
             } catch (Throwable failure) {
                 // A failing thought must never kill its worker - that would shrink the lane's capacity.
-                log.error("Companion thought failed on lane {}", Thread.currentThread().getName(), failure);
+                log.error("VEGA thought failed on lane {}", Thread.currentThread().getName(), failure);
             }
         }
     }

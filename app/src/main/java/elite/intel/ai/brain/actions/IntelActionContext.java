@@ -5,7 +5,7 @@ package elite.intel.ai.brain.actions;
  * cannot satisfy its contract or whose delegation would bypass an ownership boundary.
  */
 public enum IntelActionContext {
-    COMPANION_COMMANDER,
+    VEGA_COMMANDER,
     LEGACY_ACTION_MAP,
     GUI
 }

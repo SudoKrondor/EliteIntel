@@ -914,7 +914,7 @@ public class PlayerSession {
 
     /**
      * One of the ways to address the commander - name, highest military rank or honorific - drawn at
-     * random, so the companion varies how it speaks to them.
+     * random, so VEGA varies how it speaks to them.
      */
     /**
      * One of the commander's forms of address - name, highest military rank, or honorific - drawn afresh

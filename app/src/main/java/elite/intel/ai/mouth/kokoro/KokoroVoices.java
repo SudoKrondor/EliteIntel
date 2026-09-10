@@ -178,7 +178,7 @@ public enum KokoroVoices {
     /**
      * Resolves a stored ship-voice name to a voice of this engine: the named voice when it is one, otherwise
      * {@link #DEFAULT_VOICE}. The stored voice's gender is preserved - ship voices are male or female by the
-     * commander's choice, and that choice also decides how the companion refers to herself or himself (see
+     * commander's choice, and that choice also decides how VEGA refers to herself or himself (see
      * {@code SystemSession.getVoiceGender()}). An unknown name (a voice belonging to another engine) or
      * {@code null} collapses to the default. This is the ship-voice seam only; radio picks from
      * {@link #values()} directly and must not route through here.

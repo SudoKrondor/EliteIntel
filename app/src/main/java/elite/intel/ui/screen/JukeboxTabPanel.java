@@ -33,11 +33,11 @@ import java.util.List;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * The Jukebox tab: the commander's own music, played underneath the companion rather than over it.
+ * The Jukebox tab: the commander's own music, played underneath VEGA rather than over it.
  * <p>
- * <b>Why the volume lives here and not on the Audio settings tab.</b> That tab governs the companion - its
+ * <b>Why the volume lives here and not on the Audio settings tab.</b> That tab governs VEGA - its
  * voice, its microphone, its alert beeps. Music is the commander's, and putting its level among the
- * companion's would invite turning the wrong one down.
+ * VEGA's would invite turning the wrong one down.
  * <p>
  * The playlist is a plain list in an order the commander sets by dragging, so the table deliberately does
  * not sort by clicking a column header: a click-sort would silently throw away an order they arranged by

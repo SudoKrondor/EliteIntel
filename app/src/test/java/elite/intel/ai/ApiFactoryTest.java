@@ -4,6 +4,7 @@ import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeTTSImpl;
 import elite.intel.ai.mouth.google.GoogleTTSImpl;
 import elite.intel.ai.mouth.kokoro.KokoroTTS;
+import elite.intel.i18n.Language;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -14,9 +15,9 @@ class ApiFactoryTest {
 
     @Test
     void theStoredProviderSelectsTheMouth() {
-        assertSame(EdgeTTSImpl.getInstance(), ApiFactory.selectMouth(TtsProvider.EDGE, null));
-        assertSame(GoogleTTSImpl.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, GOOGLE_KEY));
-        assertSame(KokoroTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.KOKORO, GOOGLE_KEY));
+        assertSame(EdgeTTSImpl.getInstance(), ApiFactory.selectMouth(TtsProvider.EDGE, null, Language.EN));
+        assertSame(GoogleTTSImpl.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, GOOGLE_KEY, Language.EN));
+        assertSame(KokoroTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.KOKORO, GOOGLE_KEY, Language.EN));
     }
 
     /**
@@ -24,7 +25,7 @@ class ApiFactoryTest {
      */
     @Test
     void edgeIsUnaffectedByAStoredGoogleKey() {
-        assertSame(EdgeTTSImpl.getInstance(), ApiFactory.selectMouth(TtsProvider.EDGE, GOOGLE_KEY));
+        assertSame(EdgeTTSImpl.getInstance(), ApiFactory.selectMouth(TtsProvider.EDGE, GOOGLE_KEY, Language.EN));
     }
 
     /**
@@ -32,8 +33,25 @@ class ApiFactoryTest {
      */
     @Test
     void googleWithoutAUsableKeyFallsBackToKokoro() {
-        assertSame(KokoroTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, null));
-        assertSame(KokoroTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, ""));
-        assertSame(KokoroTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, "not-a-key"));
+        assertSame(KokoroTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, null, Language.EN));
+        assertSame(KokoroTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, "", Language.EN));
+        assertSame(KokoroTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, "not-a-key", Language.EN));
+    }
+
+    /**
+     * Kokoro cannot pronounce Cyrillic, so it is never the mouth for a Russian or Ukrainian commander - not as
+     * a selection, and not as the stand-in for a keyless Google, which would swap a bill for silence.
+     */
+    @Test
+    void kokoroNeverSpeaksForACyrillicCommander() {
+        for (Language language : Language.values()) {
+            if (!language.isCyrillicScript()) continue;
+            assertSame(EdgeTTSImpl.getInstance(), ApiFactory.selectMouth(TtsProvider.KOKORO, null, language),
+                    "stored Kokoro under " + language);
+            assertSame(EdgeTTSImpl.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, "not-a-key", language),
+                    "keyless Google under " + language);
+            assertSame(GoogleTTSImpl.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, GOOGLE_KEY, language),
+                    "Google speaks Cyrillic and stays selectable under " + language);
+        }
     }
 }

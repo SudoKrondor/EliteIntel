@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
@@ -101,7 +101,7 @@ public final class FindMiningSiteCommand implements IntelCommand {
 
         // The Spansh ring search takes seconds; every other long search command voices a filler so the
         // commander is not left in silence.
-        CompanionRuntime.narrator().filler(
+        VegaRuntime.narrator().filler(
                 StringUtls.localizedResponse("handler.miningSite.searching", material, range), false);
 
         StellarObjectSearchResultDto miningLocations = StellarObjectSearch.getInstance()

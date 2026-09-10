@@ -1,13 +1,10 @@
 package elite.intel.ai.brain.vega.tools;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.vega.CompanionRuntime;
-import elite.intel.ai.brain.vega.CompanionRuntimeGraph;
-import elite.intel.ai.brain.vega.tools.FindActionFunction;
-import elite.intel.ai.brain.vega.tools.RequestInputFunction;
-import elite.intel.ai.brain.vega.tools.SpeakFunction;
-import elite.intel.ai.brain.vega.CompanionRuntimeTestSupport;
-import elite.intel.ai.brain.vega.mind.CompanionState;
+import elite.intel.ai.brain.vega.VegaRuntime;
+import elite.intel.ai.brain.vega.VegaRuntimeGraph;
+import elite.intel.ai.brain.vega.VegaRuntimeTestSupport;
+import elite.intel.ai.brain.vega.mind.VegaState;
 import elite.intel.ai.brain.vega.model.llm.LlmToolDefinition;
 import elite.intel.ai.brain.vega.model.speech.SpeechRequest;
 import org.junit.jupiter.api.AfterEach;
@@ -21,8 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Verifies the executable system-function {@code handle}s drive the companion services reached statically
- * via {@link CompanionRuntime}: speak submits speech, request_input remains metadata-only, and find_action
+ * Verifies the executable system-function {@code handle}s drive VEGA services reached statically
+ * via {@link VegaRuntime}: speak submits speech, request_input remains metadata-only, and find_action
  * queries the reducer. Fakes keep every boundary unit-testable.
  */
 class SystemFunctionHandleTest {
@@ -31,12 +28,12 @@ class SystemFunctionHandleTest {
      * Captures the last speech request.
      */
     private final java.util.List<SpeechRequest> spoken = new java.util.ArrayList<>();
-    private final CompanionState state = new CompanionState();
-    private CompanionRuntimeGraph runtimeGraph;
+    private final VegaState state = new VegaState();
+    private VegaRuntimeGraph runtimeGraph;
 
     @BeforeEach
     void install() {
-        runtimeGraph = CompanionRuntimeTestSupport.install(
+        runtimeGraph = VegaRuntimeTestSupport.install(
                 null,
                 request -> {
                     spoken.add(request);
@@ -50,7 +47,7 @@ class SystemFunctionHandleTest {
 
     @AfterEach
     void clear() {
-        CompanionRuntimeTestSupport.uninstall(runtimeGraph);
+        VegaRuntimeTestSupport.uninstall(runtimeGraph);
     }
 
     private static JsonObject params(String key, String value) {

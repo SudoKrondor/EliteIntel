@@ -5,10 +5,10 @@ import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.ai.brain.i18n.TrailingStringAliasMatcher;
-import elite.intel.ai.brain.vega.CompanionConfig;
+import elite.intel.ai.brain.vega.VegaConfig;
 import elite.intel.ai.brain.vega.clarify.PendingClarification;
 import elite.intel.ai.brain.vega.confirm.ConfirmationCoordinator;
-import elite.intel.ai.brain.vega.diag.CompanionDiagnostics;
+import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
 import elite.intel.ai.brain.vega.memory.facts.MemoryFactContext;
 import elite.intel.ai.brain.vega.memory.facts.MergedFactCandidates;
 import elite.intel.ai.brain.vega.model.llm.*;
@@ -37,7 +37,7 @@ import java.util.concurrent.*;
  * <p>
  * It has the full commander tool set and detaches commands/queries from the ordered cognitive worker. One
  * utterance may carry more than one request ("check the loadout, what is our cargo capacity"), so the turn
- * settles up to {@link CompanionConfig#maxCommanderToolCalls()} calls, each under its own type's outcome policy,
+ * settles up to {@link VegaConfig#maxCommanderToolCalls()} calls, each under its own type's outcome policy,
  * strictly one after another: a batch is several answers to one utterance, never several things happening at
  * once. Two kinds of call are never batched - {@code request_input} suspends the turn until the commander
  * answers, and a dangerous action gates on confirmation - so either of those reduces the response to itself.
@@ -52,7 +52,7 @@ public final class CommanderThought extends Thought {
     /** llm.properties key for the fixed, code-voiced dangerous-action confirmation prompt. */
     private static final String CONFIRM_DANGEROUS_KEY = "handler.common.confirmDangerousAction";
     /**
-     * Joins the answers of a batch into the turn's one companion reply.
+     * Joins the answers of a batch into the turn's one VEGA reply.
      */
     private static final String ANSWER_SEPARATOR = "\n";
 
@@ -123,7 +123,7 @@ public final class CommanderThought extends Thought {
             List<LlmToolInvocation> calls = settleableCalls(result.toolInvocations());
 
             // The input remains only in ThoughtContext until settlement. Pure LLM speech commits a complete
-            // commander->companion pair; QUERY files its completed question/answer pair; every action/service-only
+            // commander->VEGA pair; QUERY files its completed question/answer pair; every action/service-only
             // outcome leaves conversational memory untouched.
             if (isStopped()) {
                 discardIncompleteTurn();
@@ -160,7 +160,7 @@ public final class CommanderThought extends Thought {
      */
     @Override
     protected int maxToolCallsPerRound() {
-        return CompanionConfig.maxCommanderToolCalls();
+        return VegaConfig.maxCommanderToolCalls();
     }
 
     /**
@@ -183,7 +183,7 @@ public final class CommanderThought extends Thought {
         }
         Optional<LlmToolInvocation> gating = calls.stream().filter(this::isGating).findFirst();
         if (gating.isPresent()) {
-            CompanionDiagnostics.debug(trace(), "settle", "batch of " + calls.size()
+            VegaDiagnostics.debug(trace(), "settle", "batch of " + calls.size()
                     + " reduced to gating call " + gating.get().name());
             return List.of(gating.get());
         }
@@ -191,14 +191,14 @@ public final class CommanderThought extends Thought {
                 .filter(call -> dependencies.actionTypeResolver().resolve(call.name()).isGameAction())
                 .toList();
         if (gameCalls.isEmpty()) {
-            CompanionDiagnostics.debug(trace(), "settle",
+            VegaDiagnostics.debug(trace(), "settle",
                     "batch of " + calls.size() + " reduced to one reply " + calls.get(0).name());
             return List.of(calls.get(0));
         }
         if (gameCalls.size() < calls.size()) {
-            CompanionDiagnostics.debug(trace(), "settle", "dropped "
+            VegaDiagnostics.debug(trace(), "settle", "dropped "
                     + (calls.size() - gameCalls.size()) + " non-action call(s) alongside "
-                    + CompanionDiagnostics.calls(gameCalls));
+                    + VegaDiagnostics.calls(gameCalls));
         }
         return gameCalls;
     }
@@ -245,8 +245,8 @@ public final class CommanderThought extends Thought {
      */
     private void reportUnsettledCall(LlmToolInvocation call, Throwable failure) {
         Throwable cause = failure.getCause() != null ? failure.getCause() : failure;
-        CompanionDiagnostics.debug(trace(), "settle",
-                call.name() + " did not settle: " + CompanionDiagnostics.truncate(String.valueOf(cause.getMessage())));
+        VegaDiagnostics.debug(trace(), "settle",
+                call.name() + " did not settle: " + VegaDiagnostics.truncate(String.valueOf(cause.getMessage())));
         if (cause instanceof CancellationException) {
             return; // an interrupted turn cancels its own work; that is not a failure to report
         }
@@ -305,18 +305,18 @@ public final class CommanderThought extends Thought {
         if (SpeakFunction.ID.equals(invocation.name())) {
             String reply = spokenTextOf(invocation);
             if (reply.isBlank()) {
-                CompanionDiagnostics.debug(trace(), "settle", "no reply");
+                VegaDiagnostics.debug(trace(), "settle", "no reply");
                 return CompletableFuture.completedFuture(null);
             }
-            CompanionDiagnostics.info(trace(), "settle",
-                    "speak \"" + CompanionDiagnostics.truncate(reply) + "\"");
+            VegaDiagnostics.info(trace(), "settle",
+                    "speak \"" + VegaDiagnostics.truncate(reply) + "\"");
             execute(invocation);
             recordDialoguePair(reply);
             return CompletableFuture.completedFuture(null);
         }
         IntelActionType settledType = dependencies.actionTypeResolver().resolve(invocation.name());
         if (settledType.isGameAction()) {
-            CompanionDiagnostics.info(trace(), "settle", settledType + " " + invocation.name());
+            VegaDiagnostics.info(trace(), "settle", settledType + " " + invocation.name());
             return dispatchGameCall(invocation, settledType);
         }
         settleGameCall(invocation);
@@ -398,7 +398,7 @@ public final class CommanderThought extends Thought {
      */
     private CompletableFuture<Void> dispatchRecovered(LlmToolInvocation recovered, String reason) {
         IntelActionType recoveredType = dependencies.actionTypeResolver().resolve(recovered.name());
-        CompanionDiagnostics.info(trace(), "settle",
+        VegaDiagnostics.info(trace(), "settle",
                 reason + " -> " + recoveredType + " " + recovered.name());
         return dispatchGameCall(recovered, recoveredType);
     }
@@ -433,7 +433,7 @@ public final class CommanderThought extends Thought {
                 .findFirst();
 
         if (target.isEmpty() || requestedParameter.isEmpty() || question.isBlank()) {
-            CompanionDiagnostics.debug(trace(), "clarify",
+            VegaDiagnostics.debug(trace(), "clarify",
                     "rejected request_input target=" + actionId + " parameter=" + parameterName);
             String failure = executionFailurePhrase();
             voice(failure, false);
@@ -447,9 +447,9 @@ public final class CommanderThought extends Thought {
         if (!isRuntimeActive()) {
             return;
         }
-        CompanionDiagnostics.info(trace(), "settle",
+        VegaDiagnostics.info(trace(), "settle",
                 "request_input " + actionId + "." + parameterName
-                        + " \"" + CompanionDiagnostics.truncate(question) + "\"");
+                        + " \"" + VegaDiagnostics.truncate(question) + "\"");
         voice(question, false);
         if (!isRuntimeActive()) {
             return;
@@ -477,13 +477,13 @@ public final class CommanderThought extends Thought {
         return execution.handle((result, failure) -> {
             try {
                 if (isStopped()) {
-                    CompanionDiagnostics.debug(trace(), "settle", inv.name() + " late result discarded");
+                    VegaDiagnostics.debug(trace(), "settle", inv.name() + " late result discarded");
                     return null;
                 }
                 JsonObject settled = result;
                 if (failure != null) {
-                    CompanionDiagnostics.debug(trace(), "exec", inv.name() + " failed: "
-                            + CompanionDiagnostics.truncate(String.valueOf(failure.getMessage())));
+                    VegaDiagnostics.debug(trace(), "exec", inv.name() + " failed: "
+                            + VegaDiagnostics.truncate(String.valueOf(failure.getMessage())));
                     settled = executionError(inv.name(), failure);
                 } else if (settled == null) {
                     settled = new JsonObject();
@@ -521,7 +521,7 @@ public final class CommanderThought extends Thought {
         if (!isRuntimeActive()) {
             return;
         }
-        CompanionDiagnostics.info(trace(), "confirm", "dangerous action detected: " + invocation.name());
+        VegaDiagnostics.info(trace(), "confirm", "dangerous action detected: " + invocation.name());
 
         // Code-voiced confirmation prompt (no LLM); urgent so it preempts before anything runs.
         String prompt = confirmDangerousActionPhrase();
@@ -531,7 +531,7 @@ public final class CommanderThought extends Thought {
         if (!isRuntimeActive()) {
             return;
         }
-        CompanionDiagnostics.info(trace(), "confirm", "outcome=" + outcome.name().toLowerCase(Locale.ROOT));
+        VegaDiagnostics.info(trace(), "confirm", "outcome=" + outcome.name().toLowerCase(Locale.ROOT));
         if (outcome == ConfirmationOutcome.CONFIRMED) {
             settleGameCall(invocation);
         }
@@ -583,7 +583,7 @@ public final class CommanderThought extends Thought {
         }
         boolean serviceUnreachable = result != null
                 && result.status() == LlmResult.Status.SERVICE_UNAVAILABLE;
-        CompanionDiagnostics.info(trace(), "settle", serviceUnreachable
+        VegaDiagnostics.info(trace(), "settle", serviceUnreachable
                 ? "cannot execute (LLM service unreachable)"
                 : "cannot execute (unrecoverable LLM response)");
         String phrase = serviceUnreachable ? serviceUnreachablePhrase() : executionFailurePhrase();
@@ -598,7 +598,7 @@ public final class CommanderThought extends Thought {
         if (!isRuntimeActive()) {
             return;
         }
-        CompanionDiagnostics.debug(trace(), "discard", "incomplete turn discarded (no dialogue pair)");
+        VegaDiagnostics.debug(trace(), "discard", "incomplete turn discarded (no dialogue pair)");
     }
 
     /** The fixed, code-generated dangerous-action confirmation prompt in the commander's language (no LLM). */

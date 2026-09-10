@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.MissionType;
@@ -25,7 +25,7 @@ public class MissionAcceptedSubscriber {
                         Provide key mission parameters as a summary.
                         Ignore unimportant fields such as timestamps, timeToLive, missionID etc.
                     """;
-            CompanionRuntime.narrator().narrate(
+            VegaRuntime.narrator().narrate(
                             "Mission Accepted: " + event.toYaml(),
                             instructions
                     );
@@ -50,7 +50,7 @@ public class MissionAcceptedSubscriber {
                         - IF relevant to the mission type kill count and or the target name.
                         - Ignore unimportant fields such as timestamps, timeToLive, missionID etc.
                 """;
-        CompanionRuntime.narrator().narrate("Mission Accepted: " + event.toYaml(), instructions);
+        VegaRuntime.narrator().narrate("Mission Accepted: " + event.toYaml(), instructions);
     }
 
     @Subscribe

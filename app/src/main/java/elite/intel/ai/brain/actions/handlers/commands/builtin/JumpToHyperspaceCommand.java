@@ -3,7 +3,7 @@ package elite.intel.ai.brain.actions.handlers.commands.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.managers.LocationManager;
@@ -67,7 +67,7 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
             } else {
                 message = StringUtls.localizedResponse("handler.fsd.jumpingNoFuel", starName, starClass);
             }
-            CompanionRuntime.narrator().filler(message, false);
+            VegaRuntime.narrator().filler(message, false);
         }
 
         Status status = Status.getInstance();

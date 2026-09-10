@@ -34,7 +34,7 @@ public class RoutePlotter {
      * need guessing - how long the machine takes to report the map open at all - so this only has to cover
      * the fly-in behind that signal. Raised to 3000 on 2026-09-01 while chasing a commander whose search box
      * never got focus; it was not the cause (their HOTAS was sending UI_Left continuously, see
-     * UI_* axis-half bindings) and the two seconds are dead air before the companion speaks, since the
+     * UI_* axis-half bindings) and the two seconds are dead air before VEGA speaks, since the
      * handler does not return its answer until this whole sequence finishes. Do not raise it on a hunch.
      */
     private static final int GALAXY_MAP_SETTLE_MS = 1000;
@@ -91,7 +91,7 @@ public class RoutePlotter {
         // just opened, because that is the only state whose UI focus is known. A map the commander has been
         // flying around in has focus wherever they left it, so the same keystrokes go somewhere else and the
         // system name is typed into nothing: silently, with every keystroke reporting success and the
-        // companion still announcing the course it never plotted (commander bundle 2026-09-01 - journal
+        // VEGA still announcing the course it never plotted (commander bundle 2026-09-01 - journal
         // "Music: GalaxyMap" and GuiFocus 6 one second before the command, no NavRoute afterwards).
         //
         // It has to be the map's own binding that shuts it. UI_Back does not close the galaxy map, which is

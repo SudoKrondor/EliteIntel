@@ -1,7 +1,9 @@
 package elite.intel.ai.mouth;
 
+import elite.intel.i18n.Language;
+
 /**
- * The engine that voices the companion. Exactly one is active, and the choice is a stored setting in its own
+ * The engine that voices VEGA. Exactly one is active, and the choice is a stored setting in its own
  * right ({@code game_session.ttsProvider}) - it is never inferred from the shape of the cloud API key.
  * <p>
  * {@link #KOKORO} runs locally and needs nothing configured, which is why it is both the shipped default and
@@ -35,5 +37,28 @@ public enum TtsProvider {
      */
     public boolean isLocal() {
         return this == KOKORO;
+    }
+
+    /**
+     * Whether this engine can voice the language at all - not "voice it well", but produce sound from it.
+     * <p>
+     * Only {@link #KOKORO} ever answers no: its phonemizer has no Cyrillic front end, so Russian and
+     * Ukrainian text is not spoken with an accent, it is not spoken (see {@link Language#isCyrillicScript()}).
+     * {@link #GOOGLE} and {@link #EDGE} carry every language this app ships.
+     */
+    public boolean canVoice(Language language) {
+        return this != KOKORO || !language.isCyrillicScript();
+    }
+
+    /**
+     * The engine that will actually speak {@code language}: the selection itself wherever it can voice the
+     * language, and {@link #EDGE} where it cannot.
+     * <p>
+     * Edge is the stand-in rather than Google because it is keyless: a commander whose only choice is a paid
+     * account has no voice at all until they open one, and a Cyrillic commander did not choose to be in this
+     * position. Google stays selectable - this only decides what happens to a selection that cannot speak.
+     */
+    public static TtsProvider forLanguage(TtsProvider selected, Language language) {
+        return selected.canVoice(language) ? selected : EDGE;
     }
 }

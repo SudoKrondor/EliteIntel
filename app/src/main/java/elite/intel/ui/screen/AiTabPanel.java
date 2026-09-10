@@ -2,8 +2,8 @@ package elite.intel.ui.screen;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
-import elite.intel.ai.brain.vega.CompanionRuntime;
-import elite.intel.ai.brain.vega.diag.CompanionMemoryDump;
+import elite.intel.ai.brain.vega.VegaRuntime;
+import elite.intel.ai.brain.vega.diag.VegaMemoryDump;
 import elite.intel.ai.brain.vega.memory.MemoryGateway;
 import elite.intel.ai.ears.MicDiagnosticsReport;
 import elite.intel.eventbus.UiBus;
@@ -361,32 +361,34 @@ public class AiTabPanel extends JPanel {
                 HudPalette.HUD_ICON_HEADER_ACTION);
     }
 
-    /** Builds the SYSTEM LOG header action: a memory-glyph button that dumps the companion's memory to a JSON file. */
+    /**
+     * Builds the SYSTEM LOG header action: a memory-glyph button that dumps VEGA's memory to a JSON file.
+     */
     private HudGlyphButton buildDumpMemoryButton() {
         return new HudGlyphButton(HudGlyphs::paintHudMemoryGlyph,
                 HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
-                getText("ai.section.systemMessages.dump.tooltip"), this::dumpCompanionMemory,
+                getText("ai.section.systemMessages.dump.tooltip"), this::dumpVegaMemory,
                 HudPalette.HUD_ICON_HEADER_ACTION);
     }
 
     /**
-     * Writes a full JSON snapshot of the companion's session memory to a user-chosen {@code .json} file. Runs on
-     * the EDT (button click). When the companion subsystem is not running its memory is unreachable, so the button
+     * Writes a full JSON snapshot of VEGA's session memory to a user-chosen {@code .json} file. Runs on
+     * the EDT (button click). When VEGA subsystem is not running its memory is unreachable, so the button
      * reports that as a SYSTEM LOG line instead of failing; every outcome (dumped file, not running, or write
      * error) is reported the same way, keeping feedback inside the HUD instead of a native popup.
      */
-    private void dumpCompanionMemory() {
+    private void dumpVegaMemory() {
         MemoryGateway memory;
         try {
-            memory = CompanionRuntime.memory();
+            memory = VegaRuntime.memory();
         } catch (IllegalStateException notRunning) {
-            // WHY: only the not-installed case degrades to "nothing to dump" here (CompanionRuntime getters throw
+            // WHY: only the not-installed case degrades to "nothing to dump" here (VegaRuntime getters throw
             // when the subsystem is stopped). Snapshot and serialization run outside this guard so any real failure
             // there surfaces as a write error rather than being mislabelled "not running".
             UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.dump.empty")));
             return;
         }
-        String content = CompanionMemoryDump.toJson(memory.snapshot());
+        String content = VegaMemoryDump.toJson(memory.snapshot());
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle(getText("ai.section.systemMessages.dump.title"));
         chooser.setSelectedFile(new File(defaultMemoryDumpFileName()));
@@ -474,9 +476,9 @@ public class AiTabPanel extends JPanel {
                 + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".zip";
     }
 
-    /** Timestamped default file name, e.g. {@code companion_memory_dump_20260704_132155.json}. */
+    /** Timestamped default file name, e.g. {@code vega_memory_dump_20260704_132155.json}. */
     private static String defaultMemoryDumpFileName() {
-        return "companion_memory_dump_"
+        return "vega_memory_dump_"
                 + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".json";
     }
 

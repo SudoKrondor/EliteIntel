@@ -3,7 +3,7 @@ package elite.intel.ai.brain.actions.handlers.commands.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
@@ -40,7 +40,7 @@ public final class NavigateToHomeSystemCommand implements IntelCommand {
 
     @Override
     public String execute(JsonObject params, String responseText) {
-        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.navigate.plottingHome"), false);
+        VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.navigate.plottingHome"), false);
         LocationDto location = playerSession.getHomeSystem();
         if (location.getBodyId() == -1) {
             return StringUtls.localizedResponse("handler.navigate.homeNotSet");

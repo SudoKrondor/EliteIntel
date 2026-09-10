@@ -12,7 +12,7 @@ import java.util.Set;
  * market in front of the commander has anything left to give.
  * <p>
  * <b>Why this is not inside the HUD card.</b> The screen and the voice have to agree about when a shop is
- * finished - the card stops offering goods that cannot be bought here in the same moment the companion says
+ * finished - the card stops offering goods that cannot be bought here in the same moment VEGA says
  * so out loud. Two implementations of "covered" would drift apart on the first rounding, and the commander
  * would be told one thing and shown another.
  * <p>

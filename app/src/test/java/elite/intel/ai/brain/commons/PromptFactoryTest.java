@@ -1,6 +1,6 @@
 package elite.intel.ai.brain.commons;
 
-import elite.intel.ai.brain.CompanionIdentity;
+import elite.intel.ai.brain.VegaIdentity;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -14,17 +14,17 @@ class PromptFactoryTest {
     private final PromptFactory factory = PromptFactory.getInstance();
 
     /**
-     * The analysis path is spoken, so it carries the same identity as the companion prompts.
+     * The analysis path is spoken, so it carries the same identity as VEGA prompts.
      *
      * <p>WHY: it used to open "You are {shipName}, a ship in Elite Dangerous - space sim game", which made the
-     * model answer as the hull while the companion prompt had it answering as an AI named Vega. Same session,
+     * model answer as the hull while VEGA prompt had it answering as an AI named Vega. Same session,
      * two speakers, depending only on whether the answer came from a query handler or from dialogue.
      */
     @Test
-    void analysisPromptSpeaksAsTheCompanionAiNotAsTheShip() {
+    void analysisPromptSpeaksAsVegaNotAsTheShip() {
         String prompt = factory.generateAnalysisPrompt();
 
-        assertTrue(prompt.contains(CompanionIdentity.identityClause()),
+        assertTrue(prompt.contains(VegaIdentity.identityClause()),
                 "the spoken analysis prompt must open with the shared identity clause");
         assertFalse(prompt.contains("a ship in Elite Dangerous"),
                 "the model must never be told it is the ship");
@@ -40,7 +40,7 @@ class PromptFactoryTest {
         int personality = prompt.indexOf("Personality: ");
 
         assertTrue(personality >= 0, "the analysis prompt must carry a personality block");
-        assertTrue(prompt.indexOf(CompanionIdentity.identityClause(), personality) > personality,
+        assertTrue(prompt.indexOf(VegaIdentity.identityClause(), personality) > personality,
                 "the personality block must be preceded by the identity clause, not stand alone");
     }
 }

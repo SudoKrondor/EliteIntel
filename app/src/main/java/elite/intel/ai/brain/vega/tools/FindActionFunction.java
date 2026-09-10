@@ -3,11 +3,11 @@ package elite.intel.ai.brain.vega.tools;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
 import elite.intel.ai.brain.vega.model.llm.LlmToolDefinition;
-import elite.intel.ai.brain.vega.prompt.CompanionActionReducer;
+import elite.intel.ai.brain.vega.prompt.VegaActionReducer;
 import elite.intel.util.json.JsonUtils;
 
 import java.util.EnumSet;
@@ -52,12 +52,12 @@ public final class FindActionFunction implements SystemFunction {
 
     /**
      * Searches the game-action catalog for actions matching {@code query}, reusing the shared
-     * {@link CompanionActionReducer} over all categories (COMMANDER-only tool),
+     * {@link VegaActionReducer} over all categories (COMMANDER-only tool),
      * and returns the matches as {@code {items:[{name, description}]}}.
      */
     @Override
     public JsonObject handle(String action, JsonObject params, String text) {
-        List<LlmToolDefinition> matches = CompanionRuntime.reducer()
+        List<LlmToolDefinition> matches = VegaRuntime.reducer()
                 .selectTools(EnumSet.allOf(IntelActionCategory.class), JsonUtils.getAsStringOrEmpty(params, PARAM_QUERY));
         JsonArray items = new JsonArray();
         for (LlmToolDefinition tool : matches) {

@@ -160,7 +160,7 @@ class SetupCheckTest {
 
     /**
      * The whole point, end to end: a fresh install speaks all three, straight to the TTS engine. The channel
-     * matters as much as the words - routing these through the companion would ask the missing language model
+     * matters as much as the words - routing these through VEGA would ask the missing language model
      * to announce its own absence.
      */
     @Test

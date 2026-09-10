@@ -12,7 +12,7 @@ import java.util.Map;
  *
  * <p>WHY: the game logs a crime per victim, and a single on-foot assassination contract is not one crime.
  * The reported run took a settlement apart and produced eighteen murders in twelve minutes, each of which
- * stopped whatever the companion was saying to report the same faction, the same offence and the same
+ * stopped whatever VEGA was saying to report the same faction, the same offence and the same
  * thousand-credit bounty. The commander does not learn anything from the seventeenth; he learns it from
  * the first, and everything after that is noise on a channel reserved for things that matter.
  *

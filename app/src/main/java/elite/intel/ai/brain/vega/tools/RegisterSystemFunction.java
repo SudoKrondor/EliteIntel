@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 /**
  * Marks a {@link SystemFunction} for auto-discovery by {@link SystemFunctionRegistry}.
- * Mirrors {@code @RegisterCommand} for companion system functions.
+ * Mirrors {@code @RegisterCommand} for VEGA system functions.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

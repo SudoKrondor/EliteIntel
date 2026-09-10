@@ -1,8 +1,8 @@
 package elite.intel.ai.brain.commons;
 
 import elite.intel.ai.brain.AiPromptFactory;
-import elite.intel.ai.brain.CompanionIdentity;
 import elite.intel.ai.brain.ShipPersonality;
+import elite.intel.ai.brain.VegaIdentity;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
@@ -31,14 +31,14 @@ public class PromptFactory implements AiPromptFactory {
     }
 
     /**
-     * Opens the analysis prompt with the same identity the companion prompts use.
+     * Opens the analysis prompt with the same identity VEGA prompts use.
      * <p>
      * This block used to read "You are {shipName}, a ship in Elite Dangerous" - the model answered as the hull,
-     * while the companion prompt answered as an AI named Vega, so a single session spoke with two identities
-     * depending on which path produced the line. The ship is now something the companion flies, not something it is.
+     * while VEGA prompt answered as an AI named Vega, so a single session spoke with two identities
+     * depending on which path produced the line. The ship is now something VEGA flies, not something it is.
      */
     private void youAre(StringBuilder sb) {
-        sb.append(CompanionIdentity.identityClause()).append(' ');
+        sb.append(VegaIdentity.identityClause()).append(' ');
         String ship = shipName();
         if (ship != null) {
             sb.append("You serve aboard the commander's ship, ").append(ship).append(". ");
@@ -48,8 +48,8 @@ public class PromptFactory implements AiPromptFactory {
     }
 
     /**
-     * How the companion speaks of itself here: the grammatical gender of the active ship's voice, the same
-     * seam the companion prompts read. This path is spoken too, so a male voice answering a query in feminine
+     * How VEGA speaks of itself here: the grammatical gender of the active ship's voice, the same
+     * seam VEGA prompts read. This path is spoken too, so a male voice answering a query in feminine
      * forms is the same audible mismatch - and left unsaid, the model simply picks a gender per sentence.
      */
     private String selfGender() {
@@ -117,7 +117,7 @@ public class PromptFactory implements AiPromptFactory {
     private void appendCadenceAndPersonality(StringBuilder sb) {
         ShipPersonality aiPersonality = systemSession.getAIPersonality();
         sb.append(" Personality: ");
-        sb.append(CompanionIdentity.identityAndPersonality(aiPersonality));
+        sb.append(VegaIdentity.identityAndPersonality(aiPersonality));
     }
 
     private String getSessionValues() {
@@ -135,8 +135,8 @@ public class PromptFactory implements AiPromptFactory {
     /**
      * Appends the shared "how to address" instruction: the addressee's name / highest military rank /
      * honorific, deduped (falling back to "Commander" when none are known), chosen at random each time.
-     * Reused by the companion prompt - only the addressee term differs ("me" for the ship's first-person
-     * legacy prompt, "the commander" for the companion).
+     * Reused by VEGA prompt - only the addressee term differs ("me" for the ship's first-person
+     * legacy prompt, "the commander" for VEGA).
      * <p>
      * A commander who has turned addressing off gets the opposite instruction in the same slot - one line
      * either way, so the prompt budget is unchanged. Stripping the address afterwards would not do: the

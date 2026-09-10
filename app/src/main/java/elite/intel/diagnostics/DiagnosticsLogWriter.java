@@ -13,7 +13,7 @@ import elite.intel.ui.event.LlmConnectionStatusEvent;
 
 /**
  * Mirrors the GUI SYSTEM LOG stream to the diagnostics {@link DiagnosticsLog session.log}, so an automated
- * tester reads the companion's reactions from a file instead of the screen. Subscribes to the same two buses
+ * tester reads VEGA's reactions from a file instead of the screen. Subscribes to the same two buses
  * as {@code AiTabController}: UI log events ride {@link UiBus}, while user-input and speech events ride
  * {@link GameEventBus}. Each line is prefixed by kind ({@code USER}/{@code AI}/{@code LOG}/{@code DBG}/
  * {@code DIAG}) so the log is easy to grep. Active only in diagnostics mode.

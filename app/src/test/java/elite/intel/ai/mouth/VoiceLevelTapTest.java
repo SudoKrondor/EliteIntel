@@ -9,11 +9,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The side-chain detector. It answers one question - how loud is the companion speaking right now - and
+ * The side-chain detector. It answers one question - how loud is VEGA speaking right now - and
  * the answer has to be right in dBFS, because the duck's threshold is expressed in the same units.
  *
  * <p>The measurement is taken after the speech-volume control has been applied to the PCM, which is what
- * makes a commander who runs the companion silent and reads it off the overlay get no ducking at all.
+ * makes a commander who runs VEGA silent and reads it off the overlay get no ducking at all.
  */
 class VoiceLevelTapTest {
 

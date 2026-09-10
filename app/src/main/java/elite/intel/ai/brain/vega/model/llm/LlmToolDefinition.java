@@ -7,7 +7,7 @@ import java.util.Objects;
 
 /**
  * Provider-neutral definition of one callable function offered to the LLM in the native tool-calling
- * {@code tools} array. Built within companion (never by the program's command classes): for game tools
+ * {@code tools} array. Built within VEGA (never by the program's command classes): for game tools
  * by an adapter that reads an {@code IntelAction}'s existing {@code id()}/{@code parameters()}, and for
  * {@code SystemFunction}s directly. The {@code LlmGateway} bridge renders this into provider-native JSON.
  *

@@ -11,7 +11,7 @@ import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
  * know; hedging a figure the game just gave us is just as wrong the other way, since it invites him to go
  * and check what was already certain.
  *
- * <p>English on purpose: this goes into the narration payload as data, and the companion writes the spoken
+ * <p>English on purpose: this goes into the narration payload as data, and VEGA writes the spoken
  * sentence in the commander's own language from it.
  */
 final class CarrierFuelPhrase {

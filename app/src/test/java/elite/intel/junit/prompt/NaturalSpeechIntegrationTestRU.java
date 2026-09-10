@@ -2,7 +2,7 @@ package elite.intel.junit.prompt;
 
 import elite.intel.ai.brain.actions.handlers.commands.builtin.*;
 import elite.intel.ai.brain.actions.handlers.queries.*;
-import elite.intel.ai.brain.vega.input.CompanionRoutingHarness;
+import elite.intel.ai.brain.vega.input.VegaRoutingHarness;
 import elite.intel.ai.brain.vega.tools.RequestInputFunction;
 import elite.intel.i18n.Language;
 import org.junit.jupiter.api.*;
@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class NaturalSpeechIntegrationTestRU {
 
-    private final CompanionRoutingHarness harness = new CompanionRoutingHarness(Language.RU);
+    private final VegaRoutingHarness harness = new VegaRoutingHarness(Language.RU);
 
     @BeforeAll
     void bootstrap() throws Exception {

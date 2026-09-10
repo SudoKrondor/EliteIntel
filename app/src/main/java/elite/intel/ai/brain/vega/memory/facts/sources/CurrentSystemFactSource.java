@@ -13,7 +13,7 @@ import elite.intel.session.Status;
 import java.util.*;
 
 /**
- * Query-relevant fact source for the current star system, grounding the companion in where the commander is. While
+ * Query-relevant fact source for the current star system, grounding VEGA in where the commander is. While
  * travelling the system (supercruise or deep space) it gives the system's full character (allegiance, security,
  * economy, population, controlling power); once focused on a body or station - where {@link CurrentBodyFactSource}
  * (and later a station source) carry the detail - it shrinks to a short grounding line (system, allegiance, security)

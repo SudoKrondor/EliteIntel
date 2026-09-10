@@ -4,7 +4,7 @@ import elite.intel.ai.brain.actions.handlers.commands.builtin.IgnoreNonsensicalI
 import elite.intel.ai.brain.actions.handlers.queries.ConnectionCheckQuery;
 import elite.intel.ai.brain.actions.handlers.queries.GeneralConversationQuery;
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
-import elite.intel.ai.brain.vega.diag.CompanionDiagnostics;
+import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
 import elite.intel.ai.brain.vega.model.GameStateSnapshot;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
 import elite.intel.ai.brain.vega.model.llm.LlmToolDefinition;
@@ -20,17 +20,19 @@ import java.util.stream.Collectors;
 /**
  * Picks which game commands are shown to the model for a given commander phrase. A command is kept when the
  * phrase shares a meaningful word with one of the command's training phrases - matched with
- * {@link CompanionWordMatch}, which treats inflected forms of a word as the same word, so Russian (and other)
+ * {@link VegaWordMatch}, which treats inflected forms of a word as the same word, so Russian (and other)
  * word endings no longer hide a command. A blank input offers all commands (no narrowing).
  * <p>
- * This is the companion's own word-overlap, replacing the legacy {@code Reducer} on this path: the legacy one
+ * This is VEGA's own word-overlap, replacing the legacy {@code Reducer} on this path: the legacy one
  * matched whole words exactly, which broke on inflected languages. The reflex fast-path is unaffected - it
  * keeps its own exact, full-phrase match (see {@link ReflexResolver}); only this command-list narrowing is
  * inflection-tolerant.
  */
-public final class WordOverlapActionReducer implements CompanionActionReducer {
+public final class WordOverlapActionReducer implements VegaActionReducer {
 
-    /** Fallback ids the companion never offers; it has its own speak. */
+    /**
+     * Fallback ids VEGA never offers; it has its own speak.
+     */
     private static final Set<String> FALLBACK_IDS = Set.of(
             GeneralConversationQuery.ID,
             ConnectionCheckQuery.ID,
@@ -97,19 +99,19 @@ public final class WordOverlapActionReducer implements CompanionActionReducer {
             // An empty allowed-category set is intent (no game tools requested), not a selection outcome, so it
             // needs no line; a non-empty set that yielded nothing is worth surfacing.
             if (!allowedCategories.isEmpty()) {
-                CompanionDiagnostics.debugAmbient("reduce", "word-overlap: no candidates for " + allowedCategories);
+                VegaDiagnostics.debugAmbient("reduce", "word-overlap: no candidates for " + allowedCategories);
             }
             return List.of();
         }
         // A blank input has no signal to narrow on - offer everything, mirroring the legacy "offer all".
         if (currentInput == null || currentInput.isBlank()) {
             List<LlmToolDefinition> all = allTools(candidates);
-            CompanionDiagnostics.debugAmbient("reduce", "word-overlap: blank input -> offer all (" + all.size() + ")");
+            VegaDiagnostics.debugAmbient("reduce", "word-overlap: blank input -> offer all (" + all.size() + ")");
             return all;
         }
         List<String> inputWords = List.copyOf(significantWords(currentInput));
         if (inputWords.isEmpty()) {
-            CompanionDiagnostics.debugAmbient("reduce", "word-overlap: only stop/short words -> no game tools");
+            VegaDiagnostics.debugAmbient("reduce", "word-overlap: only stop/short words -> no game tools");
             return List.of(); // only stop/short words: no signal to match on
         }
 
@@ -138,7 +140,7 @@ public final class WordOverlapActionReducer implements CompanionActionReducer {
             }
         }
         if (matched.isEmpty()) {
-            CompanionDiagnostics.debugAmbient("reduce", "word-overlap: candidates=" + candidates.size()
+            VegaDiagnostics.debugAmbient("reduce", "word-overlap: candidates=" + candidates.size()
                     + " matched=0 -> no game tools");
             return List.of();
         }
@@ -181,9 +183,9 @@ public final class WordOverlapActionReducer implements CompanionActionReducer {
                 result.add(s.candidate().tool());
             }
         }
-        CompanionDiagnostics.debugAmbient("reduce", String.format(Locale.ROOT,
+        VegaDiagnostics.debugAmbient("reduce", String.format(Locale.ROOT,
                 "word-overlap: candidates=%d matched=%d top=%.2f -> %s",
-                candidates.size(), matched.size(), scored.get(0).score(), CompanionDiagnostics.names(result)));
+                candidates.size(), matched.size(), scored.get(0).score(), VegaDiagnostics.names(result)));
         return result;
     }
 
@@ -205,7 +207,7 @@ public final class WordOverlapActionReducer implements CompanionActionReducer {
     /** Whether the input word matches any of a command's training-phrase words (inflection-tolerant or exact). */
     private boolean matchesAny(String inputWord, Set<String> triggerWords) {
         for (String trigger : triggerWords) {
-            boolean match = inflectionTolerant ? CompanionWordMatch.similar(inputWord, trigger) : inputWord.equals(trigger);
+            boolean match = inflectionTolerant ? VegaWordMatch.similar(inputWord, trigger) : inputWord.equals(trigger);
             if (match) {
                 return true;
             }

@@ -7,7 +7,7 @@ import elite.intel.ai.brain.vega.model.llm.LlmResult;
 /**
  * Provider-specific adapter: renders an {@link LlmRequest} into the provider's native chat-completion body
  * and parses a raw provider response. This is the seam that lets a new provider plug in as a new
- * implementation; the {@link CompanionLlmGateway} and the rest of companion mode stay provider-neutral.
+ * implementation; the {@link VegaLlmGateway} and the rest of VEGA stay provider-neutral.
  * <p>
  * Two response shapes: {@link #parse} for the tool-calling consciousness turn (well-formed tool-calls), and
  * {@link #parseText} for the plain-text compression turn (the model's free-text summary).

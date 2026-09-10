@@ -9,7 +9,7 @@ Do NOT stage or commit anything; just write the draft to a file and print it. Th
 
 # 1. Gather the change set
 
-Version is in app/src/main/resources/version.txt The tag is same format as version. For example is version.txt reads v-1.1.0015 compare that tag to the current branch.
+Version is in app/src/main/resources/version.txt The tag is same format as version. For example is version.txt reads v-1.1.0015 reduce that by 1 (v-1.1.0014) and compare that tag to the current branch. effectively comparing previous released version to the one we are cooking now.
 
 Run the diff, provide information in plain English targeted at non-technical users describing the changes in the new release.
 
@@ -37,7 +37,7 @@ Format:
   "Reworked", not "Add", "Fix", "Rework"). Each bullet states WHAT changed and, where it aids understanding, WHY or the key implementation choice. Describe functionality and implementation, not a list of files. It is fine to name a component/area (e.g. "credit tracking", "journal parser") when it helps the reader, but do not enumerate changed files.
 - Use plain hyphens, never em dashes ("-").
 - Do not hard-wrap lines with \n
-- Keep it factual and end user friendly.
+- Keep it factual and end user-friendly.
 
 Example shape (illustrative, not a template to copy verbatim):
 
@@ -54,4 +54,6 @@ Example shape (illustrative, not a template to copy verbatim):
 
 # 5. Output
 
-Write the message to `version-diff.txt` in the repo root and print it inline. Do not run `git add` or `git commit`. Mention that the draft is ready for the user to review and commit. Always override `version-diff.txt`
+- Write the message to `version-diff.txt` in the repo root and print it inline.
+- Do not run `git add` or `git commit`. Mention that the draft is ready for the user to review and commit.
+- Always override `version-diff.txt`

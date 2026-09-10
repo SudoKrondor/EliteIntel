@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.dao.CodexEntryDao;
 import elite.intel.db.managers.CodexEntryManager;
 import elite.intel.db.managers.LocationManager;
@@ -124,7 +124,7 @@ public class CodexEntryEventSubscriber {
             boolean isOrganic = "$Codex_SubCategory_Organic_Structures;".equalsIgnoreCase(event.getSubCategory());
 
             if (playerSession.isDiscoveryAnnouncementOn()) {
-                CompanionRuntime.narrator().narrate(sb.toString(), narrationInstructions(isOrganic));
+                VegaRuntime.narrator().narrate(sb.toString(), narrationInstructions(isOrganic));
             }
             if (isOrganic) {
                 codexEntryManager.save(event);

@@ -45,7 +45,9 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
         this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of(), null);
     }
 
-    /** Creates a tracked companion request while preserving its correlation id through the Mouth pipeline. */
+    /**
+     * Creates a tracked VEGA request while preserving its correlation id through the Mouth pipeline.
+     */
     public static VocalisationRequestEvent tracked(
             String requestId,
             String textToVoice,

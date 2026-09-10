@@ -36,7 +36,7 @@ import java.util.stream.Stream;
  * </ul>
  * <p>
  * Every line is published as a {@link VocalisationRequestEvent} straight to the TTS engine rather than routed
- * through the companion, for the same reason {@code LocalLlmModelCheck} does it: these warnings are
+ * through VEGA, for the same reason {@code LocalLlmModelCheck} does it: these warnings are
  * <em>about</em> a missing or broken setup, so voicing them must not depend on the thing that is missing. Local
  * TTS is on by default, so a fresh install can speak before anything is configured.
  */

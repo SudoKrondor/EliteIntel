@@ -17,7 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
 /**
- * Plays the commander's music, underneath the companion rather than in competition with it.
+ * Plays the commander's music, underneath VEGA rather than in competition with it.
  * <p>
  * <b>How the ducking is timed.</b> One block of audio is read, scaled, and written at a time, and the
  * write blocks until the sound card has room - so the loop runs at the speed of the music itself, and
@@ -25,7 +25,7 @@ import java.util.function.Supplier;
  * without a timer anywhere. The gain is ramped across each block rather than applied as a step, which is
  * what keeps a moving duck, and a dragged volume slider, from clicking.
  * <p>
- * <b>Why it does not need the companion running.</b> A commander may want music with the companion shut
+ * <b>Why it does not need VEGA running.</b> A commander may want music with VEGA shut
  * down, so the player is started on demand rather than as one of the application's services. With nothing
  * speaking, {@code VoiceLevelTap} simply reports silence and the music plays at full volume.
  */

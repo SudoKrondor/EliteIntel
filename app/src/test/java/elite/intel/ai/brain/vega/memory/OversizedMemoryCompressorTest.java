@@ -1,8 +1,8 @@
 package elite.intel.ai.brain.vega.memory;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.vega.CompanionRuntimeGeneration;
-import elite.intel.ai.brain.vega.diag.CompanionMemoryDump;
+import elite.intel.ai.brain.vega.VegaRuntimeGeneration;
+import elite.intel.ai.brain.vega.diag.VegaMemoryDump;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
 import elite.intel.ai.brain.vega.model.llm.LlmRequest;
 import elite.intel.ai.brain.vega.model.llm.LlmResult;
@@ -27,7 +27,7 @@ class OversizedMemoryCompressorTest {
         llm.response = CompletableFuture.completedFuture(speakResult(
                 "Route: Kharan/Yang Enterprise to Sinufee/Leonid Progress;\nthen to Cubeo/Medupe City."));
         OversizedMemoryCompressor compressor = new OversizedMemoryCompressor(
-                memory, llm, new CompanionRuntimeGeneration(), Runnable::run);
+                memory, llm, new VegaRuntimeGeneration(), Runnable::run);
         memory.setOversizedMemoryListener(compressor);
         String fullAnswer = "The first route leg contains many spoken details. "
                 + "The second route leg contains the remaining destination details. ".repeat(8);
@@ -47,9 +47,9 @@ class OversizedMemoryCompressorTest {
         assertEquals(2, stored.entryCount());
         assertEquals("current trade route", stored.commanderText());
         assertEquals("Route: Kharan/Yang Enterprise to Sinufee/Leonid Progress; then to Cubeo/Medupe City.",
-                stored.companionText());
-        assertFalse(stored.companionText().endsWith("..."));
-        String dump = CompanionMemoryDump.toJson(memory.snapshot());
+                stored.vegaText());
+        assertFalse(stored.vegaText().endsWith("..."));
+        String dump = VegaMemoryDump.toJson(memory.snapshot());
         assertTrue(dump.contains("Route: Kharan/Yang Enterprise"));
         assertFalse(dump.contains("The first route leg contains many spoken details"));
     }
@@ -60,7 +60,7 @@ class OversizedMemoryCompressorTest {
         FakeLlm llm = new FakeLlm();
         llm.response = CompletableFuture.failedFuture(new IllegalStateException("offline"));
         OversizedMemoryCompressor compressor = new OversizedMemoryCompressor(
-                memory, llm, new CompanionRuntimeGeneration(), Runnable::run);
+                memory, llm, new VegaRuntimeGeneration(), Runnable::run);
         memory.setOversizedMemoryListener(compressor);
 
         memory.write(MemoryRecord.dialogue(
@@ -69,9 +69,9 @@ class OversizedMemoryCompressorTest {
         MemoryRecord stored = memory.readRecentHistory().getFirst();
         assertEquals(MemoryKind.DIALOGUE, stored.kind());
         assertEquals(2, stored.entryCount());
-        assertTrue(stored.companionText().length() <= CompanionMemoryPolicy.entryMaxChars());
-        assertTrue(stored.companionText().endsWith("..."));
-        assertFalse(stored.companionText().endsWith("pa..."));
+        assertTrue(stored.vegaText().length() <= VegaMemoryPolicy.entryMaxChars());
+        assertTrue(stored.vegaText().endsWith("..."));
+        assertFalse(stored.vegaText().endsWith("pa..."));
     }
 
     @Test
@@ -82,14 +82,14 @@ class OversizedMemoryCompressorTest {
                 "Route continues from Kharan through Sinufee to Cubeo.",
                 "The user wants a concise memory. Analysis and draft follow. ".repeat(8)));
         OversizedMemoryCompressor compressor = new OversizedMemoryCompressor(
-                memory, llm, new CompanionRuntimeGeneration(), Runnable::run);
+                memory, llm, new VegaRuntimeGeneration(), Runnable::run);
         memory.setOversizedMemoryListener(compressor);
 
         memory.write(MemoryRecord.dialogue(Instant.EPOCH,
-                "what is the route", "route detail ".repeat(CompanionMemoryPolicy.entryMaxChars())));
+                "what is the route", "route detail ".repeat(VegaMemoryPolicy.entryMaxChars())));
 
         assertEquals("Route continues from Kharan through Sinufee to Cubeo.",
-                memory.readRecentHistory().getFirst().companionText());
+                memory.readRecentHistory().getFirst().vegaText());
     }
 
     @Test
@@ -97,32 +97,32 @@ class OversizedMemoryCompressorTest {
         SessionMemoryGateway memory = new SessionMemoryGateway(text -> 0);
         FakeLlm llm = new FakeLlm();
         llm.response = CompletableFuture.completedFuture(speakResult(
-                "summary word ".repeat(CompanionMemoryPolicy.entryMaxChars())));
+                "summary word ".repeat(VegaMemoryPolicy.entryMaxChars())));
         OversizedMemoryCompressor compressor = new OversizedMemoryCompressor(
-                memory, llm, new CompanionRuntimeGeneration(), Runnable::run);
+                memory, llm, new VegaRuntimeGeneration(), Runnable::run);
         memory.setOversizedMemoryListener(compressor);
 
         memory.write(MemoryRecord.dialogue(Instant.EPOCH,
-                "what is the route", "route detail ".repeat(CompanionMemoryPolicy.entryMaxChars())));
+                "what is the route", "route detail ".repeat(VegaMemoryPolicy.entryMaxChars())));
 
         MemoryRecord stored = memory.readRecentHistory().getFirst();
         assertEquals(MemoryKind.DIALOGUE, stored.kind());
-        assertTrue(stored.companionText().length() <= CompanionMemoryPolicy.entryMaxChars());
-        assertTrue(stored.companionText().endsWith("..."));
+        assertTrue(stored.vegaText().length() <= VegaMemoryPolicy.entryMaxChars());
+        assertTrue(stored.vegaText().endsWith("..."));
     }
 
     @Test
     void closeInterruptsPendingCompressionAndPreventsLateRewrite() throws Exception {
         SessionMemoryGateway memory = new SessionMemoryGateway(text -> 0);
         BlockingLlm llm = new BlockingLlm();
-        CompanionRuntimeGeneration generation = new CompanionRuntimeGeneration();
+        VegaRuntimeGeneration generation = new VegaRuntimeGeneration();
         ExecutorService worker = Executors.newSingleThreadExecutor();
         OversizedMemoryCompressor compressor = new OversizedMemoryCompressor(
                 memory, llm, generation, worker);
         memory.setOversizedMemoryListener(compressor);
 
         memory.write(MemoryRecord.dialogue(Instant.EPOCH,
-                "what is the route", "route detail ".repeat(CompanionMemoryPolicy.entryMaxChars())));
+                "what is the route", "route detail ".repeat(VegaMemoryPolicy.entryMaxChars())));
         assertTrue(llm.started.await(1, TimeUnit.SECONDS));
 
         compressor.close();
@@ -131,7 +131,7 @@ class OversizedMemoryCompressorTest {
         assertTrue(worker.awaitTermination(1, TimeUnit.SECONDS));
         assertTrue(memory.readRecentHistory().isEmpty());
         assertFalse(compressor.onOversized(MemoryRecord.dialogue(
-                Instant.ofEpochSecond(1), "later", "x".repeat(CompanionMemoryPolicy.entryMaxChars() + 1))));
+                Instant.ofEpochSecond(1), "later", "x".repeat(VegaMemoryPolicy.entryMaxChars() + 1))));
     }
 
     private static LlmResult speakResult(String text) {

@@ -3,7 +3,7 @@ package elite.intel.ai.brain.actions.handlers.commands.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.search.spansh.station.TradersAndBrokersSearch;
 import elite.intel.gameapi.search.spansh.station.traderandbroker.TraderType;
@@ -42,7 +42,7 @@ public final class FindEncodedMaterialTraderCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
-        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.trader.searching", TraderType.ENCODED.getType()), false);
+        VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.trader.searching", TraderType.ENCODED.getType()), false);
         TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
         RoutePlotter routePlotter = new RoutePlotter();
         return routePlotter.plotRoute(search.location(TraderType.ENCODED, null, range));

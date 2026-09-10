@@ -1,8 +1,8 @@
 package elite.intel.ai.brain.vega.input.en;
 
-import elite.intel.ai.brain.vega.CompanionConfig;
-import elite.intel.ai.brain.vega.input.CompanionEvalHarness;
-import elite.intel.ai.brain.vega.input.CompanionEvalHarness.Executed;
+import elite.intel.ai.brain.vega.VegaConfig;
+import elite.intel.ai.brain.vega.input.VegaEvalHarness;
+import elite.intel.ai.brain.vega.input.VegaEvalHarness.Executed;
 import org.junit.jupiter.api.*;
 
 import java.util.List;
@@ -10,7 +10,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
- * Theme 1 (English): does the companion understand and execute commander COMMANDS, including parameterized
+ * Theme 1 (English): does VEGA understand and execute commander COMMANDS, including parameterized
  * ones, and does the reflex fast-path fire for verbatim, safe, parameterless phrases WITHOUT reaching the LLM?
  * For each phrase it scores, from the recorded tool-calls, whether the expected command tool was called and
  * (for parameterized commands) whether the extracted argument carries the requested value; for reflex cases it
@@ -32,11 +32,11 @@ class CommandExecutionEvalTest {
     }
 
     /**
-     * The configured companion name, used to build name-addressed ("Vega, ...") command cases.
+     * The configured VEGA name, used to build name-addressed ("Vega, ...") command cases.
      */
-    private static final String NAME = CompanionConfig.companionName();
+    private static final String NAME = VegaConfig.vegaName();
 
-    private final CompanionEvalHarness h = new CompanionEvalHarness("companion-commands-eval-trace.txt");
+    private final VegaEvalHarness h = new VegaEvalHarness("vega-commands-eval-trace.txt");
 
     private final List<Case> cases = List.of(
             // LLM path: paraphrases / digit-vs-word / parameters need the model to classify or extract.
@@ -49,7 +49,7 @@ class CommandExecutionEvalTest {
             new Case("set the maximum number of trade stops to three", "trade_profile_set_max_stops", "3", false),
             // Subsystem targeting: parameterized, no synonym canonicalization, so it goes through the LLM, which
             // must execute target_subsystem with the verbatim subsystem rather than chatter (regression for the
-            // companion action-bias prompt rules - observed answering with status/FSD-target offers instead).
+            // VEGA action-bias prompt rules - observed answering with status/FSD-target offers instead).
             new Case("target drive", "target_subsystem", "drive", false),
             new Case("target power plant", "target_subsystem", "power", false),
             // Repeated-command regression (screen repro): the same direct command issued five times in a row.
@@ -61,7 +61,7 @@ class CommandExecutionEvalTest {
             new Case("target shield generator", "target_subsystem", "shield", false),
             new Case("target shield generator", "target_subsystem", "shield", false),
             // "Find" commands: parameterized search (key + optional max_distance/state). Same regression class as
-            // target_subsystem - the companion previously lost the param examples/hints and chattered instead of
+            // target_subsystem - VEGA previously lost the param examples/hints and chattered instead of
             // executing. Verifies the command fires and carries the searched value.
             new Case("find where we can buy gold within 80 light years", "find_commodity", "gold", false),
             new Case("find a mining site for painite", "find_mining_site", "painite", false),
@@ -70,7 +70,7 @@ class CommandExecutionEvalTest {
             new Case("find hunting grounds within 50 light years", "find_hunting_grounds", "50", false),
             new Case("navigate to active mission", "navigate_to_active_mission", null, false),
             new Case("calculate neutron star route at 60 efficiency", "calculate_neutron_star_route", "60", false),
-            // Regression: companion refused "display carrier management" on first request ("Sorry, I can't do
+            // Regression: VEGA refused "display carrier management" on first request ("Sorry, I can't do
             // that right now.") and only opened the panel on a follow-up. Must execute on the first request.
             new Case("display carrier management", "display_fleet_carrier_management_panel", null, false),
             // Toggle commands: state:boolean param (group 6-11). Must execute with the correct on/off state.
@@ -81,7 +81,7 @@ class CommandExecutionEvalTest {
             new Case("disable radar announcements", "toggle_radar_announcements", "false", false),
             new Case("turn off the radio", "toggle_radio", "false", false),
             // Bare panel names: no synonym canonicalization, so they go through the LLM, which must execute the
-            // matching command rather than chatter (regression for the companion action-bias prompt rules).
+            // matching command rather than chatter (regression for VEGA action-bias prompt rules).
             new Case("navigation", "show_navigation_panel", null, false),
             new Case("contacts", "show_contacts_panel", null, false),
             new Case("inventory", "show_inventory_panel", null, false),

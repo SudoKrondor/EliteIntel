@@ -2,9 +2,9 @@ package elite.intel.junit.gameapi.journal.subscribers;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.vega.CompanionNarrator;
-import elite.intel.ai.brain.vega.CompanionRuntimeGraph;
-import elite.intel.ai.brain.vega.CompanionRuntimeTestSupport;
+import elite.intel.ai.brain.vega.VegaNarrator;
+import elite.intel.ai.brain.vega.VegaRuntimeGraph;
+import elite.intel.ai.brain.vega.VegaRuntimeTestSupport;
 import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.gameapi.journal.events.CarrierJumpEvent;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
@@ -45,11 +45,11 @@ class CarrierArrivalVoyageReportTest {
     private final PlayerSession session = PlayerSession.getInstance();
     private final FleetCarrierRouteManager route = FleetCarrierRouteManager.getInstance();
     private final CapturingNarrator narrator = new CapturingNarrator();
-    private CompanionRuntimeGraph runtimeGraph;
+    private VegaRuntimeGraph runtimeGraph;
 
     @BeforeEach
     void installNarrator() {
-        runtimeGraph = CompanionRuntimeTestSupport.installNarrator(narrator);
+        runtimeGraph = VegaRuntimeTestSupport.installNarrator(narrator);
         route.clear();
         session.setFleetCarrierData(new CarrierDataDto());
         session.setLastKnownCarrierLocation("Struve 2398");
@@ -58,7 +58,7 @@ class CarrierArrivalVoyageReportTest {
     @AfterEach
     void clearNarrator() {
         route.clear();
-        CompanionRuntimeTestSupport.uninstall(runtimeGraph);
+        VegaRuntimeTestSupport.uninstall(runtimeGraph);
     }
 
     /**
@@ -146,7 +146,7 @@ class CarrierArrivalVoyageReportTest {
         return new CarrierJumpEvent(j);
     }
 
-    private static final class CapturingNarrator implements CompanionNarrator {
+    private static final class CapturingNarrator implements VegaNarrator {
         private final CountDownLatch latch = new CountDownLatch(1);
         volatile String data;
 

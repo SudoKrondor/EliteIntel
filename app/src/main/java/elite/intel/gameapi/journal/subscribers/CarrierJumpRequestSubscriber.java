@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.DeferredNotificationManager;
 import elite.intel.gameapi.journal.events.CarrierJumpRequestEvent;
 import elite.intel.session.PlayerSession;
@@ -60,7 +60,7 @@ public class CarrierJumpRequestSubscriber {
 
             long millis = Instant.parse(event.getDepartureTime()).toEpochMilli() - (1000 * 60 * 3);
             DeferredNotificationManager.getInstance().scheduleNotification(localizedEvent("event.carrier.departingThreeMinutes"), millis);
-            CompanionRuntime.narrator().narrate(data, instructions);
+            VegaRuntime.narrator().narrate(data, instructions);
         });
     }
 

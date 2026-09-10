@@ -5,7 +5,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Applies only per-language acoustic STT corrections to companion command-match text.
+ * Applies only per-language acoustic STT corrections to VEGA command-match text.
  * <p>
  * Replacements are whole Unicode words or phrases, so a correction such as {@code of -> off} cannot alter
  * a larger word such as {@code profile}. The caller keeps the original transcript for display and memory.

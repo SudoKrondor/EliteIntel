@@ -9,7 +9,7 @@ import java.util.*;
 /**
  * Which of the two carriers Elite exposes a commander meant: their own fleet carrier, or their squadron's.
  * <p>
- * Both carriers answer identical questions (fuel, finances, route, ETA), so the companion offers ONE tool per
+ * Both carriers answer identical questions (fuel, finances, route, ETA), so VEGA offers ONE tool per
  * question and resolves the owner HERE, from the commander's own words. Keeping a fleet tool beside a near-identical
  * squadron tool made semantic retrieval and the small local model distinguish sibling functions from phrases that
  * differ by one qualifier ("carrier status" / "squadron carrier status").
@@ -70,7 +70,7 @@ public enum CarrierOwnership {
 
     /**
      * The commander's INPUT language (as the aliases use), not the AI's response language: these stems are
-     * matched against what the commander said, not against what the companion is about to say back.
+     * matched against what the commander said, not against what VEGA is about to say back.
      */
     private static Set<String> squadronStems() {
         return squadronStems(SystemSession.getInstance().getLanguage());

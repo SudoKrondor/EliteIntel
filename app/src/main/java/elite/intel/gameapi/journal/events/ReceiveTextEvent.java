@@ -74,7 +74,7 @@ public class ReceiveTextEvent extends BaseEvent {
     }
 
     /**
-     * Payload-dependent. Almost all text is high-frequency NPC chatter the companion ignores. The one
+     * Payload-dependent. Almost all text is high-frequency NPC chatter VEGA ignores. The one
      * exception is a pirate hail while we are carrying cargo - a real threat - which
      * TransmissionReceivedSubscriber voices via EventNarrator (now narrating in every mode), so it is
      * NORMAL (memory only, not re-spoken by the consciousness).

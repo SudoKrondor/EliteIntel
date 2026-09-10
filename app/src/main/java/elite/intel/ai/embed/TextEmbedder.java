@@ -3,7 +3,7 @@ package elite.intel.ai.embed;
 /**
  * Turns a piece of text into a dense vector ("embedding") whose direction encodes meaning: texts that
  * mean similar things produce vectors that point in similar directions, so closeness ({@link VectorMath#cosine})
- * measures semantic similarity rather than spelling overlap. This is the seam the companion's command
+ * measures semantic similarity rather than spelling overlap. This is the seam VEGA's command
  * selection and memory recall can sit on instead of the word-overlap reducers, so that inflected forms
  * ({@code авианосец / авианосцу / авианосцем}) and synonyms ({@code курс на авианосец / лети к авианосцу})
  * match without per-language declension or synonym tables.

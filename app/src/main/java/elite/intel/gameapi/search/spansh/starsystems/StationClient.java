@@ -2,7 +2,7 @@ package elite.intel.gameapi.search.spansh.starsystems;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.gameapi.search.spansh.client.SpanshClient;
 import elite.intel.util.json.GsonFactory;
 import org.apache.logging.log4j.LogManager;
@@ -62,7 +62,7 @@ public class StationClient extends SpanshClient {
                 HttpResponse<String> resp = httpClient.send(post, HttpResponse.BodyHandlers.ofString());
                 if (resp.statusCode() == 400) {
                     log.warn("POST failed: {}", resp.body());
-                    CompanionRuntime.narrator().narrate("Unable to complete Spansh request: " + resp.body(), "Issue a warning");
+                    VegaRuntime.narrator().narrate("Unable to complete Spansh request: " + resp.body(), "Issue a warning");
                 }
 
                 if (resp.statusCode() == 200) {

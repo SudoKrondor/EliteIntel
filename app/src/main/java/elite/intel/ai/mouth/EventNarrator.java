@@ -11,8 +11,8 @@ import elite.intel.eventbus.GameEventBus;
  *
  * <p>These are functional and safety-critical callouts (fuel/oxygen/hull warnings, ship proximity,
  * target scan, pirate alert, cargo-scan detected, kill confirmation, crime alert, etc.) that the
- * commander needs in every mode - so they narrate <strong>regardless of companion mode</strong>. The
- * companion consciousness does not re-speak them: every event whose voice is owned here is classified
+ * commander needs in every mode - so they narrate <strong>regardless of VEGA</strong>. The
+ * VEGA consciousness does not re-speak them: every event whose voice is owned here is classified
  * {@link elite.intel.gameapi.journal.events.BaseEvent.Importance#NORMAL}, which keeps it in memory but
  * off the consciousness's spoken channel, so there is no double narration.
  *

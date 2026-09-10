@@ -10,9 +10,9 @@ package elite.intel.ai.mouth;
  * main mouth there is a single engine and radio is serialised through its own queue, so the gate is
  * never contended.
  * <p>
- * Companion speech reaches the same active Mouth through {@code VocalisationRequestEvent}, so it is bracketed
+ * VEGA speech reaches the same active Mouth through {@code VocalisationRequestEvent}, so it is bracketed
  * here as main-voice playback too. A dedicated radio-role Kokoro engine therefore waits behind both system and
- * companion speech.
+ * VEGA speech.
  */
 public final class MainVoicePlaybackGate {
 

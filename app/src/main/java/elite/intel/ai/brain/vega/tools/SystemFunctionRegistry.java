@@ -12,7 +12,7 @@ import java.util.*;
 /**
  * Scans {@code elite.intel.ai.brain.vega} for {@link RegisterSystemFunction} classes, instantiates
  * them via no-arg constructor, and stores them by {@code id()}. Mirror of {@code CommandRegistry} for
- * companion system functions.
+ * VEGA system functions.
  */
 public final class SystemFunctionRegistry {
 

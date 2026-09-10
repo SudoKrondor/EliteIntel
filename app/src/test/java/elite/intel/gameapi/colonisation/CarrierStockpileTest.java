@@ -198,7 +198,7 @@ class CarrierStockpileTest {
 
     /**
      * A carrier saved before we ever timestamped a market read is not thereby ancient - it is undated, and
-     * inventing an age would have the companion warn about perfectly good figures.
+     * inventing an age would have VEGA warn about perfectly good figures.
      */
     @Test
     void aCarrierWeHaveNeverTimestampedIsNotCalledStale() {

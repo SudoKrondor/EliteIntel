@@ -1,9 +1,8 @@
 package elite.intel.ai.brain.vega.prompt;
 
 import elite.intel.ai.brain.ShipPersonality;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
-import elite.intel.ai.brain.vega.prompt.CompanionSystemPrompt;
+import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.managers.ShipLoadoutManager;
 import elite.intel.db.managers.ShipManager;
@@ -21,12 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@link SystemSession#getAIPersonality()}) actually reaches the rendered COMMANDER prompt:
  * {@code {personalityClause}} is filled from the CURRENT personality on
  * every render (no stale in-memory field, no cached static prefix), so a switch shows up on the next turn. If
- * the companion "feels" unchanged after a switch, this test passing pins the cause to the model or the persona,
+ * VEGA "feels" unchanged after a switch, this test passing pins the cause to the model or the persona,
  * not to the switch failing to reach the prompt.
  */
 class PersonalitySwitchPromptTest {
 
-    private final CompanionSystemPrompt prompt = new CompanionSystemPrompt();
+    private final VegaSystemPrompt prompt = new VegaSystemPrompt();
     private ShipPersonality original;
 
     private String render() {

@@ -1,7 +1,7 @@
 package elite.intel.ai.brain.vega.prompt;
 
 import elite.intel.ai.brain.i18n.TrailingStringAliasMatcher;
-import elite.intel.ai.brain.vega.diag.CompanionDiagnostics;
+import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
 import elite.intel.ai.brain.vega.model.GameStateSnapshot;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
 import elite.intel.ai.brain.vega.model.llm.LlmToolDefinition;
@@ -22,7 +22,7 @@ import java.util.function.Supplier;
  * Selects game tools by semantic similarity. Exact prefixes for trailing string parameters are retained in
  * addition to semantic candidates, and word overlap is the fallback when embedding is unavailable.
  */
-public final class SemanticActionReducer implements CompanionActionReducer {
+public final class SemanticActionReducer implements VegaActionReducer {
 
     private static final Logger log = LogManager.getLogger(SemanticActionReducer.class);
 
@@ -36,7 +36,7 @@ public final class SemanticActionReducer implements CompanionActionReducer {
     private final BiFunction<Set<IntelActionCategory>, GameStateSnapshot,
             List<GameToolCandidates.Candidate>> candidateSource;
     private final Supplier<SemanticPhraseMatcher> matcherSupplier;
-    private final CompanionActionReducer wordOverlapFallback;
+    private final VegaActionReducer wordOverlapFallback;
 
     /** Production: live candidates, the shared process-wide embedder, and a word-overlap reducer for degradation. */
     public SemanticActionReducer() {
@@ -48,7 +48,7 @@ public final class SemanticActionReducer implements CompanionActionReducer {
     /**
      * A reducer that scores with the shared embedder but takes candidate visibility from the given source
      * instead of the live game. Used by the Help tab to preview routing for a picked what-if situation and the
-     * current language, rather than the running companion reducer's frozen live-game context.
+     * current language, rather than the running VEGA reducer's frozen live-game context.
      */
     public static SemanticActionReducer withCandidateSource(
             Function<Set<IntelActionCategory>, List<GameToolCandidates.Candidate>> candidateSource) {
@@ -58,7 +58,7 @@ public final class SemanticActionReducer implements CompanionActionReducer {
     /** Test seam: inject a fixed candidate source, a matcher supplier (may return {@code null}), and the fallback. */
     SemanticActionReducer(Function<Set<IntelActionCategory>, List<GameToolCandidates.Candidate>> candidateSource,
                           Supplier<SemanticPhraseMatcher> matcherSupplier,
-                          CompanionActionReducer wordOverlapFallback) {
+                          VegaActionReducer wordOverlapFallback) {
         this((categories, snapshot) -> candidateSource.apply(categories), matcherSupplier, wordOverlapFallback);
     }
 
@@ -66,7 +66,7 @@ public final class SemanticActionReducer implements CompanionActionReducer {
     SemanticActionReducer(BiFunction<Set<IntelActionCategory>, GameStateSnapshot,
             List<GameToolCandidates.Candidate>> candidateSource,
                           Supplier<SemanticPhraseMatcher> matcherSupplier,
-                          CompanionActionReducer wordOverlapFallback) {
+                          VegaActionReducer wordOverlapFallback) {
         this.candidateSource = candidateSource;
         this.matcherSupplier = matcherSupplier;
         this.wordOverlapFallback = wordOverlapFallback;
@@ -91,7 +91,7 @@ public final class SemanticActionReducer implements CompanionActionReducer {
                 allowedCategories, currentInput, semanticQuery, gameStateSnapshot);
         // A structured shortlist distinguishes reducer misses from later model-selection misses.
         if (DiagnosticsMode.isEnabled() && !allowedCategories.isEmpty()) {
-            DiagnosticsLog.write("DIAG reducer-candidates=" + CompanionDiagnostics.names(selected));
+            DiagnosticsLog.write("DIAG reducer-candidates=" + VegaDiagnostics.names(selected));
         }
         return selected;
     }
@@ -115,21 +115,21 @@ public final class SemanticActionReducer implements CompanionActionReducer {
         List<GameToolCandidates.Candidate> candidates = candidateSource.apply(allowedCategories, gameStateSnapshot);
         if (candidates.isEmpty()) {
             if (!allowedCategories.isEmpty()) {
-                CompanionDiagnostics.debugAmbient("reduce", "semantic: no candidates for " + allowedCategories);
+                VegaDiagnostics.debugAmbient("reduce", "semantic: no candidates for " + allowedCategories);
             }
             return List.of();
         }
         List<LlmToolDefinition> exactParameterized = exactParameterizedMatches(candidates, currentInput);
         // A blank input has no meaning to embed; the word-overlap fallback owns the "offer all" blank-input rule.
         if (currentInput == null || currentInput.isBlank()) {
-            CompanionDiagnostics.debugAmbient("reduce", "semantic: blank input -> word-overlap fallback");
+            VegaDiagnostics.debugAmbient("reduce", "semantic: blank input -> word-overlap fallback");
             return mergeExactMatches(exactParameterized,
                     wordOverlapFallback.selectTools(allowedCategories, currentInput, null, gameStateSnapshot));
         }
         SemanticPhraseMatcher matcher = matcherSupplier.get();
         if (matcher == null) {
             // Embedding model unavailable: degrade to word-overlap for the rest of the session (documented contract).
-            CompanionDiagnostics.debugAmbient("reduce", "semantic: embedding model unavailable -> word-overlap fallback");
+            VegaDiagnostics.debugAmbient("reduce", "semantic: embedding model unavailable -> word-overlap fallback");
             return mergeExactMatches(exactParameterized,
                     wordOverlapFallback.selectTools(allowedCategories, currentInput, null, gameStateSnapshot));
         }
@@ -139,7 +139,7 @@ public final class SemanticActionReducer implements CompanionActionReducer {
         } catch (RuntimeException embedFailure) {
             // A transient embedding failure must not make every game command unavailable.
             log.warn("Semantic reduction failed; falling back to word-overlap for this turn", embedFailure);
-            CompanionDiagnostics.debugAmbient("reduce", "semantic: embed failed -> word-overlap fallback");
+            VegaDiagnostics.debugAmbient("reduce", "semantic: embed failed -> word-overlap fallback");
             return mergeExactMatches(exactParameterized,
                     wordOverlapFallback.selectTools(allowedCategories, currentInput, null, gameStateSnapshot));
         }
@@ -197,8 +197,8 @@ public final class SemanticActionReducer implements CompanionActionReducer {
                 merged.add(tool);
             }
         }
-        CompanionDiagnostics.debugAmbient("reduce", "parameterized trigger retained -> "
-                + CompanionDiagnostics.names(merged));
+        VegaDiagnostics.debugAmbient("reduce", "parameterized trigger retained -> "
+                + VegaDiagnostics.names(merged));
         return List.copyOf(merged);
     }
 
@@ -223,7 +223,7 @@ public final class SemanticActionReducer implements CompanionActionReducer {
             best = Math.max(best, scores[i]);
         }
         if (best < SEM_FLOOR) {
-            CompanionDiagnostics.debugAmbient("reduce", String.format(Locale.ROOT,
+            VegaDiagnostics.debugAmbient("reduce", String.format(Locale.ROOT,
                     "semantic: candidates=%d best=%.3f < floor %.2f -> no game tools (conversation/recall)",
                     candidates.size(), best, SEM_FLOOR));
             return List.of();
@@ -250,9 +250,9 @@ public final class SemanticActionReducer implements CompanionActionReducer {
                 result.add(candidate.tool());
             }
         }
-        CompanionDiagnostics.debugAmbient("reduce", String.format(Locale.ROOT,
+        VegaDiagnostics.debugAmbient("reduce", String.format(Locale.ROOT,
                 "semantic: candidates=%d best=%.3f cutoff=%.3f kept=%d -> %s",
-                candidates.size(), best, cutoff, result.size(), CompanionDiagnostics.names(result)));
+                candidates.size(), best, cutoff, result.size(), VegaDiagnostics.names(result)));
         return result;
     }
 }

@@ -15,7 +15,7 @@ import java.util.Objects;
  * <p>
  * There is deliberately no tier below this one. A retained history and its LLM-written summaries existed here until
  * the only thing that read them - an explicit recall query - was removed; everything they collected was then written
- * and never read again, at the cost of a model call per batch. What the companion knows about the game comes from
+ * and never read again, at the cost of a model call per batch. What VEGA knows about the game comes from
  * the live {@code <facts>} block and the game queries, both of which read the database, not from stored conversation.
  */
 public final class SessionMemoryGateway implements MemoryGateway {
@@ -84,7 +84,7 @@ public final class SessionMemoryGateway implements MemoryGateway {
     }
 
     private static boolean hasOversizedEntry(MemoryRecord record) {
-        int max = CompanionMemoryPolicy.entryMaxChars();
+        int max = VegaMemoryPolicy.entryMaxChars();
         return record.entries().stream().anyMatch(entry -> entry.content().length() > max);
     }
 

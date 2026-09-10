@@ -6,13 +6,17 @@ package elite.intel.ai.brain.vega.model.memory;
  */
 public enum MemorySource {
     COMMANDER,
-    /** The companion's own reply in a completed dialogue or query record. */
-    COMPANION;
+    /**
+     * VEGA's own reply in a completed dialogue or query record.
+     */
+    VEGA;
 
-    /** Uses the configured companion name for its lines and stable enum names for every other source. */
-    public String displayLabel(String companionName) {
-        return this == COMPANION && companionName != null && !companionName.isBlank()
-                ? companionName.trim()
+    /**
+     * Uses the configured AI name for its lines and stable enum names for every other source.
+     */
+    public String displayLabel(String vegaName) {
+        return this == VEGA && vegaName != null && !vegaName.isBlank()
+                ? vegaName.trim()
                 : name();
     }
 }

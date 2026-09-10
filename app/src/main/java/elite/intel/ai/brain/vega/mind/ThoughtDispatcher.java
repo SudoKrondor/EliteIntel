@@ -1,10 +1,10 @@
 package elite.intel.ai.brain.vega.mind;
 
 import elite.intel.ai.brain.i18n.PhoneticInputNormalizer;
-import elite.intel.ai.brain.vega.CompanionAddressing;
-import elite.intel.ai.brain.vega.CompanionConfig;
+import elite.intel.ai.brain.vega.VegaAddressing;
+import elite.intel.ai.brain.vega.VegaConfig;
 import elite.intel.ai.brain.vega.clarify.PendingClarification;
-import elite.intel.ai.brain.vega.diag.CompanionDiagnostics;
+import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
 import elite.intel.ai.brain.vega.model.GameStateSnapshot;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
 import elite.intel.ai.brain.vega.model.Urgency;
@@ -51,7 +51,7 @@ public final class ThoughtDispatcher implements ManagedService {
     /** Grace period for a lane to drain on stop before its live thoughts are force-interrupted. */
     private static final long SHUTDOWN_WAIT_MILLIS = 5000;
     /** A thought running longer than this is force-interrupted by the watchdog (§2.3 / §7.2 setting). */
-    private static final long WATCHDOG_TIMEOUT_MILLIS = CompanionConfig.thoughtWatchdogTimeout().toMillis();
+    private static final long WATCHDOG_TIMEOUT_MILLIS = VegaConfig.thoughtWatchdogTimeout().toMillis();
     /** How often the watchdog checks the live thoughts. */
     private static final long WATCHDOG_INTERVAL_MILLIS = 5_000;
 
@@ -135,7 +135,7 @@ public final class ThoughtDispatcher implements ManagedService {
      * matched, {@code (exact)} or {@code (fuzzy)}.
      * <p>
      * The canonical form is also what is echoed to the listeners of {@code NormalizedUserInputEvent} (chat log,
-     * HUD overlay, diagnostics log), so what the commander sees quoted back is what the companion routed on.
+     * HUD overlay, diagnostics log), so what the commander sees quoted back is what VEGA routed on.
      */
     public void submitCommanderInput(String input) {
         if (input == null || input.isBlank()) {
@@ -148,21 +148,21 @@ public final class ThoughtDispatcher implements ManagedService {
         // changing player_status row independently.
         GameStateSnapshot gameStateSnapshot = GameStateSnapshot.capture();
         Urgency urgency = urgencyPolicy.forCommander(input);
-        // Strip a leading vocative address by the companion's own name ("Vega, all stop", or - as STT usually
+        // Strip a leading vocative address by VEGA's own name ("Vega, all stop", or - as STT usually
         // returns it, with no comma - "Vega all stop" / "Вега все стоп") before normalizing, for BOTH paths: the
         // reflex fast-path and the LLM path (the reducer, prompt current-input, and eligible memory). The name carries no
         // routing signal and can distract the model from the command. Raw STT stays only in intake diagnostics
         // and the execution request; a completed dialogue/query remembers the normalized match text.
-        String rawStripped = CompanionAddressing.stripLeadingName(input);
+        String rawStripped = VegaAddressing.stripLeadingName(input);
         String matchInput = inputNormalizer.apply(rawStripped);
         ThoughtContext context = ThoughtContext.commander(
                 urgency, input, matchInput, acceptedAtNanos, gameStateSnapshot)
                 .withPendingClarification(pendingClarification);
         dependencies.state().setLastCommanderMatchInput(matchInput); // observer snapshot only; this turn owns context
         UiBus.publish(new CommanderMatchInputChangedEvent(matchInput, gameStateSnapshot));
-        // The chat log, the HUD overlay and the diagnostics log show the words the companion actually acted on,
+        // The chat log, the HUD overlay and the diagnostics log show the words VEGA actually acted on,
         // not the raw transcript. An acoustic correction made here ("request lensing permission" -> "request
-        // landing permission") otherwise reads as a mishearing the companion somehow got right anyway.
+        // landing permission") otherwise reads as a mishearing VEGA somehow got right anyway.
         if (!matchInput.isBlank()) {
             GameEventBus.publish(new NormalizedUserInputEvent(matchInput));
         }
@@ -179,45 +179,45 @@ public final class ThoughtDispatcher implements ManagedService {
                 ? "reflex " + reflexCommand.get().actionId() + reflexCommand.get().arguments()
                 + " (" + reflexCommand.get().matchKind().name().toLowerCase(Locale.ROOT) + ")"
                 : "think";
-        CompanionDiagnostics.info(thought.trace(), "intake",
-                "\"" + CompanionDiagnostics.truncate(input) + "\" -> " + route);
+        VegaDiagnostics.info(thought.trace(), "intake",
+                "\"" + VegaDiagnostics.truncate(input) + "\" -> " + route);
         if (pendingClarification != null) {
             String disposition = reflexCommand.isPresent() ? "superseded by reflex" : "claimed for continuation";
-            CompanionDiagnostics.debug(thought.trace(), "clarify",
+            VegaDiagnostics.debug(thought.trace(), "clarify",
                     pendingClarification.actionId() + "." + pendingClarification.parameterName()
                             + " " + disposition);
         }
         if (!matchInput.equals(input)) {
             // The normalized/name-stripped form actually used for tool matching and the LLM current-input.
-            CompanionDiagnostics.debug(thought.trace(), "intake", "match text: \"" + CompanionDiagnostics.truncate(matchInput) + "\"");
+            VegaDiagnostics.debug(thought.trace(), "intake", "match text: \"" + VegaDiagnostics.truncate(matchInput) + "\"");
         }
         enqueue(ThoughtSource.COMMANDER, thought, urgency);
     }
 
     /**
-     * Accepts a gameplay subscriber's request to <b>react out loud</b> (a {@code CompanionReactionEvent}) and
+     * Accepts a gameplay subscriber's request to <b>react out loud</b> (made through {@link VegaNarrator}) and
      * queues a reactive {@link EventThought} on the EVENT lane. Event data and instructions exist only in the
-     * bounded narration request; after success, only the model's final spoken line becomes an EVENT fact.
+     * bounded narration request, and the spoken line is not stored.
      */
     public void submitEventReaction(String stimulus, String instructions, Urgency urgency) {
         if (stimulus == null || stimulus.isBlank()) {
             return;
         }
         Thought thought = Thought.eventReaction(urgency, stimulus, instructions, dependencies);
-        CompanionDiagnostics.debug(thought.trace(), "event", "reaction");
+        VegaDiagnostics.debug(thought.trace(), "event", "reaction");
         enqueue(ThoughtSource.EVENT, thought, urgency);
     }
 
     /**
      * Accepts a gameplay subscriber's <b>finished phrase</b> to voice verbatim (no LLM) and queues a verbatim
-     * {@link EventThought} on the EVENT lane. The finished phrase itself becomes the single EVENT fact.
+     * {@link EventThought} on the EVENT lane. The finished phrase is voiced and not stored.
      */
     public void submitEventVerbatim(String phrase, Urgency urgency) {
         if (phrase == null || phrase.isBlank()) {
             return;
         }
         Thought thought = Thought.eventVerbatim(urgency, phrase, dependencies);
-        CompanionDiagnostics.debug(thought.trace(), "event", "verbatim");
+        VegaDiagnostics.debug(thought.trace(), "event", "verbatim");
         enqueue(ThoughtSource.EVENT, thought, urgency);
     }
 
@@ -230,8 +230,8 @@ public final class ThoughtDispatcher implements ManagedService {
                 // Commander cognition is one ordered stream: prompt and tool selection follow intake order. Slow
                 // game handlers detach while the lane keeps their lifecycle live,
                 // so this worker accepts the next turn immediately after dispatch. EVENT remains single-worker too.
-                built.put(ThoughtSource.COMMANDER, new ThoughtLane("companion-commander", 1));
-                built.put(ThoughtSource.EVENT, new ThoughtLane("companion-event", 1));
+                built.put(ThoughtSource.COMMANDER, new ThoughtLane("vega-commander", 1));
+                built.put(ThoughtSource.EVENT, new ThoughtLane("vega-event", 1));
                 lanes = built; // single volatile publish of the fully-built lane set
                 newlyStartedLanes = built;
             } catch (RuntimeException | Error startupFailure) {
@@ -243,7 +243,7 @@ public final class ThoughtDispatcher implements ManagedService {
             ScheduledExecutorService newlyStartedWatchdog = null;
             try {
                 newlyStartedWatchdog = Executors.newSingleThreadScheduledExecutor(runnable -> {
-                    Thread thread = new Thread(runnable, "companion-watchdog");
+                    Thread thread = new Thread(runnable, "vega-watchdog");
                     thread.setDaemon(true);
                     return thread;
                 });
@@ -280,7 +280,7 @@ public final class ThoughtDispatcher implements ManagedService {
 
     /** Interrupts every live thought on barge-in (§2.15); the dispatcher owns the thought lifecycle, not speech. */
     public void interruptLiveThoughts() {
-        CompanionDiagnostics.debug(CompanionDiagnostics.SYSTEM, "barge-in", "interrupting live thoughts");
+        VegaDiagnostics.debug(VegaDiagnostics.SYSTEM, "barge-in", "interrupting live thoughts");
         interruptLive();
     }
 
@@ -322,7 +322,7 @@ public final class ThoughtDispatcher implements ManagedService {
             }
         } catch (RuntimeException unexpected) {
             // Never let a tick failure cancel the periodic schedule (scheduleAtFixedRate stops on throw).
-            log.error("Companion watchdog tick failed", unexpected);
+            log.error("VEGA watchdog tick failed", unexpected);
         }
     }
 

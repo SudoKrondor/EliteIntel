@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.GlobalSettingsManager;
 import elite.intel.gameapi.journal.events.StartJumpEvent;
 import elite.intel.gameapi.search.edsm.EdsmApiClient;
@@ -58,7 +58,7 @@ public class StartJumpSubscriber {
                                 - IF no deaths data is available, omit mentioning fatalities.
                             """;
                     SleepNoThrow.sleep(3000);
-                    CompanionRuntime.narrator().narrate(sb.toString(), instructions);
+                    VegaRuntime.narrator().narrate(sb.toString(), instructions);
                 }
             }); // end virtual thread
         }

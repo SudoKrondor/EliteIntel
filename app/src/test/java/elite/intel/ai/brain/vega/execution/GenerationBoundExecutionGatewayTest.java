@@ -1,9 +1,7 @@
 package elite.intel.ai.brain.vega.execution;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.vega.CompanionRuntimeGeneration;
-import elite.intel.ai.brain.vega.execution.ExecutionGateway;
-import elite.intel.ai.brain.vega.execution.GenerationBoundExecutionGateway;
+import elite.intel.ai.brain.vega.VegaRuntimeGeneration;
 import elite.intel.ai.brain.vega.model.execution.ExecutionRequest;
 import org.junit.jupiter.api.Test;
 
@@ -11,10 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class GenerationBoundExecutionGatewayTest {
 
@@ -22,7 +17,7 @@ class GenerationBoundExecutionGatewayTest {
     void closeCancelsOwnedResultClosesDelegateAndRejectsNewWork() {
         RecordingExecutionGateway delegate = new RecordingExecutionGateway();
         GenerationBoundExecutionGateway gateway = new GenerationBoundExecutionGateway(
-                delegate, new CompanionRuntimeGeneration());
+                delegate, new VegaRuntimeGeneration());
 
         CompletableFuture<JsonObject> pendingResult = gateway.submit(
                 new ExecutionRequest("request-1", "ship_status", new JsonObject()));
@@ -39,7 +34,7 @@ class GenerationBoundExecutionGatewayTest {
     void closeIsIdempotent() {
         RecordingExecutionGateway delegate = new RecordingExecutionGateway();
         GenerationBoundExecutionGateway gateway = new GenerationBoundExecutionGateway(
-                delegate, new CompanionRuntimeGeneration());
+                delegate, new VegaRuntimeGeneration());
 
         gateway.close();
         gateway.close();

@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.NeutronStarRouteManager;
 import elite.intel.db.managers.ShipLoadoutManager;
@@ -126,7 +126,7 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
             return StringUtls.localizedResponse("handler.neutronRoute.notFound");
         }
 
-        CompanionRuntime.narrator().filler(calculatingLine(origin, destination, efficiency, supercharge), false);
+        VegaRuntime.narrator().filler(calculatingLine(origin, destination, efficiency, supercharge), false);
 
         ShipLoadOutDto shipLoadout = shipLoadoutManager.get();
         if (shipLoadout == null) {
@@ -135,9 +135,9 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
 
         double maxJumpRange = shipLoadout.getMaxJumpRange();
         // Non-terminal warning: the route calculation below must still run, so voice the line via
-        // CompanionRuntime.narrator().filler (spoken, not remembered) instead of returning here.
+        // VegaRuntime.narrator().filler (spoken, not remembered) instead of returning here.
         if (maxJumpRange < 20) {
-            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.neutronRoute.lowRangeWarning"), false);
+            VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.neutronRoute.lowRangeWarning"), false);
         }
 
 
@@ -161,7 +161,7 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
             outcome = StringUtls.localizedResponse("handler.neutronRoute.notFound");
         }
 
-        CompanionRuntime.narrator().announce(outcome, false);
+        VegaRuntime.narrator().announce(outcome, false);
         return null;
     }
 

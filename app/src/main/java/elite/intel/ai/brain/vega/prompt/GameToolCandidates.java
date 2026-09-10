@@ -25,7 +25,9 @@ import java.util.Set;
 /** Builds provider-neutral game-tool candidates from visible actions and localized aliases. */
 public final class GameToolCandidates {
 
-    /** Legacy-path fallback ids the companion never offers; it has its own speak. */
+    /**
+     * Legacy-path fallback ids VEGA never offers; it has its own speak.
+     */
     private static final Set<String> EXCLUDED_IDS = Set.of(
             GeneralConversationQuery.ID,
             ConnectionCheckQuery.ID,
@@ -120,7 +122,7 @@ public final class GameToolCandidates {
         for (IntelAction action : actions.values()) {
             String id = action.id();
             if (EXCLUDED_IDS.contains(id)
-                    || !action.isAvailableIn(IntelActionContext.COMPANION_COMMANDER)
+                    || !action.isAvailableIn(IntelActionContext.VEGA_COMMANDER)
                     || (gateOnVisibility && !action.isVisibleForLLM(status))) {
                 continue;
             }
@@ -169,7 +171,7 @@ public final class GameToolCandidates {
 
     /**
      * Appends the action's English trigger phrases to its tool description, giving the model concrete phrasings
-     * to match against. The companion path otherwise shows it only the abstract English purpose, never the
+     * to match against. VEGA path otherwise shows it only the abstract English purpose, never the
      * phrases (unlike the legacy "action &lt;- phrases" prompt). English on purpose: the schema is English, the
      * model translates non-English input to English before selecting, and an English description stays
      * identical across languages (one cache prefix). Parameter annotations ({@code {key:X}}) are stripped - the

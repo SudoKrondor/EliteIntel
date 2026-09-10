@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.dao.DestinationReminderDao;
 import elite.intel.db.dao.RouteMonetisationDao.MonetisationTransaction;
@@ -128,15 +128,15 @@ public class JumpCompletedSubscriber {
 
             if (!event.isReplay()) {
                 if (playerSession.isRouteAnnouncementOn()) {
-                    CompanionRuntime.narrator().narrate(sb.toString(), "Announce this route information.");
+                    VegaRuntime.narrator().narrate(sb.toString(), "Announce this route information.");
                 }
                 if (isSellerSystem && station != null) {
-                    CompanionRuntime.narrator().narrate(
+                    VegaRuntime.narrator().narrate(
                             "Head to " + station.getSourceStationName() + " buy " + station.getSourceCommodity(),
                             "Remind the commander of their active trade route: state the station name and the commodity to buy.");
                 }
                 if (isBuyerSystem && station != null) {
-                    CompanionRuntime.narrator().narrate(
+                    VegaRuntime.narrator().narrate(
                             "Head to " + station.getDestinationStationName() + " sell " + station.getDestinationCommodity(),
                             "Remind the commander of their active trade route: state the station name and the commodity to sell.");
                 }

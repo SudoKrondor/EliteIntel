@@ -6,7 +6,7 @@ import elite.intel.ai.brain.vega.model.llm.LlmResult;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * The single door to the language models for companion mode. Queues {@code LlmRequest}s (never
+ * The single door to the language models for VEGA. Queues {@code LlmRequest}s (never
  * {@code Thought}s), performs native tool-calling, and enforces the tool-call-only contract with one protocol
  * repair for invalid model output. A transient HTTP failure gets a short ladder of jittered resends; a
  * transport failure that outlives the ladder - and any permanent one - reports
@@ -16,7 +16,7 @@ import java.util.concurrent.CompletableFuture;
  * Threading: implementations are asynchronous and return immediately with a future.
  * <p>
  * Extends {@link AutoCloseable} so a caller that constructs a short-lived gateway (rather than the
- * long-lived one the companion runtime holds) can release its executor deterministically via
+ * long-lived one VEGA runtime holds) can release its executor deterministically via
  * try-with-resources. {@link #close()} defaults to a no-op for implementations that own no resources.
  */
 public interface LlmGateway extends AutoCloseable {

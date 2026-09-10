@@ -1,6 +1,6 @@
 package elite.intel.ai.brain.actions.handlers.commands.custom;
 
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.ai.brain.vega.model.Urgency;
 import elite.intel.ai.brain.vega.model.speech.SpeechRequest;
 import org.apache.logging.log4j.LogManager;
@@ -12,9 +12,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Default {@link CustomCommandSpeakExecutor}: voices a custom-command SPEAK step through the companion speech
+ * Default {@link CustomCommandSpeakExecutor}: voices a custom-command SPEAK step through VEGA speech
  * gateway and blocks until the gateway reports playback finished, or until the 30-second guard timeout elapses.
- * The companion owns speech, so this no longer detours through {@code AiVoxResponseEvent} (a system-only channel).
+ * VEGA owns speech, so this no longer detours through {@code AiVoxResponseEvent} (a system-only channel).
  * Speaking state belongs to the active Mouth; this executor only waits on the request's completion handle.
  */
 class SynchronousCustomCommandSpeech implements CustomCommandSpeakExecutor {
@@ -29,9 +29,9 @@ class SynchronousCustomCommandSpeech implements CustomCommandSpeakExecutor {
     @Override
     public void speak(String text) throws InterruptedException {
         try {
-            // The companion speech gateway's future completes when playback of this request ends, so blocking on
+            // VEGA speech gateway's future completes when playback of this request ends, so blocking on
             // it makes the SPEAK step wait exactly until the line has been spoken.
-            CompanionRuntime.speech()
+            VegaRuntime.speech()
                     .submit(new SpeechRequest(UUID.randomUUID().toString(), text, Urgency.NORMAL))
                     .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (TimeoutException e) {

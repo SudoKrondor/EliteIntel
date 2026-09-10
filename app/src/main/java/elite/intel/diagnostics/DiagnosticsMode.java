@@ -45,7 +45,7 @@ public final class DiagnosticsMode {
     }
 
     /**
-     * Applies the command language from {@code language.txt} at startup, before the companion (and its
+     * Applies the command language from {@code language.txt} at startup, before VEGA (and its
      * {@code SemanticActionReducer}) are built. The reducer freezes the language at construction, so this MUST
      * run before services start — a later {@code @lang} switch would set the session language but never reach
      * the already-built reducer, leaving it matching the boot language's aliases. No-op if the file is absent

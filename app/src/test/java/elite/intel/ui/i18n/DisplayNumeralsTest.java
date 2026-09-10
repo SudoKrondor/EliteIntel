@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * and then reads the same sentence in the chat log and on the overlay - where "one thousand two hundred
  * twenty-four tonnes" is what they asked us to stop showing them.
  * <p>
- * The lines below are the shape the companion actually produces.
+ * The lines below are the shape VEGA actually produces.
  */
 class DisplayNumeralsTest {
 

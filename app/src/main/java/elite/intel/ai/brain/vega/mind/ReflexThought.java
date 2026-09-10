@@ -1,7 +1,7 @@
 package elite.intel.ai.brain.vega.mind;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.vega.diag.CompanionDiagnostics;
+import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
 import elite.intel.ai.brain.vega.model.llm.LlmToolInvocation;
 
 import java.util.concurrent.CompletableFuture;
@@ -15,7 +15,7 @@ import java.util.concurrent.CompletableFuture;
  * <p>
  * A COMMAND reflex just executes the command: a side effect, not dialogue, so nothing is filed to memory and the
  * handler owns any spoken outcome. A QUERY reflex runs the query's own data-grounded analysis path and publishes
- * a commander/companion pair only after a successful non-blank answer exists.
+ * a commander/VEGA pair only after a successful non-blank answer exists.
  * <p>
  * The handler detaches exactly like an LLM-selected game call. A queued future is cancellable; a handler already
  * started may finish operationally, but interruption discards its late speech and memory result.
@@ -68,10 +68,10 @@ final class ReflexThought extends Thought {
                 if (failure == null) {
                     settled = result == null ? new JsonObject() : result;
                 } else {
-                    // A reflex has no LLM round to report through, so without this line the companion log shows
+                    // A reflex has no LLM round to report through, so without this line VEGA log shows
                     // only the generic failure phrase and never names the action that broke.
-                    CompanionDiagnostics.debug(trace(), "exec", inv.name() + " failed: "
-                            + CompanionDiagnostics.truncate(String.valueOf(failure.getMessage())));
+                    VegaDiagnostics.debug(trace(), "exec", inv.name() + " failed: "
+                            + VegaDiagnostics.truncate(String.valueOf(failure.getMessage())));
                     settled = executionError(inv.name(), failure);
                 }
                 settleToolOutcome(inv, settled);

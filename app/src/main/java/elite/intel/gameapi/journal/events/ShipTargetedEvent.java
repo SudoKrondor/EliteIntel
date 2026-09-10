@@ -85,7 +85,7 @@ public class ShipTargetedEvent extends BaseEvent {
      * via EventNarrator (now narrating in every mode), so it is NORMAL (memory only, not re-spoken by
      * the consciousness). Whether the Wanted ship also belongs to a pirate-mission target faction only
      * changes the subscriber's wording, not the significance. Every other lock is constant targeting
-     * telemetry the companion ignores.
+     * telemetry VEGA ignores.
      */
     @Override
     public Importance importance() {

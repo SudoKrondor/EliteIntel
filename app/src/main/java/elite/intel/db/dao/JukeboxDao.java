@@ -370,7 +370,7 @@ public interface JukeboxDao {
 
         /**
          * Music volume, 0-100. Its own setting, deliberately not the AI speech volume: the commander sets
-         * this one on the Jukebox tab because the Audio tab governs the companion's voice.
+         * this one on the Jukebox tab because the Audio tab governs VEGA's voice.
          */
         public int getVolume() {
             return volume;

@@ -21,7 +21,7 @@ public final class ManifestAge {
      * Whole hours since {@code visitedAt}, or {@code 0} when the timestamp is missing or unreadable.
      * <p>
      * Zero for an unreadable timestamp on purpose: it reads as "current", which is the answer that adds no
-     * caveat to what is said. Inventing a large age from a parse failure would have the companion warn the
+     * caveat to what is said. Inventing a large age from a parse failure would have VEGA warn the
      * commander off perfectly fresh data.
      */
     public static long hoursSince(String visitedAt) {

@@ -1,11 +1,8 @@
 package elite.intel.ai.brain.vega.memory;
 
-import elite.intel.ai.brain.vega.CompanionRuntimeGeneration;
-import elite.intel.ai.brain.vega.llm.CompanionLlmGatewayFactory;
+import elite.intel.ai.brain.vega.VegaRuntimeGeneration;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
-import elite.intel.ai.brain.vega.memory.CompanionMemoryPolicy;
-import elite.intel.ai.brain.vega.memory.OversizedMemoryCompressor;
-import elite.intel.ai.brain.vega.memory.SessionMemoryGateway;
+import elite.intel.ai.brain.vega.llm.VegaLlmGatewayFactory;
 import elite.intel.ai.brain.vega.model.memory.MemoryRecord;
 import elite.intel.db.util.Database;
 import elite.intel.i18n.Language;
@@ -20,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Opt-in verification of record-level gist compression against the configured live companion LLM.
+ * Opt-in verification of record-level gist compression against the configured live VEGA LLM.
  */
 @Tag("local-integration")
 class OversizedMemoryCompressionLiveTest {
@@ -37,16 +34,16 @@ class OversizedMemoryCompressionLiveTest {
                 + "Прогресс. Вторая нога идет из системы Синуфе Эм Пи У Би Четыре Девять Два, станция Леоникено "
                 + "Прогресс, в систему Кубео, станция Медупе Сити.";
 
-        try (LlmGateway live = CompanionLlmGatewayFactory.create()) {
+        try (LlmGateway live = VegaLlmGatewayFactory.create()) {
             SessionMemoryGateway memory = new SessionMemoryGateway(text -> 0);
             try (OversizedMemoryCompressor compressor = new OversizedMemoryCompressor(
-                    memory, live, new CompanionRuntimeGeneration(), Runnable::run)) {
+                    memory, live, new VegaRuntimeGeneration(), Runnable::run)) {
                 memory.setOversizedMemoryListener(compressor);
                 memory.write(MemoryRecord.query(Instant.now(), "Какой сейчас торговый маршрут?", answer));
 
-                String gist = memory.readRecentHistory().getFirst().companionText();
+                String gist = memory.readRecentHistory().getFirst().vegaText();
                 System.out.println("LIVE MEMORY GIST (" + gist.length() + " chars): " + gist);
-                assertTrue(gist.length() <= CompanionMemoryPolicy.entryMaxChars(), gist);
+                assertTrue(gist.length() <= VegaMemoryPolicy.entryMaxChars(), gist);
                 assertFalse(gist.endsWith("..."), "live compression fell back to hard bounding: " + gist);
                 assertFalse(gist.contains("The user"), "model reasoning leaked into memory: " + gist);
                 assertTrue(gist.contains("Хранит"), "the route origin was lost: " + gist);

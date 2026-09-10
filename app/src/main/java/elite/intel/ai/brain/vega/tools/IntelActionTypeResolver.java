@@ -24,13 +24,15 @@ public final class IntelActionTypeResolver {
         QUERY,
         /** User-defined macro (custom command). */
         MACRO,
-        /** Companion system function such as {@code speak} or {@code request_input}. */
+        /**
+         * VEGA system function such as {@code speak} or {@code request_input}.
+         */
         SYSTEM,
         /** Id not found in any registry. */
         UNKNOWN;
 
         /**
-         * Whether this is a game action the LLM invoked - a command, query or macro - as opposed to a companion
+         * Whether this is a game action the LLM invoked - a command, query or macro - as opposed to a VEGA
          * system function or an unknown id. Queries receive a tool-call id for completed-record replay, and every
          * game action is reported as the turn's execution outcome. The single owner of that grouping.
          */

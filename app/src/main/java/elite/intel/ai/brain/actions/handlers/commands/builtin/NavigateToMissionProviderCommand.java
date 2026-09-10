@@ -3,7 +3,7 @@ package elite.intel.ai.brain.actions.handlers.commands.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.dao.PirateHuntingGroundsDao.HuntingGround;
 import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
 import elite.intel.db.managers.HuntingGroundManager;
@@ -79,11 +79,11 @@ public final class NavigateToMissionProviderCommand implements IntelCommand {
 
             int size = providers.size();
             // Non-terminal announcement: provider resolution below must still run, so voice the line via
-            // CompanionRuntime.narrator().filler (spoken, not remembered) instead of returning here.
+            // VegaRuntime.narrator().filler (spoken, not remembered) instead of returning here.
             if (size == 1) {
-                CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.oneMissionProvider", size, pair.getTarget().getStarSystem()), false);
+                VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.oneMissionProvider", size, pair.getTarget().getStarSystem()), false);
             } else {
-                CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.manyMissionProviders", size, pair.getTarget().getStarSystem()), false);
+                VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.manyMissionProviders", size, pair.getTarget().getStarSystem()), false);
             }
 
             provider = providers.stream().filter(p -> p.getMissionProviderFaction() == null).findFirst().orElse(null);
@@ -103,7 +103,7 @@ public final class NavigateToMissionProviderCommand implements IntelCommand {
         ).findFirst().map(PirateMissionTuple::getTarget);
 
         String starSystem = provider.getStarSystem();
-        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.plottingToProvider", starSystem, targetStarSystemName), false);
+        VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.plottingToProvider", starSystem, targetStarSystemName), false);
 
         RoutePlotter plotter = new RoutePlotter();
         String result = plotter.plotRoute(starSystem);
@@ -128,13 +128,13 @@ public final class NavigateToMissionProviderCommand implements IntelCommand {
         }
 
         if (location.isInSystem(targetSystem)) {
-            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.checkPorts", targetSystem), false);
+            VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.checkPorts", targetSystem), false);
         } else {
-            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.headTo", destination, targetSystem), false);
+            VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.headTo", destination, targetSystem), false);
         }
 
         if (destination == null) {
-            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.noKnowingProviders"), false);
+            VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.noKnowingProviders"), false);
             GameEventBus.publish(new UserInputEvent(" find hunting grounds"));
             return false;
         } else {

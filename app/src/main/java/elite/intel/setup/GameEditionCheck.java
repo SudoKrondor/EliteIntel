@@ -1,29 +1,21 @@
 package elite.intel.setup;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
+import elite.intel.gameapi.JournalHeader;
 import elite.intel.gameapi.journal.events.FileheaderEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.util.StringUtls;
-import elite.intel.util.json.GsonFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 /**
  * Warns the commander that the game is not Odyssey. Everything this app does on foot - suits, backpacks,
@@ -47,14 +39,12 @@ import java.util.stream.Stream;
  * <p>
  * Warned at most once per edition: a commander who has been told is not told again on every service restart,
  * and a session that comes up on Odyssey re-arms the warning for the next one. Spoken straight to TTS rather
- * than through the companion, for the reason {@code LocalLlmModelCheck} gives.
+ * than through VEGA, for the reason {@code LocalLlmModelCheck} gives.
  */
 public class GameEditionCheck {
 
     private static final Logger log = LogManager.getLogger(GameEditionCheck.class);
 
-    private static final String JOURNAL_SUFFIX = ".log";
-    private static final String FILEHEADER_EVENT = "Fileheader";
     private static final String ODYSSEY_FLAG = "Odyssey";
 
     private static volatile GameEditionCheck instance;
@@ -117,49 +107,15 @@ public class GameEditionCheck {
      * the app is actually following.
      */
     private Optional<Boolean> readNewestHeaderFlag() {
-        Path dir = journalDir.get();
-        if (dir == null || !Files.isDirectory(dir)) return Optional.empty();
-
-        Optional<Path> newest;
-        try (Stream<Path> files = Files.list(dir)) {
-            newest = files.filter(p -> p.toString().endsWith(JOURNAL_SUFFIX))
-                    .max(Comparator.comparingLong(p -> p.toFile().lastModified()));
-        } catch (IOException e) {
-            log.warn("Cannot list journal folder {}: {}", dir, e.getMessage());
-            return Optional.empty();
-        }
-        if (newest.isEmpty()) return Optional.empty();
-
-        try (BufferedReader reader = Files.newBufferedReader(newest.get(), StandardCharsets.UTF_8)) {
-            return odysseyFlag(reader.readLine());
-        } catch (IOException e) {
-            log.warn("Cannot read the header of {}: {}", newest.get(), e.getMessage());
-            return Optional.empty();
-        }
+        return JournalHeader.ofNewestJournal(journalDir.get())
+                .flatMap(header -> JournalHeader.bool(header, ODYSSEY_FLAG));
     }
 
     /**
      * Reads {@code Odyssey} out of a journal's first line, or empty when that line is not a {@code Fileheader}
-     * stating the flag. Tolerates the byte-order mark and control characters the game writes, exactly as the
-     * live parser does.
+     * stating the flag.
      */
     static Optional<Boolean> odysseyFlag(String headerLine) {
-        if (headerLine == null) return Optional.empty();
-        String sanitized = headerLine.replaceAll("[\\p{Cntrl}\\p{Cc}\\p{Cf}]", "").trim();
-        int start = sanitized.indexOf('{');
-        if (start < 0) return Optional.empty();
-        try {
-            JsonElement json = GsonFactory.getGson().fromJson(sanitized.substring(start), JsonElement.class);
-            if (json == null || !json.isJsonObject()) return Optional.empty();
-            JsonObject header = json.getAsJsonObject();
-            if (!header.has("event") || !FILEHEADER_EVENT.equals(header.get("event").getAsString())) {
-                return Optional.empty();
-            }
-            if (!header.has(ODYSSEY_FLAG) || !header.get(ODYSSEY_FLAG).isJsonPrimitive()) return Optional.empty();
-            return Optional.of(header.get(ODYSSEY_FLAG).getAsBoolean());
-        } catch (RuntimeException e) {
-            log.warn("Unreadable journal header: {}", e.getMessage());
-            return Optional.empty();
-        }
+        return JournalHeader.parse(headerLine).flatMap(header -> JournalHeader.bool(header, ODYSSEY_FLAG));
     }
 }

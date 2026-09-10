@@ -4,7 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ApiFactory;
 import elite.intel.ai.brain.LocalLlmModelCheck;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandLoadAnnouncement;
-import elite.intel.ai.brain.vega.input.CompanionSubsystemGate;
+import elite.intel.ai.brain.vega.input.VegaSubsystemGate;
 import elite.intel.ai.ears.*;
 import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.hands.KeyBindCheck;
@@ -210,9 +210,9 @@ public class AppController {
     private void restartBrainService() {
         synchronized (lifecycleLock) {
             if (!isServiceRunning()) return;
-            // The companion subsystem is the LLM service; restart it so an LLM source (local/cloud) change is
+            // VEGA subsystem is the LLM service; restart it so an LLM source (local/cloud) change is
             // picked up.
-            ServiceHolder brain = services.get(ServiceType.COMPANION);
+            ServiceHolder brain = services.get(ServiceType.VEGA);
             if (brain == null) return;
             appendToLog("Restarting LLM service...");
             brain.stop();
@@ -347,7 +347,7 @@ public class AppController {
 
     /**
      * Says out loud that the microphone gate is shut, when the services come up with Sleep/Wake still asleep
-     * from a previous session. Spoken straight to TTS rather than through the companion, for the same reason
+     * from a previous session. Spoken straight to TTS rather than through VEGA, for the same reason
      * {@link SetupCheck} does it: an app that silently ignores everything the commander says is
      * indistinguishable from a broken one, so the warning must not depend on the path it is warning about.
      * <p>
@@ -378,7 +378,7 @@ public class AppController {
     private void connectionCheck() {
         bgExecutor.submit(() -> {
             try {
-                // Probe the live analysis endpoint directly (companion and query handlers share the same
+                // Probe the live analysis endpoint directly (VEGA and query handlers share the same
                 // provider config). Publishing LlmConnectionStatusEvent drives the UI + retry timer; the
                 // spoken result is silenced during silent retries via suppressConnectionFailSpeech.
                 boolean reachable = ApiFactory.getInstance().getAnalysisEndpoint().verifyConnection();
@@ -460,9 +460,9 @@ public class AppController {
     /**
      * Builds the ordered service registry. Static and side-effect-free (it only wires lazy suppliers,
      * nothing is started here) so the registration can be verified in tests without standing up the
-     * controller. Order matters: audio and command execution come up first, then the COMPANION subsystem
+     * controller. Order matters: audio and command execution come up first, then the VEGA subsystem
      * (the sole LLM service since the legacy command pipeline was removed). Live game-file monitors start
-     * last so journal/status subscriber cascades cannot publish into a half-started speech/companion layer.
+     * last so journal/status subscriber cascades cannot publish into a half-started speech/VEGA layer.
      * <p>
      * Radio transmissions are voiced by the engine {@link RadioVoicing} names for the commander's language,
      * never by the main mouth as such. When that engine is also the main mouth it handles radio through its
@@ -477,7 +477,7 @@ public class AppController {
         // Diagnostics swaps in a no-op EARS: the microphone/STT is never used (input comes from the file), and
         // skipping the heavy STT model load is a large startup win with no effect on the run. TTS is NOT
         // suppressed - the DiagnosticsSpeechGateway (wired below) delegates to the real speech path, so the
-        // companion voice stays audible and the chat panel shows replies, matching a live session.
+        // VEGA voice stays audible and the chat panel shows replies, matching a live session.
         boolean diagnostics = DiagnosticsMode.isEnabled();
         services.put(ServiceType.MOUTH, new ServiceHolder(ApiFactory.getInstance()::getMouthImpl));
         if (radioMouth != mainMouth) {
@@ -498,13 +498,13 @@ public class AppController {
         // After DEVICE, whose poll loop feeds it the button transitions, and after EARS, because the gate it
         // arms is the microphone's and there must be a microphone to gate.
         services.put(ServiceType.PUSH_TO_TALK, new ServiceHolder(PushToTalkService::getInstance));
-        // The companion subsystem is the LLM service (the legacy command pipeline was removed). In diagnostics
+        // VEGA subsystem is the LLM service (the legacy command pipeline was removed). In diagnostics
         // mode it is wired with a recording execution gateway (file-fed phrases exercise the real routing path
         // without pressing keys into the game or calling third-party REST APIs) and a speech gateway that
         // delegates to the real TTS path (audible voice + chat-panel replies, indistinguishable from normal).
-        services.put(ServiceType.COMPANION, new ServiceHolder(diagnostics
-                ? () -> new CompanionSubsystemGate(null, new DiagnosticsExecutionGateway(), new DiagnosticsSpeechGateway())
-                : CompanionSubsystemGate::new));
+        services.put(ServiceType.VEGA, new ServiceHolder(diagnostics
+                ? () -> new VegaSubsystemGate(null, new DiagnosticsExecutionGateway(), new DiagnosticsSpeechGateway())
+                : VegaSubsystemGate::new));
         services.put(ServiceType.NOTIFICATION_MONITOR, new ServiceHolder(DeferredNotificationMonitor::getInstance));
         services.put(ServiceType.MISSING_MISSION_MONITOR, new ServiceHolder(MissingMissionMonitor::getInstance));
         services.put(ServiceType.WEB_SOCKET, new ServiceHolder(WebSocketBroadcaster::getInstance));
@@ -579,7 +579,7 @@ public class AppController {
     }
 
     enum ServiceType {
-        MOUTH, RADIO_MOUTH, EARS, HANDS, DEVICE, PUSH_TO_TALK, COMPANION, NOTIFICATION_MONITOR,
+        MOUTH, RADIO_MOUTH, EARS, HANDS, DEVICE, PUSH_TO_TALK, VEGA, NOTIFICATION_MONITOR,
         MISSING_MISSION_MONITOR, WEB_SOCKET, JOURNAL_PARSER, AUXILIARY_FILES_MONITOR
     }
 }

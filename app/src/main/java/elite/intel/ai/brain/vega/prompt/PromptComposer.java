@@ -16,9 +16,11 @@ public final class PromptComposer {
 
     private final SystemPromptText systemPrompt;
 
-    /** Production constructor using the companion's static system-prompt owner. */
+    /**
+     * Production constructor using VEGA's static system-prompt owner.
+     */
     public PromptComposer() {
-        this(new CompanionSystemPrompt());
+        this(new VegaSystemPrompt());
     }
 
     /** Injectable constructor for tests (avoids the session/localization singletons). */
@@ -105,11 +107,11 @@ public final class PromptComposer {
         if (recentRecords == null || recentRecords.isEmpty()) {
             return out;
         }
-        // Every stored kind is a commander/companion pair, and every one of them is replayed: session memory
+        // Every stored kind is a commander/VEGA pair, and every one of them is replayed: session memory
         // holds nothing that this method would have to skip.
         for (MemoryRecord record : recentRecords) {
             out.add(LlmMessage.of(LlmMessageRole.USER, record.commanderText()));
-            out.add(LlmMessage.of(LlmMessageRole.ASSISTANT, record.companionText()));
+            out.add(LlmMessage.of(LlmMessageRole.ASSISTANT, record.vegaText()));
         }
         return List.copyOf(out);
     }

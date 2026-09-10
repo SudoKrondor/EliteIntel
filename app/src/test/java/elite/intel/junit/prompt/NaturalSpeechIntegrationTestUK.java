@@ -3,7 +3,7 @@ package elite.intel.junit.prompt;
 
 import elite.intel.ai.brain.actions.handlers.commands.builtin.*;
 import elite.intel.ai.brain.actions.handlers.queries.*;
-import elite.intel.ai.brain.vega.input.CompanionRoutingHarness;
+import elite.intel.ai.brain.vega.input.VegaRoutingHarness;
 import elite.intel.i18n.Language;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class NaturalSpeechIntegrationTestUK {
 
-    private final CompanionRoutingHarness harness = new CompanionRoutingHarness(Language.UK);
+    private final VegaRoutingHarness harness = new VegaRoutingHarness(Language.UK);
 
     @BeforeAll
     void bootstrap() throws Exception {

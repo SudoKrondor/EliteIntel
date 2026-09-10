@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 /**
  * Unwraps a response envelope a model wrapped its own spoken line in.
  *
- * <p>WHY this exists: the companion asks for prose in the {@code speak} tool's {@code text} argument, and the
+ * <p>WHY this exists: VEGA asks for prose in the {@code speak} tool's {@code text} argument, and the
  * argument is spoken verbatim. A model that has spent its life emitting response objects sometimes hands back
  * the line already packaged - {@code {"texttospeech_response": "Dex, Tubus Compagibus logged."}} - and the
  * commander then hears the wrapper read out. Seen from a cloud provider on a narration turn, but nothing about

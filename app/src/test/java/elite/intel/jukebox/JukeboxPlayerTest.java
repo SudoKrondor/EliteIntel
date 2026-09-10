@@ -293,7 +293,7 @@ class JukeboxPlayerTest {
     }
 
     @Test
-    void aSpeakingCompanionPullsTheMusicDown() {
+    void aSpeakingVegaPullsTheMusicDown() {
         files.sampleValue((short) 10_000);
         JukeboxPlayer ducked = new JukeboxPlayer(JukeboxManager.getInstance(), () -> output, files,
                 new MusicDucker(() -> -6.0));
@@ -304,7 +304,7 @@ class JukeboxPlayerTest {
             await(() -> output.bytesWritten() > MusicFormat.BLOCK_BYTES * 60, "not enough audio to measure");
 
             assertTrue(output.steadyStateAmplitude() < 4_000,
-                    "a loud companion should duck the music well below its set level, but the music was at "
+                    "a loud VEGA should duck the music well below its set level, but the music was at "
                             + output.steadyStateAmplitude());
         } finally {
             ducked.shutdown();

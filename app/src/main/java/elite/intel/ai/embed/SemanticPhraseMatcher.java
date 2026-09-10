@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * catalog phrase is embedded once and reused across utterances (per turn only the query is embedded fresh).
  * That keeps semantic selection cheap — the expensive part is the catalog, and it is paid once.
  * <p>
- * Survives the legacy pipeline: when only companion mode remains, this matcher backs the companion's semantic
+ * Survives the legacy pipeline: when only VEGA remains, this matcher backs VEGA's semantic
  * reducer and memory recall unchanged. Inflection/synonym tolerance comes entirely from the embedding model,
  * so there are no per-language declension or synonym tables here.
  * <p>

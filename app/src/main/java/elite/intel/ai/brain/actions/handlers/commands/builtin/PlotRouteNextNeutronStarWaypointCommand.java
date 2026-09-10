@@ -3,7 +3,7 @@ package elite.intel.ai.brain.actions.handlers.commands.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.dao.NeutronStarRouteDao;
 import elite.intel.db.managers.NeutronStarRouteManager;
 import elite.intel.gameapi.inputs.RoutePlotter;
@@ -45,7 +45,7 @@ public final class PlotRouteNextNeutronStarWaypointCommand implements IntelComma
         }
 
         String systemName = route.getLegs().getFirst().getSystemName();
-        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.neutronRoute.plotting", systemName), false);
+        VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.neutronRoute.plotting", systemName), false);
         RoutePlotter plotter = new RoutePlotter();
         return plotter.plotRoute(systemName);
     }

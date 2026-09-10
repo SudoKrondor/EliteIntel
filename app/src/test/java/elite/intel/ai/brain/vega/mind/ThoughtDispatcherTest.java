@@ -2,7 +2,7 @@ package elite.intel.ai.brain.vega.mind;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
-import elite.intel.ai.brain.vega.CompanionConfig;
+import elite.intel.ai.brain.vega.VegaConfig;
 import elite.intel.ai.brain.vega.clarify.ClarificationCoordinator;
 import elite.intel.ai.brain.vega.confirm.ConfirmationCoordinator;
 import elite.intel.ai.brain.vega.execution.ExecutionGateway;
@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * blank input and input racing lifecycle (before start / after stop) are ignored, an urgent thought
  * preempts a live one, barge-in ({@code interruptLiveThoughts}) interrupts it, and the watchdog
  * force-interrupts a stuck thought. The fake LLM settles a turn with {@code speak}, producing a complete
- * commander/companion memory pair and ending the turn (or blocks, to be preempted);
+ * commander/VEGA memory pair and ending the turn (or blocks, to be preempted);
  * {@code stop()} drains the lanes, making the assertions deterministic.
  */
 class ThoughtDispatcherTest {
@@ -61,7 +61,7 @@ class ThoughtDispatcherTest {
         return new ThoughtDependencies(
                 llm, new FakeSpeech(), new FakeExecution(), memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                (categories, currentInput) -> List.of(), new CompanionState(),
+                (categories, currentInput) -> List.of(), new VegaState(),
                 invocation -> false, new ConfirmationCoordinator());
     }
 
@@ -72,10 +72,10 @@ class ThoughtDispatcherTest {
         dispatcher.submitCommanderInput("set speed to 50");
         dispatcher.stop();
 
-        // The fake speak settles the turn as one complete commander/companion pair.
+        // The fake speak settles the turn as one complete commander/VEGA pair.
         assertEquals(1, memory.writes.size());
         assertEquals(MemoryKind.DIALOGUE, memory.writes.get(0).kind());
-        assertEquals(List.of(MemorySource.COMMANDER, MemorySource.COMPANION),
+        assertEquals(List.of(MemorySource.COMMANDER, MemorySource.VEGA),
                 memory.writes.get(0).entries().stream().map(MemoryEntry::source).toList());
     }
 
@@ -104,7 +104,7 @@ class ThoughtDispatcherTest {
         ThoughtDependencies dependencies = new ThoughtDependencies(
                 failIfCalled, new FakeSpeech(), tracking, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                (categories, currentInput) -> List.of(), new CompanionState(),
+                (categories, currentInput) -> List.of(), new VegaState(),
                 invocation -> false, new ConfirmationCoordinator(),
                 new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
         ReflexResolver reflex = new ReflexResolver(
@@ -141,7 +141,7 @@ class ThoughtDispatcherTest {
             return CompletableFuture.completedFuture(new JsonObject());
         }, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                (categories, currentInput) -> List.of(), new CompanionState(),
+                (categories, currentInput) -> List.of(), new VegaState(),
                 invocation -> false, new ConfirmationCoordinator(), clarification,
                 new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
         ReflexResolver reflex = new ReflexResolver(
@@ -184,7 +184,7 @@ class ThoughtDispatcherTest {
         ThoughtDependencies dependencies = new ThoughtDependencies(
                 failIfCalled, speech, summarizing, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                (categories, currentInput) -> List.of(), new CompanionState(),
+                (categories, currentInput) -> List.of(), new VegaState(),
                 invocation -> false, new ConfirmationCoordinator(),
                 new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
         ReflexResolver reflex = new ReflexResolver(
@@ -227,7 +227,7 @@ class ThoughtDispatcherTest {
             ThoughtDependencies dependencies = new ThoughtDependencies(
                     failIfCalled, new FakeSpeech(), tracking, memory,
                     new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                    (categories, currentInput) -> List.of(), new CompanionState(),
+                    (categories, currentInput) -> List.of(), new VegaState(),
                     invocation -> false, new ConfirmationCoordinator(),
                     new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
             List<GameStateSnapshot> observedStates = new CopyOnWriteArrayList<>();
@@ -253,8 +253,8 @@ class ThoughtDispatcherTest {
     }
 
     @Test
-    void aLeadingCompanionNameIsStrippedForTheReflexGate() {
-        // Addressing the companion by name ("Vega, all stop") still takes the reflex fast-path: the leading
+    void aLeadingVegaNameIsStrippedForTheReflexGate() {
+        // Addressing VEGA by name ("Vega, all stop") still takes the reflex fast-path: the leading
         // vocative name is stripped before reflex matching. This command returns no spoken outcome, so nothing is filed.
         LlmGateway failIfCalled = new LlmGateway() {
             @Override
@@ -275,7 +275,7 @@ class ThoughtDispatcherTest {
         ThoughtDependencies dependencies = new ThoughtDependencies(
                 failIfCalled, new FakeSpeech(), tracking, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                (categories, currentInput) -> List.of(), new CompanionState(),
+                (categories, currentInput) -> List.of(), new VegaState(),
                 invocation -> false, new ConfirmationCoordinator(),
                 new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
         ReflexResolver reflex = new ReflexResolver(
@@ -283,7 +283,7 @@ class ThoughtDispatcherTest {
                 invocation -> false);
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, reflex, s -> s); // identity normalizer
         dispatcher.start();
-        String input = CompanionConfig.companionName() + ", all stop";
+        String input = VegaConfig.vegaName() + ", all stop";
         dispatcher.submitCommanderInput(input);
         dispatcher.stop();
 
@@ -292,7 +292,7 @@ class ThoughtDispatcherTest {
     }
 
     @Test
-    void aLeadingTransliteratedCompanionNameIsAlsoStrippedForTheReflexGate() {
+    void aLeadingTransliteratedVegaNameIsAlsoStrippedForTheReflexGate() {
         // Russian STT returns the name in Cyrillic ("Вега"), not the canonical Latin "Vega". The Cyrillic form
         // is the localized spoken form for the RU session language, so it is recognized as a leading vocative
         // and a name-addressed short command still reflexes (no LLM).
@@ -318,7 +318,7 @@ class ThoughtDispatcherTest {
             ThoughtDependencies dependencies = new ThoughtDependencies(
                     failIfCalled, new FakeSpeech(), tracking, memory,
                     new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                    (categories, currentInput) -> List.of(), new CompanionState(),
+                    (categories, currentInput) -> List.of(), new VegaState(),
                     invocation -> false, new ConfirmationCoordinator(),
                     new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
             ReflexResolver reflex = new ReflexResolver(
@@ -432,7 +432,7 @@ class ThoughtDispatcherTest {
         ThoughtDependencies dependencies = new ThoughtDependencies(
                 new TerminatingLlm(), new FakeSpeech(), interruptingExecution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                (categories, currentInput) -> List.of(), new CompanionState(),
+                (categories, currentInput) -> List.of(), new VegaState(),
                 invocation -> false, new ConfirmationCoordinator());
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies);
         holder[0] = dispatcher;
@@ -573,7 +573,7 @@ class ThoughtDispatcherTest {
         ThoughtDependencies dependencies = new ThoughtDependencies(
                 querySelectingLlm, speech, execution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                (categories, currentInput) -> List.of(), new CompanionState(),
+                (categories, currentInput) -> List.of(), new VegaState(),
                 invocation -> false, new ConfirmationCoordinator(), actionTypes);
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(
                 dependencies, UrgencyPolicy.normalOnly(), new ReflexResolver(() -> List.of(), invocation -> false),
@@ -599,7 +599,7 @@ class ThoughtDispatcherTest {
     void aSlowCommandDoesNotBlockTheNextCommanderCognitiveTurn() throws InterruptedException {
         CompletableFuture<JsonObject> slowResult = new CompletableFuture<>();
         AtomicInteger llmCalls = new AtomicInteger();
-        CompanionState state = new CompanionState();
+        VegaState state = new VegaState();
         LlmGateway llm = new LlmGateway() {
             @Override
             public CompletableFuture<LlmResult> submit(LlmRequest request) {
@@ -671,7 +671,7 @@ class ThoughtDispatcherTest {
                 (categories, currentInput) -> {
                     reducerCalls.incrementAndGet();
                     throw new RuntimeException("boom");
-                }, new CompanionState(),
+                }, new VegaState(),
                 invocation -> false, new ConfirmationCoordinator());
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies);
         dispatcher.start();

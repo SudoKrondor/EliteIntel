@@ -13,8 +13,8 @@ import com.google.gson.JsonObject;
  * @param arguments  parsed JSON arguments
  * @param commanderInput the commander's raw utterance that led to this call
  * @param matchInput canonical text used for tool selection and shown to the model
- * @param runtimeGenerationId process-local companion generation that owns this operation; zero for callers that
- *                   execute outside an installed companion runtime (primarily isolated gateway tests)
+ * @param runtimeGenerationId process-local VEGA generation that owns this operation; zero for callers that
+ *                   execute outside an installed VEGA runtime (primarily isolated gateway tests)
  */
 public record ExecutionRequest(
         String requestId,

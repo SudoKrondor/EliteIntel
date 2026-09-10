@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.ai.brain.vega.llm.GeminiLlmAdapter;
 import elite.intel.ai.brain.vega.model.llm.*;
 import org.junit.jupiter.api.Test;
 
@@ -74,7 +73,7 @@ class GeminiLlmAdapterTest {
     void rendersFunctionCallAsModelRoleAndFunctionResponseByName() {
         JsonObject args = new JsonObject();
         args.addProperty("text", "hi");
-        // Gemini issues no call id; companion carries the function name as the id (see parse()).
+        // Gemini issues no call id; VEGA carries the function name as the id (see parse()).
         LlmRequest req = request(List.of(
                 LlmMessage.of(LlmMessageRole.USER, "go"),
                 LlmMessage.assistantToolCalls(List.of(new LlmToolInvocation("speak", "speak", args))),

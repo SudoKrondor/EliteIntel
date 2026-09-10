@@ -4,8 +4,8 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.i18n.ResponseTextProvider;
-import elite.intel.ai.brain.vega.diag.CompanionDiagnostics;
-import elite.intel.ai.brain.vega.memory.CompanionMemoryPolicy;
+import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
+import elite.intel.ai.brain.vega.memory.VegaMemoryPolicy;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
 import elite.intel.ai.brain.vega.model.Urgency;
@@ -82,7 +82,9 @@ public abstract class Thought {
         this.trace = context.source() + "#" + TRACE_SEQ.incrementAndGet();
     }
 
-    /** The per-thought diagnostic tag ({@code SOURCE#n}); every {@link CompanionDiagnostics} line of this thought carries it. */
+    /**
+     * The per-thought diagnostic tag ({@code SOURCE#n}); every {@link VegaDiagnostics} line of this thought carries it.
+     */
     public final String trace() {
         return trace;
     }
@@ -113,25 +115,25 @@ public abstract class Thought {
     }
 
     /**
-     * Creates a reactive thought from a gameplay subscriber's {@code CompanionReactionEvent}: the companion
+     * Creates a reactive thought from a gameplay subscriber's {@link VegaNarrator} call: VEGA
      * phrases the supplied event data and speaks it. Data and instructions exist only in this LLM request; after a
-     * successful round, only the final narration is stored as the EVENT fact.
+     * successful round the narration is voiced and not stored.
      */
     public static Thought eventReaction(Urgency urgency, String stimulus, String instructions,
                                         ThoughtDependencies dependencies) {
-        String eventData = boundTransientInput(stimulus, CompanionMemoryPolicy.eventDataMaxChars());
+        String eventData = boundTransientInput(stimulus, VegaMemoryPolicy.eventDataMaxChars());
         StringBuilder promptInput = new StringBuilder(PromptXml.element("event_data", eventData));
         if (instructions != null && !instructions.isBlank()) {
             promptInput.append("\n\n")
                     .append(PromptXml.element("narration_instructions", boundTransientInput(
-                            instructions, CompanionMemoryPolicy.eventInstructionsMaxChars())));
+                            instructions, VegaMemoryPolicy.eventInstructionsMaxChars())));
         }
         return new EventThought(ThoughtContext.event(urgency, eventData, promptInput.toString()), dependencies);
     }
 
     /**
      * Creates a verbatim reactive thought from a gameplay subscriber that already has a finished phrase: it is
-     * voiced as-is (no LLM) and stored as the EVENT fact.
+     * voiced as-is (no LLM) and not stored.
      */
     public static Thought eventVerbatim(Urgency urgency, String phrase, ThoughtDependencies dependencies) {
         return new EventThought(ThoughtContext.event(urgency, phrase, phrase), phrase, dependencies);
@@ -140,7 +142,7 @@ public abstract class Thought {
     /**
      * Creates a reflex thought for one safe action selected by an exact reflex. It runs on the commander lane
      * like a {@link CommanderThought} but skips the LLM entirely. Commands remain outside memory; completed
-     * queries publish a commander/companion QUERY pair.
+     * queries publish a commander/VEGA QUERY pair.
      */
     public static Thought reflex(Urgency urgency, String input, String commandId, ThoughtDependencies dependencies) {
         return reflex(ThoughtContext.commander(urgency, input, input), commandId, new JsonObject(), dependencies);
@@ -211,7 +213,7 @@ public abstract class Thought {
             return null;
         }
         int maxCalls = maxToolCallsPerRound();
-        CompanionDiagnostics.debug(trace, "llm", "request: tools=" + tools.size() + " messages=" + flow.size()
+        VegaDiagnostics.debug(trace, "llm", "request: tools=" + tools.size() + " messages=" + flow.size()
                 + (maxCalls > 1 ? " max-calls=" + maxCalls : ""));
         CompletableFuture<LlmResult> future = dependencies.llmGateway()
                 .submit(new LlmRequest(newId(), List.copyOf(flow), tools, profile, trace, maxCalls));
@@ -224,15 +226,15 @@ public abstract class Thought {
         long startedMillis = System.currentTimeMillis();
         try {
             LlmResult result = future.join();
-            CompanionDiagnostics.debug(trace, "llm",
+            VegaDiagnostics.debug(trace, "llm",
                     describeResult(result) + " | " + (System.currentTimeMillis() - startedMillis) + " ms");
             return result;
         } catch (RuntimeException llmFailure) {
             if (!isStopped()) {
                 // A provider/transport failure (not an interrupt-driven cancel) - surface the cause.
-                log.warn("Companion LLM round failed; treating as no usable result", llmFailure);
+                log.warn("VEGA LLM round failed; treating as no usable result", llmFailure);
             }
-            CompanionDiagnostics.debug(trace, "llm", isStopped() ? "response: cancelled" : "response: failed");
+            VegaDiagnostics.debug(trace, "llm", isStopped() ? "response: cancelled" : "response: failed");
             return null;
         } finally {
             inFlight = null;
@@ -250,7 +252,7 @@ public abstract class Thought {
             return "response: none";
         }
         StringBuilder sb = new StringBuilder(result.isValid()
-                ? "response: " + CompanionDiagnostics.calls(result.toolInvocations())
+                ? "response: " + VegaDiagnostics.calls(result.toolInvocations())
                 : "response: INVALID");
         if (result.finishReason() != null) {
             sb.append(" | finish=").append(result.finishReason());
@@ -260,7 +262,7 @@ public abstract class Thought {
         String dropped = result.droppedText();
         if (dropped != null && !dropped.isBlank()) {
             sb.append(" | dropped-text=").append(dropped.length())
-                    .append(": \"").append(CompanionDiagnostics.truncate(dropped)).append("\"");
+                    .append(": \"").append(VegaDiagnostics.truncate(dropped)).append("\"");
         }
         return sb.toString();
     }
@@ -286,8 +288,8 @@ public abstract class Thought {
         // The game-tool count and list are already owned by the reduce line (kept=N -> [...]) and the total sent is
         // owned by the llm request line (tools=N); compose reports only what it adds to the prompt - the system
         // tools, grounding facts, and recent-history depth - so no tool count is repeated across lines.
-        CompanionDiagnostics.debug(trace, "compose",
-                "sysTools=" + CompanionDiagnostics.names(sysTools)
+        VegaDiagnostics.debug(trace, "compose",
+                "sysTools=" + VegaDiagnostics.names(sysTools)
                         + " facts=" + candidates.size() + " history=" + history.size()
                         + " | reduce=" + reducerMillis + " ms"
                         + " history=" + historyMillis + " ms"
@@ -298,8 +300,8 @@ public abstract class Thought {
         // grounding facts are easy to count and reference.
         int factNo = 0;
         for (Fact fact : candidates) {
-            CompanionDiagnostics.debug(trace, "facts",
-                    (++factNo) + "/" + candidates.size() + " " + CompanionDiagnostics.fact(fact));
+            VegaDiagnostics.debug(trace, "facts",
+                    (++factNo) + "/" + candidates.size() + " " + VegaDiagnostics.fact(fact));
         }
         return composed;
     }
@@ -327,7 +329,7 @@ public abstract class Thought {
         var target = dependencies.reducer().findToolById(
                 categories, pending.actionId(), context.gameStateSnapshot());
         if (target.isEmpty()) {
-            CompanionDiagnostics.debug(trace, "clarify",
+            VegaDiagnostics.debug(trace, "clarify",
                     "target unavailable in current state: " + pending.actionId());
             return selected;
         }
@@ -335,7 +337,7 @@ public abstract class Thought {
         Map<String, LlmToolDefinition> merged = new LinkedHashMap<>();
         merged.put(target.get().name(), target.get());
         selected.forEach(tool -> merged.putIfAbsent(tool.name(), tool));
-        CompanionDiagnostics.debug(trace, "clarify", "re-offered target " + pending.actionId());
+        VegaDiagnostics.debug(trace, "clarify", "re-offered target " + pending.actionId());
         return List.copyOf(merged.values());
     }
 
@@ -347,22 +349,22 @@ public abstract class Thought {
     protected CompletableFuture<JsonObject> submitExecution(LlmToolInvocation inv) {
         if (isStopped()) {
             return CompletableFuture.failedFuture(
-                    new CancellationException("Companion runtime generation is no longer active"));
+                    new CancellationException("VEGA runtime generation is no longer active"));
         }
         // Only game tools (command/query/macro) dump their call+args here. System functions have dedicated
         // diagnostic lines, so their raw call would only be a redundant copy. Every failure is still surfaced.
         if (dependencies.actionTypeResolver().resolve(inv.name()).isGameAction()) {
-            CompanionDiagnostics.debug(trace, "exec", inv.name() + CompanionDiagnostics.args(inv.arguments()));
+            VegaDiagnostics.debug(trace, "exec", inv.name() + VegaDiagnostics.args(inv.arguments()));
         }
         if (!firstToolStarted) {
             firstToolStarted = true;
-            CompanionDiagnostics.debug(trace, "latency", "time-to-first-tool=" + elapsedSinceAcceptanceMillis() + " ms");
+            VegaDiagnostics.debug(trace, "latency", "time-to-first-tool=" + elapsedSinceAcceptanceMillis() + " ms");
         }
         long executionStartedNanos = System.nanoTime();
         CompletableFuture<JsonObject> future = dependencies.executionGateway()
                 .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), originalExecutionInputFor(inv),
                         matchExecutionInputFor(inv), dependencies.runtimeGeneration().generationId()));
-        future.whenComplete((ignored, failure) -> CompanionDiagnostics.debug(trace, "exec-time",
+        future.whenComplete((ignored, failure) -> VegaDiagnostics.debug(trace, "exec-time",
                 inv.name() + "=" + elapsedMillis(executionStartedNanos) + " ms"));
         return future;
     }
@@ -391,7 +393,7 @@ public abstract class Thought {
         try {
             return submitExecution(inv).join();
         } catch (RuntimeException failed) {
-            CompanionDiagnostics.debug(trace, "exec", inv.name() + " failed: " + CompanionDiagnostics.truncate(String.valueOf(failed.getMessage())));
+            VegaDiagnostics.debug(trace, "exec", inv.name() + " failed: " + VegaDiagnostics.truncate(String.valueOf(failed.getMessage())));
             return executionError(inv.name(), failed);
         }
     }
@@ -420,7 +422,7 @@ public abstract class Thought {
         MemoryRecord record = MemoryRecord.dialogue(Instant.now(), context.memoryInput(), reply);
         boolean recorded = publishSettlement(() -> dependencies.memoryGateway().write(record));
         if (recorded) {
-            CompanionDiagnostics.debug(trace, "memory", "record dialogue");
+            VegaDiagnostics.debug(trace, "memory", "record dialogue");
         }
     }
 
@@ -480,7 +482,7 @@ public abstract class Thought {
     }
 
     /**
-     * Publishes one completed query answer as the commander/companion pair and voices it. Write and speech are
+     * Publishes one completed query answer as the commander/VEGA pair and voices it. Write and speech are
      * one settlement, so an interrupted turn leaves neither. A thought that settles several calls against one
      * utterance overrides this, voices the answer as it arrives and uses
      * {@link #recordQueryAnswerWithoutVoicing} once at the end of the turn instead.
@@ -512,7 +514,7 @@ public abstract class Thought {
      */
     private void publishQueryRecord(Runnable publication) {
         if (publishSettlement(publication)) {
-            CompanionDiagnostics.debug(trace, "memory", "record query");
+            VegaDiagnostics.debug(trace, "memory", "record query");
         }
     }
 
@@ -559,7 +561,7 @@ public abstract class Thought {
         if (!isRuntimeActive() || text == null || text.isBlank()) {
             return;
         }
-        CompanionDiagnostics.debug(trace, "voice", (critical ? "urgent " : "") + "\"" + CompanionDiagnostics.truncate(text) + "\"");
+        VegaDiagnostics.debug(trace, "voice", (critical ? "urgent " : "") + "\"" + VegaDiagnostics.truncate(text) + "\"");
         dependencies.speechGateway().submit(new SpeechRequest(newId(), text, critical ? Urgency.URGENT : Urgency.NORMAL));
     }
 

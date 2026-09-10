@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Guards the service registry against a registration silently going missing (e.g. dropped by a bad
  * merge, as happened to MOUTH/EARS - which left the app with no audio in or out). Verifies the audio
- * services are always wired and that the COMPANION subsystem (the sole LLM service) is registered.
+ * services are always wired and that the VEGA subsystem (the sole LLM service) is registered.
  */
 class AppControllerServicesTest {
 
@@ -43,9 +43,9 @@ class AppControllerServicesTest {
     }
 
     @Test
-    void companionSubsystemIsRegistered() {
+    void vegaSubsystemIsRegistered() {
         assertTrue(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO)
-                .containsKey(ServiceType.COMPANION));
+                .containsKey(ServiceType.VEGA));
     }
 
     /**
@@ -66,21 +66,21 @@ class AppControllerServicesTest {
     }
 
     @Test
-    void audioComesUpBeforeTheCompanionAndJournal() {
+    void audioComesUpBeforeVegaAndJournal() {
         List<ServiceType> order =
                 List.copyOf(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO).keySet());
         // c5651efb intent: start Mouth and Ears before the journal/aux monitors and the LLM subsystem.
         assertTrue(order.indexOf(ServiceType.MOUTH) < order.indexOf(ServiceType.JOURNAL_PARSER));
         assertTrue(order.indexOf(ServiceType.EARS) < order.indexOf(ServiceType.JOURNAL_PARSER));
-        assertTrue(order.indexOf(ServiceType.EARS) < order.indexOf(ServiceType.COMPANION));
+        assertTrue(order.indexOf(ServiceType.EARS) < order.indexOf(ServiceType.VEGA));
     }
 
     @Test
-    void liveGameFileMonitorsStartAfterCompanionAndEventConsumers() {
+    void liveGameFileMonitorsStartAfterVegaAndEventConsumers() {
         for (TtsProvider mainMouth : TtsProvider.values()) {
             List<ServiceType> order =
                     List.copyOf(AppController.buildServices(mainMouth, TtsProvider.KOKORO).keySet());
-            assertTrue(order.indexOf(ServiceType.COMPANION) < order.indexOf(ServiceType.JOURNAL_PARSER));
+            assertTrue(order.indexOf(ServiceType.VEGA) < order.indexOf(ServiceType.JOURNAL_PARSER));
             assertTrue(order.indexOf(ServiceType.WEB_SOCKET) < order.indexOf(ServiceType.JOURNAL_PARSER));
             assertTrue(order.indexOf(ServiceType.MISSING_MISSION_MONITOR) < order.indexOf(ServiceType.JOURNAL_PARSER));
             assertEquals(

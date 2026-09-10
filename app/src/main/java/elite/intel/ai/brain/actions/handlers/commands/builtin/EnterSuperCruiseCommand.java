@@ -65,7 +65,7 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
         /// Game has a bug status.isFighterOut() == true when nomad is equipped and returned to base.
 //        else if (status.isFighterOut()) {
 //            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_REQUEST_REQUEST_DOCK.getGameBinding())));
-//            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.supercruise.fighterOut"), false);
+//            VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.supercruise.fighterOut"), false);
 //        }
 
         else if (status.isInMainShip()) {

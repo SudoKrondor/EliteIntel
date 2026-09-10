@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.gameapi.inputs.RoutePlotter;
@@ -95,7 +95,7 @@ public final class NavigateToMissionTargetCommand implements IntelCommand {
         // a card and cannot take it back out of the prose.
         ReminderManager.getInstance().setReminder(heading, system, mission.getDestinationStation(), null);
 
-        CompanionRuntime.narrator().filler(heading, false);
+        VegaRuntime.narrator().filler(heading, false);
         return new RoutePlotter().plotRoute(system);
     }
 

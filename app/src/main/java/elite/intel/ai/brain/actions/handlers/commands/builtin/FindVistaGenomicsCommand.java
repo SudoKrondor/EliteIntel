@@ -3,7 +3,7 @@ package elite.intel.ai.brain.actions.handlers.commands.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
@@ -51,7 +51,7 @@ public final class FindVistaGenomicsCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         Number range = GetNumberFromParam.extractRangeParameter(params, 250);
-        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.vistaGenomics.searching"), false);
+        VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.vistaGenomics.searching"), false);
 
 
         VistaSearchCriteria criteria = new VistaSearchCriteria();
@@ -93,7 +93,7 @@ public final class FindVistaGenomicsCommand implements IntelCommand {
         // the whole spoken sentence in the starSystem column and the system name as the reminder text.
         ReminderManager.getInstance().setReminder(
                 announcement, result.getSystemName(), result.getStationName(), ReminderContact.VISTA_GENOMICS);
-        CompanionRuntime.narrator().filler(announcement, false);
+        VegaRuntime.narrator().filler(announcement, false);
         return routePlotter.plotRoute(result.getSystemName());
     }
 }

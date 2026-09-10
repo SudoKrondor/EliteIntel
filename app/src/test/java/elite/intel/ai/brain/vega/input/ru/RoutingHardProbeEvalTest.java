@@ -1,7 +1,7 @@
 package elite.intel.ai.brain.vega.input.ru;
 
-import elite.intel.ai.brain.vega.input.CompanionEvalHarness;
-import elite.intel.ai.brain.vega.input.CompanionEvalHarness.Executed;
+import elite.intel.ai.brain.vega.input.VegaEvalHarness;
+import elite.intel.ai.brain.vega.input.VegaEvalHarness.Executed;
 import elite.intel.i18n.Language;
 import org.junit.jupiter.api.*;
 
@@ -25,7 +25,7 @@ class RoutingHardProbeEvalTest {
     private record Case(String input, String expectedTool) {
     }
 
-    private final CompanionEvalHarness h = new CompanionEvalHarness("companion-ru-routing-probe-trace.txt", Language.RU);
+    private final VegaEvalHarness h = new VegaEvalHarness("vega-ru-routing-probe-trace.txt", Language.RU);
 
     private final List<Case> cases = List.of(
             // Subsystem targeting: the natural imperative "целься в X" followed by terse "цель X" noun-phrases.

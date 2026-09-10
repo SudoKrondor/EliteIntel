@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.JournalSymbol;
@@ -125,7 +125,7 @@ public final class FindMissionCommodityCommand implements IntelCommand {
 
         // Said in the commander's language, not the game's: the mission named the good in whatever
         // language the game is running in, and the search needs it in English regardless.
-        CompanionRuntime.narrator().filler(StringUtls.localizedResponse(
+        VegaRuntime.narrator().filler(StringUtls.localizedResponse(
                 "handler.missionCommodity.sourcing",
                 outstanding.shortfall(),
                 FuzzySearch.localizedCommodityName(commodity),

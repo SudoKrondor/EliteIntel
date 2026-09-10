@@ -1,6 +1,6 @@
 # Diagnostics `input.txt` — reference
 
-The file-based diagnostics mode lets you "speak" phrases to the application and feed it game events from a text file, with no microphone and no running game. It is a dev tool for checking command/query routing and the companion's reaction to events.
+The file-based diagnostics mode lets you "speak" phrases to the application and feed it game events from a text file, with no microphone and no running game. It is a dev tool for checking command/query routing and VEGA's reaction to events.
 
 Sources of truth (update the examples here when the code changes):
 
@@ -17,7 +17,7 @@ Everything lives in `%LOCALAPPDATA%\elite-intel\diagnostics\`
 | File | Role |
 |---|---|
 | `input.txt` | **The mode gate** plus the input channel. The file's mere presence at startup switches diagnostics on. The application only **reads** it and never creates it — its lifecycle is yours. |
-| `language.txt` | The boot language (code: `RU`, `EN`, …). Read at startup, before the companion/reducer are assembled. This is **data**, not a gate. |
+| `language.txt` | The boot language (code: `RU`, `EN`, …). Read at startup, before VEGA/the reducer are assembled. This is **data**, not a gate. |
 | `session.log` | A mirror of the SYSTEM LOG plus the `DIAG` turn markers. |
 
 ## Enabling the mode (short version)
@@ -40,7 +40,7 @@ The application reads only **newly appended** lines, one at a time.
 
 | Line | What it does |
 |---|---|
-| `plain text` | A spoken phrase → routed like microphone input. Opens a companion turn. |
+| `plain text` | A spoken phrase → routed like microphone input. Opens a VEGA turn. |
 | `@visible <actionId>` | Puts the game into the first context where the **command/query** `<actionId>` is visible to the router (`isVisibleForLLM`). Commands and queries only. Immediate, no turn. |
 | `@status <context>` | Manual context: `main_ship`, `supercruise`, `docked`, `landed`, `srv`, `on_foot`. Sets the `Status` flags. Immediate, no turn. |
 | `@fighter on` / `@fighter off` | The "fighter deployed" flag (`on`/`true` = deployed). |
@@ -51,7 +51,7 @@ The application reads only **newly appended** lines, one at a time.
 
 ### `@` directives
 
-They apply immediately and **create no companion turn**. Each writes its own line to the log:
+They apply immediately and **create no VEGA turn**. Each writes its own line to the log:
 
 - `@visible <id>` → `DIAG visible=<id> state=<ctx>`.
   `state=unknown-action` means a wrong id; `main_ship(fallback)` means the action is visible nowhere.
@@ -69,7 +69,7 @@ The `@status` contexts (flags mirroring `StatusFlags`):
 - **Do not supply
   a `timestamp`.** `isReplay()` means "timestamp earlier than application start" → the event is discarded (`DIAG event skipped=<type>`). With the field absent, the tailer stamps a fresh `Instant.now()`
   and the event goes through.
-- The event is published on the bus exactly as it would be from `JournalParser`, **with no companion
+- The event is published on the bus exactly as it would be from `JournalParser`, **with no VEGA
   turn**: the log gets `DIAG event=<type>`, but there will be no `DIAG turn-done` for an event. The reaction (the spoken line) is
   **asynchronous**, on a virtual thread, and appears a moment later. Do not append the next line immediately.
 - **Subscribers may have their own state
@@ -88,7 +88,7 @@ An ordinary line is a spoken phrase. It opens a full turn: the log gets `DIAG in
 - `DIAG log opened` — a fresh instance reopened the (cleared) log.
 - `DIAG tailer watching input` — the tailer is running and reading `input.txt`.
 - `DIAG input="<phrase>"` — a phrase turn has opened.
-- `DIAG dispatch tool=<id>` — the action the companion recognized in this turn.
+- `DIAG dispatch tool=<id>` — the action VEGA recognized in this turn.
 - `DIAG turn-done` — the phrase turn is finished (after `dispatch` and `speaking=false`).
 - `DIAG speaking=true|false` — the TTS speech boundaries.
 - `DIAG event=<type>` / `DIAG event skipped=<type>` — event accepted / discarded (replay/expired).

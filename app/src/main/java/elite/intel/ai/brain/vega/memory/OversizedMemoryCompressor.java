@@ -1,12 +1,11 @@
 package elite.intel.ai.brain.vega.memory;
 
-import elite.intel.ai.brain.vega.CompanionRuntimeGeneration;
+import elite.intel.ai.brain.vega.VegaRuntimeGeneration;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
 import elite.intel.ai.brain.vega.model.llm.*;
 import elite.intel.ai.brain.vega.model.memory.MemoryEntry;
 import elite.intel.ai.brain.vega.model.memory.MemoryRecord;
 import elite.intel.ai.brain.vega.tools.SpeakFunction;
-import elite.intel.util.json.JsonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,7 +31,7 @@ public final class OversizedMemoryCompressor implements OversizedMemoryListener,
 
     private final MemoryGateway memoryGateway;
     private final LlmGateway llmGateway;
-    private final CompanionRuntimeGeneration runtimeGeneration;
+    private final VegaRuntimeGeneration runtimeGeneration;
     private final Executor executor;
     private final CompressionPromptComposer promptComposer = new CompressionPromptComposer();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -41,10 +40,10 @@ public final class OversizedMemoryCompressor implements OversizedMemoryListener,
     public OversizedMemoryCompressor(
             MemoryGateway memoryGateway,
             LlmGateway llmGateway,
-            CompanionRuntimeGeneration runtimeGeneration
+            VegaRuntimeGeneration runtimeGeneration
     ) {
         this(memoryGateway, llmGateway, runtimeGeneration, Executors.newSingleThreadExecutor(runnable -> {
-            Thread thread = new Thread(runnable, "companion-memory-compressor");
+            Thread thread = new Thread(runnable, "vega-memory-compressor");
             thread.setDaemon(true);
             return thread;
         }));
@@ -54,7 +53,7 @@ public final class OversizedMemoryCompressor implements OversizedMemoryListener,
     OversizedMemoryCompressor(
             MemoryGateway memoryGateway,
             LlmGateway llmGateway,
-            CompanionRuntimeGeneration runtimeGeneration,
+            VegaRuntimeGeneration runtimeGeneration,
             Executor executor
     ) {
         this.memoryGateway = Objects.requireNonNull(memoryGateway, "memoryGateway");
@@ -87,7 +86,7 @@ public final class OversizedMemoryCompressor implements OversizedMemoryListener,
                 return;
             }
             String content = entry.content();
-            if (content.length() > CompanionMemoryPolicy.entryMaxChars()) {
+            if (content.length() > VegaMemoryPolicy.entryMaxChars()) {
                 content = compressEntry(entry);
                 if (content == null) {
                     return;
@@ -125,9 +124,9 @@ public final class OversizedMemoryCompressor implements OversizedMemoryListener,
         String candidate = hasGist ? oneLine(gist) : entry.content();
         if (!hasGist && !failed) {
             log.warn("Memory compression produced no usable speak.text; storing a bounded copy of the original entry");
-        } else if (hasGist && candidate.length() > CompanionMemoryPolicy.entryMaxChars()) {
+        } else if (hasGist && candidate.length() > VegaMemoryPolicy.entryMaxChars()) {
             log.warn("Memory compression returned {} characters; bounding the gist to {}",
-                    candidate.length(), CompanionMemoryPolicy.entryMaxChars());
+                    candidate.length(), VegaMemoryPolicy.entryMaxChars());
         }
         return MemoryTextBounds.entry(candidate);
     }

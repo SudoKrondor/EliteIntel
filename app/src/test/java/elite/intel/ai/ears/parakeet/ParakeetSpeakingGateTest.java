@@ -1,8 +1,8 @@
 package elite.intel.ai.ears.parakeet;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.ai.brain.vega.input.BargeInEvent;
+import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.i18n.Language;
@@ -46,7 +46,7 @@ class ParakeetSpeakingGateTest {
     }
 
     @Test
-    void hotMicTranscriptUsesSingleBargeInOwnerAndStillDispatchesWhileCompanionSpeaks() throws Exception {
+    void hotMicTranscriptUsesSingleBargeInOwnerAndStillDispatchesWhileVegaSpeaks() throws Exception {
         sendToAi("plot route home", false);
 
         assertFalse(recorder.has(TTSInterruptEvent.class),

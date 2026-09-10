@@ -56,7 +56,7 @@ import static org.apache.commons.lang3.StringUtils.trimToNull;
  * action this build has, including ones not usable right now; a situation lists only what is usable there.
  * <p>
  * The search box is a plain, literal text filter over the listed actions - name, action key, and the spoken
- * phrases that trigger them. It is deliberately not the companion's routing: that ranks by meaning, so it
+ * phrases that trigger them. It is deliberately not VEGA's routing: that ranks by meaning, so it
  * would answer a typed word with commands that share none of it and no way to see why.
  * <p>
  * Below those, an "Available commands and queries" section (canon 9) holds one combined, alphabetically sorted
@@ -487,7 +487,7 @@ public class BuiltInCommandsTabPanel extends JPanel {
     /**
      * The rows a search matches: a literal, case-insensitive substring of the action's name, its id, or the
      * spoken phrases that trigger it. Deliberately plain - what is typed is what is looked for - because this
-     * is a reference list the commander reads, not the routing the companion performs on a spoken phrase.
+     * is a reference list the commander reads, not the routing VEGA performs on a spoken phrase.
      * A blank search matches everything. Static and package-private so it can be tested without a screen.
      */
     static List<ActionRow> matching(List<ActionRow> rows, String search) {

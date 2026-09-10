@@ -1,9 +1,9 @@
 package elite.intel.junit.gameapi.journal.subscribers;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.vega.CompanionNarrator;
-import elite.intel.ai.brain.vega.CompanionRuntimeGraph;
-import elite.intel.ai.brain.vega.CompanionRuntimeTestSupport;
+import elite.intel.ai.brain.vega.VegaNarrator;
+import elite.intel.ai.brain.vega.VegaRuntimeGraph;
+import elite.intel.ai.brain.vega.VegaRuntimeTestSupport;
 import elite.intel.gameapi.journal.events.CarrierJumpRequestEvent;
 import elite.intel.gameapi.journal.subscribers.CarrierJumpRequestSubscriber;
 import elite.intel.util.json.GsonFactory;
@@ -56,16 +56,16 @@ class CarrierJumpRequestSubscriberTest {
 
     private final CarrierJumpRequestSubscriber subscriber = new CarrierJumpRequestSubscriber();
     private final CapturingNarrator narrator = new CapturingNarrator();
-    private CompanionRuntimeGraph runtimeGraph;
+    private VegaRuntimeGraph runtimeGraph;
 
     @BeforeEach
     void installNarrator() {
-        runtimeGraph = CompanionRuntimeTestSupport.installNarrator(narrator);
+        runtimeGraph = VegaRuntimeTestSupport.installNarrator(narrator);
     }
 
     @AfterEach
     void clearNarrator() {
-        CompanionRuntimeTestSupport.uninstall(runtimeGraph);
+        VegaRuntimeTestSupport.uninstall(runtimeGraph);
     }
 
     @Test
@@ -117,7 +117,7 @@ class CarrierJumpRequestSubscriberTest {
     }
 
     /**
-     * Captures what the subscriber hands the companion, across the subscriber's virtual thread.
+     * Captures what the subscriber hands VEGA, across the subscriber's virtual thread.
      *
      * <p>Only departure narrations, because the narrator is installed process-wide and every
      * subscriber resolves it at {@code narrate()} time, not when it started work. A carrier arrival
@@ -127,7 +127,7 @@ class CarrierJumpRequestSubscriberTest {
      */
     private static final String DEPARTURE_INSTRUCTION_PREFIX = "Report the carrier departure";
 
-    private static final class CapturingNarrator implements CompanionNarrator {
+    private static final class CapturingNarrator implements VegaNarrator {
         private final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
         volatile String data;
         volatile String instructions;

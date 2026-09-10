@@ -1,24 +1,18 @@
 package elite.intel.ai.brain.vega.input.ru;
 
-import elite.intel.ai.brain.vega.CompanionConfig;
-import elite.intel.ai.brain.vega.input.CompanionEvalHarness;
+import elite.intel.ai.brain.vega.VegaConfig;
+import elite.intel.ai.brain.vega.input.VegaEvalHarness;
 import elite.intel.i18n.Language;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Theme 7 (Russian): behaviour when the companion cannot directly satisfy a Russian request.
+ * Theme 7 (Russian): behaviour when VEGA cannot directly satisfy a Russian request.
  */
 @Tag("local-integration")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -31,7 +25,7 @@ class BehavioralEvalTest {
             "уточни", "уточните", "подроб", "что именно", "какой именно", "какую именно",
             "нужно больше", "можешь уточнить", "можете уточнить");
 
-    private final CompanionEvalHarness h = new CompanionEvalHarness("companion-ru-behavioral-eval-trace.txt", Language.RU);
+    private final VegaEvalHarness h = new VegaEvalHarness("vega-ru-behavioral-eval-trace.txt", Language.RU);
 
     private final List<String> asks = List.of(
             "какая у нас максимальная дальность прыжка",
@@ -40,7 +34,7 @@ class BehavioralEvalTest {
             "включи маскировочное устройство",
             "сколько членов экипажа на станции, к которой мы приближаемся");
 
-    // Identity asks: the companion knows its own name from the persona prompt and must answer with it.
+    // Identity asks: VEGA knows its own name from the persona prompt and must answer with it.
     private final List<String> nameAsks = List.of(
             "как тебя зовут",
             "как мне тебя называть",
@@ -88,7 +82,7 @@ class BehavioralEvalTest {
 
     @Test
     void knowsItsOwnName() throws Exception {
-        String name = CompanionConfig.companionName();
+        String name = VegaConfig.vegaName();
         // Russian output may transliterate the Latin name (e.g. "Vega" -> "Вега"); accept either form.
         String transliterated = "Вега";
         List<String> report = new ArrayList<>();
@@ -106,18 +100,18 @@ class BehavioralEvalTest {
             report.add(h.memoryDeltaBlock());
         }
 
-        StringBuilder block = new StringBuilder("\n======== RU NAME / companion identity ========\n");
+        StringBuilder block = new StringBuilder("\n======== RU NAME / VEGA identity ========\n");
         report.forEach(line -> block.append(line).append("\n"));
         block.append(String.format("said its name \"%s\"/\"%s\": %d / %d%n", name, transliterated, said, nameAsks.size()));
         block.append(h.recentMemoryDumpBlock());
         h.trace(block.toString());
 
-        assertTrue(said > 0, "the companion never said its own name \"" + name + "\" - see the trace");
+        assertTrue(said > 0, "VEGA never said its own name \"" + name + "\" - see the trace");
     }
 
     /**
      * A question repeated three times in a row must always get a spoken reaction - never silence - even
-     * after the companion already answered it. A repeat may be acknowledged ("you already asked"), but the
+     * after VEGA already answered it. A repeat may be acknowledged ("you already asked"), but the
      * commander always expects a response, so an empty (silent) turn on any repeat is a failure.
      */
     @Test

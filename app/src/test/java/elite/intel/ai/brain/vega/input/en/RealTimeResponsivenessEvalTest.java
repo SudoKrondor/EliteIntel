@@ -1,11 +1,7 @@
 package elite.intel.ai.brain.vega.input.en;
 
-import elite.intel.ai.brain.vega.input.CompanionEvalHarness;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import elite.intel.ai.brain.vega.input.VegaEvalHarness;
+import org.junit.jupiter.api.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +42,7 @@ class RealTimeResponsivenessEvalTest {
         }
     }
 
-    private final CompanionEvalHarness h = new CompanionEvalHarness("companion-realtime-eval-trace.txt");
+    private final VegaEvalHarness h = new VegaEvalHarness("vega-realtime-eval-trace.txt");
 
     private final List<Item> conversation = List.of(
             Item.say("what is our current location"),

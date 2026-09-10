@@ -12,13 +12,13 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Diagnostics-mode {@link ExecutionGateway}. Records every dispatched tool to {@link DiagnosticsLog} as a
  * {@code DIAG dispatch} marker (the signal the tester matches against the expected action) and, like
- * {@code CompanionRoutingHarness}, executes only companion system functions while game commands and queries are
+ * {@code VegaRoutingHarness}, executes only VEGA system functions while game commands and queries are
  * merely recorded,
- * never run. So a diagnostics session drives the real routing path (reflex &rarr; reducer &rarr; companion
+ * never run. So a diagnostics session drives the real routing path (reflex &rarr; reducer &rarr; VEGA
  * LLM) without pressing keys into the game or calling EDSM/Spansh.
  * <p>
- * Constructing this gateway means the companion execution path is wired, so it writes an informational
- * {@code DIAG companion-started} marker. It is NOT the readiness signal: the tester waits for {@code DIAG ready}
+ * Constructing this gateway means VEGA execution path is wired, so it writes an informational
+ * {@code DIAG VEGA-started} marker. It is NOT the readiness signal: the tester waits for {@code DIAG ready}
  * (emitted by {@link DiagnosticsLogWriter} once the LLM endpoint is confirmed reachable, i.e. all services up).
  */
 public final class DiagnosticsExecutionGateway implements ExecutionGateway {
@@ -34,7 +34,7 @@ public final class DiagnosticsExecutionGateway implements ExecutionGateway {
             registry.load();
         }
         this.systemFunctions = registry.byId();
-        DiagnosticsLog.write("DIAG companion-started");
+        DiagnosticsLog.write("DIAG VEGA-started");
     }
 
     @Override

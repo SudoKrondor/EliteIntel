@@ -1,6 +1,6 @@
 package elite.intel.util;
 
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.CarrierRouteLegs;
 import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
@@ -39,7 +39,7 @@ public class FleetCarrierRouteCalculator {
             return localizedEvent("event.carrier.route.noDestination");
         }
 
-        CompanionRuntime.narrator().filler(localizedEvent("event.carrier.route.accessing"), false);
+        VegaRuntime.narrator().filler(localizedEvent("event.carrier.route.accessing"), false);
 
         String origin = resolveOrigin(playerSession, carrierData);
         if (origin == null) {

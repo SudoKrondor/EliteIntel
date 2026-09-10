@@ -16,7 +16,7 @@ import java.util.Set;
 
 /**
  * Context-gated fact source for the station the commander is at: it contributes only when the current situation is
- * docked or on foot in a station (classified by {@link Status#getSituation}), and grounds the companion in that
+ * docked or on foot in a station (classified by {@link Status#getSituation}), and grounds VEGA in that
  * station's character (type, economy, controlling faction, number of services) as one compact, length-capped line.
  * It reads the current location record ({@link LocationManager}) the same way {@code query_station_details} does.
  * The source admits itself for station-detail/location subjects; it stays silent away from a station and

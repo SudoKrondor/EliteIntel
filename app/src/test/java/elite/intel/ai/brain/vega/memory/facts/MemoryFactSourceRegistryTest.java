@@ -1,9 +1,5 @@
 package elite.intel.ai.brain.vega.memory.facts;
 
-import elite.intel.ai.brain.vega.memory.facts.MemoryFactContext;
-import elite.intel.ai.brain.vega.memory.facts.MemoryFactSource;
-import elite.intel.ai.brain.vega.memory.facts.MemoryFactSourceRegistry;
-import elite.intel.ai.brain.vega.memory.facts.RegisterMemoryFactSource;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -23,7 +19,7 @@ class MemoryFactSourceRegistryTest {
 
     /**
      * A discoverable fact source that exists only to prove the registry's annotation scan wires it up. It
-     * contributes no facts, so it does not pollute the {@code <facts>} block of companion evals that boot the registry.
+     * contributes no facts, so it does not pollute the {@code <facts>} block of VEGA evals that boot the registry.
      */
     @RegisterMemoryFactSource
     public static final class Probe implements MemoryFactSource {

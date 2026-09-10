@@ -3,7 +3,7 @@ package elite.intel.ai.brain.actions.handlers.commands.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.dao.PirateHuntingGroundsDao.HuntingGround;
 import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
 import elite.intel.db.managers.HuntingGroundManager;
@@ -58,14 +58,14 @@ public final class ReconHuntingGroundCommand implements IntelCommand {
 
         boolean multipleMissionProviders = huntingGrounds.getFirst().getMissionProvider().size() > 1;
         // Non-terminal warning: the recon announcement and route plotting below must still run, so voice
-        // the line via CompanionRuntime.narrator().filler (spoken, not remembered) instead of returning here.
+        // the line via VegaRuntime.narrator().filler (spoken, not remembered) instead of returning here.
         if (multipleMissionProviders) {
-            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.multipleProviders"), false);
+            VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.multipleProviders"), false);
         }
 
         String starSystem = target.getStarSystem();
 
-        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.reconSystem", starSystem), false);
+        VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.reconSystem", starSystem), false);
 
         RoutePlotter plotter = new RoutePlotter();
         return plotter.plotRoute(starSystem);

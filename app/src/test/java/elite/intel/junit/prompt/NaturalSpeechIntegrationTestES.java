@@ -2,7 +2,7 @@ package elite.intel.junit.prompt;
 
 import elite.intel.ai.brain.actions.handlers.commands.builtin.*;
 import elite.intel.ai.brain.actions.handlers.queries.*;
-import elite.intel.ai.brain.vega.input.CompanionRoutingHarness;
+import elite.intel.ai.brain.vega.input.VegaRoutingHarness;
 import elite.intel.i18n.Language;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 /**
  * Spanish routing suite - the ES counterpart of {@link NaturalSpeechIntegrationTestPT}. Extrapolated from the
  * other NaturalSpeech suites: each parameterized case asserts a native Spanish phrase routes to the expected
- * action through the real companion path (reflex gate -> semantic reducer -> companion LLM). Phrases are drawn
+ * action through the real VEGA path (reflex gate -> semantic reducer -> VEGA LLM). Phrases are drawn
  * from {@code ai_action_aliases_es.properties} and {@code SpanishPromptRules} so the deterministic layer can
  * resolve the unambiguous ones and the disambiguation carries the rest.
  * <p>
@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class NaturalSpeechIntegrationTestES {
 
-    private final CompanionRoutingHarness harness = new CompanionRoutingHarness(Language.ES);
+    private final VegaRoutingHarness harness = new VegaRoutingHarness(Language.ES);
 
     @BeforeAll
     void bootstrap() throws Exception {

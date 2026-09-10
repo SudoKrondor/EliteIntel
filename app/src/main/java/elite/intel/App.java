@@ -56,10 +56,10 @@ public class App {
         ShipMakeManager.getInstance();
 
         // File-driven diagnostics harness: when a phrase input file is present, feed it as commander input and
-        // mirror the SYSTEM LOG to a session log so an automated tester can drive and observe the companion.
+        // mirror the SYSTEM LOG to a session log so an automated tester can drive and observe VEGA.
         if (DiagnosticsMode.isEnabled()) {
             DiagnosticsLog.open();
-            // Must precede service start: the companion's semantic reducer freezes the language at construction.
+            // Must precede service start: VEGA's semantic reducer freezes the language at construction.
             DiagnosticsMode.applyBootLanguage();
             DiagnosticsPacer.getInstance().start();
             new DiagnosticsLogWriter().start();

@@ -34,7 +34,7 @@ final class EdgeVoiceProvider {
      * <p>
      * Gender is the commander's choice of voice and is preserved through every step: a ship set to a male
      * voice must not land on a female one in a language whose exact voice Edge does not offer, because the
-     * same choice also tells the companion prompt how to speak of itself.
+     * same choice also tells VEGA prompt how to speak of itself.
      *
      * @param selectedName a logical {@link EdgeVoices} name, or a provider-native ShortName a commander stored
      *                     directly, or {@code null} for the default

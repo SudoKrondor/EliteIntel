@@ -29,7 +29,7 @@ import java.util.Set;
  * word ("near"/"gear"), which is exactly why those only pass when the rest of the phrase agrees.
  *
  * @see elite.intel.ai.brain.i18n.AliasVocabulary
- * @see CompanionWordMatch the looser, stem-tolerant sibling used to <em>offer</em> tools, where a wrong extra
+ * @see VegaWordMatch the looser, stem-tolerant sibling used to <em>offer</em> tools, where a wrong extra
  * candidate is cheap; firing without a model is not, so this one has no stem rule at all
  */
 public final class FuzzyAliasMatch {

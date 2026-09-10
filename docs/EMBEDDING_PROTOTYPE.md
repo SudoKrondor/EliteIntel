@@ -8,7 +8,7 @@ A working slide-in that turns text into meaning-vectors so inflected Slavic form
 The reducers (`WordOverlapActionReducer`, and the legacy `ai.brain.Reducer` that has since been deleted with the rest of the legacy LLM path) pre-filter the command catalog to a prompt-sized candidate list by **word overlap
 **. That breaks on Russian/Ukrainian: `авианосец`,
 `авианосцу`, `авианосцем` are different strings, so a valid command silently drops out before the LLM sees it.
-`CompanionWordMatch` (stem/prefix/Levenshtein) and the
+`VegaWordMatch` (stem/prefix/Levenshtein) and the
 `InputNormalizer` synonym tables are hand-built workarounds for this. Embeddings solve it at the root: the model already learned the morphology.
 
 ## What's here
@@ -82,20 +82,20 @@ A/B proof: `./gradlew embeddingTest` runs `SemanticReducerAbTest` — word-overl
 `авианосцу`, semantic keeps it as `{авианосец=carrier_status}`.
 `ReducerWordOverlapTest` (default suite, no model) locks the unchanged word-overlap behaviour across the refactor.
 
-## The seam — where this plugs into selection (companion path)
+## The seam — where this plugs into selection (VEGA path)
 
-`CompanionActionReducer` is already documented as the swap point ("can later be replaced by a smarter
+`VegaActionReducer` is already documented as the swap point ("can later be replaced by a smarter
 (e.g. semantic) reducer without touching any call site"). Reuse the same `SemanticPhraseMatcher`. Next step:
 
 1. At startup, embed every command's training phrase once; cache the vectors (a plain `float[][]` keyed by command id —
    **no vector DB needed** at a few hundred commands; consider caching to disk to skip the one-time startup cost).
 2. Per utterance: `embed(input)`, cosine vs the cached catalog, keep top-N over a threshold → candidate list.
-3. Implement `SemanticActionReducer implements CompanionActionReducer`, **A/B against**
+3. Implement `SemanticActionReducer implements VegaActionReducer`, **A/B against**
    `WordOverlapActionReducer` on the Russian/Ukrainian phrase set, keep the fast-paths (exact alias,
    `ReflexResolver`) in front.
 4. ~~Reuse the same embedder for `SessionMemoryGateway`
    recall.~~ Dropped: session memory no longer has anything to search. The stored conversation the recall was for (retained history, its summaries, and the `memory_search`
-   query that read them) was removed once nothing read it, and the companion is grounded in live game state through
+   query that read them) was removed once nothing read it, and VEGA is grounded in live game state through
    `MemoryFactSource` instead. Steps 1 to 3 shipped as `SemanticActionReducer`.
 
 ## Offline natives (done) — the bundling example

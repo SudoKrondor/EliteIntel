@@ -145,7 +145,7 @@ public final class PushToTalkService implements ManagedService {
     }
 
     /**
-     * Push-to-talk on: nothing reaches the companion until the button is held.
+     * Push-to-talk on: nothing reaches VEGA until the button is held.
      */
     private void arm() {
         UiBus.publish(new PttModeChangedEvent(true));

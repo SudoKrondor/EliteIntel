@@ -30,7 +30,7 @@ import java.util.function.Supplier;
  * screen, or a system away from the one we shopped in - and a card ordered on a guess would be worse than
  * one not ordered at all.
  * <p>
- * Shared between the HUD card and the companion's callout so that the screen and the voice cannot disagree
+ * Shared between the HUD card and VEGA's callout so that the screen and the voice cannot disagree
  * about which market the commander is shopping at, which is why it is a singleton rather than a field of
  * either.
  */

@@ -50,7 +50,7 @@ public class ProspectedAsteroidEvent extends BaseEvent {
     /**
      * Payload-dependent. Mirrors ProspectorSubscriber: an asteroid is only worth a word when it
      * holds one of the commander's tracked mining targets. We prospect and discard a great many
-     * rocks, so without this filter the companion would comment on every prospector hit.
+     * rocks, so without this filter VEGA would comment on every prospector hit.
      * <p>
      * A core asteroid always clears the bar, whatever it holds - it is rare enough, and short-lived
      * enough, that the commander wants to hear about it before deciding whether the contents matter.

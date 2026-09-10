@@ -52,7 +52,7 @@ public final class MissionSelection {
                     .thenComparing(GAME_LIST_ORDER);
 
     /**
-     * The mission the app means by "the mission" when it has to name one: the HUD's card, and the companion's
+     * The mission the app means by "the mission" when it has to name one: the HUD's card, and VEGA's
      * mission fact both read it from here, so the card and the spoken answer cannot name different missions.
      * <p>
      * Two rules, in order:

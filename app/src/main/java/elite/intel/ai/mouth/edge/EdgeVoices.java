@@ -37,7 +37,7 @@ public enum EdgeVoices {
 
     /**
      * Resolves a stored ship-voice name to an Edge voice, keeping its gender: the commander picks a male or a
-     * female voice, and that choice also decides how the companion refers to herself or himself (see
+     * female voice, and that choice also decides how VEGA refers to herself or himself (see
      * {@code SystemSession.getVoiceGender()}). An unrecognised name takes {@link #DEFAULT_VOICE}.
      */
     public static EdgeVoices voiceOrDefault(String name) {

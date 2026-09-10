@@ -1,7 +1,7 @@
 package elite.intel.ai.brain.vega.execution;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.vega.CompanionRuntimeGeneration;
+import elite.intel.ai.brain.vega.VegaRuntimeGeneration;
 import elite.intel.ai.brain.vega.model.execution.ExecutionRequest;
 
 import java.util.Set;
@@ -19,14 +19,14 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class GenerationBoundExecutionGateway implements ExecutionGateway {
 
     private final ExecutionGateway delegate;
-    private final CompanionRuntimeGeneration runtimeGeneration;
+    private final VegaRuntimeGeneration runtimeGeneration;
     private final Set<CompletableFuture<JsonObject>> ownedResults = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean closed = new AtomicBoolean();
 
     /** Wraps a gateway whose submissions and close lifecycle belong to {@code runtimeGeneration}. */
     public GenerationBoundExecutionGateway(
             ExecutionGateway delegate,
-            CompanionRuntimeGeneration runtimeGeneration
+            VegaRuntimeGeneration runtimeGeneration
     ) {
         this.delegate = java.util.Objects.requireNonNull(delegate, "delegate");
         this.runtimeGeneration = java.util.Objects.requireNonNull(runtimeGeneration, "runtimeGeneration");
@@ -36,14 +36,14 @@ public final class GenerationBoundExecutionGateway implements ExecutionGateway {
     public CompletableFuture<JsonObject> submit(ExecutionRequest request) {
         if (!acceptsSubmissions()) {
             return CompletableFuture.failedFuture(
-                    new RejectedExecutionException("Companion execution generation is no longer active"));
+                    new RejectedExecutionException("VEGA execution generation is no longer active"));
         }
         AtomicReference<CompletableFuture<JsonObject>> submittedResult = new AtomicReference<>();
         boolean submitted = runtimeGeneration.runIfActive(
                 () -> submittedResult.set(delegate.submit(request)));
         if (!submitted) {
             return CompletableFuture.failedFuture(
-                    new RejectedExecutionException("Companion execution generation is no longer active"));
+                    new RejectedExecutionException("VEGA execution generation is no longer active"));
         }
         CompletableFuture<JsonObject> result = java.util.Objects.requireNonNull(
                 submittedResult.get(), "Execution gateway returned null instead of a completion");

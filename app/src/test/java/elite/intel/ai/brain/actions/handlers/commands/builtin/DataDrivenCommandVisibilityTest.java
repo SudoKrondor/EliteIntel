@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * These three commands are data-driven (remembered landing coordinates, saved codex entries, the held carrier
  * route) and infer no parameters from the commander, so they must be offered in any normal control mode rather
  * than gated on a narrow game situation (surface lat/long, galaxy-map focus). Regression guard for the
- * over-gating that hid them from the companion router.
+ * over-gating that hid them from VEGA router.
  */
 class DataDrivenCommandVisibilityTest {
 

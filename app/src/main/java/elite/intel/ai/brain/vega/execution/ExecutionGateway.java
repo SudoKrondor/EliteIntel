@@ -6,7 +6,7 @@ import elite.intel.ai.brain.vega.model.execution.ExecutionRequest;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * The single door for executing tool-calls in companion mode. Executes {@code ExecutionRequest}s
+ * The single door for executing tool-calls in VEGA. Executes {@code ExecutionRequest}s
  * (never {@code Thought}s) on a concurrent, per-command action lane (actions/macros) or a parallel query lane,
  * so a running command never blocks a later one.
  * <p>

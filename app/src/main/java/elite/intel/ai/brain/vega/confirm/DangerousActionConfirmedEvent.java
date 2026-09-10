@@ -3,7 +3,8 @@ package elite.intel.ai.brain.vega.confirm;
 /**
  * Signals that the commander has confirmed a frozen dangerous action, delivered on a dedicated
  * confirmation bus. It only has effect if there is a current thought in {@code awaiting_confirmation};
- * the LLM does not participate in confirmation (see COMPANION_ARCHITECTURE.md §2.13).
+ * the LLM does not participate in confirmation (see docs/VEGA_ARCHITECTURE.md, "Clarification and
+ * dangerous actions").
  */
 public final class DangerousActionConfirmedEvent {
 

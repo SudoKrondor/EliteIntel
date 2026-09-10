@@ -559,7 +559,7 @@ public class ParakeetSTTImpl implements EarsInterface {
     }
 
     /**
-     * The only way a spoken word reaches the companion while she is asleep: {@link WakeBypass} decides, and
+     * The only way a spoken word reaches VEGA while she is asleep: {@link WakeBypass} decides, and
      * everything it does not admit is dropped here rather than costing an AI round trip.
      */
     private void routePastSleepGate(String transcript) {

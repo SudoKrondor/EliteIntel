@@ -2,7 +2,7 @@ package elite.intel.gameapi.search.spansh.client;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.eventbus.AudioBeepCueBus;
 import elite.intel.tools.ws.WebSocketBroadcaster;
 import elite.intel.util.AudioPlayer;
@@ -92,7 +92,7 @@ public class SpanshClient {
         String body = resp.body();
         if (resp.statusCode() == 400) {
             log.warn("POST failed: {}", body);
-            CompanionRuntime.narrator().narrate(
+            VegaRuntime.narrator().narrate(
                             "Unable to complete search request. Spansh.co.uk failed with error message: " + body,
                             """
                                     Issue a warning with exact error message returned from API, let user know that Spansh failed to give us any data.

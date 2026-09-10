@@ -18,7 +18,7 @@ public final class InterruptCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Interrupt and immediately stop the companion's current speech.";
+        return "Interrupt and immediately stop VEGA's current speech.";
     }
 
 
@@ -27,7 +27,9 @@ public final class InterruptCommand implements IntelCommand {
         return ID;
     }
 
-    /** Companion-side control (interrupts TTS); executable in any location. */
+    /**
+     * VEGA-side control (interrupts TTS); executable in any location.
+     */
     @Override
     public boolean isVisibleForLLM(Status status) {
         return true;
