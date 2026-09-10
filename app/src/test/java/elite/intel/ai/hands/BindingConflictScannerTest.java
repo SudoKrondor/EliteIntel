@@ -186,6 +186,72 @@ class BindingConflictScannerTest {
     }
 
     @Test
+    void panelAndMapKeysSharingAChordWithUiNavigationAreBlocking() {
+        // The third break in the context model: UI_Down is context "ui" and GalaxyMapOpen_Buggy is
+        // context "buggy", so contextOf() would clear this pair - but the panel and map keys are not
+        // disabled while a panel is open, which is how a commander switches panels without closing one
+        // first. Verbatim from the support bundle of 2026-09-09.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "UI_Down", Set.of("Key_LeftControl", "Key_S"),
+                "GalaxyMapOpen_Buggy", Set.of("Key_LeftControl", "Key_S"),
+                "UI_Right", Set.of("Key_LeftControl", "Key_D"),
+                "SystemMapOpen_Buggy", Set.of("Key_LeftControl", "Key_D")));
+
+        assertEquals(
+                List.of("GalaxyMapOpen_Buggy*UI_Down",
+                        "SystemMapOpen_Buggy*UI_Right"),
+                conflicts.stream()
+                        .map(c -> c.actionA() + "*" + c.actionB())
+                        .sorted()
+                        .toList());
+        assertTrue(conflicts.stream().allMatch(Conflict::blocking));
+    }
+
+    @Test
+    void panelFocusKeysSharingAChordWithUiNavigationAreBlockingInEveryContext() {
+        // Same rule for the four panel-focus keys, and in whichever vehicle Elite names them for: the
+        // walk EliteIntel does through a panel is UI_* taps, and any of these fired mid-walk replaces
+        // what it is walking.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "UI_Up", Set.of("Key_1"),
+                "FocusLeftPanel", Set.of("Key_1"),
+                "UI_Left", Set.of("Key_3"),
+                "FocusRadarPanel_Buggy", Set.of("Key_3"),
+                "UI_Select", Set.of("Key_4"),
+                "FocusRightPanel", Set.of("Key_4"),
+                "UI_Back", Set.of("Key_2"),
+                "FocusCommsPanel_Humanoid", Set.of("Key_2")));
+
+        assertEquals(4, conflicts.size());
+        assertTrue(conflicts.stream().allMatch(Conflict::blocking));
+    }
+
+    @Test
+    void panelAndMapKeysDoNotConflictWithVehicleControlsOrTheirOwnTwins() {
+        // The rule pairs the interface-switch family against UI_* only. A ship/SRV twin on one key is
+        // the recommended layout, and a vehicle control sharing a key is cleared by the context model
+        // as it always was - neither may start being reported because of this.
+        assertTrue(BindingConflictScanner.scanKeysets(bindings(
+                "FocusRadarPanel", Set.of("Key_3"),
+                "FocusRadarPanel_Buggy", Set.of("Key_3"),
+                "GalaxyMapOpen", Set.of("Key_O"),
+                "OpenCodexGoToDiscovery_Buggy", Set.of("Key_O"),
+                "SystemMapOpen_Buggy", Set.of("Key_LeftControl", "Key_D"),
+                "CycleNextSubsystem", Set.of("Key_LeftControl", "Key_D"))).isEmpty());
+    }
+
+    @Test
+    void separatingPanelKeysFromUiKeysClearsTheBlockingConflict() {
+        // The remedy is separation, exactly as for the map camera: move the SRV map keys off the chords
+        // the interface walks on and the pair is gone.
+        assertTrue(BindingConflictScanner.scanKeysets(bindings(
+                "UI_Down", Set.of("Key_LeftControl", "Key_S"),
+                "UI_Right", Set.of("Key_LeftControl", "Key_D"),
+                "GalaxyMapOpen_Buggy", Set.of("Key_RightShift", "Key_O"),
+                "SystemMapOpen_Buggy", Set.of("Key_LeftControl", "Key_Z"))).isEmpty());
+    }
+
+    @Test
     void quickCommsDoesNotConflictWithOtherUiNavigationKeys() {
         // Only Select is the problem: EliteIntel commits its choices with it. Sharing a key with a
         // direction key is an ordinary same-key overlap, cleared by the context model like any other.

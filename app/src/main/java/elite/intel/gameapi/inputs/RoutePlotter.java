@@ -176,12 +176,6 @@ public class RoutePlotter {
      * and shuts an open one. Both readings are used above, in that order.
      */
     private GameInputStep mapToggleStep() {
-        if (status.isOnFoot()) {
-            return GameInputStep.bindingTap(BINDING_GALAXY_MAP_HUMANOID.getGameBinding());
-        }
-        if (status.isInSrv()) {
-            return GameInputStep.bindingTap(BINDING_GALAXY_MAP_BUGGY.getGameBinding());
-        }
-        return GameInputStep.bindingTap(BINDING_GALAXY_MAP.getGameBinding());
+        return UiNavCommon.galaxyMapToggleStep();
     }
 }
