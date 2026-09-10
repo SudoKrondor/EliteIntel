@@ -117,6 +117,22 @@ public class LocationManager {
         return Database.withDao(LocationDao.class, LocationDao::currentCoordinates);
     }
 
+    /**
+     * Where the ship is, for a distance search, or null when the app cannot fix a position at all.
+     * <p>
+     * WHY the fallback: {@link #getGalacticCoordinates()} skips any row with a zero coordinate, and a
+     * real system sits at each of those zeroes - Sol is at the origin. A search that answered "I do
+     * not know where you are" in Sol would be wrong in one of the busiest systems in the bubble.
+     */
+    public LocationDao.Coordinates currentCoordinates() {
+        LocationDao.Coordinates coordinates = getGalacticCoordinates();
+        if (coordinates != null) return coordinates;
+
+        LocationDto here = findByLocationData(PlayerSession.getInstance().getLocationData());
+        if (here.getStarName() == null || here.getStarName().isBlank()) return null;
+        return new LocationDao.Coordinates(here.getStarName(), here.getX(), here.getY(), here.getZ());
+    }
+
 
     public LocationDto getLocation(String primaryStar, Long locationId) {
         return Database.withDao(LocationDao.class, dao -> {

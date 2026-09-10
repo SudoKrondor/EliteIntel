@@ -67,7 +67,8 @@ class CommandExecutionEvalTest {
             new Case("find a mining site for painite", "find_mining_site", "painite", false),
             new Case("find brain trees", "find_brain_trees", null, false),
             new Case("find nearest interstellar factor", "find_interstellar_factor", null, true),
-            new Case("find hunting grounds within 50 light years", "find_hunting_grounds", "50", false),
+            new Case("find hunting grounds within 50 light years", "find_bounty_hunting_ground", "50", false),
+            new Case("find pirate massacre missions within 80 light years", "find_pirate_massacre_missions", "80", false),
             new Case("navigate to active mission", "navigate_to_active_mission", null, false),
             new Case("calculate neutron star route at 60 efficiency", "calculate_neutron_star_route", "60", false),
             // Regression: VEGA refused "display carrier management" on first request ("Sorry, I can't do

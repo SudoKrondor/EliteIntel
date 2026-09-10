@@ -2,10 +2,12 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.vega.VegaRuntime;
+import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.MissionType;
 import elite.intel.gameapi.journal.events.MissionCompletedEvent;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
+import elite.intel.gameapi.missions.PirateMassacreContract;
 import elite.intel.session.PlayerSession;
 
 import static elite.intel.gameapi.MissionType.MISSION_PIRATE_MASSACRE;
@@ -16,10 +18,13 @@ import static elite.intel.util.StringUtls.removeNameEnding;
 public class MissionCompletedSubscriber {
     private MissionManager missionManager = MissionManager.getInstance();
     private PlayerSession playerSession = PlayerSession.getInstance();
+    private HuntingGroundManager huntingGrounds = HuntingGroundManager.getInstance();
 
     @Subscribe
     public void onMissionCompletedEvent(MissionCompletedEvent event) {
         Thread.ofVirtual().start(() -> {
+            recordHuntingGroundVisit(event);
+
             MissionDto mission = playerSession.getMission(event.getMissionID());
             if (mission == null) {
                 return; // no mission in session storage. just exit silently - nothing to do.
@@ -38,5 +43,18 @@ public class MissionCompletedSubscriber {
                         "Summarize key mission parameters, destination, reward, and fields relevant to the missiontype. Ignore unimportant fields such as timestamps, timeToLive, missionID etc");
             }
         });
+    }
+
+    /**
+     * Marks the recorded contract done, which is what tells the pair search that this provider and
+     * this hunting ground actually worked rather than merely being tried.
+     * <p>
+     * Runs whether or not the mission is still in the session log: a contract accepted before the app
+     * was started is absent from the log but present in the ledger, and its completion is still worth
+     * recording.
+     */
+    private void recordHuntingGroundVisit(MissionCompletedEvent event) {
+        if (!PirateMassacreContract.isOne(event.getName(), event.getTargetType())) return;
+        huntingGrounds.recordContractCompleted(event.getMissionID(), event.getTimestamp());
     }
 }

@@ -664,6 +664,11 @@ public class NativeHudOverlay {
                 // says more than one leg of the shopping for it, and ties go to whoever is registered first.
                 new CommoditySearchObjectiveSource(),
                 new ExobiologyObjectiveSource(),
+                // Ahead of the route card and behind everything else: a hunt is real work the commander
+                // is doing right now, but they never accepted it the way they accept a contract. The
+                // route it beats is usually the one back to the station to cash the vouchers in, which
+                // is part of the hunt rather than a reason to stop showing it.
+                new BountyHuntObjectiveSource(),
                 // Last and weakest: where the commander is pointed, which is worth showing when nothing
                 // else is and worth nothing next to what they are actually doing. A destination the app
                 // worked out (material trader, broker, factors) enriches this card rather than competing

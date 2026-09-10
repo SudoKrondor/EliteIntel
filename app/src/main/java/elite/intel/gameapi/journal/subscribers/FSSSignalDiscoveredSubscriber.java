@@ -2,11 +2,17 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.vega.VegaRuntime;
+import elite.intel.db.dao.LocationDao.Coordinates;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.LocationManager;
+import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.journal.events.FSSSignalDiscoveredEvent;
 import elite.intel.gameapi.journal.events.dto.FssSignalDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
+import elite.intel.gameapi.journal.events.dto.MissionDto;
+import elite.intel.gameapi.missions.ResourceSiteProfile;
+import elite.intel.gameapi.signals.ResourceSiteGrade;
+import elite.intel.gameapi.signals.ResourceSiteSweep;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 
@@ -23,18 +29,18 @@ public class FSSSignalDiscoveredSubscriber {
     private static final int SECONDS_PER_MINUTE = 60;
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
-    private final HuntingGroundManager pirateMissionDataManager = HuntingGroundManager.getInstance();
+    private final HuntingGroundManager huntingGrounds = HuntingGroundManager.getInstance();
+    private final MissionManager missionManager = MissionManager.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
     private final SystemSession systemSession = SystemSession.getInstance();
+    private final ResourceSiteSweep resourceSites = new ResourceSiteSweep();
 
     @Subscribe
     public void onFSSSignalDiscovered(FSSSignalDiscoveredEvent event) {
         Thread.ofVirtual().start(() -> {
-            locationManager.save(updateLocation(event));
-
-            if ("ResourceExtraction".equals(event.getSignalType())) {
-                pirateMissionDataManager.confirmTargetReconResourceSite(playerSession.getPrimaryStarName());
-            }
+            LocationDto location = updateLocation(event);
+            locationManager.save(location);
+            recordResourceSite(event, location);
 
             if (event.getUssTypeLocalised() != null && event.getUssTypeLocalised().equals("Nonhuman signal source")) {
                 publishVoice(localizedEvent("event.fss.signal.nonhuman", event.getThreatLevel()));
@@ -52,6 +58,51 @@ public class FSSSignalDiscoveredSubscriber {
                 publishVoice(localizedEvent("event.fss.notable.stellar.phenomenon"));
             }
         });
+    }
+
+    /**
+     * Files a resource extraction site against the system that reported it.
+     * <p>
+     * WHY the location resolved from the event's own system address rather than the star we think we
+     * are orbiting: signals do not always follow the arrival that explains them, and crediting one to
+     * wherever the app last thought it was records resource sites in systems that have none.
+     */
+    private void recordResourceSite(FSSSignalDiscoveredEvent event, LocationDto location) {
+        ResourceSiteGrade grade = ResourceSiteGrade.fromSymbol(event.getSignalName());
+        if (grade == null) return;
+
+        String starSystem = location.getStarName();
+        if (starSystem == null || starSystem.isBlank()) return;
+
+        ResourceSiteProfile sweep = resourceSites.add(event.getSystemAddress() + "@" + event.getTimestamp(), grade);
+        huntingGrounds.recordResourceSites(
+                starSystem,
+                event.getSystemAddress(),
+                new Coordinates(starSystem, location.getX(), location.getY(), location.getZ()),
+                sweep,
+                event.getTimestamp()
+        );
+
+        if (sweep.total() == 1) announceHuntingGround(starSystem);
+    }
+
+    /**
+     * Speaks only when this system is where an open pirate massacre contract sends the commander.
+     * <p>
+     * WHY not on every hunting ground found: the game announces resource sites on arrival in most
+     * populated systems, so a line here would fire a couple of hundred times in a month of ordinary
+     * flying. The ledger underneath is meant to fill up quietly. It is worth hearing only when the
+     * commander is standing in the system their contracts point at.
+     */
+    private void announceHuntingGround(String starSystem) {
+        boolean targetOfOpenContract = missionManager
+                .getMissions(missionManager.getPirateMissionTypes())
+                .values().stream()
+                .map(MissionDto::getDestinationSystem)
+                .anyMatch(starSystem::equalsIgnoreCase);
+        if (!targetOfOpenContract) return;
+
+        publishVoice(localizedEvent("event.fss.huntingGroundConfirmed", starSystem));
     }
 
     private LocationDto updateLocation(FSSSignalDiscoveredEvent event) {

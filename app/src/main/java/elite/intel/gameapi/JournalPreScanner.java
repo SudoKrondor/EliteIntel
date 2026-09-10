@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import elite.intel.gameapi.journal.EventRegistry;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.gameapi.journal.subscribers.DockedMarketSubscriber;
+import elite.intel.gameapi.journal.subscribers.ResourceSiteSubscriber;
 import elite.intel.gameapi.journal.subscribers.SilentPersistenceSubscriber;
 import elite.intel.util.json.GsonFactory;
 import org.apache.logging.log4j.LogManager;
@@ -68,6 +69,10 @@ public class JournalPreScanner {
         // the carrier ledger's attribution - was silently answered "none" until the next undocking. Replaying
         // the docking events onto the marker costs one field write and leaves it where the journal left it.
         privateBus.register(new DockedMarketSubscriber());
+        // Same reasoning for the bounty hunt: the marker says which system the commander is hunting
+        // in, it lives in memory, and a restart taken between kills would otherwise lose the card
+        // along with the tally the commander is halfway through building.
+        privateBus.register(new ResourceSiteSubscriber());
 
         for (Path file : toScan) {
             processFile(file, privateBus);
