@@ -31,7 +31,8 @@ public interface GlobalSettingsDao {
                                                                 announceJumpTraffic,
                                                                 announceJumpDeaths,
                                                                 announceRemainingJumps,
-                                                                announceFuelAvailable)
+                                                                announceFuelAvailable,
+                                                                announceArrival)
                     VALUES (1, :autoSpeedUpForFtl,
                                 :autoLightsForFtl,
                                 :autoNightVisionOff,
@@ -46,7 +47,8 @@ public interface GlobalSettingsDao {
                                 :announceJumpTraffic,
                                 :announceJumpDeaths,
                                 :announceRemainingJumps,
-                                :announceFuelAvailable)
+                                :announceFuelAvailable,
+                                :announceArrival)
             """)
     void save(@BindBean GlobalSettings settings);
 
@@ -70,6 +72,7 @@ public interface GlobalSettingsDao {
             entity.setAnnounceJumpDeaths(rs.getBoolean("announceJumpDeaths"));
             entity.setAnnounceRemainingJumps(rs.getBoolean("announceRemainingJumps"));
             entity.setAnnounceFuelAvailable(rs.getBoolean("announceFuelAvailable"));
+            entity.setAnnounceArrival(rs.getBoolean("announceArrival"));
             return entity;
         }
     }
@@ -91,6 +94,7 @@ public interface GlobalSettingsDao {
         boolean announceJumpDeaths;
         boolean announceRemainingJumps;
         boolean announceFuelAvailable;
+        boolean announceArrival;
 
         public boolean isAutoSpeedUpForFtl() {
             return autoSpeedUpForFtl;
@@ -210,6 +214,14 @@ public interface GlobalSettingsDao {
 
         public void setAnnounceFuelAvailable(boolean announceFuelAvailable) {
             this.announceFuelAvailable = announceFuelAvailable;
+        }
+
+        public boolean isAnnounceArrival() {
+            return announceArrival;
+        }
+
+        public void setAnnounceArrival(boolean announceArrival) {
+            this.announceArrival = announceArrival;
         }
     }
 }

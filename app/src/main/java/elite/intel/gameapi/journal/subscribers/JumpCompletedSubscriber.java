@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 
 import static elite.intel.util.GravityCalculator.calculateSurfaceGravity;
 import static elite.intel.util.StringUtls.*;
@@ -90,11 +91,14 @@ public class JumpCompletedSubscriber {
                 reminderText = reminder.getReminder() == null ? "" : reminder.getReminder();
             }
 
+            // Reminders are spoken whatever the arrival toggle says: the commander left a note for this
+            // system precisely so they would hear it here, and silencing "Arrived at" is not a request
+            // to lose that.
             if (finalDestination != null && finalDestination.equalsIgnoreCase(event.getStarSystem())) {
                 shipRoute.clearRoute();
                 if (reminderText != null && !reminderText.isBlank()) {
                     EventNarrator.say(localizedEvent("event.route.reminder", reminderText));
-                } else {
+                } else if (globalSettings.getAnnounceArrival()) {
                     sb.append(localizedEvent("event.route.arrivedFinal", finalDestination));
                 }
                 TrafficDto trafficDto = EdsmApiClient.searchTraffic(finalDestination);
@@ -107,27 +111,14 @@ public class JumpCompletedSubscriber {
                     EventNarrator.say(localizedEvent("event.route.reminder", reminderText));
                 }
 
-                sb.append(localizedEvent("event.route.arrived", event.getStarSystem()));
-                List<NavRouteDto> route = shipRoute.getOrderedRoute();
-                int remainingJump = route.size();
-                if (remainingJump > 0 && globalSettings.getAnnounceRemainingJumps()) {
-                    // The toggle alone is not enough: a ship with no fuel scoop cannot use a scoopable
-                    // star, and telling it "refuel possible" is worse than saying nothing. See FuelScoop.
-                    boolean announceFuel = FuelScoop.announceFuelStars();
-                    route.stream().findFirst().ifPresent(nextStop -> {
-                        sb.append(" ").append(localizedEvent("event.route.waypoint", nextStop.getName(), nextStop.getStarClass()));
-                        if (announceFuel) {
-                            sb.append(isFuelStarClause(nextStop.getStarClass()));
-                        }
-                    });
-                    sb.append(" ").append(localizedEventPlural(remainingJump, "event.route.jumpsLeft"));
-                }
+                sb.append(waypointArrival(event.getStarSystem(), shipRoute.getOrderedRoute(),
+                        globalSettings.getAnnounceArrival(), globalSettings.getAnnounceRemainingJumps(), FuelScoop::announceFuelStars));
             }
 
             locationManager.save(primaryStar);
 
             if (!event.isReplay()) {
-                if (playerSession.isRouteAnnouncementOn()) {
+                if (playerSession.isRouteAnnouncementOn() && !sb.isEmpty()) {
                     VegaRuntime.narrator().narrate(sb.toString(), "Announce this route information.");
                 }
                 if (isSellerSystem && station != null) {
@@ -157,6 +148,39 @@ public class JumpCompletedSubscriber {
         }); // end virtual thread
     }
 
+
+    /**
+     * What is said on reaching a waypoint that is not the end of the route: the arrival, then the road
+     * ahead. They are two toggles because they answer different needs - a commander on a long haul may
+     * want only the count of jumps left, and one who knows the road may want nothing at all - so each
+     * part is dropped on its own and the line is empty when both are off.
+     *
+     * @param remainingRoute    the legs still to fly, the next one first
+     * @param announceFuelStars whether a scoopable next star is worth mentioning, asked only when the
+     *                          road ahead is spoken at all - the answer costs a loadout lookup
+     * @return the line to narrate, empty when there is nothing the commander asked to hear
+     */
+    static String waypointArrival(String starSystem, List<NavRouteDto> remainingRoute,
+                                  boolean announceArrival, boolean announceRemainingJumps, BooleanSupplier announceFuelStars) {
+        StringBuilder sb = new StringBuilder();
+        if (announceArrival) {
+            sb.append(localizedEvent("event.route.arrived", starSystem));
+        }
+        int remainingJump = remainingRoute.size();
+        if (remainingJump > 0 && announceRemainingJumps) {
+            // The toggle alone is not enough: a ship with no fuel scoop cannot use a scoopable
+            // star, and telling it "refuel possible" is worse than saying nothing. See FuelScoop.
+            boolean announceFuel = announceFuelStars.getAsBoolean();
+            NavRouteDto nextStop = remainingRoute.getFirst();
+            if (!sb.isEmpty()) sb.append(" ");
+            sb.append(localizedEvent("event.route.waypoint", nextStop.getName(), nextStop.getStarClass()));
+            if (announceFuel) {
+                sb.append(isFuelStarClause(nextStop.getStarClass()));
+            }
+            sb.append(" ").append(localizedEventPlural(remainingJump, "event.route.jumpsLeft"));
+        }
+        return sb.toString();
+    }
 
     /**
      * Every state running on any faction in the system.

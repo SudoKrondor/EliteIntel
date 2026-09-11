@@ -37,7 +37,7 @@ import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * The "Binding Profile" sub-tab of BIND FORGE: bindings directory/profile/file fields, the
- * Used/Missing Bindings tables, conflict detection, hover callouts, and the Fix Missing/Revert/Apply
+ * Used/Missing Bindings tables, conflict detection, hover callouts, and the Auto-Assign Missing Binds/Revert/Apply
  * footer. Extracted from the former monolithic {@code BindingsTabPanel}.
  */
 public class BindingProfilePanel extends JPanel {
@@ -286,7 +286,7 @@ public class BindingProfilePanel extends JPanel {
         conflictsOnlyCheck = makeCheckBox(getText("bindings.filter.conflictsOnly"), false);
         conflictsOnlyCheck.addActionListener(e -> renderBindingTables());
 
-        // Non-modal footer: sync status on the left, then the conflicts-only filter, FIX MISSING,
+        // Non-modal footer: sync status on the left, then the conflicts-only filter, AUTO-ASSIGN MISSING BINDS,
         // REVERT and APPLY (primary) on the right, no BACK.
         return HudFooter.build(false, null, syncStatusBadge,
                 List.of(conflictsOnlyCheck, fixAllButton, revertButton, applyButton));
@@ -813,7 +813,7 @@ public class BindingProfilePanel extends JPanel {
     /**
      * Splits all keyboard-capable controls into those that already have a usable
      * keyboard binding and those that do not, using the same definition of "bound"
-     * the auto-assigner targets, so the Missing tab and Fix Missing never diverge.
+     * the auto-assigner targets, so the Missing tab and Auto-Assign Missing Binds never diverge.
      */
     private BindingPartition partitionByKeyboardBinding(Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots) {
         List<String> used = new ArrayList<>();
@@ -875,7 +875,7 @@ public class BindingProfilePanel extends JPanel {
 
     /**
      * Renders both tabs from {@link #currentSlots}, honoring the "show conflicts only" filter. Tab
-     * counts and the Fix Missing enabled state always reflect the full (unfiltered) data, so the
+     * counts and the Auto-Assign Missing Binds enabled state always reflect the full (unfiltered) data, so the
      * filter is a pure view toggle. Called on load and whenever the filter checkbox changes.
      */
     private void renderBindingTables() {
@@ -954,7 +954,7 @@ public class BindingProfilePanel extends JPanel {
     /**
      * Both view filters, in one place so the two tables always narrow the same way: the
      * conflicts-only checkbox and the search field. Purely a view concern - the tab counts and the
-     * Fix Missing enabled state are computed from the unfiltered lists.
+     * Auto-Assign Missing Binds enabled state are computed from the unfiltered lists.
      */
     private List<String> filterRows(List<String> bindingIds) {
         return filterBySearch(filterConflictsOnly(bindingIds));

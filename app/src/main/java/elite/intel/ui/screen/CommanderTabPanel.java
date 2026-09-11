@@ -28,9 +28,7 @@ import elite.intel.ui.screen.settings.ShipSettingsPopup;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
-import elite.intel.ui.widget.HudComboBox;
-import elite.intel.ui.widget.HudSection;
-import elite.intel.ui.widget.HudTable;
+import elite.intel.ui.widget.*;
 import elite.intel.util.StringUtls;
 
 import javax.swing.*;
@@ -72,11 +70,6 @@ public class CommanderTabPanel extends JPanel {
      * i18n key prefix for {@link ShipPersonality} labels; single owner for the cell renderer and the dropdown editor.
      */
     private static final String PERSONALITY_I18N_PREFIX = "ship.personality.";
-    /**
-     * Columns the Ship Options and Announcements toggle grids are laid out across.
-     */
-    private static final int COLUMN_COUNT = 3;
-
     /**
      * Maps a {@link ShipPersonality} enum name to its localized, HUD-cased display label.
      */
@@ -167,13 +160,12 @@ public class CommanderTabPanel extends JPanel {
 
     private JTextField playerAltNameField;
     private JCheckBox addressMeBox;
-    private JCheckBox discoveryAnnouncementBox;
-    private JCheckBox routeAnnouncementBox;
-    private JCheckBox planetaryApproachAnnouncementBox;
-    private JCheckBox radarContactAnnouncementBox;
-    private JCheckBox miningAnnouncementBox;
-    private JCheckBox navigationAnnouncementBox;
-    private JCheckBox radioTransmissionBox;
+    private ToggleTreePanel shipSettingsPanel;
+    private ToggleTreePanel announcementsPanel;
+    /**
+     * Kept apart from the rest: its checkbox is dressed by {@link #applyRadioTransmissionAvailability}.
+     */
+    private SettingToggle radioTransmissions;
     private JTable fleetTable;
     private FleetTableModel fleetTableModel;
     /**
@@ -208,9 +200,6 @@ public class CommanderTabPanel extends JPanel {
         setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         setBorder(hudScreenBorder());
 
-        JPanel content = transparentPanel(null);
-        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-
         HudSection profileSection = HudSection.flat(getText("player.section.commanderProfile"), new GridBagLayout());
         JPanel profile = profileSection.body();
         GridBagConstraints gbc = baseGbc();
@@ -230,19 +219,6 @@ public class CommanderTabPanel extends JPanel {
                 playerSession.isAddressMeOn(), playerSession::setAddressMeOn);
         addressMeBox.setToolTipText(getText("player.addressMe.tooltip"));
         addCheck(profile, addressMeBox, gbc);
-
-        content.add(profileSection);
-        content.add(Box.createVerticalStrut(HUD_GAP));
-
-        JTabbedPane optionTabs = AppTheme.makeSectionTabs();
-        optionTabs.setTabPlacement(JTabbedPane.TOP);
-        optionTabs.addTab(getText("player.tab.shipOptions"), buildShipOptionsTab());
-        optionTabs.addTab(getText("player.tab.announcements"), buildAnnouncementsTab());
-
-        content.add(optionTabs);
-        content.add(Box.createVerticalStrut(HUD_GAP));
-
-        HudSection fleetSection = HudSection.flat(getText("player.section.fleetVoice"), new BorderLayout());
 
         fleetTableModel = new FleetTableModel(playerSession);
         // Carrier rows share the grid but not its editors: their voices come from the radio engine's roster,
@@ -284,83 +260,98 @@ public class CommanderTabPanel extends JPanel {
         gearCol.setPreferredWidth(HUD_TABLE_ROW_HEIGHT + 4);
         gearCol.setMaxWidth(HUD_TABLE_ROW_HEIGHT + 10);
 
-        fleetSection.body().add(HudTable.dataPlaneScrollPane(fleetTable), BorderLayout.CENTER);
+        JPanel fleetTab = transparentPanel(new BorderLayout());
+        fleetTab.setBorder(new EmptyBorder(HUD_GAP, 0, 0, 0));
+        fleetTab.add(HudTable.dataPlaneScrollPane(fleetTable), BorderLayout.CENTER);
 
-        add(content, BorderLayout.NORTH);
-        add(fleetSection, BorderLayout.CENTER);
+        // The fleet grid is the one that grows with the window, so the tabs take the centre and the
+        // toggle pages sit at the top of theirs.
+        JTabbedPane tabs = AppTheme.makeSectionTabs();
+        tabs.setTabPlacement(JTabbedPane.TOP);
+        tabs.addTab(getText("player.tab.fleetManagement"), fleetTab);
+        tabs.addTab(getText("player.tab.globalShipSettings"), HudScrollingPage.scrollPane(buildShipSettingsPanel()));
+        tabs.addTab(getText("player.tab.announcements"), HudScrollingPage.scrollPane(buildAnnouncementsPanel()));
+
+        JPanel tabsHolder = transparentPanel(new BorderLayout());
+        tabsHolder.setBorder(new EmptyBorder(HUD_GAP, 0, 0, 0));
+        tabsHolder.add(tabs, BorderLayout.CENTER);
+
+        add(profileSection, BorderLayout.NORTH);
+        add(tabsHolder, BorderLayout.CENTER);
 
         refreshVoiceQualityLabels(); // initial HD/Standard tiers for the fleet voice list
     }
 
     /**
-     * Ship automation toggles, all backed by {@link GlobalSettingsManager}.
+     * A labelled checkbox that writes straight back to the setting it reads.
      */
+    private static JCheckBox toggle(String labelKey, boolean selected, Consumer<Boolean> onChange) {
+        JCheckBox box = makeCheckBox(getText(labelKey), selected);
+        box.addActionListener(e -> onChange.accept(box.isSelected()));
+        return box;
+    }
+
+
     /**
-     * Ship automation toggles, backed by {@link GlobalSettingsManager}. Announcements live on their own tab,
-     * including the jump-related ones that used to sit in this grid's third column.
+     * Ship automation toggles, all backed by {@link GlobalSettingsManager}. Announcements live on their own
+     * tab, including the jump-related ones that used to sit in this grid's third column.
      */
-    private JPanel buildShipOptionsTab() {
+    private ToggleTreePanel buildShipSettingsPanel() {
         GlobalSettingsManager mgr = GlobalSettingsManager.getInstance();
-        List<JCheckBox> boxes = new ArrayList<>();
-
-        boxes.add(toggle("automation.autoSpeedUpForFtl", mgr.getAutoSpeedUpForFtl(), mgr::setAutoSpeedUpForFtl));
-        boxes.add(toggle("automation.autoLightsOffForFtl", mgr.getAutoLightsForFtl(), mgr::setAutoLightsForFtl));
-        boxes.add(toggle("automation.autoNightVisionOffForFtl", mgr.getAutoNightVisionOff(), mgr::setAutoNightVisionOffForSrv));
-        boxes.add(toggle("automation.autoHardpointsRetractForFtl", mgr.getAutoHardpointsRetractForFtl(), mgr::setAutoHardpointsRetractForFtl));
-        boxes.add(toggle("automation.autoLandingGearUpForFtl", mgr.getAutoLandingGearUpForFtl(), mgr::setAutoLandingGearUpForFtl));
-        boxes.add(toggle("automation.autoCargoScoopRetractForFtl", mgr.getAutoCargoScoopRetractForFtl(), mgr::setAutoCargoScoopRetractForFtl));
-        boxes.add(toggle("automation.autoGearUpOnTakeOff", mgr.getAutoGearUpOnTakeOff(), mgr::setAutoGearUpOnTakeOff));
-        boxes.add(toggle("automation.autoExitUiBeforeOpeningAnotherPanel", mgr.getAutoExitUiBeforeOpeningAnotherWindow(), mgr::setAutoExitUiBeforeOpeningAnotherWindow));
-        boxes.add(toggle("automation.autoLightsOffForSrvDeployment", mgr.getAutoLightsOffForSrvDeployment(), mgr::setAutoLightsOffForSrvDeployment));
-        boxes.add(toggle("automation.autoPlotNextNeutronJump", mgr.getAutoPlotNextNeutronJump(), mgr::setAutoPlotNextNeutronJump));
-
-        return threeColumnGrid(boxes);
+        shipSettingsPanel = new ToggleTreePanel(List.of(
+                SettingToggle.of("automation.autoSpeedUpForFtl", mgr::getAutoSpeedUpForFtl, mgr::setAutoSpeedUpForFtl),
+                SettingToggle.of("automation.autoLightsOffForFtl", mgr::getAutoLightsForFtl, mgr::setAutoLightsForFtl),
+                SettingToggle.of("automation.autoNightVisionOffForFtl", mgr::getAutoNightVisionOff, mgr::setAutoNightVisionOffForSrv),
+                SettingToggle.of("automation.autoHardpointsRetractForFtl", mgr::getAutoHardpointsRetractForFtl, mgr::setAutoHardpointsRetractForFtl),
+                SettingToggle.of("automation.autoLandingGearUpForFtl", mgr::getAutoLandingGearUpForFtl, mgr::setAutoLandingGearUpForFtl),
+                SettingToggle.of("automation.autoCargoScoopRetractForFtl", mgr::getAutoCargoScoopRetractForFtl, mgr::setAutoCargoScoopRetractForFtl),
+                SettingToggle.of("automation.autoGearUpOnTakeOff", mgr::getAutoGearUpOnTakeOff, mgr::setAutoGearUpOnTakeOff),
+                SettingToggle.of("automation.autoExitUiBeforeOpeningAnotherPanel", mgr::getAutoExitUiBeforeOpeningAnotherWindow, mgr::setAutoExitUiBeforeOpeningAnotherWindow),
+                SettingToggle.of("automation.autoLightsOffForSrvDeployment", mgr::getAutoLightsOffForSrvDeployment, mgr::setAutoLightsOffForSrvDeployment),
+                SettingToggle.of("automation.autoPlotNextNeutronJump", mgr::getAutoPlotNextNeutronJump, mgr::setAutoPlotNextNeutronJump)));
+        return shipSettingsPanel;
     }
 
     /**
      * Every spoken-announcement toggle, in one place.
      * <p>
-     * The first seven are backed by {@link PlayerSession} and are the categories the
-     * {@code toggle_all_announcements} voice command flips, so {@link #initData()} re-reads them: a voice
-     * command may have changed one while the tab was not visible. The jump-related ones below them are backed
-     * by {@link GlobalSettingsManager}, are read only here, and moved off the Ship Options tab so that a
-     * commander looking for an announcement has one place to look.
+     * The standalone ones are backed by {@link PlayerSession} and are the categories the
+     * {@code toggle_all_announcements} voice command flips, which is why {@link #initData()} refreshes the
+     * page: a voice command may have changed one while the tab was not visible.
+     * <p>
+     * The route announcements are a tree, and the tree is the code's: {@code StartJumpSubscriber} and
+     * {@code JumpCompletedSubscriber} say nothing at all while the route toggle is off, whatever the
+     * {@link GlobalSettingsManager} switches under it say, and the fuel-star clause is only ever spoken as
+     * part of the remaining-jumps line. A dependent listed here that the subscribers did not honour would
+     * be shown greyed out while still speaking.
      */
-    private JPanel buildAnnouncementsTab() {
+    private ToggleTreePanel buildAnnouncementsPanel() {
         GlobalSettingsManager mgr = GlobalSettingsManager.getInstance();
-        List<JCheckBox> boxes = new ArrayList<>();
+        radioTransmissions = SettingToggle.of("announcements.radioTransmissions",
+                playerSession::isRadioTransmissionOn, playerSession::setRadioTransmissionOn);
 
-        discoveryAnnouncementBox = toggle("announcements.discovery",
-                playerSession.isDiscoveryAnnouncementOn(), playerSession::setDiscoveryAnnouncementOn);
-        routeAnnouncementBox = toggle("announcements.route",
-                playerSession.isRouteAnnouncementOn(), playerSession::setRouteAnnouncementOn);
-        planetaryApproachAnnouncementBox = toggle("announcements.planetaryApproach",
-                playerSession.isPlanetaryApproachAnnouncementOn(), playerSession::setPlanetaryApproachAnnouncementOn);
-        radarContactAnnouncementBox = toggle("announcements.radarContact",
-                playerSession.isRadarContactAnnouncementOn(), playerSession::setRadarContactAnnouncementOn);
-        miningAnnouncementBox = toggle("announcements.mining",
-                playerSession.isMiningAnnouncementOn(), playerSession::setMiningAnnouncementOn);
-        navigationAnnouncementBox = toggle("announcements.navigation",
-                playerSession.isNavigationAnnouncementOn(), playerSession::setNavigationAnnouncementOn);
-        radioTransmissionBox = toggle("announcements.radioTransmissions",
-                playerSession.isRadioTransmissionOn(), playerSession::setRadioTransmissionOn);
+        announcementsPanel = new ToggleTreePanel(List.of(
+                SettingToggle.of("announcements.discovery",
+                        playerSession::isDiscoveryAnnouncementOn, playerSession::setDiscoveryAnnouncementOn),
+                SettingToggle.of("announcements.planetaryApproach",
+                        playerSession::isPlanetaryApproachAnnouncementOn, playerSession::setPlanetaryApproachAnnouncementOn),
+                SettingToggle.of("announcements.radarContact",
+                        playerSession::isRadarContactAnnouncementOn, playerSession::setRadarContactAnnouncementOn),
+                SettingToggle.of("announcements.mining",
+                        playerSession::isMiningAnnouncementOn, playerSession::setMiningAnnouncementOn),
+                SettingToggle.of("announcements.navigation",
+                        playerSession::isNavigationAnnouncementOn, playerSession::setNavigationAnnouncementOn),
+                radioTransmissions,
+                SettingToggle.of("announcements.route",
+                        playerSession::isRouteAnnouncementOn, playerSession::setRouteAnnouncementOn,
+                        SettingToggle.of("automation.announceJumpRoute", mgr::getAnnounceJumpRoute, mgr::setAnnounceJumpRoute),
+                        SettingToggle.of("automation.announceJumpTraffic", mgr::getAnnounceJumpTraffic, mgr::setAnnounceJumpTraffic),
+                        SettingToggle.of("automation.announceJumpDeaths", mgr::getAnnounceJumpDeaths, mgr::setAnnounceJumpDeaths),
+                        SettingToggle.of("automation.announceArrival", mgr::getAnnounceArrival, mgr::setAnnounceArrival),
+                        SettingToggle.of("automation.announceRemainingJumps", mgr::getAnnounceRemainingJumps, mgr::setAnnounceRemainingJumps,
+                                SettingToggle.of("automation.announceFuelAvailable", mgr::getAnnounceFuelAvailable, mgr::setAnnounceFuelAvailable)))));
         applyRadioTransmissionAvailability();
-
-        boxes.add(discoveryAnnouncementBox);
-        boxes.add(routeAnnouncementBox);
-        boxes.add(planetaryApproachAnnouncementBox);
-        boxes.add(radarContactAnnouncementBox);
-        boxes.add(miningAnnouncementBox);
-        boxes.add(navigationAnnouncementBox);
-        boxes.add(radioTransmissionBox);
-
-        boxes.add(toggle("automation.announceJumpRoute", mgr.getAnnounceJumpRoute(), mgr::setAnnounceJumpRoute));
-        boxes.add(toggle("automation.announceJumpTraffic", mgr.getAnnounceJumpTraffic(), mgr::setAnnounceJumpTraffic));
-        boxes.add(toggle("automation.announceJumpDeaths", mgr.getAnnounceJumpDeaths(), mgr::setAnnounceJumpDeaths));
-        boxes.add(toggle("automation.announceRemainingJumps", mgr.getAnnounceRemainingJumps(), mgr::setAnnounceRemainingJumps));
-        boxes.add(toggle("automation.announceFuelAvailable", mgr.getAnnounceFuelAvailable(), mgr::setAnnounceFuelAvailable));
-
-        return threeColumnGrid(boxes);
+        return announcementsPanel;
     }
 
     /**
@@ -373,60 +364,12 @@ public class CommanderTabPanel extends JPanel {
      * without having to remember they once had it.
      */
     private void applyRadioTransmissionAvailability() {
+        JCheckBox radioTransmissionBox = announcementsPanel.checkBox(radioTransmissions);
         boolean available = RadioVoicing.isAvailable();
         radioTransmissionBox.setEnabled(available);
         if (!available) radioTransmissionBox.setSelected(false);
         radioTransmissionBox.setToolTipText(
                 available ? null : getText("announcements.radioTransmissions.unavailable"));
-    }
-
-    /**
-     * A labelled checkbox that writes straight back to the setting it reads.
-     */
-    private static JCheckBox toggle(String labelKey, boolean selected, Consumer<Boolean> onChange) {
-        JCheckBox box = makeCheckBox(getText(labelKey), selected);
-        box.addActionListener(e -> onChange.accept(box.isSelected()));
-        return box;
-    }
-
-    /**
-     * Lays the toggles out in three equal columns, filled top to bottom so reading down a column follows the
-     * order they were added. Computing the placement from the list is what keeps the two tabs consistent as
-     * toggles are added or moved between them; the columns used to be hand-numbered, which is how five
-     * announcements ended up living on the automation tab.
-     */
-    private static JPanel threeColumnGrid(List<JCheckBox> boxes) {
-        JPanel grid = transparentPanel(new GridBagLayout());
-        grid.setBorder(new EmptyBorder(HUD_GAP, HUD_GAP, HUD_GAP, HUD_GAP));
-
-        GridBagConstraints gbc = optionGbc();
-        int rows = (boxes.size() + COLUMN_COUNT - 1) / COLUMN_COUNT;
-        for (int i = 0; i < boxes.size(); i++) {
-            gbc.gridx = i / rows;
-            gbc.gridy = i % rows;
-            grid.add(boxes.get(i), gbc);
-        }
-
-        // Filler so the grid keeps its slack on the right rather than stretching the columns across the
-        // full width.
-        gbc.gridx = COLUMN_COUNT;
-        gbc.gridy = 0;
-        gbc.weightx = 1.0;
-        grid.add(Box.createHorizontalGlue(), gbc);
-
-        return grid;
-    }
-
-    /**
-     * Shared grid geometry for the three-column checkbox grids of both option tabs.
-     */
-    private static GridBagConstraints optionGbc() {
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.weightx = 1.0;
-        gbc.insets = new Insets(4, 6, 4, 6);
-        return gbc;
     }
 
     public void initData() {
@@ -435,13 +378,8 @@ public class CommanderTabPanel extends JPanel {
         addressMeBox.setSelected(playerSession.isAddressMeOn());
 
         // A voice command (toggle_all_announcements and friends) can flip these behind the UI's back.
-        discoveryAnnouncementBox.setSelected(playerSession.isDiscoveryAnnouncementOn());
-        routeAnnouncementBox.setSelected(playerSession.isRouteAnnouncementOn());
-        planetaryApproachAnnouncementBox.setSelected(playerSession.isPlanetaryApproachAnnouncementOn());
-        radarContactAnnouncementBox.setSelected(playerSession.isRadarContactAnnouncementOn());
-        miningAnnouncementBox.setSelected(playerSession.isMiningAnnouncementOn());
-        navigationAnnouncementBox.setSelected(playerSession.isNavigationAnnouncementOn());
-        radioTransmissionBox.setSelected(playerSession.isRadioTransmissionOn());
+        shipSettingsPanel.refresh();
+        announcementsPanel.refresh();
         applyRadioTransmissionAvailability();
 
         String commanderName = playerSession.getInGameName();
