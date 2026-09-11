@@ -2,7 +2,7 @@ package elite.intel.ai.mouth.google;
 
 /**
  * Turns sanitized plain text into Google TTS SSML for the Chirp3-HD (and Standard fallback) voices, which honor
- * SSML on the synchronous synthesis path. This is Google-only: the Kokoro/espeak-ng path keeps plain text.
+ * SSML on the synchronous synthesis path. This is Google-only: the Supertonic/espeak-ng path keeps plain text.
  * <p>
  * The neural voices phrase flatly on bare punctuation, so this escapes the text for XML, normalizes "!" to "."
  * (its exclamatory intonation sounds unnatural), and inserts explicit {@code <break>} pauses after sentence ends

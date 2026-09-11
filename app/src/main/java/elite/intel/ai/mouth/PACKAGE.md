@@ -1,7 +1,7 @@
 # `elite.intel.ai.mouth` - Developer Reference
 
 The mouth package owns everything from a
-`VocalisationRequestEvent` to speaker output. It normalises the various vox event types produced by other packages, synthesises speech via offline Kokoro, Google Cloud, or the Edge consumer Read Aloud service, and publishes an authoritative playback lifecycle while STT remains active for barge-in.
+`VocalisationRequestEvent` to speaker output. It normalises the various vox event types produced by other packages, synthesises speech via offline Supertonic, Google Cloud, or the Edge consumer Read Aloud service, and publishes an authoritative playback lifecycle while STT remains active for barge-in.
 
 ---
 
@@ -22,18 +22,18 @@ AiVoxResponseEvent  NavigationVocalisationEvent  RadioTransmissionEvent  …
                                        │
                         ┌─────────────┴──────────────┐
                         ▼                            ▼
-              [KokoroTTS]                   [GoogleTTSImpl]
+              [SupertonicTTS]               [GoogleTTSImpl]
               (offline, sherpa-onnx)        (Google Cloud TTS API)
                         │                            │
               synthesisQueue               ttsQueue (synthesis)
-              KokoroTTS-Synthesis          TTSThread
+              SupertonicTTS-Synthesis      TTSThread
               - split sentences            - split sentences
-              - generate() via sherpa-onnx - Google Cloud API call
+              - generateWithConfigAndCallback via sherpa-onnx - Google Cloud API call
               - RadioFilter (if isRadio)   - 24kHz LINEAR16
               - AudioDeClicker.sanitize()        │
                         │                   vocalizationQueue
               playbackQueue                VocalizationThread
-              KokoroTTS-Playback           - SourceDataLine.write()
+              SupertonicTTS-Playback       - SourceDataLine.write()
               - SourceDataLine.write()     - VocalisationSuccessfulEvent
                         │                            │
                         └─────────────┬──────────────┘
@@ -89,9 +89,9 @@ does not touch it.
 **`AiVoxResponseEvent` special handling**: If the event carries a
 `CompletableFuture`, `VocalisationRouter` passes it through to `VocalisationRequestEvent`; otherwise the request creates its own future. The eligible active Mouth claims the request's `VocalisationHandle` during the same EventBus dispatch. Guava queues reentrant posts, so the no-Mouth check runs through `GameEventBus.afterCurrentDispatch` only after the outer post has drained; checking immediately after a nested `publish` would reject the request before a Mouth sees it. Only the handle publishes `IsSpeakingEvent`, using a process-wide active-request count, so overlapping requests cannot report a false idle state. STT continues listening while the state is true and treats a commander transcript as barge-in.
 
-**`RadioTransmissionEvent` special handling**: The router chooses a random Kokoro voice other than the current
-Kokoro session voice and sets `isRadio=true` on the resulting `VocalisationRequestEvent`. Cloud mouths ignore it;
-the Kokoro radio service owns this route.
+**`RadioTransmissionEvent` special handling**: The router chooses a random Supertonic voice other than the current
+Supertonic session voice and sets `isRadio=true` on the resulting `VocalisationRequestEvent`. Cloud mouths ignore it;
+the Supertonic radio service owns this route.
 
 ---
 
@@ -106,21 +106,24 @@ public interface MouthInterface extends ManagedService {
 }
 ```
 
-An eligible running backend must call `event.handle().claimForPlayback()` before enqueueing work. A backend that does not own the event (Google for radio, or radio-role Kokoro for main speech) leaves it unclaimed for the correct backend. A claimed handle must be completed or failed on every terminal path.
+An eligible running backend must call `event.handle().claimForPlayback()` before enqueueing work. A backend that does not own the event (Google for radio, or radio-role Supertonic for main speech) leaves it unclaimed for the correct backend. A claimed handle must be completed or failed on every terminal path.
 
 `ManagedService` provides `start()` and `stop()`. Implementations initialize their engine/workers and register
 on `GameEventBus` during `start()`, then unregister and settle owned handles during `stop()`.
 
-Current implementations: `KokoroTTS` (offline), `GoogleTTSImpl` (cloud), and `EdgeTTSImpl` (cloud).
+Current implementations: `SupertonicTTS` (offline), `GoogleTTSImpl` (cloud), and `EdgeTTSImpl` (cloud).
 
 ---
 
-## 4. Kokoro TTS Backend (`kokoro/`)
+## 4. Supertonic TTS Backend (`supertonic/`)
 
 ### Overview
 
-`KokoroTTS` is a singleton. It uses the `kokoro-multi-lang-v1_0` ONNX model loaded from
-`AppPaths.getTtsModelDir()` via the sherpa-onnx JNI library. Output sample rate is 24000 Hz, 16-bit mono.
+`SupertonicTTS` is a singleton. It uses the `sherpa-onnx-supertonic-3-tts-int8-*` ONNX model loaded from
+`AppPaths.getTtsModelDir()` via the sherpa-onnx JNI library. Unlike the Kokoro engine this replaced, it is a
+single multilingual model built once - the language is never baked into the model config, only passed per call
+via `GenerationConfig.extra("lang", ...)`, so there is no rebuild-on-language-switch logic. Output sample rate
+is 24000 Hz, 16-bit mono.
 
 ### Two-Queue Pipeline
 
@@ -129,15 +132,16 @@ onVoiceProcessEvent()
     │  split text into sentences
     │  push SynthesisTask per sentence → synthesisQueue (BlockingQueue)
     │
-KokoroTTS-Synthesis thread (daemon)
+SupertonicTTS-Synthesis thread (daemon)
     │  pop SynthesisTask
     │  resetNumericLocale()
-    │  tts.generate(text, sid, speed) → float[] samples → PCM bytes
+    │  build GenerationConfig (sid, speed, numSteps, extra.lang)
+    │  tts.generateWithConfigAndCallback(text, genConfig, callback) → float[] samples → PCM bytes
     │  if isRadio: RadioFilter.apply(pcm)
     │  AudioDeClicker.sanitize(pcm, fadeMs)   ← fade-in to suppress pop
     │  push PlaybackTask → playbackQueue (BlockingQueue)
     │
-KokoroTTS-Playback thread (daemon)
+SupertonicTTS-Playback thread (daemon)
     │  pop PlaybackTask
     │  SourceDataLine.write(pcm)  ← persistent line, never closed between sentences
     │  on last sentence: complete CompletableFuture
@@ -148,11 +152,10 @@ The `SourceDataLine` is opened once in
 
 ### Critical Constraint - Never Call `tts.release()`
 
-`tts.release()` **must not** be called in `stop()`. The `KokoroMultiLangLexicon`
-destructor in sherpa-onnx has a SIGSEGV that crashes the JVM when
-`release()` is called after the model has been used. Language changes (which require a new model instance) are handled by rebuilding the
-`OfflineTts` object at a safe point in
-`start()` rather than releasing it at runtime.
+`tts.release()` **must not** be called in `stop()`. sherpa-onnx model destructors have a history of crashing the
+JVM when released after the model has been used (this was true of Kokoro's `KokoroMultiLangLexicon` destructor,
+and the same caution applies here). The engine is built once and kept for the process lifetime rather than
+released and rebuilt at runtime.
 
 ### LC_NUMERIC Locale Fix (`resetNumericLocale()`)
 
@@ -173,17 +176,13 @@ Commas are included as sentence boundaries (unlike Google). This matches the nat
 `CompletableFuture` is attached only to the **last** sentence's
 `PlaybackTask`.
 
-### Language to langCode Mapping
+### Language Handling
 
-```
-kokoroLangCode(Language):
-  EN  →  "en-us"
-  FR  →  "fr"
-  ES  →  "es"
-  (all others)  →  null  →  speak with English accent
-```
-
-When the langCode is null, the model synthesises in English regardless of session language. This is a deliberate fallback - Kokoro Multi-Lang v1.0 only has native accent support for these three languages.
+Supertonic is one multilingual model: the language is never baked into the model config. Each
+`generateWithConfigAndCallback` call passes it via `GenerationConfig.extra("lang", supertonicLangCode(language))`,
+where `supertonicLangCode` maps the app's `Language` enum to the model's language codes (`en`, `ru`, `uk`, `de`,
+`fr`, `es`, `it`, `pt` for both `PT` and `PTBZ`). Unlike Kokoro, which had no Cyrillic front end at all, this
+model voices every language this app ships, including Russian and Ukrainian.
 
 ### Interruption
 
@@ -242,7 +241,7 @@ VocalizationThread (daemon)
 "(?<=[.!?])\\s+(?=\\S)"
 ```
 
-Commas are not boundaries (unlike Kokoro). Google's Chirp3-HD models handle longer sentences more naturally.
+Commas are not boundaries (unlike Supertonic). Google's Chirp3-HD models handle longer sentences more naturally.
 
 ### Language Override in `GoogleVoiceProvider`
 
@@ -279,7 +278,7 @@ mono, signed PCM-16 little endian, and only that decoded PCM reaches `AudioDeCli
 
 Application speech speed drives Edge's SSML prosody rate. SSML volume remains `+0%`; the application volume is
 applied exactly once to decoded PCM through `AudioDeClicker.applyVolume`. Edge is a main-mouth provider only;
-radio stays on the dedicated Kokoro route.
+radio stays on the dedicated Supertonic route.
 
 The integration is unofficial and is not supported or endorsed by Microsoft. `dev.mccue:jlayer-decoder` is
 packaged under its own LGPL terms; see the repository's `THIRD_PARTY_NOTICES.md`.
@@ -320,23 +319,15 @@ The biquad coefficients are precomputed constants (see class header for derivati
 
 ## 7. Voice Catalogs
 
-### `KokoroVoices` (53 voices)
+### `SupertonicVoices` (10 voices)
 
-Each voice has a `sid` (speaker ID 0-52) passed to `tts.generate()`. Voice names are prefixed by accent/gender code:
+Each voice has a `sid` (speaker ID 0-9) passed to `GenerationConfig.setSid()`. Naming is inferred from
+Supertonic's documented preset voice-style history (male M1-M5 = sid 0-4, female F1-F5 = sid 5-9) - upstream
+publishes no official names for the 10 speakers, so this is best-evidence, not confirmed. Unlike Kokoro's
+53-voice, per-accent cast, every one of these ten is retained: there is no immersion-breaking voice to curate
+out, and the model is multilingual rather than accent-per-voice.
 
-| Prefix | Accent | Gender |
-|---|---|---|
-| `af_` / `am_` | American English | Female / Male |
-| `bf_` / `bm_` | British English | Female / Male |
-| `ef_` / `em_` | (European Spanish-accented) | Female / Male |
-| `ff_` | French-accented | Female |
-| `hf_` / `hm_` | (unspecified) | Female / Male |
-| `if_` / `im_` | Italian-accented | Female / Male |
-| `jf_` / `jm_` | Japanese-accented | Female / Male |
-| `pf_` / `pm_` | (unspecified) | Female / Male |
-| `zf_` / `zm_` | (unspecified) | Female / Male |
-
-Default voice: `GEORGE` (sid=26).
+Default voice: `F1` (sid=5).
 
 ### `GoogleVoices` (11 voices)
 
@@ -407,8 +398,8 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | `MouthInterface` | Extension point for TTS backends |
 | `VocalisationHandle` | Request ownership, correlation, completion, and authoritative speaking-state count |
 | `subscribers/VocalisationRouter` | Normalises all vox events to `VocalisationRequestEvent` |
-| `kokoro/KokoroTTS` | Offline backend; sherpa-onnx kokoro-multi-lang-v1_0 |
-| `kokoro/KokoroVoices` | 53 Kokoro voice enum with sid values |
+| `supertonic/SupertonicTTS` | Offline backend; sherpa-onnx Supertonic-3, one multilingual model |
+| `supertonic/SupertonicVoices` | 10-voice Supertonic voice enum with sid values |
 | `google/GoogleTTSImpl` | Cloud backend; Google Cloud TTS API |
 | `google/GoogleVoices` | 11 Google voice enum with gender and Chirp3-HD character |
 | `google/GoogleVoiceProvider` | Voice selection + non-EN language override |
@@ -427,8 +418,8 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 
 | Constant | Value | Location |
 |---|---|---|
-| `SAMPLE_RATE` | `24000` Hz | `KokoroTTS`, `GoogleTTSImpl`, `AudioDeClicker` |
-| Default Kokoro voice | `GEORGE` (sid=26) | `KokoroTTS` |
+| `SAMPLE_RATE` | `24000` Hz | `SupertonicTTS`, `GoogleTTSImpl`, `AudioDeClicker` |
+| Default Supertonic voice | `F1` (sid=5) | `SupertonicTTS` |
 | Default Google voice | `JENNIFER` | `GoogleVoiceProvider` |
 | Edge escaped-text limit | `4096` UTF-8 bytes | `EdgeSentenceSplitter` |
 | Default Edge voice | `en-US-EmmaMultilingualNeural` | `EdgeVoices` |
@@ -436,5 +427,6 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | `GAIN` | `1.4f` | `RadioFilter` |
 | HP cutoff | `300 Hz` | `RadioFilter` |
 | LP cutoff | `5500 Hz` | `RadioFilter` |
-| Kokoro sentence split | `(?<=[.,!?])\s+(?=\S)` | `KokoroTTS` |
+| Kokoro sentence split | `(?<=[.,!?])\s+(?=\S)` | `KokoroTTS` (superseded; see Supertonic below) |
+| Supertonic sentence split | `(?<=[.,!?])\s+(?=\S)` | `SupertonicTTS` |
 | Google sentence split | `(?<=[.!?])\s+(?=\S)` | `GoogleTTSImpl` |

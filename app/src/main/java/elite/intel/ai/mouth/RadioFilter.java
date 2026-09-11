@@ -15,11 +15,8 @@ import java.util.Random;
  */
 public class RadioFilter {
 
-    // Light static: ~1.2% of full scale (out of 32767)
-    //private static final float NOISE_AMPLITUDE = 400f;
-    //private static final float NOISE_AMPLITUDE = 200f;  // ~0.6% - half as loud
-    //private static final float NOISE_AMPLITUDE = 100f;  // ~0.3% - quarter volume
-    private static final float NOISE_AMPLITUDE = 50f;     // ~0.15% - very subtle
+    // Keep the radio band-pass character without adding a constant hiss to every transmission.
+    private static final float NOISE_AMPLITUDE = 0f;
 
     // Compensate for energy loss caused by the narrow bandpass, then reduce by 30%
     private static final float GAIN = 1.4f; // 2.0 (bandpass compensation) × 0.70 (−30% volume)

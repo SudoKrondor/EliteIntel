@@ -25,11 +25,11 @@ public enum Language {
     }
 
     /**
-     * Whether this language is written in Cyrillic script. This is the dividing line for the local Kokoro
-     * TTS: its phonemizer has no Cyrillic front end, so Cyrillic text cannot be voiced at all. Every other
-     * language we ship is Latin-script and Kokoro will speak it — with an accent when it has no native voice
-     * for it, which is acceptable. So Cyrillic is what forces English output, not "language without a Kokoro
-     * voice".
+     * Whether this language is written in Cyrillic script. This used to be the dividing line for the local
+     * Kokoro TTS engine, whose phonemizer had no Cyrillic front end; the Supertonic engine that replaced it
+     * reads Cyrillic natively, so nothing in this app currently forces English output on account of script.
+     * The flag is kept because callers such as {@link elite.intel.ai.mouth.TtsProvider#canVoice} still need to
+     * ask the question, even though every engine answers yes today.
      */
     public boolean isCyrillicScript() {
         return this == RU || this == UK;

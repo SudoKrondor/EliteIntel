@@ -38,8 +38,9 @@ public final class EdgeTTSImpl implements MouthInterface {
 
     /**
      * MAIN: the primary voice engine, handling all narration (including radio when Edge is also the radio
-     * engine) through one queue. RADIO: a radio-only engine running alongside a non-Edge main mouth in the
-     * Cyrillic locales Kokoro cannot pronounce, ducking behind the main voice via
+     * engine) through one queue. RADIO: a radio-only engine, kept for a future engine that cannot pronounce
+     * every locale - no current locale routes radio to Edge, since Supertonic voices every language this app
+     * ships (see {@link RadioVoicing}) - ducking behind the main voice via
      * {@link MainVoicePlaybackGate}.
      */
     public enum Role {MAIN, RADIO}
@@ -198,8 +199,8 @@ public final class EdgeTTSImpl implements MouthInterface {
         if (!running) {
             return;
         }
-        // Radio is Kokoro's everywhere it can pronounce the language; Edge takes it only in the Cyrillic
-        // locales (see RadioVoicing), where it may be the main mouth or a dedicated radio engine.
+        // Radio is Supertonic's everywhere - it voices every language this app ships (see RadioVoicing) - so
+        // this only matters if a future engine reintroduces a language gap that routes radio to Edge.
         if (role == Role.RADIO && !event.isRadio()) {
             return;
         }
@@ -337,7 +338,7 @@ public final class EdgeTTSImpl implements MouthInterface {
         AudioDeClicker.sanitize(pcm, 6);
         AudioDeClicker.applyVolume(pcm, task.gain());
         if (task.radio()) {
-            // Edge decodes to the 24 kHz mono PCM-16 the filter expects, the same shape Kokoro produces.
+            // Edge decodes to the 24 kHz mono PCM-16 the filter expects, the same shape Supertonic produces.
             RadioFilter.apply(pcm);
         }
         if (isObsolete(task.handle(), task.generation())) {

@@ -131,7 +131,7 @@ public final class AppPaths {
 
     /**
      * Directory holding the in-process text-embedding model (multilingual-e5-small int8 ONNX +
-     * tokenizer), shipped in distribution/embed/ exactly like the Parakeet and Kokoro models so the
+     * tokenizer), shipped in distribution/embed/ exactly like the Parakeet and Supertonic models so the
      * installer/updater bundle it and users never hunt one down.
      */
     public static Path getEmbedModelDir() {

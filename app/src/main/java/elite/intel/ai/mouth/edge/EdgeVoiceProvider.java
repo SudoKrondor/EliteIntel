@@ -161,7 +161,7 @@ final class EdgeVoiceProvider {
     /**
      * Voices to draw radio from before the live list arrives. Both genders, and only ShortNames Edge Read
      * Aloud is known to serve for the locale; every other language falls back to its single main-voice
-     * default, since Kokoro - not Edge - voices radio there.
+     * default, since Supertonic - not Edge - voices radio there.
      */
     private static List<String> radioFallback(Language language) {
         return switch (language) {

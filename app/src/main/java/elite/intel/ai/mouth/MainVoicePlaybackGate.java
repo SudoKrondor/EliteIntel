@@ -1,17 +1,17 @@
 package elite.intel.ai.mouth;
 
 /**
- * Coordinates the always-on Kokoro radio engine with the legacy main mouth so a radio transmission
+ * Coordinates the always-on Supertonic radio engine with the legacy main mouth so a radio transmission
  * ducks behind normal AI speech instead of playing over it (the "radio ducks/waits" behaviour).
  * <p>
- * The main mouth (Google, or Kokoro in its MAIN role) brackets each sentence's playback with
- * {@link #begin()}/{@link #end()}. The radio-role Kokoro engine calls {@link #awaitIdle(long)} before
- * playing, so it waits out the current main-voice sentence and then speaks. When Kokoro itself is the
+ * The main mouth (Google, or Supertonic in its MAIN role) brackets each sentence's playback with
+ * {@link #begin()}/{@link #end()}. The radio-role Supertonic engine calls {@link #awaitIdle(long)} before
+ * playing, so it waits out the current main-voice sentence and then speaks. When Supertonic itself is the
  * main mouth there is a single engine and radio is serialised through its own queue, so the gate is
  * never contended.
  * <p>
  * VEGA speech reaches the same active Mouth through {@code VocalisationRequestEvent}, so it is bracketed
- * here as main-voice playback too. A dedicated radio-role Kokoro engine therefore waits behind both system and
+ * here as main-voice playback too. A dedicated radio-role Supertonic engine therefore waits behind both system and
  * VEGA speech.
  */
 public final class MainVoicePlaybackGate {

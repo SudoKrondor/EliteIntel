@@ -18,7 +18,7 @@ import java.util.Set;
 
 /**
  * In-process {@link TextEmbedder} backed by the multilingual-e5-small int8 ONNX model shipped in
- * {@code distribution/embed/} (same packaging path as Parakeet/Kokoro). Runs entirely on the CPU out of
+ * {@code distribution/embed/} (same packaging path as Parakeet/Supertonic). Runs entirely on the CPU out of
  * system RAM (~130 MB resident) — it never touches the GPU the game is using — and turns a short phrase
  * into a unit-length 384-d vector in a few milliseconds.
  * <p>

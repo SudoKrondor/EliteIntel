@@ -36,7 +36,6 @@ public final class SherpaOnnxNatives {
     private static String[] nativeLibsInOrder(String platform) {
         if (platform.startsWith("win")) {
             return new String[]{
-                    "onnxruntime_providers_shared.dll",
                     "onnxruntime.dll",
                     "sherpa-onnx-jni.dll"
             };

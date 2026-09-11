@@ -16,9 +16,9 @@ import java.util.function.Supplier;
  * <p>
  * It matters for one thing only. Everything the game writes as prose - the NPC lines behind radio
  * transmissions - is written in the client's language, so a Russian client hands us Cyrillic to speak whatever
- * the commander set here. Kokoro, which voices radio almost everywhere, has no Cyrillic phonemizer, so those
- * transmissions are not accented, they are silent; and the game ships no Ukrainian client at all, so Russian
- * is the only Cyrillic case there is.
+ * the commander set here. The local Supertonic engine, which voices radio everywhere, reads Cyrillic natively,
+ * so a Russian client's NPC lines are spoken in Russian rather than dropped; the game ships no Ukrainian
+ * client at all, so Russian is the only Cyrillic case there is.
  * <p>
  * Read lazily and cached: the header is the first line of the newest journal, it does not change while a game
  * session runs, and a live {@code Fileheader} replaces it when the commander starts a new one (see

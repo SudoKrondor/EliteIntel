@@ -256,7 +256,7 @@ public class AudioSettingsPanel extends JPanel {
 
     /**
      * Applies a newly picked speaker by restarting TTS. Every engine holds a PERSISTENT output line -
-     * Kokoro and Google open theirs once and keep it - so a new speaker is not picked up by simply
+     * Supertonic and Google open theirs once and keep it - so a new speaker is not picked up by simply
      * speaking again. Same three guards as {@link #onInputDeviceSelected()}.
      */
     private void onOutputDeviceSelected() {

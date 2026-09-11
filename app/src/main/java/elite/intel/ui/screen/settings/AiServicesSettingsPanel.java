@@ -3,7 +3,7 @@ package elite.intel.ui.screen.settings;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoices;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
@@ -30,11 +30,10 @@ import static elite.intel.ui.theme.HudPalette.*;
  * Unified AI services tab: routes the language model (LLM) and speech (TTS) each between a
  * LOCAL and a CLOUD source via {@link HudSegmentedControl} switches, with the active source's
  * configuration highlighted and the unused one dimmed (section 0.6). Speech has three engines for
- * those two slots: LOCAL is Kokoro, and CLOUD holds Google (API key) and Microsoft Edge (keyless),
- * with the Edge toggle in the cloud column deciding which of the two speaks. Under a Cyrillic command
- * language the LOCAL segment is withdrawn - Kokoro has no Cyrillic phonemizer, so it would be silent -
- * leaving Edge and Google, and {@link SystemSession#getTtsProvider()} has already moved the selection to
- * Edge by the time this panel reads it.
+ * those two slots: LOCAL is Supertonic, and CLOUD holds Google (API key) and Microsoft Edge (keyless),
+ * with the Edge toggle in the cloud column deciding which of the two speaks. Supertonic voices every
+ * language this app ships, including Cyrillic, so the LOCAL segment is never withdrawn on that account -
+ * see {@link TtsProvider#canVoice}.
  * <p>
  * Persistence is transactional: no control writes to {@link SystemSession} on its own. All edits
  * live in an in-memory working copy and are committed atomically by {@link #save()} (the only point
@@ -67,8 +66,9 @@ public class AiServicesSettingsPanel extends JPanel {
     private JCheckBox ttsLockCheck;
 
     /**
-     * Whether the local engine is on offer at all. Kokoro cannot pronounce Cyrillic, so a Russian or
-     * Ukrainian commander is left with the two cloud voices; see {@link TtsProvider#canVoice}.
+     * Whether the local engine is on offer at all. Supertonic voices every language this app ships, so this
+     * is always {@code true} today; see {@link TtsProvider#canVoice}. Kept rather than inlined because a future
+     * local engine could reintroduce a language gap, and this is where that would show up again.
      */
     private boolean localVoiceOffered;
 
@@ -88,7 +88,7 @@ public class AiServicesSettingsPanel extends JPanel {
     private boolean savedLlmLocal;
     private String savedLmAddress = "", savedLmCommand = "";
     private String savedAiKey = "", savedTtsKey = "";
-    private TtsProvider savedTtsProvider = TtsProvider.KOKORO;
+    private TtsProvider savedTtsProvider = TtsProvider.SUPERTONIC;
 
     /** Suppresses dirty-marking while controls are populated programmatically. */
     private boolean loading = false;
@@ -160,16 +160,16 @@ public class AiServicesSettingsPanel extends JPanel {
         JPanel tts = speechSection.body();
 
         // Full-width source switch, no label.
-        localVoiceOffered = TtsProvider.KOKORO.canVoice(systemSession.getLanguage());
+        localVoiceOffered = TtsProvider.SUPERTONIC.canVoice(systemSession.getLanguage());
         ttsSourceControl = new HudSegmentedControl(
                 new String[]{getText("settings.ai.voice.local"), getText("settings.ai.voice.cloud")}, SRC_CLOUD);
         ttsSourceControl.setSegmentEnabled(SRC_LOCAL, localVoiceOffered);
         tts.add(ttsSourceControl, BorderLayout.NORTH);
 
-        // Left column - LOCAL: Kokoro speaks on this machine and has nothing to configure, so the column
-        // only says so - or, where it cannot pronounce the commander's language, says that instead, since a
-        // segment that is simply dead reads as a bug. Right column - CLOUD: Google (needs a key) or Microsoft
-        // Edge, chosen with the toggle under the key row.
+        // Left column - LOCAL: Supertonic speaks on this machine and has nothing to configure, so the column
+        // only says so - or, where it cannot pronounce the commander's language (which does not happen today,
+        // see localVoiceOffered), says that instead, since a segment that is simply dead reads as a bug. Right
+        // column - CLOUD: Google (needs a key) or Microsoft Edge, chosen with the toggle under the key row.
         JPanel ttsLeftCol = transparentPanel(new BorderLayout(0, HUD_GAP));
         ttsLocalHint = localVoiceOffered
                 ? HudBanner.multiline(getText("settings.ai.voice.local.hint"), StatusBadge.State.INFO)
@@ -282,7 +282,7 @@ public class AiServicesSettingsPanel extends JPanel {
             ttsKeyField.setText(storedTtsKey);
             TtsProvider ttsProvider = systemSession.getTtsProvider();
             ttsEdgeButton.setSelected(ttsProvider == TtsProvider.EDGE);
-            ttsSourceControl.setSelectedIndex(ttsProvider == TtsProvider.KOKORO ? SRC_LOCAL : SRC_CLOUD);
+            ttsSourceControl.setSelectedIndex(ttsProvider == TtsProvider.SUPERTONIC ? SRC_LOCAL : SRC_CLOUD);
 
             savedLlmLocal = local;
             savedLmAddress = lmAddress;
@@ -334,12 +334,12 @@ public class AiServicesSettingsPanel extends JPanel {
         apiKeyField.setEnabled(cloud && !llmLockCheck.isSelected());
         llmLockCheck.setEnabled(cloud);
 
-        // LOCAL means Kokoro, with nothing to set. CLOUD holds both cloud voices, so its whole column
+        // LOCAL means Supertonic, with nothing to set. CLOUD holds both cloud voices, so its whole column
         // lives or dies with the switch, and inside it the Edge toggle decides whether Google's key row
         // is in play.
         boolean ttsCloud = ttsSourceControl.getSelectedIndex() == SRC_CLOUD;
         // The "cannot pronounce this language" banner is the reason the segment beside it is dead, so it stays
-        // legible while cloud is selected - which, in that case, is always.
+        // legible while cloud is selected - which, since localVoiceOffered is always true today, never happens.
         ttsLocalHint.setEnabled(!ttsCloud || !localVoiceOffered);
         ttsEdgeButton.setEnabled(ttsCloud);
         ttsEdgeHint.setEnabled(ttsCloud);
@@ -416,7 +416,7 @@ public class AiServicesSettingsPanel extends JPanel {
                 return false; // abort entire save, stay in editing state
             }
             String defaultVoice = switch (newTtsProvider) {
-                case KOKORO -> KokoroVoices.DEFAULT_VOICE.name();
+                case SUPERTONIC -> SupertonicVoices.DEFAULT_VOICE.name();
                 case EDGE -> EdgeVoices.DEFAULT_VOICE.name();
                 case GOOGLE -> GoogleVoices.DEFAULT_VOICE.name();
             };
@@ -475,12 +475,12 @@ public class AiServicesSettingsPanel extends JPanel {
     }
 
     /**
-     * The engine the controls currently describe: LOCAL is always Kokoro, and CLOUD is Google unless the
+     * The engine the controls currently describe: LOCAL is always Supertonic, and CLOUD is Google unless the
      * Edge toggle claims it.
      */
     private TtsProvider selectedTtsProvider() {
         TtsProvider selected = ttsSourceControl.getSelectedIndex() == SRC_LOCAL
-                ? TtsProvider.KOKORO
+                ? TtsProvider.SUPERTONIC
                 : (ttsEdgeButton.isSelected() ? TtsProvider.EDGE : TtsProvider.GOOGLE);
         // Belt and braces: the local segment is already unselectable when it cannot voice the language, so
         // this only guarantees that no path through this panel can commit an engine that would be silent.

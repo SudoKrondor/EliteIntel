@@ -7,7 +7,7 @@ import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoiceProvider;
 import elite.intel.ai.mouth.google.GoogleVoices;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.ai.mouth.subscribers.events.AiVoxDemoEvent;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.dao.ShipSettingsDao;
@@ -87,7 +87,7 @@ public class CommanderTabPanel extends JPanel {
 
     /**
      * Maps a stored voice enum name to a readable label, resolved against the active TTS provider's voices.
-     * Google/Kokoro show "DisplayName - accent · quality": the accent disambiguates voices that share a display
+     * Google/Supertonic show "DisplayName - accent · quality": the accent disambiguates voices that share a display
      * name (e.g. Spanish vs Portuguese "Dora"), and the quality tier (HD vs Standard) shows what the selected
      * language actually delivers. Edge shows "DisplayName - accent" using the same friendly descriptor Google
      * uses for the same logical identity (see {@link #edgeVoiceLabel}) — the provider-native ShortName (e.g.
@@ -99,7 +99,7 @@ public class CommanderTabPanel extends JPanel {
         if (enumName == null) return "";
         try {
             if (SystemSession.getInstance().useLocalTTS()) {
-                KokoroVoices v = KokoroVoices.valueOf(enumName);
+                SupertonicVoices v = SupertonicVoices.valueOf(enumName);
                 return v.getDisplayName() + " - " + v.getDescription();
             }
             if (usesEdgeTts()) {
@@ -136,7 +136,7 @@ public class CommanderTabPanel extends JPanel {
      * Recomputes each Google voice's quality tier (HD vs Standard) for the current language off the EDT, since
      * resolving a voice may query the TTS provider (a listVoices round-trip on first use), then repaints the
      * fleet grid so the labels show the tier. Shown only for a non-English cloud voice once the TTS engine has
-     * wired its voice lookup: English is uniformly HD (no tier needed), the local (Kokoro) engine already has
+     * wired its voice lookup: English is uniformly HD (no tier needed), the local (Supertonic) engine already has
      * accurate accent labels, and before the lookup is wired resolution is optimistic (so no tier is shown).
      */
     private void refreshVoiceQualityLabels() {
@@ -469,7 +469,7 @@ public class CommanderTabPanel extends JPanel {
         boolean useLocal = SystemSession.getInstance().useLocalTTS();
         String[] voiceOptions;
         if (useLocal) {
-            voiceOptions = Arrays.stream(KokoroVoices.values()).map(Enum::name).toArray(String[]::new);
+            voiceOptions = Arrays.stream(SupertonicVoices.values()).map(Enum::name).toArray(String[]::new);
         } else if (usesEdgeTts()) {
             voiceOptions = Arrays.stream(EdgeVoices.values()).map(Enum::name).toArray(String[]::new);
         } else {
@@ -497,7 +497,7 @@ public class CommanderTabPanel extends JPanel {
      */
     static String normalizeVoice(String voiceName) {
         if (SystemSession.getInstance().useLocalTTS()) {
-            return KokoroVoices.voiceOrDefault(voiceName).name();
+            return SupertonicVoices.voiceOrDefault(voiceName).name();
         }
         if (usesEdgeTts()) {
             return EdgeVoices.voiceOrDefault(voiceName).name();
@@ -508,7 +508,7 @@ public class CommanderTabPanel extends JPanel {
     /**
      * The voices a carrier's traffic control can be given: the radio engine's roster, not the main mouth's.
      * A transmission is voiced by whichever engine {@code RadioVoicing} names for the commander's language -
-     * Kokoro almost everywhere, Edge for the Cyrillic locales - so a Google voice picked here would name a
+     * Supertonic for every language this app ships - so a Google voice picked here would name a
      * speaker the engine that has to say the line has never heard of.
      */
     private static String[] radioVoiceOptions() {
@@ -521,7 +521,7 @@ public class CommanderTabPanel extends JPanel {
     private static Stream<String> radioVoiceRoster() {
         return RadioVoicing.engine() == TtsProvider.EDGE
                 ? Arrays.stream(EdgeVoices.values()).map(Enum::name)
-                : Arrays.stream(KokoroVoices.values()).map(Enum::name);
+                : Arrays.stream(SupertonicVoices.values()).map(Enum::name);
     }
 
     /**
@@ -530,10 +530,10 @@ public class CommanderTabPanel extends JPanel {
      * than the active provider's.
      * <p>
      * No voice stored means the commander never picked one, which is shown as {@code RANDOM_VOICE} and draws a
-     * stranger per transmission. A voice the radio engine no longer carries is a different thing: the Kokoro
-     * cast is curated by hand and a voice that breaks immersion is removed from it, so a carrier can hold a
-     * name that is no longer offered. That is shown as the engine's default, because that is what
-     * {@code KokoroTTS.resolveVoiceName} will actually speak it in - the grid must not promise a voice the
+     * stranger per transmission. A voice the radio engine no longer carries is a different thing: the Supertonic
+     * cast may be curated by hand in a future release and a voice that breaks immersion removed from it, so a
+     * carrier can hold a name that is no longer offered. That is shown as the engine's default, because that is
+     * what {@code SupertonicTTS.resolveVoiceName} will actually speak it in - the grid must not promise a voice the
      * channel will not use.
      * <p>
      * Showing the stale name instead would be worse than cosmetic: these combos are not editable, and
@@ -546,7 +546,7 @@ public class CommanderTabPanel extends JPanel {
         if (isRadioVoice(stored)) return stored;
         return RadioVoicing.engine() == TtsProvider.EDGE
                 ? EdgeVoices.DEFAULT_VOICE.name()
-                : KokoroVoices.DEFAULT_VOICE.name();
+                : SupertonicVoices.DEFAULT_VOICE.name();
     }
 
     private static boolean isRadioVoice(String voiceName) {
@@ -560,7 +560,7 @@ public class CommanderTabPanel extends JPanel {
         if (enumName == null || enumName.isEmpty()) return getText("player.fleet.voice.random");
         try {
             if (RadioVoicing.engine() == TtsProvider.EDGE) return edgeVoiceLabel(enumName);
-            KokoroVoices v = KokoroVoices.valueOf(enumName);
+            SupertonicVoices v = SupertonicVoices.valueOf(enumName);
             return v.getDisplayName() + " - " + v.getDescription();
         } catch (IllegalArgumentException e) {
             return enumName;

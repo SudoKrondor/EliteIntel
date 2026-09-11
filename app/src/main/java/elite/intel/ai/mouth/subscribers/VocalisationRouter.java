@@ -41,7 +41,7 @@ public class VocalisationRouter {
 
     /**
      * Radio is never the main mouth's job: it is voiced by whichever engine {@code RadioVoicing} names for the
-     * commander's language - Kokoro almost everywhere, Edge for the Cyrillic locales it cannot pronounce - on
+     * commander's language - Supertonic everywhere, since it voices every language this app ships - on
      * a random voice so the speaker on the other end sounds like a stranger. The voice is drawn by that engine
      * (only it knows its own roster) unless the transmission names one, which happens for the one speaker the
      * commander is not meeting for the first time: their own carrier's traffic control.

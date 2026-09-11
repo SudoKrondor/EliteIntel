@@ -55,7 +55,10 @@ public class TTSFriendlyNumberConverter {
     /**
      * The language the sentence this amount is embedded in will be spoken in.
      * <p>
-     * Not simply the session language: the local Kokoro voice cannot read Cyrillic, so a Russian or
+     * Not simply the session language: an engine that cannot voice the configured language (see
+     * {@link elite.intel.ai.mouth.TtsProvider#canVoice}) has its Cyrillic text answered in
+     * English instead, and {@code StringUtls.localizedEvent} resolves the surrounding sentence that way -
+     * though no current engine (Supertonic included) actually triggers this today.
      * Ukrainian commander on it is answered in English, and {@code StringUtls.localizedEvent} resolves the
      * surrounding sentence that way. Reading the session language here instead put Russian numerals inside
      * an English sentence - "Sold один тысяч три сотен двадцать units of Steel". One policy for both halves

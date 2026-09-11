@@ -2,7 +2,7 @@ package elite.intel.ai.brain.vega.prompt;
 
 import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.managers.ShipLoadoutManager;
 import elite.intel.db.managers.ShipManager;
@@ -51,7 +51,7 @@ class PersonalitySwitchPromptTest {
         ship.setShipName("Personality Test Ship");
         ship.setShipIdentifier("cobramkiii");
         ship.setCargoCapacity(0);
-        ship.setVoice(KokoroVoices.BELLA.name());
+        ship.setVoice(SupertonicVoices.F1.name());
         ship.setPersonality(ShipPersonality.CASUAL.name());
         ship.setCommanderName("CMDR Test");
         ShipManager.getInstance().saveShip(ship);

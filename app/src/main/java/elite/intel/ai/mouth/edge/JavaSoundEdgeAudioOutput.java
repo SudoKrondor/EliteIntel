@@ -14,7 +14,7 @@ import java.util.function.Supplier;
 /** Persistent Java Sound output line for the application's required PCM format and configured mixer. */
 final class JavaSoundEdgeAudioOutput implements EdgeAudioOutput {
     /**
-     * Silence written before each clip, the same gap {@code KokoroTTS} leaves between sentences.
+     * Silence written before each clip, the same gap {@code SupertonicTTS} leaves between sentences.
      */
     private static final float SILENCE_GAP_SECONDS = 0.03f;
     /**
@@ -77,7 +77,7 @@ final class JavaSoundEdgeAudioOutput implements EdgeAudioOutput {
         AudioFormat format = current.getFormat();
         int frameSize = format.getFrameSize();
         int bufferBytes = bufferBytes(format);
-        // Small silence gap between sentences, as KokoroTTS does.
+        // Small silence gap between sentences, as SupertonicTTS does.
         byte[] silence = new byte[(int) (format.getSampleRate() * SILENCE_GAP_SECONDS) * frameSize];
         current.write(silence, 0, silence.length);
         for (int offset = 0; offset < pcm.length; offset += bufferBytes) {

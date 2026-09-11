@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Guards the unicode handling in {@link StringUtls#sanitizeTts(String)}.
  * <p>
- * The Kokoro/espeak phonemizer skips combining marks it has no phoneme for
+ * The Supertonic/espeak phonemizer skips combining marks it has no phoneme for
  * (e.g. the IPA syllabic marker U+0329), which produces audio artifacts. The
  * sanitizer must drop such stray marks while preserving the precomposed
  * accented letters used by the supported non-English languages.

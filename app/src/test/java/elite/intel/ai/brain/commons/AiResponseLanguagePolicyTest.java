@@ -9,20 +9,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class AiResponseLanguagePolicyTest {
     /**
-     * The end of the Cyrillic English-fallback in practice: Kokoro is withdrawn from a Cyrillic commander at
-     * the session read, so even a database that still stores it answers them in their own language rather than
-     * in English.
+     * Supertonic, the local engine that replaced Kokoro, voices Cyrillic natively, so a Russian or Ukrainian
+     * commander stored on it is answered in their own language, not English.
      */
     @Test
-    void aStoredKokoroNoLongerForcesEnglishOnACyrillicCommander() {
+    void aStoredSupertonicKeepsTheConfiguredCyrillicLanguage() {
         SystemSession session = SystemSession.getInstance();
         TtsProvider previousProvider = session.getTtsProvider();
         Language previousLanguage = session.getLanguage();
         try {
-            session.setTtsProvider(TtsProvider.KOKORO);
+            session.setTtsProvider(TtsProvider.SUPERTONIC);
             session.setLanguage(Language.RU);
 
-            assertEquals(TtsProvider.EDGE, session.getTtsProvider(), "Kokoro cannot voice Cyrillic");
+            assertEquals(TtsProvider.SUPERTONIC, session.getTtsProvider(), "Supertonic voices Cyrillic natively");
             assertEquals(Language.RU, AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(session));
         } finally {
             session.setTtsProvider(previousProvider);

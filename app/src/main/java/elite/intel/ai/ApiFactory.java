@@ -16,7 +16,7 @@ import elite.intel.ai.mouth.MouthInterface;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeTTSImpl;
 import elite.intel.ai.mouth.google.GoogleTTSImpl;
-import elite.intel.ai.mouth.kokoro.KokoroTTS;
+import elite.intel.ai.mouth.supertonic.SupertonicTTS;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
@@ -71,8 +71,8 @@ public class ApiFactory {
 
     /**
      * The engine the main mouth will actually be, which is the stored selection except when Google has no
-     * usable key and Kokoro stands in for it (see {@link #selectMouth}). Callers that reason about the main
-     * mouth - the radio engine decision, which must never hand the shared Kokoro singleton two roles - have to
+     * usable key and Supertonic stands in for it (see {@link #selectMouth}). Callers that reason about the main
+     * mouth - the radio engine decision, which must never hand the shared Supertonic singleton two roles - have to
      * see the substitution, not the setting.
      */
     public TtsProvider getActiveTtsProvider() {
@@ -90,19 +90,19 @@ public class ApiFactory {
         return switch (resolveProvider(provider, ttsApiKey, language)) {
             case GOOGLE -> GoogleTTSImpl.getInstance();
             case EDGE -> mainEdge();
-            case KOKORO -> mainKokoro();
+            case SUPERTONIC -> mainSupertonic();
         };
     }
 
     /**
      * The stored selection, with the Google-without-a-key safety net applied - and that safety net itself
-     * corrected for the language, because standing Kokoro in for a keyless Google would leave a Cyrillic
-     * commander silent rather than merely unpaid (see {@link TtsProvider#forLanguage}).
+     * corrected for the language (see {@link TtsProvider#forLanguage}), which no current engine/language
+     * pair actually changes.
      */
     static TtsProvider resolveProvider(TtsProvider provider, String ttsApiKey, Language language) {
         boolean googleWithoutKey = provider == TtsProvider.GOOGLE
                 && KeyDetector.detectProvider(ttsApiKey, "TTS") != ProviderEnum.GOOGLE_TTS;
-        return TtsProvider.forLanguage(googleWithoutKey ? TtsProvider.KOKORO : provider, language);
+        return TtsProvider.forLanguage(googleWithoutKey ? TtsProvider.SUPERTONIC : provider, language);
     }
 
     private static EdgeTTSImpl mainEdge() {
@@ -111,10 +111,10 @@ public class ApiFactory {
         return edge;
     }
 
-    private static KokoroTTS mainKokoro() {
-        KokoroTTS kokoro = KokoroTTS.getInstance();
-        kokoro.setRole(KokoroTTS.Role.MAIN);
-        return kokoro;
+    private static SupertonicTTS mainSupertonic() {
+        SupertonicTTS supertonic = SupertonicTTS.getInstance();
+        supertonic.setRole(SupertonicTTS.Role.MAIN);
+        return supertonic;
     }
 
     /// -- no choices here

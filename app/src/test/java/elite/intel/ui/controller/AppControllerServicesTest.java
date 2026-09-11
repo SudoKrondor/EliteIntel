@@ -20,7 +20,7 @@ class AppControllerServicesTest {
     @Test
     void audioServicesAreAlwaysRegistered() {
         for (TtsProvider mainMouth : TtsProvider.values()) {
-            Set<ServiceType> types = AppController.buildServices(mainMouth, TtsProvider.KOKORO).keySet();
+            Set<ServiceType> types = AppController.buildServices(mainMouth, TtsProvider.SUPERTONIC).keySet();
             assertTrue(types.contains(ServiceType.MOUTH), "MOUTH (TTS) must be registered, mouth=" + mainMouth);
             assertTrue(types.contains(ServiceType.EARS), "EARS (STT) must be registered, mouth=" + mainMouth);
         }
@@ -28,15 +28,15 @@ class AppControllerServicesTest {
 
     @Test
     void radioMouthOnlyRegisteredWhenTheMainMouthIsNotTheRadioEngine() {
-        // Cloud main mouth, Latin-script language: radio is voiced by a dedicated always-on Kokoro engine.
-        assertTrue(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO)
+        // Cloud main mouth, Latin-script language: radio is voiced by a dedicated always-on Supertonic engine.
+        assertTrue(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.SUPERTONIC)
                 .containsKey(ServiceType.RADIO_MOUTH));
-        // Kokoro main mouth, Cyrillic language: Kokoro cannot pronounce it, so Edge runs alongside for radio.
-        assertTrue(AppController.buildServices(TtsProvider.KOKORO, TtsProvider.EDGE)
+        // Supertonic main mouth, Cyrillic language: Supertonic cannot pronounce it, so Edge runs alongside for radio.
+        assertTrue(AppController.buildServices(TtsProvider.SUPERTONIC, TtsProvider.EDGE)
                 .containsKey(ServiceType.RADIO_MOUTH));
         // The main mouth IS the radio engine: it voices radio through its own queue, no extra engine. A second
         // holder would hand the same singleton the RADIO role and silence all narration.
-        assertFalse(AppController.buildServices(TtsProvider.KOKORO, TtsProvider.KOKORO)
+        assertFalse(AppController.buildServices(TtsProvider.SUPERTONIC, TtsProvider.SUPERTONIC)
                 .containsKey(ServiceType.RADIO_MOUTH));
         assertFalse(AppController.buildServices(TtsProvider.EDGE, TtsProvider.EDGE)
                 .containsKey(ServiceType.RADIO_MOUTH));
@@ -44,7 +44,7 @@ class AppControllerServicesTest {
 
     @Test
     void vegaSubsystemIsRegistered() {
-        assertTrue(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO)
+        assertTrue(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.SUPERTONIC)
                 .containsKey(ServiceType.VEGA));
     }
 
@@ -57,7 +57,7 @@ class AppControllerServicesTest {
     void pushToTalkComesUpAfterTheDevicesAndTheMicrophone() {
         for (TtsProvider mainMouth : TtsProvider.values()) {
             List<ServiceType> order =
-                    List.copyOf(AppController.buildServices(mainMouth, TtsProvider.KOKORO).keySet());
+                    List.copyOf(AppController.buildServices(mainMouth, TtsProvider.SUPERTONIC).keySet());
             assertTrue(order.contains(ServiceType.PUSH_TO_TALK),
                     "the controller button must work without opening settings, mouth=" + mainMouth);
             assertTrue(order.indexOf(ServiceType.DEVICE) < order.indexOf(ServiceType.PUSH_TO_TALK));
@@ -68,7 +68,7 @@ class AppControllerServicesTest {
     @Test
     void audioComesUpBeforeVegaAndJournal() {
         List<ServiceType> order =
-                List.copyOf(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO).keySet());
+                List.copyOf(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.SUPERTONIC).keySet());
         // c5651efb intent: start Mouth and Ears before the journal/aux monitors and the LLM subsystem.
         assertTrue(order.indexOf(ServiceType.MOUTH) < order.indexOf(ServiceType.JOURNAL_PARSER));
         assertTrue(order.indexOf(ServiceType.EARS) < order.indexOf(ServiceType.JOURNAL_PARSER));
@@ -79,7 +79,7 @@ class AppControllerServicesTest {
     void liveGameFileMonitorsStartAfterVegaAndEventConsumers() {
         for (TtsProvider mainMouth : TtsProvider.values()) {
             List<ServiceType> order =
-                    List.copyOf(AppController.buildServices(mainMouth, TtsProvider.KOKORO).keySet());
+                    List.copyOf(AppController.buildServices(mainMouth, TtsProvider.SUPERTONIC).keySet());
             assertTrue(order.indexOf(ServiceType.VEGA) < order.indexOf(ServiceType.JOURNAL_PARSER));
             assertTrue(order.indexOf(ServiceType.WEB_SOCKET) < order.indexOf(ServiceType.JOURNAL_PARSER));
             assertTrue(order.indexOf(ServiceType.MISSING_MISSION_MONITOR) < order.indexOf(ServiceType.JOURNAL_PARSER));

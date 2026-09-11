@@ -5,7 +5,7 @@ import elite.intel.ai.brain.VegaIdentity;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
 import elite.intel.ai.mouth.TtsProvider;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.managers.ShipLoadoutManager;
 import elite.intel.db.managers.ShipManager;
@@ -274,13 +274,13 @@ class VegaSystemPromptTest {
         SystemSession session = SystemSession.getInstance();
         TtsProvider previousProvider = session.getTtsProvider();
         try {
-            session.setTtsProvider(TtsProvider.KOKORO);
+            session.setTtsProvider(TtsProvider.SUPERTONIC);
 
-            flyShipWithVoice(901, KokoroVoices.NOVA.name());
+            flyShipWithVoice(901, SupertonicVoices.F1.name());
             assertTrue(prompt.staticRules(ThoughtSource.COMMANDER).contains("\"I\" and feminine forms"));
             assertTrue(prompt.staticRules(ThoughtSource.EVENT).contains("use feminine self-reference"));
 
-            flyShipWithVoice(902, KokoroVoices.GEORGE.name());
+            flyShipWithVoice(902, SupertonicVoices.M1.name());
             assertTrue(prompt.staticRules(ThoughtSource.COMMANDER).contains("\"I\" and masculine forms"),
                     "a male ship voice must not be told to speak of itself in feminine forms");
             assertTrue(prompt.staticRules(ThoughtSource.EVENT).contains("use masculine self-reference"));

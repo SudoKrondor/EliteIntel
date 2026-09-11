@@ -160,8 +160,8 @@ If you want to implement a new command or query follow the established patterns.
   - Run in a separate thread, manage an internal queue, and register via `SubscriberRegistration` or
     `EventBusManager.register(this)` for singletons.
 - **Current backends**:
-  - `elite.intel.ai.mouth.kokoro.KokoroTTS` - **primary, offline**. Uses Kokoro via
-    `sherpa-onnx` JNI. Two-queue pipeline: sentence splitting → synthesis queue → playback queue. Native libraries loaded from
+  - `elite.intel.ai.mouth.supertonic.SupertonicTTS` - **primary, offline**. Uses sherpa-onnx's Supertonic-3
+    model via `sherpa-onnx` JNI. Two-queue pipeline: sentence splitting → synthesis queue → playback queue. Native libraries loaded from
     `-Djava.library.path`. No API key required.
   -
   `elite.intel.ai.mouth.google.GoogleTTSImpl` - cloud-based fallback via Google Cloud Text-to-Speech API. Requires a Google Cloud API key configured in the System settings tab.

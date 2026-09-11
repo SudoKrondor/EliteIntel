@@ -9,10 +9,9 @@ import elite.intel.session.SystemSession;
  * <p>
  * A transmission is the other side of a comms link, not the ship's own voice, so it is deliberately spoken by
  * a different engine and a random voice - accents and strangers are what make the galaxy sound populated.
- * Kokoro owns that job everywhere it can: it is local, free, and its 53-speaker multi-language model gives the
- * variety the channel lives on. It cannot do Cyrillic at all (no Cyrillic front end in its phonemizer - see
- * {@link Language#isCyrillicScript()}), so for Russian and Ukrainian commanders Edge Read Aloud voices radio
- * instead; Edge is keyless, so this costs a network round trip and nothing else.
+ * Supertonic owns that job everywhere: it is local, free, and its 10-speaker multilingual model gives the
+ * variety the channel lives on. Unlike Kokoro, the local engine this one replaced, it needs no Cyrillic
+ * exception - it voices Russian and Ukrainian radio the same way it voices everything else.
  * <p>
  * Every mouth consults this before touching a radio request, so exactly one engine ever claims one: the main
  * mouth voices radio only when it is also the radio engine, and a dedicated {@code RADIO_MOUTH} service runs
@@ -24,11 +23,11 @@ public final class RadioVoicing {
     }
 
     /**
-     * The engine that voices radio for a language: Edge for the Cyrillic locales, Kokoro for the rest.
+     * The engine that voices radio for a language: Supertonic for every language this app ships.
      * Google is never a radio engine - it is the paid main mouth, and radio is chatter, not narration.
      */
     public static TtsProvider engineFor(Language language) {
-        return TtsProvider.forLanguage(TtsProvider.KOKORO, language);
+        return TtsProvider.forLanguage(TtsProvider.SUPERTONIC, language);
     }
 
     /**

@@ -282,7 +282,7 @@ class EdgeTTSImplTest {
     }
 
     @Test
-    void radioRequestsRemainUnclaimedWhereKokoroCanVoiceTheLanguage() {
+    void radioRequestsRemainUnclaimedWhereSupertonicCanVoiceTheLanguage() {
         FakeClient client = new FakeClient();
         FakeOutput output = new FakeOutput();
         EdgeTTSImpl mouth = mouth(client, output, 0f, 100);

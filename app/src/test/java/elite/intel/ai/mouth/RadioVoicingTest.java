@@ -7,18 +7,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 /**
- * Pins which engine voices radio. Kokoro's phonemizer has no Cyrillic front end, so a Russian or Ukrainian
- * commander would hear either silence or gibberish from it; Edge is keyless and speaks both, so it takes the
- * channel there and nowhere else.
+ * Pins which engine voices radio. Supertonic is a single multilingual model that voices every language this
+ * app ships, Cyrillic included, so it owns the radio channel everywhere - no language ever routes to Edge.
  */
 class RadioVoicingTest {
 
     @Test
-    void cyrillicLanguagesAreVoicedByEdgeAndEveryOtherLanguageByKokoro() {
+    void everyLanguageIsVoicedBySupertonic() {
         for (Language language : Language.values()) {
-            assertEquals(
-                    language.isCyrillicScript() ? TtsProvider.EDGE : TtsProvider.KOKORO,
-                    RadioVoicing.engineFor(language),
+            assertEquals(TtsProvider.SUPERTONIC, RadioVoicing.engineFor(language),
                     "radio engine for " + language);
         }
     }

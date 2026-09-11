@@ -14,7 +14,7 @@ import java.util.function.Consumer;
 /**
  * {@link SpeechGateway} backed by the existing TTS pipeline. A {@link SpeechRequest} is published as a
  * {@link VocalisationRequestEvent} carrying a completion future that the active {@code MouthInterface}
- * (Google or Kokoro) completes when playback finishes (or when speech is interrupted/drained); that
+ * (Google or Supertonic) completes when playback finishes (or when speech is interrupted/drained); that
  * future is returned to the caller, so the gateway is provider-agnostic and never touches the audio.
  * <p>
  * Interruption: {@code URGENT} speech preempts whatever is currently playing via a {@link TTSInterruptEvent}

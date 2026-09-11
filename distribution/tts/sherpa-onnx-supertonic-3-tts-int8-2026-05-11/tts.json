@@ -1,0 +1,311 @@
+{
+    "tts_version": "v1.7.3",
+    "split": "opensource-multilingual",
+    "ttl": {
+        "latent_dim": 24,
+        "chunk_compress_factor": 6,
+        "batch_expander": {
+            "n_batch_expand": 6
+        },
+        "normalizer": {
+            "scale": 0.25
+        },
+        "text_encoder": {
+            "n_langs": 0,
+            "lang_emb_dim": 0,
+            "text_embedder": {
+                "char_emb_dim": 256
+            },
+            "convnext": {
+                "idim": 256,
+                "ksz": 5,
+                "intermediate_dim": 1024,
+                "num_layers": 6,
+                "dilation_lst": [
+                    1,
+                    1,
+                    2,
+                    2,
+                    4,
+                    4
+                ]
+            },
+            "attn_encoder": {
+                "hidden_channels": 256,
+                "filter_channels": 1024,
+                "n_heads": 4,
+                "n_layers": 4,
+                "p_dropout": 0.0
+            },
+            "proj_out": {
+                "idim": 256,
+                "odim": 256
+            }
+        },
+        "flow_matching": {
+            "sig_min": 1e-08
+        },
+        "style_encoder": {
+            "proj_in": {
+                "ldim": 24,
+                "chunk_compress_factor": 6,
+                "odim": 256
+            },
+            "convnext": {
+                "idim": 256,
+                "ksz": 5,
+                "intermediate_dim": 1024,
+                "num_layers": 6,
+                "dilation_lst": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ]
+            },
+            "style_token_layer": {
+                "input_dim": 256,
+                "n_style": 50,
+                "style_key_dim": 256,
+                "style_value_dim": 256,
+                "prototype_dim": 256,
+                "n_units": 256,
+                "n_heads": 2
+            }
+        },
+        "speech_prompted_text_encoder": {
+            "text_dim": 256,
+            "style_dim": 256,
+            "n_units": 256,
+            "n_heads": 2
+        },
+        "uncond_masker": {
+            "prob_both_uncond": 0.04,
+            "prob_text_uncond": 0.01,
+            "std": 0.1,
+            "text_dim": 256,
+            "n_style": 50,
+            "style_key_dim": 256,
+            "style_value_dim": 256
+        },
+        "vector_field": {
+            "n_langs": 0,
+            "lang_emb_dim": 0,
+            "proj_in": {
+                "ldim": 24,
+                "chunk_compress_factor": 6,
+                "odim": 512
+            },
+            "time_encoder": {
+                "time_dim": 64,
+                "hdim": 256
+            },
+            "main_blocks": {
+                "n_blocks": 4,
+                "time_cond_layer": {
+                    "idim": 512,
+                    "time_dim": 64
+                },
+                "style_cond_layer": {
+                    "idim": 512,
+                    "style_dim": 256
+                },
+                "text_cond_layer": {
+                    "idim": 512,
+                    "text_dim": 256,
+                    "n_heads": 8,
+                    "n_units": 512,
+                    "use_residual": true,
+                    "rotary_base": 10000,
+                    "rotary_scale": 10
+                },
+                "convnext_0": {
+                    "idim": 512,
+                    "ksz": 5,
+                    "intermediate_dim": 2048,
+                    "num_layers": 4,
+                    "dilation_lst": [
+                        1,
+                        2,
+                        4,
+                        8
+                    ]
+                },
+                "convnext_1": {
+                    "idim": 512,
+                    "ksz": 5,
+                    "intermediate_dim": 2048,
+                    "num_layers": 1,
+                    "dilation_lst": [
+                        1
+                    ]
+                },
+                "convnext_2": {
+                    "idim": 512,
+                    "ksz": 5,
+                    "intermediate_dim": 2048,
+                    "num_layers": 1,
+                    "dilation_lst": [
+                        1
+                    ]
+                }
+            },
+            "last_convnext": {
+                "idim": 512,
+                "ksz": 5,
+                "intermediate_dim": 2048,
+                "num_layers": 4,
+                "dilation_lst": [
+                    1,
+                    1,
+                    1,
+                    1
+                ]
+            },
+            "proj_out": {
+                "idim": 512,
+                "chunk_compress_factor": 6,
+                "ldim": 24
+            }
+        }
+    },
+    "ae": {
+        "sample_rate": 44100,
+        "n_delay": 0,
+        "base_chunk_size": 512,
+        "chunk_compress_factor": 1,
+        "ldim": 24,
+        "encoder": {
+            "spec_processor": {
+                "n_fft": 2048,
+                "win_length": 2048,
+                "hop_length": 512,
+                "n_mels": 228,
+                "sample_rate": 44100,
+                "eps": 1e-05,
+                "norm_mean": 0.0,
+                "norm_std": 1.0
+            },
+            "ksz_init": 7,
+            "ksz": 7,
+            "num_layers": 10,
+            "dilation_lst": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ],
+            "intermediate_dim": 2048,
+            "idim": 1253,
+            "hdim": 512,
+            "odim": 24
+        },
+        "decoder": {
+            "ksz_init": 7,
+            "ksz": 7,
+            "num_layers": 10,
+            "dilation_lst": [
+                1,
+                2,
+                4,
+                1,
+                2,
+                4,
+                1,
+                1,
+                1,
+                1
+            ],
+            "intermediate_dim": 2048,
+            "idim": 24,
+            "hdim": 512,
+            "head": {
+                "idim": 512,
+                "hdim": 2048,
+                "odim": 512,
+                "ksz": 3
+            }
+        }
+    },
+    "dp": {
+        "latent_dim": 24,
+        "chunk_compress_factor": 6,
+        "normalizer": {
+            "scale": 1.0
+        },
+        "sentence_encoder": {
+            "char_emb_dim": 64,
+            "text_embedder": {
+                "char_emb_dim": 64
+            },
+            "convnext": {
+                "idim": 64,
+                "ksz": 5,
+                "intermediate_dim": 256,
+                "num_layers": 6,
+                "dilation_lst": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ]
+            },
+            "attn_encoder": {
+                "hidden_channels": 64,
+                "filter_channels": 256,
+                "n_heads": 2,
+                "n_layers": 2,
+                "p_dropout": 0.0
+            },
+            "proj_out": {
+                "idim": 64,
+                "odim": 64
+            }
+        },
+        "style_encoder": {
+            "proj_in": {
+                "ldim": 24,
+                "chunk_compress_factor": 6,
+                "odim": 64
+            },
+            "convnext": {
+                "idim": 64,
+                "ksz": 5,
+                "intermediate_dim": 256,
+                "num_layers": 4,
+                "dilation_lst": [
+                    1,
+                    1,
+                    1,
+                    1
+                ]
+            },
+            "style_token_layer": {
+                "input_dim": 64,
+                "n_style": 8,
+                "style_key_dim": 0,
+                "style_value_dim": 16,
+                "prototype_dim": 64,
+                "n_units": 64,
+                "n_heads": 2
+            }
+        },
+        "predictor": {
+            "sentence_dim": 64,
+            "n_style": 8,
+            "style_dim": 16,
+            "hdim": 128,
+            "n_layer": 2
+        }
+    }
+}

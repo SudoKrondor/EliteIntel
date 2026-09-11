@@ -2,7 +2,7 @@ package elite.intel.ai.mouth.google;
 
 import com.google.cloud.texttospeech.v1.AudioConfig;
 import com.google.cloud.texttospeech.v1.VoiceSelectionParams;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,7 +38,7 @@ class GoogleAudioConfigTest {
 
     @Test
     void localVoiceIdentifiersCannotReceiveGooglePitch() {
-        AudioConfig config = GoogleTTSImpl.createAudioConfig(voice(KokoroVoices.NOVA.name()), 1.0, -9);
+        AudioConfig config = GoogleTTSImpl.createAudioConfig(voice(SupertonicVoices.F1.name()), 1.0, -9);
 
         assertEquals(0.0, config.getPitch());
         assertFalse(hasPitch(config));

@@ -5,7 +5,7 @@ import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.VoiceGender;
 import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoices;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ChatHistoryDao;
 import elite.intel.db.dao.GameSessionDao;
 import elite.intel.db.dao.ShipDao;
@@ -76,9 +76,9 @@ public class SystemSession {
     }
 
 
-    public KokoroVoices getKokoroVoice() {
+    public SupertonicVoices getSupertonicVoice() {
         ShipDao.Ship ship = shipManager.getShip();
-        return KokoroVoices.voiceOrDefault(ship == null ? null : ship.getVoice());
+        return SupertonicVoices.voiceOrDefault(ship == null ? null : ship.getVoice());
     }
 
 
@@ -101,7 +101,7 @@ public class SystemSession {
         ShipDao.Ship ship = shipManager.getShip();
         String voice = ship == null ? null : ship.getVoice();
         return switch (getTtsProvider()) {
-            case KOKORO -> VoiceGender.of(KokoroVoices.voiceOrDefault(voice).isMale());
+            case SUPERTONIC -> VoiceGender.of(SupertonicVoices.voiceOrDefault(voice).isMale());
             case EDGE -> VoiceGender.of(EdgeVoices.voiceOrDefault(voice).male());
             case GOOGLE -> VoiceGender.of(GoogleVoices.voiceOrDefault(voice).isMale());
         };
@@ -339,7 +339,7 @@ public class SystemSession {
      * commander who rolls back to an earlier jar lands on a database where it still describes their choice.
      */
     public void setTtsProvider(TtsProvider provider) {
-        TtsProvider selected = provider == null ? TtsProvider.KOKORO : provider;
+        TtsProvider selected = provider == null ? TtsProvider.SUPERTONIC : provider;
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
             session.setTtsProvider(selected.name());
@@ -362,12 +362,11 @@ public class SystemSession {
     /**
      * The engine that voices VEGA, corrected for the commander's language. Never {@code null}.
      * <p>
-     * WHY the correction lives on the read rather than the write: Kokoro cannot voice Cyrillic at all, so a
-     * Russian or Ukrainian commander with Kokoro stored has no voice - and that is exactly the state every
-     * database upgraded from a build that let them pick it is in. Reading the stored value through
-     * {@link TtsProvider#forLanguage} makes the unusable combination unrepresentable for every caller at once
-     * (the mouth, the fleet grid's voice roster, the settings panel) without a migration, and hands Kokoro
-     * back untouched if the commander later switches to a Latin-script language.
+     * WHY the correction still lives on the read rather than the write: Supertonic, the local engine that
+     * replaced Kokoro, voices every language this app ships - Cyrillic included - so {@link TtsProvider#forLanguage}
+     * never actually substitutes a different engine today. The seam is kept because it costs nothing to keep
+     * and is exactly where a future engine's own language gap would need to be absorbed, the same way Kokoro's
+     * Cyrillic gap once was.
      */
     public TtsProvider getTtsProvider() {
         TtsProvider stored = Database.withDao(GameSessionDao.class,
