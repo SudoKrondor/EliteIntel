@@ -46,10 +46,12 @@ public class ToggleTreePanel extends JPanel {
     public ToggleTreePanel(List<SettingToggle> roots) {
         this.roots = List.copyOf(roots);
         setOpaque(false);
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        // The tab hands this panel its full height, and a grid given more than it asks for centres its
+        // rows in the surplus. Pinning the page to the top leaves the surplus below it instead.
+        setLayout(new BorderLayout());
         setBorder(new EmptyBorder(HUD_GAP, HUD_GAP, HUD_GAP, HUD_GAP));
 
-        add(page(this.roots, true));
+        add(page(this.roots, true), BorderLayout.NORTH);
         refresh();
     }
 

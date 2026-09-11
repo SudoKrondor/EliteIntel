@@ -102,12 +102,14 @@ public class KeyBindCheck {
             GameEventBus.publish(new AiVoxResponseEvent(
                     StringUtls.localizedSpeech("speech.bindingsMissing", newMissing.size())
             ));
-            // One line naming them all, not one line each. The commander needs to know that controls are
-            // unbound and which ones, once; a line per control pushed everything else out of the system log
-            // at exactly the moment it mattered - a commander sitting in the controls menu rebinding. The
-            // bindings panel is where the list is worked through row by row.
-            UiBus.publish(new AppLogEvent(
-                    "Missing bindings (" + newMissing.size() + "): " + String.join(", ", newMissing)));
+            // The count and where to look, nothing more. Naming every control here - forty-nine of them
+            // on a fresh keyboard layout - filled the system log with a wall of names nobody works from,
+            // and the earlier line per control was worse. The Bindings tab is where the list lives, with a
+            // row per control and the auto-fix beside it.
+            UiBus.publish(new AppLogEvent(newMissing.size() == 1
+                    ? "1 binding is missing - see the Bindings tab"
+                    : newMissing.size() + " bindings are missing - see the Bindings tab"));
+            log.info("Missing bindings ({}): {}", newMissing.size(), String.join(", ", newMissing));
         }
 
         if (!newConflicts.isEmpty()) {

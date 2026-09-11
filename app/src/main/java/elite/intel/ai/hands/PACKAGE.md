@@ -307,8 +307,9 @@ Inverted binding map → `keyCombo → [actionNames]`. For each
 
 Safe overlaps are not flagged:
 
-- Different vehicle states (ship / buggy / humanoid) - mutually exclusive in-game.
-- Sub-state overlays (FreeCam, FSS, SAA, GalnetAudio) - only active inside a specific UI mode.
+- Different vehicle states (ship / buggy / humanoid) - mutually exclusive in-game, so one control bound the same way in every vehicle (trigger, fire groups, cargo scoop, panels, maps, lamps, night vision) is a layout, not a clash. The vehicle comes from `BindingDisplayNames` (the game's own controls screen), not from the tag: the SRV drive and fire controls are spelled `Buggy*` and
+  `SteerLeftButton`, with no `_Buggy` suffix.
+- Sub-state overlays (FreeCam, FSS, SAA, GalnetAudio, the map camera incl. `GalaxyMapHome`) - only active inside a specific UI mode.
 
 Dangerous pairs have curated descriptions; unknown conflicts get a generic humanized description. Results are diffed against the DB state so only newly-appearing conflicts are announced.
 
@@ -331,7 +332,7 @@ wait for any open map to close → open galaxy map → wait for `GuiFocus` to re
 `UI_Back`); `prepToKnownUiPositionWhileInTheShipAtStation()` (three UI_Down steps).
 
 **`KeyBindCheck.check()`
-** - triggers missing/conflict detection and publishes the voice announcements. Missing bindings and ordinary conflicts are announced as counts; a
+** - triggers missing/conflict detection and publishes the voice announcements. Missing bindings are announced as a count pointing at the Bindings tab (the names go to the log at INFO, for the support bundle); ordinary conflicts are announced as counts; a
 **blocking** conflict instead names the chords in collision (via
 `BindingChordSpeech`), because the commander has to know which keys to move, and Frontier's W/A/S/D default is not necessarily theirs.
 
