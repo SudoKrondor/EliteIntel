@@ -1,6 +1,7 @@
 package elite.intel.tools.ws;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import elite.intel.ui.controller.ManagedService;
 import org.apache.logging.log4j.LogManager;
@@ -10,7 +11,10 @@ import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 
 import java.net.InetSocketAddress;
+import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
+import java.util.List;
+import java.util.Map;
 
 public class WebSocketBroadcaster implements Runnable, ManagedService {
 
@@ -73,8 +77,18 @@ public class WebSocketBroadcaster implements Runnable, ManagedService {
         JsonObject o = new JsonObject();
         o.addProperty("URL", request.uri().toASCIIString());
         o.addProperty("method", request.method());
-        o.addProperty("headers", request.headers().toString());
+        o.add("headers", toJson(request.headers()));
         broadcast(gson.toJson(o));
+    }
+
+    private static JsonObject toJson(HttpHeaders headers) {
+        JsonObject o = new JsonObject();
+        for (Map.Entry<String, List<String>> header : headers.map().entrySet()) {
+            JsonArray values = new JsonArray();
+            header.getValue().forEach(values::add);
+            o.add(header.getKey(), values);
+        }
+        return o;
     }
 
     @Override
