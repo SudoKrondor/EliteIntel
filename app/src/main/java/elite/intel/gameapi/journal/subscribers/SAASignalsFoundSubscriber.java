@@ -12,12 +12,13 @@ import elite.intel.gameapi.journal.events.dto.MaterialDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 import elite.intel.util.ExoBio;
-
+import elite.intel.util.TTSFriendlyNumberConverter;
 import java.util.ArrayList;
+
 import java.util.Collection;
 import java.util.List;
-
 import static elite.intel.gameapi.journal.events.dto.LocationDto.LocationType.PLANETARY_RING;
+
 import static elite.intel.util.StringUtls.localizedEvent;
 
 public class SAASignalsFoundSubscriber {
@@ -98,7 +99,7 @@ public class SAASignalsFoundSubscriber {
                             sb.append(genus.getGenusLocalised());
                             sb.append(", ");
                         }
-                        sb.append(localizedEvent("event.signals.avgPayment", averageProjectedPayment));
+                        sb.append(localizedEvent("event.signals.avgPayment", TTSFriendlyNumberConverter.formatCreditsForSpeech(averageProjectedPayment)));
                         // The bonus is Vista Genomics' payment for being first to log the organism, which
                         // is not the same question as who charted the body. On a body nobody had found,
                         // nobody can have sampled it either, so the bonus is ours to claim. On a charted
@@ -106,8 +107,8 @@ public class SAASignalsFoundSubscriber {
                         // here - so it is offered as a possibility, never added to a projection.
                         if (averageFirstDiscoveryBonus > 0) {
                             sb.append(" ").append(location.isOurDiscovery()
-                                    ? localizedEvent("event.signals.firstDiscoveryBonus", averageFirstDiscoveryBonus)
-                                    : localizedEvent("event.signals.firstDiscoveryBonusUncertain", averageFirstDiscoveryBonus));
+                                    ? localizedEvent("event.signals.firstDiscoveryBonus", TTSFriendlyNumberConverter.formatCreditsForSpeech(averageFirstDiscoveryBonus))
+                                    : localizedEvent("event.signals.firstDiscoveryBonusUncertain", TTSFriendlyNumberConverter.formatCreditsForSpeech(averageFirstDiscoveryBonus)));
                         }
                     }
 

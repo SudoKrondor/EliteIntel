@@ -39,7 +39,6 @@ import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import java.awt.*;
-import java.awt.event.HierarchyEvent;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -163,10 +162,6 @@ public class CommanderTabPanel extends JPanel {
     private JCheckBox addressMeBox;
     private ToggleTreePanel shipSettingsPanel;
     private ToggleTreePanel announcementsPanel;
-    /**
-     * Kept apart from the rest: its checkbox is dressed by {@link #applyRadioTransmissionAvailability}.
-     */
-    private SettingToggle radioTransmissions;
     private JTable fleetTable;
     private FleetTableModel fleetTableModel;
     /**
@@ -180,14 +175,6 @@ public class CommanderTabPanel extends JPanel {
 
     public CommanderTabPanel() {
         buildUi();
-        // The game may be launched - or relaunched in another language - long after this panel was built, and
-        // the header that says so arrives on the game bus, not this one. Re-reading the answer each time the
-        // tab is shown keeps the radio toggle honest without a UI event for it.
-        addHierarchyListener(e -> {
-            if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) {
-                applyRadioTransmissionAvailability();
-            }
-        });
         UiBus.register(this);
     }
 
@@ -328,9 +315,6 @@ public class CommanderTabPanel extends JPanel {
      */
     private ToggleTreePanel buildAnnouncementsPanel() {
         GlobalSettingsManager mgr = GlobalSettingsManager.getInstance();
-        radioTransmissions = SettingToggle.of("announcements.radioTransmissions",
-                playerSession::isRadioTransmissionOn, playerSession::setRadioTransmissionOn);
-
         announcementsPanel = new ToggleTreePanel(List.of(
                 SettingToggle.of("announcements.discovery",
                         playerSession::isDiscoveryAnnouncementOn, playerSession::setDiscoveryAnnouncementOn),
@@ -342,7 +326,8 @@ public class CommanderTabPanel extends JPanel {
                         playerSession::isMiningAnnouncementOn, playerSession::setMiningAnnouncementOn),
                 SettingToggle.of("announcements.navigation",
                         playerSession::isNavigationAnnouncementOn, playerSession::setNavigationAnnouncementOn),
-                radioTransmissions,
+                SettingToggle.of("announcements.radioTransmissions",
+                        playerSession::isRadioTransmissionOn, playerSession::setRadioTransmissionOn),
                 SettingToggle.of("announcements.route",
                         playerSession::isRouteAnnouncementOn, playerSession::setRouteAnnouncementOn,
                         SettingToggle.of("automation.announceJumpRoute", mgr::getAnnounceJumpRoute, mgr::setAnnounceJumpRoute),
@@ -351,26 +336,7 @@ public class CommanderTabPanel extends JPanel {
                         SettingToggle.of("automation.announceArrival", mgr::getAnnounceArrival, mgr::setAnnounceArrival),
                         SettingToggle.of("automation.announceRemainingJumps", mgr::getAnnounceRemainingJumps, mgr::setAnnounceRemainingJumps,
                                 SettingToggle.of("automation.announceFuelAvailable", mgr::getAnnounceFuelAvailable, mgr::setAnnounceFuelAvailable)))));
-        applyRadioTransmissionAvailability();
         return announcementsPanel;
-    }
-
-    /**
-     * Shows the radio toggle as the channel actually is. A game client writing Cyrillic gives us NPC lines no
-     * voice here can read aloud, so the transmissions are off whatever the stored setting says - and the box
-     * says so, unticked and dead with a tooltip, rather than sitting ticked over a channel that never speaks.
-     * <p>
-     * The stored setting is deliberately left alone: the client language is the game's state, not the
-     * commander's choice, and a commander who switches their client back to English must get their radio back
-     * without having to remember they once had it.
-     */
-    private void applyRadioTransmissionAvailability() {
-        JCheckBox radioTransmissionBox = announcementsPanel.checkBox(radioTransmissions);
-        boolean available = RadioVoicing.isAvailable();
-        radioTransmissionBox.setEnabled(available);
-        if (!available) radioTransmissionBox.setSelected(false);
-        radioTransmissionBox.setToolTipText(
-                available ? null : getText("announcements.radioTransmissions.unavailable"));
     }
 
     public void initData() {
@@ -381,7 +347,6 @@ public class CommanderTabPanel extends JPanel {
         // A voice command (toggle_all_announcements and friends) can flip these behind the UI's back.
         shipSettingsPanel.refresh();
         announcementsPanel.refresh();
-        applyRadioTransmissionAvailability();
 
         String commanderName = playerSession.getInGameName();
         List<ShipDao.Ship> ships = (commanderName != null && !commanderName.isBlank())
@@ -398,7 +363,7 @@ public class CommanderTabPanel extends JPanel {
         fleetTableModel.setRows(rows);
         fleetTableModel.fireTableDataChanged();
 
-        // The radio engine follows the language, so this roster is rebuilt with the rest of the grid.
+        // The radio engine follows the game client's language, so this roster is rebuilt with the rest of the grid.
         carrierVoiceEditor = new HudComboCellEditor(new HudComboBox<>(
                 radioVoiceOptions(), this::radioVoiceLabel, RANDOM_VOICE::equals));
 
@@ -444,9 +409,9 @@ public class CommanderTabPanel extends JPanel {
 
     /**
      * The voices a carrier's traffic control can be given: the radio engine's roster, not the main mouth's.
-     * A transmission is voiced by whichever engine {@code RadioVoicing} names for the commander's language
-     * and main mouth - Kokoro almost everywhere, Supertonic for the Cyrillic locales - so a Google voice
-     * picked here would name a speaker the engine that has to say the line has never heard of.
+     * A transmission is voiced by whichever engine {@code RadioVoicing} names for the game client's language
+     * - Kokoro almost everywhere, Supertonic for a Russian client - so a Google voice picked here would name
+     * a speaker the engine that has to say the line has never heard of.
      */
     private static String[] radioVoiceOptions() {
         return Stream.concat(Stream.of(RANDOM_VOICE), radioVoiceRoster()).toArray(String[]::new);

@@ -1,6 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.MissionManager;
@@ -34,15 +35,23 @@ public class MissionCompletedSubscriber {
             if (MISSION_PIRATE_MASSACRE.equals(missionType) || MISSION_PIRATE_MASSACRE_WING.equals(missionType)) {
                 playerSession.removeMission(event.getMissionID());
                 String targetFaction = event.getTargetFaction();
-                VegaRuntime.narrator().narrate("Notify: Mission against Faction \"" + targetFaction + "\" Completed: " + event,
-                        "Notify user of a successful mission completion, provide detailed summary from the data received.");
+                VegaRuntime.narrator().narrate("Notify: Mission against Faction \"" + targetFaction + "\" Completed: " + withSpokenReward(event),
+                        "Notify user of a successful mission completion, provide detailed summary from the data received." + SpokenAmounts.RULE);
             } else {
                 missionManager.remove(event.getMissionID());
                 String missionDetails = event.getLocalisedName();
-                VegaRuntime.narrator().narrate("Notify: Mission \"" + missionDetails + "\" Completed: " + event,
-                        "Summarize key mission parameters, destination, reward, and fields relevant to the missiontype. Ignore unimportant fields such as timestamps, timeToLive, missionID etc");
+                VegaRuntime.narrator().narrate("Notify: Mission \"" + missionDetails + "\" Completed: " + withSpokenReward(event),
+                        "Summarize key mission parameters, destination, reward, and fields relevant to the missiontype. Ignore unimportant fields such as timestamps, timeToLive, missionID etc" + SpokenAmounts.RULE);
             }
         });
+    }
+
+    /**
+     * The event plus its reward as it should be said, so the model neither reads the digits nor rounds them
+     * its own way (see {@link SpokenAmounts}).
+     */
+    private static String withSpokenReward(MissionCompletedEvent event) {
+        return event + SpokenAmounts.yamlLine("reward", event.getReward());
     }
 
     /**

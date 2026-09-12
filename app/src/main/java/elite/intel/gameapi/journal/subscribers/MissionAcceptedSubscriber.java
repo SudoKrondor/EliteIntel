@@ -1,6 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.dao.LocationDao.Coordinates;
 import elite.intel.db.managers.HuntingGroundManager;
@@ -66,8 +67,8 @@ public class MissionAcceptedSubscriber {
                     Summarize key mission parameters, destination, reward.
                         - IF relevant to the mission type kill count and or the target name.
                         - Ignore unimportant fields such as timestamps, timeToLive, missionID etc.
-                """;
-        VegaRuntime.narrator().narrate("Mission Accepted: " + event.toYaml(), instructions);
+                """ + SpokenAmounts.RULE;
+        VegaRuntime.narrator().narrate("Mission Accepted: " + withSpokenReward(event), instructions);
     }
 
     private static void genericMission(MissionAcceptedEvent event, MissionManager missionManager) {
@@ -76,11 +77,20 @@ public class MissionAcceptedSubscriber {
             String instructions = """
                         Provide key mission parameters as a summary.
                         Ignore unimportant fields such as timestamps, timeToLive, missionID etc.
-                    """;
+                    """ + SpokenAmounts.RULE;
             VegaRuntime.narrator().narrate(
-                    "Mission Accepted: " + event.toYaml(),
+                    "Mission Accepted: " + withSpokenReward(event),
                     instructions
             );
         }
+    }
+
+    /**
+     * The event with its reward also in the form it should be said: a twelve-million-credit reward read digit
+     * by digit is the thing the commander complained about, and the narration prompt forbids the model to
+     * round a figure itself.
+     */
+    private static String withSpokenReward(MissionAcceptedEvent event) {
+        return event.toYaml() + SpokenAmounts.yamlLine("Reward", event.getReward());
     }
 }

@@ -1,6 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.MissionTitle;
@@ -36,7 +37,7 @@ public class MissionFailedSubscriber {
             String title = MissionTitle.of(event.getName(), event.getLocalisedName());
             VegaRuntime.narrator().narrate(
                     "Notify: mission failed: " + title + ". Destination was " + mission.getDestinationSystem()
-                            + ". Reward lost: " + mission.getReward() + " credits.",
+                            + ". Reward lost: " + SpokenAmounts.forLlm(mission.getReward()) + ".",
                     "Tell the commander this mission has been lost, most likely by running out of time. "
                             + "One short sentence naming the mission. Do not offer to do anything about it.");
         });

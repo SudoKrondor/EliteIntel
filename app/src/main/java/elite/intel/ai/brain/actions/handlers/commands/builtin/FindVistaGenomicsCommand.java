@@ -91,8 +91,11 @@ public final class FindVistaGenomicsCommand implements IntelCommand {
         String announcement = StringUtls.localizedResponse("handler.vistaGenomics.headTo", result.getSystemName(), result.getStationName());
         // Arguments were the wrong way round here: the signature is (text, starSystem), so this stored
         // the whole spoken sentence in the starSystem column and the system name as the reminder text.
+        // The announcement says where to fly; the reminder is heard once we are there, so it says only what
+        // to look for.
         ReminderManager.getInstance().setReminder(
-                announcement, result.getSystemName(), result.getStationName(), ReminderContact.VISTA_GENOMICS);
+                StringUtls.localizedResponse("handler.vistaGenomics.reminder", result.getStationName()),
+                result.getSystemName(), result.getStationName(), ReminderContact.VISTA_GENOMICS);
         VegaRuntime.narrator().filler(announcement, false);
         return routePlotter.plotRoute(result.getSystemName());
     }

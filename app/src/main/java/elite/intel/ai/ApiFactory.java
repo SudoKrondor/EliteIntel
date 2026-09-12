@@ -13,6 +13,7 @@ import elite.intel.ai.brain.inference.xai.GrokAnalysisEndpoint;
 import elite.intel.ai.ears.EarsInterface;
 import elite.intel.ai.ears.parakeet.ParakeetSTTImpl;
 import elite.intel.ai.mouth.MouthInterface;
+import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeTTSImpl;
 import elite.intel.ai.mouth.google.GoogleTTSImpl;
@@ -68,7 +69,8 @@ public class ApiFactory {
 
     ///
     public MouthInterface getMouthImpl() {
-        return selectMouth(systemSession.getTtsProvider(), systemSession.getTtsApiKey(), systemSession.getLanguage());
+        return selectMouth(systemSession.getTtsProvider(), systemSession.getTtsApiKey(),
+                systemSession.getLanguage(), RadioVoicing.transmissionLanguage());
     }
 
     /**
@@ -78,7 +80,8 @@ public class ApiFactory {
      * to see the substitution, not the setting.
      */
     public TtsProvider getActiveTtsProvider() {
-        return resolveProvider(systemSession.getTtsProvider(), systemSession.getTtsApiKey(), systemSession.getLanguage());
+        return resolveProvider(systemSession.getTtsProvider(), systemSession.getTtsApiKey(),
+                systemSession.getLanguage(), RadioVoicing.transmissionLanguage());
     }
 
     /**
@@ -88,8 +91,8 @@ public class ApiFactory {
      * configured. The switch is exhaustive on purpose - a new engine has to be given an implementation here.
      */
     // TODO: Add ElevenLabs, AWS Polly, etc.
-    static MouthInterface selectMouth(TtsProvider provider, String ttsApiKey, Language language) {
-        return switch (resolveProvider(provider, ttsApiKey, language)) {
+    static MouthInterface selectMouth(TtsProvider provider, String ttsApiKey, Language language, Language transmissions) {
+        return switch (resolveProvider(provider, ttsApiKey, language, transmissions)) {
             case GOOGLE -> GoogleTTSImpl.getInstance();
             case EDGE -> EdgeTTSImpl.getInstance();
             case KOKORO -> mainLocal(KokoroTTS.getInstance());
@@ -99,13 +102,17 @@ public class ApiFactory {
 
     /**
      * The stored selection, with the Google-without-a-key safety net applied - and that safety net itself
-     * corrected for the language, because standing Kokoro in for a keyless Google would leave a Cyrillic
-     * commander silent rather than merely unpaid; they get Supertonic (see {@link TtsProvider#forLanguage}).
+     * corrected for the languages the session speaks, because standing Kokoro in for a keyless Google would
+     * leave a Cyrillic commander silent rather than merely unpaid; they get Supertonic (see
+     * {@link TtsProvider#forSession}).
+     *
+     * @param language      the commander's language
+     * @param transmissions the language the game client writes radio transmissions in
      */
-    static TtsProvider resolveProvider(TtsProvider provider, String ttsApiKey, Language language) {
+    static TtsProvider resolveProvider(TtsProvider provider, String ttsApiKey, Language language, Language transmissions) {
         boolean googleWithoutKey = provider == TtsProvider.GOOGLE
                 && KeyDetector.detectProvider(ttsApiKey, "TTS") != ProviderEnum.GOOGLE_TTS;
-        return TtsProvider.forLanguage(googleWithoutKey ? TtsProvider.KOKORO : provider, language);
+        return TtsProvider.forSession(googleWithoutKey ? TtsProvider.KOKORO : provider, language, transmissions);
     }
 
     private static SherpaOnnxTTS mainLocal(SherpaOnnxTTS engine) {

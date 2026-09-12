@@ -90,7 +90,9 @@ does not touch it.
 `CompletableFuture`, `VocalisationRouter` passes it through to `VocalisationRequestEvent`; otherwise the request creates its own future. The eligible active Mouth claims the request's `VocalisationHandle` during the same EventBus dispatch. Guava queues reentrant posts, so the no-Mouth check runs through `GameEventBus.afterCurrentDispatch` only after the outer post has drained; checking immediately after a nested `publish` would reject the request before a Mouth sees it. Only the handle publishes `IsSpeakingEvent`, using a process-wide active-request count, so overlapping requests cannot report a false idle state. STT continues listening while the state is true and treats a commander transcript as barge-in.
 
 **`RadioTransmissionEvent` special handling**: The router sets `isRadio=true` on the resulting
-`VocalisationRequestEvent`; the engine `RadioVoicing` names draws a random voice of its own cast other than the current ship voice. Cloud mouths ignore it; a local engine owns this route - the main mouth itself when it is local, otherwise Kokoro (Latin-script locales) or Supertonic (Cyrillic) as a dedicated `RADIO_MOUTH` service.
+`VocalisationRequestEvent`; the engine `RadioVoicing` names draws a random voice of its own cast other than the current ship voice. Cloud mouths ignore it; a local engine owns this route, picked by the
+**game
+client's** language (`GameLanguage`, off the journal header), because the words are the client's own prose: Kokoro for every client but the Russian one, Supertonic for that. When it is not the main mouth it runs as a dedicated `RADIO_MOUTH` service - Kokoro beside a Supertonic main under a Latin-script client; the reverse never arises, because a Russian client withdraws Kokoro as the main mouth too (`TtsProvider.forSession`: Kokoro must voice BOTH the commander's language and the client's, else Supertonic is the local engine). A radio task also carries the client's language into `generate(...)` (`SherpaOnnxTTS.languageOf`), and a RADIO-role engine is built for it; a client relaunched in another language restarts the mouth (`FileheaderEventSubscriber`).
 
 ---
 
@@ -215,7 +217,7 @@ What differs:
   (`en`, `de`, `fr`, `es`, `it`, `pt` for both `PT` and `PTBZ`, `ru`, `uk`). The engine is built once and never rebuilt on a language switch.
 - **Cyrillic.** Supertonic reads Russian and Ukrainian natively. That is why it exists here: `TtsProvider.forLanguage`
   substitutes it for Kokoro in the Cyrillic locales (the settings panel greys the Kokoro segment out there), and
-  `RadioVoicing` hands it the radio channel for those locales under a cloud main mouth.
+  `RadioVoicing` hands it the radio channel whenever the game client is Russian, whatever the main mouth.
 - **Ten
   voices** (`SupertonicVoices`, `M1`-`M5`, `F1`-`F5`, by `sid`), all offered; the fleet grid shows them by enum name. `DEFAULT_VOICE` is the ship default and the collapse target for a stored name the cast does not carry.
 - **44.1 kHz native
@@ -437,8 +439,8 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | `kokoro/KokoroVoices` | 53 Kokoro voice enum with sid values |
 | `supertonic/SupertonicTTS` | Alternative offline backend; sherpa-onnx Supertonic 3 (int8), the Cyrillic-capable one |
 | `supertonic/SupertonicVoices` | 10 Supertonic voice enum with sid values |
-| `RadioVoicing` | Which engine voices radio: the local main mouth, else Kokoro (Latin) / Supertonic (Cyrillic) |
-| `TtsProvider` | The stored engine choice; `forLanguage` swaps Kokoro for Supertonic under Cyrillic |
+| `RadioVoicing` | Which engine voices radio, by the game client's language: Kokoro, or Supertonic for a Russian client |
+| `TtsProvider` | The stored engine choice; `forSession` swaps Kokoro for Supertonic when the commander OR the game client is Cyrillic |
 | `google/GoogleTTSImpl` | Cloud backend; Google Cloud TTS API |
 | `google/GoogleVoices` | 11 Google voice enum with gender and Chirp3-HD character |
 | `google/GoogleVoiceProvider` | Voice selection + non-EN language override |

@@ -6,43 +6,41 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Pins which engine voices radio. A local engine always does: Kokoro wherever it can pronounce the language,
- * Supertonic for the Cyrillic locales Kokoro's phonemizer cannot read - and whichever local engine is already
- * the main mouth, so two ONNX models are never resident for one channel.
+ * Pins which engine voices radio. The transmission is the game client's prose, so the engine follows the
+ * language the client writes in - never the commander's own language and never the main mouth: Kokoro
+ * wherever it can pronounce the script, Supertonic for the Cyrillic it cannot read.
  */
 class RadioVoicingTest {
 
     @Test
-    void underACloudMainMouthCyrillicIsVoicedBySupertonicAndEveryOtherLanguageByKokoro() {
-        for (TtsProvider cloud : new TtsProvider[]{TtsProvider.GOOGLE, TtsProvider.EDGE}) {
-            for (Language language : Language.values()) {
-                assertEquals(
-                        language.isCyrillicScript() ? TtsProvider.SUPERTONIC : TtsProvider.KOKORO,
-                        RadioVoicing.engineFor(language, cloud),
-                        "radio engine for " + language + " under " + cloud);
-            }
-        }
-    }
-
-    @Test
-    void aLocalMainMouthVoicesItsOwnRadioWhateverTheLanguage() {
-        for (TtsProvider local : new TtsProvider[]{TtsProvider.KOKORO, TtsProvider.SUPERTONIC}) {
-            for (Language language : Language.values()) {
-                if (!local.canVoice(language)) continue; // never the main mouth there - see TtsProvider.forLanguage
-                assertEquals(local, RadioVoicing.engineFor(language, local),
-                        "a commander on " + local + " must not get a second local engine loaded for radio: " + language);
-            }
+    void aRussianClientIsVoicedBySupertonicAndEveryOtherByKokoro() {
+        for (Language language : Language.values()) {
+            assertEquals(
+                    language.isCyrillicScript() ? TtsProvider.SUPERTONIC : TtsProvider.KOKORO,
+                    RadioVoicing.engineFor(language),
+                    "radio engine for a client writing " + language);
         }
     }
 
     @Test
     void radioIsAlwaysLocalAndNeverBillsGoogle() {
-        for (TtsProvider main : TtsProvider.values()) {
-            for (Language language : Language.values()) {
-                TtsProvider radio = RadioVoicing.engineFor(language, main);
-                assertTrue(radio.isLocal(), "radio is chatter, not narration: " + language + " under " + main);
-                assertNotEquals(TtsProvider.GOOGLE, radio);
-            }
+        for (Language language : Language.values()) {
+            TtsProvider radio = RadioVoicing.engineFor(language);
+            assertTrue(radio.isLocal(), "radio is chatter, not narration: " + language);
+            assertNotEquals(TtsProvider.GOOGLE, radio);
+            assertNotEquals(TtsProvider.EDGE, radio);
+        }
+    }
+
+    /**
+     * The one script Kokoro cannot read is the one Supertonic takes, and nothing else moves off Kokoro: its
+     * cast is the wider one, and the channel lives on variety.
+     */
+    @Test
+    void supertonicTakesOnlyWhatKokoroCannotPronounce() {
+        for (Language language : Language.values()) {
+            assertEquals(TtsProvider.KOKORO.canVoice(language), RadioVoicing.engineFor(language) == TtsProvider.KOKORO,
+                    language.toString());
         }
     }
 }

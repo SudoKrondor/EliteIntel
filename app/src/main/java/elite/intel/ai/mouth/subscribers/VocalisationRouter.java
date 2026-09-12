@@ -40,18 +40,15 @@ public class VocalisationRouter {
     // legacy TTS in every mode.
 
     /**
-     * Radio is never the main mouth's job: it is voiced by whichever engine {@code RadioVoicing} names for the
-     * commander's language - Kokoro almost everywhere, Edge for the Cyrillic locales it cannot pronounce - on
-     * a random voice so the speaker on the other end sounds like a stranger. The voice is drawn by that engine
-     * (only it knows its own roster) unless the transmission names one, which happens for the one speaker the
-     * commander is not meeting for the first time: their own carrier's traffic control.
-     * <p>
-     * Silent when the game client writes its prose in a script no voice here can read - see
-     * {@link RadioVoicing#isAvailable()}, which is the same answer the toggle in the Commander tab shows.
+     * Radio is never the main mouth's job as such: it is voiced by whichever engine {@link RadioVoicing} names
+     * for the game client's language - Kokoro almost everywhere, Supertonic for a Russian client, whose prose
+     * Kokoro cannot pronounce - on a random voice so the speaker on the other end sounds like a stranger. The
+     * voice is drawn by that engine (only it knows its own roster) unless the transmission names one, which
+     * happens for the one speaker the commander is not meeting for the first time: their own carrier's traffic
+     * control.
      */
     @Subscribe
     public void onRadioTransmissionEvent(RadioTransmissionEvent event) {
-        if (!RadioVoicing.isAvailable()) return;
         if (!Boolean.TRUE.equals(playerSession.isRadioTransmissionOn())) return;
         publishToMouth(new VocalisationRequestEvent(
                 event.getText(), event.getVoiceName(), RadioTransmissionEvent.class, true, true,

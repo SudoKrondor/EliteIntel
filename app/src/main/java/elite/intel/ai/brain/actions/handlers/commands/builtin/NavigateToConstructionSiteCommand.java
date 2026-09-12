@@ -81,7 +81,9 @@ public final class NavigateToConstructionSiteCommand implements IntelCommand {
                 siteName(site), system, (int) Math.round(site.getProgress() * 100));
         // The port, not just the system: the route ends at the system and the commander still has to pick
         // the right pad out of however many that system holds.
-        ReminderManager.getInstance().setReminder(answer, system, site.getStationName(), null);
+        ReminderManager.getInstance().setReminder(
+                StringUtls.localizedResponse("handler.construction.reminder", siteName(site), (int) Math.round(site.getProgress() * 100)),
+                system, site.getStationName(), null);
         return new RoutePlotter().plotRouteAnd(answer, system);
     }
 

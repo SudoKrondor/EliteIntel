@@ -6,14 +6,15 @@ import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.journal.events.BountyEvent;
 import elite.intel.gameapi.journal.events.dto.BountyDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.TTSFriendlyNumberConverter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import java.util.ArrayList;
+
 import java.util.List;
 import java.util.Set;
-
 import static elite.intel.util.StringUtls.localizedEvent;
+
 
 @SuppressWarnings("unused")
 public class BountyEventSubscriber {
@@ -59,7 +60,8 @@ public class BountyEventSubscriber {
             }
 
             long bountyCollected = rewards.stream().mapToLong(r -> r.getReward()).sum();
-            if (!rewards.isEmpty()) sb.append(localizedEvent("event.bounty.claimed", bountyCollected));
+            if (!rewards.isEmpty())
+                sb.append(localizedEvent("event.bounty.claimed", TTSFriendlyNumberConverter.formatCreditsForSpeech(bountyCollected)));
             playerSession.addBountyReward(event.getTotalReward());
             EventNarrator.critical(sb.toString());
         });

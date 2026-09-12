@@ -403,6 +403,18 @@ public class LocationDto implements ToJsonConvertible {
         return stationType == null ? "FleetCarrier" : stationType;
     }
 
+    /**
+     * The station type exactly as the journal recorded it, {@code null} when the row never captured one.
+     * <p>
+     * WHY a second accessor: {@link #getStationType()} stands "FleetCarrier" in for a missing type so that
+     * spoken text never has a hole in it, and every narration caller relies on that. A caller making a
+     * decision on the type - is this a carrier, a depot, a surface port - must not be told a carrier when the
+     * truth is "unknown", or a rule about carriers silently applies to every old row.
+     */
+    public String getRecordedStationType() {
+        return stationType;
+    }
+
     public void setStationType(String stationType) {
         this.stationType = stationType;
     }

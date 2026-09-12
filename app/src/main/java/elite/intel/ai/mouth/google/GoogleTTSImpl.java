@@ -190,8 +190,8 @@ public class GoogleTTSImpl implements MouthInterface {
     }
 
     @Subscribe @Override public void onVoiceProcessEvent(VocalisationRequestEvent event) {
-        // Radio is never Google's: a dedicated radio engine voices it (Kokoro, or Edge in the Cyrillic
-        // locales - see RadioVoicing), so ignore it here rather than double-speak it on a metered key.
+        // Radio is never Google's: a dedicated local radio engine voices it (Kokoro, or Supertonic for a
+        // Russian client - see RadioVoicing), so ignore it here rather than double-speak it on a metered key.
         if (event.isRadio()) return;
         if (!running) {
             return;

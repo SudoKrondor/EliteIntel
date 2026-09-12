@@ -114,7 +114,10 @@ public final class FindFuelStationCommand implements IntelCommand {
                 station.stationName(), Math.round(station.arrivalLs()))
                 : plottedAnnouncement(station, jumpRange);
 
-        reminderManager.setReminder(announcement, station.starSystem(), station.stationName(), ReminderContact.REFUEL);
+        // The reminder is read back on arrival in that system, where the distance and "route plotted" are
+        // history: all that is left to say is which port to refuel at.
+        reminderManager.setReminder(StringUtls.localizedResponse("handler.refuel.reminder", station.stationName()),
+                station.starSystem(), station.stationName(), ReminderContact.REFUEL);
         if (!alreadyHere) {
             new RoutePlotter().plotRoute(station.starSystem());
         }

@@ -94,7 +94,7 @@ public final class FindBrainTreesCommand implements IntelCommand {
         double distance = calculateDistance(coordinates, result.getX(), result.getY(), result.getZ());
         VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.brainTrees.found", result.getSystemName(), distance, result.getBodyName()), false);
         ReminderManager.getInstance().setReminder(
-                StringUtls.localizedResponse("handler.brainTrees.reminder", result.getSystemName(), result.getBodyName()),
+                StringUtls.localizedResponse("handler.brainTrees.reminder", result.getBodyName()),
                 result.getSystemName()
         );
         // The find itself was spoken as filler above, so the plotter's note is the only thing left to say -

@@ -41,6 +41,29 @@ class TtsProviderLanguageTest {
     }
 
     /**
+     * A session speaks two languages - the commander's, and the game client's on the radio - and Kokoro has
+     * to read both to be offered at all. Whichever side is Cyrillic, Supertonic is the local engine; the cloud
+     * engines are never second-guessed.
+     */
+    @Test
+    void kokoroMustVoiceBothTheCommanderAndTheGameClient() {
+        for (Language commander : Language.values()) {
+            for (Language client : Language.values()) {
+                boolean bothLatin = !commander.isCyrillicScript() && !client.isCyrillicScript();
+                assertEquals(bothLatin, TtsProvider.KOKORO.canVoiceSession(commander, client),
+                        "Kokoro for a " + commander + " commander on a " + client + " client");
+                assertEquals(bothLatin ? TtsProvider.KOKORO : TtsProvider.SUPERTONIC,
+                        TtsProvider.forSession(TtsProvider.KOKORO, commander, client));
+                for (TtsProvider other : TtsProvider.values()) {
+                    if (other == TtsProvider.KOKORO) continue;
+                    assertEquals(other, TtsProvider.forSession(other, commander, client),
+                            other + " reads every script and is kept for a " + commander + " commander on a " + client + " client");
+                }
+            }
+        }
+    }
+
+    /**
      * Google speaks Cyrillic, so a Russian commander who pays for it keeps it: this rule withdraws Kokoro, not
      * the cloud.
      */
