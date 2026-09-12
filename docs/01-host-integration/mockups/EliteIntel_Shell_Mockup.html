@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Elite Intel shell mockup</title>
+<style>
+  :root{
+    --bg:#0b0e11;
+    --chrome:#1c1f22;
+    --panel:#0d1114;
+    --panel-2:#12171b;
+    --line:#8a5a20;
+    --line-dim:#4a3316;
+    --orange:#ff9330;
+    --orange-hot:#ff8c1a;
+    --amber:#D39207;
+    --cyan:#4fd1e8;
+    --green:#4fc56b;
+    --red:#d94f4f;
+    --text:#e6e6e6;
+    --text-dim:#c2c2c2;
+    --muted:#6a7a86;
+    --muted-2:#5a6368;
+    --convo:#b8c8d4;
+    /* WHY: sized to the tallest Alias Designer view (Built-in Devices, 923px measured at this
+       width) so the embedded mockups do not scroll inside the shell. */
+    --view-h:940px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:28px 16px 48px;
+    background:#05070a;
+    color:var(--text);
+    font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:13px;
+    display:flex; flex-direction:column; align-items:center;
+  }
+
+  .frame{width:100%; max-width:1185px; background:var(--bg); border:1px solid #2a2f34; box-shadow:0 18px 60px rgba(0,0,0,.7);}
+
+  /* ---- OS title bar ---- */
+  .titlebar{display:flex; align-items:center; gap:10px; background:var(--chrome); padding:9px 12px; border-bottom:1px solid #2a2f34;}
+  .titlebar .name{font-size:13px; color:#d6dade;}
+  .wbtns{margin-left:auto; display:flex; gap:20px; color:#c8ccd0;}
+  .wbtns span{width:14px; text-align:center; font-size:13px; line-height:1;}
+
+  /* ---- app header ---- */
+  .appheader{display:flex; align-items:baseline; gap:10px; padding:12px 16px 11px; border-bottom:2px solid #c8781e;}
+  .brand{font-size:17px; font-weight:700; letter-spacing:1.4px; color:#fff;}
+  .ver{font-size:11px; color:var(--orange); letter-spacing:.5px;}
+  .who{margin-left:auto; display:flex; gap:26px; align-items:baseline; font-size:12px; letter-spacing:.6px;}
+  .who .lbl{color:var(--muted); font-size:10px; letter-spacing:1px; margin-right:5px;}
+  .who .cmdr{color:#fff; font-weight:700;}
+  .who .ship{color:var(--cyan); font-weight:700;}
+
+  /* ---- tab bar ---- */
+  .tabs{display:flex; flex-wrap:wrap; align-items:stretch; gap:2px; padding:8px 10px 0; border-bottom:1px solid var(--line-dim);}
+  .tab{
+    display:flex; align-items:center; gap:8px;
+    padding:10px 13px 11px; font-size:12px; font-weight:600; letter-spacing:1px;
+    color:#d8dde2; background:none; border:1px solid transparent; border-bottom:none;
+    font-family:inherit; white-space:nowrap;
+  }
+  .tab svg{width:15px; height:15px; flex:none;}
+  button.tab{cursor:pointer;}
+  button.tab:hover:not(.active){background:#141a1f; color:#ffb45e;}
+  .tab.active{background:var(--amber); color:#090D12;}
+
+  /* ---- views ---- */
+  .views{height:var(--view-h); position:relative;}
+  .view{display:none; height:100%; overflow:auto;}
+  .view.on{display:block;}
+  .view.frameview{overflow:hidden; background:#090D12;}
+  .view iframe{width:100%; height:100%; border:0; display:block; background:#090D12;}
+
+  /* ---- vega view ---- */
+  .body{display:grid; grid-template-columns:1fr 232px; gap:9px; padding:9px;}
+  .col{display:flex; flex-direction:column; gap:9px; min-width:0;}
+
+  .panel{border:1px solid var(--line); background:var(--panel);}
+  .panel > .hd{font-size:10px; letter-spacing:1.4px; color:var(--orange); padding:6px 9px 5px;}
+  .panel.pad{padding-bottom:8px;}
+
+  .convo{min-height:346px; display:flex; flex-direction:column;}
+  .convo .msgs{flex:1; display:flex; flex-direction:column; justify-content:flex-end; padding:0 0 6px;}
+  .msg{display:grid; grid-template-columns:1fr 62px; align-items:start;}
+  .msg .t{text-align:right; padding:9px 12px 9px 22px; color:var(--convo); font-size:13.5px; line-height:1.45;}
+  .msg .ts{color:var(--muted); font-size:11px; padding:11px 9px 0 10px; border-left:1px solid #2b3238; height:100%;}
+  .convo .caret{color:var(--orange); padding:2px 0 7px 10px; font-size:12px;}
+
+  .diag{min-height:150px;}
+  .diag .hd{display:flex; align-items:center;}
+  .diag .icons{margin-left:auto; display:flex; gap:11px; color:#8a939b;}
+  .diag .icons svg{width:13px; height:13px;}
+  .diag ul{list-style:none; margin:0; padding:0 10px 8px 12px;}
+  .diag li{color:#9aa8b2; font-size:12.5px; padding:2.5px 0; display:flex; gap:8px;}
+  .diag li::before{content:"·"; color:var(--muted);}
+
+  .summary{display:flex; align-items:stretch;}
+  .summary .cell{flex:1; display:flex; align-items:center; gap:10px; padding:12px 14px; border-right:1px solid #23292e;}
+  .summary .cell:last-child{border-right:none;}
+  .summary svg{width:22px; height:22px; color:var(--orange); flex:none;}
+  .summary .k{font-size:9.5px; letter-spacing:1.1px; color:#93a0aa; display:block;}
+  .summary .v{font-size:14px; color:var(--text-dim); display:block; margin-top:3px;}
+
+  .qs .row{display:flex; align-items:center; padding:3.5px 9px 3.5px 0; font-size:11px; letter-spacing:.7px;}
+  .qs .row .bar{width:2px; align-self:stretch; background:var(--orange); margin-right:9px;}
+  .qs .row .k{color:var(--text-dim);}
+  .qs .row .v{margin-left:auto; font-weight:600;}
+  .v.cy{color:var(--cyan);} .v.or{color:var(--orange-hot);} .v.gr{color:var(--green);} .v.dim{color:#8fa0ab;}
+
+  .btn{display:block; width:100%; text-align:center; padding:9px 6px; margin:0 0 9px;
+       background:var(--panel-2); border:1px solid var(--line); color:var(--orange);
+       font-size:11.5px; font-weight:600; letter-spacing:1.2px;}
+  .btn.off{border-color:#33383d; color:var(--muted-2); background:#0e1215;}
+  .shorts{padding:8px 9px 0;}
+
+  .badge{padding:14px 9px 12px; text-align:center;}
+  .badge .logo{color:var(--orange-hot); margin-bottom:5px;}
+  .badge .who2{font-size:9.5px; letter-spacing:1.6px; color:var(--text-dim);}
+  .clock{font-size:27px; color:var(--orange-hot); letter-spacing:2px; margin:7px 0 2px;
+         font-family:Consolas,"Courier New",monospace;}
+  .date{font-size:10.5px; letter-spacing:1.3px; color:#cfd6db;}
+  .cr{font-size:11.5px; color:var(--cyan); margin-top:5px; font-family:Consolas,"Courier New",monospace;}
+
+  /* iframe fallback notice */
+  .fallback{display:none; padding:26px 22px; color:#9aa8b2; font-size:13px; line-height:1.6;}
+  .fallback a{color:var(--orange);}
+  .view.blocked .fallback{display:block;}
+  .view.blocked iframe{display:none;}
+
+  /* ---- caption ---- */
+  .cap{max-width:1185px; width:100%; margin-top:52px; color:#7d8891; font-size:12.5px; line-height:1.6;}
+  .cap b{color:#b9c3cb; font-weight:600;}
+  .cap a{color:var(--orange);}
+  .cap .k{display:inline-block; border:1px solid var(--line-dim); color:var(--orange);
+          padding:1px 7px; font-size:11px; letter-spacing:1px; margin:0 2px;}
+</style>
+</head>
+<body>
+
+<div class="frame">
+
+  <!-- OS chrome -->
+  <div class="titlebar">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="#ff8c1a"><path d="M12 2 L21 8 L17 10 L12 7 L7 10 L3 8 Z M12 9 L17 12 L12 22 L7 12 Z"/></svg>
+    <span class="name">Elite Intel v-1.1.0009</span>
+    <span class="wbtns"><span>&#8210;</span><span>&#9723;</span><span>&#10005;</span></span>
+  </div>
+
+  <!-- app header -->
+  <div class="appheader">
+    <span class="brand">ELITE INTEL</span>
+    <span class="ver">v-1.1.0009</span>
+    <span class="who">
+      <span><span class="lbl">CMDR</span><span class="cmdr">DAWNTREADER</span></span>
+      <span><span class="lbl">SHIP</span><span class="ship">REVILIAN</span></span>
+    </span>
+  </div>
+
+  <!-- tabs -->
+  <div class="tabs">
+    <button class="tab active" data-view="vega">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 5.8L20 10l-5.8 2.2L12 18l-2.2-5.8L4 10l5.8-2.2z"/></svg>VEGA</button>
+
+    <span class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-4 3.4-6.2 7.5-6.2s7.5 2.2 7.5 6.2"/></svg>COMMANDER</span>
+
+    <span class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="8" height="7"/><rect x="13" y="4" width="8" height="7"/><rect x="3" y="13" width="8" height="7"/><rect x="13" y="13" width="8" height="7"/></svg>ACTIONS</span>
+
+    <span class="tab" title="Elite-Intel's existing bind editor - stays until BindForge is proven">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h.01M11 9h.01M15 9h.01M7 13h10"/></svg>BINDINGS</span>
+
+    <button class="tab" data-view="bindforge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2.5" y="7.5" width="19" height="9.5" rx="4.5"/><path d="M7 12h3M8.5 10.5v3"/><circle cx="16" cy="11" r="1.1" fill="currentColor" stroke="none"/><circle cx="18" cy="13.5" r="1.1" fill="currentColor" stroke="none"/></svg>BINDFORGE</button>
+
+    <button class="tab" data-view="starvizion">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2.5 12h3.2l2-5.5 3 12 2.6-8 1.9 4h6.3"/></svg>STARVIZION</button>
+
+    <span class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2l-2.1 2.1M7.3 16.7l-2.1 2.1"/></svg>SETTINGS</span>
+
+    <span class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="7" cy="17" r="2.6"/><circle cx="17.5" cy="15" r="2.6"/><path d="M9.6 17V7l10.5-2v10"/></svg>JUKEBOX</span>
+
+    <span class="tab">
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="6" width="4" height="15"/><rect x="17" y="9" width="4" height="12"/></svg>STATS</span>
+  </div>
+
+  <!-- ================= views ================= -->
+  <div class="views">
+
+    <!-- ---------- VEGA ---------- -->
+    <div class="view on" id="view-vega">
+      <div class="body">
+
+        <div class="col">
+          <div class="panel convo">
+            <div class="hd">CONVERSATION</div>
+            <div class="msgs">
+              <div class="msg"><div class="t">Speech enabled</div><div class="ts">21:04:03</div></div>
+              <div class="msg"><div class="t">Good evening, DawnTreader!</div><div class="ts">21:04:03</div></div>
+              <div class="msg"><div class="t">Voice input enabled</div><div class="ts">21:04:05</div></div>
+              <div class="msg"><div class="t">Commander, 107 required bindings unassigned. See system readout in the app and bindings panel in the game.</div><div class="ts">21:04:07</div></div>
+              <div class="msg"><div class="t">DawnTreader, 10 user custom commands loaded and ready.</div><div class="ts">21:04:07</div></div>
+              <div class="msg"><div class="t">Connecting to LLM&#8230;</div><div class="ts">21:04:08</div></div>
+            </div>
+            <div class="caret">&#187;</div>
+          </div>
+
+          <div class="panel diag">
+            <div class="hd">DIAGNOSTICS / SYSTEM MESSAGES
+              <span class="icons">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="8" width="12" height="12"/><path d="M4 16V4h12"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v12M7 11l5 5 5-5M4 20h16"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14"/></svg>
+              </span>
+            </div>
+            <ul>
+              <li><span>21:04:06&nbsp; Missing binding: Yaw Left Button Landing</span></li>
+              <li><span>21:04:06&nbsp; Missing binding: Yaw Right Button</span></li>
+              <li><span>21:04:06&nbsp; Missing binding: Yaw Right Button Landing</span></li>
+              <li><span>21:04:06&nbsp; Missing binding: Yaw To Roll Button</span></li>
+              <li><span>21:04:08&nbsp; LM Studio request -&gt; model: google/gemma-4-e4b</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="panel qs pad">
+            <div class="hd">QUICK STATUS</div>
+            <div class="row"><span class="bar"></span><span class="k">STT</span><span class="v or">PUSH TO TALK</span></div>
+            <div class="row"><span class="bar"></span><span class="k">LLM</span><span class="v dim">STANDBY</span></div>
+            <div class="row"><span class="bar"></span><span class="k">TTS</span><span class="v gr">CLOUD</span></div>
+            <div class="row"><span class="bar"></span><span class="k">BINDINGS</span><span class="v or">107 MISSING</span></div>
+            <div class="row"><span class="bar"></span><span class="k">COMMANDS</span><span class="v cy">10 CUSTOM</span></div>
+            <div class="row"><span class="bar"></span><span class="k">KEYMAP</span><span class="v cy">IN SYNC</span></div>
+          </div>
+
+          <div class="panel">
+            <div class="hd">SHORTCUTS</div>
+            <div class="shorts">
+              <span class="btn">STOP SERVICES</span>
+              <span class="btn off">SLEEP</span>
+              <span class="btn">HIDE OVERLAY</span>
+              <span class="btn">OVERLAY SETUP</span>
+            </div>
+            <div class="badge">
+              <div class="logo">
+                <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M12 2 L21 8 L17 10 L12 7 L7 10 L3 8 Z M12 9 L17 12 L12 22 L7 12 Z"/></svg>
+              </div>
+              <div class="who2">ELITE INTEL</div>
+              <div class="clock">04:04:14</div>
+              <div class="date">31 AUG 3312</div>
+              <div class="cr">5,117,052,095 CR</div>
+            </div>
+            <div class="shorts">
+              <span class="btn">AUDIO DEVICES</span>
+              <span class="btn">CALIBRATE AUDIO</span>
+              <span class="btn off">APP IS UP TO DATE</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:0 9px 9px;">
+        <div class="panel summary">
+          <div class="cell" style="flex:0 0 auto; border-right:none; padding-right:4px;">
+            <span class="k" style="color:var(--orange); letter-spacing:1.4px; font-size:10px;">SYSTEM SUMMARY</span>
+          </div>
+        </div>
+        <div class="panel summary" style="border-top:none;">
+          <div class="cell">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="2"/><text x="12" y="15.5" font-size="8" fill="currentColor" stroke="none" text-anchor="middle" font-family="sans-serif">AI</text></svg>
+            <span><span class="k">LLM MODEL</span><span class="v">&#8212;</span></span>
+          </div>
+          <div class="cell">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.3l3.4 2"/></svg>
+            <span><span class="k">SESSION TIME</span><span class="v">00:00:08</span></span>
+          </div>
+          <div class="cell">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="12" cy="6.5" rx="7.5" ry="3"/><path d="M4.5 6.5v10c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-10"/><path d="M4.5 11.5c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3"/></svg>
+            <span><span class="k">TOKENS USED</span><span class="v">&#8212;</span></span>
+          </div>
+          <div class="cell">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.5"/><path d="M12 12l4.5-3"/><path d="M12 3.5v1.8M20.5 12h-1.8M12 20.5v-1.8M3.5 12h1.8"/></svg>
+            <span><span class="k">TOKENS / HOUR</span><span class="v">&#8212;</span></span>
+          </div>
+          <div class="cell">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.5"/><text x="12" y="15.5" font-size="9" fill="currentColor" stroke="none" text-anchor="middle" font-family="sans-serif">&#36;</text></svg>
+            <span><span class="k">CACHE SAVED</span><span class="v">0</span></span>
+          </div>
+          <div class="cell">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 L4 14h6l-1 8 9-12h-6z"/></svg>
+            <span><span class="k">LAST SPEED</span><span class="v">&#8212;</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- BINDFORGE ---------- -->
+    <div class="view frameview" id="view-bindforge">
+      <iframe title="BindForge mockup"
+              data-src="../../02-features/bindforge/mockups/BindForge_Mockup.html"></iframe>
+      <div class="fallback">
+        <b style="color:#ffb45e;">The BindForge mockup could not be embedded.</b><br><br>
+        Some browsers refuse to embed one <code>file://</code> page inside another. Open it directly instead:
+        <a href="../../02-features/bindforge/mockups/BindForge_Mockup.html">BindForge_Mockup.html</a>
+      </div>
+    </div>
+
+    <!-- ---------- STARVIZION ---------- -->
+    <div class="view frameview" id="view-starvizion">
+      <iframe title="StarVizion mockup"
+              data-src="../../02-features/starvizion/mockups/StarVizion_Mockup.html"></iframe>
+      <div class="fallback">
+        <b style="color:#ffb45e;">The StarVizion mockup could not be embedded.</b><br><br>
+        Some browsers refuse to embed one <code>file://</code> page inside another. Open it directly instead:
+        <a href="../../02-features/starvizion/mockups/StarVizion_Mockup.html">StarVizion_Mockup.html</a>
+      </div>
+    </div>
+
+  </div><!-- /views -->
+</div><!-- /frame -->
+
+<div class="cap">
+  <b>Elite Intel shell mockup — static.</b> The <span class="k">VEGA</span>, <span class="k">BINDFORGE</span> and
+  <span class="k">STARVIZION</span> tabs switch the content area in place; the feature mockups render inside the
+  shell rather than opening a new page. Every other tab, button, and readout is painted to match the running app
+  and does nothing.
+  <br>
+  <b>This shows the transition state, not the destination.</b> <span class="k">BINDINGS</span> is Elite-Intel's
+  existing bind editor: it keeps shipping alongside <span class="k">BINDFORGE</span> and is removed only once
+  BindForge is proven (see
+  <a href="../../00-overview/v1.2-scope.md#buildship-order">Build and Ship Order</a>, step 6). During development
+  the existing editor is switched off in Alan's build only. <b>STARVIZION is an added tab</b> — it displaces
+  nothing. <span class="k">JUKEBOX</span> shipped in v1.1.
+  Values shown (107 missing bindings, 10 custom commands, the 3312 clock) are copied from a real session for
+  realism only.
+  See <a href="../elite-intel-platform-map.md#host-ui">Platform Map &rarr; Host UI</a> for how the real Swing tab
+  bar works, and <a href="../../PORTING-NOTES.md#8-the-mockups">Porting Notes &sect;8</a> for the palette mapping.
+</div>
+
+<script>
+(function(){
+  var tabs  = document.querySelectorAll('button.tab[data-view]');
+  var views = document.querySelectorAll('.view');
+
+  function show(name){
+    tabs.forEach(function(t){ t.classList.toggle('active', t.dataset.view === name); });
+    views.forEach(function(v){ v.classList.toggle('on', v.id === 'view-' + name); });
+
+    var view = document.getElementById('view-' + name);
+    var frame = view && view.querySelector('iframe[data-src]');
+    if (!frame) return;
+
+    // lazy-load on first activation, and fall back if the browser blocks file:// embedding
+    var src = frame.getAttribute('data-src');
+    frame.removeAttribute('data-src');
+    var settled = false;
+    frame.addEventListener('load', function(){ settled = true; });
+    frame.addEventListener('error', function(){ view.classList.add('blocked'); });
+    frame.src = src;
+    setTimeout(function(){ if (!settled) view.classList.add('blocked'); }, 4000);
+  }
+
+  tabs.forEach(function(t){
+    t.addEventListener('click', function(){ show(t.dataset.view); });
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Root>
+	<Joy_1>B1</Joy_1>
+	<Joy_2>B2</Joy_2>
+	<Joy_3>B3</Joy_3>
+	<Joy_4>B4</Joy_4>
+	<Joy_5>B5</Joy_5>
+	<Joy_6>B6</Joy_6>
+	<Joy_7>B7</Joy_7>
+	<Joy_8>B8</Joy_8>
+	<Joy_9>B9</Joy_9>
+	<Joy_10>B10</Joy_10>
+	<Joy_11>B11</Joy_11>
+	<Joy_12>B12</Joy_12>
+	
+	<Joy_13>T1 - Down</Joy_13>
+	<Joy_14>T1 - Up</Joy_14>
+	<Joy_15>T2 - Down</Joy_15>	
+	<Joy_16>T2 - Up</Joy_16>	
+	<Joy_17>T3 - Left</Joy_17>
+	<Joy_18>T3 - Right</Joy_18>
+	<Joy_19>T4 - Left</Joy_19>
+	<Joy_20>T4 - Right</Joy_20>		
+	<Joy_21>T5 - Down</Joy_21>
+	<Joy_22>T5 - Up</Joy_22>
+	<Joy_23>T6 - Down</Joy_23>
+	<Joy_24>T6 - Up</Joy_24>
+	<Joy_25>T7 - Down</Joy_25>
+	<Joy_26>T7 - Up</Joy_26>
+	<Joy_27>T8 - Down</Joy_27>
+	<Joy_28>T8 - Up</Joy_28>
+	<Joy_29>T9 - Down</Joy_29>
+	<Joy_30>T9 - Up</Joy_30>
+	<Joy_31>T10 - Down</Joy_31>
+	<Joy_32>T10 - Up</Joy_32>
+	
+	<Joy_33>E1</Joy_33>
+	<Joy_34>E1 - Counter Clockwise</Joy_34>
+	<Joy_35>E1 - Clockwise</Joy_35>	
+	<Joy_36>E2</Joy_36>
+	<Joy_37>E2 - Counter Clockwise</Joy_37>
+	<Joy_38>E2 - Clockwise</Joy_38>
+	<Joy_39>E3</Joy_39>
+	<Joy_40>E3 - Counter Clockwise</Joy_40>
+	<Joy_41>E3 - Clockwise</Joy_41>
+	
+	<Joy_UAxis>A1</Joy_UAxis>
+	<Joy_VAxis>A2</Joy_VAxis>	
+</Root>

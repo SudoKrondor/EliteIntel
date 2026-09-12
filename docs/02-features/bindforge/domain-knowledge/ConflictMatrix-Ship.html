@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Conflict Matrix — Ship Controls</title>
+<link rel="stylesheet" href="ConflictMatrix.css">
+</head>
+<body>
+<div class="cm-page">
+  <div class="cm-header">
+    <h1 class="cm-title">Subgroup Conflict Matrix — Ship Controls</h1>
+    <div class="cm-sub">
+      Click a cell to cycle Untested &rarr; No Conflict &rarr; Conflicts. "Main Flight Controls"
+      represents everything in the Ship section not covered by a named sub-mode below — add more
+      rows if testing turns up others. Saved automatically in this browser (localStorage).
+    </div>
+    <div class="cm-nav">
+      <a href="ConflictMatrix-General.html">GENERAL</a>
+      <a href="ConflictMatrix-Ship.html" class="active">SHIP</a>
+      <a href="ConflictMatrix-SRV.html">SRV</a>
+      <a href="ConflictMatrix-OnFoot.html">ON FOOT</a>
+    </div>
+  </div>
+  <div id="cm-root"></div>
+  <div class="cm-note">
+    Pre-filled from testing done 2026-07-30: Multicrew is a confirmed real conflict with Main
+    Flight Controls (a Frontier bug — the two are mutually exclusive in actual play, but the game
+    doesn't suppress it). FSS Mode is confirmed not conflicting with Main Flight Controls, correctly.
+    DSS Mode's pairs, and Multicrew&times;FSS / Multicrew&times;DSS / FSS&times;DSS, are still
+    Untested — DSS was assumed similar to FSS but hasn't actually been tested yet.
+  </div>
+</div>
+<script src="ConflictMatrix.js"></script>
+<script>
+ConflictMatrix.init({
+  storageKey: 'bindforge-conflict-matrix-ship',
+  subgroups: ['Main Flight Controls','Multicrew','FSS Mode','DSS Mode'],
+  knownPairs: [
+    ['Main Flight Controls','Multicrew',2],
+    ['Main Flight Controls','FSS Mode',1]
+  ]
+});
+</script>
+</body>
+</html>

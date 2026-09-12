@@ -123,7 +123,7 @@ The
 | `name` | `String` | SDL3 device name; fallback: `"Joystick <id>"` |
 | `axisCount` | `int` | Number of analog axes reported by SDL3 |
 | `buttonCount` | `int` | Number of buttons reported by SDL3 |
-| `usbPath` | `String` | USB port path from `SDL_GetJoystickPathForID`; empty string if unavailable |
+| `usbPath` | `String` | USB port path from `SDL_GetJoystickPathForID`; empty string if unavailable. Identifies the **port**, not the unit |
 | `guid` | `String` | 32-char hex SDL3 GUID (see below) |
 
 ### `DeviceIdentity` (record)
@@ -161,14 +161,36 @@ No upper clamp is needed. `DeviceAxisEvent.value` is always in [−1.0, 1.0].
 
 ---
 
-## 6. Duplicate Device Detection
+## 6. Duplicate Device Detection, and the Three Tiers of Identity
 
 After opening each device,
 `checkForDuplicate()` compares its VID/PID against all already-opened devices. A match publishes
 `DeviceDuplicateWarningEvent`. This matters because Elite Dangerous uses VID/PID to identify devices in
-`.binds` files and cannot distinguish two identical physical devices (e.g., two of the same HOTAS). The
-`usbPath` field (
-`SDL_GetJoystickPathForID`) allows UI consumers to display which USB port each physical unit is plugged into, but the game itself has no mechanism to separate them.
+`.binds` files and cannot distinguish two identical physical devices (e.g., two of the same HOTAS).
+
+Three identifiers are captured, and they answer different questions:
+
+| Identifier | Identifies | Survives | Read today? |
+|---|---|---|---|
+| serial | the **physical unit** | being moved to another port, and reboots | **no** - see below |
+| `usbPath` | the **port** it is plugged into | nothing - it changes the moment the unit is moved | yes |
+| VID/PID (via `guid`) | the **model** | everything, and is shared by identical units | yes |
+
+**`SDL_GetJoystickSerial` is available in the LWJGL 3.4.0 binding and is not currently called.** Reading it
+would be a few lines against the already-open joystick handle. It is noted rather than done because it is
+not needed yet: nothing today asks "is this the same stick as last time?", and widening the `Device` record
+breaks every existing construction of it.
+
+**A serial is the only identifier that answers that question, and many devices do not report one.** Verified 2026-09-06 against two Sony DualShock 4 controllers (v1 `054C:05C4`, v2
+`054C:09CC`): both report `iSerialNumber 0x00`, no serial at all. Their Windows instance IDs
+(`8&1F31A475&0&4` and `8&1F31A475&0&3`) share the hub portion and differ only in the trailing port number
+- so for a serial-less device even the OS identity is port-derived. An empty `serial` is the normal case,
+never an error.
+
+**None of this lets Elite Dangerous tell two identical devices apart, and it must not be presented as if it
+did.** The game keys on VID/PID, and `DeviceMappings.xml` has no field that could carry anything more. What
+these buy is honest UI labelling - naming which port a unit is in, or recognising a unit across sessions -
+and nothing at the binding layer.
 
 ---
 

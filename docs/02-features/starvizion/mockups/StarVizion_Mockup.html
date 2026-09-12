@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>StarVizion mockup</title>
+<style>
+body{margin:0;background:#151B22;padding:24px;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;box-sizing:border-box}
+.sv-frame{width:100%;box-sizing:border-box;background:#090D12;border-radius:8px;padding:18px;color:#C2C2C2}
+.sv-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;padding-bottom:14px;border-bottom:2px solid #B85A14}
+.sv-header h1{font-size:16px;margin:0;color:#C2C2C2;letter-spacing:.5px}
+.sv-header .sv-sub{font-size:12px;color:#8FA0AD}
+.sv-tabbar{display:flex;border-bottom:1px solid #24313A;margin-bottom:18px}
+.sv-tab{padding:9px 20px;font-weight:700;font-size:12px;letter-spacing:.5px;color:#8FA0AD;cursor:pointer;border-bottom:2px solid transparent}
+.sv-tab.active{color:#FF7100;border-bottom-color:#B85A14}
+.sv-panel{display:none}
+.sv-panel.active{display:block}
+.sv-toolbar{display:flex;justify-content:flex-end;margin-bottom:14px}
+.sv-btn{border:1px solid #B85A14;color:#FF7100;background:transparent;padding:8px 16px;font-weight:700;font-size:12px;letter-spacing:.5px;border-radius:4px;cursor:pointer;font-family:inherit}
+.sv-btn.primary{background:#FF7100;color:#090D12}
+.sv-btn.small{padding:4px 10px;font-size:11px}
+.sv-btn.full{width:100%}
+.sv-cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.sv-card{border:1px solid #24313A;border-radius:6px;padding:12px;background:#101721;position:relative}
+.sv-card:hover{border-color:#B85A14}
+.sv-iconbtn{width:26px;height:26px;border-radius:50%;background:rgba(9,13,18,.85);border:1px solid #2D3A44;color:#C2C2C2;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;flex-shrink:0}
+.sv-iconbtn:hover{border-color:#B85A14;color:#FF822E}
+.sv-iconbtn.danger:hover{border-color:#D94F4F;color:#D94F4F}
+.sv-iconbtn.active{background:#123B28;border-color:#4FC56B;color:#4FC56B}
+.sv-cornerbtn{position:absolute;z-index:3}
+.sv-cornerbtn-tl{top:8px;left:8px}
+.sv-cornerbtn-bl{bottom:8px;left:8px}
+.sv-cornerbtn-br{bottom:8px;right:8px}
+.sv-rowbtns{display:flex;gap:8px;align-items:center}
+.sv-thumb{position:relative;height:90px;border-radius:4px;background:#151B22;border:1px dashed #2D3A44;display:flex;align-items:center;justify-content:center;color:#6F7D89;font-size:11px;margin-bottom:10px}
+.sv-cardname{font-size:13px;color:#C2C2C2;font-weight:600;margin-bottom:4px}
+.sv-cardtags{font-size:11px;color:#6F7D89;margin-bottom:8px}
+.sv-cardedit{font-size:10.5px;color:#33D7E8;font-weight:700;letter-spacing:.4px;margin-top:8px}
+.sv-status{font-size:11px;font-weight:700;letter-spacing:.5px}
+.sv-status.live{color:#4FC56B}
+.sv-status.closed{color:#6F7D89}
+.sv-status.missing{color:#D39207}
+.sv-holoframe-active{border-color:#4FC56B;box-shadow:inset 0 0 0 1px #4FC56B;background:#0D1A16}
+.sv-holoframe-active:hover{border-color:#4FC56B}
+.sv-loadoutname{font-size:13px;color:#C2C2C2;font-weight:600}
+.sv-loadoutmeta{font-size:11px;color:#8FA0AD}
+.sv-placeholder-note{font-size:11px;color:#6F7D89;margin-top:20px;padding-top:14px;border-top:1px solid #24313A}
+.sv-note{font-size:11px;color:#6F7D89;line-height:1.5}
+.sv-library-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+.sv-library-col{border:1px solid #24313A;border-radius:6px;background:#101721;padding:14px}
+.sv-library-colhead{font-size:12px;font-weight:700;letter-spacing:.5px;color:#8FA0AD;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.sv-card.sv-dragging{opacity:.4}
+.sv-dropok{background:#1A1206;box-shadow:inset 0 0 0 1px #FF7100}
+.sv-memberchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.sv-memberchip{display:flex;align-items:center;gap:6px;background:#151B22;border:1px solid #2D3A44;border-radius:4px;padding:4px 8px;font-size:11px;color:#C2C2C2;white-space:nowrap}
+.sv-memberchip-remove{color:#6F7D89;cursor:pointer;font-size:12px;line-height:1}
+.sv-memberchip-remove:hover{color:#D94F4F}
+.sv-loadoutname-input{font-size:13px;color:#C2C2C2;font-weight:600;background:transparent;border:1px solid transparent;border-radius:3px;padding:2px 4px;font-family:inherit;width:100%;box-sizing:border-box}
+.sv-loadoutname-input:hover{border-color:#24313A}
+.sv-loadoutname-input:focus{outline:none;border-color:#B85A14;background:#090D12}
+.sv-loadoutbadges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.sv-loadoutbadge{font-size:9.5px;font-weight:700;letter-spacing:.4px;padding:2px 7px;border-radius:8px;border:1px solid #2D5C66;color:#33D7E8}
+.sv-loadoutbadge.render{border-color:#8B6BC0;color:#B78CD9}
+
+/* Editor */
+.sv-editor-header{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.sv-editor-title{font-size:14px;font-weight:700;color:#FF822E;letter-spacing:.3px}
+.sv-editor-layout{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;align-items:start}
+.sv-toptabbar{display:flex;border-bottom:1px solid #24313A;margin-bottom:18px}
+.sv-toptab-inner{padding:9px 22px;font-weight:700;font-size:12px;letter-spacing:.5px;color:#8FA0AD;cursor:pointer;border-bottom:2px solid transparent}
+.sv-toptab-inner.active{color:#FF7100;border-bottom-color:#B85A14}
+.sv-vizlettab-layout{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;max-width:900px}
+.sv-checkrow{display:flex;align-items:center;gap:8px;font-size:12px;color:#C2C2C2;margin-bottom:8px;cursor:pointer}
+.sv-checkrow input{accent-color:#FF7100}
+.sv-block{border:1px solid #24313A;border-radius:6px;background:#101721;margin-bottom:14px}
+.sv-block-head{padding:9px 12px;font-size:11px;font-weight:700;letter-spacing:.5px;color:#8FA0AD;border-bottom:1px solid #24313A;display:flex;justify-content:space-between;align-items:center}
+.sv-canvas-stage{padding:20px;display:flex;justify-content:center;align-items:center;background:#090D12;min-height:120px}
+.sv-canvas{border-radius:2px;position:relative;overflow:hidden;box-shadow:0 0 0 1px #2D3A44;background:
+  linear-gradient(#151B22 1px,transparent 1px) 0 0/20px 20px,
+  linear-gradient(90deg,#151B22 1px,transparent 1px) 0 0/20px 20px,
+  #0C1117}
+.sv-canvas-note{padding:8px 12px;font-size:10.5px;color:#6F7D89;border-top:1px solid #24313A}
+.sv-canvas-dims{text-align:center;font-size:10px;color:#6F7D89;padding-top:6px}
+.sv-node-row{display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:12.5px;border-bottom:1px solid #151B22;cursor:pointer}
+.sv-node-row:last-child{border-bottom:none}
+.sv-node-row:hover{background:#131A22}
+.sv-node-row.selected{background:#1A1206}
+.sv-node-vis{cursor:pointer;color:#8FA0AD;width:16px;text-align:center}
+.sv-node-vis.hidden{color:#3A4855}
+.sv-node-type{color:#6F7D89;font-size:10px;font-weight:700;letter-spacing:.4px;border:1px solid #2D3A44;border-radius:2px;padding:2px 5px;width:52px;text-align:center;flex-shrink:0}
+.sv-node-type.unassigned{color:#D39207;border-color:#D39207}
+.sv-node-name{flex:1;color:#C2C2C2}
+.sv-node-name-input{flex:1;min-width:0;background:transparent;border:1px solid transparent;border-radius:3px;color:#C2C2C2;font-size:12.5px;padding:3px 5px;font-family:inherit}
+.sv-node-name-input:hover{border-color:#24313A}
+.sv-node-name-input:focus{outline:none;border-color:#B85A14;background:#090D12}
+.sv-node-mode{font-size:9.5px;font-weight:700;letter-spacing:.4px;padding:2px 7px;border-radius:8px;border:1px solid;flex-shrink:0}
+.sv-node-mode.live{color:#4FC56B;border-color:#4FC56B}
+.sv-node-mode.static{color:#8FA0AD;border-color:#2D3A44}
+.sv-node-delete{color:#6F7D89;font-size:15px;padding:0 2px;cursor:pointer;flex-shrink:0}
+.sv-node-delete:hover{color:#D94F4F}
+.sv-node-drag{cursor:grab;color:#3A4855;font-size:13px;padding:0 2px;flex-shrink:0}
+.sv-node-drag:active{cursor:grabbing}
+.sv-node-row.dragover{background:#1A1206;box-shadow:inset 0 2px 0 #FF7100}
+.sv-addnode{padding:10px 12px}
+.sv-bitmap-picker{padding:2px 0 8px}
+.sv-bitmap-preview{font-size:10.5px;color:#6F7D89;margin-top:4px}
+.sv-prop-section{padding:12px;border-bottom:1px solid #151B22}
+.sv-prop-section:last-child{border-bottom:none}
+.sv-prop-section-head{font-size:10px;font-weight:700;letter-spacing:.5px;color:#8FA0AD;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.sv-binding-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px}
+.sv-binding-row input{width:70px;background:#090D12;border:1px solid #24313A;border-radius:3px;color:#FF822E;font-size:11.5px;padding:5px 7px;font-family:inherit}
+.sv-binding-arrow{color:#3A4855;font-size:11px}
+.sv-binding-source{flex:1;background:#090D12;border:1px solid #24313A;border-radius:3px;color:#8FA0AD;font-size:11.5px;padding:5px 7px}
+.sv-binding-remove{color:#D94F4F;cursor:pointer;font-size:13px;padding:0 4px}
+.sv-expr-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sv-expr-label{width:60px;flex-shrink:0;font-size:11px;color:#8FA0AD;font-family:Consolas,monospace}
+.sv-expr-field{flex:1;background:#090D12;border:1px solid #24313A;border-radius:3px;color:#C2C2C2;font-size:11.5px;padding:5px 7px;font-family:Consolas,monospace}
+.sv-static-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px}
+.sv-static-label{width:60px;flex-shrink:0;color:#8FA0AD}
+.sv-static-field{flex:1;background:#090D12;border:1px solid #24313A;border-radius:3px;color:#C2C2C2;font-size:11.5px;padding:5px 7px;font-family:inherit}
+.sv-attachbar{padding:12px;text-align:center}
+.sv-attachform{display:none;padding:12px;background:#120C04;border-top:1px solid #24313A}
+.sv-attachform.open{display:block}
+.sv-attachform-row{display:flex;gap:8px;margin-bottom:8px}
+.sv-device-row{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;font-size:12px;border-bottom:1px solid #151B22;cursor:pointer}
+.sv-device-row:last-child{border-bottom:none}
+.sv-device-row:hover{background:#131A22}
+.sv-device-name{color:#C2C2C2}
+.sv-device-val{color:#FF822E;font-family:Consolas,monospace;font-size:11px}
+.sv-siminput{padding:12px;display:flex;flex-direction:column;gap:12px}
+.sv-simrow{display:flex;align-items:center;gap:10px;font-size:11.5px;color:#8FA0AD}
+.sv-simrow input[type=range]{flex:1;accent-color:#FF7100}
+.sv-simval{width:40px;text-align:right;color:#FF822E;font-family:Consolas,monospace}
+
+/* Simulated live overlay window + its right-click context menu */
+.sv-overlay-window{position:fixed;width:150px;background:#101721;border:1px solid #B85A14;border-radius:4px;box-shadow:0 4px 18px rgba(0,0,0,.5);z-index:500;overflow:hidden;user-select:none}
+.sv-overlay-window.sv-overlay-locked{border-color:#8B6BC0}
+.sv-overlay-titlebar{background:#151B22;padding:6px 10px;font-size:10.5px;font-weight:700;color:#C2C2C2;cursor:move;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.sv-overlay-window.sv-overlay-locked .sv-overlay-titlebar{cursor:default}
+.sv-overlay-lockicon{font-size:10px;color:#B78CD9}
+.sv-overlay-body{height:70px;display:flex;align-items:center;justify-content:center;color:#6F7D89;font-size:10px;text-align:center;line-height:1.4;background:
+  linear-gradient(#151B22 1px,transparent 1px) 0 0/16px 16px,
+  linear-gradient(90deg,#151B22 1px,transparent 1px) 0 0/16px 16px,
+  #0C1117}
+.sv-ctxmenu{position:fixed;background:#131A22;border:1px solid #2D3A44;border-radius:5px;box-shadow:0 6px 18px rgba(0,0,0,.5);z-index:600;min-width:130px;overflow:hidden}
+.sv-ctxmenu-item{padding:8px 14px;font-size:12px;color:#C2C2C2;cursor:pointer}
+.sv-ctxmenu-item:hover{background:#1C242E;color:#FF822E}
+.sv-ctxmenu-item.danger:hover{background:#1F1012;color:#D94F4F}
+
+/* --- embedded in the Elite-Intel shell: drop the outer inset so padding isn't doubled --- */
+html.embedded,html.embedded body{background:#090D12}
+html.embedded body{padding:0}
+html.embedded .sv-frame{border-radius:0;padding:14px}
+
+/* --- HoloFrame: member names live inside the poster area --- */
+.sv-holoframe-card .sv-thumb{flex-direction:column;justify-content:center;gap:8px;height:auto;min-height:76px;padding:12px 42px}
+.sv-holoframe-card .sv-memberchips{margin-top:0;justify-content:center}
+.sv-holoframe-card .sv-thumb .sv-memberchip{background:#101721}
+</style>
+<script>try{if(window.self!==window.top){document.documentElement.className+=" embedded";}}catch(e){document.documentElement.className+=" embedded";}</script>
+</head>
+<body>
+<div class="sv-frame">
+  <div class="sv-header">
+    <h1>STARVIZION</h1>
+    <span class="sv-sub">Live controller input visualization overlays</span>
+  </div>
+  <div class="sv-panel active" id="panel-library">
+    <div class="sv-note" style="margin-bottom:14px">Drag a Vizlet card from the left onto a HoloFrame on the right to add it as a member.</div>
+    <div class="sv-library-layout">
+      <div class="sv-library-col">
+        <div class="sv-library-colhead"><span>VIZLETS</span>
+          <span><span class="sv-btn small" onclick="svImportVizlet()" style="margin-right:6px">&#8613; IMPORT</span><span class="sv-btn primary small" onclick="svAddVizlet()">+ New Vizlet</span></span>
+        </div>
+        <div class="sv-note" style="margin-bottom:10px">&#9654; activates/deactivates (creates or closes the overlay window) &middot; &#9998; edits &middot; &#8942; opens Edit/Delete/Close. While active, right-click the floating overlay itself for Edit/Lock/Close too.</div>
+        <div class="sv-cardgrid" id="sv-cardgrid">
+          <div class="sv-card" id="card-rightstick" draggable="true" ondragstart="svVizletDragStart(event,'Right Stick')" ondragend="svVizletDragEnd(event)">
+            <div class="sv-thumb">preview
+              <span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-tl" id="playbtn-card-rightstick" onclick="svToggleVizletActive('card-rightstick','Right Stick')" title="Activate/Deactivate">&#9654;</span>
+              <span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-bl" onclick="svOpenEditor()" title="Edit">&#9998;</span>
+              <span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-br" onclick="svOpenVizletMenu(event,'card-rightstick','Right Stick')" title="More">&#8942;</span>
+            </div>
+            <div class="sv-cardname">Right Stick</div>
+            <div class="sv-cardtags">stick, rotation</div>
+            <div class="sv-status live" id="status-card-rightstick">&#9679; LIVE</div>
+          </div>
+          <div class="sv-card" id="card-throttlebar" draggable="true" ondragstart="svVizletDragStart(event,'Throttle Bar')" ondragend="svVizletDragEnd(event)">
+            <div class="sv-thumb">preview
+              <span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-tl" id="playbtn-card-throttlebar" onclick="svToggleVizletActive('card-throttlebar','Throttle Bar')" title="Activate/Deactivate">&#9654;</span>
+              <span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-bl" onclick="svOpenEditor()" title="Edit">&#9998;</span>
+              <span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-br" onclick="svOpenVizletMenu(event,'card-throttlebar','Throttle Bar')" title="More">&#8942;</span>
+            </div>
+            <div class="sv-cardname">Throttle Bar</div>
+            <div class="sv-cardtags">throttle</div>
+            <div class="sv-status closed" id="status-card-throttlebar">&#9675; CLOSED</div>
+          </div>
+          <div class="sv-card" id="card-rudderpedals" draggable="true" ondragstart="svVizletDragStart(event,'Rudder Pedals')" ondragend="svVizletDragEnd(event)">
+            <div class="sv-thumb">preview
+              <span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-tl" id="playbtn-card-rudderpedals" onclick="svToggleVizletActive('card-rudderpedals','Rudder Pedals')" title="Activate/Deactivate">&#9654;</span>
+              <span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-bl" onclick="svOpenEditor()" title="Edit">&#9998;</span>
+              <span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-br" onclick="svOpenVizletMenu(event,'card-rudderpedals','Rudder Pedals')" title="More">&#8942;</span>
+            </div>
+            <div class="sv-cardname">Rudder Pedals</div>
+            <div class="sv-cardtags">pedals, yaw</div>
+            <div class="sv-status missing" id="status-card-rudderpedals">&#9888; DEVICE MISSING</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sv-library-col">
+        <div class="sv-library-colhead"><span>HOLOFRAMES</span><span class="sv-btn primary small" onclick="svAddHoloFrame()">+ New HoloFrame</span></div>
+        <div class="sv-cardgrid" id="sv-holoframe-list">
+          <div class="sv-card sv-holoframe-card" id="holoframe-shipflight" data-members="Right Stick, Throttle Bar, Rudder Pedals" data-modes="Ship — Normal Flight,Supercruise" data-rendermode="" ondragover="svHoloFrameDragOver(event,this)" ondragleave="svHoloFrameDragLeave(event,this)" ondrop="svHoloFrameDrop(event,this)">
+            <div class="sv-thumb"><span id="thumbtext-holoframe-shipflight"></span><div class="sv-memberchips" id="chips-holoframe-shipflight"></div>
+              <span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-tl" id="playbtn-holoframe-shipflight" onclick="svToggleHoloFrameActive('holoframe-shipflight')" title="Activate/Deactivate">&#9654;</span>
+              <span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-bl" onclick="svOpenHoloFrameEditor('holoframe-shipflight')" title="Edit">&#9998;</span>
+              <span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-br" onclick="svOpenHoloFrameMenu(event,'holoframe-shipflight')" title="More">&#8942;</span>
+            </div>
+            <input class="sv-loadoutname-input" value="Ship Flight">
+            <div class="sv-loadoutbadges" id="badges-holoframe-shipflight"></div>
+          </div>
+          <div class="sv-card sv-holoframe-card" id="holoframe-onfoot" data-members="Keyboard Overlay" data-modes="On Foot" data-rendermode="desktop" ondragover="svHoloFrameDragOver(event,this)" ondragleave="svHoloFrameDragLeave(event,this)" ondrop="svHoloFrameDrop(event,this)">
+            <div class="sv-thumb"><span id="thumbtext-holoframe-onfoot"></span><div class="sv-memberchips" id="chips-holoframe-onfoot"></div>
+              <span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-tl" id="playbtn-holoframe-onfoot" onclick="svToggleHoloFrameActive('holoframe-onfoot')" title="Activate/Deactivate">&#9654;</span>
+              <span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-bl" onclick="svOpenHoloFrameEditor('holoframe-onfoot')" title="Edit">&#9998;</span>
+              <span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-br" onclick="svOpenHoloFrameMenu(event,'holoframe-onfoot')" title="More">&#8942;</span>
+            </div>
+            <input class="sv-loadoutname-input" value="On Foot">
+            <div class="sv-loadoutbadges" id="badges-holoframe-onfoot"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sv-panel" id="panel-editor">
+    <div class="sv-editor-header">
+      <span class="sv-btn small" onclick="svCloseEditor()">&larr; BACK TO LIBRARY</span>
+      <span class="sv-editor-title">Right Stick</span>
+    </div>
+    <div class="sv-toptabbar">
+      <div class="sv-toptab-inner active" id="edittab-vizlet-btn" onclick="svShowEditorTab('vizlet')">VIZLET</div>
+      <div class="sv-toptab-inner" id="edittab-nodes-btn" onclick="svShowEditorTab('nodes')">NEURONODES</div>
+    </div>
+
+    <div id="edittab-vizlet">
+      <div class="sv-vizlettab-layout">
+        <div>
+          <div class="sv-block">
+            <div class="sv-block-head"><span>IDENTITY</span></div>
+            <div class="sv-prop-section">
+              <div class="sv-static-row"><span class="sv-static-label">ID</span><input class="sv-static-field" value="a3f9c1e2-7b44-4d0a-9e21-6f8c2d0b5a17" readonly title="Stable, never changes. This is what HoloFrames reference and what the filename is built from &mdash; never the Name."></div>
+              <div class="sv-static-row"><span class="sv-static-label">Name</span><input class="sv-static-field" value="Right Stick" onchange="svRenameFileNote(this.value)"></div>
+              <div class="sv-static-row"><span class="sv-static-label">Tags</span><input class="sv-static-field" value="stick, rotation"></div>
+              <div class="sv-static-row"><span class="sv-static-label">Author</span><input class="sv-static-field" value="CMDR Example" readonly></div>
+              <div class="sv-static-row"><span class="sv-static-label">Created</span><input class="sv-static-field" value="2026-08-05" readonly></div>
+              <div class="sv-static-row"><span class="sv-static-label">Version</span><input class="sv-static-field" value="1" readonly></div>
+              <div class="sv-note" id="sv-filename-note">File: RightStick-a3f9c1e2.vizlet.json</div>
+            </div>
+          </div>
+          <div class="sv-block">
+            <div class="sv-block-head"><span>WINDOW</span></div>
+            <div class="sv-prop-section">
+              <div class="sv-static-row"><span class="sv-static-label">Width</span><input class="sv-static-field" id="sv-vizlet-width" value="300" oninput="svSyncCanvasSize()"></div>
+              <div class="sv-static-row"><span class="sv-static-label">Height</span><input class="sv-static-field" id="sv-vizlet-height" value="300" oninput="svSyncCanvasSize()"></div>
+              <div class="sv-static-row"><span class="sv-static-label">Left</span><input class="sv-static-field" value="1280"></div>
+              <div class="sv-static-row"><span class="sv-static-label">Top</span><input class="sv-static-field" value="720"></div>
+              <label class="sv-checkrow"><input type="checkbox" checked> Always-on-top</label>
+              <label class="sv-checkrow"><input type="checkbox" checked> Transparent</label>
+              <label class="sv-checkrow"><input type="checkbox"> Locked <span class="sv-note" style="margin-left:6px">(same as right-click &rarr; Lock on the live Vizlet)</span></label>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="sv-block">
+            <div class="sv-block-head"><span>RENDER MODE</span></div>
+            <div class="sv-prop-section">
+              <div class="sv-static-row"><span class="sv-static-label">Mode</span>
+                <select class="sv-static-field" id="sv-rendermode" onchange="svToggleVrFields(this.value)">
+                  <option value="desktop" selected>Desktop</option>
+                  <option value="vr">VR</option>
+                  <option value="both">Desktop + VR</option>
+                  <option value="desktopplus">Desktop+ (Windows only)</option>
+                </select>
+              </div>
+              <div id="sv-vr-fields" style="display:none">
+                <div class="sv-note" style="margin-bottom:8px;display:none" id="sv-vr-fields-note">This Vizlet renders to both the desktop window (Window section, above) and a VR overlay at the same time &mdash; both sets of properties are active together, not either/or.</div>
+                <div class="sv-static-row"><span class="sv-static-label">Lock</span>
+                  <select class="sv-static-field"><option>World-locked</option><option>HMD-locked</option></select>
+                </div>
+                <div class="sv-note" style="margin-bottom:8px">VR transform (position X/Y/Z in meters, width in meters) is set by grabbing and moving the overlay in the headset, the same way any SteamVR overlay is repositioned &mdash; not directly editable here. Current values shown read-only:</div>
+                <div class="sv-static-row"><span class="sv-static-label">X / Y / Z</span><input class="sv-static-field" value="0.00, 1.20, -0.50" readonly></div>
+                <div class="sv-static-row"><span class="sv-static-label">Width (m)</span><input class="sv-static-field" value="0.30" readonly></div>
+              </div>
+            </div>
+          </div>
+          <div class="sv-block">
+            <div class="sv-block-head"><span>MODE-BASED VISIBILITY</span></div>
+            <div class="sv-prop-section">
+              <div class="sv-static-row"><span class="sv-static-label">Visibility</span>
+                <select class="sv-static-field" id="sv-visibility" onchange="svToggleModeList(this.value)">
+                  <option value="always" selected>Always visible</option>
+                  <option value="visiblein">Visible in&hellip;</option>
+                  <option value="hiddenin">Hidden in&hellip;</option>
+                </select>
+              </div>
+              <div id="sv-mode-list" style="display:none">
+                <label class="sv-checkrow"><input type="checkbox"> Ship &mdash; Normal Flight</label>
+                <label class="sv-checkrow"><input type="checkbox"> Ship &mdash; FSS Scanner</label>
+                <label class="sv-checkrow"><input type="checkbox"> Ship &mdash; Detailed Surface Scanner</label>
+                <label class="sv-checkrow"><input type="checkbox"> SRV</label>
+                <label class="sv-checkrow"><input type="checkbox"> On Foot</label>
+                <label class="sv-checkrow"><input type="checkbox"> Docked / Station</label>
+                <label class="sv-checkrow"><input type="checkbox"> Supercruise</label>
+              </div>
+              <div class="sv-note">Mode transitions are debounced to prevent visual flicker. The user can always manually override the detected-mode state regardless of this setting.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="edittab-nodes" style="display:none">
+      <div class="sv-note" style="margin-bottom:14px">Every change here is live &mdash; no OK/Apply step. NeuroNodes are added Static by default; attaching an input is what makes a NeuroNode Live (see Vizlets and the Node System &sect; Authoring Workflow). Not yet design-reviewed &mdash; first working pass at an Editor mockup.</div>
+      <div class="sv-editor-layout">
+        <div class="sv-editor-left">
+          <div class="sv-block">
+            <div class="sv-block-head"><span>CANVAS</span></div>
+            <div class="sv-canvas-stage"><div class="sv-canvas" id="sv-canvas"></div></div>
+            <div class="sv-canvas-dims" id="sv-canvas-dims"></div>
+            <div class="sv-canvas-note">The canvas is shown at the Vizlet window's actual configured size (Width &times; Height, set on the VIZLET tab). Static illustration of the current NeuroNode stack &mdash; not live-simulated in this mockup (no real hardware here). A NeuroNode's position/size are set via numeric fields below; the Vizlet window's own position/size are set on the VIZLET tab &mdash; neither is set by dragging on the canvas.</div>
+          </div>
+          <div class="sv-block">
+            <div class="sv-block-head"><span>NEURONODES (Z-ORDER)</span></div>
+            <div id="sv-nodestack"></div>
+            <div class="sv-addnode"><button class="sv-btn full" onclick="svAddNode()">+ ADD NEURONODE</button></div>
+          </div>
+        </div>
+        <div class="sv-editor-right">
+          <div class="sv-block">
+            <div class="sv-block-head"><span id="sv-proppanel-head">PROPERTY PANEL</span></div>
+            <div id="sv-proppanel"></div>
+          </div>
+          <div class="sv-block" id="sv-devicemonitor-block" style="display:none">
+            <div class="sv-block-head"><span>DEVICE INPUT MONITOR</span></div>
+            <div class="sv-note" style="padding:8px 12px 0">Click any live input below to assign it to the selected NeuroNode's next open binding slot.</div>
+            <div id="sv-devicemonitor"></div>
+          </div>
+          <div class="sv-block" id="sv-inputsim-block" style="display:none">
+            <div class="sv-block-head"><span>INPUT SIMULATION PANEL</span></div>
+            <div class="sv-siminput">
+              <div class="sv-simrow">Axis X<input type="range" min="-100" max="100" value="35" id="sim-axisx" oninput="document.getElementById('sim-axisx-val').textContent=(this.value/100).toFixed(2);svRenderCanvas()"><span class="sv-simval" id="sim-axisx-val">0.35</span></div>
+              <div class="sv-simrow">Axis Y<input type="range" min="-100" max="100" value="-12" id="sim-axisy" oninput="document.getElementById('sim-axisy-val').textContent=(this.value/100).toFixed(2);svRenderCanvas()"><span class="sv-simval" id="sim-axisy-val">-0.12</span></div>
+              <div class="sv-note">Simulates axis/button values without hardware, for testing Live-NeuroNode expressions. Drives any selected or unselected Dot NeuroNode whose position expressions reference a bound axisX/axisY variable name.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sv-panel" id="panel-holoframe-editor">
+    <div class="sv-editor-header">
+      <span class="sv-btn small" onclick="svCloseHoloFrameEditor()">&larr; BACK TO LIBRARY</span>
+      <span class="sv-editor-title" id="sv-hf-editor-title">Ship Flight</span>
+    </div>
+    <div class="sv-vizlettab-layout">
+      <div>
+        <div class="sv-block">
+          <div class="sv-block-head"><span>IDENTITY</span></div>
+          <div class="sv-prop-section">
+            <div class="sv-static-row"><span class="sv-static-label">ID</span><input class="sv-static-field" id="sv-hf-id" readonly></div>
+            <div class="sv-static-row"><span class="sv-static-label">Name</span><input class="sv-static-field" id="sv-hf-name"></div>
+            <div class="sv-note" id="sv-hf-filename-note">File: ShipFlight-a3f9c1e2.holoframe.json</div>
+          </div>
+        </div>
+        <div class="sv-block">
+          <div class="sv-block-head"><span>MEMBERS</span></div>
+          <div class="sv-prop-section">
+            <div class="sv-memberchips" id="sv-hf-editor-chips"></div>
+            <div class="sv-note" style="margin-top:8px">Membership is set from the HoloFrame Library screen &mdash; drag a Vizlet card onto this HoloFrame there, or remove a member with the &times; on its chip here.</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sv-block">
+          <div class="sv-block-head"><span>MODE-BASED SWITCHING</span></div>
+          <div class="sv-prop-section">
+            <div class="sv-static-row"><span class="sv-static-label">Switching</span>
+              <select class="sv-static-field" id="sv-hf-modeswitch" onchange="svToggleHoloFrameModeList(this.value)">
+                <option value="manual" selected>Manual only (no mode assignment)</option>
+                <option value="assigned">Assigned to mode(s)&hellip;</option>
+              </select>
+            </div>
+            <div id="sv-hf-mode-list" style="display:none">
+              <label class="sv-checkrow"><input type="checkbox" value="Ship — Normal Flight"> Ship &mdash; Normal Flight</label>
+              <label class="sv-checkrow"><input type="checkbox" value="Ship — FSS Scanner"> Ship &mdash; FSS Scanner</label>
+              <label class="sv-checkrow"><input type="checkbox" value="Ship — Detailed Surface Scanner"> Ship &mdash; Detailed Surface Scanner</label>
+              <label class="sv-checkrow"><input type="checkbox" value="SRV"> SRV</label>
+              <label class="sv-checkrow"><input type="checkbox" value="On Foot"> On Foot</label>
+              <label class="sv-checkrow"><input type="checkbox" value="Docked / Station"> Docked / Station</label>
+              <label class="sv-checkrow"><input type="checkbox" value="Supercruise"> Supercruise</label>
+            </div>
+            <div class="sv-note">While assigned, this HoloFrame's own switching governs every member Vizlet's visibility &mdash; each member's individual Mode-Based Visibility setting is not consulted while it belongs to this HoloFrame. Manual activate/deactivate always remains available too.</div>
+          </div>
+        </div>
+        <div class="sv-block">
+          <div class="sv-block-head"><span>RENDER MODE OVERRIDE</span></div>
+          <div class="sv-prop-section">
+            <div class="sv-static-row"><span class="sv-static-label">Override</span>
+              <select class="sv-static-field" id="sv-hf-rendermode">
+                <option value="">None (each Vizlet keeps its own setting)</option>
+                <option value="desktop">Desktop</option>
+                <option value="vr">VR</option>
+                <option value="both">Desktop + VR</option>
+                <option value="desktopplus">Desktop+</option>
+              </select>
+            </div>
+            <div class="sv-note">When set, every member Vizlet renders using this mode instead of its own individually-configured Render Mode. This is whole-group only &mdash; split members across separate HoloFrames to get mixed render behavior.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sv-placeholder-note">Editor added as a first working pass, informed by Vizlets and the Node System / UI Layout / StarCalc Expression Engine docs. Vizlet library and HoloFrames panels are the earlier placeholder layout, sketched from StarVizion-Spec.md Section 9 &mdash; still not design-reviewed.</div>
+</div>
+
+<script>
+function svDeleteVizlet(cardId, name){
+  if(!confirm('Delete Vizlet "'+name+'"? This permanently removes it, including from any HoloFrames that reference it. This cannot be undone.')) return;
+  var el = document.getElementById(cardId);
+  if(el) el.remove();
+}
+function svDeleteHoloFrame(rowId, name){
+  if(!confirm('Delete HoloFrame "'+name+'"? The member Vizlets themselves are not deleted — only this grouping.')) return;
+  var el = document.getElementById(rowId);
+  if(el) el.remove();
+}
+function svImportVizlet(){
+  alert('Opens a file picker (or accepts drag-and-drop onto this library) for a .vizlet.json file. Name conflicts prompt rename/overwrite/cancel. Imported Vizlets are not automatically activated.');
+}
+
+var svVizletNextId = 1;
+function svAddVizlet(){
+  var existingNames = Array.prototype.map.call(document.querySelectorAll('#sv-cardgrid .sv-cardname'), function(el){ return el.textContent; });
+  var baseName = 'New Vizlet';
+  var name = baseName;
+  var n = 1;
+  while(existingNames.indexOf(name) !== -1){ n++; name = baseName + ' ' + n; }
+  var cardId = 'card-new' + (svVizletNextId++);
+  var card = document.createElement('div');
+  card.className = 'sv-card';
+  card.id = cardId;
+  card.draggable = true;
+  card.ondragstart = function(e){ svVizletDragStart(e, name); };
+  card.ondragend = svVizletDragEnd;
+  card.innerHTML = '<div class="sv-thumb">preview'+
+    '<span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-tl" id="playbtn-'+cardId+'" onclick="svToggleVizletActive(\''+cardId+'\',\''+name+'\')" title="Activate/Deactivate">&#9654;</span>'+
+    '<span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-bl" onclick="svOpenEditor()" title="Edit">&#9998;</span>'+
+    '<span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-br" onclick="svOpenVizletMenu(event,\''+cardId+'\',\''+name+'\')" title="More">&#8942;</span>'+
+    '</div>'+
+    '<div class="sv-cardname">'+name+'</div>'+
+    '<div class="sv-cardtags">untagged</div>'+
+    '<div class="sv-status closed" id="status-'+cardId+'">&#9675; CLOSED</div>';
+  document.getElementById('sv-cardgrid').appendChild(card);
+  svOpenEditor();
+}
+
+/* Simulated live overlay: activating a Vizlet spawns a small floating window on
+   the page (position:fixed) standing in for the real desktop/VR overlay, since
+   that's what activation actually creates. Right-click it for Edit/Lock/Close,
+   matching the live Vizlet's own context menu described in ui-layout.md. */
+var svActiveVizlets = {};
+var svOverlayZ = 500;
+function svToggleVizletActive(cardId, name){
+  if(svActiveVizlets[cardId]) svDeactivateVizlet(cardId);
+  else svActivateVizlet(cardId, name);
+}
+function svOpenVizletMenu(e, cardId, name){
+  e.stopPropagation();
+  svCloseContextMenu();
+  var rect = e.currentTarget.getBoundingClientRect();
+  var menu = document.createElement('div');
+  menu.className = 'sv-ctxmenu';
+  menu.id = 'sv-ctxmenu';
+  menu.style.left = (rect.right - 130) + 'px';
+  menu.style.top = (rect.bottom + 4) + 'px';
+  menu.innerHTML =
+    '<div class="sv-ctxmenu-item" onclick="svCloseContextMenu();svOpenEditor()">Edit</div>'+
+    '<div class="sv-ctxmenu-item danger" onclick="svCloseContextMenu();svDeleteVizlet(\''+cardId+'\',\''+name.replace(/'/g,"\\'")+'\')">Delete</div>'+
+    '<div class="sv-ctxmenu-item" onclick="svCloseContextMenu();svDeactivateVizlet(\''+cardId+'\')">Close</div>';
+  document.body.appendChild(menu);
+  setTimeout(function(){ document.addEventListener('click', svCloseContextMenu, { once:true }); }, 0);
+}
+function svActivateVizlet(cardId, name){
+  if(svActiveVizlets[cardId]) return;
+  svActiveVizlets[cardId] = { locked:false, name:name };
+  var statusEl = document.getElementById('status-' + cardId);
+  if(statusEl){ statusEl.className = 'sv-status live'; statusEl.innerHTML = '&#9679; LIVE'; }
+  var playBtn = document.getElementById('playbtn-' + cardId);
+  if(playBtn) playBtn.classList.add('active');
+  var n = Object.keys(svActiveVizlets).length;
+  var ov = document.createElement('div');
+  ov.className = 'sv-overlay-window';
+  ov.id = 'overlay-' + cardId;
+  ov.style.top = (70 + (n - 1) * 26) + 'px';
+  ov.style.left = (420 + (n - 1) * 26) + 'px';
+  ov.style.zIndex = ++svOverlayZ;
+  ov.oncontextmenu = function(e){ svOverlayContextMenu(e, cardId, name); };
+  ov.addEventListener('mousedown', function(){ ov.style.zIndex = ++svOverlayZ; });
+  ov.innerHTML = '<div class="sv-overlay-titlebar"><span>'+name+'</span><span class="sv-overlay-lockicon" id="lockicon-'+cardId+'"></span></div>'+
+    '<div class="sv-overlay-body">live overlay<br>(right-click for menu)</div>';
+  ov.querySelector('.sv-overlay-titlebar').addEventListener('mousedown', function(e){
+    if(svActiveVizlets[cardId] && svActiveVizlets[cardId].locked) return;
+    svOverlayDragStart(e, ov);
+  });
+  document.body.appendChild(ov);
+}
+function svDeactivateVizlet(cardId){
+  if(!svActiveVizlets[cardId]) return;
+  delete svActiveVizlets[cardId];
+  var statusEl = document.getElementById('status-' + cardId);
+  if(statusEl){ statusEl.className = 'sv-status closed'; statusEl.innerHTML = '&#9675; CLOSED'; }
+  var playBtn = document.getElementById('playbtn-' + cardId);
+  if(playBtn) playBtn.classList.remove('active');
+  var ov = document.getElementById('overlay-' + cardId);
+  if(ov) ov.remove();
+  svCloseContextMenu();
+}
+function svOverlayDragStart(e, ov){
+  e.preventDefault();
+  var startX = e.clientX, startY = e.clientY;
+  var origLeft = parseInt(ov.style.left, 10), origTop = parseInt(ov.style.top, 10);
+  function move(ev){
+    ov.style.left = (origLeft + ev.clientX - startX) + 'px';
+    ov.style.top = (origTop + ev.clientY - startY) + 'px';
+  }
+  function up(){
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+  }
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+}
+function svOverlayContextMenu(e, cardId, name){
+  e.preventDefault();
+  e.stopPropagation();
+  svCloseContextMenu();
+  var locked = svActiveVizlets[cardId] && svActiveVizlets[cardId].locked;
+  var menu = document.createElement('div');
+  menu.className = 'sv-ctxmenu';
+  menu.id = 'sv-ctxmenu';
+  menu.style.left = e.clientX + 'px';
+  menu.style.top = e.clientY + 'px';
+  menu.innerHTML =
+    '<div class="sv-ctxmenu-item" onclick="svCloseContextMenu();svOpenEditor()">Edit</div>'+
+    '<div class="sv-ctxmenu-item" onclick="svToggleVizletLock(\''+cardId+'\')">'+(locked ? 'Unlock' : 'Lock')+'</div>'+
+    '<div class="sv-ctxmenu-item danger" onclick="svDeactivateVizlet(\''+cardId+'\')">Close</div>';
+  document.body.appendChild(menu);
+  setTimeout(function(){ document.addEventListener('click', svCloseContextMenu, { once:true }); }, 0);
+}
+function svCloseContextMenu(){
+  var m = document.getElementById('sv-ctxmenu');
+  if(m) m.remove();
+}
+function svToggleVizletLock(cardId){
+  var v = svActiveVizlets[cardId];
+  if(!v) return;
+  v.locked = !v.locked;
+  var ov = document.getElementById('overlay-' + cardId);
+  if(ov) ov.classList.toggle('sv-overlay-locked', v.locked);
+  var icon = document.getElementById('lockicon-' + cardId);
+  if(icon) icon.innerHTML = v.locked ? '&#157A85;' : '';
+  svCloseContextMenu();
+}
+svActivateVizlet('card-rightstick', 'Right Stick');
+
+var svNodes = {
+  n1: { id:'n1', type:'Dot', name:'Stick Position', z:10, visible:true, mode:'live',
+    bindings:[ {v:'axisX', src:'Controller1 &mdash; Axis X'}, {v:'axisY', src:'Controller1 &mdash; Axis Y'} ],
+    expr:{ x:'axisX * 80 + centerX', y:'axisY * 80 + centerY', radius:'10', color:"'#FF7100'", opacity:'1' } },
+  n2: { id:'n2', type:'Grid', name:'Center Grid', z:0, visible:true, mode:'static',
+    bindings:[],
+    expr:{ opacity:'0.35' },
+    staticFields:{ gridType:'radial', color:'#2D3A44', spacing:'20', thickness:'1' } }
+};
+var svSelected = 'n1';
+var svNextId = 3;
+
+function svOpenEditor(){
+  document.querySelectorAll('.sv-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('panel-editor').classList.add('active');
+  svShowEditorTab('vizlet');
+  svRenderAll();
+}
+function svCloseEditor(){
+  document.querySelectorAll('.sv-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('panel-library').classList.add('active');
+}
+
+var svDragVizletName = null;
+function svVizletDragStart(e, name){
+  svDragVizletName = name;
+  e.dataTransfer.effectAllowed = 'copy';
+  e.currentTarget.classList.add('sv-dragging');
+}
+function svVizletDragEnd(e){
+  e.currentTarget.classList.remove('sv-dragging');
+  svDragVizletName = null;
+}
+function svHoloFrameDragOver(e, row){
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+  row.classList.add('sv-dropok');
+}
+function svHoloFrameDragLeave(e, row){
+  row.classList.remove('sv-dropok');
+}
+function svHoloFrameDrop(e, row){
+  e.preventDefault();
+  row.classList.remove('sv-dropok');
+  if(!svDragVizletName) return;
+  var members = row.dataset.members ? row.dataset.members.split(', ').filter(Boolean) : [];
+  if(members.indexOf(svDragVizletName) !== -1){
+    return;
+  }
+  members.push(svDragVizletName);
+  row.dataset.members = members.join(', ');
+  svRenderHoloFrameChips(row.id);
+}
+function svRenderHoloFrameChips(rowId){
+  var row = document.getElementById(rowId);
+  var members = row.dataset.members ? row.dataset.members.split(', ').filter(Boolean) : [];
+  var chipbox = document.getElementById('chips-' + rowId);
+  chipbox.innerHTML = members.map(function(name){
+    return '<span class="sv-memberchip">' + name +
+      '<span class="sv-memberchip-remove" onclick="event.stopPropagation();svRemoveHoloFrameMember(\'' + rowId + '\',\'' + name.replace(/'/g,"\\'") + '\')" title="Remove from HoloFrame">&times;</span></span>';
+  }).join('');
+  var thumbtext = document.getElementById('thumbtext-' + rowId);
+  // WHY: the chips already show what is in the HoloFrame, so the count is only worth
+  // rendering when there is nothing to count.
+  if(thumbtext){
+    thumbtext.textContent = members.length ? '' : 'Drag Vizlets here';
+    thumbtext.style.display = members.length ? 'none' : '';
+  }
+}
+function svRemoveHoloFrameMember(rowId, name){
+  var row = document.getElementById(rowId);
+  var members = row.dataset.members ? row.dataset.members.split(', ').filter(Boolean) : [];
+  members = members.filter(function(m){ return m !== name; });
+  row.dataset.members = members.join(', ');
+  svRenderHoloFrameChips(rowId);
+}
+function svRenderHoloFrameBadges(rowId){
+  var row = document.getElementById(rowId);
+  var box = document.getElementById('badges-' + rowId);
+  if(!box) return;
+  var modes = row.dataset.modes ? row.dataset.modes.split(',').filter(Boolean) : [];
+  var rmLabels = {desktop:'Desktop', vr:'VR', both:'Desktop + VR', desktopplus:'Desktop+'};
+  var rmLabel = rmLabels[row.dataset.rendermode || ''];
+  var badges = [];
+  if(modes.length) badges.push('<span class="sv-loadoutbadge">AUTO-SWITCH: ' + modes.join(', ') + '</span>');
+  if(rmLabel) badges.push('<span class="sv-loadoutbadge render">RENDER: ' + rmLabel + '</span>');
+  box.innerHTML = badges.join('');
+}
+document.querySelectorAll('.sv-holoframe-card').forEach(function(row){ svRenderHoloFrameChips(row.id); svRenderHoloFrameBadges(row.id); });
+
+function svSetHoloFrameActive(rowId, active){
+  var row = document.getElementById(rowId);
+  var btn = document.getElementById('playbtn-' + rowId);
+  row.classList.toggle('sv-holoframe-active', active);
+  if(btn) btn.classList.toggle('active', active);
+}
+function svToggleHoloFrameActive(rowId){
+  var row = document.getElementById(rowId);
+  svSetHoloFrameActive(rowId, !row.classList.contains('sv-holoframe-active'));
+}
+function svOpenHoloFrameMenu(e, rowId){
+  e.stopPropagation();
+  svCloseContextMenu();
+  var row = document.getElementById(rowId);
+  var name = row.querySelector('.sv-loadoutname-input').value;
+  var rect = e.currentTarget.getBoundingClientRect();
+  var menu = document.createElement('div');
+  menu.className = 'sv-ctxmenu';
+  menu.id = 'sv-ctxmenu';
+  menu.style.left = (rect.right - 130) + 'px';
+  menu.style.top = (rect.bottom + 4) + 'px';
+  menu.innerHTML =
+    '<div class="sv-ctxmenu-item" onclick="svCloseContextMenu();svOpenHoloFrameEditor(\''+rowId+'\')">Edit</div>'+
+    '<div class="sv-ctxmenu-item danger" onclick="svCloseContextMenu();svDeleteHoloFrame(\''+rowId+'\',\''+name.replace(/'/g,"\\'")+'\')">Delete</div>'+
+    '<div class="sv-ctxmenu-item" onclick="svCloseContextMenu();svSetHoloFrameActive(\''+rowId+'\',false)">Close</div>';
+  document.body.appendChild(menu);
+  setTimeout(function(){ document.addEventListener('click', svCloseContextMenu, { once:true }); }, 0);
+}
+
+function svFakeGuid(){
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
+    var r = Math.random()*16|0, v = c === 'x' ? r : (r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+var svHoloFrameEditorRowId = null;
+function svOpenHoloFrameEditor(rowId){
+  svHoloFrameEditorRowId = rowId;
+  var row = document.getElementById(rowId);
+  var name = row.querySelector('.sv-loadoutname-input').value;
+  if(!row.dataset.id) row.dataset.id = svFakeGuid();
+  document.getElementById('sv-hf-editor-title').textContent = name;
+  document.getElementById('sv-hf-name').value = name;
+  document.getElementById('sv-hf-id').value = row.dataset.id;
+  document.getElementById('sv-hf-filename-note').textContent = 'File: ' + name.replace(/\s+/g,'') + '-' + row.dataset.id.slice(0,8) + '.holoframe.json';
+  svRenderHoloFrameEditorChips();
+  var modes = row.dataset.modes ? row.dataset.modes.split(',').filter(Boolean) : [];
+  var modeSel = document.getElementById('sv-hf-modeswitch');
+  modeSel.value = modes.length ? 'assigned' : 'manual';
+  svToggleHoloFrameModeList(modeSel.value);
+  document.querySelectorAll('#sv-hf-mode-list input[type=checkbox]').forEach(function(cb){ cb.checked = modes.indexOf(cb.value) !== -1; });
+  document.getElementById('sv-hf-rendermode').value = row.dataset.rendermode || '';
+  document.querySelectorAll('.sv-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('panel-holoframe-editor').classList.add('active');
+}
+function svCloseHoloFrameEditor(){
+  var row = document.getElementById(svHoloFrameEditorRowId);
+  if(row){
+    row.querySelector('.sv-loadoutname-input').value = document.getElementById('sv-hf-name').value;
+    var assigned = document.getElementById('sv-hf-modeswitch').value === 'assigned';
+    var modes = assigned ? Array.prototype.filter.call(document.querySelectorAll('#sv-hf-mode-list input[type=checkbox]'), function(cb){ return cb.checked; }).map(function(cb){ return cb.value; }) : [];
+    row.dataset.modes = modes.join(',');
+    row.dataset.rendermode = document.getElementById('sv-hf-rendermode').value;
+    svRenderHoloFrameBadges(row.id);
+  }
+  document.querySelectorAll('.sv-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('panel-library').classList.add('active');
+}
+function svToggleHoloFrameModeList(v){
+  document.getElementById('sv-hf-mode-list').style.display = v === 'assigned' ? 'block' : 'none';
+}
+function svRenderHoloFrameEditorChips(){
+  var row = document.getElementById(svHoloFrameEditorRowId);
+  var members = row.dataset.members ? row.dataset.members.split(', ').filter(Boolean) : [];
+  var chipbox = document.getElementById('sv-hf-editor-chips');
+  chipbox.innerHTML = members.length ? members.map(function(name){
+    return '<span class="sv-memberchip">' + name +
+      '<span class="sv-memberchip-remove" onclick="svRemoveHoloFrameMember(\'' + row.id + '\',\'' + name.replace(/'/g,"\\'") + '\');svRenderHoloFrameEditorChips()" title="Remove from HoloFrame">&times;</span></span>';
+  }).join('') : '<span class="sv-note">No members yet.</span>';
+}
+
+var svHoloFrameNextId = 1;
+function svAddHoloFrame(){
+  var existingNames = Array.prototype.map.call(document.querySelectorAll('#sv-holoframe-list .sv-loadoutname-input'), function(i){ return i.value; });
+  var baseName = 'New HoloFrame';
+  var name = baseName;
+  var n = 1;
+  while(existingNames.indexOf(name) !== -1){ n++; name = baseName + ' ' + n; }
+  var rowId = 'holoframe-new' + (svHoloFrameNextId++);
+  var row = document.createElement('div');
+  row.className = 'sv-card sv-holoframe-card';
+  row.id = rowId;
+  row.dataset.members = '';
+  row.ondragover = function(e){ svHoloFrameDragOver(e, row); };
+  row.ondragleave = function(e){ svHoloFrameDragLeave(e, row); };
+  row.ondrop = function(e){ svHoloFrameDrop(e, row); };
+  row.innerHTML = '<div class="sv-thumb"><span id="thumbtext-'+rowId+'"></span>'+
+    '<div class="sv-memberchips" id="chips-'+rowId+'"></div>'+
+    '<span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-tl" id="playbtn-'+rowId+'" onclick="svToggleHoloFrameActive(\''+rowId+'\')" title="Activate/Deactivate">&#9654;</span>'+
+    '<span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-bl" onclick="svOpenHoloFrameEditor(\''+rowId+'\')" title="Edit">&#9998;</span>'+
+    '<span class="sv-iconbtn sv-cornerbtn sv-cornerbtn-br" onclick="svOpenHoloFrameMenu(event,\''+rowId+'\')" title="More">&#8942;</span>'+
+    '</div>'+
+    '<input class="sv-loadoutname-input" value="'+name+'">'+
+    '<div class="sv-loadoutbadges" id="badges-'+rowId+'"></div>';
+  document.getElementById('sv-holoframe-list').appendChild(row);
+  svRenderHoloFrameChips(rowId);
+  svRenderHoloFrameBadges(rowId);
+  row.querySelector('.sv-loadoutname-input').select();
+}
+
+function svRenderAll(){ svSyncCanvasSize(); svRenderCanvas(); svRenderStack(); svRenderProps(); }
+
+function svSyncCanvasSize(){
+  var wEl = document.getElementById('sv-vizlet-width');
+  var hEl = document.getElementById('sv-vizlet-height');
+  if(!wEl || !hEl) return;
+  var w = parseInt(wEl.value,10); if(!w || w<10) w=300;
+  var h = parseInt(hEl.value,10); if(!h || h<10) h=300;
+  var maxDim = 420;
+  var scale = Math.min(1, maxDim/w, maxDim/h);
+  var c = document.getElementById('sv-canvas');
+  c.style.width = Math.round(w*scale)+'px';
+  c.style.height = Math.round(h*scale)+'px';
+  var dims = document.getElementById('sv-canvas-dims');
+  dims.textContent = w+' × '+h+' px' + (scale<1 ? ' (shown at reduced scale to fit)' : '');
+}
+
+function svShowEditorTab(v){
+  document.getElementById('edittab-nodes').style.display = v==='nodes' ? 'block' : 'none';
+  document.getElementById('edittab-vizlet').style.display = v==='vizlet' ? 'block' : 'none';
+  document.getElementById('edittab-nodes-btn').classList.toggle('active', v==='nodes');
+  document.getElementById('edittab-vizlet-btn').classList.toggle('active', v==='vizlet');
+}
+function svToggleVrFields(mode){
+  document.getElementById('sv-vr-fields').style.display = (mode==='vr' || mode==='both') ? 'block' : 'none';
+  document.getElementById('sv-vr-fields-note').style.display = mode==='both' ? 'block' : 'none';
+}
+function svToggleModeList(v){ document.getElementById('sv-mode-list').style.display = (v==='always') ? 'none' : 'block'; }
+function svRenameFileNote(newName){
+  var sanitized = newName.trim().replace(/[^a-zA-Z0-9]/g,'');
+  document.getElementById('sv-filename-note').textContent = 'File: ' + sanitized + '-a3f9c1e2.vizlet.json (renamed automatically to match)';
+}
+
+function svRenderCanvas(){
+  var c = document.getElementById('sv-canvas');
+  c.innerHTML = '';
+  Object.keys(svNodes).sort(function(a,b){return svNodes[a].z-svNodes[b].z}).forEach(function(id){
+    var n = svNodes[id];
+    if(!n.visible) return;
+    var opacity = parseFloat(n.expr && n.expr.opacity); if(isNaN(opacity)) opacity = 1;
+    if(n.type==='Dot'){
+      var color = ((n.expr && n.expr.color) || "'#FF7100'").replace(/^'|'$/g,'').trim() || '#FF7100';
+      var radius = parseFloat(n.expr && n.expr.radius); if(isNaN(radius) || radius<=0) radius = 10;
+      var size = Math.max(4, Math.min(radius*1.6, 120));
+      var scope = svNodeVarScope(n);
+      var xPos = svEvalExpr((n.expr && n.expr.x) || '0', scope);
+      var yPos = svEvalExpr((n.expr && n.expr.y) || '0', scope);
+      var d=document.createElement('div');
+      d.style.cssText='position:absolute;left:calc(50% + '+xPos+'px);top:calc(50% - '+yPos+'px);width:'+size+'px;height:'+size+'px;margin:-'+(size/2)+'px 0 0 -'+(size/2)+'px;border-radius:50%;background:'+color+';opacity:'+opacity+';box-shadow:0 0 10px '+color+'99';
+      c.appendChild(d);
+    } else if(n.type==='Grid'){
+      var sf = n.staticFields || {};
+      var gType = (sf.gridType || 'radial').toLowerCase().trim();
+      var gColor = sf.color || '#2D3A44';
+      var spacing = parseFloat(sf.spacing); if(isNaN(spacing) || spacing<4) spacing = 20;
+      var thickness = parseFloat(sf.thickness); if(isNaN(thickness) || thickness<1) thickness = 1;
+      var g=document.createElement('div');
+      g.style.cssText = 'position:absolute;inset:0;opacity:'+opacity;
+      if(gType==='square'){
+        g.style.backgroundImage = 'linear-gradient('+gColor+' '+thickness+'px, transparent '+thickness+'px), linear-gradient(90deg, '+gColor+' '+thickness+'px, transparent '+thickness+'px)';
+        g.style.backgroundSize = spacing+'px '+spacing+'px';
+      } else if(gType==='circle' || gType==='radial'){
+        var rings = gType==='radial' ? 4 : 1;
+        var html = '';
+        for(var i=1;i<=rings;i++){
+          var d2 = Math.min(spacing*i*2, 380);
+          html += '<div style="position:absolute;left:50%;top:50%;width:'+d2+'px;height:'+d2+'px;margin:-'+(d2/2)+'px 0 0 -'+(d2/2)+'px;border-radius:50%;border:'+thickness+'px dashed '+gColor+'"></div>';
+        }
+        g.innerHTML = html;
+      } else {
+        var poly = gType==='hexagon' ? 'polygon(25% 6%,75% 6%,100% 50%,75% 94%,25% 94%,0% 50%)'
+          : gType==='triangle' ? 'polygon(50% 8%,95% 92%,5% 92%)'
+          : 'polygon(0 0,100% 0,100% 100%,0 100%)';
+        var s = Math.min(Math.max(spacing*4, 40), 220);
+        g.innerHTML = '<div style="position:absolute;left:50%;top:50%;width:'+s+'px;height:'+s+'px;margin:-'+(s/2)+'px 0 0 -'+(s/2)+'px;clip-path:'+poly+';border:'+thickness+'px solid '+gColor+'"></div>';
+      }
+      c.appendChild(g);
+    } else if(n.type==='Bar'){
+      var sf = n.staticFields || {};
+      var value = svEvalExpr((n.expr && n.expr.value) || '0.5', svNodeVarScope(n));
+      value = Math.max(0, Math.min(1, value));
+      var trackLen = parseFloat(sf.length); if(isNaN(trackLen) || trackLen<10) trackLen = 120;
+      var barThick = parseFloat(sf.thickness); if(isNaN(barThick) || barThick<2) barThick = 20;
+      var barColor = sf.color || '#33D7E8';
+      var origin = sf.fillOrigin || 'low';
+      var track = document.createElement('div');
+      track.style.cssText = 'position:absolute;left:50%;top:50%;width:'+barThick+'px;height:'+trackLen+'px;margin:-'+(trackLen/2)+'px 0 0 -'+(barThick/2)+'px;border:1px solid #2D3A44;opacity:'+opacity;
+      c.appendChild(track);
+      var fillH = value*trackLen;
+      var fillTop = origin==='high' ? 0 : origin==='mid' ? (trackLen-fillH)/2 : (trackLen-fillH);
+      var fill = document.createElement('div');
+      fill.style.cssText = 'position:absolute;left:50%;top:calc(50% - '+(trackLen/2)+'px + '+fillTop+'px);width:'+barThick+'px;height:'+fillH+'px;margin-left:-'+(barThick/2)+'px;background:'+barColor+';opacity:'+opacity;
+      c.appendChild(fill);
+    } else if(n.type==='Line'){
+      var sf = n.staticFields || {};
+      var length = parseFloat(sf.length); if(isNaN(length) || length<=0) length = 100;
+      var angle = parseFloat(sf.angle); if(isNaN(angle)) angle = 0;
+      var lnThick = parseFloat(sf.thickness); if(isNaN(lnThick) || lnThick<1) lnThick = 2;
+      var lnColor = sf.color || '#8FA0AD';
+      var ln = document.createElement('div');
+      ln.style.cssText = 'position:absolute;left:50%;top:50%;width:'+length+'px;height:'+lnThick+'px;background:'+lnColor+';opacity:'+opacity+';transform-origin:0 50%;transform:rotate('+angle+'deg)';
+      c.appendChild(ln);
+    } else if(n.type==='Arc'){
+      var sf = n.staticFields || {};
+      var radius = parseFloat(sf.radius); if(isNaN(radius) || radius<=0) radius = 60;
+      var startAngle = parseFloat(sf.startAngle); if(isNaN(startAngle)) startAngle = 0;
+      var sweep = parseFloat(sf.sweep); if(isNaN(sweep)) sweep = 90;
+      var arcThick = parseFloat(sf.thickness); if(isNaN(arcThick) || arcThick<1) arcThick = 3;
+      var arcColor = sf.color || '#8FA0AD';
+      var d3 = radius*2;
+      var arc = document.createElement('div');
+      arc.style.cssText = 'position:absolute;left:50%;top:50%;width:'+d3+'px;height:'+d3+'px;margin:-'+radius+'px 0 0 -'+radius+'px;border-radius:50%;opacity:'+opacity+';'+
+        'background:conic-gradient(from '+startAngle+'deg, '+arcColor+' 0deg '+sweep+'deg, transparent '+sweep+'deg 360deg);'+
+        '-webkit-mask:radial-gradient(circle, transparent calc(100% - '+arcThick+'px), #000 calc(100% - '+arcThick+'px));'+
+        'mask:radial-gradient(circle, transparent calc(100% - '+arcThick+'px), #000 calc(100% - '+arcThick+'px));';
+      c.appendChild(arc);
+    } else if(n.type==='Text'){
+      var sf = n.staticFields || {};
+      var content = (sf.content || "'TEXT'").replace(/^'|'$/g,'');
+      var t = document.createElement('div');
+      t.textContent = content;
+      t.style.cssText = 'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);opacity:'+opacity+';color:'+(sf.color||'#E6E6E6')+';font-size:'+(sf.fontSize||14)+'px;font-weight:'+(sf.bold==='true'?'700':'400')+';font-style:'+(sf.italic==='true'?'italic':'normal')+';text-align:'+(sf.align||'center')+';white-space:nowrap';
+      c.appendChild(t);
+    } else if(n.type==='Bitmap'){
+      var box = document.createElement('div');
+      if(n.imageData){
+        box.style.cssText = 'position:absolute;inset:12%;background-image:url('+n.imageData+');background-size:contain;background-repeat:no-repeat;background-position:center;opacity:'+opacity;
+      } else {
+        box.style.cssText = 'position:absolute;inset:12%;border:1px dashed #2D3A44;display:flex;align-items:center;justify-content:center;color:#6F7D89;font-size:10.5px;text-align:center;opacity:'+opacity;
+        box.textContent = 'no image selected';
+      }
+      c.appendChild(box);
+    } else if(n.type==='Parametric'){
+      var sf = n.staticFields || {};
+      var steps = parseInt(sf.steps,10); if(isNaN(steps) || steps<3) steps = 64;
+      var pStart = parseFloat(sf.paramStart); if(isNaN(pStart)) pStart = 0;
+      var pEnd = parseFloat(sf.paramEnd); if(isNaN(pEnd)) pEnd = 6.283;
+      var closed = sf.closed === 'true';
+      var pColor = sf.color || '#33D7E8';
+      var pThick = parseFloat(sf.thickness); if(isNaN(pThick) || pThick<1) pThick = 2;
+      var xExpr = (n.expr && n.expr.x) || 'cos(t)*50';
+      var yExpr = (n.expr && n.expr.y) || 'sin(t)*50';
+      var cw = c.clientWidth || 300, ch = c.clientHeight || 300;
+      var cx = cw/2, cy = ch/2;
+      var pts = [];
+      for(var i=0;i<=steps;i++){
+        var t = pStart + (pEnd-pStart)*(i/steps);
+        var x = svEvalMath(xExpr,t), y = svEvalMath(yExpr,t);
+        pts.push((cx+x)+','+(cy-y));
+      }
+      if(closed && pts.length) pts.push(pts[0]);
+      var svgNS = 'http://www.w3.org/2000/svg';
+      var svg = document.createElementNS(svgNS,'svg');
+      svg.setAttribute('style','position:absolute;inset:0;width:100%;height:100%;opacity:'+opacity);
+      var poly = document.createElementNS(svgNS,'polyline');
+      poly.setAttribute('points', pts.join(' '));
+      poly.setAttribute('fill','none');
+      poly.setAttribute('stroke', pColor);
+      poly.setAttribute('stroke-width', pThick);
+      svg.appendChild(poly);
+      c.appendChild(svg);
+    }
+  });
+}
+
+function svEvalExpr(expr, vars){
+  try{
+    var names = Object.keys(vars);
+    var values = names.map(function(k){ return vars[k]; });
+    var f = Function.apply(null, names.concat(['with(Math){return ('+expr+');}']));
+    var v = f.apply(null, values);
+    return (typeof v === 'number' && isFinite(v)) ? v : 0;
+  } catch(e){ return 0; }
+}
+function svEvalMath(expr, t){ return svEvalExpr(expr, {t:t}); }
+
+function svSimValues(){
+  var axEl = document.getElementById('sim-axisx');
+  var ayEl = document.getElementById('sim-axisy');
+  return {
+    axisX: axEl ? parseFloat(axEl.value)/100 : 0,
+    axisY: ayEl ? parseFloat(ayEl.value)/100 : 0
+  };
+}
+
+function svNodeVarScope(n){
+  var scope = { centerX:0, centerY:0 };
+  var sim = svSimValues();
+  (n.bindings||[]).forEach(function(b){ scope[b.v] = sim.hasOwnProperty(b.v) ? sim[b.v] : 0; });
+  return scope;
+}
+
+function svRenderStack(){
+  var wrap = document.getElementById('sv-nodestack');
+  wrap.innerHTML = '';
+  var ids = Object.keys(svNodes).sort(function(a,b){return svNodes[b].z-svNodes[a].z});
+  if(ids.length === 0){
+    wrap.innerHTML = '<div class="sv-note" style="padding:12px">No NeuroNodes yet. Click + Add NeuroNode below to create one.</div>';
+    return;
+  }
+  ids.forEach(function(id){
+    var n = svNodes[id];
+    var row = document.createElement('div');
+    row.className = 'sv-node-row' + (id===svSelected?' selected':'');
+    row.dataset.id = id;
+    row.draggable = true;
+    row.onclick = function(){ svSelectNodeRow(id); };
+    row.addEventListener('dragstart', function(e){ svDragId = id; e.dataTransfer.effectAllowed = 'move'; });
+    row.addEventListener('dragover', function(e){ e.preventDefault(); e.dataTransfer.dropEffect = 'move'; row.classList.add('dragover'); });
+    row.addEventListener('dragleave', function(){ row.classList.remove('dragover'); });
+    row.addEventListener('drop', function(e){ e.preventDefault(); row.classList.remove('dragover'); svReorderNode(svDragId, id); });
+    row.addEventListener('dragend', function(){ document.querySelectorAll('#sv-nodestack .sv-node-row.dragover').forEach(function(r){ r.classList.remove('dragover'); }); });
+    row.innerHTML = '<span class="sv-node-drag" title="Drag to reorder">&#8942;&#8942;</span>'+
+      '<span class="sv-node-vis'+(n.visible?'':' hidden')+'" onclick="event.stopPropagation();svToggleVisible(\''+id+'\')">'+(n.visible?'&#15757E;':'&#157F8C;')+'</span>'+
+      '<span class="sv-node-type'+(n.type?'':' unassigned')+'">'+(n.type?n.type.toUpperCase():'&mdash;')+'</span>'+
+      '<input class="sv-node-name-input" value="'+n.name+'" onclick="event.stopPropagation()" onfocus="svSelectNodeRow(\''+id+'\')" oninput="svRenameNode(\''+id+'\',this.value)">'+
+      '<span class="sv-node-mode '+n.mode+'">'+n.mode.toUpperCase()+'</span>'+
+      '<span class="sv-node-delete" onclick="event.stopPropagation();svDeleteNode(\''+id+'\',\''+n.name+'\')" title="Delete NeuroNode">&times;</span>';
+    wrap.appendChild(row);
+  });
+}
+
+var svDragId = null;
+
+function svReorderNode(dragId, targetId){
+  if(!dragId || dragId===targetId || !svNodes[dragId] || !svNodes[targetId]) return;
+  var order = Object.keys(svNodes).sort(function(a,b){return svNodes[b].z-svNodes[a].z});
+  order = order.filter(function(id){ return id !== dragId; });
+  var idx = order.indexOf(targetId);
+  order.splice(idx, 0, dragId);
+  var total = order.length;
+  order.forEach(function(id,i){ svNodes[id].z = total - i; });
+  svRenderAll();
+}
+
+function svSelectNodeRow(id){
+  svSelected = id;
+  document.querySelectorAll('#sv-nodestack .sv-node-row').forEach(function(r){ r.classList.toggle('selected', r.dataset.id===id); });
+  svRenderProps();
+}
+
+function svRenameNode(id, value){
+  svNodes[id].name = value;
+  if(svSelected === id){
+    var h = document.getElementById('sv-proppanel-head');
+    if(h) h.textContent = (svNodes[id].type ? svNodes[id].type.toUpperCase() : 'UNASSIGNED') + ' — ' + value + ' (' + svNodes[id].mode.toUpperCase() + ' MODE)';
+  }
+}
+
+function svToggleVisible(id){ svNodes[id].visible = !svNodes[id].visible; svRenderStack(); svRenderCanvas(); }
+
+function svDeleteNode(id, name){
+  if(!confirm('Delete NeuroNode "'+name+'"? This permanently removes it and its bindings/expressions from this Vizlet. This cannot be undone.')) return;
+  delete svNodes[id];
+  var remaining = Object.keys(svNodes);
+  svSelected = remaining.length ? remaining[0] : null;
+  svRenderAll();
+}
+
+function svAddNode(){
+  var id = 'n'+(svNextId++);
+  var ids = Object.keys(svNodes);
+  var z;
+  if(svSelected && svNodes[svSelected]){
+    var baseZ = svNodes[svSelected].z;
+    ids.forEach(function(k){ if(svNodes[k].z > baseZ) svNodes[k].z++; });
+    z = baseZ + 1;
+  } else {
+    z = ids.length ? Math.max.apply(null, ids.map(function(k){ return svNodes[k].z; })) + 1 : 0;
+  }
+  svNodes[id] = { id:id, type:null, name:'New NeuroNode', z:z, visible:true, mode:'static', bindings:[], expr:{}, staticFields:null };
+  svSelected = id;
+  svRenderAll();
+}
+
+function svNodeTypeDefaults(type){
+  switch(type){
+    case 'Dot': return { expr:{ x:'0', y:'0', radius:'10', color:"'#FF7100'", opacity:'1' }, staticFields:null };
+    case 'Bar': return { expr:{ value:'0.5', opacity:'1' }, staticFields:{ fillOrigin:'low', length:'120', thickness:'20', color:'#33D7E8' } };
+    case 'Line': return { expr:{ opacity:'1' }, staticFields:{ length:'100', angle:'0', thickness:'2', color:'#8FA0AD' } };
+    case 'Arc': return { expr:{ opacity:'1' }, staticFields:{ radius:'60', startAngle:'0', sweep:'90', thickness:'3', color:'#8FA0AD' } };
+    case 'Text': return { expr:{ opacity:'1' }, staticFields:{ content:"'LABEL'", fontSize:'14', bold:'false', italic:'false', align:'center', color:'#E6E6E6' } };
+    case 'Grid': return { expr:{ opacity:'0.35' }, staticFields:{ gridType:'square', color:'#2D3A44', spacing:'20', thickness:'1' } };
+    case 'Bitmap': return { expr:{ opacity:'1' }, staticFields:{ imagePath:'' } };
+    case 'Parametric': return { expr:{ x:'cos(t)*50', y:'sin(t)*50' }, staticFields:{ paramStart:'0', paramEnd:'6.283', steps:'64', closed:'false', color:'#33D7E8', thickness:'2' } };
+    default: return { expr:{}, staticFields:null };
+  }
+}
+
+function svAssignNodeType(id, type){
+  if(!type) return;
+  var d = svNodeTypeDefaults(type);
+  svNodes[id].type = type;
+  svNodes[id].expr = d.expr;
+  svNodes[id].staticFields = d.staticFields;
+  svRenderAll();
+}
+
+function svLoadBitmap(id, inputEl){
+  var file = inputEl.files && inputEl.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    svNodes[id].imageData = e.target.result;
+    svNodes[id].staticFields.imagePath = 'resources/img/' + file.name.replace(/[^a-zA-Z0-9._-]/g,'');
+    var note = document.getElementById('sv-bitmap-note-'+id);
+    if(note) note.textContent = 'File: ' + svNodes[id].staticFields.imagePath + ' (copied to managed resource folder)';
+    svRenderCanvas();
+  };
+  reader.readAsDataURL(file);
+}
+
+function svRenderProps(){
+  var head = document.getElementById('sv-proppanel-head');
+  var el = document.getElementById('sv-proppanel');
+  document.getElementById('sv-devicemonitor-block').style.display = 'none';
+  document.getElementById('sv-inputsim-block').style.display = 'none';
+  if(!svSelected || !svNodes[svSelected]){
+    head.textContent = 'PROPERTY PANEL';
+    el.innerHTML = '<div class="sv-note" style="padding:12px">No NeuroNode selected.</div>';
+    return;
+  }
+  var n = svNodes[svSelected];
+  head.textContent = (n.type ? n.type.toUpperCase() : 'UNASSIGNED') + ' — ' + n.name + ' (' + n.mode.toUpperCase() + ' MODE)';
+  var html = '';
+
+  if(!n.type){
+    html += '<div class="sv-prop-section"><div class="sv-prop-section-head">TYPE</div>';
+    html += '<div class="sv-static-row"><span class="sv-static-label">Type</span><select class="sv-static-field" onchange="svAssignNodeType(\''+n.id+'\',this.value)">';
+    html += '<option value="" disabled selected>Choose a type&hellip;</option>';
+    ['Dot','Bar','Line','Arc','Text','Grid','Bitmap','Parametric'].forEach(function(t){
+      html += '<option value="'+t+'">'+t+'</option>';
+    });
+    html += '</select></div>';
+    html += '<div class="sv-note">A NeuroNode starts with no primitive type. Choose one to configure its properties &mdash; it stays Static until you attach an input.</div></div>';
+    el.innerHTML = html;
+    return;
+  }
+
+  if(n.mode === 'live'){
+    html += '<div class="sv-prop-section"><div class="sv-prop-section-head">INPUT BINDINGS</div>';
+    n.bindings.forEach(function(b,i){
+      html += '<div class="sv-binding-row"><input value="'+b.v+'" readonly><span class="sv-binding-arrow">&rarr;</span><span class="sv-binding-source">'+b.src+'</span><span class="sv-binding-remove" onclick="svRemoveBinding(\''+n.id+'\','+i+')">&times;</span></div>';
+    });
+    html += '<button class="sv-btn small" onclick="svAddBindingSlot(\''+n.id+'\')">+ ADD BINDING</button></div>';
+  }
+
+  html += '<div class="sv-prop-section"><div class="sv-prop-section-head">EXPRESSIONS</div>';
+  Object.keys(n.expr).forEach(function(k){
+    html += '<div class="sv-expr-row"><span class="sv-expr-label">'+k+'</span><input class="sv-expr-field" value="'+n.expr[k]+'" oninput="svNodes[\''+n.id+'\'].expr[\''+k+'\']=this.value;svRenderCanvas()"></div>';
+  });
+  html += '</div>';
+
+  if(n.staticFields){
+    html += '<div class="sv-prop-section"><div class="sv-prop-section-head">STATIC PROPERTIES</div>';
+    Object.keys(n.staticFields).forEach(function(k){
+      if(n.type==='Bitmap' && k==='imagePath'){
+        html += '<div class="sv-bitmap-picker"><input type="file" accept="image/*" onchange="svLoadBitmap(\''+n.id+'\',this)">'+
+          '<div class="sv-bitmap-preview" id="sv-bitmap-note-'+n.id+'">'+(n.staticFields.imagePath ? 'File: '+n.staticFields.imagePath+' (copied to managed resource folder)' : 'No image selected yet.')+'</div></div>';
+      } else if(n.staticFields[k]==='true' || n.staticFields[k]==='false'){
+        html += '<label class="sv-checkrow"><input type="checkbox" '+(n.staticFields[k]==='true'?'checked':'')+' onchange="svNodes[\''+n.id+'\'].staticFields[\''+k+'\']=this.checked?\'true\':\'false\';svRenderCanvas()"> '+k+'</label>';
+      } else {
+        html += '<div class="sv-static-row"><span class="sv-static-label">'+k+'</span><input class="sv-static-field" value="'+n.staticFields[k]+'" oninput="svNodes[\''+n.id+'\'].staticFields[\''+k+'\']=this.value;svRenderCanvas()"></div>';
+      }
+    });
+    html += '</div>';
+  }
+
+  if(n.mode === 'static'){
+    html += '<div class="sv-attachbar"><button class="sv-btn full" onclick="svShowAttachForm()">+ ATTACH INPUT (MAKES THIS NEURONODE LIVE)</button></div>';
+    html += '<div class="sv-attachform" id="sv-attachform">'+
+      '<div class="sv-attachform-row"><input class="sv-static-field" id="sv-attach-var" placeholder="variable name, e.g. axisX" style="flex:1"></div>'+
+      '<div class="sv-attachform-row"><input class="sv-static-field" id="sv-attach-src" placeholder="source, e.g. Controller1 — Axis X" style="flex:1"></div>'+
+      '<button class="sv-btn primary small" onclick="svConfirmAttach(\''+n.id+'\')">CONFIRM</button> '+
+      '<button class="sv-btn small" onclick="document.getElementById(\'sv-attachform\').classList.remove(\'open\')">CANCEL</button>'+
+      '</div>';
+  }
+
+  el.innerHTML = html;
+
+  var isLive = n.mode === 'live';
+  document.getElementById('sv-devicemonitor-block').style.display = isLive ? 'block' : 'none';
+  document.getElementById('sv-inputsim-block').style.display = isLive ? 'block' : 'none';
+  if(isLive) svRenderDeviceMonitor();
+}
+
+function svShowAttachForm(){ document.getElementById('sv-attachform').classList.add('open'); }
+
+function svConfirmAttach(id){
+  var v = document.getElementById('sv-attach-var').value.trim() || 'input1';
+  var src = document.getElementById('sv-attach-src').value.trim() || 'Controller1 — Axis X';
+  var n = svNodes[id];
+  n.bindings.push({v:v, src:src});
+  n.mode = 'live';
+  svRenderAll();
+}
+
+function svAddBindingSlot(id){
+  var n = svNodes[id];
+  n.bindings.push({v:'input'+(n.bindings.length+1), src:'(click a device input to assign)'});
+  svRenderProps();
+}
+
+function svRemoveBinding(id,i){
+  var n = svNodes[id];
+  n.bindings.splice(i,1);
+  if(n.bindings.length===0){ n.mode='static'; }
+  svRenderAll();
+}
+
+var svDevices = [
+  {name:'Controller1 &mdash; Axis X', val:'0.35'},
+  {name:'Controller1 &mdash; Axis Y', val:'-0.12'},
+  {name:'Controller1 &mdash; Button 1', val:'up'},
+  {name:'Keyboard &mdash; W', val:'up'}
+];
+function svRenderDeviceMonitor(){
+  var el = document.getElementById('sv-devicemonitor');
+  el.innerHTML = svDevices.map(function(d){
+    return '<div class="sv-device-row" onclick="svAssignFromDevice(\''+d.name+'\')"><span class="sv-device-name">'+d.name+'</span><span class="sv-device-val">'+d.val+'</span></div>';
+  }).join('');
+}
+function svAssignFromDevice(name){
+  var n = svNodes[svSelected];
+  var openSlot = n.bindings.find(function(b){ return b.src.indexOf('click a device') !== -1; });
+  if(openSlot){ openSlot.src = name; } else { n.bindings.push({v:'input'+(n.bindings.length+1), src:name}); }
+  svRenderProps();
+}
+</script>
+</body>
+</html>

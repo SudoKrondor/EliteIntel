@@ -1,0 +1,2018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BindForge mockup</title>
+<style>
+body{margin:0;background:#151B22;padding:24px;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;box-sizing:border-box}
+.ei-frame{width:100%;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#090D12;border-radius:8px;padding:18px;color:#C2C2C2}
+.ei-topbar{display:flex;border-bottom:2px solid #B85A14;margin-bottom:14px}
+.ei-toptab{flex:1;text-align:center;padding:10px 4px;font-weight:700;letter-spacing:.5px;font-size:13px;cursor:pointer}
+.ei-toptab.active{background:#D39207;color:#090D12}
+.ei-toptab:not(.active){color:#FF7100}
+.ei-subbar{display:flex;border-bottom:1px solid #B85A14;margin-bottom:18px}
+.ei-subtab{padding:9px 20px;font-weight:700;font-size:12px;letter-spacing:.5px;color:#FF7100;cursor:pointer}
+.ei-subtab.active{background:#D39207;color:#090D12}
+.ei-section{margin-bottom:22px}
+.ei-section-head{color:#FF822E;font-weight:700;font-size:12px;letter-spacing:.5px;padding-bottom:6px;border-bottom:1px solid #B85A14;margin-bottom:10px}
+.ei-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #151B22;font-size:13px}
+.ei-row:last-child{border-bottom:none}
+.ei-btn{border:1px solid #B85A14;color:#FF7100;background:transparent;padding:8px 18px;font-weight:700;font-size:12px;letter-spacing:.5px;border-radius:4px;cursor:pointer}
+.ei-btn.primary{background:#FF7100;color:#090D12}
+.ei-field{background:#101721;border:1px solid #2D3A44;border-radius:3px;color:#C2C2C2;font-size:13px;padding:6px 8px;width:100%;box-sizing:border-box;font-family:inherit}
+.ei-field[readonly]{color:#8FA0AD;border-color:#24313A}
+.ei-label{font-size:11px;color:#8FA0AD;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;display:block}
+.ei-2col{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.ei-badge-ok{color:#4FC56B;font-size:12px}
+.ei-badge-warn{color:#D39207;font-size:12px}
+.ei-controllerlist{list-style:none;padding:0;margin:0;font-size:13px}
+.ei-controllerlist li{padding:5px 0;display:flex;align-items:center;gap:8px;cursor:pointer}
+.ei-dot{width:9px;height:9px;border-radius:50%;border:1px solid #B85A14;display:inline-block}
+.ei-dot.sel{background:#FF7100}
+.ei-editbanner{color:#D39207;font-size:12px;font-weight:700;letter-spacing:.5px;padding:8px 0;border-top:1px solid #1F1808;margin-top:16px}
+.ei-editactions{display:flex;gap:10px;justify-content:flex-end;padding-top:10px}
+.ei-note{font-size:11px;color:#6F7D89;margin-top:10px}
+.ei-subsubbar{display:flex;gap:22px;margin-bottom:14px}
+.ei-subsubtab{font-size:12px;font-weight:700;letter-spacing:.5px;color:#8FA0AD;cursor:pointer;padding-bottom:4px;border-bottom:2px solid transparent}
+.ei-subsubtab.active{color:#FF822E;border-bottom-color:#FF822E}
+.ei-io-cell{display:flex;align-items:center;gap:6px}
+.ei-io-label{color:#8FA0AD;font-size:12px;white-space:nowrap;flex-shrink:0}
+#io-axis .ei-io-label{width:76px}
+#io-buttons .ei-io-label{width:52px}
+.ei-field-narrow{width:150px;background:#101721;border:1px solid #2D3A44;border-radius:3px;color:#C2C2C2;font-size:12px;padding:3px 7px;font-family:inherit;box-sizing:border-box}
+#io-buttons .ei-field-narrow{padding:2px 6px}
+#io-buttons .ei-btn-grid{gap:6px 16px}
+.ei-axis-grid{display:grid;grid-template-columns:repeat(2,auto);grid-template-rows:repeat(3,auto);grid-auto-flow:column;column-gap:24px;row-gap:10px;justify-content:start}
+.ei-btn-grid{display:grid;grid-template-columns:repeat(4,auto);gap:8px 16px;justify-content:start}
+.ei-btn-grid-wrap{max-height:300px;overflow-y:auto;padding-right:6px}
+.ei-btn-grid-wrap::-webkit-scrollbar{width:8px}
+.ei-btn-grid-wrap::-webkit-scrollbar-thumb{background:#2D3A44;border-radius:4px}
+.ei-btn-grid-wrap::-webkit-scrollbar-track{background:#090D12}
+.ei-presetrow{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #151B22;font-size:13px}
+.ei-presetrow:last-child{border-bottom:none}
+.ei-select{background:#101721;border:1px solid #2D3A44;border-radius:3px;color:#C2C2C2;font-size:13px;padding:6px 8px;font-family:inherit;min-width:270px}
+.ei-warningbanner{background:#1A1206;border-left:3px solid #D39207;color:#D39207;font-size:12px;padding:10px 14px;margin-top:16px;border-radius:2px;display:none}
+.ei-bottombar{display:flex;justify-content:space-between;align-items:center;margin-top:22px;padding-top:14px;border-top:1px solid #24313A}
+.ei-syncbadge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.5px;padding:5px 14px;border-radius:14px;border:1px solid}
+.ei-syncbadge.insync{color:#4FC56B;border-color:#4FC56B}
+.ei-syncbadge.draft{color:#D39207;border-color:#D39207}
+.ei-placeholder{color:#6F7D89;font-size:13px;padding:40px 0;text-align:center}
+.ei-fm-table{width:100%;border-collapse:collapse;font-size:13px}
+.ei-fm-table th{text-align:left;font-weight:700;color:#C2C2C2;padding:8px 6px;border-bottom:1px solid #B85A14;font-size:12px}
+.ei-fm-table td{padding:9px 6px;border-bottom:1px solid #151B22;color:#8FA0AD}
+.ei-fm-table tr{cursor:pointer}
+.ei-fm-table tr:nth-child(even){background:#0C1117}
+.ei-fm-table tr.selected{background:#1A1206}
+.ei-fm-table td.created{color:#FF7100}
+.ei-fm-table td.files{color:#FF7100}
+.ei-fullbadge{color:#4FC56B;font-size:11px;font-weight:700;letter-spacing:.5px}
+.ei-partialbadge{color:#D39207;font-size:11px;font-weight:700;letter-spacing:.5px}
+.ei-custombadge{color:#33D7E8;font-size:11px;font-weight:700;letter-spacing:.5px}
+.ei-fm-toprow{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:20px}
+.ei-gi-path{font-family:Consolas,"Courier New",monospace;font-size:11.5px;color:#8FA0AD;word-break:break-all}
+.ei-gi-file{font-family:Consolas,"Courier New",monospace;font-size:11.5px;color:#C2C2C2}
+.ei-gi-table tr{cursor:default}
+.ei-gi-sub{display:block;margin-top:3px;font-size:10.5px;color:#5C6B78;letter-spacing:.3px;font-weight:400}
+.ei-gi-actions{display:flex;gap:6px;justify-content:flex-end}
+.ei-gi-actions .ei-btn{padding:4px 9px;font-size:10.5px}
+.ei-gi-stub{margin-top:18px;padding:10px 12px;border:1px dashed #3A4855}
+.ei-gi-cfgrow{padding:10px 0 2px}
+.ei-rs{margin-top:16px;padding:12px 14px;background:#0C1117;border:1px solid #24313A}
+.ei-rs-group{margin-top:10px}
+.ei-rs-group h5{margin:0 0 5px;font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;
+                color:#8FA0AD;font-weight:700}
+.ei-rs-group label{display:flex;align-items:center;gap:7px;font-size:12px;color:#C2C2C2;
+                   padding:3px 0 3px 12px;cursor:pointer}
+.ei-rs-inst{display:flex;align-items:center;gap:16px;padding:5px 0 3px 12px;font-size:11.5px;color:#8FA0AD}
+.ei-rs-inst label{padding:0;font-size:11.5px}
+.ei-rs-all{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#FF9330;
+           cursor:pointer;padding-bottom:8px;border-bottom:1px solid #151B22}
+.ei-rs-tie{font-size:11px;color:#5C6B78;padding:2px 0 0 12px;font-style:italic}
+.ei-gi-holds{margin-top:7px;font-size:12px;color:#8FA0AD}
+.ei-fm-bottombar{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid #24313A}
+.ei-btn[disabled]{opacity:.4;cursor:not-allowed}
+.ei-scope-row{display:flex;flex-wrap:wrap;gap:20px;padding:10px 0;margin-bottom:14px;border-bottom:1px solid #151B22;font-size:12px;color:#8FA0AD}
+.ei-scope-row label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.ei-scope-row input[disabled]{cursor:not-allowed}
+.ei-scope-label{font-size:11px;color:#8FA0AD;letter-spacing:.5px;text-transform:uppercase;width:100%;margin-bottom:2px}
+.ei-retention{display:flex;align-items:center;gap:8px;font-size:12px;color:#8FA0AD;white-space:nowrap}
+.ei-retention input{width:50px;background:#101721;border:1px solid #2D3A44;border-radius:3px;color:#C2C2C2;font-size:12px;padding:5px 7px;font-family:inherit}
+.ge-searchbar{margin-bottom:14px;display:flex;align-items:center;gap:14px}
+.ge-searchbar input{flex:1;background:#101721;border:1px solid #2D3A44;border-radius:3px;color:#C2C2C2;font-size:13px;padding:8px 10px;font-family:inherit;box-sizing:border-box}
+.ge-conflictsonly{display:flex;align-items:center;gap:6px;font-size:12px;color:#C2C2C2;white-space:nowrap;cursor:pointer;flex-shrink:0}
+.ge-conflictsonly input{accent-color:#FF7100}
+.ge-contextbar{display:flex;gap:2px;margin-bottom:14px}
+.ge-contextbtn{flex:1;text-align:center;padding:10px 4px;font-weight:700;font-size:12px;letter-spacing:.5px;cursor:pointer;color:#8FA0AD;background:#101721;border:1px solid #24313A}
+.ge-contextbtn.active{background:#FF7100;color:#090D12;border-color:#B85A14}
+.ge-layout{border:1px solid #24313A}
+.ge-gridcol{max-height:520px;overflow-y:auto}
+.ge-grouphead{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#101721;cursor:pointer;user-select:none;border-bottom:1px solid #24313A}
+.ge-grouphead:hover{background:#151B22}
+.ge-grouphead .ge-chevron{color:#FF7100;font-size:11px;width:10px}
+.ge-grouphead .ge-grouplabel{color:#8FA0AD;font-weight:700;font-size:11px;letter-spacing:.5px;flex:1}
+.ge-grouphead .ge-groupcount{color:#6F7D89;font-size:11px}
+.ge-bindrow{display:flex;align-items:center;gap:6px;padding:7px 12px;font-size:13px;border-bottom:1px solid #131A22;cursor:pointer}
+.ge-bindrow:hover{background:#101721}
+.ge-bindrow.selected{background:#1A1206}
+.ge-bindrow.conflict-row{position:relative;background:rgba(217,79,79,.09)}
+.ge-bindrow.conflict-row:hover{background:rgba(217,79,79,.16)}
+.ge-bindrow.conflict-row .ge-bindname{color:#D94F4F}
+.ge-conflict-popup{display:none;position:absolute;right:12px;top:100%;margin-top:2px;z-index:20;background:#1A1206;border:1px solid #D94F4F;border-radius:4px;padding:9px 13px;font-size:11.5px;line-height:1.5;color:#EFD3A6;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.55)}
+.ge-bindrow.conflict-row:hover .ge-conflict-popup{display:block}
+.ge-conflict-popup b{color:#D94F4F}
+.ge-conflict-popup .ge-conflict-hint{color:#8FA0AD;display:block;margin-top:5px}
+.ge-bindname{color:#C2C2C2;flex:1}
+.ge-bindval{color:#8FA0AD;text-align:right;font-size:12px;width:230px;flex-shrink:0}
+.ge-badge{color:#FF7100;border:1px solid #2D3A44;background:#101721;padding:2px 6px;border-radius:2px;font-size:11px}
+.an-sev{font-size:8.5px;font-weight:700;letter-spacing:.7px;padding:2px 6px;border-radius:2px;
+        border:1px solid currentColor;flex:none;min-width:58px;text-align:center}
+.an-sev.reserved{color:#D94F4F}
+.an-sev.blocking{color:#D94F4F}
+.an-sev.invalid{color:#D39207}
+.an-sev.missing{color:#D39207}
+.an-sev.curated{color:#D39207}
+.an-sev.overlap{color:#6F7D89}
+.ge-ctxmenu{position:fixed;background:#101721;border:1px solid #2D3A44;border-radius:3px;box-shadow:0 4px 12px rgba(0,0,0,.5);z-index:1000;display:none;min-width:170px}
+.ge-ctxmenu div{padding:9px 14px;font-size:12px;color:#C2C2C2;cursor:pointer}
+.ge-ctxmenu div:hover{background:#FF7100;color:#090D12}
+.pm-layout{display:grid;grid-template-columns:1fr 44px 1fr 1fr;gap:8px;margin-bottom:12px}
+.pm-col{border:1px solid #24313A}
+.pm-colhead{background:#101721;color:#FF822E;font-weight:700;font-size:11px;letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid #24313A}
+.pm-list{max-height:230px;overflow-y:auto}
+.pm-item{padding:6px 12px 6px 30px;font-size:12px;color:#C2C2C2;cursor:pointer;border-bottom:1px solid #131A22}
+.pm-item:hover{background:#101721}
+.pm-item.selected{background:#1A1206;color:#FF7100}
+.pm-arrows{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px}
+.pm-iconbtn{width:38px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center;padding:0}
+.pm-slotbox{padding:10px 12px;border-bottom:1px solid #24313A}
+.pm-slotbox:last-child{border-bottom:none}
+.pm-slotlabel{color:#8FA0AD;font-size:10px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px}
+.pm-slotvalue{background:#101721;border:1px solid #2D3A44;border-radius:3px;color:#8FA0AD;font-size:12px;padding:7px;text-align:center;margin-bottom:8px}
+.pm-slotactions{display:flex;gap:6px}
+.pm-slotactions .ei-btn{flex:1;padding:6px 4px;font-size:11px}
+.ge-bindval{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+.ge-valtext{flex:1;text-align:right}
+.ge-capbtn{opacity:0;pointer-events:none;transition:opacity .1s ease;font-family:inherit;font-size:9px;font-weight:700;letter-spacing:.4px;padding:2px 6px;border-radius:2px;cursor:pointer;white-space:nowrap;background:transparent}
+.ge-bindrow:hover .ge-capbtn{opacity:1;pointer-events:auto}
+.ge-capbtn.state-empty{color:#33D7E8;border:1px solid #33D7E8}
+.ge-capbtn.state-empty:hover{background:#33D7E8;color:#090D12}
+.ge-capbtn.state-bound{color:#4FC56B;border:1px solid #4FC56B}
+.ge-capbtn.state-bound:hover{background:#4FC56B;color:#090D12}
+.ge-capbtn.state-conflict{color:#D94F4F;border:1px solid #D94F4F}
+.ge-capbtn.state-conflict:hover{background:#D94F4F;color:#090D12}
+.ge-attr-toggle{opacity:0;pointer-events:none;transition:opacity .1s ease;font-family:inherit;font-size:9px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:2px;cursor:pointer;white-space:nowrap;background:transparent;color:#FF7100;border:1px solid #B85A14}
+.ge-bindrow:hover .ge-attr-toggle{opacity:1;pointer-events:auto}
+.ge-axisrow .ge-attr-toggle{opacity:1;pointer-events:auto}
+.ge-attr-toggle:hover{background:#FF7100;color:#090D12}
+.ge-holdchip{flex-shrink:0;width:42px;text-align:center;font-family:inherit;font-size:9px;font-weight:700;letter-spacing:.4px;padding:2px 4px;border-radius:2px;cursor:pointer;white-space:nowrap;background:transparent;color:#FF7100;border:1px solid #B85A14}
+.ge-holdchip:hover{background:#FF7100;color:#090D12}
+.ge-holdchip-spacer{flex-shrink:0;width:42px}
+.ge-axisrow .ge-bindval{width:auto;min-width:150px}
+.ge-deadzone{display:flex;align-items:center;gap:6px;width:120px;flex-shrink:0}
+.ge-deadzone-label{font-size:9px;color:#6F7D89;letter-spacing:.3px;white-space:nowrap}
+.ge-deadzone-track{position:relative;flex:1;height:6px;background:#151B22;border:1px solid #24313A;border-radius:3px;cursor:pointer}
+.ge-deadzone-fill{position:absolute;top:0;left:0;bottom:0;background:#FF7100;border-radius:2px 0 0 2px;pointer-events:none}
+.ge-deadzone-pct{font-size:9px;color:#FF7100;width:24px;text-align:right;flex-shrink:0}
+.ge-sim-toggle{margin-top:14px;display:inline-flex;align-items:center;gap:8px;font-size:10.5px;color:#8FA0AD;letter-spacing:.3px}
+.ge-sim-toggle button{font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.3px;padding:4px 10px;border-radius:2px;cursor:pointer;background:transparent;color:#33D7E8;border:1px solid #33D7E8}
+.ge-sim-toggle button.active{background:#33D7E8;color:#090D12}
+#ge-grid.capturing .ge-group{display:none}
+.ge-pinned-row{display:flex;align-items:center;gap:14px;padding:12px 14px;background:#151B22;border-left:3px solid #B85A14;border-bottom:1px solid #24313A;font-size:13px}
+.ge-pinned-label{color:#8FA0AD;font-size:10px;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0}
+.ge-pinned-name{color:#FF822E;font-weight:700;flex:1}
+.ge-pinned-current{color:#6F7D89;font-size:11px}
+.ge-capture-wrap{display:flex;flex-direction:column;align-items:center;gap:20px;padding:28px 20px 24px}
+.ge-capture-box{max-width:360px;background:linear-gradient(180deg,#1A1206,#120C04);border:1px solid #B85A14;border-radius:4px;padding:22px 26px;text-align:center;box-shadow:0 0 24px rgba(255,113,0,.15)}
+.ge-capture-label{color:#FF822E;font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+.ge-capture-target{color:#EFD3A6;font-size:17px;font-weight:700}
+.ge-capture-slot{color:#8FA0AD;font-size:12px;font-weight:400}
+.ge-capture-hint{color:#6F7D89;font-size:11px;margin-top:14px}
+.ge-conflict-label{color:#D94F4F;font-size:13px;font-weight:700;letter-spacing:.5px;margin-bottom:10px}
+.ge-conflict-text{color:#C2C2C2;font-size:12.5px;line-height:1.5;margin-bottom:16px}
+.ge-conflict-actions{display:flex;gap:10px;justify-content:center}
+.ge-kbd{display:flex;flex-direction:column;gap:4px;width:100%;max-width:640px}
+.ge-kbd-row{display:flex;gap:4px;justify-content:center}
+.ge-kbd-key{background:#101721;border:1px solid #24313A;border-radius:3px;color:#6F7D89;font-family:inherit;font-size:10.5px;font-weight:700;padding:7px 4px;min-width:32px;text-align:center;cursor:pointer}
+.ge-kbd-key.free{color:#4FC56B;border-color:#2A5638}
+.ge-kbd-key.free:hover{background:#4FC56B;color:#090D12}
+.ge-kbd-key.used{color:#D94F4F;border-color:#5A2A2A}
+.ge-kbd-key.used:hover{background:#D94F4F;color:#090D12}
+.ge-kbd-key.current{border-color:#B85A14;box-shadow:0 0 0 1px #FF7100}
+.ge-kbd-key.wide{flex:1;max-width:360px}
+.ge-kbd-gap{width:14px;flex-shrink:0}
+.ge-kbd-hint{color:#6F7D89;font-size:10.5px;text-align:center}
+.im-layout{display:grid;grid-template-columns:200px 1fr;border:1px solid #24313A}
+#im-list .ge-bindval{width:110px}
+#im-list .ge-axisrow .ge-bindval{min-width:120px}
+.im-detectcol{padding:16px;border-right:1px solid #24313A}
+.im-detect-label{font-size:11px;color:#8FA0AD;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
+.im-detect-value{background:#101721;border:1px solid #2D3A44;border-radius:3px;color:#FF7100;font-size:14px;font-weight:700;padding:10px;text-align:center;margin-bottom:14px}
+.im-detect-value.empty{color:#6F7D89;font-weight:400;font-size:12px}
+.im-listcol{max-height:420px;overflow-y:auto}
+.im-row{display:flex;align-items:center;gap:10px;padding:9px 14px;font-size:13px;border-bottom:1px solid #131A22}
+.im-sectiontag{color:#8FA0AD;border:1px solid #2D3A44;background:#101721;padding:2px 6px;border-radius:2px;font-size:10px;letter-spacing:.5px;flex-shrink:0;width:78px;text-align:center}
+.im-bindname{color:#C2C2C2;flex:1}
+.im-slot{color:#6F7D89;font-size:11px}
+
+/* --- embedded in the Elite-Intel shell: drop the outer inset so padding isn't doubled --- */
+html.embedded,html.embedded body{background:#090D12}
+html.embedded body{padding:0}
+html.embedded .ei-frame{border-radius:0;padding:14px}
+
+/* --- Alias Designer: selectable device rows --- */
+.ei-row.selectable{cursor:pointer;padding-left:8px;padding-right:8px;border-left:3px solid transparent}
+.ei-row.selectable:hover{background:#101721}
+.ei-row.selected{background:#101721;border-left-color:#FF7100}
+.ei-controllerlist li{cursor:pointer;padding:3px 0}
+.ei-controllerlist li:hover{color:#E6E6E6}
+#alias-editor-body.disabled{opacity:.35;pointer-events:none}
+.ei-editor-empty{display:none;padding:16px 2px 4px;color:#8FA0AD;font-size:13px}
+.ei-editor-empty.on{display:block}
+
+/* --- Alias Designer: naming locked until the alias is confirmed --- */
+#alias-io-section.locked{opacity:.35;pointer-events:none}
+.ei-lock-note{display:none;margin:4px 0 12px;padding:9px 11px;background:#1A1206;border-left:3px solid #D39207;color:#D39207;font-size:12px;line-height:1.5}
+.ei-lock-note.on{display:block}
+
+/* --- My Devices: per-install mirror grid --- */
+/* WHY: the three hardware columns size to their own content rather than to fixed fractions, so a
+   long device name does not leave a gulf before the next column, and every pixel left over goes
+   to INSTALLATIONS - which is the column that grows when another installation is detected. */
+.ei-devgrid{display:grid;grid-template-columns:22px auto auto auto minmax(0,1fr);
+            column-gap:26px;align-items:center}
+.ei-devgrid .hdr:first-child,.ei-devcell.first{margin-right:-14px}
+.ei-devcell.rowtabs{display:flex;gap:6px;flex-wrap:wrap;padding:6px 4px}
+.ei-rowtab{display:flex;align-items:center;gap:7px;font-family:inherit;font-size:9.5px;font-weight:700;
+           letter-spacing:.8px;padding:5px 9px;background:#101721;border:1px solid #24313A;
+           color:#8FA0AD;cursor:pointer;white-space:nowrap}
+.ei-rowtab:hover{border-color:#33D7E8;color:#33D7E8}
+.ei-rowtab.active{background:#1A1206;border-color:#FF7100;color:#FF9330}
+.ei-rowtab.empty{color:#5A6368}
+.ei-rowtab-alias{font-weight:400;letter-spacing:0;font-size:10.5px;color:#C2C2C2}
+.ei-rowtab.empty .ei-rowtab-alias,.ei-rowtab-alias.dim{color:#4A5560;font-style:italic}
+.ei-rowtab-mir{font-size:8px;letter-spacing:0;padding:1px 4px;border:1px solid #4FC56B;color:#4FC56B}
+.ei-insthead{margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #B85A14}
+.ei-instline{display:flex;align-items:center;gap:12px}
+.ei-instlbl{font-size:11px;letter-spacing:1px;font-weight:700;color:#FF9330;flex:none}
+.ei-instpath{flex:1;background:#090D12;border:1px solid #24313A;color:#8FA0AD;
+             font-family:Consolas,"Courier New",monospace;font-size:11.5px;padding:5px 9px;
+             cursor:default}
+.ei-insthead .sub{display:block;margin-top:7px;font-weight:400;letter-spacing:.3px;
+                  color:#8FA0AD;font-size:11.5px}
+.ei-mirbtn{font-family:inherit;font-size:10px;font-weight:700;letter-spacing:1px;padding:7px 14px;
+           background:#12171B;border:1px solid #3A4855;color:#5A6368;cursor:pointer;margin-right:auto}
+.ei-mirbtn.on{border-color:#4FC56B;color:#4FC56B}
+.ei-insttabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.ei-insttab{display:flex;align-items:center;gap:8px;font-family:inherit;font-size:11px;font-weight:700;
+            letter-spacing:.8px;padding:7px 12px;background:#101721;border:1px solid #24313A;
+            color:#8FA0AD;cursor:pointer}
+.ei-insttab.active{background:#1A1206;border-color:#B85A14;color:#FF9330}
+.ei-mirrorchip{font-size:8.5px;letter-spacing:.4px;padding:2px 6px;border-radius:2px;
+               border:1px solid #3A4855;color:#3A4855}
+.ei-mirrorchip.on{border-color:#4FC56B;color:#4FC56B}
+.ei-notadded{font-size:8.5px;letter-spacing:.3px;color:#5A6368;font-weight:400}
+.ei-devexpand{grid-column:1/-1;padding:16px 18px 14px;margin:0 0 4px;background:#0C1117;
+              border:1px solid #B85A14;border-top:2px solid #FF7100}
+.ei-chev{color:#FF7100;font-size:10px;transition:transform .12s ease;display:inline-block}
+.ei-chev.open{transform:rotate(90deg)}
+.ei-attached{color:#4FC56B;font-size:11.5px}
+.ei-missing{color:#5A6368;font-size:11.5px}
+.ei-bigrid{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:26px;align-items:center}
+.ei-bigrid .hdr{font-size:9px;letter-spacing:1px;color:#8FA0AD;font-weight:700;padding:0 0 7px;
+                border-bottom:1px solid #B85A14;text-align:left}
+.ei-bigrid .ei-devcell{cursor:default}
+.ei-bi-id{font-family:Consolas,"Courier New",monospace;font-size:11.5px;color:#8FA0AD}
+.ei-bi-alt{font-size:10.5px;letter-spacing:.4px;color:#5A6368}
+.ei-devgrid .hdr{font-size:9px;letter-spacing:1px;color:#8FA0AD;font-weight:700;padding:0 0 7px;
+                 border-bottom:1px solid #B85A14;text-align:center}
+.ei-devgrid .hdr.l{text-align:left}
+.ei-devcell{padding:9px 4px;border-bottom:1px solid #151B22;font-size:13px;cursor:pointer}
+.ei-devcell.c{text-align:center}
+.ei-devcell.sel{background:#101721}
+.ei-devcell.sel.first{box-shadow:inset 3px 0 0 #FF7100}
+.ei-devname-off{color:#5A6368;font-size:10.5px;letter-spacing:.4px;margin-left:6px}
+.ei-mirror{font-family:inherit;font-size:9px;font-weight:700;letter-spacing:.4px;padding:3px 8px;
+           border-radius:2px;cursor:pointer;white-space:nowrap;background:transparent;
+           border:1px solid #24313A;color:#3A4855;transition:all .1s ease}
+.ei-mirror:hover{border-color:#33D7E8;color:#33D7E8}
+.ei-mirror.on{color:#4FC56B;border-color:#4FC56B}
+.ei-mirror.local{color:#D39207;border-color:#D39207}
+</style>
+<script>try{if(window.self!==window.top){document.documentElement.className+=" embedded";}}catch(e){document.documentElement.className+=" embedded";}</script>
+</head>
+<body>
+<div class="ei-frame">
+  <div class="ei-topbar">
+    <div class="ei-toptab active" id="toptab-alias-btn" onclick="eiShowTopTab('alias')">ALIAS DESIGNER</div>
+    <div class="ei-toptab" id="toptab-bindeditor-btn" onclick="eiShowTopTab('bindeditor')">BIND EDITOR</div>
+    <div class="ei-toptab" id="toptab-preset-btn" onclick="eiShowTopTab('preset')">PRESET EDITOR</div>
+    <div class="ei-toptab" id="toptab-filemanager-btn" onclick="eiShowTopTab('filemanager')">FILE MANAGER</div>
+  </div>
+
+  <div id="toptab-alias">
+    <div class="ei-subbar">
+      <div class="ei-subtab active" id="tab-mydevices" onclick="eiShowDeviceList('my')">MY DEVICES &nbsp;(4)</div>
+      <div class="ei-subtab" id="tab-builtin" onclick="eiShowDeviceList('builtin')">BUILT-IN DEVICES &nbsp;(51)</div>
+    </div>
+
+    <div id="devicelist-my">
+    <div class="ei-section">
+      <div class="ei-devgrid" id="mydevice-grid"></div>
+      <div class="ei-note" style="margin-top:10px">
+        Every device Windows reports is listed, attached or not &mdash; an entry can outlive the hardware. <b>ADDED</b> means the device has an entry in at least one installation's <code>DeviceMappings.xml</code>. Open a device to edit it: each detected installation gets its own tab, so Steam and Epic can hold different names if you want them to. <b style="color:#4FC56B">MIRROR</b> on a tab means that installation shares one definition with the other mirrored ones &mdash; edit any of them and the rest follow. Turn it off to edit that installation on its own. <b>CLEAR</b> removes the entry from the open installation only; the device stays listed because the hardware is still attached.</div>
+      <div class="ei-editactions" style="margin-top:16px">
+        <span class="ei-note" style="margin:0 auto 0 0;max-width:640px">SAVE keeps changes in BindForge's draft. Nothing reaches a game installation until you apply.</span>
+        <button class="ei-btn primary" id="alias-apply-installs" onclick="eiApplyToInstalls()">APPLY TO GAME INSTALLS</button>
+      </div>
+    </div>
+
+    <div id="alias-editor-parking" style="display:none"></div>
+    <div id="alias-editor-host">
+      <div class="ei-insthead" id="alias-insthead"></div>
+      <div id="alias-editor-body">
+      <div style="display:flex;gap:14px;align-items:flex-end;margin-bottom:16px">
+        <div style="flex:2">
+          <span class="ei-label">Device name (alias)</span>
+          <div style="display:flex;gap:8px"><input class="ei-field" id="alias-name" value="RHVCAP Direction" style="margin-bottom:0" oninput="eiAliasEdited()"><button class="ei-btn" id="alias-confirm-btn" style="padding:4px 12px;font-size:11px;white-space:nowrap" onclick="eiConfirmAlias()">CONFIRM</button></div>
+        </div>
+        <div style="flex:1">
+          <span class="ei-label">VID (read only)</span>
+          <input class="ei-field" id="alias-vid" value="3344" readonly style="margin-bottom:0">
+        </div>
+        <div style="flex:1">
+          <span class="ei-label">PID (read only)</span>
+          <input class="ei-field" id="alias-pid" value="43F4" readonly style="margin-bottom:0">
+        </div>
+      </div>
+
+      <div class="ei-lock-note" id="alias-lock-note">This device auto-registered under the name its hardware reports. Confirm or change the alias above to unlock button and axis naming.</div>
+      <div id="alias-io-section">
+      <span class="ei-label" style="margin-bottom:0">Button &amp; axis names</span>
+      <div class="ei-subsubbar" style="margin-top:8px">
+        <div class="ei-subsubtab active" id="tab-axis" onclick="eiShowIO('axis')">AXIS &nbsp;(<span id="alias-axiscount">6</span>)</div>
+        <div class="ei-subsubtab" id="tab-buttons" onclick="eiShowIO('buttons')">BUTTONS &nbsp;(<span id="alias-btncount">32</span>)</div>
+      </div>
+
+      <div id="io-axis" class="ei-axis-grid">
+        <div class="ei-io-cell"><span class="ei-io-label">Joy_XAxis</span><input class="ei-field-narrow" maxlength="18" value="Roll"></div>
+        <div class="ei-io-cell"><span class="ei-io-label">Joy_YAxis</span><input class="ei-field-narrow" maxlength="18" value="Pitch"></div>
+        <div class="ei-io-cell"><span class="ei-io-label">Joy_ZAxis</span><input class="ei-field-narrow" maxlength="18" value="Twist"></div>
+        <div class="ei-io-cell"><span class="ei-io-label">Joy_RXAxis</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+        <div class="ei-io-cell"><span class="ei-io-label">Joy_RYAxis</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+        <div class="ei-io-cell"><span class="ei-io-label">Joy_RZAxis</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+      </div>
+
+      <div id="io-buttons" class="ei-btn-grid-wrap" style="display:none">
+        <div class="ei-btn-grid">
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_1</span><input class="ei-field-narrow" maxlength="18" value="RH_1stStageTrig"></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_2</span><input class="ei-field-narrow" maxlength="18" value="Thumb Button"></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_3</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_4</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_5</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_6</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_7</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_8</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_9</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_10</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_11</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_12</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_13</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_14</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_15</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_16</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_17</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_18</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_19</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_20</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_21</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_22</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_23</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_24</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_25</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_26</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_27</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_28</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_29</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_30</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_31</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+          <div class="ei-io-cell"><span class="ei-io-label">Joy_32</span><input class="ei-field-narrow" maxlength="18" value=""></div>
+        </div>
+      </div>
+
+      </div>
+      <div class="ei-editbanner" id="alias-editbanner">EDIT MODE &mdash; SAVE YOUR CHANGES (saves to the draft only &mdash; Apply to Game Installs, below, is what reaches a real install)</div>
+      <div class="ei-editactions">
+        <button class="ei-mirbtn" id="alias-mirror-btn" onclick="eiToggleActiveMirror()">MIRROR</button>
+        <button class="ei-btn" style="border-color:#D94F4F;color:#D94F4F" onclick="eiClearDevice()">CLEAR</button>
+        <button class="ei-btn" onclick="eiDiscardDevice()">DISCARD</button>
+        <button class="ei-btn primary" id="alias-save-btn" onclick="eiSaveDevice()">SAVE</button>
+      </div>
+      </div>
+      </div>
+    </div>
+
+        <div id="devicelist-builtin" style="display:none">
+    <div class="ei-section">
+      <div class="ei-btn-grid-wrap" style="max-height:340px">
+        <div class="ei-bigrid">
+          <div class="hdr l">DEVICE NAME</div><div class="hdr l">VID&nbsp;&nbsp;PID</div><div class="hdr l">ADDITIONAL IDS</div>
+      <div class="ei-devcell first">GamePad</div><div class="ei-devcell"><span class="ei-bi-id">045E&nbsp;&nbsp;028E</span></div><div class="ei-devcell"><span class="ei-bi-alt">+79 more</span></div>
+      <div class="ei-devcell first">BlackWidow</div><div class="ei-devcell"><span class="ei-bi-id">07B5&nbsp;&nbsp;0317</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">SaitekAV8R03</div><div class="ei-devcell"><span class="ei-bi-id">06A3&nbsp;&nbsp;0C28</span></div><div class="ei-devcell"><span class="ei-bi-alt">+1 more</span></div>
+      <div class="ei-devcell first">SaitekX55Joystick</div><div class="ei-devcell"><span class="ei-bi-id">0738&nbsp;&nbsp;2215</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">SaitekX56Joystick</div><div class="ei-devcell"><span class="ei-bi-id">0738&nbsp;&nbsp;2221</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">SaitekX55Throttle</div><div class="ei-devcell"><span class="ei-bi-id">0738&nbsp;&nbsp;A215</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">SaitekX56Throttle</div><div class="ei-devcell"><span class="ei-bi-id">0738&nbsp;&nbsp;A221</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">SaitekX52Pro</div><div class="ei-devcell"><span class="ei-bi-id">06A3&nbsp;&nbsp;0762</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">SaitekX52</div><div class="ei-devcell"><span class="ei-bi-id">06A3&nbsp;&nbsp;075C</span></div><div class="ei-devcell"><span class="ei-bi-alt">+1 more</span></div>
+      <div class="ei-devcell first">LogitechG940Pedals</div><div class="ei-devcell"><span class="ei-bi-id">046D&nbsp;&nbsp;C2AA</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">LogitechG940Joystick</div><div class="ei-devcell"><span class="ei-bi-id">046D&nbsp;&nbsp;C2A8</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">LogitechG940Throttle</div><div class="ei-devcell"><span class="ei-bi-id">046D&nbsp;&nbsp;C2A9</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">ThrustMasterWarthogJoystick</div><div class="ei-devcell"><span class="ei-bi-id">044F&nbsp;&nbsp;0402</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">ThrustMasterWarthogThrottle</div><div class="ei-devcell"><span class="ei-bi-id">044F&nbsp;&nbsp;0404</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">ThrustMasterWarthogCombined</div><div class="ei-devcell"><span class="ei-bi-id">044F&nbsp;&nbsp;FFFF</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">SaitekFLY5</div><div class="ei-devcell"><span class="ei-bi-id">0738&nbsp;&nbsp;1302</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">ThrustMasterTFlightHOTASX</div><div class="ei-devcell"><span class="ei-bi-id">044F&nbsp;&nbsp;B108</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">ThrustMasterHOTAS4</div><div class="ei-devcell"><span class="ei-bi-id">044F&nbsp;&nbsp;B67C</span></div><div class="ei-devcell"><span class="ei-bi-alt">+1 more</span></div>
+      <div class="ei-devcell first">TFlightHotasOne</div><div class="ei-devcell"><span class="ei-bi-id">044F&nbsp;&nbsp;B68D</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">T16000M</div><div class="ei-devcell"><span class="ei-bi-id">044F&nbsp;&nbsp;B10A</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">T16000MTHROTTLE</div><div class="ei-devcell"><span class="ei-bi-id">044F&nbsp;&nbsp;B687</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">T-Rudder</div><div class="ei-devcell"><span class="ei-bi-id">044F&nbsp;&nbsp;B679</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">TMwTARGET</div><div class="ei-devcell"><span class="ei-bi-id">044F&nbsp;&nbsp;FFFF</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">LogitechExtreme3DPro</div><div class="ei-devcell"><span class="ei-bi-id">046D&nbsp;&nbsp;C215</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">GioteckPS3WiredController</div><div class="ei-devcell"><span class="ei-bi-id">25F0&nbsp;&nbsp;C121</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">SaitekX45</div><div class="ei-devcell"><span class="ei-bi-id">06A3&nbsp;&nbsp;053C</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">EDTracker</div><div class="ei-devcell"><span class="ei-bi-id">2341&nbsp;&nbsp;8037</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">Logitech710WirelessGamepad</div><div class="ei-devcell"><span class="ei-bi-id">046D&nbsp;&nbsp;C219</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">LogitechWingManStrikeForce3D</div><div class="ei-devcell"><span class="ei-bi-id">046D&nbsp;&nbsp;C285</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">SaitekP2600RumbleForce</div><div class="ei-devcell"><span class="ei-bi-id">06A3&nbsp;&nbsp;5F0D</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">SaitekP2500RumbleForce</div><div class="ei-devcell"><span class="ei-bi-id">06A3&nbsp;&nbsp;FF0C</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">SaitekCyborgEvoWireless</div><div class="ei-devcell"><span class="ei-bi-id">06A3&nbsp;&nbsp;353E</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">SaitekProFlightCombatRudderPedals</div><div class="ei-devcell"><span class="ei-bi-id">06A3&nbsp;&nbsp;0764</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">SaitekProFlightRudderPedals</div><div class="ei-devcell"><span class="ei-bi-id">06A3&nbsp;&nbsp;0763</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">vJoy</div><div class="ei-devcell"><span class="ei-bi-id">1234&nbsp;&nbsp;BEAD</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">CHProThrottle1</div><div class="ei-devcell"><span class="ei-bi-id">068E&nbsp;&nbsp;00F1</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">CHProThrottle2</div><div class="ei-devcell"><span class="ei-bi-id">068E&nbsp;&nbsp;C0F1</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">CHFighterStick</div><div class="ei-devcell"><span class="ei-bi-id">068E&nbsp;&nbsp;00F3</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">CHProPedals</div><div class="ei-devcell"><span class="ei-bi-id">068E&nbsp;&nbsp;C0F2</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">CHCombatStick</div><div class="ei-devcell"><span class="ei-bi-id">068E&nbsp;&nbsp;C0F4</span></div><div class="ei-devcell"><span class="ei-bi-alt">+1 more</span></div>
+      <div class="ei-devcell first">TrustPredator</div><div class="ei-devcell"><span class="ei-bi-id">0E8F&nbsp;&nbsp;0003</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">Playstation3Controller</div><div class="ei-devcell"><span class="ei-bi-id">054C&nbsp;&nbsp;0268</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">SaitekST290Pro</div><div class="ei-devcell"><span class="ei-bi-id">06A3&nbsp;&nbsp;0460</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">XterminatorDualControl</div><div class="ei-devcell"><span class="ei-bi-id">047D&nbsp;&nbsp;3001</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">SideWinderForceFeedback2</div><div class="ei-devcell"><span class="ei-bi-id">045E&nbsp;&nbsp;001B</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">ArduinoLeonardo</div><div class="ei-devcell"><span class="ei-bi-id">2341&nbsp;&nbsp;8036</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">SlawFlightControlRudder</div><div class="ei-devcell"><span class="ei-bi-id">04D8&nbsp;&nbsp;0011</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">OculusTouch</div><div class="ei-devcell"><span class="ei-bi-id">2833&nbsp;&nbsp;0211</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">DualShock4</div><div class="ei-devcell"><span class="ei-bi-id">054C&nbsp;&nbsp;0BA0</span></div><div class="ei-devcell"><span class="ei-bi-alt">+2 more</span></div>
+      <div class="ei-devcell first">VPCPanel</div><div class="ei-devcell"><span class="ei-bi-id">3344&nbsp;&nbsp;0259</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+      <div class="ei-devcell first">VPCThrottle</div><div class="ei-devcell"><span class="ei-bi-id">3344&nbsp;&nbsp;0197</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
+        </div>
+      </div>
+      <div class="ei-note" style="margin-top:12px">Frontier ships these with the game and BindForge never writes them &mdash; the whole list is read-only. An entry can cover several hardware IDs: <b>GamePad</b> alone carries 80, which is why one row here may match more than one controller you own. Seeded from a real stock <span class="ei-bi-id">DeviceMappings.xml</span> (see <span class="ei-bi-id">reference-data/</span>), so devices you added yourself are deliberately absent &mdash; those live under My Devices.</div>
+    </div>
+    </div>
+  </div>
+
+  <div id="toptab-bindeditor" style="display:none">
+    <div class="ei-section">
+      <div class="ei-section-head">BINDINGS FILE</div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <select class="ei-select" id="be-file-select" style="flex:1">
+          <option>DualVirpilDawnTreader.4.2.binds</option>
+          <option>GeneralControls.binds</option>
+          <option>ShipControls.binds</option>
+          <option>SRVControls.binds</option>
+          <option>OnFootControls.binds</option>
+        </select>
+        <button class="ei-btn primary" onclick="beLoad()">LOAD</button>
+      </div>
+      <div class="ei-note" id="be-loaded-note">Loaded: DualVirpilDawnTreader.4.2.binds</div>
+    </div>
+
+    <div class="ge-searchbar">
+      <input type="text" placeholder="Search bindings..." id="ge-search" oninput="geSearch()">
+      <label class="ge-conflictsonly"><input type="checkbox" id="ge-conflicts-only" onchange="geToggleConflictsOnly()"> Show Anomalies Only</label>
+    </div>
+    <div class="ei-note" style="margin-top:-8px;margin-bottom:14px">Filters the list below in whichever mode tab is active. Show Anomalies Only is shared shell state too, but what it filters to is mode-specific: rows in Game Mode, whole groups (any group with a conflict against a <em>different</em> group) in Action Groups. Controller Mode is picture-based, not a list &mdash; how (or whether) search applies there is still open.</div>
+
+    <div class="ei-subbar">
+      <div class="ei-subtab active" id="tab-mode-game" onclick="beShowMode('game')">GAME MODE</div>
+      <div class="ei-subtab" id="tab-mode-purpose" onclick="beShowMode('purpose')">ACTION GROUPS</div>
+      <div class="ei-subtab" id="tab-mode-type" onclick="beShowMode('type')">CONTROL TYPES</div>
+      <div class="ei-subtab" id="tab-mode-controller" onclick="beShowMode('controller')">CONTROLLER MODE</div>
+      <div class="ei-subtab" id="tab-mode-input" onclick="beShowMode('input')">INPUT MODE</div>
+      <div class="ei-subtab" id="tab-mode-anomaly" onclick="beShowMode('anomaly')">ANOMALIES &nbsp;(8)</div>
+    </div>
+
+    <div id="mode-game">
+      <div class="ge-contextbar">
+        <div class="ge-contextbtn active" id="ctx-all" onclick="geShowContext('all')">ALL CONTROLS</div>
+        <div class="ge-contextbtn" id="ctx-general" onclick="geShowContext('general')">GENERAL CONTROLS</div>
+        <div class="ge-contextbtn" id="ctx-ship" onclick="geShowContext('ship')">SHIP CONTROLS</div>
+        <div class="ge-contextbtn" id="ctx-srv" onclick="geShowContext('srv')">SRV CONTROLS</div>
+        <div class="ge-contextbtn" id="ctx-onfoot" onclick="geShowContext('onfoot')">ON FOOT CONTROLS</div>
+      </div>
+
+      <div class="ei-note" style="margin-bottom:10px">Hover a row to reveal Capture buttons per slot (colored by state: light blue = empty, green = bound, red = conflicting). Clicking one pins the row and opens an inline capture prompt in place of the list &mdash; no popup window. Press a key for real; Esc cancels. Try capturing over <code>C</code>, <code>A</code>, or <code>D</code> to see the conflict-confirm step.</div>
+      <div class="ge-layout">
+        <div class="ge-gridcol" id="ge-grid">
+          <div class="ge-group" data-context="general">
+            <div class="ge-grouphead" onclick="geToggleGroup(this)" oncontextmenu="return geShowCtxMenu(event)">
+              <span class="ge-chevron">&#9660;</span>
+              <span class="ge-grouplabel">GENERAL CONTROLS &mdash; FREE CAMERA</span>
+              <span class="ge-groupcount">13</span>
+            </div>
+            <div class="ei-note" style="margin:8px 12px">Row names and XML elements below are verified against <code>BindForge_Binding_Zone_Map.md</code>'s "Free Camera" subgroup &mdash; not invented. Axis rows (bottom three) have no Modifier control: axis bindings cannot take a modifier in Elite Dangerous.</div>
+            <div class="ge-grouprows">
+              <div class="ge-bindrow" onclick="geSelectRow(this,'Toggle HUD')"><span class="ge-bindname">Toggle HUD</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
+              <div class="ge-bindrow" onclick="geSelectRow(this,'Move Forward')"><span class="ge-bindname">Move Forward</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
+              <div class="ge-bindrow" onclick="geSelectRow(this,'Move Backward')"><span class="ge-bindname">Move Backward</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
+              <div class="ge-bindrow" onclick="geSelectRow(this,'Move Left')"><span class="ge-bindname">Move Left</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
+              <div class="ge-bindrow" onclick="geSelectRow(this,'Move Right')"><span class="ge-bindname">Move Right</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
+              <div class="ge-bindrow conflict-row" onclick="geSelectRow(this,'Move Up')"><span class="ge-bindname">Move Up</span><span class="ge-bindval" data-conflict="true"><span class="ge-badge">F</span></span><span class="ge-bindval"><span class="ge-badge">JOY 7</span></span><div class="ge-conflict-popup"><b>Shares [F] with:</b><br>&bull; Move Down (Secondary)<span class="ge-conflict-hint">See the CONFLICTS tab for details.</span></div></div>
+              <div class="ge-bindrow conflict-row" onclick="geSelectRow(this,'Move Down')"><span class="ge-bindname">Move Down</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval" data-conflict="true"><span class="ge-badge">F</span></span><div class="ge-conflict-popup"><b>Shares [F] with:</b><br>&bull; Move Up (Primary)<span class="ge-conflict-hint">See the CONFLICTS tab for details.</span></div></div>
+              <div class="ge-bindrow" onclick="geSelectRow(this,'Pitch Up')"><span class="ge-bindname">Pitch Up</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
+              <div class="ge-bindrow" onclick="geSelectRow(this,'Pitch Down')"><span class="ge-bindname">Pitch Down</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
+              <div class="ge-bindrow" onclick="geSelectRow(this,'Exit Free Camera')"><span class="ge-bindname">Exit Free Camera</span><span class="ge-bindval" data-conflict="true"><span class="ge-badge">C</span></span><span class="ge-bindval">&mdash;</span></div>
+              <div class="ge-bindrow ge-axisrow" onclick="geSelectRow(this,'Lateral Axis')">
+                <span class="ge-bindname">Lateral Axis</span>
+                <span class="ge-bindval"><span class="ge-valtext"><span class="ge-badge">JOY X-AXIS</span></span><button class="ge-capbtn state-bound" onclick="event.stopPropagation();geCapture(this,this.previousElementSibling,'Lateral Axis','Axis')">CAPTURE</button></span>
+                <button class="ge-attr-toggle" onclick="event.stopPropagation();this.textContent=this.textContent==='NORMAL'?'INVERTED':'NORMAL'">NORMAL</button>
+                <span class="ge-deadzone"><span class="ge-deadzone-label">DZ</span><span class="ge-deadzone-track" onclick="event.stopPropagation();geSetDeadzone(event,this)"><span class="ge-deadzone-fill" style="width:8%"></span></span><span class="ge-deadzone-pct">8%</span></span>
+              </div>
+              <div class="ge-bindrow ge-axisrow" onclick="geSelectRow(this,'Lift Axis')">
+                <span class="ge-bindname">Lift Axis</span>
+                <span class="ge-bindval"><span class="ge-valtext"><span class="ge-badge">JOY Z-AXIS</span></span><button class="ge-capbtn state-bound" onclick="event.stopPropagation();geCapture(this,this.previousElementSibling,'Lift Axis','Axis')">CAPTURE</button></span>
+                <button class="ge-attr-toggle" onclick="event.stopPropagation();this.textContent=this.textContent==='NORMAL'?'INVERTED':'NORMAL'">NORMAL</button>
+                <span class="ge-deadzone"><span class="ge-deadzone-label">DZ</span><span class="ge-deadzone-track" onclick="event.stopPropagation();geSetDeadzone(event,this)"><span class="ge-deadzone-fill" style="width:5%"></span></span><span class="ge-deadzone-pct">5%</span></span>
+              </div>
+              <div class="ge-bindrow ge-axisrow" onclick="geSelectRow(this,'Pitch Axis')">
+                <span class="ge-bindname">Pitch Axis</span>
+                <span class="ge-bindval"><span class="ge-valtext">&mdash;</span><button class="ge-capbtn state-empty" onclick="event.stopPropagation();geCapture(this,this.previousElementSibling,'Pitch Axis','Axis')">CAPTURE</button></span>
+                <button class="ge-attr-toggle" onclick="event.stopPropagation();this.textContent=this.textContent==='NORMAL'?'INVERTED':'NORMAL'">NORMAL</button>
+                <span class="ge-deadzone"><span class="ge-deadzone-label">DZ</span><span class="ge-deadzone-track" onclick="event.stopPropagation();geSetDeadzone(event,this)"><span class="ge-deadzone-fill" style="width:0%"></span></span><span class="ge-deadzone-pct">0%</span></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ge-group" data-context="ship">
+            <div class="ge-grouphead" onclick="geToggleGroup(this)" oncontextmenu="return geShowCtxMenu(event)">
+              <span class="ge-chevron">&#9654;</span>
+              <span class="ge-grouplabel">SHIP CONTROLS &mdash; FLIGHT ROTATION</span>
+              <span class="ge-groupcount">6</span>
+            </div>
+            <div class="ge-grouprows" style="display:none">
+              <div class="ge-bindrow ge-axisrow" onclick="geSelectRow(this,'Yaw Axis')">
+                <span class="ge-bindname">Yaw Axis</span>
+                <span class="ge-bindval"><span class="ge-valtext"><span class="ge-badge">JOY X-AXIS</span></span><button class="ge-capbtn state-bound" onclick="event.stopPropagation();geCapture(this,this.previousElementSibling,'Yaw Axis','Axis')">CAPTURE</button></span>
+                <button class="ge-attr-toggle" onclick="event.stopPropagation();this.textContent=this.textContent==='NORMAL'?'INVERTED':'NORMAL'">NORMAL</button>
+                <span class="ge-deadzone"><span class="ge-deadzone-label">DZ</span><span class="ge-deadzone-track" onclick="event.stopPropagation();geSetDeadzone(event,this)"><span class="ge-deadzone-fill" style="width:8%"></span></span><span class="ge-deadzone-pct">8%</span></span>
+              </div>
+              <div class="ge-bindrow" onclick="geSelectRow(this,'Yaw Left')"><span class="ge-bindname">Yaw Left</span><span class="ge-bindval"><span class="ge-badge">A</span></span><span class="ge-bindval">&mdash;</span></div>
+              <div class="ge-bindrow" onclick="geSelectRow(this,'Yaw Right')"><span class="ge-bindname">Yaw Right</span><span class="ge-bindval"><span class="ge-badge">D</span></span><span class="ge-bindval">&mdash;</span></div>
+              <div class="ge-bindrow ge-axisrow" onclick="geSelectRow(this,'Roll Axis')">
+                <span class="ge-bindname">Roll Axis</span>
+                <span class="ge-bindval"><span class="ge-valtext"><span class="ge-badge">JOY RX-AXIS</span></span><button class="ge-capbtn state-bound" onclick="event.stopPropagation();geCapture(this,this.previousElementSibling,'Roll Axis','Axis')">CAPTURE</button></span>
+                <button class="ge-attr-toggle" onclick="event.stopPropagation();this.textContent=this.textContent==='NORMAL'?'INVERTED':'NORMAL'">NORMAL</button>
+                <span class="ge-deadzone"><span class="ge-deadzone-label">DZ</span><span class="ge-deadzone-track" onclick="event.stopPropagation();geSetDeadzone(event,this)"><span class="ge-deadzone-fill" style="width:5%"></span></span><span class="ge-deadzone-pct">5%</span></span>
+              </div>
+              <div class="ge-bindrow" onclick="geSelectRow(this,'Roll Left')"><span class="ge-bindname">Roll Left</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
+              <div class="ge-bindrow" onclick="geSelectRow(this,'Roll Right')"><span class="ge-bindname">Roll Right</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
+            </div>
+          </div>
+
+          <div id="ge-capture-overlay" style="display:none">
+            <div class="ge-pinned-row" id="ge-pinned-row"></div>
+            <div class="ge-capture-wrap">
+              <div class="ge-capture-box" id="ge-capture-box"></div>
+              <div class="ge-kbd" id="ge-capture-keyboard"></div>
+              <div class="ge-kbd-hint">Click a key, or press it for real. Hold Ctrl/Shift/Alt to preview availability for that combo &mdash; not yet simulated in this mockup.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="mode-purpose" style="display:none">
+      <div class="ei-note" style="margin-bottom:12px">Action Groups (named "Purpose Mode" in earlier design docs) &mdash; group bindings across sections by what the player is trying to do (e.g. "Move Left" spanning Ship/SRV/On Foot), then optionally assign one control to the whole group at once. In scope for v1 &mdash; see Bind Editor &sect; Action Groups.</div>
+
+      <div class="pm-layout">
+        <div class="pm-col pm-source">
+          <div class="pm-colhead">ALL BINDINGS</div>
+          <div class="pm-list">
+            <div class="ge-group">
+              <div class="ge-grouphead" onclick="geToggleGroup(this)">
+                <span class="ge-chevron">&#9660;</span>
+                <span class="ge-grouplabel">SHIP &mdash; FLIGHT THRUST</span>
+              </div>
+              <div class="ge-grouprows">
+                <div class="pm-item" onclick="pmSelectSource(this)">Thrust Left</div>
+                <div class="pm-item" onclick="pmSelectSource(this)">Thrust Right</div>
+                <div class="pm-item" onclick="pmSelectSource(this)">Thrust Forward</div>
+              </div>
+            </div>
+            <div class="ge-group">
+              <div class="ge-grouphead" onclick="geToggleGroup(this)">
+                <span class="ge-chevron">&#9660;</span>
+                <span class="ge-grouplabel">SRV &mdash; DRIVING</span>
+              </div>
+              <div class="ge-grouprows">
+                <div class="pm-item" onclick="pmSelectSource(this)">Steering Left Button</div>
+                <div class="pm-item" onclick="pmSelectSource(this)">Steering Right Button</div>
+              </div>
+            </div>
+            <div class="ge-group">
+              <div class="ge-grouphead" onclick="geToggleGroup(this)">
+                <span class="ge-chevron">&#9660;</span>
+                <span class="ge-grouplabel">ON FOOT &mdash; MOVEMENT</span>
+              </div>
+              <div class="ge-grouprows">
+                <div class="pm-item" onclick="pmSelectSource(this)">Strafe Left</div>
+                <div class="pm-item" onclick="pmSelectSource(this)">Strafe Right</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pm-arrows">
+          <button class="ei-btn pm-iconbtn" onclick="pmAdd()" title="Add to group">&raquo;</button>
+          <button class="ei-btn pm-iconbtn" onclick="pmRemove()" title="Remove from group">&laquo;</button>
+        </div>
+
+        <div class="pm-col pm-target">
+          <div class="pm-colhead">ACTION GROUPS</div>
+          <div class="pm-list">
+            <div class="ge-group" data-conflict="true">
+              <div class="ge-grouphead" onclick="geToggleGroup(this)">
+                <span class="ge-chevron">&#9660;</span>
+                <span class="ge-grouplabel">Move Left</span>
+              </div>
+              <div class="ge-grouprows">
+                <div class="pm-item" onclick="pmSelectTarget(this)">Ship - Thrust Left</div>
+                <div class="pm-item" onclick="pmSelectTarget(this)">SRV - Steering Left Button <span class="ge-badge" style="margin-left:6px" title="Shares a key with Cycle Fire Group">F</span></div>
+              </div>
+            </div>
+            <div class="ge-group" data-conflict="true">
+              <div class="ge-grouphead" onclick="geToggleGroup(this)">
+                <span class="ge-chevron">&#9660;</span>
+                <span class="ge-grouplabel">Cycle Fire Group</span>
+              </div>
+              <div class="ge-grouprows">
+                <div class="pm-item" onclick="pmSelectTarget(this)">Ship - Cycle Next Fire Group <span class="ge-badge" style="margin-left:6px" title="Shares a key with Move Left">F</span></div>
+              </div>
+            </div>
+            <div class="ge-group">
+              <div class="ge-grouphead" onclick="geToggleGroup(this)">
+                <span class="ge-chevron">&#9660;</span>
+                <span class="ge-grouplabel">Move Right</span>
+              </div>
+              <div class="ge-grouprows">
+                <div class="pm-item" onclick="pmSelectTarget(this)">Ship - Thrust Right</div>
+                <div class="pm-item" onclick="pmSelectTarget(this)">SRV - Steering Right Button</div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:8px"><button class="ei-btn" style="width:100%" onclick="pmNewGroup()">+ NEW GROUP</button></div>
+        </div>
+
+        <div class="pm-col pm-assigncol">
+          <div class="pm-colhead">ASSIGN CONTROL &mdash; MOVE LEFT</div>
+          <div class="pm-slotbox">
+            <div class="pm-slotlabel">Primary</div>
+            <div class="pm-slotvalue">&mdash;</div>
+            <div class="pm-slotactions">
+              <button class="ei-btn">CAPTURE</button>
+              <button class="ei-btn">CLEAR</button>
+            </div>
+          </div>
+          <div class="pm-slotbox">
+            <div class="pm-slotlabel">Secondary</div>
+            <div class="pm-slotvalue">&mdash;</div>
+            <div class="pm-slotactions">
+              <button class="ei-btn">CAPTURE</button>
+              <button class="ei-btn">CLEAR</button>
+            </div>
+          </div>
+          <div class="ei-note" style="padding:0 12px 12px 12px;margin-top:0">Applies to every binding currently in the group, all at once.</div>
+        </div>
+      </div>
+
+      <div class="ei-note">Resolved by direct testing: the game silently strips every XML comment from the .binds file on load/rewrite (a well-behaved normalize, not a lossy one &mdash; actual binding values survive intact). Group-membership metadata cannot live in .binds comments and must live in BindForge's own data store instead.</div>
+    </div>
+    <div id="mode-type" style="display:none">
+      <div class="ei-placeholder">Control Types (named "Type Mode" in earlier design docs) &mdash; primary intended grouping is axis vs. button, matching the three-kind binding schema (button-type / axis-type / standalone-setting-type); a finer breakdown by input type (keyboard, joystick axis, joystick button, POV/hat) was also considered. Confirmed out of v1 scope, parked &mdash; see Bind Editor &sect; Control Types.</div>
+    </div>
+    <div id="mode-controller" style="display:none">
+      <div class="ei-note" style="margin-bottom:10px">Controller Mode &mdash; back-burner concept. Each numbered field would be a searchable dropdown to assign a bind slot to that physical button/axis. Licensing and per-device diagram sourcing both unresolved &mdash; see BindForge_Spec.md roadmap.</div>
+      <img src="VirpilAlphaPrimeRight.png" alt="Virpil Alpha Prime grip with numbered bind-slot callouts, reference concept for Controller Mode" style="max-width:100%;height:auto;border-radius:4px;background:#fff">
+    </div>
+    <div id="mode-input" style="display:none">
+      <div class="ei-note" style="margin-bottom:12px">Input Mode &mdash; press or select a physical control and see every binding, across all sections, that uses it. Real capture will use the same device-polling layer already built for the Alias Designer. This mockup simulates detection since there's no live hardware here. Clicking a row is meant to open the same capture dialog used everywhere else in BindForge, in place &mdash; not built in this mockup, since the real version is a floating dialog matching the base game's own rebind popup rather than something this inline mockup approximates well.</div>
+      <div class="im-layout">
+        <div class="im-detectcol">
+          <div class="im-detect-label">Input Detected</div>
+          <div class="im-detect-value empty" id="im-detect-value">Waiting for input&hellip;</div>
+          <button class="ei-btn primary" style="width:100%" onclick="imSimulate()">SIMULATE INPUT</button>
+          <div class="ei-note" style="margin-top:14px">Live capture: press a button or move an axis on the input device. The control lights up here.</div>
+        </div>
+        <div class="im-listcol" id="im-list">
+          <div class="ei-placeholder">No input detected yet</div>
+        </div>
+      </div>
+    </div>
+    <div id="mode-anomaly" style="display:none">
+      <div class="ei-note" style="margin-bottom:12px">Anomalies &mdash; bindings that will not do what you expect when you press them. Four kinds, from four different causes, gathered here because the commander's question is the same in every case: <i>why didn't that work?</i> <b>ALL</b> is ordered by certainty of failure, not by kind, so whatever is most likely to actually be broken sits at the top.</div>
+      <div class="ei-subsubbar">
+        <div class="ei-subsubtab active" id="an-tab-all" onclick="anShow('all')">ALL &nbsp;(8)</div>
+        <div class="ei-subsubtab" id="an-tab-reserved" onclick="anShow('reserved')">RESERVED &nbsp;(1)</div>
+        <div class="ei-subsubtab" id="an-tab-missing" onclick="anShow('missing')">MISSING &nbsp;(1)</div>
+        <div class="ei-subsubtab" id="an-tab-conflicts" onclick="anShow('conflicts')">CONFLICTS &nbsp;(4)</div>
+        <div class="ei-subsubtab" id="an-tab-invalid" onclick="anShow('invalid')">INVALID &nbsp;(2)</div>
+      </div>
+      <div class="ei-note" id="an-kindnote" style="margin-bottom:12px"></div>
+      <div class="ge-layout">
+        <div class="ge-gridcol" id="an-rows"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toptab-preset" style="display:none">
+    <div class="ei-section">
+      <div class="ei-section-head">ACTIVE PRESET CONFIGURATION</div>
+      <div class="ei-note" style="margin-bottom:14px">The game reads four binding sections independently. Point each at a .binds file, or set them all to the same one.</div>
+
+      <div class="ei-presetrow">
+        <span>General Controls</span>
+        <select class="ei-select preset-line" onchange="presetChanged()">
+          <option>DualVirpilDawnTreader.4.2.binds</option>
+          <option>GeneralControls.binds</option>
+          <option>ShipControls.binds</option>
+          <option>SRVControls.binds</option>
+          <option>OnFootControls.binds</option>
+        </select>
+      </div>
+      <div class="ei-presetrow">
+        <span>Ship Controls</span>
+        <select class="ei-select preset-line" onchange="presetChanged()">
+          <option>DualVirpilDawnTreader.4.2.binds</option>
+          <option>GeneralControls.binds</option>
+          <option>ShipControls.binds</option>
+          <option>SRVControls.binds</option>
+          <option>OnFootControls.binds</option>
+        </select>
+      </div>
+      <div class="ei-presetrow">
+        <span>SRV Controls</span>
+        <select class="ei-select preset-line" onchange="presetChanged()">
+          <option>DualVirpilDawnTreader.4.2.binds</option>
+          <option>GeneralControls.binds</option>
+          <option>ShipControls.binds</option>
+          <option>SRVControls.binds</option>
+          <option>OnFootControls.binds</option>
+        </select>
+      </div>
+      <div class="ei-presetrow">
+        <span>On Foot Controls</span>
+        <select class="ei-select preset-line" onchange="presetChanged()">
+          <option>DualVirpilDawnTreader.4.2.binds</option>
+          <option>GeneralControls.binds</option>
+          <option>ShipControls.binds</option>
+          <option>SRVControls.binds</option>
+          <option>OnFootControls.binds</option>
+        </select>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;margin-top:16px">
+        <select class="ei-select" id="setall-select">
+          <option>DualVirpilDawnTreader.4.2.binds</option>
+          <option>GeneralControls.binds</option>
+          <option>ShipControls.binds</option>
+          <option>SRVControls.binds</option>
+          <option>OnFootControls.binds</option>
+        </select>
+        <button class="ei-btn" onclick="setAllSame()">SET ALL TO SAME</button>
+      </div>
+
+      <div class="ei-warningbanner" id="preset-warning">&#9888; You have assigned different .binds files to different sections. This is supported by the game but is an advanced configuration. Make sure each file contains the bindings for its assigned section.</div>
+
+      <div class="ei-bottombar">
+        <span class="ei-syncbadge insync" id="preset-syncbadge">&#9679; IN SYNC</span>
+        <div class="ei-commitactions">
+          <button class="ei-btn" onclick="presetRevert()">REVERT</button>
+          <button class="ei-btn primary" onclick="presetSave()">SAVE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toptab-filemanager" style="display:none">
+    <div class="ei-subbar">
+      <div class="ei-subtab active" id="tab-fm-installs" onclick="eiShowFM('installs')">GAME INSTALL LOCATIONS</div>
+      <div class="ei-subtab" id="tab-fm-backups" onclick="eiShowFM('backups')">PLAYER BACKUPS</div>
+      <div class="ei-subtab" id="tab-fm-history" onclick="eiShowFM('history')">EDIT HISTORY</div>
+    </div>
+
+    <div id="view-fm-installs">
+      <div class="ei-section">
+        <div class="ei-fm-toprow">
+          <div>
+            <div class="ei-section-head" style="border-bottom:none;padding-bottom:0">GAME INSTALL LOCATIONS</div>
+            <div class="ei-note" style="margin-top:4px">Where BindForge looks for the files it manages. Detected automatically on first run &mdash; correct anything it got wrong here. Backup, Restore and Apply all work from this list.</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;margin-left:20px">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8FA0AD;white-space:nowrap">
+              <input type="checkbox" checked style="accent-color:#FF7100">Re-check locations on app launch
+            </label>
+          </div>
+        </div>
+
+        <div class="ei-scope-label">User configuration folder &mdash; one, shared by every installation</div>
+        <div class="ei-gi-cfgrow">
+          <div class="ei-instline">
+            <input class="ei-instpath" readonly
+                   value="C:\Users\DawnTreader\AppData\Local\Frontier Developments\Elite Dangerous\Options\Bindings\"
+                   title="C:\Users\DawnTreader\AppData\Local\Frontier Developments\Elite Dangerous\Options\Bindings\">
+            <span class="ei-fullbadge" style="flex:none">FOUND</span>
+          </div>
+          <div class="ei-gi-holds">Holds 3 <span class="ei-gi-file">.binds</span> files and
+            <span class="ei-gi-file">StartPreset.4.start</span></div>
+        </div>
+        <div class="ei-note" style="margin-top:8px;margin-bottom:20px">Your bindings and active preset live here <em>once</em>, no matter how many storefronts you own. This is the folder that decides what your controls actually do &mdash; everything below it is cosmetic by comparison.</div>
+
+        <div class="ei-scope-label">Game installations &mdash; one per storefront, each with its own device files</div>
+        <table class="ei-fm-table ei-gi-table">
+          <thead><tr><th style="width:110px">Storefront</th><th style="width:40%">Location</th><th>Device files</th><th style="width:90px">Status</th><th style="width:150px"></th></tr></thead>
+          <tbody id="gi-rows"></tbody>
+        </table>
+        <div class="ei-note" style="margin-top:8px">
+          <span class="ei-gi-file">DeviceMappings.xml</span> and the <span class="ei-gi-file">.buttonMap</span> files are duplicated per installation and may legitimately differ &mdash; BindForge keeps one record per device <em>per installation</em> rather than deciding which one wins. A backup records which installation each of these files came from, so a restore can put it back where it belongs.
+        </div>
+
+        <div class="ei-fm-bottombar">
+          <button class="ei-btn" onclick="alert('Opens a folder chooser. BindForge validates that the folder contains an Elite Dangerous executable and a DeviceMappings.xml before accepting it.')">ADD INSTALLATION&hellip;</button>
+          <div class="ei-commitactions">
+            <button class="ei-btn" onclick="alert('Re-runs storefront detection. Existing rows keep their device records; a row whose path has disappeared is marked MISSING rather than deleted.')">RESCAN</button>
+          </div>
+        </div>
+
+        <div class="ei-note ei-gi-stub">
+          <strong>Not modelled yet.</strong> A row whose folder no longer exists shows <span class="ei-partialbadge">MISSING</span> and offers <em>Relocate</em> rather than <em>Remove</em>, so its device records survive the move &mdash; a game reinstalled to a new drive is the common case, and deleting the row would throw away work. Removing an installation that still exists on disk, and what that does to the records held against it, is also undesigned. See <span class="ei-gi-file">file-manager.md</span>.
+        </div>
+      </div>
+    </div>
+
+    <div id="view-fm-backups" style="display:none">
+      <div class="ei-section">
+        <div class="ei-fm-toprow">
+          <div>
+            <div class="ei-section-head" style="border-bottom:none;padding-bottom:0">PLAYER BACKUPS</div>
+            <div class="ei-note" style="margin-top:4px">Complete backups of your controller configuration &mdash; .binds file, DeviceMappings.xml, all .buttonMap files, and your active preset.</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;margin-left:20px">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8FA0AD;white-space:nowrap">
+              <input type="checkbox" style="accent-color:#FF7100">Auto-backup on app launch
+            </label>
+            <label class="ei-retention">Keep backups for <input type="number" min="1" value="30"> days</label>
+          </div>
+        </div>
+
+        <div class="ei-scope-label">Backup Now will include</div>
+        <div class="ei-scope-row">
+          <label><input type="checkbox" id="scope-all" checked onchange="scopeAllToggled()" style="accent-color:#FF7100">Everything</label>
+          <label><input type="checkbox" id="scope-binds" checked disabled style="accent-color:#FF7100">.binds</label>
+          <label><input type="checkbox" id="scope-start" checked disabled style="accent-color:#FF7100">StartPreset.#.start</label>
+          <label><input type="checkbox" id="scope-devicemappings" checked disabled style="accent-color:#FF7100">DeviceMappings.xml</label>
+          <label><input type="checkbox" id="scope-buttonmaps" checked disabled style="accent-color:#FF7100">.buttonMap files</label>
+        </div>
+
+        <table class="ei-fm-table">
+          <thead><tr><th>Created</th><th>Files</th><th>Status</th></tr></thead>
+          <tbody id="fm-rows">
+            <tr onclick="fmSelect(this)">
+              <td class="created">2026-07-02_00-24-08</td>
+              <td class="files">DualVirpilDawnTreader.4.2.binds, KeyboardFallback.4.2.binds, OnFootAlt.4.2.binds, StartPreset.4.start, DeviceMappings.xml, RHVCAP.buttonMap, Throttle.buttonMap</td>
+              <td><span class="ei-fullbadge">FULL</span></td>
+            </tr>
+            <tr onclick="fmSelect(this)">
+              <td class="created">2026-06-28_09-15-30</td>
+              <td class="files">DualVirpilDawnTreader.4.2.binds, StartPreset.4.start, DeviceMappings.xml</td>
+              <td><span class="ei-custombadge">CUSTOM</span></td>
+            </tr>
+            <tr onclick="fmSelect(this)">
+              <td class="created">2026-06-25_20-14-25</td>
+              <td class="files">DualVirpilDawnTreader.4.2.binds, StartPreset.4.start, DeviceMappings.xml, RHVCAP.buttonMap, Throttle.buttonMap</td>
+              <td><span class="ei-fullbadge">FULL</span></td>
+            </tr>
+            <tr onclick="fmSelect(this)">
+              <td class="created">2026-06-24_20-21-43</td>
+              <td class="files">DualVirpilDawnTreader.4.2.binds, StartPreset.4.start</td>
+              <td><span class="ei-partialbadge">PARTIAL</span></td>
+            </tr>
+            <tr onclick="fmSelect(this)">
+              <td class="created">2026-06-24_18-40-14</td>
+              <td class="files">DualVirpilDawnTreader.4.2.binds, StartPreset.4.start</td>
+              <td><span class="ei-partialbadge">PARTIAL</span></td>
+            </tr>
+            <tr onclick="fmSelect(this)">
+              <td class="created">2026-06-24_18-39-56</td>
+              <td class="files">DualVirpilDawnTreader.4.2.binds, StartPreset.4.start</td>
+              <td><span class="ei-partialbadge">PARTIAL</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="ei-rs" id="fm-restore-scope" style="display:none">
+          <label class="ei-rs-all"><input type="checkbox" id="rs-all" checked onchange="rsAllToggled()"
+                 style="accent-color:#FF7100">Restore everything in this backup</label>
+          <div id="fm-restore-scope-body"></div>
+        </div>
+
+        <div class="ei-fm-bottombar">
+          <button class="ei-btn" onclick="alert('Opens a file chooser filtered to .zip archives. Restores a backup that is not in this list - one copied off another machine, pulled out of a cloud folder, or sent by another commander. Same scope selection, same draft-only destination.\n\nYour own backup restores completely. Another commander\'s .binds restore too - a bindings layout is worth copying. But their DeviceMappings.xml and .buttonMap files describe THEIR hardware, so those are refused as not compatible rather than written into your device list.')">BROWSE FOR BACKUP FILE</button>
+          <div class="ei-commitactions">
+            <button class="ei-btn primary" id="fm-backup-now">BACKUP NOW</button>
+            <button class="ei-btn" id="fm-restore" disabled onclick="fmRestore()">RESTORE</button>
+          </div>
+        </div>
+        <div class="ei-note">Select a backup above to choose what to restore. <strong>Restore always writes into the draft</strong>, never straight to your game &mdash; look it over, edit it further if you like, then press Apply when you want it live. There is no separate restore-to-live: Apply is the only thing in BindForge that writes a game file.</div>
+      </div>
+    </div>
+
+    <div id="view-fm-history" style="display:none">
+      <div class="ei-section">
+        <div class="ei-fm-toprow">
+          <div>
+            <div class="ei-section-head" style="border-bottom:none;padding-bottom:0">EDIT HISTORY</div>
+            <div class="ei-note" style="margin-top:4px">A bounded, per-file undo system &mdash; distinct from Player Backups. Every write to a managed file moves the version it replaces here first. Count-based retention, not age-based.</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;margin-left:20px">
+            <label class="ei-retention">Keep last <input type="number" min="1" max="30" value="10"> versions per file</label>
+          </div>
+        </div>
+
+        <div class="ei-scope-label">File</div>
+        <div class="ei-subsubbar" style="margin-top:0;margin-bottom:14px">
+          <div class="ei-subsubtab active" onclick="fhShowFile(this,'binds')">DualVirpilDawnTreader.4.2.binds</div>
+          <div class="ei-subsubtab" onclick="fhShowFile(this,'devicemappings')">DeviceMappings.xml</div>
+          <div class="ei-subsubtab" onclick="fhShowFile(this,'start')">StartPreset.4.start</div>
+        </div>
+
+        <table class="ei-fm-table">
+          <thead><tr><th>Version</th><th>Timestamp</th><th></th></tr></thead>
+          <tbody id="fh-rows">
+            <tr onclick="fhSelect(this)"><td class="files">Current (live)</td><td class="created">2026-07-31_19-42-11</td><td></td></tr>
+            <tr onclick="fhSelect(this)"><td class="files">10 edits ago</td><td class="created">2026-07-31_18-05-40</td><td></td></tr>
+            <tr onclick="fhSelect(this)"><td class="files">9 edits ago</td><td class="created">2026-07-31_17-58-02</td><td></td></tr>
+            <tr onclick="fhSelect(this)"><td class="files">8 edits ago</td><td class="created">2026-07-30_22-14-19</td><td></td></tr>
+            <tr onclick="fhSelect(this)"><td class="files">7 edits ago</td><td class="created">2026-07-30_21-40-53</td><td></td></tr>
+          </tbody>
+        </table>
+        <div class="ei-note">Oldest entry beyond the retention count is dropped automatically as a new one is added. Restoring an entry backs up the current live version first, the same as any other write.</div>
+        <div class="ei-fm-bottombar">
+          <span></span>
+          <div class="ei-commitactions">
+            <button class="ei-btn" id="fh-restore" disabled onclick="alert('Restores the selected version over the live file, after the same confirmation dialog and Controlled Replace write used everywhere else in BindForge.')">RESTORE SELECTED VERSION</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function eiShowTopTab(v){
+  if(v==='alias') eiSelectDefaultDevice();
+  var tabs=['alias','bindeditor','preset','filemanager'];
+  tabs.forEach(function(t){
+    document.getElementById('toptab-'+t).style.display = (t===v) ? 'block' : 'none';
+    document.getElementById('toptab-'+t+'-btn').classList.toggle('active', t===v);
+  });
+}
+function eiShowDeviceList(v){
+  if(v==='my') eiSelectDefaultDevice();
+  document.getElementById('devicelist-my').style.display = v==='my' ? 'block' : 'none';
+  document.getElementById('devicelist-builtin').style.display = v==='builtin' ? 'block' : 'none';
+  document.getElementById('tab-mydevices').classList.toggle('active', v==='my');
+  document.getElementById('tab-builtin').classList.toggle('active', v==='builtin');
+}
+function eiShowIO(v){
+  document.getElementById('io-axis').style.display = v==='axis' ? 'grid' : 'none';
+  document.getElementById('io-buttons').style.display = v==='buttons' ? 'grid' : 'none';
+  document.getElementById('tab-axis').classList.toggle('active', v==='axis');
+  document.getElementById('tab-buttons').classList.toggle('active', v==='buttons');
+}
+
+/* ---------- Alias Designer: device selection ---------- */
+var eiDevices = {
+  rhvcap: {
+    winName:'VIRPIL Controls 20220720', vid:'3344', pid:'43F4', connected:true,
+    axisCount:6, buttonCount:32,
+    installs:{
+      steam:{added:true, mirror:true,  alias:'RHVCAP Direction', aliasConfirmed:true, buttonMap:true,
+             axes:['Roll','Pitch','Twist','','',''], buttons:{1:'RH_1stStageTrig', 2:'Thumb Button'}},
+      epic: {added:true, mirror:true,  alias:'RHVCAP Direction', aliasConfirmed:true, buttonMap:true,
+             axes:['Roll','Pitch','Twist','','',''], buttons:{1:'RH_1stStageTrig', 2:'Thumb Button'}}
+    }
+  },
+  trudder: {
+    winName:'Thrustmaster T-Rudder', vid:'044F', pid:'B679', connected:true,
+    axisCount:3, buttonCount:0,
+    installs:{
+      steam:{added:false, mirror:false, alias:'T-Rudder', aliasConfirmed:false, buttonMap:false,
+             axes:['','',''], buttons:{}},
+      epic: {added:false, mirror:false, alias:'T-Rudder', aliasConfirmed:false, buttonMap:false,
+             axes:['','',''], buttons:{}}
+    }
+  },
+  throttle: {
+    winName:'VPC Throttle MongoosT-50CM3', vid:'3344', pid:'83F3', connected:true,
+    axisCount:6, buttonCount:24,
+    installs:{
+      steam:{added:true,  mirror:false, alias:'Throttle', aliasConfirmed:true, buttonMap:false,
+             axes:['','','Throttle','','',''], buttons:{}},
+      // WHY: deliberately divergent from Steam - this is the case the per-installation tabs exist
+      // for, and the mockup has to show it actually differing rather than assert that it can.
+      epic: {added:true,  mirror:false, alias:'Throttle Quadrant', aliasConfirmed:true, buttonMap:true,
+             axes:['Thrust L/R','Thrust U/D','Main Throttle','','',''],
+             buttons:{1:'Flaps Toggle', 2:'Boost', 3:'Cargo Scoop'}}
+    }
+  },
+  // WHY: an entry can outlive the hardware - this one sits in Epic's DeviceMappings.xml from a
+  // controller that is no longer plugged in. It still has to be listed and clearable.
+  t16000: {
+    winName:'T.16000M', vid:'044F', pid:'B10A', connected:false,
+    axisCount:4, buttonCount:16,
+    installs:{
+      steam:{added:false, mirror:false, alias:'T16000M', aliasConfirmed:false, buttonMap:false,
+             axes:['','','',''], buttons:{}},
+      epic: {added:true,  mirror:false, alias:'T16000M', aliasConfirmed:true,  buttonMap:true,
+             axes:['X','Y','Twist','Throttle'], buttons:{1:'Trigger'}}
+    }
+  }
+};
+var eiDeviceOrder = ['rhvcap','trudder','throttle','t16000'];
+
+// only installations actually detected on this machine get a tab
+var EI_INSTALLS = [
+  {id:'steam', label:'STEAM', path:'E:\\SteamLibrary\\steamapps\\common\\Elite Dangerous\\'},
+  {id:'epic',  label:'EPIC',  path:'C:\\Program Files\\Epic\\EliteDangerous\\'}
+];
+var eiActiveInstall = 'steam';
+
+function eiInst(d){ return d.installs[eiActiveInstall]; }
+function eiAnyAdded(d){
+  return EI_INSTALLS.some(function(i){ return d.installs[i.id].added; });
+}
+function eiAnyButtonMap(d){
+  return EI_INSTALLS.some(function(i){ return d.installs[i.id].added && d.installs[i.id].buttonMap; });
+}
+// list alias: the first installation that actually has an entry wins
+function eiListAlias(d){
+  for(var k=0;k<EI_INSTALLS.length;k++){
+    var r = d.installs[EI_INSTALLS[k].id];
+    if(r.added) return r.alias;
+  }
+  return d.installs[EI_INSTALLS[0].id].alias;
+}
+
+var eiSelectedDevice = null;
+var eiPendingConfirm = false;   // confirmed this session but not yet saved
+
+function eiRenderDeviceRows(){
+  var grid = document.getElementById('mydevice-grid');
+  if(!grid) return;
+
+  var html = '<div class="hdr"></div><div class="hdr l">WINDOWS NAME</div>'
+           + '<div class="hdr l">VID&nbsp;&nbsp;PID</div><div class="hdr l">STATUS</div>'
+           + '<div class="hdr l">INSTALLATIONS</div>';
+
+  eiDeviceOrder.forEach(function(id){
+    var d = eiDevices[id];
+    if(!d) return;
+    var open = (id === eiSelectedDevice);
+    var sel  = open ? ' sel' : '';
+    var st   = d.connected ? '<span class="ei-attached">ATTACHED</span>'
+                           : '<span class="ei-missing">MISSING</span>';
+    var pick = ' data-pick="' + id + '"';
+
+    // one in-row tab per detected installation - per-install state lives here, so the row never
+    // has to average two installations into a single misleading cell
+    var rowTabs = '';
+    EI_INSTALLS.forEach(function(i){
+      var r = d.installs[i.id];
+      var on = open && (i.id === eiActiveInstall);
+      var cls = 'ei-rowtab' + (on ? ' active' : '') + (r.added ? '' : ' empty');
+      // the marker slot holds either the mirror flag or the not-added state, never an alias -
+      // an alias is per installation and belongs in the expansion, not averaged into the row
+      var mark = r.added ? (r.mirror ? '<span class="ei-rowtab-mir">M</span>' : '')
+                         : '<span class="ei-rowtab-alias dim">not added</span>';
+      rowTabs += '<button class="' + cls + '" data-rowtab="' + id + '|' + i.id + '">'
+               + i.label + mark + '</button>';
+    });
+
+    html += '<div class="ei-devcell first c' + sel + '"' + pick + '>'
+          + '<span class="ei-chev' + (open ? ' open' : '') + '">&#9654;</span></div>'
+          + '<div class="ei-devcell' + sel + '"' + pick + '>' + d.winName + '</div>'
+          + '<div class="ei-devcell' + sel + '"' + pick + ' style="color:#8FA0AD">'
+          + d.vid + '&nbsp;&nbsp;' + d.pid + '</div>'
+          + '<div class="ei-devcell' + sel + '"' + pick + '>' + st + '</div>'
+          + '<div class="ei-devcell rowtabs' + sel + '">' + rowTabs + '</div>';
+
+    if(open) html += '<div class="ei-devexpand" id="ei-expand-slot"></div>';
+  });
+
+  // WHY: one editor DOM block is moved into the open row rather than rebuilt per device - it keeps
+  // every field id unique and lets the editor code stay as it is.
+  var host = document.getElementById('alias-editor-host');
+  var park = document.getElementById('alias-editor-parking');
+  if(host && park) park.appendChild(host);
+
+  grid.innerHTML = html;
+
+  var slot = document.getElementById('ei-expand-slot');
+  if(slot && host) slot.appendChild(host);
+  eiBindGridEvents(grid);
+}
+
+function eiBindGridEvents(grid){
+  if(grid._eiBound) return;
+  grid._eiBound = true;
+  grid.addEventListener('click', function(e){
+    var rt = e.target.closest('[data-rowtab]');
+    if(rt){
+      var parts = rt.getAttribute('data-rowtab').split('|');
+      eiOpenDeviceInstall(parts[0], parts[1]);
+      return;
+    }
+    var pick = e.target.closest('[data-pick]');
+    if(pick) eiSelectDevice(pick.getAttribute('data-pick'));
+  });
+}
+
+// clicking an installation tab opens that device on that installation; clicking the one already
+// open closes the row, so the accordion still behaves like an accordion
+function eiOpenDeviceInstall(devId, instId){
+  if(eiSelectedDevice === devId && eiActiveInstall === instId){
+    eiSelectedDevice = null;
+  } else {
+    eiSelectedDevice = devId;
+    eiActiveInstall = instId;
+  }
+  eiPendingConfirm = false;
+  eiRenderDeviceRows();
+  eiRenderDeviceEditor();
+}
+
+function eiSelectDevice(id){
+  if(!eiDevices[id]) return;
+  eiSelectedDevice = (eiSelectedDevice === id) ? null : id;
+  eiPendingConfirm = false;
+  eiRenderDeviceRows();
+  eiRenderDeviceEditor();
+}
+
+function eiToggleActiveMirror(){
+  if(eiSelectedDevice) eiToggleMirror(eiActiveInstall, null);
+}
+
+// WHY: mirrored installations share one definition, so turning MIRROR on adopts whatever the other
+// mirrored installations already say. The common case (same hardware, same names) needs one edit.
+function eiToggleMirror(instId, ev){
+  if(ev) ev.stopPropagation();
+  if(!eiSelectedDevice) return;
+  var d = eiDevices[eiSelectedDevice];
+  var rec = d.installs[instId];
+  rec.mirror = !rec.mirror;
+  if(rec.mirror){
+    var src = null;
+    EI_INSTALLS.forEach(function(i){
+      if(i.id !== instId && d.installs[i.id].mirror && d.installs[i.id].added) src = d.installs[i.id];
+    });
+    if(src){
+      rec.alias = src.alias;
+      rec.aliasConfirmed = src.aliasConfirmed;
+      rec.axes = src.axes.slice();
+      rec.buttons = JSON.parse(JSON.stringify(src.buttons));
+      rec.buttonMap = src.buttonMap;
+      rec.added = true;
+    }
+  }
+  eiRenderDeviceRows();
+  eiRenderDeviceEditor();
+}
+
+function eiConfirmAlias(){
+  if(!eiSelectedDevice) return;
+  eiPendingConfirm = true;
+  eiApplyAliasLock();
+}
+
+function eiAliasEdited(){
+  if(!eiSelectedDevice) return;
+  eiPendingConfirm = true;
+  eiApplyAliasLock();
+}
+
+function eiLabelOf(instId){
+  var found = instId;
+  EI_INSTALLS.forEach(function(i){ if(i.id === instId) found = i.label; });
+  return found;
+}
+
+function eiPathOf(instId){
+  var found = '';
+  EI_INSTALLS.forEach(function(i){ if(i.id === instId) found = i.path || ''; });
+  return found;
+}
+
+function eiSaveDevice(){
+  if(!eiSelectedDevice) return;
+  var d = eiDevices[eiSelectedDevice];
+  var rec = eiInst(d);
+
+  rec.alias = document.getElementById('alias-name').value;
+  rec.aliasConfirmed = true;
+  rec.added = true;
+  eiPendingConfirm = false;
+
+  rec.axes = Array.prototype.map.call(
+    document.querySelectorAll('#io-axis .ei-io-cell input'), function(i){ return i.value; });
+
+  rec.buttons = {};
+  Array.prototype.forEach.call(document.querySelectorAll('#io-buttons .ei-io-cell'), function(cell, i){
+    var inp = cell.querySelector('input');
+    if(inp && inp.value) rec.buttons[i + 1] = inp.value;
+  });
+  rec.buttonMap = Object.keys(rec.buttons).length > 0 || rec.axes.some(function(v){ return !!v; });
+
+  var propagated = [];
+  if(rec.mirror){
+    EI_INSTALLS.forEach(function(i){
+      if(i.id === eiActiveInstall) return;
+      var o = d.installs[i.id];
+      if(!o.mirror) return;
+      o.alias = rec.alias;
+      o.aliasConfirmed = true;
+      o.added = true;
+      o.axes = rec.axes.slice();
+      o.buttons = JSON.parse(JSON.stringify(rec.buttons));
+      o.buttonMap = rec.buttonMap;
+      propagated.push(i.label);
+    });
+  }
+
+  eiRenderDeviceRows();
+  eiRenderDeviceEditor();
+  eiFlashBanner(propagated.length
+    ? 'SAVED to the draft for ' + eiLabelOf(eiActiveInstall) + ', mirrored to ' + propagated.join(', ')
+    : 'SAVED to the draft for ' + eiLabelOf(eiActiveInstall) + ' only');
+}
+
+function eiDiscardDevice(){
+  if(!eiSelectedDevice) return;
+  eiPendingConfirm = false;
+  eiRenderDeviceEditor();
+  eiFlashBanner('CHANGES DISCARDED - fields restored from the draft');
+}
+
+// WHY: the device is still physically attached, so it cannot leave the list. What CLEAR removes is
+// this installation's DeviceMappings.xml entry and its matching .buttonMap.
+function eiClearDevice(){
+  if(!eiSelectedDevice) return;
+  var d = eiDevices[eiSelectedDevice];
+  var rec = eiInst(d);
+  rec.added = false;
+  rec.mirror = false;
+  rec.aliasConfirmed = false;
+  rec.buttonMap = false;
+  rec.axes = rec.axes.map(function(){ return ''; });
+  rec.buttons = {};
+  eiPendingConfirm = false;
+  eiRenderDeviceRows();
+  eiRenderDeviceEditor();
+  eiFlashBanner('CLEARED from ' + eiLabelOf(eiActiveInstall) + ' - the device stays listed because the hardware is still attached');
+}
+
+function eiFlashBanner(msg){
+  var b = document.getElementById('alias-editbanner');
+  if(!b) return;
+  if(!b.dataset.original) b.dataset.original = b.innerHTML;
+  b.innerHTML = msg;
+  clearTimeout(b._t);
+  b._t = setTimeout(function(){ b.innerHTML = b.dataset.original; }, 3000);
+}
+
+function eiApplyAliasLock(){
+  var d = eiSelectedDevice ? eiDevices[eiSelectedDevice] : null;
+  var rec = d ? eiInst(d) : null;
+  var locked = !!rec && !rec.aliasConfirmed && !eiPendingConfirm;
+  var sec  = document.getElementById('alias-io-section');
+  var note = document.getElementById('alias-lock-note');
+  var btn  = document.getElementById('alias-confirm-btn');
+  if(sec)  sec.classList.toggle('locked', locked);
+  if(note) note.classList.toggle('on', locked);
+  if(btn)  btn.style.display = locked ? '' : 'none';
+}
+
+function eiApplyToInstalls(){
+  var lines = [];
+  eiDeviceOrder.forEach(function(id){
+    var d = eiDevices[id];
+    EI_INSTALLS.forEach(function(i){
+      var r = d.installs[i.id];
+      if(r.added){
+        lines.push(i.label + '  ->  ' + r.alias + (r.mirror ? '  (mirrored)' : '  (this install only)'));
+      }
+    });
+  });
+  var nl = String.fromCharCode(10);
+  alert(lines.length
+    ? 'Would write DeviceMappings.xml and .buttonMap:' + nl + nl + lines.join(nl) + nl + nl + 'Not built in this mockup.'
+    : 'No installation has any device entries, so nothing would be written.');
+}
+
+function eiSelectDefaultDevice(){
+  eiRenderDeviceRows();
+  eiRenderDeviceEditor();
+}
+
+function eiRenderDeviceEditor(){
+  var host = document.getElementById('alias-editor-host');
+  var d    = eiSelectedDevice ? eiDevices[eiSelectedDevice] : null;
+  if(host) host.style.display = d ? '' : 'none';
+  if(!d) return;
+
+  var rec = eiInst(d);
+
+  var head = document.getElementById('alias-insthead');
+  if(head){
+    head.innerHTML =
+        '<div class="ei-instline">'
+      +   '<span class="ei-instlbl">' + eiLabelOf(eiActiveInstall) + '</span>'
+      +   '<input class="ei-instpath" readonly value="' + eiPathOf(eiActiveInstall) + '"'
+      +     ' title="' + eiPathOf(eiActiveInstall) + '">'
+      + '</div>'
+      + '<div class="sub">' + (rec.added
+          ? 'editing this installation&rsquo;s <code>DeviceMappings.xml</code> entry and <code>.buttonMap</code>'
+          : 'this device has no entry in this installation yet &mdash; SAVE adds one')
+      + '</div>';
+  }
+
+  var mb = document.getElementById('alias-mirror-btn');
+  if(mb){
+    mb.classList.toggle('on', !!rec.mirror);
+    mb.textContent = rec.mirror ? 'MIRRORED' : 'MIRROR';
+    mb.title = rec.mirror
+      ? 'Shares one definition with the other mirrored installations'
+      : 'This installation is edited on its own';
+  }
+
+  document.getElementById('alias-name').value = rec.alias;
+  document.getElementById('alias-vid').value  = d.vid;
+  document.getElementById('alias-pid').value  = d.pid;
+  document.getElementById('alias-axiscount').textContent = d.axisCount;
+  document.getElementById('alias-btncount').textContent  = d.buttonCount;
+
+  Array.prototype.forEach.call(document.querySelectorAll('#io-axis .ei-io-cell'), function(cell, i){
+    cell.style.display = (i < d.axisCount) ? '' : 'none';
+    var inp = cell.querySelector('input');
+    if(inp) inp.value = rec.axes[i] || '';
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('#io-buttons .ei-io-cell'), function(cell, i){
+    cell.style.display = (i < d.buttonCount) ? '' : 'none';
+    var inp = cell.querySelector('input');
+    if(inp) inp.value = rec.buttons[i + 1] || '';
+  });
+
+  document.getElementById('tab-buttons').style.display = d.buttonCount ? '' : 'none';
+  if(!d.buttonCount) eiShowIO('axis');
+
+  eiApplyAliasLock();
+}
+
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', eiSelectDefaultDevice);
+}else{
+  eiSelectDefaultDevice();
+}
+
+var presetSavedState = null;
+function getPresetLines(){
+  return Array.prototype.map.call(document.querySelectorAll('.preset-line'), function(s){ return s.value; });
+}
+function setPresetLines(values){
+  var lines = document.querySelectorAll('.preset-line');
+  lines.forEach(function(s,i){ s.value = values[i]; });
+}
+function presetChanged(){
+  var lines = getPresetLines();
+  var allSame = lines.every(function(v){ return v===lines[0]; });
+  document.getElementById('preset-warning').style.display = allSame ? 'none' : 'block';
+  var badge = document.getElementById('preset-syncbadge');
+  var dirty = presetSavedState===null || lines.some(function(v,i){ return v!==presetSavedState[i]; });
+  badge.className = 'ei-syncbadge ' + (dirty ? 'draft' : 'insync');
+  badge.innerHTML = dirty ? '&#9679; DRAFT' : '&#9679; IN SYNC';
+}
+function setAllSame(){
+  var v = document.getElementById('setall-select').value;
+  setPresetLines([v,v,v,v]);
+  presetChanged();
+}
+function presetSave(){
+  presetSavedState = getPresetLines();
+  presetChanged();
+}
+function presetRevert(){
+  if(presetSavedState) setPresetLines(presetSavedState);
+  presetChanged();
+}
+presetSavedState = getPresetLines();
+presetChanged();
+
+function scopeAllToggled(){
+  var all = document.getElementById('scope-all').checked;
+  ['scope-binds','scope-start','scope-devicemappings','scope-buttonmaps'].forEach(function(id){
+    var cb = document.getElementById(id);
+    cb.disabled = all;
+    if(all) cb.checked = true;
+  });
+}
+// The scope panel is built from whichever files the selected backup actually holds - a backup
+// cannot restore what it never captured, so the archive's contents bound the choices offered.
+function fmSelect(row){
+  document.querySelectorAll('#fm-rows tr').forEach(function(r){ r.classList.remove('selected'); });
+  row.classList.add('selected');
+  document.getElementById('fm-restore').disabled = false;
+  fmBuildScope(row);
+}
+
+function fmBuildScope(row){
+  var files = row.querySelector('.files').textContent.split(',').map(function(f){ return f.trim(); });
+  var binds = files.filter(function(f){ return /\.binds$/.test(f); });
+  var preset = files.filter(function(f){ return /^StartPreset/.test(f); });
+  var devmap = files.filter(function(f){ return f === 'DeviceMappings.xml'; });
+  var maps = files.filter(function(f){ return /\.buttonMap$/.test(f); });
+  var html = '';
+
+  // .binds is the one domain where per-file choice means anything: a commander keeps several
+  // presets and may want one of them back without disturbing the others.
+  if(binds.length){
+    html += '<div class="ei-rs-group"><h5>Bindings &mdash; choose individually</h5>';
+    binds.forEach(function(f){
+      html += '<label><input type="checkbox" class="rs-item" checked disabled '
+           +  'style="accent-color:#FF7100">' + f + '</label>';
+    });
+    html += '</div>';
+  }
+
+  if(preset.length){
+    html += '<div class="ei-rs-group"><h5>Active preset</h5>'
+         +  '<label><input type="checkbox" class="rs-item" checked disabled '
+         +  'style="accent-color:#FF7100">' + preset[0] + '</label>'
+         +  '<div class="ei-rs-tie">Names a .binds file &mdash; restoring one without the other leaves the set inconsistent. BindForge says so before Apply rather than blocking the choice.</div>'
+         +  '</div>';
+  }
+
+  // Both device domains are duplicated per installation, so the meaningful choice here is which
+  // installation rather than which file.
+  if(devmap.length || maps.length){
+    html += '<div class="ei-rs-group"><h5>Device files &mdash; whole domain, per installation</h5>';
+    if(devmap.length){
+      html += '<label><input type="checkbox" class="rs-item" checked disabled '
+           +  'style="accent-color:#FF7100">DeviceMappings.xml</label>';
+    }
+    if(maps.length){
+      html += '<label><input type="checkbox" class="rs-item" checked disabled '
+           +  'style="accent-color:#FF7100">' + maps.length + ' .buttonMap files &mdash; '
+           +  maps.join(', ') + '</label>'
+           +  '<div class="ei-rs-tie">Each is named for its device entry in DeviceMappings.xml, so they travel with it rather than being picked one by one.</div>';
+    }
+    html += '<div class="ei-rs-inst">Restore into:';
+    EI_INSTALLS.forEach(function(inst){
+      html += '<label><input type="checkbox" class="rs-inst" checked disabled '
+           +  'style="accent-color:#FF7100">' + inst.label + '</label>';
+    });
+    html += '</div></div>';
+  }
+
+  document.getElementById('fm-restore-scope-body').innerHTML = html;
+  document.getElementById('rs-all').checked = true;
+  document.getElementById('fm-restore-scope').style.display = 'block';
+  rsAllToggled();
+}
+
+function rsAllToggled(){
+  var all = document.getElementById('rs-all').checked;
+  document.querySelectorAll('#fm-restore-scope-body .rs-item, #fm-restore-scope-body .rs-inst')
+    .forEach(function(cb){
+      cb.disabled = all;
+      if(all){ cb.checked = true; }
+    });
+}
+
+function fmRestore(){
+  confirm('Restore into your drafts? This REPLACES whatever those drafts currently hold, including '
+        + 'edits you have not applied yet. Your live game files are not touched - press Apply when you '
+        + 'have looked the restored version over and want it to go live.');
+}
+function beLoad(){
+  var v = document.getElementById('be-file-select').value;
+  document.getElementById('be-loaded-note').textContent = 'Loaded: ' + v;
+}
+
+// ---------------------------------------------------------------- Anomalies
+// One list, four kinds, one question: "why didn't that work?". Severity is a property
+// of a row, never a tab - burying the blocking ones behind a tab is the exact failure
+// the severity model exists to prevent.
+var AN_KIND_NOTES = {
+  all:       'Everything below, ordered by how certain the failure is rather than by kind.',
+  reserved:  'The key can never work, whatever is bound to it - claimed by the operating system, or by Elite’s own Game Menu control, which is matched on the key alone and ignores modifiers.',
+  missing:   'A control EliteIntel presses itself with nothing assigned to it. Not a broken binding - an absent one.',
+  conflicts: 'Two actions sharing one input. Ranked: blocking stops EliteIntel driving the game, curated pairs carry a known consequence, and a plain overlap is legal and sometimes deliberate.',
+  invalid:   'Bound, unique, uncontested - and still will not fire, because something else consumes the input first in a particular game state.'
+};
+
+// rank orders the ALL view: bound-but-broken sits above not-bound, because the commander
+// believes those already work.
+var AN_ITEMS = [
+  { kind:'reserved', rank:1, sev:'RESERVED', label:'RESERVED KEY &mdash; [ALT+P]', count:'1 bind',
+    note:'Game Menu is on <b>P</b>, and Elite matches that control on the key alone &mdash; so P, Shift+P and Alt+P all pause the game and open the options screen. This binding can never fire. Moving Game Menu off P frees the key; leaving Game Menu unbound entirely costs nothing, since Esc opens the same screen.',
+    binds:[ ['SHIP','Ship Lights','Primary','ALT+P'] ] },
+
+  { kind:'conflicts', rank:2, sev:'BLOCKING', label:'SHARED INPUT &mdash; [SPACE]', count:'2 binds',
+    note:'Select is how EliteIntel commits every choice it makes in the interface. On a shared key each tap also drops a focused chat box on screen, which swallows whatever is typed next and can broadcast it. The context model would normally clear this pair &mdash; Select is interface, comms is ship &mdash; but the quick comms panel is reachable while a panel is already open, so it is the exception.',
+    binds:[ ['GENERAL','UI Select','Primary','SPACE'], ['SHIP','Quick Comms Panel','Primary','SPACE'] ] },
+
+  { kind:'invalid', rank:3, sev:'INVALID', label:'WILL NOT FIRE &mdash; [S]', count:'1 bind',
+    note:'With the galaxy map’s search box focused, Elite treats any keystroke that produces a character as typing and never consults the UI bindings at all. Ctrl or Alt would suppress the character; <b>Shift does not</b> &mdash; it changes the character rather than removing it.',
+    binds:[ ['GENERAL','UI Down','Primary','S'] ] },
+
+  { kind:'invalid', rank:3, sev:'INVALID', label:'WILL NOT FIRE &mdash; [W]', count:'1 bind',
+    note:'Same cause as above. A commander never hits this by hand, because by hand they click the search result with the mouse &mdash; it only bites automation, which is why there is nothing to discover through play.',
+    binds:[ ['GENERAL','UI Up','Primary','W'] ] },
+
+  { kind:'missing', rank:4, sev:'MISSING', label:'NOT ASSIGNED', count:'1 control',
+    note:'EliteIntel presses this control itself, and nothing is bound to it. Only controls a built-in command actually drives are listed here &mdash; measured against the whole of Elite’s control set this would name well over a hundred, burying the handful that stop something working.',
+    binds:[ ['GENERAL','Head Look Reset','Primary','&mdash;'] ] },
+
+  { kind:'conflicts', rank:5, sev:'CURATED', label:'SHARED INPUT &mdash; [G]', count:'2 binds',
+    note:'Deploying hardpoints will also toggle the landing gear.',
+    binds:[ ['SHIP','Deploy Hardpoints','Primary','G'], ['SHIP','Landing Gear Toggle','Primary','G'] ] },
+
+  { kind:'conflicts', rank:6, sev:'OVERLAP', label:'SHARED INPUT &mdash; [U]', count:'2 binds',
+    note:'Confirmed real in-game, 2026-07-17 &mdash; the game’s own rebind dialog warns about this pair.',
+    binds:[ ['SHIP','Deploy Hardpoints','Primary','U'], ['GENERAL','Enter FSS Mode','Primary','U'] ] },
+
+  { kind:'conflicts', rank:6, sev:'OVERLAP', label:'SHARED INPUT &mdash; [F]', count:'2 binds',
+    note:'A Secondary-vs-Primary collision the prior scanner missed entirely. Primary and Secondary are separate slots, so a scan that compares actions rather than slots cannot see this one.',
+    binds:[ ['GENERAL','Move Up','Primary','F'], ['GENERAL','Move Down','Secondary','F'] ] }
+];
+
+function anShow(v){
+  ['all','reserved','missing','conflicts','invalid'].forEach(function(k){
+    document.getElementById('an-tab-' + k).classList.toggle('active', k === v);
+  });
+  document.getElementById('an-kindnote').innerHTML = AN_KIND_NOTES[v];
+
+  var items = AN_ITEMS.filter(function(i){ return v === 'all' || i.kind === v; });
+  items.sort(function(a, b){ return a.rank - b.rank; });
+
+  var html = '';
+  items.forEach(function(i){
+    html += '<div class="ge-group">'
+         +   '<div class="ge-grouphead" onclick="geToggleGroup(this)">'
+         +     '<span class="ge-chevron">&#9660;</span>'
+         +     '<span class="an-sev ' + i.sev.toLowerCase() + '">' + i.sev + '</span>'
+         +     '<span class="ge-grouplabel">' + i.label + '</span>'
+         +     '<span class="ge-groupcount">' + i.count + '</span>'
+         +   '</div>'
+         +   '<div class="ei-note" style="margin:8px 12px">' + i.note + '</div>'
+         +   '<div class="ge-grouprows">';
+    i.binds.forEach(function(b){
+      html += '<div class="ge-bindrow" style="cursor:default">'
+           +    '<span class="im-sectiontag">' + b[0] + '</span>'
+           +    '<span class="ge-bindname">' + b[1]
+           +      ' <span style="color:#6F7D89;font-size:11px">(' + b[2] + ')</span></span>'
+           +    '<span class="ge-bindval"><span class="ge-badge">' + b[3] + '</span></span>'
+           +  '</div>';
+    });
+    html += '</div></div>';
+  });
+  document.getElementById('an-rows').innerHTML = html;
+}
+
+function beShowMode(v){
+  var modes=['game','purpose','type','controller','input','anomaly'];
+  modes.forEach(function(m){
+    document.getElementById('mode-'+m).style.display = (m===v) ? 'block' : 'none';
+    document.getElementById('tab-mode-'+m).classList.toggle('active', m===v);
+  });
+  if(v === 'anomaly'){ anShow('all'); }
+}
+function geToggleConflictsOnly(){
+  var on = document.getElementById('ge-conflicts-only').checked;
+  document.querySelectorAll('#mode-game .ge-bindrow, #mode-input .ge-bindrow').forEach(function(row){
+    row.style.display = (!on || row.classList.contains('conflict-row')) ? '' : 'none';
+  });
+  document.querySelectorAll('#mode-purpose .pm-target .ge-group').forEach(function(group){
+    group.style.display = (!on || group.dataset.conflict === 'true') ? '' : 'none';
+  });
+}
+function geShowContext(v){
+  document.querySelectorAll('.ge-contextbtn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('ctx-'+v).classList.add('active');
+  document.querySelectorAll('.ge-group').forEach(function(g){
+    g.style.display = (v==='all' || g.dataset.context===v) ? 'block' : 'none';
+  });
+}
+function geToggleGroup(head){
+  // WHY: a group may carry an explanatory note between its head and its rows. Collapsing only
+  // nextElementSibling would hide the note and leave the rows on screen, so everything after the
+  // head is toggled instead.
+  var collapsed = !head.classList.contains('collapsed');
+  head.classList.toggle('collapsed', collapsed);
+  for (var el = head.nextElementSibling; el; el = el.nextElementSibling) {
+    el.style.display = collapsed ? 'none' : '';
+  }
+  var chevron = head.querySelector('.ge-chevron');
+  if (chevron) chevron.innerHTML = collapsed ? '&#9654;' : '&#9660;';
+}
+function geShowCtxMenu(evt){
+  evt.preventDefault();
+  var menu = document.getElementById('ge-ctxmenu');
+  menu.style.display = 'block';
+  menu.style.left = evt.clientX + 'px';
+  menu.style.top = evt.clientY + 'px';
+  return false;
+}
+document.addEventListener('click', function(){
+  var menu = document.getElementById('ge-ctxmenu');
+  if(menu) menu.style.display = 'none';
+});
+function geExpandAll(){
+  document.querySelectorAll('#ge-grid .ge-group').forEach(function(g){
+    if(g.style.display === 'none') return;
+    g.querySelector('.ge-grouprows').style.display = 'block';
+    g.querySelector('.ge-chevron').innerHTML = '&#9660;';
+  });
+}
+function geCollapseAll(){
+  document.querySelectorAll('#ge-grid .ge-group').forEach(function(g){
+    if(g.style.display === 'none') return;
+    g.querySelector('.ge-grouprows').style.display = 'none';
+    g.querySelector('.ge-chevron').innerHTML = '&#9654;';
+  });
+}
+function geSelectRow(row, name){
+  document.querySelectorAll('.ge-bindrow').forEach(function(r){ r.classList.remove('selected'); });
+  row.classList.add('selected');
+}
+function geSearch(){
+  var q = document.getElementById('ge-search').value.toLowerCase();
+  document.querySelectorAll('.ge-bindrow').forEach(function(r){
+    var name = r.querySelector('.ge-bindname').textContent.toLowerCase();
+    r.style.display = name.indexOf(q) === -1 ? 'none' : 'flex';
+  });
+}
+
+function geInitCaptureButtons(){
+  document.querySelectorAll('#ge-grid .ge-bindrow:not(.ge-axisrow)').forEach(function(row){
+    var name = row.querySelector('.ge-bindname').textContent;
+    var cells = row.querySelectorAll('.ge-bindval');
+    var slots = ['Primary','Secondary'];
+    cells.forEach(function(cell, i){
+      var slot = slots[i];
+      var hasValue = cell.querySelector('.ge-badge') !== null;
+      var state = cell.dataset.conflict === 'true' ? 'conflict' : (hasValue ? 'bound' : 'empty');
+      var valText = document.createElement('span');
+      valText.className = 'ge-valtext';
+      valText.innerHTML = cell.innerHTML;
+      cell.innerHTML = '';
+      cell.appendChild(valText);
+      if(hasValue){
+        var hold = document.createElement('button');
+        hold.className = 'ge-holdchip';
+        hold.textContent = 'TAP';
+        hold.onclick = function(e){ e.stopPropagation(); hold.textContent = hold.textContent === 'TAP' ? 'HOLD' : 'TAP'; };
+        cell.appendChild(hold);
+      } else {
+        var spacer = document.createElement('span');
+        spacer.className = 'ge-holdchip-spacer';
+        cell.appendChild(spacer);
+      }
+      var btn = document.createElement('button');
+      btn.className = 'ge-capbtn state-' + state;
+      btn.textContent = 'CAPTURE';
+      btn.onclick = function(e){ e.stopPropagation(); geCapture(btn, valText, name, slot); };
+      cell.appendChild(btn);
+    });
+  });
+}
+
+var geCaptureState = null;
+var geCaptureKeyHandler = null;
+var geSimHeld = false;
+var geDemoConflicts = {'C':'Exit Free Camera','A':'Yaw Left','D':'Yaw Right'};
+
+function geToggleSim(btn){
+  geSimHeld = !geSimHeld;
+  btn.classList.toggle('active', geSimHeld);
+  btn.textContent = geSimHeld ? 'HOLDING JOY_5' : 'SIMULATE HOLD JOY_5';
+}
+
+function geSetDeadzone(evt, track){
+  var rect = track.getBoundingClientRect();
+  var pct = Math.max(0, Math.min(100, Math.round((evt.clientX - rect.left) / rect.width * 100)));
+  track.querySelector('.ge-deadzone-fill').style.width = pct + '%';
+  track.parentElement.querySelector('.ge-deadzone-pct').textContent = pct + '%';
+}
+
+var geKbdLayout = [
+  [{l:'Esc',v:'ESC'},{gap:true},{l:'F1',v:'F1'},{l:'F2',v:'F2'},{l:'F3',v:'F3'},{l:'F4',v:'F4'},{gap:true},{l:'F5',v:'F5'},{l:'F6',v:'F6'},{l:'F7',v:'F7'},{l:'F8',v:'F8'},{gap:true},{l:'F9',v:'F9'},{l:'F10',v:'F10'},{l:'F11',v:'F11'},{l:'F12',v:'F12'}],
+  [{l:'`',v:'`'},{l:'1',v:'1'},{l:'2',v:'2'},{l:'3',v:'3'},{l:'4',v:'4'},{l:'5',v:'5'},{l:'6',v:'6'},{l:'7',v:'7'},{l:'8',v:'8'},{l:'9',v:'9'},{l:'0',v:'0'},{l:'-',v:'-'},{l:'=',v:'='},{l:'Bksp',v:'BKSP'}],
+  [{l:'Tab',v:'TAB'},{l:'Q',v:'Q'},{l:'W',v:'W'},{l:'E',v:'E'},{l:'R',v:'R'},{l:'T',v:'T'},{l:'Y',v:'Y'},{l:'U',v:'U'},{l:'I',v:'I'},{l:'O',v:'O'},{l:'P',v:'P'},{l:'[',v:'['},{l:']',v:']'},{l:'\\',v:'\\'}],
+  [{l:'Caps',v:'CAPS'},{l:'A',v:'A'},{l:'S',v:'S'},{l:'D',v:'D'},{l:'F',v:'F'},{l:'G',v:'G'},{l:'H',v:'H'},{l:'J',v:'J'},{l:'K',v:'K'},{l:'L',v:'L'},{l:';',v:';'},{l:'&#39;',v:"'"},{l:'Enter',v:'ENTER'}],
+  [{l:'Shift',v:'SHIFT'},{l:'Z',v:'Z'},{l:'X',v:'X'},{l:'C',v:'C'},{l:'V',v:'V'},{l:'B',v:'B'},{l:'N',v:'N'},{l:'M',v:'M'},{l:',',v:'COMMA'},{l:'.',v:'PERIOD'},{l:'/',v:'/'},{l:'Shift',v:'SHIFT'}],
+  [{l:'Ctrl',v:'CTRL'},{l:'Alt',v:'ALT'},{l:'Space',v:'SPACE',wide:true},{l:'Alt',v:'ALT'},{l:'Ctrl',v:'CTRL'}],
+  [{l:'&#8592;',v:'LEFT'},{l:'&#8593;',v:'UP'},{l:'&#8595;',v:'DOWN'},{l:'&#8594;',v:'RIGHT'}]
+];
+
+function geRenderKeyboard(currentValueLabel){
+  var html = '';
+  geKbdLayout.forEach(function(row){
+    html += '<div class="ge-kbd-row">';
+    row.forEach(function(k){
+      if(k.gap){ html += '<span class="ge-kbd-gap"></span>'; return; }
+      var state = geDemoConflicts[k.v] ? 'used' : 'free';
+      var cur = (k.v === currentValueLabel) ? ' current' : '';
+      var cls = 'ge-kbd-key ' + state + cur + (k.wide ? ' wide' : '');
+      var handler = k.v === 'ESC' ? 'geCancelCapture()' : ("geKbdPress('" + k.v + "')");
+      html += '<button class="' + cls + '" onclick="' + handler + '">' + k.l + '</button>';
+    });
+    html += '</div>';
+  });
+  document.getElementById('ge-capture-keyboard').innerHTML = html;
+}
+
+function geKbdPress(label){
+  if(!geCaptureState) return;
+  if(geCaptureState.slot === 'Axis'){ geHandleCapturedKey(label); return; }
+  var parts = [];
+  if(geSimHeld) parts.push('JOY 5');
+  parts.push(label);
+  geHandleCapturedKey(parts.join('+'));
+}
+
+function geCapture(btn, valText, actionName, slot){
+  geCaptureState = {actionName:actionName, slot:slot, btn:btn, valText:valText};
+  geSimHeld = false;
+  document.getElementById('ge-grid').classList.add('capturing');
+  var currentLabel = valText.textContent.trim();
+  var pinned = document.getElementById('ge-pinned-row');
+  pinned.innerHTML = '<span class="ge-pinned-label">Editing &mdash; ' + slot + '</span>' +
+    '<span class="ge-pinned-name">' + actionName + '</span>' +
+    '<span class="ge-pinned-current">Current: ' + currentLabel + '</span>';
+  geShowCaptureBox();
+  geRenderKeyboard(currentLabel);
+  document.getElementById('ge-capture-overlay').style.display = 'block';
+  geCaptureKeyHandler = function(e){
+    if(e.key === 'Escape'){ geCancelCapture(); return; }
+    if(['Control','Alt','Shift','Meta'].indexOf(e.key) !== -1) return;
+    e.preventDefault();
+    if(slot === 'Axis'){ geHandleCapturedKey(geFormatKey(e.key)); return; }
+    var parts = [];
+    if(e.ctrlKey) parts.push('L CTRL');
+    if(e.altKey) parts.push('ALT');
+    if(e.shiftKey) parts.push('SHIFT');
+    if(geSimHeld) parts.push('JOY 5');
+    parts.push(geFormatKey(e.key));
+    geHandleCapturedKey(parts.join('+'));
+  };
+  window.addEventListener('keydown', geCaptureKeyHandler);
+}
+
+function geFormatKey(key){
+  var map = {' ':'SPACE','ArrowUp':'UP','ArrowDown':'DOWN','ArrowLeft':'LEFT','ArrowRight':'RIGHT',
+    ',':'COMMA','.':'PERIOD','Backspace':'BKSP','Enter':'ENTER','Tab':'TAB'};
+  if(map[key]) return map[key];
+  return key.length === 1 ? key.toUpperCase() : key.toUpperCase();
+}
+
+function geHandleCapturedKey(label){
+  var conflictWith = geDemoConflicts[label];
+  if(conflictWith && conflictWith !== geCaptureState.actionName){
+    geShowConflictBox(label, conflictWith);
+  } else {
+    geCommitCapture(label);
+  }
+}
+
+function geShowCaptureBox(){
+  var isAxis = geCaptureState.slot === 'Axis';
+  var modifierBlock = isAxis
+    ? '<div class="ge-sim-toggle">Axis bindings can&#39;t take a modifier &mdash; just move the axis or press one key/button.</div>'
+    : '<div class="ge-sim-toggle">Combos work across devices &mdash; hold a real Ctrl/Shift/Alt, or ' +
+      '<button onclick="geToggleSim(this)">SIMULATE HOLD JOY_5</button> to demo a cross-device modifier, then press any key.</div>';
+  document.getElementById('ge-capture-box').innerHTML =
+    '<div class="ge-capture-label">PRESS KEY FOR&hellip;</div>' +
+    '<div class="ge-capture-target">' + geCaptureState.actionName + ' <span class="ge-capture-slot">(' + geCaptureState.slot + ')</span></div>' +
+    '<div class="ge-capture-hint">Esc cancels</div>' +
+    modifierBlock;
+}
+
+function geShowConflictBox(label, conflictWith){
+  document.getElementById('ge-capture-box').innerHTML =
+    '<div class="ge-conflict-label">ARE YOU SURE?</div>' +
+    '<div class="ge-conflict-text">[' + label + '] is currently bound to &ldquo;' + conflictWith + '&rdquo;. Do you want to bind it here too?</div>' +
+    '<div class="ge-conflict-actions">' +
+      '<button class="ei-btn" onclick="geShowCaptureBox()">CANCEL</button>' +
+      '<button class="ei-btn primary" onclick="geCommitCapture(\'' + label + '\')">CONFIRM</button>' +
+    '</div>';
+}
+
+function geCommitCapture(label){
+  geCaptureState.valText.innerHTML = '<span class="ge-badge">' + label + '</span>';
+  geCaptureState.btn.classList.remove('state-empty','state-conflict');
+  geCaptureState.btn.classList.add('state-bound');
+  if(geCaptureState.slot !== 'Axis'){
+    var cell = geCaptureState.valText.parentElement;
+    var spacer = cell.querySelector('.ge-holdchip-spacer');
+    if(spacer){
+      var hold = document.createElement('button');
+      hold.className = 'ge-holdchip';
+      hold.textContent = 'TAP';
+      hold.onclick = function(e){ e.stopPropagation(); hold.textContent = hold.textContent === 'TAP' ? 'HOLD' : 'TAP'; };
+      cell.replaceChild(hold, spacer);
+    }
+  }
+  geCancelCapture();
+}
+
+function geCancelCapture(){
+  if(geCaptureKeyHandler) window.removeEventListener('keydown', geCaptureKeyHandler);
+  geCaptureKeyHandler = null;
+  document.getElementById('ge-grid').classList.remove('capturing');
+  document.getElementById('ge-capture-overlay').style.display = 'none';
+  document.getElementById('ge-capture-keyboard').innerHTML = '';
+  geCaptureState = null;
+}
+geInitCaptureButtons();
+var pmSelectedSource = null;
+var pmSelectedTarget = null;
+function pmSelectSource(el){
+  document.querySelectorAll('.pm-source .pm-item').forEach(function(i){ i.classList.remove('selected'); });
+  el.classList.add('selected');
+  pmSelectedSource = el;
+}
+function pmSelectTarget(el){
+  document.querySelectorAll('.pm-target .pm-item').forEach(function(i){ i.classList.remove('selected'); });
+  el.classList.add('selected');
+  pmSelectedTarget = el;
+}
+function pmAdd(){
+  if(!pmSelectedSource) return;
+  var targetRows = document.querySelector('.pm-target .ge-grouprows');
+  var item = document.createElement('div');
+  item.className = 'pm-item';
+  item.textContent = pmSelectedSource.textContent;
+  item.onclick = function(){ pmSelectTarget(item); };
+  targetRows.appendChild(item);
+}
+function pmRemove(){
+  if(!pmSelectedTarget) return;
+  pmSelectedTarget.remove();
+  pmSelectedTarget = null;
+}
+function pmNewGroup(){
+  alert('New group creation not yet designed - just getting the ball rolling on the layout for now.');
+}
+var imExamples = [
+  {
+    device: 'RHVCAP', control: 'Joy_4 (Button)', badge: 'JOY 4',
+    rows: [
+      {type:'button', section:'SHIP', name:'Primary Fire'},
+      {type:'button', section:'SRV', name:'Primary Fire'},
+      {type:'button', section:'GENERAL', name:'Galaxy Map Select', conflict:true, sharedWith:'System Map Select, UI Panel Select/Confirm'},
+      {type:'button', section:'GENERAL', name:'System Map Select', conflict:true, sharedWith:'Galaxy Map Select, UI Panel Select/Confirm'},
+      {type:'button', section:'GENERAL', name:'UI Panel Select/Confirm', conflict:true, sharedWith:'Galaxy Map Select, System Map Select'}
+    ]
+  },
+  {
+    device: 'L-VPC Stick WarBRD-D', control: 'Joy_XAxis', badge: 'JOY X-AXIS',
+    rows: [
+      {type:'axis', section:'SHIP', name:'Roll Axis', deadzone:8},
+      {type:'axis', section:'SRV', name:'Steering Axis', deadzone:5}
+    ]
+  },
+  {
+    device: 'Throttle', control: 'Joy_12 (Button)', badge: 'JOY 12',
+    rows: []
+  }
+];
+var imIndex = -1;
+function imCaptureNotBuilt(){
+  alert('Clicking a row here is meant to open the same floating capture dialog used everywhere else in BindForge, in place. Not built in this mockup — see Bind Editor § Input Mode.');
+}
+function imRenderRow(ex, r){
+  var tag = '<span class="im-sectiontag">'+r.section+'</span>';
+  if(r.type === 'axis'){
+    return '<div class="ge-bindrow ge-axisrow" onclick="imCaptureNotBuilt()">'+tag+
+      '<span class="ge-bindname">'+r.name+'</span>'+
+      '<span class="ge-bindval"><span class="ge-valtext"><span class="ge-badge">'+ex.badge+'</span></span><button class="ge-capbtn state-bound" onclick="event.stopPropagation();imCaptureNotBuilt()">CAPTURE</button></span>'+
+      '<button class="ge-attr-toggle" onclick="event.stopPropagation();this.textContent=this.textContent===\'NORMAL\'?\'INVERTED\':\'NORMAL\'">NORMAL</button>'+
+      '<span class="ge-deadzone"><span class="ge-deadzone-label">DZ</span><span class="ge-deadzone-track" onclick="event.stopPropagation();geSetDeadzone(event,this)"><span class="ge-deadzone-fill" style="width:'+r.deadzone+'%"></span></span><span class="ge-deadzone-pct">'+r.deadzone+'%</span></span>'+
+    '</div>';
+  }
+  var rowClass = 'ge-bindrow' + (r.conflict ? ' conflict-row' : '');
+  var valSpan = r.conflict
+    ? '<span class="ge-bindval" data-conflict="true"><span class="ge-badge">'+ex.badge+'</span></span>'
+    : '<span class="ge-bindval"><span class="ge-badge">'+ex.badge+'</span></span>';
+  var popup = r.conflict
+    ? '<div class="ge-conflict-popup"><b>Shares ['+ex.badge+'] with:</b><br>&bull; '+r.sharedWith+'<span class="ge-conflict-hint">See the CONFLICTS tab for details.</span></div>'
+    : '';
+  return '<div class="'+rowClass+'" onclick="imCaptureNotBuilt()">'+tag+
+    '<span class="ge-bindname">'+r.name+'</span>'+valSpan+'<span class="ge-bindval">&mdash;</span>'+popup+
+  '</div>';
+}
+function imSimulate(){
+  imIndex = (imIndex+1) % imExamples.length;
+  var ex = imExamples[imIndex];
+  var val = document.getElementById('im-detect-value');
+  val.textContent = ex.device + ' — ' + ex.control;
+  val.classList.remove('empty');
+  var list = document.getElementById('im-list');
+  if(ex.rows.length === 0){
+    list.innerHTML = '<div class="ei-placeholder">Nothing is bound to this input</div>';
+    return;
+  }
+  list.innerHTML = ex.rows.map(function(r){ return imRenderRow(ex, r); }).join('');
+  geToggleConflictsOnly();
+}
+function eiShowFM(v){
+  ['installs','backups','history'].forEach(function(k){
+    document.getElementById('view-fm-' + k).style.display = (v === k) ? 'block' : 'none';
+    document.getElementById('tab-fm-' + k).classList.toggle('active', v === k);
+  });
+  if(v === 'installs'){ eiRenderGameInstalls(); }
+}
+
+// What BindForge found at each installation. Rendered from EI_INSTALLS so this screen and the
+// per-installation tabs in Alias Designer can never disagree about which installations exist.
+var EI_GI_META = {
+  steam: {found:true, devmap:true, buttonMaps:2, source:'auto-detected'},
+  epic:  {found:true, devmap:true, buttonMaps:0, source:'auto-detected'}
+};
+
+function eiRenderGameInstalls(){
+  var tb = document.getElementById('gi-rows');
+  if(!tb){ return; }
+  var html = '';
+  EI_INSTALLS.forEach(function(inst){
+    var m = EI_GI_META[inst.id] || {found:true, devmap:true, buttonMaps:0, source:'added by you'};
+    var files = m.devmap ? 'DeviceMappings.xml' : 'no DeviceMappings.xml';
+    files += m.buttonMaps > 0
+      ? ' + ' + m.buttonMaps + ' .buttonMap'
+      : ' + no .buttonMap files';
+    var badge = m.found
+      ? '<span class="ei-fullbadge">FOUND</span>'
+      : '<span class="ei-partialbadge">MISSING</span>';
+    html += '<tr>'
+      + '<td>' + inst.label + '<span class="ei-gi-sub">' + m.source + '</span></td>'
+      + '<td><span class="ei-gi-path">' + inst.path + '</span></td>'
+      + '<td><span class="ei-gi-file">' + files + '</span></td>'
+      + '<td>' + badge + '</td>'
+      + '<td><div class="ei-gi-actions">'
+      +   '<button class="ei-btn" onclick="giRelocate(&quot;' + inst.id + '&quot;)">RELOCATE</button>'
+      +   '<button class="ei-btn" onclick="giRemove(&quot;' + inst.id + '&quot;)">REMOVE</button>'
+      + '</div></td>'
+      + '</tr>';
+  });
+  tb.innerHTML = html;
+}
+
+function giRelocate(id){
+  alert('Opens a folder chooser pointed at ' + eiLabelOf(id) + '. The device records held against this '
+      + 'installation follow it to the new path - relocating is how a reinstall to another drive is '
+      + 'handled without losing them.');
+}
+
+function giRemove(id){
+  alert('Removes ' + eiLabelOf(id) + ' from the list. What happens to the device records held against '
+      + 'it is undesigned - see the note below the table.');
+}
+function fhShowFile(el){
+  document.querySelectorAll('#view-fm-history .ei-subsubtab').forEach(function(t){t.classList.remove('active')});
+  el.classList.add('active');
+  document.getElementById('fh-restore').disabled = true;
+  document.querySelectorAll('#fh-rows tr').forEach(function(r){r.classList.remove('selected')});
+}
+eiRenderGameInstalls();
+
+function fhSelect(row){
+  document.querySelectorAll('#fh-rows tr').forEach(function(r){r.classList.remove('selected')});
+  row.classList.add('selected');
+  document.getElementById('fh-restore').disabled = false;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Conflict Matrix — General Controls</title>
+<link rel="stylesheet" href="ConflictMatrix.css">
+</head>
+<body>
+<div class="cm-page">
+  <div class="cm-header">
+    <h1 class="cm-title">Subgroup Conflict Matrix — General Controls</h1>
+    <div class="cm-sub">
+      Click a cell to cycle Untested &rarr; No Conflict &rarr; Conflicts. Test method: bind the
+      same key to one action in each subgroup via the in-game rebind dialog and see whether it
+      warns. Saved automatically in this browser (localStorage) — use Export when a section is
+      settled, to hand it off into a <code>DomainKnowledge</code> conflict-rules doc.
+    </div>
+    <div class="cm-nav">
+      <a href="ConflictMatrix-General.html" class="active">GENERAL</a>
+      <a href="ConflictMatrix-Ship.html">SHIP</a>
+      <a href="ConflictMatrix-SRV.html">SRV</a>
+      <a href="ConflictMatrix-OnFoot.html">ON FOOT</a>
+    </div>
+  </div>
+  <div id="cm-root"></div>
+  <div class="cm-note">
+    Pre-filled from testing done 2026-07-30. Seven pairs are still Untested: Free Camera&times;Holo-Me,
+    Holo-Me&times;Playlist, Holo-Me&times;Store Camera, Holo-Me&times;System Colonization Facility
+    Placement, Playlist&times;Store Camera, Playlist&times;System Colonization Facility Placement,
+    Store Camera&times;System Colonization Facility Placement.
+  </div>
+</div>
+<script src="ConflictMatrix.js"></script>
+<script>
+ConflictMatrix.init({
+  storageKey: 'bindforge-conflict-matrix-general',
+  subgroups: [
+    'Interface Mode','Galaxy Map','Camera Suite','Free Camera',
+    'Holo-Me','Playlist','Store Camera','System Colonization Facility Placement'
+  ],
+  knownPairs: [
+    ['Interface Mode','Galaxy Map',1],
+    ['Interface Mode','Camera Suite',1],
+    ['Interface Mode','Free Camera',1],
+    ['Interface Mode','Holo-Me',2],
+    ['Interface Mode','Playlist',2],
+    ['Interface Mode','Store Camera',2],
+    ['Interface Mode','System Colonization Facility Placement',1],
+    ['Galaxy Map','Camera Suite',1],
+    ['Galaxy Map','Free Camera',1],
+    ['Galaxy Map','Holo-Me',1],
+    ['Galaxy Map','Playlist',2],
+    ['Galaxy Map','Store Camera',1],
+    ['Galaxy Map','System Colonization Facility Placement',1],
+    ['Camera Suite','Free Camera',1],
+    ['Camera Suite','Holo-Me',2],
+    ['Camera Suite','Playlist',2],
+    ['Camera Suite','Store Camera',2],
+    ['Camera Suite','System Colonization Facility Placement',1],
+    ['Free Camera','Playlist',2],
+    ['Free Camera','Store Camera',2],
+    ['Free Camera','System Colonization Facility Placement',1]
+  ]
+});
+</script>
+</body>
+</html>
