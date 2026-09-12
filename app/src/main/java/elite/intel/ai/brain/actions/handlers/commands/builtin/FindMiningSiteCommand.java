@@ -118,9 +118,12 @@ public final class FindMiningSiteCommand implements IntelCommand {
 
         Optional<StellarObjectSearchResultDto.Result> result = miningLocations.getResults().stream().findFirst();
         if (result.isPresent()) {
-            String reminder = StringUtls.localizedResponse("handler.miningSite.found", result.get().getSystemName(), result.get().getBodyName());
-            ReminderManager.getInstance().setReminder(reminder, result.get().getSystemName());
-            return new RoutePlotter().plotRouteAnd(reminder, result.get().getSystemName());
+            String found = StringUtls.localizedResponse("handler.miningSite.found", result.get().getSystemName(), result.get().getBodyName());
+            // Spoken on arrival in that system, where "found in X system" is no longer news.
+            ReminderManager.getInstance().setReminder(
+                    StringUtls.localizedResponse("handler.miningSite.reminder", result.get().getBodyName()),
+                    result.get().getSystemName());
+            return new RoutePlotter().plotRouteAnd(found, result.get().getSystemName());
         } else {
             return StringUtls.localizedResponse("handler.miningSite.notFoundInRange");
         }

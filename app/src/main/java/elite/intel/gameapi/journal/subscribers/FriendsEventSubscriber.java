@@ -43,7 +43,11 @@ public class FriendsEventSubscriber {
             data.append(name).append(" is ").append(status);
         });
         pending.clear();
-        String instructions = "Report each friend's name and their new status (online, offline, etc.). One friend per sentence.";
+        // The name is all the journal gives us: nothing in it says who the friend is, so the model must not
+        // guess. A pronoun of any kind is a guess - and the guess it makes from a name is wrong more often
+        // than not - so each friend is referred to by name and only ever by name.
+        String instructions = "Report each friend's name and their new status (online, offline, etc.). One friend per sentence. "
+                + "Refer to every friend by name only, every time: never use a pronoun for a friend, and never guess anything about a friend from their name.";
         VegaRuntime.narrator().narrate("Friends: " + data, instructions);
     }
 }

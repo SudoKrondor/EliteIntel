@@ -24,6 +24,14 @@ public class RemindTargetDestinationQuery extends BaseQueryAnalyzer implements I
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
         DestinationReminderDao.Reminder reminder = destinationReminder.getReminder();
-        return process(reminder == null ? "no reminders set" : reminder.getReminder());
+        if (reminder == null) {
+            return process("no reminders set");
+        }
+        // The stored sentence is the errand as it is read on arrival, so it names neither the system nor
+        // (always) the port; asked before arrival, the commander wants both.
+        String port = reminder.getStationName();
+        return process("Destination system: " + reminder.getStarSystem()
+                + (port == null || port.isBlank() ? "" : ". Port: " + port)
+                + ". On arrival: " + reminder.getReminder());
     }
 }

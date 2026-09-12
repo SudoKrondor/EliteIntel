@@ -59,7 +59,13 @@ public final class MonetizeRouteCommand implements IntelCommand {
                     tradeTuple.getDestination().getStarSystem(),
                     tradeTuple.getDestination().getStationName());
 
-            reminderManager.setReminder(reminder, tradeTuple.getSource().getStarSystem());
+            // The reminder is for arrival at the source system, so it starts at the port, not the system.
+            reminderManager.setReminder(StringUtls.localizedResponse("handler.tradeRoute.reminder",
+                            tradeTuple.getSource().getStationName(),
+                            tradeTuple.getSource().getCommodity(),
+                            tradeTuple.getDestination().getStarSystem(),
+                            tradeTuple.getDestination().getStationName()),
+                    tradeTuple.getSource().getStarSystem());
 
             return StringUtls.localizedResponse("handler.tradeRoute.tradeFound", reminder);
         }

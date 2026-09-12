@@ -75,6 +75,20 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
         String commodityList = commodities.stream().map(TradeCommodity::getName).collect(Collectors.joining(", "));
 
         String message;
+        // The reminder is heard on arrival in the system it is filed under, so it is the errand there and
+        // nothing about the flight: the buy leg is filed under the SOURCE system (it used to go under the
+        // destination, where "travel to the source and buy" was read back after the goods were already
+        // aboard), and once the hold is loaded the only errand left is the sale at the destination.
+        String reminder;
+        String reminderSystem;
+        if (!cargoLoaded) {
+            reminder = StringUtls.localizedResponse("handler.tradeStop.buyReminder",
+                    sourceStation, commodityList, destinationSystem, destinationStation);
+            reminderSystem = sourceSystem;
+        } else {
+            reminder = StringUtls.localizedResponse("handler.tradeStop.headToStation", destinationStation);
+            reminderSystem = destinationSystem;
+        }
         if (!cargoLoaded) {
             boolean notInSourceSystem = !location.isInSystem(sourceSystem);
             String dockedAt = locationManager.findCurrentStation().getStationName();
@@ -104,7 +118,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
             }
         }
 
-        reminderManager.setReminder(message, destinationSystem);
+        reminderManager.setReminder(reminder, reminderSystem);
         return message;
     }
 }

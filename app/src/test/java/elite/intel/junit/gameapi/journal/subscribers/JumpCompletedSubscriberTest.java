@@ -1,9 +1,15 @@
 package elite.intel.junit.gameapi.journal.subscribers;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.LocationManager;
+import elite.intel.db.managers.ReminderManager;
+import elite.intel.db.managers.ShipRouteManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.gamestate.dtos.NavRouteDto;
 import elite.intel.gameapi.journal.events.FSDJumpEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.subscribers.JumpCompletedSubscriber;
@@ -15,6 +21,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BooleanSupplier;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -96,6 +105,50 @@ class JumpCompletedSubscriberTest {
         assertNotNull(saved.getTrafficDto());
         assertEquals(800, saved.getTrafficDto().getData().getTraffic().getTotal());
         assertEquals(2, saved.getDeathsDto().getData().getDeaths().getTotal());
+    }
+
+    /**
+     * A reminder is filed under a system and phrased for arrival there - "Refuel at Bart Station" - so the
+     * arrival must find it by that column. It used to demand the system's name inside the sentence as well,
+     * which every arrival-phrased reminder fails.
+     */
+    @Test
+    void waypointArrivalSpeaksAReminderThatDoesNotNameTheSystem() throws InterruptedException {
+        SpeechRecorder speech = new SpeechRecorder();
+        GameEventBus.register(speech);
+        try {
+            session.setFinalDestination("Sol");
+            ShipRouteManager.getInstance().setNavRoute(Map.of(1, leg(1, "Alioth"), 2, leg(2, "Sol")));
+            ReminderManager.getInstance().setReminder("Refuel at Bart Station.", "Alioth");
+
+            subscriber.onFSDJumpEvent(fsdJumpEvent("Alioth", ALIOTH_ADDRESS, "Alioth A", 0L));
+
+            awaitTrue(() -> speech.spoken.stream().anyMatch(line -> line.contains("Refuel at Bart Station.")));
+        } finally {
+            GameEventBus.unregister(speech);
+            ReminderManager.getInstance().clear();
+            ShipRouteManager.getInstance().clearRoute();
+            session.setFinalDestination(null);
+        }
+    }
+
+    private static NavRouteDto leg(int number, String system) {
+        NavRouteDto dto = new NavRouteDto();
+        dto.setLeg(number);
+        dto.setName(system);
+        dto.setStarClass("G");
+        dto.setScoopable(true);
+        dto.setRemainingJumps(2 - number);
+        return dto;
+    }
+
+    private static class SpeechRecorder {
+        private final List<String> spoken = new CopyOnWriteArrayList<>();
+
+        @Subscribe
+        public void onVox(AiVoxResponseEvent event) {
+            spoken.add(event.getText());
+        }
     }
 
     private static FSDJumpEvent fsdJumpEvent(String system, long systemAddress, String body, long bodyId) {

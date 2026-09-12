@@ -11,8 +11,9 @@ import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 import elite.intel.util.NavigationUtils;
-
+import elite.intel.util.TTSFriendlyNumberConverter;
 import static elite.intel.util.StringUtls.localizedEvent;
+
 
 public class CodexEntryEventSubscriber {
 
@@ -92,14 +93,14 @@ public class CodexEntryEventSubscriber {
             if (!alreadyHaveThisEntry) {
                 sb.append(", ");
                 if (event.getVoucherAmount() > 0) {
-                    sb.append(localizedEvent("event.codex.voucher", event.getVoucherAmount()));
+                    sb.append(localizedEvent("event.codex.voucher", TTSFriendlyNumberConverter.formatCreditsForSpeech(event.getVoucherAmount())));
                 }
                 Boolean isAnnounced = playerSession.paymentHasBeenAnnounced(genus);
 
                 if (projectedPayment != null && projectedPayment.payment() != null && !isAnnounced) {
-                    sb.append(" ").append(localizedEvent("event.codex.vistaPayment", projectedPayment.payment()));
+                    sb.append(" ").append(localizedEvent("event.codex.vistaPayment", TTSFriendlyNumberConverter.formatCreditsForSpeech(projectedPayment.payment())));
                     if (projectedPayment.firstDiscoveryBonus() != null && currentLocation.isOurDiscovery()) {
-                        sb.append(" ").append(localizedEvent("event.codex.firstDiscoveryBonus", projectedPayment.firstDiscoveryBonus()));
+                        sb.append(" ").append(localizedEvent("event.codex.firstDiscoveryBonus", TTSFriendlyNumberConverter.formatCreditsForSpeech(projectedPayment.firstDiscoveryBonus())));
                     }
                     playerSession.addAnnouncedGenusPayment(genus);
                 }

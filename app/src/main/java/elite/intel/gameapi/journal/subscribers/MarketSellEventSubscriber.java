@@ -203,15 +203,25 @@ public class MarketSellEventSubscriber {
                 .map(TradeCommodity::getName)
                 .collect(Collectors.joining(", "));
 
+        // What is said now describes the whole leg; what is stored is only the errand at the system the
+        // reminder is filed under, because that is where it is read back. Already in the source system, the
+        // next thing to hear on arrival is the sale at the destination; otherwise the reminder waits at the
+        // source system and says what to buy there.
         String tradeMessage;
+        String reminder;
+        String reminderSystem;
         if (playerSession.getPrimaryStarName().equalsIgnoreCase(sourceSystem)) {
             tradeMessage = localizedEvent("event.market.trade.buy", commodities, destinationSystem, destinationStation);
+            reminder = localizedEvent("event.market.trade.sellReminder", destinationStation);
+            reminderSystem = destinationSystem;
         } else {
             tradeMessage = localizedEvent("event.market.trade.head", sourceSystem, sourceStation, commodities, destinationSystem, destinationStation);
+            reminder = localizedEvent("event.market.trade.buyReminder", sourceStation, commodities, destinationSystem, destinationStation);
+            reminderSystem = sourceSystem;
         }
 
         EventNarrator.say(tradeMessage);
-        reminderManager.setReminder(tradeMessage, destinationSystem);
+        reminderManager.setReminder(reminder, reminderSystem);
     }
 
     public record Reminder(Integer legNumber, TradeStopDto stopInfo,

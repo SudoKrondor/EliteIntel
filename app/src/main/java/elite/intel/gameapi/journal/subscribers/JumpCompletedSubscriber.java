@@ -25,7 +25,6 @@ import elite.intel.session.SystemSession;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 
@@ -107,7 +106,8 @@ public class JumpCompletedSubscriber {
                 primaryStar.setDeathsDto(deathsDto);
 
             } else if (roueSet) {
-                if (reminderText != null && !reminderText.isBlank() && reminderText.toLowerCase().contains(event.getStarSystem().toLowerCase(Locale.ROOT))) {
+                // Matched on the reminder's system column above; the text itself no longer names the system.
+                if (reminderText != null && !reminderText.isBlank()) {
                     EventNarrator.say(localizedEvent("event.route.reminder", reminderText));
                 }
 

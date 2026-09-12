@@ -46,6 +46,21 @@ public class TradeProfileManager {
      */
     private static final Set<String> SURFACE_STATION_TYPES = Set.of("CraterPort", "CraterOutpost", "OnFootSettlement");
     /**
+     * Journal station types for carriers, gated by the profile's fleet carrier flag.
+     */
+    private static final Set<String> CARRIER_STATION_TYPES = Set.of("FleetCarrier", "SquadronCarrier");
+    /**
+     * Journal station types for colonisation construction depots. A depot advertises a {@code commodities}
+     * service, but that market only takes deliveries - nothing is for sale - and Spansh does not index the
+     * site as a station at all, so a route anchored there is refused with "Could not find station".
+     */
+    private static final Set<String> CONSTRUCTION_STATION_TYPES = Set.of("SpaceConstructionDepot", "PlanetaryConstructionDepot");
+    /**
+     * The journal service that marks a colonisation site of any shape, including the colonisation ship,
+     * whose station type is the generic {@code SurfaceStation} and so cannot be told apart by type.
+     */
+    private static final String COLONISATION_CONTRIBUTION_SERVICE = "colonisationcontribution";
+    /**
      * Anchor candidates to ask Spansh for. More than one because the nearest station Spansh knows can still
      * be rejected here (a stale market flag, say), and the next one on the page is the next best answer.
      */
@@ -162,11 +177,16 @@ public class TradeProfileManager {
      * and a route plotted from a pad the ship cannot land on comes back looking perfectly valid. The
      * journal's station type is the only pad evidence we record; a type we do not recognise is taken as
      * usable, exactly as {@link #sellsCommodities} treats an unknown service list, because the older
-     * station rows predate either being captured.
+     * station rows predate either being captured. The carrier flag is the profile's too: a route the
+     * commander asked to keep off carriers must not start on one, least of all their own, which is the
+     * station they are most often docked at when they ask.
      */
     static boolean canAnchorRoute(TradeRouteSearchCriteria criteria, LocationDto station) {
-        String stationType = station.getStationType();
+        // The recorded type, not the spoken one: an old row with no type must not read as a carrier here.
+        String stationType = station.getRecordedStationType();
+        if (stationType == null) return true;
         if (criteria.isRequiresLargePad() && NO_LARGE_PAD_STATION_TYPES.contains(stationType)) return false;
+        if (!criteria.isAllowFleetCarriers() && CARRIER_STATION_TYPES.contains(stationType)) return false;
         return criteria.isAllowPlanetary() || !SURFACE_STATION_TYPES.contains(stationType);
     }
 
@@ -174,10 +194,18 @@ public class TradeProfileManager {
      * True unless the record positively says the station has no commodity market. A trade route has to
      * start where cargo can be bought, but the older station rows were written before station services
      * were captured, so an unknown service list is taken as usable rather than discarded.
+     * <p>
+     * A colonisation site is the exception that does not sell: its {@code commodities} service is the
+     * delivery manifest of the build, and Spansh knows no such station. It is recognised by the
+     * {@code colonisationcontribution} service first and the depot station types second, because the
+     * colonisation ship carries the service under an ordinary station type.
      */
-    private static boolean sellsCommodities(LocationDto station) {
+    static boolean sellsCommodities(LocationDto station) {
+        String stationType = station.getRecordedStationType();
+        if (stationType != null && CONSTRUCTION_STATION_TYPES.contains(stationType)) return false;
         List<String> services = station.getStationServices();
         if (services == null || services.isEmpty()) return true;
+        if (services.stream().anyMatch(COLONISATION_CONTRIBUTION_SERVICE::equalsIgnoreCase)) return false;
         return services.stream().anyMatch(service -> "commodities".equalsIgnoreCase(service));
     }
 

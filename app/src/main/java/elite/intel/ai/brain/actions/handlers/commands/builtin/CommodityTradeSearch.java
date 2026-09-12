@@ -158,7 +158,17 @@ final class CommodityTradeSearch {
         reminder += againstGalacticAverage(commodity, result.getPrice());
         reminder += howOldThatPriceIs(result);
         VegaRuntime.narrator().filler(reminder, false);
-        ReminderManager.getInstance().setReminder(reminder, result.getStarSystem(), result.getStationName(), null);
+        // What is stored is not the answer but the errand, phrased for the moment it is read back: on
+        // arrival in that system. The system name, the distance, the price's age and how it compares to
+        // the galaxy are all behind the commander by then; the port, the good, the unit price and a short
+        // load are what is still to act on.
+        String errand = StringUtls.localizedResponse("handler.commodity.buyReminder",
+                FuzzySearch.localizedCommodityName(commodity), result.getStationName(), result.getStationType(), result.getPrice());
+        if (result.getSupply() > 0 && result.getSupply() < wanted) {
+            errand += " " + StringUtls.localizedResponse("handler.commodity.partLoad", result.getSupply());
+        }
+        ReminderManager.getInstance().setReminder(withCarrierNote(errand, result.isFleetCarrier()),
+                result.getStarSystem(), result.getStationName(), null);
         // The reminder is prose for the voice; the stock and the unit price are inside that sentence and
         // nowhere a HUD card can read them. Store the result itself so the overlay can show what was found
         // - and keep showing it after a restart mid-trip, which is what the overlay's derive-never-remember
@@ -237,7 +247,13 @@ final class CommodityTradeSearch {
         reminder += againstGalacticAverage(commodity, result.getPrice());
         reminder += howOldThatPriceIs(result);
         VegaRuntime.narrator().filler(reminder, false);
-        ReminderManager.getInstance().setReminder(reminder, result.getStarSystem(), result.getStationName(), null);
+        String errand = StringUtls.localizedResponse("handler.commodity.sellReminder",
+                FuzzySearch.localizedCommodityName(commodity), result.getStationName(), result.getStationType(), result.getPrice());
+        if (toSell > 0 && result.getSupply() > 0 && result.getSupply() < toSell) {
+            errand += " " + StringUtls.localizedResponse("handler.commodity.partSale", result.getSupply());
+        }
+        ReminderManager.getInstance().setReminder(withCarrierNote(errand, result.isFleetCarrier()),
+                result.getStarSystem(), result.getStationName(), null);
         recordForOverlay(result, TradeSide.SELL, toSell);
 
         return new RoutePlotter().plotRoute(result.getStarSystem());
@@ -393,9 +409,11 @@ final class CommodityTradeSearch {
         }
 
         BasketResult market = markets.getFirst();
-        String reminder = spokenAnswer(market, distance);
-        VegaRuntime.narrator().filler(reminder, false);
-        ReminderManager.getInstance().setReminder(reminder, market.starSystem(), market.stationName(), null);
+        VegaRuntime.narrator().filler(spokenAnswer(market, distance), false);
+        String errand = StringUtls.localizedResponse("handler.commodity.basketReminder",
+                market.stationName(), market.stationType(), goodsList(market));
+        ReminderManager.getInstance().setReminder(withCarrierNote(errand, market.fleetCarrier()),
+                market.starSystem(), market.stationName(), null);
         recordForOverlay(market);
 
         // As above: whatever the plotter has to say is the commander's answer, not something to drop.
@@ -409,14 +427,9 @@ final class CommodityTradeSearch {
      * the way Spansh matches them, which is English whatever the commander speaks.
      */
     private static String spokenAnswer(BasketResult market, int distance) {
-        String goods = market.lines().stream()
-                .map(line -> StringUtls.localizedResponse("handler.commodity.basketItem",
-                        line.unitsToBuy(), FuzzySearch.localizedCommodityName(line.commodity())))
-                .collect(Collectors.joining(", "));
-
         String answer = StringUtls.localizedResponse(
                 market.fleetCarrier() ? "handler.commodity.basketAtCarrier" : "handler.commodity.basketAt",
-                market.starSystem(), market.stationName(), market.stationType(), goods, market.totalUnits());
+                market.starSystem(), market.stationName(), market.stationType(), goodsList(market), market.totalUnits());
         // The search doubles the radius rather than call a good nonexistent, so when the answer lies outside
         // what the commander asked for he is told - being sent 340 ly after asking for 100 is worth a
         // sentence, and silently substituting a different question for his is not.
@@ -425,6 +438,22 @@ final class CommodityTradeSearch {
                     distance, Math.round(market.distanceFromPlayer()));
         }
         return answer;
+    }
+
+    private static String goodsList(BasketResult market) {
+        return market.lines().stream()
+                .map(line -> StringUtls.localizedResponse("handler.commodity.basketItem",
+                        line.unitsToBuy(), FuzzySearch.localizedCommodityName(line.commodity())))
+                .collect(Collectors.joining(", "));
+    }
+
+    /**
+     * A carrier is only ever offered when nothing that stays put has the good, and it jumps - so the
+     * warning the spoken answer carried is kept on the reminder too, where it is read on arrival, which is
+     * exactly when the carrier may turn out to have left.
+     */
+    private static String withCarrierNote(String errand, boolean fleetCarrier) {
+        return fleetCarrier ? errand + " " + StringUtls.localizedResponse("handler.commodity.carrierReminder") : errand;
     }
 
     /**

@@ -169,10 +169,50 @@ class TradeAnchorSearchTest {
         assertTrue(TradeProfileManager.canAnchorRoute(profile, station(null)));
     }
 
+    @Test
+    void aCarrierFromOurOwnRecordsObeysTheFleetCarrierFlag() {
+        // The commander's own carrier is the station they are most often docked at when they ask, and so
+        // the nearest one on record. A route the profile keeps off carriers must not start there.
+        assertFalse(TradeProfileManager.canAnchorRoute(profile(), station("FleetCarrier")));
+        assertFalse(TradeProfileManager.canAnchorRoute(profile(), station("SquadronCarrier")));
+
+        TradeRouteSearchCriteria allowsCarriers = profile();
+        allowsCarriers.setAllowFleetCarriers(true);
+        assertTrue(TradeProfileManager.canAnchorRoute(allowsCarriers, station("FleetCarrier")));
+    }
+
+    /**
+     * A construction depot advertises a {@code commodities} service in the journal, but that market only
+     * takes deliveries, and Spansh refuses a route anchored there with "Could not find station". Seen in
+     * Hyades Sector MH-V c2-8, where ten depots sat at 0 ly beside the one built starport.
+     */
+    @Test
+    void aConstructionSiteNeverSellsAnything() {
+        List<String> depotServices = List.of("dock", "autodock", "commodities", "contacts", "rearm", "refuel",
+                "repair", "flightcontroller", "stationoperations", "stationMenu", "colonisationcontribution");
+
+        assertFalse(TradeProfileManager.sellsCommodities(station("SpaceConstructionDepot", depotServices)));
+        assertFalse(TradeProfileManager.sellsCommodities(station("PlanetaryConstructionDepot", depotServices)));
+        // The colonisation ship docks as an ordinary SurfaceStation: only its service list gives it away.
+        assertFalse(TradeProfileManager.sellsCommodities(station("SurfaceStation", depotServices)));
+        // And a depot row that never recorded its services is still recognised by type.
+        assertFalse(TradeProfileManager.sellsCommodities(station("SpaceConstructionDepot", null)));
+
+        assertTrue(TradeProfileManager.sellsCommodities(station("Coriolis", List.of("dock", "commodities", "shipyard"))));
+        assertFalse(TradeProfileManager.sellsCommodities(station("Outpost", List.of("dock", "refuel"))));
+        assertTrue(TradeProfileManager.sellsCommodities(station("Coriolis", null)),
+                "older station rows predate services being captured and stay usable");
+    }
+
     private static LocationDto station(String stationType) {
+        return station(stationType, null);
+    }
+
+    private static LocationDto station(String stationType, List<String> services) {
         LocationDto station = new LocationDto(1L, "Somewhere");
         station.setStationName("Somewhere Hub");
         station.setStationType(stationType);
+        station.setStationServices(services);
         return station;
     }
 

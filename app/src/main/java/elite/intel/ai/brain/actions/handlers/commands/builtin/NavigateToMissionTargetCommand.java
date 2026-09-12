@@ -92,8 +92,13 @@ public final class NavigateToMissionTargetCommand implements IntelCommand {
         String heading = StringUtls.localizedResponse("handler.navigate.headToSystem", system);
 
         // The port belongs in its own column, not in the sentence: the HUD overlay draws the reminder as
-        // a card and cannot take it back out of the prose.
-        ReminderManager.getInstance().setReminder(heading, system, mission.getDestinationStation(), null);
+        // a card and cannot take it back out of the prose. The sentence itself is for arrival, where
+        // "head to this system" would be a nonsense, so it names the port when the mission has one.
+        String port = mission.getDestinationStation();
+        String reminder = port == null || port.isBlank()
+                ? StringUtls.localizedResponse("handler.navigate.missionReminderNoPort")
+                : StringUtls.localizedResponse("handler.navigate.missionReminder", port);
+        ReminderManager.getInstance().setReminder(reminder, system, port, null);
 
         VegaRuntime.narrator().filler(heading, false);
         return new RoutePlotter().plotRoute(system);
