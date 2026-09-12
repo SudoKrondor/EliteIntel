@@ -93,6 +93,17 @@ public class HudBanner extends HudPanel {
         );
     }
 
+    /** Replaces the localized message while keeping the banner's semantic styling. */
+    public void setText(String text) {
+        if (textComponent instanceof JLabel label) {
+            label.setText(text == null ? "" : text);
+        } else if (textComponent instanceof JTextArea area) {
+            area.setText(text == null ? "" : text);
+        }
+        revalidate();
+        repaint();
+    }
+
     /** Dims the rail and text to {@code HUD_COLOR_ROLE_DISABLED} when disabled (section 0.6), restores the state colour when enabled. */
     @Override
     public void setEnabled(boolean enabled) {

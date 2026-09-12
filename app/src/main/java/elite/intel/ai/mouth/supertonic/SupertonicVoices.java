@@ -10,13 +10,8 @@ import java.util.concurrent.ThreadLocalRandom;
  * (one {@code voice.bin} style embedding per speaker index, selected by {@code sid}).
  * <p>
  * The upstream release does not publish names or genders for these ten indices - the model card and the
- * samples page only ever say "Speaker 0" through "Speaker 9". The names used below (M1-M5, F1-F5) are not
- * invented: they match Supertonic's own preset-voice-style naming scheme (see the {@code supertonic} PyPI
- * package, which ships an originally-4-voice pack later extended with "6 new voice styles: M3, M4, M5, F3,
- * F4, F5" - four before plus six after is exactly the ten speakers this fixed sherpa-onnx release bundles).
- * The mapping from sid to M/F index - sid 0-4 in order to M1-M5, sid 5-9 in order to F1-F5 - is inferred
- * from that history and from the model's speaker ordering, not confirmed by an upstream manifest, but it is
- * the closest available fit and vastly more informative than a bare number in every voice list this app shows.
+ * samples page only ever say "Speaker 0" through "Speaker 9". The enum names preserve the technical M/F
+ * identifiers used by the model mapping, while the display names below are this app's fantasy names.
  * <p>
  * Unlike Kokoro's 53-voice, per-accent cast, every one of these ten is retained: there is no immersion-breaking
  * outlier to cull, and holding any of them back would remove a tenth of an already small pool. Nothing may
@@ -29,16 +24,16 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public enum SupertonicVoices {
 
-    M1(0, false, "M1", "Female"),
-    M2(1, false, "M2", "Female"),
-    M3(2, false, "M3", "Female"),
-    M4(3, false, "M4", "Female"),
-    M5(4, false, "M5", "Female"),
-    F1(5, true, "F1", "Male"),
-    F2(6, true, "F2", "Male"),
-    F3(7, true, "F3", "Male"),
-    F4(8, true, "F4", "Male"),
-    F5(9, true, "F5", "Male");
+    F1(0, false, "Astra", "Female"),
+    F2(1, false, "Lyra", "Female"),
+    F3(2, false, "Vesper", "Female"),
+    F4(3, false, "Nyx", "Female"),
+    F5(4, false, "Solara", "Female"),
+    M1(5, true, "Orion", "Male"),
+    M2(6, true, "Atlas", "Male"),
+    M3(7, true, "Rook", "Male"),
+    M4(8, true, "Cassian", "Male"),
+    M5(9, true, "Draven", "Male");
 
     /**
      * The default ship voice, used when a ship has no stored voice or carries a name this engine does not

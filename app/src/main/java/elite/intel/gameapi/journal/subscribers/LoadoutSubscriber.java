@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoices;
+import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.managers.ShipManager;
@@ -50,6 +51,7 @@ public class LoadoutSubscriber {
             if (ship == null) {
 
                 String shipDefaultVoice = switch (systemSession.getTtsProvider()) {
+                    case KOKORO -> KokoroVoices.DEFAULT_VOICE.name();
                     case SUPERTONIC -> SupertonicVoices.DEFAULT_VOICE.name();
                     case EDGE -> EdgeVoices.DEFAULT_VOICE.name();
                     case GOOGLE -> GoogleVoices.DEFAULT_VOICE.name();

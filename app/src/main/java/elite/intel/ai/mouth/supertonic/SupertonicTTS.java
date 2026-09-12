@@ -58,6 +58,7 @@ public class SupertonicTTS implements MouthInterface {
     private static final int SAMPLE_RATE = 24000;
     private static final int DEFAULT_SID = SupertonicVoices.DEFAULT_VOICE.getSid();
     private static final int NUM_STEPS = 8;
+    private static final float SPEED_CALIBRATION = 0.85f;
     /**
      * MAIN: the primary voice engine (handles all narration, including radio, through one queue).
      * RADIO: a radio-only engine that runs alongside a non-Supertonic main mouth (e.g. Google), handling
@@ -443,7 +444,7 @@ public class SupertonicTTS implements MouthInterface {
 
                 GenerationConfig genConfig = new GenerationConfig();
                 genConfig.setSid(sid);
-                genConfig.setSpeed(1f + systemSession.getSpeechSpeed());
+                genConfig.setSpeed(SPEED_CALIBRATION * (1f + systemSession.getSpeechSpeed()));
                 genConfig.setNumSteps(NUM_STEPS);
                 genConfig.setExtra(Map.of("lang", supertonicLangCode(SystemSession.getInstance().getLanguage())));
 
@@ -655,9 +656,8 @@ public class SupertonicTTS implements MouthInterface {
             case ES -> "es";
             case IT -> "it";
             case DE -> "de";
-            // Supertonic ships one Portuguese code; European Portuguese speaks with whatever accent that
-            // single model carries, same trade-off Kokoro made with its Brazilian-only Portuguese voice.
-            case PT, PTBZ -> "pt";
+            // Supertonic ships one European Portuguese code. Brazilian Portuguese is routed to Kokoro.
+            case PT -> "pt";
             default -> "en";
         };
     }

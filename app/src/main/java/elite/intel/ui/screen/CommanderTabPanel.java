@@ -7,6 +7,7 @@ import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoiceProvider;
 import elite.intel.ai.mouth.google.GoogleVoices;
+import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.ai.mouth.subscribers.events.AiVoxDemoEvent;
 import elite.intel.db.dao.ShipDao;
@@ -98,7 +99,11 @@ public class CommanderTabPanel extends JPanel {
     private String voiceLabel(String enumName) {
         if (enumName == null) return "";
         try {
-            if (SystemSession.getInstance().useLocalTTS()) {
+            if (SystemSession.getInstance().getTtsProvider() == TtsProvider.KOKORO) {
+                KokoroVoices v = KokoroVoices.valueOf(enumName);
+                return v.getDisplayName() + " - " + v.getDescription();
+            }
+            if (SystemSession.getInstance().getTtsProvider() == TtsProvider.SUPERTONIC) {
                 SupertonicVoices v = SupertonicVoices.valueOf(enumName);
                 return v.getDisplayName() + " - " + v.getDescription();
             }
@@ -466,9 +471,11 @@ public class CommanderTabPanel extends JPanel {
         // Voice options depend on current TTS provider; rebuild editor on every call. Every voice the active
         // engine has is offered, male and female alike - the picked voice also decides how VEGA
         // speaks of itself (see SystemSession.getVoiceGender()).
-        boolean useLocal = SystemSession.getInstance().useLocalTTS();
+        TtsProvider provider = SystemSession.getInstance().getTtsProvider();
         String[] voiceOptions;
-        if (useLocal) {
+        if (provider == TtsProvider.KOKORO) {
+            voiceOptions = Arrays.stream(KokoroVoices.values()).map(Enum::name).toArray(String[]::new);
+        } else if (provider == TtsProvider.SUPERTONIC) {
             voiceOptions = Arrays.stream(SupertonicVoices.values()).map(Enum::name).toArray(String[]::new);
         } else if (usesEdgeTts()) {
             voiceOptions = Arrays.stream(EdgeVoices.values()).map(Enum::name).toArray(String[]::new);
@@ -496,7 +503,10 @@ public class CommanderTabPanel extends JPanel {
      * actually speaks.
      */
     static String normalizeVoice(String voiceName) {
-        if (SystemSession.getInstance().useLocalTTS()) {
+        if (SystemSession.getInstance().getTtsProvider() == TtsProvider.KOKORO) {
+            return KokoroVoices.voiceOrDefault(voiceName).name();
+        }
+        if (SystemSession.getInstance().getTtsProvider() == TtsProvider.SUPERTONIC) {
             return SupertonicVoices.voiceOrDefault(voiceName).name();
         }
         if (usesEdgeTts()) {

@@ -247,11 +247,25 @@ public final class AppPaths {
     public static String toNativePath(Path path) {
         String s = path.toAbsolutePath().toString();
         if (!System.getProperty("os.name", "").toLowerCase().contains("win")) return s;
+        if (s.chars().allMatch(character -> character < 128)) return s;
         try {
             Kernel32 k32 = Native.load("kernel32", Kernel32.class);
             char[] buf = new char[s.length() + 260];
             int len = k32.GetShortPathNameW(new WString(s), buf, buf.length);
-            if (len > 0 && len < buf.length) return new String(buf, 0, len);
+            if (len > 0 && len < buf.length) {
+                String shortPath = new String(buf, 0, len);
+                String fileName = path.getFileName().toString();
+                int extensionStart = fileName.lastIndexOf('.');
+                int separator = Math.max(shortPath.lastIndexOf('\\'), shortPath.lastIndexOf('/'));
+                if (extensionStart > 0 && extensionStart < fileName.length() - 1) {
+                    int shortExtensionStart = shortPath.lastIndexOf('.');
+                    if (shortExtensionStart > separator) {
+                        shortPath = shortPath.substring(0, shortExtensionStart)
+                                + fileName.substring(extensionStart);
+                    }
+                }
+                return shortPath;
+            }
         } catch (Throwable ignored) {
             // fall through - return original path
         }

@@ -16,6 +16,7 @@ import elite.intel.ai.mouth.MouthInterface;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeTTSImpl;
 import elite.intel.ai.mouth.google.GoogleTTSImpl;
+import elite.intel.ai.mouth.kokoro.KokoroTTS;
 import elite.intel.ai.mouth.supertonic.SupertonicTTS;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
@@ -88,6 +89,7 @@ public class ApiFactory {
     // TODO: Add ElevenLabs, AWS Polly, etc.
     static MouthInterface selectMouth(TtsProvider provider, String ttsApiKey, Language language) {
         return switch (resolveProvider(provider, ttsApiKey, language)) {
+            case KOKORO -> mainKokoro();
             case GOOGLE -> GoogleTTSImpl.getInstance();
             case EDGE -> mainEdge();
             case SUPERTONIC -> mainSupertonic();
@@ -115,6 +117,12 @@ public class ApiFactory {
         SupertonicTTS supertonic = SupertonicTTS.getInstance();
         supertonic.setRole(SupertonicTTS.Role.MAIN);
         return supertonic;
+    }
+
+    private static KokoroTTS mainKokoro() {
+        KokoroTTS kokoro = KokoroTTS.getInstance();
+        kokoro.setRole(KokoroTTS.Role.MAIN);
+        return kokoro;
     }
 
     /// -- no choices here

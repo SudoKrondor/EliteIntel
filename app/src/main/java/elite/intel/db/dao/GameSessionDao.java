@@ -15,8 +15,7 @@ public interface GameSessionDao {
 
 
     @SqlUpdate("""
-            INSERT OR REPLACE INTO game_session (id, supertonicVoice, googleVoice,
-                                                             rmsThresholdHigh,
+            INSERT OR REPLACE INTO game_session (id, rmsThresholdHigh,
                                                              rmsThresholdLow, encryptedLLMKey, encryptedTTSKey,
                                                              speechSpeed, googleWaveNetPitch,
                                                              keyInputDelayMs,
@@ -31,8 +30,7 @@ public interface GameSessionDao {
                                                              overlayDisplayMode, overlayVrPosition, overlayVisible,
                                                              overlayColors
                                                 )
-                                  VALUES (1, :supertonicVoice, :googleVoice,
-                                                      :rmsThresholdHigh,
+                                  VALUES (1, :rmsThresholdHigh,
                                                       :rmsThresholdLow, :encryptedLLMKey, :encryptedTTSKey,
                                                       :speechSpeed, :googleWaveNetPitch,
                                                       :keyInputDelayMs,
@@ -62,8 +60,6 @@ public interface GameSessionDao {
             session.setEncryptedLLMKey(rs.getString("encryptedLLMKey"));
             session.setEncryptedTTSKey(rs.getString("encryptedTTSKey"));
 
-            session.setSupertonicVoice(rs.getString("supertonicVoice"));
-            session.setGoogleVoice(rs.getString("googleVoice"));
             session.setRmsThresholdHigh(rs.getDouble("rmsThresholdHigh"));
             session.setRmsThresholdLow(rs.getDouble("rmsThresholdLow"));
 
@@ -107,8 +103,6 @@ public interface GameSessionDao {
         private String encryptedLLMKey;
         private String encryptedTTSKey;
 
-        private String supertonicVoice;
-        private String googleVoice;
         private Double rmsThresholdHigh = 460.00;
         private Double rmsThresholdLow = 100.00;
 
@@ -162,28 +156,6 @@ public interface GameSessionDao {
          */
         private String overlayColors = "";
 
-
-        /**
-         * App-global Supertonic (local TTS) voice, independent of {@link #googleVoice}.
-         */
-        public String getSupertonicVoice() {
-            return supertonicVoice;
-        }
-
-        public void setSupertonicVoice(String supertonicVoice) {
-            this.supertonicVoice = supertonicVoice;
-        }
-
-        /**
-         * App-global Google (cloud TTS) voice, independent of {@link #supertonicVoice}.
-         */
-        public String getGoogleVoice() {
-            return googleVoice;
-        }
-
-        public void setGoogleVoice(String googleVoice) {
-            this.googleVoice = googleVoice;
-        }
 
         public Double getRmsThresholdLow() {
             return rmsThresholdLow;

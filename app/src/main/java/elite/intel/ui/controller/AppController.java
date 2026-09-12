@@ -11,6 +11,7 @@ import elite.intel.ai.hands.KeyBindCheck;
 import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeTTSImpl;
+import elite.intel.ai.mouth.kokoro.KokoroTTS;
 import elite.intel.ai.mouth.supertonic.SupertonicTTS;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
@@ -525,6 +526,11 @@ public class AppController {
      */
     private static ManagedService radioEngine(TtsProvider provider) {
         return switch (provider) {
+            case KOKORO -> {
+                KokoroTTS radio = KokoroTTS.getInstance();
+                radio.setRole(KokoroTTS.Role.RADIO);
+                yield radio;
+            }
             case SUPERTONIC -> {
                 SupertonicTTS radio = SupertonicTTS.getInstance();
                 radio.setRole(SupertonicTTS.Role.RADIO);

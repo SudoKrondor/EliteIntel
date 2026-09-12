@@ -5,6 +5,7 @@ import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.VoiceGender;
 import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoices;
+import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ChatHistoryDao;
 import elite.intel.db.dao.GameSessionDao;
@@ -76,6 +77,11 @@ public class SystemSession {
     }
 
 
+    public KokoroVoices getKokoroVoice() {
+        ShipDao.Ship ship = shipManager.getShip();
+        return KokoroVoices.voiceOrDefault(ship == null ? null : ship.getVoice());
+    }
+
     public SupertonicVoices getSupertonicVoice() {
         ShipDao.Ship ship = shipManager.getShip();
         return SupertonicVoices.voiceOrDefault(ship == null ? null : ship.getVoice());
@@ -101,6 +107,7 @@ public class SystemSession {
         ShipDao.Ship ship = shipManager.getShip();
         String voice = ship == null ? null : ship.getVoice();
         return switch (getTtsProvider()) {
+            case KOKORO -> VoiceGender.of(KokoroVoices.voiceOrDefault(voice).isMale());
             case SUPERTONIC -> VoiceGender.of(SupertonicVoices.voiceOrDefault(voice).isMale());
             case EDGE -> VoiceGender.of(EdgeVoices.voiceOrDefault(voice).male());
             case GOOGLE -> VoiceGender.of(GoogleVoices.voiceOrDefault(voice).isMale());
