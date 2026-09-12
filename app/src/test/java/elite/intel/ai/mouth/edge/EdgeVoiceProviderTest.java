@@ -3,9 +3,7 @@ package elite.intel.ai.mouth.edge;
 import elite.intel.i18n.Language;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -86,116 +84,6 @@ class EdgeVoiceProviderTest {
         assertEquals("en-US-AvaNeural", EdgeVoices.shortNameOrDefault("en-US-AvaNeural"));
         assertEquals(EdgeVoices.DEFAULT_VOICE.defaultShortName(),
                 EdgeVoices.shortNameOrDefault("not-a-voice"));
-    }
-
-    /**
-     * Radio is the other side of a comms link, not the ship's voice, so it ignores the ship's voice selection
-     * entirely and draws from the whole locale: a station answering in a voice of either gender is the point.
-     */
-    @Test
-    void radioDrawsBothGendersFromTheLocaleAndKeepsTheDrawnVoice() {
-        EdgeVoiceProvider provider = new EdgeVoiceProvider();
-        provider.setAvailableVoices(List.of(
-                voice("ru-RU-SvetlanaNeural", "Female", "ru-RU"),
-                voice("ru-RU-DmitryNeural", "Male", "ru-RU"),
-                voice("uk-UA-PolinaNeural", "Female", "uk-UA")));
-
-        Set<String> drawn = new HashSet<>();
-        for (int i = 0; i < 500; i++) {
-            drawn.add(provider.randomRadioVoiceName(Language.RU));
-        }
-        assertEquals(Set.of("ru-RU-SvetlanaNeural", "ru-RU-DmitryNeural"), drawn,
-                "radio must stay in the commander's language and must include the male voice");
-        assertEquals("uk-UA-PolinaNeural", provider.randomRadioVoiceName(Language.UK));
-
-        assertEquals("ru-RU-DmitryNeural",
-                provider.resolveRadio("ru-RU-DmitryNeural", Language.RU).shortName());
-    }
-
-    /**
-     * A voice given to a carrier's traffic control is not drawn for anyone else - unless it is the only voice
-     * the locale has, which Ukrainian very nearly is: silence would be a worse answer than a repeat.
-     */
-    @Test
-    void radioSkipsAVoiceReservedForACarrier() {
-        EdgeVoiceProvider provider = new EdgeVoiceProvider();
-        provider.setAvailableVoices(List.of(
-                voice("ru-RU-SvetlanaNeural", "Female", "ru-RU"),
-                voice("ru-RU-DmitryNeural", "Male", "ru-RU"),
-                voice("uk-UA-PolinaNeural", "Female", "uk-UA")));
-
-        Set<String> drawn = new HashSet<>();
-        for (int i = 0; i < 500; i++) {
-            drawn.add(provider.randomRadioVoiceName(Language.RU, Set.of("ru-RU-DmitryNeural")));
-        }
-        assertEquals(Set.of("ru-RU-SvetlanaNeural"), drawn);
-
-        assertEquals("uk-UA-PolinaNeural",
-                provider.randomRadioVoiceName(Language.UK, Set.of("uk-UA-PolinaNeural")),
-                "the locale's only voice is still spoken rather than nothing at all");
-    }
-
-    /**
-     * The list is fetched on the first synthesis, so the first transmission of a session has no list yet.
-     */
-    @Test
-    void radioBeforeTheVoiceListArrivesUsesKnownVoicesForTheLocale() {
-        EdgeVoiceProvider provider = new EdgeVoiceProvider();
-
-        Set<String> russian = new HashSet<>();
-        Set<String> ukrainian = new HashSet<>();
-        for (int i = 0; i < 500; i++) {
-            russian.add(provider.randomRadioVoiceName(Language.RU));
-            ukrainian.add(provider.randomRadioVoiceName(Language.UK));
-        }
-        assertEquals(Set.of("ru-RU-SvetlanaNeural", "ru-RU-DmitryNeural"), russian);
-        assertEquals(Set.of("uk-UA-PolinaNeural", "uk-UA-OstapNeural"), ukrainian);
-
-        EdgeVoice unconfirmed = provider.resolveRadio("ru-RU-DmitryNeural", Language.RU);
-        assertEquals("ru-RU-DmitryNeural", unconfirmed.shortName());
-        assertEquals("ru-RU", unconfirmed.locale());
-    }
-
-    /**
-     * A pirate is named on every line they transmit, so drawing afresh each time made one attacker sound like
-     * several. Keyed on the speaker, one name keeps one voice - and an unattributed transmission is still a
-     * stranger drawn at random.
-     */
-    @Test
-    void aNamedSpeakerKeepsOneVoiceWhileStrangersStillVary() {
-        EdgeVoiceProvider provider = new EdgeVoiceProvider();
-        provider.setAvailableVoices(List.of(
-                voice("ru-RU-SvetlanaNeural", "Female", "ru-RU"),
-                voice("ru-RU-DmitryNeural", "Male", "ru-RU")));
-
-        String first = provider.radioVoiceNameFor(Language.RU, "Dave Knowles", Set.of());
-        Set<String> strangers = new HashSet<>();
-        for (int i = 0; i < 500; i++) {
-            assertEquals(first, provider.radioVoiceNameFor(Language.RU, "Dave Knowles", Set.of()));
-            assertEquals(first, provider.radioVoiceNameFor(Language.RU, " dave knowles ", Set.of()));
-            strangers.add(provider.radioVoiceNameFor(Language.RU, null, Set.of()));
-        }
-        assertEquals(Set.of("ru-RU-SvetlanaNeural", "ru-RU-DmitryNeural"), strangers);
-    }
-
-    /**
-     * A carrier's voice is still nobody else's, and the locale with a single voice still speaks rather than
-     * falling silent.
-     */
-    @Test
-    void aNamedSpeakerStillSkipsAReservedVoice() {
-        EdgeVoiceProvider provider = new EdgeVoiceProvider();
-        provider.setAvailableVoices(List.of(
-                voice("ru-RU-SvetlanaNeural", "Female", "ru-RU"),
-                voice("ru-RU-DmitryNeural", "Male", "ru-RU"),
-                voice("uk-UA-PolinaNeural", "Female", "uk-UA")));
-
-        for (int i = 0; i < 100; i++) {
-            assertEquals("ru-RU-SvetlanaNeural",
-                    provider.radioVoiceNameFor(Language.RU, "Pilot " + i, Set.of("ru-RU-DmitryNeural")));
-        }
-        assertEquals("uk-UA-PolinaNeural",
-                provider.radioVoiceNameFor(Language.UK, "Dave Knowles", Set.of("uk-UA-PolinaNeural")));
     }
 
     private static EdgeVoice voice(String shortName, String gender, String locale) {

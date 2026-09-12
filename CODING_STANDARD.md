@@ -19,7 +19,7 @@ live in `CLAUDE.md` and take precedence where they overlap.
 - Keep concerns separated; do not mix unrelated responsibilities in one class.
 - Favour extension without modification (Open/Closed) where it does not add speculative abstraction.
 - Depend on interfaces at module seams (this project already does: `EarsInterface`, `MouthInterface`,
-  `LlmGateway`, `CompanionActionReducer`, etc.).
+  `LlmGateway`, `VegaActionReducer`, etc.).
 - Subtypes must be substitutable for their base types (Liskov).
 - Prefer specific interfaces over broad ones (Interface Segregation).
 - Weigh long-term maintainability in design decisions.

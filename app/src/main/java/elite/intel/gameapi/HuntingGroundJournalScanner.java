@@ -1,10 +1,9 @@
 package elite.intel.gameapi;
 
 import com.google.gson.JsonObject;
-import elite.intel.db.dao.HuntingGroundScanDao;
+import com.google.gson.JsonParseException;
 import elite.intel.db.dao.LocationDao.Coordinates;
 import elite.intel.db.managers.HuntingGroundManager;
-import elite.intel.db.util.Database;
 import elite.intel.gameapi.journal.events.MissionAcceptedEvent;
 import elite.intel.gameapi.journal.events.MissionCompletedEvent;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
@@ -103,7 +102,7 @@ public class HuntingGroundJournalScanner {
             return List.of();
         }
 
-        String bookmark = Database.withDao(HuntingGroundScanDao.class, HuntingGroundScanDao::lastJournal);
+        String bookmark = huntingGrounds.lastScannedJournal();
         if (bookmark == null || bookmark.isBlank()) return all;
 
         for (int i = 0; i < all.size(); i++) {
@@ -117,11 +116,7 @@ public class HuntingGroundJournalScanner {
     }
 
     private void rememberProgress(Path lastRead) {
-        String name = lastRead.getFileName().toString();
-        Database.withDao(HuntingGroundScanDao.class, dao -> {
-            dao.recordProgress(name, Instant.now().toString());
-            return Void.TYPE;
-        });
+        huntingGrounds.rememberScannedJournal(lastRead.getFileName().toString(), Instant.now().toString());
     }
 
     // ---------------------------------------------------------------- reading
@@ -175,7 +170,7 @@ public class HuntingGroundJournalScanner {
         if (!sanitized.startsWith("{") || !sanitized.endsWith("}")) return null;
         try {
             return GsonFactory.getGson().fromJson(sanitized, JsonObject.class);
-        } catch (Exception e) {
+        } catch (JsonParseException e) {
             log.debug("Hunting ground scan: skipping malformed line: {}", e.getMessage());
             return null;
         }

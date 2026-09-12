@@ -68,7 +68,7 @@ public final class NavigateToPirateMissionProviderCommand implements IntelComman
 
     @Override
     public String execute(JsonObject params, String responseText) {
-        Coordinates here = locationManager.currentCoordinates();
+        Coordinates here = locationManager.getGalacticCoordinates();
         if (here == null) return StringUtls.localizedResponse("handler.pirate.positionUnknown");
 
         MassacrePair pair = resolve(here);

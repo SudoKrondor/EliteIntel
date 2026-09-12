@@ -13,8 +13,6 @@ import elite.intel.util.StringUtls;
 
 import java.util.List;
 
-import static elite.intel.util.StringUtls.getIntSafely;
-
 /**
  * Where pirate massacre contracts can be stacked, answered from the commander's own record of
  * where they have taken such contracts and where they have seen resource extraction sites.
@@ -27,10 +25,7 @@ public final class FindPirateMassacreMissionsCommand implements IntelCommand {
 
     public static final String ID = "find_pirate_massacre_missions";
 
-    private static final String PARAM_KEY = "key";
     private static final int DEFAULT_RANGE_LY = 100;
-
-    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private final HuntingGroundManager huntingGrounds = HuntingGroundManager.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
@@ -49,7 +44,7 @@ public final class FindPirateMassacreMissionsCommand implements IntelCommand {
 
     @Override
     public List<ActionParameterSpec> parameters() {
-        return PARAMETERS;
+        return SearchRange.PARAMETERS;
     }
 
     /**
@@ -62,9 +57,9 @@ public final class FindPirateMassacreMissionsCommand implements IntelCommand {
 
     @Override
     public String execute(JsonObject params, String responseText) {
-        int range = rangeLy(params);
+        int range = SearchRange.lightYears(params, DEFAULT_RANGE_LY);
 
-        Coordinates here = locationManager.currentCoordinates();
+        Coordinates here = locationManager.getGalacticCoordinates();
         if (here == null) return StringUtls.localizedResponse("handler.pirate.positionUnknown");
 
         List<MassacrePair> pairs = huntingGrounds.bestPairs(here, range);
@@ -73,23 +68,5 @@ public final class FindPirateMassacreMissionsCommand implements IntelCommand {
         String spoken = HuntingGroundSpeech.pair(pairs.getFirst());
         if (pairs.size() == 1) return spoken;
         return spoken + " " + StringUtls.localizedResponse("handler.pirate.pairAlsoKnown", pairs.size() - 1);
-    }
-
-    private int rangeLy(JsonObject params) {
-        if (params == null || params.get(PARAM_KEY) == null || params.get(PARAM_KEY).isJsonNull()) {
-            return DEFAULT_RANGE_LY;
-        }
-        Integer stated = getIntSafely(params.get(PARAM_KEY).getAsString());
-        return stated == null || stated <= 0 ? DEFAULT_RANGE_LY : stated;
-    }
-
-    private static List<ActionParameterSpec> buildParameters() {
-        ActionParameterSpec key = new ActionParameterSpec(
-                PARAM_KEY, "number", false,
-                "Maximum search range in light years (ly). If omitted, a default range is used.",
-                List.of("50", "100"),
-                "Extract the range limit in light years if the commander states one; otherwise omit it.");
-        key.validate();
-        return List.of(key);
     }
 }

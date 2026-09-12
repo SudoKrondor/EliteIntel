@@ -6,6 +6,9 @@ import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.i18n.Language;
 
+import java.util.Arrays;
+import java.util.stream.Stream;
+
 /**
  * The engine that voices VEGA. Exactly one is active, and the choice is a stored setting in its own
  * right ({@code game_session.ttsProvider}) - it is never inferred from the shape of the cloud API key.
@@ -50,6 +53,45 @@ public enum TtsProvider {
             case SUPERTONIC -> SupertonicVoices.DEFAULT_VOICE.name();
             case EDGE -> EdgeVoices.DEFAULT_VOICE.name();
             case GOOGLE -> GoogleVoices.DEFAULT_VOICE.name();
+        };
+    }
+
+    /**
+     * A stored voice name resolved against this engine's cast: the name itself when the engine carries it,
+     * otherwise {@link #defaultVoiceName()}. A voice belonging to another engine - the usual case after an
+     * engine switch - collapses to the default rather than throwing.
+     */
+    public String voiceOrDefault(String voiceName) {
+        return switch (this) {
+            case KOKORO -> KokoroVoices.voiceOrDefault(voiceName).name();
+            case SUPERTONIC -> SupertonicVoices.voiceOrDefault(voiceName).name();
+            case EDGE -> EdgeVoices.voiceOrDefault(voiceName).name();
+            case GOOGLE -> GoogleVoices.voiceOrDefault(voiceName).name();
+        };
+    }
+
+    /**
+     * The gender of a stored ship voice as this engine will speak it - the gender of
+     * {@link #voiceOrDefault(String)}, so a name this engine does not know reads as its (female) default.
+     */
+    public VoiceGender voiceGender(String voiceName) {
+        return switch (this) {
+            case KOKORO -> VoiceGender.of(KokoroVoices.voiceOrDefault(voiceName).isMale());
+            case SUPERTONIC -> VoiceGender.of(SupertonicVoices.voiceOrDefault(voiceName).isMale());
+            case EDGE -> VoiceGender.of(EdgeVoices.voiceOrDefault(voiceName).male());
+            case GOOGLE -> VoiceGender.of(GoogleVoices.voiceOrDefault(voiceName).isMale());
+        };
+    }
+
+    /**
+     * Every voice this engine carries, by enum name, in cast order.
+     */
+    public Stream<String> voiceRoster() {
+        return switch (this) {
+            case KOKORO -> Arrays.stream(KokoroVoices.values()).map(Enum::name);
+            case SUPERTONIC -> Arrays.stream(SupertonicVoices.values()).map(Enum::name);
+            case EDGE -> Arrays.stream(EdgeVoices.values()).map(Enum::name);
+            case GOOGLE -> Arrays.stream(GoogleVoices.values()).map(Enum::name);
         };
     }
 

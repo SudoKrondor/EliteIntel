@@ -38,9 +38,9 @@ public interface BountyDao {
     /**
      * What the commander is carrying and has not cashed in yet, as one row.
      * <p>
-     * WHY an aggregate rather than reading {@link #listAll()} and adding it up: the HUD polls this on
-     * a timer from the EDT, and a session of bounty hunting is hundreds of rows whose payload is a
-     * JSON blob. SQLite reads the two fields it needs out of the blob and hands back one row.
+     * WHY an aggregate rather than reading {@link #listAll()} and adding it up: the HUD overlay polls
+     * this on a timer (its own {@code hud-overlay-objectives} thread), and a session of bounty hunting is
+     * hundreds of rows whose payload is a JSON blob. SQLite reads the two fields it needs out of the blob and hands back one row.
      * <p>
      * A row written before the cashed-in flag existed has no such key in its JSON, and COALESCE reads
      * that absence as "not cashed in" - which is what it meant.

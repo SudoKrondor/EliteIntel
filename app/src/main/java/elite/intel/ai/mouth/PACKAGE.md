@@ -114,11 +114,15 @@ Current implementations: `KokoroTTS` and `SupertonicTTS` (offline), `GoogleTTSIm
 
 ---
 
-## 4. Kokoro TTS Backend (`kokoro/`)
+## 4. The sherpa-onnx pipeline (`sherpa/`) and the Kokoro backend (`kokoro/`)
 
 ### Overview
 
-`KokoroTTS` is a singleton. It uses the `kokoro-multi-lang-v1_0` ONNX model loaded from
+`sherpa/SherpaOnnxTTS` is the abstract pipeline every local engine runs on: the two queues below, the synthesis and playback threads, interrupts, the persistent line, the MAIN / RADIO `Role` and the
+`MainVoicePlaybackGate` ducking. It lives once, so the two engines cannot drift apart on interrupt semantics. A concrete engine supplies only what its model needs: `buildOfflineTts(language)`, whether it
+`rebuildsOnLanguageSwitch()`, `generate(...)`, the `sentenceBoundary()` regex, and its voice cast (`defaultVoiceName`, `isInTheCast`, `sidOf`, `radioVoiceNameFor`). `sherpa/RadioVoiceDraw` is the one copy of the radio voice draw; each cast enum hands it `values()`.
+
+`KokoroTTS` is a singleton on that pipeline. It uses the `kokoro-multi-lang-v1_0` ONNX model loaded from
 `AppPaths.getTtsModelDir()` via the sherpa-onnx JNI library. Output sample rate is 24000 Hz, 16-bit mono.
 
 ### Two-Queue Pipeline
@@ -202,7 +206,7 @@ The `canBeInterrupted` field on `VocalisationRequestEvent` controls whether
 
 ## 4a. Supertonic TTS Backend (`supertonic/`)
 
-`SupertonicTTS` is the alternative local engine, a sibling of `KokoroTTS` with the same two-queue pipeline, the same `Role` (MAIN / RADIO), the same `MainVoicePlaybackGate` ducking and the same never-`release()` rule. It runs the `sherpa-onnx-supertonic-3-tts-int8-*` model from `AppPaths.getTtsModelDir()` through the same JNI.
+`SupertonicTTS` is the alternative local engine, the second `SherpaOnnxTTS` subclass: the same two-queue pipeline, the same `Role` (MAIN / RADIO), the same `MainVoicePlaybackGate` ducking and the same never-`release()` rule, because all of that is the base class. It runs the `sherpa-onnx-supertonic-3-tts-int8-*` model from `AppPaths.getTtsModelDir()` through the same JNI.
 
 What differs:
 
@@ -393,7 +397,7 @@ Singleton, implements `VoiceProvider<VoiceSelectionParams>`.
 The `SPEAK` custom command blocks the command executor thread on the handle's `CompletableFuture<Void>`:
 
 1. Every `VocalisationRequestEvent` owns one non-null `VocalisationHandle`; an optional caller future is reused.
-2. Exactly one eligible Mouth claims the handle synchronously before queue admission. If companion publication returns unclaimed, the future fails immediately instead of hanging without a Mouth.
+2. Exactly one eligible Mouth claims the handle synchronously before queue admission. If publication returns unclaimed, the future fails immediately instead of hanging without a Mouth.
 3. Every sentence task carries the same handle and marks only the final sentence as terminal. Successful final playback completes it.
 4. Blank text after sanitization, synthesis/device/playback errors, cancellation, queue interruption, and service stop all settle the handle exactly once.
 5. Targeted cancellation uses `requestId`; urgent speech and barge-in interrupt all interruptible requests.
@@ -427,6 +431,8 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | `MouthInterface` | Extension point for TTS backends |
 | `VocalisationHandle` | Request ownership, correlation, completion, and authoritative speaking-state count |
 | `subscribers/VocalisationRouter` | Normalises all vox events to `VocalisationRequestEvent` |
+| `sherpa/SherpaOnnxTTS` | The offline pipeline both local engines run on: queues, threads, interrupts, line, roles |
+| `sherpa/RadioVoiceDraw` | The radio voice draw, generic over a cast enum |
 | `kokoro/KokoroTTS` | Offline backend; sherpa-onnx kokoro-multi-lang-v1_0 |
 | `kokoro/KokoroVoices` | 53 Kokoro voice enum with sid values |
 | `supertonic/SupertonicTTS` | Alternative offline backend; sherpa-onnx Supertonic 3 (int8), the Cyrillic-capable one |
@@ -451,8 +457,9 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 
 | Constant | Value | Location |
 |---|---|---|
-| `SAMPLE_RATE` | `24000` Hz | `KokoroTTS`, `GoogleTTSImpl`, `AudioDeClicker` |
-| Default Kokoro voice | `GEORGE` (sid=26) | `KokoroTTS` |
+| `SAMPLE_RATE` | `24000` Hz | `SherpaOnnxTTS`, `GoogleTTSImpl`, `AudioDeClicker` |
+| Default Kokoro voice | `ISABELLA` | `KokoroVoices.DEFAULT_VOICE` |
+| Default Supertonic voice | `F1` (sid=0) | `SupertonicVoices.DEFAULT_VOICE` |
 | Default Google voice | `JENNIFER` | `GoogleVoiceProvider` |
 | Edge escaped-text limit | `4096` UTF-8 bytes | `EdgeSentenceSplitter` |
 | Default Edge voice | `en-US-EmmaMultilingualNeural` | `EdgeVoices` |
@@ -460,5 +467,6 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | `GAIN` | `1.4f` | `RadioFilter` |
 | HP cutoff | `300 Hz` | `RadioFilter` |
 | LP cutoff | `5500 Hz` | `RadioFilter` |
-| Kokoro sentence split | `(?<=[.,!?])\s+(?=\S)` | `KokoroTTS` |
+| Kokoro sentence split | `(?<=[.,!?])\s+(?=\S)` | `KokoroTTS.sentenceBoundary` |
+| Supertonic sentence split | `(?<=[.!?])\s+(?=\S)` | `SupertonicTTS.sentenceBoundary` |
 | Google sentence split | `(?<=[.!?])\s+(?=\S)` | `GoogleTTSImpl` |

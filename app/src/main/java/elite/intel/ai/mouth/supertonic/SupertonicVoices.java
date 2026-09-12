@@ -1,9 +1,8 @@
 package elite.intel.ai.mouth.supertonic;
 
-import java.util.Arrays;
-import java.util.Locale;
+import elite.intel.ai.mouth.sherpa.RadioVoiceDraw;
+
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Speaker IDs for the sherpa-onnx-supertonic-3-tts-int8-2026-05-11 model, which carries 10 of them
@@ -49,9 +48,8 @@ public enum SupertonicVoices {
     public static final SupertonicVoices DEFAULT_VOICE = F1;
 
     /**
-     * A voice for the next radio transmission: any speaker in the model, male or female, because the voice
-     * on the other end of a comms link is a stranger and the variety is the point. The commander's own voice
-     * is excluded so the two speakers never sound like the same person.
+     * A voice for the next radio transmission: any speaker in the cast other than the commander's own. The
+     * rules are {@link RadioVoiceDraw}'s; this only supplies the cast.
      *
      * @param ownVoiceName the commander's ship voice (an enum name), or {@code null} when none is resolvable
      */
@@ -60,53 +58,17 @@ public enum SupertonicVoices {
     }
 
     /**
-     * The same draw, also skipping voices that belong to a named speaker - a carrier whose traffic control
-     * the commander has given a voice. Recognising that voice is the whole point of assigning it, and a
-     * passing station answering in it takes that away.
-     *
-     * @param reserved enum names spoken for elsewhere; an empty pool falls back to ignoring them, because a
-     *                 language with one usable voice must still be able to say something
+     * The same draw, also skipping voices reserved for a named speaker (see {@link RadioVoiceDraw#random}).
      */
     public static SupertonicVoices randomRadioVoice(String ownVoiceName, Set<String> reserved) {
-        SupertonicVoices[] pool = Arrays.stream(values())
-                .filter(voice -> !voice.name().equals(ownVoiceName))
-                .filter(voice -> reserved == null || !reserved.contains(voice.name()))
-                .toArray(SupertonicVoices[]::new);
-        if (pool.length > 0) {
-            return pool[ThreadLocalRandom.current().nextInt(pool.length)];
-        }
-        return reserved == null || reserved.isEmpty() ? DEFAULT_VOICE : randomRadioVoice(ownVoiceName);
+        return RadioVoiceDraw.random(values(), DEFAULT_VOICE, ownVoiceName, reserved);
     }
 
     /**
-     * A voice for a speaker the commander is going to hear again: the same speaker always draws the same
-     * voice, for as long as the cast holds it.
-     * <p>
-     * A pirate is named on every line they transmit ("Dave Knowles" over three quarters of the named chatter
-     * in a two-month journal sample), so drawing afresh each time makes one attacker sound like a crowd -
-     * indistinguishable, mid-fight, from several attackers. Deriving the voice from the name instead costs
-     * nothing to store, survives a restart, and holds across a whole encounter without anyone tracking when
-     * an encounter began or ended.
-     * <p>
-     * The commander's own voice and any voice reserved for a carrier are still skipped, but by walking on to
-     * the next speaker in the cast rather than picking again: that keeps every other speaker on the voice they
-     * already had when a carrier is given one mid-session. An unnamed speaker - a transmission with nobody
-     * attributed to it - is a stranger, and still draws at random.
-     *
-     * @param speaker who is transmitting, as the game names them; null or blank draws at random
+     * One voice per named speaker, for as long as the cast holds it (see {@link RadioVoiceDraw#forSpeaker}).
      */
     public static SupertonicVoices radioVoiceFor(String speaker, String ownVoiceName, Set<String> reserved) {
-        if (speaker == null || speaker.isBlank()) return randomRadioVoice(ownVoiceName, reserved);
-        SupertonicVoices[] cast = values();
-        int start = Math.floorMod(speaker.trim().toLowerCase(Locale.ROOT).hashCode(), cast.length);
-        for (int step = 0; step < cast.length; step++) {
-            SupertonicVoices candidate = cast[(start + step) % cast.length];
-            if (candidate.name().equals(ownVoiceName)) continue;
-            if (reserved != null && reserved.contains(candidate.name())) continue;
-            return candidate;
-        }
-        // Everyone in the cast is spoken for. Reserving is best-effort, exactly as it is for the random draw.
-        return randomRadioVoice(ownVoiceName, reserved);
+        return RadioVoiceDraw.forSpeaker(values(), DEFAULT_VOICE, speaker, ownVoiceName, reserved);
     }
 
     /**

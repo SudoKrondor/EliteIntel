@@ -78,6 +78,24 @@ class HuntingGroundLedgerTest {
         assertEquals(List.of("C Services", "Union of C"), pair.providerFactions().stream().sorted().toList());
     }
 
+    /**
+     * Player minor factions are named as free text, and a comma in one must not split it into two
+     * factions and over-report the stack.
+     */
+    @Test
+    void aFactionNameWithACommaStaysOneFaction() {
+        Coordinates provider = at("Ledger Provider H", 8000);
+        sites("Ledger Target H", 8010, new ResourceSiteProfile(1, 0, 0, 0));
+        contract(9501, provider, "Wolf, Rayner and Sons", "Ledger Target H", "H Cartel", "Kepler, Orbital");
+        contract(9502, provider, "Wolf, Rayner and Sons", "Ledger Target H", "H Cartel", "Kepler, Orbital");
+
+        MassacrePair pair = onlyPair(provider);
+
+        assertEquals(List.of("Wolf, Rayner and Sons"), pair.providerFactions());
+        assertEquals(1, pair.stackDepth(), "two contracts from one faction are one faction deep");
+        assertEquals(List.of("Kepler, Orbital"), pair.stations());
+    }
+
     @Test
     void theSameContractReadTwiceIsStillOneContract() {
         Coordinates provider = at("Ledger Provider D", 4000);
@@ -111,8 +129,13 @@ class HuntingGroundLedgerTest {
                 "within a range the commander named, the question is where the good fighting is");
     }
 
+    /**
+     * The contract rows stay on file: the ledger is keyed on the game's MissionID so that re-reading a
+     * journal is harmless, and deleting them would only let the next scan put them back. The flag on the
+     * ground is what silences the pairing.
+     */
     @Test
-    void forgettingAGroundDropsItsPairsAndSurvivesTheNextSighting() {
+    void forgettingAGroundSilencesItsPairsAndSurvivesTheNextSighting() {
         Coordinates provider = at("Ledger Provider G", 7000);
         sites("Ledger Target G", 7010, new ResourceSiteProfile(0, 2, 0, 1));
         contract(9401, provider, "Union of G", "Ledger Target G", "G Cartel");
@@ -120,8 +143,10 @@ class HuntingGroundLedgerTest {
         HuntingGroundManager.ForgetResult result = ledger.forget("Ledger Target G");
 
         assertTrue(result.wasKnown());
-        assertEquals(1, result.contractsForgotten());
+        assertEquals(1, result.contractsAgainstIt());
         assertTrue(ledger.bestPairs(provider, 1).isEmpty());
+        assertFalse(contract(9401, provider, "Union of G", "Ledger Target G", "G Cartel"),
+                "the contract is still on file, so a journal re-read learns nothing new");
 
         sites("Ledger Target G", 7010, new ResourceSiteProfile(0, 2, 0, 1));
 

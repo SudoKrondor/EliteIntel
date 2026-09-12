@@ -65,19 +65,6 @@ class HuntingGroundSchemaTest {
     }
 
     @Test
-    void theWorkflowTheHelpDescribesIsTheOneTheAppNowHas() {
-        try (Handle handle = upgradedDatabase()) {
-            String help = handle.createQuery("SELECT help FROM help_topics WHERE id = 9")
-                    .mapTo(String.class).one();
-
-            assertFalse(help.contains("reconnaissance"),
-                    "recon and manual confirmation are gone - sites announce themselves on arrival");
-            assertTrue(help.contains("Scan journals for hunting grounds"));
-            assertTrue(help.contains("Find a bounty hunting ground"));
-        }
-    }
-
-    @Test
     void theScanBookmarkStartsEmptySoTheFirstRunReadsEverything() {
         try (Handle handle = upgradedDatabase()) {
             assertNull(handle.createQuery("SELECT lastJournal FROM hunting_ground_scan WHERE id = 1")
@@ -114,10 +101,7 @@ class HuntingGroundSchemaTest {
                     missionProviderFaction TEXT,
                     targetFactionID        INTEGER)
                 """);
-        handle.execute("CREATE TABLE help_topics (id INTEGER PRIMARY KEY, topic TEXT, help TEXT)");
 
-        handle.execute("INSERT INTO help_topics VALUES (9, 'Pirate Massacre Missions', "
-                + "'Old text about reconnaissance and manual confirmation.')");
         handle.execute("INSERT INTO pirate_hunting_grounds (starSystem, x, y, z, hasResSite, ignored) "
                 + "VALUES ('Odomazotz', 0, 0, 0, 1, 0)");
         handle.execute("INSERT INTO pirate_hunting_grounds (starSystem, x, y, z, hasResSite, ignored) "

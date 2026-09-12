@@ -1,6 +1,5 @@
 package elite.intel.ai.mouth;
 
-import elite.intel.ai.ApiFactory;
 import elite.intel.gameapi.GameLanguage;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
@@ -19,9 +18,9 @@ import elite.intel.session.SystemSession;
  * who picked Supertonic as their voice does not also get Kokoro loaded beside it for the sake of the wider
  * cast - two ONNX models resident for one channel is not worth it.
  * <p>
- * Every mouth consults this before touching a radio request, so exactly one engine ever claims one: the main
+ * Every local engine reads this once at start, so exactly one engine ever claims a radio request: the main
  * mouth voices radio only when it is also the radio engine, and a dedicated {@code RADIO_MOUTH} service runs
- * the radio engine alongside the main mouth when the two differ.
+ * the radio engine alongside the main mouth when the two differ. The cloud mouths never touch radio.
  */
 public final class RadioVoicing {
 
@@ -31,11 +30,14 @@ public final class RadioVoicing {
     /**
      * The engine that voices radio: the main mouth itself when it is a local engine, otherwise Kokoro for
      * the Latin-script locales and Supertonic for the Cyrillic ones. Google is never a radio engine - it is
-     * the paid main mouth, and radio is chatter, not narration - and neither is Edge any longer, now that a
-     * local engine can read Cyrillic.
+     * the paid main mouth, and radio is chatter, not narration - and neither is Edge, now that a local
+     * engine can read Cyrillic.
      *
-     * @param mainMouth the engine actually voicing VEGA, after every substitution
-     *                  (see {@code ApiFactory#getActiveTtsProvider()}) - never the raw stored setting
+     * @param mainMouth the engine voicing VEGA. The stored selection is enough here even though a keyless
+     *                  Google is replaced by a local engine at start-up ({@code ApiFactory}): the stand-in
+     *                  is exactly the local engine that would voice Google's radio, so the answer is the
+     *                  same either way. Only the decision whether a separate radio service is needed has
+     *                  to see the substitution, and that is made where it happens, in the controller.
      */
     public static TtsProvider engineFor(Language language, TtsProvider mainMouth) {
         if (mainMouth.isLocal()) return mainMouth;
@@ -46,11 +48,13 @@ public final class RadioVoicing {
      * The radio engine for the language and main mouth the commander is running.
      */
     public static TtsProvider engine() {
-        return engineFor(SystemSession.getInstance().getLanguage(), ApiFactory.getInstance().getActiveTtsProvider());
+        SystemSession session = SystemSession.getInstance();
+        return engineFor(session.getLanguage(), session.getTtsProvider());
     }
 
     /**
-     * Whether the given engine is the one that must voice radio right now.
+     * Whether the given engine is the one that must voice radio. Read once per service start, not per
+     * request: the answer changes only with the language or the engine, and either restarts the mouth.
      */
     public static boolean isRadioEngine(TtsProvider provider) {
         return engine() == provider;

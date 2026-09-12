@@ -10,8 +10,8 @@ import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.hands.KeyBindCheck;
 import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
-import elite.intel.ai.mouth.edge.EdgeTTSImpl;
 import elite.intel.ai.mouth.kokoro.KokoroTTS;
+import elite.intel.ai.mouth.sherpa.SherpaOnnxTTS;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.ai.mouth.supertonic.SupertonicTTS;
@@ -521,28 +521,21 @@ public class AppController {
     }
 
     /**
-     * The engine that voices radio, in its radio role. Google is deliberately absent: it is the paid main
-     * mouth, and radio chatter is not worth a commander's per-character bill.
+     * The engine that voices radio, in its radio role. The cloud engines are deliberately absent: Google is
+     * the paid main mouth, and radio chatter is not worth a commander's per-character bill; Edge is keyless
+     * but not local, and a local engine can now read every script (see {@link RadioVoicing}).
      */
     private static ManagedService radioEngine(TtsProvider provider) {
         return switch (provider) {
-            case KOKORO -> {
-                KokoroTTS radio = KokoroTTS.getInstance();
-                radio.setRole(KokoroTTS.Role.RADIO);
-                yield radio;
-            }
-            case SUPERTONIC -> {
-                SupertonicTTS radio = SupertonicTTS.getInstance();
-                radio.setRole(SupertonicTTS.Role.RADIO);
-                yield radio;
-            }
-            case EDGE -> {
-                EdgeTTSImpl radio = EdgeTTSImpl.getInstance();
-                radio.setRole(EdgeTTSImpl.Role.RADIO);
-                yield radio;
-            }
-            case GOOGLE -> throw new IllegalArgumentException("Google never voices radio transmissions");
+            case KOKORO -> radioLocal(KokoroTTS.getInstance());
+            case SUPERTONIC -> radioLocal(SupertonicTTS.getInstance());
+            case EDGE, GOOGLE -> throw new IllegalArgumentException(provider + " never voices radio transmissions");
         };
+    }
+
+    private static SherpaOnnxTTS radioLocal(SherpaOnnxTTS engine) {
+        engine.setRole(SherpaOnnxTTS.Role.RADIO);
+        return engine;
     }
 
     static class ServiceHolder {

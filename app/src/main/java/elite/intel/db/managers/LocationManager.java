@@ -113,19 +113,17 @@ public class LocationManager {
         return value != null && !value.isBlank();
     }
 
-    public LocationDao.Coordinates getGalacticCoordinates() {
-        return Database.withDao(LocationDao.class, LocationDao::currentCoordinates);
-    }
-
     /**
      * Where the ship is, for a distance search, or null when the app cannot fix a position at all.
      * <p>
-     * WHY the fallback: {@link #getGalacticCoordinates()} skips any row with a zero coordinate, and a
-     * real system sits at each of those zeroes - Sol is at the origin. A search that answered "I do
-     * not know where you are" in Sol would be wrong in one of the busiest systems in the bubble.
+     * WHY the fallback: the row query skips any row with a zero coordinate, because a location saved
+     * before its coordinates were known carries zeroes - but a real system sits at each of those zeroes
+     * too, and Sol is at the origin. When no non-zero row exists, the current location record is taken
+     * as it is, so a search asked in one of the busiest systems in the bubble does not answer "I do not
+     * know where you are". Every caller gets this, not only the ones written after the Sol case was found.
      */
-    public LocationDao.Coordinates currentCoordinates() {
-        LocationDao.Coordinates coordinates = getGalacticCoordinates();
+    public LocationDao.Coordinates getGalacticCoordinates() {
+        LocationDao.Coordinates coordinates = Database.withDao(LocationDao.class, LocationDao::currentCoordinates);
         if (coordinates != null) return coordinates;
 
         LocationDto here = findByLocationData(PlayerSession.getInstance().getLocationData());

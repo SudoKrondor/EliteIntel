@@ -17,6 +17,7 @@ import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeTTSImpl;
 import elite.intel.ai.mouth.google.GoogleTTSImpl;
 import elite.intel.ai.mouth.kokoro.KokoroTTS;
+import elite.intel.ai.mouth.sherpa.SherpaOnnxTTS;
 import elite.intel.ai.mouth.supertonic.SupertonicTTS;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
@@ -90,9 +91,9 @@ public class ApiFactory {
     static MouthInterface selectMouth(TtsProvider provider, String ttsApiKey, Language language) {
         return switch (resolveProvider(provider, ttsApiKey, language)) {
             case GOOGLE -> GoogleTTSImpl.getInstance();
-            case EDGE -> mainEdge();
-            case KOKORO -> mainKokoro();
-            case SUPERTONIC -> mainSupertonic();
+            case EDGE -> EdgeTTSImpl.getInstance();
+            case KOKORO -> mainLocal(KokoroTTS.getInstance());
+            case SUPERTONIC -> mainLocal(SupertonicTTS.getInstance());
         };
     }
 
@@ -107,22 +108,9 @@ public class ApiFactory {
         return TtsProvider.forLanguage(googleWithoutKey ? TtsProvider.KOKORO : provider, language);
     }
 
-    private static EdgeTTSImpl mainEdge() {
-        EdgeTTSImpl edge = EdgeTTSImpl.getInstance();
-        edge.setRole(EdgeTTSImpl.Role.MAIN);
-        return edge;
-    }
-
-    private static KokoroTTS mainKokoro() {
-        KokoroTTS kokoro = KokoroTTS.getInstance();
-        kokoro.setRole(KokoroTTS.Role.MAIN);
-        return kokoro;
-    }
-
-    private static SupertonicTTS mainSupertonic() {
-        SupertonicTTS supertonic = SupertonicTTS.getInstance();
-        supertonic.setRole(SupertonicTTS.Role.MAIN);
-        return supertonic;
+    private static SherpaOnnxTTS mainLocal(SherpaOnnxTTS engine) {
+        engine.setRole(SherpaOnnxTTS.Role.MAIN);
+        return engine;
     }
 
     /// -- no choices here

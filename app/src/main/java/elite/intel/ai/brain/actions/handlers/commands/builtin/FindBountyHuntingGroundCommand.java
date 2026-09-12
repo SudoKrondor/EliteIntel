@@ -15,8 +15,6 @@ import elite.intel.util.StringUtls;
 
 import java.util.List;
 
-import static elite.intel.util.StringUtls.getIntSafely;
-
 /**
  * Plots a route to the best resource extraction site system the commander knows of, for bounty
  * hunting with no contract involved.
@@ -31,10 +29,7 @@ public final class FindBountyHuntingGroundCommand implements IntelCommand {
 
     public static final String ID = "find_bounty_hunting_ground";
 
-    private static final String PARAM_KEY = "key";
     private static final int DEFAULT_RANGE_LY = 100;
-
-    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private final HuntingGroundManager huntingGrounds = HuntingGroundManager.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
@@ -53,7 +48,7 @@ public final class FindBountyHuntingGroundCommand implements IntelCommand {
 
     @Override
     public List<ActionParameterSpec> parameters() {
-        return PARAMETERS;
+        return SearchRange.PARAMETERS;
     }
 
     /**
@@ -66,9 +61,9 @@ public final class FindBountyHuntingGroundCommand implements IntelCommand {
 
     @Override
     public String execute(JsonObject params, String responseText) {
-        int range = rangeLy(params);
+        int range = SearchRange.lightYears(params, DEFAULT_RANGE_LY);
 
-        Coordinates here = locationManager.currentCoordinates();
+        Coordinates here = locationManager.getGalacticCoordinates();
         if (here == null) return StringUtls.localizedResponse("handler.pirate.positionUnknown");
 
         List<HuntingGround> grounds = huntingGrounds.bestHuntingGrounds(here, range);
@@ -89,23 +84,5 @@ public final class FindBountyHuntingGroundCommand implements IntelCommand {
 
         RoutePlotter plotter = new RoutePlotter();
         return plotter.plotRoute(best.starSystem());
-    }
-
-    private int rangeLy(JsonObject params) {
-        if (params == null || params.get(PARAM_KEY) == null || params.get(PARAM_KEY).isJsonNull()) {
-            return DEFAULT_RANGE_LY;
-        }
-        Integer stated = getIntSafely(params.get(PARAM_KEY).getAsString());
-        return stated == null || stated <= 0 ? DEFAULT_RANGE_LY : stated;
-    }
-
-    private static List<ActionParameterSpec> buildParameters() {
-        ActionParameterSpec key = new ActionParameterSpec(
-                PARAM_KEY, "number", false,
-                "Maximum search range in light years (ly). If omitted, a default range is used.",
-                List.of("50", "100"),
-                "Extract the range limit in light years if the commander states one; otherwise omit it.");
-        key.validate();
-        return List.of(key);
     }
 }

@@ -106,12 +106,7 @@ public class SystemSession {
     public VoiceGender getVoiceGender() {
         ShipDao.Ship ship = shipManager.getShip();
         String voice = ship == null ? null : ship.getVoice();
-        return switch (getTtsProvider()) {
-            case KOKORO -> VoiceGender.of(KokoroVoices.voiceOrDefault(voice).isMale());
-            case SUPERTONIC -> VoiceGender.of(SupertonicVoices.voiceOrDefault(voice).isMale());
-            case EDGE -> VoiceGender.of(EdgeVoices.voiceOrDefault(voice).male());
-            case GOOGLE -> VoiceGender.of(GoogleVoices.voiceOrDefault(voice).isMale());
-        };
+        return getTtsProvider().voiceGender(voice);
     }
 
 

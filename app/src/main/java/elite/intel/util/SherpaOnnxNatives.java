@@ -5,8 +5,10 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 public final class SherpaOnnxNatives {
 
@@ -58,26 +60,33 @@ public final class SherpaOnnxNatives {
     private static void extractAndLoad(String platform, Path dir, String lib) throws IOException {
         Path target = dir.resolve(lib);
         String resource = "/native/" + platform + "/" + lib;
-        byte[] shipped;
-        try (InputStream in = SherpaOnnxNatives.class.getResourceAsStream(resource)) {
-            if (in == null) throw new IOException("Resource not in JAR: " + resource);
-            shipped = in.readAllBytes();
-        }
+        URL shipped = SherpaOnnxNatives.class.getResource(resource);
+        if (shipped == null) throw new IOException("Resource not in JAR: " + resource);
+        // The size comes from the jar entry, not from reading the library: these are tens of megabytes,
+        // and on every ordinary start the copy on disk is already current.
+        long shippedSize = shipped.openConnection().getContentLengthLong();
+
         if (!Files.exists(target)) {
-            Files.write(target, shipped);
-        } else if (Files.size(target) != shipped.length) {
+            copy(shipped, target);
+        } else if (Files.size(target) != shippedSize) {
             try {
-                Files.write(target, shipped);
-                log.info("Refreshed {} from the jar ({} bytes)", lib, shipped.length);
+                copy(shipped, target);
+                log.info("Refreshed {} from the jar ({} bytes)", lib, shippedSize);
             } catch (IOException e) {
                 // A read-only install tree: say which library is stale rather than fail here, since the
                 // load below may still succeed and the message is what the support bundle needs.
                 log.warn("{} on disk is {} bytes but the jar carries {}; could not refresh it: {}",
-                        lib, Files.size(target), shipped.length, e.getMessage());
+                        lib, Files.size(target), shippedSize, e.getMessage());
             }
         }
         System.load(target.toAbsolutePath().toString());
         log.info("Loaded {}", lib);
+    }
+
+    private static void copy(URL shipped, Path target) throws IOException {
+        try (InputStream in = shipped.openStream()) {
+            Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     private static String detectPlatform() {

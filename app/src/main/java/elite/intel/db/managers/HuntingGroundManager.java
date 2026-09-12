@@ -1,6 +1,7 @@
 package elite.intel.db.managers;
 
 import elite.intel.db.dao.HuntingGroundDao;
+import elite.intel.db.dao.HuntingGroundScanDao;
 import elite.intel.db.dao.LocationDao.Coordinates;
 import elite.intel.db.dao.MassacreMissionDao;
 import elite.intel.db.util.Database;
@@ -132,7 +133,22 @@ public class HuntingGroundManager {
         return new Knowledge(grounds, contracts);
     }
 
+    /**
+     * The journal file the last backfill scan read to the end, or null when none has run - so a re-run
+     * reads only what is new.
+     */
+    public String lastScannedJournal() {
+        return Database.withDao(HuntingGroundScanDao.class, HuntingGroundScanDao::lastJournal);
+    }
+
     // ---------------------------------------------------------------- writes
+
+    public void rememberScannedJournal(String journalFileName, String scannedAt) {
+        Database.withDao(HuntingGroundScanDao.class, dao -> {
+            dao.recordProgress(journalFileName, scannedAt);
+            return Void.TYPE;
+        });
+    }
 
     /**
      * Records the resource sites one FSS sweep reported in a system.
@@ -190,18 +206,21 @@ public class HuntingGroundManager {
     }
 
     /**
-     * Stops offering a hunting ground, and forgets the contracts that led to it.
+     * Stops offering a hunting ground, and with it every pairing whose contracts point at it.
      * <p>
-     * WHY the row survives: the commander forgets a ground because it is poor - thin spawns, small
-     * bounties, a ring an hour out from the star - and none of that is in the journal. Deleting the
-     * row would let the next arrival record the system all over again and the app would recommend it
-     * straight back. The flag is the verdict, and the sighting underneath stays honest.
+     * WHY the rows survive, the contracts included: the commander forgets a ground because it is poor -
+     * thin spawns, small bounties, a ring an hour out from the star - and none of that is in the journal.
+     * Deleting the ground would let the next arrival record the system all over again and the app would
+     * recommend it straight back, and deleting its contracts would let the next journal scan re-insert
+     * them - the ledger is keyed on the game's MissionID precisely so that re-reading is harmless. The
+     * flag is the verdict: the pair search joins on it, so nothing under a forgotten ground is offered,
+     * and the sightings and contracts underneath stay honest.
      */
     public ForgetResult forget(String starSystem) {
         if (starSystem == null || starSystem.isBlank()) return new ForgetResult(false, 0);
 
         boolean known = Database.withDao(HuntingGroundDao.class, dao -> dao.forget(starSystem)) > 0;
-        int contracts = Database.withDao(MassacreMissionDao.class, dao -> dao.deleteForTarget(starSystem));
+        int contracts = Database.withDao(MassacreMissionDao.class, dao -> dao.countForTarget(starSystem));
         return new ForgetResult(known, contracts);
     }
 
@@ -212,23 +231,26 @@ public class HuntingGroundManager {
     }
 
     /**
-     * Splits what GROUP_CONCAT returned. The separator is a comma because SQLite offers no other one
-     * alongside DISTINCT, which is safe here: Elite faction and station names do not contain commas.
+     * Splits what GROUP_CONCAT returned: one entry per contract, joined on a character no faction or
+     * station name can carry, so a name with a comma in it (player minor factions are free text) stays one
+     * name. Repeats are dropped here rather than in SQL, which cannot de-duplicate and pick the separator
+     * at the same time.
      */
     private static List<String> split(String concatenated) {
         if (concatenated == null || concatenated.isBlank()) return List.of();
-        return Arrays.stream(concatenated.split(","))
+        return Arrays.stream(concatenated.split("\\|"))
                 .map(String::trim)
                 .filter(value -> !value.isEmpty())
+                .distinct()
                 .toList();
     }
 
     /**
-     * @param wasKnown           false when the system was never a hunting ground, so there was
-     *                           nothing to forget and the commander should be told so
-     * @param contractsForgotten how many recorded contracts pointed at it
+     * @param wasKnown          false when the system was never a hunting ground, so there was
+     *                          nothing to forget and the commander should be told so
+     * @param contractsAgainstIt how many recorded contracts pointed at it, and so go unoffered with it
      */
-    public record ForgetResult(boolean wasKnown, int contractsForgotten) {
+    public record ForgetResult(boolean wasKnown, int contractsAgainstIt) {
     }
 
     public record Knowledge(int huntingGrounds, int contracts) {

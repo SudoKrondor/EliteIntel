@@ -26,7 +26,8 @@ public interface VegaNarrator {
     void filler(String text, boolean urgent);
 
     /**
-     * Voices event data phrased by one LLM round and remembers only the successful final narration.
+     * Voices event data phrased by one LLM round. Nothing is stored: the data lives only in that request,
+     * and the spoken line is not replayed into the commander prompt.
      *
      * @param data         event data used only in the current LLM request
      * @param instructions how to phrase it this turn
@@ -36,7 +37,7 @@ public interface VegaNarrator {
     /**
      * Voices a finished phrase verbatim. Nothing is stored.
      *
-     * @param phrase the finished line to voice and remember
+     * @param phrase the finished line to voice
      * @param urgent whether the line preempts current speech
      */
     void announce(String phrase, boolean urgent);

@@ -11,7 +11,8 @@ import java.util.UUID;
 /**
  * Production {@link VegaNarrator}: routes a subscriber's voicing request to the right owner - a
  * start-of-processing filler straight to the {@link SpeechGateway} (voiced, not remembered), and a narrated or
- * verbatim result to the {@link ThoughtDispatcher}'s EVENT lane (voiced and stored as a completed EVENT record).
+ * verbatim result to the {@link ThoughtDispatcher}'s EVENT lane (voiced, and not stored either - a gameplay
+ * narration is never replayed into the commander prompt).
  * It holds no state of its own; it is the thin composition point installed into
  * {@code VegaRuntime} so gameplay subscribers reach VEGA through one door.
  */

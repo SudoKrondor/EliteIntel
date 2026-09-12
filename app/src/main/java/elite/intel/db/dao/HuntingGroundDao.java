@@ -73,9 +73,6 @@ public interface HuntingGroundDao {
     @SqlQuery("SELECT * FROM hunting_ground WHERE starSystem = :starSystem")
     Ground findByName(@Bind("starSystem") String starSystem);
 
-    @SqlQuery("SELECT * FROM hunting_ground WHERE systemAddress = :systemAddress")
-    Ground findByAddress(@Bind("systemAddress") long systemAddress);
-
     /**
      * The hunting grounds worth flying to, best first.
      * <p>

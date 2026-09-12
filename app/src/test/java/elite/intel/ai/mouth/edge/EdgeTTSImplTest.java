@@ -296,44 +296,6 @@ class EdgeTTSImplTest {
         assertTrue(client.requests.isEmpty());
     }
 
-    /**
-     * Edge took the Cyrillic radio channel while Kokoro was the only local engine; Supertonic has it now
-     * (see {@code RadioVoicing}), so a Russian transmission is left unclaimed here exactly like an English
-     * one. This used to be the test that Edge claimed it - with an event that was never marked radio, so it
-     * only ever proved that RU narration draws a ru-RU voice.
-     */
-    @Test
-    void radioInACyrillicLanguageIsLeftToTheLocalEngineToo() {
-        FakeClient client = new FakeClient();
-        FakeOutput output = new FakeOutput();
-        EdgeTTSImpl mouth = mouth(client, output, new EdgeVoiceProvider(), Language.RU, 0f, 100);
-        mouth.start();
-        VocalisationRequestEvent radio = new VocalisationRequestEvent(
-                "radio-ru", null, AiVoxResponseEvent.class, true, true, "station");
-
-        mouth.onVoiceProcessEvent(radio);
-
-        assertFalse(radio.handle().isHandled());
-        assertTrue(client.requests.isEmpty());
-    }
-
-    @Test
-    void aRadioRoleEngineIgnoresNormalNarrationLeavingItToTheMainMouth() {
-        FakeClient client = new FakeClient();
-        FakeOutput output = new FakeOutput();
-        EdgeTTSImpl mouth = mouth(client, output, new EdgeVoiceProvider(), Language.RU, 0f, 100);
-        mouth.setRole(EdgeTTSImpl.Role.RADIO);
-        mouth.start();
-        CompletableFuture<Void> completion = new CompletableFuture<>();
-        VocalisationRequestEvent narration = VocalisationRequestEvent.tracked(
-                "narration", "course plotted", AiVoxResponseEvent.class, true, completion);
-
-        mouth.onVoiceProcessEvent(narration);
-
-        assertFalse(narration.handle().isHandled());
-        assertTrue(client.requests.isEmpty());
-    }
-
     private EdgeTTSImpl mouth(FakeClient client, FakeOutput output, float speed, int volume) {
         return mouth(client, output, compressed -> pcm((char) compressed[0]), speed, volume);
     }

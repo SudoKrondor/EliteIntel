@@ -99,15 +99,16 @@ public class RoutePlotter {
         // would fire ten of them at a map that ignores them, and the tap below would then be the thing that
         // closed it - leaving the sequence running against no map at all. GuiFocus is exclusive, so an open
         // galaxy map already says there is no other panel for closeOpenPanel() to shut.
+        // The binding is a toggle: the same step shuts the open map here and opens a fresh one below.
         if (mapAlreadyOpen) {
-            steps.add(mapToggleStep());
+            steps.add(UiNavCommon.galaxyMapToggleStep());
         }
         // WHY a wait rather than a tap straight away: the keys that shut the open map - either the toggle
         // above or closeOpenPanel() before it - have been dispatched, but the game reports GuiFocus through
         // Status.json a beat later. The binding is a toggle, so tapping it against a stale "still open"
         // reading would close the very map this sequence is trying to open.
         steps.add(GameInputStep.waitUntil("galaxy map closed", () -> !status.isGalaxyMapOpen(), GALAXY_MAP_CLOSE_TIMEOUT_MS));
-        steps.add(mapToggleStep());
+        steps.add(UiNavCommon.galaxyMapToggleStep());
         // WHY this replaced a blind delay(3000): on slower hardware the map itself took two seconds to
         // appear (commander bundle 2026-08-23 - map binding at 16:07:39Z, journal "Music: GalaxyMap" at
         // 16:07:41Z), so barely a second of the budget was left. Every step below then ran against a map
@@ -168,14 +169,4 @@ public class RoutePlotter {
         return null;
     }
 
-    /**
-     * Taps the galaxy map binding for wherever the commander is standing - the map has a separate binding on
-     * foot and in an SRV, and the ship one does nothing there.
-     * <p>
-     * Named for what the key is rather than what it does: it is a toggle, so the same step opens a shut map
-     * and shuts an open one. Both readings are used above, in that order.
-     */
-    private GameInputStep mapToggleStep() {
-        return UiNavCommon.galaxyMapToggleStep();
-    }
 }

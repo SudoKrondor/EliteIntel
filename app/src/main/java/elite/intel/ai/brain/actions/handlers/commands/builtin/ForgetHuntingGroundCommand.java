@@ -9,7 +9,7 @@ import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
 /**
- * Drops the current system as a hunting ground, and the contracts that led here with it.
+ * Drops the current system as a hunting ground, and every pairing that led here with it.
  * <p>
  * WHY the commander has to be able to say this: the journal records that a system has resource
  * extraction sites, and nothing else. It does not record that the ring is an hour out from the star,
@@ -32,7 +32,7 @@ public final class ForgetHuntingGroundCommand implements IntelCommand {
     @Override
     public String llmDescription() {
         return "Forget the current star system as a pirate hunting ground, so it is never recommended again, "
-                + "and discard the recorded mission-provider pairs that targeted it.";
+                + "and stop offering the recorded mission-provider pairs that targeted it.";
     }
 
     /**
@@ -54,10 +54,10 @@ public final class ForgetHuntingGroundCommand implements IntelCommand {
         if (!result.wasKnown()) {
             return StringUtls.localizedResponse("handler.pirate.nothingToForget", starSystem);
         }
-        if (result.contractsForgotten() == 0) {
+        if (result.contractsAgainstIt() == 0) {
             return StringUtls.localizedResponse("handler.pirate.groundForgotten", starSystem);
         }
         return StringUtls.localizedResponse("handler.pirate.groundAndPairsForgotten",
-                starSystem, result.contractsForgotten());
+                starSystem, result.contractsAgainstIt());
     }
 }

@@ -56,10 +56,12 @@ public interface MassacreMissionDao {
     int markCompleted(@Bind("missionId") long missionId, @Bind("completedAt") String completedAt);
 
     /**
-     * Forgets every contract that sent the commander to this hunting ground.
+     * How many contracts on file sent the commander to this hunting ground. Read when the ground is
+     * forgotten, so the commander hears how many pairings go quiet with it - the rows themselves stay,
+     * because the ledger is the raw record and {@link #findPairs} already hides a forgotten target.
      */
-    @SqlUpdate("DELETE FROM massacre_mission WHERE targetSystem = :targetSystem")
-    int deleteForTarget(@Bind("targetSystem") String targetSystem);
+    @SqlQuery("SELECT COUNT(*) FROM massacre_mission WHERE targetSystem = :targetSystem")
+    int countForTarget(@Bind("targetSystem") String targetSystem);
 
     /**
      * Provider systems paired with hunting grounds that have resource sites, deepest stack first.
@@ -76,8 +78,8 @@ public interface MassacreMissionDao {
             SELECT m.providerSystem,
                    m.targetSystem,
                    m.targetFaction,
-                   GROUP_CONCAT(DISTINCT m.providerFaction) AS providerFactions,
-                   GROUP_CONCAT(DISTINCT m.providerStation) AS stations,
+                   GROUP_CONCAT(m.providerFaction, '|') AS providerFactions,
+                   GROUP_CONCAT(m.providerStation, '|') AS stations,
                    COUNT(DISTINCT m.providerFaction)        AS stackDepth,
                    SUM(CASE WHEN m.completedAt IS NULL THEN 0 ELSE 1 END) AS missionsCompleted,
                    g.resStandard, g.resLow, g.resHigh, g.resHazardous,
@@ -126,9 +128,10 @@ public interface MassacreMissionDao {
     }
 
     /**
-     * One provider/target grouping straight out of SQL. {@code providerFactions} and
-     * {@code stations} are comma-separated because that is what GROUP_CONCAT returns - the manager
-     * splits them before anything else sees them.
+     * One provider/target grouping straight out of SQL. {@code providerFactions} and {@code stations}
+     * are {@code |}-joined and carry one entry per contract, repeats included: SQLite's GROUP_CONCAT
+     * cannot take both DISTINCT and a separator, and a separator no name can contain matters more than a
+     * few repeated names, which the manager drops when it splits them.
      */
     record Pair(String providerSystem,
                 String providerFactions,

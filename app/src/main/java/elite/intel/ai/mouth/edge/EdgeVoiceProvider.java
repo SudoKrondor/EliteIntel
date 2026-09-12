@@ -4,9 +4,6 @@ import elite.intel.i18n.Language;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 
 /** Resolves the per-ship voice model against the voices currently offered by Edge Read Aloud. */
 final class EdgeVoiceProvider {
@@ -76,99 +73,6 @@ final class EdgeVoiceProvider {
                 ? position.defaultShortName()
                 : localizedFallback(language, male);
         return fallbackVoice(fallback, locale(language), male);
-    }
-
-    /**
-     * A voice for the next radio transmission in this language: any voice Edge offers for the locale, male or
-     * female. The female-only rule of {@link #resolve} is the ship's own voice speaking; a transmission is a
-     * stranger on a comms channel, and the variety is what makes the channel sound populated.
-     * <p>
-     * Drawn once per transmission by the caller (not per sentence), and taken from the live voice list when it
-     * has been fetched, so a locale Edge extends later widens the cast with no code change. Before the first
-     * successful list fetch it falls back to voices known to exist for the locale.
-     */
-    String randomRadioVoiceName(Language language) {
-        return randomRadioVoiceName(language, Set.of());
-    }
-
-    /**
-     * The same draw, skipping voices that belong to a named speaker - a carrier whose traffic control the
-     * commander has given a voice. Reserving is best-effort by design: the Cyrillic locales this engine
-     * serves have very few voices (Ukrainian has one), so a reservation that would leave nothing to say is
-     * dropped rather than silencing the channel.
-     *
-     * @param reserved ShortNames spoken for elsewhere
-     */
-    String randomRadioVoiceName(Language language, Set<String> reserved) {
-        List<String> pool = radioPool(language, reserved);
-        return pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
-    }
-
-    /**
-     * The same pool, but keyed on the speaker so one of them always draws the same voice - a pirate is named
-     * on every line they send, and a fresh draw each time makes one attacker sound like several. A blank
-     * speaker is a stranger and still draws at random.
-     * <p>
-     * The mapping holds for as long as the pool does. It shifts when the live voice list first arrives and
-     * replaces the fallback, and it can shift for the Cyrillic locales this engine serves, whose pools are
-     * tiny (Ukrainian has one voice, so every speaker shares it either way).
-     */
-    String radioVoiceNameFor(Language language, String speaker, Set<String> reserved) {
-        if (speaker == null || speaker.isBlank()) return randomRadioVoiceName(language, reserved);
-        List<String> pool = radioPool(language, reserved);
-        return pool.get(Math.floorMod(speaker.trim().toLowerCase(Locale.ROOT).hashCode(), pool.size()));
-    }
-
-    /**
-     * Who is available to voice a transmission, in a stable order: the locale's voices that nobody has
-     * reserved, else all of them, else the known-good fallback for the locale. Reserving is best-effort by
-     * design - see {@link #randomRadioVoiceName(Language, Set)}.
-     */
-    private List<String> radioPool(Language language, Set<String> reserved) {
-        List<String> candidates = availableVoices.stream()
-                .filter(voice -> languageMatches(language, voice.locale()))
-                .map(EdgeVoice::shortName)
-                .sorted()
-                .toList();
-        List<String> free = candidates.stream().filter(name -> !reserved.contains(name)).toList();
-        if (!free.isEmpty()) return free;
-        if (!candidates.isEmpty()) return candidates;
-        List<String> fallback = radioFallback(language);
-        List<String> freeFallback = fallback.stream().filter(name -> !reserved.contains(name)).toList();
-        return freeFallback.isEmpty() ? fallback : freeFallback;
-    }
-
-    /**
-     * Resolves a radio voice by ShortName, keeping the drawn voice whatever its gender - unlike
-     * {@link #resolve}, which normalizes to the female ship voice. An unknown name (the voice list is not in
-     * yet) is requested as-is: it came from {@link #randomRadioVoiceName}, so it is a real voice for the
-     * locale even when we cannot confirm it against the list.
-     */
-    EdgeVoice resolveRadio(String shortName, Language language) {
-        String desired = shortName == null || shortName.isBlank()
-                ? localizedFallback(language, false)
-                : shortName;
-        return availableVoices.stream()
-                .filter(voice -> voice.shortName().equals(desired))
-                .findFirst()
-                // WHY: gender is metadata the voice list carries; with no list there is nothing to read it
-                // from, and radio - unlike the ship voice - never filters on it.
-                .orElseGet(() -> new EdgeVoice(
-                        EdgeSsml.protocolVoiceName(desired), desired, "Unknown", locale(language),
-                        EdgeProtocolConstants.OUTPUT_FORMAT));
-    }
-
-    /**
-     * Voices to draw radio from before the live list arrives. Both genders, and only ShortNames Edge Read
-     * Aloud is known to serve for the locale; every other language falls back to its single main-voice
-     * default, since Kokoro - not Edge - voices radio there.
-     */
-    private static List<String> radioFallback(Language language) {
-        return switch (language) {
-            case RU -> List.of("ru-RU-SvetlanaNeural", "ru-RU-DmitryNeural");
-            case UK -> List.of("uk-UA-PolinaNeural", "uk-UA-OstapNeural");
-            default -> List.of(localizedFallback(language, false));
-        };
     }
 
     private static EdgeVoice fallbackVoice(String shortName, String locale, boolean male) {

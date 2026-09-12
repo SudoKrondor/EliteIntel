@@ -405,7 +405,7 @@ public class CommanderTabPanel extends JPanel {
         // Voice options depend on current TTS provider; rebuild editor on every call. Every voice the active
         // engine has is offered, male and female alike - the picked voice also decides how VEGA
         // speaks of itself (see SystemSession.getVoiceGender()).
-        String[] voiceOptions = voiceRoster(SystemSession.getInstance().getTtsProvider()).toArray(String[]::new);
+        String[] voiceOptions = SystemSession.getInstance().getTtsProvider().voiceRoster().toArray(String[]::new);
         // labelFn shows "DisplayName - accent"; getCellEditorValue() still returns the raw enum name to store.
         fleetTable.getColumnModel().getColumn(COL_VOICE)
                 .setCellEditor(new HudComboCellEditor(new HudComboBox<>(voiceOptions, this::voiceLabel)));
@@ -427,32 +427,7 @@ public class CommanderTabPanel extends JPanel {
      * actually speaks.
      */
     static String normalizeVoice(String voiceName) {
-        return voiceOrDefault(SystemSession.getInstance().getTtsProvider(), voiceName);
-    }
-
-    /**
-     * A stored voice name resolved against one engine's cast: the name itself when the engine carries it,
-     * otherwise that engine's default.
-     */
-    private static String voiceOrDefault(TtsProvider provider, String voiceName) {
-        return switch (provider) {
-            case KOKORO -> KokoroVoices.voiceOrDefault(voiceName).name();
-            case SUPERTONIC -> SupertonicVoices.voiceOrDefault(voiceName).name();
-            case EDGE -> EdgeVoices.voiceOrDefault(voiceName).name();
-            case GOOGLE -> GoogleVoices.voiceOrDefault(voiceName).name();
-        };
-    }
-
-    /**
-     * Every voice one engine carries, by enum name.
-     */
-    private static Stream<String> voiceRoster(TtsProvider provider) {
-        return switch (provider) {
-            case KOKORO -> Arrays.stream(KokoroVoices.values()).map(Enum::name);
-            case SUPERTONIC -> Arrays.stream(SupertonicVoices.values()).map(Enum::name);
-            case EDGE -> Arrays.stream(EdgeVoices.values()).map(Enum::name);
-            case GOOGLE -> Arrays.stream(GoogleVoices.values()).map(Enum::name);
-        };
+        return SystemSession.getInstance().getTtsProvider().voiceOrDefault(voiceName);
     }
 
     /**
@@ -481,7 +456,7 @@ public class CommanderTabPanel extends JPanel {
      * Every voice the engine that speaks radio currently carries, by enum name.
      */
     private static Stream<String> radioVoiceRoster() {
-        return voiceRoster(RadioVoicing.engine());
+        return RadioVoicing.engine().voiceRoster();
     }
 
     /**
@@ -493,7 +468,7 @@ public class CommanderTabPanel extends JPanel {
      * stranger per transmission. A voice the radio engine no longer carries is a different thing: the Kokoro
      * cast is curated by hand and a voice that breaks immersion is removed from it, so a carrier can hold a
      * name that is no longer offered. That is shown as the engine's default, because that is what
-     * {@code KokoroTTS.resolveVoiceName} will actually speak it in - the grid must not promise a voice the
+     * {@code SherpaOnnxTTS.resolveVoiceName} will actually speak it in - the grid must not promise a voice the
      * channel will not use.
      * <p>
      * Showing the stale name instead would be worse than cosmetic: these combos are not editable, and
@@ -517,9 +492,7 @@ public class CommanderTabPanel extends JPanel {
     private String radioVoiceLabel(String enumName) {
         if (enumName == null || enumName.isEmpty()) return getText("player.fleet.voice.random");
         try {
-            TtsProvider radio = RadioVoicing.engine();
-            if (radio == TtsProvider.EDGE) return edgeVoiceLabel(enumName);
-            return localVoiceLabel(radio, enumName);
+            return localVoiceLabel(RadioVoicing.engine(), enumName);
         } catch (IllegalArgumentException e) {
             return enumName;
         }
