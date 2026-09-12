@@ -11,18 +11,11 @@ BindForge exists to protect Elite Dangerous control configuration from loss and 
 
 ### Scope: every control, every input device
 
-**BindForge covers the whole of Elite's control set and every device that can drive it — keyboard, mouse,
-joystick, HOTAS, gamepad, pedals, and any combination of them.** It is not a controller-only tool. Where
-this documentation says "controller", read it as shorthand for *whatever device holds the binding*, never
-as an exclusion of keyboard and mouse.
+**BindForge covers the whole of Elite's control set and every device that can drive it — keyboard, mouse, joystick, HOTAS, gamepad, pedals, and any combination of them.** It is not a controller-only tool. Where this documentation says "controller", read it as shorthand for *whatever device holds the binding*, never as an exclusion of keyboard and mouse.
 
-This matters more than it looks, because Elite-Intel's existing binding code is deliberately narrower.
-`KeyBindingsParser` is a read-only, keyboard-only boundary feeding command execution, and `BindingsWriter`
-refuses to edit any slot holding a controller assignment. Both are correct for what they protect today,
-and because **BindForge is that same code grown**, neither can simply be routed around.
+This matters more than it looks, because Elite-Intel's existing binding code is deliberately narrower. `KeyBindingsParser` is a read-only, keyboard-only boundary feeding command execution, and `BindingsWriter` refuses to edit any slot holding a controller assignment. Both are correct for what they protect today, and because **BindForge is that same code grown**, neither can simply be routed around.
 
-They do not get the same answer: the parser stays exactly as narrow as it is, and the writer widens — see
-[Two narrow boundaries](#two-narrow-boundaries--one-stays-one-widens).
+They do not get the same answer: the parser stays exactly as narrow as it is, and the writer widens — see [Two narrow boundaries](#two-narrow-boundaries--one-stays-one-widens).
 
 **Priority order, in order:**
 1. Back up and restore all managed file domains reliably — see [Managed File Domains](#managed-file-domains) and [File Manager](file-manager.md).
@@ -48,13 +41,9 @@ The Active Preset file has four lines, one per binding section, in a fixed order
 
 ### Why `DeviceMappings.xml` is not cosmetic — reclassified 2026-09-08
 
-It was filed as cosmetic because its visible effect is button labels. That is what it *shows*. What it
-*does* is decouple a commander's bindings from a hardware ID they do not control.
+It was filed as cosmetic because its visible effect is button labels. That is what it *shows*. What it *does* is decouple a commander's bindings from a hardware ID they do not control.
 
-`.binds` names a device by its `DeviceMappings.xml` element name, or by raw VID+PID hex when no entry
-matches ([§4.0](domain-knowledge/EliteDangerous-BindsFileFormat.md#40-the-rule-confirmed-2026-09-08)).
-So the entry is an **indirection layer**, and whether one exists decides what happens when the hardware ID
-changes:
+`.binds` names a device by its `DeviceMappings.xml` element name, or by raw VID+PID hex when no entry matches ([§4.0](domain-knowledge/EliteDangerous-BindsFileFormat.md#40-the-rule-confirmed-2026-09-08)). So the entry is an **indirection layer**, and whether one exists decides what happens when the hardware ID changes:
 
 | State | `.binds` holds | A firmware update changes the PID |
 |---|---|---|
@@ -62,13 +51,9 @@ changes:
 | **Entry exists** | `Device="RVWAP"` | edit one PID field; every binding keeps working |
 
 **And hardware IDs do change.** See
-[VID/PID is not stable](alias-designer.md#vidpid-is-not-a-stable-identity). One commander's two VIRPIL
-devices carried six different PIDs across three snapshots between 2024-08 and 2026-09, while a Razer
-device and two Frontier-recognised devices in the same files never moved.
+[VID/PID is not stable](alias-designer.md#vidpid-is-not-a-stable-identity). One commander's two VIRPIL devices carried six different PIDs across three snapshots between 2024-08 and 2026-09, while a Razer device and two Frontier-recognised devices in the same files never moved.
 
-So the loss impact is **high, not cosmetic**: a `DeviceMappings.xml` lost to a game update takes the
-indirection with it, and the bindings that depended on it revert to depending on an ID the vendor can
-change. `.buttonMap` remains genuinely cosmetic — it really is only labels.
+So the loss impact is **high, not cosmetic**: a `DeviceMappings.xml` lost to a game update takes the indirection with it, and the bindings that depended on it revert to depending on an ID the vendor can change. `.buttonMap` remains genuinely cosmetic — it really is only labels.
 
 A confirmed real-world incident — a game update that overwrote a user's `DeviceMappings.xml` — is the direct reason Alias Designer and File Manager were prioritized ahead of the rest of the BindForge suite. Game updates can overwrite or erase these files, but this is confirmed **not** universal or guaranteed — it happens on some updates for some users, not reliably reproducibly — so BindForge must always validate presence/correctness rather than assume either outcome.
 
@@ -128,9 +113,7 @@ BindForge inherits and applies Elite-Intel's project-wide [Data Integrity Princi
 
 ## Reconciling BindForge Edits With In-Game Rebinds
 
-**Settled 2026-09-06.** A player can rebind inside Elite's own controls screen while BindForge is open.
-Both sides then hold a changed file, and something has to decide what happens. Elite-Intel already
-implements the mechanism, in `BindingsWorkingCopyRepository`.
+**Settled 2026-09-06.** A player can rebind inside Elite's own controls screen while BindForge is open. Both sides then hold a changed file, and something has to decide what happens. Elite-Intel already implements the mechanism, in `BindingsWorkingCopyRepository`.
 
 Three SHA-256 fingerprints are compared:
 
@@ -146,35 +129,24 @@ Three SHA-256 fingerprints are compared:
 | no | **yes** | player rebound in-game, BindForge untouched | `refreshFromGameIfClean` adopts the change into the draft and re-baselines, silently. Nothing is lost and nothing is asked. |
 | **yes** | **yes** | both sides edited | **apply refuses**, via `BindingsApplyService.verifyGameFileDidNotChange` |
 
-The refusal is what makes it safe to leave BindForge open while the game runs: an in-game rebind cannot be
-silently overwritten by a stale draft. The current message offers only *reload from game* or *discard the
-draft* - both of which lose somebody's work.
+The refusal is what makes it safe to leave BindForge open while the game runs: an in-game rebind cannot be silently overwritten by a stale draft. The current message offers only *reload from game* or *discard the draft* - both of which lose somebody's work.
 
 ### Direction: merge rather than choose a loser
 
-**Agreed in principle 2026-09-06; dialog design deferred.** The last row deserves better than a forced
-choice. `.binds` is a list of actions with stable names, each holding a primary and a secondary slot, so a
-three-way compare against the baseline resolves per action rather than per line:
+**Agreed in principle 2026-09-06; dialog design deferred.** The last row deserves better than a forced choice. `.binds` is a list of actions with stable names, each holding a primary and a secondary slot, so a three-way compare against the baseline resolves per action rather than per line:
 
 - changed in the draft only -> take the draft
 - changed live only -> take live
 - changed both sides to the same value -> not a conflict
 - changed both sides differently -> a real conflict, and the only case worth interrupting for
 
-**Show without asking, where nothing conflicts.** The silent adoption in row three is correct behaviour and
-must survive: a player who has not touched BindForge should never be prompted about their own in-game
-rebind. Non-conflicting merges are reported - a summary the player can open - rather than confirmed.
-Confirmation is reserved for genuine conflicts.
+**Show without asking, where nothing conflicts.** The silent adoption in row three is correct behaviour and must survive: a player who has not touched BindForge should never be prompted about their own in-game rebind. Non-conflicting merges are reported - a summary the player can open - rather than confirmed. Confirmation is reserved for genuine conflicts.
 
 ### Merge grain: the slot, not the action — settled 2026-09-07
 
-**Primary and Secondary are separate entities, not two halves of one.** A live change to *Primary* and a
-draft change to *Secondary* of the same action are **two independent edits and merge cleanly** — there is
-nothing to ask the player about.
+**Primary and Secondary are separate entities, not two halves of one.** A live change to *Primary* and a draft change to *Secondary* of the same action are **two independent edits and merge cleanly** — there is nothing to ask the player about.
 
-It is not simply twice the element count, because the three element types carry different numbers of
-slots. From the 457-element reference specimen in
-[the format documentation](domain-knowledge/EliteDangerous-BindsFileFormat.md):
+It is not simply twice the element count, because the three element types carry different numbers of slots. From the 457-element reference specimen in [the format documentation](domain-knowledge/EliteDangerous-BindsFileFormat.md):
 
 | Element type | Count | Slots each | Slots |
 |---|---|---|---|
@@ -184,11 +156,9 @@ slots. From the 457-element reference specimen in
 | `KeyboardLayout` | 1 | 0 — the one text-content element | 0 |
 | | 515 | | **774** |
 
-*Counts refreshed 2026-09-08 against two independent `4.2` files, which agree exactly; an earlier
-457-element specimen gave 268/72/117.*
+*Counts refreshed 2026-09-08 against two independent `4.2` files, which agree exactly; an earlier 457-element specimen gave 268/72/117.*
 
-So around 600 addressable slots on that file rather than the ~900 a flat doubling would suggest, and 117
-elements with no slot to merge at all. Counts differ per file; the proportions are the point.
+So around 600 addressable slots on that file rather than the ~900 a flat doubling would suggest, and 117 elements with no slot to merge at all. Counts differ per file; the proportions are the point.
 
 | Element type | Merge unit | Both sides changed it |
 |---|---|---|
@@ -196,33 +166,19 @@ elements with no slot to merge at all. Counts differ per file; the proportions a
 | Axis | per element (its single slot) | conflict |
 | Standalone setting | per element (its single value) | conflict — only one value can win |
 
-**One exception, and it is a property rather than an input.** `ToggleOn` is **element-level, covering both
-Primary and Secondary as one shared behaviour** — explicitly unlike `Modifier` and `Hold`, which are
-per-slot. So on a button element the two input slots merge independently while the toggle flag sitting
-above them does not: both sides changing `ToggleOn` is a real conflict even when the slots either side of
-it merged cleanly.
+**One exception, and it is a property rather than an input.** `ToggleOn` is **element-level, covering both Primary and Secondary as one shared behaviour** — explicitly unlike `Modifier` and `Hold`, which are per-slot. So on a button element the two input slots merge independently while the toggle flag sitting above them does not: both sides changing `ToggleOn` is a real conflict even when the slots either side of it merged cleanly.
 
-The same reasoning covers file-level non-binding settings such as `KeyboardLayout`: one value, no slot,
-so both sides changing it is a conflict.
+The same reasoning covers file-level non-binding settings such as `KeyboardLayout`: one value, no slot, so both sides changing it is a conflict.
 
-**Open:** what the conflict dialog looks like. Deferred by agreement — the grain above is what the dialog
-needs to know, and it is settled.
+**Open:** what the conflict dialog looks like. Deferred by agreement — the grain above is what the dialog needs to know, and it is settled.
 
-**Gap:** all of the above exists for `.binds` only. `DeviceMappings.xml` and `.buttonMap` have no draft, no
-baseline and no staleness check. Extending the same three-fingerprint treatment to them is new work.
+**Gap:** all of the above exists for `.binds` only. `DeviceMappings.xml` and `.buttonMap` have no draft, no baseline and no staleness check. Extending the same three-fingerprint treatment to them is new work.
 
 ## Writing While the Game Is Running
 
-BindForge does not block writes while Elite Dangerous is running, and does not detect whether it is running.
-Reinstating such a block was reconsidered on 2026-09-06, on the strength of the in-game-rebind problem
-above, and rejected again: the three-fingerprint check catches precisely the case that is dangerous and
-leaves every other session unpenalised, which a blanket block does not.
+BindForge does not block writes while Elite Dangerous is running, and does not detect whether it is running. Reinstating such a block was reconsidered on 2026-09-06, on the strength of the in-game-rebind problem above, and rejected again: the three-fingerprint check catches precisely the case that is dangerous and leaves every other session unpenalised, which a blanket block does not.
 
-Earlier designs specified a **Dormant Mode** that hard-blocked every write for the entire time the game was up.
-That was dropped in August 2026. Two reasons: the block window was far wider than the actual risk — the game
-only re-reads the Bind Domain (`.binds`) when its own in-game Controls menu is opened, so an edit made while the
-player is out flying has no effect until they next open that menu — and it made BindForge depend on
-game-process detection that the host does not provide.
+Earlier designs specified a **Dormant Mode** that hard-blocked every write for the entire time the game was up. That was dropped in August 2026. Two reasons: the block window was far wider than the actual risk — the game only re-reads the Bind Domain (`.binds`) when its own in-game Controls menu is opened, so an edit made while the player is out flying has no effect until they next open that menu — and it made BindForge depend on game-process detection that the host does not provide.
 
 Configuration is protected instead by two mechanisms that never depended on Dormant Mode and are unchanged:
 
@@ -232,71 +188,39 @@ Configuration is protected instead by two mechanisms that never depended on Dorm
   original caution — the game overwriting a player's configuration — and offers to restore it, regardless of
   what caused the loss.
 
-**Residual risk, stated plainly:** a write issued at the exact moment the game reads one of these files could
-still collide. That window is narrow and unmeasured. If it turns out to matter in practice, the cheapest
-mitigation is a warning at the point of writing rather than a session-long block.
+**Residual risk, stated plainly:** a write issued at the exact moment the game reads one of these files could still collide. That window is narrow and unmeasured. If it turns out to matter in practice, the cheapest mitigation is a warning at the point of writing rather than a session-long block.
 
 ## Upgrading the Existing Bind Editor
 
-Elite-Intel already ships a bind editor — `ui.screen.BindingsTabPanel`, backed by ~20 classes in
-`elite.intel.ai.hands`. **BindForge is that editor, upgraded.** It is not a second section built beside it,
-and there is nothing to retire: anything BindForge was specified to do is built *into* the existing editor
-and grown up to these specs. See
-[Phased rollout](../../00-overview/v1.2-scope.md#phased-rollout--revised-2026-09-08) for the order, and
-[why the build-alongside plan was replaced](../../00-overview/v1.2-scope.md#the-bindforge-name-is-returning-not-arriving)
-for the reasoning.
+Elite-Intel already ships a bind editor — `ui.screen.BindingsTabPanel`, backed by ~20 classes in `elite.intel.ai.hands`. **BindForge is that editor, upgraded.** It is not a second section built beside it, and there is nothing to retire: anything BindForge was specified to do is built *into* the existing editor and grown up to these specs. See [Phased rollout](../../00-overview/v1.2-scope.md#phased-rollout--revised-2026-09-08) for the order, and [why the build-alongside plan was replaced](../../00-overview/v1.2-scope.md#the-bindforge-name-is-returning-not-arriving) for the reasoning.
 
-That settles what used to be this document's hardest open question — which component owns the write path —
-by removing the second component. What follows is what the decision obliges.
+That settles what used to be this document's hardest open question — which component owns the write path — by removing the second component. What follows is what the decision obliges.
 
 ### There is one writer, and it already exists
 
-`BindingsApplyService`, `BindingsWorkingCopyRepository`, `BindingsWriter`, `BindingsBackupService` and
-`AppPaths.getBindingsWorkingDir()` are **BindForge's pipeline already**. They are not borrowed from a
-neighbour; the neighbour is the thing being upgraded. The [draft model](#live-file-synchronization) this
-document describes is the working-copy repository that exists today, with Apply as the only path to a live
-file.
+`BindingsApplyService`, `BindingsWorkingCopyRepository`, `BindingsWriter`, `BindingsBackupService` and `AppPaths.getBindingsWorkingDir()` are **BindForge's pipeline already**. They are not borrowed from a neighbour; the neighbour is the thing being upgraded. The [draft model](#live-file-synchronization) this document describes is the working-copy repository that exists today, with Apply as the only path to a live file.
 
-**The hazard this replaces is worth naming, so that nobody rebuilds it.** A second editor would have meant
-two working copies and two writers over the same `.binds`. Each would have been individually safe — backup,
-atomic write, the [Data Integrity Principle](#data-integrity-principle) satisfied — and **jointly they would
-not have been:** one saves, the other is still holding a stale in-memory model, the player applies there, and
-the first editor's work is gone with no operation having misbehaved. The Data Integrity Principle does not
+**The hazard this replaces is worth naming, so that nobody rebuilds it.** A second editor would have meant two working copies and two writers over the same `.binds`. Each would have been individually safe — backup, atomic write, the [Data Integrity Principle](#data-integrity-principle) satisfied — and **jointly they would not have been:** one saves, the other is still holding a stale in-memory model, the player applies there, and the first editor's work is gone with no operation having misbehaved. The Data Integrity Principle does not
 catch that, because it governs atomicity *within* an operation, not ownership *across* components.
 
-**Under upgrade-in-place that failure cannot occur, because the second owner is never built.** The rule that
-keeps it that way is simple: BindForge adds no working copy, no writer and no working directory of its own.
-Where a capability is missing, the existing class grows it.
+**Under upgrade-in-place that failure cannot occur, because the second owner is never built.** The rule that keeps it that way is simple: BindForge adds no working copy, no writer and no working directory of its own. Where a capability is missing, the existing class grows it.
 
 ### Two narrow boundaries — one stays, one widens
 
-`elite.intel.ai.hands` holds two deliberate restrictions. Under the old plan BindForge sidestepped both by
-building its own. Under this one they have to be faced directly, and **they do not have the same answer.**
+`elite.intel.ai.hands` holds two deliberate restrictions. Under the old plan BindForge sidestepped both by building its own. Under this one they have to be faced directly, and **they do not have the same answer.**
 
-**`KeyBindingsParser` stays exactly as narrow as it is.** It is a read-only, keyboard-only boundary feeding
-command execution — the path that presses real keys in the player's ship. Its narrowness is what stops a
-non-keyboard assignment from becoming executable by accident. BindForge reads `.binds` for editing through
-its own full-fidelity path and **must not widen the parser to do it**; the two readers answer different
-questions, and the parser's answer must stay small.
+**`KeyBindingsParser` stays exactly as narrow as it is.** It is a read-only, keyboard-only boundary feeding command execution — the path that presses real keys in the player's ship. Its narrowness is what stops a non-keyboard assignment from becoming executable by accident. BindForge reads `.binds` for editing through its own full-fidelity path and **must not widen the parser to do it**; the two readers answer different questions, and the parser's answer must stay small.
 
-**`BindingsWriter` widens — settled 2026-09-12, reversing an earlier position.** It refuses today to edit any
-slot holding a controller assignment, allowing only an existing `Keyboard` slot or an empty `{NoDevice}` one
-(`isEditableMainSlot`). BindForge's remit is [every control on every device](#scope-every-control-every-input-device), so as the editor
+**`BindingsWriter` widens — settled 2026-09-12, reversing an earlier position.** It refuses today to edit any slot holding a controller assignment, allowing only an existing `Keyboard` slot or an empty `{NoDevice}` one (`isEditableMainSlot`). BindForge's remit is [every control on every device](#scope-every-control-every-input-device), so as the editor
 becomes BindForge, the writer must be able to write what the editor can edit.
 
 The refusal's stated reason survives the change, because it was never really about controllers:
 
 > *The commander bound that device in the game and this application does not take it away.*
 
-That is exactly right for an **assistant acting on its own initiative**, and it stays right — nothing in the
-voice or command path may touch a controller binding. It does not describe a **commander editing their own
-bindings on purpose**, which is the one thing a bind editor is for. A commander who rebinds a HOTAS button in
-the capture dialog *is* taking it away, intentionally, having been shown what was there.
+That is exactly right for an **assistant acting on its own initiative**, and it stays right — nothing in the voice or command path may touch a controller binding. It does not describe a **commander editing their own bindings on purpose**, which is the one thing a bind editor is for. A commander who rebinds a HOTAS button in the capture dialog *is* taking it away, intentionally, having been shown what was there.
 
-So the boundary moves from *device type* to *who initiated the write*: **deliberate, commander-initiated
-edits may write any device; nothing automatic may write a controller slot.** Widening the writer does not
-widen the parser, so the protection the javadoc actually describes — keeping non-keyboard assignments out of
-command execution — is untouched.
+So the boundary moves from *device type* to *who initiated the write*: **deliberate, commander-initiated edits may write any device; nothing automatic may write a controller slot.** Widening the writer does not widen the parser, so the protection the javadoc actually describes — keeping non-keyboard assignments out of command execution — is untouched.
 
 #### Editing a binding is not the same as being able to press it
 
