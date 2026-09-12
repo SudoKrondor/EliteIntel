@@ -10,6 +10,7 @@ import elite.intel.ai.ears.AudioDeviceEnumerator;
 import elite.intel.ai.ears.Resampler;
 import elite.intel.ai.mouth.*;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.ai.mouth.subscribers.events.RadioTransmissionEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.eventbus.GameEventBus;
@@ -64,9 +65,12 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     protected static final int SAMPLE_RATE = 24000;
 
     /**
-     * MAIN: the primary voice engine (handles all narration, including radio, through one queue).
-     * RADIO: a radio-only engine that runs alongside a non-local main mouth (e.g. Google), handling
-     * only radio transmissions and ducking behind the main voice via {@link MainVoicePlaybackGate}.
+     * MAIN: the primary voice engine (handles all narration, and radio too when it is also the radio engine,
+     * through one queue).
+     * RADIO: a radio-only engine that runs alongside a main mouth of another engine (Google, or the other
+     * local engine), handling only radio transmissions and ducking behind the main voice via
+     * {@link MainVoicePlaybackGate}. It is built for the language the transmissions are written in - the game
+     * client's - not the commander's (see {@link RadioVoicing#transmissionLanguage()}).
      */
     public enum Role {MAIN, RADIO}
 
@@ -85,8 +89,13 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     private final AtomicReference<SynthesisTask> currentSynthesis = new AtomicReference<>();
     private final AtomicReference<PlaybackTask> currentPlayback = new AtomicReference<>();
 
-    private record SynthesisTask(String text, String voiceName, boolean isRadio, long generation,
-                                 boolean lastSentence, VocalisationHandle handle) {
+    /**
+     * One sentence waiting for synthesis. {@code language} is the one the text is written in: the commander's
+     * for everything we say ourselves, the game client's for a radio transmission (see
+     * {@link #languageOf(VocalisationRequestEvent)}).
+     */
+    private record SynthesisTask(String text, String voiceName, boolean isRadio, Language language,
+                                 long generation, boolean lastSentence, VocalisationHandle handle) {
     }
 
     /**
@@ -185,7 +194,9 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
             return;
         }
 
-        if (!ensureEngineBuilt(systemSession.getLanguage())) return;
+        // A radio-only engine speaks nothing but the game client's prose, so it is built for that language.
+        Language builtLanguage = role == Role.RADIO ? RadioVoicing.transmissionLanguage() : systemSession.getLanguage();
+        if (!ensureEngineBuilt(builtLanguage)) return;
 
         voicesRadio = RadioVoicing.isRadioEngine(provider());
         running = true;
@@ -344,12 +355,13 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
             // One voice for the whole transmission: the draw happens here, not per sentence, or a station
             // would change speaker mid-message.
             String voiceName = resolveVoiceName(event);
+            Language language = languageOf(event);
             for (int i = 0; i < sentences.size(); i++) {
                 boolean isLast = (i == sentences.size() - 1);
                 boolean isRadio = event.isRadio();
                 if (!Status.getInstance().isInMainShip()) isRadio = true;
                 if (!synthesisQueue.offer(new SynthesisTask(
-                        sentences.get(i), voiceName, isRadio, generation, isLast, handle))) {
+                        sentences.get(i), voiceName, isRadio, language, generation, isLast, handle))) {
                     handle.fail(new IllegalStateException(engineName + " synthesis queue rejected vocalisation"));
                     return;
                 }
@@ -490,6 +502,21 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
         return named;
     }
 
+    /**
+     * The language the request's text is written in. A radio transmission is the game client's own prose,
+     * in the client's language; everything else - narration, a carrier voice audition, a system callout -
+     * we wrote ourselves in the commander's. The distinction is the origin, not the radio flag: an audition
+     * is flagged radio so it gets the transmission filter, but its words are ours.
+     * <p>
+     * Only a model that takes the language per call (Supertonic) can honour a different one per task; Kokoro
+     * has it baked in at build time and reads every task with the language it was built for.
+     */
+    private Language languageOf(VocalisationRequestEvent event) {
+        return event.getOriginType() == RadioTransmissionEvent.class
+                ? RadioVoicing.transmissionLanguage()
+                : systemSession.getLanguage();
+    }
+
     // -- Stage 1: Synthesis thread ---------------------------------------------
 
     private void processSynthesisQueue() {
@@ -509,7 +536,7 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                         task.text().replace(".", " "),
                         sidOf(task.voiceName()),
                         1f + systemSession.getSpeechSpeed(),
-                        systemSession.getLanguage()
+                        task.language()
                 );
 
                 if (audio == null || audio.getSamples() == null || audio.getSamples().length == 0) {

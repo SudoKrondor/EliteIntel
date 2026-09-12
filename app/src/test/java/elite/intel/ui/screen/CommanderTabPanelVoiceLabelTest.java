@@ -151,7 +151,7 @@ class CommanderTabPanelVoiceLabelTest {
         Language previousLanguage = session.getLanguage();
         try {
             session.setTtsProvider(TtsProvider.KOKORO);
-            session.setLanguage(Language.EN); // RadioVoicing hands the Cyrillic locales to Edge instead
+            session.setLanguage(Language.EN); // with no journal in the test, the radio engine falls back to the app language
 
             // The commander's pick is kept whenever the engine still carries it.
             assertEquals(KokoroVoices.GEORGE.name(), CommanderTabPanel.carrierVoiceCell(KokoroVoices.GEORGE.name()));

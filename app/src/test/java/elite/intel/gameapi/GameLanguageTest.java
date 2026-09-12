@@ -1,5 +1,6 @@
 package elite.intel.gameapi;
 
+import elite.intel.i18n.Language;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -7,34 +8,57 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The client language decides whether radio transmissions can be voiced at all, so the two ways it is learned
- * - read off the newest journal at startup, handed over live by a session that starts afterwards - both have
- * to land on the same answer, and an install we cannot read must not silence a channel that works.
+ * The client language decides which engine voices radio transmissions and in what language, so the two ways
+ * it is learned - read off the newest journal at startup, handed over live by a session that starts afterwards
+ * - both have to land on the same answer, and an install we cannot read must say so rather than guess.
  */
 class GameLanguageTest {
 
-    private static final String RUSSIAN_HEADER =
-            "{ \"timestamp\":\"2026-07-25T05:49:56Z\", \"event\":\"Fileheader\", \"part\":1,"
-                    + " \"language\":\"Russian/RU\", \"Odyssey\":true, \"gameversion\":\"4.4.0.3\", \"build\":\"r330683/r0 \" }";
-    private static final String ENGLISH_HEADER =
-            "{ \"timestamp\":\"2026-07-25T05:49:56Z\", \"event\":\"Fileheader\", \"part\":1,"
-                    + " \"language\":\"English/UK\", \"Odyssey\":true, \"gameversion\":\"4.4.0.3\", \"build\":\"r330683/r0 \" }";
+    private static final String RUSSIAN_HEADER = header("Russian/RU");
+    private static final String ENGLISH_HEADER = header("English/UK");
+
+    private static String header(String language) {
+        return "{ \"timestamp\":\"2026-07-25T05:49:56Z\", \"event\":\"Fileheader\", \"part\":1,"
+                + " \"language\":\"" + language + "\", \"Odyssey\":true, \"gameversion\":\"4.4.0.3\", \"build\":\"r330683/r0 \" }";
+    }
 
     @Test
     void aRussianClientIsReadOffTheNewestJournal(@TempDir Path dir) throws IOException {
         writeJournal(dir, "Journal.2026-07-25T054956.01.log", RUSSIAN_HEADER);
-        assertTrue(new GameLanguage(() -> dir).isCyrillicScript());
+        assertEquals(Optional.of(Language.RU), new GameLanguage(() -> dir).language());
     }
 
     @Test
-    void anEnglishClientIsNotCyrillic(@TempDir Path dir) throws IOException {
+    void anEnglishClientIsEnglish(@TempDir Path dir) throws IOException {
         writeJournal(dir, "Journal.2026-07-25T054956.01.log", ENGLISH_HEADER);
-        assertFalse(new GameLanguage(() -> dir).isCyrillicScript());
+        assertEquals(Optional.of(Language.EN), new GameLanguage(() -> dir).language());
+    }
+
+    /**
+     * Frontier ships the client in six languages, spelled {@code <Name>/<REGION>} in the header; the name is
+     * what identifies it, and the only Portuguese client is the Brazilian one.
+     */
+    @Test
+    void everyClientLanguageFrontierShipsMapsToOneOfOurs(@TempDir Path dir) {
+        GameLanguage language = new GameLanguage(() -> dir);
+        language.onGameSessionStarted("English/UK");
+        assertEquals(Optional.of(Language.EN), language.language());
+        language.onGameSessionStarted("French/FR");
+        assertEquals(Optional.of(Language.FR), language.language());
+        language.onGameSessionStarted("German/DE");
+        assertEquals(Optional.of(Language.DE), language.language());
+        language.onGameSessionStarted("Spanish/ES");
+        assertEquals(Optional.of(Language.ES), language.language());
+        language.onGameSessionStarted("Portuguese/BR");
+        assertEquals(Optional.of(Language.PTBZ), language.language());
+        language.onGameSessionStarted("Russian/RU");
+        assertEquals(Optional.of(Language.RU), language.language());
     }
 
     /**
@@ -44,26 +68,30 @@ class GameLanguageTest {
     @Test
     void aLiveHeaderNamesTheSessionThatJustStarted(@TempDir Path dir) {
         GameLanguage language = new GameLanguage(() -> dir);
-        assertFalse(language.isCyrillicScript());
+        assertTrue(language.language().isEmpty());
 
         language.onGameSessionStarted("Russian/RU");
-        assertTrue(language.isCyrillicScript());
+        assertEquals(Optional.of(Language.RU), language.language());
 
         language.onGameSessionStarted("English/UK");
-        assertFalse(language.isCyrillicScript(), "relaunching in English must give the radio back");
+        assertEquals(Optional.of(Language.EN), language.language(), "relaunching in English must move the radio back");
     }
 
     /**
-     * Unknown is not Cyrillic: an unreadable header, or a journal folder that is not there yet, must leave the
-     * radio exactly as the commander set it.
+     * Unknown is unknown, not a guess: an unreadable header, a journal folder that is not there yet, or a
+     * language this app does not ship, and the caller decides what stands in.
      */
     @Test
-    void anUnreadableInstallLeavesTheRadioAlone(@TempDir Path dir) throws IOException {
-        assertFalse(new GameLanguage(() -> dir).isCyrillicScript(), "empty folder");
-        assertFalse(new GameLanguage(() -> dir.resolve("nowhere")).isCyrillicScript(), "no folder");
+    void anUnreadableInstallIsUnknown(@TempDir Path dir) throws IOException {
+        assertTrue(new GameLanguage(() -> dir).language().isEmpty(), "empty folder");
+        assertTrue(new GameLanguage(() -> dir.resolve("nowhere")).language().isEmpty(), "no folder");
 
         writeJournal(dir, "Journal.2026-07-25T054956.01.log", "not json at all");
-        assertFalse(new GameLanguage(() -> dir).isCyrillicScript(), "unreadable header");
+        assertTrue(new GameLanguage(() -> dir).language().isEmpty(), "unreadable header");
+
+        GameLanguage language = new GameLanguage(() -> dir);
+        language.onGameSessionStarted("Klingon/QO");
+        assertTrue(language.language().isEmpty(), "a client language this app does not ship");
     }
 
     /**
@@ -77,7 +105,7 @@ class GameLanguageTest {
         Files.setLastModifiedTime(older, java.nio.file.attribute.FileTime.fromMillis(1_000_000));
         Files.setLastModifiedTime(newer, java.nio.file.attribute.FileTime.fromMillis(2_000_000));
 
-        assertTrue(new GameLanguage(() -> dir).isCyrillicScript());
+        assertEquals(Optional.of(Language.RU), new GameLanguage(() -> dir).language());
     }
 
     private static Path writeJournal(Path dir, String name, String header) throws IOException {

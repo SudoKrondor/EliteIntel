@@ -275,10 +275,11 @@ public class AppController {
             appendToLog("Restarting TTS service...");
 
             // A dedicated radio engine is needed only when the main mouth is not itself the radio engine.
-            // Which engine that is can change with either setting this restart reacts to (the TTS provider,
-            // or the language - Cyrillic moves radio to Supertonic), and every engine is a singleton shared with
-            // the main mouth, so the radio engine is always retired BEFORE the main mouth restarts: starting
-            // a main mouth while the same singleton still holds the RADIO role would silence all narration.
+            // Either side can change with what this restart reacts to (the TTS provider; the game client's
+            // language, which picks the radio engine - a Russian client moves radio to Supertonic), and every
+            // engine is a singleton shared with the main mouth, so the radio engine is always retired BEFORE
+            // the main mouth restarts: starting a main mouth while the same singleton still holds the RADIO
+            // role would silence all narration.
             TtsProvider mainMouth = ApiFactory.getInstance().getActiveTtsProvider();
             TtsProvider radioMouth = RadioVoicing.engine();
             boolean needRadio = radioMouth != mainMouth;
@@ -465,10 +466,10 @@ public class AppController {
      * (the sole LLM service since the legacy command pipeline was removed). Live game-file monitors start
      * last so journal/status subscriber cascades cannot publish into a half-started speech/VEGA layer.
      * <p>
-     * Radio transmissions are voiced by the engine {@link RadioVoicing} names for the commander's language,
+     * Radio transmissions are voiced by the engine {@link RadioVoicing} names for the game client's language,
      * never by the main mouth as such. When that engine is also the main mouth it handles radio through its
      * own queue and no extra service is needed; otherwise a dedicated {@link ServiceType#RADIO_MOUTH} runs it
-     * in its radio role alongside the main mouth.
+     * in its radio role alongside the main mouth - which may be the other local engine.
      *
      * @param mainMouth the engine the main mouth will actually be (see {@code ApiFactory#getActiveTtsProvider})
      * @param radioMouth the engine that voices radio (see {@link RadioVoicing#engine()})

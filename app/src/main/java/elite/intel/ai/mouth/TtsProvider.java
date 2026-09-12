@@ -127,4 +127,27 @@ public enum TtsProvider {
     public static TtsProvider forLanguage(TtsProvider selected, Language language) {
         return selected.canVoice(language) ? selected : SUPERTONIC;
     }
+
+    /**
+     * Whether this engine can voice everything a session speaks: what we write, in the commander's language,
+     * and what the game client writes - the radio transmissions - in its own.
+     */
+    public boolean canVoiceSession(Language commander, Language transmissions) {
+        return canVoice(commander) && canVoice(transmissions);
+    }
+
+    /**
+     * The engine that will actually speak in a session where the commander runs {@code commander} and the game
+     * client writes {@code transmissions}: the selection wherever it can voice both, {@link #SUPERTONIC} where
+     * it cannot - which only ever means Kokoro against a Cyrillic script on either side.
+     * <p>
+     * WHY the client's language withdraws Kokoro as the <em>main</em> mouth, when Kokoro could narrate an
+     * English commander perfectly well over a Russian client: because that client's chatter needs Supertonic
+     * resident anyway, and the rule the commander set is that wherever anything in the session is Cyrillic,
+     * Supertonic is the local engine - the one already loaded narrates too, rather than Kokoro loading beside
+     * it for narration alone. Edge and Google stay selectable: they read every script.
+     */
+    public static TtsProvider forSession(TtsProvider selected, Language commander, Language transmissions) {
+        return selected.canVoiceSession(commander, transmissions) ? selected : SUPERTONIC;
+    }
 }
