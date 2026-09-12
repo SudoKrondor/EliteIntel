@@ -1,18 +1,25 @@
 package elite.intel.ai.mouth;
 
+import elite.intel.ai.mouth.edge.EdgeVoices;
+import elite.intel.ai.mouth.google.GoogleVoices;
+import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.i18n.Language;
 
 /**
  * The engine that voices VEGA. Exactly one is active, and the choice is a stored setting in its own
  * right ({@code game_session.ttsProvider}) - it is never inferred from the shape of the cloud API key.
  * <p>
- * {@link #KOKORO} runs locally and needs nothing configured, which is why it is both the shipped default and
- * the fallback for an unreadable stored value: a commander with no cloud account still has a voice. {@link #GOOGLE}
- * is the only engine that needs an API key. {@link #EDGE} is Microsoft's online Read Aloud service, which is
+ * Two engines run locally and need nothing configured: {@link #KOKORO}, which is the shipped default and the
+ * fallback for an unreadable stored value, so a commander with no cloud account still has a voice; and
+ * {@link #SUPERTONIC}, the alternative local engine, which is the one local engine that can read Cyrillic and
+ * therefore stands in for Kokoro wherever Kokoro cannot speak (see {@link #forLanguage}). {@link #GOOGLE} is
+ * the only engine that needs an API key. {@link #EDGE} is Microsoft's online Read Aloud service, which is
  * keyless but not local - it still talks to Microsoft over the network.
  */
 public enum TtsProvider {
     KOKORO,
+    SUPERTONIC,
     GOOGLE,
     EDGE;
 
@@ -33,10 +40,24 @@ public enum TtsProvider {
     }
 
     /**
+     * The voice a ship gets from this engine until the commander picks one: the name every cast-specific
+     * {@code voiceOrDefault} collapses an unknown name to. Every engine names its voices differently, so a
+     * new ship, and every ship after an engine switch, is written with the active engine's default.
+     */
+    public String defaultVoiceName() {
+        return switch (this) {
+            case KOKORO -> KokoroVoices.DEFAULT_VOICE.name();
+            case SUPERTONIC -> SupertonicVoices.DEFAULT_VOICE.name();
+            case EDGE -> EdgeVoices.DEFAULT_VOICE.name();
+            case GOOGLE -> GoogleVoices.DEFAULT_VOICE.name();
+        };
+    }
+
+    /**
      * Whether the engine synthesises on this machine, with no network call and no account.
      */
     public boolean isLocal() {
-        return this == KOKORO;
+        return this == KOKORO || this == SUPERTONIC;
     }
 
     /**
@@ -44,6 +65,7 @@ public enum TtsProvider {
      * <p>
      * Only {@link #KOKORO} ever answers no: its phonemizer has no Cyrillic front end, so Russian and
      * Ukrainian text is not spoken with an accent, it is not spoken (see {@link Language#isCyrillicScript()}).
+     * {@link #SUPERTONIC} is one multilingual model with Russian and Ukrainian among its languages, and
      * {@link #GOOGLE} and {@link #EDGE} carry every language this app ships.
      */
     public boolean canVoice(Language language) {
@@ -52,13 +74,15 @@ public enum TtsProvider {
 
     /**
      * The engine that will actually speak {@code language}: the selection itself wherever it can voice the
-     * language, and {@link #EDGE} where it cannot.
+     * language, and {@link #SUPERTONIC} where it cannot.
      * <p>
-     * Edge is the stand-in rather than Google because it is keyless: a commander whose only choice is a paid
-     * account has no voice at all until they open one, and a Cyrillic commander did not choose to be in this
-     * position. Google stays selectable - this only decides what happens to a selection that cannot speak.
+     * Supertonic is the stand-in rather than a cloud engine because it is what the commander asked for in every
+     * respect but the name: local, keyless, nothing leaving the machine. A Cyrillic commander did not choose to
+     * be in this position - Kokoro is the shipped default - and until Supertonic existed the stand-in was Edge,
+     * which cost them a network round trip they never opted into. Google stays selectable - this only decides
+     * what happens to a selection that cannot speak.
      */
     public static TtsProvider forLanguage(TtsProvider selected, Language language) {
-        return selected.canVoice(language) ? selected : EDGE;
+        return selected.canVoice(language) ? selected : SUPERTONIC;
     }
 }

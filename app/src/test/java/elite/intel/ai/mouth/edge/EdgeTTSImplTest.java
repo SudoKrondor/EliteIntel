@@ -282,7 +282,7 @@ class EdgeTTSImplTest {
     }
 
     @Test
-    void radioRequestsRemainUnclaimedWhereKokoroCanVoiceTheLanguage() {
+    void radioRequestsAreLeftToTheLocalEngine() {
         FakeClient client = new FakeClient();
         FakeOutput output = new FakeOutput();
         EdgeTTSImpl mouth = mouth(client, output, 0f, 100);
@@ -297,30 +297,24 @@ class EdgeTTSImplTest {
     }
 
     /**
-     * Kokoro has no Cyrillic front end, so Edge is the radio engine for Russian and Ukrainian: it must claim
-     * the transmission, speak it in a locale voice it drew itself rather than the ship's voice, and keep that
-     * one voice for every sentence of the message.
+     * Edge took the Cyrillic radio channel while Kokoro was the only local engine; Supertonic has it now
+     * (see {@code RadioVoicing}), so a Russian transmission is left unclaimed here exactly like an English
+     * one. This used to be the test that Edge claimed it - with an event that was never marked radio, so it
+     * only ever proved that RU narration draws a ru-RU voice.
      */
     @Test
-    void radioInACyrillicLanguageIsClaimedAndSpokenInOneDrawnLocaleVoice() throws Exception {
+    void radioInACyrillicLanguageIsLeftToTheLocalEngineToo() {
         FakeClient client = new FakeClient();
         FakeOutput output = new FakeOutput();
         EdgeTTSImpl mouth = mouth(client, output, new EdgeVoiceProvider(), Language.RU, 0f, 100);
         mouth.start();
-        CompletableFuture<Void> completion = new CompletableFuture<>();
-        VocalisationRequestEvent radio = VocalisationRequestEvent.tracked(
-                "radio-ru", "one. two.", AiVoxResponseEvent.class, true, completion);
+        VocalisationRequestEvent radio = new VocalisationRequestEvent(
+                "radio-ru", null, AiVoxResponseEvent.class, true, true, "station");
 
         mouth.onVoiceProcessEvent(radio);
 
-        await(completion);
-        List<String> voices = client.requests.stream()
-                .map(request -> request.voice().shortName()).distinct().toList();
-        assertEquals(1, voices.size(), "a station must not change speaker mid-transmission");
-        assertTrue(voices.getFirst().startsWith("ru-RU-"), voices.getFirst());
-        assertNotEquals(EdgeVoices.MARY.defaultShortName(), voices.getFirst(),
-                "the transmission is a stranger, not the commander's own ship voice");
-        assertEquals(2, output.played.size());
+        assertFalse(radio.handle().isHandled());
+        assertTrue(client.requests.isEmpty());
     }
 
     @Test

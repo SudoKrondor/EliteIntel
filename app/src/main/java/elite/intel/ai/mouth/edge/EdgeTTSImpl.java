@@ -38,9 +38,11 @@ public final class EdgeTTSImpl implements MouthInterface {
 
     /**
      * MAIN: the primary voice engine, handling all narration (including radio when Edge is also the radio
-     * engine) through one queue. RADIO: a radio-only engine running alongside a non-Edge main mouth in the
-     * Cyrillic locales Kokoro cannot pronounce, ducking behind the main voice via
-     * {@link MainVoicePlaybackGate}.
+     * engine) through one queue. RADIO: a radio-only engine running alongside a non-Edge main mouth, ducking
+     * behind the main voice via {@link MainVoicePlaybackGate}. No locale routes radio to Edge today - it
+     * took the Cyrillic locales while Kokoro was the only local engine, and Supertonic has them now (see
+     * {@link RadioVoicing}) - so the role and the locale-voice draw are kept for an engine gap that comes
+     * back, not exercised.
      */
     public enum Role {MAIN, RADIO}
 
@@ -198,12 +200,12 @@ public final class EdgeTTSImpl implements MouthInterface {
         if (!running) {
             return;
         }
-        // Radio is Kokoro's everywhere it can pronounce the language; Edge takes it only in the Cyrillic
-        // locales (see RadioVoicing), where it may be the main mouth or a dedicated radio engine.
+        // Radio belongs to a local engine wherever one can pronounce the language (see RadioVoicing), which
+        // today is everywhere; Edge asks as the main mouth it is, and the rule stays in one place.
         if (role == Role.RADIO && !event.isRadio()) {
             return;
         }
-        if (event.isRadio() && RadioVoicing.engineFor(settings.language()) != TtsProvider.EDGE) {
+        if (event.isRadio() && RadioVoicing.engineFor(settings.language(), TtsProvider.EDGE) != TtsProvider.EDGE) {
             return;
         }
         VocalisationHandle handle = event.handle();

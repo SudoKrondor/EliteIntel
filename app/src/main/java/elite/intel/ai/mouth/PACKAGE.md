@@ -1,7 +1,7 @@
 # `elite.intel.ai.mouth` - Developer Reference
 
 The mouth package owns everything from a
-`VocalisationRequestEvent` to speaker output. It normalises the various vox event types produced by other packages, synthesises speech via offline Kokoro, Google Cloud, or the Edge consumer Read Aloud service, and publishes an authoritative playback lifecycle while STT remains active for barge-in.
+`VocalisationRequestEvent` to speaker output. It normalises the various vox event types produced by other packages, synthesises speech via offline Kokoro or Supertonic 3, Google Cloud, or the Edge consumer Read Aloud service, and publishes an authoritative playback lifecycle while STT remains active for barge-in.
 
 ---
 
@@ -89,9 +89,8 @@ does not touch it.
 **`AiVoxResponseEvent` special handling**: If the event carries a
 `CompletableFuture`, `VocalisationRouter` passes it through to `VocalisationRequestEvent`; otherwise the request creates its own future. The eligible active Mouth claims the request's `VocalisationHandle` during the same EventBus dispatch. Guava queues reentrant posts, so the no-Mouth check runs through `GameEventBus.afterCurrentDispatch` only after the outer post has drained; checking immediately after a nested `publish` would reject the request before a Mouth sees it. Only the handle publishes `IsSpeakingEvent`, using a process-wide active-request count, so overlapping requests cannot report a false idle state. STT continues listening while the state is true and treats a commander transcript as barge-in.
 
-**`RadioTransmissionEvent` special handling**: The router chooses a random Kokoro voice other than the current
-Kokoro session voice and sets `isRadio=true` on the resulting `VocalisationRequestEvent`. Cloud mouths ignore it;
-the Kokoro radio service owns this route.
+**`RadioTransmissionEvent` special handling**: The router sets `isRadio=true` on the resulting
+`VocalisationRequestEvent`; the engine `RadioVoicing` names draws a random voice of its own cast other than the current ship voice. Cloud mouths ignore it; a local engine owns this route - the main mouth itself when it is local, otherwise Kokoro (Latin-script locales) or Supertonic (Cyrillic) as a dedicated `RADIO_MOUTH` service.
 
 ---
 
@@ -111,7 +110,7 @@ An eligible running backend must call `event.handle().claimForPlayback()` before
 `ManagedService` provides `start()` and `stop()`. Implementations initialize their engine/workers and register
 on `GameEventBus` during `start()`, then unregister and settle owned handles during `stop()`.
 
-Current implementations: `KokoroTTS` (offline), `GoogleTTSImpl` (cloud), and `EdgeTTSImpl` (cloud).
+Current implementations: `KokoroTTS` and `SupertonicTTS` (offline), `GoogleTTSImpl` (cloud), and `EdgeTTSImpl` (cloud).
 
 ---
 
@@ -185,6 +184,8 @@ kokoroLangCode(Language):
 
 When the langCode is null, the model synthesises in English regardless of session language. This is a deliberate fallback - Kokoro Multi-Lang v1.0 only has native accent support for these three languages.
 
+Cyrillic has no entry at all: Kokoro's phonemizer cannot read it, so `TtsProvider.forLanguage` never lets Kokoro be the engine for a Russian or Ukrainian commander - Supertonic stands in (next section).
+
 ### Interruption
 
 `interruptAndClear()`:
@@ -198,6 +199,26 @@ The `canBeInterrupted` field on `VocalisationRequestEvent` controls whether
 `TTSInterruptEvent` triggers this. Mission-critical announcements set it to false and are immune to interrupt.
 
 ---
+
+## 4a. Supertonic TTS Backend (`supertonic/`)
+
+`SupertonicTTS` is the alternative local engine, a sibling of `KokoroTTS` with the same two-queue pipeline, the same `Role` (MAIN / RADIO), the same `MainVoicePlaybackGate` ducking and the same never-`release()` rule. It runs the `sherpa-onnx-supertonic-3-tts-int8-*` model from `AppPaths.getTtsModelDir()` through the same JNI.
+
+What differs:
+
+- **One multilingual model.** The language is not baked into the model config; each
+  `generateWithConfigAndCallback` call passes it as `GenerationConfig.extra("lang", supertonicLangCode(language))`
+  (`en`, `de`, `fr`, `es`, `it`, `pt` for both `PT` and `PTBZ`, `ru`, `uk`). The engine is built once and never rebuilt on a language switch.
+- **Cyrillic.** Supertonic reads Russian and Ukrainian natively. That is why it exists here: `TtsProvider.forLanguage`
+  substitutes it for Kokoro in the Cyrillic locales (the settings panel greys the Kokoro segment out there), and
+  `RadioVoicing` hands it the radio channel for those locales under a cloud main mouth.
+- **Ten
+  voices** (`SupertonicVoices`, `M1`-`M5`, `F1`-`F5`, by `sid`), all offered; the fleet grid shows them by enum name. `DEFAULT_VOICE` is the ship default and the collapse target for a stored name the cast does not carry.
+- **44.1 kHz native
+  output**, resampled to the pipeline's `SAMPLE_RATE` (24 kHz) before the declicker, the radio filter and the playback line, so nothing downstream sees a second rate.
+- **Sentence split on `.!?` only** - comma clauses stay together so the model's own prosody carries the pause.
+
+Selecting it is a stored setting like any other engine (`game_session.ttsProvider = SUPERTONIC`), written by the LOCAL column's engine switch in the AI services settings. Kokoro remains the shipped default and the fallback for an unreadable stored value.
 
 ## 5. Google TTS Backend (`google/`)
 
@@ -278,8 +299,7 @@ at 4096 UTF-8 bytes per request, MPEG frames are assembled before `EdgeMp3Decode
 mono, signed PCM-16 little endian, and only that decoded PCM reaches `AudioDeClicker`.
 
 Application speech speed drives Edge's SSML prosody rate. SSML volume remains `+0%`; the application volume is
-applied exactly once to decoded PCM through `AudioDeClicker.applyVolume`. Edge is a main-mouth provider only;
-radio stays on the dedicated Kokoro route.
+applied exactly once to decoded PCM through `AudioDeClicker.applyVolume`. Edge is a main-mouth provider only; radio stays on the local-engine route.
 
 The integration is unofficial and is not supported or endorsed by Microsoft. `dev.mccue:jlayer-decoder` is
 packaged under its own LGPL terms; see the repository's `THIRD_PARTY_NOTICES.md`.
@@ -409,6 +429,10 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | `subscribers/VocalisationRouter` | Normalises all vox events to `VocalisationRequestEvent` |
 | `kokoro/KokoroTTS` | Offline backend; sherpa-onnx kokoro-multi-lang-v1_0 |
 | `kokoro/KokoroVoices` | 53 Kokoro voice enum with sid values |
+| `supertonic/SupertonicTTS` | Alternative offline backend; sherpa-onnx Supertonic 3 (int8), the Cyrillic-capable one |
+| `supertonic/SupertonicVoices` | 10 Supertonic voice enum with sid values |
+| `RadioVoicing` | Which engine voices radio: the local main mouth, else Kokoro (Latin) / Supertonic (Cyrillic) |
+| `TtsProvider` | The stored engine choice; `forLanguage` swaps Kokoro for Supertonic under Cyrillic |
 | `google/GoogleTTSImpl` | Cloud backend; Google Cloud TTS API |
 | `google/GoogleVoices` | 11 Google voice enum with gender and Chirp3-HD character |
 | `google/GoogleVoiceProvider` | Voice selection + non-EN language override |

@@ -22,7 +22,7 @@ class AiResponseLanguagePolicyTest {
             session.setTtsProvider(TtsProvider.KOKORO);
             session.setLanguage(Language.RU);
 
-            assertEquals(TtsProvider.EDGE, session.getTtsProvider(), "Kokoro cannot voice Cyrillic");
+            assertEquals(TtsProvider.SUPERTONIC, session.getTtsProvider(), "Kokoro cannot voice Cyrillic");
             assertEquals(Language.RU, AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(session));
         } finally {
             session.setTtsProvider(previousProvider);

@@ -14,6 +14,7 @@ import elite.intel.ai.mouth.edge.EdgeTTSImpl;
 import elite.intel.ai.mouth.kokoro.KokoroTTS;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.ai.mouth.supertonic.SupertonicTTS;
 import elite.intel.devices.DeviceService;
 import elite.intel.diagnostics.*;
 import elite.intel.eventbus.GameEventBus;
@@ -275,7 +276,7 @@ public class AppController {
 
             // A dedicated radio engine is needed only when the main mouth is not itself the radio engine.
             // Which engine that is can change with either setting this restart reacts to (the TTS provider,
-            // or the language - Cyrillic moves radio to Edge), and every engine is a singleton shared with
+            // or the language - Cyrillic moves radio to Supertonic), and every engine is a singleton shared with
             // the main mouth, so the radio engine is always retired BEFORE the main mouth restarts: starting
             // a main mouth while the same singleton still holds the RADIO role would silence all narration.
             TtsProvider mainMouth = ApiFactory.getInstance().getActiveTtsProvider();
@@ -528,6 +529,11 @@ public class AppController {
             case KOKORO -> {
                 KokoroTTS radio = KokoroTTS.getInstance();
                 radio.setRole(KokoroTTS.Role.RADIO);
+                yield radio;
+            }
+            case SUPERTONIC -> {
+                SupertonicTTS radio = SupertonicTTS.getInstance();
+                radio.setRole(SupertonicTTS.Role.RADIO);
                 yield radio;
             }
             case EDGE -> {

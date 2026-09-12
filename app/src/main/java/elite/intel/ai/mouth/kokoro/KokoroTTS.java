@@ -236,9 +236,9 @@ public class KokoroTTS implements MouthInterface {
     @Override
     @Subscribe
     public void onVoiceProcessEvent(VocalisationRequestEvent event) {
-        // In RADIO role this engine runs alongside a non-Kokoro main mouth and voices radio only;
-        // normal narration belongs to the main mouth. In MAIN role it handles everything except radio in a
-        // Cyrillic locale, which Kokoro cannot pronounce and Edge voices instead (see RadioVoicing).
+        // In RADIO role this engine runs alongside a non-local main mouth and voices radio only;
+        // normal narration belongs to the main mouth. In MAIN role it handles everything, radio included -
+        // a Cyrillic locale, which Kokoro cannot pronounce, never reaches it at all (see RadioVoicing).
         if (role == Role.RADIO && !event.isRadio()) return;
         if (event.isRadio() && !RadioVoicing.isRadioEngine(TtsProvider.KOKORO)) return;
         if (!running) {
@@ -629,8 +629,8 @@ public class KokoroTTS implements MouthInterface {
      * correctly here and merely spoken with the accent of whatever voice is selected. Getting this wrong is
      * worse than an accent — German text read with "en-us" rules is mangled, not accented.
      * <p>
-     * Cyrillic (RU/UK) has no entry on purpose: it cannot be phonemized at all, so those sessions are
-     * answered in English upstream (see {@code AiResponseLanguagePolicy}) and land on the default.
+     * Cyrillic (RU/UK) has no entry on purpose: it cannot be phonemized at all, so those sessions never
+     * reach this engine - Supertonic stands in for it (see {@code TtsProvider#forLanguage}).
      */
     private static String kokoroLangCode(Language language) {
         return switch (language) {

@@ -9,6 +9,7 @@ import elite.intel.ai.mouth.google.GoogleVoiceProvider;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.subscribers.events.AiVoxDemoEvent;
+import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.dao.ShipSettingsDao;
 import elite.intel.db.managers.GlobalSettingsManager;
@@ -91,11 +92,11 @@ public class CommanderTabPanel extends JPanel {
     private String voiceLabel(String enumName) {
         if (enumName == null) return "";
         try {
-            if (SystemSession.getInstance().useLocalTTS()) {
-                KokoroVoices v = KokoroVoices.valueOf(enumName);
-                return v.getDisplayName() + " - " + v.getDescription();
+            TtsProvider provider = SystemSession.getInstance().getTtsProvider();
+            if (provider.isLocal()) {
+                return localVoiceLabel(provider, enumName);
             }
-            if (usesEdgeTts()) {
+            if (provider == TtsProvider.EDGE) {
                 return edgeVoiceLabel(enumName);
             }
             GoogleVoices v = GoogleVoices.valueOf(enumName);
@@ -404,15 +405,7 @@ public class CommanderTabPanel extends JPanel {
         // Voice options depend on current TTS provider; rebuild editor on every call. Every voice the active
         // engine has is offered, male and female alike - the picked voice also decides how VEGA
         // speaks of itself (see SystemSession.getVoiceGender()).
-        boolean useLocal = SystemSession.getInstance().useLocalTTS();
-        String[] voiceOptions;
-        if (useLocal) {
-            voiceOptions = Arrays.stream(KokoroVoices.values()).map(Enum::name).toArray(String[]::new);
-        } else if (usesEdgeTts()) {
-            voiceOptions = Arrays.stream(EdgeVoices.values()).map(Enum::name).toArray(String[]::new);
-        } else {
-            voiceOptions = Arrays.stream(GoogleVoices.values()).map(Enum::name).toArray(String[]::new);
-        }
+        String[] voiceOptions = voiceRoster(SystemSession.getInstance().getTtsProvider()).toArray(String[]::new);
         // labelFn shows "DisplayName - accent"; getCellEditorValue() still returns the raw enum name to store.
         fleetTable.getColumnModel().getColumn(COL_VOICE)
                 .setCellEditor(new HudComboCellEditor(new HudComboBox<>(voiceOptions, this::voiceLabel)));
@@ -434,20 +427,51 @@ public class CommanderTabPanel extends JPanel {
      * actually speaks.
      */
     static String normalizeVoice(String voiceName) {
-        if (SystemSession.getInstance().useLocalTTS()) {
-            return KokoroVoices.voiceOrDefault(voiceName).name();
+        return voiceOrDefault(SystemSession.getInstance().getTtsProvider(), voiceName);
+    }
+
+    /**
+     * A stored voice name resolved against one engine's cast: the name itself when the engine carries it,
+     * otherwise that engine's default.
+     */
+    private static String voiceOrDefault(TtsProvider provider, String voiceName) {
+        return switch (provider) {
+            case KOKORO -> KokoroVoices.voiceOrDefault(voiceName).name();
+            case SUPERTONIC -> SupertonicVoices.voiceOrDefault(voiceName).name();
+            case EDGE -> EdgeVoices.voiceOrDefault(voiceName).name();
+            case GOOGLE -> GoogleVoices.voiceOrDefault(voiceName).name();
+        };
+    }
+
+    /**
+     * Every voice one engine carries, by enum name.
+     */
+    private static Stream<String> voiceRoster(TtsProvider provider) {
+        return switch (provider) {
+            case KOKORO -> Arrays.stream(KokoroVoices.values()).map(Enum::name);
+            case SUPERTONIC -> Arrays.stream(SupertonicVoices.values()).map(Enum::name);
+            case EDGE -> Arrays.stream(EdgeVoices.values()).map(Enum::name);
+            case GOOGLE -> Arrays.stream(GoogleVoices.values()).map(Enum::name);
+        };
+    }
+
+    /**
+     * A local engine's voice as "DisplayName - description"; both local casts label themselves the same way.
+     */
+    private static String localVoiceLabel(TtsProvider provider, String enumName) {
+        if (provider == TtsProvider.SUPERTONIC) {
+            SupertonicVoices v = SupertonicVoices.valueOf(enumName);
+            return v.getDisplayName() + " - " + v.getDescription();
         }
-        if (usesEdgeTts()) {
-            return EdgeVoices.voiceOrDefault(voiceName).name();
-        }
-        return GoogleVoices.voiceOrDefault(voiceName).name();
+        KokoroVoices v = KokoroVoices.valueOf(enumName);
+        return v.getDisplayName() + " - " + v.getDescription();
     }
 
     /**
      * The voices a carrier's traffic control can be given: the radio engine's roster, not the main mouth's.
-     * A transmission is voiced by whichever engine {@code RadioVoicing} names for the commander's language -
-     * Kokoro almost everywhere, Edge for the Cyrillic locales - so a Google voice picked here would name a
-     * speaker the engine that has to say the line has never heard of.
+     * A transmission is voiced by whichever engine {@code RadioVoicing} names for the commander's language
+     * and main mouth - Kokoro almost everywhere, Supertonic for the Cyrillic locales - so a Google voice
+     * picked here would name a speaker the engine that has to say the line has never heard of.
      */
     private static String[] radioVoiceOptions() {
         return Stream.concat(Stream.of(RANDOM_VOICE), radioVoiceRoster()).toArray(String[]::new);
@@ -457,9 +481,7 @@ public class CommanderTabPanel extends JPanel {
      * Every voice the engine that speaks radio currently carries, by enum name.
      */
     private static Stream<String> radioVoiceRoster() {
-        return RadioVoicing.engine() == TtsProvider.EDGE
-                ? Arrays.stream(EdgeVoices.values()).map(Enum::name)
-                : Arrays.stream(KokoroVoices.values()).map(Enum::name);
+        return voiceRoster(RadioVoicing.engine());
     }
 
     /**
@@ -482,9 +504,7 @@ public class CommanderTabPanel extends JPanel {
     static String carrierVoiceCell(String stored) {
         if (stored == null || stored.isBlank()) return RANDOM_VOICE;
         if (isRadioVoice(stored)) return stored;
-        return RadioVoicing.engine() == TtsProvider.EDGE
-                ? EdgeVoices.DEFAULT_VOICE.name()
-                : KokoroVoices.DEFAULT_VOICE.name();
+        return RadioVoicing.engine().defaultVoiceName();
     }
 
     private static boolean isRadioVoice(String voiceName) {
@@ -497,16 +517,12 @@ public class CommanderTabPanel extends JPanel {
     private String radioVoiceLabel(String enumName) {
         if (enumName == null || enumName.isEmpty()) return getText("player.fleet.voice.random");
         try {
-            if (RadioVoicing.engine() == TtsProvider.EDGE) return edgeVoiceLabel(enumName);
-            KokoroVoices v = KokoroVoices.valueOf(enumName);
-            return v.getDisplayName() + " - " + v.getDescription();
+            TtsProvider radio = RadioVoicing.engine();
+            if (radio == TtsProvider.EDGE) return edgeVoiceLabel(enumName);
+            return localVoiceLabel(radio, enumName);
         } catch (IllegalArgumentException e) {
             return enumName;
         }
-    }
-
-    private static boolean usesEdgeTts() {
-        return SystemSession.getInstance().getTtsProvider() == TtsProvider.EDGE;
     }
 
     /**

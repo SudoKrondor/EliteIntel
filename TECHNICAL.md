@@ -93,6 +93,9 @@ Two STT backends are supported behind a common interface:
 
 - **Kokoro** (local, offline) - JNI Invocation 0 network traffic - bundled with the installer, no API key required
 
+- **Supertonic
+  3** (local, offline) - the alternative local engine, same JNI path; speaks every language the app ships including Russian and Ukrainian, which Kokoro cannot. Ten voices. Bundled with the installer.
+
 - **Google Cloud TTS** (cloud) - 14 voices across British, American, and Australian accents,
   selected at runtime via voice command.
 
