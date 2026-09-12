@@ -1,12 +1,4 @@
-## Contact the developer.
+## Contact the developer and community.
 
-👉[**Matrix Community**](https://matrix.to/#/#krondor:matrix.org)👈
-
-👉[YouTube](https://www.youtube.com/@SudoKrondor)
-
-### 📧 Support Email:
-``` support@elite-intel.org ```
-
-
-### 📧 General Contact Email:
-``` contact@elite-intel.org ```
+- Chat 👉 [**Matrix Community**](https://matrix.to/#/#krondor:matrix.org)
+- Watch 👉 [YouTube](https://www.youtube.com/@SudoKrondor)
