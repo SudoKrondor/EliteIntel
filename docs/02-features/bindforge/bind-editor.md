@@ -127,9 +127,39 @@ same in every case: *why didn't that work?*
 | Kind | What it is | Cause |
 |---|---|---|
 | **Reserved** | the key can never work, whatever is bound | claimed by the OS, or by Elite's own Game Menu control |
-| **Missing** | a control EliteIntel drives with nothing assigned | absence, not breakage |
+| **Missing** | a control EliteIntel drives that it cannot press — **two shapes**, see below | absence, not breakage |
 | **Conflicts** | two actions sharing one input | the original category |
 | **Invalid** | bound, unique, uncontested, and still will not fire | something else consumes the input first in a given game state |
+
+#### Missing has two shapes — added 2026-09-12
+
+**Elite-Intel can only simulate keyboard input.** Krondor, 2026-09-12: *"the app can't use / simulate
+any input except keyboard."* So from the assistant's side there are two ways a control it drives can
+be undriveable, and they look completely different to the commander:
+
+| Shape | The file says | The commander sees | Remedy |
+|---|---|---|---|
+| **Nothing bound** | no assignment in either slot | an empty row | bind it |
+| **Bound, but not to a keyboard** | a HOTAS, joystick, gamepad or mouse assignment | **a perfectly normal binding** | add a keyboard binding in the free slot |
+
+The second is the dangerous one, because **nothing looks wrong.** The commander bound it, the game
+honours it, their hardware works — and the assistant silently cannot use that control. Elite-Intel
+already detects exactly this (`KeyBindingsParser.isBoundToNonKeyboardDeviceOnly`) and its only output
+today is a line in the log, which no commander reads.
+
+**This must not become noise for HOTAS commanders.** It applies *only to controls Elite-Intel
+actually drives*, exactly as the first shape already does. A commander who flies entirely on a stick
+has hundreds of non-keyboard bindings and almost none of them matter here; flagging them all would
+bury the handful that stop the assistant working. The existing detector makes the same distinction
+for the same reason — its `// WHY:` records an earlier version that warned on 345 of 352 actions and
+was worse than silent.
+
+**The remedy is additive, which is why this is comfortable.** `.binds` gives every control two slots.
+A control held on a HOTAS in Primary can take a keyboard binding in Secondary without the commander
+losing anything — both fire. So the fix BindForge offers is *"add a keyboard binding here so the
+assistant can use it too"*, never *"replace your stick binding"*. See
+[FN-1](#known-scanner-defects--all-still-open), which currently makes the scanner blind to the very
+Secondary slot this remedy writes to.
 
 **Why not "Conflicts", "Warnings", "Errors" or "Problems".** *Conflicts* was the original and only
 describes one of the four. *Warnings* understates — a reserved binding will never fire and a blocking

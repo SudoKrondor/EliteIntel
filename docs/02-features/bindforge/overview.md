@@ -298,6 +298,27 @@ edits may write any device; nothing automatic may write a controller slot.** Wid
 widen the parser, so the protection the javadoc actually describes — keeping non-keyboard assignments out of
 command execution — is untouched.
 
+#### Editing a binding is not the same as being able to press it
+
+**Stated by Krondor 2026-09-12, and it is a hard capability limit rather than a policy:**
+
+> *"While we may let users edit the HOTAS assignment as part of the binding management (which is the
+> goal for BindForge) the app can't use / simulate any input except keyboard."*
+
+So the writer widening is real but **one-directional**. BindForge gains the ability to *write* a
+controller assignment into `.binds`; Elite-Intel gains no ability to *send* one. The reason the editor
+refused controller slots in the first place was not caution about overwriting the commander's work —
+it was that **there was no support for those devices at all.**
+
+Two consequences worth building for:
+
+1. **`KeyBindingsParser` staying narrow is not a stylistic choice.** It is the shape of what the
+   application can actually do. Widening it would not make a HOTAS binding executable; it would only
+   let an unpressable one reach the executor.
+2. **A control the assistant drives, bound only to a controller, is unusable by the assistant** even
+   though the commander sees it as bound. That is a real state with a real remedy, and it belongs in
+   [Anomalies](bind-editor.md#four-kinds-one-question) rather than only in a log line.
+
 ### External change detection stays in one place
 
 `BindingsMonitor` already watches the bindings directory with a `java.nio.file.WatchService`, re-parsing and
