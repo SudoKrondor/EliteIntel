@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 @RegisterRowMapper(BountyDao.BountyMapper.class)
+@RegisterRowMapper(BountyDao.PendingMapper.class)
 public interface BountyDao {
 
     @SqlUpdate("""
@@ -33,6 +34,39 @@ public interface BountyDao {
 
     @SqlQuery("SELECT * FROM bounties")
     Bounty[] listAll();
+
+    /**
+     * What the commander is carrying and has not cashed in yet, as one row.
+     * <p>
+     * WHY an aggregate rather than reading {@link #listAll()} and adding it up: the HUD overlay polls
+     * this on a timer (its own {@code hud-overlay-objectives} thread), and a session of bounty hunting is
+     * hundreds of rows whose payload is a JSON blob. SQLite reads the two fields it needs out of the blob and hands back one row.
+     * <p>
+     * A row written before the cashed-in flag existed has no such key in its JSON, and COALESCE reads
+     * that absence as "not cashed in" - which is what it meant.
+     */
+    @SqlQuery("""
+            SELECT COUNT(*)                                              AS kills,
+                   COALESCE(SUM(json_extract(bounty, '$.totalReward')), 0) AS credits
+              FROM bounties
+             WHERE COALESCE(json_extract(bounty, '$.cashedIn'), 0) = 0
+            """)
+    Pending pending();
+
+    class PendingMapper implements RowMapper<Pending> {
+
+        @Override
+        public Pending map(ResultSet rs, StatementContext ctx) throws SQLException {
+            return new Pending(rs.getInt("kills"), rs.getLong("credits"));
+        }
+    }
+
+    /**
+     * @param kills   bounty vouchers held, which is one per kill the commander was paid for
+     * @param credits what those vouchers are worth
+     */
+    record Pending(int kills, long credits) {
+    }
 
     class BountyMapper implements RowMapper<Bounty> {
 

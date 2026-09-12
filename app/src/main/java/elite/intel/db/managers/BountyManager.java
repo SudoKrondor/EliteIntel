@@ -47,6 +47,14 @@ public class BountyManager {
         });
     }
 
+    /**
+     * The vouchers the commander is carrying, and what they are worth. Both zero once they are
+     * cashed in, which is how the bounty-hunting card knows the hunt paid out.
+     */
+    public BountyDao.Pending pending() {
+        return Database.withDao(BountyDao.class, BountyDao::pending);
+    }
+
     public void markAllCashedIn() {
         Database.withDao(BountyDao.class, dao -> {
             BountyDao.Bounty[] data = dao.listAll();

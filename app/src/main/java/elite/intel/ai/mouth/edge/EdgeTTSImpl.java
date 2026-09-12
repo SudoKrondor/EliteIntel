@@ -1,7 +1,10 @@
 package elite.intel.ai.mouth.edge;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.*;
+import elite.intel.ai.mouth.AudioDeClicker;
+import elite.intel.ai.mouth.MainVoicePlaybackGate;
+import elite.intel.ai.mouth.MouthInterface;
+import elite.intel.ai.mouth.VocalisationHandle;
 import elite.intel.ai.mouth.subscribers.events.*;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
@@ -19,9 +22,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,14 +36,6 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class EdgeTTSImpl implements MouthInterface {
     private static final Logger log = LogManager.getLogger(EdgeTTSImpl.class);
     private static final EdgeTTSImpl INSTANCE = productionInstance();
-
-    /**
-     * MAIN: the primary voice engine, handling all narration (including radio when Edge is also the radio
-     * engine) through one queue. RADIO: a radio-only engine running alongside a non-Edge main mouth in the
-     * Cyrillic locales Kokoro cannot pronounce, ducking behind the main voice via
-     * {@link MainVoicePlaybackGate}.
-     */
-    public enum Role {MAIN, RADIO}
 
     private final BlockingQueue<SynthesisTask> synthesisQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<PlaybackTask> playbackQueue = new LinkedBlockingQueue<>();
@@ -59,7 +52,6 @@ public final class EdgeTTSImpl implements MouthInterface {
     private final EdgeTtsSettings settings;
     private final boolean publishStartupEvents;
 
-    private volatile Role role = Role.MAIN;
     private volatile boolean running;
     private Thread synthesisThread;
     private Thread playbackThread;
@@ -70,7 +62,6 @@ public final class EdgeTTSImpl implements MouthInterface {
             Language language,
             String rate,
             float gain,
-            boolean radio,
             Class<? extends BaseVoxEvent> originType,
             long generation,
             boolean lastSentence,
@@ -119,14 +110,6 @@ public final class EdgeTTSImpl implements MouthInterface {
         return INSTANCE;
     }
 
-    /**
-     * Sets whether this engine acts as the main mouth or the radio-only engine. Must be set before
-     * {@link #start()}; a running engine keeps its role until the next stop/start cycle.
-     */
-    public void setRole(Role role) {
-        this.role = role;
-    }
-
     @Override
     public synchronized void start() {
         if (running) {
@@ -151,9 +134,7 @@ public final class EdgeTTSImpl implements MouthInterface {
         startWorkers();
         GameEventBus.register(this);
         log.info("Edge Read Aloud TTS started");
-        // Only the main voice greets on start; the radio-only engine stays silent (its greeting would
-        // otherwise arrive over a comms channel as if a station had said it).
-        if (publishStartupEvents && role == Role.MAIN) {
+        if (publishStartupEvents) {
             publishStartupEvents();
         }
     }
@@ -198,12 +179,9 @@ public final class EdgeTTSImpl implements MouthInterface {
         if (!running) {
             return;
         }
-        // Radio is Kokoro's everywhere it can pronounce the language; Edge takes it only in the Cyrillic
-        // locales (see RadioVoicing), where it may be the main mouth or a dedicated radio engine.
-        if (role == Role.RADIO && !event.isRadio()) {
-            return;
-        }
-        if (event.isRadio() && RadioVoicing.engineFor(settings.language()) != TtsProvider.EDGE) {
+        // Radio is a local engine's everywhere (see RadioVoicing): Edge is a main-mouth engine only, and a
+        // transmission is left for the RADIO_MOUTH service running beside it.
+        if (event.isRadio()) {
             return;
         }
         VocalisationHandle handle = event.handle();
@@ -226,46 +204,18 @@ public final class EdgeTTSImpl implements MouthInterface {
         }
 
         Language language = settings.language();
-        // One voice for the whole transmission: the draw happens here, not per sentence, or a station would
-        // change speaker mid-message.
-        String selected;
-        if (event.isRadio()) {
-            // A radio request that names a voice comes from a speaker the commander has assigned one to -
-            // their own carrier's traffic control. Everyone else on the channel stays a stranger.
-            selected = event.getVoiceName() == null
-                    // Keyed on the individual behind it, so one pirate keeps one voice across the lines they
-                    // send. A station or a police wing carries no key and stays a stranger.
-                    ? voiceProvider.radioVoiceNameFor(language, event.getSpeakerKey(),
-                    reservedShortNames(event.getReservedVoices()))
-                    : EdgeVoices.shortNameOrDefault(event.getVoiceName());
-        } else if (event.getVoiceName() == null) {
-            selected = settings.selectedVoiceName();
-        } else {
-            selected = EdgeVoices.shortNameOrDefault(event.getVoiceName());
-        }
+        String selected = event.getVoiceName() == null
+                ? settings.selectedVoiceName()
+                : EdgeVoices.shortNameOrDefault(event.getVoiceName());
         String rate = EdgeSsml.rate(settings.speechSpeed());
         float gain = Math.max(0, Math.min(100, settings.voiceVolume())) / 100f;
         long generation = interruptGeneration.get();
         for (int i = 0; i < sentences.size(); i++) {
             synthesisQueue.add(new SynthesisTask(
-                    sentences.get(i), selected, language, rate, gain, event.isRadio(),
+                    sentences.get(i), selected, language, rate, gain,
                     event.getOriginType(), generation, i == sentences.size() - 1, handle));
         }
         publishAccepted(event);
-    }
-
-    /**
-     * The reserved voices as Edge ShortNames, which is what the draw works in. A name this engine does not
-     * know is dropped rather than defaulted: {@code shortNameOrDefault} would answer with the default voice,
-     * and reserving that would quietly exclude the one voice every locale is guaranteed to have.
-     */
-    private static Set<String> reservedShortNames(Set<String> voiceNames) {
-        Set<String> shortNames = new HashSet<>();
-        for (String name : voiceNames) {
-            EdgeVoices voice = EdgeVoices.find(name);
-            if (voice != null) shortNames.add(voice.defaultShortName());
-        }
-        return shortNames;
     }
 
     private void publishAccepted(VocalisationRequestEvent event) {
@@ -311,9 +261,7 @@ public final class EdgeTTSImpl implements MouthInterface {
         if (isObsolete(task.handle(), task.generation())) {
             return;
         }
-        EdgeVoice voice = task.radio()
-                ? voiceProvider.resolveRadio(task.selectedVoiceName(), task.language())
-                : voiceProvider.resolve(task.selectedVoiceName(), task.language());
+        EdgeVoice voice = voiceProvider.resolve(task.selectedVoiceName(), task.language());
         EdgeSynthesisRequest request = new EdgeSynthesisRequest(
                 task.handle().requestId(), task.text(), voice, task.rate());
         byte[] compressed;
@@ -336,10 +284,6 @@ public final class EdgeTTSImpl implements MouthInterface {
         }
         AudioDeClicker.sanitize(pcm, 6);
         AudioDeClicker.applyVolume(pcm, task.gain());
-        if (task.radio()) {
-            // Edge decodes to the 24 kHz mono PCM-16 the filter expects, the same shape Kokoro produces.
-            RadioFilter.apply(pcm);
-        }
         if (isObsolete(task.handle(), task.generation())) {
             return;
         }
@@ -397,14 +341,8 @@ public final class EdgeTTSImpl implements MouthInterface {
     }
 
     private boolean play(PlaybackTask task) throws Exception {
-        // Radio ducks behind the main voice: wait out any ongoing main-voice sentence, then play. As the main
-        // mouth this engine instead brackets its own playback so a radio engine can see it.
-        boolean radioEngine = role == Role.RADIO;
-        if (radioEngine) {
-            MainVoicePlaybackGate.awaitIdleForRadio();
-        } else {
-            MainVoicePlaybackGate.begin();
-        }
+        // The main mouth brackets its own playback so the radio engine beside it can duck behind it.
+        MainVoicePlaybackGate.begin();
         try {
             boolean completed = audioOutput.play(task.pcm(), () -> interruptRequested.get()
                     || task.handle().isDone()
@@ -416,9 +354,7 @@ public final class EdgeTTSImpl implements MouthInterface {
             return completed;
         } finally {
             interruptRequested.set(false);
-            if (!radioEngine) {
-                MainVoicePlaybackGate.end();
-            }
+            MainVoicePlaybackGate.end();
         }
     }
 

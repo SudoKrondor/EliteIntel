@@ -9,6 +9,7 @@ import elite.intel.ai.mouth.google.GoogleVoiceProvider;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.subscribers.events.AiVoxDemoEvent;
+import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.dao.ShipSettingsDao;
 import elite.intel.db.managers.GlobalSettingsManager;
@@ -28,9 +29,7 @@ import elite.intel.ui.screen.settings.ShipSettingsPopup;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
-import elite.intel.ui.widget.HudComboBox;
-import elite.intel.ui.widget.HudSection;
-import elite.intel.ui.widget.HudTable;
+import elite.intel.ui.widget.*;
 import elite.intel.util.StringUtls;
 
 import javax.swing.*;
@@ -73,11 +72,6 @@ public class CommanderTabPanel extends JPanel {
      */
     private static final String PERSONALITY_I18N_PREFIX = "ship.personality.";
     /**
-     * Columns the Ship Options and Announcements toggle grids are laid out across.
-     */
-    private static final int COLUMN_COUNT = 3;
-
-    /**
      * Maps a {@link ShipPersonality} enum name to its localized, HUD-cased display label.
      */
     private static String personalityLabel(String enumName) {
@@ -98,11 +92,11 @@ public class CommanderTabPanel extends JPanel {
     private String voiceLabel(String enumName) {
         if (enumName == null) return "";
         try {
-            if (SystemSession.getInstance().useLocalTTS()) {
-                KokoroVoices v = KokoroVoices.valueOf(enumName);
-                return v.getDisplayName() + " - " + v.getDescription();
+            TtsProvider provider = SystemSession.getInstance().getTtsProvider();
+            if (provider.isLocal()) {
+                return localVoiceLabel(provider, enumName);
             }
-            if (usesEdgeTts()) {
+            if (provider == TtsProvider.EDGE) {
                 return edgeVoiceLabel(enumName);
             }
             GoogleVoices v = GoogleVoices.valueOf(enumName);
@@ -167,13 +161,12 @@ public class CommanderTabPanel extends JPanel {
 
     private JTextField playerAltNameField;
     private JCheckBox addressMeBox;
-    private JCheckBox discoveryAnnouncementBox;
-    private JCheckBox routeAnnouncementBox;
-    private JCheckBox planetaryApproachAnnouncementBox;
-    private JCheckBox radarContactAnnouncementBox;
-    private JCheckBox miningAnnouncementBox;
-    private JCheckBox navigationAnnouncementBox;
-    private JCheckBox radioTransmissionBox;
+    private ToggleTreePanel shipSettingsPanel;
+    private ToggleTreePanel announcementsPanel;
+    /**
+     * Kept apart from the rest: its checkbox is dressed by {@link #applyRadioTransmissionAvailability}.
+     */
+    private SettingToggle radioTransmissions;
     private JTable fleetTable;
     private FleetTableModel fleetTableModel;
     /**
@@ -208,9 +201,6 @@ public class CommanderTabPanel extends JPanel {
         setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         setBorder(hudScreenBorder());
 
-        JPanel content = transparentPanel(null);
-        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-
         HudSection profileSection = HudSection.flat(getText("player.section.commanderProfile"), new GridBagLayout());
         JPanel profile = profileSection.body();
         GridBagConstraints gbc = baseGbc();
@@ -230,19 +220,6 @@ public class CommanderTabPanel extends JPanel {
                 playerSession.isAddressMeOn(), playerSession::setAddressMeOn);
         addressMeBox.setToolTipText(getText("player.addressMe.tooltip"));
         addCheck(profile, addressMeBox, gbc);
-
-        content.add(profileSection);
-        content.add(Box.createVerticalStrut(HUD_GAP));
-
-        JTabbedPane optionTabs = AppTheme.makeSectionTabs();
-        optionTabs.setTabPlacement(JTabbedPane.TOP);
-        optionTabs.addTab(getText("player.tab.shipOptions"), buildShipOptionsTab());
-        optionTabs.addTab(getText("player.tab.announcements"), buildAnnouncementsTab());
-
-        content.add(optionTabs);
-        content.add(Box.createVerticalStrut(HUD_GAP));
-
-        HudSection fleetSection = HudSection.flat(getText("player.section.fleetVoice"), new BorderLayout());
 
         fleetTableModel = new FleetTableModel(playerSession);
         // Carrier rows share the grid but not its editors: their voices come from the radio engine's roster,
@@ -284,83 +261,98 @@ public class CommanderTabPanel extends JPanel {
         gearCol.setPreferredWidth(HUD_TABLE_ROW_HEIGHT + 4);
         gearCol.setMaxWidth(HUD_TABLE_ROW_HEIGHT + 10);
 
-        fleetSection.body().add(HudTable.dataPlaneScrollPane(fleetTable), BorderLayout.CENTER);
+        JPanel fleetTab = transparentPanel(new BorderLayout());
+        fleetTab.setBorder(new EmptyBorder(HUD_GAP, 0, 0, 0));
+        fleetTab.add(HudTable.dataPlaneScrollPane(fleetTable), BorderLayout.CENTER);
 
-        add(content, BorderLayout.NORTH);
-        add(fleetSection, BorderLayout.CENTER);
+        // The fleet grid is the one that grows with the window, so the tabs take the centre and the
+        // toggle pages sit at the top of theirs.
+        JTabbedPane tabs = AppTheme.makeSectionTabs();
+        tabs.setTabPlacement(JTabbedPane.TOP);
+        tabs.addTab(getText("player.tab.fleetManagement"), fleetTab);
+        tabs.addTab(getText("player.tab.globalShipSettings"), HudScrollingPage.scrollPane(buildShipSettingsPanel()));
+        tabs.addTab(getText("player.tab.announcements"), HudScrollingPage.scrollPane(buildAnnouncementsPanel()));
+
+        JPanel tabsHolder = transparentPanel(new BorderLayout());
+        tabsHolder.setBorder(new EmptyBorder(HUD_GAP, 0, 0, 0));
+        tabsHolder.add(tabs, BorderLayout.CENTER);
+
+        add(profileSection, BorderLayout.NORTH);
+        add(tabsHolder, BorderLayout.CENTER);
 
         refreshVoiceQualityLabels(); // initial HD/Standard tiers for the fleet voice list
     }
 
     /**
-     * Ship automation toggles, all backed by {@link GlobalSettingsManager}.
+     * A labelled checkbox that writes straight back to the setting it reads.
      */
+    private static JCheckBox toggle(String labelKey, boolean selected, Consumer<Boolean> onChange) {
+        JCheckBox box = makeCheckBox(getText(labelKey), selected);
+        box.addActionListener(e -> onChange.accept(box.isSelected()));
+        return box;
+    }
+
+
     /**
-     * Ship automation toggles, backed by {@link GlobalSettingsManager}. Announcements live on their own tab,
-     * including the jump-related ones that used to sit in this grid's third column.
+     * Ship automation toggles, all backed by {@link GlobalSettingsManager}. Announcements live on their own
+     * tab, including the jump-related ones that used to sit in this grid's third column.
      */
-    private JPanel buildShipOptionsTab() {
+    private ToggleTreePanel buildShipSettingsPanel() {
         GlobalSettingsManager mgr = GlobalSettingsManager.getInstance();
-        List<JCheckBox> boxes = new ArrayList<>();
-
-        boxes.add(toggle("automation.autoSpeedUpForFtl", mgr.getAutoSpeedUpForFtl(), mgr::setAutoSpeedUpForFtl));
-        boxes.add(toggle("automation.autoLightsOffForFtl", mgr.getAutoLightsForFtl(), mgr::setAutoLightsForFtl));
-        boxes.add(toggle("automation.autoNightVisionOffForFtl", mgr.getAutoNightVisionOff(), mgr::setAutoNightVisionOffForSrv));
-        boxes.add(toggle("automation.autoHardpointsRetractForFtl", mgr.getAutoHardpointsRetractForFtl(), mgr::setAutoHardpointsRetractForFtl));
-        boxes.add(toggle("automation.autoLandingGearUpForFtl", mgr.getAutoLandingGearUpForFtl(), mgr::setAutoLandingGearUpForFtl));
-        boxes.add(toggle("automation.autoCargoScoopRetractForFtl", mgr.getAutoCargoScoopRetractForFtl(), mgr::setAutoCargoScoopRetractForFtl));
-        boxes.add(toggle("automation.autoGearUpOnTakeOff", mgr.getAutoGearUpOnTakeOff(), mgr::setAutoGearUpOnTakeOff));
-        boxes.add(toggle("automation.autoExitUiBeforeOpeningAnotherPanel", mgr.getAutoExitUiBeforeOpeningAnotherWindow(), mgr::setAutoExitUiBeforeOpeningAnotherWindow));
-        boxes.add(toggle("automation.autoLightsOffForSrvDeployment", mgr.getAutoLightsOffForSrvDeployment(), mgr::setAutoLightsOffForSrvDeployment));
-        boxes.add(toggle("automation.autoPlotNextNeutronJump", mgr.getAutoPlotNextNeutronJump(), mgr::setAutoPlotNextNeutronJump));
-
-        return threeColumnGrid(boxes);
+        shipSettingsPanel = new ToggleTreePanel(List.of(
+                SettingToggle.of("automation.autoSpeedUpForFtl", mgr::getAutoSpeedUpForFtl, mgr::setAutoSpeedUpForFtl),
+                SettingToggle.of("automation.autoLightsOffForFtl", mgr::getAutoLightsForFtl, mgr::setAutoLightsForFtl),
+                SettingToggle.of("automation.autoNightVisionOffForFtl", mgr::getAutoNightVisionOff, mgr::setAutoNightVisionOffForSrv),
+                SettingToggle.of("automation.autoHardpointsRetractForFtl", mgr::getAutoHardpointsRetractForFtl, mgr::setAutoHardpointsRetractForFtl),
+                SettingToggle.of("automation.autoLandingGearUpForFtl", mgr::getAutoLandingGearUpForFtl, mgr::setAutoLandingGearUpForFtl),
+                SettingToggle.of("automation.autoCargoScoopRetractForFtl", mgr::getAutoCargoScoopRetractForFtl, mgr::setAutoCargoScoopRetractForFtl),
+                SettingToggle.of("automation.autoGearUpOnTakeOff", mgr::getAutoGearUpOnTakeOff, mgr::setAutoGearUpOnTakeOff),
+                SettingToggle.of("automation.autoExitUiBeforeOpeningAnotherPanel", mgr::getAutoExitUiBeforeOpeningAnotherWindow, mgr::setAutoExitUiBeforeOpeningAnotherWindow),
+                SettingToggle.of("automation.autoLightsOffForSrvDeployment", mgr::getAutoLightsOffForSrvDeployment, mgr::setAutoLightsOffForSrvDeployment),
+                SettingToggle.of("automation.autoPlotNextNeutronJump", mgr::getAutoPlotNextNeutronJump, mgr::setAutoPlotNextNeutronJump)));
+        return shipSettingsPanel;
     }
 
     /**
      * Every spoken-announcement toggle, in one place.
      * <p>
-     * The first seven are backed by {@link PlayerSession} and are the categories the
-     * {@code toggle_all_announcements} voice command flips, so {@link #initData()} re-reads them: a voice
-     * command may have changed one while the tab was not visible. The jump-related ones below them are backed
-     * by {@link GlobalSettingsManager}, are read only here, and moved off the Ship Options tab so that a
-     * commander looking for an announcement has one place to look.
+     * The standalone ones are backed by {@link PlayerSession} and are the categories the
+     * {@code toggle_all_announcements} voice command flips, which is why {@link #initData()} refreshes the
+     * page: a voice command may have changed one while the tab was not visible.
+     * <p>
+     * The route announcements are a tree, and the tree is the code's: {@code StartJumpSubscriber} and
+     * {@code JumpCompletedSubscriber} say nothing at all while the route toggle is off, whatever the
+     * {@link GlobalSettingsManager} switches under it say, and the fuel-star clause is only ever spoken as
+     * part of the remaining-jumps line. A dependent listed here that the subscribers did not honour would
+     * be shown greyed out while still speaking.
      */
-    private JPanel buildAnnouncementsTab() {
+    private ToggleTreePanel buildAnnouncementsPanel() {
         GlobalSettingsManager mgr = GlobalSettingsManager.getInstance();
-        List<JCheckBox> boxes = new ArrayList<>();
+        radioTransmissions = SettingToggle.of("announcements.radioTransmissions",
+                playerSession::isRadioTransmissionOn, playerSession::setRadioTransmissionOn);
 
-        discoveryAnnouncementBox = toggle("announcements.discovery",
-                playerSession.isDiscoveryAnnouncementOn(), playerSession::setDiscoveryAnnouncementOn);
-        routeAnnouncementBox = toggle("announcements.route",
-                playerSession.isRouteAnnouncementOn(), playerSession::setRouteAnnouncementOn);
-        planetaryApproachAnnouncementBox = toggle("announcements.planetaryApproach",
-                playerSession.isPlanetaryApproachAnnouncementOn(), playerSession::setPlanetaryApproachAnnouncementOn);
-        radarContactAnnouncementBox = toggle("announcements.radarContact",
-                playerSession.isRadarContactAnnouncementOn(), playerSession::setRadarContactAnnouncementOn);
-        miningAnnouncementBox = toggle("announcements.mining",
-                playerSession.isMiningAnnouncementOn(), playerSession::setMiningAnnouncementOn);
-        navigationAnnouncementBox = toggle("announcements.navigation",
-                playerSession.isNavigationAnnouncementOn(), playerSession::setNavigationAnnouncementOn);
-        radioTransmissionBox = toggle("announcements.radioTransmissions",
-                playerSession.isRadioTransmissionOn(), playerSession::setRadioTransmissionOn);
+        announcementsPanel = new ToggleTreePanel(List.of(
+                SettingToggle.of("announcements.discovery",
+                        playerSession::isDiscoveryAnnouncementOn, playerSession::setDiscoveryAnnouncementOn),
+                SettingToggle.of("announcements.planetaryApproach",
+                        playerSession::isPlanetaryApproachAnnouncementOn, playerSession::setPlanetaryApproachAnnouncementOn),
+                SettingToggle.of("announcements.radarContact",
+                        playerSession::isRadarContactAnnouncementOn, playerSession::setRadarContactAnnouncementOn),
+                SettingToggle.of("announcements.mining",
+                        playerSession::isMiningAnnouncementOn, playerSession::setMiningAnnouncementOn),
+                SettingToggle.of("announcements.navigation",
+                        playerSession::isNavigationAnnouncementOn, playerSession::setNavigationAnnouncementOn),
+                radioTransmissions,
+                SettingToggle.of("announcements.route",
+                        playerSession::isRouteAnnouncementOn, playerSession::setRouteAnnouncementOn,
+                        SettingToggle.of("automation.announceJumpRoute", mgr::getAnnounceJumpRoute, mgr::setAnnounceJumpRoute),
+                        SettingToggle.of("automation.announceJumpTraffic", mgr::getAnnounceJumpTraffic, mgr::setAnnounceJumpTraffic),
+                        SettingToggle.of("automation.announceJumpDeaths", mgr::getAnnounceJumpDeaths, mgr::setAnnounceJumpDeaths),
+                        SettingToggle.of("automation.announceArrival", mgr::getAnnounceArrival, mgr::setAnnounceArrival),
+                        SettingToggle.of("automation.announceRemainingJumps", mgr::getAnnounceRemainingJumps, mgr::setAnnounceRemainingJumps,
+                                SettingToggle.of("automation.announceFuelAvailable", mgr::getAnnounceFuelAvailable, mgr::setAnnounceFuelAvailable)))));
         applyRadioTransmissionAvailability();
-
-        boxes.add(discoveryAnnouncementBox);
-        boxes.add(routeAnnouncementBox);
-        boxes.add(planetaryApproachAnnouncementBox);
-        boxes.add(radarContactAnnouncementBox);
-        boxes.add(miningAnnouncementBox);
-        boxes.add(navigationAnnouncementBox);
-        boxes.add(radioTransmissionBox);
-
-        boxes.add(toggle("automation.announceJumpRoute", mgr.getAnnounceJumpRoute(), mgr::setAnnounceJumpRoute));
-        boxes.add(toggle("automation.announceJumpTraffic", mgr.getAnnounceJumpTraffic(), mgr::setAnnounceJumpTraffic));
-        boxes.add(toggle("automation.announceJumpDeaths", mgr.getAnnounceJumpDeaths(), mgr::setAnnounceJumpDeaths));
-        boxes.add(toggle("automation.announceRemainingJumps", mgr.getAnnounceRemainingJumps(), mgr::setAnnounceRemainingJumps));
-        boxes.add(toggle("automation.announceFuelAvailable", mgr.getAnnounceFuelAvailable(), mgr::setAnnounceFuelAvailable));
-
-        return threeColumnGrid(boxes);
+        return announcementsPanel;
     }
 
     /**
@@ -373,60 +365,12 @@ public class CommanderTabPanel extends JPanel {
      * without having to remember they once had it.
      */
     private void applyRadioTransmissionAvailability() {
+        JCheckBox radioTransmissionBox = announcementsPanel.checkBox(radioTransmissions);
         boolean available = RadioVoicing.isAvailable();
         radioTransmissionBox.setEnabled(available);
         if (!available) radioTransmissionBox.setSelected(false);
         radioTransmissionBox.setToolTipText(
                 available ? null : getText("announcements.radioTransmissions.unavailable"));
-    }
-
-    /**
-     * A labelled checkbox that writes straight back to the setting it reads.
-     */
-    private static JCheckBox toggle(String labelKey, boolean selected, Consumer<Boolean> onChange) {
-        JCheckBox box = makeCheckBox(getText(labelKey), selected);
-        box.addActionListener(e -> onChange.accept(box.isSelected()));
-        return box;
-    }
-
-    /**
-     * Lays the toggles out in three equal columns, filled top to bottom so reading down a column follows the
-     * order they were added. Computing the placement from the list is what keeps the two tabs consistent as
-     * toggles are added or moved between them; the columns used to be hand-numbered, which is how five
-     * announcements ended up living on the automation tab.
-     */
-    private static JPanel threeColumnGrid(List<JCheckBox> boxes) {
-        JPanel grid = transparentPanel(new GridBagLayout());
-        grid.setBorder(new EmptyBorder(HUD_GAP, HUD_GAP, HUD_GAP, HUD_GAP));
-
-        GridBagConstraints gbc = optionGbc();
-        int rows = (boxes.size() + COLUMN_COUNT - 1) / COLUMN_COUNT;
-        for (int i = 0; i < boxes.size(); i++) {
-            gbc.gridx = i / rows;
-            gbc.gridy = i % rows;
-            grid.add(boxes.get(i), gbc);
-        }
-
-        // Filler so the grid keeps its slack on the right rather than stretching the columns across the
-        // full width.
-        gbc.gridx = COLUMN_COUNT;
-        gbc.gridy = 0;
-        gbc.weightx = 1.0;
-        grid.add(Box.createHorizontalGlue(), gbc);
-
-        return grid;
-    }
-
-    /**
-     * Shared grid geometry for the three-column checkbox grids of both option tabs.
-     */
-    private static GridBagConstraints optionGbc() {
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.weightx = 1.0;
-        gbc.insets = new Insets(4, 6, 4, 6);
-        return gbc;
     }
 
     public void initData() {
@@ -435,13 +379,8 @@ public class CommanderTabPanel extends JPanel {
         addressMeBox.setSelected(playerSession.isAddressMeOn());
 
         // A voice command (toggle_all_announcements and friends) can flip these behind the UI's back.
-        discoveryAnnouncementBox.setSelected(playerSession.isDiscoveryAnnouncementOn());
-        routeAnnouncementBox.setSelected(playerSession.isRouteAnnouncementOn());
-        planetaryApproachAnnouncementBox.setSelected(playerSession.isPlanetaryApproachAnnouncementOn());
-        radarContactAnnouncementBox.setSelected(playerSession.isRadarContactAnnouncementOn());
-        miningAnnouncementBox.setSelected(playerSession.isMiningAnnouncementOn());
-        navigationAnnouncementBox.setSelected(playerSession.isNavigationAnnouncementOn());
-        radioTransmissionBox.setSelected(playerSession.isRadioTransmissionOn());
+        shipSettingsPanel.refresh();
+        announcementsPanel.refresh();
         applyRadioTransmissionAvailability();
 
         String commanderName = playerSession.getInGameName();
@@ -466,15 +405,7 @@ public class CommanderTabPanel extends JPanel {
         // Voice options depend on current TTS provider; rebuild editor on every call. Every voice the active
         // engine has is offered, male and female alike - the picked voice also decides how VEGA
         // speaks of itself (see SystemSession.getVoiceGender()).
-        boolean useLocal = SystemSession.getInstance().useLocalTTS();
-        String[] voiceOptions;
-        if (useLocal) {
-            voiceOptions = Arrays.stream(KokoroVoices.values()).map(Enum::name).toArray(String[]::new);
-        } else if (usesEdgeTts()) {
-            voiceOptions = Arrays.stream(EdgeVoices.values()).map(Enum::name).toArray(String[]::new);
-        } else {
-            voiceOptions = Arrays.stream(GoogleVoices.values()).map(Enum::name).toArray(String[]::new);
-        }
+        String[] voiceOptions = SystemSession.getInstance().getTtsProvider().voiceRoster().toArray(String[]::new);
         // labelFn shows "DisplayName - accent"; getCellEditorValue() still returns the raw enum name to store.
         fleetTable.getColumnModel().getColumn(COL_VOICE)
                 .setCellEditor(new HudComboCellEditor(new HudComboBox<>(voiceOptions, this::voiceLabel)));
@@ -496,20 +427,26 @@ public class CommanderTabPanel extends JPanel {
      * actually speaks.
      */
     static String normalizeVoice(String voiceName) {
-        if (SystemSession.getInstance().useLocalTTS()) {
-            return KokoroVoices.voiceOrDefault(voiceName).name();
+        return SystemSession.getInstance().getTtsProvider().voiceOrDefault(voiceName);
+    }
+
+    /**
+     * A local engine's voice as "DisplayName - description"; both local casts label themselves the same way.
+     */
+    private static String localVoiceLabel(TtsProvider provider, String enumName) {
+        if (provider == TtsProvider.SUPERTONIC) {
+            SupertonicVoices v = SupertonicVoices.valueOf(enumName);
+            return v.getDisplayName() + " - " + v.getDescription();
         }
-        if (usesEdgeTts()) {
-            return EdgeVoices.voiceOrDefault(voiceName).name();
-        }
-        return GoogleVoices.voiceOrDefault(voiceName).name();
+        KokoroVoices v = KokoroVoices.valueOf(enumName);
+        return v.getDisplayName() + " - " + v.getDescription();
     }
 
     /**
      * The voices a carrier's traffic control can be given: the radio engine's roster, not the main mouth's.
-     * A transmission is voiced by whichever engine {@code RadioVoicing} names for the commander's language -
-     * Kokoro almost everywhere, Edge for the Cyrillic locales - so a Google voice picked here would name a
-     * speaker the engine that has to say the line has never heard of.
+     * A transmission is voiced by whichever engine {@code RadioVoicing} names for the commander's language
+     * and main mouth - Kokoro almost everywhere, Supertonic for the Cyrillic locales - so a Google voice
+     * picked here would name a speaker the engine that has to say the line has never heard of.
      */
     private static String[] radioVoiceOptions() {
         return Stream.concat(Stream.of(RANDOM_VOICE), radioVoiceRoster()).toArray(String[]::new);
@@ -519,9 +456,7 @@ public class CommanderTabPanel extends JPanel {
      * Every voice the engine that speaks radio currently carries, by enum name.
      */
     private static Stream<String> radioVoiceRoster() {
-        return RadioVoicing.engine() == TtsProvider.EDGE
-                ? Arrays.stream(EdgeVoices.values()).map(Enum::name)
-                : Arrays.stream(KokoroVoices.values()).map(Enum::name);
+        return RadioVoicing.engine().voiceRoster();
     }
 
     /**
@@ -533,7 +468,7 @@ public class CommanderTabPanel extends JPanel {
      * stranger per transmission. A voice the radio engine no longer carries is a different thing: the Kokoro
      * cast is curated by hand and a voice that breaks immersion is removed from it, so a carrier can hold a
      * name that is no longer offered. That is shown as the engine's default, because that is what
-     * {@code KokoroTTS.resolveVoiceName} will actually speak it in - the grid must not promise a voice the
+     * {@code SherpaOnnxTTS.resolveVoiceName} will actually speak it in - the grid must not promise a voice the
      * channel will not use.
      * <p>
      * Showing the stale name instead would be worse than cosmetic: these combos are not editable, and
@@ -544,9 +479,7 @@ public class CommanderTabPanel extends JPanel {
     static String carrierVoiceCell(String stored) {
         if (stored == null || stored.isBlank()) return RANDOM_VOICE;
         if (isRadioVoice(stored)) return stored;
-        return RadioVoicing.engine() == TtsProvider.EDGE
-                ? EdgeVoices.DEFAULT_VOICE.name()
-                : KokoroVoices.DEFAULT_VOICE.name();
+        return RadioVoicing.engine().defaultVoiceName();
     }
 
     private static boolean isRadioVoice(String voiceName) {
@@ -559,16 +492,10 @@ public class CommanderTabPanel extends JPanel {
     private String radioVoiceLabel(String enumName) {
         if (enumName == null || enumName.isEmpty()) return getText("player.fleet.voice.random");
         try {
-            if (RadioVoicing.engine() == TtsProvider.EDGE) return edgeVoiceLabel(enumName);
-            KokoroVoices v = KokoroVoices.valueOf(enumName);
-            return v.getDisplayName() + " - " + v.getDescription();
+            return localVoiceLabel(RadioVoicing.engine(), enumName);
         } catch (IllegalArgumentException e) {
             return enumName;
         }
-    }
-
-    private static boolean usesEdgeTts() {
-        return SystemSession.getInstance().getTtsProvider() == TtsProvider.EDGE;
     }
 
     /**

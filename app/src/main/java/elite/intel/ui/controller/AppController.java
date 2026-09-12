@@ -10,10 +10,11 @@ import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.hands.KeyBindCheck;
 import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
-import elite.intel.ai.mouth.edge.EdgeTTSImpl;
 import elite.intel.ai.mouth.kokoro.KokoroTTS;
+import elite.intel.ai.mouth.sherpa.SherpaOnnxTTS;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.ai.mouth.supertonic.SupertonicTTS;
 import elite.intel.devices.DeviceService;
 import elite.intel.diagnostics.*;
 import elite.intel.eventbus.GameEventBus;
@@ -275,7 +276,7 @@ public class AppController {
 
             // A dedicated radio engine is needed only when the main mouth is not itself the radio engine.
             // Which engine that is can change with either setting this restart reacts to (the TTS provider,
-            // or the language - Cyrillic moves radio to Edge), and every engine is a singleton shared with
+            // or the language - Cyrillic moves radio to Supertonic), and every engine is a singleton shared with
             // the main mouth, so the radio engine is always retired BEFORE the main mouth restarts: starting
             // a main mouth while the same singleton still holds the RADIO role would silence all narration.
             TtsProvider mainMouth = ApiFactory.getInstance().getActiveTtsProvider();
@@ -520,23 +521,21 @@ public class AppController {
     }
 
     /**
-     * The engine that voices radio, in its radio role. Google is deliberately absent: it is the paid main
-     * mouth, and radio chatter is not worth a commander's per-character bill.
+     * The engine that voices radio, in its radio role. The cloud engines are deliberately absent: Google is
+     * the paid main mouth, and radio chatter is not worth a commander's per-character bill; Edge is keyless
+     * but not local, and a local engine can now read every script (see {@link RadioVoicing}).
      */
     private static ManagedService radioEngine(TtsProvider provider) {
         return switch (provider) {
-            case KOKORO -> {
-                KokoroTTS radio = KokoroTTS.getInstance();
-                radio.setRole(KokoroTTS.Role.RADIO);
-                yield radio;
-            }
-            case EDGE -> {
-                EdgeTTSImpl radio = EdgeTTSImpl.getInstance();
-                radio.setRole(EdgeTTSImpl.Role.RADIO);
-                yield radio;
-            }
-            case GOOGLE -> throw new IllegalArgumentException("Google never voices radio transmissions");
+            case KOKORO -> radioLocal(KokoroTTS.getInstance());
+            case SUPERTONIC -> radioLocal(SupertonicTTS.getInstance());
+            case EDGE, GOOGLE -> throw new IllegalArgumentException(provider + " never voices radio transmissions");
         };
+    }
+
+    private static SherpaOnnxTTS radioLocal(SherpaOnnxTTS engine) {
+        engine.setRole(SherpaOnnxTTS.Role.RADIO);
+        return engine;
     }
 
     static class ServiceHolder {

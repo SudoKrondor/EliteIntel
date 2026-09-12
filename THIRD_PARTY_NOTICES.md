@@ -56,6 +56,15 @@ The dependency is unmodified and is included in `elite_intel.jar` by the Gradle 
 
 The dependency is unmodified and is included in `elite_intel.jar` by the Gradle Shadow plugin. EliteIntel's source and Gradle build scripts provide what is needed to rebuild the combined JAR against an interface-compatible version of the library.
 
+## Supertonic-3 TTS model
+
+`distribution/tts/sherpa-onnx-supertonic-3-tts-int8-2026-05-11/` bundles the quantized ONNX weights and voice data for Supertone Inc.'s Supertonic-3 text-to-speech model, run locally through the sherpa-onnx JNI bindings as EliteIntel's alternative offline TTS engine (beside Kokoro).
+
+- License: MIT License, Copyright (c) 2025 Supertone Inc. The full text is included alongside the model files as `LICENSE`.
+
+The model is unmodified and distributed as downloaded from the
+[k2-fsa/sherpa-onnx releases](https://github.com/k2-fsa/sherpa-onnx/releases).
+
 ## Jukebox audio test fixtures
 
 `app/src/test/resources/jukebox/` holds short synthetic MP3, FLAC, M4A/M4B and Ogg Vorbis files - a few seconds at most of a plain sine tone, generated with FFmpeg for this repository. They carry no third-party audio and exist so the decoders, the resampler and the tag reader are tested against real files of each format rather than against mocks. Two of them hold a codec this build deliberately cannot decode, so that refusing such a file is tested too: `lossless-alac.m4a` is Apple Lossless rather than AAC, and `opus-in-ogg.ogg` is Opus rather than Vorbis.

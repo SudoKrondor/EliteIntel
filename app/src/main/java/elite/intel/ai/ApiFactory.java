@@ -17,6 +17,8 @@ import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.edge.EdgeTTSImpl;
 import elite.intel.ai.mouth.google.GoogleTTSImpl;
 import elite.intel.ai.mouth.kokoro.KokoroTTS;
+import elite.intel.ai.mouth.sherpa.SherpaOnnxTTS;
+import elite.intel.ai.mouth.supertonic.SupertonicTTS;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
@@ -71,9 +73,9 @@ public class ApiFactory {
 
     /**
      * The engine the main mouth will actually be, which is the stored selection except when Google has no
-     * usable key and Kokoro stands in for it (see {@link #selectMouth}). Callers that reason about the main
-     * mouth - the radio engine decision, which must never hand the shared Kokoro singleton two roles - have to
-     * see the substitution, not the setting.
+     * usable key and a local engine stands in for it (see {@link #selectMouth}). Callers that reason about the
+     * main mouth - the radio engine decision, which must never hand a shared local singleton two roles - have
+     * to see the substitution, not the setting.
      */
     public TtsProvider getActiveTtsProvider() {
         return resolveProvider(systemSession.getTtsProvider(), systemSession.getTtsApiKey(), systemSession.getLanguage());
@@ -89,15 +91,16 @@ public class ApiFactory {
     static MouthInterface selectMouth(TtsProvider provider, String ttsApiKey, Language language) {
         return switch (resolveProvider(provider, ttsApiKey, language)) {
             case GOOGLE -> GoogleTTSImpl.getInstance();
-            case EDGE -> mainEdge();
-            case KOKORO -> mainKokoro();
+            case EDGE -> EdgeTTSImpl.getInstance();
+            case KOKORO -> mainLocal(KokoroTTS.getInstance());
+            case SUPERTONIC -> mainLocal(SupertonicTTS.getInstance());
         };
     }
 
     /**
      * The stored selection, with the Google-without-a-key safety net applied - and that safety net itself
      * corrected for the language, because standing Kokoro in for a keyless Google would leave a Cyrillic
-     * commander silent rather than merely unpaid (see {@link TtsProvider#forLanguage}).
+     * commander silent rather than merely unpaid; they get Supertonic (see {@link TtsProvider#forLanguage}).
      */
     static TtsProvider resolveProvider(TtsProvider provider, String ttsApiKey, Language language) {
         boolean googleWithoutKey = provider == TtsProvider.GOOGLE
@@ -105,16 +108,9 @@ public class ApiFactory {
         return TtsProvider.forLanguage(googleWithoutKey ? TtsProvider.KOKORO : provider, language);
     }
 
-    private static EdgeTTSImpl mainEdge() {
-        EdgeTTSImpl edge = EdgeTTSImpl.getInstance();
-        edge.setRole(EdgeTTSImpl.Role.MAIN);
-        return edge;
-    }
-
-    private static KokoroTTS mainKokoro() {
-        KokoroTTS kokoro = KokoroTTS.getInstance();
-        kokoro.setRole(KokoroTTS.Role.MAIN);
-        return kokoro;
+    private static SherpaOnnxTTS mainLocal(SherpaOnnxTTS engine) {
+        engine.setRole(SherpaOnnxTTS.Role.MAIN);
+        return engine;
     }
 
     /// -- no choices here

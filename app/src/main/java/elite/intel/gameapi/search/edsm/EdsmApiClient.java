@@ -384,7 +384,7 @@ public class EdsmApiClient {
                     .uri(URI.create(query.toString()))
                     .timeout(Duration.ofSeconds(15))
                     .header("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0")
-                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                    .header("Accept", "application/json")
                     .header("Accept-Language", "en-US,en;q=0.5")
                     .GET()
                     .build();

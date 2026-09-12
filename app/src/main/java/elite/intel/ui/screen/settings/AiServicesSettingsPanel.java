@@ -1,9 +1,6 @@
 package elite.intel.ui.screen.settings;
 
 import elite.intel.ai.mouth.TtsProvider;
-import elite.intel.ai.mouth.edge.EdgeVoices;
-import elite.intel.ai.mouth.google.GoogleVoices;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
@@ -51,6 +48,8 @@ public class AiServicesSettingsPanel extends JPanel {
 
     private static final int SRC_LOCAL = 0;
     private static final int SRC_CLOUD = 1;
+    private static final int ENGINE_KOKORO = 0;
+    private static final int ENGINE_SUPERTONIC = 1;
 
     private final SystemSession systemSession = SystemSession.getInstance();
 
@@ -62,20 +61,22 @@ public class AiServicesSettingsPanel extends JPanel {
     private JCheckBox llmLockCheck;
 
     private HudSegmentedControl ttsSourceControl;
+    private HudSegmentedControl ttsLocalEngineControl;
     private JToggleButton ttsEdgeButton;
     private JPasswordField ttsKeyField;
     private JCheckBox ttsLockCheck;
 
     /**
-     * Whether the local engine is on offer at all. Kokoro cannot pronounce Cyrillic, so a Russian or
-     * Ukrainian commander is left with the two cloud voices; see {@link TtsProvider#canVoice}.
+     * Whether Kokoro is on offer. It cannot pronounce Cyrillic, so for a Russian or Ukrainian commander its
+     * segment is greyed out and Supertonic is the local engine; see {@link TtsProvider#canVoice}.
      */
-    private boolean localVoiceOffered;
+    private boolean kokoroOffered;
 
     private JPanel localCol;
     private JPanel rightCol;
     private JPanel ttsRightCol;
-    private HudBanner ttsLocalHint;
+    private HudBanner ttsKokoroHint;
+    private HudBanner ttsSupertonicHint;
     private HudBanner ttsEdgeHint;
     private JButton saveButton;
     private JLabel unsavedLabel;
@@ -160,21 +161,31 @@ public class AiServicesSettingsPanel extends JPanel {
         JPanel tts = speechSection.body();
 
         // Full-width source switch, no label.
-        localVoiceOffered = TtsProvider.KOKORO.canVoice(systemSession.getLanguage());
+        kokoroOffered = TtsProvider.KOKORO.canVoice(systemSession.getLanguage());
         ttsSourceControl = new HudSegmentedControl(
                 new String[]{getText("settings.ai.voice.local"), getText("settings.ai.voice.cloud")}, SRC_CLOUD);
-        ttsSourceControl.setSegmentEnabled(SRC_LOCAL, localVoiceOffered);
         tts.add(ttsSourceControl, BorderLayout.NORTH);
 
-        // Left column - LOCAL: Kokoro speaks on this machine and has nothing to configure, so the column
-        // only says so - or, where it cannot pronounce the commander's language, says that instead, since a
-        // segment that is simply dead reads as a bug. Right column - CLOUD: Google (needs a key) or Microsoft
-        // Edge, chosen with the toggle under the key row.
+        // Left column - LOCAL: two engines that speak on this machine and have nothing to configure, chosen
+        // with a switch of their own. Kokoro is the default; where it cannot pronounce the commander's
+        // language its segment is greyed out and the banner says why, since a segment that is simply dead
+        // reads as a bug. Right column - CLOUD: Google (needs a key) or Microsoft Edge, chosen with the toggle
+        // under the key row.
         JPanel ttsLeftCol = transparentPanel(new BorderLayout(0, HUD_GAP));
-        ttsLocalHint = localVoiceOffered
-                ? HudBanner.multiline(getText("settings.ai.voice.local.hint"), StatusBadge.State.INFO)
+        ttsLocalEngineControl = new HudSegmentedControl(
+                new String[]{getText("settings.ai.voice.kokoro"), getText("settings.ai.voice.supertonic")},
+                kokoroOffered ? ENGINE_KOKORO : ENGINE_SUPERTONIC);
+        ttsLocalEngineControl.setSegmentEnabled(ENGINE_KOKORO, kokoroOffered);
+        ttsLeftCol.add(ttsLocalEngineControl, BorderLayout.NORTH);
+        // One banner is shown at a time: the selected engine's, or the "why Kokoro is greyed out" one.
+        ttsKokoroHint = HudBanner.multiline(getText("settings.ai.voice.local.hint"), StatusBadge.State.INFO);
+        ttsSupertonicHint = kokoroOffered
+                ? HudBanner.multiline(getText("settings.ai.voice.supertonic.hint"), StatusBadge.State.INFO)
                 : HudBanner.multiline(getText("settings.ai.voice.local.unavailable"), StatusBadge.State.STANDBY);
-        ttsLeftCol.add(ttsLocalHint, BorderLayout.NORTH);
+        JPanel ttsLocalHints = transparentPanel(new BorderLayout());
+        ttsLocalHints.add(ttsKokoroHint, BorderLayout.NORTH);
+        ttsLocalHints.add(ttsSupertonicHint, BorderLayout.SOUTH);
+        ttsLeftCol.add(ttsLocalHints, BorderLayout.CENTER);
 
         ttsRightCol = transparentPanel(new GridBagLayout());
         GridBagConstraints tgc = baseGbc();
@@ -239,6 +250,10 @@ public class AiServicesSettingsPanel extends JPanel {
             recomputeDirty();
             updateEnablement();
         });
+        ttsLocalEngineControl.addChangeListener(e -> {
+            recomputeDirty();
+            updateEnablement();
+        });
         // The Edge toggle picks which cloud voice speaks; while it is on, updateEnablement dims the
         // Google key row, and turning it off hands the cloud slot back to Google.
         ttsEdgeButton.addItemListener(e -> {
@@ -282,7 +297,11 @@ public class AiServicesSettingsPanel extends JPanel {
             ttsKeyField.setText(storedTtsKey);
             TtsProvider ttsProvider = systemSession.getTtsProvider();
             ttsEdgeButton.setSelected(ttsProvider == TtsProvider.EDGE);
-            ttsSourceControl.setSelectedIndex(ttsProvider == TtsProvider.KOKORO ? SRC_LOCAL : SRC_CLOUD);
+            ttsSourceControl.setSelectedIndex(ttsProvider.isLocal() ? SRC_LOCAL : SRC_CLOUD);
+            if (ttsProvider.isLocal()) {
+                ttsLocalEngineControl.setSelectedIndex(
+                        ttsProvider == TtsProvider.SUPERTONIC ? ENGINE_SUPERTONIC : ENGINE_KOKORO);
+            }
 
             savedLlmLocal = local;
             savedLmAddress = lmAddress;
@@ -334,13 +353,18 @@ public class AiServicesSettingsPanel extends JPanel {
         apiKeyField.setEnabled(cloud && !llmLockCheck.isSelected());
         llmLockCheck.setEnabled(cloud);
 
-        // LOCAL means Kokoro, with nothing to set. CLOUD holds both cloud voices, so its whole column
-        // lives or dies with the switch, and inside it the Edge toggle decides whether Google's key row
-        // is in play.
+        // LOCAL holds the two local engines, with nothing to set beyond which one. CLOUD holds both cloud
+        // voices, so its whole column lives or dies with the switch, and inside it the Edge toggle decides
+        // whether Google's key row is in play.
         boolean ttsCloud = ttsSourceControl.getSelectedIndex() == SRC_CLOUD;
-        // The "cannot pronounce this language" banner is the reason the segment beside it is dead, so it stays
-        // legible while cloud is selected - which, in that case, is always.
-        ttsLocalHint.setEnabled(!ttsCloud || !localVoiceOffered);
+        boolean supertonic = ttsLocalEngineControl.getSelectedIndex() == ENGINE_SUPERTONIC;
+        ttsLocalEngineControl.setEnabled(!ttsCloud);
+        ttsKokoroHint.setVisible(!supertonic);
+        ttsSupertonicHint.setVisible(supertonic);
+        // The "cannot pronounce this language" banner is the reason the Kokoro segment is dead, so it stays
+        // legible while cloud is selected.
+        ttsKokoroHint.setEnabled(!ttsCloud);
+        ttsSupertonicHint.setEnabled(!ttsCloud || !kokoroOffered);
         ttsEdgeButton.setEnabled(ttsCloud);
         ttsEdgeHint.setEnabled(ttsCloud);
         boolean googleTts = ttsCloud && !ttsEdgeButton.isSelected();
@@ -415,12 +439,7 @@ public class AiServicesSettingsPanel extends JPanel {
             if (!confirmed) {
                 return false; // abort entire save, stay in editing state
             }
-            String defaultVoice = switch (newTtsProvider) {
-                case KOKORO -> KokoroVoices.DEFAULT_VOICE.name();
-                case EDGE -> EdgeVoices.DEFAULT_VOICE.name();
-                case GOOGLE -> GoogleVoices.DEFAULT_VOICE.name();
-            };
-            ShipManager.getInstance().resetAllVoicesToDefault(defaultVoice);
+            ShipManager.getInstance().resetAllVoicesToDefault(newTtsProvider.defaultVoiceName());
         }
 
         // Restart side-effects fire only when the relevant config actually changed.
@@ -475,14 +494,14 @@ public class AiServicesSettingsPanel extends JPanel {
     }
 
     /**
-     * The engine the controls currently describe: LOCAL is always Kokoro, and CLOUD is Google unless the
-     * Edge toggle claims it.
+     * The engine the controls currently describe: LOCAL is Kokoro unless the engine switch says Supertonic,
+     * and CLOUD is Google unless the Edge toggle claims it.
      */
     private TtsProvider selectedTtsProvider() {
         TtsProvider selected = ttsSourceControl.getSelectedIndex() == SRC_LOCAL
-                ? TtsProvider.KOKORO
+                ? (ttsLocalEngineControl.getSelectedIndex() == ENGINE_SUPERTONIC ? TtsProvider.SUPERTONIC : TtsProvider.KOKORO)
                 : (ttsEdgeButton.isSelected() ? TtsProvider.EDGE : TtsProvider.GOOGLE);
-        // Belt and braces: the local segment is already unselectable when it cannot voice the language, so
+        // Belt and braces: the Kokoro segment is already unselectable when it cannot voice the language, so
         // this only guarantees that no path through this panel can commit an engine that would be silent.
         return TtsProvider.forLanguage(selected, systemSession.getLanguage());
     }

@@ -103,7 +103,7 @@ dependencies {
     implementation 'com.zaxxer:HikariCP:5.1.0'
 
     //sherpa
-    implementation files('libs/sherpa-onnx-v1.12.33.jar')
+    implementation files('libs/sherpa-onnx-v1.13.8.jar')
 
     // In-process text embeddings (semantic command/memory matching). CPU-only, runs the
     // multilingual-e5-small int8 ONNX model shipped in distribution/embed/. ONNX Runtime drives

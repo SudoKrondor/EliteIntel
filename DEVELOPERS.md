@@ -162,7 +162,9 @@ If you want to implement a new command or query follow the established patterns.
 - **Current backends**:
   - `elite.intel.ai.mouth.kokoro.KokoroTTS` - **primary, offline**. Uses Kokoro via
     `sherpa-onnx` JNI. Two-queue pipeline: sentence splitting → synthesis queue → playback queue. Native libraries loaded from
-    `-Djava.library.path`. No API key required.
+    `-Djava.library.path`. No API key required. Cannot voice Cyrillic.
+  - `elite.intel.ai.mouth.supertonic.SupertonicTTS` - **alternative,
+    offline**. The same pipeline (both extend `elite.intel.ai.mouth.sherpa.SherpaOnnxTTS`) over the Supertonic 3 model (one multilingual model, language passed per call, ten voices). It is the local engine a Russian or Ukrainian commander gets, and a choice for everyone else (`TtsProvider.SUPERTONIC`).
   -
   `elite.intel.ai.mouth.google.GoogleTTSImpl` - cloud-based fallback via Google Cloud Text-to-Speech API. Requires a Google Cloud API key configured in the System settings tab.
   - `elite.intel.ai.mouth.edge.EdgeTTSImpl` - unofficial cloud integration with the consumer Edge Read Aloud

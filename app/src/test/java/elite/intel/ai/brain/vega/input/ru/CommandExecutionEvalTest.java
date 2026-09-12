@@ -51,7 +51,8 @@ class CommandExecutionEvalTest {
             new Case("найди где купить золото в радиусе 80 световых лет", "find_commodity", "gold", false),
             new Case("найди место добычи платины", "find_mining_site", "platinum", false),
             new Case("найди мозговые деревья", "find_brain_trees", null, false),
-            new Case("найди охотничьи угодья в радиусе 50 световых лет", "find_hunting_grounds", "50", false),
+            new Case("найди охотничьи угодья в радиусе 50 световых лет", "find_bounty_hunting_ground", "50", false),
+            new Case("найди пиратские миссии на уничтожение в радиусе 80 световых лет", "find_pirate_massacre_missions", "80", false),
             new Case("навигация к активной миссии", "navigate_to_active_mission", null, false),
             new Case("рассчитать нейтронный маршрут с эффективностью 60", "calculate_neutron_star_route", "60", false),
             // Toggle commands: state:boolean param. Must execute with the correct on/off state.

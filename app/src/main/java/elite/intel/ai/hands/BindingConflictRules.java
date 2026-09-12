@@ -12,8 +12,7 @@ import java.util.Set;
  * Also owns the context-group logic used by conflict detection: which actions live in mutually
  * exclusive input contexts ({@link #contextOf}) and which live in modal sub-state overlays
  * ({@link #isSubStateModeAction}). Two actions can only conflict when they share both a context and
- * an exact chord - and one lighting control bound the same way in every context (the lamps, or night
- * vision) is exempt even then ({@link #LAMP_ACTIONS}, {@link #NIGHT_VISION_ACTIONS}).
+ * an exact chord.
  */
 public class BindingConflictRules {
 
@@ -25,37 +24,6 @@ public class BindingConflictRules {
      */
     private static final List<String> QUICK_COMMS_ACTIONS = List.of(
             "QuickCommsPanel", "QuickCommsPanel_Buggy", "QuickCommsPanel_Humanoid");
-
-    /**
-     * The lamps: ship spot light, SRV headlights, on-foot torch.
-     * <p>
-     * One control the commander thinks of as "the light", which Elite happens to name three times because
-     * it is bound per vehicle. Commanders put all three on one key on purpose and want no report about it:
-     * only one of them can fire at a time anyway, and each is a toggle that shows its effect at once.
-     * <p>
-     * Listed by name rather than matched on a word, for the reason {@link #isMapCameraAction} is: the
-     * action set is Frontier's, and a future update naming something else "light" must not join this
-     * family without someone deciding it should. Note that Elite spells the SRV headlights
-     * {@code HeadlightsBuggyButton} - no {@code _Buggy} suffix - so {@link #contextOf} reads it as a ship
-     * action, which is what made the ship lamp and the SRV lamp look like a same-context clash; this
-     * family clears the pair whichever context they land in.
-     */
-    private static final Set<String> LAMP_ACTIONS = Set.of(
-            "ShipSpotLightToggle",
-            "HeadlightsBuggyButton",
-            "HumanoidToggleFlashlightButton");
-
-    /**
-     * Night vision, in a vehicle and on foot - the same control under two names, exempt among itself for
-     * the same reason as {@link #LAMP_ACTIONS}.
-     * <p>
-     * A lamp and night vision are NOT one family: they are two different controls, they are meant to be
-     * worked separately, and EliteIntel taps both itself - it turns the lights and night vision off before
-     * a jump. On one key those taps flip each other back, so that pair stays reported.
-     */
-    private static final Set<String> NIGHT_VISION_ACTIONS = Set.of(
-            "NightVisionToggle",
-            "HumanoidToggleNightVisionButton");
 
     /**
      * The controls that change what the interface is showing: the four panel-focus keys and the two
@@ -154,7 +122,10 @@ public class BindingConflictRules {
      * - Different input contexts (ship / buggy / humanoid / UI / construction) - mutually exclusive,
      * only one is active at a time. The game disables the others' controls while one is active, so a
      * shared key cannot fire two of them. In particular a UI_* or construction-panel action never
-     * collides with a ship action (e.g. {@code CycleNextSubsystem} vs {@code UI_Right}).
+     * collides with a ship action (e.g. {@code CycleNextSubsystem} vs {@code UI_Right}), and a control
+     * the commander thinks of as one thing but Elite binds per vehicle - the cargo scoop, the fire
+     * groups, the triggers, the panels, the maps, the lamps, night vision - may sit on one key in all
+     * of them. Commanders lay it out that way on purpose, and only one vehicle is ever occupied.
      * - Either action belongs to a sub-state overlay (camera, FSS, Galnet, radial wheels) - these
      * modes are only active inside a specific overlay and cannot fire alongside regular actions.
      */
@@ -162,22 +133,8 @@ public class BindingConflictRules {
         if (isMapVersusUiNavigation(a, b)) return false;
         if (isSelectVersusQuickComms(a, b)) return false;
         if (isInterfaceSwitchVersusUiNavigation(a, b)) return false;
-        if (isSameLightingControl(a, b)) return true;
         if (isSubStateModeAction(a) || isSubStateModeAction(b)) return true;
         return !contextOf(a).equals(contextOf(b));
-    }
-
-    /**
-     * True when both actions are the same lighting control wearing different names for different
-     * contexts - two lamps ({@link #LAMP_ACTIONS}) or two night vision toggles
-     * ({@link #NIGHT_VISION_ACTIONS}). That is a deliberate layout, not a clash.
-     * <p>
-     * A lamp against night vision is neither, and stays reported: those are two controls the commander
-     * works separately, and EliteIntel taps both of them for a jump.
-     */
-    private static boolean isSameLightingControl(String a, String b) {
-        return (LAMP_ACTIONS.contains(a) && LAMP_ACTIONS.contains(b))
-                || (NIGHT_VISION_ACTIONS.contains(a) && NIGHT_VISION_ACTIONS.contains(b));
     }
 
     /**
@@ -307,9 +264,11 @@ public class BindingConflictRules {
      * The ship action that is the same logical control as the given SRV ({@code _Buggy}) action, or
      * {@code null} when the action is not an SRV variant.
      * <p>
-     * Ship and SRV are mutually exclusive vehicles with effectively the same controls. Elite names
-     * every SRV action {@code <ShipAction>_Buggy}, so stripping the suffix yields its ship twin. A
-     * control and its twin sharing a key never conflict ({@link #isSafeOverlap}); binding them to the
+     * Ship and SRV are mutually exclusive vehicles with effectively the same controls. Where an SRV
+     * control has a ship counterpart of the same name, Elite spells it {@code <ShipAction>_Buggy}, so
+     * stripping the suffix yields its ship twin (the SRV-only drive and turret controls are spelled
+     * {@code Buggy*} instead and have no twin). A control and its twin sharing a key never conflict
+     * ({@link #isSafeOverlap}); binding them to the
      * <em>same</em> key is the recommended-but-not-required setup, which the editor nudges toward.
      */
     public static String shipTwinOf(String action) {
@@ -326,15 +285,32 @@ public class BindingConflictRules {
      *   <li>{@code ui} - panel/menu navigation (UI_* keys); ship controls are disabled while a panel is open,
      *       with the three exceptions checked ahead of this in {@link #isSafeOverlap};</li>
      *   <li>{@code construction} - the colonisation/construction panel, a separate UI panel;</li>
-     *   <li>{@code buggy} - SRV (_Buggy) controls;</li>
+     *   <li>{@code buggy} - SRV controls;</li>
      *   <li>{@code humanoid} - on-foot controls;</li>
      *   <li>{@code ship} - everything else (cockpit flight).</li>
      * </ul>
+     * The vehicle is read from the game's own controls screen ({@link BindingDisplayNames}), because
+     * Elite's tag names do not say it reliably: the SRV fire and drive controls are spelled
+     * {@code BuggyPrimaryFireButton}, {@code SteerLeftButton}, {@code VerticalThrustersButton} - no
+     * {@code _Buggy} suffix - and reading them as ship actions reported the SRV trigger against the ship
+     * trigger, the SRV fire groups against the ship fire groups, and SRV steering against yaw, on layouts
+     * where sharing those keys is exactly the point. A tag the table has not met (or one under GENERAL,
+     * which holds the interface and camera controls the checks above already classify) falls back to the
+     * name, which is right for the {@code _Buggy} and {@code Humanoid} spellings.
      */
     private static String contextOf(String action) {
         if (action.startsWith("UI_")) return "ui";
         if (action.contains("Construction")) return "construction";
-        if (action.endsWith("_Buggy")) return "buggy";
+        return switch (BindingDisplayNames.lookup(action).section()) {
+            case SRV -> "buggy";
+            case ON_FOOT -> "humanoid";
+            case SHIP -> "ship";
+            case GENERAL, OTHER -> contextFromName(action);
+        };
+    }
+
+    private static String contextFromName(String action) {
+        if (action.contains("Buggy")) return "buggy";
         if (action.contains("Humanoid")) return "humanoid";
         return "ship";
     }
@@ -349,6 +325,9 @@ public class BindingConflictRules {
         // all the CamPitch/CamRoll/CamYaw/CamZoom/CamTranslate axes. No non-camera ED action name
         // contains "Cam".
         return action.contains("Cam")
+                // "Galaxy Cam Select Current System": the one control in the map's own section whose
+                // tag does not spell "Cam". It exists only while the map is open, like the rest.
+                || action.equals("GalaxyMapHome")
                 // Radial wheels (HumanoidItemWheel*, HumanoidEmoteWheel*, HumanoidUtilityWheel*) are
                 // modal UI components: while a wheel is shown the game blocks every other control, so
                 // they cannot co-fire with any other action.

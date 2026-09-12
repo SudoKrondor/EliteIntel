@@ -8,6 +8,7 @@ import elite.intel.ui.screen.settings.InputSettingsPanel;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudFooter;
+import elite.intel.ui.widget.HudScrollingPage;
 import elite.intel.ui.widget.HudUpdateButton;
 
 
@@ -48,9 +49,10 @@ public class SettingsTabPanel extends JPanel {
 
         JTabbedPane tabs = AppTheme.makeSectionTabs();
         tabs.setTabPlacement(JTabbedPane.TOP);
-        tabs.addTab(getText("settings.tab.aiServices"), aiServicesPanel);
-        tabs.addTab(getText("settings.tab.audio"), audioPanel);
-        tabs.addTab(getText("settings.tab.comms"), inputPanel);
+        // Each page scrolls rather than squashing its rows when the window is shorter than it.
+        tabs.addTab(getText("settings.tab.aiServices"), HudScrollingPage.scrollPane(aiServicesPanel));
+        tabs.addTab(getText("settings.tab.audio"), HudScrollingPage.scrollPane(audioPanel));
+        tabs.addTab(getText("settings.tab.comms"), HudScrollingPage.scrollPane(inputPanel));
         tabs.addChangeListener(e -> guardAiServicesTab(tabs));
 
         updateAppButton = new HudUpdateButton(false);

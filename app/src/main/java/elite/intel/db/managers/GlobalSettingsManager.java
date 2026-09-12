@@ -203,6 +203,19 @@ public class GlobalSettingsManager {
         return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAnnounceRemainingJumps());
     }
 
+    public void setAnnounceArrival(boolean announceArrival) {
+        Database.withDao(GlobalSettingsDao.class, dao -> {
+            GlobalSettingsDao.GlobalSettings settings = dao.get();
+            settings.setAnnounceArrival(announceArrival);
+            dao.save(settings);
+            return Void.TYPE;
+        });
+    }
+
+    public boolean getAnnounceArrival() {
+        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAnnounceArrival());
+    }
+
     public void setAnnounceFuelAvailable(boolean announceFuelAvailable) {
         Database.withDao(GlobalSettingsDao.class, dao -> {
             GlobalSettingsDao.GlobalSettings settings = dao.get();

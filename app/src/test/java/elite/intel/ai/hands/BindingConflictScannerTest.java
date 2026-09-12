@@ -404,8 +404,8 @@ class BindingConflictScannerTest {
 
     @Test
     void aLampOnTheSameKeyAsSomethingElseStillConflicts() {
-        // The relaxation covers a lighting control against itself and nothing else - a spot light that
-        // also drops the landing gear is still worth a word.
+        // Only the other vehicles' controls are cleared - a spot light that also drops the landing gear
+        // is still worth a word.
         List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
                 "ShipSpotLightToggle", Set.of("Key_L"),
                 "LandingGearToggle", Set.of("Key_L")));
@@ -416,11 +416,78 @@ class BindingConflictScannerTest {
     @Test
     void theSrvLampIsNotRefusedTheKeyTheShipLampAlreadyHas() {
         // The editor's save-guard reads the same rule. The SRV headlights are spelled without a _Buggy
-        // suffix, so the context model reads them as a ship action - the family is what clears the pair.
+        // suffix; the vehicle comes from the game's controls screen, not from the tag.
         CandidateConflict conflict = BindingConflictScanner.candidateConflict(
                 "HeadlightsBuggyButton", Set.of("Key_L"), bindings("ShipSpotLightToggle", Set.of("Key_L")));
 
         assertNull(conflict);
+    }
+
+    @Test
+    void oneControlBoundTheSameWayInEveryVehicleIsNeverAConflict() {
+        // The commander thinks of one trigger, one fire-group key, one cargo scoop, one right panel, one
+        // map - Elite binds each per vehicle, and only one vehicle is ever occupied. The SRV spellings are
+        // the trap: BuggyPrimaryFireButton, BuggyCycleFireGroupNext and SteerLeftButton carry no _Buggy
+        // suffix, and reading them as ship controls reported the SRV trigger against the ship trigger.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "PrimaryFire", Set.of("Mouse_1"),
+                "BuggyPrimaryFireButton", Set.of("Mouse_1"),
+                "HumanoidPrimaryFireButton", Set.of("Mouse_1"),
+                "SecondaryFire", Set.of("Mouse_2"),
+                "BuggySecondaryFireButton", Set.of("Mouse_2"),
+                "CycleFireGroupNext", Set.of("Key_N"),
+                "BuggyCycleFireGroupNext", Set.of("Key_N"),
+                "CycleFireGroupPrevious", Set.of("Key_LeftShift", "Key_N"),
+                "BuggyCycleFireGroupPrevious", Set.of("Key_LeftShift", "Key_N"),
+                "ToggleCargoScoop", Set.of("Key_Home"),
+                "ToggleCargoScoop_Buggy", Set.of("Key_Home"),
+                "FocusRightPanel", Set.of("Key_4"),
+                "FocusRightPanel_Buggy", Set.of("Key_4"),
+                "GalaxyMapOpen", Set.of("Key_M"),
+                "GalaxyMapOpen_Buggy", Set.of("Key_M"),
+                "GalaxyMapOpen_Humanoid", Set.of("Key_M"),
+                "YawLeftButton", Set.of("Key_A"),
+                "SteerLeftButton", Set.of("Key_A"),
+                "HumanoidStrafeLeftButton", Set.of("Key_A"),
+                "UpThrustButton", Set.of("Key_R"),
+                "VerticalThrustersButton", Set.of("Key_R"),
+                "ToggleFlightAssist", Set.of("Key_Z"),
+                "ToggleDriveAssist", Set.of("Key_Z")));
+
+        assertTrue(conflicts.isEmpty(), "a control shared across vehicles is a layout, not a clash: " + conflicts);
+    }
+
+    @Test
+    void twoSrvControlsOnOneKeyStillConflictWhateverTheirSpelling() {
+        // The SRV trigger and the SRV fire-group key really are live together.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "BuggyPrimaryFireButton", Set.of("Key_N"),
+                "BuggyCycleFireGroupNext", Set.of("Key_N"),
+                "SteerLeftButton", Set.of("Key_A"),
+                "ToggleCargoScoop_Buggy", Set.of("Key_A")));
+
+        assertEquals(List.of("BuggyCycleFireGroupNext*BuggyPrimaryFireButton", "SteerLeftButton*ToggleCargoScoop_Buggy"),
+                conflicts.stream().map(c -> c.actionA() + "*" + c.actionB()).toList());
+    }
+
+    @Test
+    void onFootMovementDoesNotConflictWithTheMapCamera() {
+        // W/A/S/D walks on foot and pans the galaxy map; the map is a sub-state the walk cannot share.
+        // GalaxyMapHome is the one map-section control whose tag does not spell "Cam".
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "HumanoidForwardButton", Set.of("Key_W"),
+                "CamTranslateForward", Set.of("Key_W"),
+                "ForwardKey", Set.of("Key_W"),
+                "HumanoidBackwardButton", Set.of("Key_S"),
+                "CamTranslateBackward", Set.of("Key_S"),
+                "HumanoidStrafeLeftButton", Set.of("Key_A"),
+                "CamTranslateLeft", Set.of("Key_A"),
+                "HumanoidStrafeRightButton", Set.of("Key_D"),
+                "CamTranslateRight", Set.of("Key_D"),
+                "HumanoidJumpButton", Set.of("Key_Space"),
+                "GalaxyMapHome", Set.of("Key_Space")));
+
+        assertTrue(conflicts.isEmpty(), conflicts.toString());
     }
 
     // --- recommendVehicleTwins: nudging ship/SRV twins onto the same key ---

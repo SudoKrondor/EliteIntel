@@ -6,6 +6,7 @@ import elite.intel.ai.mouth.VoiceGender;
 import elite.intel.ai.mouth.edge.EdgeVoices;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ChatHistoryDao;
 import elite.intel.db.dao.GameSessionDao;
 import elite.intel.db.dao.ShipDao;
@@ -81,6 +82,11 @@ public class SystemSession {
         return KokoroVoices.voiceOrDefault(ship == null ? null : ship.getVoice());
     }
 
+    public SupertonicVoices getSupertonicVoice() {
+        ShipDao.Ship ship = shipManager.getShip();
+        return SupertonicVoices.voiceOrDefault(ship == null ? null : ship.getVoice());
+    }
+
 
     /**
      * The gender VEGA is heard as aboard the active ship: the gender of the voice that ship carries,
@@ -100,11 +106,7 @@ public class SystemSession {
     public VoiceGender getVoiceGender() {
         ShipDao.Ship ship = shipManager.getShip();
         String voice = ship == null ? null : ship.getVoice();
-        return switch (getTtsProvider()) {
-            case KOKORO -> VoiceGender.of(KokoroVoices.voiceOrDefault(voice).isMale());
-            case EDGE -> VoiceGender.of(EdgeVoices.voiceOrDefault(voice).male());
-            case GOOGLE -> VoiceGender.of(GoogleVoices.voiceOrDefault(voice).isMale());
-        };
+        return getTtsProvider().voiceGender(voice);
     }
 
 
@@ -364,10 +366,11 @@ public class SystemSession {
      * <p>
      * WHY the correction lives on the read rather than the write: Kokoro cannot voice Cyrillic at all, so a
      * Russian or Ukrainian commander with Kokoro stored has no voice - and that is exactly the state every
-     * database upgraded from a build that let them pick it is in. Reading the stored value through
-     * {@link TtsProvider#forLanguage} makes the unusable combination unrepresentable for every caller at once
-     * (the mouth, the fleet grid's voice roster, the settings panel) without a migration, and hands Kokoro
-     * back untouched if the commander later switches to a Latin-script language.
+     * database upgraded from a build that let them pick it is in, and the state every fresh install starts in,
+     * since Kokoro is the shipped default. Reading the stored value through {@link TtsProvider#forLanguage}
+     * makes the unusable combination unrepresentable for every caller at once (the mouth, the fleet grid's
+     * voice roster, the settings panel) without a migration - they get Supertonic - and hands Kokoro back
+     * untouched if the commander later switches to a Latin-script language.
      */
     public TtsProvider getTtsProvider() {
         TtsProvider stored = Database.withDao(GameSessionDao.class,

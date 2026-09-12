@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Kokoro is the only engine that can fail to voice a language outright, and Cyrillic is the only language it
  * fails on. The rule is pinned here because three places lean on it - the stored setting the session hands
- * back, the mouth the factory builds, and the segment the settings panel withdraws - and all three would
+ * back, the mouth the factory builds, and the segment the settings panel greys out - and all three would
  * degrade into silence rather than an error if it drifted.
  */
 class TtsProviderLanguageTest {
@@ -18,13 +18,14 @@ class TtsProviderLanguageTest {
         for (Language language : Language.values()) {
             assertTrue(TtsProvider.EDGE.canVoice(language), "Edge carries every language: " + language);
             assertTrue(TtsProvider.GOOGLE.canVoice(language), "Google carries every language: " + language);
+            assertTrue(TtsProvider.SUPERTONIC.canVoice(language), "Supertonic carries every language: " + language);
             assertEquals(!language.isCyrillicScript(), TtsProvider.KOKORO.canVoice(language),
                     "Kokoro against " + language);
         }
     }
 
     @Test
-    void anEngineThatCannotSpeakTheLanguageIsReplacedByTheKeylessOne() {
+    void anEngineThatCannotSpeakTheLanguageIsReplacedByTheOtherLocalOne() {
         for (Language language : Language.values()) {
             for (TtsProvider selected : TtsProvider.values()) {
                 TtsProvider resolved = TtsProvider.forLanguage(selected, language);
@@ -32,8 +33,8 @@ class TtsProviderLanguageTest {
                 if (selected.canVoice(language)) {
                     assertEquals(selected, resolved, "a usable selection is never second-guessed: " + selected);
                 } else {
-                    assertEquals(TtsProvider.EDGE, resolved,
-                            "the stand-in must be keyless, not a paid account: " + language);
+                    assertEquals(TtsProvider.SUPERTONIC, resolved,
+                            "the stand-in must be local and keyless, like the choice it replaces: " + language);
                 }
             }
         }
@@ -48,5 +49,29 @@ class TtsProviderLanguageTest {
         assertEquals(TtsProvider.GOOGLE, TtsProvider.forLanguage(TtsProvider.GOOGLE, Language.RU));
         assertEquals(TtsProvider.GOOGLE, TtsProvider.forLanguage(TtsProvider.GOOGLE, Language.UK));
         assertFalse(TtsProvider.KOKORO.canVoice(Language.RU));
+    }
+
+    /**
+     * Both local engines are local, and only they are: the settings panel's LOCAL segment and the radio rule
+     * ({@code RadioVoicing}) both read this.
+     */
+    @Test
+    void exactlyTheTwoOnnxEnginesAreLocal() {
+        assertTrue(TtsProvider.KOKORO.isLocal());
+        assertTrue(TtsProvider.SUPERTONIC.isLocal());
+        assertFalse(TtsProvider.EDGE.isLocal());
+        assertFalse(TtsProvider.GOOGLE.isLocal());
+    }
+
+    /**
+     * A stored value this build does not know - or none at all - is Kokoro, the shipped default, so a commander
+     * who rolls back from a build with more engines still has a voice.
+     */
+    @Test
+    void unknownStoredValuesFallBackToKokoro() {
+        assertEquals(TtsProvider.KOKORO, TtsProvider.fromStored(null));
+        assertEquals(TtsProvider.KOKORO, TtsProvider.fromStored(""));
+        assertEquals(TtsProvider.KOKORO, TtsProvider.fromStored("ELEVENLABS"));
+        assertEquals(TtsProvider.SUPERTONIC, TtsProvider.fromStored("supertonic"));
     }
 }

@@ -1,0 +1,13 @@
+-- The in-app help table, unread since spoken help was withdrawn.
+--
+-- WHY it is dropped rather than left alone: help_topics was the source for a "help" query that the LLM
+-- took to as a fallback for anything it could not route, answering commanders with a paragraph of
+-- documentation instead of doing what they asked. The query was withdrawn for that (the Built-in
+-- Commands tab is where the help lives now) and its handler was never registered again, so nothing has
+-- read this table since. Migration 01048 still rewrote one of its rows, which is how it was noticed.
+-- A table nothing reads is a place for the next such fallback to grow from.
+--
+-- NOTE: no semicolon may appear inside these comments. Migrations are split on a semicolon at end of
+-- line before comments are stripped, so one here would cut the file mid-comment and hand SQLite a
+-- statement with no SQL in it.
+DROP TABLE IF EXISTS help_topics;

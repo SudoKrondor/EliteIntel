@@ -14,7 +14,7 @@ import java.util.function.Supplier;
 /** Persistent Java Sound output line for the application's required PCM format and configured mixer. */
 final class JavaSoundEdgeAudioOutput implements EdgeAudioOutput {
     /**
-     * Silence written before each clip, the same gap {@code KokoroTTS} leaves between sentences.
+     * Silence written before each clip, the same gap {@code SherpaOnnxTTS} leaves between sentences.
      */
     private static final float SILENCE_GAP_SECONDS = 0.03f;
     /**
