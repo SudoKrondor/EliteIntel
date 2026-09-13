@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 public class SupertonicTTS extends SherpaOnnxTTS {
 
     private static final int NUM_STEPS = 8;
+    private static final float SPEED_MULTIPLIER = 0.85f;
 
     private static volatile SupertonicTTS instance;
 
@@ -57,7 +58,7 @@ public class SupertonicTTS extends SherpaOnnxTTS {
     protected GeneratedAudio generate(OfflineTts tts, String text, int sid, float speed, Language language) {
         GenerationConfig genConfig = new GenerationConfig();
         genConfig.setSid(sid);
-        genConfig.setSpeed(speed);
+        genConfig.setSpeed(speed * SPEED_MULTIPLIER);
         genConfig.setNumSteps(NUM_STEPS);
         genConfig.setExtra(Map.of("lang", supertonicLangCode(language)));
         Consumer<float[]> noStreaming = samples -> {
