@@ -129,7 +129,7 @@ public class ScanEventSubscriber {
                 // it first (see carriesNoDiscoveryInformation), so they are not recorded. Leaving the stored
                 // values alone keeps whatever a real scan established; an unseen body then stays "not ours",
                 // which is the only answer a beacon can support and the safe one in a populated system.
-                if (!carriesNoDiscoveryInformation(event)) {
+                if (!carriesNoDiscoveryInformation(event, primaryStarLocation.getPopulation())) {
                     location.setOurDiscovery(!event.isWasDiscovered());
                     location.setWeMappedIt(!event.isWasMapped());
                 }
@@ -181,14 +181,14 @@ public class ScanEventSubscriber {
                     location.setMaterials(materials);
                 }
 
-                announceIfNewDiscovery(event, location);
+                announceIfNewDiscovery(event, location, primaryStarLocation.getPopulation());
                 playerSession.setLastScan(location);
             });
         });
     }
 
-    private void announceIfNewDiscovery(ScanEvent event, LocationDto location) {
-        if (carriesNoDiscoveryInformation(event)) return;
+    private void announceIfNewDiscovery(ScanEvent event, LocationDto location, long systemPopulation) {
+        if (carriesNoDiscoveryInformation(event, systemPopulation)) return;
 
         boolean wasDiscovered = event.isWasDiscovered();
         boolean wasMapped = event.isWasMapped();
@@ -214,20 +214,27 @@ public class ScanEventSubscriber {
     }
 
     /**
+     * The journal's {@code WasDiscovered} flag is not to be believed in two situations, and both have
+     * announced "New System discovered!" to a commander sitting in the middle of the bubble.
+     * <p>
      * A nav beacon hands over the whole system's body data at once, and the Scan events it produces report
      * {@code WasDiscovered:false} for bodies that were charted decades ago. The flags describe how <em>this</em>
-     * scan learned about the body, not whether anyone had been there before.
+     * scan learned about the body, not whether anyone had been there before. The journal contradicts itself
+     * outright: of 97 {@code NavBeaconDetail} scans in one session, 37 claimed {@code WasMapped:true} with
+     * {@code WasDiscovered:false}, which cannot happen. Believing them announced Wolf 1323, a populated system
+     * with named planets.
      * <p>
-     * The journal contradicts itself outright: of 97 {@code NavBeaconDetail} scans in one session, 37 claimed
-     * {@code WasMapped:true} with {@code WasDiscovered:false}, which cannot happen. Every {@code WasDiscovered:false}
-     * in that session came from this scan type; {@code AutoScan} and {@code Detailed} were always true.
-     * <p>
-     * Believing them announced "New System discovered!" for Wolf 1323, a populated system with named planets.
-     * The signal is in fact the opposite of a discovery: nav beacons only exist in populated systems, so a
-     * beacon scan is near proof the system has been settled for a long time.
+     * A populated system has no discovery record at all. Nat9481 (380,000 people, a Powerplay stronghold, two
+     * fleet carriers parked in it) reported {@code WasDiscovered:false} on the commander's own {@code Detailed}
+     * scan of its primary star, and its beacon flagged every one of its bodies the same way, mapped ones
+     * included. Systems settled before anyone could discover them were never "discovered" as far as the game
+     * is concerned. Whatever the flag says, nobody discovers a system that already has a population, so a
+     * scan in one carries no discovery information either.
+     *
+     * @param systemPopulation the population the journal reported on arrival, 0 when unknown or empty
      */
-    static boolean carriesNoDiscoveryInformation(ScanEvent event) {
-        return NAV_BEACON_SCAN.equalsIgnoreCase(event.getScanType());
+    static boolean carriesNoDiscoveryInformation(ScanEvent event, long systemPopulation) {
+        return NAV_BEACON_SCAN.equalsIgnoreCase(event.getScanType()) || systemPopulation > 0;
     }
 
     /**
