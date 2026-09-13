@@ -35,4 +35,16 @@ class SupertonicVoicesTest {
         assertEquals(10, SupertonicVoices.values().length);
         assertEquals(10, java.util.Arrays.stream(SupertonicVoices.values()).mapToInt(SupertonicVoices::getSid).distinct().count());
     }
+
+    /**
+     * The commander picks a voice by its display name, so two speakers sharing one would be indistinguishable
+     * in the list, and a display name that is just the constant ("F1") is a model index, not a name.
+     */
+    @Test
+    void everySpeakerHasItsOwnHumanName() {
+        assertEquals(10, java.util.Arrays.stream(SupertonicVoices.values()).map(SupertonicVoices::getDisplayName).distinct().count());
+        for (SupertonicVoices voice : SupertonicVoices.values()) {
+            assertNotEquals(voice.name(), voice.getDisplayName(), voice + " shows its model index instead of a name");
+        }
+    }
 }
