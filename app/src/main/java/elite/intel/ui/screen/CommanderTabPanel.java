@@ -180,7 +180,13 @@ public class CommanderTabPanel extends JPanel {
 
     @Subscribe
     public void onTTSProviderChanged(TTSProviderChangedEvent event) {
-        SwingUtilities.invokeLater(this::initData);
+        SwingUtilities.invokeLater(() -> {
+            // Discard an open fleet combo before replacing its provider-specific editor and model.
+            if (fleetTable.isEditing()) {
+                fleetTable.getCellEditor().cancelCellEditing();
+            }
+            initData();
+        });
     }
 
     private void buildUi() {
