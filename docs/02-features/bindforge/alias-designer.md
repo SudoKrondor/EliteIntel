@@ -366,15 +366,24 @@ The name every controller is offered, and the constraint typed names are held to
 
 1. Start from the name the device reports.
 2. **Keep letters and digits only** — spaces and punctuation are dropped.
-3. **It must start with a letter.** If it does not, prefix `Device`; if nothing is left, use `Controller`.
-4. **It must not clash** with an existing entry or one of Frontier's built-in names, compared ignoring case, `-`
-   and `_`. On a clash, add the lowest number that makes it unique.
+3. **It must start with a letter and be at least 3 characters.** If it does not start with a letter, or is
+   shorter than 3, prefix `Device`; if nothing is left at all, use `Controller`.
+4. **It must be at most 50 characters.** A longer name is cut to 50.
+5. **It must not clash** with an existing entry or one of Frontier's built-in names, compared ignoring case, `-`
+   and `_`. On a clash, add the lowest number that makes it unique — shortening the name first when that is
+   what keeps it within 50.
+
+*Steps 3 and 4 added 2026-09-13*, so the default always meets [alias validation](#fields-and-rules)'s 3–50
+character limit instead of offering a name the commander would then be told is invalid.
 
 | Reported | Default | Why |
 |---|---|---|
 | `Virpil Controls 20220720` | `VirpilControls20220720` | spaces dropped |
 | `T-Rudder`, from a device that is not Frontier's T-Rudder | `TRudder2` | clashes with `T-Rudder` once `-` is ignored |
 | `3Dconnexion SpaceMouse` | `Device3DconnexionSpaceMouse` | must start with a letter |
+| `G9` | `DeviceG9` | at least 3 characters |
+| `Thrustmaster Hotas Warthog Flight Stick And Throttle Combined Edition` | `ThrustmasterHotasWarthogFlightStickAndThrottleComb` | cut to 50 |
+| the same, when that name is taken | `ThrustmasterHotasWarthogFlightStickAndThrottleCom2` | shortened so the number fits |
 
 A name the commander **types** may also use `-` and `_` — see [alias validation](#fields-and-rules).
 

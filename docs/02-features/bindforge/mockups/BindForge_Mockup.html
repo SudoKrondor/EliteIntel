@@ -1235,11 +1235,11 @@ function obTaken(exceptId){
 }
 
 function obDefaultName(reported, taken){
-  var base = reported.replace(/[^A-Za-z0-9]/g, '');
-  if (!base) base = 'Controller';
-  if (!/^[A-Za-z]/.test(base)) base = 'Device' + base;
+  var base = reported.replace(/[^A-Za-z0-9]/g, '') || 'Controller';
+  if (!/^[A-Za-z]/.test(base) || base.length < 3) base = 'Device' + base;
+  base = base.slice(0, 50);
   var name = base;
-  for (var n = 2; taken[obKey(name)]; n++) name = base + n;
+  for (var n = 2; taken[obKey(name)]; n++) name = base.slice(0, 50 - String(n).length) + n;   // the number must fit within 50
   return name;
 }
 
