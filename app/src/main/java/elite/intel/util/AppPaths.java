@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 
 public final class AppPaths {
 
@@ -243,15 +244,21 @@ public final class AppPaths {
      * On Windows, converts a path to its 8.3 short form so native libraries that
      * do not handle non-ASCII characters (e.g. sherpa-onnx on a system with a
      * non-Latin username) can open the file.  No-op on Linux/macOS.
+     * <p>
+     * The short form comes back upper-cased ({@code UNICOD~1.BIN}), and sherpa-onnx
+     * checks some file extensions byte for byte - Supertonic's unicode indexer must
+     * end in {@code .bin}, and a mismatch there exits the whole process. So the
+     * short form is lower-cased before it is handed over: Windows file systems are
+     * case-insensitive, so the file still opens, and the extension check passes.
      */
     public static String toNativePath(Path path) {
         String s = path.toAbsolutePath().toString();
-        if (!System.getProperty("os.name", "").toLowerCase().contains("win")) return s;
+        if (!System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win")) return s;
         try {
             Kernel32 k32 = Native.load("kernel32", Kernel32.class);
             char[] buf = new char[s.length() + 260];
             int len = k32.GetShortPathNameW(new WString(s), buf, buf.length);
-            if (len > 0 && len < buf.length) return new String(buf, 0, len);
+            if (len > 0 && len < buf.length) return new String(buf, 0, len).toLowerCase(Locale.ROOT);
         } catch (Throwable ignored) {
             // fall through - return original path
         }

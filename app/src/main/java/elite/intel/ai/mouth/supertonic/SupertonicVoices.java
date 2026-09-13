@@ -9,7 +9,7 @@ import java.util.Set;
  * (one {@code voice.bin} style embedding per speaker index, selected by {@code sid}).
  * <p>
  * The upstream release does not publish names or genders for these ten indices - the model card and the
- * samples page only ever say "Speaker 0" through "Speaker 9". The names used below follow Supertonic's own
+ * samples page only ever say "Speaker 0" through "Speaker 9". The constant names follow Supertonic's own
  * preset-voice naming scheme (the {@code supertonic} PyPI package ships an originally-4-voice pack later
  * extended with "6 new voice styles: M3, M4, M5, F3, F4, F5" - ten in all, exactly the speakers this fixed
  * sherpa-onnx release bundles). Which index is which sex was <em>measured</em>, not inferred from that history:
@@ -18,27 +18,33 @@ import java.util.Set;
  * The gender matters beyond the label: the ship's voice decides how VEGA speaks of itself (see
  * {@code SystemSession.getVoiceGender()}), so a wrong flag here misgenders every line.
  * <p>
+ * The constant name is the stored identity of a ship voice (see {@link #voiceOrDefault(String)}) and must
+ * never change; the display name is what the commander sees when picking a voice. "F1" and "M3" are model
+ * indices, not something to choose a ship's voice by, so each speaker carries a name in the Commander tab
+ * instead - space-flavoured, one per speaker, with nothing to imply an accent or a language the way Kokoro's
+ * per-accent cast does. The names are ours, not the model's.
+ * <p>
  * Unlike Kokoro's 53-voice, per-accent cast, every one of these ten is retained: there is no immersion-breaking
  * outlier to cull, and holding any of them back would remove a tenth of an already small pool. Nothing may
  * assume a contiguous range, a count, or the presence of any particular voice beyond what is declared below:
  * derive from {@link #values()}.
  * <p>
- * The fleet grid renders each voice by its raw enum name; voices are not localized.
+ * The fleet grid renders each voice by its display name; voices are not localized.
  * <p>
  * Source: https://github.com/k2-fsa/sherpa-onnx/releases/tag/tts-models (sherpa-onnx-supertonic-3-tts-int8-2026-05-11)
  */
 public enum SupertonicVoices {
 
-    F1(0, false, "F1", "Female"),
-    F2(1, false, "F2", "Female"),
-    F3(2, false, "F3", "Female"),
-    F4(3, false, "F4", "Female"),
-    F5(4, false, "F5", "Female"),
-    M1(5, true, "M1", "Male"),
-    M2(6, true, "M2", "Male"),
-    M3(7, true, "M3", "Male"),
-    M4(8, true, "M4", "Male"),
-    M5(9, true, "M5", "Male");
+    F1(0, false, "Astra", "Female"),
+    F2(1, false, "Lyra", "Female"),
+    F3(2, false, "Vesper", "Female"),
+    F4(3, false, "Nyx", "Female"),
+    F5(4, false, "Solara", "Female"),
+    M1(5, true, "Orion", "Male"),
+    M2(6, true, "Atlas", "Male"),
+    M3(7, true, "Rook", "Male"),
+    M4(8, true, "Cassian", "Male"),
+    M5(9, true, "Draven", "Male");
 
     /**
      * The default ship voice, used when a ship has no stored voice or carries a name this engine does not
