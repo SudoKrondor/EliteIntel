@@ -5,7 +5,7 @@ The Bind Editor is where the player views and edits their actual key/button/axis
 ## Shell (Common to All Modes)
 
 - A Bindings File dropdown plus Load button, above everything. Load performs the standard [Live File Synchronization](overview.md#live-file-synchronization) freshness check for the Bind Domain before opening the file for editing.
-- A Search box, above all mode tabs — filters whichever list is currently showing in whichever mode tab is active. Controller Mode is picture-based, not a list, so how (or whether) Search applies there is still open.
+- A Search box, above all mode tabs — filters whichever list is currently showing in whichever mode tab is active. **It clears in one action**: a × appears inside the field once there is anything to clear, and Esc does the same for anyone whose hands are already on the keyboard — which, in a bind editor, is most of them. Clearing restores the full list and returns focus to the field. Controller Mode is picture-based, not a list, so how (or whether) Search applies there is still open.
 - A **Show Anomalies Only** checkbox/toggle, on the same line as Search — shared shell state, not owned by any one mode, but what it filters *to* depends on which mode tab is active: in Game Mode it filters the grid to conflicting rows only (see [Conflict Display](#conflict-display)); in Action Groups it filters the group list to only groups containing at least one binding that conflicts with something in a *different* group (see [Action Groups — Conflict Filtering](#action-groups)); in Input Mode it filters the same way Game Mode does, since Input Mode's list is already the same row format with conflicts already shown inline. It has no meaningful effect on the Conflicts tab, since that tab's entire content already is the anomaly list — not undefined, just not applicable. Control Types and Controller Mode don't need a defined behavior either, since both are confirmed back-burner and out of scope.
 - Mode tabs: **Game Mode**, **Action Groups**, **Control Types**, **Controller Mode**, **Input Mode**, **Anomalies** (see below for each mode's status).
 - A Context Bar of buttons (All / General / Ship / SRV / On Foot) filtering the grid to one section.
@@ -213,10 +213,64 @@ ejection is about what the control does when it fires. Collapsing them into one 
 argument — and the argument is what tells a future maintainer whether some third control belongs here.
 Elite-Intel keeps them apart too, as `GAME_MENU_LEFT_UNBOUND` and `LEFT_UNBOUND_ON_PURPOSE`.
 
-**Player-marked — the same state, chosen rather than shipped.** A commander must be able to mark a slot
+**Player-marked — the same state, chosen rather than shipped.** A commander must be able to mark a control
 *leave this empty* so it stops being reported. Confirmed needed 2026-07-12; storage resolved to the database
 on 2026-07-17, because `.binds` does not preserve comments and there is nowhere in the file to put a marker.
-The mechanism — checkbox, context menu, something else — and whether it is reversible are still undesigned.
+
+#### The mechanism: an ASSISTANT column in the grid — settled 2026-09-12
+
+The mark lives in the editing grid rather than behind a context menu or a dialog, and it is **one state of
+a column rather than a feature of its own.** The column answers a single question about each control:
+**can Elite-Intel drive this?**
+
+```
+CONTROL                PRIMARY     SECONDARY   ASSISTANT
+Yaw Left               A           —
+Move Right             Joy_4       —           CAN'T PRESS
+Roll Left              —           —           NOT BOUND
+Toggle HUD             —           —           ON PURPOSE
+```
+
+| State | Meaning |
+|---|---|
+| *(blank)* | **The common case.** Either Elite-Intel can drive the control, or it never needs to. |
+| **NOT BOUND** | Elite-Intel drives this control and nothing is assigned — [Missing, first shape](#missing-has-two-shapes--added-2026-09-12). |
+| **CAN'T PRESS** | Assigned, but only to a device Elite-Intel cannot send input to — [Missing, second shape](#missing-has-two-shapes--added-2026-09-12). |
+| **ON PURPOSE** | The commander has said stop reporting this. |
+
+**Why a column rather than a menu item.** A context menu hides the state as well as the action: nothing in
+the grid would distinguish *empty* from *empty on purpose*, which is the whole distinction being drawn. A
+column shows it on every row at a glance, and the same width then carries the two Missing shapes, which
+otherwise needed somewhere of their own. **One column, three things that all answer the same question.**
+
+**The mark is per control, not per slot.** *"This control should have nothing on it"* is what the two
+shipped defaults actually say — `EjectAllCargo` is unbound entirely, not unbound in Primary — and it is
+what Missing reports, which is action-level. A per-slot mark would also have no clear meaning when the
+other slot is bound. This is the one place BindForge does **not** use the slot as its grain; everywhere
+else — merging, conflicts, capture — [the slot is the unit](overview.md#merge-grain-the-slot-not-the-action--settled-2026-09-07).
+
+**ON PURPOSE silences both shapes, and that is deliberate.** A commander who flies on a stick and does not
+want Elite-Intel touching their landing gear marks it once. Whether the slot is empty or holds `Joy_12`,
+their intent is the same — *stop asking* — so it is one mark and one database table rather than two states
+a commander would have to tell apart. **Marking never changes a binding:** a control marked while bound to
+a stick stays bound to the stick, and the game goes on using it. Only the reporting stops.
+
+**Reversible, and reversible the same way it was set.** Clearing the mark returns the control to whichever
+state it would otherwise have had — blank, NOT BOUND, or CAN'T PRESS. The mark is a row in the database
+([storage settled 2026-07-17](#intentionally-unbound--a-state-not-an-anomaly)), so clearing it is a delete
+and nothing in `.binds` is touched in either direction.
+
+**Hovering a mark gives the reason**, in the commander's terms rather than the file's: *"Bound to Joy_4.
+Elite-Intel can only send keyboard input, so it cannot use this control. Add a keyboard binding in the free
+slot and both will work."* That sentence is the remedy as well as the explanation — the
+[additive fix](#missing-has-two-shapes--added-2026-09-12), never a replacement.
+
+**In the mockup, measured rather than assumed.** The column is 104px and the row is flex, so the width
+comes out of the control name. At the app's 1184px client width the name column still gets 462px and no
+name clips — including the longest in the set. It only crowds below roughly 900px, which is narrower than
+the window ships at. The chips reuse the existing `an-sev` severity classes rather than introducing a
+parallel set, so the amber of a Missing row and the amber of this column are the same amber by
+construction.
 
 #### What the state changes
 
@@ -543,9 +597,52 @@ back to substring-matching the tag only for `GENERAL` and `OTHER`. Context is th
 to contain `Buggy` makes the whole safe/unsafe split more trustworthy than when these defects were
 first recorded.
 
-**FN-1 is a dependency, not just a cleanup.** The capture dialog is specified to list *every* action
-sharing a chord — see [Capture Flow](#binding-editor-panel--capture-dialog). A scanner that sees one slot
-per action cannot produce that list, so the dialog cannot be built correctly on top of it.
+#### FN-1 in detail — scoped 2026-09-12
+
+**It is a dependency, not a cleanup.** Two specified features are built on top of it and cannot be
+correct without it:
+
+- The capture dialog lists *every* action sharing a chord — see
+  [Capture Flow](#binding-editor-panel--capture-dialog). A scanner seeing one slot per action cannot
+  produce that list.
+- The remedy for [Missing's second shape](#missing-has-two-shapes--added-2026-09-12) is *add a keyboard
+  binding in the free Secondary slot*. **The scanner cannot see the slot that remedy writes to**, so it
+  cannot confirm its own fix worked.
+
+**Where the slot is actually lost.** Not in the scanner — one layer above it. `parseBindingSlots()`
+already returns **both** slots, correctly. `parseBindings()` then collapses each pair to a single
+`KeyBinding`, primary-else-secondary, and everything downstream inherits the loss:
+
+| Layer | State |
+|---|---|
+| `parseBindingSlots()` | **Both slots present.** The data exists. |
+| `parseBindings()` | **Collapses to one** — primary if present, else secondary. This is the defect. |
+| `toKeysets()` | one keyset per action, from that single binding |
+| `scanKeysets()` | keyed by action name, so **the type cannot represent two slots** even if given them |
+
+**What fixing it touches.** The map key becomes a typed slot reference — action plus `BindingSlotType`,
+which already exists — rather than a bare action string. That flows into `Conflict`, into
+`candidateConflict`, and lets [Game Mode](#game-mode) colour the offending *slot cell* rather than the
+whole row. One new rule is needed: **Primary and Secondary of the same control on one chord is
+redundancy, not a conflict** — pressing it fires one action — so same-action pairs are skipped.
+
+**What it does not touch, which is the useful part:**
+
+- **No database migration.** `binding_conflicts` holds `conflict_key` and `description`, and
+  `checkForConflictsAndPersist()` already funnels every conflict through
+  `BindingConflictRules.makeKey(actionA, actionB)` into a `Set`. Several slot-level conflicts between one
+  pair of actions collapse to one row **on their own**, with no change to the write path.
+- **The spoken warning is unaffected.** It says two named controls share a key, which stays true at
+  action level; the slot is detail the voice line never carried.
+- **Krondor's scanner tests survive intact.** All 32 `scanKeysets` calls in
+  `BindingConflictScannerTest` go through one private `bindings(Object...)` helper, so changing the key
+  type is **a one-line change in that helper** and every test body keeps its exact text. That matters
+  more than it sounds: he is adding tests to that file weekly, and a change that rewrote 32 call sites
+  would conflict with every one of those additions — exactly the
+  [merge pain the package freeze exists to avoid](../../00-overview/v1.2-scope.md#the-code-stays-where-it-is--stated-by-krondor-2026-09-12).
+
+**So the blast radius is the scanner and its callers, not the schema, not the voice path, and not his
+test suite.** That is what makes FN-1 a reasonable first slice rather than a refactor to be feared.
 
 **FP-3's suppression list has grown since it was first recorded**, now also matching `Wheel`, `MultiCrew`,
 `Store` and anything containing `Cam`. Each addition widens a rule already known to be too broad. The fix

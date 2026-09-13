@@ -98,9 +98,154 @@ one firmware update away from losing that layout and has no way to know it. Bind
 and count the exposure: *"Two attached devices are referenced by hardware ID rather than by name. 131
 bindings depend on those IDs and would not survive a firmware update. Create aliases?"*
 
-**Open:** how confident the after-the-fact match has to be before offering it. Same VID and an unmatched
-device is suggestive, not proof — the commander could equally have unplugged one stick and plugged in
-another from the same vendor. Suggest, never apply silently.
+### Device identity is the commander's to confirm — settled 2026-09-12
+
+The question was how confident a match has to be before BindForge offers it. **The answer is that
+BindForge does not score confidence at all.**
+
+**Because it cannot.** There is no reliable device identity to compare:
+
+- **No serial number.** Both DualShock 4 specimens report `iSerialNumber 0x00`, and their Windows
+  instance IDs differ only by USB port — see [Specimens](reference-data/SPECIMENS-README.md).
+- **VID/PID is provably unstable.** Two VIRPIL devices carried six PIDs across three snapshots, from
+  firmware updates alone — [above](#vidpid-is-not-a-stable-identity).
+- **One entry can cover several controllers.** Frontier's `<DualShock4>` matches both DS4 revisions
+  through `<Alternative>` pairs.
+
+Same VID with an unmatched device is suggestive, never proof: a commander may equally have unplugged
+one stick and plugged in another from the same vendor. **A percentage threshold here would be fake
+precision — a number defending a guess.**
+
+**The commander knows, and is the only one who does.** They know whether they flashed firmware or
+bought a new stick. So BindForge states what it found and asks:
+
+```
+Your .binds references 334483F3.
+That device is not attached.
+
+Attached instead: VIRPIL Constellation ALPHA (334483F4)
+Same vendor, different product ID.
+
+131 bindings point at the missing ID.
+
+Is this the same device?      [ Yes ]  [ No ]  [ Not now ]
+```
+
+**What the dialog owes the commander** is evidence, not a verdict: the ID in the file, what is
+attached instead, which halves match, and **how many bindings are at stake.** The binding count is
+what makes the question answerable — 131 is worth a moment's thought, 2 is not.
+
+| Answer | What happens |
+|---|---|
+| **Yes** | the alias is created and pointed at the attached device, in the draft. Every binding follows, because they reference the name — the one-field fix [described above](#why-this-matters-more-than-a-renumbering). |
+| **No** | nothing is written. The bindings stay orphaned, and BindForge **says so plainly** rather than falling silent, since that is the state the commander just confirmed. |
+| **Not now** | nothing is written and **the question is not asked again until the hardware situation changes.** Deferral is not a soft no, and re-asking on every launch turns a useful prompt into something to dismiss reflexively. |
+
+**This is the same shape as [Restore](file-manager.md#restoring-when-nothing-matches--ask-do-not-guess)
+and the [foreign-backup device list](file-manager.md#how-bindforge-tells-case-1-from-case-3--settled-2026-09-12):**
+where hardware identity is genuinely unknowable, BindForge asks a question the commander can answer
+instead of computing an answer it cannot.
+
+## What Changes When Hardware Changes
+
+**Settled 2026-09-12**, walking the scenarios a commander actually hits. They reduce to **two
+operations**, and which one runs is the commander's answer rather than BindForge's deduction.
+
+| What BindForge sees | What it usually means | Operation |
+|---|---|---|
+| A device appears, nothing missing | **Addition** — a stick added to the setup | **Create**: new `DeviceMappings.xml` entry, new `.buttonMap` |
+| A device is missing, and something unrecognised is present | **Replacement, or a firmware update** | **Ask**, then **retarget**: the entry keeps its name, its VID/PID changes |
+| Missing, and the commander says none of the candidates is it | **A genuinely different device** | **Create**, and the old bindings stay orphaned |
+| A device is missing, nothing new present | **Unplugged, or sold** | **Nothing.** No prompt, no change |
+
+**A firmware update is not a third case.** It presents exactly as a replacement — an ID that is gone and
+an ID that is new — and BindForge cannot distinguish a reflash from a warranty swap. It does not need to:
+*"yes, this is the same device"* produces the correct outcome for both.
+
+**Addition is only simple when Frontier does not already know the device.** The stock
+`DeviceMappings.xml` ships **139 device elements**
+([the built-in list](#built-in-devices)). A controller already in there is already named by the game, and
+there is nothing for BindForge to create.
+
+**A missing device is not an error.** Hardware gets unplugged. The entry stays valid, the bindings stay
+intact, and the device works again when it comes back. BindForge says nothing — there is no question to
+ask and nothing to fix.
+
+### Ask about one missing device at a time
+
+**The one-missing-one-new pairing does not survive contact with reality.** This commander's own files:
+
+| Snapshot | LVWAP | RVWAP |
+|---|---|---|
+| 2024-08 | `C3F3` | `03F3` |
+| 2025-05 | `83F3` | `43F4` |
+| current | `83F4` | `03F5` |
+
+**Both sticks changed PID in the same session, twice.** That is the VPC Configuration Tool flashing both
+devices at once, which is how firmware updates normally happen for a two-stick setup — not an edge case.
+So BindForge routinely sees *two* missing and *two* new, all from one vendor, with **no way to know which
+new ID is the left stick.** Pairing them by order or by proximity would silently swap a commander's
+joystick and throttle bindings.
+
+**So each missing device is presented on its own, listing every unmatched candidate:**
+
+```
+LVWAP (334483F3) is not attached.
+131 bindings depend on it.
+
+Which attached device is it?
+  ( ) VIRPIL Constellation ALPHA   334483F4
+  ( ) VIRPIL MongoosT-50CM3        334403F5
+  ( ) None of these
+
+                          [ OK ]  [ Not now ]
+```
+
+One mechanism covers one change, two, or five. **"None of these"** is what routes to *create* instead of
+*retarget*, and **"Not now"** defers without recording a wrong answer — see
+[the three answers](#device-identity-is-the-commanders-to-confirm--settled-2026-09-12).
+
+**Deferred, not rejected: press-to-identify.** Asking the commander to press a button on the missing
+device would identify it with certainty rather than by inference, and Elite-Intel already has the input
+capture to do it. It is a better answer where the hardware is attached and working, and it is worth
+revisiting once the capture path is in place. It cannot be the *only* answer, because the device may be
+absent — which is frequently why it is missing.
+
+### Retargeting keeps the bindings, and says what it cannot promise
+
+A retarget edits one field. Every binding follows, because `.binds` references the **name**, not the ID —
+the whole reason the indirection is worth having
+([above](#why-this-matters-more-than-a-renumbering)).
+
+**That is complete and correct for a firmware update or an identical unit.** The hardware is the same, so
+the buttons are where they were.
+
+**It is not the whole story for a different model.** `.binds` records buttons **by index** — `Joy_5`, not
+"the pinkie switch". `Joy_5` on a Constellation Alpha is not the same physical button as `Joy_5` on a
+MongoosT-50CM3. The retarget succeeds, nothing errors, and some controls are simply in the wrong place.
+The `.buttonMap` labels are wrong in the same way, for the same reason.
+
+**So the bindings move, and BindForge names the risk rather than hiding or pre-empting it:**
+
+```
+Bindings moved to VIRPIL MongoosT-50CM3.
+
+131 bindings kept. They refer to buttons by
+number, and this device has a different layout,
+so some may now be in unexpected places.
+
+  [ Review in Bind Editor ]   [ Dismiss ]
+```
+
+**Why keep them rather than start clean.** A commander replacing a broken stick with a similar one has a
+layout that mostly works, and rebuilding 131 bindings by hand to avoid a handful of misplaced ones is the
+worse trade. Keeping them is also **reversible** — it lands in the draft, and Discard puts everything
+back. Starting unbound destroys work that no later step can recover.
+
+**BindForge does not try to detect whether the model differs.** It has no map of which physical button is
+`Joy_5` on arbitrary hardware, and guessing would produce a confident wrong answer. The warning is shown
+whenever a retarget crosses to a device the commander picked from the candidate list, and a firmware
+update that keeps the same layout costs them one dismissed dialog.
 
 ## Automatic Device Registration
 

@@ -99,6 +99,11 @@ body{margin:0;background:#151B22;padding:24px;font-family:'Segoe UI',system-ui,-
 .ei-retention input{width:50px;background:#101721;border:1px solid #2D3A44;border-radius:3px;color:#C2C2C2;font-size:12px;padding:5px 7px;font-family:inherit}
 .ge-searchbar{margin-bottom:14px;display:flex;align-items:center;gap:14px}
 .ge-searchbar input{flex:1;background:#101721;border:1px solid #2D3A44;border-radius:3px;color:#C2C2C2;font-size:13px;padding:8px 10px;font-family:inherit;box-sizing:border-box}
+.ge-searchwrap{flex:1;position:relative;display:flex}
+.ge-searchwrap input{padding-right:30px}
+.ge-searchclear{position:absolute;right:1px;top:1px;bottom:1px;width:28px;display:none;align-items:center;justify-content:center;background:none;border:0;color:#6F7D89;font-size:16px;line-height:1;cursor:pointer;font-family:inherit;padding:0}
+.ge-searchclear:hover{color:#FF7100}
+.ge-searchwrap.has-text .ge-searchclear{display:flex}
 .ge-conflictsonly{display:flex;align-items:center;gap:6px;font-size:12px;color:#C2C2C2;white-space:nowrap;cursor:pointer;flex-shrink:0}
 .ge-conflictsonly input{accent-color:#FF7100}
 .ge-contextbar{display:flex;gap:2px;margin-bottom:14px}
@@ -123,6 +128,7 @@ body{margin:0;background:#151B22;padding:24px;font-family:'Segoe UI',system-ui,-
 .ge-conflict-popup .ge-conflict-hint{color:#8FA0AD;display:block;margin-top:5px}
 .ge-bindname{color:#C2C2C2;flex:1}
 .ge-bindval{color:#8FA0AD;text-align:right;font-size:12px;width:230px;flex-shrink:0}
+.ge-assist{width:104px;flex-shrink:0;display:flex;align-items:center;justify-content:flex-end}
 .ge-badge{color:#FF7100;border:1px solid #2D3A44;background:#101721;padding:2px 6px;border-radius:2px;font-size:11px}
 .an-sev{font-size:8.5px;font-weight:700;letter-spacing:.7px;padding:2px 6px;border-radius:2px;
         border:1px solid currentColor;flex:none;min-width:58px;text-align:center}
@@ -491,7 +497,7 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
     </div>
 
     <div class="ge-searchbar">
-      <input type="text" placeholder="Search bindings..." id="ge-search" oninput="geSearch()">
+      <span class="ge-searchwrap"><input type="text" placeholder="Search bindings..." id="ge-search" aria-label="Search bindings" oninput="geSearch()" onkeydown="if(event.key==='Escape'){event.preventDefault();geClearSearch();}"><button type="button" class="ge-searchclear" onclick="geClearSearch()" title="Clear search (Esc)" aria-label="Clear search">&times;</button></span>
       <label class="ge-conflictsonly"><input type="checkbox" id="ge-conflicts-only" onchange="geToggleConflictsOnly()"> Show Anomalies Only</label>
     </div>
     <div class="ei-note" style="margin-top:-8px;margin-bottom:14px">Filters the list below in whichever mode tab is active. Show Anomalies Only is shared shell state too, but what it filters to is mode-specific: rows in Game Mode, whole groups (any group with a conflict against a <em>different</em> group) in Action Groups. Controller Mode is picture-based, not a list &mdash; how (or whether) search applies there is still open.</div>
@@ -514,7 +520,7 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
         <div class="ge-contextbtn" id="ctx-onfoot" onclick="geShowContext('onfoot')">ON FOOT CONTROLS</div>
       </div>
 
-      <div class="ei-note" style="margin-bottom:10px">Hover a row to reveal Capture buttons per slot (colored by state: light blue = empty, green = bound, red = conflicting). Clicking one pins the row and opens an inline capture prompt in place of the list &mdash; no popup window. Press a key for real; Esc cancels. Try capturing over <code>C</code>, <code>A</code>, or <code>D</code> to see the conflict-confirm step.</div>
+      <div class="ei-note" style="margin-bottom:10px">The <b>ASSISTANT</b> column on the right answers one question: <i>can EliteIntel drive this control?</i> Blank is the common case. <span class="an-sev missing">NOT BOUND</span> and <span class="an-sev missing">CAN'T PRESS</span> are the two shapes of Missing &mdash; nothing assigned, or assigned only to a device EliteIntel cannot send input to. <span class="an-sev overlap">ON PURPOSE</span> is the commander saying stop reporting this; it silences both, and the control stays bound to whatever it was. Hover a mark for the reason. Hover a row to reveal Capture buttons per slot (colored by state: light blue = empty, green = bound, red = conflicting). Clicking one pins the row and opens an inline capture prompt in place of the list &mdash; no popup window. Press a key for real; Esc cancels. Try capturing over <code>C</code>, <code>A</code>, or <code>D</code> to see the conflict-confirm step.</div>
       <div class="ge-layout">
         <div class="ge-gridcol" id="ge-grid">
           <div class="ge-group" data-context="general">
@@ -529,7 +535,7 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
               <div class="ge-bindrow" onclick="geSelectRow(this,'Move Forward')"><span class="ge-bindname">Move Forward</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
               <div class="ge-bindrow" onclick="geSelectRow(this,'Move Backward')"><span class="ge-bindname">Move Backward</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
               <div class="ge-bindrow" onclick="geSelectRow(this,'Move Left')"><span class="ge-bindname">Move Left</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
-              <div class="ge-bindrow" onclick="geSelectRow(this,'Move Right')"><span class="ge-bindname">Move Right</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
+              <div class="ge-bindrow" onclick="geSelectRow(this,'Move Right')"><span class="ge-bindname">Move Right</span><span class="ge-bindval"><span class="ge-badge">Joy_4</span></span><span class="ge-bindval">&mdash;</span></div>
               <div class="ge-bindrow conflict-row" onclick="geSelectRow(this,'Move Up')"><span class="ge-bindname">Move Up</span><span class="ge-bindval" data-conflict="true"><span class="ge-badge">F</span></span><span class="ge-bindval"><span class="ge-badge">JOY 7</span></span><div class="ge-conflict-popup"><b>Shares [F] with:</b><br>&bull; Move Down (Secondary)<span class="ge-conflict-hint">See the CONFLICTS tab for details.</span></div></div>
               <div class="ge-bindrow conflict-row" onclick="geSelectRow(this,'Move Down')"><span class="ge-bindname">Move Down</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval" data-conflict="true"><span class="ge-badge">F</span></span><div class="ge-conflict-popup"><b>Shares [F] with:</b><br>&bull; Move Up (Primary)<span class="ge-conflict-hint">See the CONFLICTS tab for details.</span></div></div>
               <div class="ge-bindrow" onclick="geSelectRow(this,'Pitch Up')"><span class="ge-bindname">Pitch Up</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
@@ -1568,6 +1574,33 @@ var AN_ITEMS = [
     binds:[ ['GENERAL','Move Up','Primary','F'], ['GENERAL','Move Down','Secondary','F'] ] }
 ];
 
+/* ASSISTANT column - can Elite-Intel drive this control?
+   Blank is the common case: either EliteIntel can press it, or it never needs to.
+   The marks are illustrative here; in the real thing the column is populated from
+   EliteIntel's own list of driven controls plus the player's on-purpose marks. */
+var GE_ASSIST = {
+  'Toggle HUD':   ['overlap', 'ON PURPOSE',  'You marked this as deliberately unbound. EliteIntel will not ask again.'],
+  'Move Right':   ['missing', "CAN'T PRESS", 'Bound to Joy_4. EliteIntel can only send keyboard input, so it cannot use this control. Add a keyboard binding in the free slot and both will work.'],
+  'Roll Left':    ['missing', 'NOT BOUND',   'EliteIntel drives this control and nothing is bound to it.'],
+  'Roll Right':   ['overlap', 'ON PURPOSE',  'You marked this as deliberately unbound. EliteIntel will not ask again.']
+};
+
+function geAssistInit(){
+  document.querySelectorAll('.ge-bindrow').forEach(function(row){
+    if (row.querySelector('.ge-assist')) return;
+    var cell = document.createElement('span');
+    cell.className = 'ge-assist';
+    var name = row.querySelector('.ge-bindname');
+    var mark = name ? GE_ASSIST[name.textContent.trim()] : null;
+    if (mark) {
+      cell.innerHTML = '<span class="an-sev ' + mark[0] + '">' + mark[1] + '</span>';
+      cell.title = mark[2];
+    }
+    row.appendChild(cell);
+  });
+}
+document.addEventListener('DOMContentLoaded', geAssistInit);
+
 function anShow(v){
   ['all','reserved','missing','conflicts','invalid'].forEach(function(k){
     document.getElementById('an-tab-' + k).classList.toggle('active', k === v);
@@ -1667,8 +1700,18 @@ function geSelectRow(row, name){
   document.querySelectorAll('.ge-bindrow').forEach(function(r){ r.classList.remove('selected'); });
   row.classList.add('selected');
 }
+function geClearSearch(){
+  var input = document.getElementById('ge-search');
+  if (!input.value) return;
+  input.value = '';
+  geSearch();
+  input.focus();
+}
+
 function geSearch(){
-  var q = document.getElementById('ge-search').value.toLowerCase();
+  var input = document.getElementById('ge-search');
+  var q = input.value.toLowerCase();
+  input.parentElement.classList.toggle('has-text', input.value.length > 0);
   document.querySelectorAll('.ge-bindrow').forEach(function(r){
     var name = r.querySelector('.ge-bindname').textContent.toLowerCase();
     r.style.display = name.indexOf(q) === -1 ? 'none' : 'flex';

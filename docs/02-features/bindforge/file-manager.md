@@ -197,7 +197,7 @@ copying them wholesale — *"their Throttle entry, onto your throttle."* That is
 not a flag on this one. Until it exists, refusing is the correct answer, because a refusal a player
 understands beats an import they cannot unpick.
 
-#### Open: how BindForge tells case 1 from case 3
+#### How BindForge tells case 1 from case 3 — settled 2026-09-12
 
 Harder than it first appears, and an earlier note in this document got it wrong by suggesting the source
 installation IDs would settle it.
@@ -212,8 +212,37 @@ local `DeviceMappings.xml` and the rows in
 [device provenance](../../03-data-models/device-provenance.md), rather than against what happens to be
 plugged in at that moment, since a player may restore before reattaching a controller.
 
-Unresolved: how much overlap counts as "theirs". A player who upgraded one stick between the backup and
-the restore has a partial match, and that is case 1 with a wrinkle rather than case 3.
+**It never decides. It lists the device entries and the commander ticks.** The archive is a bag of
+device entries, not one indivisible thing — which is how `DeviceMappings.xml` already works — so
+"case 1 or case 3" was the wrong shape of question. **A single archive can be both at once.**
+
+```
+Restore which device entries?
+  [x] RVWAP         matches attached hardware
+  [x] LVWAP         matches attached hardware
+  [ ] X56 Throttle  not seen on this machine
+```
+
+**BindForge's assessment sets the tick; the commander sets the outcome.** Entries matching hardware
+it can see are pre-ticked, entries it cannot place are not. That keeps the common cases to a glance —
+a straight own-backup restore is all ticked, another commander's archive is all clear — while the
+partial case, the one that started this question, needs exactly one correction.
+
+**Why the commander can answer this when BindForge cannot.** They know whether they still own the
+X56. BindForge knows only that no attached device matches it, which is equally consistent with the
+stick being sold, unplugged, or on a desk in another room. This is the same conclusion reached for
+[device identity in Alias Designer](alias-designer.md#device-identity-is-the-commanders-to-confirm--settled-2026-09-12),
+and for the same reason: there is no reliable hardware identity to compute from.
+
+**The refusal in case 3 stands, and this is how it is enforced** — not by classifying the archive, but
+by leaving foreign entries unticked by default, so importing someone else's hardware takes a
+deliberate act rather than an unnoticed one. **Matching is compared against what BindForge knows
+locally** — the local `DeviceMappings.xml` plus the
+[provenance](../../03-data-models/device-provenance.md) rows — **not against what is plugged in right
+now**, since a commander may restore before reattaching a controller.
+
+**`.binds` is unaffected by any of this.** It is restored per case 2 regardless of which device
+entries are ticked; a bindings layout is worth copying even when none of the hardware is yours.
 
 ## Installation Mirroring — moved, not removed
 

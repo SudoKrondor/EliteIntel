@@ -96,7 +96,47 @@ From that point on, the section behaves exactly like any other managed domain �
 
 **Per-section, not all-or-nothing:** because the Active Preset file tracks each of the four sections independently — the same "split preset" configuration Preset Editor already supports — a player can be partway customized (some sections on a real custom file, others still on factory defaults), and this flow only prompts for the sections that actually need it.
 
-**Testing-required:** whether a `ControlSchemes` preset file can be copied byte-for-byte into the player's bindings folder as a valid starting `.binds` file, or whether the game's own first-customization save does something to the file beyond a plain copy, hasn't been confirmed against a real install — see [testing-required.md](../../00-overview/testing-required.md).
+#### When it fires — settled 2026-09-12
+
+**When the player first opens BindForge, not when Elite-Intel launches.** The check is cheap and could run at startup, but a newcomer who launched the application to do something else has not asked about bindings, and a prompt about factory presets at that moment is an interruption rather than an offer. Opening the Bindings section is the moment the question is *in context*, and it is also the first moment the answer matters — the section cannot show a real state until it exists.
+
+The four sections are gathered into one prompt rather than asked about one at a time:
+
+```
+2 of 4 sections are on factory presets.
+Ship and SRV cannot be edited until they
+have a custom preset of their own.
+
+  [ Create both ]  [ Choose ]  [ Not now ]
+```
+
+**Choose** opens the per-section picker, for a partly-customized player who wants one section and not another.
+
+#### It applies immediately — settled 2026-09-12
+
+**This is the one documented exception to [Apply is the only thing that writes a live game file](#live-file-synchronization).** The click on **Create** is the consent, and setup completes when the player gives it. Leaving a draft here would mean they pressed Create and nothing was created, then asked them to **Apply** a change they cannot yet evaluate, in a product they opened seconds ago.
+
+**Why the exception is safe rather than merely convenient.** The draft model exists to stop BindForge overwriting a commander's work. **This case is defined by there being none** — it runs only where no custom `.binds` exists for that section. Concretely:
+
+| The write | Why it cannot lose anything |
+|---|---|
+| Create the new `.binds` | **Additive.** The file did not exist; nothing is overwritten. |
+| Repoint `StartPreset.#.start` | **One line, reversible.** [Preset Editor](preset-editor.md) switches it back at any time. |
+| The factory preset | **Never touched.** `ControlSchemes` is read-only to BindForge; the original remains exactly as shipped. |
+
+So the player is told what happened and how to undo it, rather than being asked to authorize it twice:
+
+```
+Created Custom.binds for Ship and SRV,
+and set both sections to use them.
+
+Your factory presets are unchanged.
+You can switch back any time in Preset Editor.
+```
+
+**The exception does not generalize, and its boundary is the point.** It covers *creating* a preset where none existed, at first open, with explicit consent. Every subsequent write to that section — every binding the player then edits — goes through the draft and Apply like everything else. A write that modifies existing player data is never an exception, whatever the flow.
+
+**Testing-required, and now load-bearing:** whether a `ControlSchemes` preset file can be copied byte-for-byte into the player's bindings folder as a valid starting `.binds` file, or whether the game's own first-customization save does something to the file beyond a plain copy, hasn't been confirmed against a real install — see [testing-required.md](../../00-overview/testing-required.md). **Applying immediately raises the stakes on that test:** a bad copy reaches the live bindings folder with no review step in front of it. The timestamped backup still runs, so it is recoverable rather than dangerous — but this should be confirmed before the flow ships, not after.
 
 ## Top-Level Structure
 
@@ -133,7 +173,7 @@ The refusal is what makes it safe to leave BindForge open while the game runs: a
 
 ### Direction: merge rather than choose a loser
 
-**Agreed in principle 2026-09-06; dialog design deferred.** The last row deserves better than a forced choice. `.binds` is a list of actions with stable names, each holding a primary and a secondary slot, so a three-way compare against the baseline resolves per action rather than per line:
+**Agreed in principle 2026-09-06; dialog settled 2026-09-12 — [see below](#the-conflict-dialog--settled-2026-09-12).** The last row deserves better than a forced choice. `.binds` is a list of actions with stable names, each holding a primary and a secondary slot, so a three-way compare against the baseline resolves per action rather than per line:
 
 - changed in the draft only -> take the draft
 - changed live only -> take live
@@ -141,6 +181,82 @@ The refusal is what makes it safe to leave BindForge open while the game runs: a
 - changed both sides differently -> a real conflict, and the only case worth interrupting for
 
 **Show without asking, where nothing conflicts.** The silent adoption in row three is correct behaviour and must survive: a player who has not touched BindForge should never be prompted about their own in-game rebind. Non-conflicting merges are reported - a summary the player can open - rather than confirmed. Confirmation is reserved for genuine conflicts.
+
+### The conflict dialog — settled 2026-09-12
+
+**It never interrupts.** Detection raises a banner on the BindForge screen and nothing more — no modal,
+no stolen focus. The player may be mid-flight when their in-game rebind collides with a draft edit, and
+**nothing is about to be written either way**, so there is nothing urgent to decide.
+
+```
+⚠ 3 controls were rebound in-game while you were
+  editing. 2 merged cleanly. 1 needs your decision.
+
+                              [ Review ]  [ Later ]
+
+  APPLY is unavailable until the conflict is resolved.
+```
+
+The banner reports the clean merges in the same breath as the conflict, because *"2 merged cleanly"* is
+what tells the player the remaining one is genuinely worth their attention rather than the usual noise.
+**Later** dismisses it; the conflict stays, and **Apply stays unavailable** until it is resolved. That
+is the existing refusal in `BindingsApplyService.verifyGameFileDidNotChange` doing its job — it is not
+being relaxed, it is being given a way out that does not cost somebody their work.
+
+#### The resolution list
+
+**One row per conflicting slot**, both values side by side, and clicking a value picks it:
+
+```
+1 conflict     [ Keep all mine ]  [ Keep all in-game ]
+
+CONTROL           SECONDARY
+                  YOURS        IN-GAME
+Landing Gear      ( ) L        ( ) G
+Cargo Scoop       ( ) Home     ( ) End
+
+  2 of 2 still to decide
+                          [ Merge ]  disabled
+```
+
+**A row is a slot, not a control** — the column header says which, because
+[Primary and Secondary are separate entities](#merge-grain-the-slot-not-the-action--settled-2026-09-07)
+and one control can appear twice with different answers. The layout deliberately echoes the bind grid:
+the player is choosing between two keys for a named control, which is what they do all day in
+[Game Mode](bind-editor.md#game-mode).
+
+**A full-file diff was rejected.** A `.binds` holds 774 slots, and showing two versions of it asks a
+commander to think like a programmer about their joystick. One-at-a-time was rejected too: it hides how
+much they are agreeing to.
+
+#### Nothing is pre-selected
+
+**Merge stays disabled until every row has an answer**, and the count says how many are left.
+
+**Why no default, when a default would be one click.** Either default silently destroys work in the case
+the player does not read the dialog. Pre-selecting *in-game* discards BindForge edits, which is the exact
+outcome the apply refusal exists to prevent. Pre-selecting *yours* overwrites a binding the game is
+already using. **A genuine conflict is rare by construction** — it needs both sides to change the same
+slot to different values between one apply and the next — so the cost of asking is a few clicks in an
+uncommon case, and the cost of guessing is lost work with nobody aware it happened.
+
+**The bulk buttons are not a default.** *Keep all mine* and *Keep all in-game* set every row at once, but
+pressing one is itself the decision. They exist so that twenty conflicts after a long session are not
+twenty clicks; they do not pre-empt the choice.
+
+#### Where the result goes
+
+**Merge writes the draft, not the game.** The merged set — clean merges and resolved conflicts together —
+becomes the new draft, and the baseline is reset to the live file it was reconciled against. The player
+then reviews and applies like any other edit, so **the merge itself is discardable**: Discard puts the
+draft back and the live file was never touched.
+
+**Cancel resolves nothing.** The draft and the conflict both stand, and Apply remains unavailable. There
+is no state in which closing the dialog loses an edit from either side.
+
+**If the game changes again mid-resolution**, the comparison is simply re-run against the new live file.
+Decisions already made on slots that did not change again are kept; a slot that moved underneath the
+dialog returns to undecided rather than silently resolving to a value the player never saw.
 
 ### Merge grain: the slot, not the action — settled 2026-09-07
 
@@ -170,7 +286,7 @@ So around 600 addressable slots on that file rather than the ~900 a flat doublin
 
 The same reasoning covers file-level non-binding settings such as `KeyboardLayout`: one value, no slot, so both sides changing it is a conflict.
 
-**Open:** what the conflict dialog looks like. Deferred by agreement — the grain above is what the dialog needs to know, and it is settled.
+**Settled 2026-09-12:** [the conflict dialog](#the-conflict-dialog--settled-2026-09-12) resolves per slot, which is why the grain above is the thing it needed to know.
 
 **Gap:** all of the above exists for `.binds` only. `DeviceMappings.xml` and `.buttonMap` have no draft, no baseline and no staleness check. Extending the same three-fingerprint treatment to them is new work.
 
@@ -198,7 +314,9 @@ That settles what used to be this document's hardest open question — which com
 
 ### There is one writer, and it already exists
 
-`BindingsApplyService`, `BindingsWorkingCopyRepository`, `BindingsWriter`, `BindingsBackupService` and `AppPaths.getBindingsWorkingDir()` are **BindForge's pipeline already**. They are not borrowed from a neighbour; the neighbour is the thing being upgraded. The [draft model](#live-file-synchronization) this document describes is the working-copy repository that exists today, with Apply as the only path to a live file.
+`BindingsApplyService`, `BindingsWorkingCopyRepository`, `BindingsWriter`, `BindingsBackupService` and `AppPaths.getBindingsWorkingDir()` are **BindForge's pipeline already**. They are not borrowed from a neighbour; the neighbour is the thing being upgraded. The [draft model](#live-file-synchronization) this document describes is the working-copy repository that exists today, with Apply as the only path to a live file — save one
+documented exception at [First-Time Startup](#it-applies-immediately--settled-2026-09-12), which creates
+a preset where none existed rather than modifying one.
 
 **The hazard this replaces is worth naming, so that nobody rebuilds it.** A second editor would have meant two working copies and two writers over the same `.binds`. Each would have been individually safe — backup, atomic write, the [Data Integrity Principle](#data-integrity-principle) satisfied — and **jointly they would not have been:** one saves, the other is still holding a stale in-memory model, the player applies there, and the first editor's work is gone with no operation having misbehaved. The Data Integrity Principle does not
 catch that, because it governs atomicity *within* an operation, not ownership *across* components.

@@ -51,12 +51,16 @@ The [Bind Editor's](bind-editor.md) file selector controls what's open for viewi
 
 [First-Time Startup](overview.md#first-time-startup) reads the Active Preset file to detect any section still on a stock, factory preset, and — if the player agrees to create a custom file for it — repoints that section's entry through this same mechanism, not a separate write path.
 
-**Open, raised by the draft model 2026-09-08: does First-Time Startup apply, or leave a draft?** Everywhere
-else, leaving an unapplied draft is correct — the player reviews it and applies when ready. In a setup flow it
-is arguably wrong: a player who has just agreed to create a custom preset would reasonably believe it is done,
-and would be left one unexplained step short. The likely answer is that First-Time Startup applies as part of
-completing setup, since the player has already given consent at that point — but it is the one place the
-draft model does not obviously fit, so it should be decided rather than inherited.
+**Settled 2026-09-12: First-Time Startup applies immediately.** It does not leave a draft, and it is the
+only place in BindForge that writes a live game file outside Apply — see
+[It applies immediately](overview.md#it-applies-immediately--settled-2026-09-12) for the reasoning and
+the limits of the exception.
+
+**What that means for this screen:** the repoint arrives here already done. A player who opened
+BindForge for the first time and accepted the offer finds their sections **IN SYNC**, pointing at the
+new custom files, with nothing pending. Preset Editor is then how they change their mind — switching a
+section back to a factory preset is an ordinary edit through the normal draft-and-Apply path, because
+by that point there is real configuration to protect.
 
 ## Deferred
 
