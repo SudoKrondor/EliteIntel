@@ -42,12 +42,47 @@ Each in-row tab shows the installation name plus one marker: **M** when that ins
 
 ### Built-in Devices
 
-Frontier's shipped default entries. Read-only; no Clear or Edit.
+Frontier's shipped default entries. **The reference list is read-only**, and BindForge never changes an
+entry on it. A built-in controller that is actually attached also appears under **My Devices, marked
+BUILT-IN**, where its button labels can be edited — see
+[Built-in controllers in My Devices](#built-in-controllers-in-my-devices--settled-2026-09-13).
 
 > **Open problem — this split is not derivable from the file.** `DeviceMappings.xml` is a flat list of device
 > elements with nothing marking which are Frontier's and which the player added. Any list built by reading a
 > real install will mix them. Resolving this needs a shipped reference copy of Frontier's stock file plus a
 > provenance record — see [Device Provenance](../../03-data-models/device-provenance.md).
+
+### Built-in controllers in My Devices — settled 2026-09-13
+
+**A controller that matches one of Frontier's entries on VID/PID is shown as BUILT-IN**, in every
+installation, because Frontier's entry sits in each installation's `DeviceMappings.xml`. The entry exists, so
+the device is not *not added* — but the entry is not the commander's either, and the grid says which. The match
+is made against the [shipped stock reference](reference-data/FrontierStock-README.md): `Thrustmaster T-Rudder`
+at `044F:B679` is Frontier's `<T-Rudder>`.
+
+**Its name and VID/PID are locked** (Alan, 2026-09-13). A built-in element is Frontier's **definition**, not a
+label on one stick: `<DualShock4>` matches both DualShock 4 revisions, and `<GamePad>` carries 80 VID/PID pairs,
+so renaming one renames every controller it covers. And a game update that restores Frontier's file would put
+the old name back, leaving `.binds` pointing at a name that no longer exists.
+
+**Its button and axis labels are editable.** They are saved as a `.buttonMap` under Frontier's name —
+`T-Rudder.buttonMap` — which changes nothing about how the game recognises the device. Labels unlock straight
+away, because there is no name to confirm.
+
+**RESET LABELS replaces CLEAR.** [CLEAR](#actions-and-what-each-one-reaches) removes an installation's entry,
+and on a built-in that entry is Frontier's. RESET LABELS removes only the `.buttonMap` the commander or BindForge
+created, and the next [Elite-Intel startup](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller)
+generates a fresh one. A `.buttonMap` Frontier itself shipped — `VPCPanel`, `VPCThrottle` — is never removed.
+Like SAVE and CLEAR, it **follows MIRROR**: resetting one mirrored installation resets them all.
+
+| | The commander's entry | Built-in |
+|---|---|---|
+| Name | editable, as the [rename transaction](#renaming-a-device) | **locked** — Frontier's |
+| VID / PID | read-only | read-only |
+| Button and axis labels | editable once the name is confirmed | editable straight away |
+| Undo (follows MIRROR) | **CLEAR** — the entry and `.buttonMap` | **RESET LABELS** — only a `.buttonMap` BindForge or the commander made |
+| [Onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13) | asked for a name | never asked |
+| What APPLY writes | the entry and its `.buttonMap` | the `.buttonMap` only |
 
 ## VID/PID Is Not a Stable Identity
 
@@ -251,30 +286,131 @@ update that keeps the same layout costs them one dismissed dialog.
 
 Any controller connected to the system — whether already connected when BindForge starts, or plugged in later during a session (hot-plug) — is automatically added to the My Devices working copy with no user action required. This applies the same "detect and inform, don't ask" principle already used for [First Run](#first-run-and-hot-plug) below, extended to individual devices as they're seen.
 
-- **Default alias:** the name the Device Service already reports for the hardware (e.g., "VPC Throttle"), used as-is until the user renames it.
+- **Default alias:** the name the Device Service reports, **cleaned into a valid name** by the [default-name rule](#the-default-name-rule) — `Virpil Controls 20220720` becomes `VirpilControls20220720`. [Onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13) shows it to the commander before anything is written.
 - **VID/PID:** filled in immediately from the connected hardware, same as any other device entry.
-- **No `.buttonMap` stub is created.** A button-map file is only created once the user actually enters button/axis names for that device — see [Device Editor](#device-editor) below.
-- **This only touches the working copy, never a live game installation** — the same separation that already governs every other Alias Designer edit (see [Overview — Managed File Domains](overview.md#managed-file-domains)). Nothing about automatic registration writes to a game install; that only happens through File Manager's Installation Mirroring. This means automatic registration is safe to happen at any time.
+- **A `.buttonMap` is created once the device has a name** — at [onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13) for a controller with no entry, or at [Elite-Intel startup](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller) for a connected controller that already has one. *Changed 2026-09-13: this used to say no `.buttonMap` stub is created until the commander labels something — see [why the rule moved](#it-is-the-alias-confirm-gate-moved-earlier).*
+- **Registration itself touches only the working copy.** Detecting a controller writes nothing. The writes that follow it — a confirmed name, a generated `.buttonMap` — are among the few that reach a game installation outside Apply, and each is justified in [What onboarding writes, and when](#what-onboarding-writes-and-when) and in [Overview — writes outside Apply](overview.md#writes-outside-apply--the-complete-list).
 - **Hot-plugging into BindForge is safe; hot-plugging into a running game is not — those are different things.** BindForge can register a newly-connected controller into its own working copy at any time without risk. Physically connecting or disconnecting a controller while Elite Dangerous itself is running is a separate, game-level risk (it can crash the game) that exists independently of BindForge and is outside BindForge's control — automatic registration does not cause or worsen this; it just means BindForge's own device list stays current regardless of when the user plugs something in.
 
 ### Rules automatic registration still needs
 
-Three gaps, all found while working the design through and none of them yet decided:
+Three gaps were found while working the design through. **Two were settled by onboarding on 2026-09-13**, and the third earlier:
 
-- **Name sanitisation.** The default alias is the name the Device Service reports, but that name becomes an
-  **XML element tag** in `DeviceMappings.xml` and a **filename stem** for `.buttonMap`. SDL-style names like
-  `Virpil Controls 20220720` are neither a valid XML tag nor a safe filename. A sanitisation rule is required
-  and does not exist.
-- **Collision with Frontier's built-ins.** The alias-uniqueness rule in [Device Editor](#device-editor)
-  forbids colliding with a built-in entry — but SDL will happily report `T-Rudder` for a device Frontier
-  already ships a `<T-Rudder>` entry for. Automatic registration would violate BindForge's own validation rule
-  for exactly the devices most likely to be recognised.
+- **Name sanitisation — settled 2026-09-13.** The reported name becomes an **XML element tag** in
+  `DeviceMappings.xml` and a **filename stem** for `.buttonMap`, and SDL-style names like
+  `Virpil Controls 20220720` are neither. [The default-name rule](#the-default-name-rule) cleans them, and
+  [alias validation](#fields-and-rules) now holds typed names to the same constraint.
+- **Collision with Frontier's built-ins — settled 2026-09-13.** A controller that *is* a built-in already
+  has Frontier's entry, matched on VID/PID, so it is never onboarded and [never renamed](#built-in-controllers-in-my-devices--settled-2026-09-13). A *different*
+  controller reporting a clashing name gets a number — `T-Rudder` from an unrelated device becomes
+  `TRudder2`. See [the default-name rule](#the-default-name-rule).
 - **What reaches the game's file.** Registration only touches the draft, so nothing lands in a real install
   until **Apply to Game Installs** runs. **Settled 2026-09-06: applying pushes only what changed**, never the
   whole set. Pushing everything accumulates entries for hardware plugged in once, years ago, and rewrites
   rows no one touched; since both files are purely cosmetic, an entry for a device the player never named
   carries no benefit. A narrow write is also a smaller thing to get wrong, and a smaller diff to show the
   player when a merge has to be explained.
+
+## Onboarding — every controller gets a name and a `.buttonMap` — settled 2026-09-13
+
+**Every connected controller ends up with a name and a `.buttonMap`** (Alan, 2026-09-13). The
+[capture dialog](bind-editor.md#capture-dialog--settled-2026-09-13) labels a controller's inputs from its
+`.buttonMap`, and Frontier ships one for only 2 of its 51 device entries
+([stock reference](reference-data/FrontierStock-README.md)), so without this most controllers would show bare
+`Joy_N`. A `.buttonMap` is named after its device's `DeviceMappings.xml` entry, so every file needs a name first
+— and giving a controller a name is what onboarding does.
+
+### It is the alias-confirm gate, moved earlier
+
+This used to be ruled out: *no `.buttonMap` stub is created* until the commander labels something. The reason was
+never the file. It was that a `.buttonMap` should only exist under **a name the commander has looked at**, because
+renaming afterwards is a [three-file transaction](#renaming-a-device). Onboarding keeps that property and drops
+the wait: the name is shown before anything is written. **Silent creation under a name nobody saw is still ruled
+out.**
+
+### When, and for which controllers
+
+| Moment | Controllers |
+|---|---|
+| The first time BindForge is opened, alongside [First-Time Startup](overview.md#first-time-startup) | every connected controller with **no `DeviceMappings.xml` entry** |
+| A controller detected later — [hot-plug](#first-run-and-hot-plug) | that controller, if it has no entry |
+
+**A controller that already has a name is never asked** — a Frontier built-in such as `SaitekX56Joystick`, or an
+entry the commander made. There is no decision to put to them.
+
+### What it asks: just a name
+
+```
+3 controllers need a name so BindForge and the game can label their buttons.
+
+VIRPIL Controls 20220720      VID 3344  PID 83F4
+NAME  [ VirpilControls20220720          ]
+
+                                        [ Skip ]  [ Next ]
+```
+
+One field per controller, prefilled with the [default name](#the-default-name-rule). **Button labels are
+generated**, not asked for — `Button 1`…`Button N`, `Hat 1 Up`/`Down`/`Left`/`Right`, `X Axis` — sized to
+what the device reports. Labelling every button by pressing it would turn seconds into minutes for a thirty-button
+stick. The generated labels can be renamed later in the [Device Editor](#device-editor) at no cost, because
+renaming a label does not rename the file.
+
+**Skipping takes the default name.** A controller never leaves onboarding unnamed; skipping is how a commander
+who wants to get on with it says *use yours*. That keeps onboarding to a few clicks however many controllers are
+attached.
+
+### The default-name rule
+
+The name every controller is offered, and the constraint typed names are held to, because the name becomes an
+**XML element tag** in `DeviceMappings.xml` and the **filename stem** of its `.buttonMap`:
+
+1. Start from the name the device reports.
+2. **Keep letters and digits only** — spaces and punctuation are dropped.
+3. **It must start with a letter.** If it does not, prefix `Device`; if nothing is left, use `Controller`.
+4. **It must not clash** with an existing entry or one of Frontier's built-in names, compared ignoring case, `-`
+   and `_`. On a clash, add the lowest number that makes it unique.
+
+| Reported | Default | Why |
+|---|---|---|
+| `Virpil Controls 20220720` | `VirpilControls20220720` | spaces dropped |
+| `T-Rudder`, from a device that is not Frontier's T-Rudder | `TRudder2` | clashes with `T-Rudder` once `-` is ignored |
+| `3Dconnexion SpaceMouse` | `Device3DconnexionSpaceMouse` | must start with a letter |
+
+A name the commander **types** may also use `-` and `_` — see [alias validation](#fields-and-rules).
+
+### What onboarding writes, and when
+
+| The controller | Written | When |
+|---|---|---|
+| **Not referenced in `.binds`**, or referenced only by name | its `DeviceMappings.xml` entry and a generated `.buttonMap` | **straight away**, to every detected installation |
+| **Referenced in `.binds` by VID+PID hex** | the entry, the `.buttonMap`, **and** a rewrite of every `Device="<hex>"` to the new name | **together, in one Apply** |
+
+**Why the two cases differ.** The first creates things that did not exist and changes no existing entry or
+binding — the same reasoning that lets
+[First-Time Startup apply immediately](overview.md#it-applies-immediately--settled-2026-09-12). The second rewrites
+existing bindings, which only Apply ever does.
+
+**And the second case's writes have to land together.** Once an entry exists, `.binds` is expected to name the
+device ([format §4.0](domain-knowledge/EliteDangerous-BindsFileFormat.md#40-the-rule-confirmed-2026-09-08)), and
+there is no evidence the game honours the old hex references in the meantime — when this commander added `RVWAP`
+and `LVWAP`, the hex was replaced by hand. Writing the entry on its own could leave those bindings dead until
+Apply. See [testing item 13](../../00-overview/testing-required.md).
+
+Onboarding says so rather than leaving a surprise: *"131 bindings will move to LVWAP when you apply."* That is the
+[before-the-fact offer](#detecting-it-and-getting-ahead-of-it), folded into naming.
+
+### At Elite-Intel startup: a `.buttonMap` for every connected, named controller
+
+A controller that **already has a name** but no `.buttonMap` gets a generated one when Elite-Intel starts, with no
+prompt, because there is nothing to decide. That covers Frontier's built-ins, which almost never ship one.
+
+- **Connected controllers only.** A device plugged in once, years ago, gets nothing.
+- **Every detected installation**, since `.buttonMap` files live inside each one.
+- **Never overwrites** a `.buttonMap` that exists, whether Frontier's or the commander's.
+- **After RESET LABELS** on a built-in, the next startup generates its `.buttonMap` afresh.
+
+It runs at Elite-Intel startup rather than when BindForge opens, so the labels are already there the first time
+the capture dialog is used. **Startup never names anything:** a controller with no name waits for onboarding.
 
 ## Device Editor
 
@@ -308,13 +444,18 @@ edited independently*, and *entry shared with the other mirrored installations*.
   VID/PID, so hand-editing this would break the association. They are device-level, identical on every tab.
 - **Edit Mode** activates the moment any field changes. A persistent label reminds the user this saves to the
   working copy only.
-- **Alias name validation:** 3–50 characters; letters, numbers, spaces, and a specific set of punctuation
-  characters only; no period; must not collide with any existing entry, including Frontier's built-ins.
-- **The alias must be confirmed or changed before button/axis naming unlocks.** For an automatically-registered
-  device still carrying its default hardware-reported alias, the Button & Axis Names tabs stay locked until the
-  user has explicitly confirmed or edited the alias — a deliberate minimum touchpoint, since it ensures a device
-  never gets fully configured under an alias the user never actually looked at. Confirmation does **not** reach
-  the working copy until Save, so Discard can undo it.
+- **Alias name validation — tightened 2026-09-13.** 3–50 characters; **must start with a letter**; then
+  letters, digits, `-` and `_` only; **no spaces and no period**; must not collide with any existing entry,
+  including Frontier's built-ins, compared [ignoring case, `-` and `_`](#the-default-name-rule). *The earlier
+  rule allowed spaces and a wider set of punctuation. But the alias becomes an XML element tag and a
+  filename stem, and a space is valid in neither — so that rule would have accepted a name the game
+  cannot read.*
+- **The alias must be confirmed or changed before button/axis naming unlocks.** [Onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13)
+  is where that happens. Confirming the offered name, typing another, or skipping — which accepts the
+  default — all count, because in each case the commander has been shown the name. A device is never fully
+  configured under a name nobody looked at. A later rename is the [multi-file transaction](#renaming-a-device).
+  **A built-in has no name to confirm:** its labels unlock straight away, and its name stays
+  [Frontier's](#built-in-controllers-in-my-devices--settled-2026-09-13).
 - **Button and axis names** are edited in Axis/Buttons sub-tabs. The UI sizes dynamically to the device's real
   axis and button count — never hardcoded; a device with three axes shows three. A hard 18-character limit
   applies to every button/axis friendly name, confirmed by direct in-game testing. The alias field has its own
@@ -329,7 +470,8 @@ edited independently*, and *entry shared with the other mirrored installations*.
 |---|---|---|
 | **SAVE** | the open installation's record | **No** — draft only |
 | **DISCARD** | the open installation's record | No |
-| **CLEAR** | the open installation's record | No — see below |
+| **CLEAR** | the open installation's record, **and every installation mirrored with it** — not offered on a built-in | No — see below |
+| **RESET LABELS** | a built-in's `.buttonMap` in the open installation, **and every installation mirrored with it** | No — draft only; see [built-ins](#built-in-controllers-in-my-devices--settled-2026-09-13) |
 | **MIRROR** | the open installation | No |
 | **APPLY TO GAME INSTALLS** | every installation with an entry | **Yes** |
 
@@ -338,9 +480,12 @@ that writes into a live game installation. Applying is a separate, deliberate ac
 screen.
 
 **CLEAR, not Delete.** A device cannot be removed from the list while its hardware is attached — it would
-simply reappear, because the list is driven by what is plugged in. What CLEAR removes is *this installation's*
-`DeviceMappings.xml` entry and its matching `.buttonMap`. The device stays listed, showing *not added* for that
-installation. Clearing every installation returns the device to the state it had before it was ever configured.
+simply reappear, because the list is driven by what is plugged in. What CLEAR removes is the open installation's
+`DeviceMappings.xml` entry and its matching `.buttonMap` — **and, when that installation is mirrored, every
+installation mirrored with it**, because MIRROR means one shared definition and SAVE already reaches all of them
+(settled 2026-09-13). The device stays listed, showing *not added* for each installation cleared. Clearing every
+installation returns the device to the state it had before it was ever configured. To clear just one of several
+mirrored installations, turn MIRROR off on it first.
 
 This also replaces the old "delete and recreate to fix a wrong VID/PID" repair path, which never worked as
 written: automatic registration would re-add a connected device immediately.
@@ -363,12 +508,14 @@ So renaming has to be handled as one transaction:
 
 **Why the alias-confirm gate matters more than it looks.** Requiring the alias to be settled before button and
 axis naming unlocks means a `.buttonMap` is only ever created under a name the player has already looked at.
-A rename *before* any file exists is free. This is also why no `.buttonMap` stub is created at registration
-time — creating one early would reintroduce exactly the rename problem the sequencing avoids.
+A rename *before* any file exists is free. [Onboarding](#it-is-the-alias-confirm-gate-moved-earlier) keeps
+that property while creating the file straight away: the name is shown before anything is written.
 
-**Blocked on testing:** whether `.binds` uses the name or the hex form for devices defined in
-`DeviceMappings.xml` is not settled — the format reference shows both. See
-[testing-required.md](../../00-overview/testing-required.md).
+**Answered 2026-09-08:** `.binds` names a device by its `DeviceMappings.xml` element name when an entry
+matches, and falls back to VID+PID hex when none does
+([format §4.0](domain-knowledge/EliteDangerous-BindsFileFormat.md#40-the-rule-confirmed-2026-09-08)). So step 3
+is real: a rename that skips it orphans every binding on that device. *This line used to say the question
+was blocked on testing.*
 
 ## First Run and Hot-Plug
 

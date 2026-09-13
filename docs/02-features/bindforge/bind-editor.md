@@ -14,7 +14,21 @@ The Bind Editor is where the player views and edits their actual key/button/axis
 
 ## Game Mode
 
-**Status: built.** Organizes bindings to match the in-game controls UI exactly — the same four top-level sections and the same subgroup structure the game itself uses. See [Binding Zone Map (domain knowledge)](domain-knowledge/EliteDangerous-ActionCatalog.md) for the full, cross-verified section/subgroup/action inventory this is built from.
+**Status: exists as Krondor's Binding Profile, and grows in phase 3** — corrected 2026-09-13; this line
+used to say *built*, which overstated it. Elite-Intel's `BindingProfilePanel` already organizes bindings to
+match the in-game controls UI — the same four top-level sections and the same group structure the game
+uses — with the game's own row names (`BindingDisplayNames`), search, and a show-conflicts-only filter.
+See [Binding Zone Map (domain knowledge)](domain-knowledge/EliteDangerous-ActionCatalog.md) for the full,
+cross-verified section/subgroup/action inventory.
+
+### What Game Mode still needs
+
+| Addition | Where it is specified |
+|---|---|
+| Capture for **every device**, through the capture dialog | [Capture Dialog](#capture-dialog--settled-2026-09-13) |
+| The **ASSISTANT** column | [The mechanism: an ASSISTANT column](#the-mechanism-an-assistant-column-in-the-grid--settled-2026-09-12) |
+| Conflict colouring on the **slot cell**, not the whole row | [FN-1](#fn-1-in-detail--scoped-2026-09-12) |
+| The in-game name and the XML tag in the capture dialog | [What the dialog shows](#what-the-dialog-shows) |
 
 ### Conflict Display
 
@@ -23,28 +37,188 @@ Carried forward from a proven, already-real pattern, not invented fresh:
 - Hovering a conflicting row shows a **persistent** popup (not an auto-dismissing tooltip, which vanishes too fast to read a full explanation) listing every other action sharing that key.
 - The shell's [Show Anomalies Only toggle](#shell-common-to-all-modes) filters the grid to rows carrying an anomaly while Game Mode is active.
 
-### Binding Editor Panel — Capture Dialog
+### Capture Dialog — settled 2026-09-13
 
-Hovering a row reveals Capture Primary/Secondary controls — not a whole-row click, and not auto-armed by selection, so browsing rows to look at them is always a safe no-op. Clicking Capture opens a floating capture dialog centered over the content, modeled directly on the base game's own rebind popup (dimmed background, a box reading "Press [input] for... ACTION NAME," waiting for the next input) — a proven, already-real pattern, not invented fresh.
+**BindForge captures through Krondor's existing dialog, grown — not a new one.**
+`AssignKeyboardBindingDialog` already does the hard parts: it captures a chord by having the commander press
+it, colours an on-screen keyboard free and used, and warns about conflicts, reserved chords and the game-menu
+key *before* anything is kept — leaving all validation and writing to `BindingsWriter`. It already dims the
+window behind it, too. The earlier design, a floating popup *"modeled directly on the base game's own rebind
+popup"*, described a dialog nobody built while this one shipped. The class keeps its name under the
+[package freeze](../../00-overview/v1.2-scope.md#the-code-stays-where-it-is--stated-by-krondor-2026-09-12);
+what it shows and what it captures grows.
 
-Capture-control color reflects slot state: an empty slot, a bound-and-clean slot, and a bound-and-conflicting slot are each visually distinct.
+**One dialog for every slot, with tabs that grey out what cannot fill it** (Alan, 2026-09-13). Earlier the
+same day this was split into a button dialog and an axis dialog; it was folded back into one, because a single
+dialog that shows every input source — and says plainly which ones do not apply — is one thing to learn
+rather than two. **No mode gets its own variant:** Game Mode, Action Groups, Input Mode and Anomalies all open
+this dialog, and Control Types will too if it is picked back up.
 
-**Capture flow:**
-1. The user presses a key/button.
-2. If there's no conflict, it commits immediately to the working copy and the dialog closes.
-3. If there is a conflict, the same dialog updates in place to list **every** action sharing that exact combination (not just one) with Confirm/Cancel only — no second, separate popup opens for this.
+#### Capture is the only way in
 
-There is deliberately no "always confirm"/skip-warnings option, even though the base game has one — a skip option would defeat the purpose of warning the player at all.
+The dialog opens from a slot's **Capture** button, never from clicking the row. Browsing the grid is always
+safe: **a stray click cannot start a rebind** (Alan, 2026-09-13). Krondor's editor currently opens its dialog
+from a click on the slot, so this is a change to the existing behaviour, not a carry-over of it.
 
-**This capture dialog is the one and only input-capture mechanic anywhere in BindForge.** Every mode that lets the player rebind something — Game Mode, Action Groups, Input Mode, Anomalies, and Control Types whenever it's picked back up — opens this exact same dialog, never a mode-specific variant. A player rebinding from Input Mode's reverse-lookup list or from an Anomalies row sees the identical popup they'd see capturing from Game Mode's own grid.
+#### Tabs are input sources; sub-tabs are input kinds
 
-### Open items — carried from the punch list, 2026-09-09
+```
+[KEYBOARD]  MOUSE  VPCThrottle 82  VPCPanel 43  RVWAP 31
+             BUTTONS 79   HATS 0   AXIS DIRECTIONS 6   AXES 3
+```
 
-- **Does the non-active slot's Capture button stay live while the other slot is being edited?** Either
-  answer is defensible; neither is chosen.
+**KEYBOARD** and **MOUSE** come first; every connected controller follows, one tab each. A controller's tab
+is split by **input kind** — **BUTTONS**, **HATS**, **AXIS DIRECTIONS**, **AXES** — so every device has the
+same four pages whatever its hardware. Inside BUTTONS, the device's own `.buttonMap` labels group the inputs
+under headings (the throttle's right grip, left grip, base, toggles, encoders), so a large device stays
+findable.
+
+**What the slot enables:**
+
+| Tab or sub-tab | Button slot | Axis slot |
+|---|---|---|
+| KEYBOARD | enabled, and the default | greyed — an axis row never takes a key |
+| MOUSE | enabled | greyed — [mouse movement is not bindable](#mouse-is-three-different-element-shapes-and-only-one-of-them-is-a-binding) |
+| controller › BUTTONS | enabled | greyed |
+| controller › HATS | enabled when the device reports hats | greyed |
+| controller › AXIS DIRECTIONS | enabled when the device reports axes | greyed |
+| controller › AXES | greyed — a button slot cannot take a whole axis | enabled when the device reports axes; the default page |
+| a controller with nothing enabled | the whole tab greyed | the whole tab greyed — for instance a device with no axes |
+
+**Greyed, not hidden.** Every tab stays in view with a tooltip saying why it is unavailable. A commander
+looking for their button box on an axis row learns *"this device reports no axes"* instead of wondering where
+it went.
+
+**The input pressed decides the tab.** Pressing a real key moves to KEYBOARD; pressing a controller input
+moves to that device's tab and kind. Clicking an input captures it too, for anyone working from the list
+rather than the hardware.
+
+**The page has a fixed height and scrolls.** Splitting by kind does not shorten the largest page much — 79
+of the throttle's 82 inputs are buttons — so the dialog keeps a constant size that fits the app window, and
+the input list scrolls inside it.
+
+#### What the dialog shows
+
+The **title is the in-game name**, and the first rows say where it lives and what the file calls it:
+
+```
+GALAXY CAM SET Y-AXIS TO Z-AXIS              BUTTON / KEY  ×
+ASSIGNMENT
+CONTROL          General › Galaxy Map
+XML BINDING      CamTranslateZHold
+SLOT             Secondary
+CURRENT VALUE    Not defined
+NEW INPUT        [ NOT DEFINED ]
+                 [ CLEAR BINDING ]
+```
+
+| Row | Source | Button slot | Axis slot |
+|---|---|---|---|
+| Title | `BindingDisplayNames.lookup(bindingId).name()` | yes | yes |
+| CONTROL | the same record's section and group | yes | yes |
+| XML BINDING | the raw `bindingId` | yes | yes |
+| SLOT | Primary or Secondary | yes | *Axis (one binding)* — an axis element has one `<Binding>` |
+| CURRENT VALUE | the slot as it stands in the draft | yes | yes |
+| NEW INPUT | the capture field | yes | yes |
+| INVERTED, DEADZONE | the axis row's settings | — | yes |
+
+**Why both names.** The in-game name is what the commander recognises, and it is ambiguous on its own — the
+game has four different rows called *Move Forward*, which is why CONTROL carries the section and group. The XML
+tag is what the file, a support bundle and another commander's `.binds` all say. Today the dialog's
+**SELECTED BINDING** row shows only the tag, so the first thing a commander reads is `CamTranslateZHold`.
+
+#### Nothing is kept until SAVE
+
+The commander presses the input, reads whatever the dialog says about it — in use, reserved, the game-menu
+key, a conflict — and then presses **SAVE**. **SAVE writes to the draft**; Apply is still the only thing that
+reaches the game. **CLEAR BINDING** empties the slot, and **BACK** or Esc leaves with nothing changed.
+
+This is Krondor's flow as it ships, and it **replaces the earlier commit-on-press design**, where a clean
+capture saved itself instantly. A warning about a reserved chord or the game-menu key is only useful if it can
+be read before the binding lands.
+
+#### MOUSE is chosen, not captured
+
+The MOUSE tab lists mouse inputs to click: the buttons, as `Mouse_1` upward, and the wheel as the half-axes
+`Pos_Mouse_ZAxis` (up) and `Neg_Mouse_ZAxis` (down). It never listens for mouse movement or clicks — see
+[Mouse inputs are chosen, not captured](#mouse-inputs-are-chosen-not-captured) for why a stray scroll must not
+bind anything. The button count is whatever the system reports, never a hardcoded four.
+
+#### What counts as an axis — what the device reports, not what it looks like
+
+A dial is not necessarily an axis. **Both kinds sit on the same VIRPIL panel**, in Frontier's own
+[`VPCPanel.buttonMap`](reference-data/VPCPanel.buttonMap) and [`VPCThrottle.buttonMap`](reference-data/VPCThrottle.buttonMap):
+
+| Physical control | Reports as | Frontier's label | Sub-tab |
+|---|---|---|---|
+| Rotary **encoder** — endless, clicky | **buttons**: press, clockwise, counter-clockwise | `E1`, `E1 - Clockwise`, `E1 - Counter Clockwise` | BUTTONS |
+| The throttle's **dials** | **buttons** | `L Dial - Forward`, `R Dial - Backward` | BUTTONS |
+| **Axis dial or slider** — with end stops | **an axis** | `Joy_UAxis` = A1, `Joy_VAxis` = A2 | AXES |
+| Throttle levers, flaps | **axes** | `Joy_RXAxis` = Throttle L, `Joy_RZAxis` = Flaps | AXES |
+
+So **a button box can have axes**. Elite-Intel already knows the count: `DeviceService` reads
+`SDL_GetNumJoystickAxes` into `Device.axisCount`, and publishes live movement as `DeviceAxisEvent`, which is
+what *move an axis to capture it* needs. What a control looks like cannot be the test, because vendor software
+can remap a physical control to report either way.
+
+#### Axis directions and hats are button inputs
+
+**Axis directions.** Pushing an axis **one way** can fire a button row. The format writes this as `Pos_`/`Neg_`
+on a **BUTTON** slot ([format §5.2](domain-knowledge/EliteDangerous-BindsFileFormat.md#52-directional-pseudo-axis-codes)),
+and real files use it: `DualVirpilDawnTreader.4.1.binds` puts `Neg_Joy_YAxis` on `UpThrustButton`'s Secondary
+slot and `Neg_Joy_RYAxis` on Toggle HUD. The AXIS DIRECTIONS page offers a *+* and a *−* for every axis the
+device reports.
+
+**Hats.** A hat is written `Joy_POV1Up`, `Joy_POV1Down`, `Joy_POV1Left`, `Joy_POV1Right`, and a diagonal sets two
+of them at once ([format §5.4](domain-knowledge/EliteDangerous-BindsFileFormat.md#54-pov--hat-codes)). Real
+files bind them to button rows — `FocusRightPanel` on `Joy_POV1Right`. Some hardware reports its hats as plain
+buttons instead (the throttle's `R POV1 Forward` is `Joy_9`), and those appear under BUTTONS.
+
+#### Axis slots take an axis only
+
+**An axis row is never bound to a keyboard key** (Alan, 2026-09-13), and never to the mouse — which is why
+both tabs grey out. Keys go on the matching button rows — *Yaw Left* and *Yaw Right* beside *Yaw Axis*. Axis
+bindings take no modifiers.
+
+**Inverted and Deadzone live in both places.** They stay inline on the axis row for a quick adjustment, and
+they appear in the dialog beside the axis they belong to. It is one value in each case, so saving from either
+leaves the other showing the same thing.
+
+#### Capture-control colour, and no skip option
+
+A row's Capture controls are coloured by slot state — empty, bound and clean, and bound and conflicting are
+each distinct. There is deliberately **no "always confirm" or skip-warnings option**, even though the base game
+has one: a skip option would defeat the purpose of warning at all.
+
+#### Conflict warnings name one binding today
+
+Krondor's wording is *"Conflicts with {0}; may not work"*, and `CandidateConflict` carries a single
+`otherBinding`. **The target is every action sharing that exact chord**, which needs that record to hold a list
+and needs [FN-1](#fn-1-in-detail--scoped-2026-09-12) fixed first — otherwise a binding in the discarded slot
+cannot be named at all.
+
+#### What the dialog cannot do yet — gaps in the code, not in the design
+
+| Gap | Where | Closes when |
+|---|---|---|
+| **A HOTAS slot never opens the dialog.** It shows *"This slot uses an advanced or unsupported binding. The basic editor will not modify it."* | `BindingProfilePanel.openAssignKeyboardBindingDialog` via `isBasicEditableSlot` | [`BindingsWriter` widens](overview.md#two-narrow-boundaries--one-stays-one-widens) |
+| **The dialog says keyboard throughout** — *Assign keyboard key*, *Keyboard Assignment*, *New key* | `bindings.assign.*` in the nine `gui*.properties` bundles | the source tabs arrive; the text changes, the class name does not |
+| **Hats cannot be captured.** The device layer has no hat handling at all | `elite.intel.devices` | hat events are read and mapped to `Joy_POV` tokens |
+| **U and V axes cannot be captured.** `AXIS_TOKENS` is exactly X, Y, Z, RX, RY, RZ, so a panel's A1/A2 dials make `axisToBindsToken` throw | `ButtonInputMapper` | the token list grows to `Joy_UAxis` and `Joy_VAxis` |
+| **SELECTED BINDING shows the raw tag** | `AssignKeyboardBindingDialog.buildUi` | the title and CONTROL row land |
+
+### Open items — capture dialog
+
+- *Settled 2026-09-13:* every controller gets a name and a `.buttonMap` through
+  [onboarding](alias-designer.md#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13) — a name only, labels
+  generated, skipping takes the default — and a connected controller that already has a name gets a
+  generated `.buttonMap` at Elite-Intel startup.
 - **Colour collision: the capture button's "empty" state versus the existing "recommendation"
   indicator.** Both land on a similar light blue. **Explicitly parked by Alan — do not resolve without
   raising it directly**, since it touches an existing convention rather than only BindForge's own.
+- *Resolved:* how a slot opens the dialog — its [Capture button](#capture-is-the-only-way-in), to prevent
+  accidental clicks. Where mouse input is chosen — the [MOUSE tab](#mouse-is-chosen-not-captured). Whether
+  the other slot's Capture control stays live while one is edited — moot, because the dialog is modal.
 
 ### Modifiers, Hold, Inverted, Deadzone
 
@@ -54,7 +228,9 @@ All of the following are confirmed by direct in-game testing, not just inferred 
 - Cross-device modifiers are real and confirmed working in-game — for example, a keyboard key combined with two separate joystick buttons in one binding.
 - **A bind slot can combine a maximum of four inputs total** — one main input plus up to three modifiers.
 - **Axis bindings can never take a modifier at all**, confirmed by direct testing — attempting to add a modifier to an axis binding silently drops it and produces a plain single-input rebind instead. The only two things that vary on an axis slot are Inverted and Deadzone.
-- Hold (for buttons) and Inverted (for axes) are inline toggle controls; Deadzone (for axes) is an inline slider — none of the three use the capture-overlay mechanic.
+- **Hold** stays an inline toggle on a button slot. **Inverted** and **Deadzone** are inline on the axis row and
+  also in the [capture dialog](#axis-slots-take-an-axis-only) when an axis slot is captured (settled 2026-09-13).
+- **An axis row takes an axis only — never a keyboard key** (Alan, 2026-09-13).
 - Axis rows have a different column shape than button rows: one value slot plus Capture, Inverted, and Deadzone controls, rather than a Primary/Secondary pair.
 
 ## Action Groups
@@ -108,7 +284,7 @@ all five are Action Groups' own, and none blocks building the mode.
 
 **Rows render exactly like Game Mode's grid, not a simplified list** — the same Primary/Secondary slot columns (with Hold/Tap and modifier chords shown), the same axis column shape (value, Inverted, Deadzone), and the same conflict red-highlighting. A player scanning what's bound to a physical input needs the same information density they'd get browsing Game Mode directly; a plain text list would be a step down.
 
-**Editing from here:** clicking a row opens the same [capture dialog](#binding-editor-panel--capture-dialog) used everywhere else in BindForge, right in place — the player never has to leave Input Mode and flip to Game Mode to rebind or clear something they found this way.
+**Editing from here:** clicking a row opens the same [capture dialog](#capture-dialog--settled-2026-09-13) used everywhere else in BindForge, right in place — the player never has to leave Input Mode and flip to Game Mode to rebind or clear something they found this way.
 
 This is distinct from [Control Types](#control-types) below, which groups by input *category* (all axes together, all buttons together) rather than looking up one *specific* physical input. Input Mode absorbed what was judged the one genuinely useful idea from Control Types' original concept when Control Types itself was parked.
 
@@ -311,7 +487,7 @@ widened Missing beyond the controls Elite-Intel drives. The state should be expl
 
 **Layout:** conflicts are grouped by the shared input causing them — each group header names the shared key/chord and how many binds share it, expandable/collapsible the same way Game Mode's grid groups work. Inside a group, each row is tagged with its section plus the action name, exactly like Input Mode's list.
 
-**Editing from here:** clicking a row opens the same [capture dialog](#binding-editor-panel--capture-dialog) used everywhere else, right in place — resolving a conflict never requires leaving the Conflicts tab and jumping to Game Mode.
+**Editing from here:** clicking a row opens the same [capture dialog](#capture-dialog--settled-2026-09-13) used everywhere else, right in place — resolving a conflict never requires leaving the Conflicts tab and jumping to Game Mode.
 
 ## Mouse Inputs Are Chosen, Not Captured
 
@@ -603,7 +779,7 @@ first recorded.
 correct without it:
 
 - The capture dialog lists *every* action sharing a chord — see
-  [Capture Flow](#binding-editor-panel--capture-dialog). A scanner seeing one slot per action cannot
+  [Capture Flow](#capture-dialog--settled-2026-09-13). A scanner seeing one slot per action cannot
   produce that list.
 - The remedy for [Missing's second shape](#missing-has-two-shapes--added-2026-09-12) is *add a keyboard
   binding in the free Secondary slot*. **The scanner cannot see the slot that remedy writes to**, so it
@@ -619,30 +795,85 @@ already returns **both** slots, correctly. `parseBindings()` then collapses each
 | `parseBindings()` | **Collapses to one** — primary if present, else secondary. This is the defect. |
 | `toKeysets()` | one keyset per action, from that single binding |
 | `scanKeysets()` | keyed by action name, so **the type cannot represent two slots** even if given them |
+| `BindingProfilePanel.effectiveBindings()` | **a second copy** of primary-else-secondary, on the grid's own path. The fix removes it rather than patching both. |
 
-**What fixing it touches.** The map key becomes a typed slot reference — action plus `BindingSlotType`,
-which already exists — rather than a bare action string. That flows into `Conflict`, into
-`candidateConflict`, and lets [Game Mode](#game-mode) colour the offending *slot cell* rather than the
-whole row. One new rule is needed: **Primary and Secondary of the same control on one chord is
-redundancy, not a conflict** — pressing it fires one action — so same-action pairs are skipped.
+**The question that sorts every caller.** The one-slot view answers *"what key does Elite-Intel
+press?"* — and for that it is correct. The both-slots view answers *"what is bound in the file?"* — which is
+what an editor needs. **Audited against the code 2026-09-12, including Krondor's latest merge:**
 
-**What it does not touch, which is the useful part:**
+##### Needs both slots
+
+| Call site | Feeds | What goes wrong today |
+|---|---|---|
+| `BindingConflictScanner.scan` — Game Mode grid, spoken warning, `binding_conflicts` | Conflicts | a clash in the discarded slot is invisible |
+| `candidateConflict` — `AssignKeyboardBindingDialog` and `KeyboardAvailabilityView` | capture dialog, keyboard map | a key taken in another control's discarded slot shows green |
+| `recommendVehicleTwins` — `BindingProfilePanel` | ship/SRV twin nudge | twins called mismatched when their other slots agree |
+| `ReservedKeyChords.scan` | [Reserved](#four-kinds-one-question) | a chord Windows or the game menu swallows goes unreported if it sits in the discarded slot |
+| `ReservedKeyChords.gameMenuKeys` | Reserved, keyboard map | with Game Menu bound in both slots, only one of its keys is treated as reserved |
+| `UiNavigationTextTrap.scan` | [Invalid](#four-kinds-one-question) | a UI navigation key that types into the search box goes unreported if it sits in the discarded slot |
+
+##### Correct with one slot — must not change
+
+| Call site | Why one slot is right |
+|---|---|
+| `InputSequenceExecutor.resolveBinding` | it presses the key, and needs exactly one |
+| `UINavigator.isBound` | *"is there something Elite-Intel can press?"* |
+| `BindingsMonitor.checkForMissingBindings` | Missing asks whether Elite-Intel has *a* key, and falling back to Secondary is exactly what makes that answer right |
+| `ToolGenerateBindings` | a developer tool that reads action names only |
+
+**These must not be "fixed" along with the rest.** They look like the same defect and are not — each asks the
+executor's question, and gets the executor's answer.
+
+##### Two shapes of fix, chosen by who else depends on the caller
+
+**Widen the scanner family** (the first three rows). The map key becomes a typed slot reference — action
+plus `BindingSlotType`, which already exists — rather than a bare action string. That flows into
+`Conflict`, `candidateConflict` and `recommendVehicleTwins`, and lets [Game Mode](#game-mode) colour the
+offending *slot cell* rather than the whole row. One new rule is needed: **Primary and Secondary of the same
+control on one chord is redundancy, not a conflict** — pressing it fires one action — so same-action pairs
+are skipped. `BindingProfilePanel.effectiveBindings()` is deleted, not updated.
+
+**Add alongside, for the two anomaly detectors** (the last three rows). `ReservedKeyChords` and
+`UiNavigationTextTrap` also drive Elite-Intel's own spoken warnings, and **for those the one-slot view is
+correct**: the text-trap warning exists because *Elite-Intel's* interface walk would type into the search
+box, and Elite-Intel presses the surviving slot. Only BindForge's Anomalies tab, where the commander can
+press either slot, needs both. So each gains a both-slots entry point for BindForge, and the existing
+methods keep serving the voice path unchanged.
+
+**This is not a second way of doing the same thing**, which `CODING_STANDARD.md` would rule out. The two
+methods answer different questions — *"will the key I press be swallowed?"* and *"is anything in this file
+swallowed?"* — and they live on the same class rather than a parallel one.
+
+##### What it does not touch
 
 - **No database migration.** `binding_conflicts` holds `conflict_key` and `description`, and
   `checkForConflictsAndPersist()` already funnels every conflict through
   `BindingConflictRules.makeKey(actionA, actionB)` into a `Set`. Several slot-level conflicts between one
-  pair of actions collapse to one row **on their own**, with no change to the write path.
-- **The spoken warning is unaffected.** It says two named controls share a key, which stays true at
-  action level; the slot is detail the voice line never carried.
-- **Krondor's scanner tests survive intact.** All 32 `scanKeysets` calls in
-  `BindingConflictScannerTest` go through one private `bindings(Object...)` helper, so changing the key
-  type is **a one-line change in that helper** and every test body keeps its exact text. That matters
-  more than it sounds: he is adding tests to that file weekly, and a change that rewrote 32 call sites
-  would conflict with every one of those additions — exactly the
-  [merge pain the package freeze exists to avoid](../../00-overview/v1.2-scope.md#the-code-stays-where-it-is--stated-by-krondor-2026-09-12).
+  pair of actions collapse to one row **on their own**.
+- **Krondor's tests keep their assertions.** Every scanner-family test — 32 `scanKeysets`, 6
+  `candidateConflict` and 4 `recommendVehicleTwinsKeysets` calls — builds its input through the one private
+  `bindings(Object...)` helper. Changing the key type means changing that helper plus the declared type of
+  five local `existing` variables; **no test body's expectations change.** `ReservedKeyChordsTest` (11
+  calls) and `UiNavigationTextTrapTest` (6 calls) are **not touched at all**, because those fixes add a
+  method rather than change one. That matters because he adds tests to these files weekly — see
+  [the package freeze](../../00-overview/v1.2-scope.md#the-code-stays-where-it-is--stated-by-krondor-2026-09-12).
 
-**So the blast radius is the scanner and its callers, not the schema, not the voice path, and not his
-test suite.** That is what makes FN-1 a reasonable first slice rather than a refactor to be feared.
+##### What it does touch that is easy to miss
+
+- **The spoken conflict warning can see more.** Widening `scan` means a clash in the *Secondary* slot of a
+  control Elite-Intel presses by *Primary* would newly be announced — even though it cannot affect the key
+  Elite-Intel sends. **That is Krondor's call, not BindForge's**: the persist path can keep the warning
+  exactly as it is by filtering to the slot `getBindings()` returns. *Corrected 2026-09-12; an earlier
+  version of this section said the spoken warning was unaffected.*
+- **`ai/hands/PACKAGE.md` documents "primary slot wins over secondary".** That stays true of the executor's
+  view and must gain a line describing the both-slots view **in the same change**, or it becomes the kind of
+  half-true documentation the coding standard treats as an incomplete change.
+
+**The blast radius, corrected 2026-09-12:** `BindingConflictScanner` and its three callers, one new method
+each on `ReservedKeyChords` and `UiNavigationTextTrap`, one duplicate removed from `BindingProfilePanel`,
+and one decision for Krondor about the spoken warning. An earlier version said *"the scanner and its
+callers"*; the audit found the two detectors. **Still no schema change, still no test assertions
+rewritten** — which is what keeps FN-1 a reasonable first slice rather than a refactor to be feared.
 
 **FP-3's suppression list has grown since it was first recorded**, now also matching `Wheel`, `MultiCrew`,
 `Store` and anything containing `Cam`. Each addition widens a rule already known to be too broad. The fix

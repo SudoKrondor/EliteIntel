@@ -121,6 +121,15 @@ make mirrored the sensible default rather than a choice.
 hardware, and BindForge lists and preserves them deliberately. Confirm the game ignores a stale entry rather
 than erroring or discarding the file.
 
+**13. Does the game honour hex device references once a `DeviceMappings.xml` entry exists for that
+device?** `.binds` names a device by its entry once one exists, and by VID+PID hex until then. What is untested
+is the moment in between: add an entry for a device an existing `.binds` references by hex, start the game, and
+see whether those bindings still work — and whether the game rewrites them to the name on its next save.
+**The only evidence points the other way:** when Alan added `RVWAP` and `LVWAP`, the hex references were
+replaced by hand. So onboarding writes the entry and the `.binds` rewrite together, in one Apply. If the game
+turns out to cope on its own, the entry could be written straight away like any other name.
+→ [Alias Designer — What onboarding writes, and when](../02-features/bindforge/alias-designer.md#what-onboarding-writes-and-when)
+
 ## Core Platform
 
 **8. Linux/Proton path resolution — Krondor's, not a BindForge testing item.** *Reassigned 2026-09-06.* Not a one-time check but ongoing, given how much Linux path resolution varies by distro and by how an individual user has their Steam library configured — which is exactly why it is owned by the person running it. BindForge builds and tests Windows storefront detection; Krondor makes the edits his platform needs. Listed here so the dependency stays visible, not as work waiting on Alan. The journal path is confirmed against independent precedent (EDMarketConnector); the bindings-folder path is inferred from the same structure but not independently confirmed.

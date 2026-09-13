@@ -217,7 +217,7 @@ since been resolved in the specs, several referenced a stack (Godot), a host (th
 sections that no longer exist, and the genuinely live remainder was small. **Those were extracted into the
 specs that own them** — [Action Groups](../02-features/bindforge/bind-editor.md#action-groups),
 [Anomalies](../02-features/bindforge/bind-editor.md#anomalies), the
-[capture dialog](../02-features/bindforge/bind-editor.md#binding-editor-panel--capture-dialog),
+[capture dialog](../02-features/bindforge/bind-editor.md#capture-dialog--settled-2026-09-13),
 [Control Types](../02-features/bindforge/bind-editor.md#control-types),
 [StarVizion's open questions](../02-features/starvizion/roadmap.md#open-questions) and
 [V1.2 Scope](v1.2-scope.md#host-prerequisites-elite-intel) — and the punch lists deleted. An open item is

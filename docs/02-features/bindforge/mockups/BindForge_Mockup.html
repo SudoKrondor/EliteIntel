@@ -179,23 +179,6 @@ body{margin:0;background:#151B22;padding:24px;font-family:'Segoe UI',system-ui,-
 .ge-deadzone-track{position:relative;flex:1;height:6px;background:#151B22;border:1px solid #24313A;border-radius:3px;cursor:pointer}
 .ge-deadzone-fill{position:absolute;top:0;left:0;bottom:0;background:#FF7100;border-radius:2px 0 0 2px;pointer-events:none}
 .ge-deadzone-pct{font-size:9px;color:#FF7100;width:24px;text-align:right;flex-shrink:0}
-.ge-sim-toggle{margin-top:14px;display:inline-flex;align-items:center;gap:8px;font-size:10.5px;color:#8FA0AD;letter-spacing:.3px}
-.ge-sim-toggle button{font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.3px;padding:4px 10px;border-radius:2px;cursor:pointer;background:transparent;color:#33D7E8;border:1px solid #33D7E8}
-.ge-sim-toggle button.active{background:#33D7E8;color:#090D12}
-#ge-grid.capturing .ge-group{display:none}
-.ge-pinned-row{display:flex;align-items:center;gap:14px;padding:12px 14px;background:#151B22;border-left:3px solid #B85A14;border-bottom:1px solid #24313A;font-size:13px}
-.ge-pinned-label{color:#8FA0AD;font-size:10px;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0}
-.ge-pinned-name{color:#FF822E;font-weight:700;flex:1}
-.ge-pinned-current{color:#6F7D89;font-size:11px}
-.ge-capture-wrap{display:flex;flex-direction:column;align-items:center;gap:20px;padding:28px 20px 24px}
-.ge-capture-box{max-width:360px;background:linear-gradient(180deg,#1A1206,#120C04);border:1px solid #B85A14;border-radius:4px;padding:22px 26px;text-align:center;box-shadow:0 0 24px rgba(255,113,0,.15)}
-.ge-capture-label{color:#FF822E;font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
-.ge-capture-target{color:#EFD3A6;font-size:17px;font-weight:700}
-.ge-capture-slot{color:#8FA0AD;font-size:12px;font-weight:400}
-.ge-capture-hint{color:#6F7D89;font-size:11px;margin-top:14px}
-.ge-conflict-label{color:#D94F4F;font-size:13px;font-weight:700;letter-spacing:.5px;margin-bottom:10px}
-.ge-conflict-text{color:#C2C2C2;font-size:12.5px;line-height:1.5;margin-bottom:16px}
-.ge-conflict-actions{display:flex;gap:10px;justify-content:center}
 .ge-kbd{display:flex;flex-direction:column;gap:4px;width:100%;max-width:640px}
 .ge-kbd-row{display:flex;gap:4px;justify-content:center}
 .ge-kbd-key{background:#101721;border:1px solid #24313A;border-radius:3px;color:#6F7D89;font-family:inherit;font-size:10.5px;font-weight:700;padding:7px 4px;min-width:32px;text-align:center;cursor:pointer}
@@ -206,7 +189,83 @@ body{margin:0;background:#151B22;padding:24px;font-family:'Segoe UI',system-ui,-
 .ge-kbd-key.current{border-color:#B85A14;box-shadow:0 0 0 1px #FF7100}
 .ge-kbd-key.wide{flex:1;max-width:360px}
 .ge-kbd-gap{width:14px;flex-shrink:0}
-.ge-kbd-hint{color:#6F7D89;font-size:10.5px;text-align:center}
+.cd-scrim{position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:2000;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px}
+.cd-scrim[hidden],.cd-scrim [hidden]{display:none!important}
+.cd-dialog{width:680px;max-width:100%;background:#090D12;border:1px solid #FF7100;box-shadow:0 10px 40px rgba(0,0,0,.7);font-size:13px}
+.cd-titlebar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #B85A14}
+.cd-title{flex:1;color:#EFD3A6;font-size:17px;font-weight:700;letter-spacing:.6px;text-transform:uppercase}
+.cd-kind{color:#6F7D89;font-size:10px;font-weight:700;letter-spacing:.8px;border:1px solid #2D3A44;border-radius:2px;padding:2px 6px}
+.cd-x{background:none;border:0;color:#FF7100;font-size:22px;line-height:1;cursor:pointer;font-family:inherit;padding:0 4px}
+.cd-body{padding:14px 22px 6px}
+.cd-section{color:#FF7100;font-size:11px;font-weight:700;letter-spacing:1px;padding-bottom:6px;border-bottom:1px solid #2D3A44;margin-bottom:10px}
+.cd-grid{display:grid;grid-template-columns:130px 1fr;gap:6px 14px;align-items:center}
+.cd-k{color:#C2C2C2;font-size:12px;letter-spacing:.4px}
+.cd-v{color:#C2C2C2;font-size:12.5px}
+.cd-xml{font-family:Consolas,'Courier New',monospace;color:#8FA0AD}
+.cd-field{display:block;text-align:center;background:#B85A14;color:#090D12;font-weight:700;letter-spacing:.5px;padding:7px 10px;border:1px solid #FF7100}
+.cd-field.set{background:#1A1206;color:#FF9330}
+.cd-clearrow{margin:8px 0 0 144px}
+.cd-hint,.cd-tabhint{border-left:3px solid #33D7E8;background:#0E1A22;color:#33D7E8;font-size:12px;padding:7px 12px}
+.cd-hint{margin:8px 0 0}
+.cd-tabhint{margin:6px 0 0}
+.cd-banner{margin:8px 0 0;border-left:3px solid #D94F4F;background:#1E0E0E;color:#E88A8A;font-size:12px;padding:7px 12px}
+.cd-tabs{display:flex;flex-wrap:wrap;gap:2px;margin:12px 0 0;border-bottom:1px solid #2D3A44}
+.cd-tab{background:#101721;border:1px solid #24313A;border-bottom:0;color:#8FA0AD;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.5px;padding:7px 14px;cursor:pointer}
+.cd-tab.active{background:#FF7100;border-color:#FF7100;color:#090D12}
+.cd-tabsub{font-weight:400;opacity:.75;margin-left:6px}
+.cd-subtabs{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0 0}
+.cd-subtab{background:transparent;border:1px solid #24313A;border-radius:2px;color:#8FA0AD;font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.5px;padding:5px 10px;cursor:pointer}
+.cd-subtab.active{border-color:#FF7100;color:#FF7100}
+.cd-tab:disabled,.cd-subtab:disabled{opacity:.32;cursor:not-allowed}
+.cd-tabbody{padding:10px 4px 4px 0;height:230px;overflow-y:auto}
+.cd-devgroup{margin-bottom:10px}
+.cd-devgroup h6{margin:0 0 5px;color:#6F7D89;font-size:10px;letter-spacing:.8px;text-transform:uppercase;font-weight:700}
+.cd-inputs{display:flex;flex-wrap:wrap;gap:4px}
+.cd-in{background:#101721;border:1px solid #2A5638;color:#4FC56B;border-radius:3px;font-family:inherit;font-size:10.5px;padding:5px 7px;cursor:pointer}
+.cd-in b{font-weight:700;margin-right:5px}
+.cd-in:hover{background:#4FC56B;color:#090D12}
+.cd-in.used{border-color:#5A2A2A;color:#D94F4F}
+.cd-in.used:hover{background:#D94F4F;color:#090D12}
+.cd-in.current,.cd-dialog .ge-kbd-key.current{box-shadow:0 0 0 1px #FF7100;border-color:#B85A14}
+.ax-toggle{display:inline-flex;border:1px solid #B85A14;border-radius:3px;overflow:hidden;justify-self:start}
+.ax-toggle button{background:transparent;border:0;color:#FF7100;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.5px;padding:5px 12px;cursor:pointer}
+.ax-toggle button.on{background:#FF7100;color:#090D12}
+.ax-dz{display:flex;align-items:center;gap:10px}
+.ax-dz input{flex:1;accent-color:#FF7100}
+.ax-dz span{color:#FF9330;font-size:12px;min-width:36px;text-align:right}
+.cd-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 22px;border-top:1px solid #B85A14;margin-top:8px}
+.cd-footnote{flex:1;color:#6F7D89;font-size:11px;text-align:center}
+.cd-footer .ei-btn:disabled{opacity:.4;cursor:not-allowed}
+.ob-demo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 12px;padding:8px 12px;border:1px dashed #2D3A44;border-radius:3px;color:#6F7D89;font-size:11px}
+.ob-demo b{color:#8FA0AD;letter-spacing:.8px}
+.ob-step{color:#6F7D89;font-size:10px;font-weight:700;letter-spacing:.8px;border:1px solid #2D3A44;border-radius:2px;padding:2px 6px}
+.ob-intro{color:#C2C2C2;font-size:12.5px;line-height:1.55;margin-bottom:12px}
+.ob-dots{display:flex;gap:4px;margin:0 0 12px}
+.ob-dot{flex:1;height:3px;background:#24313A}
+.ob-dot.done{background:#B85A14}
+.ob-dot.on{background:#FF7100}
+.ob-card{border:1px solid #24313A;background:#0C1117;padding:12px 14px}
+.ob-reported{color:#EFD3A6;font-size:14px;font-weight:700}
+.ob-ids{color:#6F7D89;font-size:11px;margin-top:3px}
+.ob-namerow{display:grid;grid-template-columns:70px 1fr;gap:6px 12px;align-items:center;margin-top:12px}
+.ob-name{background:#101721;border:1px solid #B85A14;color:#FF9330;font-family:inherit;font-size:14px;font-weight:700;padding:7px 10px;width:100%;box-sizing:border-box}
+.ob-name.bad{border-color:#D94F4F;color:#E88A8A}
+.ob-valid{grid-column:2;font-size:11px;color:#4FC56B}
+.ob-valid.bad{color:#E88A8A}
+.ob-writes{margin-top:12px;display:grid;grid-template-columns:auto 1fr auto;gap:6px 12px;align-items:center;font-size:12px}
+.ob-file{font-family:Consolas,'Courier New',monospace;color:#8FA0AD}
+.ob-what{color:#C2C2C2}
+.ob-when{font-size:9.5px;font-weight:700;letter-spacing:.7px;padding:2px 7px;border-radius:2px;border:1px solid;white-space:nowrap}
+.ob-when.now{color:#4FC56B;border-color:#2A5638}
+.ob-when.apply{color:#D39207;border-color:#5A4508}
+.ob-hex{margin-top:10px;border-left:3px solid #D39207;background:#1A1406;color:#E6C27A;font-size:12px;padding:8px 12px;line-height:1.5}
+.ob-labels{margin-top:10px;font-size:11px;color:#6F7D89;line-height:1.9}
+.ob-labels .cd-in,.ob-labels .cd-in:hover{cursor:default;margin-right:3px;background:#101721;color:#4FC56B}
+.ob-more{color:#6F7D89;margin-right:6px}
+.ob-sum h6{margin:14px 0 6px;color:#6F7D89;font-size:10px;letter-spacing:.8px;text-transform:uppercase;font-weight:700}
+.ob-sumrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid #131A22;font-size:12.5px;color:#EFD3A6}
+.ei-rowtab-alias.builtin{color:#33D7E8}
+.ob-sumrow small{display:block;color:#6F7D89;font-size:11px;margin-top:1px}
 .im-layout{display:grid;grid-template-columns:200px 1fr;border:1px solid #24313A}
 #im-list .ge-bindval{width:110px}
 #im-list .ge-axisrow .ge-bindval{min-width:120px}
@@ -323,9 +382,21 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
 
     <div id="devicelist-my">
     <div class="ei-section">
+      <div class="ob-demo"><b>DEMO</b>
+        <button type="button" class="ei-btn" onclick="obFirstOpen()">FIRST OPEN OF BINDFORGE</button>
+        <button type="button" class="ei-btn" onclick="obHotPlug()">PLUG IN A NEW CONTROLLER</button>
+        <span>Onboarding names every connected controller that has no entry and is not one of Frontier&#39;s built-ins. See Alias Designer &sect; Onboarding.</span>
+      </div>
+      <div id="ob-scrim" class="cd-scrim" hidden>
+        <div class="cd-dialog" role="dialog" aria-modal="true" aria-labelledby="ob-title">
+          <div class="cd-titlebar"><span id="ob-title" class="cd-title"></span><span class="ob-step" id="ob-step"></span></div>
+          <div class="cd-body" id="ob-body"></div>
+          <div class="cd-footer" id="ob-footer"></div>
+        </div>
+      </div>
       <div class="ei-devgrid" id="mydevice-grid"></div>
       <div class="ei-note" style="margin-top:10px">
-        Every device Windows reports is listed, attached or not &mdash; an entry can outlive the hardware. <b>ADDED</b> means the device has an entry in at least one installation's <code>DeviceMappings.xml</code>. Open a device to edit it: each detected installation gets its own tab, so Steam and Epic can hold different names if you want them to. <b style="color:#4FC56B">MIRROR</b> on a tab means that installation shares one definition with the other mirrored ones &mdash; edit any of them and the rest follow. Turn it off to edit that installation on its own. <b>CLEAR</b> removes the entry from the open installation only; the device stays listed because the hardware is still attached.</div>
+        Every device Windows reports is listed, attached or not &mdash; an entry can outlive the hardware. <b>ADDED</b> means the device has an entry in at least one installation's <code>DeviceMappings.xml</code>. Open a device to edit it: each detected installation gets its own tab, so Steam and Epic can hold different names if you want them to. <b style="color:#4FC56B">MIRROR</b> on a tab means that installation shares one definition with the other mirrored ones &mdash; edit any of them and the rest follow. Turn it off to edit that installation on its own. <b>CLEAR</b> removes the entry from the open installation and every installation mirrored with it; the device stays listed because the hardware is still attached. <b style="color:#33D7E8">BUILT-IN</b> marks Frontier&#39;s own entry: its name and VID/PID are locked, its button labels are not, and <b>RESET LABELS</b> takes the place of CLEAR.</div>
       <div class="ei-editactions" style="margin-top:16px">
         <span class="ei-note" style="margin:0 auto 0 0;max-width:640px">SAVE keeps changes in BindForge's draft. Nothing reaches a game installation until you apply.</span>
         <button class="ei-btn primary" id="alias-apply-installs" onclick="eiApplyToInstalls()">APPLY TO GAME INSTALLS</button>
@@ -339,7 +410,7 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
       <div style="display:flex;gap:14px;align-items:flex-end;margin-bottom:16px">
         <div style="flex:2">
           <span class="ei-label">Device name (alias)</span>
-          <div style="display:flex;gap:8px"><input class="ei-field" id="alias-name" value="RHVCAP Direction" style="margin-bottom:0" oninput="eiAliasEdited()"><button class="ei-btn" id="alias-confirm-btn" style="padding:4px 12px;font-size:11px;white-space:nowrap" onclick="eiConfirmAlias()">CONFIRM</button></div>
+          <div style="display:flex;gap:8px"><input class="ei-field" id="alias-name" value="RHVCAPDirection" style="margin-bottom:0" oninput="eiAliasEdited()"><button class="ei-btn" id="alias-confirm-btn" style="padding:4px 12px;font-size:11px;white-space:nowrap" onclick="eiConfirmAlias()">CONFIRM</button></div>
         </div>
         <div style="flex:1">
           <span class="ei-label">VID (read only)</span>
@@ -409,7 +480,8 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
       <div class="ei-editbanner" id="alias-editbanner">EDIT MODE &mdash; SAVE YOUR CHANGES (saves to the draft only &mdash; Apply to Game Installs, below, is what reaches a real install)</div>
       <div class="ei-editactions">
         <button class="ei-mirbtn" id="alias-mirror-btn" onclick="eiToggleActiveMirror()">MIRROR</button>
-        <button class="ei-btn" style="border-color:#D94F4F;color:#D94F4F" onclick="eiClearDevice()">CLEAR</button>
+        <button class="ei-btn" id="alias-clear-btn" style="border-color:#D94F4F;color:#D94F4F" onclick="eiClearDevice()">CLEAR</button>
+        <button class="ei-btn" id="alias-reset-btn" style="display:none" onclick="eiResetLabels()" title="Removes the .buttonMap you or BindForge made. Frontier&#39;s entry is never touched.">RESET LABELS</button>
         <button class="ei-btn" onclick="eiDiscardDevice()">DISCARD</button>
         <button class="ei-btn primary" id="alias-save-btn" onclick="eiSaveDevice()">SAVE</button>
       </div>
@@ -475,7 +547,7 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
       <div class="ei-devcell first">VPCThrottle</div><div class="ei-devcell"><span class="ei-bi-id">3344&nbsp;&nbsp;0197</span></div><div class="ei-devcell"><span class="ei-bi-alt"></span></div>
         </div>
       </div>
-      <div class="ei-note" style="margin-top:12px">Frontier ships these with the game and BindForge never writes them &mdash; the whole list is read-only. An entry can cover several hardware IDs: <b>GamePad</b> alone carries 80, which is why one row here may match more than one controller you own. Seeded from a real stock <span class="ei-bi-id">DeviceMappings.xml</span> (see <span class="ei-bi-id">reference-data/</span>), so devices you added yourself are deliberately absent &mdash; those live under My Devices.</div>
+      <div class="ei-note" style="margin-top:12px">Frontier ships these with the game, and BindForge never changes one &mdash; the whole list is read-only. An attached built-in also shows in My Devices as <b>BUILT-IN</b>, where only its button labels can be edited. An entry can cover several hardware IDs: <b>GamePad</b> alone carries 80, which is why one row here may match more than one controller you own. Seeded from a real stock <span class="ei-bi-id">DeviceMappings.xml</span> (see <span class="ei-bi-id">reference-data/</span>), so devices you added yourself are deliberately absent &mdash; those live under My Devices.</div>
     </div>
     </div>
   </div>
@@ -520,7 +592,7 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
         <div class="ge-contextbtn" id="ctx-onfoot" onclick="geShowContext('onfoot')">ON FOOT CONTROLS</div>
       </div>
 
-      <div class="ei-note" style="margin-bottom:10px">The <b>ASSISTANT</b> column on the right answers one question: <i>can EliteIntel drive this control?</i> Blank is the common case. <span class="an-sev missing">NOT BOUND</span> and <span class="an-sev missing">CAN'T PRESS</span> are the two shapes of Missing &mdash; nothing assigned, or assigned only to a device EliteIntel cannot send input to. <span class="an-sev overlap">ON PURPOSE</span> is the commander saying stop reporting this; it silences both, and the control stays bound to whatever it was. Hover a mark for the reason. Hover a row to reveal Capture buttons per slot (colored by state: light blue = empty, green = bound, red = conflicting). Clicking one pins the row and opens an inline capture prompt in place of the list &mdash; no popup window. Press a key for real; Esc cancels. Try capturing over <code>C</code>, <code>A</code>, or <code>D</code> to see the conflict-confirm step.</div>
+      <div class="ei-note" style="margin-bottom:10px">The <b>ASSISTANT</b> column on the right answers one question: <i>can EliteIntel drive this control?</i> Blank is the common case. <span class="an-sev missing">NOT BOUND</span> and <span class="an-sev missing">CAN'T PRESS</span> are the two shapes of Missing &mdash; nothing assigned, or assigned only to a device EliteIntel cannot send input to. <span class="an-sev overlap">ON PURPOSE</span> is the commander saying stop reporting this; it silences both, and the control stays bound to whatever it was. Hover a mark for the reason. Hover a row to reveal Capture buttons per slot (light blue = empty, green = bound, red = conflicting). Capture is the only way in &mdash; clicking a row never opens anything, so a stray click cannot start a rebind. It opens <b>one capture dialog</b>, Krondor&#39;s existing assign dialog grown: titled with the in-game name, with tabs for <b>KEYBOARD</b>, <b>MOUSE</b> and every connected controller. Tabs that cannot fill the slot are greyed out &mdash; an axis row enables only a controller&#39;s <b>AXES</b>; a button row enables everything else. Controller tabs split into <b>BUTTONS &middot; HATS &middot; AXIS DIRECTIONS &middot; AXES</b>, labelled from each device&#39;s <code>.buttonMap</code>. Axis rows add Inverted and Deadzone (still inline on the row). Hold Ctrl/Shift/Alt while clicking for a combo across devices. <b>SAVE</b> writes to the draft; BACK or Esc cancels. <code>C</code>, <code>A</code> and <code>D</code> show the conflict warning.</div>
       <div class="ge-layout">
         <div class="ge-gridcol" id="ge-grid">
           <div class="ge-group" data-context="general">
@@ -588,12 +660,33 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
             </div>
           </div>
 
-          <div id="ge-capture-overlay" style="display:none">
-            <div class="ge-pinned-row" id="ge-pinned-row"></div>
-            <div class="ge-capture-wrap">
-              <div class="ge-capture-box" id="ge-capture-box"></div>
-              <div class="ge-kbd" id="ge-capture-keyboard"></div>
-              <div class="ge-kbd-hint">Click a key, or press it for real. Hold Ctrl/Shift/Alt to preview availability for that combo &mdash; not yet simulated in this mockup.</div>
+          <div id="cd-scrim" class="cd-scrim" hidden>
+            <div class="cd-dialog" role="dialog" aria-modal="true" aria-labelledby="cd-title">
+              <div class="cd-titlebar"><span id="cd-title" class="cd-title"></span><span class="cd-kind" id="cd-kind"></span><button type="button" class="cd-x" onclick="cdClose()" aria-label="Close" title="Close (Esc)">&times;</button></div>
+              <div class="cd-body">
+                <div class="cd-section">ASSIGNMENT</div>
+                <div class="cd-grid">
+                  <span class="cd-k">CONTROL</span><span class="cd-v" id="cd-control"></span>
+                  <span class="cd-k">XML BINDING</span><span class="cd-v cd-xml" id="cd-xml"></span>
+                  <span class="cd-k">SLOT</span><span class="cd-v" id="cd-slot"></span>
+                  <span class="cd-k">CURRENT VALUE</span><span class="cd-v" id="cd-current"></span>
+                  <span class="cd-k">NEW INPUT</span><span class="cd-field" id="cd-field">NOT DEFINED</span>
+                  <span class="cd-k cd-axisonly">INVERTED</span><span class="ax-toggle cd-axisonly"><button type="button" id="cd-normal" onclick="cdSetInverted(false)">NORMAL</button><button type="button" id="cd-inverted" onclick="cdSetInverted(true)">INVERTED</button></span>
+                  <span class="cd-k cd-axisonly">DEADZONE</span><span class="ax-dz cd-axisonly"><input type="range" min="0" max="100" id="cd-dz" aria-label="Deadzone" oninput="cdSetDeadzone(this.value)"><span id="cd-dzpct">0%</span></span>
+                </div>
+                <div class="cd-clearrow"><button type="button" class="ei-btn" onclick="cdClear()">CLEAR BINDING</button></div>
+                <div class="cd-hint" id="cd-hint"></div>
+                <div class="cd-banner" id="cd-banner" hidden></div>
+                <div class="cd-tabs" id="cd-tabs" role="tablist" aria-label="Input source"></div>
+                <div class="cd-subtabs" id="cd-subtabs" role="tablist" aria-label="Input kind" hidden></div>
+                <div class="cd-tabbody" id="cd-tabbody"></div>
+                <div class="cd-tabhint" id="cd-tabhint"></div>
+              </div>
+              <div class="cd-footer">
+                <button type="button" class="ei-btn" onclick="cdClose()">BACK</button>
+                <span class="cd-footnote">SAVE writes to the draft &mdash; APPLY is what reaches the game.</span>
+                <button type="button" class="ei-btn primary" id="cd-save" onclick="cdSave()" disabled>SAVE</button>
+              </div>
             </div>
           </div>
         </div>
@@ -1013,9 +1106,9 @@ var eiDevices = {
     winName:'VIRPIL Controls 20220720', vid:'3344', pid:'43F4', connected:true,
     axisCount:6, buttonCount:32,
     installs:{
-      steam:{added:true, mirror:true,  alias:'RHVCAP Direction', aliasConfirmed:true, buttonMap:true,
+      steam:{added:true, mirror:true,  alias:'RHVCAPDirection', aliasConfirmed:true, buttonMap:true,
              axes:['Roll','Pitch','Twist','','',''], buttons:{1:'RH_1stStageTrig', 2:'Thumb Button'}},
-      epic: {added:true, mirror:true,  alias:'RHVCAP Direction', aliasConfirmed:true, buttonMap:true,
+      epic: {added:true, mirror:true,  alias:'RHVCAPDirection', aliasConfirmed:true, buttonMap:true,
              axes:['Roll','Pitch','Twist','','',''], buttons:{1:'RH_1stStageTrig', 2:'Thumb Button'}}
     }
   },
@@ -1023,9 +1116,9 @@ var eiDevices = {
     winName:'Thrustmaster T-Rudder', vid:'044F', pid:'B679', connected:true,
     axisCount:3, buttonCount:0,
     installs:{
-      steam:{added:false, mirror:false, alias:'T-Rudder', aliasConfirmed:false, buttonMap:false,
+      steam:{added:true, mirror:true, builtin:true, alias:'T-Rudder', aliasConfirmed:true, buttonMap:false,
              axes:['','',''], buttons:{}},
-      epic: {added:false, mirror:false, alias:'T-Rudder', aliasConfirmed:false, buttonMap:false,
+      epic: {added:true, mirror:true, builtin:true, alias:'T-Rudder', aliasConfirmed:true, buttonMap:false,
              axes:['','',''], buttons:{}}
     }
   },
@@ -1037,20 +1130,20 @@ var eiDevices = {
              axes:['','','Throttle','','',''], buttons:{}},
       // WHY: deliberately divergent from Steam - this is the case the per-installation tabs exist
       // for, and the mockup has to show it actually differing rather than assert that it can.
-      epic: {added:true,  mirror:false, alias:'Throttle Quadrant', aliasConfirmed:true, buttonMap:true,
+      epic: {added:true,  mirror:false, alias:'ThrottleQuadrant', aliasConfirmed:true, buttonMap:true,
              axes:['Thrust L/R','Thrust U/D','Main Throttle','','',''],
              buttons:{1:'Flaps Toggle', 2:'Boost', 3:'Cargo Scoop'}}
     }
   },
-  // WHY: an entry can outlive the hardware - this one sits in Epic's DeviceMappings.xml from a
-  // controller that is no longer plugged in. It still has to be listed and clearable.
+  // WHY: a built-in whose hardware is no longer plugged in - Frontier's entry is in every installation,
+  // and Epic still carries the commander's labels for it. It still has to be listed, and its labels resettable.
   t16000: {
     winName:'T.16000M', vid:'044F', pid:'B10A', connected:false,
     axisCount:4, buttonCount:16,
     installs:{
-      steam:{added:false, mirror:false, alias:'T16000M', aliasConfirmed:false, buttonMap:false,
+      steam:{added:true, mirror:false, builtin:true, alias:'T16000M', aliasConfirmed:true, buttonMap:false,
              axes:['','','',''], buttons:{}},
-      epic: {added:true,  mirror:false, alias:'T16000M', aliasConfirmed:true,  buttonMap:true,
+      epic: {added:true,  mirror:false, builtin:true, alias:'T16000M', aliasConfirmed:true,  buttonMap:true,
              axes:['X','Y','Twist','Throttle'], buttons:{1:'Trigger'}}
     }
   }
@@ -1083,6 +1176,260 @@ function eiListAlias(d){
 var eiSelectedDevice = null;
 var eiPendingConfirm = false;   // confirmed this session but not yet saved
 
+/* Onboarding - every controller gets a name and a .buttonMap (settled 2026-09-13).
+   Asks for a name only; SKIP takes the default; labels are generated. A controller .binds references by hex
+   waits for Apply, with its entry, .buttonMap and .binds rewrite together. Demo only: the three controllers in
+   OB_NEW stand in for hardware Windows reports; taken names come from My Devices and from Frontier's real
+   stock DeviceMappings.xml (reference-data/). */
+var OB_BUILTIN = [{"name":"GamePad","pairs":[["045E","028E"],["045E","028F"],["045E","02FF"],["24C6","5D04"],["045E","02A1"],["0738","4716"],["0E6F","0213"],["045E","0291"],["045E","0719"],["044F","0F07"],["044F","B326"],["046D","C21D"],["046D","C21E"],["046D","C21F"],["046D","C242"],["046D","CA84"],["0738","4540"],["0738","4556"],["0738","4718"],["0738","4726"],["0738","4728"],["0738","4738"],["0738","4740"],["0738","6040"],["0738","B726"],["0738","BEEF"],["0738","CB02"],["0738","CB03"],["0738","F738"],["0C12","8802"],["0C12","8809"],["0C12","880A"],["0E6F","0005"],["0E6F","0006"],["0E6F","0105"],["0E6F","0113"],["0E6F","0201"],["0E6F","021F"],["0E6F","0301"],["0E6F","0401"],["0E8F","0201"],["0E8F","3008"],["0F0D","000A"],["0F0D","000D"],["0F0D","0016"],["0F30","0202"],["0F30","8888"],["102C","FF0C"],["12AB","0004"],["12AB","0301"],["12AB","8809"],["1430","4748"],["1430","8888"],["146B","0601"],["1532","0037"],["15E4","3F00"],["15E4","3F0A"],["15E4","3F10"],["162E","BEEF"],["1689","FD00"],["1689","FD01"],["1BAD","0002"],["1BAD","0003"],["1BAD","F016"],["1BAD","F023"],["1BAD","F028"],["1BAD","F038"],["1BAD","F900"],["1BAD","F901"],["1BAD","F903"],["24C6","5000"],["24C6","5300"],["24C6","5303"],["24C6","5500"],["24C6","5501"],["24C6","5506"],["24C6","5B02"],["045E","02EA"],["045E","0B13"],["045E","02D1"]]},{"name":"BlackWidow","pairs":[["07B5","0317"]]},{"name":"SaitekAV8R03","pairs":[["06A3","0C28"],["06A3","0461"]]},{"name":"SaitekX55Joystick","pairs":[["0738","2215"]]},{"name":"SaitekX56Joystick","pairs":[["0738","2221"]]},{"name":"SaitekX55Throttle","pairs":[["0738","A215"]]},{"name":"SaitekX56Throttle","pairs":[["0738","A221"]]},{"name":"SaitekX52Pro","pairs":[["06A3","0762"]]},{"name":"SaitekX52","pairs":[["06A3","075C"],["06A3","0255"]]},{"name":"LogitechG940Pedals","pairs":[["046D","C2AA"]]},{"name":"LogitechG940Joystick","pairs":[["046D","C2A8"]]},{"name":"LogitechG940Throttle","pairs":[["046D","C2A9"]]},{"name":"ThrustMasterWarthogJoystick","pairs":[["044F","0402"]]},{"name":"ThrustMasterWarthogThrottle","pairs":[["044F","0404"]]},{"name":"ThrustMasterWarthogCombined","pairs":[["044F","FFFF"]]},{"name":"SaitekFLY5","pairs":[["0738","1302"]]},{"name":"ThrustMasterTFlightHOTASX","pairs":[["044F","B108"]]},{"name":"ThrustMasterHOTAS4","pairs":[["044F","B67C"],["044F","B67B"]]},{"name":"TFlightHotasOne","pairs":[["044F","B68D"]]},{"name":"T16000M","pairs":[["044F","B10A"]]},{"name":"T16000MTHROTTLE","pairs":[["044F","B687"]]},{"name":"T-Rudder","pairs":[["044F","B679"]]},{"name":"TMwTARGET","pairs":[["044F","FFFF"]]},{"name":"LogitechExtreme3DPro","pairs":[["046D","C215"]]},{"name":"GioteckPS3WiredController","pairs":[["25F0","C121"]]},{"name":"SaitekX45","pairs":[["06A3","053C"]]},{"name":"EDTracker","pairs":[["2341","8037"]]},{"name":"Logitech710WirelessGamepad","pairs":[["046D","C219"]]},{"name":"LogitechWingManStrikeForce3D","pairs":[["046D","C285"]]},{"name":"SaitekP2600RumbleForce","pairs":[["06A3","5F0D"]]},{"name":"SaitekP2500RumbleForce","pairs":[["06A3","FF0C"]]},{"name":"SaitekCyborgEvoWireless","pairs":[["06A3","353E"]]},{"name":"SaitekProFlightCombatRudderPedals","pairs":[["06A3","0764"]]},{"name":"SaitekProFlightRudderPedals","pairs":[["06A3","0763"]]},{"name":"vJoy","pairs":[["1234","BEAD"]]},{"name":"CHProThrottle1","pairs":[["068E","00F1"]]},{"name":"CHProThrottle2","pairs":[["068E","C0F1"]]},{"name":"CHFighterStick","pairs":[["068E","00F3"]]},{"name":"CHProPedals","pairs":[["068E","C0F2"]]},{"name":"CHCombatStick","pairs":[["068E","C0F4"],["068E","00F4"]]},{"name":"TrustPredator","pairs":[["0E8F","0003"]]},{"name":"Playstation3Controller","pairs":[["054C","0268"]]},{"name":"SaitekST290Pro","pairs":[["06A3","0460"]]},{"name":"XterminatorDualControl","pairs":[["047D","3001"]]},{"name":"SideWinderForceFeedback2","pairs":[["045E","001B"]]},{"name":"ArduinoLeonardo","pairs":[["2341","8036"]]},{"name":"SlawFlightControlRudder","pairs":[["04D8","0011"]]},{"name":"OculusTouch","pairs":[["2833","0211"]]},{"name":"DualShock4","pairs":[["054C","0BA0"],["054C","05C4"],["054C","09CC"]]},{"name":"VPCPanel","pairs":[["3344","0259"]]},{"name":"VPCThrottle","pairs":[["3344","0197"]]}];
+var OB_AXIS_NAMES = ['X', 'Y', 'Z', 'RX', 'RY', 'RZ', 'U', 'V'];
+var OB_NEW = {
+  lvwap:      {winName:'VIRPIL Controls 20220720', vid:'3344', pid:'03F5', axisCount:6, buttonCount:32, hatCount:1, hexBindings:131, firstOpen:true},
+  rudder2:    {winName:'T-Rudder', vid:'1DD2', pid:'1001', axisCount:3, buttonCount:2, hatCount:0, hexBindings:0, firstOpen:true},
+  spacemouse: {winName:'3Dconnexion SpaceMouse Pro', vid:'256F', pid:'C62E', axisCount:6, buttonCount:15, hatCount:0, hexBindings:0, firstOpen:false}
+};
+var obState = null;
+
+function obFirstOpen(){
+  obStart(Object.keys(OB_NEW).filter(function(id){ return OB_NEW[id].firstOpen && !eiDevices[id]; }), 'first');
+}
+
+function obHotPlug(){
+  obStart(eiDevices.spacemouse ? [] : ['spacemouse'], 'hotplug');
+}
+
+function obStart(ids, mode){
+  obState = {mode:mode, ids:ids, step:0, names:{}};
+  ids.forEach(function(id){ obState.names[id] = obDefaultName(OB_NEW[id].winName, obTaken(id)); });
+  var scrim = document.getElementById('ob-scrim');
+  if (scrim.parentElement !== document.body) document.body.appendChild(scrim);
+  scrim.hidden = false;
+  obRender();
+}
+
+/* ---- the default-name rule and alias validation ---- */
+function obKey(name){
+  return String(name).toLowerCase().replace(/[-_]/g, '');
+}
+
+function obBuiltinMatch(d){
+  return OB_BUILTIN.filter(function(b){
+    return b.pairs.some(function(p){ return p[0] === d.vid && p[1] === d.pid; });
+  })[0] || null;
+}
+
+function obTaken(exceptId){
+  var taken = {};
+  OB_BUILTIN.forEach(function(b){ taken[obKey(b.name)] = 'Frontier\u2019s ' + b.name; });
+  eiDeviceOrder.forEach(function(id){
+    EI_INSTALLS.forEach(function(i){
+      var r = eiDevices[id].installs[i.id];
+      if ((r.added || r.draft) && !r.builtin) taken[obKey(r.alias)] = 'your ' + r.alias;
+    });
+  });
+  Object.keys(obState.names).forEach(function(id){
+    var n = obState.names[id];
+    if (id !== exceptId && n) taken[obKey(n)] = n + ', named a moment ago';
+  });
+  return taken;
+}
+
+function obDefaultName(reported, taken){
+  var base = reported.replace(/[^A-Za-z0-9]/g, '');
+  if (!base) base = 'Controller';
+  if (!/^[A-Za-z]/.test(base)) base = 'Device' + base;
+  var name = base;
+  for (var n = 2; taken[obKey(name)]; n++) name = base + n;
+  return name;
+}
+
+function obValidate(name, taken){
+  if (name.length < 3 || name.length > 50) return '3 to 50 characters';
+  if (!/^[A-Za-z]/.test(name)) return 'Must start with a letter';
+  if (/[^A-Za-z0-9_-]/.test(name)) return 'Letters, digits, - and _ only \u2014 no spaces or periods';
+  if (taken[obKey(name)]) return 'Already used by ' + taken[obKey(name)];
+  return null;
+}
+
+function obLabels(d){
+  var labels = [];
+  for (var b = 1; b <= d.buttonCount; b++) labels.push('Button ' + b);
+  for (var h = 1; h <= d.hatCount; h++) ['Up', 'Down', 'Left', 'Right'].forEach(function(dir){ labels.push('Hat ' + h + ' ' + dir); });
+  for (var a = 0; a < d.axisCount; a++) labels.push(OB_AXIS_NAMES[a] + ' Axis');
+  return labels;
+}
+
+/* ---- rendering ---- */
+function obRender(){
+  var s = obState, total = s.ids.length;
+  document.getElementById('ob-title').textContent = s.mode === 'hotplug' ? 'New controller detected' : 'Name your controllers';
+  if (!total) return obRenderNothingToAsk();
+  if (s.step >= total) return obRenderSummary();
+  obRenderCard();
+}
+
+function obDotsHtml(){
+  var s = obState;
+  if (s.ids.length < 2) return '';
+  return '<div class="ob-dots">' + s.ids.map(function(_, i){
+    return '<span class="ob-dot' + (i < s.step ? ' done' : (i === s.step ? ' on' : '')) + '"></span>';
+  }).join('') + '<span class="ob-dot' + (s.step >= s.ids.length ? ' on' : '') + '"></span></div>';
+}
+
+function obRenderCard(){
+  var s = obState, id = s.ids[s.step], d = OB_NEW[id], total = s.ids.length;
+  document.getElementById('ob-step').textContent = 'CONTROLLER ' + (s.step + 1) + ' OF ' + total;
+  var intro = s.mode === 'hotplug'
+    ? 'A controller with no name was just plugged in. Give it one now, or <b>Skip</b> to use the name shown.'
+    : (s.step === 0 ? '<b>' + total + ' controller' + (total > 1 ? 's need' : ' needs') + ' a name</b> so BindForge and the game can label ' +
+      'their buttons. Each name becomes the controller\u2019s entry in <code>DeviceMappings.xml</code> and the name of its ' +
+      '<code>.buttonMap</code>. <b>Skip</b> uses the name shown.' : '');
+  document.getElementById('ob-body').innerHTML = (intro ? '<div class="ob-intro">' + intro + '</div>' : '') + obDotsHtml() +
+    '<div class="ob-card">' +
+      '<div class="ob-reported">' + cdHtml(d.winName) + '</div>' +
+      '<div class="ob-ids">VID ' + d.vid + ' &nbsp;PID ' + d.pid + ' &nbsp;&middot;&nbsp; ' + d.buttonCount + ' buttons, ' + d.hatCount +
+        (d.hatCount === 1 ? ' hat, ' : ' hats, ') + d.axisCount + ' axes &nbsp;&middot;&nbsp; no entry, and not one of Frontier\u2019s devices</div>' +
+      '<div class="ob-namerow"><label class="cd-k" for="ob-name">NAME</label>' +
+        '<input class="ob-name" id="ob-name" maxlength="50" spellcheck="false" autocomplete="off" aria-describedby="ob-valid" oninput="obNameEdited(this.value)">' +
+        '<span class="ob-valid" id="ob-valid"></span></div>' +
+      '<div class="ob-writes" id="ob-writes"></div>' +
+      (d.hexBindings ? '<div class="ob-hex" id="ob-hex"></div>' : '') +
+      '<div class="ob-labels">Generated labels, renameable later in Alias Designer: ' + obLabelsHtml(d) + '</div>' +
+    '</div>';
+  document.getElementById('ob-name').value = s.names[id];
+  document.getElementById('ob-footer').innerHTML =
+    (s.step > 0 ? '<button type="button" class="ei-btn" onclick="obBack()">BACK</button>' : '<span></span>') +
+    '<span class="cd-footnote">Skipping never leaves a controller unnamed.</span>' +
+    '<button type="button" class="ei-btn" onclick="obSkip()">SKIP \u2014 USE DEFAULT</button>' +
+    '<button type="button" class="ei-btn primary" id="ob-next" onclick="obNext()">' + (s.step === total - 1 ? 'REVIEW' : 'NEXT') + '</button>';
+  obRefreshCard();
+}
+
+function obLabelsHtml(d){
+  var labels = obLabels(d), chip = function(t){ return '<span class="cd-in"><b>' + cdHtml(t) + '</b></span>'; };
+  var buttons = labels.slice(0, d.buttonCount), rest = labels.slice(d.buttonCount);
+  var shown = buttons.length > 3
+    ? buttons.slice(0, 3).map(chip).join('') + '<span class="ob-more">\u2026 ' + (buttons.length - 3) + ' more buttons</span>'
+    : buttons.map(chip).join('');
+  return shown + rest.map(chip).join('');
+}
+
+function obNameEdited(value){
+  obState.names[obState.ids[obState.step]] = value;
+  obRefreshCard();
+}
+
+function obRefreshCard(){
+  var s = obState, id = s.ids[s.step], d = OB_NEW[id], name = s.names[id];
+  var taken = obTaken(id), err = obValidate(name, taken), fallback = obDefaultName(d.winName, taken);
+  var input = document.getElementById('ob-name'), valid = document.getElementById('ob-valid');
+  input.classList.toggle('bad', !!err);
+  valid.classList.toggle('bad', !!err);
+  valid.textContent = err ? '\u26a0 ' + err : (name === fallback ? '\u2713 Valid \u2014 this is the default' : '\u2713 Valid \u2014 Skip would use ' + fallback);
+  var shown = err ? '\u2026' : name, installs = EI_INSTALLS.map(function(i){ return i.label; }).join(', ');
+  var when = d.hexBindings ? '<span class="ob-when apply">ON APPLY</span>' : '<span class="ob-when now">NOW</span>';
+  document.getElementById('ob-writes').innerHTML =
+    '<span class="ob-file">DeviceMappings.xml</span><span class="ob-what">adds &lt;' + cdHtml(shown) + '&gt; &middot; ' + installs + '</span>' + when +
+    '<span class="ob-file">' + cdHtml(shown) + '.buttonMap</span><span class="ob-what">generated labels &middot; ' + installs + '</span>' + when +
+    (d.hexBindings ? '<span class="ob-file">.binds</span><span class="ob-what">' + d.hexBindings + ' bindings: Device=&quot;' + d.vid + d.pid +
+      '&quot; &rarr; &quot;' + cdHtml(shown) + '&quot;</span>' + when : '');
+  if (d.hexBindings){
+    document.getElementById('ob-hex').innerHTML = '<b>' + d.hexBindings + ' bindings</b> in your <code>.binds</code> reference this controller by ' +
+      'hardware ID <code>' + d.vid + d.pid + '</code>. Naming it moves them to <b>' + cdHtml(shown) + '</b>, so the entry, the ' +
+      '<code>.buttonMap</code> and the rewrite all wait for <b>Apply</b> and land together \u2014 the game never sees the name without ' +
+      'the bindings that use it.';
+  }
+  document.getElementById('ob-next').disabled = !!err;
+}
+
+function obRenderSummary(){
+  var s = obState, installs = EI_INSTALLS.map(function(i){ return i.label; }).join(', ');
+  document.getElementById('ob-step').textContent = 'SUMMARY';
+  document.getElementById('ob-body').innerHTML = obDotsHtml() + '<div class="ob-sum">' +
+    '<div class="ob-intro">This is what happens when you finish.</div>' +
+    '<h6>Named in this onboarding</h6>' + s.ids.map(function(id){
+      var d = OB_NEW[id];
+      return '<div class="ob-sumrow"><span>' + cdHtml(s.names[id]) + '<small>' + cdHtml(d.winName) + ' \u2014 ' +
+        (d.hexBindings ? d.hexBindings + ' bindings move to this name on Apply' : 'entry and .buttonMap written to ' + installs) + '</small></span>' +
+        (d.hexBindings ? '<span class="ob-when apply">ON APPLY</span>' : '<span class="ob-when now">NOW</span>') + '</div>';
+    }).join('') + obNotAskedHtml() + '</div>';
+  document.getElementById('ob-footer').innerHTML =
+    '<button type="button" class="ei-btn" onclick="obBack()">BACK</button>' +
+    '<span class="cd-footnote">Every name can be changed later in Alias Designer.</span>' +
+    '<button type="button" class="ei-btn primary" onclick="obDone()">DONE</button>';
+}
+
+function obRenderNothingToAsk(){
+  document.getElementById('ob-step').textContent = '';
+  document.getElementById('ob-body').innerHTML = '<div class="ob-sum"><div class="ob-intro"><b>Every connected controller already has a ' +
+    'name</b> \u2014 there is nothing to ask.</div>' + obNotAskedHtml() + '</div>';
+  document.getElementById('ob-footer').innerHTML = '<span></span><span class="cd-footnote"></span>' +
+    '<button type="button" class="ei-btn primary" onclick="obDone()">DONE</button>';
+}
+
+function obNotAskedHtml(){
+  var named = [], generated = [];
+  eiDeviceOrder.forEach(function(id){
+    var d = eiDevices[id];
+    if (!d.connected) return;
+    var builtin = obBuiltinMatch(d);
+    var hasEntry = EI_INSTALLS.some(function(i){ return d.installs[i.id].added || d.installs[i.id].draft; });
+    if (!builtin && !hasEntry) return;
+    var label = builtin ? builtin.name : eiListAlias(d);
+    named.push('<div class="ob-sumrow"><span>' + cdHtml(label) + '<small>' + cdHtml(d.winName) + ' \u2014 ' +
+      (builtin ? 'Frontier\u2019s built-in, already named by the game' : (EI_INSTALLS.some(function(i){ return d.installs[i.id].draft; }) ? 'named, waiting for Apply' : 'already has a name')) + '</small></span><span></span></div>');
+    var missing = EI_INSTALLS.filter(function(i){ return !d.installs[i.id].buttonMap && !d.installs[i.id].draft; }).map(function(i){ return i.label; });
+    if (missing.length){
+      generated.push('<div class="ob-sumrow"><span>' + cdHtml(label) + '.buttonMap<small>generated for ' + missing.join(', ') +
+        ', which had none</small></span><span class="ob-when now">AT STARTUP</span></div>');
+    }
+  });
+  return (named.length ? '<h6>Not asked \u2014 already named</h6>' + named.join('') : '') +
+         (generated.length ? '<h6>Generated at Elite-Intel startup, with no prompt</h6>' + generated.join('') : '');
+}
+
+/* ---- navigation ---- */
+function obNext(){
+  var s = obState, id = s.ids[s.step];
+  if (obValidate(s.names[id], obTaken(id))) return;
+  s.step++;
+  obRender();
+}
+
+function obSkip(){
+  var s = obState, id = s.ids[s.step];
+  s.names[id] = null;
+  s.names[id] = obDefaultName(OB_NEW[id].winName, obTaken(id));
+  s.step++;
+  obRender();
+}
+
+function obBack(){
+  obState.step = Math.max(0, obState.step - 1);
+  obRender();
+}
+
+function obDone(){
+  var s = obState;
+  s.ids.forEach(function(id){
+    var d = OB_NEW[id], buttons = {}, axes = [], installs = {};
+    for (var b = 1; b <= d.buttonCount; b++) buttons[b] = 'Button ' + b;
+    for (var a = 0; a < d.axisCount; a++) axes.push(OB_AXIS_NAMES[a] + ' Axis');
+    EI_INSTALLS.forEach(function(i){
+      installs[i.id] = {added:!d.hexBindings, draft:!!d.hexBindings, mirror:true, alias:s.names[id], aliasConfirmed:true,
+                        buttonMap:!d.hexBindings, axes:axes.slice(), buttons:JSON.parse(JSON.stringify(buttons))};
+    });
+    eiDevices[id] = {winName:d.winName, vid:d.vid, pid:d.pid, connected:true, axisCount:d.axisCount, buttonCount:d.buttonCount, installs:installs};
+    eiDeviceOrder.push(id);
+  });
+  document.getElementById('tab-mydevices').innerHTML = 'MY DEVICES &nbsp;(' + eiDeviceOrder.length + ')';
+  document.getElementById('ob-scrim').hidden = true;
+  obState = null;
+  eiShowTopTab('alias');
+  eiShowDeviceList('my');
+  eiRenderDeviceRows();
+}
+
 function eiRenderDeviceRows(){
   var grid = document.getElementById('mydevice-grid');
   if(!grid) return;
@@ -1109,8 +1456,10 @@ function eiRenderDeviceRows(){
       var cls = 'ei-rowtab' + (on ? ' active' : '') + (r.added ? '' : ' empty');
       // the marker slot holds either the mirror flag or the not-added state, never an alias -
       // an alias is per installation and belongs in the expansion, not averaged into the row
-      var mark = r.added ? (r.mirror ? '<span class="ei-rowtab-mir">M</span>' : '')
-                         : '<span class="ei-rowtab-alias dim">not added</span>';
+      var mark = r.builtin ? '<span class="ei-rowtab-alias builtin">built-in</span>'
+               : r.added ? (r.mirror ? '<span class="ei-rowtab-mir">M</span>' : '')
+                         : (r.draft ? '<span class="ei-rowtab-alias dim">draft</span>'
+                                    : '<span class="ei-rowtab-alias dim">not added</span>');
       rowTabs += '<button class="' + cls + '" data-rowtab="' + id + '|' + i.id + '">'
                + i.label + mark + '</button>';
     });
@@ -1235,7 +1584,7 @@ function eiSaveDevice(){
   var d = eiDevices[eiSelectedDevice];
   var rec = eiInst(d);
 
-  rec.alias = document.getElementById('alias-name').value;
+  if(!rec.builtin) rec.alias = document.getElementById('alias-name').value;   // a built-in's name is Frontier's
   rec.aliasConfirmed = true;
   rec.added = true;
   eiPendingConfirm = false;
@@ -1282,20 +1631,50 @@ function eiDiscardDevice(){
 
 // WHY: the device is still physically attached, so it cannot leave the list. What CLEAR removes is
 // this installation's DeviceMappings.xml entry and its matching .buttonMap.
-function eiClearDevice(){
+// WHY: MIRROR means one shared definition, so an undo reaches every mirrored installation, exactly as SAVE does.
+function eiMirrorTargets(d){
+  if(!d.installs[eiActiveInstall].mirror) return [eiActiveInstall];
+  return EI_INSTALLS.filter(function(i){
+    return i.id === eiActiveInstall || d.installs[i.id].mirror;
+  }).map(function(i){ return i.id; });
+}
+
+function eiResetLabels(){
   if(!eiSelectedDevice) return;
   var d = eiDevices[eiSelectedDevice];
-  var rec = eiInst(d);
-  rec.added = false;
-  rec.mirror = false;
-  rec.aliasConfirmed = false;
-  rec.buttonMap = false;
-  rec.axes = rec.axes.map(function(){ return ''; });
-  rec.buttons = {};
+  if(!eiInst(d).builtin) return;
+  var targets = eiMirrorTargets(d);
+  targets.forEach(function(instId){
+    var rec = d.installs[instId];
+    rec.axes = rec.axes.map(function(){ return ''; });
+    rec.buttons = {};
+    if(!rec.frontierButtonMap) rec.buttonMap = false;   // a .buttonMap Frontier shipped is never removed
+  });
   eiPendingConfirm = false;
   eiRenderDeviceRows();
   eiRenderDeviceEditor();
-  eiFlashBanner('CLEARED from ' + eiLabelOf(eiActiveInstall) + ' - the device stays listed because the hardware is still attached');
+  eiFlashBanner('LABELS RESET for ' + targets.map(function(id){ return eiLabelOf(id); }).join(', ') + ' - ' +
+    eiInst(d).alias + '.buttonMap removed from the draft. Frontier\u2019s entry is untouched, and the next startup generates fresh labels');
+}
+
+function eiClearDevice(){
+  if(!eiSelectedDevice) return;
+  var d = eiDevices[eiSelectedDevice];
+  var targets = eiMirrorTargets(d);
+  targets.forEach(function(instId){
+    var rec = d.installs[instId];
+    rec.added = false;
+    rec.mirror = false;
+    rec.aliasConfirmed = false;
+    rec.buttonMap = false;
+    rec.axes = rec.axes.map(function(){ return ''; });
+    rec.buttons = {};
+  });
+  eiPendingConfirm = false;
+  eiRenderDeviceRows();
+  eiRenderDeviceEditor();
+  eiFlashBanner('CLEARED from ' + targets.map(function(id){ return eiLabelOf(id); }).join(', ') +
+    ' - the device stays listed because the hardware is still attached');
 }
 
 function eiFlashBanner(msg){
@@ -1310,7 +1689,7 @@ function eiFlashBanner(msg){
 function eiApplyAliasLock(){
   var d = eiSelectedDevice ? eiDevices[eiSelectedDevice] : null;
   var rec = d ? eiInst(d) : null;
-  var locked = !!rec && !rec.aliasConfirmed && !eiPendingConfirm;
+  var locked = !!rec && !rec.builtin && !rec.aliasConfirmed && !eiPendingConfirm;
   var sec  = document.getElementById('alias-io-section');
   var note = document.getElementById('alias-lock-note');
   var btn  = document.getElementById('alias-confirm-btn');
@@ -1325,8 +1704,12 @@ function eiApplyToInstalls(){
     var d = eiDevices[id];
     EI_INSTALLS.forEach(function(i){
       var r = d.installs[i.id];
-      if(r.added){
+      if(r.builtin){
+        if(r.buttonMap) lines.push(i.label + '  ->  ' + r.alias + '.buttonMap only  (Frontier\u2019s entry untouched)');
+      } else if(r.added){
         lines.push(i.label + '  ->  ' + r.alias + (r.mirror ? '  (mirrored)' : '  (this install only)'));
+      } else if(r.draft){
+        lines.push(i.label + '  ->  ' + r.alias + '  (entry, .buttonMap and .binds rewrite, together)');
       }
     });
   });
@@ -1357,7 +1740,9 @@ function eiRenderDeviceEditor(){
       +   '<input class="ei-instpath" readonly value="' + eiPathOf(eiActiveInstall) + '"'
       +     ' title="' + eiPathOf(eiActiveInstall) + '">'
       + '</div>'
-      + '<div class="sub">' + (rec.added
+      + '<div class="sub">' + (rec.builtin
+          ? 'Frontier&rsquo;s built-in entry &mdash; its name and VID/PID are locked; labels are saved to <code>' + rec.alias + '.buttonMap</code>'
+          : rec.added
           ? 'editing this installation&rsquo;s <code>DeviceMappings.xml</code> entry and <code>.buttonMap</code>'
           : 'this device has no entry in this installation yet &mdash; SAVE adds one')
       + '</div>';
@@ -1373,6 +1758,11 @@ function eiRenderDeviceEditor(){
   }
 
   document.getElementById('alias-name').value = rec.alias;
+  var nameInput = document.getElementById('alias-name');
+  nameInput.readOnly = !!rec.builtin;
+  nameInput.title = rec.builtin ? 'Frontier\u2019s name \u2014 locked, because the entry is Frontier\u2019s definition' : '';
+  document.getElementById('alias-clear-btn').style.display = rec.builtin ? 'none' : '';
+  document.getElementById('alias-reset-btn').style.display = rec.builtin ? '' : 'none';
   document.getElementById('alias-vid').value  = d.vid;
   document.getElementById('alias-pid').value  = d.pid;
   document.getElementById('alias-axiscount').textContent = d.axisCount;
@@ -1752,16 +2142,7 @@ function geInitCaptureButtons(){
   });
 }
 
-var geCaptureState = null;
-var geCaptureKeyHandler = null;
-var geSimHeld = false;
 var geDemoConflicts = {'C':'Exit Free Camera','A':'Yaw Left','D':'Yaw Right'};
-
-function geToggleSim(btn){
-  geSimHeld = !geSimHeld;
-  btn.classList.toggle('active', geSimHeld);
-  btn.textContent = geSimHeld ? 'HOLDING JOY_5' : 'SIMULATE HOLD JOY_5';
-}
 
 function geSetDeadzone(evt, track){
   var rect = track.getBoundingClientRect();
@@ -1780,60 +2161,6 @@ var geKbdLayout = [
   [{l:'&#8592;',v:'LEFT'},{l:'&#8593;',v:'UP'},{l:'&#8595;',v:'DOWN'},{l:'&#8594;',v:'RIGHT'}]
 ];
 
-function geRenderKeyboard(currentValueLabel){
-  var html = '';
-  geKbdLayout.forEach(function(row){
-    html += '<div class="ge-kbd-row">';
-    row.forEach(function(k){
-      if(k.gap){ html += '<span class="ge-kbd-gap"></span>'; return; }
-      var state = geDemoConflicts[k.v] ? 'used' : 'free';
-      var cur = (k.v === currentValueLabel) ? ' current' : '';
-      var cls = 'ge-kbd-key ' + state + cur + (k.wide ? ' wide' : '');
-      var handler = k.v === 'ESC' ? 'geCancelCapture()' : ("geKbdPress('" + k.v + "')");
-      html += '<button class="' + cls + '" onclick="' + handler + '">' + k.l + '</button>';
-    });
-    html += '</div>';
-  });
-  document.getElementById('ge-capture-keyboard').innerHTML = html;
-}
-
-function geKbdPress(label){
-  if(!geCaptureState) return;
-  if(geCaptureState.slot === 'Axis'){ geHandleCapturedKey(label); return; }
-  var parts = [];
-  if(geSimHeld) parts.push('JOY 5');
-  parts.push(label);
-  geHandleCapturedKey(parts.join('+'));
-}
-
-function geCapture(btn, valText, actionName, slot){
-  geCaptureState = {actionName:actionName, slot:slot, btn:btn, valText:valText};
-  geSimHeld = false;
-  document.getElementById('ge-grid').classList.add('capturing');
-  var currentLabel = valText.textContent.trim();
-  var pinned = document.getElementById('ge-pinned-row');
-  pinned.innerHTML = '<span class="ge-pinned-label">Editing &mdash; ' + slot + '</span>' +
-    '<span class="ge-pinned-name">' + actionName + '</span>' +
-    '<span class="ge-pinned-current">Current: ' + currentLabel + '</span>';
-  geShowCaptureBox();
-  geRenderKeyboard(currentLabel);
-  document.getElementById('ge-capture-overlay').style.display = 'block';
-  geCaptureKeyHandler = function(e){
-    if(e.key === 'Escape'){ geCancelCapture(); return; }
-    if(['Control','Alt','Shift','Meta'].indexOf(e.key) !== -1) return;
-    e.preventDefault();
-    if(slot === 'Axis'){ geHandleCapturedKey(geFormatKey(e.key)); return; }
-    var parts = [];
-    if(e.ctrlKey) parts.push('L CTRL');
-    if(e.altKey) parts.push('ALT');
-    if(e.shiftKey) parts.push('SHIFT');
-    if(geSimHeld) parts.push('JOY 5');
-    parts.push(geFormatKey(e.key));
-    geHandleCapturedKey(parts.join('+'));
-  };
-  window.addEventListener('keydown', geCaptureKeyHandler);
-}
-
 function geFormatKey(key){
   var map = {' ':'SPACE','ArrowUp':'UP','ArrowDown':'DOWN','ArrowLeft':'LEFT','ArrowRight':'RIGHT',
     ',':'COMMA','.':'PERIOD','Backspace':'BKSP','Enter':'ENTER','Tab':'TAB'};
@@ -1841,64 +2168,328 @@ function geFormatKey(key){
   return key.length === 1 ? key.toUpperCase() : key.toUpperCase();
 }
 
-function geHandleCapturedKey(label){
-  var conflictWith = geDemoConflicts[label];
-  if(conflictWith && conflictWith !== geCaptureState.actionName){
-    geShowConflictBox(label, conflictWith);
-  } else {
-    geCommitCapture(label);
+/* Capture dialog - Krondor's AssignKeyboardBindingDialog, grown for BindForge (settled 2026-09-13).
+   One dialog for every slot. Tabs: KEYBOARD, MOUSE, then each connected controller, split by input kind
+   into BUTTONS / HATS / AXIS DIRECTIONS / AXES. Tabs that cannot fill the slot are greyed out. SAVE writes
+   to the draft. Demo only: VPCThrottle and VPCPanel labels come from Frontier's real .buttonMap files;
+   RVWAP's stand in for a .buttonMap BindForge generated. */
+var CD_XML = {"Free Camera|Toggle HUD": "FreeCamToggleHUD", "Free Camera|Move Forward": "MoveFreeCamForward", "Free Camera|Move Backward": "MoveFreeCamBackwards", "Free Camera|Move Left": "MoveFreeCamLeft", "Free Camera|Move Right": "MoveFreeCamRight", "Free Camera|Move Up": "MoveFreeCamUp", "Free Camera|Move Down": "MoveFreeCamDown", "Free Camera|Pitch Up": "PitchCameraUp", "Free Camera|Pitch Down": "PitchCameraDown", "Free Camera|Exit Free Camera": "QuitCamera", "Free Camera|Lateral Axis": "MoveFreeCamX", "Free Camera|Lift Axis": "MoveFreeCamZ", "Free Camera|Pitch Axis": "PitchCamera", "Flight Rotation|Yaw Axis": "YawAxisRaw", "Flight Rotation|Yaw Left": "YawLeftButton", "Flight Rotation|Yaw Right": "YawRightButton", "Flight Rotation|Roll Axis": "RollAxisRaw", "Flight Rotation|Roll Left": "RollLeftButton", "Flight Rotation|Roll Right": "RollRightButton"};
+var CD_DEVICES = [{"id": "VPCThrottle", "inputs": 82, "generated": false, "buttons": [{"name": "Right (R)", "inputs": [{"tag": "Joy_8", "label": "R POV1 Press"}, {"tag": "Joy_9", "label": "R POV1 Forward"}, {"tag": "Joy_10", "label": "R POV1 Right"}, {"tag": "Joy_11", "label": "R POV1 Back"}, {"tag": "Joy_12", "label": "R POV1 Left"}, {"tag": "Joy_13", "label": "R Stick Press"}, {"tag": "Joy_14", "label": "R Dial - Forward"}, {"tag": "Joy_15", "label": "R Dial - Backward"}, {"tag": "Joy_16", "label": "R POV2 - Press"}, {"tag": "Joy_17", "label": "R POV2 - Forward"}, {"tag": "Joy_18", "label": "R POV2 - Down"}, {"tag": "Joy_19", "label": "R POV2 - Back"}, {"tag": "Joy_20", "label": "R POV2 - Up"}, {"tag": "Joy_21", "label": "R 1"}, {"tag": "Joy_22", "label": "R POV3 - Press"}, {"tag": "Joy_23", "label": "R POV3 - Down"}, {"tag": "Joy_24", "label": "R POV3 - Back"}, {"tag": "Joy_25", "label": "R POV3 - Up"}, {"tag": "Joy_26", "label": "R POV3 - Forward"}, {"tag": "Joy_27", "label": "R POV4 - Press"}, {"tag": "Joy_28", "label": "R POV4 - Down"}, {"tag": "Joy_29", "label": "R POV4 - Back"}, {"tag": "Joy_30", "label": "R POV4 - Up"}, {"tag": "Joy_31", "label": "R POV4 - Forward"}, {"tag": "Joy_32", "label": "R 2"}, {"tag": "Joy_33", "label": "R 3"}]}, {"name": "Left (L)", "inputs": [{"tag": "Joy_1", "label": "L Dial - Press"}, {"tag": "Joy_2", "label": "L Dial - Backward"}, {"tag": "Joy_3", "label": "L Dial - Forward"}, {"tag": "Joy_4", "label": "L 1"}, {"tag": "Joy_5", "label": "L POV Press"}, {"tag": "Joy_6", "label": "L POV Forward"}, {"tag": "Joy_7", "label": "L POV Back"}]}, {"name": "Base buttons (B)", "inputs": [{"tag": "Joy_38", "label": "B1-1"}, {"tag": "Joy_39", "label": "B2-1"}, {"tag": "Joy_40", "label": "B3-1"}, {"tag": "Joy_41", "label": "B4-1"}, {"tag": "Joy_42", "label": "B5-1"}, {"tag": "Joy_43", "label": "B6-1"}, {"tag": "Joy_56", "label": "B1-2"}, {"tag": "Joy_57", "label": "B2-2"}, {"tag": "Joy_58", "label": "B3-2"}, {"tag": "Joy_59", "label": "B4-2"}, {"tag": "Joy_60", "label": "B5-2"}, {"tag": "Joy_61", "label": "B6-2"}, {"tag": "Joy_62", "label": "B1-3"}, {"tag": "Joy_63", "label": "B2-3"}, {"tag": "Joy_64", "label": "B3-3"}, {"tag": "Joy_65", "label": "B4-3"}, {"tag": "Joy_66", "label": "B5-3"}, {"tag": "Joy_67", "label": "B6-3"}, {"tag": "Joy_68", "label": "B1-4"}, {"tag": "Joy_69", "label": "B2-4"}, {"tag": "Joy_70", "label": "B3-4"}, {"tag": "Joy_71", "label": "B4-4"}, {"tag": "Joy_72", "label": "B5-4"}, {"tag": "Joy_73", "label": "B6-4"}, {"tag": "Joy_74", "label": "B1-5"}, {"tag": "Joy_75", "label": "B2-5"}, {"tag": "Joy_76", "label": "B3-5"}, {"tag": "Joy_77", "label": "B4-5"}, {"tag": "Joy_78", "label": "B5-5"}, {"tag": "Joy_79", "label": "B6-5"}]}, {"name": "Toggles (T)", "inputs": [{"tag": "Joy_34", "label": "T1"}, {"tag": "Joy_35", "label": "T2"}, {"tag": "Joy_36", "label": "T3"}, {"tag": "Joy_37", "label": "T4"}, {"tag": "Joy_44", "label": "T5 - Up"}, {"tag": "Joy_45", "label": "T5 - Down"}, {"tag": "Joy_46", "label": "T6 - Up"}, {"tag": "Joy_47", "label": "T6 - Down"}, {"tag": "Joy_48", "label": "T7 - Up"}, {"tag": "Joy_49", "label": "T7 - Down"}]}, {"name": "Encoders (E)", "inputs": [{"tag": "Joy_50", "label": "E1"}, {"tag": "Joy_51", "label": "E1 - Counter Clockwise"}, {"tag": "Joy_52", "label": "E1 - Clockwise"}, {"tag": "Joy_53", "label": "E2"}, {"tag": "Joy_54", "label": "E2 - Counter Clockwise"}, {"tag": "Joy_55", "label": "E2 - Clockwise"}]}], "hats": [], "directions": [{"name": "Axis directions (half-axis)", "inputs": [{"tag": "Neg_Joy_RXAxis", "label": "\u2212Throttle L"}, {"tag": "Pos_Joy_RXAxis", "label": "+Throttle L"}, {"tag": "Neg_Joy_RYAxis", "label": "\u2212Throttle R"}, {"tag": "Pos_Joy_RYAxis", "label": "+Throttle R"}, {"tag": "Neg_Joy_RZAxis", "label": "\u2212Flaps"}, {"tag": "Pos_Joy_RZAxis", "label": "+Flaps"}]}], "axes": [{"name": "Axes", "inputs": [{"tag": "Joy_RXAxis", "label": "Throttle L"}, {"tag": "Joy_RYAxis", "label": "Throttle R"}, {"tag": "Joy_RZAxis", "label": "Flaps"}]}]}, {"id": "VPCPanel", "inputs": 43, "generated": false, "buttons": [{"name": "Buttons (B)", "inputs": [{"tag": "Joy_1", "label": "B1"}, {"tag": "Joy_2", "label": "B2"}, {"tag": "Joy_3", "label": "B3"}, {"tag": "Joy_4", "label": "B4"}, {"tag": "Joy_5", "label": "B5"}, {"tag": "Joy_6", "label": "B6"}, {"tag": "Joy_7", "label": "B7"}, {"tag": "Joy_8", "label": "B8"}, {"tag": "Joy_9", "label": "B9"}, {"tag": "Joy_10", "label": "B10"}, {"tag": "Joy_11", "label": "B11"}, {"tag": "Joy_12", "label": "B12"}]}, {"name": "Toggles (T)", "inputs": [{"tag": "Joy_13", "label": "T1 - Down"}, {"tag": "Joy_14", "label": "T1 - Up"}, {"tag": "Joy_15", "label": "T2 - Down"}, {"tag": "Joy_16", "label": "T2 - Up"}, {"tag": "Joy_17", "label": "T3 - Left"}, {"tag": "Joy_18", "label": "T3 - Right"}, {"tag": "Joy_19", "label": "T4 - Left"}, {"tag": "Joy_20", "label": "T4 - Right"}, {"tag": "Joy_21", "label": "T5 - Down"}, {"tag": "Joy_22", "label": "T5 - Up"}, {"tag": "Joy_23", "label": "T6 - Down"}, {"tag": "Joy_24", "label": "T6 - Up"}, {"tag": "Joy_25", "label": "T7 - Down"}, {"tag": "Joy_26", "label": "T7 - Up"}, {"tag": "Joy_27", "label": "T8 - Down"}, {"tag": "Joy_28", "label": "T8 - Up"}, {"tag": "Joy_29", "label": "T9 - Down"}, {"tag": "Joy_30", "label": "T9 - Up"}, {"tag": "Joy_31", "label": "T10 - Down"}, {"tag": "Joy_32", "label": "T10 - Up"}]}, {"name": "Encoders (E)", "inputs": [{"tag": "Joy_33", "label": "E1"}, {"tag": "Joy_34", "label": "E1 - Counter Clockwise"}, {"tag": "Joy_35", "label": "E1 - Clockwise"}, {"tag": "Joy_36", "label": "E2"}, {"tag": "Joy_37", "label": "E2 - Counter Clockwise"}, {"tag": "Joy_38", "label": "E2 - Clockwise"}, {"tag": "Joy_39", "label": "E3"}, {"tag": "Joy_40", "label": "E3 - Counter Clockwise"}, {"tag": "Joy_41", "label": "E3 - Clockwise"}]}], "hats": [], "directions": [{"name": "Axis directions (half-axis)", "inputs": [{"tag": "Neg_Joy_UAxis", "label": "\u2212A1"}, {"tag": "Pos_Joy_UAxis", "label": "+A1"}, {"tag": "Neg_Joy_VAxis", "label": "\u2212A2"}, {"tag": "Pos_Joy_VAxis", "label": "+A2"}]}], "axes": [{"name": "Axes", "inputs": [{"tag": "Joy_UAxis", "label": "A1"}, {"tag": "Joy_VAxis", "label": "A2"}]}]}, {"id": "RVWAP", "inputs": 31, "generated": true, "buttons": [{"name": "Buttons", "inputs": [{"tag": "Joy_1", "label": "Button 1"}, {"tag": "Joy_2", "label": "Button 2"}, {"tag": "Joy_3", "label": "Button 3"}, {"tag": "Joy_4", "label": "Button 4"}, {"tag": "Joy_5", "label": "Button 5"}, {"tag": "Joy_6", "label": "Button 6"}, {"tag": "Joy_7", "label": "Button 7"}, {"tag": "Joy_8", "label": "Button 8"}, {"tag": "Joy_9", "label": "Button 9"}, {"tag": "Joy_10", "label": "Button 10"}, {"tag": "Joy_11", "label": "Button 11"}, {"tag": "Joy_12", "label": "Button 12"}, {"tag": "Joy_13", "label": "Button 13"}, {"tag": "Joy_14", "label": "Button 14"}, {"tag": "Joy_15", "label": "Button 15"}, {"tag": "Joy_16", "label": "Button 16"}, {"tag": "Joy_17", "label": "Button 17"}, {"tag": "Joy_18", "label": "Button 18"}, {"tag": "Joy_19", "label": "Button 19"}, {"tag": "Joy_20", "label": "Button 20"}, {"tag": "Joy_21", "label": "Button 21"}, {"tag": "Joy_22", "label": "Button 22"}, {"tag": "Joy_23", "label": "Button 23"}, {"tag": "Joy_24", "label": "Button 24"}]}], "hats": [{"name": "Hats", "inputs": [{"tag": "Joy_POV1Up", "label": "Hat 1 Up"}, {"tag": "Joy_POV1Down", "label": "Hat 1 Down"}, {"tag": "Joy_POV1Left", "label": "Hat 1 Left"}, {"tag": "Joy_POV1Right", "label": "Hat 1 Right"}]}], "directions": [{"name": "Axis directions (half-axis)", "inputs": [{"tag": "Neg_Joy_XAxis", "label": "\u2212X Axis"}, {"tag": "Pos_Joy_XAxis", "label": "+X Axis"}, {"tag": "Neg_Joy_YAxis", "label": "\u2212Y Axis"}, {"tag": "Pos_Joy_YAxis", "label": "+Y Axis"}, {"tag": "Neg_Joy_ZAxis", "label": "\u2212Z Axis"}, {"tag": "Pos_Joy_ZAxis", "label": "+Z Axis"}]}], "axes": [{"name": "Axes", "inputs": [{"tag": "Joy_XAxis", "label": "X Axis"}, {"tag": "Joy_YAxis", "label": "Y Axis"}, {"tag": "Joy_ZAxis", "label": "Z Axis"}]}]}];
+var CD_MOUSE = [
+  {name:'Buttons', inputs:[{tag:'Mouse_1',label:'Mouse 1'},{tag:'Mouse_2',label:'Mouse 2'},{tag:'Mouse_3',label:'Mouse 3'},{tag:'Mouse_4',label:'Mouse 4'},{tag:'Mouse_5',label:'Mouse 5'}]},
+  {name:'Wheel (half-axis)', inputs:[{tag:'Pos_Mouse_ZAxis',label:'Wheel up'},{tag:'Neg_Mouse_ZAxis',label:'Wheel down'}]}
+];
+var CD_KINDS = [{id:'buttons', name:'BUTTONS'}, {id:'hats', name:'HATS'}, {id:'directions', name:'AXIS DIRECTIONS'}, {id:'axes', name:'AXES'}];
+var CD_DEMO_USED = {'VPCThrottle Joy_38':'Cargo Scoop', 'VPCPanel Joy_1':'Landing Gear'};
+var geCaptureState = null;
+var cdKeyHandler = null;
+
+/* Entry point for every Capture button in the grid; axis rows call it inline with slot 'Axis'. */
+function geCapture(btn, valText, actionName, slot){
+  var ctx = cdContext(btn, actionName), isAxis = slot === 'Axis', row = btn.closest('.ge-bindrow');
+  var current = valText.textContent.trim(), isEmpty = current === '' || current === '\u2014';
+  var s = geCaptureState = {btn:btn, valText:valText, actionName:actionName, slot:slot, isAxis:isAxis,
+    original:isEmpty ? null : current, value:isEmpty ? null : current, friendly:null, tab:null, sub:{}};
+  if (isAxis){
+    s.toggle = row.querySelector('.ge-attr-toggle');
+    s.fill = row.querySelector('.ge-deadzone-fill');
+    s.pct = row.querySelector('.ge-deadzone-pct');
+    s.inverted = s.origInverted = s.toggle.textContent.trim() === 'INVERTED';
+    s.deadzone = s.origDeadzone = parseInt(s.fill.style.width, 10) || 0;
   }
+  s.tab = isAxis ? cdFirstEnabledTab() : 'keyboard';
+  document.getElementById('cd-title').textContent = actionName;
+  document.getElementById('cd-kind').textContent = isAxis ? 'AXIS' : 'BUTTON / KEY';
+  document.getElementById('cd-control').textContent = ctx.control;
+  document.getElementById('cd-xml').textContent = ctx.xml;
+  document.getElementById('cd-slot').textContent = isAxis ? 'Axis (one binding)' : slot;
+  document.getElementById('cd-current').textContent = isEmpty ? 'Not defined' : current;
+  document.getElementById('cd-hint').textContent = isAxis
+    ? 'Move an axis on a controller, or click one. An axis slot takes a whole axis: no keys, no mouse, no modifiers. Esc cancels.'
+    : 'Press the input now \u2014 a key, or a button, hat or axis direction on a controller \u2014 or pick a mouse input. Esc cancels.';
+  document.querySelectorAll('.cd-axisonly').forEach(function(el){ el.hidden = !isAxis; });
+  if (isAxis){
+    document.getElementById('cd-dz').value = s.deadzone;
+    cdSetInverted(s.inverted);
+    cdSetDeadzone(s.deadzone);
+  }
+  cdSetBanner(null);
+  cdRender();
+  var scrim = document.getElementById('cd-scrim');
+  if (scrim.parentElement !== document.body) document.body.appendChild(scrim);
+  scrim.hidden = false;
+  cdKeyHandler = cdOnKey;
+  window.addEventListener('keydown', cdKeyHandler, true);
 }
 
-function geShowCaptureBox(){
-  var isAxis = geCaptureState.slot === 'Axis';
-  var modifierBlock = isAxis
-    ? '<div class="ge-sim-toggle">Axis bindings can&#39;t take a modifier &mdash; just move the axis or press one key/button.</div>'
-    : '<div class="ge-sim-toggle">Combos work across devices &mdash; hold a real Ctrl/Shift/Alt, or ' +
-      '<button onclick="geToggleSim(this)">SIMULATE HOLD JOY_5</button> to demo a cross-device modifier, then press any key.</div>';
-  document.getElementById('ge-capture-box').innerHTML =
-    '<div class="ge-capture-label">PRESS KEY FOR&hellip;</div>' +
-    '<div class="ge-capture-target">' + geCaptureState.actionName + ' <span class="ge-capture-slot">(' + geCaptureState.slot + ')</span></div>' +
-    '<div class="ge-capture-hint">Esc cancels</div>' +
-    modifierBlock;
+function cdContext(btn, actionName){
+  var group = btn.closest('.ge-group');
+  var parts = (group ? group.querySelector('.ge-grouplabel').textContent : '').split(' \u2014 ');
+  var section = cdTitleCase((parts[0] || '').replace(/ CONTROLS$/, ''));
+  var groupName = cdTitleCase(parts[1] || '');
+  return {control:section + ' \u203a ' + groupName, xml:CD_XML[groupName + '|' + actionName] || '(not in this demo)'};
 }
 
-function geShowConflictBox(label, conflictWith){
-  document.getElementById('ge-capture-box').innerHTML =
-    '<div class="ge-conflict-label">ARE YOU SURE?</div>' +
-    '<div class="ge-conflict-text">[' + label + '] is currently bound to &ldquo;' + conflictWith + '&rdquo;. Do you want to bind it here too?</div>' +
-    '<div class="ge-conflict-actions">' +
-      '<button class="ei-btn" onclick="geShowCaptureBox()">CANCEL</button>' +
-      '<button class="ei-btn primary" onclick="geCommitCapture(\'' + label + '\')">CONFIRM</button>' +
-    '</div>';
+function cdTitleCase(s){
+  return s.toLowerCase().replace(/\b[a-z]/g, function(c){ return c.toUpperCase(); });
 }
 
-function geCommitCapture(label){
-  geCaptureState.valText.innerHTML = '<span class="ge-badge">' + label + '</span>';
-  geCaptureState.btn.classList.remove('state-empty','state-conflict');
-  geCaptureState.btn.classList.add('state-bound');
-  if(geCaptureState.slot !== 'Axis'){
-    var cell = geCaptureState.valText.parentElement;
-    var spacer = cell.querySelector('.ge-holdchip-spacer');
-    if(spacer){
-      var hold = document.createElement('button');
-      hold.className = 'ge-holdchip';
-      hold.textContent = 'TAP';
-      hold.onclick = function(e){ e.stopPropagation(); hold.textContent = hold.textContent === 'TAP' ? 'HOLD' : 'TAP'; };
-      cell.replaceChild(hold, spacer);
+function cdHtml(s){
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function cdJs(s){
+  return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+/* ---- which tabs can fill this slot ---- */
+function cdDevice(id){
+  return CD_DEVICES.filter(function(d){ return d.id === id; })[0];
+}
+
+function cdTabs(){
+  return [{id:'keyboard', name:'KEYBOARD', sub:''}, {id:'mouse', name:'MOUSE', sub:''}].concat(CD_DEVICES.map(function(d){
+    return {id:d.id, name:d.id, sub:d.inputs + ' inputs'};
+  }));
+}
+
+function cdKindCount(dev, kind){
+  return dev[kind].reduce(function(n, g){ return n + g.inputs.length; }, 0);
+}
+
+function cdKindViable(kind){
+  return geCaptureState.isAxis ? kind === 'axes' : kind !== 'axes';
+}
+
+function cdKindEnabled(dev, kind){
+  return cdKindViable(kind) && cdKindCount(dev, kind) > 0;
+}
+
+function cdTabEnabled(id){
+  if (id === 'keyboard' || id === 'mouse') return !geCaptureState.isAxis;
+  var dev = cdDevice(id);
+  return CD_KINDS.some(function(k){ return cdKindEnabled(dev, k.id); });
+}
+
+function cdTabReason(id){
+  if (id === 'keyboard') return 'An axis slot takes a whole axis, never a key';
+  if (id === 'mouse') return 'An axis slot takes a whole axis; mouse movement is not bindable';
+  return geCaptureState.isAxis ? 'This device reports no axes' : 'Nothing on this device fits a button slot';
+}
+
+function cdKindReason(kind){
+  if (!cdKindViable(kind)) return geCaptureState.isAxis ? 'An axis slot takes a whole axis' : 'A button slot cannot take a whole axis';
+  return 'This device reports none';
+}
+
+function cdFirstEnabledTab(){
+  var first = cdTabs().filter(function(t){ return cdTabEnabled(t.id); })[0];
+  return first ? first.id : 'keyboard';
+}
+
+function cdActiveKind(dev){
+  var s = geCaptureState, chosen = s.sub[dev.id];
+  if (chosen && cdKindEnabled(dev, chosen)) return chosen;
+  var first = CD_KINDS.filter(function(k){ return cdKindEnabled(dev, k.id); })[0];
+  s.sub[dev.id] = first ? first.id : null;
+  return s.sub[dev.id];
+}
+
+function cdShowTab(id){
+  if (!cdTabEnabled(id)) return;
+  geCaptureState.tab = id;
+  cdRender();
+}
+
+function cdShowKind(kind){
+  geCaptureState.sub[geCaptureState.tab] = kind;
+  cdRender();
+}
+
+/* ---- rendering ---- */
+function cdRender(){
+  var s = geCaptureState;
+  document.getElementById('cd-tabs').innerHTML = cdTabs().map(function(t){
+    var on = t.id === s.tab, enabled = cdTabEnabled(t.id);
+    return '<button type="button" role="tab" aria-selected="' + on + '" class="cd-tab' + (on ? ' active' : '') + '"' +
+      (enabled ? '' : ' disabled title="' + cdHtml(cdTabReason(t.id)) + '"') + ' onclick="cdShowTab(\'' + t.id + '\')">' +
+      t.name + (t.sub ? '<span class="cd-tabsub">' + t.sub + '</span>' : '') + '</button>';
+  }).join('');
+  var subs = document.getElementById('cd-subtabs'), body = document.getElementById('cd-tabbody'), hint = document.getElementById('cd-tabhint');
+  if (s.tab === 'keyboard'){
+    subs.hidden = true;
+    body.innerHTML = '<div class="ge-kbd">' + cdKeyboardHtml() + '</div>';
+    hint.textContent = 'Green: free, red: already used. Hold Ctrl/Shift/Alt while clicking a key to add a modifier.';
+  } else if (s.tab === 'mouse'){
+    subs.hidden = true;
+    body.innerHTML = cdGroupsHtml('', CD_MOUSE);
+    hint.textContent = 'Mouse inputs are chosen, not captured \u2014 click one, so a stray scroll never binds anything. The buttons listed are whatever the system reports.';
+  } else {
+    var dev = cdDevice(s.tab), kind = cdActiveKind(dev);
+    subs.hidden = false;
+    subs.innerHTML = CD_KINDS.map(function(k){
+      var on = k.id === kind, enabled = cdKindEnabled(dev, k.id);
+      return '<button type="button" role="tab" aria-selected="' + on + '" class="cd-subtab' + (on ? ' active' : '') + '"' +
+        (enabled ? '' : ' disabled title="' + cdHtml(cdKindReason(k.id)) + '"') + ' onclick="cdShowKind(\'' + k.id + '\')">' +
+        k.name + '<span class="cd-tabsub">' + cdKindCount(dev, k.id) + '</span></button>';
+    }).join('');
+    body.innerHTML = kind ? cdGroupsHtml(dev.id, dev[kind]) : '';
+    hint.textContent = (dev.generated ? 'Labels come from a .buttonMap BindForge generated for this device \u2014 rename them in Alias Designer. ' :
+      'Labels are this device\u2019s own .buttonMap. ') +
+      (s.isAxis ? 'Move an axis on this device, or click one.' : 'Press an input on this device, or click it. Hold Ctrl/Shift/Alt while clicking for a combo across devices.');
+  }
+  body.scrollTop = 0;
+  cdRenderField();
+}
+
+function cdIsCurrent(key){
+  var v = geCaptureState.value;
+  return !!v && (v === key || v.slice(-(key.length + 1)) === '+' + key);
+}
+
+function cdGroupsHtml(devId, groups){
+  return groups.map(function(g){
+    return '<div class="cd-devgroup"><h6>' + g.name + '</h6><div class="cd-inputs">' + g.inputs.map(function(i){
+      var key = devId ? devId + ' ' + i.tag : i.tag, used = CD_DEMO_USED[key];
+      var cls = 'cd-in' + (used ? ' used' : '') + (cdIsCurrent(key) ? ' current' : '');
+      return '<button type="button" class="' + cls + '" title="' + cdHtml(i.tag + (used ? ' \u2014 used by ' + used : '')) + '" onclick="cdInputClick(\'' +
+        devId + '\',\'' + i.tag + '\',\'' + cdJs(i.label) + '\', event)"><b>' + cdHtml(i.label) + '</b>' + cdHtml(i.tag.replace('Joy_', '')) + '</button>';
+    }).join('') + '</div></div>';
+  }).join('');
+}
+
+function cdKeyboardHtml(){
+  var html = '';
+  geKbdLayout.forEach(function(row){
+    html += '<div class="ge-kbd-row">';
+    row.forEach(function(k){
+      if (k.gap){ html += '<span class="ge-kbd-gap"></span>'; return; }
+      var cls = 'ge-kbd-key ' + (geDemoConflicts[k.v] ? 'used' : 'free') + (cdIsCurrent(k.v) ? ' current' : '') + (k.wide ? ' wide' : '');
+      html += '<button type="button" class="' + cls + '" onclick="cdKbdClick(\'' + cdJs(k.v) + '\', event)">' + k.l + '</button>';
+    });
+    html += '</div>';
+  });
+  return html;
+}
+
+function cdRenderField(){
+  var s = geCaptureState, field = document.getElementById('cd-field');
+  field.textContent = s.value ? s.value + (s.friendly ? '  \u00b7  ' + s.friendly : '') : 'NOT DEFINED';
+  field.classList.toggle('set', !!s.value);
+  var unchanged = s.value === s.original && (!s.isAxis || (s.inverted === s.origInverted && s.deadzone === s.origDeadzone));
+  document.getElementById('cd-save').disabled = unchanged;
+}
+
+function cdSetBanner(text){
+  var banner = document.getElementById('cd-banner');
+  banner.hidden = !text;
+  banner.textContent = text ? '\u26a0 ' + text : '';
+}
+
+/* ---- capturing ---- */
+function cdModifiers(e){
+  var parts = [];
+  if (!e || geCaptureState.isAxis) return parts;
+  if (e.ctrlKey) parts.push('L CTRL');
+  if (e.altKey) parts.push('ALT');
+  if (e.shiftKey) parts.push('SHIFT');
+  return parts;
+}
+
+function cdOnKey(e){
+  if (!geCaptureState) return;
+  if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); cdClose(); return; }
+  if (geCaptureState.isAxis) return;   // an axis slot never takes a key
+  if (['Control','Alt','Shift','Meta'].indexOf(e.key) !== -1) return;
+  e.preventDefault();
+  e.stopPropagation();
+  geCaptureState.tab = 'keyboard';     // the input pressed decides the tab
+  cdCaptured(cdModifiers(e).concat([geFormatKey(e.key)]).join('+'), null);
+}
+
+function cdKbdClick(v, e){
+  if (!geCaptureState || geCaptureState.isAxis) return;
+  if (v === 'ESC'){ cdClose(); return; }
+  cdCaptured(cdModifiers(e).concat([v]).join('+'), null);
+}
+
+function cdInputClick(devId, tag, label, e){
+  if (!geCaptureState) return;
+  var input = devId ? devId + ' ' + tag : tag;
+  cdCaptured(cdModifiers(e).concat([input]).join('+'), label);
+}
+
+function cdConflictWith(value, actionName){
+  var other = value ? (geDemoConflicts[value] || CD_DEMO_USED[value]) : null;
+  return other && other !== actionName ? other : null;
+}
+
+function cdCaptured(value, friendly){
+  var s = geCaptureState;
+  s.value = value;
+  s.friendly = friendly;
+  var other = cdConflictWith(value, s.actionName);
+  cdSetBanner(other ? 'Conflicts with ' + other + '; may not work' : null);
+  cdRender();
+}
+
+function cdClear(){
+  if (!geCaptureState) return;
+  geCaptureState.value = null;
+  geCaptureState.friendly = null;
+  cdSetBanner(null);
+  cdRender();
+}
+
+function cdSetInverted(on){
+  geCaptureState.inverted = !!on;
+  document.getElementById('cd-normal').classList.toggle('on', !on);
+  document.getElementById('cd-inverted').classList.toggle('on', !!on);
+  cdRenderField();
+}
+
+function cdSetDeadzone(v){
+  geCaptureState.deadzone = parseInt(v, 10) || 0;
+  document.getElementById('cd-dzpct').textContent = geCaptureState.deadzone + '%';
+  cdRenderField();
+}
+
+function cdSave(){
+  var s = geCaptureState;
+  if (!s) return;
+  var cell = s.valText.parentElement;
+  s.valText.innerHTML = s.value ? '<span class="ge-badge">' + cdHtml(s.value) + '</span>' : '&mdash;';
+  s.btn.classList.remove('state-empty', 'state-bound', 'state-conflict');
+  s.btn.classList.add(!s.value ? 'state-empty' : (cdConflictWith(s.value, s.actionName) ? 'state-conflict' : 'state-bound'));
+  if (s.isAxis){
+    s.toggle.textContent = s.inverted ? 'INVERTED' : 'NORMAL';   // the row's inline controls stay in step
+    s.fill.style.width = s.deadzone + '%';
+    s.pct.textContent = s.deadzone + '%';
+  } else {
+    var spacer = cell.querySelector('.ge-holdchip-spacer'), hold = cell.querySelector('.ge-holdchip');
+    if (s.value && spacer){
+      var chip = document.createElement('button');
+      chip.className = 'ge-holdchip';
+      chip.textContent = 'TAP';
+      chip.onclick = function(e){ e.stopPropagation(); chip.textContent = chip.textContent === 'TAP' ? 'HOLD' : 'TAP'; };
+      cell.replaceChild(chip, spacer);
+    }
+    if (!s.value && hold){
+      var gap = document.createElement('span');
+      gap.className = 'ge-holdchip-spacer';
+      cell.replaceChild(gap, hold);
     }
   }
-  geCancelCapture();
+  cdClose();
 }
 
-function geCancelCapture(){
-  if(geCaptureKeyHandler) window.removeEventListener('keydown', geCaptureKeyHandler);
-  geCaptureKeyHandler = null;
-  document.getElementById('ge-grid').classList.remove('capturing');
-  document.getElementById('ge-capture-overlay').style.display = 'none';
-  document.getElementById('ge-capture-keyboard').innerHTML = '';
+function cdClose(){
+  if (cdKeyHandler) window.removeEventListener('keydown', cdKeyHandler, true);
+  cdKeyHandler = null;
+  document.getElementById('cd-scrim').hidden = true;
   geCaptureState = null;
 }
+
 geInitCaptureButtons();
 var pmSelectedSource = null;
 var pmSelectedTarget = null;
@@ -1954,7 +2545,7 @@ var imExamples = [
 ];
 var imIndex = -1;
 function imCaptureNotBuilt(){
-  alert('Clicking a row here is meant to open the same floating capture dialog used everywhere else in BindForge, in place. Not built in this mockup — see Bind Editor § Input Mode.');
+  alert('Clicking a row here is meant to open the same capture dialog used everywhere else in BindForge, in place. Not built in this mockup — see Bind Editor § Input Mode.');
 }
 function imRenderRow(ex, r){
   var tag = '<span class="im-sectiontag">'+r.section+'</span>';

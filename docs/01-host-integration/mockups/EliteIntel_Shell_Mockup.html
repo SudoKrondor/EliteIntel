@@ -169,9 +169,6 @@
     <span class="tab">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="8" height="7"/><rect x="13" y="4" width="8" height="7"/><rect x="3" y="13" width="8" height="7"/><rect x="13" y="13" width="8" height="7"/></svg>ACTIONS</span>
 
-    <span class="tab" title="Elite-Intel's existing bind editor - stays until BindForge is proven">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h.01M11 9h.01M15 9h.01M7 13h10"/></svg>BINDINGS</span>
-
     <button class="tab" data-view="bindforge">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2.5" y="7.5" width="19" height="9.5" rx="4.5"/><path d="M7 12h3M8.5 10.5v3"/><circle cx="16" cy="11" r="1.1" fill="currentColor" stroke="none"/><circle cx="18" cy="13.5" r="1.1" fill="currentColor" stroke="none"/></svg>BINDFORGE</button>
 
@@ -331,12 +328,11 @@
   shell rather than opening a new page. Every other tab, button, and readout is painted to match the running app
   and does nothing.
   <br>
-  <b>This shows the transition state, not the destination.</b> <span class="k">BINDINGS</span> is Elite-Intel's
-  existing bind editor: it keeps shipping alongside <span class="k">BINDFORGE</span> and is removed only once
-  BindForge is proven (see
-  <a href="../../00-overview/v1.2-scope.md#buildship-order">Build and Ship Order</a>, step 6). During development
-  the existing editor is switched off in Alan's build only. <b>STARVIZION is an added tab</b> — it displaces
-  nothing. <span class="k">JUKEBOX</span> shipped in v1.1.
+  <b>BINDFORGE is the existing Bindings tab, upgraded in place.</b> There is no separate
+  <span class="k">BINDINGS</span> tab beside it: Elite-Intel's current bind editor grows into BindForge and takes
+  the name once it is what the name says (see
+  <a href="../../00-overview/v1.2-scope.md#phased-rollout--revised-2026-09-08">Phased rollout</a>, phase 4).
+  <b>STARVIZION is an added tab</b> — it displaces nothing. <span class="k">JUKEBOX</span> shipped in v1.1.
   Values shown (107 missing bindings, 10 custom commands, the 3312 clock) are copied from a real session for
   realism only.
   See <a href="../elite-intel-platform-map.md#host-ui">Platform Map &rarr; Host UI</a> for how the real Swing tab

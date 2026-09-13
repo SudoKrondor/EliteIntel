@@ -114,7 +114,7 @@ have a custom preset of their own.
 
 #### It applies immediately — settled 2026-09-12
 
-**This is the one documented exception to [Apply is the only thing that writes a live game file](#live-file-synchronization).** The click on **Create** is the consent, and setup completes when the player gives it. Leaving a draft here would mean they pressed Create and nothing was created, then asked them to **Apply** a change they cannot yet evaluate, in a product they opened seconds ago.
+**This is one of three documented exceptions to [Apply is the only thing that writes a live game file](#live-file-synchronization)** — [the complete list](#writes-outside-apply--the-complete-list) follows below. The click on **Create** is the consent, and setup completes when the player gives it. Leaving a draft here would mean they pressed Create and nothing was created, then asked them to **Apply** a change they cannot yet evaluate, in a product they opened seconds ago.
 
 **Why the exception is safe rather than merely convenient.** The draft model exists to stop BindForge overwriting a commander's work. **This case is defined by there being none** — it runs only where no custom `.binds` exists for that section. Concretely:
 
@@ -135,6 +135,20 @@ You can switch back any time in Preset Editor.
 ```
 
 **The exception does not generalize, and its boundary is the point.** It covers *creating* a preset where none existed, at first open, with explicit consent. Every subsequent write to that section — every binding the player then edits — goes through the draft and Apply like everything else. A write that modifies existing player data is never an exception, whatever the flow.
+
+#### Writes outside Apply — the complete list
+
+**Added 2026-09-13**, when device onboarding brought the count to three. Every entry creates something that did
+not exist; none changes an existing binding, entry or file.
+
+| Write | When | Why it cannot lose anything |
+|---|---|---|
+| A custom preset from a factory one | [First-Time Startup](#it-applies-immediately--settled-2026-09-12), on **Create** | a new `.binds`; one reversible `StartPreset` line; the factory preset untouched |
+| A controller's name | [onboarding](alias-designer.md#what-onboarding-writes-and-when), when the name is confirmed or the default taken — **only for a controller `.binds` does not reference by hex** | adds a new `DeviceMappings.xml` entry beside the existing ones; creates a `.buttonMap` that did not exist |
+| A generated `.buttonMap` | [Elite-Intel startup](alias-designer.md#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller), for a connected, named controller without one | creates a file that did not exist; never overwrites |
+
+**What is never on this list:** anything that rewrites existing player data. Naming a controller that `.binds`
+already references by hex rewrites its bindings, so it waits for Apply — entry and rewrite together.
 
 **Testing-required, and now load-bearing:** whether a `ControlSchemes` preset file can be copied byte-for-byte into the player's bindings folder as a valid starting `.binds` file, or whether the game's own first-customization save does something to the file beyond a plain copy, hasn't been confirmed against a real install — see [testing-required.md](../../00-overview/testing-required.md). **Applying immediately raises the stakes on that test:** a bad copy reaches the live bindings folder with no review step in front of it. The timestamped backup still runs, so it is recoverable rather than dangerous — but this should be confirmed before the flow ships, not after.
 
@@ -314,9 +328,9 @@ That settles what used to be this document's hardest open question — which com
 
 ### There is one writer, and it already exists
 
-`BindingsApplyService`, `BindingsWorkingCopyRepository`, `BindingsWriter`, `BindingsBackupService` and `AppPaths.getBindingsWorkingDir()` are **BindForge's pipeline already**. They are not borrowed from a neighbour; the neighbour is the thing being upgraded. The [draft model](#live-file-synchronization) this document describes is the working-copy repository that exists today, with Apply as the only path to a live file — save one
-documented exception at [First-Time Startup](#it-applies-immediately--settled-2026-09-12), which creates
-a preset where none existed rather than modifying one.
+`BindingsApplyService`, `BindingsWorkingCopyRepository`, `BindingsWriter`, `BindingsBackupService` and `AppPaths.getBindingsWorkingDir()` are **BindForge's pipeline already**. They are not borrowed from a neighbour; the neighbour is the thing being upgraded. The [draft model](#live-file-synchronization) this document describes is the working-copy repository that exists today, with Apply as the only path to a live file — save
+[three documented exceptions](#writes-outside-apply--the-complete-list), each of which creates something that
+did not exist rather than modifying anything.
 
 **The hazard this replaces is worth naming, so that nobody rebuilds it.** A second editor would have meant two working copies and two writers over the same `.binds`. Each would have been individually safe — backup, atomic write, the [Data Integrity Principle](#data-integrity-principle) satisfied — and **jointly they would not have been:** one saves, the other is still holding a stale in-memory model, the player applies there, and the first editor's work is gone with no operation having misbehaved. The Data Integrity Principle does not
 catch that, because it governs atomicity *within* an operation, not ownership *across* components.

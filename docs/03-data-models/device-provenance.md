@@ -78,9 +78,12 @@ names, which is the divergence the design exists to allow.
 Frontier's, and Frontier's entries live in the shipped reference file rather than in this table. This table
 records what BindForge knows about entries it might *touch*, and a player-added entry carries one pair.
 
-**Open, and cheap to defer:** what happens if a player adds `<Alternative>` pairs by hand, or edits one of
-Frontier's multi-pair entries. Neither is common, and neither has been observed. Recorded so the single-pair
-assumption is a decision rather than an oversight.
+**Settled 2026-09-13 for Frontier's entries: BindForge never edits one.** A built-in's name and VID/PID pairs
+are Frontier's definition and stay locked; only a `.buttonMap` under its name can be created — see
+[Built-in controllers in My Devices](../02-features/bindforge/alias-designer.md#built-in-controllers-in-my-devices--settled-2026-09-13).
+
+**Still open, and cheap to defer:** what happens if a player adds `<Alternative>` pairs by hand. Not observed;
+recorded so the single-pair assumption is a decision rather than an oversight.
 
 ### Confirmed with real hardware: two controllers, one entry
 
