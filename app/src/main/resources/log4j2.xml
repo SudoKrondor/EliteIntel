@@ -14,7 +14,7 @@
              pattern with only a date in it gives every roll on the same day the
              same filename, so each one overwrites the last and a long session
              keeps just the most recent megabyte of history. The counter is what
-             makes the 7 kept files actually be 7 files. -->
+             makes the kept files actually be separate files. -->
         <RollingFile name="rollingFile" fileName="${logPath}/${rollingFileName}.log"
                      filePattern="${logPath}/${rollingFileName}_%d{yyyy-MM-dd}_%i.log" immediateFlush="true">
             <PatternLayout pattern="${logPattern}"/>
@@ -23,7 +23,19 @@
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
                 <SizeBasedTriggeringPolicy size="1MB"/>
             </Policies>
-            <DefaultRolloverStrategy max="7"/>
+            <!-- max bounds only the %i counter WITHIN one date: a new day starts again at _1 and
+                 never touches yesterday's files, so on its own it let the directory grow by up to
+                 max files a day forever. The Delete below is the real cap - it runs on every
+                 rollover, including the one at startup, and keeps the newest rolled files by
+                 modification time, whatever date is in their name. Three is enough: the support
+                 bundle wants the current log plus the previous session's, and a long session that
+                 rolls at 1MB once or twice must not push the previous session out of reach. -->
+            <DefaultRolloverStrategy max="3">
+                <Delete basePath="${logPath}" maxDepth="1">
+                    <IfFileName glob="${rollingFileName}_*.log"/>
+                    <IfAccumulatedFileCount exceeds="3"/>
+                </Delete>
+            </DefaultRolloverStrategy>
         </RollingFile>
     </Appenders>
 
