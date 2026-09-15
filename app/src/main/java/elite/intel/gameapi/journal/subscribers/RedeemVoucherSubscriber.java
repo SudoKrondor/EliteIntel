@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.managers.BountyManager;
+import elite.intel.db.managers.CombatBondManager;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.journal.events.RedeemVoucherEvent;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
@@ -18,9 +19,15 @@ public class RedeemVoucherSubscriber {
 
     private final MissionManager missionManager = MissionManager.getInstance();
     private final BountyManager bountyManager = BountyManager.getInstance();
+    private final CombatBondManager combatBonds = CombatBondManager.getInstance();
 
     @Subscribe
     public void onRedeemVoucherEvent(RedeemVoucherEvent event) {
+        // Combat bonds are their own ledger with no mission to reconcile against: paid means gone.
+        if (ConflictZoneSubscriber.VOUCHER_COMBAT_BOND.equalsIgnoreCase(event.getType())) {
+            combatBonds.cashedIn();
+            return;
+        }
         Map<Long, MissionDto> missions = missionManager.getMissions(
                 missionManager.getPirateMissionTypes()
         );

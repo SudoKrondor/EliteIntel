@@ -112,19 +112,6 @@ public class GlobalSettingsManager {
         return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAutoGearUpOnTakeOff());
     }
 
-    public void setAutoExitUiBeforeOpeningAnotherWindow(boolean autoExitUiBeforeOpeningAnotherWindow) {
-        Database.withDao(GlobalSettingsDao.class, dao -> {
-            GlobalSettingsDao.GlobalSettings settings = dao.get();
-            settings.setAutoExitUiBeforeOpeningAnotherWindow(autoExitUiBeforeOpeningAnotherWindow);
-            dao.save(settings);
-            return Void.TYPE;
-        });
-    }
-
-    public boolean getAutoExitUiBeforeOpeningAnotherWindow() {
-        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAutoExitUiBeforeOpeningAnotherWindow());
-    }
-
     public void setAutoLightsOffForSrvDeployment(boolean autoLightsOffForSrvDeployment) {
         Database.withDao(GlobalSettingsDao.class, dao -> {
             GlobalSettingsDao.GlobalSettings settings = dao.get();

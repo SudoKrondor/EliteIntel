@@ -24,7 +24,6 @@ public interface GlobalSettingsDao {
                                                                 autoLandingGearUpForFtl,
                                                                 autoHardpointsRetractForFtl,
                                                                 autoGearUpOnTakeOff,
-                                                                autoExitUiBeforeOpeningAnotherWindow,
                                                                 autoLightsOffForSrvDeployment,
                                                                 autoPlotNextNeutronJump,
                                                                 announceJumpRoute,
@@ -40,7 +39,6 @@ public interface GlobalSettingsDao {
                                 :autoLandingGearUpForFtl,
                                 :autoHardpointsRetractForFtl,
                                 :autoGearUpOnTakeOff,
-                                :autoExitUiBeforeOpeningAnotherWindow,
                                 :autoLightsOffForSrvDeployment,
                                 :autoPlotNextNeutronJump,
                                 :announceJumpRoute,
@@ -64,7 +62,6 @@ public interface GlobalSettingsDao {
             entity.setAutoLandingGearUpForFtl(rs.getBoolean("autoLandingGearUpForFtl"));
             entity.setAutoHardpointsRetractForFtl(rs.getBoolean("autoHardpointsRetractForFtl"));
             entity.setAutoGearUpOnTakeOff(rs.getBoolean("autoGearUpOnTakeOff"));
-            entity.setAutoExitUiBeforeOpeningAnotherWindow(rs.getBoolean("autoExitUiBeforeOpeningAnotherWindow"));
             entity.setAutoLightsOffForSrvDeployment(rs.getBoolean("autoLightsOffForSrvDeployment"));
             entity.setAutoPlotNextNeutronJump(rs.getBoolean("autoPlotNextNeutronJump"));
             entity.setAnnounceJumpRoute(rs.getBoolean("announceJumpRoute"));
@@ -86,7 +83,6 @@ public interface GlobalSettingsDao {
         boolean autoLandingGearUpForFtl;
         boolean autoHardpointsRetractForFtl;
         boolean autoGearUpOnTakeOff;
-        boolean autoExitUiBeforeOpeningAnotherWindow;
         boolean autoLightsOffForSrvDeployment;
         boolean autoPlotNextNeutronJump;
         boolean announceJumpRoute;
@@ -150,14 +146,6 @@ public interface GlobalSettingsDao {
 
         public void setAutoGearUpOnTakeOff(boolean autoGearUpOnTakeOff) {
             this.autoGearUpOnTakeOff = autoGearUpOnTakeOff;
-        }
-
-        public boolean isAutoExitUiBeforeOpeningAnotherWindow() {
-            return autoExitUiBeforeOpeningAnotherWindow;
-        }
-
-        public void setAutoExitUiBeforeOpeningAnotherWindow(boolean autoExitUiBeforeOpeningAnotherWindow) {
-            this.autoExitUiBeforeOpeningAnotherWindow = autoExitUiBeforeOpeningAnotherWindow;
         }
 
         public boolean isAutoLightsOffForSrvDeployment() {

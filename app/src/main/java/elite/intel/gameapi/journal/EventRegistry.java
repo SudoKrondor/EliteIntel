@@ -65,6 +65,7 @@ public class EventRegistry {
         registerEvent("ClearSessionCache", ClearSessionCacheEvent.class);
         registerEvent("UserInput", UserInputEvent.class);
         registerEvent("Bounty", BountyEvent.class);
+        registerEvent("FactionKillBond", FactionKillBondEvent.class);
         registerEvent("Cargo", CargoEvent.class);
         registerEvent("CargoTransfer", CargoTransferEvent.class);
         registerEvent("CarrierJump", CarrierJumpEvent.class);

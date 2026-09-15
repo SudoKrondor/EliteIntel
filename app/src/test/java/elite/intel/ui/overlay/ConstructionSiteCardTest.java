@@ -504,19 +504,34 @@ class ConstructionSiteCardTest {
     }
 
     /**
-     * At this point the answer is "fly back and unload", which the plotted-route card already says.
+     * The delivery leg. The card used to withdraw here, on the reasoning that "fly back" is what the
+     * plotted-route card says - but a card that vanishes the moment the last tonne is bought reads as the
+     * build having ended. It stays, saying what is aboard for the site, until the build completes.
      */
     @Test
-    void aHoldThatCoversEverythingOutstandingDrawsNoCard() {
-        assertTrue(card(site(0.9, Instant.now().toString()),
-                List.of(line("steel", 2542, 2500)),
-                Map.of("steel", 42)).isEmpty());
+    void aHoldThatCoversEverythingOutstandingShowsWhatToDeliver() {
+        HudObjective objective = card(site(0.9, Instant.now().toString()),
+                List.of(line("steel", 2542, 2500), line("titanium", 100, 100)),
+                Map.of("steel", 42)).orElseThrow();
+
+        assertEquals("42 T", valueOf(objective, "STEEL"));
+        assertEquals(HudRow.State.GOOD, rowOf(objective, "STEEL").state());
+        assertEquals("0 T", valueOf(objective, "OUTSTANDING"), "nothing left to buy");
+        assertFalse(labels(objective).contains("TITANIUM"), "a delivered line is not a delivery");
     }
 
+    /**
+     * Delivered in full but the game has not yet flagged the build complete: a full bar, nothing under it,
+     * and the completion flag is what ends the card - not the manifest running out.
+     */
     @Test
-    void aManifestWithNothingLeftDrawsNoCard() {
-        assertTrue(card(site(1.0, Instant.now().toString()),
-                List.of(line("steel", 2542, 2542)), Map.of()).isEmpty());
+    void aManifestWithNothingLeftKeepsTheCardUntilTheBuildCompletes() {
+        HudObjective objective = card(site(1.0, Instant.now().toString()),
+                List.of(line("steel", 2542, 2542)), Map.of()).orElseThrow();
+
+        assertEquals(100, rowOf(objective, "PROGRESS").current());
+        assertEquals("0 T", valueOf(objective, "OUTSTANDING"));
+        assertFalse(labels(objective).contains("STEEL"));
     }
 
     @Test

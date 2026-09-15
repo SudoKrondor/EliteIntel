@@ -18,12 +18,12 @@ import java.util.concurrent.Executors;
 public class AudioBeepCueBus {
 
     private static final AsyncEventBus bus = new AsyncEventBus(
-            "audio-cue",
             Executors.newSingleThreadExecutor(r -> {
                 Thread t = new Thread(r, "Audio-Cue-Bus");
                 t.setDaemon(true);
                 return t;
-            })
+            }),
+            new LoggedSubscriberFailures("audio-cue")
     );
 
     public static void publish(Object event) {

@@ -45,12 +45,9 @@ public class HistoricalMissionScanner {
         Path journalDir = PlayerSession.getInstance().getJournalPath();
         List<Path> journalFiles;
         try {
-            //noinspection resource
-            journalFiles = Files.list(journalDir) // <- journals are never in resources
-                    .filter(p -> p.toString().endsWith(".log"))
-                    .sorted(Comparator.comparingLong(p -> p.toFile().lastModified()))  // <- Scan oldest first
-                    .limit(4)
-                    .toList();
+            // The last four by the stamp in their names, oldest first - the mtime sort this replaced took
+            // the four OLDEST files in the folder, which on a long-lived install never held a live mission.
+            journalFiles = JournalFiles.newest(journalDir, 4);
         } catch (IOException e) {
             log.error("Failed to list journal files", e);
             return Collections.emptyList();

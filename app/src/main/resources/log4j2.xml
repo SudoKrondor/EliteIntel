@@ -14,7 +14,7 @@
              pattern with only a date in it gives every roll on the same day the
              same filename, so each one overwrites the last and a long session
              keeps just the most recent megabyte of history. The counter is what
-             makes the 7 kept files actually be 7 files. -->
+             makes the kept files actually be separate files. -->
         <RollingFile name="rollingFile" fileName="${logPath}/${rollingFileName}.log"
                      filePattern="${logPath}/${rollingFileName}_%d{yyyy-MM-dd}_%i.log" immediateFlush="true">
             <PatternLayout pattern="${logPattern}"/>
@@ -23,7 +23,19 @@
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
                 <SizeBasedTriggeringPolicy size="1MB"/>
             </Policies>
-            <DefaultRolloverStrategy max="7"/>
+            <!-- max bounds only the %i counter WITHIN one date: a new day starts again at _1 and
+                 never touches yesterday's files, so on its own it let the directory grow by up to
+                 max files a day forever. The Delete below is the real cap - it runs on every
+                 rollover, including the one at startup, and keeps the newest rolled files by
+                 modification time, whatever date is in their name. Three is enough: the support
+                 bundle wants the current log plus the previous session's, and a long session that
+                 rolls at 1MB once or twice must not push the previous session out of reach. -->
+            <DefaultRolloverStrategy max="3">
+                <Delete basePath="${logPath}" maxDepth="1">
+                    <IfFileName glob="${rollingFileName}_*.log"/>
+                    <IfAccumulatedFileCount exceeds="3"/>
+                </Delete>
+            </DefaultRolloverStrategy>
         </RollingFile>
     </Appenders>
 
@@ -74,11 +86,25 @@
              the warn line would have been discarded, leaving the failure with nowhere to go
              at all. Edge-triggered: one line per failed batch, not per record. -->
         <Logger name="elite.intel.ai.brain.vega.memory" level="debug"/>
-        <Logger name="elite.intel.gameapi.JournalParser" level="error"/>
+        <!-- info, on purpose. Every info line under here is edge-triggered - which journal the tail
+             chose at startup, that it switched files, that it is waiting for the game - and the
+             per-event line is debug. A commander whose HUD sat on a manifest sixteen dockings old
+             sent a bundle that could not say whether the journal was being read at all, because
+             the only lines that answer that were pinned to error along with the per-event noise. -->
+        <Logger name="elite.intel.gameapi.JournalParser" level="info"/>
         <!-- warn, on purpose: a file caught mid-write is retried rather than dropped, and seeing how
              often that happens is the only way to tell a slow disk from a stuck market. -->
         <Logger name="elite.intel.gameapi.AuxiliaryFilesMonitor" level="warn"/>
+        <!-- info, on purpose: the EDDN relay listener runs silently in the background and nothing else
+             says whether it connected, dropped or how much it has learned. A bundle should answer that. -->
+        <Logger name="elite.intel.gameapi.eddn" level="info"/>
         <Logger name="elite.intel.gameapi.journal.subscribers" level="error"/>
+        <!-- info, and louder than its package: one line each time a construction site's manifest
+             actually CHANGES (the fingerprint guard means an unchanged republish writes nothing and
+             logs nothing), so a bundle shows the depot events reaching the store - a few lines per
+             docking. The same sixteen-docking report above had no way to tell an unread journal from
+             a manifest that arrived and was never written. -->
+        <Logger name="elite.intel.gameapi.journal.subscribers.ColonisationDepotSubscriber" level="info"/>
         <!-- info, and louder than elite.intel, or this logger writes nothing at all. Exobiology
              payouts are fixed game constants that the journal states only at the moment of sale, so
              everything spoken before then comes from a table curated by hand - and a hand-curated

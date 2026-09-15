@@ -93,10 +93,8 @@ public class HuntingGroundJournalScanner {
      */
     private List<Path> journalsToRead(Path journalDir) {
         List<Path> all;
-        try (var files = Files.list(journalDir)) {
-            all = files.filter(path -> path.getFileName().toString().endsWith(".log"))
-                    .sorted(Comparator.comparingLong(path -> path.toFile().lastModified()))
-                    .toList();
+        try {
+            all = JournalFiles.listOldestFirst(journalDir);
         } catch (IOException e) {
             log.warn("Hunting ground scan: cannot list {}: {}", journalDir, e.getMessage());
             return List.of();

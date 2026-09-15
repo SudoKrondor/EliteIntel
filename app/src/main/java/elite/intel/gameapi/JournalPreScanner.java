@@ -3,8 +3,10 @@ package elite.intel.gameapi;
 import com.google.common.eventbus.EventBus;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import elite.intel.eventbus.LoggedSubscriberFailures;
 import elite.intel.gameapi.journal.EventRegistry;
 import elite.intel.gameapi.journal.events.BaseEvent;
+import elite.intel.gameapi.journal.subscribers.ConflictZoneSubscriber;
 import elite.intel.gameapi.journal.subscribers.DockedMarketSubscriber;
 import elite.intel.gameapi.journal.subscribers.ResourceSiteSubscriber;
 import elite.intel.gameapi.journal.subscribers.SilentPersistenceSubscriber;
@@ -16,9 +18,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Reads the two most recent journal files (previous session + current) before
@@ -41,10 +41,7 @@ public class JournalPreScanner {
 
         List<Path> all;
         try {
-            all = Files.list(journalDir)
-                    .filter(p -> p.getFileName().toString().endsWith(".log"))
-                    .sorted(Comparator.comparingLong(p -> p.toFile().lastModified()))
-                    .collect(Collectors.toList());
+            all = JournalFiles.listOldestFirst(journalDir);
         } catch (IOException e) {
             log.warn("JournalPreScanner: cannot list {}: {}", journalDir, e.getMessage());
             return;
@@ -57,7 +54,7 @@ public class JournalPreScanner {
 
         List<Path> toScan = all.subList(Math.max(0, all.size() - JOURNALS_TO_SCAN), all.size());
 
-        EventBus privateBus = new EventBus("pre-scan");
+        EventBus privateBus = new EventBus(new LoggedSubscriberFailures("pre-scan"));
         privateBus.register(new SilentPersistenceSubscriber());
         FinancePreScanAccumulator finance = new FinancePreScanAccumulator();
         privateBus.register(finance);
@@ -73,6 +70,8 @@ public class JournalPreScanner {
         // in, it lives in memory, and a restart taken between kills would otherwise lose the card
         // along with the tally the commander is halfway through building.
         privateBus.register(new ResourceSiteSubscriber());
+        // And for the conflict-zone fight, which is the same marker for the other kind of war.
+        privateBus.register(new ConflictZoneSubscriber());
 
         for (Path file : toScan) {
             processFile(file, privateBus);

@@ -300,7 +300,6 @@ public class CommanderTabPanel extends JPanel {
                 SettingToggle.of("automation.autoLandingGearUpForFtl", mgr::getAutoLandingGearUpForFtl, mgr::setAutoLandingGearUpForFtl),
                 SettingToggle.of("automation.autoCargoScoopRetractForFtl", mgr::getAutoCargoScoopRetractForFtl, mgr::setAutoCargoScoopRetractForFtl),
                 SettingToggle.of("automation.autoGearUpOnTakeOff", mgr::getAutoGearUpOnTakeOff, mgr::setAutoGearUpOnTakeOff),
-                SettingToggle.of("automation.autoExitUiBeforeOpeningAnotherPanel", mgr::getAutoExitUiBeforeOpeningAnotherWindow, mgr::setAutoExitUiBeforeOpeningAnotherWindow),
                 SettingToggle.of("automation.autoLightsOffForSrvDeployment", mgr::getAutoLightsOffForSrvDeployment, mgr::setAutoLightsOffForSrvDeployment),
                 SettingToggle.of("automation.autoPlotNextNeutronJump", mgr::getAutoPlotNextNeutronJump, mgr::setAutoPlotNextNeutronJump)));
         return shipSettingsPanel;

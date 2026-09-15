@@ -67,10 +67,13 @@ import java.util.stream.Collectors;
  * is a job the commander took on, not something the app volunteered, but it is not the moment-to-moment
  * task an active card describes either.
  * <p>
- * The card disappears on its own when the build completes or fails, when the hold already covers everything
- * outstanding (at which point the answer is "fly back", which the plotted-route card already says), and
- * when the manifest has gone unrefreshed long enough to stop being believable - see
- * {@link ActiveConstructionSite}. Docking at the depot brings it back.
+ * The card disappears on its own when the build completes or fails, and when the manifest has gone
+ * unrefreshed long enough to stop being believable - see {@link ActiveConstructionSite}. Docking at the
+ * depot brings it back. It does NOT withdraw when the hold already covers everything outstanding: it used
+ * to, on the reasoning that "fly back" is what the plotted-route card says - but a card that vanishes the
+ * moment the last tonne is bought reads as the build having ended, and the commander is left to remember
+ * what the hold is for. So the card stays through the delivery leg, saying what is aboard for the site,
+ * and the build's completion is what ends it.
  */
 public class ConstructionSiteObjectiveSource implements HudObjectiveSource {
 
@@ -158,12 +161,11 @@ public class ConstructionSiteObjectiveSource implements HudObjectiveSource {
 
         List<ConstructionCargo.Outstanding> outstanding = ConstructionCargo.outstanding(
                 manifest.apply(current.getMarketId()), hold.get());
-        if (outstanding.isEmpty()) return Optional.empty();
-
+        // Empty when the hold covers every line the site still wants - the delivery leg. The card stays up
+        // (see the class comment) and lists what is aboard instead of what to buy.
         List<ConstructionCargo.Outstanding> stillToBuy = outstanding.stream()
                 .filter(line -> !line.isSatisfied())
                 .toList();
-        if (stillToBuy.isEmpty()) return Optional.empty();
 
         Optional<Shop> shop = this.shop.get();
         boolean manifestIsOld = ManifestAge.hoursSince(current.getVisitedAt()) >= STALE_AFTER_HOURS;
@@ -179,7 +181,9 @@ public class ConstructionSiteObjectiveSource implements HudObjectiveSource {
                 (int) Math.round(current.getProgress() * 100), 100));
         // The good's own name is the row's label: a loading order is read down the left-hand column, and
         // repeating the word COMMODITY says nothing. Same shape as the shopping-list card.
-        Goods goods = goods(current, shop, outstanding, stillToBuy, goodsBudget);
+        Goods goods = stillToBuy.isEmpty()
+                ? new Goods(aboardForTheSite(outstanding, goodsBudget), null)
+                : goods(current, shop, outstanding, stillToBuy, goodsBudget);
         // Directly under the progress bar and above the goods, because it is what the goods are about: a
         // list that changes on entering a system says nothing until the commander knows which pad to fly to.
         if (goods.heading() != null) rows.add(goods.heading());
@@ -272,6 +276,20 @@ public class ConstructionSiteObjectiveSource implements HudObjectiveSource {
                     load.held() > 0 ? HudRow.State.GOOD : HudRow.State.NORMAL));
         }
         return new Goods(rows, null);
+    }
+
+    /**
+     * The delivery leg: everything the site still wants is aboard, so each line is what the hold carries
+     * for it, green. A manifest with nothing left at all (delivered in full, the game not yet saying so)
+     * gives an empty list under a full bar, and the completion flag ends the card.
+     */
+    private static List<HudRow> aboardForTheSite(List<ConstructionCargo.Outstanding> outstanding, int budget) {
+        return outstanding.stream()
+                .filter(line -> line.held() > 0)
+                .limit(Math.min(budget, MAX_GOODS_LISTED))
+                .map(line -> HudRow.of(displayName(line).toUpperCase(),
+                        HudText.amount(line.held(), "overlay.card.unit.tonnes"), HudRow.State.GOOD))
+                .toList();
     }
 
     /**

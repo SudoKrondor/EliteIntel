@@ -14,12 +14,12 @@ import java.util.concurrent.Executors;
 public class AudioMonitorBus {
 
     private static final AsyncEventBus bus = new AsyncEventBus(
-            "audio-monitor",
             Executors.newSingleThreadExecutor(r -> {
                 Thread t = new Thread(r, "Audio-Monitor-Bus");
                 t.setDaemon(true);
                 return t;
-            })
+            }),
+            new LoggedSubscriberFailures("audio-monitor")
     );
 
     public static void publish(Object event) {

@@ -1,6 +1,7 @@
 package elite.intel.ui.support;
 
 import elite.intel.ai.hands.BindingsLoader;
+import elite.intel.gameapi.JournalFiles;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -18,7 +19,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -382,11 +382,8 @@ public final class SupportBundle {
     private static Collected newestJournal(@Nullable Path journalDir) {
         if (journalDir == null) return Collected.missing("no journal directory configured");
         if (!Files.isDirectory(journalDir)) return Collected.missing("not a directory: " + journalDir);
-        try (var files = Files.list(journalDir)) {
-            Optional<Path> newest = files
-                    .filter(p -> p.toString().endsWith(".log"))
-                    .max(Comparator.comparingLong(p -> p.toFile().lastModified()));
-            return newest.map(Collected::of)
+        try {
+            return JournalFiles.newest(journalDir).map(Collected::of)
                     .orElseGet(() -> Collected.missing("no journal files in " + journalDir));
         } catch (IOException e) {
             return Collected.missing("could not list " + journalDir + ": " + e);

@@ -8,7 +8,7 @@ import com.google.common.eventbus.EventBus;
  * from game journal events on GameEventBus.
  */
 public class UiBus {
-    private static final EventBus bus = new EventBus("ui");
+    private static final EventBus bus = new EventBus(new LoggedSubscriberFailures("ui"));
 
     public static void publish(Object event) {
         bus.post(event);

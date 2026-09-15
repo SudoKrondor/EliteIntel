@@ -126,6 +126,13 @@ public class LocationEvent extends BaseEvent {
     @SerializedName("SystemFaction")
     private Faction systemFaction;
 
+    /**
+     * The wars in this system, in the same shape FSDJump reports them - the two events describe the
+     * same arrival and share the block.
+     */
+    @SerializedName("Conflicts")
+    private List<FSDJumpEvent.Conflict> conflicts;
+
     public LocationEvent(JsonObject json) {
         super(json.get("timestamp").getAsString(), Duration.ofSeconds(60), "Location");
         LocationEvent event = GsonFactory.getGson().fromJson(json, LocationEvent.class);
@@ -168,6 +175,7 @@ public class LocationEvent extends BaseEvent {
         this.powerplayStateUndermining = event.powerplayStateUndermining;
         this.factions = event.factions;
         this.systemFaction = event.systemFaction;
+        this.conflicts = event.conflicts;
     }
 
     @Override
@@ -357,6 +365,10 @@ public class LocationEvent extends BaseEvent {
 
     public List<Faction> getFactions() {
         return factions;
+    }
+
+    public List<FSDJumpEvent.Conflict> getConflicts() {
+        return conflicts;
     }
 
     public Faction getSystemFaction() {

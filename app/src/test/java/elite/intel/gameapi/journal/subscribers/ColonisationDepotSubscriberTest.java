@@ -99,6 +99,36 @@ class ColonisationDepotSubscriberTest {
     }
 
     /**
+     * The name lookup reads a stored location row back through Gson, and a row an older build wrote can fail
+     * to parse. That failure used to escape the subscriber before the write, and the fingerprint stayed
+     * unset - so every republish failed the same way and the site froze at its last good manifest, for
+     * sixteen dockings in the report that found it. The manifest is the point; the name is a nicety.
+     */
+    @Test
+    void aFailingLocationLookupStillStoresTheManifest() {
+        ColonisationDepotSubscriber subscriber = new ColonisationDepotSubscriber(
+                (site, manifest) -> {
+                    sitesWritten.add(site);
+                    manifestsWritten.add(manifest);
+                },
+                (visitedAt, marketId) -> padsRecorded.add(marketId + "@" + visitedAt),
+                marketId -> {
+                    throw new IllegalStateException("Expected BEGIN_OBJECT but was NUMBER at line 1");
+                });
+
+        subscriber.onConstructionDepot(depot("2026-09-14T20:20:23Z", 0.308365, 0));
+        subscriber.onConstructionDepot(depot("2026-09-14T20:20:27Z", 0.308365, 0));
+
+        assertEquals(1, sitesWritten.size(), "the manifest must be stored without a name");
+        Site site = sitesWritten.getFirst();
+        assertEquals(MARKET_ID, site.getMarketId());
+        assertNull(site.getStationName());
+        assertEquals(0.308365, site.getProgress(), 1e-9);
+        assertEquals(List.of(MARKET_ID + "@2026-09-14T20:20:27Z"), padsRecorded,
+                "the unchanged republish must still record the pad, so the fingerprint took");
+    }
+
+    /**
      * The game republishes the whole manifest every 15 to 30 seconds for as long as the ship is on the
      * pad - fifty copies over the visit this fixture came from. Writing each one would mean deleting and
      * reinserting seventeen rows every twenty seconds for no change at all.
