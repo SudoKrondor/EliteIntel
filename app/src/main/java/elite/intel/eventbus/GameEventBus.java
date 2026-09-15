@@ -14,7 +14,7 @@ import java.util.Objects;
 public class GameEventBus {
     // WHY: subscribers run on the publishing thread, but Guava queues reentrant posts until the current event
     // finishes. Some seams rely on same-thread dispatch; switching to AsyncEventBus would silently break those.
-    private static final EventBus bus = new EventBus();
+    private static final EventBus bus = new EventBus(new LoggedSubscriberFailures("game"));
     private static final ThreadLocal<DispatchContext> dispatchContext =
             ThreadLocal.withInitial(DispatchContext::new);
 

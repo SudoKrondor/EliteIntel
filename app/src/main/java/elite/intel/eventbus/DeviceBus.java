@@ -14,12 +14,12 @@ import java.util.concurrent.Executors;
 public class DeviceBus {
 
     private static final AsyncEventBus bus = new AsyncEventBus(
-            "device-input",
             Executors.newSingleThreadExecutor(r -> {
                 Thread t = new Thread(r, "Device-Input-Bus");
                 t.setDaemon(true);
                 return t;
-            })
+            }),
+            new LoggedSubscriberFailures("device-input")
     );
 
     public static void publish(Object event) {

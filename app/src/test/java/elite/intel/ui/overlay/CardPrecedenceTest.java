@@ -80,6 +80,19 @@ class CardPrecedenceTest {
         assertEquals("massacre-stack", winnerOf("massacre-stack", "bounty-hunt"));
     }
 
+    /**
+     * The same standing as the bounty hunt, for the same reason, and the two never both speak: a
+     * ship is in a resource site or in a war zone, not both.
+     */
+    @Test
+    void aConflictZoneFightOnlyOutranksThePlottedRoute() {
+        assertEquals("conflict-zone", winnerOf("conflict-zone", "ship-route"));
+        assertEquals("mission", winnerOf("mission", "conflict-zone"));
+        assertEquals("trade-route", winnerOf("trade-route", "conflict-zone"));
+        assertEquals("construction-site", winnerOf("construction-site", "conflict-zone"));
+        assertEquals("massacre-stack", winnerOf("massacre-stack", "conflict-zone"));
+    }
+
     @Test
     void aQuietHudShowsNothing() {
         assertTrue(NativeHudOverlay.highestPriority(List.of()).isEmpty());
@@ -116,6 +129,7 @@ class CardPrecedenceTest {
             case "CommoditySearchObjectiveSource" -> "commodity-search";
             case "ExobiologyObjectiveSource" -> "exobiology";
             case "BountyHuntObjectiveSource" -> "bounty-hunt";
+            case "ConflictZoneObjectiveSource" -> "conflict-zone";
             case "ShipRouteObjectiveSource" -> "ship-route";
             default -> throw new AssertionError(
                     "unmapped overlay source " + source.getClass().getSimpleName()

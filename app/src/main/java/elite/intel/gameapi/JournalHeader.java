@@ -11,9 +11,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 /**
  * The {@code Fileheader} line every journal file opens with, read straight off disk.
@@ -30,7 +28,6 @@ public final class JournalHeader {
 
     private static final Logger log = LogManager.getLogger(JournalHeader.class);
 
-    private static final String JOURNAL_SUFFIX = ".log";
     private static final String FILEHEADER_EVENT = "Fileheader";
 
     private JournalHeader() {
@@ -85,9 +82,8 @@ public final class JournalHeader {
 
     private static Optional<Path> newestJournal(Path journalDir) {
         if (journalDir == null || !Files.isDirectory(journalDir)) return Optional.empty();
-        try (Stream<Path> files = Files.list(journalDir)) {
-            return files.filter(p -> p.toString().endsWith(JOURNAL_SUFFIX))
-                    .max(Comparator.comparingLong(p -> p.toFile().lastModified()));
+        try {
+            return JournalFiles.newest(journalDir);
         } catch (IOException e) {
             log.warn("Cannot list journal folder {}: {}", journalDir, e.getMessage());
             return Optional.empty();

@@ -17,8 +17,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static elite.intel.util.StringUtls.localizedSpeech;
 
@@ -49,6 +49,11 @@ import static elite.intel.util.StringUtls.localizedSpeech;
  */
 public class JournalParser implements Runnable, ManagedService {
     private static final Logger log = LogManager.getLogger(JournalParser.class);
+    /**
+     * How often the folder is re-listed for a newer journal by name. A directory listing is cheap, and a
+     * game that has just opened a new journal writes its first lines within seconds anyway.
+     */
+    private static final long NEWEST_CHECK_INTERVAL_NANOS = TimeUnit.SECONDS.toNanos(5);
     private Path journalDir;
     private Thread processingThread;
     private volatile boolean isRunning;
@@ -127,7 +132,8 @@ public class JournalParser implements Runnable, ManagedService {
             }
             if (!isRunning) return;
             long lastPosition = 0;
-            log.info("Monitoring {}", currentFile);
+            log.info("Monitoring {}", currentFile.getFileName());
+            long lastNewestCheck = System.nanoTime();
 
             while (isRunning) {
                 Thread.sleep(200);
@@ -147,23 +153,37 @@ public class JournalParser implements Runnable, ManagedService {
                 //   poll caused the parser to switch to an older journal file (whose cached mtime
                 //   appeared newer), reset lastPosition to 0, and read only expired events forever.
                 //
-                // Solution: do NOT call getLatestJournalFile() inside the loop. Instead watch for
-                // ENTRY_CREATE events from the WatchService. That fires reliably when the game
-                // starts a new journal, and is unaffected by stale mtime caching.
+                // Solution: never choose a file by mtime. The startup pick and the periodic re-check
+                // below both go by the start stamp in the file's NAME (see JournalFiles), which the
+                // filesystem cannot get stale; ENTRY_CREATE from the WatchService is kept as the fast
+                // path for the moment the game opens a new journal.
                 WatchKey key = watchService.poll();
                 if (key != null) {
                     for (WatchEvent<?> watchEvent : key.pollEvents()) {
                         if (watchEvent.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
                             @SuppressWarnings("unchecked")
                             Path created = ((WatchEvent<Path>) watchEvent).context();
-                            if (created.toString().endsWith(".log")) {
+                            if (JournalFiles.startStamp(created).isPresent()) {
                                 lastPosition = 0;
                                 currentFile = journalDir.resolve(created);
+                                lastNewestCheck = System.nanoTime();
                                 log.info("Switched to new journal file: {}", currentFile.getFileName());
                             }
                         }
                     }
                     key.reset();
+                }
+                // Backstop for a missed or never-delivered ENTRY_CREATE: one directory listing every few
+                // seconds, by name. Cheap, and the only way a session that began on the wrong file (or
+                // whose watch key went quiet) ever finds the file the game is actually writing.
+                if (System.nanoTime() - lastNewestCheck >= NEWEST_CHECK_INTERVAL_NANOS) {
+                    lastNewestCheck = System.nanoTime();
+                    Path newest = newestJournalOrNull();
+                    if (newest != null && !newest.equals(currentFile)) {
+                        lastPosition = 0;
+                        currentFile = newest;
+                        log.info("Switched to newer journal file by name: {}", currentFile.getFileName());
+                    }
                 }
 
                 try {
@@ -192,7 +212,9 @@ public class JournalParser implements Runnable, ManagedService {
                                     GameEventBus.publish(event);
                                     webSocketBroadcaster.broadcast(event.toJson());
                                     UiBus.publish(new AppLogDebugEvent("\tProcessing Event: " + eventType));
-                                    log.info("Processing Journal Event: {} {}", eventType, event.toJsonObject());
+                                    // debug, not info: this fires per event, and the logger is at info so the
+                                    // edge-triggered lines above (file chosen, file switched) reach a bundle.
+                                    log.debug("Processing Journal Event: {} {}", eventType, event.toJsonObject());
                                 } else if (event != null && event.isReplay()) {
                                     log.debug("Skipping replay event: {}", eventType);
                                 } else if (event != null && event.isExpired()) {
@@ -213,9 +235,20 @@ public class JournalParser implements Runnable, ManagedService {
     }
 
     private Path getLatestJournalFile() throws IOException {
-        return Files.list(journalDir)
-                .filter(p -> p.toString().endsWith(".log"))
-                .max(Comparator.comparingLong(p -> p.toFile().lastModified()))
+        return JournalFiles.newest(journalDir)
                 .orElseThrow(() -> new IOException("No journal files found in " + journalDir));
+    }
+
+    /**
+     * The newest journal by name, or null when the folder cannot be listed right now - a transient the
+     * next check will retry, not a reason to stop tailing the file we have.
+     */
+    private Path newestJournalOrNull() {
+        try {
+            return JournalFiles.newest(journalDir).orElse(null);
+        } catch (IOException e) {
+            log.debug("Could not list {} for a newer journal: {}", journalDir, e.getMessage());
+            return null;
+        }
     }
 }

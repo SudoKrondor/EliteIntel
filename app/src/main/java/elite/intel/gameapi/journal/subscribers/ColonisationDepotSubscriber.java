@@ -98,9 +98,12 @@ public class ColonisationDepotSubscriber {
         Site site = site(event);
         writer.accept(site, manifest);
         lastWritten.put(event.getMarketID(), fingerprint);
-        log.debug("Construction site {} ({}) at {}%, {} of {} lines outstanding",
+        // info, edge-triggered on the fingerprint: the line a bundle needs to show the manifest arrived AND
+        // was stored. The logger is raised to info in log4j2.xml, above its package's error.
+        log.info("Construction site {} ({}) stored at {}%, {} of {} lines outstanding, as of {}",
                 site.getStationName(), event.getMarketID(), Math.round(event.getConstructionProgress() * 100),
-                manifest.stream().filter(line -> line.outstanding() > 0).count(), manifest.size());
+                manifest.stream().filter(line -> line.outstanding() > 0).count(), manifest.size(),
+                event.getTimestamp());
     }
 
     /**
@@ -118,13 +121,30 @@ public class ColonisationDepotSubscriber {
         site.setFailed(event.isConstructionFailed());
         site.setVisitedAt(event.getTimestamp());
 
-        LocationDto location = locator.apply(event.getMarketID());
+        LocationDto location = locationOrNull(event.getMarketID());
         if (location != null) {
             site.setStationName(location.getStationName());
             site.setStarSystem(location.getStarName());
             site.setSystemAddress(location.getSystemAddress() == 0 ? null : location.getSystemAddress());
         }
         return site;
+    }
+
+    /**
+     * The name lookup must never cost the manifest. It reads a stored location row back through Gson, and a
+     * row written by an older build can fail to parse; before this the failure escaped the subscriber, the
+     * write below it never ran, and the fingerprint stayed unset - so every republish failed the same way and
+     * the site froze at its last good manifest. A site with no name is still the shopping list; the name is
+     * kept from the last write that had one (see {@code ConstructionSiteDao.saveSite}).
+     */
+    private LocationDto locationOrNull(long marketId) {
+        try {
+            return locator.apply(marketId);
+        } catch (RuntimeException e) {
+            log.warn("Construction site {}: location lookup failed, storing the manifest without a name: {}",
+                    marketId, e.toString());
+            return null;
+        }
     }
 
     private static List<Requirement> manifest(ColonisationConstructionDepotEvent event) {

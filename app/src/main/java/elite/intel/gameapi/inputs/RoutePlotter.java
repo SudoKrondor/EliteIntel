@@ -95,8 +95,8 @@ public class RoutePlotter {
         // "Music: GalaxyMap" and GuiFocus 6 one second before the command, no NavRoute afterwards).
         //
         // It has to be the map's own binding that shuts it. UI_Back does not close the galaxy map, which is
-        // why closeOpenPanel() is skipped here entirely: with autoExitUiBeforeOpeningAnotherWindow on it
-        // would fire ten of them at a map that ignores them, and the tap below would then be the thing that
+        // why closeOpenPanel() is skipped here entirely: it would fire ten of them at a map that ignores
+        // them, and the tap below would then be the thing that
         // closed it - leaving the sequence running against no map at all. GuiFocus is exclusive, so an open
         // galaxy map already says there is no other panel for closeOpenPanel() to shut.
         // The binding is a toggle: the same step shuts the open map here and opens a fresh one below.

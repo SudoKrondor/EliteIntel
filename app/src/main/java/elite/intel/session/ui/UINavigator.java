@@ -5,7 +5,6 @@ import elite.intel.ai.hands.BindingsMonitor;
 import elite.intel.ai.hands.KeyBindingsParser;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.db.managers.GlobalSettingsManager;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.session.Status;
 import elite.intel.session.StatusFlags;
@@ -40,7 +39,6 @@ public class UINavigator {
     private static final int TAB_CYCLE_PAUSE_MS = 10; // extra pause between each tab keystroke
 
     private final PanelStateTracker tracker = PanelStateTracker.getInstance();
-    private final GlobalSettingsManager globalSettingsManager = GlobalSettingsManager.getInstance();
 
     public UINavigator() {
     }
@@ -109,9 +107,10 @@ public class UINavigator {
         }
     }
 
+    /**
+     * Backs out of whatever UI the game has open so the next panel opens on a clean focus.
+     */
     public void closeOpenPanel() {
-
-
         StatusFlags.GuiFocus lastOpened = tracker.getLastOpenedPanel();
         if (lastOpened != null) {
             if (status.getGuiFocus() == lastOpened) {
@@ -132,19 +131,17 @@ public class UINavigator {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(Bindings.GameCommand.EXPLORATION_SAAEXIT_THIRD_PERSON.getGameBinding())));
         }
 
-        if (shouldBackOut()) {
-            for (int i = 0; i < 10; i++) {
-                GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(Bindings.GameCommand.BINDING_EXIT_KEY.getGameBinding())));
-            }
-        } else {
-            for (int i = 0; i < 3; i++) {
-                GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(Bindings.GameCommand.BINDING_EXIT_KEY.getGameBinding())));
-            }
+        // WHY: a full-screen mode (maps, FSS, SAA, station services, codex) sits several UI_Back presses
+        // deep, so back all the way out of it. Three is enough for a side panel. This used to be behind a
+        // commander toggle - with it off the next panel opened on top of a stale focus and every
+        // subsequent keystroke went astray, so backing out is now unconditional.
+        int backTaps = isInDeepUiMode() ? 10 : 3;
+        for (int i = 0; i < backTaps; i++) {
+            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(Bindings.GameCommand.BINDING_EXIT_KEY.getGameBinding())));
         }
     }
 
-    private boolean shouldBackOut() {
-        if (!globalSettingsManager.getAutoExitUiBeforeOpeningAnotherWindow()) return false;
+    private boolean isInDeepUiMode() {
         if (status.isGalaxyMapOpen()) return true;
         if (status.isSystemMapOpen()) return true;
         if (status.isOrreryOpen()) return true;

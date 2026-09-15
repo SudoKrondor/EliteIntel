@@ -669,6 +669,9 @@ public class NativeHudOverlay {
                 // route it beats is usually the one back to the station to cash the vouchers in, which
                 // is part of the hunt rather than a reason to stop showing it.
                 new BountyHuntObjectiveSource(),
+                // Its twin for a faction war: same rank, same reasoning, and never both at once - a
+                // ship is in a resource site or in a conflict zone, not both.
+                new ConflictZoneObjectiveSource(),
                 // Last and weakest: where the commander is pointed, which is worth showing when nothing
                 // else is and worth nothing next to what they are actually doing. A destination the app
                 // worked out (material trader, broker, factors) enriches this card rather than competing

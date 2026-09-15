@@ -12,7 +12,7 @@ import com.google.common.eventbus.EventBus;
  * blocking between publishing while sleeping, so fire-and-forget would break timing.
  */
 public class GameControllerBus {
-    private static final EventBus bus = new EventBus("game-controller");
+    private static final EventBus bus = new EventBus(new LoggedSubscriberFailures("game-controller"));
 
     public static void publish(Object event) {
         bus.post(event);

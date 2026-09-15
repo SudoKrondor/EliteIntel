@@ -11,6 +11,7 @@ import elite.intel.diagnostics.*;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.JournalPreScanner;
 import elite.intel.gameapi.SubscriberRegistration;
+import elite.intel.gameapi.eddn.EddnListener;
 import elite.intel.session.LoadSessionEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.controller.AppController;
@@ -76,6 +77,10 @@ public class App {
         Thread.ofVirtual().name("journal-pre-scan").start(
                 () -> JournalPreScanner.scan(PlayerSession.getInstance().getJournalPath())
         );
+
+        // Listen to the EDDN relay for where the resource sites and the wars are. Subscribe-only,
+        // silent, one daemon thread: the app is whole without it and just learns more slowly.
+        EddnListener.getInstance().start();
 
         // Event subscribers
         SubscriberRegistration.registerSubscribers();

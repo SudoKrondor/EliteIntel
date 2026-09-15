@@ -119,6 +119,7 @@ class AiActionMapGeneratorTest {
             "find_encoded_material_trader",
             "find_guardian_technology_broker",
             "find_bounty_hunting_ground",
+            "find_conflict_zone_for_combat_bonds",
             "find_pirate_massacre_missions",
             "find_human_technology_broker",
             "find_interstellar_factor",

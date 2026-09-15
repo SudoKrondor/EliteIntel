@@ -3,16 +3,14 @@ package elite.intel.gameapi.journal.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.dao.LocationDao.Coordinates;
+import elite.intel.db.managers.ConflictZoneManager;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.journal.events.FSSSignalDiscoveredEvent;
 import elite.intel.gameapi.journal.events.dto.FssSignalDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
-import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.gameapi.missions.ResourceSiteProfile;
-import elite.intel.gameapi.signals.ResourceSiteGrade;
-import elite.intel.gameapi.signals.ResourceSiteSweep;
+import elite.intel.gameapi.signals.*;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 
@@ -30,10 +28,11 @@ public class FSSSignalDiscoveredSubscriber {
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final HuntingGroundManager huntingGrounds = HuntingGroundManager.getInstance();
-    private final MissionManager missionManager = MissionManager.getInstance();
+    private final ConflictZoneManager conflictZones = ConflictZoneManager.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
     private final SystemSession systemSession = SystemSession.getInstance();
     private final ResourceSiteSweep resourceSites = new ResourceSiteSweep();
+    private final ConflictZoneSweep conflictZoneSweep = new ConflictZoneSweep();
 
     @Subscribe
     public void onFSSSignalDiscovered(FSSSignalDiscoveredEvent event) {
@@ -41,6 +40,7 @@ public class FSSSignalDiscoveredSubscriber {
             LocationDto location = updateLocation(event);
             locationManager.save(location);
             recordResourceSite(event, location);
+            recordConflictZone(event, location);
 
             if (event.getUssTypeLocalised() != null && event.getUssTypeLocalised().equals("Nonhuman signal source")) {
                 publishVoice(localizedEvent("event.fss.signal.nonhuman", event.getThreatLevel()));
@@ -61,7 +61,9 @@ public class FSSSignalDiscoveredSubscriber {
     }
 
     /**
-     * Files a resource extraction site against the system that reported it.
+     * Files a resource extraction site against the system that reported it. Silently: the ledger is
+     * quiet data acquisition, and a line here would fire on arrival in most populated systems. The
+     * commander reads it back by asking for a hunting ground.
      * <p>
      * WHY the location resolved from the event's own system address rather than the star we think we
      * are orbiting: signals do not always follow the arrival that explains them, and crediting one to
@@ -82,27 +84,27 @@ public class FSSSignalDiscoveredSubscriber {
                 sweep,
                 event.getTimestamp()
         );
-
-        if (sweep.total() == 1) announceHuntingGround(starSystem);
     }
 
     /**
-     * Speaks only when this system is where an open pirate massacre contract sends the commander.
-     * <p>
-     * WHY not on every hunting ground found: the game announces resource sites on arrival in most
-     * populated systems, so a line here would fire a couple of hundred times in a month of ordinary
-     * flying. The ledger underneath is meant to fill up quietly. It is worth hearing only when the
-     * commander is standing in the system their contracts point at.
+     * Files a conflict zone against the system that reported it, the same way and for the same
+     * reasons as a resource site. Silent: the ledger is read back by asking for a war zone.
      */
-    private void announceHuntingGround(String starSystem) {
-        boolean targetOfOpenContract = missionManager
-                .getMissions(missionManager.getPirateMissionTypes())
-                .values().stream()
-                .map(MissionDto::getDestinationSystem)
-                .anyMatch(starSystem::equalsIgnoreCase);
-        if (!targetOfOpenContract) return;
+    private void recordConflictZone(FSSSignalDiscoveredEvent event, LocationDto location) {
+        ConflictZoneSignal zone = ConflictZoneSignal.fromSymbol(event.getSignalName());
+        if (zone == null) return;
 
-        publishVoice(localizedEvent("event.fss.huntingGroundConfirmed", starSystem));
+        String starSystem = location.getStarName();
+        if (starSystem == null || starSystem.isBlank()) return;
+
+        ConflictZoneProfile sweep = conflictZoneSweep.add(event.getSystemAddress() + "@" + event.getTimestamp(), zone);
+        conflictZones.recordZones(
+                starSystem,
+                event.getSystemAddress(),
+                new Coordinates(starSystem, location.getX(), location.getY(), location.getZ()),
+                sweep,
+                event.getTimestamp()
+        );
     }
 
     private LocationDto updateLocation(FSSSignalDiscoveredEvent event) {
