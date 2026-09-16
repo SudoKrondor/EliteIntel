@@ -39,20 +39,18 @@ public class JournalPreScanner {
     public static void scan(Path journalDir) {
         log.info("JournalPreScanner: scanning last {} journal(s) in {}", JOURNALS_TO_SCAN, journalDir);
 
-        List<Path> all;
+        List<Path> toScan;
         try {
-            all = JournalFiles.listOldestFirst(journalDir);
+            toScan = JournalFiles.newest(journalDir, JOURNALS_TO_SCAN);
         } catch (IOException e) {
             log.warn("JournalPreScanner: cannot list {}: {}", journalDir, e.getMessage());
             return;
         }
 
-        if (all.isEmpty()) {
+        if (toScan.isEmpty()) {
             log.info("JournalPreScanner: no journal files found, skipping");
             return;
         }
-
-        List<Path> toScan = all.subList(Math.max(0, all.size() - JOURNALS_TO_SCAN), all.size());
 
         EventBus privateBus = new EventBus(new LoggedSubscriberFailures("pre-scan"));
         privateBus.register(new SilentPersistenceSubscriber());

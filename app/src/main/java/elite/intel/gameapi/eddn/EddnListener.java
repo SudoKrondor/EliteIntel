@@ -74,7 +74,6 @@ public final class EddnListener {
 
     private final EnvelopeHandler sightings;
     private final AtomicBoolean running = new AtomicBoolean();
-    private Thread thread;
 
     private volatile long received;
     private volatile long handled;
@@ -97,7 +96,7 @@ public final class EddnListener {
 
     public synchronized void start() {
         if (!running.compareAndSet(false, true)) return;
-        thread = new Thread(this::run, "eddn-listener");
+        Thread thread = new Thread(this::run, "eddn-listener");
         thread.setDaemon(true);
         thread.start();
     }
@@ -108,7 +107,6 @@ public final class EddnListener {
      */
     public synchronized void stop() {
         running.set(false);
-        thread = null;
     }
 
     /**

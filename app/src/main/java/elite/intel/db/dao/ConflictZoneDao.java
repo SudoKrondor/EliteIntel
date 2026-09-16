@@ -65,6 +65,19 @@ public interface ConflictZoneDao {
     int clearIfNotSeenSince(@Bind("starSystem") String starSystem, @Bind("seenBefore") String seenBefore);
 
     /**
+     * The same, for an arrival that found no war: everything sighted up to and including that moment is
+     * over, so the bound is inclusive.
+     */
+    @SqlUpdate("""
+            UPDATE conflict_zone
+               SET czLow = 0, czMedium = 0, czHigh = 0, czPowerplay = 0,
+                   warType = NULL, faction1 = NULL, faction2 = NULL
+             WHERE starSystem = :starSystem
+               AND (lastSeen IS NULL OR lastSeen <= :seenAt)
+            """)
+    int clearIfNotSeenAfter(@Bind("starSystem") String starSystem, @Bind("seenAt") String seenAt);
+
+    /**
      * Raises each intensity count to what this sweep saw, never lowering one.
      * <p>
      * WHY MAX rather than assignment: a sweep interrupted part way reports fewer zones than the

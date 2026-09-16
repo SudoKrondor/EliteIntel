@@ -168,8 +168,7 @@ public class ConflictZoneManager {
     public void recordPeace(String starSystem, String seenAt) {
         if (starSystem == null || starSystem.isBlank() || seenAt == null) return;
         Database.withDao(ConflictZoneDao.class, dao -> {
-            // Anything seen up to and including this moment is over, so the cut-off sits just past it.
-            dao.clearIfNotSeenSince(starSystem, seenAt + "~");
+            dao.clearIfNotSeenAfter(starSystem, seenAt);
             return Void.TYPE;
         });
     }

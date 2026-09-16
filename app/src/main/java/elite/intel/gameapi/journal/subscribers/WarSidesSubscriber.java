@@ -46,7 +46,7 @@ public class WarSidesSubscriber {
                 List<FSDJumpEvent.Conflict> conflicts, String timestamp) {
         if (starSystem == null || starSystem.isBlank()) return;
 
-        ActiveWar war = activeWar(conflicts);
+        ActiveWar war = ActiveWar.firstIn(conflicts);
         if (war == null) {
             conflictZones.recordPeace(starSystem, timestamp);
             return;
@@ -56,20 +56,5 @@ public class WarSidesSubscriber {
                 : null;
         conflictZones.recordWar(starSystem, systemAddress, coordinates,
                 war.warType(), war.faction1(), war.faction2(), timestamp);
-    }
-
-    /**
-     * The first war being fought here. A system can host two at once, and then the zones belong
-     * to both and one pair of names is as good as the other for telling the commander what to expect.
-     */
-    private static ActiveWar activeWar(List<FSDJumpEvent.Conflict> conflicts) {
-        if (conflicts == null) return null;
-        for (FSDJumpEvent.Conflict conflict : conflicts) {
-            ActiveWar war = ActiveWar.of(conflict.getWarType(), conflict.getStatus(),
-                    conflict.getFaction1() == null ? null : conflict.getFaction1().getName(),
-                    conflict.getFaction2() == null ? null : conflict.getFaction2().getName());
-            if (war != null) return war;
-        }
-        return null;
     }
 }

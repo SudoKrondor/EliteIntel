@@ -26,13 +26,6 @@ public enum ConflictZoneIntensity {
     }
 
     /**
-     * Whether this is a faction war zone the commander can drop into for combat bonds.
-     */
-    public boolean isFactionWar() {
-        return this != POWERPLAY;
-    }
-
-    /**
      * The intensity this symbol names, or null when it is not a conflict zone at all.
      * <p>
      * The symbol carries the zone's index after a colon ({@code $Warzone_PointRace_Low:#index=3;}),

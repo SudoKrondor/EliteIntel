@@ -33,7 +33,7 @@ public class FactionKillBondSubscriber {
      * A faction that is really a symbol ({@code $faction_PilotsFederation;}) reads better by its
      * localised name; an ordinary faction name has no localised twin and is used as is.
      */
-    private static String preferPlain(String name, String localised) {
+    static String preferPlain(String name, String localised) {
         if (name != null && name.startsWith("$") && localised != null && !localised.isBlank()) return localised;
         return name;
     }

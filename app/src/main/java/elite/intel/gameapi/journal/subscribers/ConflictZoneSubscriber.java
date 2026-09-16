@@ -19,8 +19,6 @@ import elite.intel.session.PlayerSession;
  */
 public class ConflictZoneSubscriber {
 
-    static final String VOUCHER_COMBAT_BOND = "CombatBond";
-
     private final ConflictZone conflictZone = ConflictZone.getInstance();
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
@@ -43,7 +41,7 @@ public class ConflictZoneSubscriber {
      */
     @Subscribe
     public void onRedeemVoucher(RedeemVoucherEvent event) {
-        if (event == null || !VOUCHER_COMBAT_BOND.equalsIgnoreCase(event.getType())) return;
+        if (event == null || !event.isCombatBond()) return;
         conflictZone.cashedIn();
     }
 }

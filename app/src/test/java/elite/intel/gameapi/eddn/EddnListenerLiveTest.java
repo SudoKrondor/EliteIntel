@@ -45,8 +45,6 @@ class EddnListenerLiveTest {
         }
         listener.stop();
 
-        System.out.printf("EDDN live: %d envelopes, %d sweeps in %ds%n",
-                listener.received(), sweeps.get(), (System.currentTimeMillis() - started) / 1000);
         assertTrue(listener.received() > 0, "nothing came off the relay - is the network up?");
         assertTrue(sweeps.get() > 0, "no FSS sweep in a minute is not the relay at any hour");
         assertNotNull(resourceSite.get(), "a minute of the relay carries several resource-site sweeps");

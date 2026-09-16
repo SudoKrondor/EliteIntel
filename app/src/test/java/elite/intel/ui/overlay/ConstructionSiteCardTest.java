@@ -53,11 +53,17 @@ class ConstructionSiteCardTest {
                 line("aluminium", 800, 0), line("polymers", 700, 0));
     }
 
+    /**
+     * The system the build is in - where a carrier working it is parked on the shuttle leg, and not on any
+     * other.
+     */
+    private static final String BUILD_SYSTEM = "Hyades Sector NR-V b2-2";
+
     private static Site site(double progress, String visitedAt) {
         Site site = new Site();
         site.setMarketId(MARKET_ID);
         site.setStationName("Orbital Construction Site: Divis Gateway");
-        site.setStarSystem("Hyades Sector NR-V b2-2");
+        site.setStarSystem(BUILD_SYSTEM);
         site.setProgress(progress);
         site.setVisitedAt(visitedAt);
         return site;
@@ -124,14 +130,29 @@ class ConstructionSiteCardTest {
     }
 
     /**
-     * The shuttle run between a carrier and the depot: a carrier is working the build, and there is no
-     * commodity market anywhere on the trip, so the card is the loading order rather than a shopping list.
+     * The shuttle run between a carrier and the depot: a carrier parked in the build's own system is working
+     * the build, and there is no commodity market anywhere on the trip, so the card is the delivery list
+     * rather than a shopping list.
      */
     private static Optional<HudObjective> shuttleCard(List<Requirement> manifest, Map<String, Integer> hold,
                                                       Map<String, Integer> stash) {
+        return inFlightCard(manifest, hold, BUILD_SYSTEM, stash);
+    }
+
+    /**
+     * The stocking leg: the carrier is parked at a market system, the ship is in flight between markets
+     * filling it, and there is no commodity screen open. Sherwood City's system, from the live case.
+     */
+    private static Optional<HudObjective> stockingLegCard(List<Requirement> manifest, Map<String, Integer> stash) {
+        return inFlightCard(manifest, Map.of(), "Hyades Sector LH-V c2-22", stash);
+    }
+
+    private static Optional<HudObjective> inFlightCard(List<Requirement> manifest, Map<String, Integer> hold,
+                                                       String carrierSystem, Map<String, Integer> stash) {
         return new ConstructionSiteObjectiveSource(() -> site(0.67271, Instant.now().toString()),
                 marketId -> manifest, () -> hold, () -> 880, () -> shop(Set.of()),
-                (ignored, alsoIgnored) -> Optional.of(new Stash("GHY-L8X", stash))).currentObjective();
+                (ignored, alsoIgnored) -> Optional.of(new Stash("GHY-L8X", carrierSystem, null, stash)))
+                .currentObjective();
     }
 
     @Test
@@ -299,6 +320,75 @@ class ConstructionSiteCardTest {
         HudObjective objective = shuttleCard(wittHub(), Map.of(), Map.of("steel", 2274)).orElseThrow();
 
         assertEquals("2,274/2,274 T", valueOf(objective, "STEEL"), "bought in full, and still to be delivered");
+        assertEquals(HudRow.State.GOOD, rowOf(objective, "STEEL").state());
+    }
+
+    /**
+     * Quiroga Landing's manifest as the live case had it: the five big lines bought in full and on the
+     * carrier, the twelve behind them not started. The commander was flying from one market to the next to
+     * buy those twelve.
+     */
+    private static List<Requirement> quirogaLanding() {
+        return List.of(
+                line("steel", 1898, 0), line("aluminium", 1186, 0), line("cmmcomposite", 712, 0),
+                line("liquidoxygen", 344, 0), line("polymers", 238, 0), line("structuralregulators", 202, 0),
+                line("buildingfabricators", 120, 0), line("computercomponents", 84, 0),
+                line("basicmedicines", 72, 0), line("combatstabilisers", 72, 0));
+    }
+
+    private static Map<String, Integer> quirogaStockpile() {
+        return Map.of("steel", 1898, "aluminium", 1186, "cmmcomposite", 712, "liquidoxygen", 344,
+                "polymers", 238);
+    }
+
+    /**
+     * The live case. With the carrier parked at the market system, in flight is the leg BETWEEN markets, and
+     * the card used to draw the delivery list - whose first five rows were exactly the five goods already
+     * finished. The commander was shown what they had bought and nothing of what they were flying to buy.
+     */
+    @Test
+    void theStockingLegListsWhatIsStillToBuyNotWhatIsAlreadyOnTheCarrier() {
+        HudObjective objective = stockingLegCard(quirogaLanding(), quirogaStockpile()).orElseThrow();
+
+        assertEquals(List.of("PROGRESS", "STRUCTURAL REGULATORS", "BUILDING FABRICATORS", "COMPUTER COMPONENTS",
+                        "BASIC MEDICINES", "COMBAT STABILISERS", "OUTSTANDING"), labels(objective),
+                "what the commodity search told the commander to buy, and none of what is bought");
+        assertEquals("202 T", valueOf(objective, "STRUCTURAL REGULATORS"));
+    }
+
+    /**
+     * A good part bought on the carrier is still to acquire, and the row says how much of it is in hand.
+     */
+    @Test
+    void theStockingLegShowsAPartBoughtGoodOverItsRequirement() {
+        HudObjective objective = stockingLegCard(divisGateway(), Map.of("steel", 2000)).orElseThrow();
+
+        assertEquals("2,000/2,542 T", valueOf(objective, "STEEL"));
+        assertEquals(HudRow.State.GOOD, rowOf(objective, "STEEL").state());
+    }
+
+    /**
+     * The same figures on the same manifest are the delivery list once the carrier is parked at the build:
+     * the finished steel is then the whole point of the trip.
+     */
+    @Test
+    void theSameStockpileAtTheBuildIsTheDeliveryList() {
+        HudObjective objective = shuttleCard(quirogaLanding(), Map.of(), quirogaStockpile()).orElseThrow();
+
+        assertEquals("STEEL", labels(objective).get(1), "the shuttle run leads with what is aboard");
+        assertEquals("1,898/1,898 T", valueOf(objective, "STEEL"));
+    }
+
+    /**
+     * The whole build bought and the carrier not yet jumped: nothing is left to acquire, so the finished
+     * goods stand, as they do at a bought-out shop.
+     */
+    @Test
+    void aStockingLegWithNothingLeftToBuyShowsTheFinishedGoods() {
+        HudObjective objective = stockingLegCard(divisGateway(),
+                Map.of("steel", 2542, "titanium", 1525)).orElseThrow();
+
+        assertEquals("2,542/2,542 T", valueOf(objective, "STEEL"));
         assertEquals(HudRow.State.GOOD, rowOf(objective, "STEEL").state());
     }
 
@@ -607,6 +697,43 @@ class ConstructionSiteCardTest {
                 .orElseThrow();
 
         assertEquals("640 T", valueOf(objective, "STEEL"), "a hold's worth again, not the whole requirement");
+    }
+
+    /**
+     * And that loading order must not name what the carrier already holds: sized to the hold and blind to the
+     * stockpile, it told the commander to buy 640 tonnes of steel they owned in full.
+     */
+    @Test
+    void theLoadingOrderSkipsWhatTheCarrierAlreadyHolds() {
+        HudObjective objective = shoppingCard(divisGateway(), Set.of("gold", "silver"), Map.of("steel", 2542))
+                .orElseThrow();
+
+        assertFalse(labels(objective).contains("STEEL"), "bought in full, nothing to load");
+        assertEquals("640 T", valueOf(objective, "TITANIUM"), "the hold goes to the next good instead");
+    }
+
+    /**
+     * A good the carrier holds part of is loaded for what is genuinely left, not the whole requirement.
+     */
+    @Test
+    void theLoadingOrderLoadsOnlyWhatTheCarrierLacks() {
+        HudObjective objective = shoppingCard(divisGateway(), Set.of("gold", "silver"), Map.of("steel", 2300))
+                .orElseThrow();
+
+        assertEquals("242 T", valueOf(objective, "STEEL"), "2,542 wanted less 2,300 on the carrier");
+    }
+
+    /**
+     * The whole build on the carrier at a market selling none of it: there is nothing to load, so the
+     * finished goods stand rather than an empty list under the bar.
+     */
+    @Test
+    void aLoadingOrderWithNothingToLoadShowsTheFinishedGoods() {
+        HudObjective objective = shoppingCard(divisGateway(), Set.of("gold", "silver"),
+                Map.of("steel", 2542, "titanium", 1525)).orElseThrow();
+
+        assertEquals("2,542/2,542 T", valueOf(objective, "STEEL"));
+        assertEquals(HudRow.State.GOOD, rowOf(objective, "STEEL").state());
     }
 
     /**

@@ -218,19 +218,22 @@ public class ConstructionSiteObjectiveSource implements HudObjectiveSource {
     }
 
     /**
-     * The commodity rows, in one of three shapes, decided by what the commander can actually do where they
+     * The commodity rows, in one of four shapes, decided by what the commander can actually do where they
      * are standing:
      * <ul>
      *   <li><b>Shopping list</b> - at a market with a carrier working the build. What these shelves sell that
      *       the site still wants, over what is already bought.</li>
      *   <li><b>Loading order</b> - at a market with no carrier on the job. What this trip buys, sized to the
      *       hold, and what else is on these shelves after it.</li>
-     *   <li><b>Delivery list</b> - a carrier holding cargo for this build, and no market anywhere on the trip:
-     *       the carrier-to-depot shuttle. Nothing can be bought, so a trip allocation answers a question nobody
-     *       is asking; what the commander wants is the job itself - each good as what they hold over what the
-     *       site still wants, largest first. See {@link ConstructionShopping#toDeliver}. No shop on its own is
-     *       not enough, because that is also the commander in flight TOWARDS a market, where sizing the next
-     *       purchase to the hold is the whole point.</li>
+     *   <li><b>Delivery list</b> - a carrier parked at the build holding cargo for it, and no market anywhere
+     *       on the trip: the carrier-to-depot shuttle. Nothing can be bought, so a trip allocation answers a
+     *       question nobody is asking; what the commander wants is the job itself - each good as what they
+     *       hold over what the site still wants, largest first. See {@link ConstructionShopping#toDeliver}.
+     *       No shop on its own is not enough, because that is also the commander in flight TOWARDS a market,
+     *       where sizing the next purchase to the hold is the whole point.</li>
+     *   <li><b>Still to acquire</b> - a carrier parked elsewhere holding cargo for the build, and no market in
+     *       front of the ship: the stocking leg between two markets. What the build still wants that is not
+     *       yet bought anywhere, largest first. See {@link #carrierRun}.</li>
      * </ul>
      * A shopping list that comes back empty is not a shopping trip worth drawing - this market sells nothing
      * the build wants - so the card falls back to the loading order rather than showing the commander a
@@ -251,19 +254,25 @@ public class ConstructionSiteObjectiveSource implements HudObjectiveSource {
                     .orElse(null);
             if (shopping != null) return shopping;
         }
-        // The shuttle run: a carrier is holding cargo for this build and there is no market anywhere on the
-        // trip. Both halves are needed. No shop alone is also the commander in flight towards one, where the
-        // trip allocation is exactly what they are about to act on; a carrier with no shop is the leg between
-        // the stockpile and the depot, where nothing can be bought and the job itself is the answer.
+        // In flight with a carrier working the build: no shop alone is also the commander flying towards one,
+        // where the trip allocation is what they are about to act on, so both halves are needed. Which leg of
+        // the carrier's job this is decides the list - see carrierRun.
         if (stash.isPresent() && shop.isEmpty() && budget > 0) {
-            List<ConstructionShopping.Line> toDeliver = ConstructionShopping.toDeliver(manifest, stash.get());
-            if (!toDeliver.isEmpty()) return new Goods(rows(toDeliver, budget), null);
+            return carrierRun(current, manifest, stash.get(), budget);
+        }
+
+        // The loading order is sized to the hold, so it must not name what the carrier already holds. With
+        // the whole build on the carrier there is nothing to load, and the finished goods stand instead - the
+        // same answer a bought-out shop gives.
+        List<ConstructionCargo.Outstanding> toLoad = lessTheStash(stillToBuy, stash);
+        if (toLoad.isEmpty()) {
+            return new Goods(rows(ConstructionShopping.toDeliver(manifest, stash.orElse(null)), budget), null);
         }
 
         List<HudRow> rows = new ArrayList<>();
         Set<String> onTheShelves = shop.map(Shop::stock).orElse(Set.of());
         boolean headed = false;
-        for (Load load : loadingOrder(partlyBoughtFirst(stillToBuy, stash), holdCapacity.getAsInt(),
+        for (Load load : loadingOrder(partlyBoughtFirst(toLoad, stash), holdCapacity.getAsInt(),
                 onTheShelves, Math.min(budget, MAX_GOODS_LISTED))) {
             // The heading is what keeps the trip's tonnes from reading as an order for the whole shortfall,
             // so it goes in the moment the list stops being about this hold. It costs the row the budget
@@ -341,6 +350,42 @@ public class ConstructionSiteObjectiveSource implements HudObjectiveSource {
         List<ConstructionShopping.Line> next = ConstructionShopping.stillToAcquire(manifest, stash);
         if (next.isEmpty()) return new Goods(rows(soldHere, budget), atThisMarket(shop));
         return new Goods(rows(next, budget), sourcedElsewhere());
+    }
+
+    /**
+     * The card between markets with a carrier working the build. The carrier's job has two legs, and the
+     * same figures answer opposite questions on each:
+     * <ul>
+     *   <li><b>The shuttle run</b> - the carrier is parked in the build's own system and the ship is moving
+     *       its stockpile down to the depot. Nothing can be bought, so the list is the job itself: every good
+     *       the site still wants as what is already bought over what it wants, a good under way first. A
+     *       good sitting complete on the carrier is the most relevant line there is.</li>
+     *   <li><b>The stocking leg</b> - the carrier is parked somewhere else and the ship is flying from one
+     *       market to the next filling it. The goods already bought in full are the LEAST relevant lines
+     *       there are, and the delivery order spent the whole card on them: measured live at Quiroga Landing,
+     *       a commander with steel, aluminium, CMM composite, liquid oxygen and polymers all complete on the
+     *       carrier, en route to buy the twelve goods that were not, was shown those five and nothing else.
+     *       So this leg lists what is still to acquire, largest requirement first - the same answer the
+     *       commodity search and the reminder it sets give out loud.</li>
+     * </ul>
+     * The two legs are told apart by where the carrier is, which is also how {@link CarrierStockpile} tells
+     * stocking from shuttling. A carrier we never placed, or a site whose system we never learned, is read
+     * as the shuttle: guessing the other way would turn a delivery run into a shopping trip.
+     */
+    private static Goods carrierRun(Site site, List<ConstructionCargo.Outstanding> manifest, Stash stash,
+                                    int budget) {
+        List<ConstructionShopping.Line> lines = isShuttling(site, stash)
+                ? ConstructionShopping.toDeliver(manifest, stash)
+                : ConstructionShopping.stillToAcquire(manifest, stash);
+        // A stocking leg with nothing left to acquire is the whole build bought and the carrier not yet
+        // jumped: the finished goods are the answer, as they are at a bought-out shop.
+        if (lines.isEmpty()) lines = ConstructionShopping.toDeliver(manifest, stash);
+        return new Goods(rows(lines, budget), null);
+    }
+
+    private static boolean isShuttling(Site site, Stash stash) {
+        if (site.getStarSystem() == null || stash.starSystem() == null) return true;
+        return site.getStarSystem().equalsIgnoreCase(stash.starSystem());
     }
 
     private static List<HudRow> rows(List<ConstructionShopping.Line> goods, int budget) {
@@ -508,6 +553,31 @@ public class ConstructionSiteObjectiveSource implements HudObjectiveSource {
         }
         started.addAll(untouched);
         return started;
+    }
+
+    /**
+     * The manifest with the carrier's stock taken off it, for the loading order.
+     * <p>
+     * A line's shortfall is measured against the ship's hold alone, because that is what a trip empties into
+     * the depot. But tonnes on the carrier are bought too, and a loading order that ignores them tells the
+     * commander to fill the hold with a good the carrier already holds in full - the exact purchase the
+     * stockpile exists to prevent. So the carrier's tonnes are counted as delivered here, a good it covers
+     * leaves the list, and the rest are re-sorted by what is genuinely still to buy. Only the loading order
+     * reads the result; the shopping and delivery lists take the stash as their own figure.
+     */
+    private static List<ConstructionCargo.Outstanding> lessTheStash(
+            List<ConstructionCargo.Outstanding> stillToBuy, Optional<Stash> stash) {
+        if (stash.isEmpty() || stash.get().isEmpty()) return stillToBuy;
+        List<ConstructionCargo.Outstanding> result = new ArrayList<>();
+        for (ConstructionCargo.Outstanding line : stillToBuy) {
+            int onTheCarrier = stash.get().stockOf(line.symbol());
+            ConstructionCargo.Outstanding less = onTheCarrier <= 0 ? line
+                    : new ConstructionCargo.Outstanding(line.symbol(), line.gameName(), line.required(),
+                    line.provided() + onTheCarrier, line.held(), line.payment());
+            if (!less.isSatisfied()) result.add(less);
+        }
+        result.sort(ConstructionCargo.largestShortfallFirst());
+        return result;
     }
 
     /**
