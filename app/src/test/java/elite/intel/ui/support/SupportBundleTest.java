@@ -38,6 +38,19 @@ class SupportBundleTest {
     }
 
     @Test
+    void theManifestDescribesTheMachine(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.writeTo(zip, new SupportBundle.Sources("1.1.0", "log", null, null, null));
+
+        // The "is it slow" report starts with what it runs on, and that is read from the manifest alone.
+        String manifest = unzip(zip).get(SupportBundle.INFO_ENTRY);
+        assertTrue(manifest.contains("CPU: "), manifest);
+        assertTrue(manifest.contains("Memory: "), manifest);
+        assertTrue(manifest.contains("JVM heap: "), manifest);
+    }
+
+    @Test
     void carriesTheMicrophoneReportWhenOneIsSupplied(@TempDir Path tmp) throws IOException {
         Path zip = tmp.resolve("bundle.zip");
 

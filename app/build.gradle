@@ -112,8 +112,13 @@ dependencies {
     implementation 'ai.djl.huggingface:tokenizers:0.30.0'
 
     // JNA - platform-native key simulation (left/right ctrl, alt, shift)
-    implementation 'net.java.dev.jna:jna:5.14.0'
-    implementation 'net.java.dev.jna:jna-platform:5.14.0'
+    implementation 'net.java.dev.jna:jna:5.17.0'
+    implementation 'net.java.dev.jna:jna-platform:5.17.0'
+
+    // OSHI - the hardware inventory in the support bundle (CPU model, RAM, GPU + VRAM). Rides on the JNA
+    // already shipped, which is pinned to the version OSHI wants so the two never drift apart; queried
+    // once, off the EDT, only when a bundle is written.
+    implementation 'com.github.oshi:oshi-core:6.8.2'
 
     implementation 'org.zeromq:jeromq:0.6.0'
 
