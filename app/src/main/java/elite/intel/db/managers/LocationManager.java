@@ -2,6 +2,8 @@ package elite.intel.db.managers;
 
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.util.Database;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.gamestate.status_events.BioSurveyCompletedEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.DockedMarket;
 import elite.intel.session.LocationData;
@@ -55,10 +57,19 @@ public class LocationManager {
      * find/save pair.
      */
     public void updateBody(long systemAddress, long bodyId, Consumer<LocationDto> mutator) {
+        boolean surveyWasComplete;
+        boolean surveyIsComplete;
         synchronized (lockFor(systemAddress, bodyId)) {
             LocationDto location = findBySystemAddress(systemAddress, bodyId);
+            surveyWasComplete = location.isBioScansCompleted();
             mutator.accept(location);
+            surveyIsComplete = location.isBioScansCompleted();
             save(location);
+        }
+        // Every writer of the survey-complete latch comes through here, so this is where a flip is
+        // announced - after the lock is released, since a listener may well read this body back.
+        if (surveyWasComplete != surveyIsComplete) {
+            GameEventBus.publish(new BioSurveyCompletedEvent(systemAddress, bodyId, surveyIsComplete));
         }
     }
 

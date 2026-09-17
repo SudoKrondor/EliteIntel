@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
+import elite.intel.db.managers.ExoMasteryManager;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.LocationData;
@@ -45,6 +46,7 @@ public final class SetCurrentBodyExobiologySurveyCompleteCommand implements Inte
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
+    private final ExoMasteryManager exoMastery = ExoMasteryManager.getInstance();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec state = new ActionParameterSpec(
@@ -113,7 +115,10 @@ public final class SetCurrentBodyExobiologySurveyCompleteCommand implements Inte
      * The body the commander is at, when it is one a biological survey could apply to, otherwise null.
      *
      * <p>"Has biology" is the DSS/FSS signal count or a detected genus list - either is enough, because
-     * a body can carry a genus list from a scan whose signal count never landed on the row.
+     * a body can carry a genus list from a scan whose signal count never landed on the row. A body on
+     * the Exo-Mastery catalogue counts too: the catalogue is other commanders' word that there is
+     * biology here, and the commander who sampled it before this app existed has no scan of their own
+     * to prove it - which is exactly who this command is for.
      */
     private LocationDto bodyWithBiology() {
         LocationData<Long, Long> here = playerSession.getLocationData();
@@ -122,7 +127,8 @@ public final class SetCurrentBodyExobiologySurveyCompleteCommand implements Inte
         LocationDto body = locationManager.findByLocationData(here);
         if (body == null || body.getBodyId() < 0) return null;
         boolean hasBiology = ExoBio.bioSignalsDetected(body) > 0
-                || (body.getGenus() != null && !body.getGenus().isEmpty());
+                || (body.getGenus() != null && !body.getGenus().isEmpty())
+                || (exoMastery.isEnabled() && exoMastery.isListed(here.getSystemAddress(), here.getInGameId()));
         return hasBiology ? body : null;
     }
 
