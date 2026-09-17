@@ -164,11 +164,16 @@ public class ConflictZoneManager {
     /**
      * Records that an arrival found no war in a system: the zones are gone, whatever the last sweep
      * said. Nothing happens for a system never recorded, so this is safe to call on every arrival.
+     * <p>
+     * WHY the read first: this is called for every arrival on the EDDN relay - tens a second at peak,
+     * nearly all in systems this ledger has never heard of. An UPDATE that matches nothing still opens
+     * a write transaction and takes the one WAL writer slot the journal parser needs, so the systems
+     * without a row are turned away by a lock-free read instead.
      */
     public void recordPeace(String starSystem, String seenAt) {
         if (starSystem == null || starSystem.isBlank() || seenAt == null) return;
         Database.withDao(ConflictZoneDao.class, dao -> {
-            dao.clearIfNotSeenAfter(starSystem, seenAt);
+            if (dao.exists(starSystem)) dao.clearIfNotSeenAfter(starSystem, seenAt);
             return Void.TYPE;
         });
     }

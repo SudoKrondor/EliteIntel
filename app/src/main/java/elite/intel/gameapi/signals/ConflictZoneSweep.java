@@ -29,7 +29,9 @@ public final class ConflictZoneSweep {
      * the events of one sweep arrive concurrently and in no particular order. Order does not matter
      * to a count, but losing an increment does.
      *
-     * @param sweepKey identifies the sweep - the system address and the event timestamp together
+     * @param sweepKey identifies the sweep - the system address for the live subscriber, whose signals
+     *                 for one system arrive over a few seconds and belong together; one message for the
+     *                 EDDN relay, which batches a whole sweep already
      */
     public synchronized ConflictZoneProfile add(String sweepKey, ConflictZoneSignal signal) {
         if (!sweepKey.equals(currentSweep)) {

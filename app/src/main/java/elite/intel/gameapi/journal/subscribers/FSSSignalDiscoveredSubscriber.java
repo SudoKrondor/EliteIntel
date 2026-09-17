@@ -97,7 +97,11 @@ public class FSSSignalDiscoveredSubscriber {
         String starSystem = location.getStarName();
         if (starSystem == null || starSystem.isBlank()) return;
 
-        ConflictZoneProfile sweep = conflictZoneSweep.add(event.getSystemAddress() + "@" + event.getTimestamp(), zone);
+        // Keyed by the system alone, not the timestamp: the FSS reports a busy system's signals over a
+        // few seconds, and a per-second key would split one sweep into batches of which the ledger's MAX
+        // keeps only the largest. Zones are counted by identity, so a re-arrival re-announcing the same
+        // set adds nothing, and a different system starts the tally over.
+        ConflictZoneProfile sweep = conflictZoneSweep.add(String.valueOf(event.getSystemAddress()), zone);
         conflictZones.recordZones(
                 starSystem,
                 event.getSystemAddress(),

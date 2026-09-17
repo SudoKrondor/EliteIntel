@@ -104,6 +104,10 @@ public final class FindCommodityCommand implements IntelCommand {
         if (commodity == null) {
             return StringUtls.localizedResponse("handler.commodity.notFound", key.getAsString());
         }
+        // A good learned from a non-English client has no English name yet, and Spansh matches nothing else.
+        if (!FuzzySearch.hasTradeName(commodity)) {
+            return StringUtls.localizedResponse("handler.commodity.tradeNameUnknown", FuzzySearch.localizedCommodityName(commodity));
+        }
         return CommodityTradeSearch.findAndPlot(commodity, distance, returnClosest);
     }
 }

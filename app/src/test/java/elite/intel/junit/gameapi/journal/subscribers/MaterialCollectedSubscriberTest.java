@@ -3,6 +3,7 @@ package elite.intel.junit.gameapi.journal.subscribers;
 import com.google.gson.JsonObject;
 import elite.intel.db.dao.MaterialNameDao;
 import elite.intel.db.managers.MaterialManager;
+import elite.intel.gameapi.GameLanguage;
 import elite.intel.gameapi.journal.events.MaterialCollectedEvent;
 import elite.intel.gameapi.journal.subscribers.MaterialCollectedSubscriber;
 import elite.intel.gameapi.search.edsm.dto.MaterialsType;
@@ -86,7 +87,9 @@ class MaterialCollectedSubscriberTest {
 
     @Test
     void unrecognisedSymbolIsRegisteredRatherThanDropped() {
-        // Guards against a future game update adding a material this build has never seen.
+        // Guards against a future game update adding a material this build has never seen. The display
+        // name is filed under the game client's language, so the English name below needs an English client.
+        GameLanguage.getInstance().onGameSessionStarted("English/UK");
         subscriber.onMaterialCollected(event("someunreleasedmaterial", "Raw", 7, "Some Unreleased Material"));
 
         MaterialNameDao.Material result = MaterialManager.getInstance().find("someunreleasedmaterial");

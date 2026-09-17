@@ -111,6 +111,13 @@ public interface ConflictZoneDao {
     Zone findByName(@Bind("starSystem") String starSystem);
 
     /**
+     * Whether the system has a row at all. A read, so it takes no writer lock: the guard that keeps
+     * an arrival in a system never seen to hold a war from costing a write transaction.
+     */
+    @SqlQuery("SELECT COUNT(*) > 0 FROM conflict_zone WHERE starSystem = :starSystem")
+    boolean exists(@Bind("starSystem") String starSystem);
+
+    /**
      * The war zones worth flying to, best first: sighted since {@code seenSince}, holding at least
      * one faction-war zone, ordered by the day of the last sighting, then the hardest intensity
      * present, then distance. Within the range the commander asked for they are offered the war

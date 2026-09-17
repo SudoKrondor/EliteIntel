@@ -20,6 +20,7 @@ import org.apache.logging.log4j.Logger;
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.HudPalette.HUD_GAP;
@@ -197,7 +198,7 @@ public class ExoMasteryTabPanel extends JPanel {
                     Stats stats = get();
                     statusLabel.setText(getText("exoMastery.status.enabled"));
                     show(true, stats);
-                } catch (Exception e) {
+                } catch (InterruptedException | ExecutionException e) {
                     Throwable cause = e.getCause() != null ? e.getCause() : e;
                     log.warn("Exo-Mastery catalogue could not be loaded: {}", cause.getMessage());
                     statusLabel.setText(getText("exoMastery.status.failed", cause.getMessage()));

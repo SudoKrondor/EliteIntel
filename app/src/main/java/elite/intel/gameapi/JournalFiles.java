@@ -3,7 +3,6 @@ package elite.intel.gameapi;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -76,18 +75,27 @@ public final class JournalFiles {
     }
 
     /**
-     * Oldest first. A real journal always outranks a file whose name says nothing; those fall back on the
-     * modification time among themselves.
+     * A file with its sort key worked out once. A real journal always outranks a file whose name says
+     * nothing; those fall back on the modification time among themselves.
+     * <p>
+     * WHY the key is precomputed: the parser re-lists the folder every few seconds for the life of a
+     * session, and a long-lived install holds thousands of journals. Matching the name pattern inside the
+     * comparator would run it on both operands of every comparison, O(n log n) regex matches per listing,
+     * where one match per file is all the ordering needs.
      */
-    public static Comparator<Path> oldestFirst() {
-        return (a, b) -> {
-            Optional<StartStamp> stampA = startStamp(a);
-            Optional<StartStamp> stampB = startStamp(b);
-            if (stampA.isPresent() && stampB.isPresent()) return stampA.get().compareTo(stampB.get());
-            if (stampA.isPresent()) return 1;
-            if (stampB.isPresent()) return -1;
-            return Long.compare(a.toFile().lastModified(), b.toFile().lastModified());
-        };
+    private record Keyed(Path path, Optional<StartStamp> stamp, long lastModified) implements Comparable<Keyed> {
+        static Keyed of(Path path) {
+            Optional<StartStamp> stamp = startStamp(path);
+            return new Keyed(path, stamp, stamp.isPresent() ? 0 : path.toFile().lastModified());
+        }
+
+        @Override
+        public int compareTo(Keyed other) {
+            if (stamp.isPresent() && other.stamp.isPresent()) return stamp.get().compareTo(other.stamp.get());
+            if (stamp.isPresent()) return 1;
+            if (other.stamp.isPresent()) return -1;
+            return Long.compare(lastModified, other.lastModified);
+        }
     }
 
     /**
@@ -98,7 +106,9 @@ public final class JournalFiles {
     public static List<Path> listOldestFirst(Path journalDir) throws IOException {
         try (Stream<Path> files = Files.list(journalDir)) {
             return files.filter(p -> p.getFileName().toString().endsWith(".log"))
-                    .sorted(oldestFirst())
+                    .map(Keyed::of)
+                    .sorted()
+                    .map(Keyed::path)
                     .toList();
         }
     }

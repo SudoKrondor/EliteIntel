@@ -3,9 +3,11 @@ package elite.intel.gameapi.journal.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.FuzzySearch;
+import elite.intel.db.managers.CommodityCatalogue;
 import elite.intel.gameapi.journal.events.ProspectedAsteroidEvent;
 import elite.intel.session.PlayerSession;
 
+import java.util.Arrays;
 import java.util.Set;
 
 import static elite.intel.util.StringUtls.capitalizeWords;
@@ -17,6 +19,7 @@ public class ProspectorSubscriber {
     @Subscribe
     public void onProspectedAsteroidEvent(ProspectedAsteroidEvent event) {
         Thread.ofVirtual().start(() -> {
+            learnGoods(event);
             PlayerSession playerSession = PlayerSession.getInstance();
             if (!playerSession.isMiningAnnouncementOn()) return;
 
@@ -60,6 +63,20 @@ public class ProspectorSubscriber {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * The prospector names each mineral in the rock with its display name beside the symbol, so an ore
+     * this build has never heard of is learned here - before the announcement, which then already knows
+     * its name. The motherlode is not learned: it comes as a bare symbol with no display name, and a
+     * run-together symbol is not a name worth remembering.
+     */
+    private static void learnGoods(ProspectedAsteroidEvent event) {
+        if (event.getMaterials() == null) return;
+        CommodityCatalogue.getInstance().learnAll(Arrays.stream(event.getMaterials())
+                .filter(material -> material != null && material.getName() != null && !material.getName().isEmpty())
+                .map(material -> new CommodityCatalogue.Sighting(material.getName(), material.getNameLocalised()))
+                .toList());
     }
 
     /**

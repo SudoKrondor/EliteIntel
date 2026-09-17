@@ -30,128 +30,37 @@
 -- statement with no SQL in it.
 CREATE TABLE IF NOT EXISTS exo_mastery_system
 (
-    systemAddress
-    INTEGER
-    PRIMARY
-    KEY,
-    starSystem
-    TEXT
-    NOT
-    NULL
-    COLLATE
-    NOCASE,
-    x
-    DOUBLE
-    PRECISION
-    NOT
-    NULL,
-    y
-    DOUBLE
-    PRECISION
-    NOT
-    NULL,
-    z
-    DOUBLE
-    PRECISION
-    NOT
-    NULL
+    systemAddress INTEGER PRIMARY KEY,
+    starSystem    TEXT             NOT NULL COLLATE NOCASE,
+    x             DOUBLE PRECISION NOT NULL,
+    y             DOUBLE PRECISION NOT NULL,
+    z             DOUBLE PRECISION NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS exo_mastery_body
 (
-    id
-    INTEGER
-    PRIMARY
-    KEY
-    AUTOINCREMENT,
-    systemAddress
-    INTEGER
-    NOT
-    NULL,
-    bodyId
-    INTEGER
-    NOT
-    NULL,
-    starSystem
-    TEXT
-    NOT
-    NULL
-    COLLATE
-    NOCASE,
-    bodyName
-    TEXT
-    NOT
-    NULL,
-    bodyType
-    TEXT,
-    value
-    INTEGER
-    NOT
-    NULL
-    DEFAULT
-    0,
-    completed
-    BOOLEAN
-    NOT
-    NULL
-    DEFAULT
-    FALSE,
-    completedAt
-    TEXT,
-    UNIQUE
-(
-    systemAddress,
-    bodyId
-)
-    );
-
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    systemAddress INTEGER NOT NULL,
+    bodyId        INTEGER NOT NULL,
+    starSystem    TEXT    NOT NULL COLLATE NOCASE,
+    bodyName      TEXT    NOT NULL,
+    bodyType      TEXT,
+    value         INTEGER NOT NULL DEFAULT 0,
+    completed     BOOLEAN NOT NULL DEFAULT FALSE,
+    completedAt   TEXT,
+    UNIQUE (systemAddress, bodyId)
+);
 CREATE INDEX IF NOT EXISTS idx_exo_mastery_body_system ON exo_mastery_body (systemAddress, completed);
 
 CREATE TABLE IF NOT EXISTS exo_mastery_species
 (
-    id
-    INTEGER
-    PRIMARY
-    KEY
-    AUTOINCREMENT,
-    systemAddress
-    INTEGER
-    NOT
-    NULL,
-    bodyId
-    INTEGER
-    NOT
-    NULL,
-    speciesSymbol
-    TEXT
-    NOT
-    NULL,
-    speciesName
-    TEXT
-    NOT
-    NULL,
-    colonies
-    INTEGER
-    NOT
-    NULL
-    DEFAULT
-    0,
-    value
-    INTEGER
-    NOT
-    NULL
-    DEFAULT
-    0,
-    sampled
-    BOOLEAN
-    NOT
-    NULL
-    DEFAULT
-    FALSE,
-    UNIQUE
-(
-    systemAddress,
-    bodyId,
-    speciesSymbol
-)
-    );
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    systemAddress INTEGER NOT NULL,
+    bodyId        INTEGER NOT NULL,
+    speciesSymbol TEXT    NOT NULL,
+    speciesName   TEXT    NOT NULL,
+    colonies      INTEGER NOT NULL DEFAULT 0,
+    value         INTEGER NOT NULL DEFAULT 0,
+    sampled       BOOLEAN NOT NULL DEFAULT FALSE,
+    UNIQUE (systemAddress, bodyId, speciesSymbol)
+);

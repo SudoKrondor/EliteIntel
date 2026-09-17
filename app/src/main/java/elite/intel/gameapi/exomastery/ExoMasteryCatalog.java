@@ -1,7 +1,7 @@
 package elite.intel.gameapi.exomastery;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
+import elite.intel.util.json.GsonFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -90,7 +90,7 @@ public record ExoMasteryCatalog(int format, String generated, String source, int
     public static ExoMasteryCatalog parse(byte[] json) throws IOException {
         ExoMasteryCatalog catalog;
         try (InputStreamReader reader = new InputStreamReader(new java.io.ByteArrayInputStream(json), StandardCharsets.UTF_8)) {
-            catalog = new Gson().fromJson(reader, ExoMasteryCatalog.class);
+            catalog = GsonFactory.getGson().fromJson(reader, ExoMasteryCatalog.class);
         } catch (JsonParseException e) {
             throw new IOException("Catalogue is not valid JSON: " + e.getMessage(), e);
         }

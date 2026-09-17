@@ -162,12 +162,36 @@ final class HardwareReport {
      * <p>
      * Bounded: a wedged driver can hang the tool, and this is a courtesy line in a bundle, so it gets a few
      * seconds and is then killed. Whatever the tool prints is passed through as-is, one line per card.
+     * <p>
+     * The output goes to a temporary file rather than a pipe. WHY: the tool is waited on before its output
+     * is read, and a pipe holds only a few kilobytes before the writer blocks - a tool that printed more
+     * than that would never exit, and the timeout would call a healthy driver hung. A file has no such
+     * ceiling, so the query can grow without anyone having to remember this.
      */
     private static String nvidiaSmi() {
+        Path output;
+        try {
+            output = Files.createTempFile("nvidia-smi", ".txt");
+        } catch (IOException e) {
+            return "GPU (nvidia-smi): could not be read (" + e + ")";
+        }
+        try {
+            return nvidiaSmi(output);
+        } finally {
+            try {
+                Files.deleteIfExists(output);
+            } catch (IOException e) {
+                log.debug("Could not delete {}", output, e);
+            }
+        }
+    }
+
+    private static String nvidiaSmi(Path output) {
         Process process;
         try {
             process = new ProcessBuilder("nvidia-smi", "--query-gpu=name,memory.total,memory.used", "--format=csv,noheader")
                     .redirectErrorStream(true)
+                    .redirectOutput(output.toFile())
                     .start();
         } catch (IOException notInstalled) {
             return "";
@@ -177,10 +201,10 @@ final class HardwareReport {
                 process.destroyForcibly();
                 return "GPU (nvidia-smi): no answer within " + NVIDIA_SMI_TIMEOUT.toSeconds() + "s";
             }
-            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            if (process.exitValue() != 0 || output.isBlank()) return "";
+            String printed = Files.readString(output, StandardCharsets.UTF_8);
+            if (process.exitValue() != 0 || printed.isBlank()) return "";
             StringBuilder text = new StringBuilder();
-            for (String line : output.strip().split("\\R")) {
+            for (String line : printed.strip().split("\\R")) {
                 if (!text.isEmpty()) text.append('\n');
                 text.append("GPU (nvidia-smi): ").append(line.strip());
             }

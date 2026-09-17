@@ -83,8 +83,9 @@ public interface ExoMasteryDao {
      * sampled out before the catalogue arrived, so it is completed on arrival rather than offered.
      * <p>
      * A read of another manager's table, in SQL, because the alternative is loading every location
-     * row's JSON to look at one boolean. The latch is stored as JSON true, which SQLite's {@code ->>}
-     * reads back as 1.
+     * row's JSON to look at one boolean. The body is matched on the row's own {@code inGameId} column,
+     * which is the journal BodyID the location manager keys on; only the latch has to come out of the
+     * JSON, where it is stored as true and read back by SQLite's {@code ->>} as 1.
      */
     @SqlUpdate("""
             UPDATE exo_mastery_body
@@ -92,7 +93,7 @@ public interface ExoMasteryDao {
              WHERE completed = FALSE
                AND EXISTS (SELECT 1 FROM location l
                             WHERE l.systemAddress = exo_mastery_body.systemAddress
-                              AND l.json ->> '$.bodyId' = exo_mastery_body.bodyId
+                              AND l.inGameId = exo_mastery_body.bodyId
                               AND l.json ->> '$.bioScansCompleted' = 1)
             """)
     int adoptCompletedLocations(@Bind("completedAt") String completedAt);
