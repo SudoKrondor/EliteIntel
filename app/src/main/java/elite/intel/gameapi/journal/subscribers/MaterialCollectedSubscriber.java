@@ -6,6 +6,7 @@ import elite.intel.db.dao.MaterialNameDao;
 import elite.intel.db.managers.MaterialManager;
 import elite.intel.gameapi.journal.events.MaterialCollectedEvent;
 import elite.intel.gameapi.search.edsm.dto.MaterialsType;
+import elite.intel.session.PlayerSession;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +33,9 @@ public class MaterialCollectedSubscriber {
         // arrives under a different display string on every localized client.
         String symbol = event.getName();
         materialManager.collect(symbol, MaterialsType.fromJournalCategory(event.getCategory()), event.getCount(), event.getNameLocalised());
+
+        // WHY: the ledger is always written - only the commentary is on the switch.
+        if (!PlayerSession.getInstance().isCargoScoopPickupAnnouncementOn()) return;
 
         MaterialNameDao.Material material = materialManager.find(symbol);
         String displayName = event.getDisplayName();

@@ -7,6 +7,7 @@ import elite.intel.gameapi.GameLanguage;
 import elite.intel.gameapi.journal.events.MaterialCollectedEvent;
 import elite.intel.gameapi.journal.subscribers.MaterialCollectedSubscriber;
 import elite.intel.gameapi.search.edsm.dto.MaterialsType;
+import elite.intel.session.PlayerSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -97,6 +98,20 @@ class MaterialCollectedSubscriberTest {
         assertEquals(7, result.getAmount());
         assertEquals("Some Unreleased Material", result.getName());
         assertEquals(MaterialsType.GAME_RAW.getType(), result.getMaterialType());
+    }
+
+    @Test
+    void silencedPickupAnnouncementsStillWriteTheLedger() {
+        // The cargo-scoop switch mutes the commentary only. A commander who turned it off must not
+        // find the materials tally drifting behind the game.
+        PlayerSession playerSession = PlayerSession.getInstance();
+        playerSession.setCargoScoopPickupAnnouncementOn(false);
+        try {
+            subscriber.onMaterialCollected(event("iron", "Raw", 4));
+            assertEquals(4, MaterialManager.getInstance().find("iron").getAmount());
+        } finally {
+            playerSession.setCargoScoopPickupAnnouncementOn(true);
+        }
     }
 
     @Test

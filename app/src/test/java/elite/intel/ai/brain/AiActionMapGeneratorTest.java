@@ -238,6 +238,7 @@ class AiActionMapGeneratorTest {
             "taxi_to_landing_pad",
             "toggle_all_announcements",
             "toggle_cargo_scoop",
+            "toggle_cargo_scoop_pickup_announcements",
             "toggle_discovery_announcements",
             "toggle_lights_on_off",
             "toggle_mining_announcements",

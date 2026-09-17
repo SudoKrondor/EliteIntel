@@ -43,13 +43,15 @@ public final class MicDiagnosticsReport {
      * and taking data lets the layout be exercised without a live session behind it.
      */
     public record VoiceGate(boolean pushToTalkEnabled, @Nullable String controllerName, int buttonIndex,
-                            boolean sleeping) {
+                            int mouseButton, boolean mouseReadable, boolean sleeping) {
 
-        public static VoiceGate from(SystemSession session) {
+        public static VoiceGate from(SystemSession session, DeviceService devices) {
             return new VoiceGate(
                     session.isPushToTalkEnabled(),
                     session.getPushToTalkControllerName(),
                     session.getPushToTalkButtonIndex(),
+                    session.getPushToTalkMouseButton(),
+                    devices.isMouseAvailable(),
                     session.isSleeping());
         }
     }
@@ -61,7 +63,7 @@ public final class MicDiagnosticsReport {
         return render(
                 MicLevelRecorder.getInstance().snapshot(),
                 inputDeviceNames(),
-                VoiceGate.from(SystemSession.getInstance()),
+                VoiceGate.from(SystemSession.getInstance(), DeviceService.getInstance()),
                 DeviceService.getInstance().getConnectedDevices());
     }
 
@@ -211,6 +213,7 @@ public final class MicDiagnosticsReport {
         text.append("  Controller: ")
                 .append(controller == null || controller.isBlank() ? "(none mapped)" : controller).append('\n');
         text.append("  Button:     ").append(gate.buttonIndex()).append('\n');
+        appendMouseButton(text, gate);
         boolean present = controller != null && !controller.isBlank()
                 && connectedControllers.stream().anyMatch(device -> controller.equals(device.name()));
         if (!present) {
@@ -223,6 +226,20 @@ public final class MicDiagnosticsReport {
             connectedControllers.forEach(device -> text.append("    ").append(device.name())
                     .append(" (").append(device.buttonCount()).append(" buttons)\n"));
         }
+    }
+
+    /**
+     * The mouse is the second trigger, and the one most likely to be silently inert: its state is read
+     * OS-wide, which a Wayland desktop does not allow, so the report says whether it can be read at all.
+     */
+    private static void appendMouseButton(StringBuilder text, VoiceGate gate) {
+        if (gate.mouseButton() < 0) {
+            text.append("  Mouse:      (none mapped)\n");
+            return;
+        }
+        text.append("  Mouse:      button ").append(gate.mouseButton() + 1)
+                .append(gate.mouseReadable() ? ", readable\n"
+                        : " - *** mouse buttons cannot be read on this desktop, so it cannot open the microphone ***\n");
     }
 
     /**

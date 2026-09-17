@@ -332,6 +332,8 @@ public class CommanderTabPanel extends JPanel {
                         playerSession::isRadarContactAnnouncementOn, playerSession::setRadarContactAnnouncementOn),
                 SettingToggle.of("announcements.mining",
                         playerSession::isMiningAnnouncementOn, playerSession::setMiningAnnouncementOn),
+                SettingToggle.of("announcements.cargoScoopPickup",
+                        playerSession::isCargoScoopPickupAnnouncementOn, playerSession::setCargoScoopPickupAnnouncementOn),
                 SettingToggle.of("announcements.navigation",
                         playerSession::isNavigationAnnouncementOn, playerSession::setNavigationAnnouncementOn),
                 SettingToggle.of("announcements.radioTransmissions",

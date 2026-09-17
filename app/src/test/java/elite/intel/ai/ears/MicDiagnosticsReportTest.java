@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MicDiagnosticsReportTest {
 
     private static final List<String> ONE_DEVICE = List.of("Chosen Mic");
-    private static final VoiceGate HANDS_FREE = new VoiceGate(false, null, 0, false);
+    private static final VoiceGate HANDS_FREE = new VoiceGate(false, null, 0, -1, false, false);
 
     private static MicLevelRecorder.Capture capture(String requested, String resolved, boolean gateClears) {
         return new MicLevelRecorder.Capture(
@@ -107,7 +107,7 @@ class MicDiagnosticsReportTest {
     void aHealthyMicrophoneUnderPushToTalkPointsAtTheButtonNotTheAudio() {
         String report = MicDiagnosticsReport.render(
                 snapshot(capture("Chosen Mic", "Chosen Mic", true), 4000, 900.0, 120),
-                ONE_DEVICE, new VoiceGate(true, "Missing HOTAS", 7, false),
+                ONE_DEVICE, new VoiceGate(true, "Missing HOTAS", 7, -1, false, false),
                 List.of(new Device(1, "Some Other Stick", 4, 12, "usb-1", "guid-1")));
 
         assertTrue(verdictOf(report).contains("push-to-talk is the gate"));
@@ -120,10 +120,35 @@ class MicDiagnosticsReportTest {
     void aHealthyHandsFreeMicrophoneSaysSoAndNamesSleep() {
         String report = MicDiagnosticsReport.render(
                 snapshot(capture("Chosen Mic", "Chosen Mic", true), 4000, 900.0, 120),
-                ONE_DEVICE, new VoiceGate(false, null, 0, true), List.of());
+                ONE_DEVICE, new VoiceGate(false, null, 0, -1, false, true), List.of());
 
         assertTrue(verdictOf(report).contains("healthy"));
         assertTrue(report.contains("currently asleep"));
+    }
+
+    /**
+     * A mapped mouse button is inert on a desktop that refuses global pointer state (Wayland), and a
+     * commander who mapped one has no other way to learn that the button is not the problem.
+     */
+    @Test
+    void aMappedMouseButtonThatCannotBeReadIsCalledOut() {
+        String report = MicDiagnosticsReport.render(
+                snapshot(capture("Chosen Mic", "Chosen Mic", true), 4000, 900.0, 120),
+                ONE_DEVICE, new VoiceGate(true, "HOTAS", 7, 3, false, false),
+                List.of(new Device(1, "HOTAS", 4, 12, "usb-1", "guid-1")));
+
+        assertTrue(report.contains("Mouse:      button 4"));
+        assertTrue(report.contains("*** mouse buttons cannot be read on this desktop"));
+    }
+
+    @Test
+    void aReadableMouseButtonIsReportedAsSuch() {
+        String report = MicDiagnosticsReport.render(
+                snapshot(capture("Chosen Mic", "Chosen Mic", true), 4000, 900.0, 120),
+                ONE_DEVICE, new VoiceGate(true, "HOTAS", 7, 4, true, false),
+                List.of(new Device(1, "HOTAS", 4, 12, "usb-1", "guid-1")));
+
+        assertTrue(report.contains("Mouse:      button 5, readable"));
     }
 
     @Test

@@ -12,6 +12,8 @@ import elite.intel.util.json.GsonFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -23,8 +25,10 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class WarSidesSubscriberTest {
 
-    private static final String SEEN = "2026-09-10T12:00:00Z";
-    private static final String LATER = "2026-09-10T13:00:00Z";
+    // Relative to now: the ledger forgets a war unseen for WAR_LIFETIME, and a fixed date would age past
+    // it and start failing on the day it turned a week old.
+    private static final String SEEN = Instant.now().minus(Duration.ofHours(2)).toString();
+    private static final String LATER = Instant.now().minus(Duration.ofHours(1)).toString();
 
     private final ConflictZoneManager ledger = ConflictZoneManager.getInstance();
     private final WarSidesSubscriber subscriber = new WarSidesSubscriber(ledger);

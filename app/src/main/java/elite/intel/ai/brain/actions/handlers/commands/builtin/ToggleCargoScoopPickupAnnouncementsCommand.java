@@ -11,17 +11,18 @@ import elite.intel.util.StringUtls;
 import java.util.List;
 
 /**
- * Stage-4b self-describing command for "toggle all announcements".
- * No parameters
- * beyond the LLM PARAM_STATE flag.
+ * "Announce cargo-scoop pickups on/off". Silences the running commentary on what the scoop just
+ * swallowed (materials, today); the ledger keeps being written either way. Deliberately not a
+ * sibling of {@code toggle_cargo_scoop}, which opens and closes the scoop itself - the phrases
+ * all carry "announce"/"pickup" wording so the two never share a training phrase.
  */
 @RegisterCommand
-public final class ToggleAllAnnouncementsCommand implements IntelCommand {
-    public static final String ID = "toggle_all_announcements";
+public final class ToggleCargoScoopPickupAnnouncementsCommand implements IntelCommand {
+    public static final String ID = "toggle_cargo_scoop_pickup_announcements";
 
     @Override
     public String llmDescription() {
-        return "Turn all spoken announcement categories (discovery, route, planetary approach, radar, mining, navigation, cargo-scoop pickups) on or off together; 'state' true = on.";
+        return "Turn spoken cargo-scoop pickup announcements (what was just scooped) on or off ('state'). Does not open or close the scoop.";
     }
 
 
@@ -44,7 +45,9 @@ public final class ToggleAllAnnouncementsCommand implements IntelCommand {
         return ID;
     }
 
-    /** App-side announcement setting (no game input); executable in any location. */
+    /**
+     * App-side announcement setting (no game input); executable in any location.
+     */
     @Override
     public boolean isVisibleForLLM(Status status) {
         return true;
@@ -61,15 +64,8 @@ public final class ToggleAllAnnouncementsCommand implements IntelCommand {
             return StringUtls.localizedResponse("handler.common.llmParamFailed");
         }
         boolean isOn = params.get(PARAM_STATE).getAsBoolean();
-        PlayerSession playerSession = PlayerSession.getInstance();
-        playerSession.setDiscoveryAnnouncementOn(isOn);
-        playerSession.setRouteAnnouncementOn(isOn);
-        playerSession.setPlanetaryApproachAnnouncementOn(isOn);
-        playerSession.setRadarContactAnnouncementOn(isOn);
-        playerSession.setMiningAnnouncementOn(isOn);
-        playerSession.setNavigationAnnouncementOn(isOn);
-        playerSession.setCargoScoopPickupAnnouncementOn(isOn);
+        PlayerSession.getInstance().setCargoScoopPickupAnnouncementOn(isOn);
         String state = StringUtls.localizedResponse(isOn ? "handler.state.on" : "handler.state.off");
-        return StringUtls.localizedResponse("handler.announcements.all", state);
+        return StringUtls.localizedResponse("handler.announcements.cargoScoopPickup", state);
     }
 }

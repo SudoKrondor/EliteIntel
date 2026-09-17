@@ -26,7 +26,11 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
 
 /**
  * "Input" settings tab - lets the commander map a controller button to push-to-talk, from the devices the
- * shared SDL3 poll loop in {@link DeviceService} reports.
+ * shared SDL3 poll loop in {@link DeviceService} reports, and a mouse button beside it for the times the
+ * controller is out of reach (on foot, in the SRV).
+ * <p>
+ * Only the middle and the two side buttons are offered for the mouse: left and right fire the ship's
+ * weapons, and a gate that opened on every shot would be worse than none.
  * <p>
  * Editing only. The mapped button is acted on by {@link PushToTalkService}, which reads these settings back
  * from {@code SystemSession}: a controller button must keep working whether or not this tab was ever opened,
@@ -37,6 +41,13 @@ public class InputSettingsPanel extends JPanel {
     private JCheckBox enablePushToTalkCheck;
     private HudComboBox<Object> controllerCombo;
     private HudComboBox<String> buttonCombo;
+    private HudComboBox<String> mouseButtonCombo;
+
+    /**
+     * SDL 0-based mouse button index behind each entry of {@link #mouseButtonCombo} after the placeholder:
+     * middle, X1 (back), X2 (forward). Left (0) and right (2) are not offered.
+     */
+    private static final int[] MOUSE_BUTTON_CHOICES = {1, 3, 4};
 
     // Selection state behind the combos. EDT-only: the device subscriptions below hand straight to
     // invokeLater, and the button itself is read by PushToTalkService, not here.
@@ -72,6 +83,7 @@ public class InputSettingsPanel extends JPanel {
         setControlsEnabled(pushToTalkEnabled);
 
         reconcileControllerSelection();
+        selectMouseButton(session.getPushToTalkMouseButton());
     }
 
     private void buildUi() {
@@ -112,6 +124,16 @@ public class InputSettingsPanel extends JPanel {
         buttonCombo.addActionListener(e -> onButtonSelected());
         addField(rightCol, buttonCombo, gc, 1, 1.0);
 
+        nextRow(gc);
+        addLabel(rightCol, getText("settings.input.mouseButton"), gc, 0);
+        mouseButtonCombo = new HudComboBox<>(new String[]{
+                getText("settings.input.mouseButton.placeholder"),
+                getText("settings.input.mouseButton.middle"),
+                getText("settings.input.mouseButton.back"),
+                getText("settings.input.mouseButton.forward")});
+        mouseButtonCombo.addActionListener(e -> onMouseButtonSelected());
+        addField(rightCol, mouseButtonCombo, gc, 1, 1.0);
+
         JPanel rightWrap = transparentPanel(new BorderLayout());
         rightWrap.add(rightCol, BorderLayout.NORTH);
 
@@ -146,6 +168,7 @@ public class InputSettingsPanel extends JPanel {
     private void setControlsEnabled(boolean enabled) {
         controllerCombo.setEnabled(enabled);
         buttonCombo.setEnabled(enabled);
+        mouseButtonCombo.setEnabled(enabled);
     }
 
     private void onControllerSelected() {
@@ -163,6 +186,33 @@ public class InputSettingsPanel extends JPanel {
         selectedButtonIndex = buttonCombo.getSelectedIndex() - 1; // -1 = placeholder
         if (!suppressPersistence) {
             SystemSession.getInstance().setPushToTalkButtonIndex(selectedButtonIndex);
+        }
+    }
+
+    private void onMouseButtonSelected() {
+        if (suppressPersistence) {
+            return;
+        }
+        int choice = mouseButtonCombo.getSelectedIndex() - 1; // -1 = placeholder
+        SystemSession.getInstance().setPushToTalkMouseButton(choice < 0 ? -1 : MOUSE_BUTTON_CHOICES[choice]);
+    }
+
+    /**
+     * Drives the mouse combo from a stored SDL button index without writing it back; an index that is not
+     * on offer (a left or right button from a hand-edited database) shows as none.
+     */
+    private void selectMouseButton(int sdlButton) {
+        int item = 0;
+        for (int i = 0; i < MOUSE_BUTTON_CHOICES.length; i++) {
+            if (MOUSE_BUTTON_CHOICES[i] == sdlButton) {
+                item = i + 1;
+            }
+        }
+        suppressPersistence = true;
+        try {
+            mouseButtonCombo.setSelectedIndex(item);
+        } finally {
+            suppressPersistence = false;
         }
     }
 

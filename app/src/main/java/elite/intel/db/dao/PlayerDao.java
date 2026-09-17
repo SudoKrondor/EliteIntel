@@ -25,7 +25,7 @@ public interface PlayerDao {
                        goods_sold_this_session, highest_single_transaction, in_game_name,
                        insurance_claims, is_mining_announcement_on, is_navigation_announcement_on,
                        is_radio_transmission_on, is_route_announcement_on,
-                       is_planetary_approach_announcement_on, is_address_me_on,
+                       is_planetary_approach_announcement_on, is_cargo_scoop_pickup_announcement_on, is_address_me_on,
                        last_known_carrier_location, last_scan_id, market_profits,
                        personal_credits_available, player_highest_military_rank,
                        player_name, ships_owned, species_first_logged,
@@ -41,7 +41,7 @@ public interface PlayerDao {
                        :goodsSoldThisSession, :highestSingleTransaction, :inGameName,
                        :insuranceClaims, :miningAnnouncementOn, :navigationAnnouncementOn,
                        :radioTransmissionOn, :routeAnnouncementOn,
-                       :planetaryApproachAnnouncementOn, :addressMeOn,
+                       :planetaryApproachAnnouncementOn, :cargoScoopPickupAnnouncementOn, :addressMeOn,
                        :lastKnownCarrierLocation, :lastScanId, :marketProfits,
                        :personalCreditsAvailable, :playerHighestMilitaryRank,
                        :playerName, :shipsOwned, :speciesFirstLogged, :totalBountyClaimed, :totalDistanceTraveled,
@@ -72,6 +72,7 @@ public interface PlayerDao {
         private Boolean isRadioTransmissionOn = null;
         private boolean isRouteAnnouncementOn = true;
         private boolean isPlanetaryApproachAnnouncementOn = true;
+        private boolean isCargoScoopPickupAnnouncementOn = true;
         private boolean isAddressMeOn = true;
         private String lastKnownCarrierLocation = "";
         private long lastScanId = -1;
@@ -277,6 +278,14 @@ public interface PlayerDao {
             isPlanetaryApproachAnnouncementOn = planetaryApproachAnnouncementOn;
         }
 
+        public boolean isCargoScoopPickupAnnouncementOn() {
+            return isCargoScoopPickupAnnouncementOn;
+        }
+
+        public void setCargoScoopPickupAnnouncementOn(boolean cargoScoopPickupAnnouncementOn) {
+            isCargoScoopPickupAnnouncementOn = cargoScoopPickupAnnouncementOn;
+        }
+
         public boolean isAddressMeOn() {
             return isAddressMeOn;
         }
@@ -469,6 +478,7 @@ public interface PlayerDao {
             p.setRadioTransmissionOn(rs.getObject("is_radio_transmission_on") != null && rs.getBoolean("is_radio_transmission_on"));
             p.setRouteAnnouncementOn(rs.getBoolean("is_route_announcement_on"));
             p.setPlanetaryApproachAnnouncementOn(rs.getBoolean("is_planetary_approach_announcement_on"));
+            p.setCargoScoopPickupAnnouncementOn(rs.getBoolean("is_cargo_scoop_pickup_announcement_on"));
             p.setAddressMeOn(rs.getBoolean("is_address_me_on"));
             p.setLastKnownCarrierLocation(rs.getString("last_known_carrier_location"));
             p.setLastScanId(rs.getLong("last_scan_id"));
