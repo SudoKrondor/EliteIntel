@@ -26,6 +26,7 @@ import java.util.function.Supplier;
  * this running on? A local LLM and two local speech engines share one machine with the game, and a
  * report from a laptop with an integrated GPU and eight gigabytes is a different bug from the same words
  * sent from a desktop with a dedicated card. Asking gets prose ("a decent PC"); this gets the numbers.
+ * The keyboard and mouse ride along (see {@link InputDeviceReport}) because a binding report is about them.
  * <p>
  * Every line is optional. The JDK volunteers cores, memory and disk space; the CPU model and the graphics
  * cards come from OSHI, which asks the OS through native calls that can fail on any machine for any reason
@@ -63,6 +64,7 @@ final class HardwareReport {
         text.append(guarded("JVM heap", HardwareReport::heap));
         text.append(guarded("GPU", () -> gpus(hardware)));
         text.append(guarded("GPU (nvidia-smi)", HardwareReport::nvidiaSmi));
+        text.append(guarded("Input devices", InputDeviceReport::describe));
         for (Path volume : volumes) {
             if (volume == null) continue;
             text.append(guarded("Disk " + volume, () -> disk(volume)));
