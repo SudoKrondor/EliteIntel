@@ -1,13 +1,21 @@
 # BindForge — Bind Editor
 
-The Bind Editor is where the player views and edits their actual key/button/axis bindings. It organizes the same underlying binding data through multiple **modes**, each offering a different lens on it. Conflict detection is shared infrastructure used by every mode, not owned by any single one — see [Shared Conflict Detection](#shared-conflict-detection) below.
+The Bind Editor is where the player views and edits their actual key/button/axis bindings. It organises the same underlying binding data through multiple **modes**, each offering a different lens on it. Conflict detection is shared infrastructure used by every mode, not owned by any single one — see [Shared Conflict Detection](#shared-conflict-detection) below.
+
+**Two of the six modes ship in V1.2: [Game Mode](#game-mode) and [Anomalies](#anomalies).** Action Groups,
+Input Mode, Control Types and Controller Mode are [deferred to a later release](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16),
+and their tabs are not in the mode bar at all for V1.2. Their designs stay in this document, which is what
+makes them cheap to build when they come back — each mode's own section below carries its status.
 
 ## Shell (Common to All Modes)
 
 - A Bindings File dropdown plus Load button, above everything. Load performs the standard [Live File Synchronization](overview.md#live-file-synchronization) freshness check for the Bind Domain before opening the file for editing.
 - A Search box, above all mode tabs — filters whichever list is currently showing in whichever mode tab is active. **It clears in one action**: a × appears inside the field once there is anything to clear, and Esc does the same for anyone whose hands are already on the keyboard — which, in a bind editor, is most of them. Clearing restores the full list and returns focus to the field. Controller Mode is picture-based, not a list, so how (or whether) Search applies there is still open.
-- A **Show Anomalies Only** checkbox/toggle, on the same line as Search — shared shell state, not owned by any one mode, but what it filters *to* depends on which mode tab is active: in Game Mode it filters the grid to conflicting rows only (see [Conflict Display](#conflict-display)); in Action Groups it filters the group list to only groups containing at least one binding that conflicts with something in a *different* group (see [Action Groups — Conflict Filtering](#action-groups)); in Input Mode it filters the same way Game Mode does, since Input Mode's list is already the same row format with conflicts already shown inline. It has no meaningful effect on the Conflicts tab, since that tab's entire content already is the anomaly list — not undefined, just not applicable. Control Types and Controller Mode don't need a defined behavior either, since both are confirmed back-burner and out of scope.
-- Mode tabs: **Game Mode**, **Action Groups**, **Control Types**, **Controller Mode**, **Input Mode**, **Anomalies** (see below for each mode's status).
+- A **Show Anomalies Only** checkbox, on the same line as Search. **It belongs to Game Mode and appears only there** (settled 2026-09-15). It filters the grid to rows carrying an anomaly — any of the [four kinds](#four-kinds-one-question), not conflicts alone. Leaving Game Mode hides it **and clears it**, so a filter is never left applied where nothing on screen explains it. **Why it exists when [Anomalies](#anomalies) has its own tab:** the tab answers *what is wrong*, gathering every anomaly by kind and severity away from the game's own layout; the checkbox answers *what is wrong here*, keeping the sections and groups the commander is already working in. *Until 2026-09-15 this was shared shell state that meant something different in each mode. [Action Groups](#action-groups) has no filter of its own as a result, and needs none: it is not where conflicts get fixed.*
+- Mode tabs: **Game Mode** and **Anomalies** in V1.2 (settled 2026-09-16). **Action Groups**, **Control
+  Types**, **Controller Mode** and **Input Mode** are documented below but [are not in the mode bar](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16)
+  for that release — not greyed out, not labelled “coming soon”, not present. Nothing on screen promises a
+  view that cannot be opened.
 - A Context Bar of buttons (All / General / Ship / SRV / On Foot) filtering the grid to one section.
 - A collapsible-group binding grid: left-click toggles one group; right-click opens Expand All / Collapse All, scoped to the currently visible groups.
 - A roughly 75/25 split between the binding grid and the Binding Editor panel.
@@ -15,7 +23,7 @@ The Bind Editor is where the player views and edits their actual key/button/axis
 ## Game Mode
 
 **Status: exists as Krondor's Binding Profile, and grows in phase 3** — corrected 2026-09-13; this line
-used to say *built*, which overstated it. Elite-Intel's `BindingProfilePanel` already organizes bindings to
+used to say *built*, which overstated it. Elite-Intel's `BindingProfilePanel` already organises bindings to
 match the in-game controls UI — the same four top-level sections and the same group structure the game
 uses — with the game's own row names (`BindingDisplayNames`), search, and a show-conflicts-only filter.
 See [Binding Zone Map (domain knowledge)](domain-knowledge/EliteDangerous-ActionCatalog.md) for the full,
@@ -26,16 +34,397 @@ cross-verified section/subgroup/action inventory.
 | Addition | Where it is specified |
 |---|---|
 | Capture for **every device**, through the capture dialog | [Capture Dialog](#capture-dialog--settled-2026-09-13) |
+| The 93 **settings entries**, which appear nowhere today | [Settings entries are rows too](#settings-entries-are-rows-too--settled-2026-09-16) |
 | The **ASSISTANT** column | [The mechanism: an ASSISTANT column](#the-mechanism-an-assistant-column-in-the-grid--settled-2026-09-12) |
 | Conflict colouring on the **slot cell**, not the whole row | [FN-1](#fn-1-in-detail--scoped-2026-09-12) |
 | The in-game name and the XML tag in the capture dialog | [What the dialog shows](#what-the-dialog-shows) |
 
+### Settings entries are rows too — settled 2026-09-16
+
+**BindForge is a bind manager, not an assistant accessory.** Alan: *“we are not just facilitating Elite
+Intel's need for bindings anymore, this is a full bind management system. that means we need the user to
+have access to all the binds the game offers so that they can edit the binds outside of the game. This
+includes the “binds” that are just settings, like deadzones and toggles for inverted and other “not an
+input” “bind”*.
+
+Two different things wear the word *settings*, and only one of them was already built:
+
+- **Properties of an axis row** — Inverted and Deadzone, which belong to one axis binding and already sit on
+  that row in the grid. Unchanged by this.
+- **[Standalone-setting-type](../../03-data-models/binding-schema.md#binding-element--three-distinct-kinds)
+  entries** — a bare value attached to no control at all, which had nowhere to appear. These are what
+  this section adds.
+
+**Measured against `reference-data/Custom.4.2.binds`**, a real 4.2 file holds **515 elements: 352
+button-type, 70 axis-type and 93 standalone settings.** The settings are not a rounding error — they are
+nearly a fifth of the file, and until now not one of them was reachable outside the game.
+
+**Where a settings row goes: with its own subgroup, at the foot of it.** The
+[Action Catalog](domain-knowledge/EliteDangerous-ActionCatalog.md) already files every settings entry under a
+subgroup — `YawToRollMode` is in **Flight Rotation** beside Yaw Axis, `FreeCamMouseSensitivity` is in
+**Free Camera** — so BindForge puts it where the game's own taxonomy already has it, gathered below that
+subgroup's bindings under a **SETTINGS** divider rather than mixed among them. Gathered, because a row with
+no capture affordance sitting between rows that have one invites a click that cannot work; in its own band,
+because moving `Yaw Into Roll` away from the yaw bindings would be BindForge inventing a layout the game
+does not use.
+
+**A settings row has no slots, so it has no capture, no Primary/Secondary, no hold chip and no conflict
+state.** It cannot collide with anything, and it is never [an anomaly](#anomalies): a value is either set or
+left at the game's default, and neither is a fault.
+
+#### The three value shapes, measured
+
+**The complete observed vocabulary of every choice field is
+[tabulated separately](reference-data/settings-choice-fields.md)**, generated from 47,898 real files rather
+than written by hand: 34 token choices, 3 numeric choices, 45 booleans and 21 free numbers.
+
+| Shape | Count | Editor | Examples |
+|---|---|---|---|
+| **Boolean** | 36 | checkbox | `DeployHardpointsOnFire` (Firing Deploys Hardpoints), `EnableRumbleTrigger` — every one holds `0` or `1` |
+| **Float** | 25 | numeric field | `MouseSensitivity` `1.00000000`, `MouseDeadzone` `0.05000000`, `FreeCamMouseSensitivity` `5.00000000` |
+| **Enum** | 31 | dropdown | `YawToRollMode` `Bindings_YawIntoRollNone`, `MouseYMode` `Bindings_MousePitch`; **23 of the 31 hold an empty value**, which is the game's default rather than a missing one |
+
+`KeyboardLayout` is the one entry with no `Value` attribute at all — it carries the layout as element text.
+It is read-only: the game writes it from the OS keyboard layout, and nothing a commander does in a bind
+editor should claim to change that.
+
+**Floats are a plain numeric field, not a slider.** A slider has to know its range, and nothing in any of the
+five specimen files tells us what the maximum sensitivity is. A field writes exactly what the commander
+typed, which is the same contract the rest of BindForge keeps with the file.
+
+**Except that three of them are not really floats — found 2026-09-16.** The game's options screen shows
+**Headlook Button Increments** as a four-choice dropdown — CONTINUOUS, SMALL INCREMENTS, MEDIUM INCREMENTS,
+LARGE INCREMENTS — and the file stores it as `HeadlookIncrement` = `0.00000000`. `ThrottleIncrement` and
+`BuggyThrottleIncrement` have the same shape. **A numeric field would let a commander type a value the game
+never offers**, so these three are dropdowns like any other enumerated setting, and the number behind each
+label is captured by the same testing. *Nothing in the file distinguishes them from a genuine float — the
+difference is only visible on the options screen, which is why it took looking.*
+
+**The other 22 are safe to treat as numbers.** Every one of them is a sensitivity, a deadzone or a power
+curve — `MouseSensitivity`, `FSSMouseDeadzone`, `HumanoidPitchSensitivity` and their kin — and the options
+screen renders that family as a **slider**, confirmed twice on screen — Headlook Sensitivity, and the SRV
+Turret Mouse Sensitivity, Deadzone and Power Curve trio.
+A slider is a number chosen freely, so a numeric field writes nothing the game would not accept. Only the
+**increments** family turned out to be a list wearing a number.
+
+#### What the options screen showed — 2026-09-16
+
+Alan walked the game's own options screen. **Two assumptions did not survive it.**
+
+**A label does not tell you its token.** *UI Focus Mode* reads **DIRECTION** on screen and is stored as
+`Bindings_FocusModeHold`. Anything that builds a token from a label, or a label from a token, is
+guessing — both directions have to be read from a file the game wrote.
+
+**And one token can wear different labels.** `Bindings_MouseYaw` reads **YAW** under Ship Controls and under
+the SRV turret, and **ROTATE** under On Foot Controls — same token, same vocabulary, different word on
+screen, because rotating on foot is not called yawing. **So the label table is keyed by element and token
+together, never by token alone**, and a shared vocabulary does not imply shared labels.
+
+**An empty value is a choice, not an absence — and which choice depends on the element.** The four
+panel-focus entries hold `""` in `Custom.4.2.binds` and `FocusOption_Nothing` in another specimen, and the
+screen shows **DOES NOTHING** for both. But `ThrottleRange` is empty and reads **FULL RANGE**, while
+`MouseBuggyYMode` is empty and reads **OFF**. Three elements, three different meanings for the same empty
+string:
+
+| Element | Value in the file | What the screen reads |
+|---|---|---|
+| `CommsPanelFocusOptions` | `""` | **FOCUSES THE PANEL** |
+| the same field | `FocusOption_Nothing` | DOES NOTHING |
+| `ThrottleRange` | `""` | FULL RANGE |
+| `MouseBuggyYMode`, `MouseBuggyRollingXMode` | `""` | OFF |
+
+**Empty is sometimes the only way to say a thing.** The panel-focus fields offer three choices on screen and
+have only two tokens: *Focuses the panel* is written as `Value=""` and nothing else, proved 2026-09-17 by
+setting exactly that option in-game and watching the game replace `FocusOption_Nothing` with a blank while
+the three sibling fields stayed as they were. **So writing that choice means writing an empty value, not
+removing the element** — an editor that “tidied away” empty attributes would silently change the setting.
+
+**So there is no single rule for empty**, and nothing may normalise it. An empty value is that element's
+default choice, whatever the game decided it should be, and BindForge writes back exactly the form the file
+already held unless the commander picks something else. *This is also the second reason the vocabularies
+have to be captured per element rather than per family: the family tells you the tokens, not the default.*
+
+| Element | In-game name | Choices on screen | Tokens known |
+|---|---|---|---|
+| `MouseXMode` | Mouse X-Axis | OFF, ROLL, YAW | `Bindings_MouseYaw` = YAW, `Bindings_MouseRoll` = ROLL |
+| `MouseYMode` | Mouse Y-Axis | OFF, PITCH, PITCH INVERTED | `Bindings_MousePitch` = PITCH, `Bindings_MousePitchInverted` = PITCH INVERTED |
+| `UIFocusMode` | UI Focus Mode | DIRECTION, and CYCLE per the help text | `Bindings_FocusModeHold` = **DIRECTION** |
+| `CommsPanelFocusOptions` and its three siblings | Looking at Comms / External / Role / Internal Panel | FOCUSES THE PANEL, SHOWS THE PANEL, DOES NOTHING | `FocusOption_Nothing` = DOES NOTHING, `FocusOption_Show` = SHOWS THE PANEL, **`""` = FOCUSES THE PANEL** — *settled by experiment 2026-09-17; see [the vocabulary table](reference-data/settings-choice-fields.md)* |
+| `HeadlookMode` | Headlook Axis Mode | ACCUMULATE, DIRECT | `Bindings_HeadlookModeAccumulate` = ACCUMULATE |
+| `HeadlookIncrement` | Headlook Button Increments | CONTINUOUS, SMALL, MEDIUM, LARGE INCREMENTS | stored as a float; `0.00000000` is one of the four |
+| `MuteButtonMode` | Mute Button Mode | TOGGLE, PUSH TO TALK, **PUSH TO MUTE** | `mute_toggle`, `mute_pushToTalk`; the third has never appeared in a file |
+| `CqcMuteButtonMode` | Microphone State Mode (CQC) | the same three | `mute_pushToTalk` |
+| `EnableMenuGroups` | Enable Context Menu In Ship | OFF | a plain `0`/`1`, no capture needed |
+| `ThrottleRange` | Throttle Axis Range | FULL RANGE, FORWARD ONLY | **`""` = FULL RANGE** — the empty value is the default choice, not an unset one |
+| `BuggyThrottleRange` | Throttle Axis Range (SRV) | the same two | `Bindings_BuggyThrottleForewardOnly` = FORWARD ONLY |
+| `BuggyThrottleIncrement` | SRV Throttle Increments | CONTINUOUS, 10%, 12.5%, 16.7%, 25%, and more below the fold | `0.00000000` = CONTINUOUS |
+| `MouseTurretYMode` | Turret Mouse Y-Axis | OFF, PITCH, PITCH INVERTED | `Bindings_MousePitchInverted` = PITCH INVERTED |
+| `MouseTurretXMode` | Turret Mouse X-Axis | — | `Bindings_MouseYaw` = YAW |
+| `MouseBuggyYMode` | SRV Pitch Mouse Y-Axis | OFF, PITCH, PITCH INVERTED | `""` = **OFF** |
+| `MouseBuggyRollingXMode` | SRV Rolling Mouse X-Axis | — | `""` = **OFF** |
+| `MouseHumanoidXMode` | Mouse X-Axis (On Foot) | — | `Bindings_MouseYaw` = **ROTATE** |
+| `MouseHumanoidYMode` | Mouse Y-Axis (On Foot) | OFF, PITCH, PITCH INVERTED | `Bindings_MousePitch` = PITCH |
+
+**Six in-game names came free with it** — Mouse X-Axis and Y-Axis were already in the catalog, but UI Focus
+Mode, Headlook Axis Mode, Headlook Button Increments, Mute Button Mode, Microphone State Mode (CQC) and the
+four *Looking at* panel entries were not. **Which panel element is which is still inferred**, not observed:
+left/right/role/comms against external/internal/role/comms is the obvious mapping and the cheapest thing in
+the world to confirm by setting one and reading the file.
+
+**The increments are percentages, and that is the shape of the vocabulary.** *SRV Throttle Increments* offers
+CONTINUOUS, 10%, 12.5%, 16.7%, 25% and more below the crop — a series of simple divisions (1/10, 1/8, 1/6,
+1/4), with `0.00000000` standing for CONTINUOUS. **So the stored number is almost certainly the fraction the
+label names**, which would make these dropdowns cheap to populate and to label. *Almost certainly is not
+captured*, though: selecting two of them and reading the file settles it, and until then the reading stays a
+hypothesis rather than something BindForge writes.
+
+**Two values confirm each other across the two throttle families.** `BuggyThrottleRange` holds
+`Bindings_BuggyThrottleForewardOnly` and the SRV screen reads FORWARD ONLY, while `ThrottleRange` is empty and
+the ship screen reads FULL RANGE — so the ship's *Forward Only* token is the one thing still missing from
+that family, and the guess `Bindings_ThrottleForewardOnly` is exactly the kind of guess this section exists to
+refuse.
+
+**More remain.** Alan: *“here is a bunch of things i have seen that are choices instead of a number or input
+capture, there are more”* — the sweep in
+[testing-required.md](../../00-overview/testing-required.md) is what finishes the set.
+
+#### An in-game apply re-emits the whole file — observed 2026-09-17
+
+Four saves on Alan's live file in five minutes, watched from the outside:
+
+| Time | What he did | What the file did |
+|---|---|---|
+| 22:29:14 | set Comms panel focus to *Shows the panel* | that field changed, its three siblings did not |
+| 22:30:33 | pressed apply with **nothing changed** | **the file was rewritten anyway**, with every value identical |
+| 22:31:40 | set it back to *Does nothing* | that field changed, siblings again untouched |
+| 22:34:50 | pressed apply with a field **already** on the value he wanted | file rewritten; that field read `Bindings_MouseYaw` |
+
+**The 22:30 save is the useful one.** The game rewrote a file it had no changes for, which means an apply
+**serialises the game's own model** rather than patching the text in place. Two consequences:
+
+- **Every value in the file after an apply is what the current build writes**, not a value that happens to
+  have survived. That is what settled the On Foot token without changing anything: the field was re-emitted,
+  and it came out `Bindings_MouseYaw`.
+- **A single-field experiment is conclusive**, because the siblings prove the rewrite is faithful rather than
+  wholesale-defaulting: three panel-focus fields kept their values through all four saves.
+
+*This is the same normalise-on-save behaviour that [strips XML comments](#action-groups) — seen from a different
+angle, and it is the reason BindForge's own
+[freshness check](overview.md#freshness-checks) cannot trust a file's modification time.*
+
+#### Frontier documents most of them, in the game folder — found 2026-09-16
+
+**`ControlSchemes\Help.txt` ships with the game**, beside the preset files, and its *Options* section lists legal values.
+An identical 6,230-byte copy sits in every install on Alan's machine — Steam Horizons, Steam Odyssey and
+Epic Odyssey — so it is not a stray file or a mod. This is the answer to *“is this written down anywhere”*:
+**it was in the game folder the whole time.**
+
+| Setting | Values Frontier lists |
+|---|---|
+| `YawToRollMode`, `YawToRollMode_Landing` | `Bindings_YawIntoRollNone`, `Bindings_YawIntoRollTime`, `Bindings_YawIntoRollLowRoll` |
+| `ThrottleRange` | `""` and `Bindings_ThrottleForewardOnly` — **confirming empty is FULL RANGE** |
+| `UIFocusMode` | `Bindings_FocusModeHold`, `Bindings_FocusModeToggle` — so CYCLE is *Toggle* |
+| `HeadlookMode` | `Bindings_HeadlookModeDirect`, `Bindings_HeadlookModeAccumulate` |
+| `GunsightSystem` | `Bindings_TraditionalGunsights`, `Bindings_TrailingGunsights` |
+| `MouseSensitivity` | any number greater than 0.0 |
+| `MouseDeadzone` | any number between 0.0 and 1.0 |
+| `ThrottleIncrement` | **any number between 0.0 and 1.0** |
+
+**A second source, in the same folders: 90 shipped preset files.** Scanning every `.binds` Frontier ships
+(`SaitekX52.binds`, `KeyboardMouseOnly.binds`, `DualShock4Controller.binds` and the rest) yields tokens no
+commander file held — `FocusOption_Show`, `Bindings_YawIntoRollTime`, `Bindings_ThrottleForewardOnly` and
+`Bindings_TraditionalGunsights`. **Frontier's own files are the cheapest evidence there is**, and BindForge's
+testing should start there before anyone touches the options screen.
+
+**What the file does not cover, because it predates the settings it is missing.** It documents an older
+`MouseMode` with values like `Bindings_MouseAbsPitchRoll` that no current file uses — today's `MouseXMode` and
+`MouseYMode` are not in it, nor are the panel-focus family, the mute modes, or the headlook increments.
+*Which is a warning about the file as much as a gift: it is documentation the game has outgrown in places, so a
+value it lists is evidence, not a guarantee, and a setting it omits is not thereby invalid.*
+
+**The mouse family looked settled, and was not — corrected 2026-09-17.** The ship's X dropdown offers exactly
+OFF, ROLL, YAW and its Y dropdown OFF, PITCH, PITCH INVERTED, each with a known token or the empty default.
+But On Foot carries **tokens of its own** — `Bindings_MouseHumanoidYawRotate` and
+`Bindings_MouseHumanoidPitchRotate`, found in six files out of 48,354, beside the plain `Bindings_MouseYaw`
+that 33,847 files hold. **Two tokens reach the same choice.**
+
+**Today's build writes `Bindings_MouseYaw` — settled 2026-09-17.** With On Foot's *Mouse X-Axis* showing
+ROTATE, Alan applied in-game; the game rewrote the file and that field came back `Bindings_MouseYaw`. Because
+[an apply re-emits the whole file](#an-in-game-apply-re-emits-the-whole-file--observed-2026-09-17), the value
+after a save is what the current build writes rather than a leftover — so `Bindings_MouseHumanoidYawRotate` is
+a legacy or short-lived token, not current, which is also what six files in forty-eight thousand suggests.
+**The vocabularies are now closed.**
+
+**`ThrottleIncrement` is the interesting disagreement.** Frontier's file says *any number between 0.0 and 1.0*,
+while the modern options screen offers a fixed list — CONTINUOUS, 10%, 12.5%, 16.7%, 25% and more. Both are
+true: the field accepts any fraction, and the UI offers a chosen few. **BindForge offers the UI's list**, because
+matching what the commander sees in the game is the entire point of the editor — and the list's values are
+what the remaining testing captures.
+
+#### A third source: EDRefCard's repository — 2026-09-16
+
+[EDRefCard](https://github.com/richardbuckle/EDRefCard), the community reference-card generator, keeps **152
+`.binds` files in its public repository** — Frontier's shipped defaults for four game versions (3.3, 3.5, 4.0a
+and Odyssey patch 8) plus around two dozen real commander files kept as test cases. Scanning them closed
+almost everything that was left, and **one result would have made a reasonable guess wrong**.
+
+| Finding | Why it matters |
+|---|---|
+| `ThrottleRangeFreeCam` = **`Bindings_ThrottleForewardOnlyFreeCam`** | it has its **own token**, not the `Bindings_ThrottleForewardOnly` its siblings use. A family does not guarantee a shared vocabulary — the exact assumption this section refuses to make |
+| `ThrottleIncrement` = `0.10000000`, `HeadlookIncrement` = `0.25000000` | **the increments are the fraction the label names** — 10% and 25%. The percentage reading is now observed, not hypothesised |
+| `UIFocusMode` holds both `Bindings_FocusModeHold` and `Bindings_FocusModeToggle` | confirms [Help.txt](#frontier-documents-most-of-them-in-the-game-folder--found-2026-09-16) against files in the wild |
+| `HeadlookMode` holds both `...Accumulate` and `...Direct` | same |
+| panel focus: `FocusOption_Nothing`, `FocusOption_Show` | two of the three; **FOCUSES THE PANEL** is still unseen |
+| mute: `mute_toggle`, `mute_pushToTalk` on both settings | two of the three; **PUSH TO MUTE** is still unseen |
+
+**What that leaves is two tokens.** The value behind *Focuses the panel*, and the value behind *Push to mute*.
+Both are one selection each in the game, and until they are observed BindForge offers the options it can
+write and says why — `FocusOption_Focus` and `mute_pushToMute` are the obvious guesses, and
+`Bindings_ThrottleForewardOnlyFreeCam` is why obvious guesses are not written to a commander's file.
+
+**Where these came from matters.** All three sources so far — the game folder, Frontier's 90 shipped presets,
+and a public source repository — were free to read. [edrefcard.info](https://edrefcard.info/list) lists 3,888
+commander-shared configs and would be a far richer sample, but **its `robots.txt` allows `/list` and disallows
+everything else, including `/configs/`**, so those files are not ours to crawl. Recorded here so the question
+is settled rather than rediscovered.
+
+#### A fourth source: 48,354 community configs — 2026-09-17
+
+Alan holds a corpus of **48,354 commander-shared `.binds` files**, scanned read-only and diffed against
+every value the earlier sources held.
+
+**The version attributes name the writer, not the game — corrected 2026-09-17.** An earlier draft of this
+section read a *4.5* in the corpus as a game version newer than any specimen. Alan challenged it, and he was
+right: **116 of the 117 files reading `MajorVersion="4" MinorVersion="5"` are `PresetName="GameGlass"`**, a
+third-party touchscreen controller app that writes its own preset and stamps its own number. Every version
+above 4.2 is the same story — `4.4` is one file named `EliteDangerousBinds`, `6.1` is two named `Virpil`,
+`3.1` and `3.2` are `HCS ...` files from a voice-pack vendor, and `5.0` is a handful of hand-named customs.
+**So the version attribute identifies whatever tool last wrote the file, and BindForge must not gate any
+behaviour on it.**
+
+| Version reading | Files | What it actually is |
+|---|---|---|
+| 4.2 | 25,681 | the current game |
+| 4.1, 4.0 | 17,688 | recent game versions |
+| 3.0, 2.x, 1.x | 3,100-odd | genuinely old game files, back to `1.0` |
+| 4.3, 4.4, 4.5, 5.0, 6.1 | 141 | **third-party tools and hand edits** |
+| *absent entirely* | **1,225** | 1,078 using the older `<Root PresetName=… SortOrder="0">` schema, and 147 a bare `<Root>` |
+
+**The missing-version case is the one that matters**, being nine times more common than every odd version put
+together: a file legitimately has no `MajorVersion` or `MinorVersion` at all, so reading them must be
+optional rather than assumed.
+
+| What it found | Detail |
+|---|---|
+| **`mute_pushToMute`** | 191 files on `MuteButtonMode`, 122 on `CqcMuteButtonMode` — the last unknown token, and the guess was right |
+| **`Bindings_ThrottleFullRange`** (23) and **`Bindings_ThrottleFullRangeFreeCam`** (6) | full range has an **explicit token as well as empty**, so empty is a default rather than the only representation |
+| **`Bindings_MouseHumanoidYawRotate`**, **`Bindings_MouseHumanoidPitchRotate`** (6 each) | On Foot carries its **own tokens** beside the shared `Bindings_MouseYaw` / `MousePitch` |
+| `FocusOption_Show` appears **only on `CommsPanelFocusOptions`** (4,679) | the left, right and role panels never hold it: **vocabularies differ inside a family** |
+| `Bindings_YawIntoRollLowRoll` (271), `...Time` (2,540) | all three yaw-into-roll values confirmed in the wild, on `_FAOff` and `_Landing` too |
+| `UIFocusMode`, `HeadlookMode` | both values of each, at scale — 1,862 and 3,262 files hold the non-default |
+
+**The increment vocabularies are now complete, and they differ per element:**
+
+| Element | Values in the corpus | The labels they match |
+|---|---|---|
+| `ThrottleIncrement`, `BuggyThrottleIncrement` | `0`, `0.10000000`, `0.12500000`, `0.16666667`, `0.25000000` | CONTINUOUS, 10%, 12.5%, 16.7%, 25% |
+| `HeadlookIncrement` | `0`, `0.25000000`, `0.33333334`, `0.50000000` | CONTINUOUS, SMALL, MEDIUM, LARGE — exactly four |
+
+**Two things written on 2026-09-16 were wrong, and are corrected above.** *Empty does not mean DOES NOTHING*
+on a panel-focus entry: the preset in the screenshots holds `FocusOption_Nothing`, which is what the screen
+was reading, and no `FocusOption_Focus` exists anywhere in 48,354 files — so empty is most likely **Focuses
+the panel**, and is the one thing still worth one selection to confirm. *And the mouse family was not closed*:
+On Foot has tokens of its own, found in six files out of forty-eight thousand.
+
+##### Real files are messier than any specification
+
+The corpus is the first evidence of what BindForge will actually be handed, and it is not clean:
+
+- **Values the game never wrote.** `Bindings_ThrottleRangeFullRange`, `Bindings_ThrottleRange_ForwardOnly`,
+  `Bindings_ThrustForwardOnly`, plain `Forward`, and `Bindings_MouseRole` — a typo of *Roll* — one file each.
+  Hand-edited, and the game evidently tolerated them.
+- **A binding token in a settings field.** Panel-focus entries holding `1`, or `Joy_POV1Up` — someone pasted a
+  button where a choice belongs.
+- **Eight files carry the game's *other* settings** — `Language`, `PilotIsFemale`, market filters, route
+  plotting, HUD marker toggles — under a `.binds` extension.
+- **437 files have no `<Root>` element at all.** Measured: **363 are plain-text lists of preset names**, the
+  shape of a `StartPreset` file rather than a binds file, saved with the wrong extension; 47 are some other
+  XML; and 27 are HTML pages, which are artifacts of however the corpus was collected rather than anything a
+  commander's game produced. **A bind editor will be handed files that are not bind files** — by far the most
+  likely being the `StartPreset` that sits beside them in the same folder.
+- **Structurally wrong files**: `Deadzone`, `Inverted`, `ToggleOn`, `Hold` and `Modifier1` appearing as top-level
+  elements, where they belong inside a binding.
+- **Decimal formatting varies**: `0.00`, `0.0000`, `0.10000` alongside the usual eight places.
+
+**What that requires of BindForge**, none of which was written down before: a file that contains a value no
+vocabulary knows **still opens**; the unknown value is **shown as it is and preserved on write**, never silently
+corrected to the nearest legal token; an element BindForge does not recognise is **left alone rather than
+dropped**; and none of this counts as damage, because the commander's game has been reading these files
+quite happily.
+
+##### A `.binds` name does not make it a binds file — 2026-09-17
+
+**445 of the 48,354 files — 0.9% — carry a `.binds` extension and hold something else entirely.**
+
+| What is inside | Files | What it really is |
+|---|---|---|
+| Plain text, a few preset names per line | **363** | a **`StartPreset.start`** — the same shape as the specimen in `reference-data/` |
+| `<ActionMaps>` | 10 | **another game's** keybindings (Star Citizen's format) |
+| `<Bindings>`, `<FastEventsMapping>`, `<inputmap>`, `<profile>` | 16 | other tools' input configs and device profiles |
+| `<KeyboardLayout>` | 2 | a real binds file whose `<Root>` element has been truncated away |
+| `<plist>`, `<FilesMatch>`, `<li>`, hand-made XML | ~14 | a macOS property list, an Apache config snippet, HTML fragments, one-offs |
+| `<!DOCTYPE html>` | 27 | artifacts of how the corpus was collected, not commander files |
+
+**The 363 are the ones that matter, and they are not a mystery:** `StartPreset.start` lives in the **same
+folder** as the `.binds` files, with a similar name and a similar job, so it is the obvious wrong file to
+grab. A commander sharing their bindings picks it by accident — 363 times out of 48,354.
+
+**So BindForge identifies a file by its content, not its name.** On load it checks for a `<Root>` element
+carrying binding children, and when that is absent it **says what the file looks like instead** — *“this is a
+Start Preset list, not a bindings file”* beats *“could not parse file”, and beats an editor that opens empty. The two
+truncated binds files argue the same point from the other side: a file can be *nearly* right and still not be
+loadable.
+
+**And it never writes over one.** A file BindForge cannot identify is left exactly as it is: not repaired, not
+normalised, not replaced with a binds file wearing the same name. Someone's `StartPreset`, or another
+game's configuration, is not BindForge's to rewrite.
+
+*Open, and Alan's call: whether an unrecognised settings value earns a row in [Anomalies](#anomalies).* It fits
+the *[Invalid](#four-kinds-one-question)* kind by meaning — it will not do what the commander expects — but
+[settings are currently never anomalies](#settings-entries-are-rows-too--settled-2026-09-16), and the whole
+class is five files in forty-eight thousand.
+
+#### Enums need their vocabularies captured first — settled 2026-09-16
+
+An enum's value is a **token naming one choice from a fixed set**, the way the game writes the option the
+commander picked from a dropdown: `Bindings_MouseYaw` means the mouse's X axis yaws, `Bindings_MouseRoll`
+means it rolls. **The problem is that a file only ever contains the token it happens to hold.** Across all
+five specimens, `YawToRollMode` is `Bindings_YawIntoRollNone` every single time — whatever the game calls its
+on-states, no file we have has ever contained one.
+
+| Element | In-game name | Tokens observed |
+|---|---|---|
+| `MouseXMode`, and the whole mouse-axis family | Mouse X-Axis | `Bindings_MouseYaw`, `Bindings_MouseRoll` |
+| `MouseYMode`, and its family | Mouse Y-Axis | `Bindings_MousePitch`, `Bindings_MousePitchInverted` |
+| `MuteButtonMode` | — | `mute_pushToTalk`, `mute_toggle` |
+| `YawToRollMode` | Yaw Into Roll | `Bindings_YawIntoRollNone` **only** |
+| `LeftPanelFocusOptions` and the other panel-focus entries | — | `FocusOption_Nothing` **only** |
+
+**So the dropdowns are populated from testing, not from invention** — see
+[testing-required.md](../../00-overview/testing-required.md). Walk each dropdown in the game's options screen,
+save, and read the token back out of the file. **If that testing has not happened by release, enums ship
+read-only** with their current value shown and the game's own options screen named as where to change them;
+booleans and floats do not depend on it. Writing a token nobody has ever seen the game write is the one
+outcome to avoid: the game would discard it silently, with BindForge's fingerprints on the file.
+
 ### Conflict Display
 
 Carried forward from a proven, already-real pattern, not invented fresh:
-- Conflicting rows render in a distinct warning color.
+- Conflicting rows render in a distinct warning colour.
 - Hovering a conflicting row shows a **persistent** popup (not an auto-dismissing tooltip, which vanishes too fast to read a full explanation) listing every other action sharing that key.
-- The shell's [Show Anomalies Only toggle](#shell-common-to-all-modes) filters the grid to rows carrying an anomaly while Game Mode is active.
+- The [**Show Anomalies Only** checkbox](#shell-common-to-all-modes) sits beside Search and **appears only
+  here**, filtering the grid to rows carrying an anomaly — any of the [four kinds](#four-kinds-one-question),
+  not conflicts alone.
 
 ### Capture Dialog — settled 2026-09-13
 
@@ -43,7 +432,7 @@ Carried forward from a proven, already-real pattern, not invented fresh:
 `AssignKeyboardBindingDialog` already does the hard parts: it captures a chord by having the commander press
 it, colours an on-screen keyboard free and used, and warns about conflicts, reserved chords and the game-menu
 key *before* anything is kept — leaving all validation and writing to `BindingsWriter`. It already dims the
-window behind it, too. The earlier design, a floating popup *"modeled directly on the base game's own rebind
+window behind it, too. The earlier design, a floating popup *"modelled directly on the base game's own rebind
 popup"*, described a dialog nobody built while this one shipped. The class keeps its name under the
 [package freeze](../../00-overview/v1.2-scope.md#the-code-stays-where-it-is--stated-by-krondor-2026-09-12);
 what it shows and what it captures grows.
@@ -237,48 +626,96 @@ All of the following are confirmed by direct in-game testing, not just inferred 
 
 *(Named "Purpose Mode" in earlier design generations — same underlying concept, renamed.)*
 
-**Status: in scope for V1.2** (see [v1.2-scope.md](../../00-overview/v1.2-scope.md)). Groups bindings by **player intent** rather than game category — for example, "Move Left" spans Ship, SRV, On Foot, and General Controls simultaneously; Game Mode shows these in four separate sections, Action Groups shows them together in one group.
+**Status: designed in full, and deferred to a later release (2026-09-16)** — see [The V1.2 release is
+trimmed](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16). It was promoted into V1.2 scope on 2026-09-08 and designed out from there,
+including the open items settled 2026-09-16 below; **its tab is not in the V1.2 mode bar**. Everything
+recorded here stands and is what gets built when the mode returns. Groups bindings by **player intent** rather than game category — for example, "Move Left" spans Ship, SRV, On Foot, and General Controls simultaneously; Game Mode shows these in four separate sections, Action Groups shows them together in one group.
 
 - **Action Groups** — each binding belongs to at most one action group. (A binding can't logically serve two physical intents at once — if it did, both groups would require the same key, which is itself a conflict.)
-- **Default Groups** — ship with BindForge, read-only, no rename/edit/delete. The exact default set is intentionally left undefined until BindForge's binds-file audit is complete.
+- **Default Groups** — **ship with the app** (settled 2026-09-16): an application resource, read-only, no
+  rename/edit/delete, versioned with Elite-Intel like any other shipped resource. The exact default set is
+  intentionally left undefined until BindForge's binds-file audit is complete.
 - **User Groups** — fully editable and deletable, stored persistently.
-- **Ungrouped bindings are hidden in Action Groups** (they remain visible in Game Mode) — a deliberate curated-view choice, not a bug.
+- **Ungrouped is the default state of every binding** (settled 2026-09-16). Nothing is grouped until someone
+  groups it; the shipped default groups are the only exception, and a control Frontier adds in a game
+  update arrives ungrouped exactly as every existing control started out. Ungrouped bindings do not appear
+  in **View Groups**, which lists groups — but they are all in **Manage Groups'** ALL BINDINGS list,
+  which is complete, and in [Game Mode](#game-mode). *Earlier wording called this “hidden in Action
+  Groups”, which read as though some bindings were unreachable.*
 
 **View Groups tab:** a left panel lists groups (default groups with a lock indicator first, then user groups); a right panel shows only that group's bindings with its own real-time search. Clicking a row opens the same Binding Editor panel Game Mode uses.
 
-**Manage Groups tab:** a three-column layout — a source list of all bindings, add/remove controls, and a target list of the selected group's members — plus a group list. A fourth control, "Assign Control to Group," applies one capture to every member binding in a group at once.
+**Manage Groups tab:** a three-column layout — **ALL BINDINGS**, add/remove controls, and the group
+list with the selected group's members — plus "Assign Control to Group," which applies one capture to
+every member of a group at once.
 
-**Assign Control to Group — confirmation semantics (resolved):** the capture is attempted against every member binding in the group. For any member where applying it would either overwrite an existing, different value, or create a new conflict with a binding *outside* the group, that member gets its own row in one consolidated confirmation dialog — modeled on the base game's own "already bound" warning, but covering every affected member at once rather than one dialog per binding. Each row shows whatever is actually at stake for that specific member (the existing value being overwritten, the new conflict it would create, or both together when both apply) with its own toggle so the player can confirm or skip that member individually — applying to the rest of the group is never all-or-nothing because one member happens to be contested. Members with no existing value and no new conflict apply immediately, with nothing to confirm.
+**ALL BINDINGS is Game Mode's list, minus the editing columns — settled 2026-09-16.** Alan: *“the
+'all bindings' list should be exactly the same as the list on the game mode tab, minus all the extra
+columns”*. Same sections, same groups, same rows, same order, showing each control's name and its Primary
+and Secondary values; the shell's Search reaches it. What comes out is everything belonging to *editing* a
+binding — the [ASSISTANT column](#game-mode), the capture buttons, the tap/hold chips, the axis inverted
+and deadzone controls — because the list has one job: *“selecting an individual binding and putting it
+in to a player designed group”*. Anomaly decoration comes out too, for the same reason anomaly filtering
+is not offered here. A binding already in a group is shown dimmed, naming that group, so the one-group
+rule is visible before the add button has to refuse it. **One list, one model:** Game Mode and this list
+read the same binding set, so they cannot drift.
 
-**Conflict prevention:** adding a binding already in another group is blocked, with an explicit warning naming both groups.
+**Assign Control to Group — it writes Primary, and confirms any overwrite (settled 2026-09-16).**
+The capture lands in each member's **Primary** slot, always — never Secondary, and never
+“whichever slot is free”. A group is a statement about intent, so its members should hold the control in the
+same place; picking a slot per member would make what the group did depend on what each member happened to
+have. **Any existing Primary value is an overwrite and must be confirmed**, with the value at stake named. A
+commander who wants the group's control in Secondary slots moves it there per binding in
+[Game Mode](#game-mode) — which also means the *old* Primary is never silently displaced.
 
-**Conflict Filtering:** conflicts here are a group-level concern, not a per-row one the way Game Mode shows them — a single binding inside a group either has a real conflict or it doesn't, but what a player scanning the View Groups list actually wants to know is *which groups contain any conflict with something outside them*. When the shell's [Show Conflicts Only toggle](#shell-common-to-all-modes) is active in Action Groups, the group list filters down to only groups with at least one member binding conflicting with a binding in a *different* group — group-internal duplicates aren't possible in the first place, since a binding belongs to at most one group.
+**Confirmation semantics (resolved):** the capture is attempted against every member binding in the group. For any member where applying it would either overwrite an existing, different value, or create a new conflict with a binding *outside* the group, that member gets its own row in one consolidated confirmation dialog — modelled on the base game's own "already bound" warning, but covering every affected member at once rather than one dialog per binding. Each row shows whatever is actually at stake for that specific member (the existing value being overwritten, the new conflict it would create, or both together when both apply) with its own toggle so the player can confirm or skip that member individually — applying to the rest of the group is never all-or-nothing because one member happens to be contested. Members with no existing value and no new conflict apply immediately, with nothing to confirm.
 
-**Persistence — resolved by direct testing:** an early design considered marking group membership using comments inside the `.binds` XML file itself. Testing confirmed the game silently strips every XML comment on load/rewrite (while every actual binding value survives intact) — a well-behaved normalize, not a lossy one, but one that rules out this storage approach. **Consequence: group-membership metadata must live in BindForge's own data store, never in `.binds` file comments.**
+**Conflict prevention:** adding a binding already in another group is blocked, with an explicit warning
+naming both groups — and the ALL BINDINGS row is dimmed beforehand, so the refusal is not the first the
+commander hears of it.
+
+**A member with nothing bound is shown (settled 2026-09-16)** — listed in its group with an empty value,
+not hidden. Hiding it would make the group misreport itself: a commander reading “Move Left” wants to know
+that the On Foot member has nothing on it, and that is precisely the member Assign Control to Group applies
+to with nothing to confirm. It is also [an anomaly worth reporting](#four-kinds-one-question) when
+Elite-Intel drives the control — reported in Game Mode and [Anomalies](#anomalies), where anomalies are
+handled.
+
+**No anomaly filtering here — settled 2026-09-15.** Alan: *"action groups aren't really a place to fix conflicts."* This is a curated view of **intent**, while a conflict is a property of a **chord**, and the commander resolves one in [Game Mode](#game-mode) or [Anomalies](#anomalies) where the chord and its rivals are both in view. So the shell's [Show Anomalies Only checkbox](#shell-common-to-all-modes) does not appear in this mode, and no equivalent of its own is planned.
+
+**Conflict state still shows here**, from the [shared detection service](#shared-conflict-detection): a group holding a binding that clashes with something outside it is still marked, because noticing is useful even where fixing is not. *An earlier design filtered the group list down to exactly those groups, driven by the shell checkbox; that went with the checkbox.* Group-internal duplicates cannot arise in any case, since a binding belongs to at most one group.
+
+**Persistence — resolved by direct testing:** an early design considered marking group membership using comments inside the `.binds` XML file itself. Testing confirmed the game silently strips every XML comment on load/rewrite (while every actual binding value survives intact) — a well-behaved normalise, not a lossy one, but one that rules out this storage approach. **Consequence: group-membership metadata must live in BindForge's own data store, never in `.binds` file comments.**
 
 **Prerequisites:** the binds-file audit complete; Game Mode stable; a persistence design for user groups.
 
 ### Open items — carried from the punch list, 2026-09-09
 
-Design questions this section raises and does not answer. Preserved when the punch lists were retired;
-all five are Action Groups' own, and none blocks building the mode.
+Five design questions this section used to raise and not answer. **Four were settled 2026-09-16** and are
+written up above; this list keeps the record of what was asked and what the answer was.
 
-- **"Assign one control to every group member at once" — behaviour undesigned.** The layout is confirmed;
-  what the button *does* is not. Overwrite every member's binding, or fill only empty slots? And does it
-  validate that the result creates no new conflicts?
-- **Ungrouped actions after a game update.** Frontier ships new content, new bindable actions appear, and
-  they land ungrouped — where [ungrouped bindings are hidden](#action-groups). A commander could gain
-  controls they never see here. Needs a notification design, not just a rule.
-- **Can default groups update independently of an app release?** It would let group definitions follow the
-  game's content without shipping a whole new Elite-Intel. Untouched.
-- **Completely unbound bindings — shown in their group, or hidden?** Distinct from *ungrouped*: this is a
-  binding that belongs to a group but has neither Primary nor Secondary assigned.
-- **Storage schema for user groups.** Falls out during implementation, alongside the assign-to-all
-  semantics above. A new table means a new `011XX` migration, and an applied migration is never edited.
-
+- ~~**“Assign one control to every group member at once” — behaviour undesigned.**~~ **Settled:** it writes
+  **Primary** on every member and confirms any overwrite, and it validates conflicts against bindings outside
+  the group.
+- ~~**Ungrouped actions after a game update.**~~ **Settled, and the premise was wrong:** ungrouped is the
+  default state of every binding, not a state a game update pushes things into, and ALL BINDINGS lists every
+  binding there is. New Frontier controls arrive ungrouped like everything else started out, and are
+  reachable in exactly the same place. No notification is needed for a control that is where all controls
+  begin.
+- ~~**Can default groups update independently of an app release?**~~ **Settled: no.** Default groups ship
+  with the app as a versioned application resource, so a change to them is an Elite-Intel release. Fetching
+  group definitions out of band is not planned.
+- ~~**Completely unbound bindings — shown in their group, or hidden?**~~ **Settled: shown**, with an empty
+  value.
+- **Storage schema for user groups — still open.** Falls out during implementation. A new table means a new
+  `011XX` migration, and an applied migration is never edited. What has to persist is now settled: group
+  name, ordered membership, and whether the group is a shipped default or the commander's own.
 ## Input Mode
 
-**Status: in scope for V1.2, and now designed.** Input Mode is an input-first reverse lookup — press a physical control, and see everything bound to it across every section — the mirror image of Game Mode's action-first view.
+**Status: designed in full, and deferred to a later release (2026-09-16)** — see [The V1.2 release is
+trimmed](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16). **Its tab is not in the V1.2 mode bar.** The design below is complete and
+unchanged: it is the cheapest of the deferred modes to build, since its rows are Game Mode's rows and its
+capture is the shared dialog. Input Mode is an input-first reverse lookup — press a physical control, and see everything bound to it across every section — the mirror image of Game Mode's action-first view.
 
 **Layout:** two columns. The left column, "Input Detected," is a live readout that lights up with the device and control name (e.g., "RHVCAP — Joy_4 (Button)") the moment the player presses a button or moves an axis. The right column lists every existing binding that uses that exact input, one row per binding, tagged with its section (Ship/SRV/General/On Foot) and action name. If nothing is currently bound to the detected input, the list says so plainly rather than showing an empty grid.
 
@@ -303,11 +740,26 @@ same in every case: *why didn't that work?*
 | Kind | What it is | Cause |
 |---|---|---|
 | **Reserved** | the key can never work, whatever is bound | claimed by the OS, or by Elite's own Game Menu control |
-| **Missing** | a control EliteIntel drives that it cannot press — **two shapes**, see below | absence, not breakage |
+| **Missing** | nothing is bound to it — or it is bound only to something Elite-Intel cannot press. **Two shapes**, see below | absence, not breakage |
 | **Conflicts** | two actions sharing one input | the original category |
 | **Invalid** | bound, unique, uncontested, and still will not fire | something else consumes the input first in a given game state |
 
 #### Missing has two shapes — added 2026-09-12
+
+**The two shapes are scoped differently, settled 2026-09-16.** Shape one is **every control in the file with
+nothing bound** — BindForge manages the commander's bindings, not Elite-Intel's subset of them, so an
+unbound control is a fact about their file whoever was going to press it. Shape two stays scoped to the
+controls Elite-Intel drives, because *“Elite-Intel cannot press this”* means nothing about a control it
+never presses.
+
+**Measured, so the size is known rather than assumed:** `DualVirpilDawnTreader.4.1.binds` has **128**
+controls with nothing bound out of 396; `Custom.4.2.binds` has **245** out of 422. That is the length of the
+MISSING list on a real file, and the [ASSISTANT chips](#the-mechanism-an-assistant-column-in-the-grid--settled-2026-09-12)
+are what separate the handful that stop the assistant working from the rest of it. *This replaces the
+“narrow versus broad” open item, which asked whether the broad count should be shown at all.*
+
+**[Settings entries](#settings-entries-are-rows-too--settled-2026-09-16) are never Missing.** They hold a value or the game's default, and
+neither is an absence — 23 of the 31 enums sit empty in a perfectly healthy file.
 
 **Elite-Intel can only simulate keyboard input.** Krondor, 2026-09-12: *"the app can't use / simulate
 any input except keyboard."* So from the assistant's side there are two ways a control it drives can
@@ -351,6 +803,13 @@ is already Elite's own vocabulary. *Problems* was accurate but reads like an IDE
 A second tab row inside the mode: **All / Reserved / Missing / Conflicts / Invalid**, each carrying its
 own count. **All** is the default.
 
+**The mode tab's badge counts every anomaly, all four kinds** (settled 2026-09-16) — the number on the tab
+is the number of rows behind it, which is the only version of the badge that never lies. **It is a large
+number, and that is honest:** with Missing covering every unbound control, `Custom.4.2.binds` produces 245
+Missing beside 1 Reserved, 4 conflict groups and 2 Invalid — a badge of 252. A commander who has bound
+their whole file sees a small one. *An earlier draft had this counting conflicts alone, which predates the
+rename.*
+
 **Severity is banding and sort order, never a third tab level.** Blocking, curated and plain-overlap are
 properties of a row, shown as a chip on its group header. Putting them behind tabs would bury the blocking
 ones behind a click, which is the precise failure the severity model exists to prevent — and it would put
@@ -369,6 +828,11 @@ a binding four levels deep.
 
 **Bound-but-broken ranks above not-bound**, because the commander believes those already work. An unbound
 control at least fails honestly.
+
+**This ordering is what keeps the ALL tab usable now that Missing is the whole file.** Missing outnumbers
+everything else several hundred to one, and sits fourth regardless — so a reserved key and a blocking
+conflict are still the first things on screen, with the long tail below them. The ordering existed before
+the MISSING list grew; growing it is what makes it load-bearing.
 
 ### Intentionally Unbound — a state, not an anomaly
 
@@ -469,12 +933,23 @@ so today they fall outside the Missing scan by side effect rather than by intent
 reached by the wrong route: it would evaporate the moment either flag changed, or the moment BindForge
 widened Missing beyond the controls Elite-Intel drives. The state should be explicit.
 
-### Open items — carried from the punch list, 2026-09-09
+### What a row offers — settled 2026-09-16
 
-- **Narrow versus broad missing.** Missing is scoped to the controls Elite-Intel drives — roughly 80
-  actions — while a commander's file typically has around 129 controls simply unbound. Both numbers are
-  true and they answer different questions. Whether the broad count is shown at all, and how it is kept
-  visually subordinate to the narrow one, is undecided.
+Anomalies is where the commander reads the list, so it is where they act on it. Every row opens the
+[capture dialog](#capture-dialog--settled-2026-09-13) in place, and a **MISSING** row can also be marked
+**ON PURPOSE** from here.
+
+**Marking from the tab rather than only from the grid** is the difference between silencing a control and
+hunting for it: a commander working down a list of 245 unbound controls, deciding which ones they are
+never going to bind, would otherwise have to find each one in Game Mode to say so. The mark is [the same
+one the ASSISTANT column sets](#the-mechanism-an-assistant-column-in-the-grid--settled-2026-09-12) — one
+state, one table, two places it can be set — and the row leaves the MISSING list as soon as it is set,
+which is the feedback that the mark took.
+
+**Marking never writes to `.binds`**, here or anywhere: it is a row in BindForge's own database, and clearing
+it puts the control back on the list.
+
+### Open items — carried from the punch list, 2026-09-09
 - **Which voice command depends on this binding?** Selecting a missing control ought to name the
   command(s) that stop working without it — far more useful than the action's own name. No design, and it
   reaches into territory `BindingsMonitor` deliberately avoids: it does not consult the custom-command
@@ -483,11 +958,11 @@ widened Missing beyond the controls Elite-Intel drives. The state should be expl
 
 ### Conflicts (the kind)
 
-**Status: in scope for V1.2, and designed.** Surfaces the [Shared Conflict Detection](#shared-conflict-detection) service's output directly, rather than requiring the player to spot conflict coloring row-by-row inside Game Mode. The mode tab itself carries a live badge showing the current conflict count.
+**Status: in scope for V1.2, and designed.** Surfaces the [Shared Conflict Detection](#shared-conflict-detection) service's output directly, rather than requiring the player to spot conflict colouring row-by-row inside Game Mode. The conflict count appears on the CONFLICTS sub-tab; the mode tab's own badge [counts every anomaly](#structure).
 
-**Layout:** conflicts are grouped by the shared input causing them — each group header names the shared key/chord and how many binds share it, expandable/collapsible the same way Game Mode's grid groups work. Inside a group, each row is tagged with its section plus the action name, exactly like Input Mode's list.
+**Layout:** conflicts are grouped by the shared input causing them — each group header names the shared key/chord and how many binds share it, expandable/collapsible the same way Game Mode's grid groups work. Inside a group, each row is tagged with its section plus the action name — the same row shape Game Mode uses, so a conflict reads the same wherever the commander meets it. *Until 2026-09-16 this sentence pointed at Input Mode's list, which is now [deferred](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16).*
 
-**Editing from here:** clicking a row opens the same [capture dialog](#capture-dialog--settled-2026-09-13) used everywhere else, right in place — resolving a conflict never requires leaving the Conflicts tab and jumping to Game Mode.
+**Editing from here:** clicking a row opens the same [capture dialog](#capture-dialog--settled-2026-09-13) used everywhere else, right in place — resolving an anomaly never requires leaving the Anomalies tab and jumping to Game Mode.
 
 ## Mouse Inputs Are Chosen, Not Captured
 
@@ -587,7 +1062,7 @@ Conflict-detection data and logic are shared across every Bind Editor mode — G
 ### How the Game Actually Resolves Conflicts (confirmed by direct in-game testing)
 
 - **The modifier-vs-main-key label is not semantically meaningful to the game.** The game does not track which physical key is "really" a modifier — it tracks press order: whatever is held down when the last input arrives becomes the recorded modifier set, and the last-pressed input becomes the slot's recorded main value, regardless of which key is conceptually the "real" action key. **Practical consequence for capture:** hold intended modifiers first, press the intended main key last, to get the expected result.
-- Modifier order does not affect the game's own conflict recognition — two captures of the same key set in different orderings are correctly recognized as the same combination.
+- Modifier order does not affect the game's own conflict recognition — two captures of the same key set in different orderings are correctly recognised as the same combination.
 - A binding matches by its exact chord (main key plus exactly its modifier set). Holding extra modifiers does not trigger a binding with fewer of them, and a bare key and a modified chord on the same key are two fully independent bindings that both fire — they do not suppress each other.
 - Elite's own conflict-checking is genuinely context-aware, operating at two levels:
   - **Macro level (top-level sections):** the four sections (General/Ship/SRV/On Foot) are *assumed* isolated from each other for conflict purposes, but this is **not fully confirmed** — there is at least one unconfirmed observation of an apparent cross-section conflict between Ship and SRV during testing. If real, a cross-section conflict matrix would be needed in addition to the four per-section matrices that exist today. This is the single most important open item in BindForge's conflict-detection design — see [conflicts-and-open-questions.md](../../00-overview/conflicts-and-open-questions.md).
@@ -597,7 +1072,7 @@ Conflict-detection data and logic are shared across every Bind Editor mode — G
 - **A collision between one action's Secondary slot and another action's Primary slot is a real, confirmed conflict** — any scanner comparing only each action's single "winning" slot will systematically miss these.
 - **The game does not consider a hold-bound action and a tap-bound action sharing a key to be conflicting at all.** Hold/Tap identity must be folded into whatever defines "the same combination" for conflict-comparison purposes — an earlier scanner that ignored this produced a confirmed false positive.
 - **FSS-mode-entry nuance:** the action that enters FSS scanning mode genuinely conflicts with other ship actions sharing its key — a blanket rule that suppresses every scan-related action as "always safe" is wrong for at least this one action, even though the FSS subgroup as a whole is correctly isolated from the rest of Ship Controls at the macro level. The nuance is that subgroup-level isolation does not guarantee every individual action within it is exempt from every possible collision.
-- **UI-action-vs-ship-action assignment is allowed by the game with no warning, but this only answers "can this be assigned," not "is it behaviorally safe when both are live simultaneously."** This distinction was tested but not cleanly resolved — a second, behavior-focused round of testing (rather than assignment-focused) is still needed. See [conflicts-and-open-questions.md](../../00-overview/conflicts-and-open-questions.md).
+- **UI-action-vs-ship-action assignment is allowed by the game with no warning, but this only answers "can this be assigned," not "is it behaviorally safe when both are live simultaneously."** This distinction was tested but not cleanly resolved — a second, behaviour-focused round of testing (rather than assignment-focused) is still needed. See [conflicts-and-open-questions.md](../../00-overview/conflicts-and-open-questions.md).
 
 See [BindForge's conflict-testing domain knowledge](domain-knowledge/EliteDangerous-ConflictRules.md) and the [interactive conflict-matrix test pages](domain-knowledge/ConflictMatrix-General.html) for the full, per-subgroup empirical results this section summarizes.
 
@@ -881,4 +1356,4 @@ is to narrow it to genuinely isolated sub-states, which is the same distinction
 [§3d's severity model](domain-knowledge/EliteDangerous-ConflictRules.md#3d-conflicts-have-severity-not-just-existence)
 makes elsewhere: a rule can be right in general and still need its exceptions named.
 
-**Where filtering happens (resolved):** the shell owns one shared Show Anomalies Only toggle rather than each mode having its own, but what that toggle filters *to* is mode-specific — a row-level filter in Game Mode and Input Mode (same row format, so same filter), a group-level filter in Action Groups. It has no effect in the Conflicts tab, since that tab's content already is the conflict list. Control Types and Controller Mode don't need a defined behavior, being confirmed back-burner.
+**Where filtering happens (resolved 2026-07, revised 2026-09-15):** there is no longer a shared toggle meaning something different in each mode. **Show Anomalies Only belongs to Game Mode**, filters rows there, and is hidden and cleared everywhere else. [Anomalies](#anomalies) needs no filter, since its content already is the list; [Action Groups](#action-groups) has no filter at all, by design; Control Types and Controller Mode need no behaviour, being confirmed back-burner.

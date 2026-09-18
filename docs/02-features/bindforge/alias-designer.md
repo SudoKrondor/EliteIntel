@@ -552,10 +552,10 @@ interrupts: **Save** or **Discard**. Neither touches a game installation.
 
 ## Deferred
 
-- **Recalibrate** — a feature to fix axis center-point drift during live highlighting. Out of scope for this iteration.
+- **Recalibrate** — a feature to fix axis centre-point drift during live highlighting. Out of scope for this iteration.
 - **Duplicate-VID/PID handling — dropped from scope 2026-09-07; nothing is designed and nothing needs to be.**
   The existing `DeviceDuplicateWarningEvent` tells the player, and the alias-uniqueness rule below rejects the
-  second automatic registration on its own. Retained for the reasoning: Two connected devices of the identical model genuinely can report the same VID and PID (this is normal USB behavior, not an edge case) — combined with [Automatic Device Registration](#automatic-device-registration), both would attempt to auto-register under the same default hardware-reported alias, which the alias-uniqueness rule would reject. Neither `.binds` nor `DeviceMappings.xml` has any field that could distinguish two entries sharing a VID/PID, and the game itself keys on VID/PID, so it could not act on a distinction even if BindForge drew one. That is why nothing is designed here rather than deferred: there is no design that would help. See [conflicts-and-open-questions.md](../../00-overview/conflicts-and-open-questions.md).
+  second automatic registration on its own. Retained for the reasoning: Two connected devices of the identical model genuinely can report the same VID and PID (this is normal USB behaviour, not an edge case) — combined with [Automatic Device Registration](#automatic-device-registration), both would attempt to auto-register under the same default hardware-reported alias, which the alias-uniqueness rule would reject. Neither `.binds` nor `DeviceMappings.xml` has any field that could distinguish two entries sharing a VID/PID, and the game itself keys on VID/PID, so it could not act on a distinction even if BindForge drew one. That is why nothing is designed here rather than deferred: there is no design that would help. See [conflicts-and-open-questions.md](../../00-overview/conflicts-and-open-questions.md).
 
 ## Design Considerations — Closed
 

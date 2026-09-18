@@ -14,7 +14,7 @@ The two DualShock 4 controllers acquired 2026-09-06 would not have covered it an
 (`05C4` vs `09CC`) — though they did settle the neighbouring case of two devices sharing one entry, see
 item 9.
 
-*Original question, for the record:* Connect two controllers of the identical model (VID and PID both match) and determine what Elite Dangerous actually does with two `DeviceMappings.xml` entries pointing at the same VID/PID: does it support both usefully, or silently conflate them? Neither `.binds` nor `DeviceMappings.xml` has any field that could distinguish two such entries, so this determines whether BindForge's auto-registration/disambiguation behavior (see [Alias Designer — Automatic Device Registration](../02-features/bindforge/alias-designer.md#automatic-device-registration)) is even useful at the file-format level, not just how to present it.
+*Original question, for the record:* Connect two controllers of the identical model (VID and PID both match) and determine what Elite Dangerous actually does with two `DeviceMappings.xml` entries pointing at the same VID/PID: does it support both usefully, or silently conflate them? Neither `.binds` nor `DeviceMappings.xml` has any field that could distinguish two such entries, so this determines whether BindForge's auto-registration/disambiguation behaviour (see [Alias Designer — Automatic Device Registration](../02-features/bindforge/alias-designer.md#automatic-device-registration)) is even useful at the file-format level, not just how to present it.
 → [Conflict 3.7](conflicts-and-open-questions.md#37-duplicate-vidpid-devices--resolved-confirmed-real-but-the-fix-needs-hands-on-testing-not-a-design-decision)
 
 **2. ~~VID/PID-to-device-identifier derivation~~ — half answered 2026-09-08; the button/axis offset is
@@ -29,7 +29,7 @@ extra comparison — and never writes hex at all. What remains is the numbering 
 **3. Cross-section conflict isolation** — confirm whether BindForge's four top-level sections (General/Ship/SRV/On Foot) are genuinely conflict-isolated from each other, or whether there's a real cross-section conflict (an unconfirmed observation during testing suggested a possible Ship↔SRV collision). This determines whether a cross-section conflict matrix is needed in addition to the four per-section matrices that already exist — the single most consequential open empirical question in BindForge's conflict-detection design.
 → [Conflict 3.16](conflicts-and-open-questions.md#316-cross-section-conflict-isolation-may-be-wrong--merged-into-38) · [Bind Editor — Shared Conflict Detection](../02-features/bindforge/bind-editor.md#how-the-game-actually-resolves-conflicts-confirmed-by-direct-in-game-testing)
 
-**4. UI-action-vs-ship-action behavioral safety** — confirmed assignable to the same key with no in-game warning, but whether it's actually safe when both are live simultaneously (not just whether the assignment is *allowed*) needs a second, behavior-focused round of testing.
+**4. UI-action-vs-ship-action behavioural safety** — confirmed assignable to the same key with no in-game warning, but whether it's actually safe when both are live simultaneously (not just whether the assignment is *allowed*) needs a second, behaviour-focused round of testing.
 → [Bind Editor — Shared Conflict Detection](../02-features/bindforge/bind-editor.md#how-the-game-actually-resolves-conflicts-confirmed-by-direct-in-game-testing)
 
 **5. On Foot conflict coverage** — only three On Foot subgroups have been identified/tested so far; real on-foot play likely has more untested contexts (ship-interior actions while on foot, SRV boarding, taxi/Apex travel).
@@ -129,6 +129,102 @@ see whether those bindings still work — and whether the game rewrites them to 
 replaced by hand. So onboarding writes the entry and the `.binds` rewrite together, in one Apply. If the game
 turns out to cope on its own, the entry could be written straight away like any other name.
 → [Alias Designer — What onboarding writes, and when](../02-features/bindforge/alias-designer.md#what-onboarding-writes-and-when)
+
+**14. What are the legal values of each settings enum?** *Added 2026-09-16, and it gates part of the
+release.* 31 of a `.binds` file's 93 [standalone settings](../03-data-models/binding-schema.md#binding-element--three-distinct-kinds)
+hold an enum token — `Bindings_MouseYaw`, `mute_toggle`, `FocusOption_Nothing` — and **a file contains the one
+token it holds, never the set it was chosen from.** Across all five specimens, `YawToRollMode` reads
+`Bindings_YawIntoRollNone` every time; whatever its on-states are called, we have never seen one. The
+mouse-axis family is the exception — sibling elements between them show `Bindings_MouseYaw`,
+`Bindings_MouseRoll`, `Bindings_MousePitch` and `Bindings_MousePitchInverted`.
+
+**The test, and why reading the screen is not enough (revised 2026-09-16).** *UI Focus Mode* reads
+**DIRECTION** on the options screen and is stored as `Bindings_FocusModeHold` — so the label does not give you
+the token in either direction. **Each option has to be selected, saved, and the file read back**, one at a
+time, recording the label and the token together. Roughly twenty minutes of clicking for the whole set,
+and it is the difference between a working dropdown and BindForge writing a value the game discards.
+
+**Three of them are not enums at all in the file.** *Headlook Button Increments* is a four-choice
+dropdown (CONTINUOUS, SMALL, MEDIUM, LARGE) stored as `HeadlookIncrement` = `0.00000000`; `ThrottleIncrement`
+and `BuggyThrottleIncrement` share the shape. Nothing in the file marks them as enumerated, so they need
+the same walk — recording which number each label writes.
+
+**Most of this was answered on 2026-09-16 without touching the game** — `ControlSchemes\Help.txt` ships with
+Elite and lists the legal values for `YawToRollMode` (None, Time, LowRoll), `ThrottleRange` (`""` and
+`Bindings_ThrottleForewardOnly`), `UIFocusMode` (Hold, Toggle), `HeadlookMode` (Direct, Accumulate) and
+`GunsightSystem`, and the 90 shipped preset files supply `FocusOption_Show` on top. See
+[Frontier documents most of them](../02-features/bindforge/bind-editor.md#frontier-documents-most-of-them-in-the-game-folder--found-2026-09-16).
+**What is left is the short list below**, and the mouse family is closed entirely.
+
+**Partly captured already**, from Alan's pass over the options screen on 2026-09-16 — see
+[What the options screen showed](../02-features/bindforge/bind-editor.md#what-the-options-screen-showed--2026-09-16)
+for the labels and the tokens known so far. What is left is the token behind every option **not currently
+selected** — OFF and ROLL on the mouse X axis, CYCLE on UI Focus Mode, DIRECT on Headlook Axis Mode,
+**one confirmation** (2026-09-17). `mute_pushToMute` was found in 313 community files, the increment vocabularies
+are complete, and the panel-focus question was **settled in-game**: setting *Looking at Comms Panel* to
+*Focuses the panel* rewrote `CommsPanelFocusOptions` to `Value=""`, so the empty string is that choice and
+there is no third token.
+
+**Nothing remains open.** The On Foot question closed the same evening: with *Mouse X-Axis* on ROTATE, an
+in-game apply re-emitted the field as `Bindings_MouseYaw`, so that is what the current build writes and
+`Bindings_MouseHumanoidYawRotate` is not current. **Item 14 is complete** — every choice field's vocabulary is
+[tabulated](../02-features/bindforge/reference-data/settings-choice-fields.md), and the method that closed it is
+recorded under
+[an in-game apply re-emits the whole file](../02-features/bindforge/bind-editor.md#an-in-game-apply-re-emits-the-whole-file--observed-2026-09-17).
+
+Everything else closed on 2026-09-16 from sources that cost nothing: Frontier's `Help.txt`, the 90
+presets Elite ships, and the 152 `.binds` files in [EDRefCard's repository](https://github.com/richardbuckle/EDRefCard).
+**The increments are the fraction the label names** — `ThrottleIncrement` = `0.10000000` for 10%,
+`HeadlookIncrement` = `0.25000000` for 25% — and `ThrottleRangeFreeCam` turned out to carry its own token,
+`Bindings_ThrottleForewardOnlyFreeCam`, rather than sharing its family's. **That last one is the argument for
+this whole testing item:** the obvious guess was wrong, in the one place nobody would have checked.
+
+**Do not crawl edrefcard.info for more.** Its 3,888 shared configs would be a richer sample, but the site's
+`robots.txt` allows `/list` and disallows everything else, `/configs/` included.
+
+**Second pass, 2026-09-16, ended early — the game crashed.** Nothing was lost: every value captured matched
+the preset file exactly, so the pairs already recorded stand. Worth confirming the `.binds` file survived the
+crash intact before the next pass, since a crash during an options change is precisely the case
+[Player Backups](../02-features/bindforge/file-manager.md) exist for.
+**If it does not happen before release, enums ship read-only** — booleans and floats do not depend on it.
+
+**The 31 entries are 6 families**, and the members of a family share a vocabulary, so the work is about
+**eight dropdowns**, not thirty-one. Tokens below were read out of the specimen files; none is inferred from an
+element's name.
+
+| Family | Entries | Tokens already observed | What the walk has to find |
+|---|---|---|---|
+| **Mouse axis mode** | 16 — `MouseXMode`/`MouseYMode` and the FSS, SAA, Multicrew, Turret, SRV steering, SRV rolling and On Foot copies, plus `YawCameraMouse` and `PitchCameraMouse` | `Bindings_MouseYaw`, `Bindings_MouseRoll`, `Bindings_MousePitch`, `Bindings_MousePitchInverted` | whether X offers yaw and roll only, whether each has an inverted form, whether an off/none exists |
+| **Panel focus** | 4 — `LeftPanelFocusOptions`, `RightPanelFocusOptions`, `RolePanelFocusOptions`, `CommsPanelFocusOptions` | `FocusOption_Nothing` **only** | every other `FocusOption_*` |
+| **Yaw into roll** | 3 — `YawToRollMode`, `YawToRollMode_FAOff`, `YawToRollMode_Landing` | `Bindings_YawIntoRollNone` **only** | the on-states |
+| **Throttle range** | 3 — `ThrottleRange`, `ThrottleRangeFreeCam`, `BuggyThrottleRange` | `Bindings_BuggyThrottleForewardOnly` = FORWARD ONLY (note the game's own spelling of *Foreward*); `""` = FULL RANGE | **the ship's FORWARD ONLY token**, and whether `ThrottleRangeFreeCam` uses the same vocabulary |
+| **Mute mode** | 2 — `MuteButtonMode`, `CqcMuteButtonMode` | `mute_pushToTalk`, `mute_toggle` | **there is a third** — the screen offers PUSH TO MUTE, whose token no file has ever held |
+| **Enumerated numerics** | 3 — `HeadlookIncrement`, `ThrottleIncrement`, `BuggyThrottleIncrement` | `0.00000000` = CONTINUOUS on all three | the SRV list reads CONTINUOUS, 10%, 12.5%, 16.7%, 25%, … — confirm the stored number is the fraction, and get the full list including whatever sits below the fold |
+| **Singletons** | 2 — `UIFocusMode`, `HeadlookMode` | `Bindings_FocusModeHold`, `Bindings_HeadlookModeAccumulate` | the other modes of each |
+
+**The observed vocabularies are tabulated** in
+[settings-choice-fields.md](../02-features/bindforge/reference-data/settings-choice-fields.md) — what this
+testing adds is the labels, and any value the files have never held.
+
+**Capture what empty means, per element.** An empty value is that element's default *choice*, and the choice
+differs: `""` reads DOES NOTHING on a panel-focus entry, FULL RANGE on `ThrottleRange` and OFF on
+`MouseBuggyYMode`. Record it alongside the tokens — it is what BindForge shows for a setting the commander
+has never touched.
+
+**Confirm which panel element is which.** `LeftPanelFocusOptions`, `RightPanelFocusOptions`, `RolePanelFocusOptions`
+and `CommsPanelFocusOptions` line up with *Looking at External / Internal / Role / Comms Panel* by inference,
+not by observation. Setting one of them to a distinct value and reading the file settles all four.
+
+**Capture the missing display names in the same pass.** Eleven of the 31 have no row in the
+[Action Catalog](../02-features/bindforge/domain-knowledge/EliteDangerous-ActionCatalog.md) at all —
+`HeadlookMode`, `UIFocusMode`, `MuteButtonMode`, `CqcMuteButtonMode`, the four panel-focus entries,
+`YawCameraMouse`, `PitchCameraMouse` and `BuggyThrottleRange`. **Six of the eleven were named on 2026-09-16** —
+UI Focus Mode, Headlook Axis Mode, Mute Button Mode, Microphone State Mode (CQC) and the four *Looking at*
+panel entries — leaving `YawCameraMouse`, `PitchCameraMouse` and `BuggyThrottleRange`. The element is known, the label the game puts
+on it is not, and [every grid row needs a name](../02-features/bindforge/bind-editor.md#settings-entries-are-rows-too--settled-2026-09-16).
+Noting where each one appears on screen costs nothing extra while the options screen is already open.
+
+→ [Bind Editor — Enums need their vocabularies captured first](../02-features/bindforge/bind-editor.md#enums-need-their-vocabularies-captured-first--settled-2026-09-16)
 
 ## Core Platform
 

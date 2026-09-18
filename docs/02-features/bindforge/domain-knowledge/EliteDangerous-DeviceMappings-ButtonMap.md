@@ -105,9 +105,9 @@ Observed label text styles:
 
 **Gap — no confirmed icon token syntax.** The source material does not document any structured "icon token" format inside a label value (e.g. a placeholder like `{icon:...}`). Every observed label is plain text. If Elite's own UI renders icons for some devices, the mechanism behind that is not established by the available source material — do not assume a token syntax exists without confirming it against a real `.buttonMap` file taken from a device the in-game UI is known to show icons for.
 
-### 2.5 Fallback behavior
+### 2.5 Fallback behaviour
 
-If a device has no `.buttonMap` file, or a specific input code has no label entry in one that exists, the documented design intent (not confirmed as the game's own internal behavior, but the reasonable behavior for a tool consuming these files) is to fall back to a generic label (e.g. "Button 1", "Axis X") and, failing that, to the raw token (e.g. `Joy_4`).
+If a device has no `.buttonMap` file, or a specific input code has no label entry in one that exists, the documented design intent (not confirmed as the game's own internal behaviour, but the reasonable behaviour for a tool consuming these files) is to fall back to a generic label (e.g. "Button 1", "Axis X") and, failing that, to the raw token (e.g. `Joy_4`).
 
 ### 2.6 Relationship chain
 

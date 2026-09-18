@@ -330,6 +330,18 @@ Consequences of that limit, so they are chosen rather than discovered:
   to produce; it does not provide it. **Windows storefront detection is BindForge's to build; Linux/Proton
   resolution is Krondor's** — see below.
 
+## What a `.binds` File Might Not Be
+
+**Added 2026-09-17, measured rather than imagined.** Across 48,354 commander-shared files, **445 carry a
+`.binds` extension and are not bindings files** — 363 of them a `StartPreset.start` picked by mistake from the
+same folder, the rest other games' configs, device profiles, truncated files and stray XML. Full breakdown in
+[Bind Editor](bind-editor.md#a-binds-name-does-not-make-it-a-binds-file--2026-09-17).
+
+**What that asks of this screen:** the bindings-file dropdown lists what is *in* the folder, so it will list
+those files too. Selecting one has to produce a sentence naming what the file appears to be, never a stack
+trace and never an empty editor — and **no restore, backup or apply path may overwrite a file BindForge
+could not identify.**
+
 ## Edit History
 
 **Confirmed in V1.2 (2026-09-09).** The reason it earns its place rather than being deferred: **it removes
