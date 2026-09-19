@@ -117,49 +117,23 @@ public class RoutePlotter {
         // guess on a slow one.
         steps.add(GameInputStep.waitUntil("galaxy map open", status::isGalaxyMapOpen, GALAXY_MAP_OPEN_TIMEOUT_MS));
         steps.addAll(List.of(
-                // WHY a settle on top of the confirmed signal: GuiFocus flips when the map starts opening,
-                // not when its fly-in has finished and it accepts UI input. The wait above removes the
-                // guesswork about how long the machine takes to get there; this is the fixed part that is left.
+
+                ///UI navigation to the search field.
+                ///Map movement and UI nav keys must not be the same.
                 GameInputStep.delay(GALAXY_MAP_SETTLE_MS),
                 GameInputStep.bindingHold(BINDING_CAM_ZOOM_IN.getGameBinding(), 500),
                 GameInputStep.bindingTap(BINDING_UI_LEFT.getGameBinding()),
-                GameInputStep.delay(200),
                 GameInputStep.bindingTap(BINDING_UI_RIGHT.getGameBinding()),
-                GameInputStep.delay(200),
                 GameInputStep.bindingTap(BINDING_ACTIVATE.getGameBinding()),
-                GameInputStep.delay(200),
                 GameInputStep.text(destination),
-                GameInputStep.delay(250),
-                // WHY a raw arrow rather than the UI_Down binding, and why this is the ONE step that
-                // breaks the binding-driven rule the rest of this sequence follows.
-                //
-                // The step has to move focus OUT of the search field. A focused Elite text field
-                // consumes any keystroke that produces a PRINTABLE CHARACTER and never gets as far as
-                // the UI_* bindings - so UI_Down on a bare letter (S) or on Shift+letter (Shift+S)
-                // types that letter after the system name and focus never leaves the box. Every step
-                // below is then typed too, and no route is plotted: silently, with every keystroke
-                // reporting success. A non-printing chord (Ctrl+W/A/S/D, verified in game 2026-08-31)
-                // does reach the binding, which is why UI_Down appears to work for some commanders and
-                // not others - the modifier, not the binding, is what decides it.
-                //
-                // The Down arrow produces no character on any layout, so it is the only key that is
-                // safe to send here regardless of what the commander bound. It is also the stock
-                // UI_Down key, so this is a no-op for anyone near default.
-                //
-                // This does NOT rescue a commander who moved UI navigation off the arrows entirely
-                // (bundle 2026-08-31: W/A/S/D for the UI, arrows given to power distribution). Nothing
-                // we can send rescues that - it is a bindings problem, and KeyBindCheck warns about it
-                // on every start rather than this line trying to guess a key on their behalf.
-                GameInputStep.rawKey(KeyProcessor.KEY_DOWNARROW, 0, 0),
+
+                ///NOTE These two keys are a workaround for the in-game map UI behavior.
+                ///ENTER key after the destination is typed in, slide right to the button and hit select
+                GameInputStep.rawKey(KeyProcessor.KEY_ENTER, 0, 0),
+                GameInputStep.bindingTap(BINDING_UI_RIGHT.getGameBinding()),
                 GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding()),
-                GameInputStep.delay(1000),
-                GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding()),
-                // WHY a camera nudge at the end: the galaxy map does not repaint the plotted course
-                // until something moves the camera, so without this the route is live but the map
-                // still shows the old one. 20ms is a twitch - short enough not to move the view
-                // anywhere the commander would notice, long enough to trigger the redraw.
-                // This is why BINDING_CAM_YAW_LEFT is marked DRIVEN: the commander must be warned
-                // at startup when it is unbound, or the map silently stops refreshing here.
+
+                ///Yaw to grab the focus. Another work around
                 GameInputStep.bindingHold(BINDING_CAM_YAW_LEFT.getGameBinding(), 20)
         ));
 
