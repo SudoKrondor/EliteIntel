@@ -18,7 +18,7 @@ and is stored in files the game will happily clobber. Protecting that configurat
 
 ## The Problem that requires StarVizion
 
-StarVizion's problem is narrower: players flying with springless HOTAS or HOSAS setups have no physical center or stop feedback, and inside a VR headset they cannot see their own hands. They need visual confirmation of control state that the game does not provide. Additionally, Elite-Intel's current overlay system provides players information about missions and other in game activities progress. StarVizion seeks to add capabilty for users to design their own overlays that contain information that they would like to show in game.
+StarVizion's problem is narrower: players flying with springless HOTAS or HOSAS setups have no physical centre or stop feedback, and inside a VR headset they cannot see their own hands. They need visual confirmation of control state that the game does not provide. Additionally, Elite-Intel's current overlay system provides players information about missions and other in game activities progress. StarVizion seeks to add capabilty for users to design their own overlays that contain information that they would like to show in game.
 
 ## History
 

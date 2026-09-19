@@ -330,6 +330,18 @@ Consequences of that limit, so they are chosen rather than discovered:
   to produce; it does not provide it. **Windows storefront detection is BindForge's to build; Linux/Proton
   resolution is Krondor's** — see below.
 
+## What a `.binds` File Might Not Be
+
+**Added 2026-09-17, measured rather than imagined.** Across 48,354 commander-shared files, **445 carry a
+`.binds` extension and are not bindings files** — 363 of them a `StartPreset.start` picked by mistake from the
+same folder, the rest other games' configs, device profiles, truncated files and stray XML. Full breakdown in
+[Bind Editor](bind-editor.md#a-binds-name-does-not-make-it-a-binds-file--2026-09-17).
+
+**What that asks of this screen:** the bindings-file dropdown lists what is *in* the folder, so it will list
+those files too. Selecting one has to produce a sentence naming what the file appears to be, never a stack
+trace and never an empty editor — and **no restore, backup or apply path may overwrite a file BindForge
+could not identify.**
+
 ## Edit History
 
 **Confirmed in V1.2 (2026-09-09).** The reason it earns its place rather than being deferred: **it removes
@@ -356,6 +368,33 @@ BindForge's settings tab (see [Settings Storage](../../01-host-integration/elite
 | Auto-backup on Elite-Intel launch | Enabled | Toggles [Player Backups — Auto-Backup on App Launch](#auto-backup-on-app-launch) |
 | Backup destination | Elite-Intel's default backup path | Where Player Backup ZIP archives are written |
 | Edit History retention | 10 (range 1–30) | How many historical versions [Edit History](#edit-history) keeps per file before dropping the oldest |
+
+## What exists in code today — checked 2026-09-18
+
+`PlayerBackupService` and `BindingManagementPanel` already carry the backup half of this screen. What is
+here, and what is not:
+
+| Piece | State |
+|---|---|
+| Create a backup | **exists** — `createBackup()`, into a timestamped folder with real filenames ([format divergence](#archive-format--zip)) |
+| List backups | **exists** — `listBackups()`, newest first, as `PlayerBackup(folder, timestamp, fileNames)` |
+| Delete a backup | **exists**, wired to a button |
+| Restore to the editing slot | **exists** — `restoreToWorkingCopy(folder, presetFileName)` |
+| Restore to live | **exists** — `restoreToLive(folder, presetFileName, gameBindsFile)`, **one file at a time**, which is what [Restore Scope](#restore-scope) widens |
+| [Auto-backup on launch](#auto-backup-on-app-launch) | **does not exist.** `createBackup()` has exactly one caller: the Backup Now button |
+| [Retention](#retention) | **does not exist.** Nothing prunes anything; backups accumulate until deleted by hand |
+| [Backup status values](#backup-status-values) | **not reachable yet** — Full / Partial / Custom needs the installation list that [detection](#open) would supply |
+| [Game Install Locations](#game-install-locations) | **not built** — see the section's own [Open](#open) note |
+| [Edit History](#edit-history) | **nothing at all** — no class, no table, no migration |
+
+**Auto-backup and retention are one change, not two.** Today nothing prunes, and that is harmless because
+every backup is a deliberate button press. Add the launch trigger on its own and the folder grows every
+time Elite-Intel starts, on a machine where the commander never asked for a single backup. Whichever lands
+first, the other has to land with it.
+
+**Edit History needs the first V1.2 migration.** The newest applied migration is `01050`, and the
+**`011XX` block is entirely free** — so Edit History's table is a new `011XX` file, and [an applied
+migration is never edited](../../../CLAUDE.md).
 
 ## Export / Import — Considered, Then Cut
 

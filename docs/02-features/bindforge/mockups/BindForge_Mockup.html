@@ -128,6 +128,18 @@ body{margin:0;background:#151B22;padding:24px;font-family:'Segoe UI',system-ui,-
 .ge-conflict-popup .ge-conflict-hint{color:#8FA0AD;display:block;margin-top:5px}
 .ge-bindname{color:#C2C2C2;flex:1}
 .ge-bindval{color:#8FA0AD;text-align:right;font-size:12px;width:230px;flex-shrink:0}
+.an-rowactions{display:flex;gap:6px;flex-shrink:0;width:150px;justify-content:flex-end}
+.ge-bindrow .an-rowactions .ge-capbtn{opacity:1;pointer-events:auto}
+.an-purposebtn{font-family:inherit;font-size:9px;font-weight:700;letter-spacing:.4px;padding:2px 6px;border-radius:2px;cursor:pointer;white-space:nowrap;background:transparent;color:#C9922E;border:1px solid #C9922E}
+.an-purposebtn:hover{background:#C9922E;color:#090D12}
+.ge-setdivider{padding:6px 12px;font-size:10px;font-weight:700;letter-spacing:.5px;color:#6F7D89;background:#0D131A;border-top:1px solid #24313A;border-bottom:1px solid #131A22}
+.ge-setrow .ge-bindname{color:#8FA0AD}
+.ge-xmltag{color:#4A5A66;font-size:10px;margin-left:6px}
+.ge-setval{width:230px;flex-shrink:0;display:flex;justify-content:flex-end}
+.ge-setnum{width:110px;background:#101721;border:1px solid #2D3A44;border-radius:3px;color:#FF7100;font-family:inherit;font-size:11px;padding:3px 6px;text-align:right}
+.ge-setenum{max-width:230px;background:#101721;border:1px solid #2D3A44;border-radius:3px;color:#8FA0AD;font-family:inherit;font-size:11px;padding:3px 6px}
+.ge-setenum:disabled{border-style:dashed;cursor:not-allowed}
+.ge-setbool{display:flex;align-items:center;gap:6px;color:#8FA0AD;font-size:11px}
 .ge-assist{width:104px;flex-shrink:0;display:flex;align-items:center;justify-content:flex-end}
 .ge-badge{color:#FF7100;border:1px solid #2D3A44;background:#101721;padding:2px 6px;border-radius:2px;font-size:11px}
 .an-sev{font-size:8.5px;font-weight:700;letter-spacing:.7px;padding:2px 6px;border-radius:2px;
@@ -150,6 +162,14 @@ body{margin:0;background:#151B22;padding:24px;font-family:'Segoe UI',system-ui,-
 .pm-item.selected{background:#1A1206;color:#FF7100}
 .pm-arrows{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px}
 .pm-iconbtn{width:38px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center;padding:0}
+.ei-deferredbar{margin-top:10px;border-top:1px dashed #2D3A44;padding-top:8px;align-items:center;gap:6px;opacity:.72}
+.ei-deferredlabel{color:#6F7D89;font-size:10px;font-weight:700;letter-spacing:.6px;padding:0 10px 0 2px;white-space:nowrap}
+.ei-deferredbar .ei-subtab{border-style:dashed;color:#8FA0AD}
+.pm-source .ge-bindrow{padding:6px 12px;font-size:12px}
+.pm-source .ge-bindname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pm-source .ge-bindval{width:auto;min-width:0;max-width:104px;font-size:11px;overflow:hidden}
+.pm-srcrow.grouped{opacity:.42}
+.pm-srcrow.grouped .ge-bindname{font-style:italic}
 .pm-slotbox{padding:10px 12px;border-bottom:1px solid #24313A}
 .pm-slotbox:last-child{border-bottom:none}
 .pm-slotlabel{color:#8FA0AD;font-size:10px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px}
@@ -570,18 +590,25 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
 
     <div class="ge-searchbar">
       <span class="ge-searchwrap"><input type="text" placeholder="Search bindings..." id="ge-search" aria-label="Search bindings" oninput="geSearch()" onkeydown="if(event.key==='Escape'){event.preventDefault();geClearSearch();}"><button type="button" class="ge-searchclear" onclick="geClearSearch()" title="Clear search (Esc)" aria-label="Clear search">&times;</button></span>
-      <label class="ge-conflictsonly"><input type="checkbox" id="ge-conflicts-only" onchange="geToggleConflictsOnly()"> Show Anomalies Only</label>
+      <label class="ge-conflictsonly" id="ge-anomonly-label"><input type="checkbox" id="ge-conflicts-only" onchange="geToggleConflictsOnly()"> Show Anomalies Only</label>
     </div>
-    <div class="ei-note" style="margin-top:-8px;margin-bottom:14px">Filters the list below in whichever mode tab is active. Show Anomalies Only is shared shell state too, but what it filters to is mode-specific: rows in Game Mode, whole groups (any group with a conflict against a <em>different</em> group) in Action Groups. Controller Mode is picture-based, not a list &mdash; how (or whether) search applies there is still open.</div>
+    <div class="ei-note" style="margin-top:-8px;margin-bottom:14px">Search filters the list below in whichever mode tab is active, and clears with the &times; in the field or Esc. <b>Show Anomalies Only</b> belongs to Game Mode and appears only there: it hides every row with nothing wrong, keeping the game&#39;s own grouping &mdash; the ANOMALIES tab is the cross-section list. Leaving Game Mode hides the checkbox and clears it. Controller Mode is picture-based, not a list &mdash; how (or whether) search applies there is still open.</div>
 
+    <!-- WHY: V1.2 ships GAME MODE and ANOMALIES (Alan, 2026-09-16). The other four are not in the
+         mode bar at all - not greyed, not "coming soon" - so they sit in a preview bar of their own. -->
     <div class="ei-subbar">
       <div class="ei-subtab active" id="tab-mode-game" onclick="beShowMode('game')">GAME MODE</div>
-      <div class="ei-subtab" id="tab-mode-purpose" onclick="beShowMode('purpose')">ACTION GROUPS</div>
-      <div class="ei-subtab" id="tab-mode-type" onclick="beShowMode('type')">CONTROL TYPES</div>
-      <div class="ei-subtab" id="tab-mode-controller" onclick="beShowMode('controller')">CONTROLLER MODE</div>
-      <div class="ei-subtab" id="tab-mode-input" onclick="beShowMode('input')">INPUT MODE</div>
       <div class="ei-subtab" id="tab-mode-anomaly" onclick="beShowMode('anomaly')">ANOMALIES &nbsp;(8)</div>
     </div>
+
+    <div class="ei-subbar ei-deferredbar">
+      <span class="ei-deferredlabel">NOT IN V1.2 &mdash; DESIGN PREVIEW</span>
+      <div class="ei-subtab" id="tab-mode-purpose" onclick="beShowMode('purpose')">ACTION GROUPS</div>
+      <div class="ei-subtab" id="tab-mode-input" onclick="beShowMode('input')">INPUT MODE</div>
+      <div class="ei-subtab" id="tab-mode-type" onclick="beShowMode('type')">CONTROL TYPES</div>
+      <div class="ei-subtab" id="tab-mode-controller" onclick="beShowMode('controller')">CONTROLLER MODE</div>
+    </div>
+    <div class="ei-note" style="margin-top:8px">These four modes are <b>designed, not shipped</b>: the V1.2 Bind Editor has <b>GAME MODE</b> and <b>ANOMALIES</b> and nothing else, so the commander is never shown a tab that cannot be opened. They are clickable here because this file is where the design is reviewed &mdash; see <code>v1.2-scope.md</code>, &ldquo;The V1.2 release is trimmed&rdquo;.</div>
 
     <div id="mode-game">
       <div class="ge-contextbar">
@@ -608,8 +635,8 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
               <div class="ge-bindrow" onclick="geSelectRow(this,'Move Backward')"><span class="ge-bindname">Move Backward</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
               <div class="ge-bindrow" onclick="geSelectRow(this,'Move Left')"><span class="ge-bindname">Move Left</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
               <div class="ge-bindrow" onclick="geSelectRow(this,'Move Right')"><span class="ge-bindname">Move Right</span><span class="ge-bindval"><span class="ge-badge">Joy_4</span></span><span class="ge-bindval">&mdash;</span></div>
-              <div class="ge-bindrow conflict-row" onclick="geSelectRow(this,'Move Up')"><span class="ge-bindname">Move Up</span><span class="ge-bindval" data-conflict="true"><span class="ge-badge">F</span></span><span class="ge-bindval"><span class="ge-badge">JOY 7</span></span><div class="ge-conflict-popup"><b>Shares [F] with:</b><br>&bull; Move Down (Secondary)<span class="ge-conflict-hint">See the CONFLICTS tab for details.</span></div></div>
-              <div class="ge-bindrow conflict-row" onclick="geSelectRow(this,'Move Down')"><span class="ge-bindname">Move Down</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval" data-conflict="true"><span class="ge-badge">F</span></span><div class="ge-conflict-popup"><b>Shares [F] with:</b><br>&bull; Move Up (Primary)<span class="ge-conflict-hint">See the CONFLICTS tab for details.</span></div></div>
+              <div class="ge-bindrow conflict-row" onclick="geSelectRow(this,'Move Up')"><span class="ge-bindname">Move Up</span><span class="ge-bindval" data-conflict="true"><span class="ge-badge">F</span></span><span class="ge-bindval"><span class="ge-badge">JOY 7</span></span><div class="ge-conflict-popup"><b>Shares [F] with:</b><br>&bull; Move Down (Secondary)<span class="ge-conflict-hint">See the ANOMALIES tab for details.</span></div></div>
+              <div class="ge-bindrow conflict-row" onclick="geSelectRow(this,'Move Down')"><span class="ge-bindname">Move Down</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval" data-conflict="true"><span class="ge-badge">F</span></span><div class="ge-conflict-popup"><b>Shares [F] with:</b><br>&bull; Move Up (Primary)<span class="ge-conflict-hint">See the ANOMALIES tab for details.</span></div></div>
               <div class="ge-bindrow" onclick="geSelectRow(this,'Pitch Up')"><span class="ge-bindname">Pitch Up</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
               <div class="ge-bindrow" onclick="geSelectRow(this,'Pitch Down')"><span class="ge-bindname">Pitch Down</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
               <div class="ge-bindrow" onclick="geSelectRow(this,'Exit Free Camera')"><span class="ge-bindname">Exit Free Camera</span><span class="ge-bindval" data-conflict="true"><span class="ge-badge">C</span></span><span class="ge-bindval">&mdash;</span></div>
@@ -631,6 +658,9 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
                 <button class="ge-attr-toggle" onclick="event.stopPropagation();this.textContent=this.textContent==='NORMAL'?'INVERTED':'NORMAL'">NORMAL</button>
                 <span class="ge-deadzone"><span class="ge-deadzone-label">DZ</span><span class="ge-deadzone-track" onclick="event.stopPropagation();geSetDeadzone(event,this)"><span class="ge-deadzone-fill" style="width:0%"></span></span><span class="ge-deadzone-pct">0%</span></span>
               </div>
+              <div class="ge-setdivider">SETTINGS &mdash; values, not inputs: nothing to capture, nothing to conflict with</div>
+              <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Throttle Axis Range <span class="ge-xmltag">ThrottleRangeFreeCam</span></span><span class="ge-setval"><select class="ge-setenum" disabled title="Read-only until the legal values for ThrottleRangeFreeCam are captured in-game - testing item 14. Writing a token the game has never written risks it being discarded silently."><option selected>(game default)</option></select></span></div>
+              <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Free Camera Mouse Sensitivity <span class="ge-xmltag">FreeCamMouseSensitivity</span></span><span class="ge-setval"><input class="ge-setnum" value="5.00000000"></span></div>
             </div>
           </div>
 
@@ -657,6 +687,23 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
               </div>
               <div class="ge-bindrow" onclick="geSelectRow(this,'Roll Left')"><span class="ge-bindname">Roll Left</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
               <div class="ge-bindrow" onclick="geSelectRow(this,'Roll Right')"><span class="ge-bindname">Roll Right</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
+              <div class="ge-setdivider">SETTINGS &mdash; values, not inputs: nothing to capture, nothing to conflict with</div>
+              <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Yaw Into Roll <span class="ge-xmltag">YawToRollMode</span></span><span class="ge-setval"><select class="ge-setenum" disabled title="Read-only until the legal values for YawToRollMode are captured in-game - testing item 14. Writing a token the game has never written risks it being discarded silently."><option selected>Bindings_YawIntoRollNone</option></select></span></div>
+              <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Yaw Into Roll Sensitivity <span class="ge-xmltag">YawToRollSensitivity</span></span><span class="ge-setval"><input class="ge-setnum" value="0.40000001"></span></div>
+              <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Yaw Into Roll - Flight Assist Off <span class="ge-xmltag">YawToRollMode_FAOff</span></span><span class="ge-setval"><select class="ge-setenum" disabled title="Read-only until the legal values for YawToRollMode_FAOff are captured in-game - testing item 14. Writing a token the game has never written risks it being discarded silently."><option selected>(game default)</option></select></span></div>
+            </div>
+          </div>
+
+          <div class="ge-group" data-context="ship">
+            <div class="ge-grouphead" onclick="geToggleGroup(this)" oncontextmenu="return geShowCtxMenu(event)">
+              <span class="ge-chevron">&#9654;</span>
+              <span class="ge-grouplabel">SHIP CONTROLS &mdash; WEAPONS</span>
+              <span class="ge-groupcount">1</span>
+            </div>
+            <div class="ge-grouprows" style="display:none">
+              <div class="ei-note" style="margin:8px 12px">This group&#39;s bindings are not built out in the mockup (see <b>Mockup Completeness</b>); it is here for the third value shape. <code>DeployHardpointsOnFire</code> is a real entry with its real value from <code>Custom.4.2.binds</code>.</div>
+              <div class="ge-setdivider">SETTINGS &mdash; values, not inputs: nothing to capture, nothing to conflict with</div>
+              <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Firing Deploys Hardpoints <span class="ge-xmltag">DeployHardpointsOnFire</span></span><span class="ge-setval"><label class="ge-setbool"><input type="checkbox" checked> on</label></span></div>
             </div>
           </div>
 
@@ -698,39 +745,8 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
       <div class="pm-layout">
         <div class="pm-col pm-source">
           <div class="pm-colhead">ALL BINDINGS</div>
-          <div class="pm-list">
-            <div class="ge-group">
-              <div class="ge-grouphead" onclick="geToggleGroup(this)">
-                <span class="ge-chevron">&#9660;</span>
-                <span class="ge-grouplabel">SHIP &mdash; FLIGHT THRUST</span>
-              </div>
-              <div class="ge-grouprows">
-                <div class="pm-item" onclick="pmSelectSource(this)">Thrust Left</div>
-                <div class="pm-item" onclick="pmSelectSource(this)">Thrust Right</div>
-                <div class="pm-item" onclick="pmSelectSource(this)">Thrust Forward</div>
-              </div>
-            </div>
-            <div class="ge-group">
-              <div class="ge-grouphead" onclick="geToggleGroup(this)">
-                <span class="ge-chevron">&#9660;</span>
-                <span class="ge-grouplabel">SRV &mdash; DRIVING</span>
-              </div>
-              <div class="ge-grouprows">
-                <div class="pm-item" onclick="pmSelectSource(this)">Steering Left Button</div>
-                <div class="pm-item" onclick="pmSelectSource(this)">Steering Right Button</div>
-              </div>
-            </div>
-            <div class="ge-group">
-              <div class="ge-grouphead" onclick="geToggleGroup(this)">
-                <span class="ge-chevron">&#9660;</span>
-                <span class="ge-grouplabel">ON FOOT &mdash; MOVEMENT</span>
-              </div>
-              <div class="ge-grouprows">
-                <div class="pm-item" onclick="pmSelectSource(this)">Strafe Left</div>
-                <div class="pm-item" onclick="pmSelectSource(this)">Strafe Right</div>
-              </div>
-            </div>
-          </div>
+          <div class="pm-list" id="pm-source-list"></div>
+          <div class="ei-note" style="margin:0;padding:8px 10px;border-top:1px solid #24313A">The same list as <b>GAME MODE</b>, minus the editing columns &mdash; every binding is here, grouped the way the game groups them, because a binding is <b>ungrouped</b> until someone puts it in a group. Search reaches this list too. A row already in a group is dimmed: a binding belongs to at most one.</div>
         </div>
 
         <div class="pm-arrows">
@@ -741,23 +757,14 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
         <div class="pm-col pm-target">
           <div class="pm-colhead">ACTION GROUPS</div>
           <div class="pm-list">
-            <div class="ge-group" data-conflict="true">
+            <div class="ge-group">
               <div class="ge-grouphead" onclick="geToggleGroup(this)">
                 <span class="ge-chevron">&#9660;</span>
                 <span class="ge-grouplabel">Move Left</span>
               </div>
               <div class="ge-grouprows">
-                <div class="pm-item" onclick="pmSelectTarget(this)">Ship - Thrust Left</div>
-                <div class="pm-item" onclick="pmSelectTarget(this)">SRV - Steering Left Button <span class="ge-badge" style="margin-left:6px" title="Shares a key with Cycle Fire Group">F</span></div>
-              </div>
-            </div>
-            <div class="ge-group" data-conflict="true">
-              <div class="ge-grouphead" onclick="geToggleGroup(this)">
-                <span class="ge-chevron">&#9660;</span>
-                <span class="ge-grouplabel">Cycle Fire Group</span>
-              </div>
-              <div class="ge-grouprows">
-                <div class="pm-item" onclick="pmSelectTarget(this)">Ship - Cycle Next Fire Group <span class="ge-badge" style="margin-left:6px" title="Shares a key with Move Left">F</span></div>
+                <div class="pm-item" onclick="pmSelectTarget(this)">General - Move Left</div>
+                <div class="pm-item" onclick="pmSelectTarget(this)">Ship - Yaw Left</div>
               </div>
             </div>
             <div class="ge-group">
@@ -766,8 +773,26 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
                 <span class="ge-grouplabel">Move Right</span>
               </div>
               <div class="ge-grouprows">
-                <div class="pm-item" onclick="pmSelectTarget(this)">Ship - Thrust Right</div>
-                <div class="pm-item" onclick="pmSelectTarget(this)">SRV - Steering Right Button</div>
+                <div class="pm-item" onclick="pmSelectTarget(this)">General - Move Right</div>
+                <div class="pm-item" onclick="pmSelectTarget(this)">Ship - Yaw Right</div>
+              </div>
+            </div>
+            <div class="ge-group" data-conflict="true">
+              <div class="ge-grouphead" onclick="geToggleGroup(this)">
+                <span class="ge-chevron">&#9660;</span>
+                <span class="ge-grouplabel">Camera Up</span>
+              </div>
+              <div class="ge-grouprows">
+                <div class="pm-item" onclick="pmSelectTarget(this)">General - Move Up <span class="ge-badge" style="margin-left:6px" title="Shares [F] with Move Down, in the Camera Down group">F</span></div>
+              </div>
+            </div>
+            <div class="ge-group" data-conflict="true">
+              <div class="ge-grouphead" onclick="geToggleGroup(this)">
+                <span class="ge-chevron">&#9660;</span>
+                <span class="ge-grouplabel">Camera Down</span>
+              </div>
+              <div class="ge-grouprows">
+                <div class="pm-item" onclick="pmSelectTarget(this)">General - Move Down <span class="ge-badge" style="margin-left:6px" title="Shares [F] with Move Up, in the Camera Up group">F</span></div>
               </div>
             </div>
           </div>
@@ -838,56 +863,61 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
   <div id="toptab-preset" style="display:none">
     <div class="ei-section">
       <div class="ei-section-head">ACTIVE PRESET CONFIGURATION</div>
-      <div class="ei-note" style="margin-bottom:14px">The game reads four binding sections independently. Point each at a .binds file, or set them all to the same one.</div>
+      <div class="ei-note" style="margin-bottom:14px">The game reads four binding sections independently. Point each at a <b>preset name</b>, or set them all to the same one. <b>Names, not filenames:</b> <code>StartPreset.4.start</code> stores the name with the game&#39;s version suffix and the <code>.binds</code> extension stripped, so <code>DualVirpilDawnTreader.4.2.binds</code> appears here as <b>DualVirpilDawnTreader</b>. One name can cover several files &mdash; <code>Custom.3.0.binds</code> and <code>Custom.4.2.binds</code> are both <b>Custom</b>, and the game loads whichever matches its own version. The BIND EDITOR&#39;s file selector is a real file picker, which is why it shows filenames instead.</div>
 
       <div class="ei-presetrow">
         <span>General Controls</span>
         <select class="ei-select preset-line" onchange="presetChanged()">
-          <option>DualVirpilDawnTreader.4.2.binds</option>
-          <option>GeneralControls.binds</option>
-          <option>ShipControls.binds</option>
-          <option>SRVControls.binds</option>
-          <option>OnFootControls.binds</option>
+          <option>DualVirpilDawnTreader</option>
+          <option>GeneralControls</option>
+          <option>ShipControls</option>
+          <option>SRVControls</option>
+          <option>OnFootControls</option>
+          <option>Custom</option>
         </select>
       </div>
       <div class="ei-presetrow">
         <span>Ship Controls</span>
         <select class="ei-select preset-line" onchange="presetChanged()">
-          <option>DualVirpilDawnTreader.4.2.binds</option>
-          <option>GeneralControls.binds</option>
-          <option>ShipControls.binds</option>
-          <option>SRVControls.binds</option>
-          <option>OnFootControls.binds</option>
+          <option>DualVirpilDawnTreader</option>
+          <option>GeneralControls</option>
+          <option>ShipControls</option>
+          <option>SRVControls</option>
+          <option>OnFootControls</option>
+          <option>Custom</option>
         </select>
       </div>
       <div class="ei-presetrow">
         <span>SRV Controls</span>
         <select class="ei-select preset-line" onchange="presetChanged()">
-          <option>DualVirpilDawnTreader.4.2.binds</option>
-          <option>GeneralControls.binds</option>
-          <option>ShipControls.binds</option>
-          <option>SRVControls.binds</option>
-          <option>OnFootControls.binds</option>
+          <option>DualVirpilDawnTreader</option>
+          <option>GeneralControls</option>
+          <option>ShipControls</option>
+          <option>SRVControls</option>
+          <option>OnFootControls</option>
+          <option>Custom</option>
         </select>
       </div>
       <div class="ei-presetrow">
         <span>On Foot Controls</span>
         <select class="ei-select preset-line" onchange="presetChanged()">
-          <option>DualVirpilDawnTreader.4.2.binds</option>
-          <option>GeneralControls.binds</option>
-          <option>ShipControls.binds</option>
-          <option>SRVControls.binds</option>
-          <option>OnFootControls.binds</option>
+          <option>DualVirpilDawnTreader</option>
+          <option>GeneralControls</option>
+          <option>ShipControls</option>
+          <option>SRVControls</option>
+          <option>OnFootControls</option>
+          <option>Custom</option>
         </select>
       </div>
 
       <div style="display:flex;gap:10px;align-items:center;margin-top:16px">
         <select class="ei-select" id="setall-select">
-          <option>DualVirpilDawnTreader.4.2.binds</option>
-          <option>GeneralControls.binds</option>
-          <option>ShipControls.binds</option>
-          <option>SRVControls.binds</option>
-          <option>OnFootControls.binds</option>
+          <option>DualVirpilDawnTreader</option>
+          <option>GeneralControls</option>
+          <option>ShipControls</option>
+          <option>SRVControls</option>
+          <option>OnFootControls</option>
+          <option>Custom</option>
         </select>
         <button class="ei-btn" onclick="setAllSame()">SET ALL TO SAME</button>
       </div>
@@ -1923,7 +1953,7 @@ function beLoad(){
 var AN_KIND_NOTES = {
   all:       'Everything below, ordered by how certain the failure is rather than by kind.',
   reserved:  'The key can never work, whatever is bound to it - claimed by the operating system, or by Elite’s own Game Menu control, which is matched on the key alone and ignores modifiers.',
-  missing:   'A control EliteIntel presses itself with nothing assigned to it. Not a broken binding - an absent one.',
+  missing:   'Every control in the file with nothing bound to it - 245 of the 422 in this one. Not broken bindings; absent ones. The ASSISTANT chip marks the few EliteIntel needs, and ON PURPOSE takes a control off this list for good. Settings entries never appear here: an empty value is the game&#39;s default, not a gap.',
   conflicts: 'Two actions sharing one input. Ranked: blocking stops EliteIntel driving the game, curated pairs carry a known consequence, and a plain overlap is legal and sometimes deliberate.',
   invalid:   'Bound, unique, uncontested - and still will not fire, because something else consumes the input first in a particular game state.'
 };
@@ -1947,9 +1977,16 @@ var AN_ITEMS = [
     note:'Same cause as above. A commander never hits this by hand, because by hand they click the search result with the mouse &mdash; it only bites automation, which is why there is nothing to discover through play.',
     binds:[ ['GENERAL','UI Up','Primary','W'] ] },
 
-  { kind:'missing', rank:4, sev:'MISSING', label:'NOT ASSIGNED', count:'1 control',
-    note:'EliteIntel presses this control itself, and nothing is bound to it. Only controls a built-in command actually drives are listed here &mdash; measured against the whole of Elite’s control set this would name well over a hundred, burying the handful that stop something working.',
+  { kind:'missing', rank:4, sev:'MISSING', label:'NOT ASSIGNED &mdash; ELITEINTEL DRIVES THIS', n:1, count:'1 control',
+    note:'EliteIntel presses this control itself, and nothing is bound to it. This is the handful that stop the assistant working, which is what the ASSISTANT chip in Game Mode marks &mdash; they are not a separate kind, just the ones with consequences beyond the commander&rsquo;s own hands.',
     binds:[ ['GENERAL','Head Look Reset','Primary','&mdash;'] ] },
+
+  // WHY: widened 2026-09-16 - BindForge manages the commander's file, not EliteIntel's subset of it,
+  // so an unbound control is a fact about the file whoever was going to press it. Real files run 128
+  // (DualVirpilDawnTreader.4.1) to 245 (Custom.4.2) controls with nothing on them.
+  { kind:'missing', rank:4, sev:'MISSING', label:'NOT ASSIGNED', n:244, count:'244 controls',
+    note:'Every other control in the file with nothing bound &mdash; five shown, the list is the whole of it. All five are real, and really unbound in this file. Bind one from here, or mark it ON PURPOSE and it stops being reported at all. <b>Jettison All Cargo is unbound too and is deliberately not here:</b> it is one of the two controls shipped ON PURPOSE.',
+    binds:[ ['GENERAL','Galaxy Cam Pitch Up','Primary','&mdash;'], ['SHIP','Use Shield Cell','Primary','&mdash;'], ['SHIP','Night Vision','Primary','&mdash;'], ['SRV','Steering Left Button','Primary','&mdash;'], ['ON FOOT','Turn Left','Primary','&mdash;'] ] },
 
   { kind:'conflicts', rank:5, sev:'CURATED', label:'SHARED INPUT &mdash; [G]', count:'2 binds',
     note:'Deploying hardpoints will also toggle the landing gear.',
@@ -1991,17 +2028,70 @@ function geAssistInit(){
 }
 document.addEventListener('DOMContentLoaded', geAssistInit);
 
+// WHY: every count on screen is derived from the data - a tab that says 4 and shows 5 is how a mockup
+// starts lying. n is what the row represents: one bind, one conflict group, or 244 unbound controls.
+function anWeight(i){ return i.n || 1; }
+
+// WHY: three panes share the .ei-subsubtab class, so reading the active one out of the DOM can
+// return the capture dialog's tab. The kind on screen is state, so it is held as state.
+var anCurrent = 'all';
+
+function anCounts(){
+  var c = {all:0, reserved:0, missing:0, conflicts:0, invalid:0};
+  AN_ITEMS.forEach(function(i){ c[i.kind] += anWeight(i); c.all += anWeight(i); });
+  ['all','reserved','missing','conflicts','invalid'].forEach(function(k){
+    var tab = document.getElementById('an-tab-' + k);
+    tab.innerHTML = k.toUpperCase() + ' &nbsp;(' + c[k] + ')';
+  });
+  document.getElementById('tab-mode-anomaly').innerHTML = 'ANOMALIES &nbsp;(' + c.all + ')';
+  return c;
+}
+
+// WHY: the commander reads the list here, so this is where they act on it (settled 2026-09-16). Marking
+// writes no binding - it is a row in BindForge's own database - and the control leaves the list at once,
+// which is the only feedback that the mark took.
+function anOnPurpose(itemIdx, bindIdx){
+  var item = AN_ITEMS[itemIdx];
+  var name = item.binds[bindIdx][1];
+  item.binds.splice(bindIdx, 1);
+  item.n = anWeight(item) - 1;
+  item.count = item.n + (item.n === 1 ? ' control' : ' controls');
+  if(item.n <= 0) AN_ITEMS.splice(itemIdx, 1);
+  anShow(anCurrent);
+  anFlash(name + ' marked ON PURPOSE - off this list, and shown that way in Game Mode&rsquo;s ASSISTANT '
+    + 'column. Nothing was written to .binds; clearing the mark puts it back.');
+}
+
+function anFlash(msg){
+  var n = document.getElementById('an-kindnote');
+  if(!n._original) n._original = n.innerHTML;
+  n.innerHTML = msg;
+  clearTimeout(n._t);
+  n._t = setTimeout(function(){ n.innerHTML = n._original; n._original = null; }, 4000);
+}
+
+// WHY: resolving an anomaly here rather than hunting for the row in Game Mode is the point of the tab
+// (settled 2026-09-16). It is the same dialog, opened on the same slot.
+function anCapture(btn, name, slot){
+  geCapture(btn, btn.closest('.ge-bindrow').querySelector('.ge-bindval .ge-badge'), name, slot);
+}
+
 function anShow(v){
   ['all','reserved','missing','conflicts','invalid'].forEach(function(k){
     document.getElementById('an-tab-' + k).classList.toggle('active', k === v);
   });
+  anCounts();
+  document.getElementById('an-tab-' + v).classList.add('active');
+  anCurrent = v;
   document.getElementById('an-kindnote').innerHTML = AN_KIND_NOTES[v];
 
-  var items = AN_ITEMS.filter(function(i){ return v === 'all' || i.kind === v; });
-  items.sort(function(a, b){ return a.rank - b.rank; });
+  var idx = AN_ITEMS.map(function(i, n){ return n; })
+                    .filter(function(n){ return v === 'all' || AN_ITEMS[n].kind === v; });
+  idx.sort(function(a, b){ return AN_ITEMS[a].rank - AN_ITEMS[b].rank; });
 
   var html = '';
-  items.forEach(function(i){
+  idx.forEach(function(n){
+    var i = AN_ITEMS[n];
     html += '<div class="ge-group">'
          +   '<div class="ge-grouphead" onclick="geToggleGroup(this)">'
          +     '<span class="ge-chevron">&#9660;</span>'
@@ -2011,12 +2101,20 @@ function anShow(v){
          +   '</div>'
          +   '<div class="ei-note" style="margin:8px 12px">' + i.note + '</div>'
          +   '<div class="ge-grouprows">';
-    i.binds.forEach(function(b){
-      html += '<div class="ge-bindrow" style="cursor:default">'
+    i.binds.forEach(function(b, bi){
+      html += '<div class="ge-bindrow" style="cursor:default" data-control="' + cdTitleCase(b[0]) + '">'
            +    '<span class="im-sectiontag">' + b[0] + '</span>'
            +    '<span class="ge-bindname">' + b[1]
            +      ' <span style="color:#6F7D89;font-size:11px">(' + b[2] + ')</span></span>'
            +    '<span class="ge-bindval"><span class="ge-badge">' + b[3] + '</span></span>'
+           +    '<span class="an-rowactions">'
+           +      '<button class="ge-capbtn ' + (b[3] === '&mdash;' ? 'state-empty' : 'state-conflict') + '" '
+           +        'onclick="anCapture(this, \'' + b[1] + '\', \'' + b[2] + '\')">CAPTURE</button>'
+           +      (i.kind === 'missing'
+                    ? '<button class="an-purposebtn" onclick="anOnPurpose(' + n + ',' + bi + ')" '
+                      + 'title="Stop reporting this control. Nothing is written to .binds.">ON PURPOSE</button>'
+                    : '')
+           +    '</span>'
            +  '</div>';
     });
     html += '</div></div>';
@@ -2030,15 +2128,19 @@ function beShowMode(v){
     document.getElementById('mode-'+m).style.display = (m===v) ? 'block' : 'none';
     document.getElementById('tab-mode-'+m).classList.toggle('active', m===v);
   });
+  // WHY: the filter belongs to Game Mode (settled 2026-09-15). Hiding it elsewhere is not enough on its
+  // own - a filter still applied but no longer visible would hide rows with nothing on screen to explain it.
+  var box = document.getElementById('ge-conflicts-only');
+  document.getElementById('ge-anomonly-label').style.display = (v === 'game') ? '' : 'none';
+  if(v !== 'game' && box.checked){ box.checked = false; geToggleConflictsOnly(); }
   if(v === 'anomaly'){ anShow('all'); }
 }
 function geToggleConflictsOnly(){
   var on = document.getElementById('ge-conflicts-only').checked;
-  document.querySelectorAll('#mode-game .ge-bindrow, #mode-input .ge-bindrow').forEach(function(row){
-    row.style.display = (!on || row.classList.contains('conflict-row')) ? '' : 'none';
-  });
-  document.querySelectorAll('#mode-purpose .pm-target .ge-group').forEach(function(group){
-    group.style.display = (!on || group.dataset.conflict === 'true') ? '' : 'none';
+  document.querySelectorAll('#mode-game .ge-bindrow').forEach(function(row){
+    // any anomaly, not conflicts alone: a row EliteIntel cannot drive is one too
+    var anomaly = row.classList.contains('conflict-row') || !!row.querySelector('.ge-assist .an-sev.missing');
+    row.style.display = (!on || anomaly) ? '' : 'none';
   });
 }
 function geShowContext(v){
@@ -2173,6 +2275,11 @@ function geFormatKey(key){
    into BUTTONS / HATS / AXIS DIRECTIONS / AXES. Tabs that cannot fill the slot are greyed out. SAVE writes
    to the draft. Demo only: VPCThrottle and VPCPanel labels come from Frontier's real .buttonMap files;
    RVWAP's stand in for a .buttonMap BindForge generated. */
+// the same table keyed by action alone, for rows that arrive without their game group
+var CD_XML_BY_ACTION = {};
+setTimeout(function(){ Object.keys(CD_XML).forEach(function(k){
+  CD_XML_BY_ACTION[k.split('|')[1]] = CD_XML[k];
+}); }, 0);
 var CD_XML = {"Free Camera|Toggle HUD": "FreeCamToggleHUD", "Free Camera|Move Forward": "MoveFreeCamForward", "Free Camera|Move Backward": "MoveFreeCamBackwards", "Free Camera|Move Left": "MoveFreeCamLeft", "Free Camera|Move Right": "MoveFreeCamRight", "Free Camera|Move Up": "MoveFreeCamUp", "Free Camera|Move Down": "MoveFreeCamDown", "Free Camera|Pitch Up": "PitchCameraUp", "Free Camera|Pitch Down": "PitchCameraDown", "Free Camera|Exit Free Camera": "QuitCamera", "Free Camera|Lateral Axis": "MoveFreeCamX", "Free Camera|Lift Axis": "MoveFreeCamZ", "Free Camera|Pitch Axis": "PitchCamera", "Flight Rotation|Yaw Axis": "YawAxisRaw", "Flight Rotation|Yaw Left": "YawLeftButton", "Flight Rotation|Yaw Right": "YawRightButton", "Flight Rotation|Roll Axis": "RollAxisRaw", "Flight Rotation|Roll Left": "RollLeftButton", "Flight Rotation|Roll Right": "RollRightButton"};
 var CD_DEVICES = [{"id": "VPCThrottle", "inputs": 82, "generated": false, "buttons": [{"name": "Right (R)", "inputs": [{"tag": "Joy_8", "label": "R POV1 Press"}, {"tag": "Joy_9", "label": "R POV1 Forward"}, {"tag": "Joy_10", "label": "R POV1 Right"}, {"tag": "Joy_11", "label": "R POV1 Back"}, {"tag": "Joy_12", "label": "R POV1 Left"}, {"tag": "Joy_13", "label": "R Stick Press"}, {"tag": "Joy_14", "label": "R Dial - Forward"}, {"tag": "Joy_15", "label": "R Dial - Backward"}, {"tag": "Joy_16", "label": "R POV2 - Press"}, {"tag": "Joy_17", "label": "R POV2 - Forward"}, {"tag": "Joy_18", "label": "R POV2 - Down"}, {"tag": "Joy_19", "label": "R POV2 - Back"}, {"tag": "Joy_20", "label": "R POV2 - Up"}, {"tag": "Joy_21", "label": "R 1"}, {"tag": "Joy_22", "label": "R POV3 - Press"}, {"tag": "Joy_23", "label": "R POV3 - Down"}, {"tag": "Joy_24", "label": "R POV3 - Back"}, {"tag": "Joy_25", "label": "R POV3 - Up"}, {"tag": "Joy_26", "label": "R POV3 - Forward"}, {"tag": "Joy_27", "label": "R POV4 - Press"}, {"tag": "Joy_28", "label": "R POV4 - Down"}, {"tag": "Joy_29", "label": "R POV4 - Back"}, {"tag": "Joy_30", "label": "R POV4 - Up"}, {"tag": "Joy_31", "label": "R POV4 - Forward"}, {"tag": "Joy_32", "label": "R 2"}, {"tag": "Joy_33", "label": "R 3"}]}, {"name": "Left (L)", "inputs": [{"tag": "Joy_1", "label": "L Dial - Press"}, {"tag": "Joy_2", "label": "L Dial - Backward"}, {"tag": "Joy_3", "label": "L Dial - Forward"}, {"tag": "Joy_4", "label": "L 1"}, {"tag": "Joy_5", "label": "L POV Press"}, {"tag": "Joy_6", "label": "L POV Forward"}, {"tag": "Joy_7", "label": "L POV Back"}]}, {"name": "Base buttons (B)", "inputs": [{"tag": "Joy_38", "label": "B1-1"}, {"tag": "Joy_39", "label": "B2-1"}, {"tag": "Joy_40", "label": "B3-1"}, {"tag": "Joy_41", "label": "B4-1"}, {"tag": "Joy_42", "label": "B5-1"}, {"tag": "Joy_43", "label": "B6-1"}, {"tag": "Joy_56", "label": "B1-2"}, {"tag": "Joy_57", "label": "B2-2"}, {"tag": "Joy_58", "label": "B3-2"}, {"tag": "Joy_59", "label": "B4-2"}, {"tag": "Joy_60", "label": "B5-2"}, {"tag": "Joy_61", "label": "B6-2"}, {"tag": "Joy_62", "label": "B1-3"}, {"tag": "Joy_63", "label": "B2-3"}, {"tag": "Joy_64", "label": "B3-3"}, {"tag": "Joy_65", "label": "B4-3"}, {"tag": "Joy_66", "label": "B5-3"}, {"tag": "Joy_67", "label": "B6-3"}, {"tag": "Joy_68", "label": "B1-4"}, {"tag": "Joy_69", "label": "B2-4"}, {"tag": "Joy_70", "label": "B3-4"}, {"tag": "Joy_71", "label": "B4-4"}, {"tag": "Joy_72", "label": "B5-4"}, {"tag": "Joy_73", "label": "B6-4"}, {"tag": "Joy_74", "label": "B1-5"}, {"tag": "Joy_75", "label": "B2-5"}, {"tag": "Joy_76", "label": "B3-5"}, {"tag": "Joy_77", "label": "B4-5"}, {"tag": "Joy_78", "label": "B5-5"}, {"tag": "Joy_79", "label": "B6-5"}]}, {"name": "Toggles (T)", "inputs": [{"tag": "Joy_34", "label": "T1"}, {"tag": "Joy_35", "label": "T2"}, {"tag": "Joy_36", "label": "T3"}, {"tag": "Joy_37", "label": "T4"}, {"tag": "Joy_44", "label": "T5 - Up"}, {"tag": "Joy_45", "label": "T5 - Down"}, {"tag": "Joy_46", "label": "T6 - Up"}, {"tag": "Joy_47", "label": "T6 - Down"}, {"tag": "Joy_48", "label": "T7 - Up"}, {"tag": "Joy_49", "label": "T7 - Down"}]}, {"name": "Encoders (E)", "inputs": [{"tag": "Joy_50", "label": "E1"}, {"tag": "Joy_51", "label": "E1 - Counter Clockwise"}, {"tag": "Joy_52", "label": "E1 - Clockwise"}, {"tag": "Joy_53", "label": "E2"}, {"tag": "Joy_54", "label": "E2 - Counter Clockwise"}, {"tag": "Joy_55", "label": "E2 - Clockwise"}]}], "hats": [], "directions": [{"name": "Axis directions (half-axis)", "inputs": [{"tag": "Neg_Joy_RXAxis", "label": "\u2212Throttle L"}, {"tag": "Pos_Joy_RXAxis", "label": "+Throttle L"}, {"tag": "Neg_Joy_RYAxis", "label": "\u2212Throttle R"}, {"tag": "Pos_Joy_RYAxis", "label": "+Throttle R"}, {"tag": "Neg_Joy_RZAxis", "label": "\u2212Flaps"}, {"tag": "Pos_Joy_RZAxis", "label": "+Flaps"}]}], "axes": [{"name": "Axes", "inputs": [{"tag": "Joy_RXAxis", "label": "Throttle L"}, {"tag": "Joy_RYAxis", "label": "Throttle R"}, {"tag": "Joy_RZAxis", "label": "Flaps"}]}]}, {"id": "VPCPanel", "inputs": 43, "generated": false, "buttons": [{"name": "Buttons (B)", "inputs": [{"tag": "Joy_1", "label": "B1"}, {"tag": "Joy_2", "label": "B2"}, {"tag": "Joy_3", "label": "B3"}, {"tag": "Joy_4", "label": "B4"}, {"tag": "Joy_5", "label": "B5"}, {"tag": "Joy_6", "label": "B6"}, {"tag": "Joy_7", "label": "B7"}, {"tag": "Joy_8", "label": "B8"}, {"tag": "Joy_9", "label": "B9"}, {"tag": "Joy_10", "label": "B10"}, {"tag": "Joy_11", "label": "B11"}, {"tag": "Joy_12", "label": "B12"}]}, {"name": "Toggles (T)", "inputs": [{"tag": "Joy_13", "label": "T1 - Down"}, {"tag": "Joy_14", "label": "T1 - Up"}, {"tag": "Joy_15", "label": "T2 - Down"}, {"tag": "Joy_16", "label": "T2 - Up"}, {"tag": "Joy_17", "label": "T3 - Left"}, {"tag": "Joy_18", "label": "T3 - Right"}, {"tag": "Joy_19", "label": "T4 - Left"}, {"tag": "Joy_20", "label": "T4 - Right"}, {"tag": "Joy_21", "label": "T5 - Down"}, {"tag": "Joy_22", "label": "T5 - Up"}, {"tag": "Joy_23", "label": "T6 - Down"}, {"tag": "Joy_24", "label": "T6 - Up"}, {"tag": "Joy_25", "label": "T7 - Down"}, {"tag": "Joy_26", "label": "T7 - Up"}, {"tag": "Joy_27", "label": "T8 - Down"}, {"tag": "Joy_28", "label": "T8 - Up"}, {"tag": "Joy_29", "label": "T9 - Down"}, {"tag": "Joy_30", "label": "T9 - Up"}, {"tag": "Joy_31", "label": "T10 - Down"}, {"tag": "Joy_32", "label": "T10 - Up"}]}, {"name": "Encoders (E)", "inputs": [{"tag": "Joy_33", "label": "E1"}, {"tag": "Joy_34", "label": "E1 - Counter Clockwise"}, {"tag": "Joy_35", "label": "E1 - Clockwise"}, {"tag": "Joy_36", "label": "E2"}, {"tag": "Joy_37", "label": "E2 - Counter Clockwise"}, {"tag": "Joy_38", "label": "E2 - Clockwise"}, {"tag": "Joy_39", "label": "E3"}, {"tag": "Joy_40", "label": "E3 - Counter Clockwise"}, {"tag": "Joy_41", "label": "E3 - Clockwise"}]}], "hats": [], "directions": [{"name": "Axis directions (half-axis)", "inputs": [{"tag": "Neg_Joy_UAxis", "label": "\u2212A1"}, {"tag": "Pos_Joy_UAxis", "label": "+A1"}, {"tag": "Neg_Joy_VAxis", "label": "\u2212A2"}, {"tag": "Pos_Joy_VAxis", "label": "+A2"}]}], "axes": [{"name": "Axes", "inputs": [{"tag": "Joy_UAxis", "label": "A1"}, {"tag": "Joy_VAxis", "label": "A2"}]}]}, {"id": "RVWAP", "inputs": 31, "generated": true, "buttons": [{"name": "Buttons", "inputs": [{"tag": "Joy_1", "label": "Button 1"}, {"tag": "Joy_2", "label": "Button 2"}, {"tag": "Joy_3", "label": "Button 3"}, {"tag": "Joy_4", "label": "Button 4"}, {"tag": "Joy_5", "label": "Button 5"}, {"tag": "Joy_6", "label": "Button 6"}, {"tag": "Joy_7", "label": "Button 7"}, {"tag": "Joy_8", "label": "Button 8"}, {"tag": "Joy_9", "label": "Button 9"}, {"tag": "Joy_10", "label": "Button 10"}, {"tag": "Joy_11", "label": "Button 11"}, {"tag": "Joy_12", "label": "Button 12"}, {"tag": "Joy_13", "label": "Button 13"}, {"tag": "Joy_14", "label": "Button 14"}, {"tag": "Joy_15", "label": "Button 15"}, {"tag": "Joy_16", "label": "Button 16"}, {"tag": "Joy_17", "label": "Button 17"}, {"tag": "Joy_18", "label": "Button 18"}, {"tag": "Joy_19", "label": "Button 19"}, {"tag": "Joy_20", "label": "Button 20"}, {"tag": "Joy_21", "label": "Button 21"}, {"tag": "Joy_22", "label": "Button 22"}, {"tag": "Joy_23", "label": "Button 23"}, {"tag": "Joy_24", "label": "Button 24"}]}], "hats": [{"name": "Hats", "inputs": [{"tag": "Joy_POV1Up", "label": "Hat 1 Up"}, {"tag": "Joy_POV1Down", "label": "Hat 1 Down"}, {"tag": "Joy_POV1Left", "label": "Hat 1 Left"}, {"tag": "Joy_POV1Right", "label": "Hat 1 Right"}]}], "directions": [{"name": "Axis directions (half-axis)", "inputs": [{"tag": "Neg_Joy_XAxis", "label": "\u2212X Axis"}, {"tag": "Pos_Joy_XAxis", "label": "+X Axis"}, {"tag": "Neg_Joy_YAxis", "label": "\u2212Y Axis"}, {"tag": "Pos_Joy_YAxis", "label": "+Y Axis"}, {"tag": "Neg_Joy_ZAxis", "label": "\u2212Z Axis"}, {"tag": "Pos_Joy_ZAxis", "label": "+Z Axis"}]}], "axes": [{"name": "Axes", "inputs": [{"tag": "Joy_XAxis", "label": "X Axis"}, {"tag": "Joy_YAxis", "label": "Y Axis"}, {"tag": "Joy_ZAxis", "label": "Z Axis"}]}]}];
 var CD_MOUSE = [
@@ -2223,6 +2330,12 @@ function geCapture(btn, valText, actionName, slot){
 }
 
 function cdContext(btn, actionName){
+  // an Anomalies row has no game group to read - its group header names the shared key, not a
+  // section - so the row carries its own section instead
+  var row = btn.closest('.ge-bindrow');
+  if (row && row.dataset.control){
+    return {control:row.dataset.control, xml:CD_XML_BY_ACTION[actionName] || '(not in this demo)'};
+  }
   var group = btn.closest('.ge-group');
   var parts = (group ? group.querySelector('.ge-grouplabel').textContent : '').split(' \u2014 ');
   var section = cdTitleCase((parts[0] || '').replace(/ CONTROLS$/, ''));
@@ -2493,29 +2606,118 @@ function cdClose(){
 geInitCaptureButtons();
 var pmSelectedSource = null;
 var pmSelectedTarget = null;
+
+/* WHY: ALL BINDINGS is Game Mode's list with the editing columns taken out (Alan, 2026-09-16) - the same
+   groups, the same rows, in the same order. Its one job is picking a binding to put in a group, so the
+   ASSISTANT column, the capture buttons, the hold chips and the axis controls all come out, and so does the
+   conflict decoration: conflicts are noticed here, not fixed here. The mockup clones the grid to guarantee
+   the two lists cannot drift; the real thing renders both from one model. */
+var PM_STRIP = '.ge-assist, .ge-capbtn, .ge-holdchip, .ge-holdchip-spacer, .ge-attr-toggle, .ge-deadzone,'
+             + ' .ge-setrow, .ge-setdivider,'   // a setting has no input, so it cannot join an action group
+             + ' .ei-note, .ge-conflict-popup';
+
+function pmBuildSource(){
+  var list = document.getElementById('pm-source-list');
+  if(!list) return;
+  list.innerHTML = '';
+  document.querySelectorAll('#ge-grid .ge-group').forEach(function(g){
+    var c = g.cloneNode(true);
+    c.querySelectorAll(PM_STRIP).forEach(function(n){ n.parentNode.removeChild(n); });
+    var head = c.querySelector('.ge-grouphead');
+    if(head) head.removeAttribute('oncontextmenu');        // renaming a group is Game Mode's menu
+    var rows = c.querySelector('.ge-grouprows');
+    if(rows) rows.style.display = '';                      // the source list opens expanded
+    c.querySelectorAll('.ge-bindrow').forEach(function(row){
+      row.classList.remove('selected');
+      row.classList.remove('conflict-row');
+      row.classList.add('pm-srcrow');
+      row.removeAttribute('onclick');
+      row.querySelectorAll('[data-conflict]').forEach(function(n){ n.removeAttribute('data-conflict'); });
+      row.onclick = function(){ pmSelectSource(row); };
+    });
+    if(c.querySelectorAll('.ge-bindrow').length) list.appendChild(c);   // a settings-only group has nothing to offer here
+  });
+  pmMarkGrouped();
+}
+document.addEventListener('DOMContentLoaded', pmBuildSource);
+
+// "SHIP CONTROLS - FLIGHT ROTATION" -> "Ship", the prefix a group member carries
+function pmSectionOf(row){
+  var g = row.closest('.ge-group'), label = g ? g.querySelector('.ge-grouplabel') : null;
+  if(!label) return '';
+  var head = label.textContent.split('\u2014')[0].trim().replace(/ CONTROLS$/i, '');
+  return head.charAt(0) + head.slice(1).toLowerCase();
+}
+
+function pmLabelOf(row){
+  var name = row.querySelector('.ge-bindname').textContent.trim();
+  var section = pmSectionOf(row);
+  return section ? section + ' - ' + name : name;
+}
+
+// a member's own text, without the conflict badge that may follow it
+function pmMemberLabel(item){
+  var first = item.firstChild;
+  return (first && first.nodeType === 3 ? first.textContent : item.textContent).trim();
+}
+
+// WHY: a binding belongs to at most one group, and the list says so before the button has to refuse
+function pmMarkGrouped(){
+  var taken = {};
+  document.querySelectorAll('.pm-target .pm-item').forEach(function(i){
+    taken[pmMemberLabel(i).toLowerCase()] = i;
+  });
+  document.querySelectorAll('.pm-source .pm-srcrow').forEach(function(row){
+    var inGroup = taken[pmLabelOf(row).toLowerCase()];
+    row.classList.toggle('grouped', !!inGroup);
+    row.title = inGroup
+      ? 'Already in ' + inGroup.closest('.ge-group').querySelector('.ge-grouplabel').textContent
+      : '';
+  });
+}
+
 function pmSelectSource(el){
-  document.querySelectorAll('.pm-source .pm-item').forEach(function(i){ i.classList.remove('selected'); });
+  document.querySelectorAll('.pm-source .pm-srcrow').forEach(function(i){ i.classList.remove('selected'); });
   el.classList.add('selected');
   pmSelectedSource = el;
 }
+
 function pmSelectTarget(el){
   document.querySelectorAll('.pm-target .pm-item').forEach(function(i){ i.classList.remove('selected'); });
   el.classList.add('selected');
   pmSelectedTarget = el;
 }
+
 function pmAdd(){
   if(!pmSelectedSource) return;
-  var targetRows = document.querySelector('.pm-target .ge-grouprows');
+  var label = pmLabelOf(pmSelectedSource);
+  var already = null;
+  document.querySelectorAll('.pm-target .pm-item').forEach(function(i){
+    if(pmMemberLabel(i).toLowerCase() === label.toLowerCase()) already = i;
+  });
+  if(already){
+    alert(label + ' is already in \u201c' +
+      already.closest('.ge-group').querySelector('.ge-grouplabel').textContent + '\u201d.' +
+      '\n\nA binding belongs to at most one group - remove it from there first.');
+    return;
+  }
+  var group = pmSelectedTarget ? pmSelectedTarget.closest('.ge-group')
+                               : document.querySelector('.pm-target .ge-group');
+  var rows = group.querySelector('.ge-grouprows');
+  rows.style.display = '';
   var item = document.createElement('div');
   item.className = 'pm-item';
-  item.textContent = pmSelectedSource.textContent;
+  item.textContent = label;
   item.onclick = function(){ pmSelectTarget(item); };
-  targetRows.appendChild(item);
+  rows.appendChild(item);
+  pmMarkGrouped();
 }
+
 function pmRemove(){
   if(!pmSelectedTarget) return;
-  pmSelectedTarget.remove();
+  pmSelectedTarget.parentNode.removeChild(pmSelectedTarget);
   pmSelectedTarget = null;
+  pmMarkGrouped();   // the binding is ungrouped again, and the source list stops dimming it
 }
 function pmNewGroup(){
   alert('New group creation not yet designed - just getting the ball rolling on the layout for now.');
@@ -2562,7 +2764,7 @@ function imRenderRow(ex, r){
     ? '<span class="ge-bindval" data-conflict="true"><span class="ge-badge">'+ex.badge+'</span></span>'
     : '<span class="ge-bindval"><span class="ge-badge">'+ex.badge+'</span></span>';
   var popup = r.conflict
-    ? '<div class="ge-conflict-popup"><b>Shares ['+ex.badge+'] with:</b><br>&bull; '+r.sharedWith+'<span class="ge-conflict-hint">See the CONFLICTS tab for details.</span></div>'
+    ? '<div class="ge-conflict-popup"><b>Shares ['+ex.badge+'] with:</b><br>&bull; '+r.sharedWith+'<span class="ge-conflict-hint">See the ANOMALIES tab for details.</span></div>'
     : '';
   return '<div class="'+rowClass+'" onclick="imCaptureNotBuilt()">'+tag+
     '<span class="ge-bindname">'+r.name+'</span>'+valSpan+'<span class="ge-bindval">&mdash;</span>'+popup+

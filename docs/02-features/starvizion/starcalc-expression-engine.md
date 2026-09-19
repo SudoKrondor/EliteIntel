@@ -1,6 +1,6 @@
 # StarVizion — StarCalc Expression Engine
 
-StarCalc is StarVizion's built-in expression evaluation system. It lets users write simple formulas that combine input values and constants to produce derived outputs — average two axes into a composite thrust level, compute a ratio, apply conditional logic, normalize or scale an axis range.
+StarCalc is StarVizion's built-in expression evaluation system. It lets users write simple formulas that combine input values and constants to produce derived outputs — average two axes into a composite thrust level, compute a ratio, apply conditional logic, normalise or scale an axis range.
 
 ## Expression Syntax
 
@@ -70,11 +70,11 @@ If an expression references a variable that has not been bound, it fails validat
 
 ### Window Variables
 
-Always available to every NeuroNode with no setup required — they reflect the Vizlet's current window geometry: width, height, center X (width/2), center Y (height/2), and aspect ratio (width/height). These let an expression like "axis value times half the window width, offset from center" work correctly regardless of the Vizlet's actual size.
+Always available to every NeuroNode with no setup required — they reflect the Vizlet's current window geometry: width, height, centre X (width/2), centre Y (height/2), and aspect ratio (width/height). These let an expression like "axis value times half the window width, offset from centre" work correctly regardless of the Vizlet's actual size.
 
 ### Time Variables
 
-Time variables enable animation — behavior that changes over time with no input required: total elapsed seconds since the Vizlet started, and elapsed seconds since the previous frame. Both are read-only and monotonic. Example: a dot that pulses in size using a sine wave of elapsed time.
+Time variables enable animation — behaviour that changes over time with no input required: total elapsed seconds since the Vizlet started, and elapsed seconds since the previous frame. Both are read-only and monotonic. Example: a dot that pulses in size using a sine wave of elapsed time.
 
 ### Helper Functions
 

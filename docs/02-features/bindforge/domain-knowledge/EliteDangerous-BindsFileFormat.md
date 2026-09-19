@@ -1,8 +1,8 @@
 # Elite Dangerous — `.binds` File Format Reference
 
-**Scope:** Engine-agnostic reference for Frontier's `.binds` key-binding file format and the game's own binding behavior — structure, vocabulary, and confirmed quirks/pitfalls. This document describes the game and the file itself, independent of any particular parser implementation.
+**Scope:** Engine-agnostic reference for Frontier's `.binds` key-binding file format and the game's own binding behaviour — structure, vocabulary, and confirmed quirks/pitfalls. This document describes the game and the file itself, independent of any particular parser implementation.
 
-**Confidence:** Structural facts (element shapes, attributes, device ID derivation) come from a full structural extraction of a real, complex dual-HOTAS `.binds` file (457 top-level elements). Behavioral facts (the modifier press-order mechanism, exact-chord matching, file re-read timing) come from direct in-game testing conducted 2026-06-23 through 2026-06-24, including one theory (subset-suppression) that was proposed, tested further, and explicitly retracted — see §9. Treat anything not marked "confirmed by live testing" as a structural observation only, not a behavior-verified fact.
+**Confidence:** Structural facts (element shapes, attributes, device ID derivation) come from a full structural extraction of a real, complex dual-HOTAS `.binds` file (457 top-level elements). Behavioural facts (the modifier press-order mechanism, exact-chord matching, file re-read timing) come from direct in-game testing conducted 2026-06-23 through 2026-06-24, including one theory (subset-suppression) that was proposed, tested further, and explicitly retracted — see §9. Treat anything not marked "confirmed by live testing" as a structural observation only, not a behaviour-verified fact.
 
 ---
 
@@ -148,7 +148,7 @@ These attach to `<Primary>`, `<Secondary>`, or `<Binding>` — the "slot" elemen
 
 - Nested inside `<Primary>` or `<Secondary>` (or `<Binding>`) — never at the action-element level.
 - **Hard cap of 3 modifiers per slot, confirmed by live testing.** Holding 4 inputs at once (e.g. `LeftCtrl+LeftAlt+LeftShift+Y`) does not produce a 4-modifier bind — the game always caps at 3.
-- A modifier can be any device type, not just keyboard — confirmed via a joystick button used as a modifier, and via a HOTAS slider's end-of-travel behavior acting as a modifier.
+- A modifier can be any device type, not just keyboard — confirmed via a joystick button used as a modifier, and via a HOTAS slider's end-of-travel behaviour acting as a modifier.
 - Left/Right variants are tracked as distinct values and are freely mixable on the same slot (`LeftShift` + `RightShift` together on one slot is valid).
 - The same key cannot be both the slot's base `Key=` and one of its own `<Modifier>` entries.
 - Multiple `<Modifier>` elements are allowed per slot; their XML order should be preserved by any tool that edits the file, although (see below) order does not affect the game's own conflict matching.
@@ -174,16 +174,16 @@ Reproduced directly: holding `LeftCtrl + LeftShift + LeftAlt + Y` (4 inputs) dur
 
 `Key_Y` — a genuine action key — was written as a `<Modifier>`. `Key_LeftControl` — a genuine modifier key — was written as the Primary `Key=`.
 
-**The actual rule: whatever is held down when the *last* key is pressed becomes the `<Modifier>` set (in whatever order); the last-pressed key becomes the slot's `Key=` attribute.** It's purely a function of press order, not key identity. Practical consequence for any capture UI: accumulate held keys in press order and finalize the binding on the first non-modifier key pressed — that reproduces the game's own capture behavior.
+**The actual rule: whatever is held down when the *last* key is pressed becomes the `<Modifier>` set (in whatever order); the last-pressed key becomes the slot's `Key=` attribute.** It's purely a function of press order, not key identity. Practical consequence for any capture UI: accumulate held keys in press order and finalize the binding on the first non-modifier key pressed — that reproduces the game's own capture behaviour.
 
-**Modifier order in the XML does not affect the game's own conflict recognition** — confirmed via the in-game "Are you sure?" rebind-conflict dialog: two captures of the same key set, captured in different orderings, are correctly recognized by the game as the same combo regardless of order.
+**Modifier order in the XML does not affect the game's own conflict recognition** — confirmed via the in-game "Are you sure?" rebind-conflict dialog: two captures of the same key set, captured in different orderings, are correctly recognised by the game as the same combo regardless of order.
 
 **Execution consequence:** any external tool that takes the `<Primary>`/`<Modifier>` XML labels at face value for *execution* (tapping whatever's in Primary, holding whatever's in Modifier) will get hold/tap roles backwards whenever Frontier's own capture happened to mislabel a real action key into a `<Modifier>` slot, as shown above. Two concrete failure modes result:
 
 - A key that's really the intended tap-key, but is sitting in a `<Modifier>` slot, gets held for the full chord duration — long enough to also trigger that key's own separate binding elsewhere, if it has one.
 - While the (mislabeled) modifiers are held but the (mislabeled) Primary hasn't fired yet, the currently-held key subset can be an exact match for some *other* binding's full combo, spuriously firing that one too.
 
-**The fix is not "the primary can never be a modifier" — it's "never trust the slot labels for execution."** Any code that needs to actually press keys to fire a binding must classify each key by its own identity, independent of which XML element it's nested in: Ctrl/Alt/Shift (any left/right variant) are always held; anything else is always tapped, regardless of XML position. Two edge cases are worth handling explicitly rather than silently mis-executing: every key in a chord turning out to be a modifier (nothing left to tap), and two or more non-modifier keys in one chord (ambiguous — preferring whichever one the slot originally labeled Primary is a reasonable tie-break).
+**The fix is not "the primary can never be a modifier" — it's "never trust the slot labels for execution."** Any code that needs to actually press keys to fire a binding must classify each key by its own identity, independent of which XML element it's nested in: Ctrl/Alt/Shift (any left/right variant) are always held; anything else is always tapped, regardless of XML position. Two edge cases are worth handling explicitly rather than silently mis-executing: every key in a chord turning out to be a modifier (nothing left to tap), and two or more non-modifier keys in one chord (ambiguous — preferring whichever one the slot originally labelled Primary is a reasonable tie-break).
 
 ### 3.2 `Hold`
 
@@ -201,7 +201,7 @@ Reproduced directly: holding `LeftCtrl + LeftShift + LeftAlt + Y` (4 inputs) dur
 
 ### 3.3 `ToggleOn`
 
-- Element-level, covering both Primary and Secondary as **one shared behavior** — unlike `Modifier`/`Hold`, it is not a per-slot property.
+- Element-level, covering both Primary and Secondary as **one shared behaviour** — unlike `Modifier`/`Hold`, it is not a per-slot property.
 
 ```xml
 <ToggleCargoScoop>
@@ -211,7 +211,7 @@ Reproduced directly: holding `LeftCtrl + LeftShift + LeftAlt + Y` (4 inputs) dur
 </ToggleCargoScoop>
 ```
 
-- Only two observed values (`0`/`1`): `1` = toggle behavior, `0` = hold/momentary.
+- Only two observed values (`0`/`1`): `1` = toggle behaviour, `0` = hold/momentary.
 - Never appears on AXIS — BUTTON-only.
 
 ### 3.4 `Deadzone` / `Inverted`
@@ -328,7 +328,7 @@ the resulting `.binds` device ID is `33440259`.
 - The same physical device can produce a *different* device ID if the user changes its VID/PID through vendor configuration software (this is a real, observed scenario with Virpil hardware, for example) — a `.binds` file's device references can go stale relative to a device's current VID/PID without any other change to the file.
 - **Controller/joystick device identity is opaque within the `.binds` file alone.** The 8-hex-character string does not decode to reveal VID vs. PID individually, or device type (joystick vs. gamepad vs. wheel) — that distinction simply is not carried by the format. Recovering a human-readable name requires cross-referencing `DeviceMappings.xml` — see `EliteDangerous-DeviceMappings-ButtonMap.md`.
 - A conceptual lookup chain from a live device to a `.binds` reference: enumerate the device's hardware GUID → extract VID+PID → concatenate as an 8-char hex string → match against `Device=` attributes in the `.binds` file → optionally look up a human name via `DeviceMappings.xml` for display.
-- **Exact formatting details are not fully verified from documentation alone:** byte order (VID-first vs. PID-first), hex case (upper vs. lower), zero-padding behavior, and whether interface/collection info is ever appended are not independently confirmed — the derivation formula above is drawn from a single matching example (VID `3344` + PID `0259` → `33440259`) rather than an exhaustive verification pass. Treat this as reliable for the common case, but re-verify byte order against a live device pairing before depending on it for device-identity correlation.
+- **Exact formatting details are not fully verified from documentation alone:** byte order (VID-first vs. PID-first), hex case (upper vs. lower), zero-padding behaviour, and whether interface/collection info is ever appended are not independently confirmed — the derivation formula above is drawn from a single matching example (VID `3344` + PID `0259` → `33440259`) rather than an exhaustive verification pass. Treat this as reliable for the common case, but re-verify byte order against a live device pairing before depending on it for device-identity correlation.
 
 ---
 
@@ -476,7 +476,7 @@ Cross-referencing the in-game Control Bindings UI's displayed action list agains
 
 ---
 
-## 9. Binding Match Behavior
+## 9. Binding Match Behaviour
 
 ### 9.1 Exact-chord matching, not subset/priority
 
@@ -488,7 +488,7 @@ An earlier round of testing (2026-06-23) reproduced a case that looked exactly l
 
 **This theory was retracted after further testing.** The original failure was traced to a **stale `.binds` reload** — the game had not yet re-read the file (§7) — so the test was observing an old binding state, not a genuine subset-suppression rule. The real, confirmed model is §9.1 above: exact-chord matching, with no subset suppression at all.
 
-The lasting lesson: **any test methodology for `.binds` behavior must explicitly account for the "Controls screen must be opened to reload" lifecycle rule**, or it will misattribute a stale-read symptom to a real binding-logic bug — exactly as happened here.
+The lasting lesson: **any test methodology for `.binds` behaviour must explicitly account for the "Controls screen must be opened to reload" lifecycle rule**, or it will misattribute a stale-read symptom to a real binding-logic bug — exactly as happened here.
 
 ---
 
@@ -543,4 +543,4 @@ update, which no in-file marker would survive either — see `EliteDangerous-Dev
 
 ---
 
-*Consolidated from a full structural extraction of a real 457-element `.binds` file and direct in-game testing (2026-06-23–2026-06-24). Behavioral claims not marked "confirmed by live testing" should be treated as structural observation only.*
+*Consolidated from a full structural extraction of a real 457-element `.binds` file and direct in-game testing (2026-06-23–2026-06-24). Behavioural claims not marked "confirmed by live testing" should be treated as structural observation only.*

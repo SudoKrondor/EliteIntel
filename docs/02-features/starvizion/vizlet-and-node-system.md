@@ -22,7 +22,7 @@ A **Vizlet** is the fundamental unit of StarVizion. It is a single overlay windo
 
 Vizlets are not dockable and do not snap to other Vizlets, monitors, or desktop edges. They float freely.
 
-### Device Disconnect Behavior
+### Device Disconnect Behaviour
 
 **On first startup** — if a device referenced by a saved Vizlet is not present, a warning is shown in the editor. The Vizlet still loads; affected nodes are flagged with a warning indicator.
 
@@ -32,7 +32,7 @@ Vizlets are not dockable and do not snap to other Vizlets, monitors, or desktop 
 - Those Vizlets close their overlay windows
 - When the device reconnects, the user re-activates the Vizlets manually
 
-This behavior is intentionally simple. Players who need visual confirmation of their controls rarely run without their HOTAS connected, so over-engineering reconnection logic is not warranted.
+This behaviour is intentionally simple. Players who need visual confirmation of their controls rarely run without their HOTAS connected, so over-engineering reconnection logic is not warranted.
 
 ---
 
@@ -48,7 +48,7 @@ NeuroNodes operate in one of two modes, determined by whether the node has input
 
 **Live mode** — the node has one or more input bindings. Its properties are driven by StarCalc expressions that reference live controller input, game data, or time. The node updates every frame. This is how moving indicators, live readouts, and animated elements are built.
 
-**Static mode** — the node has no input bindings. It cannot reference live controller input. Properties can still be driven by StarCalc expressions that reference window variables or time variables — so a Static node can animate using time, or size itself relative to the window, but it cannot react to a joystick or button. This is how tick marks, axis lines, center markers, end stops, background gradients, animated pulses, and other visual scaffolding are built.
+**Static mode** — the node has no input bindings. It cannot reference live controller input. Properties can still be driven by StarCalc expressions that reference window variables or time variables — so a Static node can animate using time, or size itself relative to the window, but it cannot react to a joystick or button. This is how tick marks, axis lines, centre markers, end stops, background gradients, animated pulses, and other visual scaffolding are built.
 
 The mode is not an explicit setting — it is inferred from whether the node has any input bindings. The editor adapts its UI to whichever mode applies (see [UI Layout — Vizlet Editor](ui-layout.md#vizlet-editor)).
 
@@ -65,7 +65,7 @@ This deliberately generalizes "input source" beyond just a physical controller �
 | Dot | Circle, defined by position and radius. | Axis position indicator, button state |
 | Bar | Filled linear bar. | Throttle, slider, progress |
 | Line | Line drawn from an origin point at a given angle and length. Supports tick mark sub-properties. | Axis line, crosshair, scale marks |
-| Arc | Circular arc, defined by center, radius, and angle range. Supports tick mark sub-properties. | Radial gauge, heading ring |
+| Arc | Circular arc, defined by centre, radius, and angle range. Supports tick mark sub-properties. | Radial gauge, heading ring |
 | Text | Text string, static or expression-driven. | Numerical readout, label |
 | Grid | Repeating grid pattern across the node area. Supports multiple types: square, circle, radial, hexagon, triangle, and others. | Background guide, alignment reference, radar overlay |
 | Bitmap | User-supplied image file. | Cockpit art, custom overlay, complex shapes |
@@ -89,7 +89,7 @@ The Line and Arc primitives support an optional set of tick-mark properties in S
 
 ### Bar Fill Options
 
-The Bar primitive's fill can originate from the midpoint (extends outward in both directions — suitable for bidirectional axes resting at center), the low end (suitable for values ranging from zero to maximum, e.g. throttle), or the high end (reverses the direction — full value looks empty, suitable for countdown-style readouts).
+The Bar primitive's fill can originate from the midpoint (extends outward in both directions — suitable for bidirectional axes resting at centre), the low end (suitable for values ranging from zero to maximum, e.g. throttle), or the high end (reverses the direction — full value looks empty, suitable for countdown-style readouts).
 
 ### Text Properties
 
@@ -103,7 +103,7 @@ When a user adds a Bitmap node and selects an image file, StarVizion copies that
 
 - **Dot** — radius, fill color, optional border (color, thickness, independent opacity).
 - **Line** — length, angle (0 = right, 90 = down), thickness, color. Originates from the node's position and extends in the direction of the angle.
-- **Arc** — radius, start angle, sweep (angular extent — 360 produces a full circle), thickness, color. Centered on the node's position.
+- **Arc** — radius, start angle, sweep (angular extent — 360 produces a full circle), thickness, color. Centred on the node's position.
 - **Grid** — pattern type (square, circle, radial, hexagon, triangle), color, spacing (or ring radius for circle/radial), thickness, and an optional dashed/dotted line style with configurable dash length and gap.
 
 ### Binding a NeuroNode
@@ -159,7 +159,7 @@ When the user has two physically identical controllers (e.g., dual identical HOT
 
 ### Hot-Plug
 
-Connect and disconnect events are surfaced by the Device Service. When a bound device disconnects, the affected Vizlets soft-save and close (see [Device Disconnect Behavior](#device-disconnect-behavior) above). When the device reconnects, the user re-activates the affected Vizlets manually. There is no automatic resumption.
+Connect and disconnect events are surfaced by the Device Service. When a bound device disconnects, the affected Vizlets soft-save and close (see [Device Disconnect Behaviour](#device-disconnect-behaviour) above). When the device reconnects, the user re-activates the affected Vizlets manually. There is no automatic resumption.
 
 ### Keyboard Capture — Confirmed Global, v1
 

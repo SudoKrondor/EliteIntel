@@ -25,7 +25,40 @@ sides is a conflict.
 
 ## Layout
 
-Four dropdowns — General, Ship, SRV, On Foot Controls — each populated from every `.binds` file found in the bindings folder, defaulting to whatever the Active Preset file currently specifies. A "Set All to Same" dropdown-plus-button bulk-sets all four at once; this is a shortcut, not a separate commit path — Save is still required afterward.
+Four dropdowns — General, Ship, SRV, On Foot Controls — each populated with the **preset names** of the `.binds` files in the bindings folder, defaulting to whatever the Active Preset file currently specifies. **A file is included on the strength of its contents, not its extension** (added 2026-09-17): the folder demonstrably holds files with a `.binds` name that are not binds files at all — most often a `StartPreset` picked by mistake, since it sits right beside them — and offering one as a preset would point a section at something the game cannot load. See [what a `.binds` file might not be](file-manager.md#what-a-binds-file-might-not-be). A "Set All to Same" dropdown-plus-button bulk-sets all four at once; this is a shortcut, not a separate commit path — Save is still required afterward.
+
+## What a line actually holds — the preset name, not the file name
+
+**Added 2026-09-17.** Every other part of this document assumes the four lines are understood, and nothing
+said what goes in them. Since writing this file is the whole job of the screen, the rule belongs here.
+
+**A line holds the preset name: the filename with the game-assigned version suffix and the extension
+removed.** Verified against the live folder and the
+[specimens](reference-data/SPECIMENS-README.md):
+
+| File in the bindings folder | The line that names it |
+|---|---|
+| `DualVirpilDawnTreader.4.2.binds` | `DualVirpilDawnTreader` |
+| `Custom.4.2.binds` | `Custom` |
+| `KeyboardMouseOnly.binds` (a shipped preset, no suffix) | `KeyboardMouseOnly` |
+
+**Get this wrong and the failure is silent.** A section repointed at a name no file answers to does not
+raise an error — the game simply loads something else, and the commander discovers it in the cockpit. This
+is the one write in BindForge where a single mistyped string costs a flight.
+
+### A name does not identify a file
+
+**One name can mean several files.** `reference-data/` holds both `Custom.3.0.binds` and
+`Custom.4.2.binds`, and each reduces to `Custom`. The game resolves which one to load by its own version, so
+**BindForge must not assume a name maps to exactly one file** — the dropdowns offer *names*, which is what the
+file stores and what the game's own preset list shows.
+
+**And the suffix is not guaranteed.** `Custom.4.2 (2).binds` — a real file, from a download that de-duplicated
+by adding ` (2)` — does not fit `name.major.minor.binds`, so its whole basename is the name. A transform that
+assumes a version suffix would mangle it. Strip a suffix **only when one is there**.
+
+*Both are in the shipped specimens rather than hypothetical, which is why they are written down here rather
+than discovered during implementation.*
 
 ## Consistency Warning
 
@@ -61,6 +94,31 @@ BindForge for the first time and accepted the offer finds their sections **IN SY
 new custom files, with nothing pending. Preset Editor is then how they change their mind — switching a
 section back to a factory preset is an ordinary edit through the normal draft-and-Apply path, because
 by that point there is real configuration to protect.
+
+## What exists in code today — checked 2026-09-17
+
+| Piece | State |
+|---|---|
+| `BindingsLoader.findStartPresetFile(Path)` | **exists** — finds `StartPreset.*.start` by prefix and extension, so it copes with the version suffix. Reusable as-is. |
+| `BindingsLoader.getActivePresetName()` | **exists, and reads one line** — see below |
+| Writing the file | **does not exist.** Nothing in the codebase writes `StartPreset.*.start`. |
+| Backup coverage | `PlayerBackupService` already includes the file, and `SetupCheck` reads it. |
+
+**`getActivePresetName()` collapses the four sections into one.** It takes the first non-empty line, and its
+own comment explains why: *“The file repeats the preset name on multiple lines; we take the first non-empty
+one.”* That holds for the common case where all four lines match — and it is wrong for exactly the
+configuration this screen exists to support. The shipped specimen `StartPreset.4.start` reads
+`KeyboardMouseOnly / Custom / Custom / Custom`, so today's code would report *KeyboardMouseOnly* as **the**
+active preset and silently ignore what Ship, SRV and On Foot are pointing at.
+
+**This is not a bug in what it was written for.** It answers *“which preset is the commander on?”* for a
+single-preset setup, which is what the assistant needed. BindForge needs the four values, so the honest
+change is a **second method returning all four** rather than altering what the existing one promises — the
+same shape as [the Missing scan's two questions](bind-editor.md#missing-has-two-shapes--added-2026-09-12),
+where one caller wants a summary and another wants the truth per slot.
+
+**So the build order for this screen is:** read all four lines, then the draft model, then the write path
+(which is new code, guarded by the same backup-before-write as every other Apply).
 
 ## Deferred
 

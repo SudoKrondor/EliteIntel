@@ -2,13 +2,22 @@
 
 ## Post-V1.2 / Back-Burner Ideas
 
+**Action Groups** — designed in full, then **deferred out of V1.2 on 2026-09-16** so the release can publish
+before the end of September. Nothing about the design is in question; see [Bind Editor — Action Groups](bind-editor.md#action-groups)
+and [The V1.2 release is trimmed](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16).
+
+**Input Mode** — designed in full, deferred the same day and for the same reason. Its rows are Game Mode's
+rows and its capture is the shared dialog, which makes it the cheapest of the four to bring back. See
+[Bind Editor — Input Mode](bind-editor.md#input-mode).
+
 **Controller Mode** — a visual, picture-based view of the physical controller with bindings overlaid on the corresponding physical buttons/axes. No implementation scope defined yet.
 
 **Control Types** — see [Bind Editor — Control Types](bind-editor.md#control-types). Confirmed out of v1 scope (see [v1.2-scope.md](../../00-overview/v1.2-scope.md)).
 
 ## Formerly "Needed Before V1 Can Be Built" — Now Resolved
 
-**Input Mode design** — done. See [Bind Editor — Input Mode](bind-editor.md#input-mode).
+**Input Mode design** — done, and it stays done: the mode is [deferred past V1.2](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16),
+not undesigned. See [Bind Editor — Input Mode](bind-editor.md#input-mode).
 
 **A single, consolidated bind data table** — done. [`BindForge_ConsolidatedActionTable.xlsx`](reference-data/BindForge_ConsolidatedActionTable.xlsx) merges all three prior sources into one authoritative 482-action table:
 - [`EliteDangerous-ActionCatalog.md`](domain-knowledge/EliteDangerous-ActionCatalog.md) (domain knowledge) — In-Game Name, XML Element, Bindable. Screenshot-and-`.binds`-cross-checked, includes known correction history.
@@ -23,7 +32,7 @@ None of the three source files includes a structural axis/button/toggle classifi
 
 - **Control Types' foundational questions** — see [Bind Editor — Control Types](bind-editor.md#control-types). Tagged blocking in BindForge's current punchlist: whether it's a standalone mode or a filter, and whether it has real value beyond axis review. Moot for v1 now that Control Types is confirmed out of scope, but still worth resolving before deciding whether to build it post-v1.
 - **Cross-section conflict matrix** — whether top-level sections (General/Ship/SRV/On Foot) are truly isolated from each other for conflict purposes, or whether a cross-section matrix is needed in addition to the four per-section matrices. See [Bind Editor — Shared Conflict Detection](bind-editor.md#how-the-game-actually-resolves-conflicts-confirmed-by-direct-in-game-testing).
-- **UI-action-vs-ship-action behavioral safety** — confirmed assignable with no in-game warning, but whether it's actually safe when both are live simultaneously needs a second, behavior-focused round of testing. See the same section above.
+- **UI-action-vs-ship-action behavioural safety** — confirmed assignable with no in-game warning, but whether it's actually safe when both are live simultaneously needs a second, behaviour-focused round of testing. See the same section above.
 - **On Foot conflict coverage** — only three On Foot subgroups have been identified/tested so far; real on-foot play likely has more untested contexts (ship-interior actions while on foot, SRV boarding, taxi/Apex travel).
 
 See [conflicts-and-open-questions.md](../../00-overview/conflicts-and-open-questions.md) for every place different design generations disagree on scope, naming, or mechanism rather than simply being at different stages of the same idea.

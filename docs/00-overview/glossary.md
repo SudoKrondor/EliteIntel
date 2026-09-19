@@ -5,7 +5,7 @@ current/preferred term is listed first with prior names noted — see
 [conflicts-and-open-questions.md](conflicts-and-open-questions.md) for full detail on any naming change flagged
 as unresolved.
 
-## Naming Normalization Applied Throughout This Package
+## Naming Normalisation Applied Throughout This Package
 
 | Current name | Prior name(s) found in source material |
 |---|---|
@@ -68,7 +68,8 @@ listed so that older notes and mockups can be read correctly:
 - **Alias Designer / Bind Editor / Preset Editor / File Manager** — BindForge's four top-level sections. See
   [BindForge Overview](../02-features/bindforge/overview.md#top-level-structure).
 - **Game Mode / Action Groups / Control Types / Controller Mode / Input Mode / Anomalies** — the six Bind
-  Editor modes. Action Groups and Control Types were named "Purpose Mode" and "Type Mode" in earlier design
+  Editor modes. **Game Mode and Anomalies ship in V1.2**; the other four are [deferred](v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16),
+  with their tabs absent from the mode bar rather than greyed out (2026-09-16). Action Groups and Control Types were named "Purpose Mode" and "Type Mode" in earlier design
   generations; **Anomalies was named "Conflicts" until 2026-09-07**, when it grew to cover reserved keys,
   missing controls and contextually invalid bindings alongside conflicts. See
   [Bind Editor](../02-features/bindforge/bind-editor.md).
@@ -83,7 +84,7 @@ listed so that older notes and mockups can be read correctly:
 - **Vizlet** — a single overlay window; StarVizion's fundamental visual unit.
 - **NeuroNode** — the single building block of a Vizlet; renders one visual primitive, Live or Static depending
   on whether it has input bindings.
-- **Live mode / Static mode** — a NeuroNode's behavior depending on whether it has input bindings (earlier
+- **Live mode / Static mode** — a NeuroNode's behaviour depending on whether it has input bindings (earlier
   design generations called these "Reactive mode" and "Decoration mode").
 - **Primitive** — the visual shape a NeuroNode renders: Dot, Bar, Line, Arc, Text, Grid, Bitmap, or Parametric.
 - **StarCalc** — StarVizion's expression language.

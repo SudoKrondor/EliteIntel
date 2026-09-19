@@ -15,7 +15,7 @@ Two tabs:
 
 Shows all saved Vizlets as cards. Each card shows the Vizlet's name, tags, a thumbnail preview (rendered from the Vizlet's node definitions, not a screenshot), and a status indicator (live / closed / device missing).
 
-**Controls are icon buttons overlaid on the thumbnail, not click gestures** — three fixed corners, so the action is visible without hovering or guessing: a play icon (top-left) activates/deactivates — creating or closing the overlay window; a pencil (bottom-left) opens the editor; a stacked-dots icon (bottom-right) opens a small menu with Edit, Delete (with a confirmation, since it's permanent), and Close. The play icon fills in to show active state. This mirrors a pattern familiar from media-library apps (e.g. Plex's poster cards), chosen specifically so the controls are self-explanatory without needing separate single-click/double-click behavior to be taught. Duplicate and export are not yet placed in this control set — still open.
+**Controls are icon buttons overlaid on the thumbnail, not click gestures** — three fixed corners, so the action is visible without hovering or guessing: a play icon (top-left) activates/deactivates — creating or closing the overlay window; a pencil (bottom-left) opens the editor; a stacked-dots icon (bottom-right) opens a small menu with Edit, Delete (with a confirmation, since it's permanent), and Close. The play icon fills in to show active state. This mirrors a pattern familiar from media-library apps (e.g. Plex's poster cards), chosen specifically so the controls are self-explanatory without needing separate single-click/double-click behaviour to be taught. Duplicate and export are not yet placed in this control set — still open.
 
 ## HoloFrame Library View
 

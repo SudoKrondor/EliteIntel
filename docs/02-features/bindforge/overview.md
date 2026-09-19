@@ -55,7 +55,7 @@ It was filed as cosmetic because its visible effect is button labels. That is wh
 
 So the loss impact is **high, not cosmetic**: a `DeviceMappings.xml` lost to a game update takes the indirection with it, and the bindings that depended on it revert to depending on an ID the vendor can change. `.buttonMap` remains genuinely cosmetic — it really is only labels.
 
-A confirmed real-world incident — a game update that overwrote a user's `DeviceMappings.xml` — is the direct reason Alias Designer and File Manager were prioritized ahead of the rest of the BindForge suite. Game updates can overwrite or erase these files, but this is confirmed **not** universal or guaranteed — it happens on some updates for some users, not reliably reproducibly — so BindForge must always validate presence/correctness rather than assume either outcome.
+A confirmed real-world incident — a game update that overwrote a user's `DeviceMappings.xml` — is the direct reason Alias Designer and File Manager were prioritised ahead of the rest of the BindForge suite. Game updates can overwrite or erase these files, but this is confirmed **not** universal or guaranteed — it happens on some updates for some users, not reliably reproducibly — so BindForge must always validate presence/correctness rather than assume either outcome.
 
 **Confirmed by direct testing:** `.buttonMap` files cannot be relocated to the user configuration bindings folder alongside `.binds`, despite documentation suggesting otherwise — removing `DeviceMappings.xml` from the game install folder causes the game to load no bindings at all, not even defaults. The game installation folder is the only valid location for both `DeviceMappings.xml` and `.buttonMap` files.
 
@@ -64,6 +64,12 @@ A confirmed real-world incident — a game update that overwrote a user's `Devic
 Every managed file domain follows the same synchronization model: the live file inside the game's own folders is the source of truth, and BindForge keeps a local working copy in its own user-data folder that mirrors it for editing. This applies uniformly across all four domains — Bind, Device Identity, Button Map, and Active Preset.
 
 ### Freshness Checks
+
+**A modification time is not evidence of a change (observed 2026-09-17).** Pressing apply in the game's options
+screen with nothing altered still rewrites the `.binds` file, every value identical — watched directly on a
+live file. So a freshness check compares **content**, never timestamps: a file that looks newer may hold
+exactly what BindForge already has, and treating that as a conflict would put a pointless question in front
+of the commander every time they visited the options screen.
 
 Whenever BindForge is opened, or whenever a live file changes while BindForge is running (detected by `ai.hands.BindingsMonitor`, which already watches the bindings directory and is [extended to cover the game installation folders too](#external-change-detection-stays-in-one-place) rather than BindForge adding a second watcher; see [File Access](../../01-host-integration/elite-intel-platform-map.md#file-access)), BindForge compares its local working copy against the live file's current state.
 
@@ -78,7 +84,7 @@ BindForge does not treat "the live file changed" and "the live file is now corre
 
 **If a change looks like data loss:** BindForge does not sync its working copy to match. Instead, it raises this as an Error-level condition (Elite-Intel's tabbed UI has no badge affordance yet — some visible equivalent is required, see [Status Badges](../../01-host-integration/elite-intel-platform-map.md#status-badges)) and offers to **restore** the missing configuration back onto the live file immediately — the roles reverse, and the working copy (or, if the working copy itself is somehow unavailable, the most recent File Manager backup) becomes the source used to overwrite the damaged live file, through the same backed-up, atomic write every other BindForge write already uses (see [Data Integrity Principle](#data-integrity-principle)).
 
-This is a general behavior, not specific to Alias Designer — see also [Bind Editor — Shell](bind-editor.md#shell-common-to-all-modes) and [Preset Editor — Sync Badge](preset-editor.md#sync-badge) for how each section surfaces it.
+This is a general behaviour, not specific to Alias Designer — see also [Bind Editor — Shell](bind-editor.md#shell-common-to-all-modes) and [Preset Editor — Sync Badge](preset-editor.md#sync-badge) for how each section surfaces it.
 
 ### First-Time Startup
 
@@ -154,7 +160,7 @@ already references by hex rewrites its bindings, so it waits for Apply — entry
 
 ## Top-Level Structure
 
-BindForge's UI is organized into four top-level sections, in this order:
+BindForge's UI is organised into four top-level sections, in this order:
 
 1. **Alias Designer** — device mapping and button/axis naming
 2. **Bind Editor** — viewing and editing bindings, in multiple modes
@@ -428,7 +434,7 @@ leaving. Recorded here because the wording survives in older notes.
 ## Document Map
 
 - [Alias Designer](alias-designer.md)
-- [Bind Editor](bind-editor.md) — Game Mode, Action Groups, Input Mode, Control Types, and shared conflict detection
+- [Bind Editor](bind-editor.md) — Game Mode, Anomalies and shared conflict detection in V1.2; Action Groups, Input Mode, Control Types and Controller Mode [deferred](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16)
 - [Preset Editor](preset-editor.md)
 - [File Manager](file-manager.md)
 - [Roadmap and Open Items](roadmap.md)

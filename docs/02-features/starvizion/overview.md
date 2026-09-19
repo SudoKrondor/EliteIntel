@@ -20,7 +20,7 @@ StarVizion creates **Vizlets**: frameless, borderless, transparent, always-on-to
 - Computed displays driven by expression formulas that combine multiple inputs
 - (Future) Game telemetry from the Elite Dangerous journal — see [Telemetry](../../03-data-models/telemetry.md)
 
-Vizlets are designed for players who fly in VR using springless HOTAS setups with no physical center or stop feedback, who need visual confirmation of their current control states inside the headset. They also serve desktop players who want a live readout of their inputs visible alongside the game.
+Vizlets are designed for players who fly in VR using springless HOTAS setups with no physical centre or stop feedback, who need visual confirmation of their current control states inside the headset. They also serve desktop players who want a live readout of their inputs visible alongside the game.
 
 ## What StarVizion Does Not Do
 
@@ -36,7 +36,7 @@ StarVizion visualizes controller input, which is game-agnostic. The mode-based v
 ## Document Map
 
 - [Vizlets and the Node System](vizlet-and-node-system.md) — the Vizlet window, its NeuroNode building blocks, and the visual primitives available
-- [StarCalc Expression Engine](starcalc-expression-engine.md) — the expression language that drives Live and Static behavior
+- [StarCalc Expression Engine](starcalc-expression-engine.md) — the expression language that drives Live and Static behaviour
 - [HoloFrames and Persistence](holoframes-and-persistence.md) — saving, grouping, exporting, and importing Vizlets
 - [UI Layout](ui-layout.md) — the editor UI and mode-based visibility system
 - [VR Overlay](vr-overlay.md) — desktop vs. VR rendering
