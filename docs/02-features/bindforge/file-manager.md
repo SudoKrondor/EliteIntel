@@ -369,6 +369,33 @@ BindForge's settings tab (see [Settings Storage](../../01-host-integration/elite
 | Backup destination | Elite-Intel's default backup path | Where Player Backup ZIP archives are written |
 | Edit History retention | 10 (range 1–30) | How many historical versions [Edit History](#edit-history) keeps per file before dropping the oldest |
 
+## What exists in code today — checked 2026-09-18
+
+`PlayerBackupService` and `BindingManagementPanel` already carry the backup half of this screen. What is
+here, and what is not:
+
+| Piece | State |
+|---|---|
+| Create a backup | **exists** — `createBackup()`, into a timestamped folder with real filenames ([format divergence](#archive-format--zip)) |
+| List backups | **exists** — `listBackups()`, newest first, as `PlayerBackup(folder, timestamp, fileNames)` |
+| Delete a backup | **exists**, wired to a button |
+| Restore to the editing slot | **exists** — `restoreToWorkingCopy(folder, presetFileName)` |
+| Restore to live | **exists** — `restoreToLive(folder, presetFileName, gameBindsFile)`, **one file at a time**, which is what [Restore Scope](#restore-scope) widens |
+| [Auto-backup on launch](#auto-backup-on-app-launch) | **does not exist.** `createBackup()` has exactly one caller: the Backup Now button |
+| [Retention](#retention) | **does not exist.** Nothing prunes anything; backups accumulate until deleted by hand |
+| [Backup status values](#backup-status-values) | **not reachable yet** — Full / Partial / Custom needs the installation list that [detection](#open) would supply |
+| [Game Install Locations](#game-install-locations) | **not built** — see the section's own [Open](#open) note |
+| [Edit History](#edit-history) | **nothing at all** — no class, no table, no migration |
+
+**Auto-backup and retention are one change, not two.** Today nothing prunes, and that is harmless because
+every backup is a deliberate button press. Add the launch trigger on its own and the folder grows every
+time Elite-Intel starts, on a machine where the commander never asked for a single backup. Whichever lands
+first, the other has to land with it.
+
+**Edit History needs the first V1.2 migration.** The newest applied migration is `01050`, and the
+**`011XX` block is entirely free** — so Edit History's table is a new `011XX` file, and [an applied
+migration is never edited](../../../CLAUDE.md).
+
 ## Export / Import — Considered, Then Cut
 
 A dedicated Export/Import feature for device configuration was considered and explicitly cut. Its main justified use case — remapping an alias configuration for a recipient's different hardware — doesn't hold up, because VID/PID is read-only and hardware-derived by design; an imported alias would still require the same manual re-association that Alias Designer's normal setup already requires. "Browse for backup file" already supports restoring a backup onto another machine, which is what a genuine transfer between a player's own machines actually needs. Nothing a dedicated Export/Import feature would add beyond that was judged worth its own feature.

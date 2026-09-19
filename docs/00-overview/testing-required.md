@@ -226,6 +226,15 @@ Noting where each one appears on screen costs nothing extra while the options sc
 
 → [Bind Editor — Enums need their vocabularies captured first](../02-features/bindforge/bind-editor.md#enums-need-their-vocabularies-captured-first--settled-2026-09-16)
 
+**15. What does the game do when two files share one preset name?** *Added 2026-09-17.* `Custom.3.0.binds`
+and `Custom.4.2.binds` both reduce to the preset name `Custom`, which is what `StartPreset.#.start` stores —
+so the name in that file cannot distinguish them. Presumably the game loads the one matching its own version
+and shows a single entry, but that is an assumption, and
+[Preset Editor](../02-features/bindforge/preset-editor.md#a-name-does-not-identify-a-file) is built on it. Put
+two versions of one name in the folder, open the game's Controls screen, and see what the preset list shows and
+which file a save writes back to.
+→ [Preset Editor — what a line actually holds](../02-features/bindforge/preset-editor.md#what-a-line-actually-holds--the-preset-name-not-the-file-name)
+
 ## Core Platform
 
 **8. Linux/Proton path resolution — Krondor's, not a BindForge testing item.** *Reassigned 2026-09-06.* Not a one-time check but ongoing, given how much Linux path resolution varies by distro and by how an individual user has their Steam library configured — which is exactly why it is owned by the person running it. BindForge builds and tests Windows storefront detection; Krondor makes the edits his platform needs. Listed here so the dependency stays visible, not as work waiting on Alan. The journal path is confirmed against independent precedent (EDMarketConnector); the bindings-folder path is inferred from the same structure but not independently confirmed.

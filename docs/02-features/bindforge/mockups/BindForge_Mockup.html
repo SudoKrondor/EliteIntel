@@ -863,56 +863,61 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
   <div id="toptab-preset" style="display:none">
     <div class="ei-section">
       <div class="ei-section-head">ACTIVE PRESET CONFIGURATION</div>
-      <div class="ei-note" style="margin-bottom:14px">The game reads four binding sections independently. Point each at a .binds file, or set them all to the same one.</div>
+      <div class="ei-note" style="margin-bottom:14px">The game reads four binding sections independently. Point each at a <b>preset name</b>, or set them all to the same one. <b>Names, not filenames:</b> <code>StartPreset.4.start</code> stores the name with the game&#39;s version suffix and the <code>.binds</code> extension stripped, so <code>DualVirpilDawnTreader.4.2.binds</code> appears here as <b>DualVirpilDawnTreader</b>. One name can cover several files &mdash; <code>Custom.3.0.binds</code> and <code>Custom.4.2.binds</code> are both <b>Custom</b>, and the game loads whichever matches its own version. The BIND EDITOR&#39;s file selector is a real file picker, which is why it shows filenames instead.</div>
 
       <div class="ei-presetrow">
         <span>General Controls</span>
         <select class="ei-select preset-line" onchange="presetChanged()">
-          <option>DualVirpilDawnTreader.4.2.binds</option>
-          <option>GeneralControls.binds</option>
-          <option>ShipControls.binds</option>
-          <option>SRVControls.binds</option>
-          <option>OnFootControls.binds</option>
+          <option>DualVirpilDawnTreader</option>
+          <option>GeneralControls</option>
+          <option>ShipControls</option>
+          <option>SRVControls</option>
+          <option>OnFootControls</option>
+          <option>Custom</option>
         </select>
       </div>
       <div class="ei-presetrow">
         <span>Ship Controls</span>
         <select class="ei-select preset-line" onchange="presetChanged()">
-          <option>DualVirpilDawnTreader.4.2.binds</option>
-          <option>GeneralControls.binds</option>
-          <option>ShipControls.binds</option>
-          <option>SRVControls.binds</option>
-          <option>OnFootControls.binds</option>
+          <option>DualVirpilDawnTreader</option>
+          <option>GeneralControls</option>
+          <option>ShipControls</option>
+          <option>SRVControls</option>
+          <option>OnFootControls</option>
+          <option>Custom</option>
         </select>
       </div>
       <div class="ei-presetrow">
         <span>SRV Controls</span>
         <select class="ei-select preset-line" onchange="presetChanged()">
-          <option>DualVirpilDawnTreader.4.2.binds</option>
-          <option>GeneralControls.binds</option>
-          <option>ShipControls.binds</option>
-          <option>SRVControls.binds</option>
-          <option>OnFootControls.binds</option>
+          <option>DualVirpilDawnTreader</option>
+          <option>GeneralControls</option>
+          <option>ShipControls</option>
+          <option>SRVControls</option>
+          <option>OnFootControls</option>
+          <option>Custom</option>
         </select>
       </div>
       <div class="ei-presetrow">
         <span>On Foot Controls</span>
         <select class="ei-select preset-line" onchange="presetChanged()">
-          <option>DualVirpilDawnTreader.4.2.binds</option>
-          <option>GeneralControls.binds</option>
-          <option>ShipControls.binds</option>
-          <option>SRVControls.binds</option>
-          <option>OnFootControls.binds</option>
+          <option>DualVirpilDawnTreader</option>
+          <option>GeneralControls</option>
+          <option>ShipControls</option>
+          <option>SRVControls</option>
+          <option>OnFootControls</option>
+          <option>Custom</option>
         </select>
       </div>
 
       <div style="display:flex;gap:10px;align-items:center;margin-top:16px">
         <select class="ei-select" id="setall-select">
-          <option>DualVirpilDawnTreader.4.2.binds</option>
-          <option>GeneralControls.binds</option>
-          <option>ShipControls.binds</option>
-          <option>SRVControls.binds</option>
-          <option>OnFootControls.binds</option>
+          <option>DualVirpilDawnTreader</option>
+          <option>GeneralControls</option>
+          <option>ShipControls</option>
+          <option>SRVControls</option>
+          <option>OnFootControls</option>
+          <option>Custom</option>
         </select>
         <button class="ei-btn" onclick="setAllSame()">SET ALL TO SAME</button>
       </div>
