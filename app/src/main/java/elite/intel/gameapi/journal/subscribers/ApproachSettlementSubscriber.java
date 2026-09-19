@@ -21,8 +21,8 @@ public class ApproachSettlementSubscriber {
 
             // The settlement is a place of its own, not the body it stands on: give it its own record before
             // anything is filed against it. The event names the body but not the system, so that comes from
-            // the system's own record, and from the session when the system has none yet.
-            String starSystem = currentStarSystem(event.getSystemAddress());
+            // whatever is on record for the address, and from the session when the system has no record yet.
+            String starSystem = LocationManager.getInstance().findStarName(event.getSystemAddress());
             DockedStationRecord settlement = DockedStationRecord.of(event, starSystem);
             settlement.store();
 
@@ -39,13 +39,6 @@ public class ApproachSettlementSubscriber {
                 VegaRuntime.narrator().narrate(sb.toString(), instructions);
             }
         });
-    }
-
-    private String currentStarSystem(long systemAddress) {
-        String fromSystemRecord = LocationManager.getInstance().findBySystemAddress(systemAddress).getStarName();
-        return fromSystemRecord == null || fromSystemRecord.isBlank()
-                ? playerSession.getPrimaryStarName()
-                : fromSystemRecord;
     }
 
     /**

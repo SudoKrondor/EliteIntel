@@ -3,8 +3,8 @@ package elite.intel.gameapi.signals;
 /**
  * A star system with conflict zones in it, who is fighting there, and how far away it is.
  *
- * @param warType    the game's own word - {@code war}, {@code civilwar} or {@code election} - or
- *                   null when no arrival has named the sides yet
+ * @param warType    the game's own word - {@code war} or {@code civilwar}, the two kinds that spawn
+ *                   zones (see {@link ActiveWar}) - or null when no arrival has named the sides yet
  * @param faction1   one side, or null with {@code warType}
  * @param faction2   the other side, or null with {@code warType}
  * @param distanceLy from wherever the query was asked, so a caller can report it without redoing

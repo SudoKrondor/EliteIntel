@@ -3,9 +3,11 @@ package elite.intel.junit.gameapi.journal.subscribers;
 import com.google.gson.JsonObject;
 import elite.intel.db.dao.MaterialNameDao;
 import elite.intel.db.managers.MaterialManager;
+import elite.intel.gameapi.GameLanguage;
 import elite.intel.gameapi.journal.events.MaterialCollectedEvent;
 import elite.intel.gameapi.journal.subscribers.MaterialCollectedSubscriber;
 import elite.intel.gameapi.search.edsm.dto.MaterialsType;
+import elite.intel.session.PlayerSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -86,7 +88,9 @@ class MaterialCollectedSubscriberTest {
 
     @Test
     void unrecognisedSymbolIsRegisteredRatherThanDropped() {
-        // Guards against a future game update adding a material this build has never seen.
+        // Guards against a future game update adding a material this build has never seen. The display
+        // name is filed under the game client's language, so the English name below needs an English client.
+        GameLanguage.getInstance().onGameSessionStarted("English/UK");
         subscriber.onMaterialCollected(event("someunreleasedmaterial", "Raw", 7, "Some Unreleased Material"));
 
         MaterialNameDao.Material result = MaterialManager.getInstance().find("someunreleasedmaterial");
@@ -94,6 +98,20 @@ class MaterialCollectedSubscriberTest {
         assertEquals(7, result.getAmount());
         assertEquals("Some Unreleased Material", result.getName());
         assertEquals(MaterialsType.GAME_RAW.getType(), result.getMaterialType());
+    }
+
+    @Test
+    void silencedPickupAnnouncementsStillWriteTheLedger() {
+        // The cargo-scoop switch mutes the commentary only. A commander who turned it off must not
+        // find the materials tally drifting behind the game.
+        PlayerSession playerSession = PlayerSession.getInstance();
+        playerSession.setCargoScoopPickupAnnouncementOn(false);
+        try {
+            subscriber.onMaterialCollected(event("iron", "Raw", 4));
+            assertEquals(4, MaterialManager.getInstance().find("iron").getAmount());
+        } finally {
+            playerSession.setCargoScoopPickupAnnouncementOn(true);
+        }
     }
 
     @Test

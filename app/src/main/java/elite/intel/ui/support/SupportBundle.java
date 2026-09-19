@@ -48,7 +48,8 @@ public final class SupportBundle {
     private static final Logger log = LogManager.getLogger(SupportBundle.class);
 
     /**
-     * Manifest naming the app version, the collection time, and anything that could not be collected.
+     * Manifest naming the app version, the collection time, the machine (see {@link HardwareReport}) and
+     * anything that could not be collected.
      */
     public static final String INFO_ENTRY = "bundle-info.txt";
 
@@ -463,6 +464,16 @@ public final class SupportBundle {
         }
     }
 
+    /**
+     * Where the app lives, for the disk-space line: the directory the log is written to, which is the
+     * working directory in every shipped layout, or the working directory itself when no log path is known.
+     */
+    private static Path installDir(Sources sources) {
+        Path appLog = sources.appLog();
+        Path parent = appLog == null ? null : appLog.toAbsolutePath().getParent();
+        return parent == null ? Path.of("").toAbsolutePath() : parent;
+    }
+
     private static String manifest(Sources sources, List<String> included, List<String> omitted) {
         StringBuilder text = new StringBuilder()
                 .append("Elite Intel support bundle\n")
@@ -476,6 +487,7 @@ public final class SupportBundle {
                 .append("  Timezone: ").append(java.time.ZoneId.systemDefault()).append('\n')
                 .append(desktop())
                 .append(displays())
+                .append(HardwareReport.describe(installDir(sources), sources.journalDir()))
                 .append("\nIncluded:\n");
         if (included.isEmpty()) {
             text.append("  (nothing)\n");

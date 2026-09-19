@@ -12,12 +12,29 @@ import elite.intel.ui.i18n.MultiLingualTextProvider;
 import javax.annotation.Nullable;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class StringUtls {
 
+
+    /**
+     * A list of names for a narration payload: comma-separated, no separator after the last one, and a full stop
+     * to close it. A builder that appended ", " after every item left the payload ending in a dangling comma, and
+     * the model - told to repeat the list exactly - completed the sentence it saw coming: "Stratum, Tussock, and."
+     * Blank entries are skipped so the same dangling shape cannot come back through an empty name.
+     */
+    public static String spokenList(Collection<String> items) {
+        StringBuilder sb = new StringBuilder();
+        for (String item : items) {
+            if (item == null || item.isBlank()) continue;
+            if (!sb.isEmpty()) sb.append(", ");
+            sb.append(item.trim());
+        }
+        return sb.isEmpty() ? "" : sb.append('.').toString();
+    }
 
     public static String subtractString(String a, String b) {
         if (a == null || b == null) return "";

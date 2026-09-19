@@ -21,7 +21,7 @@ public final class ToggleAllAnnouncementsCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Turn all spoken announcement categories (discovery, route, planetary approach, radar, mining, navigation) on or off together; 'state' true = on.";
+        return "Turn all spoken announcement categories (discovery, route, planetary approach, radar, mining, navigation, cargo-scoop pickups) on or off together; 'state' true = on.";
     }
 
 
@@ -68,6 +68,7 @@ public final class ToggleAllAnnouncementsCommand implements IntelCommand {
         playerSession.setRadarContactAnnouncementOn(isOn);
         playerSession.setMiningAnnouncementOn(isOn);
         playerSession.setNavigationAnnouncementOn(isOn);
+        playerSession.setCargoScoopPickupAnnouncementOn(isOn);
         String state = StringUtls.localizedResponse(isOn ? "handler.state.on" : "handler.state.off");
         return StringUtls.localizedResponse("handler.announcements.all", state);
     }

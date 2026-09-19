@@ -6,7 +6,11 @@ import elite.intel.gameapi.search.edsm.dto.MarketDto;
 import elite.intel.gameapi.search.edsm.dto.OutfittingDto;
 import elite.intel.gameapi.search.edsm.dto.ShipyardDto;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static elite.intel.util.StringUtls.localizedEvent;
+import static elite.intel.util.StringUtls.spokenList;
 
 /**
  * What EDSM knows about one station's market, outfitting and shipyard, filed on that station's record.
@@ -32,13 +36,11 @@ public class LocalServicesData {
         boolean hasOutfitting = outfittingDto.getData() != null && outfittingDto.getData().getOutfitting() != null;
         boolean hasShipyard = shipyardDto.getData() != null && shipyardDto.getData().getShips() != null;
 
-        if (hasMarket) {
-            sb.append(" ").append(localizedEvent("event.docked.marketLabel")).append(" ");
-            sb.append(marketDto.getData().getName());
-            sb.append(", ");
-        }
-        if (hasOutfitting) sb.append(" ").append(localizedEvent("event.docked.outfitting")).append(", ");
-        if (hasShipyard) sb.append(" ").append(localizedEvent("event.docked.shipyard")).append(", ");
+        List<String> services = new ArrayList<>();
+        if (hasMarket) services.add(localizedEvent("event.docked.marketLabel") + " " + marketDto.getData().getName());
+        if (hasOutfitting) services.add(localizedEvent("event.docked.outfitting"));
+        if (hasShipyard) services.add(localizedEvent("event.docked.shipyard"));
+        if (!services.isEmpty()) sb.append(" ").append(spokenList(services));
 
         if (hasMarket || hasOutfitting || hasShipyard) {
             LocationManager.getInstance().updateNamedBody(systemAddress, marketId, recordKey, station -> {

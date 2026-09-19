@@ -1,6 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
+import com.google.gson.JsonParseException;
 import elite.intel.db.dao.ConstructionSiteDao.Requirement;
 import elite.intel.db.dao.ConstructionSiteDao.Site;
 import elite.intel.db.managers.ConstructionSiteManager;
@@ -140,7 +141,7 @@ public class ColonisationDepotSubscriber {
     private LocationDto locationOrNull(long marketId) {
         try {
             return locator.apply(marketId);
-        } catch (RuntimeException e) {
+        } catch (JsonParseException e) {
             log.warn("Construction site {}: location lookup failed, storing the manifest without a name: {}",
                     marketId, e.toString());
             return null;

@@ -49,6 +49,22 @@ class ConflictZoneSweepTest {
         assertEquals(2, profile.low(), "index 3 arrived twice, and there is still one zone with that index");
     }
 
+    /**
+     * The live subscriber keys the sweep by system alone, because the FSS reports a busy system's
+     * signals over a few seconds: batches seconds apart are one sweep, and the ledger's MAX would
+     * otherwise keep only the largest batch.
+     */
+    @Test
+    void batchesOfTheSameSystemAddUpUnderOneKey() {
+        ConflictZoneSweep sweep = new ConflictZoneSweep();
+        sweep.add("2278152997195", ConflictZoneSignal.fromSymbol(LOW_3));
+        sweep.add("2278152997195", ConflictZoneSignal.fromSymbol(LOW_5));
+
+        ConflictZoneProfile later = sweep.add("2278152997195", ConflictZoneSignal.fromSymbol(HIGH_2));
+
+        assertEquals(new ConflictZoneProfile(2, 0, 1, 0), later);
+    }
+
     @Test
     void theTallyRestartsWithTheNextSweep() {
         ConflictZoneSweep sweep = new ConflictZoneSweep();

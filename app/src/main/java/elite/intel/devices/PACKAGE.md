@@ -1,6 +1,6 @@
 # `elite.intel.devices` - Developer Reference
 
-The devices package owns joystick, HOTAS, gamepad, and pedal input. It polls SDL3 on a single dedicated platform thread and publishes connect/disconnect, axis, and button events on the DeviceBus. It is shared infrastructure - the input monitor, Bindings, and push-to-talk all consume these events rather than managing their own SDL3 context.
+The devices package owns joystick, HOTAS, gamepad, and pedal input, plus the mouse buttons as a pseudo-device. It polls SDL3 on a single dedicated platform thread and publishes connect/disconnect, axis, and button events on the DeviceBus. It is shared infrastructure - the input monitor, Bindings, and push-to-talk all consume these events rather than managing their own SDL3 context.
 
 Read-only device access only. This package never writes to the game, the
 `.binds` file, or any other file.
@@ -18,6 +18,7 @@ pollLoop()
     │
     ├─ configureLwjglNativePath()   ← must run before any LWJGL class is touched
     ├─ SDL_Init(JOYSTICK | GAMEPAD)
+    ├─ SDL_InitSubSystem(VIDEO)      ← for the global mouse state; failure costs only the mouse
     │
     │  loop every 16ms (~60 Hz):
     │
@@ -28,10 +29,13 @@ pollLoop()
     │     new id  → onDeviceAdded()   → DeviceConnectedEvent
     │     gone id → onDeviceRemoved() → DeviceDisconnectedEvent
     │
-    └─ for each open handle:
-          pollJoystick()
-            ├─ SDL_GetJoystickAxis()   → DeviceAxisEvent (on change only)
-            └─ SDL_GetJoystickButton() → DeviceButtonEvent (on state transition only)
+    ├─ for each open handle:
+    │     pollJoystick()
+    │       ├─ SDL_GetJoystickAxis()   → DeviceAxisEvent (on change only)
+    │       └─ SDL_GetJoystickButton() → DeviceButtonEvent (on state transition only)
+    │
+    └─ pollMouse()                  ← only when the video subsystem came up
+          └─ SDL_GetGlobalMouseState() → DeviceButtonEvent(MOUSE_DEVICE_ID, ...) (on transition only)
 ```
 
 ---
@@ -64,6 +68,19 @@ errorMessage)` and exits the poll thread. `UnsatisfiedLinkError`,
 `NoClassDefFoundError` are all caught - the last of these is thrown on second access when the static initializer of an LWJGL class already failed.
 
 Success publishes `DeviceServiceStateEvent(available=true, null)`.
+
+### Mouse Buttons
+
+SDL's mouse
+*events* are window-scoped: they reach only an SDL window this process owns and that has the focus, and the app has no window at all while the game is up. `SDL_GetGlobalMouseState()` is the one call that reads the OS-wide button state regardless of focus (`GetAsyncKeyState` on Windows, `XQueryPointer` on X11), so `pollMouse()` samples it on every tick and publishes a `DeviceButtonEvent` per transition, exactly as a joystick button is published.
+
+It lives in SDL's video subsystem, so `initMouse()` calls `SDL_InitSubSystem(SDL_INIT_VIDEO)`
+**after** the joystick init succeeded and swallows its failure. On Linux it first asks for the `x11` driver (`SDL_HINT_VIDEO_DRIVER`): on a Wayland desktop SDL would otherwise pick `wayland` and read nothing, while XWayland - which Proton draws the game through - reports the pointer buttons to any X client whenever the pointer is over an X window. The app has no window, so being an X client costs it nothing. Failure is swallowed as before: `isMouseAvailable()` stays false and the controllers are unaffected. It is also held false when SDL reports the `wayland` video driver, because there the subsystem starts and the global state is a permanent zero (Wayland gives a client no pointer state outside its own focused window); that case is detected up front rather than left to look like a mouse that is never pressed.
+
+The mouse is published under `MOUSE_DEVICE_ID` (0, which SDL3 never assigns to a joystick), carries
+`MOUSE_BUTTON_COUNT` (5) buttons - left, middle, right, X1 (back), X2 (forward), 0-based in that order - and is
+**not** in `getConnectedDevices()`: that list feeds the controller pickers and the `.binds`
+correlation, and a mouse belongs in neither. The extra keys of a gaming mouse are remapped to keyboard keys by the vendor driver and never appear as mouse buttons.
 
 ---
 
@@ -103,7 +120,7 @@ All events are published on `DeviceBus`.
 | `DeviceConnectedEvent` | New device detected by poll diff | `device` (Device record) |
 | `DeviceDisconnectedEvent` | Known device no longer enumerated | `deviceId` (SDL3 instance ID) |
 | `DeviceAxisEvent` | Axis raw value changes | `deviceId`, `axisIndex`, `value` [-1.0, 1.0] |
-| `DeviceButtonEvent` | Button state transitions | `deviceId`, `buttonIndex`, `pressed` |
+| `DeviceButtonEvent` | Button state transitions (a controller, or the mouse under `MOUSE_DEVICE_ID`) | `deviceId`, `buttonIndex`, `pressed` |
 | `DeviceDuplicateWarningEvent` | Two connected devices share VID/PID | `device1`, `device2` |
 
 `DeviceServiceStateEvent` is published from the poll thread before any other events. Subscribers that touch Swing components must switch to the EDT.
@@ -242,6 +259,8 @@ Elite Dangerous uses 1-based `Joy_N` tokens; SDL3 uses 0-based indices.
 | Constant | Value | Location |
 |---|---|---|
 | `POLL_INTERVAL_MS` | `16` ms (~60 Hz) | `DeviceService` |
+| `MOUSE_DEVICE_ID` | `0` | `DeviceService` |
+| `MOUSE_BUTTON_COUNT` | `5` | `DeviceService` |
 | `AXIS_SCALE` | `1.0f / 32767.0f` | `DeviceService` |
 | `stop()` join timeout | `3000` ms | `DeviceService` |
 | GUID string length | 32 hex chars | `DeviceService.readGuid` |

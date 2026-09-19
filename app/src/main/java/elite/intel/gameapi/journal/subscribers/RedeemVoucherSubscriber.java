@@ -24,7 +24,7 @@ public class RedeemVoucherSubscriber {
     @Subscribe
     public void onRedeemVoucherEvent(RedeemVoucherEvent event) {
         // Combat bonds are their own ledger with no mission to reconcile against: paid means gone.
-        if (ConflictZoneSubscriber.VOUCHER_COMBAT_BOND.equalsIgnoreCase(event.getType())) {
+        if (event.isCombatBond()) {
             combatBonds.cashedIn();
             return;
         }

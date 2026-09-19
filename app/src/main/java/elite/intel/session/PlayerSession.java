@@ -899,6 +899,22 @@ public class PlayerSession {
         squadronCarriers.save(carrierData);
     }
 
+    /**
+     * Whether a material scooped into the hold is spoken. The ledger is written either way.
+     */
+    public boolean isCargoScoopPickupAnnouncementOn() {
+        return Database.withDao(PlayerDao.class, dao -> dao.get().isCargoScoopPickupAnnouncementOn());
+    }
+
+    public void setCargoScoopPickupAnnouncementOn(boolean isOn) {
+        Database.withDao(PlayerDao.class, dao -> {
+            PlayerDao.Player player = dao.get();
+            player.setCargoScoopPickupAnnouncementOn(isOn);
+            dao.save(player);
+            return Void.class;
+        });
+    }
+
     public boolean isRadarContactAnnouncementOn() {
         return Database.withDao(PlayerDao.class, dao -> dao.get().isRadarAnnouncementOn());
     }

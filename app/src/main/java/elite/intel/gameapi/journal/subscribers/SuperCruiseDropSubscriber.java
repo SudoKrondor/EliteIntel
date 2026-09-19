@@ -36,7 +36,7 @@ public class SuperCruiseDropSubscriber {
                 long systemAddress = playerSession.getLocationData().getSystemAddress();
                 location.setLocationType(LocationDto.LocationType.STATION);
                 location.setSystemAddress(systemAddress);
-                location.setStarName(locationManager.findBySystemAddress(systemAddress).getStarName());
+                location.setStarName(locationManager.findStarName(systemAddress));
                 locationManager.save(location);
             }
 

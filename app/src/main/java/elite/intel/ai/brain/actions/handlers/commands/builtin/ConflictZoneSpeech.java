@@ -51,7 +51,8 @@ final class ConflictZoneSpeech {
             case LOW -> "handler.war.intensity.low";
             case MEDIUM -> "handler.war.intensity.medium";
             case HIGH -> "handler.war.intensity.high";
-            case POWERPLAY -> "handler.war.intensity.powerplay";
+            // ConflictZoneProfile.present() lists faction-war zones only, so this is never read aloud.
+            case POWERPLAY -> throw new IllegalStateException("powerplay zones are never read aloud");
         };
     }
 }

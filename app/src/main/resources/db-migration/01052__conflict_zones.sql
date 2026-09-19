@@ -27,7 +27,11 @@
 -- combat_bond is the tally of FactionKillBond rewards not yet cashed in, for the HUD card. It is the
 -- combat-zone twin of the bounties table. Redeeming combat bonds (RedeemVoucher, type CombatBond)
 -- empties it, which is how the card knows the fight is over without a session of its own. The
--- UNIQUE key makes replaying a journal line harmless.
+-- UNIQUE key makes replaying a journal line harmless. It is the whole line, because the event carries
+-- nothing else to tell two bonds apart, and journal timestamps are whole seconds - so two bonds for the
+-- same side, the same victim faction and the same reward in the same second are one row. That is two
+-- identical ships killed within a second of each other, and the card counting one kill short of the
+-- truth for it is accepted over a replay counting every kill twice.
 --
 -- NOTE: no semicolon may appear inside these comments. Migrations are split on a semicolon at end of
 -- line before comments are stripped, so one here would cut the file mid-comment and hand SQLite a
@@ -92,7 +96,6 @@ CREATE TABLE IF NOT EXISTS conflict_zone
     lastSeen
     TEXT
 );
-
 CREATE INDEX IF NOT EXISTS idx_conflict_zone_address ON conflict_zone (systemAddress);
 
 CREATE TABLE IF NOT EXISTS combat_bond

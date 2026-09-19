@@ -57,6 +57,14 @@ public class RedeemVoucherEvent extends BaseEvent {
         return type;
     }
 
+    /**
+     * Whether this voucher was combat bonds - the one kind whose redemption ends a conflict-zone fight.
+     * Bounties and codex vouchers cashed at the same counter say nothing about the war.
+     */
+    public boolean isCombatBond() {
+        return "CombatBond".equalsIgnoreCase(type);
+    }
+
     public long getAmount() {
         return amount;
     }

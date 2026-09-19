@@ -162,6 +162,7 @@ public class CommanderTabPanel extends JPanel {
     private JCheckBox addressMeBox;
     private ToggleTreePanel shipSettingsPanel;
     private ToggleTreePanel announcementsPanel;
+    private ExoMasteryTabPanel exoMasteryPanel;
     private JTable fleetTable;
     private FleetTableModel fleetTableModel;
     /**
@@ -265,6 +266,8 @@ public class CommanderTabPanel extends JPanel {
         tabs.addTab(getText("player.tab.fleetManagement"), fleetTab);
         tabs.addTab(getText("player.tab.globalShipSettings"), HudScrollingPage.scrollPane(buildShipSettingsPanel()));
         tabs.addTab(getText("player.tab.announcements"), HudScrollingPage.scrollPane(buildAnnouncementsPanel()));
+        exoMasteryPanel = new ExoMasteryTabPanel();
+        tabs.addTab(getText("player.tab.exoMastery"), HudScrollingPage.scrollPane(exoMasteryPanel));
 
         JPanel tabsHolder = transparentPanel(new BorderLayout());
         tabsHolder.setBorder(new EmptyBorder(HUD_GAP, 0, 0, 0));
@@ -329,6 +332,8 @@ public class CommanderTabPanel extends JPanel {
                         playerSession::isRadarContactAnnouncementOn, playerSession::setRadarContactAnnouncementOn),
                 SettingToggle.of("announcements.mining",
                         playerSession::isMiningAnnouncementOn, playerSession::setMiningAnnouncementOn),
+                SettingToggle.of("announcements.cargoScoopPickup",
+                        playerSession::isCargoScoopPickupAnnouncementOn, playerSession::setCargoScoopPickupAnnouncementOn),
                 SettingToggle.of("announcements.navigation",
                         playerSession::isNavigationAnnouncementOn, playerSession::setNavigationAnnouncementOn),
                 SettingToggle.of("announcements.radioTransmissions",
@@ -352,6 +357,7 @@ public class CommanderTabPanel extends JPanel {
         // A voice command (toggle_all_announcements and friends) can flip these behind the UI's back.
         shipSettingsPanel.refresh();
         announcementsPanel.refresh();
+        exoMasteryPanel.initData();
 
         String commanderName = playerSession.getInGameName();
         List<ShipDao.Ship> ships = (commanderName != null && !commanderName.isBlank())

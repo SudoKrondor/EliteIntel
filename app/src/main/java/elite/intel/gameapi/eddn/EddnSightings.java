@@ -4,11 +4,17 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
 import elite.intel.db.dao.LocationDao.Coordinates;
 import elite.intel.db.managers.ConflictZoneManager;
 import elite.intel.db.managers.HuntingGroundManager;
+import elite.intel.gameapi.journal.events.FSDJumpEvent;
 import elite.intel.gameapi.missions.ResourceSiteProfile;
 import elite.intel.gameapi.signals.*;
+import elite.intel.util.json.GsonFactory;
+
+import java.lang.reflect.Type;
+import java.util.List;
 
 /**
  * What this app learns from the EDDN relay: where the resource extraction sites are, where the
@@ -27,6 +33,13 @@ final class EddnSightings implements EddnListener.EnvelopeHandler {
 
     private static final String SCHEMA_FSS_SIGNALS = "https://eddn.edcd.io/schemas/fsssignaldiscovered/1";
     private static final String SCHEMA_JOURNAL = "https://eddn.edcd.io/schemas/journal/1";
+
+    /**
+     * The Conflicts block read into the same DTOs the journal events carry, so the relay and the
+     * commander's own arrivals are read by one rule ({@link ActiveWar#firstIn}).
+     */
+    private static final Type CONFLICTS = new TypeToken<List<FSDJumpEvent.Conflict>>() {
+    }.getType();
 
     private final HuntingGroundManager huntingGrounds;
     private final ConflictZoneManager conflictZones;
@@ -129,7 +142,7 @@ final class EddnSightings implements EddnListener.EnvelopeHandler {
         String timestamp = text(message, "timestamp");
         if (starSystem == null || timestamp == null) return false;
 
-        ActiveWar war = activeWar(message.get("Conflicts"));
+        ActiveWar war = ActiveWar.firstIn(GsonFactory.getGson().fromJson(message.get("Conflicts"), CONFLICTS));
         if (war == null) {
             conflictZones.recordPeace(starSystem, timestamp);
         } else {
@@ -137,22 +150,6 @@ final class EddnSightings implements EddnListener.EnvelopeHandler {
                     war.warType(), war.faction1(), war.faction2(), timestamp);
         }
         return true;
-    }
-
-    private static ActiveWar activeWar(JsonElement conflicts) {
-        if (conflicts == null || !conflicts.isJsonArray()) return null;
-        for (JsonElement element : conflicts.getAsJsonArray()) {
-            if (!element.isJsonObject()) continue;
-            JsonObject conflict = element.getAsJsonObject();
-            ActiveWar war = ActiveWar.of(text(conflict, "WarType"), text(conflict, "Status"),
-                    sideName(conflict.get("Faction1")), sideName(conflict.get("Faction2")));
-            if (war != null) return war;
-        }
-        return null;
-    }
-
-    private static String sideName(JsonElement side) {
-        return side != null && side.isJsonObject() ? text(side.getAsJsonObject(), "Name") : null;
     }
 
     private static Coordinates coordinates(String starSystem, JsonObject message) {

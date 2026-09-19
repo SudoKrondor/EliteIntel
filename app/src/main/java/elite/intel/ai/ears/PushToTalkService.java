@@ -18,7 +18,8 @@ import elite.intel.util.AudioPlayer;
 import elite.intel.util.PlayBeepEvent;
 
 /**
- * Turns the commander's mapped controller button into the microphone gate.
+ * Turns the commander's mapped controller button - and, beside it, a mapped mouse button - into the
+ * microphone gate.
  * <p>
  * A press opens the gate for as long as the button is down: the current vocalisation is cut immediately, at
  * the press rather than when the resulting transcript arrives, so speaking over her is instant. While
@@ -33,6 +34,10 @@ import elite.intel.util.PlayBeepEvent;
  * The panel still owns the settings themselves. This reads them from {@link SystemSession} at the moment it
  * needs them rather than mirroring them, so there is no second copy of the mapping to keep in step, and a
  * change to the controller or button takes effect on the very next press.
+ * <p>
+ * The mouse button is a second trigger, not a replacement: a commander who flies on a HOTAS walks and drives
+ * on mouse and keyboard, and has no controller in hand on foot. It arrives on the same bus as a controller
+ * button, from the pseudo-device {@link DeviceService#MOUSE_DEVICE_ID}, and holds the gate the same way.
  */
 public final class PushToTalkService implements ManagedService {
 
@@ -160,13 +165,20 @@ public final class PushToTalkService implements ManagedService {
     }
 
     /**
-     * Whether this transition is the mapped button on the mapped controller. The controller is stored by name
-     * (an SDL instance id is reassigned on every reconnect), so it is matched by name against the device the
-     * event came from.
+     * Whether this transition is the mapped mouse button, or the mapped button on the mapped controller. The
+     * controller is stored by name (an SDL instance id is reassigned on every reconnect), so it is matched by
+     * name against the device the event came from; the mouse has a fixed id and needs no such lookup.
      */
     private boolean isGateButton(DeviceButtonEvent event) {
         SystemSession session = SystemSession.getInstance();
-        if (!session.isPushToTalkEnabled() || event.buttonIndex() != session.getPushToTalkButtonIndex()) {
+        if (!session.isPushToTalkEnabled()) {
+            return false;
+        }
+        if (event.deviceId() == DeviceService.MOUSE_DEVICE_ID) {
+            int mouseButton = session.getPushToTalkMouseButton();
+            return mouseButton >= 0 && event.buttonIndex() == mouseButton;
+        }
+        if (event.buttonIndex() != session.getPushToTalkButtonIndex()) {
             return false;
         }
         String mapped = session.getPushToTalkControllerName();

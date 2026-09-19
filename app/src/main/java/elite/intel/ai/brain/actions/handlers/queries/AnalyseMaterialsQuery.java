@@ -109,18 +109,22 @@ public class AnalyseMaterialsQuery extends BaseQueryAnalyzer implements IntelQue
                         Data fields:
                         - materialName: name of the material, already in the correct language. Use it verbatim.
                         - materialType: category of the material
-                        - grade: rarity, 1 (very common) to 5 (very rare)
+                        - grade: rarity, 1 (very common) to 5 (very rare); absent when not known
                         - amount: current units held; 0 means the commander holds none
-                        - maxCap: maximum storage capacity in units
+                        - maxCap: maximum storage capacity in units; absent when not known
 
-                        State the amount held and maximum capacity. Answer only what was asked.
+                        State the amount held, and the maximum capacity only when maxCap is present.
+                        Never guess a capacity or a grade. Answer only what was asked.
                         """;
+                // WHY: a material learned from the journal has no grade or cap - the journal never states
+                // them - and the mapper reports both as 0. Sent as 0 the model would announce a full hold
+                // of nothing; left out it has nothing to say about capacity, which is the truth.
                 MaterialDataDto dto = new MaterialDataDto(
                         FuzzySearch.localizedMaterialName(materialSymbol),
                         data.getMaterialType(),
-                        data.getGrade(),
+                        knownOrNull(data.getGrade()),
                         data.getAmount(),
-                        data.getMaxCapacity());
+                        knownOrNull(data.getMaxCapacity()));
                 return process(new AiDataStruct(instructions, dto), originalUserInput);
             }
         }
@@ -160,7 +164,11 @@ public class AnalyseMaterialsQuery extends BaseQueryAnalyzer implements IntelQue
         return process(StringUtls.localizedResponse("query.materials.notFound", query));
     }
 
-    record MaterialDataDto(String materialName, String materialType, int grade, int amount, int maxCap)
+    private static Integer knownOrNull(int value) {
+        return value > 0 ? value : null;
+    }
+
+    record MaterialDataDto(String materialName, String materialType, Integer grade, int amount, Integer maxCap)
             implements ToYamlConvertable {
         @Override
         public String toYaml() {

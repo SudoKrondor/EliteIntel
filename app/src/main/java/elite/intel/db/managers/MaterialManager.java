@@ -1,8 +1,10 @@
 package elite.intel.db.managers;
 
+import elite.intel.db.NameColumns;
 import elite.intel.db.dao.MaterialNameDao;
 import elite.intel.db.util.Database;
 import elite.intel.gameapi.search.edsm.dto.MaterialsType;
+import elite.intel.i18n.Language;
 import elite.intel.util.StringUtls;
 
 import java.util.*;
@@ -16,6 +18,11 @@ import java.util.stream.Collectors;
  * {@code focuscrystals}), never {@code Name_Localised}. Frontier omits {@code Name_Localised}
  * whenever it would equal the raw name, and changes it with the client language, so it is a display
  * string and not an identifier.
+ * <p>
+ * A symbol the catalogue does not know is learned on the spot, and its display name is filed under the
+ * game client's language - the language {@code Name_Localised} was written in - never any other. That is
+ * how a material added by a game update becomes speakable in the commander's own language without
+ * waiting for a curated migration, and why a learned row never carries a translation it did not see.
  */
 public class MaterialManager {
 
@@ -101,15 +108,16 @@ public class MaterialManager {
      * definition the newer fact and must not be overwritten by a replay that could not have seen it.
      */
     public void replaceAll(Collection<Holding> holdings) {
-        List<MaterialNameDao.Holding> rows = holdings.stream()
+        List<Holding> known = holdings.stream()
                 .filter(holding -> symbolKey(holding.symbol()) != null)
-                .map(holding -> new MaterialNameDao.Holding(
-                        symbolKey(holding.symbol()),
-                        displayNameOr(holding.symbol(), holding.displayName()),
-                        holding.type().getType(),
-                        holding.amount()))
+                .toList();
+        List<MaterialNameDao.Holding> rows = known.stream()
+                .map(holding -> new MaterialNameDao.Holding(symbolKey(holding.symbol()), holding.amount()))
                 .toList();
         Database.withDao(MaterialNameDao.class, dao -> {
+            for (Holding holding : known) {
+                ensureKnown(dao, symbolKey(holding.symbol()), holding.type(), holding.displayName());
+            }
             dao.replaceAllAmounts(rows, Set.copyOf(reportedLive));
             return null;
         });
@@ -144,12 +152,6 @@ public class MaterialManager {
     }
 
     /**
-     * No-op for the 147 materials the migration seeds, which is every one known as of Odyssey. It
-     * exists so a material added by a future game update is registered rather than having its count
-     * dropped on the floor. INSERT OR IGNORE rather than a read-then-write: a Materials snapshot
-     * carries well over a hundred entries, and none of them need the round trip.
-     */
-    /**
      * Normalizes a journal material name to the inventory key. Every seeded row is lower-case, and most
      * events already spell the symbol that way, but MissionCompleted's MaterialsReward reports it in
      * mixed case ({@code "HybridCapacitors"} for {@code hybridcapacitors}) — matched raw, that credit
@@ -167,12 +169,34 @@ public class MaterialManager {
         return symbolKey(symbol);
     }
 
+    /**
+     * No-op for the 147 materials the migration seeds, which is every one known as of Odyssey. It exists
+     * so a material added by a game update is registered rather than having its count dropped on the
+     * floor, and named in the language the journal named it in. INSERT OR IGNORE plus a conditional UPDATE
+     * rather than a read-then-write: a Materials snapshot carries well over a hundred entries, and none of
+     * them need the round trip.
+     * <p>
+     * An English client supplies the English name outright. Any other client supplies its own translation
+     * and leaves the English pending behind the symbol stand-in. A client whose language is not known
+     * supplies nothing but the symbol: the count is kept either way, and a name is never guessed into a
+     * column it may not belong to.
+     */
     private void ensureKnown(MaterialNameDao dao, String symbol, MaterialsType type, String displayName) {
-        dao.insertIfMissing(symbol, displayNameOr(symbol, displayName), type.getType());
+        String display = displayNameOr(symbol, displayName);
+        Optional<String> gameColumn = NameColumns.gameMaterial();
+        if (gameColumn.isPresent() && gameColumn.get().equals(NameColumns.material(Language.EN))) {
+            dao.insertIfMissing(symbol, display, type.getType(), false);
+            dao.fillEnglishIfPending(symbol, display);
+            return;
+        }
+        dao.insertIfMissing(symbol, symbol, type.getType(), true);
+        gameColumn.ifPresent(column -> dao.fillNameIfNull(column, symbol, display));
     }
 
     /**
-     * The journal's display name when it gave one, otherwise a readable form of the symbol.
+     * The journal's display name when it gave one, otherwise a readable form of the symbol. Frontier
+     * omits {@code Name_Localised} only when it would equal the symbol, so the capitalised symbol IS the
+     * word the client shows in that case, whatever its language.
      */
     private static String displayNameOr(String symbol, String displayName) {
         return (displayName == null || displayName.isBlank())

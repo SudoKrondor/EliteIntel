@@ -42,7 +42,7 @@ public class AnalyzeBioScansStarSystemQuery extends BaseQueryAnalyzer implements
                 Answer only what the user is asking. Do not read back the entire data set.
 
                 Data fields:
-                - conclusion: the already-decided answer to "is there anything left to scan in this system". It is authoritative.
+                - conclusion: the already-decided answer to "how many bodies have bio signals, which are done, what is left to scan". It is authoritative.
                 - planetsRequireBioScans: planets with organics still to scan (planet name + remaining count). A planet whose organics are all sampled is absent.
                 - planetsUnmapped: planets where organics were sampled but the body was never surface-mapped, so no bio signal count exists and the true total there is unknown. These are NOT outstanding scans.
                 - partialSamples: individual genus samples that are in progress (1 or 2 of 3 taken) with how many scans still needed
@@ -77,25 +77,31 @@ public class AnalyzeBioScansStarSystemQuery extends BaseQueryAnalyzer implements
     private SystemBioScans scanStateForCurrentSystem() {
         List<PlanetsToScan> requireScans = new ArrayList<>();
         List<UnmappedPlanet> unmapped = new ArrayList<>();
+        List<String> surveyed = new ArrayList<>();
         Collection<LocationDto> locations = locationManager.findAllBySystemAddress(playerSession.getLocationData().getSystemAddress());
 
         for (LocationDto location : locations) {
             // A body recorded as sampled out is finished for good, and the sample count below cannot
             // show that on its own: selling organic data clears the samples it counts, after which a
             // finished body reads as untouched and comes back as outstanding work.
-            if (location.isBioScansCompleted()) continue;
+            if (location.isBioScansCompleted()) {
+                surveyed.add(location.getPlanetShortName());
+                continue;
+            }
             int detected = bioSignalsDetected(location);
             int completed = getCompletedSamples(location.getPlanetName());
             if (detected > 0) {
                 int remaining = remainingOrganics(detected, completed);
                 if (remaining > 0) {
                     requireScans.add(new PlanetsToScan(location.getPlanetShortName(), remaining));
+                } else {
+                    surveyed.add(location.getPlanetShortName());
                 }
             } else if (completed > 0) {
                 unmapped.add(new UnmappedPlanet(location.getPlanetShortName(), completed));
             }
         }
-        return new SystemBioScans(conclusion(requireScans, unmapped), requireScans, unmapped);
+        return new SystemBioScans(conclusion(surveyed, requireScans, unmapped), requireScans, unmapped);
     }
 
     /**
@@ -103,8 +109,18 @@ public class AnalyzeBioScansStarSystemQuery extends BaseQueryAnalyzer implements
      * non-empty one as outstanding work (it once announced an unmapped body as "we still need to check out two alpha").
      * Outstanding scans lead; an unmapped body is reported as a caveat to a completed survey, never as a to-do.
      */
-    static String conclusion(List<PlanetsToScan> requireScans, List<UnmappedPlanet> unmapped) {
+    static String conclusion(List<String> surveyed, List<PlanetsToScan> requireScans, List<UnmappedPlanet> unmapped) {
         StringBuilder sb = new StringBuilder();
+        // The whole picture first - how many bodies carry biology and which are done - because "how many
+        // moons have bio signals" is the question asked most, and a list of what is left does not answer it.
+        int withBiology = surveyed.size() + requireScans.size();
+        if (withBiology > 0) {
+            sb.append(withBiology).append(withBiology == 1 ? " body carries" : " bodies carry").append(" bio signals");
+            if (!surveyed.isEmpty()) {
+                sb.append("; fully surveyed: ").append(String.join(", ", surveyed));
+            }
+            sb.append(". ");
+        }
         if (requireScans.isEmpty()) {
             sb.append("Nothing left to scan in this system: every detected bio signal has been sampled.");
         } else {

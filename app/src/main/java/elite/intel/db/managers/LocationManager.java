@@ -2,6 +2,8 @@ package elite.intel.db.managers;
 
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.util.Database;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.gamestate.status_events.BioSurveyCompletedEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.DockedMarket;
 import elite.intel.session.LocationData;
@@ -55,10 +57,19 @@ public class LocationManager {
      * find/save pair.
      */
     public void updateBody(long systemAddress, long bodyId, Consumer<LocationDto> mutator) {
+        boolean surveyWasComplete;
+        boolean surveyIsComplete;
         synchronized (lockFor(systemAddress, bodyId)) {
             LocationDto location = findBySystemAddress(systemAddress, bodyId);
+            surveyWasComplete = location.isBioScansCompleted();
             mutator.accept(location);
+            surveyIsComplete = location.isBioScansCompleted();
             save(location);
+        }
+        // Every writer of the survey-complete latch comes through here, so this is where a flip is
+        // announced - after the lock is released, since a listener may well read this body back.
+        if (surveyWasComplete != surveyIsComplete) {
+            GameEventBus.publish(new BioSurveyCompletedEvent(systemAddress, bodyId, surveyIsComplete));
         }
     }
 
@@ -156,6 +167,28 @@ public class LocationManager {
         });
     }
 
+
+    /**
+     * The name of the system at {@code systemAddress}, or null when nothing on record names it.
+     * <p>
+     * WHY not the primary star's record: a system entered by carrier, or one the session started docked in,
+     * never gets a PRIMARY_STAR record - only a jump writes that - yet every record filed there carries the
+     * system's name in its own column. A writer that took the name from the primary star alone came away
+     * with null in exactly those systems, and {@link #save} then dropped its record without a word: this is how
+     * six moons' FSS bio signals went unrecorded. The session's current system is the last resort, for the
+     * first body filed in a system nothing else has written to yet.
+     */
+    public String findStarName(long systemAddress) {
+        String filed = Database.withDao(LocationDao.class, dao -> dao.findStarName(systemAddress));
+        if (filed != null && !filed.isBlank()) return filed;
+        PlayerSession session = PlayerSession.getInstance();
+        Long currentSystem = session.getLocationData().getSystemAddress();
+        if (currentSystem != null && currentSystem == systemAddress) {
+            String current = session.getPrimaryStarName();
+            if (current != null && !current.isBlank()) return current;
+        }
+        return null;
+    }
 
     public LocationDto findBySystemAddress(Long systemAddress, Long bodyId) {
         return Database.withDao(LocationDao.class, dao -> {

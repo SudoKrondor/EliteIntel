@@ -554,6 +554,22 @@ public class SystemSession {
         });
     }
 
+    /**
+     * The mouse button that also opens the gate, as a 0-based SDL button index; -1 when none is mapped.
+     */
+    public int getPushToTalkMouseButton() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getPushToTalkMouseButton());
+    }
+
+    public void setPushToTalkMouseButton(int buttonIndex) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setPushToTalkMouseButton(buttonIndex);
+            dao.save(session);
+            return null;
+        });
+    }
+
     public boolean isNoiseReductionEnabled() {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().isNoiseReductionEnabled());
     }

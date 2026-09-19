@@ -17,7 +17,6 @@ import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
-import elite.intel.session.Status;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AiResponseLogEvent;
 import elite.intel.ui.event.AppLogEvent;
@@ -356,12 +355,13 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
             // would change speaker mid-message.
             String voiceName = resolveVoiceName(event);
             Language language = languageOf(event);
+            // The filter follows the event alone. The ship voice used to be pushed through it whenever the
+            // commander left the main ship, to sound distant on foot or in the SRV, but the effect varied
+            // too much across voices and audio hardware - subtle on one, unintelligible static on another.
             for (int i = 0; i < sentences.size(); i++) {
                 boolean isLast = (i == sentences.size() - 1);
-                boolean isRadio = event.isRadio();
-                if (!Status.getInstance().isInMainShip()) isRadio = true;
                 if (!synthesisQueue.offer(new SynthesisTask(
-                        sentences.get(i), voiceName, isRadio, language, generation, isLast, handle))) {
+                        sentences.get(i), voiceName, event.isRadio(), language, generation, isLast, handle))) {
                     handle.fail(new IllegalStateException(engineName + " synthesis queue rejected vocalisation"));
                     return;
                 }

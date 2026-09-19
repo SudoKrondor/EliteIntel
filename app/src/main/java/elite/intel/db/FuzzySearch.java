@@ -50,51 +50,67 @@ public class FuzzySearch {
 
     /**
      * Resolves a spoken commodity name to the canonical <em>English</em> name, matching against the
-     * commander's own language first and falling back to English.
+     * commander's own language and the word the game client shows first, then falling back to English.
      * <p>
      * The English retry is not redundant with the DAO's {@code COALESCE(<col>, commodity)}: that
      * only covers rows with no translation, so on a row that <em>is</em> translated the English
      * term is absent from the localized candidate list entirely. Commodity names are commonly
      * spoken in English whatever the client language, so both must resolve. The retry costs
      * nothing on the hit path.
+     * <p>
+     * For a good learned from a non-English client the "English name" is the symbol stand-in - the one
+     * canonical key such a row has. It round-trips through {@link #commoditySymbol} and
+     * {@link #localizedCommodityName} like any other, but is no trade name: check
+     * {@link #hasTradeName} before handing it to Spansh.
      */
     public static String fuzzyCommodityMatch(String input, int similarity) {
         Language lang = SystemSession.getInstance().getLanguage();
-        if (lang != Language.EN) {
-            String col = commodityColumn(lang);
-            String localized = fuzzyMatch(input, similarity, CommodityDao.class,
-                    dao -> dao.getAllLocalizedNamesLowerCase(col),
-                    (dao, name) -> dao.getEnglishByLocalizedName(col, name));
-            if (localized != null && !localized.isBlank()) return localized;
-        }
+        String col = NameColumns.commoditySpoken(lang);
+        String gameCol = NameColumns.gameCommoditySpoken();
+        String localized = fuzzyMatch(input, similarity, CommodityDao.class,
+                dao -> dao.getAllLocalizedNamesLowerCase(col, gameCol),
+                (dao, name) -> dao.getEnglishByLocalizedName(col, gameCol, name));
+        if (localized != null && !localized.isBlank()) return localized;
         return fuzzyMatch(input, similarity, CommodityDao.class, CommodityDao::getAllNamesLowerCase, CommodityDao::getOriginalCase);
     }
 
     /**
+     * Whether a name from {@link #fuzzyCommodityMatch} is a real English name Spansh will match, rather
+     * than the symbol stand-in of a good learned from a non-English client that no English client or
+     * curated migration has named yet.
+     */
+    public static boolean hasTradeName(String englishName) {
+        if (englishName == null || englishName.isBlank()) return false;
+        return Database.withDao(CommodityDao.class, dao -> dao.hasEnglishName(englishName));
+    }
+
+    /**
      * Resolves the localized display name for an English commodity name (e.g. the
-     * lowercase {@code Type} field from a journal event). Returns the localized name
-     * for the current language, or the original {@code englishName} when the game is
-     * in English or no localized version exists in the DB.
+     * lowercase {@code Type} field from a journal event). Returns the display name for the current
+     * language, else English, else the word the game client shows for a good learned from the journal,
+     * or the original {@code englishName} when the table has nothing for it at all.
      */
     public static String localizedCommodityName(String englishName) {
         if (englishName == null || englishName.isBlank()) return englishName;
         Language lang = systemSession.getLanguage();
-        if (lang == Language.EN) return englishName;
-        String col = commodityColumn(lang);
-        String localized = Database.withDao(CommodityDao.class, dao -> dao.getLocalizedByEnglishName(col, englishName));
+        String col = NameColumns.commoditySpoken(lang);
+        String gameCol = NameColumns.gameCommoditySpoken();
+        String localized = Database.withDao(CommodityDao.class, dao -> dao.getLocalizedByEnglishName(col, gameCol, englishName));
         return (localized == null || localized.isBlank()) ? englishName : localized;
     }
 
     /**
-     * The localized display name for a non-localized game symbol - {@link #commodityNameForSymbol}
-     * followed by {@link #localizedCommodityName}. This is the pair a journal field needs when the
-     * game hands over a bare symbol with no {@code _Localised} sibling, as {@code MotherlodeMaterial}
-     * does. Returns {@code null} for a symbol the commodities table does not know, so the caller can
-     * decide what to say instead of speaking a database miss.
+     * The localized display name for a non-localized game symbol. This is what a journal field needs
+     * when the game hands over a bare symbol with no {@code _Localised} sibling, as
+     * {@code MotherlodeMaterial} does. Returns {@code null} for a symbol the commodities table does not
+     * know, so the caller can decide what to say instead of speaking a database miss.
      */
     public static String localizedCommodityNameForSymbol(String symbol) {
-        String englishName = commodityNameForSymbol(symbol);
-        return englishName == null ? null : localizedCommodityName(englishName);
+        if (symbol == null || symbol.isBlank()) return null;
+        Language lang = systemSession.getLanguage();
+        String col = NameColumns.commoditySpoken(lang);
+        String gameCol = NameColumns.gameCommoditySpoken();
+        return Database.withDao(CommodityDao.class, dao -> dao.getLocalizedBySymbol(col, gameCol, symbol));
     }
 
     /**
@@ -112,7 +128,8 @@ public class FuzzySearch {
     /**
      * The English commodity name for a game symbol - the reverse of {@link #commoditySymbol}, and the
      * only way to get from a journal field to a name Spansh will match. Returns {@code null} when the
-     * symbol is unknown to the commodities table.
+     * symbol is unknown to the commodities table, or known only from a non-English client so that no
+     * English name exists yet.
      */
     public static String commodityNameForSymbol(String symbol) {
         if (symbol == null || symbol.isBlank()) return null;
@@ -129,11 +146,12 @@ public class FuzzySearch {
      */
     public static String fuzzyMaterialSymbol(String input, int similarity) {
         Language lang = systemSession.getLanguage();
-        String col = materialNameColumn(lang);
+        String col = NameColumns.materialSpoken(lang);
+        String gameCol = NameColumns.gameMaterialSpoken();
         String tag = languageTag(lang);
         return fuzzyMatch(input, similarity, MaterialNameDao.class,
-                dao -> dao.getAllSpokenFormsLowerCase(col, tag),
-                (dao, spoken) -> dao.getSymbolBySpokenForm(col, tag, spoken));
+                dao -> dao.getAllSpokenFormsLowerCase(col, gameCol, tag),
+                (dao, spoken) -> dao.getSymbolBySpokenForm(col, gameCol, tag, spoken));
     }
 
     /**
@@ -154,13 +172,15 @@ public class FuzzySearch {
      * Frontier localizes only English, German, Spanish, French, Russian and Brazilian Portuguese. A
      * commander on any other language is necessarily running an English client, so naming the material
      * in their spoken language would name something their HUD does not show — they get English instead.
-     * See {@link Language#isGameLocalized()}.
+     * See {@link Language#isGameLocalized()}. A material learned from a non-English client has no
+     * English name yet, and then the word that client shows is spoken: it is the word on the HUD.
      */
     public static String localizedMaterialName(String symbol) {
         if (symbol == null || symbol.isBlank()) return StringUtls.localizedResponse(UNKNOWN_MATERIAL);
         Language lang = systemSession.getLanguage();
-        String col = lang.isGameLocalized() ? materialNameColumn(lang) : "name";
-        String name = Database.withDao(MaterialNameDao.class, dao -> dao.getLocalizedNameBySymbol(col, symbol));
+        String col = NameColumns.materialSpoken(lang.isGameLocalized() ? lang : Language.EN);
+        String gameCol = NameColumns.gameMaterialSpoken();
+        String name = Database.withDao(MaterialNameDao.class, dao -> dao.getLocalizedNameBySymbol(col, gameCol, symbol));
         // WHY: the result is spoken aloud, so an unregistered symbol must not leak the raw journal
         // token ("guardian_powercell") into speech. Degrading to a localized "unknown material" keeps
         // the reply intelligible; the amount and capacity around it are still accurate.
@@ -215,20 +235,6 @@ public class FuzzySearch {
         };
     }
 
-    private static String materialNameColumn(Language lang) {
-        return switch (lang) {
-            case DE -> "name_de";
-            case FR -> "name_fr";
-            case ES -> "name_es";
-            case RU -> "name_ru";
-            case UK -> "name_uk";
-            case IT -> "name_it";
-            case PT -> "name_pt";
-            case PTBZ -> "name_ptbz";
-            default -> "name";
-        };
-    }
-
     /**
      * The {@code material_aliases.lang} value for a language, matching migration 01017.
      */
@@ -236,28 +242,6 @@ public class FuzzySearch {
         return lang.name().toLowerCase();
     }
 
-    /**
-     * The {@code commodities} column holding names for a language. Unlike
-     * {@link #materialNameColumn(Language)} this is not gated on {@link Language#isGameLocalized()}:
-     * commodities are localized for every supported language, not only Frontier's six.
-     * <p>
-     * A column that is still NULL for a given row is not a problem — CommodityDao wraps every
-     * lookup in {@code COALESCE(<col>, commodity)}, so untranslated rows resolve to the English
-     * name. That is what currently carries UK, which has no translations loaded at all.
-     */
-    private static String commodityColumn(Language lang) {
-        return switch (lang) {
-            case DE -> "commodity_de";
-            case FR -> "commodity_fr";
-            case ES -> "commodity_es";
-            case RU -> "commodity_ru";
-            case UK -> "commodity_uk";
-            case IT -> "commodity_it";
-            case PT -> "commodity_pt";
-            case PTBZ -> "commodity_ptbz";
-            default -> "commodity";
-        };
-    }
 
 
 

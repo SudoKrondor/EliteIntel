@@ -79,12 +79,17 @@ public final class ConstructionCargo {
             result.add(new Outstanding(line.getSymbol(), line.getGameName(), line.getRequiredAmount(),
                     line.getProvidedAmount(), claimed, line.getPayment()));
         }
-        result.sort(Comparator
-                .comparingInt(Outstanding::shortfall).reversed()
-                // A stable tie-break so the same manifest always names the same commodity. Without it the
-                // card and the spoken answer can disagree about what is next while nothing has changed.
-                .thenComparing(Outstanding::symbol));
+        result.sort(largestShortfallFirst());
         return result;
+    }
+
+    /**
+     * The order every list of outstanding lines is read in, so the card and the spoken answer never
+     * disagree about what is next. The symbol is a stable tie-break: without it the same manifest could
+     * name a different commodity from one read to the next while nothing had changed.
+     */
+    public static Comparator<Outstanding> largestShortfallFirst() {
+        return Comparator.comparingInt(Outstanding::shortfall).reversed().thenComparing(Outstanding::symbol);
     }
 
     /**

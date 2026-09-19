@@ -32,6 +32,19 @@ import java.util.Set;
 @RegisterRowMapper(MaterialNameDao.MaterialMapper.class)
 public interface MaterialNameDao {
 
+    /**
+     * The English name as a spoken form: NULL while the row is a learned one whose English is still
+     * pending, because {@code name} then holds the bare symbol as a stand-in for the NOT NULL UNIQUE
+     * constraint (see migration 01054) and must never be spoken or matched.
+     */
+    String ENGLISH_NAME = "CASE WHEN english_pending = 1 THEN NULL ELSE name END";
+
+    /**
+     * The display name for a row: the given language column, else English, else the word the game client
+     * shows for a name learned from the journal.
+     */
+    String SPOKEN_NAME = "COALESCE(<col>, " + ENGLISH_NAME + ", <gameCol>)";
+
     // ── identity ─────────────────────────────────────────────────────────────
 
     @SqlQuery("SELECT * FROM material_names WHERE symbol = :symbol")
@@ -89,63 +102,98 @@ public interface MaterialNameDao {
         }
         for (Holding holding : holdings) {
             if (preserve.contains(holding.symbol())) continue;
-            insertIfMissing(holding.symbol(), holding.name(), holding.materialType());
             setAmount(holding.symbol(), holding.amount());
         }
     }
 
     /**
-     * One row of a full-inventory rewrite.
+     * One row of a full-inventory rewrite. The row must already exist - the caller registers unknown
+     * symbols first, because which name column a new row gets is a language decision the DAO does not make.
      */
-    record Holding(String symbol, String name, String materialType, int amount) {
+    record Holding(String symbol, int amount) {
     }
 
+    // ── learning ─────────────────────────────────────────────────────────────
+
     /**
-     * Registers a material this build has never seen, so a future game update that adds one does not
-     * silently drop its count. Seeded rows already exist for everything known as of Odyssey; this is
-     * the safety net, and it deliberately leaves the translations null so COALESCE falls back to
-     * whatever display name the journal gave us.
+     * Registers a material this build has never seen, so a game update that adds one does not silently
+     * drop its count. Seeded rows already exist for everything known as of Odyssey; this is the safety net.
+     * <p>
+     * {@code name} is the English name when the caller has one, otherwise the bare symbol with
+     * {@code englishPending} set - the English column is NOT NULL UNIQUE and a symbol is the one stand-in
+     * guaranteed unique. Translations are left null for {@link #fillNameIfNull} to supply.
      */
-    @SqlUpdate("INSERT OR IGNORE INTO material_names (symbol, name, materialType) VALUES (:symbol, :name, :materialType)")
+    @SqlUpdate("""
+            INSERT OR IGNORE INTO material_names (symbol, name, materialType, english_pending)
+            VALUES (:symbol, :name, :materialType, :englishPending)
+            """)
     void insertIfMissing(@Bind("symbol") String symbol,
                          @Bind("name") String name,
-                         @Bind("materialType") String materialType);
+                         @Bind("materialType") String materialType,
+                         @Bind("englishPending") boolean englishPending);
+
+    /**
+     * Supplies a translation the row does not have yet. A column already filled - by a migration or an
+     * earlier sighting - is left exactly as it is: curated data always outranks a journal sighting.
+     */
+    @SqlUpdate("UPDATE material_names SET <col> = :name WHERE symbol = :symbol AND <col> IS NULL")
+    void fillNameIfNull(@Define("col") String col, @Bind("symbol") String symbol, @Bind("name") String name);
+
+    /**
+     * Replaces the symbol stand-in with the real English name, once an English client has supplied one.
+     * Guarded against the UNIQUE constraint explicitly: a name already carried by another row means
+     * Frontier renamed a symbol, and that is a curation question rather than something to write over.
+     */
+    @SqlUpdate("""
+            UPDATE material_names
+               SET name = :name, english_pending = 0
+             WHERE symbol = :symbol
+               AND english_pending = 1
+               AND NOT EXISTS (SELECT 1 FROM material_names WHERE name = :name)
+            """)
+    void fillEnglishIfPending(@Bind("symbol") String symbol, @Bind("name") String name);
 
     // ── name resolution ──────────────────────────────────────────────────────
 
     /**
-     * Every spoken form that can identify a material in the given language: the localized display name
-     * (falling back to English where Frontier shipped no translation, which is exactly what that
-     * client shows on screen) plus any aliases. Lower-cased, for fuzzy matching.
+     * Every spoken form that can identify a material: the display name in the commander's language
+     * (falling back to English where Frontier shipped no translation, which is exactly what that client
+     * shows on screen, and then to the game client's own column for a name learned there), the word the
+     * game client itself shows, and any aliases. Lower-cased, for fuzzy matching.
+     * <p>
+     * The game column is offered in its own right so the commander can always say the word on their HUD,
+     * whatever language they talk to us in.
      */
-    @SqlQuery("""
-            SELECT LOWER(COALESCE(<col>, name)) FROM material_names
-            UNION
-            SELECT LOWER(alias) FROM material_aliases WHERE lang = :lang
-            """)
-    List<String> getAllSpokenFormsLowerCase(@Define("col") String col, @Bind("lang") String lang);
+    @SqlQuery("SELECT spoken FROM ("
+            + " SELECT LOWER(" + SPOKEN_NAME + ") AS spoken FROM material_names"
+            + " UNION SELECT LOWER(<gameCol>) FROM material_names"
+            + " UNION SELECT LOWER(alias) FROM material_aliases WHERE lang = :lang"
+            + ") WHERE spoken IS NOT NULL")
+    List<String> getAllSpokenFormsLowerCase(@Define("col") String col,
+                                            @Define("gameCol") String gameCol,
+                                            @Bind("lang") String lang);
 
     /**
-     * Resolves any spoken form — localized name or alias — back to the journal symbol.
+     * Resolves any spoken form — localized name, the game client's word, or alias — back to the journal symbol.
      */
-    @SqlQuery("""
-            SELECT symbol FROM (
-                SELECT symbol, LOWER(COALESCE(<col>, name)) AS spoken FROM material_names
-                UNION ALL
-                SELECT symbol, LOWER(alias) AS spoken FROM material_aliases WHERE lang = :lang
-            )
-            WHERE spoken = LOWER(:spokenForm)
-            LIMIT 1
-            """)
+    @SqlQuery("SELECT symbol FROM ("
+            + " SELECT symbol, LOWER(" + SPOKEN_NAME + ") AS spoken FROM material_names"
+            + " UNION ALL SELECT symbol, LOWER(<gameCol>) AS spoken FROM material_names"
+            + " UNION ALL SELECT symbol, LOWER(alias) AS spoken FROM material_aliases WHERE lang = :lang"
+            + ") WHERE spoken = LOWER(:spokenForm) LIMIT 1")
     String getSymbolBySpokenForm(@Define("col") String col,
+                                 @Define("gameCol") String gameCol,
                                  @Bind("lang") String lang,
                                  @Bind("spokenForm") String spokenForm);
 
     /**
-     * The display name to speak in the given language column, or the English name if untranslated.
+     * The display name to speak: the given language column, else English, else the word the game client
+     * shows for a name learned from the journal. Null only for a symbol that is unknown or has no name yet.
      */
-    @SqlQuery("SELECT COALESCE(<col>, name) FROM material_names WHERE symbol = :symbol")
-    String getLocalizedNameBySymbol(@Define("col") String col, @Bind("symbol") String symbol);
+    @SqlQuery("SELECT " + SPOKEN_NAME + " FROM material_names WHERE symbol = :symbol")
+    String getLocalizedNameBySymbol(@Define("col") String col,
+                                    @Define("gameCol") String gameCol,
+                                    @Bind("symbol") String symbol);
 
     @SqlQuery("SELECT COUNT(*) FROM material_names")
     int count();
@@ -154,8 +202,9 @@ public interface MaterialNameDao {
         @Override
         public Material map(ResultSet rs, StatementContext ctx) throws SQLException {
             // maxCapacity and grade are null for Frontier's "Unknown" placeholder row, which is a
-            // display string rather than a real material. Read each immediately before its wasNull()
-            // check — wasNull() reports on the most recent getter call only.
+            // display string rather than a real material, and for any material learned from the journal,
+            // which never states a grade. Read each immediately before its wasNull() check — wasNull()
+            // reports on the most recent getter call only.
             int maxCapacity = rs.getInt("maxCapacity");
             if (rs.wasNull()) maxCapacity = 0;
             int grade = rs.getInt("grade");
@@ -163,7 +212,7 @@ public interface MaterialNameDao {
             return new Material(
                     rs.getLong("id"),
                     rs.getString("symbol"),
-                    rs.getString("name"),
+                    rs.getBoolean("english_pending") ? null : rs.getString("name"),
                     rs.getString("materialType"),
                     rs.getInt("amount"),
                     maxCapacity,
@@ -204,7 +253,8 @@ public interface MaterialNameDao {
         }
 
         /**
-         * The English display name, e.g. {@code Basic Conductors}.
+         * The English display name, e.g. {@code Basic Conductors}; null for a material learned from a
+         * non-English client whose English name is still pending.
          */
         public String getName() {
             return name;
@@ -218,6 +268,10 @@ public interface MaterialNameDao {
             return amount;
         }
 
+        /**
+         * The storage cap, or 0 when it is not known - a learned material, whose grade the journal never
+         * states. Callers treat 0 as "say nothing about capacity", never as a full hold.
+         */
         public int getMaxCapacity() {
             return maxCapacity;
         }

@@ -14,7 +14,39 @@ public class LocationSubscriber {
 
     @Subscribe
     public void onLocationEvent(LocationEvent event) {
+        Thread.ofVirtual().start(() -> {
+            // A jump arrival files EDSM's body list for the system, but a session that starts inside one -
+            // the commander logged out docked or landed - never jumped in. Without the list the only bodies
+            // on record are the ones the commander's own scans write, and the FSS does not repeat a Scan for
+            // a body resolved on an earlier visit, so a moon's bio signals landed on a row nothing could
+            // classify. Fetched only while the system has no planet or moon on record, so a re-read of the
+            // journal at every start does not become a call per start.
+            if (EdsmSystemBodies.hasNoClassifiedBodies(locationManager.findAllBySystemAddress(event.getSystemAddress()))) {
+                EdsmSystemBodies.fetchAndRecord(event.getStarSystem(), event.getSystemAddress(), event.getStarPos());
+            }
 
+            // Read after the fetch, so what EDSM just filed for this body is built on rather than written over.
+            LocationDto dto = fromEvent(event);
+            dto.setTrafficDto(EdsmApiClient.searchTraffic(event.getStarSystem()));
+            dto.setDeathsDto(EdsmApiClient.searchDeaths(event.getStarSystem()));
+
+            if (dto.getStarName() != null && !dto.getStarName().isEmpty()) {
+                //have to check for star name (primary star of the system). Sometimes the star name is empty.
+                //do not save locations without star name.
+                locationManager.save(dto);
+            }
+
+            // After the body, never onto it: this is the arrival of a commander who quit on a pad, and the
+            // station standing here is not the body the event names. Written last so that where the two are
+            // the same record - an orbital station, whose Body IS its own name - the station's fields land on
+            // top of the body write rather than under it.
+            if (event.isDocked()) {
+                DockedStationRecord.of(event).store();
+            }
+        });
+    }
+
+    private LocationDto fromEvent(LocationEvent event) {
         LocationDto dto = findLocation(event);
         dto.setX(event.getStarPos()[0]);
         dto.setY(event.getStarPos()[1]);
@@ -49,25 +81,7 @@ public class LocationSubscriber {
         dto.setSecurity(event.getSystemSecurityLocalised());
 
         if (event.getSystemFaction() != null) dto.setSystemFaction(event.getSystemFaction().getName());
-
-        Thread.ofVirtual().start(() -> {
-            dto.setTrafficDto(EdsmApiClient.searchTraffic(event.getStarSystem()));
-            dto.setDeathsDto(EdsmApiClient.searchDeaths(event.getStarSystem()));
-
-            if (dto.getStarName() != null && !dto.getStarName().isEmpty()) {
-                //have to check for star name (primary star of the system). Sometimes the star name is empty.
-                //do not save locations without star name.
-                locationManager.save(dto);
-            }
-
-            // After the body, never onto it: this is the arrival of a commander who quit on a pad, and the
-            // station standing here is not the body the event names. Written last so that where the two are
-            // the same record - an orbital station, whose Body IS its own name - the station's fields land on
-            // top of the body write rather than under it.
-            if (event.isDocked()) {
-                DockedStationRecord.of(event).store();
-            }
-        });
+        return dto;
     }
 
     private LocationDto findLocation(LocationEvent event) {

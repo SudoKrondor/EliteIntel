@@ -3,6 +3,7 @@ package elite.intel.ai.ears;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.db.util.Database;
+import elite.intel.devices.DeviceService;
 import elite.intel.devices.events.DeviceButtonEvent;
 import elite.intel.devices.events.DeviceDisconnectedEvent;
 import elite.intel.eventbus.DeviceBus;
@@ -15,11 +16,12 @@ import elite.intel.ui.event.PushToTalkSettingsChangedEvent;
 import elite.intel.util.Cypher;
 import org.junit.jupiter.api.*;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The push-to-talk gate as a service: which button transitions it acts on, and what it publishes.
@@ -40,7 +42,7 @@ class PushToTalkServiceTest {
      * Collects everything published on one bus, so a case can assert on what was and was not announced.
      */
     private static final class Collector {
-        private final List<Object> events = new ArrayList<>();
+        private final List<Object> events = new CopyOnWriteArrayList<>();
 
         @Subscribe
         public void onEvent(Object event) {
@@ -49,6 +51,11 @@ class PushToTalkServiceTest {
 
         boolean sawGateChange() {
             return events.stream().anyMatch(event -> event instanceof PttButtonStateEvent);
+        }
+
+        boolean sawGate(boolean held) {
+            return events.stream().anyMatch(event ->
+                    event instanceof PttButtonStateEvent state && state.isHeld() == held);
         }
 
         boolean sawArmed(boolean armed) {
@@ -67,6 +74,7 @@ class PushToTalkServiceTest {
     private boolean savedEnabled;
     private String savedController;
     private int savedButton;
+    private int savedMouseButton;
 
     @BeforeAll
     void boot() throws Exception {
@@ -80,6 +88,7 @@ class PushToTalkServiceTest {
         savedEnabled = session.isPushToTalkEnabled();
         savedController = session.getPushToTalkControllerName();
         savedButton = session.getPushToTalkButtonIndex();
+        savedMouseButton = session.getPushToTalkMouseButton();
 
         UiBus.register(ui);
         GameEventBus.register(game);
@@ -97,6 +106,7 @@ class PushToTalkServiceTest {
         session.setPushToTalkEnabled(savedEnabled);
         session.setPushToTalkControllerName(savedController);
         session.setPushToTalkButtonIndex(savedButton);
+        session.setPushToTalkMouseButton(savedMouseButton);
     }
 
     /**
@@ -198,6 +208,76 @@ class PushToTalkServiceTest {
         DeviceBus.publish(new DeviceDisconnectedEvent(4242));
 
         assertFalse(ui.sawGateChange());
+    }
+
+    /**
+     * The mouse is the one trigger a test JVM can exercise from the positive side: it has a fixed device id
+     * and no controller to be matched against, so a press on the bus is the same press the poll loop makes.
+     */
+    @Test
+    void theMappedMouseButtonHoldsAndReleasesTheGate() {
+        configure(true);
+        SystemSession.getInstance().setPushToTalkMouseButton(3);
+        PushToTalkService.getInstance().start();
+        ui.clear();
+        game.clear();
+
+        DeviceBus.publish(new DeviceButtonEvent(DeviceService.MOUSE_DEVICE_ID, 3, true));
+        assertTrue(eventually(() -> ui.sawGate(true)), "the mapped mouse button opens the gate");
+        assertTrue(game.events.stream().anyMatch(event -> event instanceof TTSInterruptEvent),
+                "and cuts the current vocalisation at the press");
+
+        DeviceBus.publish(new DeviceButtonEvent(DeviceService.MOUSE_DEVICE_ID, 3, false));
+        assertTrue(eventually(() -> ui.sawGate(false)), "and its release closes it");
+    }
+
+    @Test
+    void anUnmappedMouseButtonIsIgnored() {
+        configure(true);
+        SystemSession.getInstance().setPushToTalkMouseButton(3);
+        PushToTalkService.getInstance().start();
+        ui.clear();
+
+        DeviceBus.publish(new DeviceButtonEvent(DeviceService.MOUSE_DEVICE_ID, 1, true));
+        // Prove the bus has drained by pushing a press that must arrive behind the ignored one.
+        DeviceBus.publish(new DeviceButtonEvent(DeviceService.MOUSE_DEVICE_ID, 3, true));
+        assertTrue(eventually(() -> ui.sawGate(true)));
+
+        assertEquals(1, ui.events.stream().filter(event -> event instanceof PttButtonStateEvent).count(),
+                "the middle button, which is not mapped, opened nothing");
+    }
+
+    /**
+     * With no mouse button mapped, the mouse index -1 must not match anything: a mapped controller button
+     * with index 0 is the default, and the mouse must not ride on it.
+     */
+    @Test
+    void withNoMouseButtonMappedTheMouseIsInert() {
+        configure(true);
+        SystemSession.getInstance().setPushToTalkMouseButton(-1);
+        PushToTalkService.getInstance().start();
+        ui.clear();
+
+        DeviceBus.publish(new DeviceButtonEvent(DeviceService.MOUSE_DEVICE_ID, 0, true));
+        // The settings are read per event, so a mapping made now catches only the marker press behind it.
+        SystemSession.getInstance().setPushToTalkMouseButton(3);
+        DeviceBus.publish(new DeviceButtonEvent(DeviceService.MOUSE_DEVICE_ID, 3, true));
+        assertTrue(eventually(() -> ui.sawGate(true)));
+
+        assertEquals(1, ui.events.stream().filter(event -> event instanceof PttButtonStateEvent).count(),
+                "the unmapped press opened nothing; only the marker did");
+    }
+
+    /**
+     * DeviceBus dispatches on its own thread, so a publish returns before the service has seen the event.
+     */
+    private static boolean eventually(BooleanSupplier condition) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        while (System.nanoTime() < deadline) {
+            if (condition.getAsBoolean()) return true;
+            Thread.onSpinWait();
+        }
+        return condition.getAsBoolean();
     }
 
     private static void configure(boolean enabled) {

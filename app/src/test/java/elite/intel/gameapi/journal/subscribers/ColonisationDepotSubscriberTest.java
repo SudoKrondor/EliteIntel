@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import elite.intel.db.dao.ConstructionSiteDao.Requirement;
 import elite.intel.db.dao.ConstructionSiteDao.Site;
 import elite.intel.gameapi.journal.events.ColonisationConstructionDepotEvent;
@@ -113,7 +114,7 @@ class ColonisationDepotSubscriberTest {
                 },
                 (visitedAt, marketId) -> padsRecorded.add(marketId + "@" + visitedAt),
                 marketId -> {
-                    throw new IllegalStateException("Expected BEGIN_OBJECT but was NUMBER at line 1");
+                    throw new JsonSyntaxException("Expected BEGIN_OBJECT but was NUMBER at line 1");
                 });
 
         subscriber.onConstructionDepot(depot("2026-09-14T20:20:23Z", 0.308365, 0));

@@ -3,6 +3,7 @@ package elite.intel.ai.brain.actions.handlers.queries;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
 import elite.intel.db.managers.LocationManager;
+import elite.intel.gameapi.journal.ScanBodyClassifier;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto.LocationType;
 import elite.intel.session.PlayerSession;
@@ -251,7 +252,8 @@ public class AnalyzeStellarObjectsQuery extends BaseQueryAnalyzer implements Int
             // classification yet: neither is worth an exception in the middle of a system report.
             String planetName = location.getPlanetName() == null ? "" : location.getPlanetName();
             boolean isPlanetaryRing = planetName.contains("Ring");
-            LocationType locationType = location.getLocationType();
+            // Read off the designation when nothing classified the row, or an FSS-only bio moon never reaches the tallies.
+            LocationType locationType = ScanBodyClassifier.resolve(location);
 
             if (LocationType.STAR == locationType || LocationType.PRIMARY_STAR == locationType) {
                 numberOfStars++;
@@ -295,6 +297,7 @@ public class AnalyzeStellarObjectsQuery extends BaseQueryAnalyzer implements Int
         long landablePlanets = result.stream().filter(l -> "PLANET".equals(l.objectClass()) && l.isLandable()).count();
         long bioMoons = result.stream().filter(l -> "MOON".equals(l.objectClass()) && l.bioSignals() > 0).count();
         long bioPlanets = result.stream().filter(l -> "PLANET".equals(l.objectClass()) && l.bioSignals() > 0).count();
+        long bioBodies = result.stream().filter(l -> l.bioSignals() > 0).count();
         long atmosMoons = result.stream().filter(l -> "MOON".equals(l.objectClass()) && hasAtmosphere(l)).count();
         long fuelStars = result.stream().filter(l -> isScoopable(l)).count();
 
@@ -305,10 +308,11 @@ public class AnalyzeStellarObjectsQuery extends BaseQueryAnalyzer implements Int
                 Landable planets: %d
                 Moons with bio signals: %d
                 Planets with bio signals: %d
+                Bodies with bio signals (moons and planets together): %d
                 Moons with atmosphere: %d
                 Scoopable fuel stars: %d
                 """.formatted(numberOfStars, numberOfPlanets, numberOfMoons, numberOfStations,
-                landableMoons, landablePlanets, bioMoons, bioPlanets, atmosMoons, fuelStars);
+                landableMoons, landablePlanets, bioMoons, bioPlanets, bioBodies, atmosMoons, fuelStars);
 
         return new StellarObjectsData<>(result, summary);
     }

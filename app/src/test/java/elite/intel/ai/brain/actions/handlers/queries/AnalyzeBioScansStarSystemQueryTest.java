@@ -60,7 +60,7 @@ class AnalyzeBioScansStarSystemQueryTest {
     void anUnmappedSampledBodyIsNotOutstandingWork() {
         // The live case: 2 a was sampled 3 times but never surface-mapped, so no signal count was ever emitted.
         String conclusion = AnalyzeBioScansStarSystemQuery.conclusion(
-                List.of(), List.of(new AnalyzeBioScansStarSystemQuery.UnmappedPlanet("2 a", 3)));
+                List.of(), List.of(), List.of(new AnalyzeBioScansStarSystemQuery.UnmappedPlanet("2 a", 3)));
 
         assertTrue(conclusion.startsWith("Nothing left to scan in this system"), conclusion);
         assertTrue(conclusion.contains("2 a (3 sampled) was never surface-mapped"), conclusion);
@@ -70,15 +70,31 @@ class AnalyzeBioScansStarSystemQueryTest {
     @DisplayName("outstanding scans lead the conclusion")
     void outstandingScansLeadTheConclusion() {
         String conclusion = AnalyzeBioScansStarSystemQuery.conclusion(
-                List.of(new AnalyzeBioScansStarSystemQuery.PlanetsToScan("B 4", 2)), List.of());
+                List.of(), List.of(new AnalyzeBioScansStarSystemQuery.PlanetsToScan("B 4", 2)), List.of());
 
-        assertTrue(conclusion.startsWith("Still to scan: B 4 (2)."), conclusion);
+        assertTrue(conclusion.endsWith("Still to scan: B 4 (2)."), conclusion);
+    }
+
+    /**
+     * 76 Leonis: seven moons with seven signals each, one surveyed. "How many moons have bio signals" is the
+     * question asked most, and a list of what is left cannot answer it - the total and the finished ones lead.
+     */
+    @Test
+    @DisplayName("the conclusion states how many bodies carry biology and which are surveyed")
+    void theConclusionStatesTheTotalAndTheSurveyedBodies() {
+        String conclusion = AnalyzeBioScansStarSystemQuery.conclusion(
+                List.of("6 a"),
+                List.of(new AnalyzeBioScansStarSystemQuery.PlanetsToScan("6 b", 7),
+                        new AnalyzeBioScansStarSystemQuery.PlanetsToScan("6 c", 7)),
+                List.of());
+
+        assertEquals("3 bodies carry bio signals; fully surveyed: 6 a. Still to scan: 6 b (7), 6 c (7).", conclusion);
     }
 
     @Test
     @DisplayName("a fully surveyed system says so with no caveat")
     void aFullySurveyedSystemHasNoCaveat() {
-        String conclusion = AnalyzeBioScansStarSystemQuery.conclusion(List.of(), List.of());
+        String conclusion = AnalyzeBioScansStarSystemQuery.conclusion(List.of(), List.of(), List.of());
 
         assertEquals("Nothing left to scan in this system: every detected bio signal has been sampled.", conclusion);
     }

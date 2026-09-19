@@ -1,5 +1,8 @@
 package elite.intel.gameapi.signals;
 
+import elite.intel.gameapi.journal.events.FSDJumpEvent;
+
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -10,6 +13,24 @@ import java.util.Locale;
  * are read as "no war here" by {@link #of}.
  */
 public record ActiveWar(String warType, String faction1, String faction2) {
+
+    /**
+     * The first war being fought in a system, from its arrival's Conflicts block, or null when none is.
+     * A system can host two at once, and then the zones belong to both and one pair of names is as good
+     * as the other for telling the commander what to expect. The one reading of the block, whether it
+     * came off the commander's own journal or the EDDN relay.
+     */
+    public static ActiveWar firstIn(List<FSDJumpEvent.Conflict> conflicts) {
+        if (conflicts == null) return null;
+        for (FSDJumpEvent.Conflict conflict : conflicts) {
+            if (conflict == null) continue;
+            ActiveWar war = of(conflict.getWarType(), conflict.getStatus(),
+                    conflict.getFaction1() == null ? null : conflict.getFaction1().getName(),
+                    conflict.getFaction2() == null ? null : conflict.getFaction2().getName());
+            if (war != null) return war;
+        }
+        return null;
+    }
 
     /**
      * The war these Conflicts fields describe, or null when they describe no war worth flying to.

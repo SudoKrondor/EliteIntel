@@ -20,8 +20,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.lwjgl.sdl.SDLInit.SDL_INIT_GAMEPAD;
-import static org.lwjgl.sdl.SDLInit.SDL_INIT_JOYSTICK;
+import static org.lwjgl.sdl.SDLInit.*;
 
 /**
  * Polls SDL3 for joystick/HOTAS/gamepad/pedal input on a dedicated platform thread. Publishes
@@ -31,6 +30,14 @@ import static org.lwjgl.sdl.SDLInit.SDL_INIT_JOYSTICK;
  * Singleton shared infrastructure: the input monitor, Bindings, and push-to-talk all consume these
  * events rather than owning their own SDL3 context. Call start() once; stop() to shut down
  * cleanly.
+ * <p>
+ * The mouse rides along as a pseudo-device. SDL's mouse <em>events</em> are window-scoped and this process
+ * has no window, so they never arrive while the game holds the focus; {@code SDL_GetGlobalMouseState} reads
+ * the OS-wide button state instead (GetAsyncKeyState on Windows, XQueryPointer on X11) and is sampled on the
+ * same tick as the joysticks. It needs the video subsystem, which is brought up separately so its failure -
+ * no display, a Wayland session with no global pointer state - costs the mouse and nothing else. The mouse
+ * is deliberately absent from {@link #getConnectedDevices()}: that list is what the controller pickers and
+ * the {@code .binds} correlation are built on, and a mouse is neither.
  */
 public class DeviceService {
 
@@ -38,10 +45,42 @@ public class DeviceService {
     private static final int POLL_INTERVAL_MS = 16; // ~60 Hz
     private static final float AXIS_SCALE = 1.0f / 32767.0f;
 
+    /**
+     * The device id a mouse button event carries. SDL3 never hands out joystick id 0 (it is the invalid id),
+     * so it cannot collide with a real controller.
+     */
+    public static final int MOUSE_DEVICE_ID = 0;
+
+    /**
+     * Left, middle, right, X1 (back), X2 (forward) - the five buttons the OS reports as mouse buttons. The
+     * extra keys on a gaming mouse are remapped to keyboard keys by the vendor driver and never appear here.
+     */
+    public static final int MOUSE_BUTTON_COUNT = 5;
+
+    /**
+     * SDL's name for the one desktop where the video subsystem starts and the global mouse state still never
+     * reads anything.
+     */
+    private static final String WAYLAND_DRIVER = "wayland";
+
+    /**
+     * The driver asked for on Linux. On a Wayland desktop SDL would pick {@code wayland} and read nothing,
+     * whereas XWayland - which Proton draws the game through - reports the pointer buttons to any X client
+     * whenever the pointer is over an X window, and a fullscreen game is one. The app has no window of its
+     * own, so it loses nothing by being an X client; on a plain X11 desktop this is what SDL would pick anyway.
+     */
+    private static final String X11_DRIVER = "x11";
+
+    private static final boolean IS_LINUX =
+            System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("linux");
+
     private static volatile DeviceService instance;
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicBoolean available = new AtomicBoolean(false);
+    private final AtomicBoolean mouseAvailable = new AtomicBoolean(false);
+    // SDL button mask from the previous tick. Poll thread only.
+    private int prevMouseMask;
     private volatile Thread pollThread;
 
     // Written only from the poll thread; readable from any thread via CopyOnWriteArrayList.
@@ -67,6 +106,14 @@ public class DeviceService {
     // -------------------------------------------------------------------------
 
     public boolean isAvailable() { return available.get(); }
+
+    /**
+     * Whether mouse buttons are being read. False on a Wayland session or wherever the video subsystem
+     * would not start; a mouse push-to-talk mapping is then inert.
+     */
+    public boolean isMouseAvailable() {
+        return mouseAvailable.get();
+    }
 
     /**
      * Returns a snapshot of currently connected devices - safe to call from any thread.
@@ -126,6 +173,9 @@ public class DeviceService {
                 for (Map.Entry<Integer, Long> entry : openHandles.entrySet()) {
                     pollJoystick(entry.getKey(), entry.getValue());
                 }
+                if (mouseAvailable.get()) {
+                    pollMouse();
+                }
 
                 //noinspection BusyWait
                 Thread.sleep(POLL_INTERVAL_MS);
@@ -136,6 +186,7 @@ public class DeviceService {
             closeAllHandles();
             SDLInit.SDL_Quit();
             available.set(false);
+            mouseAvailable.set(false);
             log.info("Device service stopped");
         }
     }
@@ -191,6 +242,7 @@ public class DeviceService {
                 return false;
             }
             log.info("Device service SDL3 initialized");
+            initMouse();
             return true;
         } catch (UnsatisfiedLinkError | ExceptionInInitializerError | NoClassDefFoundError e) {
             // NoClassDefFoundError is thrown on second access if Library's static init failed.
@@ -198,6 +250,46 @@ public class DeviceService {
             running.set(false);
             DeviceBus.publish(new DeviceServiceStateEvent(false, e.getMessage()));
             return false;
+        }
+    }
+
+    /**
+     * Brings up the video subsystem for the global mouse state. Its failure is reported and swallowed: the
+     * controllers are already up and must stay up.
+     */
+    private void initMouse() {
+        if (IS_LINUX) {
+            SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_DRIVER, X11_DRIVER);
+        }
+        if (!SDLInit.SDL_InitSubSystem(SDL_INIT_VIDEO)) {
+            log.warn("Mouse buttons unavailable, SDL video subsystem failed to start: {}", SDLError.SDL_GetError());
+            return;
+        }
+        String driver = SDLVideo.SDL_GetCurrentVideoDriver();
+        if (WAYLAND_DRIVER.equals(driver)) {
+            // The subsystem comes up fine here, but the global state is a permanent zero: Wayland gives a
+            // client no pointer state outside its own focused window, and this process has no window.
+            log.warn("Mouse buttons unavailable: the {} desktop does not expose global mouse state", driver);
+            return;
+        }
+        prevMouseMask = SDLMouse.SDL_GetGlobalMouseState(null, null);
+        mouseAvailable.set(true);
+        log.info("Mouse buttons readable via global mouse state (video driver: {})", driver);
+    }
+
+    /**
+     * Same delta-only contract as the joystick buttons: a transition per button, nothing while held.
+     */
+    private void pollMouse() {
+        int mask = SDLMouse.SDL_GetGlobalMouseState(null, null);
+        int changed = mask ^ prevMouseMask;
+        if (changed == 0) return;
+        prevMouseMask = mask;
+        for (int b = 0; b < MOUSE_BUTTON_COUNT; b++) {
+            int bit = 1 << b;
+            if ((changed & bit) != 0) {
+                DeviceBus.publish(new DeviceButtonEvent(MOUSE_DEVICE_ID, b, (mask & bit) != 0));
+            }
         }
     }
 

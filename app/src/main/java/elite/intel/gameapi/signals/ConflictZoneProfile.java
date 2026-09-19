@@ -11,34 +11,12 @@ import java.util.Map;
  */
 public record ConflictZoneProfile(int low, int medium, int high, int powerplay) {
 
-    public static final ConflictZoneProfile NONE = new ConflictZoneProfile(0, 0, 0, 0);
-
     /**
      * Zones the commander can drop into for combat bonds. Powerplay zones are excluded because
      * they are a different fight, for a power rather than a faction.
      */
     public int factionWarZones() {
         return low + medium + high;
-    }
-
-    public int total() {
-        return factionWarZones() + powerplay;
-    }
-
-    /**
-     * The larger count of each intensity across the two profiles.
-     * <p>
-     * WHY per intensity rather than picking the richer profile whole: one sweep may catch the high
-     * zones and another the low ones, and the system has both.
-     */
-    public ConflictZoneProfile max(ConflictZoneProfile other) {
-        if (other == null) return this;
-        return new ConflictZoneProfile(
-                Math.max(low, other.low),
-                Math.max(medium, other.medium),
-                Math.max(high, other.high),
-                Math.max(powerplay, other.powerplay)
-        );
     }
 
     public int count(ConflictZoneIntensity intensity) {
