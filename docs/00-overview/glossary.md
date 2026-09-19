@@ -67,9 +67,11 @@ listed so that older notes and mockups can be read correctly:
   on first import — see [First Run](../02-features/bindforge/alias-designer.md#first-run-and-hot-plug).
 - **Alias Designer / Bind Editor / Preset Editor / File Manager** — BindForge's four top-level sections. See
   [BindForge Overview](../02-features/bindforge/overview.md#top-level-structure).
-- **Game Mode / Action Groups / Control Types / Controller Mode / Input Mode / Anomalies** — the six Bind
-  Editor modes. **Game Mode and Anomalies ship in V1.2**; the other four are [deferred](v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16),
-  with their tabs absent from the mode bar rather than greyed out (2026-09-16). Action Groups and Control Types were named "Purpose Mode" and "Type Mode" in earlier design
+- **Game Mode / Action Groups / Control Types / Controller Mode / Input Mode / Anomalies / Settings** — the
+  seven Bind Editor modes. **Game Mode, Anomalies and Settings ship in V1.2**; the other four are
+  [deferred](v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16), with their tabs absent from the mode bar rather than greyed out
+  (2026-09-16). **Settings was added 2026-09-19**, after the trim, because it is a second view over rows the
+  grid already renders rather than a mode's worth of new work. Action Groups and Control Types were named "Purpose Mode" and "Type Mode" in earlier design
   generations; **Anomalies was named "Conflicts" until 2026-09-07**, when it grew to cover reserved keys,
   missing controls and contextually invalid bindings alongside conflicts. See
   [Bind Editor](../02-features/bindforge/bind-editor.md).

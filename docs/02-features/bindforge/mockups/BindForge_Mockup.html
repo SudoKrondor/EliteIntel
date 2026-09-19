@@ -594,11 +594,12 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
     </div>
     <div class="ei-note" style="margin-top:-8px;margin-bottom:14px">Search filters the list below in whichever mode tab is active, and clears with the &times; in the field or Esc. <b>Show Anomalies Only</b> belongs to Game Mode and appears only there: it hides every row with nothing wrong, keeping the game&#39;s own grouping &mdash; the ANOMALIES tab is the cross-section list. Leaving Game Mode hides the checkbox and clears it. Controller Mode is picture-based, not a list &mdash; how (or whether) search applies there is still open.</div>
 
-    <!-- WHY: V1.2 ships GAME MODE and ANOMALIES (Alan, 2026-09-16). The other four are not in the
+    <!-- WHY: V1.2 ships GAME MODE, ANOMALIES and SETTINGS (2026-09-16; Settings added 2026-09-19). The other four are not in the
          mode bar at all - not greyed, not "coming soon" - so they sit in a preview bar of their own. -->
     <div class="ei-subbar">
       <div class="ei-subtab active" id="tab-mode-game" onclick="beShowMode('game')">GAME MODE</div>
       <div class="ei-subtab" id="tab-mode-anomaly" onclick="beShowMode('anomaly')">ANOMALIES &nbsp;(8)</div>
+      <div class="ei-subtab" id="tab-mode-settings" onclick="beShowMode('settings')">SETTINGS</div>
     </div>
 
     <div class="ei-subbar ei-deferredbar">
@@ -608,7 +609,7 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
       <div class="ei-subtab" id="tab-mode-type" onclick="beShowMode('type')">CONTROL TYPES</div>
       <div class="ei-subtab" id="tab-mode-controller" onclick="beShowMode('controller')">CONTROLLER MODE</div>
     </div>
-    <div class="ei-note" style="margin-top:8px">These four modes are <b>designed, not shipped</b>: the V1.2 Bind Editor has <b>GAME MODE</b> and <b>ANOMALIES</b> and nothing else, so the commander is never shown a tab that cannot be opened. They are clickable here because this file is where the design is reviewed &mdash; see <code>v1.2-scope.md</code>, &ldquo;The V1.2 release is trimmed&rdquo;.</div>
+    <div class="ei-note" style="margin-top:8px">These four modes are <b>designed, not shipped</b>: the V1.2 Bind Editor has <b>GAME MODE</b>, <b>ANOMALIES</b> and <b>SETTINGS</b> and nothing else, so the commander is never shown a tab that cannot be opened. They are clickable here because this file is where the design is reviewed &mdash; see <code>v1.2-scope.md</code>, &ldquo;The V1.2 release is trimmed&rdquo;.</div>
 
     <div id="mode-game">
       <div class="ge-contextbar">
@@ -659,7 +660,7 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
                 <span class="ge-deadzone"><span class="ge-deadzone-label">DZ</span><span class="ge-deadzone-track" onclick="event.stopPropagation();geSetDeadzone(event,this)"><span class="ge-deadzone-fill" style="width:0%"></span></span><span class="ge-deadzone-pct">0%</span></span>
               </div>
               <div class="ge-setdivider">SETTINGS &mdash; values, not inputs: nothing to capture, nothing to conflict with</div>
-              <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Throttle Axis Range <span class="ge-xmltag">ThrottleRangeFreeCam</span></span><span class="ge-setval"><select class="ge-setenum" disabled title="Read-only until the legal values for ThrottleRangeFreeCam are captured in-game - testing item 14. Writing a token the game has never written risks it being discarded silently."><option selected>(game default)</option></select></span></div>
+              <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Throttle Axis Range <span class="ge-xmltag">ThrottleRangeFreeCam</span></span><span class="ge-setval"><select class="ge-setenum" title="Vocabulary settled 2026-09-17: the empty value is FULL RANGE."><option selected>FULL RANGE</option><option>FORWARD ONLY</option></select></span></div>
               <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Free Camera Mouse Sensitivity <span class="ge-xmltag">FreeCamMouseSensitivity</span></span><span class="ge-setval"><input class="ge-setnum" value="5.00000000"></span></div>
             </div>
           </div>
@@ -688,9 +689,9 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
               <div class="ge-bindrow" onclick="geSelectRow(this,'Roll Left')"><span class="ge-bindname">Roll Left</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
               <div class="ge-bindrow" onclick="geSelectRow(this,'Roll Right')"><span class="ge-bindname">Roll Right</span><span class="ge-bindval">&mdash;</span><span class="ge-bindval">&mdash;</span></div>
               <div class="ge-setdivider">SETTINGS &mdash; values, not inputs: nothing to capture, nothing to conflict with</div>
-              <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Yaw Into Roll <span class="ge-xmltag">YawToRollMode</span></span><span class="ge-setval"><select class="ge-setenum" disabled title="Read-only until the legal values for YawToRollMode are captured in-game - testing item 14. Writing a token the game has never written risks it being discarded silently."><option selected>Bindings_YawIntoRollNone</option></select></span></div>
+              <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Yaw Into Roll <span class="ge-xmltag">YawToRollMode</span></span><span class="ge-setval"><select class="ge-setenum" title="Three values, from Frontier&#39;s own Help.txt and confirmed in the corpus. The in-game labels for this family were never read off the screen, so the tokens are shown."><option selected>Bindings_YawIntoRollNone</option><option>Bindings_YawIntoRollTime</option><option>Bindings_YawIntoRollLowRoll</option></select></span></div>
               <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Yaw Into Roll Sensitivity <span class="ge-xmltag">YawToRollSensitivity</span></span><span class="ge-setval"><input class="ge-setnum" value="0.40000001"></span></div>
-              <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Yaw Into Roll - Flight Assist Off <span class="ge-xmltag">YawToRollMode_FAOff</span></span><span class="ge-setval"><select class="ge-setenum" disabled title="Read-only until the legal values for YawToRollMode_FAOff are captured in-game - testing item 14. Writing a token the game has never written risks it being discarded silently."><option selected>(game default)</option></select></span></div>
+              <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Yaw Into Roll - Flight Assist Off <span class="ge-xmltag">YawToRollMode_FAOff</span></span><span class="ge-setval"><select class="ge-setenum" title="Same vocabulary as Yaw Into Roll; the empty value is this field&#39;s default."><option selected>(not set)</option><option>Bindings_YawIntoRollNone</option><option>Bindings_YawIntoRollTime</option><option>Bindings_YawIntoRollLowRoll</option></select></span></div>
             </div>
           </div>
 
@@ -704,6 +705,20 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
               <div class="ei-note" style="margin:8px 12px">This group&#39;s bindings are not built out in the mockup (see <b>Mockup Completeness</b>); it is here for the third value shape. <code>DeployHardpointsOnFire</code> is a real entry with its real value from <code>Custom.4.2.binds</code>.</div>
               <div class="ge-setdivider">SETTINGS &mdash; values, not inputs: nothing to capture, nothing to conflict with</div>
               <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Firing Deploys Hardpoints <span class="ge-xmltag">DeployHardpointsOnFire</span></span><span class="ge-setval"><label class="ge-setbool"><input type="checkbox" checked> on</label></span></div>
+            </div>
+          </div>
+
+          <div class="ge-group" data-context="ship">
+            <div class="ge-grouphead" onclick="geToggleGroup(this)" oncontextmenu="return geShowCtxMenu(event)">
+              <span class="ge-chevron">&#9654;</span>
+              <span class="ge-grouplabel">SHIP CONTROLS &mdash; FLIGHT THROTTLE</span>
+              <span class="ge-groupcount">2</span>
+            </div>
+            <div class="ge-grouprows" style="display:none">
+              <div class="ei-note" style="margin:8px 12px">Bindings for this group are not built out in the mockup. It is here for the two shapes nothing else shows: a <b>numeric choice</b>, and a <b>value no vocabulary knows</b> &mdash; <code>Bindings_ThrustForwardOnly</code> is a real hand edit, found in exactly one file out of 47,898. BindForge keeps it and says so; it never quietly corrects it to the nearest legal token.</div>
+              <div class="ge-setdivider">SETTINGS &mdash; values, not inputs: nothing to capture, nothing to conflict with</div>
+              <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Throttle Axis Range <span class="ge-xmltag">ThrottleRange</span></span><span class="ge-setval"><span class="an-sev missing" style="margin-right:6px" title="Bindings_ThrustForwardOnly is not a value the game writes. It is kept exactly as found.">UNRECOGNISED</span><select class="ge-setenum"><option selected>Bindings_ThrustForwardOnly</option><option>FULL RANGE</option><option>FORWARD ONLY</option></select></span></div>
+              <div class="ge-bindrow ge-setrow"><span class="ge-bindname">Throttle Increments <span class="ge-xmltag">ThrottleIncrement</span></span><span class="ge-setval"><select class="ge-setenum" title="Stored as a float: the number is the fraction the label names. 0.10000000 is 10%."><option selected>CONTINUOUS</option><option>10%</option><option>12.5%</option><option>16.7%</option><option>25%</option></select></span></div>
             </div>
           </div>
 
@@ -842,6 +857,12 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
         <div class="im-listcol" id="im-list">
           <div class="ei-placeholder">No input detected yet</div>
         </div>
+      </div>
+    </div>
+    <div id="mode-settings" style="display:none">
+      <div class="ei-note" style="margin-bottom:12px">Every <b>settings entry</b> in the file, in one place &mdash; 93 of them in a real 4.2 file. The same rows GAME MODE shows inline beside the bindings they affect, with the same editors and the same values: inline answers <i>what is set here</i>, this tab answers <i>what can I set</i>. Settings have no input, so there is no capture, no Primary/Secondary and no conflict state. A value no vocabulary knows shows here, marked, and is written back exactly as found.</div>
+      <div class="ge-layout">
+        <div class="ge-gridcol" id="settings-rows"></div>
       </div>
     </div>
     <div id="mode-anomaly" style="display:none">
@@ -2076,6 +2097,32 @@ function anCapture(btn, name, slot){
   geCapture(btn, btn.closest('.ge-bindrow').querySelector('.ge-bindval .ge-badge'), name, slot);
 }
 
+// WHY: one model, two views (Alan, 2026-09-19). GAME MODE shows a setting beside the bindings it affects;
+// this tab shows every one of them at once. The mockup clones the grid's own rows so the two cannot
+// disagree; the real thing renders both from the same model rather than copying.
+function smBuild(){
+  var list = document.getElementById('settings-rows');
+  if(!list) return;
+  list.innerHTML = '';
+  document.querySelectorAll('#ge-grid .ge-group').forEach(function(g){
+    var rows = g.querySelectorAll('.ge-setrow');
+    if(!rows.length) return;
+    var c = g.cloneNode(true);
+    c.querySelectorAll('.ge-bindrow:not(.ge-setrow), .ge-setdivider, .ei-note, .ge-assist')
+     .forEach(function(n){ n.parentNode.removeChild(n); });
+    var head = c.querySelector('.ge-grouphead');
+    if(head) head.removeAttribute('oncontextmenu');
+    var count = c.querySelector('.ge-groupcount');
+    if(count) count.textContent = rows.length;
+    var body = c.querySelector('.ge-grouprows');
+    if(body) body.style.display = '';
+    var chevron = c.querySelector('.ge-chevron');
+    if(chevron) chevron.innerHTML = '&#9660;';
+    list.appendChild(c);
+  });
+}
+document.addEventListener('DOMContentLoaded', smBuild);
+
 function anShow(v){
   ['all','reserved','missing','conflicts','invalid'].forEach(function(k){
     document.getElementById('an-tab-' + k).classList.toggle('active', k === v);
@@ -2123,7 +2170,7 @@ function anShow(v){
 }
 
 function beShowMode(v){
-  var modes=['game','purpose','type','controller','input','anomaly'];
+  var modes=['game','purpose','type','controller','input','anomaly','settings'];
   modes.forEach(function(m){
     document.getElementById('mode-'+m).style.display = (m===v) ? 'block' : 'none';
     document.getElementById('tab-mode-'+m).classList.toggle('active', m===v);

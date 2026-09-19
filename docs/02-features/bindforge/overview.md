@@ -92,6 +92,15 @@ Live File Synchronization assumes a live custom `.binds` file already exists for
 
 **Detection:** the Active Preset file (`StartPreset.#.start` — see [Preset Editor](preset-editor.md)) records, independently per section (General/Ship/SRV/On Foot, the same four sections Preset Editor's own dropdowns manage), which preset is currently active for that section — stock or custom, always known, never guessed. BindForge checks this per section on startup.
 
+**The only reader that exists today cannot do that** (checked 2026-09-18). `BindingsLoader.getActivePresetName()`
+takes the **first non-empty line** of the file, on the stated assumption that the name simply repeats — which
+holds for the common case and fails for exactly the split preset this screen is built to handle. Against the
+shipped specimen `KeyboardMouseOnly / Custom / Custom / Custom`, it reports *KeyboardMouseOnly* and never sees
+the other three. **First-Time Startup is the first screen a new commander meets**, so a mis-detection there
+offers to fix a section that is fine and stays silent about three that are not. Reading all four lines is a
+prerequisite for this feature, not a refinement of it — see [Preset Editor — what exists in code
+today](preset-editor.md#what-exists-in-code-today--checked-2026-09-17).
+
 **If a section is still pointing at a stock, factory preset:** BindForge asks the player whether to create a real custom `.binds` file for that section, seeded from a copy of the *exact* stock preset currently active for it (read from the Active Preset file, not assumed). If the player agrees:
 1. BindForge copies that stock preset's content into a new file in the player's own bindings folder.
 2. BindForge repoints that section's entry in the Active Preset file to the new custom file, through Preset Editor's own existing write path (Save, backed by the standard timestamped-backup-before-write) — the same mechanism the player would use to manually switch presets themselves.
@@ -163,7 +172,7 @@ already references by hex rewrites its bindings, so it waits for Apply — entry
 BindForge's UI is organised into four top-level sections, in this order:
 
 1. **Alias Designer** — device mapping and button/axis naming
-2. **Bind Editor** — viewing and editing bindings, in multiple modes
+2. **Bind Editor** — viewing and editing bindings; [three modes in V1.2](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16), Game Mode, Anomalies and Settings
 3. **Preset Editor** — which `.binds` file loads for each binding section
 4. **File Manager** — backup and restore of all four managed file domains; BindForge's primary feature
 
@@ -324,7 +333,21 @@ Configuration is protected instead by two mechanisms that never depended on Dorm
   original caution — the game overwriting a player's configuration — and offers to restore it, regardless of
   what caused the loss.
 
-**Residual risk, stated plainly:** a write issued at the exact moment the game reads one of these files could still collide. That window is narrow and unmeasured. If it turns out to matter in practice, the cheapest mitigation is a warning at the point of writing rather than a session-long block.
+**Residual risk, restated 2026-09-18 — it is wider than “narrow”, and it is not a torn read.** Two observed
+facts change the shape of it. The game [re-reads `.binds` only when its own Controls screen opens](domain-knowledge/EliteDangerous-BindsFileFormat.md), and an in-game apply
+**re-emits the entire file from the game's in-memory model** — watched directly on a live file, where a save
+with nothing changed still rewrote every value ([how that was established](bind-editor.md#an-in-game-apply-re-emits-the-whole-file--observed-2026-09-17)).
+
+Put together: if a commander opens the Controls screen, BindForge writes, and the commander then applies
+in-game, **BindForge's write is gone in its entirety** — not corrupted, not half-merged, simply replaced by
+what the game loaded when the screen opened. The exposure is not an instant but **the whole time that screen
+is open**, and the loss is whole-file.
+
+**What that does and does not change.** It does not revive Dormant Mode: the game being *running* is still
+not the risk, and blocking for a whole session still costs more than it saves. What it argues for is narrower
+and cheaper — [Destructive Change Detection](#destructive-change-detection) already catches the loss after the
+fact and offers the backup, which is the mitigation that matters. A warning at the point of writing remains
+the next cheapest step if this turns out to bite anyone in practice.
 
 ## Upgrading the Existing Bind Editor
 
@@ -434,7 +457,7 @@ leaving. Recorded here because the wording survives in older notes.
 ## Document Map
 
 - [Alias Designer](alias-designer.md)
-- [Bind Editor](bind-editor.md) — Game Mode, Anomalies and shared conflict detection in V1.2; Action Groups, Input Mode, Control Types and Controller Mode [deferred](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16)
+- [Bind Editor](bind-editor.md) — Game Mode, Anomalies, Settings and shared conflict detection in V1.2; Action Groups, Input Mode, Control Types and Controller Mode [deferred](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16)
 - [Preset Editor](preset-editor.md)
 - [File Manager](file-manager.md)
 - [Roadmap and Open Items](roadmap.md)

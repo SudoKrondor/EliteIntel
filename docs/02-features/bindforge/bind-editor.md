@@ -2,7 +2,8 @@
 
 The Bind Editor is where the player views and edits their actual key/button/axis bindings. It organises the same underlying binding data through multiple **modes**, each offering a different lens on it. Conflict detection is shared infrastructure used by every mode, not owned by any single one — see [Shared Conflict Detection](#shared-conflict-detection) below.
 
-**Two of the six modes ship in V1.2: [Game Mode](#game-mode) and [Anomalies](#anomalies).** Action Groups,
+**Three of the seven modes ship in V1.2: [Game Mode](#game-mode), [Anomalies](#anomalies) and
+[Settings](#settings--settled-2026-09-19).** Action Groups,
 Input Mode, Control Types and Controller Mode are [deferred to a later release](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16),
 and their tabs are not in the mode bar at all for V1.2. Their designs stay in this document, which is what
 makes them cheap to build when they come back — each mode's own section below carries its status.
@@ -12,8 +13,9 @@ makes them cheap to build when they come back — each mode's own section below 
 - A Bindings File dropdown plus Load button, above everything. Load performs the standard [Live File Synchronization](overview.md#live-file-synchronization) freshness check for the Bind Domain before opening the file for editing.
 - A Search box, above all mode tabs — filters whichever list is currently showing in whichever mode tab is active. **It clears in one action**: a × appears inside the field once there is anything to clear, and Esc does the same for anyone whose hands are already on the keyboard — which, in a bind editor, is most of them. Clearing restores the full list and returns focus to the field. Controller Mode is picture-based, not a list, so how (or whether) Search applies there is still open.
 - A **Show Anomalies Only** checkbox, on the same line as Search. **It belongs to Game Mode and appears only there** (settled 2026-09-15). It filters the grid to rows carrying an anomaly — any of the [four kinds](#four-kinds-one-question), not conflicts alone. Leaving Game Mode hides it **and clears it**, so a filter is never left applied where nothing on screen explains it. **Why it exists when [Anomalies](#anomalies) has its own tab:** the tab answers *what is wrong*, gathering every anomaly by kind and severity away from the game's own layout; the checkbox answers *what is wrong here*, keeping the sections and groups the commander is already working in. *Until 2026-09-15 this was shared shell state that meant something different in each mode. [Action Groups](#action-groups) has no filter of its own as a result, and needs none: it is not where conflicts get fixed.*
-- Mode tabs: **Game Mode** and **Anomalies** in V1.2 (settled 2026-09-16). **Action Groups**, **Control
-  Types**, **Controller Mode** and **Input Mode** are documented below but [are not in the mode bar](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16)
+- Mode tabs: **Game Mode**, **Anomalies** and **[Settings](#settings--settled-2026-09-19)** in V1.2 (settled 2026-09-16,
+  Settings added 2026-09-19). **Action Groups**, **Control Types**, **Controller Mode** and **Input Mode** are
+  documented below but [are not in the mode bar](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16)
   for that release — not greyed out, not labelled “coming soon”, not present. Nothing on screen promises a
   view that cannot be opened.
 - A Context Bar of buttons (All / General / Ship / SRV / On Foot) filtering the grid to one section.
@@ -58,6 +60,10 @@ Two different things wear the word *settings*, and only one of them was already 
 **Measured against `reference-data/Custom.4.2.binds`**, a real 4.2 file holds **515 elements: 352
 button-type, 70 axis-type and 93 standalone settings.** The settings are not a rounding error — they are
 nearly a fifth of the file, and until now not one of them was reachable outside the game.
+
+**They also have a tab of their own** — [Settings](#settings--settled-2026-09-19) lists every one of them in a single place,
+for the commander who knows the game has an option somewhere without knowing which section hid it. Same rows,
+same editors, same values.
 
 **Where a settings row goes: with its own subgroup, at the foot of it.** The
 [Action Catalog](domain-knowledge/EliteDangerous-ActionCatalog.md) already files every settings entry under a
@@ -963,6 +969,47 @@ it puts the control back on the list.
 **Layout:** conflicts are grouped by the shared input causing them — each group header names the shared key/chord and how many binds share it, expandable/collapsible the same way Game Mode's grid groups work. Inside a group, each row is tagged with its section plus the action name — the same row shape Game Mode uses, so a conflict reads the same wherever the commander meets it. *Until 2026-09-16 this sentence pointed at Input Mode's list, which is now [deferred](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16).*
 
 **Editing from here:** clicking a row opens the same [capture dialog](#capture-dialog--settled-2026-09-13) used everywhere else, right in place — resolving an anomaly never requires leaving the Anomalies tab and jumping to Game Mode.
+
+## Settings — settled 2026-09-19
+
+**Status: in scope for V1.2.** A third mode tab, after Anomalies, listing **every [settings entry](#settings-entries-are-rows-too--settled-2026-09-16) in the file at once** — all 93 of
+them in a real 4.2 file, grouped the way the game groups them. Alan: *“in the game mode the settings show
+inline with the binds. but we could also make it easy to see them all at once”*.
+
+**Both places, and the split is one this editor already makes.** [Anomalies](#anomalies) gathers every
+anomaly away from the game's layout while the [Show Anomalies Only checkbox](#shell-common-to-all-modes)
+answers the same question inside it; settings divide on exactly that line. **Inline rows answer *what is set
+here*** while the commander is working in a group — mouse sensitivity sitting with the mouse bindings it
+affects. **This tab answers *what can I set*** — which is the question a commander arrives with when they know
+the game has an option somewhere and do not know which section hid it.
+
+**One model, two views.** The tab renders the same rows with the same editors — checkbox, numeric field,
+dropdown — reading the same values. Nothing is editable here that is not editable there, and a change in
+either is the same change. *This is the same relationship [ALL BINDINGS](#action-groups) has with Game Mode's
+grid, for the same reason: two lists that can drift are two bugs waiting.*
+
+**What it does not carry.** No [ASSISTANT column](#the-mechanism-an-assistant-column-in-the-grid--settled-2026-09-12) — Elite-Intel
+drives controls, not sliders. No capture button, no Primary/Secondary, no conflict state: a setting has no
+input to collide with. The shell's Search reaches it like every other list.
+
+**It fits a trimmed release because it costs almost nothing.** The editors, the value shapes and the
+[vocabularies](reference-data/settings-choice-fields.md) are all built for the inline rows already. This tab is
+a second view over them — which is the only kind of tab worth adding to a mode bar that was just cut to
+two.
+
+### Where an unrecognised value shows — and what it settles
+
+**A settings value no vocabulary knows shows *here*, on its own row, marked as unrecognised and preserved
+exactly as written.** That was left open on 2026-09-17, when the only candidate home was [Anomalies](#anomalies):
+it fits the *[Invalid](#four-kinds-one-question)* kind by meaning — the game will discard a token it does not
+know — but putting five files in forty-eight thousand into the tab a commander opens to find broken bindings
+would be a poor trade. **A Settings tab gives it the obvious home instead:** beside the value, where the
+commander can see what it is and choose a real option, rather than in a list of things that stop the game
+working.
+
+The rule underneath is unchanged: BindForge **shows the unknown value and writes it back untouched** unless
+the commander picks something else — see
+[real files are messier than any specification](#real-files-are-messier-than-any-specification).
 
 ## Mouse Inputs Are Chosen, Not Captured
 
