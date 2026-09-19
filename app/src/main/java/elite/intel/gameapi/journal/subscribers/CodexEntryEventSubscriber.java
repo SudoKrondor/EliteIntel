@@ -35,7 +35,7 @@ public class CodexEntryEventSubscriber {
             // species, so that trailing save landed seconds later on top of the sample the scan
             // handler had recorded, and the first sample of every new species vanished.
             LocationDto currentLocation = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBodyID());
-            String starName = locationManager.findBySystemAddress(event.getSystemAddress()).getStarName();
+            String starName = locationManager.findStarName(event.getSystemAddress());
             currentLocation.setStarName(starName); // for the codex lookups below, persisted or not
             // A codex entry can name a body we hold no row for. That row is keyed on the body name,
             // which this event does not carry, so there is nothing to persist - and persisting anyway
@@ -91,9 +91,10 @@ public class CodexEntryEventSubscriber {
 
 
             if (!alreadyHaveThisEntry) {
-                sb.append(", ");
+                // The category line above already closed its sentence; a separator here with nothing after it
+                // (no voucher, payment already announced) left the payload ending in a bare comma.
                 if (event.getVoucherAmount() > 0) {
-                    sb.append(localizedEvent("event.codex.voucher", TTSFriendlyNumberConverter.formatCreditsForSpeech(event.getVoucherAmount())));
+                    sb.append(" ").append(localizedEvent("event.codex.voucher", TTSFriendlyNumberConverter.formatCreditsForSpeech(event.getVoucherAmount())));
                 }
                 Boolean isAnnounced = playerSession.paymentHasBeenAnnounced(genus);
 

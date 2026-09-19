@@ -16,7 +16,7 @@ public class ScanBaryCentreSubscriber {
 
             /// set galactic coordinates of the primary star
             LocationDto primaryStarLocation = locationManager.findBySystemAddress(event.getSystemAddress());
-            location.setStarName(primaryStarLocation.getStarName());
+            location.setStarName(locationManager.findStarName(event.getSystemAddress()));
             location.setX(primaryStarLocation.getX());
             location.setY(primaryStarLocation.getY());
             location.setZ(primaryStarLocation.getZ());

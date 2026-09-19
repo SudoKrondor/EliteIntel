@@ -125,6 +125,54 @@ class LocationSubscriberTest {
     }
 
     /**
+     * A commander who starts the session inside a system never jumped into it, so the jump's EDSM body pull never
+     * ran. Every body on record then came from the commander's own scans - and the FSS repeats no Scan for a body
+     * resolved on an earlier visit, so a system already surveyed had no classified moons at all.
+     */
+    @Test
+    void aStartInASystemWithNoBodiesOnRecordFilesEdsmsBodyList() throws InterruptedException {
+        // A system no other test writes to: the table is shared across the run, and a moon another test
+        // already classified would both satisfy the wait early and make the fetch look unnecessary.
+        long sysAddr = 3932277478106L;
+        String star = "Hyades Sector DB-X d1-112";
+        wm.stubFor(get(urlPathEqualTo("/api-system-v1/bodies"))
+                .willReturn(ok()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"name":"Hyades Sector DB-X d1-112","bodies":[
+                                  {"bodyId":24,"name":"Hyades Sector DB-X d1-112 6","type":"Planet","subType":"Gas giant with water based life",
+                                   "distanceToArrival":2400.0,"parents":[{"Star":0}]},
+                                  {"bodyId":27,"name":"Hyades Sector DB-X d1-112 6 c","type":"Planet","subType":"Rocky body",
+                                   "distanceToArrival":2401.0,"parents":[{"Planet":24},{"Star":0}]}
+                                ]}
+                                """)));
+
+        subscriber.onLocationEvent(locationEvent(star, sysAddr, star, "StarSystem", "Independent"));
+
+        awaitTrue(() -> locationManager.findBySystemAddress(sysAddr, 27L).getLocationType() == LocationDto.LocationType.MOON);
+
+        assertEquals(LocationDto.LocationType.PLANET, locationManager.findBySystemAddress(sysAddr, 24L).getLocationType());
+        assertEquals("Hyades Sector DB-X d1-112 6 c", locationManager.findBySystemAddress(sysAddr, 27L).getPlanetName());
+    }
+
+    @Test
+    void aSystemWhoseBodiesAreAlreadyOnRecordIsNotFetchedAgain() throws InterruptedException {
+        long sysAddr = 2283077046962L;
+        String star = "Hyades Sector MH-V c2-8";
+        LocationDto planet = new LocationDto(7L, sysAddr);
+        planet.setStarName(star);
+        planet.setPlanetName(star + " 7");
+        planet.setLocationType(LocationDto.LocationType.PLANET);
+        locationManager.save(planet);
+
+        subscriber.onLocationEvent(locationEvent(star, sysAddr, star, "StarSystem", "Independent"));
+
+        awaitTrue(() -> locationManager.findBySystemAddress(sysAddr, star).getTrafficDto() != null);
+
+        wm.verify(0, getRequestedFor(urlPathEqualTo("/api-system-v1/bodies")));
+    }
+
+    /**
      * Shaped after a verbatim docked Location line: the Body is the moon, the station is the carrier on it.
      */
     private static LocationEvent dockedAtCarrier(String starSystem, long systemAddress, String body,

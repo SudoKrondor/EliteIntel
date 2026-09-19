@@ -23,8 +23,7 @@ import java.util.Locale;
 import static elite.intel.util.ExoBio.calculateGenusNotYetScanned;
 import static elite.intel.util.ExoBio.completedScansForPlanet;
 import static elite.intel.util.NavigationUtils.calculateSurfaceDistance;
-import static elite.intel.util.StringUtls.localizedEvent;
-import static elite.intel.util.StringUtls.subtractString;
+import static elite.intel.util.StringUtls.*;
 
 public class ScanOrganicSubscriber {
 
@@ -66,7 +65,7 @@ public class ScanOrganicSubscriber {
             String species = subtractString(event.getSpeciesLocalised(), genus);
             if (event.getBody() == null) return;
             LocationDto currentLocation = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBody());
-            String starName = locationManager.findBySystemAddress(event.getSystemAddress()).getStarName();
+            String starName = locationManager.findStarName(event.getSystemAddress());
             currentLocation.setStarName(starName);
             playerSession.setCurrentLocationId(event.getBody(), event.getSystemAddress());
 
@@ -141,9 +140,7 @@ public class ScanOrganicSubscriber {
                             location -> location.markBioScansCompleted());
                 } else {
                     sb.append(" ").append(localizedEvent("event.organic.remainingGenus")).append(" ");
-                    for (GenusDto entry : remainingSpecies) {
-                        sb.append(entry.getGenusLocalised()).append(", ");
-                    }
+                    sb.append(spokenList(remainingSpecies.stream().map(GenusDto::getGenusLocalised).toList()));
                 }
 
                 announce(sb.toString());

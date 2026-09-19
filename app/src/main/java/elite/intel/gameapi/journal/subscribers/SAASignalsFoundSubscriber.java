@@ -20,6 +20,7 @@ import java.util.List;
 import static elite.intel.gameapi.journal.events.dto.LocationDto.LocationType.PLANETARY_RING;
 
 import static elite.intel.util.StringUtls.localizedEvent;
+import static elite.intel.util.StringUtls.spokenList;
 
 public class SAASignalsFoundSubscriber {
 
@@ -30,12 +31,12 @@ public class SAASignalsFoundSubscriber {
         Status status = Status.getInstance();
         if (status.isInMainShip() && !status.isLanded() && !status.isDocked()) {
             String instructions = """
-                        Report the signals detected on this body. List each signal type briefly, with how
-                        many of it were found.
+                        Report the signals detected on the body the sensor data names, and say which body it
+                        is. List each signal type briefly, with how many of it were found.
                         If biological signals are present, name each genus and state the average projected payout.
                         State a first-discovery bonus only if the sensor data gives one, and keep any doubt it
                         expresses about it - never present an uncertain bonus as earnings.
-                        If the sensor data says the survey here is already complete, say so and list no genus.
+                        If the sensor data says the survey there is already complete, say only that, naming the body.
                     """;
             VegaRuntime.narrator().narrate(sb, instructions);
         }
@@ -51,7 +52,7 @@ public class SAASignalsFoundSubscriber {
             LocationDto primaryStarLocation = locationManager.findBySystemAddress(event.getSystemAddress());
             location.setPlanetName(event.getBodyName());
             location.setBodyId(event.getBodyID());
-            location.setStarName(primaryStarLocation.getStarName());
+                location.setStarName(locationManager.findStarName(event.getSystemAddress()));
             location.setX(primaryStarLocation.getX());
             location.setY(primaryStarLocation.getY());
             location.setZ(primaryStarLocation.getZ());
@@ -63,56 +64,24 @@ public class SAASignalsFoundSubscriber {
 
             if (signalsFound > 0) {
                 int liveSignals = event.getGenuses() != null ? event.getGenuses().size() : 0;
-                sb.append(" ").append(localizedEvent("event.signals.found")).append(" ");
-                for (SAASignalsFoundEvent.Signal signal : signals) {
-                    // The game's own wording, never the symbol - see SignalName. The mining update added
-                    // $PlanetaryMiningLocation_Name; and the narrator read it out as it stood.
-                    String type = SignalName.display(signal.getTypeLocalised(), signal.getType());
-                    // With the count: a body can carry 29 mining locations and 2 geological sites, and which
-                    // is worth the detour is the whole question the report is there to answer.
-                    if (type != null) {
-                        sb.append(" ").append(localizedEvent("event.signals.type", type, signal.getCount()));
-                    }
-                }
-
                 if (liveSignals > 0) {
                     location.setBioSignals(liveSignals);
                     location.setGenus(toGenusDto(event.getGenuses(), location.getPlanetName()));
-                    boolean alreadySampledOut = surveyAlreadyComplete(location);
+                }
+                // The game re-reports every mapped body that comes into range in supercruise, so on the run
+                // between a carrier and the unsurveyed moons of a system this fires for every surveyed one
+                // passed. A body yields its organics once: for one already sampled out the whole listing is
+                // data the commander has, and re-listing the genuses reads as work to do. One named sentence.
+                // Named in both forms, because two surveyed moons with the same counts, nine seconds apart,
+                // were heard as one report twice.
+                boolean alreadySampledOut = liveSignals > 0 && surveyAlreadyComplete(location);
+                if (alreadySampledOut) {
+                    sb.append(" ").append(localizedEvent("event.signals.bioSurveyAlreadyComplete", event.getBodyName()));
+                } else {
+                    appendSignalReport(sb, event, location, liveSignals);
+                }
 
-                    if (alreadySampledOut) {
-                        // A body yields its organics once. Re-listing the genuses here reads as work to
-                        // do, so the commander is told plainly that this one is spent instead.
-                        sb.append(" ").append(localizedEvent("event.signals.bioSurveyAlreadyComplete"));
-                    } else {
-                        sb.append(" ").append(localizedEvent("event.signals.exobio", liveSignals));
-
-                        long averageProjectedPayment = 0;
-                        long averageFirstDiscoveryBonus = 0;
-                        for (SAASignalsFoundEvent.Genus genus : event.getGenuses()) {
-                            BioForms.ProjectedPayment averagePayment = BioForms.getAverageProjectedPayment(genus.getGenus());
-                            if (averagePayment != null) {
-                                averageProjectedPayment = averageProjectedPayment + averagePayment.payment();
-                                averageFirstDiscoveryBonus = averageFirstDiscoveryBonus + averagePayment.firstDiscoveryBonus();
-                            }
-                            sb.append(" ");
-                            sb.append(genus.getGenusLocalised());
-                            sb.append(", ");
-                        }
-                        sb.append(localizedEvent("event.signals.avgPayment", TTSFriendlyNumberConverter.formatCreditsForSpeech(averageProjectedPayment)));
-                        // The bonus is Vista Genomics' payment for being first to log the organism, which
-                        // is not the same question as who charted the body. On a body nobody had found,
-                        // nobody can have sampled it either, so the bonus is ours to claim. On a charted
-                        // body it is genuinely unknown - the journal never says whether anyone sampled
-                        // here - so it is offered as a possibility, never added to a projection.
-                        if (averageFirstDiscoveryBonus > 0) {
-                            sb.append(" ").append(location.isOurDiscovery()
-                                    ? localizedEvent("event.signals.firstDiscoveryBonus", TTSFriendlyNumberConverter.formatCreditsForSpeech(averageFirstDiscoveryBonus))
-                                    : localizedEvent("event.signals.firstDiscoveryBonusUncertain", TTSFriendlyNumberConverter.formatCreditsForSpeech(averageFirstDiscoveryBonus)));
-                        }
-                    }
-
-                } else if (event.getBodyName().contains("Ring")) {
+                if (liveSignals == 0 && event.getBodyName().contains("Ring")) {
                     // Rings are bodies. Classify and enrich the same `location` we save below - do NOT
                     // build a second DTO with the same name, or the trailing save(location) overwrites it.
                     location.setLocationType(PLANETARY_RING);
@@ -146,6 +115,50 @@ public class SAASignalsFoundSubscriber {
         });
     }
 
+
+    /**
+     * The full report for a body still worth the detour: every signal type with its count, and for organics the
+     * genuses with the projected payout.
+     */
+    private static void appendSignalReport(StringBuilder sb, SAASignalsFoundEvent event, LocationDto location, int liveSignals) {
+        sb.append(" ").append(localizedEvent("event.signals.found", event.getBodyName())).append(" ");
+        for (SAASignalsFoundEvent.Signal signal : event.getSignals()) {
+            // The game's own wording, never the symbol - see SignalName. The mining update added
+            // $PlanetaryMiningLocation_Name; and the narrator read it out as it stood.
+            String type = SignalName.display(signal.getTypeLocalised(), signal.getType());
+            // With the count: a body can carry 29 mining locations and 2 geological sites, and which
+            // is worth the detour is the whole question the report is there to answer.
+            if (type != null) {
+                sb.append(" ").append(localizedEvent("event.signals.type", type, signal.getCount()));
+            }
+        }
+        if (liveSignals == 0) return;
+
+        sb.append(" ").append(localizedEvent("event.signals.exobio", liveSignals));
+        long averageProjectedPayment = 0;
+        long averageFirstDiscoveryBonus = 0;
+        List<String> genusNames = new ArrayList<>();
+        for (SAASignalsFoundEvent.Genus genus : event.getGenuses()) {
+            BioForms.ProjectedPayment averagePayment = BioForms.getAverageProjectedPayment(genus.getGenus());
+            if (averagePayment != null) {
+                averageProjectedPayment = averageProjectedPayment + averagePayment.payment();
+                averageFirstDiscoveryBonus = averageFirstDiscoveryBonus + averagePayment.firstDiscoveryBonus();
+            }
+            genusNames.add(genus.getGenusLocalised());
+        }
+        sb.append(" ").append(spokenList(genusNames)).append(" ");
+        sb.append(localizedEvent("event.signals.avgPayment", TTSFriendlyNumberConverter.formatCreditsForSpeech(averageProjectedPayment)));
+        // The bonus is Vista Genomics' payment for being first to log the organism, which
+        // is not the same question as who charted the body. On a body nobody had found,
+        // nobody can have sampled it either, so the bonus is ours to claim. On a charted
+        // body it is genuinely unknown - the journal never says whether anyone sampled
+        // here - so it is offered as a possibility, never added to a projection.
+        if (averageFirstDiscoveryBonus > 0) {
+            sb.append(" ").append(location.isOurDiscovery()
+                    ? localizedEvent("event.signals.firstDiscoveryBonus", TTSFriendlyNumberConverter.formatCreditsForSpeech(averageFirstDiscoveryBonus))
+                    : localizedEvent("event.signals.firstDiscoveryBonusUncertain", TTSFriendlyNumberConverter.formatCreditsForSpeech(averageFirstDiscoveryBonus)));
+        }
+    }
 
     private long findParentId(String parentBodyName, Collection<LocationDto> allLocationsInStarSystem) {
         for (LocationDto dto : allLocationsInStarSystem) {

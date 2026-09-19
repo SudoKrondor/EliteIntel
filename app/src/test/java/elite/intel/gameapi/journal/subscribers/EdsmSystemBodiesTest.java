@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * star's class in spectralClass and a planet's in subType, so reading the wrong one stored stars as
  * planets whose type was a spectral code such as "M5".
  */
-class JumpCompletedSubscriberTest {
+class EdsmSystemBodiesTest {
 
     @Test
     void aStarsSpectralClassIsRecordedAsItsStarClass() {
@@ -57,7 +57,7 @@ class JumpCompletedSubscriberTest {
         LocationDto body = new LocationDto(4L);
         body.setPlanetClass("High metal content body");
 
-        JumpCompletedSubscriber.applyBodyClass(body, bodyData("""
+        EdsmSystemBodies.applyBodyClass(body, bodyData("""
                 {"bodyId":4,"name":"Sawait 4","type":"Planet","subType":"High metal content world"}
                 """));
 
@@ -109,12 +109,12 @@ class JumpCompletedSubscriberTest {
     }
 
     private static LocationDto.LocationType classify(String edsmBodyJson) {
-        return JumpCompletedSubscriber.classifyEdsmBody(bodyData(edsmBodyJson));
+        return EdsmSystemBodies.classifyEdsmBody(bodyData(edsmBodyJson));
     }
 
     private static LocationDto apply(String edsmBodyJson) {
         LocationDto body = new LocationDto(4L);
-        JumpCompletedSubscriber.applyBodyClass(body, bodyData(edsmBodyJson));
+        EdsmSystemBodies.applyBodyClass(body, bodyData(edsmBodyJson));
         return body;
     }
 

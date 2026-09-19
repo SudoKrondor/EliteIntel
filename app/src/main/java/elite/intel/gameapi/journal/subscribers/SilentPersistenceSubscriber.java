@@ -330,6 +330,28 @@ public class SilentPersistenceSubscriber {
         log.debug("PreScan: saved scan {}", event.getBodyName());
     }
 
+    /**
+     * The FSS repeats no Scan for a body the commander resolved on an earlier visit, so for such a body the
+     * signal report is the only journal line there is - and the live bus skips every line older than the
+     * app start. Without this the six bio moons the commander FSS'd before a restart stayed unknown until
+     * they were FSS'd again.
+     */
+    @Subscribe
+    public void onFSSBodySignals(FSSBodySignalsEvent event) {
+        if (event.getBodyID() == null) return;
+
+        LocationDto location = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBodyID());
+        LocationDto primaryStar = locationManager.findBySystemAddress(event.getSystemAddress());
+        location.setX(primaryStar.getX());
+        location.setY(primaryStar.getY());
+        location.setZ(primaryStar.getZ());
+        if (FSSBodySignalsSubscriber.file(location, event, locationManager.findStarName(event.getSystemAddress())) == null)
+            return;
+
+        locationManager.save(location);
+        log.debug("PreScan: saved FSS body signals {}", event.getBodyName());
+    }
+
     @Subscribe
     public void onSAASignalsFound(SAASignalsFoundEvent event) {
         if (event.getBodyName() == null) return;
@@ -339,7 +361,7 @@ public class SilentPersistenceSubscriber {
         location.setBodyId(event.getBodyID());
         location.setSystemAddress(event.getSystemAddress());
         location.setPlanetName(event.getBodyName());
-        location.setStarName(primaryStar.getStarName());
+        location.setStarName(locationManager.findStarName(event.getSystemAddress()));
         location.setX(primaryStar.getX());
         location.setY(primaryStar.getY());
         location.setZ(primaryStar.getZ());

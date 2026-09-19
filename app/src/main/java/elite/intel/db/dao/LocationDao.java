@@ -15,12 +15,16 @@ import java.util.List;
 @RegisterRowMapper(LocationDao.LocationMapper.class)
 public interface LocationDao {
 
+    // WHY primaryStar is updated on conflict: a row is keyed on its name and keeps that name for life, but a
+    // carrier's row moves system with the carrier. Left out of the update, the column kept the system the row
+    // was first saved in through every jump, so a lookup by system name found the carrier where it no longer was.
     @SqlUpdate("""
             INSERT INTO location (inGameId, locationName, primaryStar, systemAddress, json)
             VALUES (:inGameId, :locationName, :primaryStar, :systemAddress, :json)
             ON CONFLICT(locationName) DO UPDATE SET
                 json = excluded.json,
                 inGameId = excluded.inGameId,
+                primaryStar = excluded.primaryStar,
                 systemAddress = excluded.systemAddress
             """)
     void upsert(
@@ -43,6 +47,14 @@ public interface LocationDao {
 
     @SqlQuery("select * from location where primaryStar = :starSystem and json like '%\"PRIMARY_STAR\"%'")
     Location findPrimaryStar(@Bind("starSystem") String starSystem);
+
+    /**
+     * The name of the system at this address, read from the record's own starName rather than the primaryStar
+     * column: until the upsert above learned to update that column, a carrier kept the name of the system it was
+     * first saved in through every jump, so the column can still disagree with the record on an older database.
+     */
+    @SqlQuery("select json->>'$.starName' from location where systemAddress = :systemAddress and json->>'$.starName' is not null and json->>'$.starName' != '' limit 1")
+    String findStarName(@Bind("systemAddress") long systemAddress);
 
     @SqlQuery("""
             SELECT location.primaryStar,
