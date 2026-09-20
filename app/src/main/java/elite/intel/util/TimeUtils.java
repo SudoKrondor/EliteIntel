@@ -37,7 +37,12 @@ public class TimeUtils {
      *
      */
     public static String transformToYMDHtimeAgo(String dateAsString, String pattern) {
-        LocalDateTime updatedDateTime = LocalDateTime.parse(dateAsString.substring(0, 19), DateTimeFormatter.ofPattern(pattern));
+        // handle the 'T' separator only if needed for a space-separated pattern
+        String value = dateAsString.substring(0, 19);
+        if (!pattern.contains("'T'")) {
+            value = value.replace('T', ' ');
+        }
+        LocalDateTime updatedDateTime = LocalDateTime.parse(value, DateTimeFormatter.ofPattern(pattern));
         LocalDateTime now = LocalDateTime.now();
         Duration duration = Duration.between(updatedDateTime, now);
 
