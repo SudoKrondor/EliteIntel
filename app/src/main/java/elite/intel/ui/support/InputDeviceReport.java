@@ -211,10 +211,11 @@ final class InputDeviceReport {
     }
 
     private static long safeUint(Object value) {
-    if (value instanceof Number) return ((Number) value).longValue();
+        if (value instanceof Number number) return number.longValue();
+        if (value == null) return 0;
         try {
             return Long.parseLong(value.toString().trim());
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
             return 0;
         }
     }

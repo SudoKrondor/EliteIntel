@@ -19,13 +19,15 @@ public final class MultiLingualTextProvider {
     }
 
     public static String getText(String key, Object... args) {
-        String pattern = resolveText(locale(), key);
-        return args.length == 0 ? pattern : MessageFormat.format(pattern, args);
+        Locale locale = locale();
+        String pattern = resolveText(locale, key);
+        return args.length == 0 ? pattern : new MessageFormat(pattern, locale).format(args);
     }
 
     public static String getText(Language language, String key, Object... args) {
-        String pattern = resolveText(locale(language), key);
-        return args.length == 0 ? pattern : MessageFormat.format(pattern, args);
+        Locale locale = locale(language);
+        String pattern = resolveText(locale, key);
+        return args.length == 0 ? pattern : new MessageFormat(pattern, locale).format(args);
     }
 
     private static String resolveText(Locale locale, String key) {
