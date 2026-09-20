@@ -153,6 +153,33 @@ public final class ReservedKeyChords {
     }
 
     /**
+     * The keyboard keys on the game-menu control, from the executable <em>slot</em> map.
+     * <p>
+     * Same rule as {@link #gameMenuKeysFromSlots}, for callers that hold the keyboard-only
+     * {@link KeyBindingsParser.BindingSlots} rather than the read-only model: both slots count,
+     * because a commander with a key in each has two keys that open the menu. Separately named
+     * only because the two slot maps erase to the same signature.
+     */
+    public static Set<String> gameMenuKeysFromExecutableSlots(
+            Map<String, KeyBindingsParser.BindingSlots> slots) {
+        if (slots == null) {
+            return Set.of();
+        }
+        KeyBindingsParser.BindingSlots menu = slots.get(GAME_MENU_ACTION);
+        if (menu == null) {
+            return Set.of();
+        }
+        Set<String> keys = new LinkedHashSet<>();
+        if (menu.primary() != null) {
+            keys.addAll(mainKeySet(menu.primary().key));
+        }
+        if (menu.secondary() != null) {
+            keys.addAll(mainKeySet(menu.secondary().key));
+        }
+        return Set.copyOf(keys);
+    }
+
+    /**
      * Every control in the file that is already bound to a reserved key or chord.
      * <p>
      * Refusing one at assignment time only helps the commander who assigns it through EliteIntel.

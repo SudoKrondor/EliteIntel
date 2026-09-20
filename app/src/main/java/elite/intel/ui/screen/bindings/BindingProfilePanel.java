@@ -87,6 +87,8 @@ public class BindingProfilePanel extends JPanel {
      * each load.
      */
     private Map<String, Set<String>> conflictsByBinding = Map.of();
+    /** Per binding id, the chord the scan actually matched on - which may sit in either slot. */
+    private Map<String, Set<String>> conflictChordsByBinding = Map.of();
     /**
      * Each binding id mapped to its ship/SRV twin id(s) bound to a different key. Drives the CYAN
      * row tint and the soft "use the same key" callout - a recommendation, never a conflict.
@@ -304,9 +306,11 @@ public class BindingProfilePanel extends JPanel {
 
             Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots =
                     parser.parseReadOnlyBindingSlots(workingCopyPath.toFile());
-            Map<String, KeyBindingsParser.KeyBinding> parsedBindings = effectiveBindings(slots);
-            conflictsByBinding = computeConflicts(parsedBindings);
-            recommendationsByBinding = computeRecommendations(parsedBindings);
+            Map<String, KeyBindingsParser.BindingSlots> parsedSlots = parser.toExecutableSlots(slots);
+            ConflictIndex conflicts = computeConflicts(parsedSlots);
+            conflictsByBinding = conflicts.partners();
+            conflictChordsByBinding = conflicts.chords();
+            recommendationsByBinding = computeRecommendations(parsedSlots);
 
             currentSlots = slots;
             activeBindingsFile = workingCopyPath.toFile();
@@ -320,13 +324,16 @@ public class BindingProfilePanel extends JPanel {
 
             renderBindingTables();
 
-            // The AiTab badge reflects only the controls EliteIntel itself drives.
+            // The AiTab badge reflects only the controls EliteIntel itself drives, so it reads the
+            // collapsed execution view - the one slot we would press - not both slots.
+            Map<String, KeyBindingsParser.KeyBinding> executable = parser.toExecutableBindings(parsedSlots);
             UiBus.publish(new BindingsSummaryChangedEvent(
-                    monitor.findMissingGameBindings(parsedBindings).size(),
-                    monitor.findFoundGameBindings(parsedBindings).size()));
+                    monitor.findMissingGameBindings(executable).size(),
+                    monitor.findFoundGameBindings(executable).size()));
         } catch (Exception e) {
             UiBus.publish(new BindingsSummaryChangedEvent(0, 0));
             conflictsByBinding = Map.of();
+            conflictChordsByBinding = Map.of();
             recommendationsByBinding = Map.of();
             clearLoadedBindingsSnapshot();
             profileField.setText(getText("bindings.notAvailable"));
@@ -834,43 +841,26 @@ public class BindingProfilePanel extends JPanel {
     }
 
     /**
-     * Builds the same keyboard-only view that command execution uses while keeping
-     * diagnostic slots available for tables.
-     * <p>
-     * Non-keyboard slots remain visible in the read-only UI, but they are not included
-     * in this map and therefore still count as missing for EliteIntel command execution.
-     */
-    private Map<String, KeyBindingsParser.KeyBinding> effectiveBindings(
-            Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots) {
-        Map<String, KeyBindingsParser.KeyBinding> bindings = new HashMap<>();
-        for (Map.Entry<String, KeyBindingsParser.ReadOnlyBindingSlots> entry : slots.entrySet()) {
-            KeyBindingsParser.KeyBinding keyBinding = executableBinding(entry.getValue().primary());
-            if (keyBinding == null)
-                keyBinding = executableBinding(entry.getValue().secondary());
-            if (keyBinding != null)
-                bindings.put(entry.getKey(), keyBinding);
-        }
-        return bindings;
-    }
-
-    private KeyBindingsParser.KeyBinding executableBinding(KeyBindingsParser.ReadOnlyBindingSlot slot) {
-        if (slot == null || !slot.keyboardUsable())
-            return null;
-        return parser.new KeyBinding(slot.key(), slot.modifiers(), slot.hold());
-    }
-
-    /**
      * Maps every conflicting binding id to the (sorted) ids it shares a chord with. The {@code keySet}
      * drives the RED/green row coloring; the partner lists feed the hover callout.
      */
-    private Map<String, Set<String>> computeConflicts(
-            Map<String, KeyBindingsParser.KeyBinding> bindings) {
+    private ConflictIndex computeConflicts(
+            Map<String, KeyBindingsParser.BindingSlots> bindings) {
         Map<String, Set<String>> conflicts = new HashMap<>();
-        for (BindingConflictScanner.Conflict conflict : BindingConflictScanner.scan(bindings)) {
+        Map<String, Set<String>> chords = new HashMap<>();
+        for (BindingConflictScanner.Conflict conflict : BindingConflictScanner.scanSlots(bindings)) {
             conflicts.computeIfAbsent(conflict.actionA(), k -> new TreeSet<>()).add(conflict.actionB());
             conflicts.computeIfAbsent(conflict.actionB(), k -> new TreeSet<>()).add(conflict.actionA());
+            chords.putIfAbsent(conflict.actionA(), conflict.chord());
+            chords.putIfAbsent(conflict.actionB(), conflict.chord());
         }
-        return conflicts;
+        return new ConflictIndex(conflicts, chords);
+    }
+
+    /**
+     * Conflict partners and the chord each binding collides on, from a single scan.
+     */
+    private record ConflictIndex(Map<String, Set<String>> partners, Map<String, Set<String>> chords) {
     }
 
     /**
@@ -915,9 +905,9 @@ public class BindingProfilePanel extends JPanel {
      * directions). The {@code keySet} drives the CYAN tint; the partner lists feed the soft callout.
      */
     private Map<String, Set<String>> computeRecommendations(
-            Map<String, KeyBindingsParser.KeyBinding> bindings) {
+            Map<String, KeyBindingsParser.BindingSlots> bindings) {
         Map<String, Set<String>> recommendations = new HashMap<>();
-        for (BindingConflictScanner.Recommendation r : BindingConflictScanner.recommendVehicleTwins(bindings)) {
+        for (BindingConflictScanner.Recommendation r : BindingConflictScanner.recommendVehicleTwinsFromSlots(bindings)) {
             recommendations.computeIfAbsent(r.shipAction(), k -> new TreeSet<>()).add(r.buggyAction());
             recommendations.computeIfAbsent(r.buggyAction(), k -> new TreeSet<>()).add(r.shipAction());
         }
@@ -1038,21 +1028,36 @@ public class BindingProfilePanel extends JPanel {
         if (slots == null) {
             return "";
         }
-        KeyBindingsParser.ReadOnlyBindingSlot slot = conflictingSlot(slots);
+        KeyBindingsParser.ReadOnlyBindingSlot slot =
+                conflictingSlot(slots, conflictChordsByBinding.get(bindingId));
         return slot == null ? "" : slotFormatter.formatChord(slot.bindingModifiers(), slot.key());
     }
 
     /**
-     * The keyboard-usable slot the conflict scanner matched on - primary first, then secondary.
+     * The slot whose chord is the one the scan matched on.
+     * <p>
+     * WHY it is not simply "the Primary": the scan reads both slots, so a binding can be in conflict
+     * on its Secondary while its Primary holds a different chord entirely. Naming the Primary there
+     * sends the commander to rebind a key that is not in collision.
      */
-    private KeyBindingsParser.ReadOnlyBindingSlot conflictingSlot(KeyBindingsParser.ReadOnlyBindingSlots slots) {
-        if (slots.primary() != null && slots.primary().keyboardUsable()) {
+    private KeyBindingsParser.ReadOnlyBindingSlot conflictingSlot(
+            KeyBindingsParser.ReadOnlyBindingSlots slots, Set<String> conflictChord) {
+        if (conflictChord == null || conflictChord.isEmpty()) {
+            return null;
+        }
+        if (matchesChord(slots.primary(), conflictChord)) {
             return slots.primary();
         }
-        if (slots.secondary() != null && slots.secondary().keyboardUsable()) {
+        if (matchesChord(slots.secondary(), conflictChord)) {
             return slots.secondary();
         }
         return null;
+    }
+
+    private boolean matchesChord(KeyBindingsParser.ReadOnlyBindingSlot slot, Set<String> chord) {
+        return slot != null
+                && slot.keyboardUsable()
+                && chord.equals(BindingConflictScanner.chordOf(slot.key(), Arrays.asList(slot.modifiers())));
     }
 
     private Map<BindingSection, List<Object[]>> groupedRows() {
@@ -1120,7 +1125,7 @@ public class BindingProfilePanel extends JPanel {
                 slotType,
                 slot,
                 availabilityService,
-                effectiveBindings(currentSlots),
+                parser.toExecutableSlots(currentSlots),
                 conflictsByBinding.get(bindingId),
                 conflictChordText(bindingId)
         );

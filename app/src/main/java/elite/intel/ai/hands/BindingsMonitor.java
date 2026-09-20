@@ -60,12 +60,24 @@ public class BindingsMonitor {
     private Path bindingsDir;
     // Written by the monitor thread's initial parse and read by callers on other threads
     // (KeyBindCheck at startup, command execution), so publication must be visible.
-    private volatile Map<String, KeyBindingsParser.KeyBinding> bindings;
+    // WHY one field and not two: both views come from the same parse, and a reader that caught a new
+    // one beside an old one would answer "which controls are missing" and "which chords collide" from
+    // different generations of the file for as long as a re-parse takes.
+    private volatile BindingsSnapshot snapshot;
+
+    /**
+     * Both views of one parse: the slot pairs a conflict scan needs, and the single key per action
+     * that command execution presses. Replaced wholesale, never mutated.
+     */
+    private record BindingsSnapshot(
+            Map<String, KeyBindingsParser.BindingSlots> slots,
+            Map<String, KeyBindingsParser.KeyBinding> executable) {
+    }
     private File currentBindsFile;
     private Thread processingThread;
     private volatile boolean running;
     /**
-     * Identity of the file contents behind the current {@link #bindings}, so the watch loop can tell a
+     * Identity of the file contents behind the current {@link #snapshot}, so the watch loop can tell a
      * second notification about a write it already read from a genuinely new one. Elite writes the
      * .binds file more than once per save and each write arrives as its own ENTRY_MODIFY, which without
      * this re-parses an identical file, republishes {@link BindingsUpdatedEvent} and prints a second
@@ -214,7 +226,8 @@ public class BindingsMonitor {
     private void parseAndUpdateBindings() {
         try {
             currentBindsFile = bindingsLoader.getLatestBindsFile();
-            bindings = parser.parseBindings(currentBindsFile);
+            Map<String, KeyBindingsParser.BindingSlots> slots = parser.parseBindingSlots(currentBindsFile);
+            snapshot = new BindingsSnapshot(slots, parser.toExecutableBindings(slots));
             parsedFileFingerprint = fingerprintOf(currentBindsFile);
             GameEventBus.publish(
                     new AppLogEvent("SYSTEM: Key bindings updated from file " + currentBindsFile.getAbsolutePath()));
@@ -245,7 +258,20 @@ public class BindingsMonitor {
     }
 
     public Map<String, KeyBindingsParser.KeyBinding> getBindings() {
-        return bindings;
+        BindingsSnapshot current = snapshot;
+        return current == null ? null : current.executable();
+    }
+
+    /**
+     * Both slots of every keyboard binding, for callers that must see a chord wherever it sits.
+     * <p>
+     * {@link #getBindings()} keeps only the slot EliteIntel would press, which is right for execution
+     * and wrong for conflict detection: a chord in a Secondary slot still fires in game and can still
+     * collide. Conflict scanning reads this.
+     */
+    public Map<String, KeyBindingsParser.BindingSlots> getBindingSlots() {
+        BindingsSnapshot current = snapshot;
+        return current == null ? null : current.slots();
     }
 
     /**
@@ -259,7 +285,7 @@ public class BindingsMonitor {
      * duplicate parse is harmless - both produce the same map.
      */
     public void ensureBindingsLoaded() {
-        if (bindings == null) {
+        if (snapshot == null) {
             log.info("Bindings not parsed yet; parsing on demand before the missing-binding check");
             parseAndUpdateBindings();
         }
@@ -379,7 +405,7 @@ public class BindingsMonitor {
      * identical chord within the same context.
      */
     private List<BindingConflictScanner.Conflict> detectConflicts() {
-        return BindingConflictScanner.scan(getBindings());
+        return BindingConflictScanner.scanSlots(getBindingSlots());
     }
 
     /**

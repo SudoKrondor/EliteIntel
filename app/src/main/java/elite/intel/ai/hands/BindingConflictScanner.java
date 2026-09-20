@@ -53,6 +53,30 @@ public final class BindingConflictScanner {
     public record Recommendation(String shipAction, String buggyAction) {
     }
 
+    /**
+     * One slot of one action - the unit a conflict scan actually compares.
+     * <p>
+     * WHY this exists: ED gives every action a Primary and a Secondary slot, and either can hold a
+     * chord. Keying a scan by action name alone can only ever represent one of them, so a chord shared
+     * between one action's Primary and another's Secondary was discarded before any rule ran - the scan
+     * never saw it. Measured 2026-09-19 over a corpus of 3,985 commander-shared .binds files (the
+     * readable remainder of ~48,000 collected): 13.8% hold a conflict of that shape that
+     * {@link BindingConflictRules#isBlocking} called blocking under the rules of that date. The share
+     * moves when those rules change - it is here to show the defect was common, not as a fixed figure.
+     * <p>
+     * The action name remains the unit of <em>judgement</em>: {@link BindingConflictRules} asks about
+     * actions, and {@link Conflict} reports actions. The slot only decides what gets compared.
+     */
+    record SlotRef(String action, KeyBindingsParser.BindingSlotType slot) {
+    }
+
+    /**
+     * Orders slot entries by action, then slot, so pairing and output are deterministic.
+     */
+    private static final Comparator<Map.Entry<SlotRef, Set<String>>> BY_ACTION_THEN_SLOT =
+            Comparator.<Map.Entry<SlotRef, Set<String>>, String>comparing(e -> e.getKey().action())
+                    .thenComparing(e -> e.getKey().slot());
+
     private BindingConflictScanner() {
     }
 
@@ -67,32 +91,75 @@ public final class BindingConflictScanner {
     }
 
     /**
-     * Core algorithm over already-extracted key-sets. Package-private so it can be exercised
-     * directly in tests without constructing {@link KeyBindingsParser.KeyBinding}s.
+     * Scans <em>both</em> slots of every keyboard binding for same-context duplicate chords.
+     *
+     * @param slots action name → its Primary/Secondary pair, as from
+     *              {@link BindingsMonitor#getBindingSlots()}
+     * @return all conflicts, each action pair reported once per shared chord, in deterministic order
+     */
+    public static List<Conflict> scanSlots(Map<String, KeyBindingsParser.BindingSlots> slots) {
+        return scanSlotKeysets(toSlotKeysets(slots));
+    }
+
+    /**
+     * Core algorithm over already-extracted key-sets, one per action. Package-private so it can be
+     * exercised directly in tests without constructing {@link KeyBindingsParser.KeyBinding}s.
+     * <p>
+     * Equivalent to {@link #scanSlotKeysets} where every chord sits in a Primary slot.
      */
     static List<Conflict> scanKeysets(Map<String, Set<String>> keysets) {
+        return scanSlotKeysets(asPrimarySlots(keysets));
+    }
+
+    /**
+     * Core algorithm over key-sets keyed by {@link SlotRef}, so a chord in a Secondary slot is
+     * compared like any other.
+     * <p>
+     * Two slots of the <em>same</em> action never conflict: a binding cannot compete with itself, and
+     * holding one chord in both slots is how a player gives an action two ways to fire. An action pair
+     * sharing a chord is reported once however many slot combinations produce it.
+     */
+    static List<Conflict> scanSlotKeysets(Map<SlotRef, Set<String>> keysets) {
         List<Conflict> conflicts = new ArrayList<>();
-        // Sorted for deterministic pairing and output.
-        List<Map.Entry<String, Set<String>>> entries = new ArrayList<>(new TreeMap<>(keysets).entrySet());
+        Set<PairChord> reported = new HashSet<>();
+        // Sorted by action, then slot, for deterministic pairing and output.
+        List<Map.Entry<SlotRef, Set<String>>> entries = new ArrayList<>(keysets.entrySet());
+        entries.sort(BY_ACTION_THEN_SLOT);
 
         for (int i = 0; i < entries.size(); i++) {
-            String a = entries.get(i).getKey();
+            SlotRef refA = entries.get(i).getKey();
             Set<String> ksA = entries.get(i).getValue();
             for (int j = i + 1; j < entries.size(); j++) {
-                String b = entries.get(j).getKey();
+                SlotRef refB = entries.get(j).getKey();
                 Set<String> ksB = entries.get(j).getValue();
 
+                String a = refA.action();
+                String b = refB.action();
+                if (a.equals(b)) {
+                    continue; // one action's own two slots - not a competitor
+                }
                 if (!ksA.equals(ksB)) {
                     continue; // ED matches the exact chord; only identical chords clash
                 }
                 if (BindingConflictRules.isSafeOverlap(a, b)) {
                     continue; // different vehicle state or a sub-mode overlay → never co-fire
                 }
-                conflicts.add(new Conflict(a, b, Set.copyOf(ksA), BindingConflictRules.describe(a, b),
+                Set<String> chord = Set.copyOf(ksA);
+                if (!reported.add(new PairChord(a, b, chord))) {
+                    continue; // already reported for this pair on this chord, from another slot pairing
+                }
+                conflicts.add(new Conflict(a, b, chord, BindingConflictRules.describe(a, b),
                         BindingConflictRules.isBlocking(a, b)));
             }
         }
         return conflicts;
+    }
+
+    /**
+     * An action pair on one chord, so the same clash found through two slot combinations is reported
+     * once.
+     */
+    private record PairChord(String actionA, String actionB, Set<String> chord) {
     }
 
     /**
@@ -108,21 +175,43 @@ public final class BindingConflictScanner {
     }
 
     /**
+     * As {@link #recommendVehicleTwins}, but reading both slots of each twin.
+     */
+    public static List<Recommendation> recommendVehicleTwinsFromSlots(
+            Map<String, KeyBindingsParser.BindingSlots> slots) {
+        return recommendVehicleTwinsFromSlotKeysets(toSlotKeysets(slots));
+    }
+
+    /**
      * Keyset-based core, so it can be tested without KeyBindings.
      */
     static List<Recommendation> recommendVehicleTwinsKeysets(Map<String, Set<String>> keysets) {
+        return recommendVehicleTwinsFromSlotKeysets(asPrimarySlots(keysets));
+    }
+
+    /**
+     * Slot-aware core. Twins count as unified when they share <em>any</em> chord: a player who put the
+     * same key on the ship's Primary and the SRV's Secondary has already done the thing this would
+     * suggest, and nagging them about it is how a useful nudge turns into noise.
+     */
+    static List<Recommendation> recommendVehicleTwinsFromSlotKeysets(Map<SlotRef, Set<String>> keysets) {
+        Map<String, Set<Set<String>>> chordsByAction = new TreeMap<>();
+        for (Map.Entry<SlotRef, Set<String>> e : keysets.entrySet()) {
+            chordsByAction.computeIfAbsent(e.getKey().action(), k -> new HashSet<>()).add(e.getValue());
+        }
+
         List<Recommendation> recommendations = new ArrayList<>();
-        for (Map.Entry<String, Set<String>> entry : new TreeMap<>(keysets).entrySet()) {
+        for (Map.Entry<String, Set<Set<String>>> entry : chordsByAction.entrySet()) {
             String buggy = entry.getKey();
             String ship = BindingConflictRules.shipTwinOf(buggy);
             if (ship == null) {
                 continue; // not an SRV variant
             }
-            Set<String> shipKeyset = keysets.get(ship);
-            if (shipKeyset == null) {
+            Set<Set<String>> shipChords = chordsByAction.get(ship);
+            if (shipChords == null) {
                 continue; // ship twin unbound → missing-binding concern, not a recommendation
             }
-            if (!shipKeyset.equals(entry.getValue())) {
+            if (Collections.disjoint(shipChords, entry.getValue())) {
                 recommendations.add(new Recommendation(ship, buggy));
             }
         }
@@ -138,32 +227,67 @@ public final class BindingConflictScanner {
     public static CandidateConflict candidateConflict(
             String bindingId, String key, Collection<String> modifiers,
             Map<String, KeyBindingsParser.KeyBinding> existingBindings) {
-        return candidateConflict(bindingId, buildKeyset(key, modifiers), toKeysets(existingBindings));
+        return candidateConflict(bindingId, chordOf(key, modifiers), toKeysets(existingBindings));
+    }
+
+    /**
+     * As {@link #candidateConflict}, but judged against <em>both</em> slots of every existing binding.
+     * <p>
+     * This is the one the editor wants: a chord sitting in some other action's Secondary slot is taken,
+     * and a save-guard that cannot see it waves the player through to a clash the game will honour.
+     */
+    public static CandidateConflict candidateConflictInSlots(
+            String bindingId, String key, Collection<String> modifiers,
+            Map<String, KeyBindingsParser.BindingSlots> existingSlots) {
+        return candidateConflictInSlotKeysets(
+                bindingId, chordOf(key, modifiers), toSlotKeysets(existingSlots));
     }
 
     /**
      * Keyset-based core, so it can be tested without KeyBindings.
      */
     static CandidateConflict candidateConflict(String bindingId, Set<String> candidate, Map<String, Set<String>> existing) {
-        if (candidate.isEmpty() || existing == null) {
+        return candidateConflictInSlotKeysets(bindingId, candidate, asPrimarySlots(existing));
+    }
+
+    /**
+     * Slot-aware core. Both slots of the binding being edited are skipped: an action never conflicts
+     * with itself, whichever slot the chord already sits in.
+     */
+    static CandidateConflict candidateConflictInSlotKeysets(
+            String bindingId, Set<String> candidate, Map<SlotRef, Set<String>> existing) {
+        if (candidate == null || candidate.isEmpty() || existing == null) {
             return null;
         }
-        for (Map.Entry<String, Set<String>> e : existing.entrySet()) {
-            if (e.getKey().equals(bindingId)) {
+        // Sorted so the binding named back is stable when a chord is taken more than once.
+        List<Map.Entry<SlotRef, Set<String>>> entries = new ArrayList<>(existing.entrySet());
+        entries.sort(BY_ACTION_THEN_SLOT);
+
+        for (Map.Entry<SlotRef, Set<String>> e : entries) {
+            String other = e.getKey().action();
+            if (other.equals(bindingId)) {
                 continue; // a binding never conflicts with its own other slot
             }
             if (!candidate.equals(e.getValue())) {
                 continue; // exact chord match only
             }
-            if (BindingConflictRules.isSafeOverlap(bindingId, e.getKey())) {
+            if (BindingConflictRules.isSafeOverlap(bindingId, other)) {
                 continue;
             }
-            return new CandidateConflict(e.getKey());
+            return new CandidateConflict(other);
         }
         return null;
     }
 
-    private static Set<String> buildKeyset(String key, Collection<String> modifiers) {
+    /**
+     * The key-set one slot contributes to a scan - its main key plus any modifiers.
+     * <p>
+     * Public because a caller that has a {@link Conflict} in hand may need to find which of an
+     * action's two slots the scan actually matched on. Since the scan reads both, "the Primary if it
+     * holds a key" is no longer that slot, and telling the commander to move the wrong chord is worse
+     * than telling them nothing.
+     */
+    public static Set<String> chordOf(String key, Collection<String> modifiers) {
         if (key == null || key.isBlank() || key.equals("Key_")) {
             return Set.of();
         }
@@ -186,7 +310,7 @@ public final class BindingConflictScanner {
         if (kb == null) {
             return Set.of();
         }
-        return buildKeyset(kb.key, kb.modifiers == null ? null : Arrays.asList(kb.modifiers));
+        return chordOf(kb.key, kb.modifiers == null ? null : Arrays.asList(kb.modifiers));
     }
 
     private static Map<String, Set<String>> toKeysets(Map<String, KeyBindingsParser.KeyBinding> bindings) {
@@ -200,5 +324,46 @@ public final class BindingConflictScanner {
             }
         }
         return keysets;
+    }
+
+    /**
+     * Key-sets for both slots of every action. A slot with nothing in it contributes nothing.
+     */
+    private static Map<SlotRef, Set<String>> toSlotKeysets(Map<String, KeyBindingsParser.BindingSlots> slots) {
+        Map<SlotRef, Set<String>> keysets = new LinkedHashMap<>();
+        if (slots != null) {
+            for (Map.Entry<String, KeyBindingsParser.BindingSlots> e : slots.entrySet()) {
+                KeyBindingsParser.BindingSlots pair = e.getValue();
+                if (pair == null) {
+                    continue;
+                }
+                putIfBound(keysets, e.getKey(), KeyBindingsParser.BindingSlotType.PRIMARY, pair.primary());
+                putIfBound(keysets, e.getKey(), KeyBindingsParser.BindingSlotType.SECONDARY, pair.secondary());
+            }
+        }
+        return keysets;
+    }
+
+    private static void putIfBound(Map<SlotRef, Set<String>> keysets, String action,
+                                   KeyBindingsParser.BindingSlotType slot,
+                                   KeyBindingsParser.KeyBinding binding) {
+        Set<String> keyset = keysetOf(binding);
+        if (!keyset.isEmpty()) {
+            keysets.put(new SlotRef(action, slot), keyset);
+        }
+    }
+
+    /**
+     * Reads an action-keyed map as one Primary slot per action, so the action-keyed entry points and
+     * the slot-aware core share a single algorithm rather than two that can drift apart.
+     */
+    private static Map<SlotRef, Set<String>> asPrimarySlots(Map<String, Set<String>> keysets) {
+        Map<SlotRef, Set<String>> slots = new LinkedHashMap<>();
+        if (keysets != null) {
+            for (Map.Entry<String, Set<String>> e : keysets.entrySet()) {
+                slots.put(new SlotRef(e.getKey(), KeyBindingsParser.BindingSlotType.PRIMARY), e.getValue());
+            }
+        }
+        return slots;
     }
 }

@@ -2,6 +2,9 @@ package elite.intel.ai.hands;
 
 import elite.intel.ai.hands.BindingConflictScanner.CandidateConflict;
 import elite.intel.ai.hands.BindingConflictScanner.Conflict;
+import elite.intel.ai.hands.BindingConflictScanner.Recommendation;
+import elite.intel.ai.hands.BindingConflictScanner.SlotRef;
+import elite.intel.ai.hands.KeyBindingsParser.BindingSlotType;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
@@ -566,5 +569,118 @@ class BindingConflictScannerTest {
         CandidateConflict conflict = BindingConflictScanner.candidateConflict(
                 "GalaxyMapOpen", Set.of("Key_LeftControl", "Key_Y"), existing);
         assertNull(conflict);
+    }
+
+    // --- both slots: chords the scan could not previously see (FN-1) ---
+
+    @SuppressWarnings("unchecked")
+    private static Map<SlotRef, Set<String>> slots(Object... triples) {
+        Map<SlotRef, Set<String>> m = new LinkedHashMap<>();
+        for (int i = 0; i < triples.length; i += 3) {
+            m.put(new SlotRef((String) triples[i], (BindingSlotType) triples[i + 1]),
+                    (Set<String>) triples[i + 2]);
+        }
+        return m;
+    }
+
+    @Test
+    void chordSharedBetweenOnePrimaryAndAnotherSecondaryConflicts() {
+        // The case the action-keyed scan could not express: EliteIntel presses Move Up's Primary F, and
+        // Move Down holds the same F in its Secondary. Both fire in-game; nothing reported it.
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots(
+                "MoveUp", BindingSlotType.PRIMARY, Set.of("Key_F"),
+                "MoveDown", BindingSlotType.SECONDARY, Set.of("Key_F")));
+
+        assertEquals(1, conflicts.size());
+        assertEquals("MoveDown", conflicts.get(0).actionA()); // still ordered A < B by action name
+        assertEquals("MoveUp", conflicts.get(0).actionB());
+    }
+
+    @Test
+    void mapCameraOnAPrimaryVersusUiNavigationOnASecondaryIsBlocking() {
+        // The commonest real shape: across ~48,000 shared .binds files, map-camera-versus-UI split
+        // across slots is the largest group of blocking conflicts the old scan discarded unseen.
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots(
+                "CamTranslateForward", BindingSlotType.PRIMARY, Set.of("Key_Z"),
+                "UI_Up", BindingSlotType.SECONDARY, Set.of("Key_Z")));
+
+        assertEquals(1, conflicts.size());
+        assertTrue(conflicts.get(0).blocking());
+    }
+
+    @Test
+    void oneActionHoldingTheSameChordInBothSlotsIsNotAConflict() {
+        // Two ways to fire one action is a setup, not a clash.
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots(
+                "GalaxyMapOpen", BindingSlotType.PRIMARY, Set.of("Key_Y"),
+                "GalaxyMapOpen", BindingSlotType.SECONDARY, Set.of("Key_Y")));
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void anActionPairSharingAChordThroughSeveralSlotsIsReportedOnce() {
+        // Four slot pairings produce the same clash; the player has one problem, not four.
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots(
+                "ActionOne", BindingSlotType.PRIMARY, Set.of("Key_Y"),
+                "ActionOne", BindingSlotType.SECONDARY, Set.of("Key_Y"),
+                "ActionTwo", BindingSlotType.PRIMARY, Set.of("Key_Y"),
+                "ActionTwo", BindingSlotType.SECONDARY, Set.of("Key_Y")));
+
+        assertEquals(1, conflicts.size());
+    }
+
+    @Test
+    void contextRulesStillApplyAcrossSlots() {
+        // A ship action and its SRV twin never co-fire, whichever slots hold the chord.
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots(
+                "HeadLookToggle", BindingSlotType.PRIMARY, Set.of("Key_O"),
+                "HeadLookToggle_Buggy", BindingSlotType.SECONDARY, Set.of("Key_O")));
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void candidateChordIsTakenWhenItSitsInAnotherActionsSecondary() {
+        // The save-guard's job: a chord parked in someone else's Secondary is not free.
+        Map<SlotRef, Set<String>> existing = slots(
+                "LandingGearToggle", BindingSlotType.SECONDARY, Set.of("Key_LeftControl", "Key_Y"));
+
+        CandidateConflict conflict = BindingConflictScanner.candidateConflictInSlotKeysets(
+                "GalaxyMapOpen", Set.of("Key_LeftControl", "Key_Y"), existing);
+
+        assertNotNull(conflict);
+        assertEquals("LandingGearToggle", conflict.otherBinding());
+    }
+
+    @Test
+    void candidateIgnoresTheEditedBindingsOwnSecondary() {
+        Map<SlotRef, Set<String>> existing = slots(
+                "GalaxyMapOpen", BindingSlotType.SECONDARY, Set.of("Key_Y"));
+
+        assertNull(BindingConflictScanner.candidateConflictInSlotKeysets(
+                "GalaxyMapOpen", Set.of("Key_Y"), existing));
+    }
+
+    @Test
+    void twinsSharingAChordInEitherSlotAreNotRecommended() {
+        // Ship on Primary, SRV on Secondary, same key: already unified, so no nudge.
+        List<Recommendation> recommendations = BindingConflictScanner.recommendVehicleTwinsFromSlotKeysets(slots(
+                "HeadLookToggle", BindingSlotType.PRIMARY, Set.of("Key_O"),
+                "HeadLookToggle_Buggy", BindingSlotType.SECONDARY, Set.of("Key_O")));
+
+        assertTrue(recommendations.isEmpty());
+    }
+
+    @Test
+    void twinsWithNoChordInCommonAreStillRecommended() {
+        List<Recommendation> recommendations = BindingConflictScanner.recommendVehicleTwinsFromSlotKeysets(slots(
+                "HeadLookToggle", BindingSlotType.PRIMARY, Set.of("Key_O"),
+                "HeadLookToggle_Buggy", BindingSlotType.PRIMARY, Set.of("Key_P"),
+                "HeadLookToggle_Buggy", BindingSlotType.SECONDARY, Set.of("Key_Q")));
+
+        assertEquals(1, recommendations.size());
+        assertEquals("HeadLookToggle", recommendations.get(0).shipAction());
+        assertEquals("HeadLookToggle_Buggy", recommendations.get(0).buggyAction());
     }
 }
