@@ -1117,7 +1117,7 @@ public class NaturalSpeechIntegrationTestIT {
 
     static Stream<String> queryStellarObjects() {
         return Stream.of("che oggetti stellari ci sono nel sistema", "quali pianeti nel sistema", "ci sono pianeti atterrabili",
-                "si può atterrare su un pianeta o una luna", "quali corpi sono presenti nel sistema",
+                "si può atterrare su un pianeta o una luna", "quali pianeti sono presenti nel sistema",
                 "ci sono anelli di ghiaccio", "ci sono anelli planetari", "il sistema sistema ha anelli");
     }
 
