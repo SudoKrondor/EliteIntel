@@ -130,10 +130,13 @@ public class RoutePlotter {
                 ///NOTE These two keys are a workaround for the in-game map UI behavior.
                 ///ENTER key after the destination is typed in, slide right to the button and hit select
                 GameInputStep.rawKey(KeyProcessor.KEY_ENTER, 0, 0),
+                GameInputStep.delay(500), // Required minimum delay
                 GameInputStep.bindingTap(BINDING_UI_RIGHT.getGameBinding()),
+                GameInputStep.delay(500), // Required minimum delay
                 GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding()),
-
-                ///Yaw to grab the focus. Another work around
+                //-------------------------------------------------------------------
+                ///Yaw to grab the focus. Another workaround
+                GameInputStep.delay(3000), // Required minimum delay
                 GameInputStep.bindingHold(BINDING_CAM_YAW_LEFT.getGameBinding(), 20)
         ));
 
