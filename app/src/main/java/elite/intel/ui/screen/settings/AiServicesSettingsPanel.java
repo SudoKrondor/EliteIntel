@@ -71,6 +71,11 @@ public class AiServicesSettingsPanel extends JPanel {
     private JLabel ttsKeyLabel;
     private JPasswordField ttsKeyField;
     private JCheckBox ttsLockCheck;
+    /**
+     * Google WaveNet is the only engine that reads a pitch, so the slider lives in Google's segment alone.
+     */
+    private JLabel googleWaveNetPitchLabel;
+    private HudSlider googleWaveNetPitchSlider;
 
     /**
      * Whether Kokoro is on offer. It cannot pronounce Cyrillic, so for a Russian or Ukrainian commander - or a
@@ -109,6 +114,7 @@ public class AiServicesSettingsPanel extends JPanel {
     private String savedLmAddress = "", savedLmCommand = "";
     private String savedAiKey = "", savedTtsKey = "";
     private TtsProvider savedTtsProvider = TtsProvider.KOKORO;
+    private int savedGoogleWaveNetPitch;
 
     /** Suppresses dirty-marking while controls are populated programmatically. */
     private boolean loading = false;
@@ -213,7 +219,8 @@ public class AiServicesSettingsPanel extends JPanel {
                 new String[]{getText("settings.ai.voice.google"), getText("settings.ai.voice.edge")},
                 ENGINE_GOOGLE);
         ttsRightCol.add(ttsCloudEngineControl, BorderLayout.NORTH);
-        // Google: its key row above its banner. Edge: just the banner. One of the two is shown at a time.
+        // Google: its key row, then its WaveNet pitch, above its banner. Edge: just the banner. One of the
+        // two is shown at a time.
         JPanel ttsKeyForm = transparentPanel(new GridBagLayout());
         GridBagConstraints tgc = baseGbc();
         ttsKeyField = makePasswordField();
@@ -223,6 +230,16 @@ public class AiServicesSettingsPanel extends JPanel {
         ttsKeyRow.add(ttsLockCheck, BorderLayout.EAST);
         ttsKeyLabel = addLabel(ttsKeyForm, getText("settings.ai.googleTtsKey"), tgc, 0);
         addField(ttsKeyForm, ttsKeyRow, tgc, 1, 1.0);
+        nextRow(tgc);
+        googleWaveNetPitchSlider = new HudSlider(
+                SystemSession.GOOGLE_WAVENET_PITCH_MIN, SystemSession.GOOGLE_WAVENET_PITCH_MAX, 1,
+                SystemSession.GOOGLE_WAVENET_PITCH_MIN);
+        googleWaveNetPitchLabel = addLabel(ttsKeyForm, getText("settings.ai.googleWaveNetPitch"), tgc, 0);
+        // Drop the label from the row top to the track, the slider's own layout being value above, track below.
+        googleWaveNetPitchLabel.setPreferredSize(
+                new Dimension(googleWaveNetPitchLabel.getPreferredSize().width, HUD_SLIDER_HEIGHT));
+        googleWaveNetPitchLabel.setBorder(BorderFactory.createEmptyBorder(HUD_SLIDER_VALUE_AREA, 0, 0, 0));
+        addField(ttsKeyForm, googleWaveNetPitchSlider, tgc, 1, 1.0);
         ttsGoogleHint = HudBanner.multiline(getText("settings.ai.voice.google.hint"), StatusBadge.State.INFO);
         ttsGoogleConfig = transparentPanel(new BorderLayout(0, HUD_GAP));
         ttsGoogleConfig.add(ttsKeyForm, BorderLayout.NORTH);
@@ -286,6 +303,7 @@ public class AiServicesSettingsPanel extends JPanel {
         });
         llmLockCheck.addItemListener(e -> updateEnablement());
         ttsLockCheck.addItemListener(e -> updateEnablement());
+        googleWaveNetPitchSlider.addChangeListener(e -> recomputeDirty());
 
         onTextChange(addressField);
         onTextChange(commandModelField);
@@ -319,6 +337,8 @@ public class AiServicesSettingsPanel extends JPanel {
             apiKeyField.setText(nz(systemSession.getAiApiKey(), ""));
             String storedTtsKey = nz(systemSession.getTtsApiKey(), "");
             ttsKeyField.setText(storedTtsKey);
+            int storedPitch = systemSession.getGoogleWaveNetPitch();
+            googleWaveNetPitchSlider.setValue(storedPitch);
             TtsProvider ttsProvider = systemSession.getTtsProvider();
             ttsSourceControl.setSelectedIndex(ttsProvider.isLocal() ? SRC_LOCAL : SRC_CLOUD);
             if (ttsProvider.isLocal()) {
@@ -335,6 +355,7 @@ public class AiServicesSettingsPanel extends JPanel {
             savedAiKey = nz(systemSession.getAiApiKey(), "");
             savedTtsKey = storedTtsKey;
             savedTtsProvider = ttsProvider;
+            savedGoogleWaveNetPitch = storedPitch;
 
             updateEnablement();
         } finally {
@@ -399,6 +420,8 @@ public class AiServicesSettingsPanel extends JPanel {
         ttsKeyLabel.setEnabled(ttsCloud);
         ttsKeyField.setEnabled(ttsCloud && !ttsLockCheck.isSelected());
         ttsLockCheck.setEnabled(ttsCloud);
+        googleWaveNetPitchLabel.setEnabled(ttsCloud);
+        googleWaveNetPitchSlider.setEnabled(ttsCloud);
     }
 
     /** Re-evaluates whether the working copy differs from the last saved snapshot. */
@@ -414,6 +437,7 @@ public class AiServicesSettingsPanel extends JPanel {
         String newTtsKey = new String(ttsKeyField.getPassword());
         return newLocal != savedLlmLocal
                 || selectedTtsProvider() != savedTtsProvider
+                || googleWaveNetPitchSlider.getValue() != savedGoogleWaveNetPitch
                 || !Objects.equals(newAiKey, savedAiKey)
                 || !Objects.equals(newTtsKey, savedTtsKey)
                 || !Objects.equals(lmAddress, savedLmAddress)
@@ -451,6 +475,7 @@ public class AiServicesSettingsPanel extends JPanel {
         TtsProvider newTtsProvider = selectedTtsProvider();
         String newAiKey = new String(apiKeyField.getPassword());
         String newTtsKey = new String(ttsKeyField.getPassword());
+        int newPitch = googleWaveNetPitchSlider.getValue();
 
         // Every engine names its voices differently, so any engine change - not just local/cloud - invalidates
         // the fleet's stored voices.
@@ -485,6 +510,8 @@ public class AiServicesSettingsPanel extends JPanel {
         systemSession.setAiApiKey(newAiKey);
         systemSession.setTtsProvider(newTtsProvider);
         systemSession.setTtsApiKey(newTtsKey);
+        // Google reads the pitch per request, so a new value needs no restart - just the save.
+        systemSession.setGoogleWaveNetPitch(newPitch);
 
         UiBus.publish(new AppLogEvent("AI services config saved"));
         if (brainChanged) UiBus.publish(new RestartBrainEvent());
@@ -499,6 +526,7 @@ public class AiServicesSettingsPanel extends JPanel {
         savedAiKey = newAiKey;
         savedTtsKey = newTtsKey;
         savedTtsProvider = newTtsProvider;
+        savedGoogleWaveNetPitch = newPitch;
 
         clearDirty();
         return true;

@@ -105,6 +105,13 @@ public class AudioCalibrator {
                     (int) noiseFloor, (int) avgSpeechRMS, String.format("%.1f", separation), MIN_SPEECH_TO_NOISE_DB);
             UiBus.publish(new AppLogEvent(StringUtls.localizedSpeech("log.audioCalibrationLowGap",
                     String.format("%.1f dB", separation))));
+            // Said aloud, because this is the one finding a commander never reads a log for: from their
+            // chair every cause looks the same - nothing happens when they speak - and the remedy is on
+            // their side of the screen. A loud room was already announced by the noise phase, so what is
+            // left to name is the other half: a microphone that does not deliver the voice.
+            if (noiseFloor <= MAX_NOISE_AVG) {
+                GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedResponse("speech.audioCalibrationMicQuiet")));
+            }
             highThreshold = Math.max(gateOpen, DEGENERATE_GATE_FALLBACK);
         } else {
             highThreshold = gateOpen;

@@ -32,7 +32,7 @@ Microphone (any format)
     │
 [trimLeadingLowEnergy]      strip pre-speech silence frames
     │
-[Amplifier]                 peak-normalize to -3 dBFS
+[Amplifier]                 peak-normalize to -3 dBFS (only if the peak clears the floor by 15 dB)
     │
 [padAudio]                  pad short utterances to 1500 ms minimum
     │
@@ -99,6 +99,10 @@ Room quality is judged **solely** by `separationDb(noiseFloor, avgSpeechRMS)` ag
 `gateClearsNoiseFloor` for exactly this reason, so it cannot drift from the calibration that produced the value.
 `DEGENERATE_GATE_FALLBACK` applies only to a failed measurement
 (muted mic, or speech that never rose above ambient).
+
+A calibration that falls short of `MIN_SPEECH_TO_NOISE_DB` is **said
+aloud**, not only logged (`speech.audioCalibrationMicQuiet`: raise the OS input level, recalibrate), because the commander it is for never reads a log - from their chair every cause looks like "it does not hear me". A loud room was already announced by the noise phase, so the spoken verdict covers the other half, the quiet microphone. The same verdict stands in words under the mic meter in the audio settings (`HudMicHealthHint`), judged by
+`gateClearsNoiseFloor` from the floor and gate every `AudioMonitorEvent` carries, so meter, panel, startup warning and calibrator cannot disagree.
 
 Results are stored in `SystemSession` (`rmsThresholdHigh`, `rmsThresholdLow`) and returned as
 `RmsTupple<Double, Double>`.
@@ -213,7 +217,12 @@ The noise spectrum reference is `volatile`; `accumulateNoise` is
 ### `Amplifier`
 
 Two-pass peak normalizer. Pass 1 finds the peak sample magnitude; Pass 2 scales to -3 dBFS (
-`≈ 23197` linear) with hard clip safety. No-ops if peak is below 100 or already at/above target. Applied to the full utterance before PCM-to-float conversion.
+`≈ 23197` linear) with hard clip safety. Applied to the full utterance before PCM-to-float conversion.
+
+It no-ops when the peak is already at/above target, or when the capture holds nothing but the room: the peak must clear the calibrated noise floor by `MIN_PEAK_ABOVE_NOISE_DB` (15 dB), so ambient noise is never lifted to -3 dBFS and decoded as speech. The floor is a
+**ratio over the room, never an absolute
+amplitude** - a quiet microphone in a treated room puts real speech under any fixed number that would keep a hot microphone's hiss out. 15 dB separates the two because room noise peaks 10-12 dB over its own RMS (its crest factor), while a voice sits above the floor to begin with and then peaks 12-18 dB over
+*that*. Before calibration (floor `0`) the old absolute floor `UNCALIBRATED_MIN_PEAK` (100) stands, so an uncalibrated install behaves as it always did.
 
 ### `StreamNormalizer`
 
@@ -323,4 +332,6 @@ While the app is speaking (`isSpeaking == true`):
 | `DEGENERATE_GATE_FALLBACK` | `120.0` (failed measurement only) | `AudioCalibrator` |
 | `FFT_SIZE` | `512` (~32ms) | `SpectralNoiseReducer` |
 | `TARGET_DBFS` (Amplifier) | `-3.0` dBFS | `Amplifier` |
+| `MIN_PEAK_ABOVE_NOISE_DB` | `15.0` dB (peak over the calibrated floor, else not normalized) | `Amplifier` |
+| `UNCALIBRATED_MIN_PEAK` | `100` (absolute, only while no floor is calibrated) | `Amplifier` |
 | `TARGET_DBFS` (StreamNormalizer) | `-18.0` dBFS | `StreamNormalizer` |

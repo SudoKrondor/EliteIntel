@@ -557,7 +557,10 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                 }
 
                 AudioDeClicker.sanitize(pcm, 5);
-                AudioDeClicker.applyVolume(pcm, systemSession.getVoiceVolume() / 100f);
+                // The radio has a level of its own: this engine is the only one that voices a transmission
+                // (Google and Edge drop them), so the fork between the two sliders lives here alone.
+                int volume = task.isRadio() ? systemSession.getRadioVolume() : systemSession.getVoiceVolume();
+                AudioDeClicker.applyVolume(pcm, volume / 100f);
                 if (task.isRadio()) {
                     RadioFilter.apply(pcm);
                 }

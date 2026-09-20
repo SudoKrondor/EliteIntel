@@ -117,6 +117,11 @@ public class AppController {
         systemSession.setVoiceVolume(event.getVolume());
     }
 
+    @Subscribe
+    public void onRadioVolumeChangedEvent(RadioVolumeChangedEvent event) {
+        systemSession.setRadioVolume(event.volume());
+    }
+
     /**
      * Answers every request to move the Sleep/Wake gate - the AI tab button, and the spoken "go to sleep" /
      * "wake up" commands alike. Persists the new state, announces it so the views that show the gate are told

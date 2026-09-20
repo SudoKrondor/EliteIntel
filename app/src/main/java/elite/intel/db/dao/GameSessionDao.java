@@ -20,7 +20,7 @@ public interface GameSessionDao {
                                                              rmsThresholdLow, encryptedLLMKey, encryptedTTSKey,
                                                              speechSpeed, googleWaveNetPitch,
                                                              keyInputDelayMs,
-                                                             useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, ttsProvider, notificationVolume, sttThreads, voiceVolume,
+                                                             useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, ttsProvider, notificationVolume, sttThreads, voiceVolume, radioVolume,
                                                              lmStudioAddress, lmStudioCommandModel,
                                                              aiLanguage,
                                                              audioInputDevice, audioOutputDevice,
@@ -36,7 +36,7 @@ public interface GameSessionDao {
                                                       :rmsThresholdLow, :encryptedLLMKey, :encryptedTTSKey,
                                                       :speechSpeed, :googleWaveNetPitch,
                                                       :keyInputDelayMs,
-                                                      :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :ttsProvider, :notificationVolume, :sttThreads, :voiceVolume,
+                                                      :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :ttsProvider, :notificationVolume, :sttThreads, :voiceVolume, :radioVolume,
                                                       :lmStudioAddress, :lmStudioCommandModel,
                                                       :aiLanguage,
                                                       :audioInputDevice, :audioOutputDevice,
@@ -78,6 +78,7 @@ public interface GameSessionDao {
             session.setNotificationVolume(rs.getFloat("notificationVolume"));
             session.setSttThreads(rs.getInt("sttThreads"));
             session.setVoiceVolume(rs.getInt("voiceVolume"));
+            session.setRadioVolume(rs.getInt("radioVolume"));
             session.setLmStudioAddress(rs.getString("lmStudioAddress"));
             session.setLmStudioCommandModel(rs.getString("lmStudioCommandModel"));
             session.setAiLanguage(rs.getString("aiLanguage"));
@@ -130,6 +131,10 @@ public interface GameSessionDao {
         private String ttsProvider;
         private Integer sttThreads;
         private Integer voiceVolume;
+        /**
+         * Level of the radio engine's chatter, 0 to 100 percent, independent of {@link #voiceVolume}.
+         */
+        private Integer radioVolume;
         private String lmStudioAddress;
         private String lmStudioCommandModel;
         private String aiLanguage;
@@ -298,6 +303,14 @@ public interface GameSessionDao {
 
         public void setVoiceVolume(Integer voiceVolume) {
             this.voiceVolume = voiceVolume;
+        }
+
+        public Integer getRadioVolume() {
+            return radioVolume;
+        }
+
+        public void setRadioVolume(Integer radioVolume) {
+            this.radioVolume = radioVolume;
         }
 
         public String getLmStudioAddress() {
