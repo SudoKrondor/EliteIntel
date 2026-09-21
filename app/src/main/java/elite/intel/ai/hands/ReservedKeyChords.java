@@ -118,23 +118,11 @@ public final class ReservedKeyChords {
     }
 
     /**
-     * The keyboard keys the commander has on the game-menu control, from the executable binding map.
-     * <p>
-     * Normally empty or a single key. Returned as a set because the answer is a property of the file,
-     * not a constant, and because {@link #gameMenuKeysFromSlots} can legitimately find two.
-     */
-    public static Set<String> gameMenuKeys(Map<String, KeyBindingsParser.KeyBinding> bindings) {
-        // One slot per action is all the execution map has, so the second extractor has nothing to read.
-        return menuKeysOf(bindings, ReservedKeyChords::mainKeyOf, menu -> Set.of());
-    }
-
-    /**
      * The keyboard keys on the game-menu control, from the read-only slot map.
      * <p>
-     * Both slots are read, unlike {@link #gameMenuKeys}: Elite gives every control a Primary and a
-     * Secondary, and a commander with a key in each has two keys that open the menu. The executable
-     * map keeps only one slot per action, which is fine for pressing a control and not fine for
-     * deciding which keys are unusable.
+     * Both slots are read: Elite gives every control a Primary and a Secondary, and a commander with a
+     * key in each has two keys that open the menu. Normally empty or a single key; returned as a set
+     * because the answer is a property of the file, not a constant.
      */
     public static Set<String> gameMenuKeysFromSlots(Map<String, ReadOnlyBindingSlots> slots) {
         return menuKeysOf(slots,
@@ -158,12 +146,12 @@ public final class ReservedKeyChords {
     }
 
     /**
-     * The one rule behind all three public forms: look up the game-menu control, union what each of
-     * its slots puts on the keyboard, and return nothing when the control is unbound.
+     * The one rule behind both public forms: look up the game-menu control, union what each of its
+     * slots puts on the keyboard, and return nothing when the control is unbound.
      * <p>
-     * Generic over the slot model because the three callers hold three different ones - the read-only
-     * map, the keyboard-only slot map, and the single-slot execution map - which erase to the same
-     * signature and so cannot share a name. The extractors are what differs; the rule is not.
+     * Generic over the slot model because the two callers hold different ones - the read-only map and
+     * the keyboard-only slot map - which erase to the same signature and so cannot share a name. The
+     * extractors are what differs; the rule is not.
      */
     private static <S> Set<String> menuKeysOf(Map<String, S> slots,
                                               Function<S, Set<String>> primaryKeys,
@@ -196,39 +184,51 @@ public final class ReservedKeyChords {
      * anything. So the file is read as well as written: what cannot be assigned is also reported
      * when found.
      * <p>
-     * Scanned across every action, not just the ones EliteIntel presses. A reserved chord is a
-     * property of the chord, not of who presses it: Alt+F4 quits the game whoever reaches for it.
-     * The game-menu control itself is never reported - it is the one control that key belongs to.
+     * Scanned across every action, not just the ones EliteIntel presses, and across <em>both</em> slots
+     * of each: a reserved chord is a property of the chord, not of who presses it or which slot holds
+     * it. Alt+F4 quits the game whoever reaches for it, and a Secondary on the menu key pauses the game
+     * exactly as a Primary does. The game-menu control itself is never reported - it is the one control
+     * that key belongs to.
      *
-     * @param bindings action name to parsed binding, as from {@code BindingsMonitor.getBindings()}
-     * @return the offending bindings in action-name order; empty when the file is clean
+     * @param slots action name to its keyboard-usable Primary/Secondary pair, as from
+     *              {@code BindingsMonitor.getBindingSlots()}
+     * @return the offending bindings in action-name order, Primary before Secondary within an action;
+     * empty when the file is clean
      */
-    public static List<ReservedBinding> scan(Map<String, KeyBindingsParser.KeyBinding> bindings) {
-        if (bindings == null || bindings.isEmpty()) {
+    public static List<ReservedBinding> scan(Map<String, KeyBindingsParser.BindingSlots> slots) {
+        if (slots == null || slots.isEmpty()) {
             return List.of();
         }
-        Set<String> menuKeys = gameMenuKeys(bindings);
+        Set<String> menuKeys = gameMenuKeysFromExecutableSlots(slots);
         List<ReservedBinding> found = new ArrayList<>();
         // Sorted so the spoken list and the log lines come out in the same order on every start.
-        for (Map.Entry<String, KeyBindingsParser.KeyBinding> entry : new TreeMap<>(bindings).entrySet()) {
+        for (Map.Entry<String, KeyBindingsParser.BindingSlots> entry : new TreeMap<>(slots).entrySet()) {
             if (GAME_MENU_ACTION.equals(entry.getKey())) {
                 continue; // the game menu is allowed to sit on its own key
             }
-            KeyBindingsParser.KeyBinding binding = entry.getValue();
-            if (binding == null || binding.key == null || binding.key.isBlank() || "Key_".equals(binding.key)) {
-                continue; // unbound, or bound only to a device we cannot press
-            }
-            List<String> modifiers = binding.modifiers == null ? List.of() : Arrays.asList(binding.modifiers);
-            Match match = match(binding.key, modifiers, menuKeys, IS_LINUX);
-            if (match == null) {
-                continue;
-            }
-            Set<String> chord = new LinkedHashSet<>();
-            chord.add(binding.key);
-            chord.addAll(modifiers);
-            found.add(new ReservedBinding(entry.getKey(), chord, match.reason(), match.rule()));
+            addIfReserved(found, entry.getKey(), entry.getValue().primary(), menuKeys);
+            addIfReserved(found, entry.getKey(), entry.getValue().secondary(), menuKeys);
         }
         return List.copyOf(found);
+    }
+
+    /**
+     * Appends one slot's chord to {@code found} when it is reserved; an empty slot appends nothing.
+     */
+    private static void addIfReserved(List<ReservedBinding> found, String action,
+                                      KeyBindingsParser.KeyBinding binding, Set<String> menuKeys) {
+        if (binding == null || binding.key == null || binding.key.isBlank() || "Key_".equals(binding.key)) {
+            return; // unbound, or bound only to a device we cannot press
+        }
+        List<String> modifiers = binding.modifiers == null ? List.of() : Arrays.asList(binding.modifiers);
+        Match match = match(binding.key, modifiers, menuKeys, IS_LINUX);
+        if (match == null) {
+            return;
+        }
+        Set<String> chord = new LinkedHashSet<>();
+        chord.add(binding.key);
+        chord.addAll(modifiers);
+        found.add(new ReservedBinding(action, chord, match.reason(), match.rule()));
     }
 
     /**
@@ -239,7 +239,7 @@ public final class ReservedKeyChords {
      * main key only. A key held as a modifier alongside something else does not open the menu, so
      * reserving it there would take keys off the board for nothing.
      *
-     * @param gameMenuKeys from whichever of {@link #gameMenuKeys}, {@link #gameMenuKeysFromSlots} or
+     * @param gameMenuKeys from whichever of {@link #gameMenuKeysFromSlots} or
      *                     {@link #gameMenuKeysFromExecutableSlots} matches the map the caller holds; empty
      *                     when the commander has left the game-menu control unbound, which is the
      *                     recommended state

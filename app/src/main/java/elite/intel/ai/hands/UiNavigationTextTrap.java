@@ -70,31 +70,50 @@ public final class UiNavigationTextTrap {
     }
 
     /**
-     * Scans the four UI direction bindings for chords a focused text field would swallow.
+     * Scans both slots of the four UI direction bindings for chords a focused text field would swallow.
+     * <p>
+     * Both slots, because Elite fires either: a commander with {@code UI_Down} on Down-arrow in the
+     * Primary and {@code S} in the Secondary still types an "s" whenever they reach for the second one,
+     * and a scan that read only the slot EliteIntel presses called that layout clean.
      *
-     * @param bindings action name to parsed binding, as from {@code BindingsMonitor.getBindings()}
-     * @return the trapped bindings in {@link #UI_NAVIGATION_ACTIONS} order; empty when the layout is safe
+     * @param slots action name to its keyboard-usable Primary/Secondary pair, as from
+     *              {@code BindingsMonitor.getBindingSlots()}
+     * @return the trapped bindings in {@link #UI_NAVIGATION_ACTIONS} order, Primary before Secondary
+     * within an action; empty when the layout is safe
      */
-    public static List<TrappedBinding> scan(Map<String, KeyBindingsParser.KeyBinding> bindings) {
-        if (bindings == null || bindings.isEmpty()) {
+    public static List<TrappedBinding> scan(Map<String, KeyBindingsParser.BindingSlots> slots) {
+        if (slots == null || slots.isEmpty()) {
             return List.of();
         }
         List<TrappedBinding> trapped = new ArrayList<>();
         for (String action : UI_NAVIGATION_ACTIONS) {
-            KeyBindingsParser.KeyBinding binding = bindings.get(action);
-            if (binding == null || binding.key == null || binding.key.isBlank()) {
+            KeyBindingsParser.BindingSlots pair = slots.get(action);
+            if (pair == null) {
                 continue; // unbound, or bound only to a device we cannot press - not this check's business
             }
-            String[] modifiers = binding.modifiers == null ? new String[0] : binding.modifiers;
-            if (!typesACharacter(binding.key, modifiers)) {
-                continue;
-            }
-            Set<String> chord = new LinkedHashSet<>();
-            chord.add(binding.key);
-            chord.addAll(Arrays.asList(modifiers));
-            trapped.add(new TrappedBinding(action, chord));
+            addIfTrapped(trapped, action, pair.primary());
+            addIfTrapped(trapped, action, pair.secondary());
         }
         return List.copyOf(trapped);
+    }
+
+    /**
+     * Appends one slot's chord to {@code trapped} when a text field would swallow it; an empty slot
+     * appends nothing.
+     */
+    private static void addIfTrapped(List<TrappedBinding> trapped, String action,
+                                     KeyBindingsParser.KeyBinding binding) {
+        if (binding == null || binding.key == null || binding.key.isBlank()) {
+            return;
+        }
+        String[] modifiers = binding.modifiers == null ? new String[0] : binding.modifiers;
+        if (!typesACharacter(binding.key, modifiers)) {
+            return;
+        }
+        Set<String> chord = new LinkedHashSet<>();
+        chord.add(binding.key);
+        chord.addAll(Arrays.asList(modifiers));
+        trapped.add(new TrappedBinding(action, chord));
     }
 
     /**

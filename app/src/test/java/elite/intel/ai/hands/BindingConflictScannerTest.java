@@ -596,23 +596,34 @@ class BindingConflictScannerTest {
 
     // --- both slots: chords a single-slot scan could not see ---
 
-    @SuppressWarnings("unchecked")
-    private static Map<SlotRef, Set<String>> slots(Object... triples) {
-        Map<SlotRef, Set<String>> m = new LinkedHashMap<>();
-        for (int i = 0; i < triples.length; i += 3) {
-            m.put(new SlotRef((String) triples[i], (BindingSlotType) triples[i + 1]),
-                    (Set<String>) triples[i + 2]);
+    /**
+     * Typed fixture builder: one chord per slot, kept in insertion order so a test can also pin what
+     * the scan does with arrival order.
+     */
+    private static final class Slots {
+        private final Map<SlotRef, Set<String>> m = new LinkedHashMap<>();
+
+        Slots put(String action, BindingSlotType slot, String... keys) {
+            m.put(new SlotRef(action, slot), Set.of(keys));
+            return this;
         }
-        return m;
+
+        Map<SlotRef, Set<String>> build() {
+            return m;
+        }
+    }
+
+    private static Slots slots() {
+        return new Slots();
     }
 
     @Test
     void chordSharedBetweenOnePrimaryAndAnotherSecondaryConflicts() {
         // The case the action-keyed scan could not express: EliteIntel presses Move Up's Primary F, and
         // Move Down holds the same F in its Secondary. Both fire in-game; nothing reported it.
-        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots(
-                "MoveUp", BindingSlotType.PRIMARY, Set.of("Key_F"),
-                "MoveDown", BindingSlotType.SECONDARY, Set.of("Key_F")));
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots()
+                .put("MoveUp", BindingSlotType.PRIMARY, "Key_F")
+                .put("MoveDown", BindingSlotType.SECONDARY, "Key_F").build());
 
         assertEquals(1, conflicts.size());
         assertEquals("MoveDown", conflicts.get(0).actionA()); // still ordered A < B by action name
@@ -624,9 +635,9 @@ class BindingConflictScannerTest {
         // The shape this fix exists for: the map camera and UI navigation are both live in the galaxy
         // map, so a chord they share stops EliteIntel driving it - and splitting that chord across
         // slots is how it used to go unseen.
-        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots(
-                "CamTranslateForward", BindingSlotType.PRIMARY, Set.of("Key_Z"),
-                "UI_Up", BindingSlotType.SECONDARY, Set.of("Key_Z")));
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots()
+                .put("CamTranslateForward", BindingSlotType.PRIMARY, "Key_Z")
+                .put("UI_Up", BindingSlotType.SECONDARY, "Key_Z").build());
 
         assertEquals(1, conflicts.size());
         assertTrue(conflicts.get(0).blocking());
@@ -635,9 +646,9 @@ class BindingConflictScannerTest {
     @Test
     void oneActionHoldingTheSameChordInBothSlotsIsNotAConflict() {
         // Two ways to fire one action is a setup, not a clash.
-        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots(
-                "GalaxyMapOpen", BindingSlotType.PRIMARY, Set.of("Key_Y"),
-                "GalaxyMapOpen", BindingSlotType.SECONDARY, Set.of("Key_Y")));
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots()
+                .put("GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_Y")
+                .put("GalaxyMapOpen", BindingSlotType.SECONDARY, "Key_Y").build());
 
         assertTrue(conflicts.isEmpty());
     }
@@ -645,11 +656,11 @@ class BindingConflictScannerTest {
     @Test
     void anActionPairSharingAChordThroughSeveralSlotsIsReportedOnce() {
         // Four slot pairings produce the same clash; the player has one problem, not four.
-        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots(
-                "ActionOne", BindingSlotType.PRIMARY, Set.of("Key_Y"),
-                "ActionOne", BindingSlotType.SECONDARY, Set.of("Key_Y"),
-                "ActionTwo", BindingSlotType.PRIMARY, Set.of("Key_Y"),
-                "ActionTwo", BindingSlotType.SECONDARY, Set.of("Key_Y")));
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots()
+                .put("ActionOne", BindingSlotType.PRIMARY, "Key_Y")
+                .put("ActionOne", BindingSlotType.SECONDARY, "Key_Y")
+                .put("ActionTwo", BindingSlotType.PRIMARY, "Key_Y")
+                .put("ActionTwo", BindingSlotType.SECONDARY, "Key_Y").build());
 
         assertEquals(1, conflicts.size());
     }
@@ -657,9 +668,9 @@ class BindingConflictScannerTest {
     @Test
     void contextRulesStillApplyAcrossSlots() {
         // A ship action and its SRV twin never co-fire, whichever slots hold the chord.
-        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots(
-                "HeadLookToggle", BindingSlotType.PRIMARY, Set.of("Key_O"),
-                "HeadLookToggle_Buggy", BindingSlotType.SECONDARY, Set.of("Key_O")));
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots()
+                .put("HeadLookToggle", BindingSlotType.PRIMARY, "Key_O")
+                .put("HeadLookToggle_Buggy", BindingSlotType.SECONDARY, "Key_O").build());
 
         assertTrue(conflicts.isEmpty());
     }
@@ -667,8 +678,8 @@ class BindingConflictScannerTest {
     @Test
     void candidateChordIsTakenWhenItSitsInAnotherActionsSecondary() {
         // The save-guard's job: a chord parked in someone else's Secondary is not free.
-        Map<SlotRef, Set<String>> existing = slots(
-                "LandingGearToggle", BindingSlotType.SECONDARY, Set.of("Key_LeftControl", "Key_Y"));
+        Map<SlotRef, Set<String>> existing = slots()
+                .put("LandingGearToggle", BindingSlotType.SECONDARY, "Key_LeftControl", "Key_Y").build();
 
         CandidateConflict conflict = BindingConflictScanner.candidateConflictInSlotKeysets(
                 "GalaxyMapOpen", Set.of("Key_LeftControl", "Key_Y"), existing);
@@ -679,8 +690,8 @@ class BindingConflictScannerTest {
 
     @Test
     void candidateIgnoresTheEditedBindingsOwnSecondary() {
-        Map<SlotRef, Set<String>> existing = slots(
-                "GalaxyMapOpen", BindingSlotType.SECONDARY, Set.of("Key_Y"));
+        Map<SlotRef, Set<String>> existing = slots()
+                .put("GalaxyMapOpen", BindingSlotType.SECONDARY, "Key_Y").build();
 
         assertNull(BindingConflictScanner.candidateConflictInSlotKeysets(
                 "GalaxyMapOpen", Set.of("Key_Y"), existing));
@@ -689,19 +700,19 @@ class BindingConflictScannerTest {
     @Test
     void twinsSharingAChordInEitherSlotAreNotRecommended() {
         // Ship on Primary, SRV on Secondary, same key: already unified, so no nudge.
-        List<Recommendation> recommendations = BindingConflictScanner.recommendVehicleTwinsFromSlotKeysets(slots(
-                "HeadLookToggle", BindingSlotType.PRIMARY, Set.of("Key_O"),
-                "HeadLookToggle_Buggy", BindingSlotType.SECONDARY, Set.of("Key_O")));
+        List<Recommendation> recommendations = BindingConflictScanner.recommendVehicleTwinsFromSlotKeysets(slots()
+                .put("HeadLookToggle", BindingSlotType.PRIMARY, "Key_O")
+                .put("HeadLookToggle_Buggy", BindingSlotType.SECONDARY, "Key_O").build());
 
         assertTrue(recommendations.isEmpty());
     }
 
     @Test
     void twinsWithNoChordInCommonAreStillRecommended() {
-        List<Recommendation> recommendations = BindingConflictScanner.recommendVehicleTwinsFromSlotKeysets(slots(
-                "HeadLookToggle", BindingSlotType.PRIMARY, Set.of("Key_O"),
-                "HeadLookToggle_Buggy", BindingSlotType.PRIMARY, Set.of("Key_P"),
-                "HeadLookToggle_Buggy", BindingSlotType.SECONDARY, Set.of("Key_Q")));
+        List<Recommendation> recommendations = BindingConflictScanner.recommendVehicleTwinsFromSlotKeysets(slots()
+                .put("HeadLookToggle", BindingSlotType.PRIMARY, "Key_O")
+                .put("HeadLookToggle_Buggy", BindingSlotType.PRIMARY, "Key_P")
+                .put("HeadLookToggle_Buggy", BindingSlotType.SECONDARY, "Key_Q").build());
 
         assertEquals(1, recommendations.size());
         assertEquals("HeadLookToggle", recommendations.get(0).shipAction());

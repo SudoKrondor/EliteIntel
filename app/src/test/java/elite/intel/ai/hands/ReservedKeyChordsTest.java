@@ -60,15 +60,13 @@ class ReservedKeyChordsTest {
 
     @Test
     void gameMenuKeysComeOutOfTheCommandersFile() {
-        Map<String, KeyBindingsParser.KeyBinding> bindings = new LinkedHashMap<>();
-        assertEquals(Set.of(), ReservedKeyChords.gameMenuKeys(bindings), "an unbound game menu reserves nothing");
-        assertEquals(Set.of(), ReservedKeyChords.gameMenuKeys(null));
+        Map<String, KeyBindingsParser.BindingSlots> slots = new LinkedHashMap<>();
+        assertEquals(Set.of(), ReservedKeyChords.gameMenuKeysFromExecutableSlots(slots),
+                "an unbound game menu reserves nothing");
+        assertEquals(Set.of(), ReservedKeyChords.gameMenuKeysFromExecutableSlots(null));
 
-        bindings.put("Pause", binding("Key_P"));
-        assertEquals(Set.of("Key_P"), ReservedKeyChords.gameMenuKeys(bindings));
-
-        bindings.put("Pause", binding("Key_"));  // the empty-slot placeholder
-        assertEquals(Set.of(), ReservedKeyChords.gameMenuKeys(bindings));
+        slots.put("Pause", primary("Key_P"));
+        assertEquals(Set.of("Key_P"), ReservedKeyChords.gameMenuKeysFromExecutableSlots(slots));
     }
 
     @Test
@@ -114,12 +112,12 @@ class ReservedKeyChordsTest {
     @Test
     void scanReportsControlsAlreadyBoundToAReservedChord() {
         // Elite's own controls screen has no reserved-chord rule, so a file written there can hold one.
-        Map<String, KeyBindingsParser.KeyBinding> bindings = new LinkedHashMap<>();
-        bindings.put("Pause", binding("Key_P"));
-        bindings.put("QuickCommsPanel", binding("Key_P", "Key_LeftAlt"));
-        bindings.put("GalaxyMapOpen", binding("Key_F4", "Key_RightAlt"));
-        bindings.put("LandingGearToggle", binding("Key_L"));                  // clean
-        bindings.put("ToggleCargoScoop", binding("Key_R", "Key_LeftShift"));  // clean
+        Map<String, KeyBindingsParser.BindingSlots> bindings = new LinkedHashMap<>();
+        bindings.put("Pause", primary("Key_P"));
+        bindings.put("QuickCommsPanel", primary("Key_P", "Key_LeftAlt"));
+        bindings.put("GalaxyMapOpen", primary("Key_F4", "Key_RightAlt"));
+        bindings.put("LandingGearToggle", primary("Key_L"));                  // clean
+        bindings.put("ToggleCargoScoop", primary("Key_R", "Key_LeftShift"));  // clean
 
         List<ReservedKeyChords.ReservedBinding> found = ReservedKeyChords.scan(bindings);
 
@@ -133,12 +131,12 @@ class ReservedKeyChordsTest {
 
     @Test
     void scanReportsEveryControlSharingTheGameMenuKeyWhateverItsModifiers() {
-        Map<String, KeyBindingsParser.KeyBinding> bindings = new LinkedHashMap<>();
-        bindings.put("Pause", binding("Key_G"));
-        bindings.put("LandingGearToggle", binding("Key_G"));                  // the bare key
-        bindings.put("ToggleCargoScoop", binding("Key_G", "Key_LeftShift"));  // and any chord on it
-        bindings.put("GalaxyMapOpen", binding("Key_G", "Key_LeftControl", "Key_LeftAlt"));
-        bindings.put("HyperSuperCombination", binding("Key_H"));              // clean
+        Map<String, KeyBindingsParser.BindingSlots> bindings = new LinkedHashMap<>();
+        bindings.put("Pause", primary("Key_G"));
+        bindings.put("LandingGearToggle", primary("Key_G"));                  // the bare key
+        bindings.put("ToggleCargoScoop", primary("Key_G", "Key_LeftShift"));  // and any chord on it
+        bindings.put("GalaxyMapOpen", primary("Key_G", "Key_LeftControl", "Key_LeftAlt"));
+        bindings.put("HyperSuperCombination", primary("Key_H"));              // clean
 
         List<ReservedKeyChords.ReservedBinding> found = ReservedKeyChords.scan(bindings);
 
@@ -149,9 +147,9 @@ class ReservedKeyChordsTest {
     @Test
     void anUnboundGameMenuReservesNothing() {
         // The recommended state: Esc opens that menu anyway, so no key is spent on it.
-        Map<String, KeyBindingsParser.KeyBinding> bindings = new LinkedHashMap<>();
-        bindings.put("LandingGearToggle", binding("Key_L"));
-        bindings.put("ToggleCargoScoop", binding("Key_P", "Key_LeftAlt"));
+        Map<String, KeyBindingsParser.BindingSlots> bindings = new LinkedHashMap<>();
+        bindings.put("LandingGearToggle", primary("Key_L"));
+        bindings.put("ToggleCargoScoop", primary("Key_P", "Key_LeftAlt"));
         assertTrue(ReservedKeyChords.scan(bindings).isEmpty());
     }
 
@@ -172,14 +170,58 @@ class ReservedKeyChordsTest {
         assertTrue(ReservedKeyChords.scan(null).isEmpty());
         assertTrue(ReservedKeyChords.scan(Map.of()).isEmpty());
 
-        Map<String, KeyBindingsParser.KeyBinding> bindings = new LinkedHashMap<>();
-        bindings.put("QuickCommsPanel", binding("Key_"));   // the empty-slot placeholder
-        bindings.put("GalaxyMapOpen", binding(null, "Key_LeftAlt"));
+        Map<String, KeyBindingsParser.BindingSlots> bindings = new LinkedHashMap<>();
+        bindings.put("QuickCommsPanel", primary("Key_"));   // the empty-slot placeholder
+        bindings.put("GalaxyMapOpen", primary(null, "Key_LeftAlt"));
         assertTrue(ReservedKeyChords.scan(bindings).isEmpty());
     }
 
     private static KeyBindingsParser.KeyBinding binding(String key, String... modifiers) {
         return KeyBindingsParser.getInstance().new KeyBinding(key, modifiers, false);
+    }
+
+    /**
+     * One chord in the Primary slot and nothing in the Secondary.
+     */
+    private static KeyBindingsParser.BindingSlots primary(String key, String... modifiers) {
+        return new KeyBindingsParser.BindingSlots(binding(key, modifiers), null);
+    }
+
+    @Test
+    void scanReportsAReservedChordSittingInASecondarySlot() {
+        // Elite fires either slot, so Alt+F4 in a Secondary closes the game exactly as it would in a
+        // Primary, and a Secondary on the menu key pauses it. A scan of the one slot EliteIntel presses
+        // called both of these clean.
+        Map<String, KeyBindingsParser.BindingSlots> bindings = new LinkedHashMap<>();
+        bindings.put("Pause", primary("Key_P"));
+        bindings.put("GalaxyMapOpen", new KeyBindingsParser.BindingSlots(
+                binding("Key_M"), binding("Key_F4", "Key_LeftAlt")));
+        bindings.put("LandingGearToggle", new KeyBindingsParser.BindingSlots(
+                binding("Key_L"), binding("Key_P", "Key_LeftShift")));
+
+        List<ReservedKeyChords.ReservedBinding> found = ReservedKeyChords.scan(bindings);
+
+        assertEquals(List.of("GalaxyMapOpen", "LandingGearToggle"),
+                found.stream().map(ReservedKeyChords.ReservedBinding::action).toList());
+        assertEquals(Set.of("Key_F4", "Key_LeftAlt"), found.get(0).chord());
+        assertEquals(ReservedKeyChords.Rule.OS_CLAIMED, found.get(0).rule());
+        assertEquals(Set.of("Key_P", "Key_LeftShift"), found.get(1).chord());
+        assertEquals(ReservedKeyChords.Rule.GAME_MENU, found.get(1).rule());
+    }
+
+    @Test
+    void aControlReservedOnBothSlotsIsReportedOncePerSlot() {
+        // Two chords to move, so two lines - Primary first, so the log reads in slot order.
+        Map<String, KeyBindingsParser.BindingSlots> bindings = new LinkedHashMap<>();
+        bindings.put("Pause", primary("Key_P"));
+        bindings.put("EjectAllCargo", new KeyBindingsParser.BindingSlots(
+                binding("Key_P", "Key_LeftControl"), binding("Key_P", "Key_LeftAlt")));
+
+        List<ReservedKeyChords.ReservedBinding> found = ReservedKeyChords.scan(bindings);
+
+        assertEquals(2, found.size());
+        assertEquals(Set.of("Key_P", "Key_LeftControl"), found.get(0).chord());
+        assertEquals(Set.of("Key_P", "Key_LeftAlt"), found.get(1).chord());
     }
 
     @Test
@@ -193,10 +235,10 @@ class ReservedKeyChordsTest {
 
     @Test
     void eachFoundBindingCarriesTheRuleThatDecidesTheFix() {
-        Map<String, KeyBindingsParser.KeyBinding> bindings = new LinkedHashMap<>();
-        bindings.put("Pause", binding("Key_P"));
-        bindings.put("EjectAllCargo", binding("Key_P", "Key_LeftControl"));
-        bindings.put("CloseWindow", binding("Key_F4", "Key_LeftAlt"));
+        Map<String, KeyBindingsParser.BindingSlots> bindings = new LinkedHashMap<>();
+        bindings.put("Pause", primary("Key_P"));
+        bindings.put("EjectAllCargo", primary("Key_P", "Key_LeftControl"));
+        bindings.put("CloseWindow", primary("Key_F4", "Key_LeftAlt"));
 
         Map<String, ReservedKeyChords.Rule> byAction = ReservedKeyChords.scan(bindings).stream()
                 .collect(Collectors.toMap(

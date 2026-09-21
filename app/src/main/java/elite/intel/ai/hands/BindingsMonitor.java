@@ -266,8 +266,9 @@ public class BindingsMonitor {
      * Both slots of every keyboard binding, for callers that must see a chord wherever it sits.
      * <p>
      * {@link #getBindings()} keeps only the slot EliteIntel would press, which is right for execution
-     * and wrong for conflict detection: a chord in a Secondary slot still fires in game and can still
-     * collide. Conflict scanning reads this.
+     * and wrong for every check on the file: a chord in a Secondary slot still fires in game, so it can
+     * still collide, still type into a search box, and still open the game menu. The conflict,
+     * text-trap and reserved-chord scans all read this.
      */
     public Map<String, KeyBindingsParser.BindingSlots> getBindingSlots() {
         BindingsSnapshot current = snapshot;
@@ -332,7 +333,7 @@ public class BindingsMonitor {
      * because by hand they click the search result with the mouse.
      */
     public List<UiNavigationTextTrap.TrappedBinding> textTrappedUiNavigation() {
-        return UiNavigationTextTrap.scan(getBindings());
+        return UiNavigationTextTrap.scan(getBindingSlots());
     }
 
     /**
@@ -345,7 +346,7 @@ public class BindingsMonitor {
      * does not, so the file has to be read as well.
      */
     public List<ReservedKeyChords.ReservedBinding> reservedChordBindings() {
-        return ReservedKeyChords.scan(getBindings());
+        return ReservedKeyChords.scan(getBindingSlots());
     }
 
     /**

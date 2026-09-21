@@ -54,10 +54,8 @@ The public API. Every command handler that needs to press keys builds a
 `GameInputSequenceEvent` and publishes it on `GameControllerBus` (not the main
 `EventBusManager`).
 
-
-```
-Java
-    {GameControllerBus.publish(GameInputSequenceEvent.of(            
+```java
+GameControllerBus.publish(GameInputSequenceEvent.of(
         GameInputStep.bindingTap(BINDING_GALAXY_MAP.getGameBinding()),
         GameInputStep.delay(3000),
         GameInputStep.rawKey(KeyProcessor.KEY_ENTER, 0, 0)  // no modifier, tap not hold
