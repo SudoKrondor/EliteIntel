@@ -55,6 +55,7 @@ public class PlayerSession {
     private final LocationManager locationManager = LocationManager.getInstance();
     private final SuitInventory suitInventory = SuitInventory.getInstance();
     private boolean shipAutoDeparted = false;
+    private String announcedPointOfInterest;
 
     private PlayerSession() {
         GameEventBus.register(this);
@@ -992,6 +993,24 @@ public class PlayerSession {
 
     public boolean isShipAutoDeparted() {
         return shipAutoDeparted;
+    }
+
+    /**
+     * Records that the point of interest under a touchdown has been spoken, and says whether this is the
+     * first time: an exobiology run lands at the same beacon a dozen times in a row, and the commander
+     * needs to hear where they are once per stay, not on every hop. The latch is keyed on the body so a
+     * fresh planet is announced again, and {@link #clearAnnouncedPointOfInterest()} lifts it when the
+     * ship leaves for supercruise.
+     */
+    public synchronized boolean markPointOfInterestAnnounced(long bodyId, String pointOfInterest) {
+        String key = bodyId + "|" + pointOfInterest;
+        if (key.equals(announcedPointOfInterest)) return false;
+        announcedPointOfInterest = key;
+        return true;
+    }
+
+    public synchronized void clearAnnouncedPointOfInterest() {
+        announcedPointOfInterest = null;
     }
 }
 

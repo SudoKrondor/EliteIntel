@@ -30,8 +30,8 @@ import java.util.stream.Collectors;
  *
  * <p>Distinct from {@code navigate_to_bio_sample_codex_entry}, which is surface navigation to the next
  * organism on the planet under the ship. This is the jump before that: which system to fly to at all.
- * The two are never offered together - this one needs the main-ship cockpit for the galaxy map, and
- * withdraws itself once the ship has landed.
+ * Both are on offer from anywhere: route plotting works in every game state, and on the surface the
+ * model picks between "next organism here" and "next system" from the question itself.
  */
 @RegisterCommand
 public final class NavigateToExoMasterySiteCommand implements IntelCommand {
@@ -59,13 +59,12 @@ public final class NavigateToExoMasterySiteCommand implements IntelCommand {
     }
 
     /**
-     * Offered only with the catalogue loaded, in the main-ship cockpit (the galaxy map is a ship-only
-     * bind) and off the ground - on the surface the question is where the next organism is, not where
-     * the next system is.
+     * Offered whenever the catalogue is loaded: route plotting is available anywhere in the game, so no
+     * game state withholds it.
      */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return !status.isLanded() && exoMastery.isEnabled();
+        return exoMastery.isEnabled();
     }
 
     @Override

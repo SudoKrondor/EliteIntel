@@ -324,7 +324,7 @@ Classifies a binding ID into a
 `GlobalSettingsManager` toggle.
 
 **`RoutePlotter.plotRoute(destination)`** - publishes a full galaxy-map navigation sequence:
-wait for any open map to close → open galaxy map → wait for `GuiFocus` to report it open → settle → zoom in → navigate to search → type destination → arrow-down → Enter → Enter. The two waits are
+wait for any open map to close → open galaxy map → wait for `GuiFocus` to report it open → settle → zoom in → navigate to search → type destination → Enter → `UI_Right` → `UI_Select` → yaw to grab focus. The two waits are
 `WAIT_UNTIL` steps rather than fixed delays: the map takes seconds to appear on slower hardware, and every step after it is worthless if it fires while the map is still opening.
 
 **`UiNavCommon`** - shared UI helpers: `close()` (handles open system/galaxy map, then
