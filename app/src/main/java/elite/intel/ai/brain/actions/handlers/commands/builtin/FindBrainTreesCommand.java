@@ -12,6 +12,7 @@ import elite.intel.db.managers.BrainTreeManager;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.gameapi.inputs.RoutePlotter;
+import elite.intel.gameapi.search.PermitLockedSystems;
 import elite.intel.gameapi.search.spansh.stellarobjects.StellarObjectSearchResultDto;
 import elite.intel.session.Status;
 import elite.intel.util.NavigationUtils;
@@ -40,6 +41,12 @@ public final class FindBrainTreesCommand implements IntelCommand {
     private final LocationManager locationManager = LocationManager.getInstance();
 
     private static final String PARAM_KEY = "key";
+
+    /**
+     * How many of the nearest sites to consider: enough that a permit-locked one, or two, at the head of
+     * the list still leaves an answer.
+     */
+    private static final int NEAREST_CANDIDATES = 5;
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
@@ -87,10 +94,15 @@ public final class FindBrainTreesCommand implements IntelCommand {
                 );
 
         LocationDao.Coordinates coordinates = locationManager.getGalacticCoordinates();
-        StellarObjectSearchResultDto.Result result = brainTreeManager.findNearestWithMaterial(material, coordinates.x(), coordinates.y(), coordinates.z());
-        if (result == null) {
+        // The nearest site the commander may actually fly to: the ledger is asked for a few in case the
+        // closest sits behind a permit.
+        List<StellarObjectSearchResultDto.Result> nearest = PermitLockedSystems.reachable(
+                brainTreeManager.findNearestWithMaterial(material, coordinates.x(), coordinates.y(), coordinates.z(), NEAREST_CANDIDATES),
+                StellarObjectSearchResultDto.Result::getSystemName);
+        if (nearest.isEmpty()) {
             return StringUtls.localizedResponse("handler.brainTrees.notFound");
         }
+        StellarObjectSearchResultDto.Result result = nearest.getFirst();
         double distance = calculateDistance(coordinates, result.getX(), result.getY(), result.getZ());
         VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.brainTrees.found", result.getSystemName(), distance, result.getBodyName()), false);
         ReminderManager.getInstance().setReminder(

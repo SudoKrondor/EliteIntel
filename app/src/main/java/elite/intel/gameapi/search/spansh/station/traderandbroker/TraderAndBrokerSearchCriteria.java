@@ -6,7 +6,17 @@ import elite.intel.util.json.ToJsonConvertible;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
+/**
+ * The request body for a material trader / technology broker search on {@code /api/stations/search}.
+ *
+ * <p>Every filter here is written in the exact shape the endpoint accepts, because Spansh ignores a
+ * filter it does not recognise and silently matches nothing against a shape it does not expect. That
+ * is how these searches went stale: the light-year radius was being sent as a pair of ints where the
+ * endpoint wants strings, and no freshness bound was sent at all, so the nearest listing won no
+ * matter how many months old it was.
+ */
 public class TraderAndBrokerSearchCriteria extends BaseJsonDto implements ToJsonConvertible {
 
     @SerializedName("filters")
@@ -35,6 +45,15 @@ public class TraderAndBrokerSearchCriteria extends BaseJsonDto implements ToJson
         @SerializedName("distance")
         private Distance distance;
 
+        @SerializedName("distance_to_arrival")
+        private RangeFilter distanceToArrival;
+
+        @SerializedName("large_pads")
+        private RangeFilter largePads;
+
+        @SerializedName("updated_at")
+        private UpdatedAt updatedAt;
+
         public void setDistance(Distance distance) {
             this.distance = distance;
         }
@@ -45,6 +64,21 @@ public class TraderAndBrokerSearchCriteria extends BaseJsonDto implements ToJson
 
         public void setTechnologyBroker(TechnologyBroker technologyBroker) {
             this.technologyBroker = technologyBroker;
+        }
+
+        public void setDistanceToArrival(RangeFilter distanceToArrival) {
+            this.distanceToArrival = distanceToArrival;
+        }
+
+        /**
+         * Null leaves the pad size unconstrained, which is the right answer for a small or medium ship.
+         */
+        public void setLargePads(RangeFilter largePads) {
+            this.largePads = largePads;
+        }
+
+        public void setUpdatedAt(UpdatedAt updatedAt) {
+            this.updatedAt = updatedAt;
         }
     }
 
@@ -67,20 +101,75 @@ public class TraderAndBrokerSearchCriteria extends BaseJsonDto implements ToJson
         }
     }
 
+    /**
+     * The light-year radius around the reference coordinates.
+     *
+     * <p>Unlike every other bound on this endpoint this one is a bare min/max pair of STRINGS, not a
+     * {@code "<=>"} range, and it is silently ignored in any other shape.
+     */
     public static class Distance {
 
         @SerializedName("min")
-        private int min;
+        private String min;
 
         @SerializedName("max")
-        private int max;
+        private String max;
 
         public void setMin(int min) {
-            this.min = min;
+            this.min = lightYears(min);
         }
 
         public void setMax(int max) {
-            this.max = max;
+            this.max = lightYears(max);
+        }
+
+        // WHY Locale.ROOT: the wire wants "100.00", and a German default locale would write "100,00".
+        private static String lightYears(int value) {
+            return String.format(Locale.ROOT, "%.2f", (double) value);
+        }
+    }
+
+    /**
+     * A closed numeric range, {@code {"comparison": "<=>", "value": [min, max]}}. Both ends are always
+     * sent: the endpoint accepts a one-sided {@code ">="} without complaint and then matches nothing.
+     */
+    public static class RangeFilter {
+
+        @SerializedName("comparison")
+        private final String comparison = "<=>";
+
+        @SerializedName("value")
+        private final int[] value;
+
+        public RangeFilter(int min, int max) {
+            this.value = new int[]{min, max};
+        }
+    }
+
+    /**
+     * How recently the station's listing must have been updated, as the closed range
+     * {@code ["now-7h", "now"]} in Spansh's own relative-time vocabulary.
+     */
+    public static class UpdatedAt {
+
+        @SerializedName("comparison")
+        private final String comparison = "<=>";
+
+        @SerializedName("value")
+        private final List<String> value;
+
+        // WHY private: the upper bound is always "now". A range ending in the past would ask for
+        // listings that are stale by construction, which is the exact thing this filter exists to stop.
+        private UpdatedAt(String since) {
+            this.value = List.of(since, "now");
+        }
+
+        /**
+         * Listings updated between {@code since} and now, where {@code since} is a Spansh relative time
+         * such as {@code "now-7h"}.
+         */
+        public static UpdatedAt since(String since) {
+            return new UpdatedAt(since);
         }
     }
 

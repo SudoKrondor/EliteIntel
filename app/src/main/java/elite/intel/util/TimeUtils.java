@@ -37,7 +37,12 @@ public class TimeUtils {
      *
      */
     public static String transformToYMDHtimeAgo(String dateAsString, String pattern) {
-        LocalDateTime updatedDateTime = LocalDateTime.parse(dateAsString.substring(0, 19), DateTimeFormatter.ofPattern(pattern));
+        // handle the 'T' separator only if needed for a space-separated pattern
+        String value = dateAsString.substring(0, 19);
+        if (!pattern.contains("'T'")) {
+            value = value.replace('T', ' ');
+        }
+        LocalDateTime updatedDateTime = LocalDateTime.parse(value, DateTimeFormatter.ofPattern(pattern));
         LocalDateTime now = LocalDateTime.now();
         Duration duration = Duration.between(updatedDateTime, now);
 
@@ -48,11 +53,12 @@ public class TimeUtils {
         long hours = duration.toHours() % 24;
         long minutes = duration.toMinutes() % 60;
 
-        String timeAgo = (years > 0 ? years + " years, " : "") +
-                (months > 0 ? months + " months, " : "") +
-                (days > 0 ? days + " days, " : "") +
-                (hours > 0 ? hours + " hours, " : "") +
-                minutes + " minutes ago";
-        return timeAgo;
+        StringBuilder sb = new StringBuilder();
+        if (years > 0) sb.append(StringUtls.localizedEventPlural((int) years, "event.time.years")).append(", ");
+        if (months > 0) sb.append(StringUtls.localizedEventPlural((int) months, "event.time.months")).append(", ");
+        if (days > 0) sb.append(StringUtls.localizedEventPlural((int) days, "event.time.days")).append(", ");
+        if (hours > 0) sb.append(StringUtls.localizedEventPlural((int) hours, "event.time.hours")).append(", ");
+        sb.append(StringUtls.localizedEventPlural((int) minutes, "event.time.minutes"));
+        return StringUtls.localizedEvent("event.time.ago", sb.toString());
     }
 }

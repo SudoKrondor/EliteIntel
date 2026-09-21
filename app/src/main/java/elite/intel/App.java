@@ -46,6 +46,13 @@ public class App {
         Thread.setDefaultUncaughtExceptionHandler(
                 (thread, throwable) -> log.error("Uncaught exception on {}", identify(thread), throwable));
 
+        // WHY before any java.awt.Robot exists: on a Wayland session with GNOME Shell 47+, JDK 24+ (and the
+        // JBR we ship) defaults Robot.keyPress to the XDG RemoteDesktop portal - a permission prompt per
+        // keypress, and the key never reaches Elite under Proton, which is an XWayland client. "x11" keeps
+        // Robot on XTEST through XWayland, the path every other desktop takes and the one the game hears.
+        // The JDK reads the property once at class-init of sun.awt.screencast.XdgDesktopPortal.
+        System.setProperty("awt.robot.screenshotMethod", "x11");
+
         // init kry and db first!
         Cypher.initializeKey();
         Database.init();

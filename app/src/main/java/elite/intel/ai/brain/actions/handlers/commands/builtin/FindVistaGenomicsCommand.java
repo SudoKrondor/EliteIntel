@@ -9,6 +9,7 @@ import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.gameapi.ReminderContact;
 import elite.intel.gameapi.inputs.RoutePlotter;
+import elite.intel.gameapi.search.PermitLockedSystems;
 import elite.intel.gameapi.search.spansh.station.CurrentSystemFilter;
 import elite.intel.gameapi.search.spansh.station.vista.VistaGenomicsLocationDto;
 import elite.intel.gameapi.search.spansh.station.vista.VistaGenomicsSearch;
@@ -75,8 +76,8 @@ public final class FindVistaGenomicsCommand implements IntelCommand {
         coords.setZ(galacticCoordinates.z());
         criteria.setReferenceCoords(coords);
 
-        List<VistaGenomicsLocationDto.Result> results = CurrentSystemFilter.exclude(
-                VistaGenomicsSearch.findVistaGenomics(criteria), PlayerSession.getInstance().getPrimaryStarName());
+        List<VistaGenomicsLocationDto.Result> results = PermitLockedSystems.reachable(CurrentSystemFilter.exclude(
+                VistaGenomicsSearch.findVistaGenomics(criteria), PlayerSession.getInstance().getPrimaryStarName()));
         if (results.isEmpty()) {
             return StringUtls.localizedResponse("handler.vistaGenomics.notFound");
         }

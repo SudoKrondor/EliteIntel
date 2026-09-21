@@ -7,6 +7,7 @@ import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
+import elite.intel.gameapi.search.PermitLockedSystems;
 import elite.intel.gameapi.search.spansh.findcarrier.CarrierAccess;
 import elite.intel.gameapi.search.spansh.findcarrier.FleetCarrierSearch;
 import elite.intel.gameapi.search.spansh.findcarrier.FleetCarrierSearchResultsDto;
@@ -70,6 +71,7 @@ public final class FindNearestFleetCarrierCommand implements IntelCommand {
         final String finalPlayerCarrierCallSign = playerCarrierCallSign;
         fleetCarriers.getResults().stream()
                 .filter(carrier -> finalPlayerCarrierCallSign == null || !finalPlayerCarrierCallSign.equals(carrier.getCallSign()))
+                .filter(carrier -> PermitLockedSystems.isReachable(carrier.getSystemName()))
                 .findFirst()
                 .ifPresentOrElse(
                         result -> {

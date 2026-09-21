@@ -95,6 +95,7 @@ public class EventRegistry {
         registerEvent("MissionCompleted", MissionCompletedEvent.class);
         registerEvent("MissionFailed", MissionFailedEvent.class);
         registerEvent("MissionRedirected", MissionRedirectedEvent.class);
+        registerEvent("Music", MusicEvent.class);
         registerEvent("NavRoute", NavRouteEvent.class);
         registerEvent("NavRouteClear", NavRouteClearEvent.class);
         registerEvent("NpcCrewPaidWage", NpcCrewPaidWageEvent.class);

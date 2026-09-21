@@ -98,29 +98,66 @@ class UiNavigationTextTrapTest {
     void uiSelectIsDeliberatelyOutOfScope() {
         // Frontier's default UI_Select is bare Space, which types a character. Including Select would
         // flag nearly every commander alive, and it is only pressed once focus has left the field.
-        Map<String, KeyBindingsParser.KeyBinding> bindings = layout(
+        Map<String, KeyBindingsParser.BindingSlots> slots = layout(
                 "Key_UpArrow", "Key_DownArrow", "Key_LeftArrow", "Key_RightArrow", new String[]{});
-        bindings.put("UI_Select", PARSER.new KeyBinding("Key_Space", new String[]{}, false));
+        slots.put("UI_Select", primaryOnly("Key_Space", new String[]{}));
 
-        assertTrue(UiNavigationTextTrap.scan(bindings).isEmpty());
+        assertTrue(UiNavigationTextTrap.scan(slots).isEmpty());
     }
 
     @Test
     void unboundDirectionIsNotFlagged() {
-        Map<String, KeyBindingsParser.KeyBinding> bindings = layout(
+        Map<String, KeyBindingsParser.BindingSlots> slots = layout(
                 "Key_W", "Key_S", "Key_A", "Key_D", new String[]{});
-        bindings.remove("UI_Down");
+        slots.remove("UI_Down");
 
-        assertEquals(3, UiNavigationTextTrap.scan(bindings).size());
+        assertEquals(3, UiNavigationTextTrap.scan(slots).size());
     }
 
-    private static Map<String, KeyBindingsParser.KeyBinding> layout(String up, String down, String left,
-                                                                    String right, String[] modifiers) {
-        Map<String, KeyBindingsParser.KeyBinding> bindings = new LinkedHashMap<>();
-        bindings.put("UI_Up", PARSER.new KeyBinding(up, modifiers, false));
-        bindings.put("UI_Down", PARSER.new KeyBinding(down, modifiers, false));
-        bindings.put("UI_Left", PARSER.new KeyBinding(left, modifiers, false));
-        bindings.put("UI_Right", PARSER.new KeyBinding(right, modifiers, false));
-        return bindings;
+    @Test
+    void aPrintableKeyInTheSecondarySlotIsTrappedToo() {
+        // Arrows in the Primary, W/A/S/D in the Secondary: Elite fires either, so the S still lands in
+        // the search box. A scan that read only the slot EliteIntel presses called this layout clean.
+        Map<String, KeyBindingsParser.BindingSlots> slots = layout(
+                "Key_UpArrow", "Key_DownArrow", "Key_LeftArrow", "Key_RightArrow", new String[]{});
+        slots.put("UI_Down", new KeyBindingsParser.BindingSlots(
+                PARSER.new KeyBinding("Key_DownArrow", new String[]{}, false),
+                PARSER.new KeyBinding("Key_S", new String[]{}, false)));
+
+        List<UiNavigationTextTrap.TrappedBinding> trapped = UiNavigationTextTrap.scan(slots);
+
+        assertEquals(1, trapped.size());
+        assertEquals("UI_Down", trapped.get(0).action());
+        assertEquals(java.util.Set.of("Key_S"), trapped.get(0).chord(), "the Secondary's chord, not the arrow");
+    }
+
+    @Test
+    void bothSlotsTrappedAreReportedOncePerSlot() {
+        // Each chord is its own thing to move, so each is named - Primary first.
+        Map<String, KeyBindingsParser.BindingSlots> slots = new LinkedHashMap<>();
+        slots.put("UI_Up", new KeyBindingsParser.BindingSlots(
+                PARSER.new KeyBinding("Key_W", new String[]{}, false),
+                PARSER.new KeyBinding("Key_I", new String[]{}, false)));
+
+        assertEquals(List.of(java.util.Set.of("Key_W"), java.util.Set.of("Key_I")),
+                UiNavigationTextTrap.scan(slots).stream().map(UiNavigationTextTrap.TrappedBinding::chord).toList());
+    }
+
+    /**
+     * The four directions with one chord each in the Primary slot and nothing in the Secondary, which
+     * is how every layout observed so far was written.
+     */
+    private static Map<String, KeyBindingsParser.BindingSlots> layout(String up, String down, String left,
+                                                                      String right, String[] modifiers) {
+        Map<String, KeyBindingsParser.BindingSlots> slots = new LinkedHashMap<>();
+        slots.put("UI_Up", primaryOnly(up, modifiers));
+        slots.put("UI_Down", primaryOnly(down, modifiers));
+        slots.put("UI_Left", primaryOnly(left, modifiers));
+        slots.put("UI_Right", primaryOnly(right, modifiers));
+        return slots;
+    }
+
+    private static KeyBindingsParser.BindingSlots primaryOnly(String key, String[] modifiers) {
+        return new KeyBindingsParser.BindingSlots(PARSER.new KeyBinding(key, modifiers, false), null);
     }
 }

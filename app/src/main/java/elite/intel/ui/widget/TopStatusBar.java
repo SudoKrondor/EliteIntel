@@ -83,7 +83,7 @@ public class TopStatusBar extends HudPanel {
 
         JLabel verLabel = new JLabel(ver);
         verLabel.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-        verLabel.setFont(verLabel.getFont().deriveFont(Font.PLAIN, HudPalette.HUD_FONT_READOUT_KEY));
+        verLabel.setFont(verLabel.getFont().deriveFont(Font.PLAIN, HudPalette.HUD_FONT_APP_TITLE));
         verLabel.setAlignmentY(Component.CENTER_ALIGNMENT);
         row.add(verLabel);
 
@@ -145,7 +145,7 @@ public class TopStatusBar extends HudPanel {
     private static JLabel keyLabel(String text) {
         JLabel l = new JLabel(text == null ? "" : text.toUpperCase(Locale.ROOT));
         l.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-        l.setFont(l.getFont().deriveFont(Font.PLAIN, HudPalette.HUD_FONT_READOUT_KEY));
+        l.setFont(l.getFont().deriveFont(Font.PLAIN, HudPalette.HUD_FONT_APP_TITLE));
         l.setAlignmentY(Component.CENTER_ALIGNMENT);
         return l;
     }

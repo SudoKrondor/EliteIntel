@@ -1,7 +1,8 @@
 package elite.intel.ui.screen.settings;
 
-import elite.intel.ai.mouth.TtsProvider;
+import com.google.common.eventbus.Subscribe;
 import elite.intel.eventbus.UiBus;
+import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.*;
 import elite.intel.ui.support.AudioDeviceCombo;
@@ -21,14 +22,18 @@ import static elite.intel.ui.theme.HudPalette.*;
 public class AudioSettingsPanel extends JPanel {
 
     private final SystemSession systemSession = SystemSession.getInstance();
+    private final PlayerSession playerSession = PlayerSession.getInstance();
 
     /** Shared left label-column width so device and level controls start at the same x (fits the longest label). */
     private static final int LABEL_COL_WIDTH = 170;
 
     private HudSlider voiceVolumeSlider;
+    /**
+     * Dead while the radio is off (see {@link #updateRadioVolumeEnablement()}): a level for nothing is a puzzle.
+     */
+    private HudSlider radioVolumeSlider;
     private HudSlider beepVolumeSlider;
     private HudSlider speechSpeedSlider;
-    private HudSlider googleWaveNetPitchSlider;
     private HudSlider sttThreadsSlider;
 
     private HudComboBox<String> inputCombo;
@@ -45,6 +50,16 @@ public class AudioSettingsPanel extends JPanel {
 
     public AudioSettingsPanel() {
         buildUi();
+        UiBus.register(this);
+    }
+
+    /**
+     * The radio switch moved - by the Commander tab's checkbox or the spoken toggle command, which runs off
+     * the Swing thread - so the slider follows it while this panel is showing, not only on the next show.
+     */
+    @Subscribe
+    public void onRadioTransmissionStateChanged(RadioTransmissionStateChangedEvent event) {
+        SwingUtilities.invokeLater(() -> radioVolumeSlider.setEnabled(event.on()));
     }
 
     private void buildUi() {
@@ -79,7 +94,7 @@ public class AudioSettingsPanel extends JPanel {
         addHierarchyListener(e -> {
             if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) {
                 syncDevices();
-                updateGoogleWaveNetPitchEnablement();
+                updateRadioVolumeEnablement();
             }
         });
     }
@@ -194,17 +209,13 @@ public class AudioSettingsPanel extends JPanel {
         voiceVolumeSlider.addChangeListener(e -> UiBus.publish(new SttVolumeChangedEvent(voiceVolumeSlider.getValue())));
         addLevelRow(grid, ag, 0, getText("settings.audio.speechVolume"), voiceVolumeSlider);
 
+        radioVolumeSlider = makeSlider(0, 100, systemSession.getRadioVolume());
+        radioVolumeSlider.addChangeListener(e -> UiBus.publish(new RadioVolumeChangedEvent(radioVolumeSlider.getValue())));
+        addLevelRow(grid, ag, 1, getText("settings.audio.radioVolume"), radioVolumeSlider);
+
         speechSpeedSlider = makeSlider(0, 100, (int) (systemSession.getSpeechSpeed() * 100));
         speechSpeedSlider.addChangeListener(e -> UiBus.publish(new SpeechSpeedChangeEvent(speechSpeedSlider.getValue() / 100f)));
-        addLevelRow(grid, ag, 1, getText("settings.audio.ttsVoiceSpeed"), speechSpeedSlider);
-
-        googleWaveNetPitchSlider = makeSlider(
-                SystemSession.GOOGLE_WAVENET_PITCH_MIN,
-                SystemSession.GOOGLE_WAVENET_PITCH_MAX,
-                systemSession.getGoogleWaveNetPitch());
-        googleWaveNetPitchSlider.addChangeListener(e ->
-                systemSession.setGoogleWaveNetPitch(googleWaveNetPitchSlider.getValue()));
-        addLevelRow(grid, ag, 2, getText("settings.audio.googleWaveNetPitch"), googleWaveNetPitchSlider);
+        addLevelRow(grid, ag, 2, getText("settings.audio.ttsVoiceSpeed"), speechSpeedSlider);
 
         beepVolumeSlider = makeSlider(0, 100, (int) (systemSession.getBeepVolume() * 100));
         beepVolumeSlider.addChangeListener(e -> UiBus.publish(new NotificationVolumeChangedEvent(beepVolumeSlider.getValue() / 100f)));
@@ -217,10 +228,15 @@ public class AudioSettingsPanel extends JPanel {
         return section;
     }
 
-    /** Right column: MICROPHONE MONITOR - a FRAMED accent card holding the full-height level meter. */
+    /**
+     * Right column: MICROPHONE MONITOR - a FRAMED accent card holding the full-height level meter, with
+     * the meter's verdict in words beneath it ({@link HudMicHealthHint}) for the commander who does not
+     * read meters.
+     */
     private JComponent buildMicColumn() {
-        HudSection section = new HudSection(getText("settings.audio.section.microphoneMonitor"), new BorderLayout());
+        HudSection section = new HudSection(getText("settings.audio.section.microphoneMonitor"), new BorderLayout(0, HUD_GAP));
         section.body().add(new HudMicMeter(), BorderLayout.CENTER);
+        section.body().add(new HudMicHealthHint(), BorderLayout.SOUTH);
         return section;
     }
 
@@ -230,7 +246,7 @@ public class AudioSettingsPanel extends JPanel {
         noiseReductionCheck.setSelected(nrEnabled);
         noiseStrengthControl.setSelectedIndex(systemSession.getNoiseReductionStrength());
         noiseStrengthControl.setEnabled(nrEnabled);
-        updateGoogleWaveNetPitchEnablement();
+        updateRadioVolumeEnablement();
     }
 
     /**
@@ -280,12 +296,11 @@ public class AudioSettingsPanel extends JPanel {
     }
 
     /**
-     * Only Google WaveNet reads the pitch, so the slider is live for that engine alone (section 0.6).
+     * The radio level is live only while the radio is on (section 0.6). Re-read on every show: the switch
+     * may have moved while this panel was hidden, and the event that also tracks it is not replayed.
      */
-    private void updateGoogleWaveNetPitchEnablement() {
-        if (googleWaveNetPitchSlider != null) {
-            googleWaveNetPitchSlider.setEnabled(systemSession.getTtsProvider() == TtsProvider.GOOGLE);
-        }
+    private void updateRadioVolumeEnablement() {
+        radioVolumeSlider.setEnabled(Boolean.TRUE.equals(playerSession.isRadioTransmissionOn()));
     }
 
     private static void selectDevice(HudComboBox<String> combo, String savedName) {

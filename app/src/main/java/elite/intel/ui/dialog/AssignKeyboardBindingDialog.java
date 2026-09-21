@@ -54,7 +54,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
      * Its own banner rather than a second use of {@link #reservedBanner}: "reserved combination" says nothing about a key that is reserved on its own.
      */
     private final HudBanner gameMenuKeyBanner;
-    private final Map<String, KeyBindingsParser.KeyBinding> existingBindings;
+    private final Map<String, KeyBindingsParser.BindingSlots> existingSlots;
     /**
      * The keys the commander has on the game menu, which no other control may use. Empty when this dialog
      * is editing the game-menu control itself - that is the one binding its own key belongs to.
@@ -86,7 +86,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
             BindingSlotType slotType,
             KeyBindingsParser.ReadOnlyBindingSlot currentSlot,
             KeyboardKeyAvailabilityService availabilityService,
-            Map<String, KeyBindingsParser.KeyBinding> existingBindings,
+            Map<String, KeyBindingsParser.BindingSlots> existingSlots,
             Set<String> existingConflicts,
             String existingConflictChord
     ) {
@@ -97,10 +97,10 @@ public class AssignKeyboardBindingDialog extends JDialog {
         this.slotType = slotType;
         this.currentSlot = currentSlot;
         this.availabilityService = availabilityService;
-        this.existingBindings = existingBindings == null ? Map.of() : existingBindings;
+        this.existingSlots = existingSlots == null ? Map.of() : existingSlots;
         this.gameMenuKeys = ReservedKeyChords.GAME_MENU_ACTION.equals(bindingId)
                 ? Set.of()
-                : ReservedKeyChords.gameMenuKeys(this.existingBindings);
+                : ReservedKeyChords.gameMenuKeysFromExecutableSlots(this.existingSlots);
         this.existingConflicts = existingConflicts == null ? Set.of() : existingConflicts;
         this.existingConflictChord = existingConflictChord == null ? "" : existingConflictChord;
         this.originalKey = currentKeyboardKey(currentSlot);
@@ -124,7 +124,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
         this.conflictSlot = transparentPanel(new BorderLayout());
         this.reservedBanner = HudBanner.multiline(getText("bindings.assign.reserved"), StatusBadge.State.OFFLINE);
         this.gameMenuKeyBanner = HudBanner.multiline(getText("bindings.assign.gameMenuKey"), StatusBadge.State.OFFLINE);
-        this.keyboardView = new KeyboardAvailabilityView(bindingId, this.existingBindings);
+        this.keyboardView = new KeyboardAvailabilityView(bindingId, this.existingSlots);
         this.keyboardView.setCurrentKey(originalKey);
         buildUi();
         updateSaveState();
@@ -438,7 +438,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
             return null;
         }
         List<String> modifierKeys = selectedModifiers.stream().map(BindingModifier::key).toList();
-        return BindingConflictScanner.candidateConflict(bindingId, selectedKey, modifierKeys, existingBindings);
+        return BindingConflictScanner.candidateConflictInSlots(bindingId, selectedKey, modifierKeys, existingSlots);
     }
 
     private boolean isChanged() {

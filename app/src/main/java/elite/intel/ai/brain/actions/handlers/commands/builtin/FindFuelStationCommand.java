@@ -11,6 +11,7 @@ import elite.intel.db.managers.ShipManager;
 import elite.intel.gameapi.ReminderContact;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
+import elite.intel.gameapi.search.spansh.station.SearchRadii;
 import elite.intel.gameapi.search.spansh.station.refuel.RefuelStation;
 import elite.intel.gameapi.search.spansh.station.refuel.RefuelStationSearch;
 import elite.intel.session.PlayerSession;
@@ -104,7 +105,7 @@ public final class FindFuelStationCommand implements IntelCommand {
             // How far it actually looked, not what was asked for: the search widens twice on its own, and
             // reporting the radius the commander named would understate the sweep by a factor of twenty.
             return StringUtls.localizedResponse("handler.refuel.notFound",
-                    RefuelStationSearch.radiiToTry(distance).getLast());
+                    SearchRadii.widening(distance).getLast());
         }
 
         RefuelStation station = found.getFirst();

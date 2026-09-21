@@ -25,6 +25,8 @@ final class NarrationPrompt {
                     station names are often long procedural codes; never replace one with a shorter, more familiar or more
                     pronounceable name, never translate or abbreviate it, and never guess one that event_data does not
                     contain. If event_data names no destination, do not name one.
+                            Keep what happened exactly as event_data states it: restyle the line, never reinterpret the event.
+                            Arriving in a system is not docking, a plotted target is not an arrival, and a request is not a grant.
             </narration>
 
             <language>
