@@ -2,6 +2,7 @@ package elite.intel.db;
 
 import elite.intel.db.dao.CommodityDao;
 import elite.intel.db.dao.MaterialNameDao;
+import elite.intel.db.dao.ShipModuleDao;
 import elite.intel.db.dao.SubSystemDao;
 import elite.intel.db.util.Database;
 import elite.intel.i18n.Language;
@@ -233,6 +234,38 @@ public class FuzzySearch {
             case UK -> "label_uk";
             default -> "subsystem";
         };
+    }
+
+    /**
+     * Resolves a spoken ship module name to the English name Spansh matches on, or null when nothing
+     * clears the threshold.
+     * <p>
+     * English only, with no retry in the commander's language: the module catalogue has no other, because
+     * Spansh knows none and the game gives us no per-language module list to seed one from. A commander
+     * on any client says the module in English, as they do a commodity whose row has no translation yet.
+     * See {@link #shipModuleSpellings} for what to actually send.
+     */
+    public static String fuzzyShipModuleMatch(String input, int similarity) {
+        return fuzzyMatch(input, similarity, ShipModuleDao.class,
+                ShipModuleDao::getAllNamesLowerCase, ShipModuleDao::getOriginalCase);
+    }
+
+    /**
+     * Whether the spoken words name a module exactly, spaces and case aside. Cheaper and stricter than
+     * {@link #fuzzyShipModuleMatch}: a caller that must decide between the commodity and module catalogues
+     * lets a word-for-word module name win before the commodity fuzzy match gets a chance to bend it.
+     */
+    public static boolean isShipModuleName(String input) {
+        if (input == null || input.isBlank()) return false;
+        return !shipModuleSpellings(input).isEmpty();
+    }
+
+    /**
+     * Every spelling the catalogue holds for a module, the given one first; see
+     * {@link ShipModuleDao#getSpellings}.
+     */
+    public static List<String> shipModuleSpellings(String name) {
+        return Database.withDao(ShipModuleDao.class, dao -> dao.getSpellings(name.trim()));
     }
 
     /**

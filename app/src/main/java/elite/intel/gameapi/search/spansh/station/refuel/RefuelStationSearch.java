@@ -1,6 +1,7 @@
 package elite.intel.gameapi.search.spansh.station.refuel;
 
 import elite.intel.gameapi.search.spansh.station.DockingEffort;
+import elite.intel.gameapi.search.spansh.station.SearchRadii;
 import elite.intel.gameapi.search.spansh.station.StationSearchClient;
 import elite.intel.gameapi.search.spansh.station.marketstation.TradeStationSearchCriteria;
 import elite.intel.gameapi.search.spansh.station.marketstation.TradeStationSearchResultDto;
@@ -42,12 +43,6 @@ public final class RefuelStationSearch {
     private static final int PADS_MANY = 100;
 
     /**
-     * Human space is roughly this wide around Sol, so a last sweep this far covers every fixed station there
-     * is. Reached only when the radius the commander asked for, and double it, came back empty.
-     */
-    private static final int INHABITED_BUBBLE_LY = 1000;
-
-    /**
      * How far from the arrival point a station may sit and still count as somewhere to refuel. Supercruise
      * burns no fuel, so this is a limit on the commander's evening rather than on their tank - but a station
      * a quarter of a million light seconds out is half an hour of flying, and there is always another.
@@ -68,39 +63,20 @@ public final class RefuelStationSearch {
     /**
      * The stations within reach that sell fuel, best candidate first.
      *
-     * <p>The radius widens twice - to double the stated one, then to the whole inhabited bubble - rather than
-     * report that there is nowhere to refuel. A commander who cannot reach the answer still needs to be told
-     * where it is; the caller compares the winner's distance against what was asked for and says so.
+     * <p>The radius widens as {@link SearchRadii#widening} says rather than report that there is nowhere to
+     * refuel.
      *
      * @param maxDistanceLy the radius to try first, normally the ship's jump range
      * @param padSize       the pad the ship needs, as {@link ShipPadSizes#getPadSize} spells it
      * @return the stations found, ranked; empty when even the widest sweep found none
      */
     public static List<RefuelStation> nearest(double x, double y, double z, int maxDistanceLy, String padSize) {
-        for (int radius : radiiToTry(maxDistanceLy)) {
+        for (int radius : SearchRadii.widening(maxDistanceLy)) {
             List<RefuelStation> found = rank(fetch(x, y, z, radius, padSize), padSize);
             if (!found.isEmpty()) return found;
             log.debug("No refuelling station a {} ship can use within {} ly; widening", padSize, radius);
         }
         return List.of();
-    }
-
-    /**
-     * The radii to try, in order. Each is only reached when the one before it found nothing, so a commander
-     * inside the bubble still gets a single round trip.
-     * <p>
-     * Public because a caller reporting that nothing was found has to say how far the search actually looked,
-     * which is the last rung and not the radius it was given.
-     */
-    public static List<Integer> radiiToTry(int maxDistanceLy) {
-        // Guarded so a commander who asks for a galaxy-wide radius does not overflow it into a negative one.
-        int widened = maxDistanceLy > Integer.MAX_VALUE / 2 ? maxDistanceLy : maxDistanceLy * 2;
-        List<Integer> radii = new ArrayList<>();
-        radii.add(maxDistanceLy);
-        if (widened > maxDistanceLy) radii.add(widened);
-        // Never NARROWS an already-wide ask: a commander who said 2000 ly keeps his 4000 ly second sweep.
-        if (INHABITED_BUBBLE_LY > widened) radii.add(INHABITED_BUBBLE_LY);
-        return List.copyOf(radii);
     }
 
     /**

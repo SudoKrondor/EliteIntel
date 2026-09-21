@@ -452,8 +452,10 @@ public class ParakeetSTTImpl implements EarsInterface {
             // other trace anywhere - no UI line, no event - so the reason has to travel with the transcript.
             // The peak is here because Amplifier normalizes to a peak: one loud sample anywhere in the
             // capture (a beep, a knock) sets the gain for the whole utterance and leaves the voice quiet.
+            // The floor goes with it because the same peak decides whether there is a voice to normalize
+            // at all - measured against the room, so a quiet microphone is still lifted.
             byte[] conditioned = padAudio(trimLeadingLowEnergy(pcmBytes));
-            byte[] forDecoder = Amplifier.amplify(conditioned);
+            byte[] forDecoder = Amplifier.amplify(conditioned, NOISE_FLOOR);
             // Peak alone cannot tell speech from silence: one button click in an otherwise empty buffer
             // reads the same as a spoken phrase. RMS is the sustained level, so the pair separates them -
             // a high peak over a low RMS is a transient, not a voice.

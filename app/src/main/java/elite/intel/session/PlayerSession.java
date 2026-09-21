@@ -5,6 +5,7 @@ import elite.intel.db.dao.ShipScansDao;
 import elite.intel.db.managers.*;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.carrier.CarrierStatsReading;
 import elite.intel.gameapi.data.FsdTarget;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
@@ -12,6 +13,7 @@ import elite.intel.gameapi.journal.events.CarrierStatsEvent;
 import elite.intel.gameapi.journal.events.ReputationEvent;
 import elite.intel.gameapi.journal.events.dto.*;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
+import elite.intel.ui.event.RadioTransmissionStateChangedEvent;
 import elite.intel.util.OsDetector;
 import elite.intel.util.Ranks;
 import org.apache.commons.lang3.StringUtils;
@@ -580,6 +582,10 @@ public class PlayerSession {
         return Database.withDao(PlayerDao.class, dao -> dao.get().getRadioTransmissionOn());
     }
 
+    /**
+     * The one write path for the radio switch, so the UI is told of every flip from here - the spoken toggle
+     * command and the Commander tab's checkbox both land in this method - rather than from each caller.
+     */
     public void setRadioTransmissionOn(Boolean radioTransmissionOn) {
         Database.withDao(PlayerDao.class, dao -> {
             PlayerDao.Player player = dao.get();
@@ -587,6 +593,7 @@ public class PlayerSession {
             dao.save(player);
             return Void.class;
         });
+        UiBus.publish(new RadioTransmissionStateChangedEvent(Boolean.TRUE.equals(radioTransmissionOn)));
     }
 
     public Boolean isMiningAnnouncementOn() {

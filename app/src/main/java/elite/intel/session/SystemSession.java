@@ -416,6 +416,20 @@ public class SystemSession {
         });
     }
 
+    /// 0 to 100 %, the radio engine's level: station, police and NPC chatter, independent of the ship's voice.
+    public int getRadioVolume() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getRadioVolume());
+    }
+
+    public void setRadioVolume(int volume) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setRadioVolume(volume);
+            dao.save(session);
+            return null;
+        });
+    }
+
     public void clearChatHistory() {
         Database.withDao(ChatHistoryDao.class, dao -> {
             dao.clear();
