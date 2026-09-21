@@ -82,13 +82,14 @@ public class BindingProfilePanel extends JPanel {
 
     private Map<String, KeyBindingsParser.ReadOnlyBindingSlots> currentSlots = Map.of();
     /**
-     * Each conflicting binding id mapped to the (sorted) ids it shares a chord with. Drives the RED
-     * row coloring (via {@code keySet}) and the hover callout (via the partner list); recomputed on
-     * each load.
+     * Every conflict in the loaded file, indexed for the two things this panel asks: whether a row
+     * is in conflict (RED coloring) and what to say in its hover callout. Recomputed on each load.
+     * <p>
+     * Grouped by chord rather than flattened because one binding can be in conflict on both its
+     * slots at once, against different partners. Telling the commander about only one of them
+     * leaves the other to be discovered in the cockpit.
      */
-    private Map<String, Set<String>> conflictsByBinding = Map.of();
-    /** Per binding id, the chord the scan actually matched on - which may sit in either slot. */
-    private Map<String, Set<String>> conflictChordsByBinding = Map.of();
+    private ConflictIndex conflicts = ConflictIndex.empty();
     /**
      * Each binding id mapped to its ship/SRV twin id(s) bound to a different key. Drives the CYAN
      * row tint and the soft "use the same key" callout - a recommendation, never a conflict.
@@ -113,7 +114,7 @@ public class BindingProfilePanel extends JPanel {
                 this::openClearKeyboardBindingDialog,
                 // Lambda (not a bound method ref) so it reads the field live: the map is
                 // reassigned on each load, and a bound method ref would pin the initial empty map.
-                id -> conflictsByBinding.containsKey(id),
+                id -> conflicts.contains(id),
                 id -> recommendationsByBinding.containsKey(id),
                 this::buildRowCalloutContent);
         buildUi();
@@ -307,9 +308,7 @@ public class BindingProfilePanel extends JPanel {
             Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots =
                     parser.parseReadOnlyBindingSlots(workingCopyPath.toFile());
             Map<String, KeyBindingsParser.BindingSlots> parsedSlots = parser.toExecutableSlots(slots);
-            ConflictIndex conflicts = computeConflicts(parsedSlots);
-            conflictsByBinding = conflicts.partners();
-            conflictChordsByBinding = conflicts.chords();
+            conflicts = computeConflicts(parsedSlots);
             recommendationsByBinding = computeRecommendations(parsedSlots);
 
             currentSlots = slots;
@@ -332,8 +331,7 @@ public class BindingProfilePanel extends JPanel {
                     monitor.findFoundGameBindings(executable).size()));
         } catch (Exception e) {
             UiBus.publish(new BindingsSummaryChangedEvent(0, 0));
-            conflictsByBinding = Map.of();
-            conflictChordsByBinding = Map.of();
+            conflicts = ConflictIndex.empty();
             recommendationsByBinding = Map.of();
             clearLoadedBindingsSnapshot();
             profileField.setText(getText("bindings.notAvailable"));
@@ -841,26 +839,52 @@ public class BindingProfilePanel extends JPanel {
     }
 
     /**
-     * Maps every conflicting binding id to the (sorted) ids it shares a chord with. The {@code keySet}
-     * drives the RED/green row coloring; the partner lists feed the hover callout.
+     * Maps every conflicting binding id to the partners it collides with, grouped by the chord each
+     * collision happens on. The {@code keySet} drives the RED/green row coloring; the grouped
+     * partner lists feed the hover callout.
      */
     private ConflictIndex computeConflicts(
             Map<String, KeyBindingsParser.BindingSlots> bindings) {
-        Map<String, Set<String>> conflicts = new HashMap<>();
-        Map<String, Set<String>> chords = new HashMap<>();
+        Map<String, Map<Set<String>, Set<String>>> byChord = new HashMap<>();
         for (BindingConflictScanner.Conflict conflict : BindingConflictScanner.scanSlots(bindings)) {
-            conflicts.computeIfAbsent(conflict.actionA(), k -> new TreeSet<>()).add(conflict.actionB());
-            conflicts.computeIfAbsent(conflict.actionB(), k -> new TreeSet<>()).add(conflict.actionA());
-            chords.putIfAbsent(conflict.actionA(), conflict.chord());
-            chords.putIfAbsent(conflict.actionB(), conflict.chord());
+            indexConflict(byChord, conflict.actionA(), conflict.actionB(), conflict.chord());
+            indexConflict(byChord, conflict.actionB(), conflict.actionA(), conflict.chord());
         }
-        return new ConflictIndex(conflicts, chords);
+        return new ConflictIndex(byChord);
     }
 
     /**
-     * Conflict partners and the chord each binding collides on, from a single scan.
+     * Which partners each conflicting binding collides with, grouped by the chord the collision
+     * happens on. Named rather than passed around as its raw map type, which says nothing about
+     * which nesting level means what.
      */
-    private record ConflictIndex(Map<String, Set<String>> partners, Map<String, Set<String>> chords) {
+    private record ConflictIndex(Map<String, Map<Set<String>, Set<String>>> byBinding) {
+
+        static ConflictIndex empty() {
+            return new ConflictIndex(Map.of());
+        }
+
+        boolean contains(String bindingId) {
+            return byBinding.containsKey(bindingId);
+        }
+
+        /** The chords this binding is in conflict on, each with the partners it collides with there. */
+        Map<Set<String>, Set<String>> partnersByChord(String bindingId) {
+            return byBinding.getOrDefault(bindingId, Map.of());
+        }
+    }
+
+    /**
+     * Records one direction of one conflict: {@code partner} collides with {@code binding} on
+     * {@code chord}. The scan reports each pair once per shared chord, so a binding in conflict on
+     * both its slots accumulates an entry per chord rather than keeping only the first.
+     */
+    private static void indexConflict(
+            Map<String, Map<Set<String>, Set<String>>> byChord,
+            String binding, String partner, Set<String> chord) {
+        byChord.computeIfAbsent(binding, k -> new LinkedHashMap<>())
+                .computeIfAbsent(chord, k -> new TreeSet<>())
+                .add(partner);
     }
 
     /**
@@ -935,7 +959,7 @@ public class BindingProfilePanel extends JPanel {
             return null;
         }
         return buildCalloutCard(HUD_COLOR_ROLE_INFORMATION,
-                getText("bindings.recommendation.popup.title"), partners);
+                List.of(new CalloutSection(getText("bindings.recommendation.popup.title"), partners)));
     }
 
     /**
@@ -954,7 +978,7 @@ public class BindingProfilePanel extends JPanel {
         if (conflictsOnlyCheck == null || !conflictsOnlyCheck.isSelected()) {
             return bindingIds;
         }
-        return bindingIds.stream().filter(conflictsByBinding::containsKey).toList();
+        return bindingIds.stream().filter(conflicts::contains).toList();
     }
 
     /**
@@ -982,38 +1006,57 @@ public class BindingProfilePanel extends JPanel {
 
     /**
      * Builds the themed hover-callout content for a conflicting binding, or {@code null} if it has no
-     * conflict. Names the shared chord and lists, humanized, every binding it collides with.
+     * conflict. One titled group per chord it collides on, each naming that chord and listing,
+     * humanized, the bindings it collides with there - a binding in conflict on both slots has two.
      */
     private JComponent buildConflictPopupContent(String bindingId) {
-        Set<String> partners = conflictsByBinding.get(bindingId);
-        if (partners == null || partners.isEmpty()) {
+        Map<Set<String>, Set<String>> byChord = conflicts.partnersByChord(bindingId);
+        if (byChord.isEmpty()) {
             return null;
         }
-        return buildCalloutCard(HUD_COLOR_ROLE_DANGER,
-                getText("bindings.conflict.popup.title", conflictChordText(bindingId)), partners);
+        List<CalloutSection> sections = new ArrayList<>();
+        for (Map.Entry<Set<String>, Set<String>> e : byChord.entrySet()) {
+            sections.add(new CalloutSection(
+                    getText("bindings.conflict.popup.title", chordText(bindingId, e.getKey())),
+                    e.getValue()));
+        }
+        return buildCalloutCard(HUD_COLOR_ROLE_DANGER, sections);
     }
 
     /**
-     * Shared structure for conflict and recommendation hover callouts: an accented title and a
-     * humanized bullet list of partner binding names, framed in the given accent color.
+     * One titled group inside a hover callout.
+     * <p>
+     * A list of these rather than a title-keyed map: the title is rendered text, and two chords that
+     * happen to render the same way - both empty, if a slot cannot be matched - would silently
+     * collapse into one and take a partner list with them.
      */
-    private JComponent buildCalloutCard(Color accent, String title, Set<String> partners) {
+    private record CalloutSection(String title, Set<String> partners) {
+    }
+
+    /**
+     * Shared structure for conflict and recommendation hover callouts: one accented title per
+     * section, each over a humanized bullet list of partner binding names, framed in the given
+     * accent color.
+     */
+    private JComponent buildCalloutCard(Color accent, List<CalloutSection> sections) {
         HudPanel card = new HudPanel(new BorderLayout(), accent, HudPanel.Variant.FRAMED);
         JPanel body = transparentPanel(null);
         body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
         body.setBorder(new EmptyBorder(6, 10, 6, 10));
 
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setForeground(accent);
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD));
-        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        body.add(titleLabel);
+        for (CalloutSection section : sections) {
+            JLabel titleLabel = new JLabel(section.title());
+            titleLabel.setForeground(accent);
+            titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD));
+            titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            body.add(titleLabel);
 
-        for (String partner : partners) {
-            JLabel item = new JLabel("• " + BindingDisplayNames.label(partner));
-            item.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
-            item.setAlignmentX(Component.LEFT_ALIGNMENT);
-            body.add(item);
+            for (String partner : section.partners()) {
+                JLabel item = new JLabel("• " + BindingDisplayNames.label(partner));
+                item.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
+                item.setAlignmentX(Component.LEFT_ALIGNMENT);
+                body.add(item);
+            }
         }
 
         card.add(body, BorderLayout.CENTER);
@@ -1021,43 +1064,28 @@ public class BindingProfilePanel extends JPanel {
     }
 
     /**
-     * The formatted chord (e.g. "Left Ctrl + A") of the slot that puts {@code bindingId} into conflict.
+     * The formatted chord (e.g. "Left Ctrl + A") as the commander sees it on the row.
+     * <p>
+     * WHY it formats the matching slot rather than the raw chord: the scan reads both slots, so a
+     * binding can be in conflict on its Secondary while its Primary holds a different chord
+     * entirely. The slot that actually carries {@code chord} is the one to name - pointing at the
+     * Primary there sends the commander to rebind a key that is not in collision.
      */
-    private String conflictChordText(String bindingId) {
+    private String chordText(String bindingId, Set<String> chord) {
         KeyBindingsParser.ReadOnlyBindingSlots slots = currentSlots.get(bindingId);
-        if (slots == null) {
+        if (slots == null || chord == null || chord.isEmpty()) {
             return "";
         }
-        KeyBindingsParser.ReadOnlyBindingSlot slot =
-                conflictingSlot(slots, conflictChordsByBinding.get(bindingId));
+        KeyBindingsParser.ReadOnlyBindingSlot slot = matchesChord(slots.primary(), chord)
+                ? slots.primary()
+                : matchesChord(slots.secondary(), chord) ? slots.secondary() : null;
         return slot == null ? "" : slotFormatter.formatChord(slot.bindingModifiers(), slot.key());
-    }
-
-    /**
-     * The slot whose chord is the one the scan matched on.
-     * <p>
-     * WHY it is not simply "the Primary": the scan reads both slots, so a binding can be in conflict
-     * on its Secondary while its Primary holds a different chord entirely. Naming the Primary there
-     * sends the commander to rebind a key that is not in collision.
-     */
-    private KeyBindingsParser.ReadOnlyBindingSlot conflictingSlot(
-            KeyBindingsParser.ReadOnlyBindingSlots slots, Set<String> conflictChord) {
-        if (conflictChord == null || conflictChord.isEmpty()) {
-            return null;
-        }
-        if (matchesChord(slots.primary(), conflictChord)) {
-            return slots.primary();
-        }
-        if (matchesChord(slots.secondary(), conflictChord)) {
-            return slots.secondary();
-        }
-        return null;
     }
 
     private boolean matchesChord(KeyBindingsParser.ReadOnlyBindingSlot slot, Set<String> chord) {
         return slot != null
                 && slot.keyboardUsable()
-                && chord.equals(BindingConflictScanner.chordOf(slot.key(), Arrays.asList(slot.modifiers())));
+                && chord.equals(BindingConflictScanner.chordOf(slot));
     }
 
     private Map<BindingSection, List<Object[]>> groupedRows() {
@@ -1118,6 +1146,10 @@ public class BindingProfilePanel extends JPanel {
             );
             return;
         }
+        // The dialog edits this one slot, so it reports this slot's collision - not whichever of the
+        // binding's chords happened to be indexed first.
+        Set<String> chordPartners = conflicts.partnersByChord(bindingId)
+                .get(BindingConflictScanner.chordOf(slot));
         AssignKeyboardBindingDialog dialog = new AssignKeyboardBindingDialog(
                 this,
                 activeBindingsFile.toPath(),
@@ -1126,8 +1158,8 @@ public class BindingProfilePanel extends JPanel {
                 slot,
                 availabilityService,
                 parser.toExecutableSlots(currentSlots),
-                conflictsByBinding.get(bindingId),
-                conflictChordText(bindingId)
+                chordPartners,
+                chordPartners == null ? "" : slotFormatter.formatChord(slot.bindingModifiers(), slot.key())
         );
 
         assignDialogOpen = true;

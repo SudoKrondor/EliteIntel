@@ -193,7 +193,10 @@ Monitors the bindings directory via `WatchService` on a dedicated background thr
 On startup and on any `.binds` file create/modify event:
 
 1. Re-resolves the active file via `BindingsLoader`.
-2. Parses it with `KeyBindingsParser.parseBindings()`.
+2. Parses it with `KeyBindingsParser.parseBindingSlots()`, then derives the execution view with
+   `toExecutableBindings()`. Both are published as one immutable snapshot, so `getBindings()`
+   (the one key per control that EliteIntel presses) and `getBindingSlots()` (both slots, for
+   conflict scanning) can never be read from different generations of the file.
 3. Publishes `BindingsUpdatedEvent` on the EventBus.
 
 After each file event:

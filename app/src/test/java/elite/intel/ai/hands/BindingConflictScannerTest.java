@@ -546,6 +546,29 @@ class BindingConflictScannerTest {
     }
 
     @Test
+    void candidateNamesTheSameBindingWhateverOrderTheSlotsArrivedIn() {
+        // Two controls hold the taken chord, so the save-guard has to pick one to name. It sorts by
+        // action then slot before answering, which is the only reason the commander is not told a
+        // different name each time the dialog opens.
+        Map<SlotRef, Set<String>> forwards = new LinkedHashMap<>();
+        forwards.put(new SlotRef("ShipSpotLightToggle", BindingSlotType.SECONDARY), Set.of("Key_W"));
+        forwards.put(new SlotRef("LandingGearToggle", BindingSlotType.PRIMARY), Set.of("Key_W"));
+
+        Map<SlotRef, Set<String>> backwards = new LinkedHashMap<>();
+        backwards.put(new SlotRef("LandingGearToggle", BindingSlotType.PRIMARY), Set.of("Key_W"));
+        backwards.put(new SlotRef("ShipSpotLightToggle", BindingSlotType.SECONDARY), Set.of("Key_W"));
+
+        CandidateConflict first = BindingConflictScanner.candidateConflictInSlotKeysets(
+                "GalaxyMapOpen", Set.of("Key_W"), forwards);
+        CandidateConflict second = BindingConflictScanner.candidateConflictInSlotKeysets(
+                "GalaxyMapOpen", Set.of("Key_W"), backwards);
+
+        assertNotNull(first);
+        assertEquals("LandingGearToggle", first.otherBinding(), "the first by action order wins");
+        assertEquals(first, second, "insertion order must not change which binding is named");
+    }
+
+    @Test
     void candidateBareChordIsCleanWhenOnlyModifiedVariantsExist() {
         // bare Y is free even though Ctrl+Shift+Alt+Y is taken (different chord).
         Map<String, Set<String>> existing = bindings(
@@ -571,7 +594,7 @@ class BindingConflictScannerTest {
         assertNull(conflict);
     }
 
-    // --- both slots: chords the scan could not previously see (FN-1) ---
+    // --- both slots: chords a single-slot scan could not see ---
 
     @SuppressWarnings("unchecked")
     private static Map<SlotRef, Set<String>> slots(Object... triples) {
@@ -598,8 +621,9 @@ class BindingConflictScannerTest {
 
     @Test
     void mapCameraOnAPrimaryVersusUiNavigationOnASecondaryIsBlocking() {
-        // The commonest real shape: across ~48,000 shared .binds files, map-camera-versus-UI split
-        // across slots is the largest group of blocking conflicts the old scan discarded unseen.
+        // The shape this fix exists for: the map camera and UI navigation are both live in the galaxy
+        // map, so a chord they share stops EliteIntel driving it - and splitting that chord across
+        // slots is how it used to go unseen.
         List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots(
                 "CamTranslateForward", BindingSlotType.PRIMARY, Set.of("Key_Z"),
                 "UI_Up", BindingSlotType.SECONDARY, Set.of("Key_Z")));

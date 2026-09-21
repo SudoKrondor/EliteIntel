@@ -64,15 +64,6 @@ public class BindingsMonitor {
     // one beside an old one would answer "which controls are missing" and "which chords collide" from
     // different generations of the file for as long as a re-parse takes.
     private volatile BindingsSnapshot snapshot;
-
-    /**
-     * Both views of one parse: the slot pairs a conflict scan needs, and the single key per action
-     * that command execution presses. Replaced wholesale, never mutated.
-     */
-    private record BindingsSnapshot(
-            Map<String, KeyBindingsParser.BindingSlots> slots,
-            Map<String, KeyBindingsParser.KeyBinding> executable) {
-    }
     private File currentBindsFile;
     private Thread processingThread;
     private volatile boolean running;
@@ -114,6 +105,15 @@ public class BindingsMonitor {
             }
         }
         return actions;
+    }
+
+    /**
+     * Both views of one parse: the slot pairs a conflict scan needs, and the single key per action
+     * that command execution presses. Replaced wholesale, never mutated.
+     */
+    private record BindingsSnapshot(
+            Map<String, KeyBindingsParser.BindingSlots> slots,
+            Map<String, KeyBindingsParser.KeyBinding> executable) {
     }
 
     private BindingsMonitor() {
@@ -405,7 +405,17 @@ public class BindingsMonitor {
      * identical chord within the same context.
      */
     private List<BindingConflictScanner.Conflict> detectConflicts() {
-        return BindingConflictScanner.scanSlots(getBindingSlots());
+        Map<String, KeyBindingsParser.BindingSlots> slots = getBindingSlots();
+        if (slots == null) {
+            // WHY: nothing has parsed yet - no binds file, or the parse threw and left the snapshot
+            // unset. That is a real state, not an impossible argument, and parseAndUpdateBindings has
+            // already spoken the failure to the commander. Reporting no conflicts beats an NPE that
+            // would end the rest of the startup check. Logged at debug because both callers reach
+            // here on one bad start, and the condition is reported above.
+            log.debug("Bindings not yet loaded, skipping conflict detection");
+            return List.of();
+        }
+        return BindingConflictScanner.scanSlots(slots);
     }
 
     /**

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -70,22 +71,6 @@ class BindingConflictPipelineTest {
     }
 
     /**
-     * Pins the defect itself. If someone points a call site back at the single-slot entry point, this
-     * is the test that says what was lost rather than leaving a silent regression.
-     */
-    @Test
-    void theSingleSlotPathCannotSeeIt() throws Exception {
-        File file = bindsFile(CROSS_SLOT_CLASH);
-
-        Map<String, KeyBindingsParser.KeyBinding> collapsed =
-                KeyBindingsParser.getInstance().parseBindings(file);
-
-        assertTrue(BindingConflictScanner.scan(collapsed).isEmpty(),
-                "the collapsed execution view keeps one slot per action, so it cannot see this clash - "
-                        + "that is the bug, and conflict scanning must not be fed from here");
-    }
-
-    /**
      * Two actions can collide on more than one chord, and each collision is its own line to fix.
      * <p>
      * WHY it is worth pinning: the de-dupe key is the pair <em>and</em> the chord, so this is two
@@ -110,7 +95,7 @@ class BindingConflictPipelineTest {
         assertEquals(2, conflicts.size(), "one conflict per shared chord: " + conflicts);
         assertEquals(List.of(Set.of("Key_W"), Set.of("Key_X")),
                 conflicts.stream().map(BindingConflictScanner.Conflict::chord).sorted(
-                        java.util.Comparator.comparing(c -> String.join("", c))).toList(),
+                        Comparator.comparing(c -> String.join("", c))).toList(),
                 "both W and X should be named, so the commander fixes both");
         assertTrue(conflicts.stream().allMatch(BindingConflictScanner.Conflict::blocking));
     }

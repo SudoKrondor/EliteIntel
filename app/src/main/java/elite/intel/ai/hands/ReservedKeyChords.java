@@ -5,6 +5,7 @@ import elite.intel.ai.hands.KeyBindingsParser.ReadOnlyBindingSlots;
 import elite.intel.util.OsDetector;
 
 import java.util.*;
+import java.util.function.Function;
 
 /**
  * Keyboard keys and chords that must never be assigned to a game control.
@@ -123,11 +124,8 @@ public final class ReservedKeyChords {
      * not a constant, and because {@link #gameMenuKeysFromSlots} can legitimately find two.
      */
     public static Set<String> gameMenuKeys(Map<String, KeyBindingsParser.KeyBinding> bindings) {
-        if (bindings == null) {
-            return Set.of();
-        }
-        KeyBindingsParser.KeyBinding menu = bindings.get(GAME_MENU_ACTION);
-        return menu == null ? Set.of() : mainKeySet(menu.key);
+        // One slot per action is all the execution map has, so the second extractor has nothing to read.
+        return menuKeysOf(bindings, ReservedKeyChords::mainKeyOf, menu -> Set.of());
     }
 
     /**
@@ -139,17 +137,9 @@ public final class ReservedKeyChords {
      * deciding which keys are unusable.
      */
     public static Set<String> gameMenuKeysFromSlots(Map<String, ReadOnlyBindingSlots> slots) {
-        if (slots == null) {
-            return Set.of();
-        }
-        ReadOnlyBindingSlots menu = slots.get(GAME_MENU_ACTION);
-        if (menu == null) {
-            return Set.of();
-        }
-        Set<String> keys = new LinkedHashSet<>();
-        keys.addAll(keyboardMainKey(menu.primary()));
-        keys.addAll(keyboardMainKey(menu.secondary()));
-        return Set.copyOf(keys);
+        return menuKeysOf(slots,
+                menu -> keyboardMainKey(menu.primary()),
+                menu -> keyboardMainKey(menu.secondary()));
     }
 
     /**
@@ -162,21 +152,39 @@ public final class ReservedKeyChords {
      */
     public static Set<String> gameMenuKeysFromExecutableSlots(
             Map<String, KeyBindingsParser.BindingSlots> slots) {
+        return menuKeysOf(slots,
+                menu -> mainKeyOf(menu.primary()),
+                menu -> mainKeyOf(menu.secondary()));
+    }
+
+    /**
+     * The one rule behind all three public forms: look up the game-menu control, union what each of
+     * its slots puts on the keyboard, and return nothing when the control is unbound.
+     * <p>
+     * Generic over the slot model because the three callers hold three different ones - the read-only
+     * map, the keyboard-only slot map, and the single-slot execution map - which erase to the same
+     * signature and so cannot share a name. The extractors are what differs; the rule is not.
+     */
+    private static <S> Set<String> menuKeysOf(Map<String, S> slots,
+                                              Function<S, Set<String>> primaryKeys,
+                                              Function<S, Set<String>> secondaryKeys) {
         if (slots == null) {
             return Set.of();
         }
-        KeyBindingsParser.BindingSlots menu = slots.get(GAME_MENU_ACTION);
+        S menu = slots.get(GAME_MENU_ACTION);
         if (menu == null) {
             return Set.of();
         }
-        Set<String> keys = new LinkedHashSet<>();
-        if (menu.primary() != null) {
-            keys.addAll(mainKeySet(menu.primary().key));
-        }
-        if (menu.secondary() != null) {
-            keys.addAll(mainKeySet(menu.secondary().key));
-        }
+        Set<String> keys = new LinkedHashSet<>(primaryKeys.apply(menu));
+        keys.addAll(secondaryKeys.apply(menu));
         return Set.copyOf(keys);
+    }
+
+    /**
+     * The keyboard key one executable slot holds, or nothing when the slot is empty.
+     */
+    private static Set<String> mainKeyOf(KeyBindingsParser.KeyBinding binding) {
+        return binding == null ? Set.of() : mainKeySet(binding.key);
     }
 
     /**
@@ -231,8 +239,10 @@ public final class ReservedKeyChords {
      * main key only. A key held as a modifier alongside something else does not open the menu, so
      * reserving it there would take keys off the board for nothing.
      *
-     * @param gameMenuKeys from {@link #gameMenuKeys} or {@link #gameMenuKeysFromSlots}; empty when the
-     *                     commander has left the game-menu control unbound, which is the recommended state
+     * @param gameMenuKeys from whichever of {@link #gameMenuKeys}, {@link #gameMenuKeysFromSlots} or
+     *                     {@link #gameMenuKeysFromExecutableSlots} matches the map the caller holds; empty
+     *                     when the commander has left the game-menu control unbound, which is the
+     *                     recommended state
      */
     public static boolean isReserved(String mainKey, Collection<String> modifierKeys, Collection<String> gameMenuKeys) {
         return reason(mainKey, modifierKeys, gameMenuKeys) != null;

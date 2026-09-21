@@ -131,9 +131,6 @@ public class KeyBindingsParser {
      */
     public Map<String, KeyBinding> toExecutableBindings(Map<String, BindingSlots> slots) {
         Map<String, KeyBinding> bindings = new HashMap<>();
-        if (slots == null) {
-            return bindings;
-        }
         for (Map.Entry<String, BindingSlots> entry : slots.entrySet()) {
             KeyBinding keyBinding = entry.getValue().primary() != null
                     ? entry.getValue().primary()
@@ -172,9 +169,6 @@ public class KeyBindingsParser {
      */
     public Map<String, BindingSlots> toExecutableSlots(Map<String, ReadOnlyBindingSlots> readOnlySlots) {
         Map<String, BindingSlots> bindings = new HashMap<>();
-        if (readOnlySlots == null) {
-            return bindings;
-        }
         for (Map.Entry<String, ReadOnlyBindingSlots> entry : readOnlySlots.entrySet()) {
             KeyBinding primaryBinding = toExecutableBinding(entry.getValue().primary());
             KeyBinding secondaryBinding = toExecutableBinding(entry.getValue().secondary());

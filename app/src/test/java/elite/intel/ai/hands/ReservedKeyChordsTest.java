@@ -72,6 +72,28 @@ class ReservedKeyChordsTest {
     }
 
     @Test
+    void bothSlotsOfTheGameMenuReserveTheirKeys() {
+        // The case this method exists for: a commander with the menu on P in the Primary and O in the
+        // Secondary has two keys that open it. The execution view keeps one slot per control, which is
+        // right for pressing a key and wrong for deciding which keys are spent - offering O as free
+        // hands out a key that pauses the game.
+        Map<String, KeyBindingsParser.BindingSlots> slots = new LinkedHashMap<>();
+        slots.put("Pause", new KeyBindingsParser.BindingSlots(binding("Key_P"), binding("Key_O")));
+
+        assertEquals(Set.of("Key_P", "Key_O"), ReservedKeyChords.gameMenuKeysFromExecutableSlots(slots));
+    }
+
+    @Test
+    void anUnboundOrAbsentGameMenuReservesNothingFromExecutableSlots() {
+        assertEquals(Set.of(), ReservedKeyChords.gameMenuKeysFromExecutableSlots(Map.of()));
+        assertEquals(Set.of(), ReservedKeyChords.gameMenuKeysFromExecutableSlots(
+                Map.of("Pause", new KeyBindingsParser.BindingSlots(null, null))));
+        // "Key_" is the empty-slot placeholder Elite writes, not a key.
+        assertEquals(Set.of(), ReservedKeyChords.gameMenuKeysFromExecutableSlots(
+                Map.of("Pause", new KeyBindingsParser.BindingSlots(binding("Key_"), null))));
+    }
+
+    @Test
     void ordinaryChordsAreNotReserved() {
         assertFalse(ReservedKeyChords.isReservedKeyset(Set.of("Key_F4"), true));               // F4 alone
         assertFalse(ReservedKeyChords.isReservedKeyset(Set.of("Key_F1", "Key_LeftAlt"), true)); // Alt+F1 (not F4, not Ctrl+Alt)

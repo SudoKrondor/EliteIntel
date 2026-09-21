@@ -14,9 +14,13 @@ import java.util.*;
  * In-game testing disproved it - the failure that suggested it was a stale-bindings state, where ED
  * had not re-read the {@code .binds}, not a real conflict.)
  * <p>
- * A binding's key-set is the unordered union of its primary key and modifiers, because ED's
- * {@code <Primary>}/{@code <Modifier>} slots are positional only - "Ctrl+Y" is the same chord no
- * matter which key sits in which slot.
+ * A binding's key-set is the unordered union of its main key and modifiers, because ED's
+ * {@code <Primary>}/{@code <Modifier>} elements are positional only - "Ctrl+Y" is the same chord no
+ * matter which key sits in which element. ("Primary" there names a position inside one chord, and is
+ * not the Primary <em>slot</em> below.)
+ * <p>
+ * Every action has two binding slots, a Primary and a Secondary, and ED fires either. Both are
+ * scanned: a chord in a Secondary slot collides exactly as one in a Primary does. See {@link SlotRef}.
  * <p>
  * Context filtering - mutually exclusive vehicle states (ship / SRV / on-foot) and sub-mode overlays
  * (camera, FSS, SAA, store, …) - is delegated to {@link BindingConflictRules}.
@@ -59,10 +63,7 @@ public final class BindingConflictScanner {
      * WHY this exists: ED gives every action a Primary and a Secondary slot, and either can hold a
      * chord. Keying a scan by action name alone can only ever represent one of them, so a chord shared
      * between one action's Primary and another's Secondary was discarded before any rule ran - the scan
-     * never saw it. Measured 2026-09-19 over a corpus of 3,985 commander-shared .binds files (the
-     * readable remainder of ~48,000 collected): 13.8% hold a conflict of that shape that
-     * {@link BindingConflictRules#isBlocking} called blocking under the rules of that date. The share
-     * moves when those rules change - it is here to show the defect was common, not as a fixed figure.
+     * never saw it.
      * <p>
      * The action name remains the unit of <em>judgement</em>: {@link BindingConflictRules} asks about
      * actions, and {@link Conflict} reports actions. The slot only decides what gets compared.
@@ -81,16 +82,6 @@ public final class BindingConflictScanner {
     }
 
     /**
-     * Scans every keyboard binding for same-context duplicate chords.
-     *
-     * @param bindings action name → parsed binding, as from {@code BindingsMonitor.getBindings()}
-     * @return all conflicts, each reported once, in deterministic order
-     */
-    public static List<Conflict> scan(Map<String, KeyBindingsParser.KeyBinding> bindings) {
-        return scanKeysets(toKeysets(bindings));
-    }
-
-    /**
      * Scans <em>both</em> slots of every keyboard binding for same-context duplicate chords.
      *
      * @param slots action name → its Primary/Secondary pair, as from
@@ -106,6 +97,11 @@ public final class BindingConflictScanner {
      * exercised directly in tests without constructing {@link KeyBindingsParser.KeyBinding}s.
      * <p>
      * Equivalent to {@link #scanSlotKeysets} where every chord sits in a Primary slot.
+     * <p>
+     * WHY it still exists: <strong>no production caller</strong>. Around 45 tests were written against
+     * an action-keyed map before the scan read both slots, and this reaches the real core for them.
+     * Migrating those fixtures to slot maps would let this, {@link #recommendVehicleTwinsKeysets},
+     * {@link #candidateConflict} and {@link #asPrimarySlots} all go.
      */
     static List<Conflict> scanKeysets(Map<String, Set<String>> keysets) {
         return scanSlotKeysets(asPrimarySlots(keysets));
@@ -167,15 +163,8 @@ public final class BindingConflictScanner {
      * player to unify them. Only twins where <em>both</em> halves are bound qualify; an unbound twin
      * is a missing-binding concern handled elsewhere, not a recommendation.
      *
-     * @param bindings action name → parsed binding, as from {@code BindingsMonitor.getBindings()}
+     * @param slots action name → its Primary/Secondary pair
      * @return one recommendation per mismatched twin pair, in deterministic order
-     */
-    public static List<Recommendation> recommendVehicleTwins(Map<String, KeyBindingsParser.KeyBinding> bindings) {
-        return recommendVehicleTwinsKeysets(toKeysets(bindings));
-    }
-
-    /**
-     * As {@link #recommendVehicleTwins}, but reading both slots of each twin.
      */
     public static List<Recommendation> recommendVehicleTwinsFromSlots(
             Map<String, KeyBindingsParser.BindingSlots> slots) {
@@ -183,7 +172,7 @@ public final class BindingConflictScanner {
     }
 
     /**
-     * Keyset-based core, so it can be tested without KeyBindings.
+     * Keyset-based core, so it can be tested without KeyBindings. Test-only - see {@link #scanKeysets}.
      */
     static List<Recommendation> recommendVehicleTwinsKeysets(Map<String, Set<String>> keysets) {
         return recommendVehicleTwinsFromSlotKeysets(asPrimarySlots(keysets));
@@ -221,20 +210,11 @@ public final class BindingConflictScanner {
     /**
      * Reports the binding (if any) whose chord is identical to the candidate ({@code key} +
      * {@code modifiers}) for {@code bindingId} within the same context, or {@code null} if the
-     * candidate is free. Used by the editor save-guard and the live keyboard widget. The binding's
-     * own other slot is never treated as a self-conflict.
-     */
-    public static CandidateConflict candidateConflict(
-            String bindingId, String key, Collection<String> modifiers,
-            Map<String, KeyBindingsParser.KeyBinding> existingBindings) {
-        return candidateConflict(bindingId, chordOf(key, modifiers), toKeysets(existingBindings));
-    }
-
-    /**
-     * As {@link #candidateConflict}, but judged against <em>both</em> slots of every existing binding.
+     * candidate is free. Used by the editor save-guard and the live keyboard widget.
      * <p>
-     * This is the one the editor wants: a chord sitting in some other action's Secondary slot is taken,
-     * and a save-guard that cannot see it waves the player through to a clash the game will honour.
+     * Judged against <em>both</em> slots of every existing binding: a chord sitting in some other
+     * action's Secondary slot is taken, and a save-guard that cannot see it waves the player through
+     * to a clash the game will honour. The binding's own other slot is never a self-conflict.
      */
     public static CandidateConflict candidateConflictInSlots(
             String bindingId, String key, Collection<String> modifiers,
@@ -244,7 +224,7 @@ public final class BindingConflictScanner {
     }
 
     /**
-     * Keyset-based core, so it can be tested without KeyBindings.
+     * Keyset-based core, so it can be tested without KeyBindings. Test-only - see {@link #scanKeysets}.
      */
     static CandidateConflict candidateConflict(String bindingId, Set<String> candidate, Map<String, Set<String>> existing) {
         return candidateConflictInSlotKeysets(bindingId, candidate, asPrimarySlots(existing));
@@ -256,8 +236,8 @@ public final class BindingConflictScanner {
      */
     static CandidateConflict candidateConflictInSlotKeysets(
             String bindingId, Set<String> candidate, Map<SlotRef, Set<String>> existing) {
-        if (candidate == null || candidate.isEmpty() || existing == null) {
-            return null;
+        if (candidate.isEmpty()) {
+            return null; // a blank or unbound chord collides with nothing
         }
         // Sorted so the binding named back is stable when a chord is taken more than once.
         List<Map.Entry<SlotRef, Set<String>>> entries = new ArrayList<>(existing.entrySet());
@@ -280,14 +260,11 @@ public final class BindingConflictScanner {
     }
 
     /**
-     * The key-set one slot contributes to a scan - its main key plus any modifiers.
-     * <p>
-     * Public because a caller that has a {@link Conflict} in hand may need to find which of an
-     * action's two slots the scan actually matched on. Since the scan reads both, "the Primary if it
-     * holds a key" is no longer that slot, and telling the commander to move the wrong chord is worse
-     * than telling them nothing.
+     * The key-set one slot contributes to a scan - its main key plus any modifiers. Tolerates a blank
+     * key and the {@code Key_} placeholder Elite writes for an empty slot, both of which are "unbound"
+     * rather than a chord.
      */
-    public static Set<String> chordOf(String key, Collection<String> modifiers) {
+    static Set<String> chordOf(String key, Collection<String> modifiers) {
         if (key == null || key.isBlank() || key.equals("Key_")) {
             return Set.of();
         }
@@ -304,6 +281,19 @@ public final class BindingConflictScanner {
     }
 
     /**
+     * The chord one parsed slot holds, or an empty set when the slot is empty.
+     * <p>
+     * Public because a caller holding a {@link Conflict} may need to find which of an action's two
+     * slots the scan actually matched on. Since the scan reads both, "the Primary if it holds a key"
+     * is no longer that slot, and telling the commander to move the wrong chord is worse than telling
+     * them nothing. Taking the slot rather than its parts also saves each caller a hand-rolled unpack
+     * and the array copy {@code modifiers()} returns.
+     */
+    public static Set<String> chordOf(KeyBindingsParser.ReadOnlyBindingSlot slot) {
+        return slot == null ? Set.of() : chordOf(slot.key(), Arrays.asList(slot.modifiers()));
+    }
+
+    /**
      * The full set of keys a binding's chord requires held: its main key plus all modifiers.
      */
     static Set<String> keysetOf(KeyBindingsParser.KeyBinding kb) {
@@ -313,33 +303,15 @@ public final class BindingConflictScanner {
         return chordOf(kb.key, kb.modifiers == null ? null : Arrays.asList(kb.modifiers));
     }
 
-    private static Map<String, Set<String>> toKeysets(Map<String, KeyBindingsParser.KeyBinding> bindings) {
-        Map<String, Set<String>> keysets = new LinkedHashMap<>();
-        if (bindings != null) {
-            for (Map.Entry<String, KeyBindingsParser.KeyBinding> e : bindings.entrySet()) {
-                Set<String> ks = keysetOf(e.getValue());
-                if (!ks.isEmpty()) {
-                    keysets.put(e.getKey(), ks);
-                }
-            }
-        }
-        return keysets;
-    }
-
     /**
      * Key-sets for both slots of every action. A slot with nothing in it contributes nothing.
      */
     private static Map<SlotRef, Set<String>> toSlotKeysets(Map<String, KeyBindingsParser.BindingSlots> slots) {
         Map<SlotRef, Set<String>> keysets = new LinkedHashMap<>();
-        if (slots != null) {
-            for (Map.Entry<String, KeyBindingsParser.BindingSlots> e : slots.entrySet()) {
-                KeyBindingsParser.BindingSlots pair = e.getValue();
-                if (pair == null) {
-                    continue;
-                }
-                putIfBound(keysets, e.getKey(), KeyBindingsParser.BindingSlotType.PRIMARY, pair.primary());
-                putIfBound(keysets, e.getKey(), KeyBindingsParser.BindingSlotType.SECONDARY, pair.secondary());
-            }
+        for (Map.Entry<String, KeyBindingsParser.BindingSlots> e : slots.entrySet()) {
+            KeyBindingsParser.BindingSlots pair = e.getValue();
+            putIfBound(keysets, e.getKey(), KeyBindingsParser.BindingSlotType.PRIMARY, pair.primary());
+            putIfBound(keysets, e.getKey(), KeyBindingsParser.BindingSlotType.SECONDARY, pair.secondary());
         }
         return keysets;
     }
@@ -354,8 +326,9 @@ public final class BindingConflictScanner {
     }
 
     /**
-     * Reads an action-keyed map as one Primary slot per action, so the action-keyed entry points and
-     * the slot-aware core share a single algorithm rather than two that can drift apart.
+     * Reads an action-keyed map as one Primary slot per action, so the test-only entry points and the
+     * slot-aware core share a single algorithm rather than two that can drift apart.
+     * See {@link #scanKeysets} for why they are still here.
      */
     private static Map<SlotRef, Set<String>> asPrimarySlots(Map<String, Set<String>> keysets) {
         Map<SlotRef, Set<String>> slots = new LinkedHashMap<>();
