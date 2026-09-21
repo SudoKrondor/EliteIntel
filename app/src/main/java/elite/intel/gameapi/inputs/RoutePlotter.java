@@ -115,6 +115,10 @@ public class RoutePlotter {
         // that was not taking input yet: the search field never got focus and the system name was typed
         // into nothing. Watching the game's own state costs nothing on a fast machine and does not
         // guess on a slow one.
+        //
+        // On foot the game's own state is the journal's Music cue, not GuiFocus - Status.json has no such
+        // field outside a vehicle, and this wait sat out its full 15 s on a map that had opened within a
+        // second (commander bundle 2026-09-20). Status.isGalaxyMapOpen() reads both signals.
         steps.add(GameInputStep.waitUntil("galaxy map open", status::isGalaxyMapOpen, GALAXY_MAP_OPEN_TIMEOUT_MS));
         steps.addAll(List.of(
 

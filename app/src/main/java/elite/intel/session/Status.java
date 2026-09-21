@@ -11,6 +11,11 @@ public class Status extends StatusFlags {
     private static volatile Status instance; // Singleton instance
     private boolean isFighterOut = false;
     private boolean okToAnnounceLoadout = true;
+    /**
+     * Whether the journal last reported the galaxy map's own music track. In memory only: it is the map's
+     * live state, not something to carry across a restart. See {@link #isGalaxyMapOpen()} for why it exists.
+     */
+    private volatile boolean galaxyMapMusicPlaying = false;
 
     private Status() {
         //
@@ -144,8 +149,25 @@ public class Status extends StatusFlags {
         return getGuiFocus() == GuiFocus.STATION_SERVICES;
     }
 
+    /**
+     * Whether the galaxy map is up, by either signal the game gives.
+     * <p>
+     * WHY two signals: Status.json carries {@code GuiFocus} only while the commander is in a vehicle. On foot
+     * the field is absent altogether, so a map opened from the concourse never showed here, and every step
+     * gated on it either waited out its whole timeout (the route plotter sat 15 s on an open map before
+     * typing - commander bundle 2026-09-20) or never fired (the close-before-open toggle). The journal's
+     * {@code Music} cue is {@code GalaxyMap} exactly while the map is open, in every context, and is the only
+     * signal on foot; in a vehicle the two agree, and whichever the game writes first counts.
+     */
     public boolean isGalaxyMapOpen() {
-        return getGuiFocus() == GuiFocus.GALAXY_MAP;
+        return getGuiFocus() == GuiFocus.GALAXY_MAP || galaxyMapMusicPlaying;
+    }
+
+    /**
+     * Recorded from the journal's {@code Music} cue: true while the galaxy map's track plays.
+     */
+    public void setGalaxyMapMusicPlaying(boolean playing) {
+        this.galaxyMapMusicPlaying = playing;
     }
 
     public boolean isSystemMapOpen() {
