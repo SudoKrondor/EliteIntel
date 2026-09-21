@@ -167,7 +167,15 @@ A reserved key is one that **cannot be used for anything, regardless of what els
 is no competing action to name and no game state to qualify it — the key is simply off the board. A
 pairwise scan finds nothing wrong, because nothing is wrong *between two bindings*.
 
-Two sources, one fixed and one read out of the commander's own file.
+**Three classes, by who takes the key** — named 2026-09-20:
+
+| Class | Who takes it | Keys | What a binding on one does |
+|---|---|---|---|
+| **Game-Claimed** | Elite itself | `Esc`, always; whatever sits on `Pause` | never fires — the game menu opens instead |
+| **OS-Claimed** | the operating system | `Alt+F4`, Linux `Ctrl+Alt+F1`…`F12`; `PrintScreen`, the Windows key, the Copilot key | acts on the OS, or never reaches the game at all |
+| **Self-Sabotaging** | nobody — it works, and that is the problem | `NumLock` | fires, and changes what every numpad binding sends |
+
+The first two are unusable. The third is usable and harmful, so it is warned about rather than refused.
 
 ### Source 1: the operating system
 
@@ -175,9 +183,17 @@ Two sources, one fixed and one read out of the commander's own file.
 |---|---|---|
 | `Alt+F4` | closes the focused window — quits the game | every desktop OS |
 | `Ctrl+Alt+F1`…`F12` | switches virtual terminal, dropping the commander to a TTY out of the running session | Linux only |
+| `PrintScreen` | taken by Windows before the game sees it — a binding on it never fires | Windows |
+| the Windows key | the same | Windows |
+| the Copilot key | the same, on keyboards that have one | Windows |
 
 **Matched on the full key-set** — main key plus modifiers — so key order and extra modifiers held
 alongside cannot let one slip through.
+
+The last three are *Alan, in game, 2026-09-20*: every other non-character key he tried could be captured,
+`NumLock` included. They are **not in `ReservedKeyChords`** and do not need to be for assignment —
+`EliteKeyboardKeys` never offers them, so nothing can hand one out. A file carrying one from elsewhere is
+not reported.
 
 ### Source 2: Elite itself — the game-menu key
 
@@ -212,6 +228,35 @@ way into a screen the commander can already reach, and takes a key off the board
 Elite-Intel's auto-assigner therefore leaves `Pause` deliberately empty **and** pulls its key out of the
 assignment pool entirely — pulling the whole key, not the exact chord, since with the menu on P it would
 otherwise still hand out `Alt+P` and `Shift+P`.
+
+### `Esc` itself — claimed outright
+
+`Esc` is the one key Elite claims unconditionally. It opens the game menu whatever `Pause` holds, and it
+cannot be rebound away.
+
+**Elite never writes it into a `.binds`.** On the controls screen, pressing `Esc` while a slot is waiting
+for input **clears** that slot rather than binding it — it is how a commander empties a binding they do not
+want. So a file the game wrote never contains `Esc`; one can only arrive by hand-editing or from another
+tool. *Alan, in game, 2026-09-20.*
+
+That makes it differ from the `Pause` key twice over: it is a constant rather than something read from the
+file, and the game itself guarantees it is absent. **The risk is not a file the commander already has — it is
+a tool offering `Esc` as assignable.** Elite-Intel's assign dropdown does today; see
+[`Esc`, and the difference between a key you can bind and a key you can press](../bind-editor.md#esc-and-the-difference-between-a-key-you-can-bind-and-a-key-you-can-press).
+
+**Unusable for binding, not for pressing.** Elite-Intel sends `Esc` itself: a custom command that exits the
+game has no other way into the menu. Refusing `Esc` as a binding must never remove it as a key.
+
+### Self-Sabotaging: `NumLock`
+
+`NumLock` is captured and fires like any other key, and that is the problem. Pressing it switches the
+numpad to a different set of codes, so **every numpad binding the commander has starts sending something
+else** — silently, from one keypress, with nothing on screen to connect the two.
+
+It is not reserved: a binding on it works. So it is **assignable, with a warning**, rather than refused
+(*Alan, 2026-09-20*) — refusing it would overrule a commander who knows exactly what it does. Elite-Intel's
+auto-assigner already keeps the entire numpad out of its pool, partly for this reason, while the manual list
+still offers `NumLock` itself.
 
 ## 3d. Conflicts Have Severity, Not Just Existence
 

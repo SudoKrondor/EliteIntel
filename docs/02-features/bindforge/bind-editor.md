@@ -590,7 +590,8 @@ has one: a skip option would defeat the purpose of warning at all.
 Krondor's wording is *"Conflicts with {0}; may not work"*, and `CandidateConflict` carries a single
 `otherBinding`. **The target is every action sharing that exact chord**, which needs that record to hold a list
 and needs [FN-1](#fn-1-in-detail--scoped-2026-09-12) fixed first — otherwise a binding in the discarded slot
-cannot be named at all.
+cannot be named at all. *FN-1 was fixed 2026-09-20, so a binding in either slot can now be found; the record
+still holds one name, and making it a list is what remains.*
 
 #### What the dialog cannot do yet — gaps in the code, not in the design
 
@@ -791,9 +792,10 @@ was worse than silent.
 **The remedy is additive, which is why this is comfortable.** `.binds` gives every control two slots.
 A control held on a HOTAS in Primary can take a keyboard binding in Secondary without the commander
 losing anything — both fire. So the fix BindForge offers is *"add a keyboard binding here so the
-assistant can use it too"*, never *"replace your stick binding"*. See
-[FN-1](#known-scanner-defects--all-still-open), which currently makes the scanner blind to the very
-Secondary slot this remedy writes to.
+assistant can use it too"*, never *"replace your stick binding"*. Until 2026-09-20,
+[FN-1](#fn-1-in-detail--scoped-2026-09-12) made the scanner blind to the very Secondary slot this remedy
+writes to. It is fixed, so the remedy can now confirm its own work: a keyboard binding added in Secondary is
+scanned like any other.
 
 **Why not "Conflicts", "Warnings", "Errors" or "Problems".** *Conflicts* was the original and only
 describes one of the four. *Warnings* understates — a reserved binding will never fire and a blocking
@@ -1162,6 +1164,12 @@ action, no game state — the key is off the board. Two sources:
   and `Alt+P` all pause the game and open the options screen. Read from the commander's file, both slots,
   so it is a parameter rather than a constant.
 
+*Widened 2026-09-20 into three classes — Game-Claimed, OS-Claimed and Self-Sabotaging — which add `Esc`,
+`PrintScreen`, the Windows and Copilot keys, and `NumLock`. See
+[§3c](domain-knowledge/EliteDangerous-ConflictRules.md#3c-a-third-category-reserved-keys), and
+[`Esc`](#esc-and-the-difference-between-a-key-you-can-bind-and-a-key-you-can-press) below for what it means
+for the editor.*
+
 **This is the category BindForge is most likely to inflict on someone**, and it is the reason to treat it
 ahead of the other two. The first two are conditions BindForge *finds*; this one it can *create*. Input
 Mode capturing a chord that ends in the game-menu key produces a binding that will never fire, and the
@@ -1194,6 +1202,51 @@ not `Pause` is bound, so a key there buys a second route into a screen already r
 everywhere else. Elite-Intel's auto-assigner already does exactly this — skips the control *and* pulls
 its key from the pool — and reports the skip rather than passing over it silently, so a commander who
 runs it and still sees the control listed as missing is told why.
+
+### `Esc`, and the difference between a key you can bind and a key you can press
+
+**Added 2026-09-20.** `Esc` is [Game-Claimed](domain-knowledge/EliteDangerous-ConflictRules.md#3c-a-third-category-reserved-keys)
+outright, and it is the one the current editor gets wrong: `EliteKeyboardKeys.ASSIGNABLE_KEYS` lists
+`Key_Escape`, so the assign dropdown offers it. A commander who takes the offer gets a binding that can never
+fire — and when Elite-Intel drives that control, it presses `Esc` and opens the game menu instead.
+
+**The fix is one entry, because the two jobs are already two lists.** Traced through the code 2026-09-20:
+
+| | Bindable | Pressable |
+|---|---|---|
+| Source | `EliteKeyboardKeys.ASSIGNABLE_KEYS` | every `KEY_*` field on `KeyProcessor`, via `KeyBindingExecutor.knownEliteKeyNames()` |
+| Token form | `Key_Escape` | `KEY_ESCAPE` |
+| Read by | assign dropdown, `BindingsWriter`'s guard, keyboard map | the custom-command `RAW_KEY` picker and executor |
+
+No class reads both. So removing `Key_Escape` from the bindable list:
+
+- stops the dropdown offering it;
+- makes `BindingsWriter` refuse to write it, so the rule holds even if the UI is bypassed;
+- greys it out on the keyboard map;
+- **still lets a commander clear an existing `Esc` binding** — the writer skips its key check for a clear;
+- **still displays one**, since nothing on the display path reads the list;
+- **leaves custom commands untouched.** A `RAW_KEY` step resolves through the pressable list, so a custom
+  command that exits the game still reaches `Esc`.
+
+**BindForge must keep the two lists apart.** They look like duplication and are not: one answers *"may a
+game control be bound to this?"*, the other *"can Elite-Intel send this?"* Merging them would either put
+`Esc` back in the dropdown or take it away from custom commands. **A guard test pins it** —
+`knownEliteKeyNames()` contains `KEY_ESCAPE`, and `isAssignable("Key_Escape")` is false — so a future
+tidy-up fails loudly instead of silently breaking a commander's exit command.
+
+**An `Esc` binding already in a file is shown**, flagged reserved, with the remedy *clear it* (Alan,
+2026-09-20). Reporting one at startup — a Game-Claimed rule in `ReservedKeyChords` — is **deferred**: the game
+cannot write one, so it would only ever catch a hand-edited file.
+
+**The other classes, briefly.** `PrintScreen`, the Windows key and the Copilot key are already absent from
+`ASSIGNABLE_KEYS`, so nothing changes for them. **`NumLock` stays assignable, with a warning** (Alan,
+2026-09-20): it fires fine, but pressing it changes what every numpad binding sends, and refusing it would
+overrule a commander who knows that. The warning belongs in Input Mode when it is captured, and on the
+keyboard map.
+
+**Rolled into BindForge rather than patched in V1.1 first — decided 2026-09-20.** It only bites a commander
+who deliberately picks `Esc` from the dropdown and finds out on the first press, which is small next to the
+cost of changing the same editor twice.
 
 ### Conflicts have severity, and Anomalies shows it
 
@@ -1246,9 +1299,14 @@ than a second computation arriving at a different answer to "is this a conflict"
 a filtering decision into the computation path, which is the SRP/DRY objection
 Elite-Intel's own `CODING_STANDARD.md` raises directly.
 
-### Known scanner defects — all still open
+### Known scanner defects — FN-1 fixed, three still open
 
-**All four are live work rather than history.** FN-1, FP-1 and FP-3 were each confirmed against the game
+**Updated 2026-09-20: FN-1 is fixed** — shipped in the V1.1 maintenance line and merged into
+`V1.2-BindForge` the same day. See [FN-1 in detail](#fn-1-in-detail--scoped-2026-09-12) for what shipped and
+where the build departed from the design. **FP-1, FP-3 and FN-6 are still open**, and nothing below about
+them has changed.
+
+*As recorded before the fix:* **All four are live work rather than history.** FN-1, FP-1 and FP-3 were each confirmed against the game
 itself rather than suspected, and verified against the code on 2026-09-09. FN-6 was a suspicion until
 2026-09-12, when it was confirmed by reading the same code — see below.
 
@@ -1260,7 +1318,7 @@ change.** FN-6, never checked before, is now confirmed rather than suspected.
 
 | ID | Defect | What the game actually does | Still open? |
 |---|---|---|---|
-| **FN-1** | **Secondary-slot blindness.** One slot per action is kept and the other discarded before any conflict check runs. | Treats a Secondary-vs-Primary collision as **a real conflict**. | **Yes.** `toKeysets()` still builds one keyset per action from a single `KeyBinding`. |
+| **FN-1** | **Secondary-slot blindness.** One slot per action is kept and the other discarded before any conflict check runs. | Treats a Secondary-vs-Primary collision as **a real conflict**. | **No — fixed 2026-09-20.** The scan keys each chord by action *and* slot, so both slots are compared. `toKeysets()` is gone. |
 | **FP-1** | **Hold and tap are not part of combo identity.** | Does **not** warn when a hold-bound and a tap-bound action share a key. | **Yes.** `buildKeyset()` and `keysetOf()` read `key` and `modifiers` only — never `hold`, although `KeyBinding` carries it. |
 | **FP-3** | **Sub-state over-suppression.** Any `ExplorationFSS*` / `ExplorationSAA*` action is blanket-treated as safe. | **Does** warn — `ExplorationFSSEnter` sharing a key with `DeployHardpointToggle` is a genuine conflict. | **Yes.** `isSubStateModeAction()` still matches on those prefixes and `isSafeOverlap()` returns true for either side. |
 | **FN-6** | **A non-keyboard modifier drops the whole slot.** Not just the modifier — the entire binding never reaches the conflict map. | Warns normally; the chord exists as far as the game is concerned. | **Yes, and confirmed 2026-09-12** — no longer a suspicion. `isKeyboardUsable()` requires the main key be `Keyboard` **and every modifier** be `Keyboard`, so one HOTAS modifier voids the slot. |
@@ -1275,6 +1333,11 @@ Both conflict paths apply it independently: `BindingsMonitor` through `parseBind
 `BindingProfilePanel.executableBinding()` with its own copy of the same check — which is itself worth
 noting under [one writer, one way](overview.md#there-is-one-writer-and-it-already-exists).
 
+*Updated 2026-09-20:* the FN-1 fix deleted `BindingProfilePanel`'s copy. Both conflict paths now reach the
+gate through `KeyBindingsParser.toExecutableSlots()`, so FN-6 has one place to be fixed in on the conflict
+side. The gate itself is untouched, and FN-6 is exactly as open as before. (`MissingBindingAutoAssigner`
+keeps a slot-level check of its own, outside the conflict path.)
+
 **The gate is correct where it was written and wrong where BindForge needs it.** Elite-Intel cannot
 press a HOTAS modifier, so excluding those chords from *command execution* is right. A bind editor is
 not executing anything: it has to tell the commander their chord collides whether or not the assistant
@@ -1288,6 +1351,10 @@ where it is.
 kept. An action whose Primary is a HOTAS-modified chord and whose Secondary is plain keyboard is
 scanned on its Secondary alone, with nothing reporting that the Primary was discarded.
 
+*Updated 2026-09-20:* with FN-1 fixed they no longer compound — every surviving slot is scanned. FN-6 still
+voids a HOTAS-modified slot on its own, so in that example the Secondary is scanned and the Primary is
+still dropped without a word. The example still holds; only its cause got simpler.
+
 **One thing did improve.** `contextOf()` now reads an action's vehicle from
 `BindingDisplayNames.lookup(action).section()` — the game's own OPTIONS › CONTROLS screen — falling
 back to substring-matching the tag only for `GENERAL` and `OTHER`. Context is the basis of every
@@ -1296,6 +1363,31 @@ to contain `Buggy` makes the whole safe/unsafe split more trustworthy than when 
 first recorded.
 
 #### FN-1 in detail — scoped 2026-09-12
+
+> **Shipped 2026-09-20.** Built in the V1.1 maintenance line rather than as BindForge's first slice: a
+> blind spot in shipped conflict detection is a V1.1 bug, so it went out with V1.1 and reached
+> `V1.2-BindForge` through Krondor's merge. Commits `220271aa2` (the fix) and `bf1ad44ef`…`38188f9da` (the
+> cleanup after review) by Alan; `ac24c5de3` (the two detectors) by Krondor; merged to `V1.1-Release` as
+> `2d0367be7` and to `V1.2-BindForge` as `02e9c0ab7`.
+>
+> **The rest of this section is the design as scoped, kept as the record.** The build followed it, except:
+>
+> | The design said | What shipped | Why |
+> |---|---|---|
+> | The two anomaly detectors **gain** a both-slots method; the one-slot methods keep serving the spoken warnings | `ReservedKeyChords.scan` and `UiNavigationTextTrap.scan` were **switched** to both slots, and the startup warnings with them | Elite fires either slot. A Secondary on `Alt+F4` still closes the game, and the trap bites the commander's own keypresses — *"in our hands or theirs"*, per `UiNavigationTextTrap`'s own javadoc — not only Elite-Intel's |
+> | Whether the spoken conflict warning sees more is **Krondor's call** | It does. Conflicts are scanned on both slots, still filtered to pairs touching a control Elite-Intel drives | Settled by what he merged |
+> | `ReservedKeyChordsTest` and `UiNavigationTextTrapTest` **not touched**; no test expectations change | Both suites were migrated to slot-map fixtures, the untyped helper this change added to the conflict tests became a typed builder, and each detector gained Secondary-slot cases | Replacing the detectors, rather than adding to them, made it unavoidable — and the typed builder cleared the `@SuppressWarnings` review had flagged repeatedly |
+> | `Conflict` gains the slot, so Game Mode can colour the **slot cell** | `Conflict` still names actions and carries the **chord**; the panel finds the slot by matching it. Rows are still coloured whole | The action stayed the unit of judgement. Slot-cell colouring is **still to build**, and the chord is enough to build it from |
+>
+> **Found in review, not foreseen here:** `getBindingSlots()` returns `null` until a parse succeeds, and the
+> first version of the both-slot conflict path would have thrown on a fresh install. Each scanner now guards
+> `null` itself; Krondor chose that over changing the accessor.
+>
+> **Known debt left by the build:** the public trio is named unevenly — `scanSlots`,
+> `recommendVehicleTwinsFromSlots`, `candidateConflictInSlots` — because the suffixes once told them apart from
+> the action-keyed methods they replaced. Those methods are gone; four test-only adapters remain, each with a
+> note saying why, until ~45 older tests move to slot-map fixtures. The older `bindings(Object...)` helper
+> those tests build through keeps its `@SuppressWarnings("unchecked")` until then, and goes with them.
 
 **It is a dependency, not a cleanup.** Two specified features are built on top of it and cannot be
 correct without it:
