@@ -88,7 +88,7 @@ public class KeyBindCheck {
         // behaves oddly, only that the game keeps pausing. See ReservedKeyChords.
         List<ReservedKeyChords.ReservedBinding> reserved = monitor.reservedChordBindings();
         if (!reserved.isEmpty()) {
-            speakReservedWarnings(reserved, ReservedKeyChords.gameMenuKeys(monitor.getBindings()));
+            speakReservedWarnings(reserved, ReservedKeyChords.gameMenuKeysFromExecutableSlots(monitor.getBindingSlots()));
             reserved.forEach(r -> {
                 String line = "[" + BindingChordSpeech.describe(r.chord()) + "] "
                         + StringUtls.humanizeBindingName(r.action())
