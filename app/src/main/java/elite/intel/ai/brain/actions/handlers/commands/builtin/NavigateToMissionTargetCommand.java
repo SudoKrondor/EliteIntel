@@ -61,10 +61,12 @@ public final class NavigateToMissionTargetCommand implements IntelCommand {
         return ID;
     }
 
-    /** Route plotting taps the ship-only GalaxyMapOpen bind; works only in the main-ship cockpit. */
+    /**
+     * Route plotting is available anywhere in the game, so the command is offered everywhere.
+     */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip();
+        return true;
     }
 
     @Override

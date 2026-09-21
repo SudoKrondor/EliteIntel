@@ -325,18 +325,6 @@ public class BindingsMonitor {
     }
 
     /**
-     * UI direction keys that a focused Elite text field would swallow as text - see
-     * {@link UiNavigationTextTrap}.
-     * <p>
-     * A pure read announced on every start, for the same reason as {@link #blockingConflicts()}: it stops
-     * route plotting outright rather than degrading it, and the commander cannot discover it by playing
-     * because by hand they click the search result with the mouse.
-     */
-    public List<UiNavigationTextTrap.TrappedBinding> textTrappedUiNavigation() {
-        return UiNavigationTextTrap.scan(getBindingSlots());
-    }
-
-    /**
      * Controls already bound to a key or chord that must never be assigned - the key the commander has
      * on the game menu, or an OS combination like Alt+F4. See {@link ReservedKeyChords}.
      * <p>

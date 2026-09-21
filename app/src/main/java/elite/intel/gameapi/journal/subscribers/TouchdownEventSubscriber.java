@@ -34,11 +34,6 @@ public class TouchdownEventSubscriber {
             sb.append(" ");
             sb.append(event.isPlayerControlled() ? localizedEvent("event.touchdown.manual") : localizedEvent("event.touchdown.unmanned"));
             sb.append(" ");
-            if (isStation) sb.append(" ").append(localizedEvent("event.touchdown.onStation")).append(" ");
-            if (isStation)
-                sb.append(" ").append(localizedEvent("event.touchdown.on")).append(" ").append(event.getBody()).append(". ").append(localizedEvent("event.touchdown.nearestDest")).append(": ").append(pointOfInterest).append(".");
-
-            sb.append(" ");
             sb.append(locationType == null ? localizedEvent("event.touchdown.unknown") : locationType);
             sb.append(" ");
             sb.append(body);
@@ -58,7 +53,9 @@ public class TouchdownEventSubscriber {
             currentLocation.setLandingCoordinates(new double[]{event.getLatitude(), event.getLongitude()});
             locationManager.save(currentLocation);
 
-            if (pointOfInterest != null && !pointOfInterest.isEmpty()) {
+            boolean atPointOfInterest = pointOfInterest != null && !pointOfInterest.isEmpty();
+            // Hopping between bio samples lands beside the same beacon over and over: name it once per stay.
+            if (atPointOfInterest && playerSession.markPointOfInterestAnnounced(event.getBodyId(), pointOfInterest)) {
                 VegaRuntime.narrator().narrate(sb.toString(), "Confirm touchdown. State the point of interest we have landed at.");
             } else {
                 EventNarrator.critical(localizedEvent("event.touchdown"));

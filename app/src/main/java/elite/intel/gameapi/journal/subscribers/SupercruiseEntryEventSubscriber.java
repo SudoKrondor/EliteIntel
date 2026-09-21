@@ -18,6 +18,7 @@ public class SupercruiseEntryEventSubscriber {
 
     @Subscribe
     public void onSuperCruiseEntryEvent(SupercruiseEntryEvent event) {
+        playerSession.clearAnnouncedPointOfInterest();
         Thread.ofVirtual().start(() -> {
             LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
             currentLocation.setStarName(locationManager.findStarName(playerSession.getLocationData().getSystemAddress()));

@@ -17,9 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Covers the parse-and-scan half of what {@link BindingsMonitor#blockingConflicts()} runs - a real
  * {@code .binds} file on disk, through {@link KeyBindingsParser#parseBindingSlots(File)}, into
- * {@link BindingConflictScanner#scanSlots} - rather than the scanner alone. The two sibling startup
- * scans that read the same slot map, {@link UiNavigationTextTrap} and {@link ReservedKeyChords}, get
- * one file-backed case each for the same reason.
+ * {@link BindingConflictScanner#scanSlots} - rather than the scanner alone. The sibling startup
+ * scan that reads the same slot map, {@link ReservedKeyChords}, gets one file-backed case for the
+ * same reason.
  * <p>
  * It stops at the scanner: {@code BindingsMonitor} itself, the Bindings tab, the assign dialog and
  * the keyboard map view are still untested, and those are where a rewiring mistake would recur.
@@ -100,22 +100,6 @@ class BindingConflictPipelineTest {
                         Comparator.comparing(c -> String.join("", c))).toList(),
                 "both W and X should be named, so the commander fixes both");
         assertTrue(conflicts.stream().allMatch(BindingConflictScanner.Conflict::blocking));
-    }
-
-    /**
-     * The same fixture, read by the text-trap scan: the W that {@code UI_Up} holds in its Secondary is
-     * typed into a focused search box, whichever slot it sits in.
-     */
-    @Test
-    void aPrintableKeyInASecondarySlotIsFoundByTheTextTrapScan() throws Exception {
-        Map<String, KeyBindingsParser.BindingSlots> slots =
-                KeyBindingsParser.getInstance().parseBindingSlots(bindsFile(CROSS_SLOT_CLASH));
-
-        List<UiNavigationTextTrap.TrappedBinding> trapped = UiNavigationTextTrap.scan(slots);
-
-        assertEquals(1, trapped.size(), "only UI_Up's Secondary types a character: " + trapped);
-        assertEquals("UI_Up", trapped.get(0).action());
-        assertEquals(Set.of("Key_W"), trapped.get(0).chord());
     }
 
     /**
