@@ -130,6 +130,7 @@ public final class ObjectiveFactSource implements MemoryFactSource {
             case INTERSTELLAR_FACTORS -> "see interstellar factors";
             case VISTA_GENOMICS -> "sell exobiology data at Vista Genomics";
             case REFUEL -> "refuel there";
+            case OUTFITTING -> "buy a ship module at outfitting";
         };
     }
 }

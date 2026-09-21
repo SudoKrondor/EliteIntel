@@ -114,6 +114,7 @@ public class ShipRouteObjectiveSource implements HudObjectiveSource {
             case INTERSTELLAR_FACTORS -> HudText.get("overlay.card.title.interstellarFactors");
             case VISTA_GENOMICS -> HudText.get("overlay.card.title.vistaGenomics");
             case REFUEL -> HudText.get("overlay.card.title.refuel");
+            case OUTFITTING -> HudText.get("overlay.card.title.outfitting");
         };
     }
 
@@ -129,7 +130,7 @@ public class ShipRouteObjectiveSource implements HudObjectiveSource {
             case MATERIAL_TRADER_ENCODED -> Optional.of(HudText.get("overlay.card.value.materialEncoded"));
             case TECHNOLOGY_BROKER_HUMAN -> Optional.of(HudText.get("overlay.card.value.brokerHuman"));
             case TECHNOLOGY_BROKER_GUARDIAN -> Optional.of(HudText.get("overlay.card.value.brokerGuardian"));
-            case INTERSTELLAR_FACTORS, VISTA_GENOMICS, REFUEL -> Optional.empty();
+            case INTERSTELLAR_FACTORS, VISTA_GENOMICS, REFUEL, OUTFITTING -> Optional.empty();
         };
     }
 

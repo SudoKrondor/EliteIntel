@@ -19,7 +19,8 @@ public enum ReminderContact {
     TECHNOLOGY_BROKER_GUARDIAN,
     INTERSTELLAR_FACTORS,
     VISTA_GENOMICS,
-    REFUEL;
+    REFUEL,
+    OUTFITTING;
 
     /**
      * The stored form. Null-safe so callers can pass an absent contact straight through.
