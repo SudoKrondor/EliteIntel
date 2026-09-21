@@ -59,7 +59,7 @@ public final class NavigateToExoMasterySiteCommand implements IntelCommand {
      */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() && !status.isLanded() && exoMastery.isEnabled();
+        return !status.isLanded() && exoMastery.isEnabled();
     }
 
     @Override
