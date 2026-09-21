@@ -16,6 +16,14 @@ public class RankAndProgressDto implements ToJsonConvertible {
     private String explorationRank = "unknown";
     private String mercenaryRank = "unknown";
 
+    /**
+     * The highest journal rank number held in any career - combat, trade, exploration, mercenary,
+     * exobiology or CQC - or -1 before the game has reported them. Kept as the number rather than a
+     * name because the career ranks above are stored localized, and the one question asked of them
+     * ({@link #hasEliteRank}) is a comparison, not a display.
+     */
+    private int highestCareerRank = -1;
+
     private String pledgedToPower = "unknown";
     private String allegiance = "unknown";
     private int powerRank = 0;
@@ -88,6 +96,27 @@ public class RankAndProgressDto implements ToJsonConvertible {
 
     public String getMercenaryRank() {
         return mercenaryRank;
+    }
+
+    public int getHighestCareerRank() {
+        return highestCareerRank;
+    }
+
+    /**
+     * Raises the highest career rank to {@code rank} when it is higher; a promotion in one career never
+     * lowers what another already reached. A null - a promotion in some other career - changes nothing.
+     */
+    public void raiseCareerRank(Integer rank) {
+        if (rank != null && rank > highestCareerRank) highestCareerRank = rank;
+    }
+
+    /**
+     * True when the commander is Elite (or above) in at least one career, which is what the Pilots
+     * Federation asks for the Shinrarta Dezhra permit. False while the ranks are still unknown, so a
+     * fresh install withholds the system rather than sending a commander somewhere they cannot jump to.
+     */
+    public boolean hasEliteRank() {
+        return highestCareerRank >= Ranks.ELITE;
     }
 
     public void setMercenaryRank(String mercenaryRank) {
@@ -203,6 +232,10 @@ public class RankAndProgressDto implements ToJsonConvertible {
         this.setCombatRankEmpire(data.getEmpire());
         this.setCombatRankFederation(data.getFederation());
         this.setMercenaryRank(Ranks.getMercenaryRankMap().get(data.getSoldier()));
+        // A snapshot, not a promotion: the game reports every career, so this is the whole answer.
+        this.highestCareerRank = Math.max(Math.max(data.getCombat(), data.getTrade()),
+                Math.max(Math.max(data.getExplore(), data.getSoldier()),
+                        Math.max(data.getExobiologist(), data.getCQC())));
     }
 
     public void setProgressData(PlayerProgressStats data) {

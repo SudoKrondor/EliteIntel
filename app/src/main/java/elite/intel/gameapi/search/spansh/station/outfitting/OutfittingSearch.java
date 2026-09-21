@@ -1,5 +1,6 @@
 package elite.intel.gameapi.search.spansh.station.outfitting;
 
+import elite.intel.gameapi.search.PermitLockedSystems;
 import elite.intel.gameapi.search.spansh.station.CurrentSystemFilter;
 import elite.intel.gameapi.search.spansh.station.DockingEffort;
 import elite.intel.gameapi.search.spansh.station.SearchRadii;
@@ -79,8 +80,8 @@ public final class OutfittingSearch {
             TradeStationSearchResultDto response = StationSearchClient.getInstance().searchStations(criteria);
             // A failed POST, a search that times out and an empty body all arrive here as a null.
             if (response == null || response.getResults() == null) continue;
-            List<OutfittingHit> found = rank(
-                    CurrentSystemFilter.exclude(stocking(response.getResults(), wanted), currentSystem), returnClosest);
+            List<OutfittingHit> found = rank(PermitLockedSystems.reachable(
+                    CurrentSystemFilter.exclude(stocking(response.getResults(), wanted), currentSystem)), returnClosest);
             if (!found.isEmpty()) return found;
             log.debug("No outfitting stocking {} within {} ly; widening", wanted, radius);
         }

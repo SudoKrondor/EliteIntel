@@ -4,6 +4,7 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.StationMarketsManager;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.search.PermitLockedSystems;
 import elite.intel.gameapi.search.spansh.station.DockingEffort;
 import elite.intel.gameapi.search.spansh.station.StationSearchClient;
 import elite.intel.gameapi.search.spansh.station.marketstation.TradeStationSearchCriteria;
@@ -353,7 +354,8 @@ public final class SpanshCommoditySearch {
 
         TradeStationSearchResultDto response = StationSearchClient.getInstance().searchStations(criteria);
         // A failed POST, a search that times out and an empty body all arrive here as a null.
-        return response == null || response.getResults() == null ? List.of() : response.getResults();
+        if (response == null || response.getResults() == null) return List.of();
+        return PermitLockedSystems.reachable(response.getResults(), TradeStationSearchResultDto.StationResult::getSystemName);
     }
 
     /**

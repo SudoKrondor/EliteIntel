@@ -10,6 +10,7 @@ import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.missions.HuntingGround;
+import elite.intel.gameapi.search.PermitLockedSystems;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
@@ -66,7 +67,8 @@ public final class FindBountyHuntingGroundCommand implements IntelCommand {
         Coordinates here = locationManager.getGalacticCoordinates();
         if (here == null) return StringUtls.localizedResponse("handler.pirate.positionUnknown");
 
-        List<HuntingGround> grounds = huntingGrounds.bestHuntingGrounds(here, range);
+        List<HuntingGround> grounds = PermitLockedSystems.reachable(
+                huntingGrounds.bestHuntingGrounds(here, range), HuntingGround::starSystem);
         if (grounds.isEmpty()) return StringUtls.localizedResponse("handler.pirate.noGroundsKnown", range);
 
         HuntingGround best = grounds.getFirst();

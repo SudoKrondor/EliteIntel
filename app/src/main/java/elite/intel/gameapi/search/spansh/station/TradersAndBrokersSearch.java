@@ -8,6 +8,7 @@ import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.ReminderContact;
+import elite.intel.gameapi.search.PermitLockedSystems;
 import elite.intel.gameapi.search.spansh.station.traderandbroker.*;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.TimeUtils;
@@ -171,7 +172,7 @@ public class TradersAndBrokersSearch {
      * with no sort comes back in no order at all.
      */
     static TraderAndBrokerSearchDto.Result nearest(List<TraderAndBrokerSearchDto.Result> results, String currentSystem) {
-        return CurrentSystemFilter.exclude(results, currentSystem)
+        return PermitLockedSystems.reachable(CurrentSystemFilter.exclude(results, currentSystem))
                 .stream()
                 .min(Comparator.comparingDouble(TraderAndBrokerSearchDto.Result::getDistance))
                 .orElse(null);

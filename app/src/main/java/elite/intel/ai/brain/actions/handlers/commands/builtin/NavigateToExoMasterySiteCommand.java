@@ -9,6 +9,7 @@ import elite.intel.db.dao.ExoMasteryDao.Site;
 import elite.intel.db.managers.ExoMasteryManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.gameapi.inputs.RoutePlotter;
+import elite.intel.gameapi.search.PermitLockedSystems;
 import elite.intel.session.LocationData;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
@@ -35,6 +36,11 @@ import java.util.stream.Collectors;
 @RegisterCommand
 public final class NavigateToExoMasterySiteCommand implements IntelCommand {
     public static final String ID = "navigate_to_exo_mastery_site";
+
+    /**
+     * How many of the richest sites to consider, so a permit-locked one at the head still leaves an answer.
+     */
+    private static final int RICHEST_CANDIDATES = 5;
 
     private final ExoMasteryManager exoMastery = ExoMasteryManager.getInstance();
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -67,10 +73,13 @@ public final class NavigateToExoMasterySiteCommand implements IntelCommand {
         if (!exoMastery.isEnabled()) {
             return StringUtls.localizedResponse("handler.exoMastery.notEnabled");
         }
-        Site best = exoMastery.richestRemaining();
-        if (best == null) {
+        // The richest site the commander may fly to: a few are asked for in case the richest sits behind a
+        // permit, which no catalogue entry says anything about.
+        List<Site> open = PermitLockedSystems.reachable(exoMastery.richestRemaining(RICHEST_CANDIDATES), Site::starSystem);
+        if (open.isEmpty()) {
             return StringUtls.localizedResponse("handler.exoMastery.allHarvested");
         }
+        Site best = open.getFirst();
         LocationData<Long, Long> here = playerSession.getLocationData();
         boolean alreadyThere = here != null && here.getSystemAddress() != null && here.getSystemAddress() == best.systemAddress();
         if (alreadyThere) {

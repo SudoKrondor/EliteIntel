@@ -361,6 +361,27 @@ class VegaSystemPromptTest {
                 "narration must forbid filling a gap the payload leaves");
     }
 
+    /**
+     * The narration branch must pin the event's meaning to the payload, not only its names and numbers.
+     *
+     * <p>WHY: handed "Arrived at final destination: Hyades Sector NR-V b2-2." straight after a hyperspace jump,
+     * the model voiced "we've docked at Hyades Sector NR-V b2-2" - the same prompt had produced "arrived at"
+     * one jump earlier. The name rule above held (the system was copied exactly), but nothing forbade
+     * upgrading the verb, and a docking is a different game state from an arrival: the commander was still in
+     * open space. The rule names the confusions that matter in flight so the line may be restyled but never
+     * reinterpreted.
+     */
+    @Test
+    void narrationBranchForbidsReinterpretingTheEvent() {
+        String normalized = prompt.staticRules(ThoughtSource.EVENT).replaceAll("\\s+", " ");
+        assertTrue(normalized.contains("Keep what happened exactly as event_data states it"),
+                "narration must pin the event's meaning to the payload");
+        assertTrue(normalized.contains("restyle the line, never reinterpret the event"),
+                "narration must allow style and forbid reinterpretation");
+        assertTrue(normalized.contains("Arriving in a system is not docking"),
+                "narration must name the arrival/docking confusion explicitly");
+    }
+
     @Test
     void languageRuleNamesResolvedLanguageForInputAndSpokenOutput() {
         String name = resolvedLanguageName();

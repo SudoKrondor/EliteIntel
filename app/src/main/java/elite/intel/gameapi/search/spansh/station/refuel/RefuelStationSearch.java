@@ -1,5 +1,6 @@
 package elite.intel.gameapi.search.spansh.station.refuel;
 
+import elite.intel.gameapi.search.PermitLockedSystems;
 import elite.intel.gameapi.search.spansh.station.DockingEffort;
 import elite.intel.gameapi.search.spansh.station.SearchRadii;
 import elite.intel.gameapi.search.spansh.station.StationSearchClient;
@@ -93,7 +94,8 @@ public final class RefuelStationSearch {
             TradeStationSearchResultDto response = StationSearchClient.getInstance().searchStations(criteria);
             // A failed POST, a search that times out and an empty body all arrive here as a null.
             if (response == null || response.getResults() == null) continue;
-            for (TradeStationSearchResultDto.StationResult station : response.getResults()) {
+            for (TradeStationSearchResultDto.StationResult station : PermitLockedSystems.reachable(
+                    response.getResults(), TradeStationSearchResultDto.StationResult::getSystemName)) {
                 byId.putIfAbsent(identity(station), station);
             }
         }
