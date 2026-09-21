@@ -1147,9 +1147,11 @@ public class BindingProfilePanel extends JPanel {
             return;
         }
         // The dialog edits this one slot, so it reports this slot's collision - not whichever of the
-        // binding's chords happened to be indexed first.
-        Set<String> chordPartners = conflicts.partnersByChord(bindingId)
-                .get(BindingConflictScanner.chordOf(slot));
+        // binding's chords happened to be indexed first. A null slot is the ordinary Missing-Bindings
+        // case (the control is absent from the file), and nothing unbound can be in conflict.
+        Set<String> chordPartners = slot == null
+                ? null
+                : conflicts.partnersByChord(bindingId).get(BindingConflictScanner.chordOf(slot));
         AssignKeyboardBindingDialog dialog = new AssignKeyboardBindingDialog(
                 this,
                 activeBindingsFile.toPath(),
