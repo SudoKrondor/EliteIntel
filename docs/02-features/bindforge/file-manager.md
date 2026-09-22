@@ -369,6 +369,13 @@ BindForge's settings tab (see [Settings Storage](../../01-host-integration/elite
 | Backup destination | Elite-Intel's default backup path | Where Player Backup ZIP archives are written |
 | Edit History retention | 10 (range 1–30) | How many historical versions [Edit History](#edit-history) keeps per file before dropping the oldest |
 
+**Where they are stored — proposed 2026-09-20:** a `bindforge_settings` table of their own, one column each;
+see [Settings Storage](../../01-host-integration/elite-intel-platform-map.md#proposed-a-bindforge_settings-table--for-krondor-to-accept-or-change).
+Two open points from that proposal belong here: whether Player Backups' [age limit](#retention) is a fourth
+setting or fixed at 30 days, and that *"BindForge's settings tab"* means a panel on Elite-Intel's Settings
+screen — not the Bind Editor's [Settings mode](bind-editor.md#settings--settled-2026-09-19), which edits the
+game's own settings inside the `.binds` file.
+
 ## What exists in code today — checked 2026-09-18
 
 `PlayerBackupService` and `BindingManagementPanel` already carry the backup half of this screen. What is

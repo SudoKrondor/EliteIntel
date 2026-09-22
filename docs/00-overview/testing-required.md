@@ -226,7 +226,10 @@ Noting where each one appears on screen costs nothing extra while the options sc
 
 → [Bind Editor — Enums need their vocabularies captured first](../02-features/bindforge/bind-editor.md#enums-need-their-vocabularies-captured-first--settled-2026-09-16)
 
-**15. What does the game do when two files share one preset name?** *Added 2026-09-17.* `Custom.3.0.binds`
+**15. ~~What does the game do when two files share one preset name?~~ WITHDRAWN 2026-09-21 — it cannot
+happen.** Alan: Elite migrates an older-version `.binds` to the current version under the same name, so a
+live folder never holds `Custom.3.0` beside `Custom.4.2`, and only the Live game is supported. The pair in
+`reference-data/` is two collected specimens, not one folder. *Original entry, for the record:* *Added 2026-09-17.* `Custom.3.0.binds`
 and `Custom.4.2.binds` both reduce to the preset name `Custom`, which is what `StartPreset.#.start` stores —
 so the name in that file cannot distinguish them. Presumably the game loads the one matching its own version
 and shows a single entry, but that is an assumption, and

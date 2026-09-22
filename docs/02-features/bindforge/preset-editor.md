@@ -48,17 +48,19 @@ is the one write in BindForge where a single mistyped string costs a flight.
 
 ### A name does not identify a file
 
-**One name can mean several files.** `reference-data/` holds both `Custom.3.0.binds` and
-`Custom.4.2.binds`, and each reduces to `Custom`. The game resolves which one to load by its own version, so
-**BindForge must not assume a name maps to exactly one file** — the dropdowns offer *names*, which is what the
-file stores and what the game's own preset list shows.
+~~**One name can mean several files.**~~ **Withdrawn 2026-09-21: a live folder never holds two versions of
+one preset** (Alan). `reference-data/` does hold both `Custom.3.0.binds` and `Custom.4.2.binds`, but they are
+collected specimens, not one commander's folder. In a live install Elite migrates an older-version file to the
+current version under the same name and the old one goes, and **only the Live game is supported** — so the name
+in `StartPreset.#.start` identifies exactly one file. The dropdowns still offer *names*, because that is what
+the file stores and what the game's own preset list shows.
 
 **And the suffix is not guaranteed.** `Custom.4.2 (2).binds` — a real file, from a download that de-duplicated
 by adding ` (2)` — does not fit `name.major.minor.binds`, so its whole basename is the name. A transform that
 assumes a version suffix would mangle it. Strip a suffix **only when one is there**.
 
-*Both are in the shipped specimens rather than hypothetical, which is why they are written down here rather
-than discovered during implementation.*
+*The `(2)` file is in the shipped specimens rather than hypothetical, which is why it is written down here
+rather than discovered during implementation.*
 
 ## Consistency Warning
 

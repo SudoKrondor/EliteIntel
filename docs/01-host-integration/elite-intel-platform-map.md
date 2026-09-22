@@ -100,6 +100,10 @@ The ported specs rely on this in a few places — most importantly BindForge rai
 destructive-change detection. Some visible equivalent is needed; a badge on the tab title is the obvious
 candidate, but it does not exist yet and would be new UI work. **Flagged as an open item.**
 
+*Updated 2026-09-20:* `HudTabbedPane` has no badge. The app's existing workaround is the count in the tab
+title — *USED BINDINGS (252)* — which serves the Anomalies count outright; a destructive-change **Error** state
+is the case a count cannot carry. See [the UI component map](../02-features/bindforge/ui-component-map.md#4-a-badge-on-a-tab).
+
 ---
 
 ## Device Input
@@ -246,8 +250,84 @@ Settings live in SQLite via `db.dao.GlobalSettingsDao` / `db.managers.GlobalSett
 `ShipSettingsDao` for per-ship values — not per-plugin isolated files.
 
 The StellarCore isolation guarantee ("a plugin's settings physically cannot collide with another's, since they
-are different files in different folders") does not hold. BindForge and StarVizion settings live in the same
-store as everything else and must be namespaced by key convention.
+are different files in different folders") does not hold. ~~BindForge and StarVizion settings live in the same
+store as everything else and must be namespaced by key convention.~~
+
+**Corrected 2026-09-20: there are no keys to namespace.** That sentence assumed a key–value store, and
+Elite-Intel does not have one. Read from the tree:
+
+| Table | Shape | Holds |
+|---|---|---|
+| `game_session` | one row, one typed column per setting | most app-wide settings — API keys, audio, LLM, push-to-talk, overlay, `keyInputDelayMs` |
+| `global_settings` | one row (`id = 1`, seeded by its migration), one typed column per setting | the automation toggles |
+| `ship_settings` | one row per ship | per-ship values |
+| `player` | one row | commander details, and `bindings_dir` |
+
+**A setting is a column**, added by a numbered migration with a comment saying why, and a default chosen so
+existing installations keep their behaviour. Names are camelCase, and related settings already share an
+informal prefix — `lmStudio*`, `pushToTalk*`, `localLlm*`, `noiseReduction*`. So the question was never
+*"which key prefix"* but **"which table, and what column names."**
+
+### Proposed: a `bindforge_settings` table — for Krondor to accept or change
+
+**Proposed 2026-09-20. Not settled until Krondor agrees** — it is his schema.
+
+**BindForge's own settings get a table of their own**, modelled exactly on `global_settings`: one row
+(`id = 1`) inserted by the same migration that creates it, one typed column per setting, each with a default.
+StarVizion, when it comes, does the same as `starvizion_settings`.
+
+**Why not add columns to `game_session`, which is what most settings do.** Because of who else is in that
+file. Over the last 90 days `GameSessionDao` changed in **19** commits and `SystemSession` in **32** — two of
+the busiest files in the codebase, and nearly all of it Krondor's. Every BindForge setting added there edits the
+same DAO, the same session class and the same long SQL statement he is editing that week. That is precisely the
+merging trouble the [package freeze](../00-overview/v1.2-scope.md#the-code-stays-where-it-is--stated-by-krondor-2026-09-12)
+exists to prevent. A table of its own touches none of his files: the migration, DAO and manager are all new, and
+*"new code is free."* `GlobalSettingsDao`, the model being copied, changed in **3**.
+
+**Why not a key–value table.** It would be a second way of storing a setting beside the one the codebase
+already uses everywhere — which `CODING_STANDARD.md` names as a design anti-pattern — and it would give up
+what columns provide for free: a type, a default, and a migration that says why the value exists.
+
+**The conventions:**
+
+- **The table is the namespace, so columns carry no prefix.** `editHistoryRetention`, not
+  `bindForgeEditHistoryRetention` — just as `global_settings` does not prefix its columns with `global`.
+- **Table names take `bindforge_`**, in the snake_case every existing table uses. That covers BindForge's data
+  tables too, which are records rather than settings: `bindforge_edit_history`, the detected installations,
+  and later the deferred Action Groups' user groups.
+- **Migrations in the `011XX` block**, never editing an applied one.
+- **Save every column, and prove it.** `global_settings` saves with `INSERT OR REPLACE`, which resets any
+  column the statement does not list to its default. Two of its columns are missing from its save today —
+  harmless, since nothing reads either, but it shows how easily a column falls out. BindForge's save lists every
+  column, and a round-trip test pins it.
+
+**What does not move.** Settings BindForge inherits by upgrading the editor in place stay exactly where they
+are: `game_session.keyInputDelayMs` and `player.bindings_dir`. Moving them would migrate every commander's
+stored values for no change in behaviour, through the busiest files in the tree. The line is **settings
+BindForge introduces**, not *every setting on a BindForge screen*.
+
+**What goes in it** — the three settings [File Manager](../02-features/bindforge/file-manager.md#settings)
+specifies:
+
+| Column | Type | Default | |
+|---|---|---|---|
+| `autoBackupOnLaunch` | boolean | `true` | Player Backups on Elite-Intel launch |
+| `backupDirectory` | text | `null`, meaning Elite-Intel's default backup path | where Player Backup archives are written |
+| `editHistoryRetention` | integer | `10` | versions kept per file, 1–30 |
+
+`backupDirectory` defaults to `null` rather than a stored path, so the default follows `AppPaths` if it
+ever changes instead of freezing whatever path it was on the day the row was written.
+
+**Two questions this raises, both in the spec rather than the schema:**
+
+- **Is Player Backups' age limit a setting?** File Manager's [Retention](../02-features/bindforge/file-manager.md#retention)
+  gives *"keep backups for N days," default 30*, but the Settings table does not list it. Either it is a
+  fourth column or it is fixed at 30 — the spec should say which.
+- **"Settings" means two things in BindForge.** The Bind Editor's
+  [Settings mode](../02-features/bindforge/bind-editor.md#settings--settled-2026-09-19) edits the game's own
+  settings entries, which live in the `.binds` file and never touch SQLite. File Manager's *"BindForge's settings
+  tab"* means BindForge's own preferences, stored here. Per the paragraph below, those preferences belong as a
+  panel on Elite-Intel's Settings screen, not a tab inside BindForge — which also keeps the two apart.
 
 The Settings UI is `ui.screen.SettingsTabPanel` with panels under `ui.screen.settings/`
 (`AiServicesSettingsPanel`, `AudioSettingsPanel`, …). BindForge and StarVizion settings become additional
@@ -259,6 +339,13 @@ panels there, following the existing pattern.
 
 There is no Theme Service and no theme-changed notification. `ui.theme` provides `AppTheme`, `HudPalette`,
 `HudGlyphs`, and `HudForms` — a fixed visual language rather than a swappable runtime theme.
+
+**That language is written down**, in [`ED_HUD_REFERENCE.md`](../ED_HUD_REFERENCE.md) — *"the single source of
+truth for HUD component design"*, which every UI change is checked against. It names the component for each
+job, and it requires any component added to the HUD layer to update the matching section of that file in the
+same commit. How BindForge's screens map onto it, and what it lacks, is in the
+[BindForge UI Component Map](../02-features/bindforge/ui-component-map.md). *Added 2026-09-20; this section
+previously did not mention the canon at all.*
 
 The specs' rule "plugins use theme values and never hardcode colours" still applies as good practice, and
 `InputMonitorPalette` shows the established pattern for a feature-local palette. But live theme switching is

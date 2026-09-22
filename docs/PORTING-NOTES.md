@@ -222,6 +222,11 @@ unresolved questions stay in [conflicts-and-open-questions.md](00-overview/confl
 9. **Settings are not isolated.** Everything shares one SQLite store. BindForge and StarVizion settings need a
    key-namespacing convention.
 
+   **Reframed 2026-09-20 — there are no keys.** Elite-Intel stores each setting as a typed column, not a
+   key–value pair, so the question is which table and what column names. Proposed: a `bindforge_settings` table
+   of its own, keeping BindForge out of the two busiest files in the tree. Awaiting Krondor. See
+   [Settings Storage](01-host-integration/elite-intel-platform-map.md#proposed-a-bindforge_settings-table--for-krondor-to-accept-or-change).
+
 10. **Archive backup/restore (ZIP) does not exist.** BindForge's File Manager is built on it.
 
 11. **`DeviceMappings.xml` and `.buttonMap` handling appears entirely absent.** Two of BindForge's four managed

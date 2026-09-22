@@ -39,6 +39,7 @@ open questions the port created.
     starvizion/         Specs, mockup, punchlists
 03-data-models/         Binding schema, device provenance, telemetry
 04-other-ideas/         Considered and parked - not scheduled, kept so the reasoning survives
+
 ```
 
 ## BindForge
@@ -47,25 +48,21 @@ Four top-level sections, in priority order — backup and restore first, because
 loss matters more than editing it.
 
 - [Overview](02-features/bindforge/overview.md) — managed file domains, live file sync, data integrity
-- [Alias Designer](02-features/bindforge/alias-designer.md) — device naming, button/axis labels, and
-  per-installation mirroring
-- [Bind Editor](02-features/bindforge/bind-editor.md) — Game Mode, Anomalies, Settings and shared
-  conflict detection in V1.2; Action Groups, Input Mode, Control Types and Controller Mode [deferred](00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16)
+- [Alias Designer](02-features/bindforge/alias-designer.md) — device naming, button/axis labels, and per-installation mirroring
+- [Bind Editor](02-features/bindforge/bind-editor.md) — Game Mode, Anomalies, Settings and shared conflict detection in V1.2; Action Groups, Input Mode, Control Types and Controller Mode [deferred](00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16)
 - [Preset Editor](02-features/bindforge/preset-editor.md) — which `.binds` file loads per binding section
 - [File Manager](02-features/bindforge/file-manager.md) — backup and restore of all four file domains
+- [UI Component Map](02-features/bindforge/ui-component-map.md) — each screen mapped onto the HUD kit, and what the kit lacks
 - [Roadmap](02-features/bindforge/roadmap.md)
-- [Domain knowledge](02-features/bindforge/domain-knowledge/) — `.binds` format, action catalog, conflict
-  rules, `DeviceMappings.xml`/`.buttonMap`, and the interactive conflict-matrix pages
-- [Reference data](02-features/bindforge/reference-data/) — `ActionCatalog.json` and the binding-zone
-  spreadsheets
+- [Domain knowledge](02-features/bindforge/domain-knowledge/) — `.binds` format, action catalog, conflict rules, `DeviceMappings.xml`/`.buttonMap`, and the interactive conflict-matrix pages
+- [Reference data](02-features/bindforge/reference-data/) — `ActionCatalog.json` and the binding-zone spreadsheets
 - [Mockup](02-features/bindforge/mockups/BindForge_Mockup.html)
 - [Device Provenance](03-data-models/device-provenance.md) — why device ownership must live in the database
 
 ## StarVizion
 
 - [Overview](02-features/starvizion/overview.md)
-- [Vizlets and the Node System](02-features/starvizion/vizlet-and-node-system.md) — Vizlets, NeuroNodes, the
-  eight primitives
+- [Vizlets and the Node System](02-features/starvizion/vizlet-and-node-system.md) — Vizlets, NeuroNodes, the eight primitives
 - [StarCalc Expression Engine](02-features/starvizion/starcalc-expression-engine.md)
 - [HoloFrames and Persistence](02-features/starvizion/holoframes-and-persistence.md)
 - [UI Layout](02-features/starvizion/ui-layout.md) — editor UI and mode-based visibility
