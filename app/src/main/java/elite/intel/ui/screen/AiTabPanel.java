@@ -19,6 +19,7 @@ import elite.intel.ui.telemetry.LlmSessionStatsTracker;
 import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.*;
+import elite.intel.util.AppPaths;
 import elite.intel.util.SleepNoThrow;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -438,9 +439,26 @@ public class AiTabPanel extends JPanel {
                 PlayerSession.getInstance().getBindingsDir(),
                 // Passed unevaluated on purpose: rendering it enumerates the machine's audio devices, which
                 // blocks, and this runs on the EDT. The bundle worker calls it.
-                MicDiagnosticsReport::render);
+                MicDiagnosticsReport::render,
+                customCommandsFile());
 
         Thread.ofVirtual().name("diagnostics-bundle").start(() -> writeBundle(target, sources));
+    }
+
+    /**
+     * Where the commander's custom commands are kept, or null if that cannot be worked out.
+     * <p>
+     * Null rather than a thrown exception: resolving the path creates the directory, so it can fail on a
+     * read-only or missing app data directory - and a bundle that aborts over the one file the commander
+     * may not even have would cost the journal and the logs with it. {@link SupportBundle} reports the null.
+     */
+    private static Path customCommandsFile() {
+        try {
+            return AppPaths.getCustomCommandsFilePath();
+        } catch (IOException | RuntimeException e) {
+            log.warn("Diagnostics bundle: could not resolve the custom commands file", e);
+            return null;
+        }
     }
 
     /**

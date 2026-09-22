@@ -94,8 +94,8 @@ class BindingConflictScannerTest {
 
     @Test
     void uiNavigationNeverConflictsWithShipAction() {
-        // The UI panel is its own input context - ship controls are disabled while it is open, so a
-        // shared key cannot fire both. CycleNextSubsystem (ship) vs UI_Right (UI) is safe.
+        // The panel that has focus is reading that key, so the ship binding on it does not also fire.
+        // CycleNextSubsystem (ship) vs UI_Right (interface) is safe.
         List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
                 "CycleNextSubsystem", Set.of("Key_RightArrow"),
                 "UI_Right", Set.of("Key_RightArrow")));
@@ -241,6 +241,43 @@ class BindingConflictScannerTest {
                 "OpenCodexGoToDiscovery_Buggy", Set.of("Key_O"),
                 "SystemMapOpen_Buggy", Set.of("Key_LeftControl", "Key_D"),
                 "CycleNextSubsystem", Set.of("Key_LeftControl", "Key_D"))).isEmpty());
+    }
+
+    // --- Interface Mode controls are their own context, in every vehicle ---
+
+    @Test
+    void interfaceModeControlsDoNotConflictWithAnyVehicleControl() {
+        // Verbatim from a commander's file of 2026-09-22: pips on the arrow keys with UI navigation in
+        // the arrows' secondary slots, panel and page cycles on C/E/Q alongside on-foot tools, Select on
+        // Space with jump and the SRV vertical thrusters. Thirteen pairs, every one of them fine in game:
+        // the focused panel is reading the key, so the vehicle binding on it does not also fire.
+        assertTrue(BindingConflictScanner.scanKeysets(bindings(
+                "UI_Up", Set.of("Key_UpArrow"),
+                "IncreaseEnginesPower", Set.of("Key_UpArrow"),
+                "IncreaseEnginesPower_Buggy", Set.of("Key_UpArrow"),
+                "UI_Down", Set.of("Key_DownArrow"),
+                "ResetPowerDistribution", Set.of("Key_DownArrow"),
+                "UI_Select", Set.of("Key_Space"),
+                "HumanoidJumpButton", Set.of("Key_Space"),
+                "VerticalThrustersButton", Set.of("Key_Space"),
+                "CycleNextPanel", Set.of("Key_E"),
+                "HumanoidToggleMissionHelpPanelButton", Set.of("Key_E"),
+                "CycleNextPage", Set.of("Key_C"),
+                "HumanoidToggleShieldsButton", Set.of("Key_C"))).isEmpty());
+    }
+
+    @Test
+    void panelAndPageCyclesAreInterfaceControlsNotShipOnes() {
+        // CycleNextPanel carries no UI_ prefix and sits under GENERAL, so the name fallback used to make
+        // it context "ship" - reporting it against ship controls it never co-fires with, and clearing it
+        // against the SRV and on-foot controls it shares a context with. Both directions, one test.
+        assertTrue(BindingConflictScanner.scanKeysets(bindings(
+                "CycleNextPanel", Set.of("Key_E"),
+                "RightThrustButton", Set.of("Key_E"))).isEmpty());
+
+        assertEquals(1, BindingConflictScanner.scanKeysets(bindings(
+                "CyclePreviousPanel", Set.of("Key_Q"),
+                "UI_Left", Set.of("Key_Q"))).size());
     }
 
     @Test

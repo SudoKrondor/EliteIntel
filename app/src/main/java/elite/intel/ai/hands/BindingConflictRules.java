@@ -52,14 +52,41 @@ public class BindingConflictRules {
             "GalaxyMapOpen", "GalaxyMapOpen_Buggy", "GalaxyMapOpen_Humanoid",
             "SystemMapOpen", "SystemMapOpen_Buggy", "SystemMapOpen_Humanoid");
 
+    /**
+     * The controls Elite lists under GENERAL &gt; <em>Interface Mode</em>: the six {@code UI_*}
+     * direction and commit keys, the nested toggle, and the tab and page cycles.
+     * <p>
+     * These belong to no vehicle: the commander walks a panel with them in the ship, in the SRV and on
+     * foot alike, so they are context {@code ui} wherever they appear. {@code CycleNextPanel} and the
+     * page cycles carry no {@code UI_} prefix and sit under GENERAL, so without this list they fall
+     * through {@link #contextOf}'s name fallback and come back as {@code ship} - which reported them
+     * against ship controls they never co-fire with, and cleared them against the SRV and on-foot
+     * controls they share a context with.
+     * <p>
+     * A shared chord against a <em>vehicle</em> control is safe, and specifically was tried as a blocking
+     * conflict and withdrawn: a panel leaves the ship flyable, but the key the focused panel is reading
+     * is the panel's while it has focus, so the vehicle binding on that same key does not also fire. The
+     * rule turned a commander's whole interface layout - pips on the arrows, UI navigation on the arrows'
+     * secondary slots, which is how Frontier ships it - into thirteen warnings, all wrong.
+     * <p>
+     * Listed by name for the reason {@link #INTERFACE_SWITCH_ACTIONS} is: the action set is Frontier's,
+     * and a control they add later has to be opted in here by someone who has decided it belongs.
+     * {@code BindingConflictRulesTest} pins this list against the Interface Mode group of the control
+     * name table, so the two cannot drift apart unnoticed.
+     */
+    private static final Set<String> INTERFACE_MODE_ACTIONS = Set.of(
+            "UI_Up", "UI_Down", "UI_Left", "UI_Right", "UI_Select", "UI_Back", "UI_Toggle",
+            "CycleNextPanel", "CyclePreviousPanel",
+            "CycleNextPage", "CyclePreviousPage");
+
     private static final Map<String, String> DESCRIPTIONS = new HashMap<>();
 
     static {
-        // NOTE: UI_* navigation keys are otherwise NOT listed here. The UI panel is its own input
-        // context (the game disables ship controls while a panel is open), so UI_* never co-fires with
-        // a ship action - see contextOf(). Two UI_* actions on one chord still conflict (same context).
-        // The quick comms pairs below are the exception, and say why; the panel-focus and map-open keys
-        // are the other one, described generically in describe() rather than pair by pair here.
+        // NOTE: Interface Mode keys are otherwise NOT listed here. They are their own input context, so
+        // one never co-fires with a vehicle control - see contextOf() and INTERFACE_MODE_ACTIONS. Two of
+        // them on one chord still conflict (same context). The quick comms pairs below are the exception,
+        // and say why; the panel-focus and map-open keys are the other one, described generically in
+        // describe() rather than pair by pair here.
 
         // Dangerous hardware action pairs
         put("DeployHardpointToggle", "LandingGearToggle", "Deploying hardpoints will also toggle landing gear");
@@ -120,12 +147,12 @@ public class BindingConflictRules {
      * <p>
      * Safe cases:
      * - Different input contexts (ship / buggy / humanoid / UI / construction) - mutually exclusive,
-     * only one is active at a time. The game disables the others' controls while one is active, so a
-     * shared key cannot fire two of them. In particular a UI_* or construction-panel action never
-     * collides with a ship action (e.g. {@code CycleNextSubsystem} vs {@code UI_Right}), and a control
-     * the commander thinks of as one thing but Elite binds per vehicle - the cargo scoop, the fire
-     * groups, the triggers, the panels, the maps, the lamps, night vision - may sit on one key in all
-     * of them. Commanders lay it out that way on purpose, and only one vehicle is ever occupied.
+     * only one is active at a time. In particular an Interface Mode or construction-panel action never
+     * collides with a vehicle control (e.g. {@code CycleNextSubsystem} vs {@code UI_Right}): the panel
+     * that has focus is reading that key. And a control the commander thinks of as one thing but Elite
+     * binds per vehicle - the cargo scoop, the fire groups, the triggers, the panels, the maps, the
+     * lamps, night vision - may sit on one key in all of them. Commanders lay it out that way on
+     * purpose, and only one vehicle is ever occupied.
      * - Either action belongs to a sub-state overlay (camera, FSS, Galnet, radial wheels) - these
      * modes are only active inside a specific overlay and cannot fire alongside regular actions.
      */
@@ -159,6 +186,20 @@ public class BindingConflictRules {
         return isMapVersusUiNavigation(a, b)
                 || isSelectVersusQuickComms(a, b)
                 || isInterfaceSwitchVersusUiNavigation(a, b);
+    }
+
+    /**
+     * True for the GENERAL &gt; Interface Mode controls - see {@link #INTERFACE_MODE_ACTIONS}.
+     */
+    private static boolean isInterfaceModeAction(String action) {
+        return INTERFACE_MODE_ACTIONS.contains(action);
+    }
+
+    /**
+     * The Interface Mode family, for the test that pins it against the control name table.
+     */
+    static Set<String> interfaceModeActions() {
+        return INTERFACE_MODE_ACTIONS;
     }
 
     /**
@@ -282,7 +323,8 @@ public class BindingConflictRules {
      * The mutually exclusive input context an action belongs to. Only one is ever active, so two
      * actions in different contexts can share a key without ever co-firing:
      * <ul>
-     *   <li>{@code ui} - panel/menu navigation (UI_* keys); ship controls are disabled while a panel is open,
+     *   <li>{@code ui} - the Interface Mode controls ({@link #INTERFACE_MODE_ACTIONS}); the panel that
+     *       has focus is reading those keys, so a vehicle binding on the same key does not also fire,
      *       with the three exceptions checked ahead of this in {@link #isSafeOverlap};</li>
      *   <li>{@code construction} - the colonisation/construction panel, a separate UI panel;</li>
      *   <li>{@code buggy} - SRV controls;</li>
@@ -299,7 +341,11 @@ public class BindingConflictRules {
      * name, which is right for the {@code _Buggy} and {@code Humanoid} spellings.
      */
     private static String contextOf(String action) {
-        if (action.startsWith("UI_")) return "ui";
+        // The Interface Mode group, not just the UI_* spellings. CycleNextPanel and CyclePreviousPanel
+        // carry no prefix and sit under GENERAL in the control name table, so they used to fall through
+        // to contextFromName() and come back as "ship" - which under-reported them against ship controls
+        // and cleared them outright against SRV and on-foot ones.
+        if (isInterfaceModeAction(action) || isUiNavigationAction(action)) return "ui";
         if (action.contains("Construction")) return "construction";
         return switch (BindingDisplayNames.lookup(action).section()) {
             case SRV -> "buggy";

@@ -27,6 +27,8 @@ final class CommanderPrompt {
                     only what is new. Never apologise or open with regret ("sorry", "I'm afraid"); name what is unavailable,
                     then what you can do instead. In speech, never mention prompts, function calls, JSON, models, or any
                     other machinery behind your answer.
+                            Your words are spoken aloud, never read: write plain sentences a commander could type. No dashes as
+                            punctuation, asterisks, quotation marks, markdown or lists; a speech engine voices those by name.
             </communication_rules>
 
             <language>

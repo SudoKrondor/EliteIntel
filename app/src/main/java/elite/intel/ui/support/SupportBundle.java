@@ -110,17 +110,28 @@ public final class SupportBundle {
      *                       audio devices and compares them against the saved one - work that blocks, and that
      *                       must not run on the EDT where the caller assembles the rest of this. Null when the
      *                       caller has no audio pipeline.
+     * @param customCommands {@code custom-commands/custom_commands.json}, the commander's own macros. Null
+     *                       when the caller cannot resolve the app data directory.
      */
     public record Sources(String appVersion, String sessionLog,
                           @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
-                          @Nullable Supplier<String> micDiagnostics) {
+                          @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands) {
 
         /**
          * Sources with no microphone diagnostics, for a caller that has no audio pipeline to ask.
          */
         public Sources(String appVersion, String sessionLog,
                        @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir) {
-            this(appVersion, sessionLog, appLog, journalDir, bindingsDir, null);
+            this(appVersion, sessionLog, appLog, journalDir, bindingsDir, null, null);
+        }
+
+        /**
+         * Sources with microphone diagnostics but no custom commands file.
+         */
+        public Sources(String appVersion, String sessionLog,
+                       @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
+                       @Nullable Supplier<String> micDiagnostics) {
+            this(appVersion, sessionLog, appLog, journalDir, bindingsDir, micDiagnostics, null);
         }
     }
 
@@ -168,6 +179,7 @@ public final class SupportBundle {
             copy(zip, "journal", newestJournal(sources.journalDir()), included, omitted);
             copyGameState(zip, sources.journalDir(), included, omitted);
             copy(zip, "bindings", activeBindings(sources.bindingsDir()), included, omitted);
+            copy(zip, "custom commands", customCommands(sources.customCommands()), included, omitted);
             writeMicDiagnostics(zip, sources.micDiagnostics(), included, omitted);
 
             writeEntry(zip, INFO_ENTRY, manifest(sources, included, omitted).getBytes(StandardCharsets.UTF_8));
@@ -402,6 +414,34 @@ public final class SupportBundle {
         } catch (IOException e) {
             return Collected.missing("could not resolve the active preset in " + bindingsDir + ": " + e);
         }
+    }
+
+    /**
+     * The commander's own custom commands, copied raw.
+     * <p>
+     * WHY they belong in a bundle: a custom command is a list of keystrokes the commander wrote, bound to a
+     * phrase or a stick button, and it drives the game through the same input path everything else does. So
+     * "the app pressed the wrong buttons" has two possible authors, and without this file only one of them is
+     * in the zip. A bundle of 2026-09-22 turned on exactly that question - the app's own log accounted for
+     * every keystroke it sent and still did not explain what the commander watched happen.
+     * <p>
+     * The file rather than {@code CustomCommandRepository.load()}, even though the load is easy to call:
+     * loading validates, skips the entries that fail and can silently fall back to the {@code .bak} sibling,
+     * so a rendered view is the set the app accepted rather than the set the commander has. When a malformed
+     * command is the fault being reported, the rendered view is precisely the one that would not show it.
+     * <p>
+     * A commander who has written none has no file, and that is worth a line of its own: it is the answer to
+     * "could this have been one of theirs", and is not the same as the bundle having failed to pick one up.
+     * <p>
+     * A caller that named no path at all is silent instead, on the same rule as an absent
+     * {@link Collected#absent()} source - it has no custom command store to point at, and saying so would
+     * make its bundles read as incomplete. Where the path was supposed to resolve and did not, the caller
+     * logs it, and the application log is in the bundle.
+     */
+    private static Collected customCommands(@Nullable Path customCommands) {
+        if (customCommands == null) return Collected.absent();
+        if (!Files.isRegularFile(customCommands)) return Collected.missing("none defined");
+        return Collected.of(customCommands);
     }
 
     /**
