@@ -59,9 +59,9 @@ final class ShipModuleSearch {
         }
 
         OutfittingHit hit = found.getFirst();
-        String stocked = stockedList(hit.modules());
+        String stocked = stockedList(wanted, hit.modules());
         String answer = StringUtls.localizedResponse("handler.module.headTo",
-                hit.starSystem(), hit.stationName(), hit.stationType(), wanted.name(), stocked);
+                hit.starSystem(), hit.stationName(), hit.stationType(), wanted.label(), stocked);
         // The search widens the radius rather than call a module nonexistent, so when the answer lies outside
         // what the commander asked for he is told.
         if (hit.distanceLy() > distance) {
@@ -71,7 +71,7 @@ final class ShipModuleSearch {
 
         // The errand as it is read back on arrival in that system: the port, the module and what it stocks.
         ReminderManager.getInstance().setReminder(
-                StringUtls.localizedResponse("handler.module.reminder", wanted.name(), hit.stationName(), hit.stationType(), stocked),
+                StringUtls.localizedResponse("handler.module.reminder", wanted.label(), hit.stationName(), hit.stationType(), stocked),
                 hit.starSystem(), hit.stationName(), ReminderContact.OUTFITTING);
 
         // The plotter's own outcome, not a discarded return: it declines to re-plot a route the commander is
@@ -81,11 +81,15 @@ final class ShipModuleSearch {
 
     /**
      * "6D at 449,430 credits, 6E at 107,860 credits" - every listing that fits, cheapest first, so a
-     * commander who named a size but no class hears which classes are on the shelf.
+     * commander who named a size but no class hears which classes are on the shelf. A broad request names
+     * the module on each listing - "Beam Laser 3E at 74,650 credits" - since the station may stock any of
+     * the family.
      */
-    private static String stockedList(List<StockedModule> modules) {
+    private static String stockedList(WantedModule wanted, List<StockedModule> modules) {
         return modules.stream()
-                .map(module -> StringUtls.localizedResponse("handler.module.stocked", module.designation(), module.price()))
+                .map(module -> StringUtls.localizedResponse("handler.module.stocked",
+                        wanted.isFamily() ? module.name() + " " + module.designation() : module.designation(),
+                        module.price()))
                 .collect(Collectors.joining(", "));
     }
 
@@ -95,7 +99,7 @@ final class ShipModuleSearch {
     private static String spoken(WantedModule wanted) {
         StringBuilder spoken = new StringBuilder();
         if (wanted.mount() != null) spoken.append(wanted.mount()).append(' ');
-        spoken.append(wanted.name());
+        spoken.append(wanted.label());
         if (wanted.size() != null || wanted.rating() != null) {
             spoken.append(' ');
             if (wanted.size() != null) spoken.append(wanted.size());

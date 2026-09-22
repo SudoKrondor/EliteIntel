@@ -141,6 +141,21 @@ class OutfittingSearchTest {
     }
 
     /**
+     * A broad request ("a gimbal laser") asks for the whole family, and each listing keeps its own module's
+     * name so the commander hears which laser the station has.
+     */
+    @Test
+    void aFamilyListingSaysWhichModuleItIs() {
+        WantedModule anyGimbalLaser = new WantedModule("Laser", List.of("Beam Laser", "Pulse Laser"), null, null, "Gimbal");
+
+        List<OutfittingHit> hits = OutfittingSearch.stocking(page(), anyGimbalLaser);
+
+        assertTrue(anyGimbalLaser.isFamily());
+        assertEquals(List.of("Ehrlich City"), hits.stream().map(OutfittingHit::stationName).toList());
+        assertEquals("Beam Laser", hits.getFirst().modules().getFirst().name());
+    }
+
+    /**
      * Module prices are fixed by the game, so a cheaper station is one with a Power's discount - and that is
      * the station worth hearing about first. At the same price, nearest wins.
      */

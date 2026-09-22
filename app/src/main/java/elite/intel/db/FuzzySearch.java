@@ -269,6 +269,13 @@ public class FuzzySearch {
     }
 
     /**
+     * Every module name the catalogue holds, in its own case.
+     */
+    public static List<String> shipModuleNames() {
+        return Database.withDao(ShipModuleDao.class, ShipModuleDao::getAllNames);
+    }
+
+    /**
      * The {@code material_aliases.lang} value for a language, matching migration 01017.
      */
     private static String languageTag(Language lang) {

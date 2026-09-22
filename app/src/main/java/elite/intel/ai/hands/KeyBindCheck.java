@@ -43,15 +43,7 @@ public class KeyBindCheck {
         // every start for as long as it is in the file, because a once-only warning leaves a permanently
         // broken setup permanently silent. See BindingConflictRules#isBlocking.
         if (!blocking.isEmpty()) {
-            // The keys are named rather than described as "W A S D": Frontier's default lands there, but a
-            // commander who has already remapped hears a layout that is not theirs and stops listening.
-            List<String> conflictingKeys = BindingChordSpeech.distinctChords(
-                    blocking.stream().map(BindingConflictScanner.Conflict::chord).toList());
-            GameEventBus.publish(new AiVoxResponseEvent(
-                    // The count drives singular/plural wording in every locale; the joined list is what is read out.
-                    StringUtls.localizedSpeech("speech.bindingConflictsBlocking",
-                            conflictingKeys.size(), String.join(", ", conflictingKeys))
-            ));
+            speakBlocking("speech.bindingConflictsBlocking", blocking);
             blocking.forEach(c -> {
                 String line = "[" + BindingChordSpeech.describe(c.chord()) + "] " + c.description();
                 UiBus.publish(new AppLogEvent("BLOCKING binding conflict: " + line));
@@ -114,6 +106,28 @@ public class KeyBindCheck {
                         + plainOverlaps.size() + "): " + String.join(", ", plainOverlaps)));
             }
         }
+    }
+
+    /**
+     * Speaks one blocking warning naming the chords involved, or says nothing when there are none.
+     * <p>
+     * The keys are named rather than described as "W A S D": Frontier's default lands there, but a
+     * commander who has already remapped hears a layout that is not theirs and stops listening.
+     * <p>
+     * One message for every blocking family, which their shared consequence earns: each of the three
+     * stops a walk reaching what it was sent for, so "route plotting cannot work" is true of all of them.
+     * A family that does something else needs its own line, not this one.
+     */
+    private void speakBlocking(String speechKey, List<BindingConflictScanner.Conflict> conflicts) {
+        if (conflicts.isEmpty()) {
+            return;
+        }
+        List<String> conflictingKeys = BindingChordSpeech.distinctChords(
+                conflicts.stream().map(BindingConflictScanner.Conflict::chord).toList());
+        GameEventBus.publish(new AiVoxResponseEvent(
+                // The count drives singular/plural wording in every locale; the joined list is what is read out.
+                StringUtls.localizedSpeech(speechKey, conflictingKeys.size(), String.join(", ", conflictingKeys))
+        ));
     }
 
     /**

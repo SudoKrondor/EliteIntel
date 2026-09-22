@@ -38,10 +38,11 @@ public final class ShowStationServicesPanelCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         UiNavCommon.close();
-        UiNavCommon.prepToKnownUiPositionWhileInTheShipAtStation();
+        UiNavCommon.prepToTopOfTheDockedMenu();
+        // Station services is the second row, counted down from the top - see prepToTopOfTheDockedMenu()
+        // for why the count runs downwards and not up from the bottom.
         GameControllerBus.publish(GameInputSequenceEvent.of(
-                GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
-                GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
+                GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_DOWN.getGameBinding()),
                 GameInputStep.bindingTap(Bindings.GameCommand.BINDING_ACTIVATE.getGameBinding())
         ));
         return null;
