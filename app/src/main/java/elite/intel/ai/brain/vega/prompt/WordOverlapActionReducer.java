@@ -94,7 +94,8 @@ public final class WordOverlapActionReducer implements VegaActionReducer {
     public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput,
                                                SemanticQuery semanticQuery,
                                                GameStateSnapshot gameStateSnapshot) {
-        List<GameToolCandidates.Candidate> candidates = candidateSource.apply(allowedCategories, gameStateSnapshot);
+        List<GameToolCandidates.Candidate> candidates = GameToolCandidates.admitted(
+                candidateSource.apply(allowedCategories, gameStateSnapshot), currentInput);
         if (candidates.isEmpty()) {
             // An empty allowed-category set is intent (no game tools requested), not a selection outcome, so it
             // needs no line; a non-empty set that yielded nothing is worth surfacing.

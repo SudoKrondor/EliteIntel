@@ -3,7 +3,6 @@ package elite.intel.ai.brain.vega.prompt;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.ai.brain.i18n.AliasPhrase;
 import elite.intel.ai.brain.i18n.AliasVocabulary;
-import elite.intel.ai.brain.vega.confirm.DangerousActionPolicy;
 import elite.intel.ai.brain.vega.model.GameStateSnapshot;
 import elite.intel.ai.brain.vega.prompt.ReflexResolver.CommandPhrase;
 import elite.intel.session.PlayerSituation;
@@ -18,20 +17,19 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * The reflex gate: an input is a reflex only when it matches a training phrase - word for word, or as a
  * damaged transcript of one - and resolves to exactly one safe action whose every required argument is already
- * known. Word overlap, an ambiguous tie, an action still needing argument extraction and a dangerous action
- * are all rejected (they take the LLM / confirmation path instead).
+ * known. Word overlap, an ambiguous tie and an action still needing argument extraction are all rejected
+ * (they take the LLM path instead).
  */
 class ReflexResolverTest {
 
-    private static final DangerousActionPolicy NOTHING_DANGEROUS = invocation -> false;
 
     /**
      * Injects the vocabulary alongside the commands, so a case is matched against its own aliases rather than
      * against whichever words the shipped bundles happen to contain. Mirrors production, where every word of
      * every authored alias is by definition a word we wrote.
      */
-    private static ReflexResolver resolver(List<CommandPhrase> commands, DangerousActionPolicy danger) {
-        return new ReflexResolver(() -> commands, danger, () -> vocabularyOf(commands));
+    private static ReflexResolver resolver(List<CommandPhrase> commands) {
+        return new ReflexResolver(() -> commands, () -> vocabularyOf(commands));
     }
 
     private static Set<String> vocabularyOf(List<CommandPhrase> commands) {
@@ -54,7 +52,7 @@ class ReflexResolverTest {
     @Test
     void verbatimSingleSafeParameterlessCommandIsAReflex() {
         ReflexResolver resolver = resolver(
-                List.of(new CommandPhrase("open_nav", "open navigation, nav panel", true)), NOTHING_DANGEROUS);
+                List.of(new CommandPhrase("open_nav", "open navigation, nav panel", true)));
 
         assertEquals(Optional.of("open_nav"), actionId(resolver.resolve("open navigation")));
         assertEquals(Optional.of("open_nav"), actionId(resolver.resolve("nav panel")),
@@ -63,7 +61,7 @@ class ReflexResolverTest {
 
     @Test
     void matchIsCaseInsensitiveAndTrimmed() {
-        ReflexResolver resolver = resolver(List.of(new CommandPhrase("honk", "honk", true)), NOTHING_DANGEROUS);
+        ReflexResolver resolver = resolver(List.of(new CommandPhrase("honk", "honk", true)));
 
         assertEquals(Optional.of("honk"), actionId(resolver.resolve("  HONK  ")));
     }
@@ -77,7 +75,7 @@ class ReflexResolverTest {
             return snapshot.visibilityStatus().isInMainShip()
                     ? List.of(new CommandPhrase("combat", "combat mode", true))
                     : List.of();
-        }, NOTHING_DANGEROUS);
+        });
 
         assertEquals(Optional.of("combat"), actionId(resolver.resolve("combat mode", turnState)));
         assertSame(turnState, observed.get(), "exact matching must use the owning turn's immutable state");
@@ -86,8 +84,7 @@ class ReflexResolverTest {
     @Test
     void trailingSentencePunctuationIsIgnored() {
         ReflexResolver resolver = resolver(List.of(new CommandPhrase(
-                        "query_carrier_voyage", "qual è la destinazione finale della fleet carrier", true)),
-                NOTHING_DANGEROUS);
+                "query_carrier_voyage", "qual è la destinazione finale della fleet carrier", true)));
 
         // A spoken question keeps its '?', but the alias is stored plain - the reflex must still match.
         assertEquals(Optional.of("query_carrier_voyage"),
@@ -99,7 +96,7 @@ class ReflexResolverTest {
     @Test
     void looseWordOverlapIsNotAReflex() {
         ReflexResolver resolver = resolver(
-                List.of(new CommandPhrase("open_nav", "open navigation", true)), NOTHING_DANGEROUS);
+                List.of(new CommandPhrase("open_nav", "open navigation", true)));
 
         assertTrue(resolver.resolve("open the navigation panel please").isEmpty(),
                 "sharing words is not enough - the phrase must match the alias word for word, or be a "
@@ -113,7 +110,7 @@ class ReflexResolverTest {
     @Test
     void aDamagedWordIsStillAReflexWhenTheRestOfThePhraseAgrees() {
         ReflexResolver resolver = resolver(
-                List.of(new CommandPhrase("open_nav", "open navigation", true)), NOTHING_DANGEROUS);
+                List.of(new CommandPhrase("open_nav", "open navigation", true)));
 
         assertEquals(Optional.of("open_nav"), actionId(resolver.resolve("open navigashon")));
         assertEquals(ReflexResolver.MatchKind.FUZZY,
@@ -131,7 +128,7 @@ class ReflexResolverTest {
     void aWordWeAuthoredIsNeverTreatedAsDamage() {
         ReflexResolver resolver = resolver(List.of(
                 new CommandPhrase("launch_fighter", "launch fighter", true),
-                new CommandPhrase("find_lunch", "lunch spot", true)), NOTHING_DANGEROUS);
+                new CommandPhrase("find_lunch", "lunch spot", true)));
 
         assertTrue(resolver.resolve("lunch fighter").isEmpty(),
                 "\"lunch\" is a word we wrote, so it is not a mis-heard \"launch\"");
@@ -145,7 +142,7 @@ class ReflexResolverTest {
     void anAmbiguousRepairIsNotAReflex() {
         ReflexResolver resolver = resolver(List.of(
                 new CommandPhrase("deploy_gear", "deploy gear", true),
-                new CommandPhrase("deploy_nets", "deploy near", true)), NOTHING_DANGEROUS);
+                new CommandPhrase("deploy_nets", "deploy near", true)));
 
         assertTrue(resolver.resolve("deploy xear").isEmpty(), "one letter from both - the LLM disambiguates");
     }
@@ -154,7 +151,7 @@ class ReflexResolverTest {
     void ambiguousMatchIsNotAReflex() {
         ReflexResolver resolver = resolver(List.of(
                 new CommandPhrase("open_nav", "panel", true),
-                new CommandPhrase("open_systems", "panel", true)), NOTHING_DANGEROUS);
+                new CommandPhrase("open_systems", "panel", true)));
 
         assertTrue(resolver.resolve("panel").isEmpty(), "two commands share the phrase - the LLM disambiguates");
     }
@@ -162,7 +159,7 @@ class ReflexResolverTest {
     @Test
     void parameterizedCommandIsNotAReflex() {
         ReflexResolver resolver = resolver(
-                List.of(new CommandPhrase("set_speed", "set speed", false)), NOTHING_DANGEROUS);
+                List.of(new CommandPhrase("set_speed", "set speed", false)));
 
         assertTrue(resolver.resolve("set speed").isEmpty(), "parameters need the LLM to extract arguments");
     }
@@ -177,7 +174,7 @@ class ReflexResolverTest {
         ReflexResolver resolver = resolver(List.of(new CommandPhrase(
                 "target_subsystem",
                 "target fsd {key:fsd}, target engines {key:drive}",
-                Set.of("key"))), NOTHING_DANGEROUS);
+                Set.of("key"))));
 
         assertEquals(Optional.of(new ReflexResolver.Reflex("target_subsystem", Map.of("key", "fsd"))),
                 resolver.resolve("target fsd"));
@@ -189,7 +186,7 @@ class ReflexResolverTest {
     @Test
     void placeholderArgumentStillNeedsTheLlm() {
         ReflexResolver resolver = resolver(List.of(new CommandPhrase(
-                "increase_speed", "increase speed by {key:X}", Set.of("key"))), NOTHING_DANGEROUS);
+                "increase_speed", "increase speed by {key:X}", Set.of("key"))));
 
         assertTrue(resolver.resolve("increase speed by").isEmpty(),
                 "a placeholder value stands for commander wording - only the LLM can read it");
@@ -198,7 +195,7 @@ class ReflexResolverTest {
     @Test
     void aliasMissingAnArgumentIsNotAReflex() {
         ReflexResolver resolver = resolver(List.of(new CommandPhrase(
-                "find_commodity", "find gold {key:gold}", Set.of("key", "max_distance"))), NOTHING_DANGEROUS);
+                "find_commodity", "find gold {key:gold}", Set.of("key", "max_distance"))));
 
         assertTrue(resolver.resolve("find gold").isEmpty(),
                 "the alias pins down key but not max_distance, so the action cannot run from the phrase alone");
@@ -211,30 +208,31 @@ class ReflexResolverTest {
     @Test
     void unsuppliedOptionalParameterIsNotAReflex() {
         ReflexResolver resolver = resolver(List.of(new CommandPhrase(
-                "navigate_to_active_mission", "navigate to the active mission", Set.of("key"))), NOTHING_DANGEROUS);
+                "navigate_to_active_mission", "navigate to the active mission", Set.of("key"))));
 
         assertTrue(resolver.resolve("navigate to the active mission").isEmpty());
     }
 
+    /**
+     * A dangerous command is still recognized here; {@code ReflexThought} owns asking before it runs.
+     */
     @Test
-    void dangerousCommandIsNotAReflex() {
-        DangerousActionPolicy selfDestructDangerous = invocation -> "self_destruct".equals(invocation.name());
-        ReflexResolver resolver = resolver(
-                List.of(new CommandPhrase("self_destruct", "self destruct", true)), selfDestructDangerous);
+    void dangerousCommandStillResolves() {
+        ReflexResolver resolver = resolver(List.of(new CommandPhrase("self_destruct", "self destruct", true)));
 
-        assertTrue(resolver.resolve("self destruct").isEmpty(), "a dangerous command keeps its confirmation flow");
+        assertEquals(Optional.of("self_destruct"), actionId(resolver.resolve("self destruct")));
     }
 
     @Test
     void noCommandMatchIsNotAReflex() {
-        ReflexResolver resolver = resolver(List.of(new CommandPhrase("honk", "honk", true)), NOTHING_DANGEROUS);
+        ReflexResolver resolver = resolver(List.of(new CommandPhrase("honk", "honk", true)));
 
         assertTrue(resolver.resolve("how are you doing").isEmpty());
     }
 
     @Test
     void blankOrNullInputIsNotAReflex() {
-        ReflexResolver resolver = resolver(List.of(new CommandPhrase("honk", "honk", true)), NOTHING_DANGEROUS);
+        ReflexResolver resolver = resolver(List.of(new CommandPhrase("honk", "honk", true)));
 
         assertTrue(resolver.resolve("   ").isEmpty());
         assertTrue(resolver.resolve(null).isEmpty());

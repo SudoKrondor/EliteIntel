@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.i18n.ResponseTextProvider;
+import elite.intel.ai.brain.vega.confirm.ConfirmationCoordinator;
 import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
 import elite.intel.ai.brain.vega.memory.VegaMemoryPolicy;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
@@ -26,9 +27,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -620,5 +619,90 @@ public abstract class Thought {
             return value;
         }
         return value.substring(0, Math.max(0, maxChars - 3)).stripTrailing() + "...";
+    }
+
+    /**
+     * How long a dangerous action waits for the commander's confirmation before discard.
+     */
+    private static final long CONFIRMATION_TIMEOUT_SECONDS = 30;
+    /**
+     * Response-bundle key for the fixed, code-voiced dangerous-action confirmation prompt.
+     */
+    private static final String CONFIRM_DANGEROUS_KEY = "handler.common.confirmDangerousAction";
+    /**
+     * Response-bundle key for the line voiced when the commander declines, moves on, or never answers.
+     */
+    private static final String DANGEROUS_CANCELLED_KEY = "handler.common.dangerousActionCancelled";
+
+    private enum ConfirmationOutcome {CONFIRMED, CANCELLED, TIMED_OUT, INTERRUPTED}
+
+    /**
+     * Holds a validated dangerous tool call and waits for the commander's confirmation. The model is never told
+     * an action is dangerous: the thought detects it from the danger policy and voices a fixed, localized
+     * confirmation prompt itself (no LLM). The commander's next words decide it - {@code VegaSubsystemGate}
+     * classifies them as yes or no. On confirm the call runs; on a no, a different request, or silence it is
+     * discarded and VEGA says so. Blocks this thought's lane, and nothing else, until the answer arrives.
+     * Confirmation and execution contribute no conversational memory.
+     */
+    protected final void handleDangerousConfirmation(LlmToolInvocation invocation) {
+        if (!isRuntimeActive()) {
+            return;
+        }
+        VegaDiagnostics.info(trace(), "confirm", "dangerous action detected: " + invocation.name());
+
+        // Code-voiced confirmation prompt (no LLM); urgent so it preempts before anything runs.
+        voice(responsePhrase(CONFIRM_DANGEROUS_KEY), true);
+
+        ConfirmationOutcome outcome = awaitConfirmationOutcome();
+        if (!isRuntimeActive()) {
+            return;
+        }
+        VegaDiagnostics.info(trace(), "confirm", "outcome=" + outcome.name().toLowerCase(Locale.ROOT));
+        switch (outcome) {
+            case CONFIRMED -> settleToolOutcome(invocation, execute(invocation));
+            case CANCELLED, TIMED_OUT -> voice(responsePhrase(DANGEROUS_CANCELLED_KEY), true);
+            case INTERRUPTED -> {
+            } // a barge-in or shutdown already owns what the commander hears next
+        }
+    }
+
+    /**
+     * Blocks on the confirmation coordinator; maps confirm/cancel/timeout/overlap to its typed runtime outcome.
+     */
+    private ConfirmationOutcome awaitConfirmationOutcome() {
+        ConfirmationCoordinator coordinator = dependencies.confirmationCoordinator();
+        CompletableFuture<Boolean> wait = coordinator.open();
+        if (wait == null) {
+            return ConfirmationOutcome.CANCELLED; // an overlapping confirmation is already pending (§1.6.25)
+        }
+        inFlight = wait;
+        if (isStopped()) {
+            wait.cancel(true);
+        }
+        try {
+            return wait.get(CONFIRMATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    ? ConfirmationOutcome.CONFIRMED
+                    : ConfirmationOutcome.CANCELLED;
+        } catch (TimeoutException timedOut) {
+            return ConfirmationOutcome.TIMED_OUT;
+        } catch (CancellationException interruptedWait) {
+            return ConfirmationOutcome.INTERRUPTED;
+        } catch (InterruptedException interruptedException) {
+            Thread.currentThread().interrupt();
+            return ConfirmationOutcome.INTERRUPTED;
+        } catch (ExecutionException failed) {
+            return ConfirmationOutcome.CANCELLED;
+        } finally {
+            inFlight = null;
+            coordinator.close(wait);
+        }
+    }
+
+    /**
+     * A fixed, code-generated confirmation line in the commander's language (no LLM).
+     */
+    private static String responsePhrase(String key) {
+        Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
+        return ResponseTextProvider.getText(language, key);
     }
 }

@@ -10,6 +10,8 @@ import elite.intel.ai.brain.actions.handlers.queries.ConnectionCheckQuery;
 import elite.intel.ai.brain.actions.handlers.queries.GeneralConversationQuery;
 import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
+import elite.intel.ai.brain.i18n.AiActionCues;
+import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
 import elite.intel.ai.brain.vega.model.GameStateSnapshot;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
 import elite.intel.ai.brain.vega.model.llm.LlmToolDefinition;
@@ -39,8 +41,29 @@ public final class GameToolCandidates {
      * @param id                  the action id matched against the reducer's survivors
      * @param localizedAliasGroup the localized alias group, or the id when none is defined
      * @param tool                the rendered, provider-neutral definition carrying the parameter schema
+     * @param cueStems            word-stems the utterance must contain before the tool is offered (see
+     *                            {@link AiActionCues}), empty when the tool is ungated
      */
-    public record Candidate(String id, String localizedAliasGroup, LlmToolDefinition tool) {}
+    public record Candidate(String id, String localizedAliasGroup, LlmToolDefinition tool, List<String> cueStems) {
+
+        public Candidate {
+            cueStems = List.copyOf(cueStems);
+        }
+
+        /**
+         * An ungated candidate.
+         */
+        public Candidate(String id, String localizedAliasGroup, LlmToolDefinition tool) {
+            this(id, localizedAliasGroup, tool, List.of());
+        }
+
+        /**
+         * Whether this utterance carries one of the candidate's cues, so it may be offered at all.
+         */
+        public boolean admits(String input) {
+            return AiActionCues.admits(cueStems, input);
+        }
+    }
 
     private final Map<String, ? extends IntelAction> commands;
     private final Map<String, ? extends IntelAction> queries;
@@ -118,6 +141,26 @@ public final class GameToolCandidates {
         return result;
     }
 
+    /**
+     * The candidates this utterance may be offered: drops every cue-gated tool whose cue the commander never
+     * said, so a destructive action cannot ride in on a shared noun (see {@link AiActionCues}).
+     */
+    static List<Candidate> admitted(List<Candidate> candidates, String input) {
+        List<Candidate> admitted = new ArrayList<>(candidates.size());
+        List<String> withheld = new ArrayList<>();
+        for (Candidate candidate : candidates) {
+            if (candidate.admits(input)) {
+                admitted.add(candidate);
+            } else {
+                withheld.add(candidate.id());
+            }
+        }
+        if (!withheld.isEmpty()) {
+            VegaDiagnostics.debugAmbient("reduce", "cue missing, withheld -> " + withheld);
+        }
+        return admitted;
+    }
+
     private void addActions(List<Candidate> out, Map<String, ? extends IntelAction> actions, boolean gateOnVisibility) {
         for (IntelAction action : actions.values()) {
             String id = action.id();
@@ -137,7 +180,8 @@ public final class GameToolCandidates {
             String base = authored == null ? "" : authored.strip();
             String description = appendEnglishPhrases(base, id);
             out.add(new Candidate(id, hasPhrases ? phraseGroup : id,
-                    new LlmToolDefinition(id, description, phraseGroup, action.parameters())));
+                    new LlmToolDefinition(id, description, phraseGroup, action.parameters()),
+                    AiActionCues.stems(language, id)));
         }
     }
 
