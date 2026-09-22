@@ -12,6 +12,7 @@ import elite.intel.util.StringUtls;
 import elite.intel.util.json.GetNumberFromParam;
 
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -104,11 +105,14 @@ public final class FindCommodityCommand implements IntelCommand {
             return StringUtls.localizedResponse("handler.commodity.specify");
         }
 
-        SpokenModule module = SpokenModule.parse(key.getAsString());
-        // A size, class or mount settles it: no commodity has one. Otherwise a word-for-word module name
-        // wins before the commodity fuzzy match gets a chance to bend it into a good.
-        if (module.isSpecific() || FuzzySearch.isShipModuleName(module.name())) {
-            return findModule(module, distance, returnClosest);
+        String spoken = key.getAsString();
+        SpokenModule module = SpokenModule.parse(spoken);
+        // A size, class or mount settles it: no commodity has one. Otherwise a word-for-word module name, or
+        // the word a family of them ends in ("lasers"), wins before the commodity fuzzy match gets a chance
+        // to bend it into a good.
+        if (module.isSpecific() || FuzzySearch.isShipModuleName(module.name())
+                || ModuleFamily.exact(module.name(), FuzzySearch.shipModuleNames()).isPresent()) {
+            return findModule(spoken, module, distance, returnClosest);
         }
 
         // Our own table's spelling, passed on untouched: Spansh matches a commodity name exactly, and
@@ -117,7 +121,7 @@ public final class FindCommodityCommand implements IntelCommand {
         String commodity = FuzzySearch.fuzzyCommodityMatch(key.getAsString(), 3);
 
         if (commodity == null) {
-            return findModule(module, distance, returnClosest);
+            return findModule(spoken, module, distance, returnClosest);
         }
         // A good learned from a non-English client has no English name yet, and Spansh matches nothing else.
         if (!FuzzySearch.hasTradeName(commodity)) {
@@ -129,13 +133,41 @@ public final class FindCommodityCommand implements IntelCommand {
     /**
      * The module branch: the spoken name resolved against the module catalogue, then searched with whatever
      * designation the commander put around it.
+     *
+     * @param spoken the request as the commander said it, echoed back when nothing matches
      */
-    private static String findModule(SpokenModule module, int distance, boolean returnClosest) {
-        String name = FuzzySearch.fuzzyShipModuleMatch(module.name(), 3);
-        if (name == null) {
-            return StringUtls.localizedResponse("handler.module.notFound", module.name());
+    private static String findModule(String spoken, SpokenModule module, int distance, boolean returnClosest) {
+        WantedModule wanted = wantedModule(module);
+        if (wanted == null) {
+            return StringUtls.localizedResponse("handler.module.notFound", spoken);
         }
-        WantedModule wanted = new WantedModule(FuzzySearch.shipModuleSpellings(name), module.size(), module.rating(), module.mount());
         return ShipModuleSearch.findAndPlot(wanted, distance, returnClosest);
+    }
+
+    /**
+     * What the spoken name means in the catalogue, most literal reading first: a module named word for word,
+     * a family named word for word ("lasers"), a module the transcript bent ("minning lazer"), and last a
+     * family the transcript bent ("lazers"). Null when it means none of them.
+     * <p>
+     * WHY a bent module name is tried before a bent family: its match is scored against the whole name, so
+     * "minning lazer" is the Mining Laser and not every laser there is.
+     */
+    static WantedModule wantedModule(SpokenModule module) {
+        List<String> spellings = FuzzySearch.shipModuleSpellings(module.name());
+        if (!spellings.isEmpty()) {
+            return new WantedModule(spellings, module.size(), module.rating(), module.mount());
+        }
+        List<String> catalogue = FuzzySearch.shipModuleNames();
+        Optional<ModuleFamily> family = ModuleFamily.exact(module.name(), catalogue);
+        if (family.isEmpty()) {
+            String name = FuzzySearch.fuzzyShipModuleMatch(module.name(), 3);
+            if (name != null) {
+                return new WantedModule(FuzzySearch.shipModuleSpellings(name), module.size(), module.rating(), module.mount());
+            }
+            family = ModuleFamily.nearest(module.name(), catalogue);
+        }
+        return family
+                .map(found -> new WantedModule(found.label(), found.members(), module.size(), module.rating(), module.mount()))
+                .orElse(null);
     }
 }

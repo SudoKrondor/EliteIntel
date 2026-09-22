@@ -17,6 +17,9 @@ public interface ShipModuleDao {
     @SqlQuery("SELECT LOWER(name) FROM ship_modules ORDER BY name")
     List<String> getAllNamesLowerCase();
 
+    @SqlQuery("SELECT name FROM ship_modules ORDER BY name")
+    List<String> getAllNames();
+
     @SqlQuery("SELECT name FROM ship_modules WHERE LOWER(name) = LOWER(:name) LIMIT 1")
     String getOriginalCase(@Bind("name") String name);
 

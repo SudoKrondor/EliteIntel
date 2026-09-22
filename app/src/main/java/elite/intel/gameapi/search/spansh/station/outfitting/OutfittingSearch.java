@@ -154,7 +154,7 @@ public final class OutfittingSearch {
                     continue;
                 if (!wanted.matches(module.getName(), module.getModuleClass(), module.getRating(), module.getWeaponMode()))
                     continue;
-                stocked.add(new StockedModule(module.getModuleClass(), module.getRating(), module.getWeaponMode(), module.getPrice()));
+                stocked.add(new StockedModule(module.getName(), module.getModuleClass(), module.getRating(), module.getWeaponMode(), module.getPrice()));
             }
             if (stocked.isEmpty()) continue;
             stocked.sort(Comparator.comparingLong(StockedModule::price));
