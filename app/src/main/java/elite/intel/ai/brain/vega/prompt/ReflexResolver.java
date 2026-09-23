@@ -7,13 +7,10 @@ import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegist
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.ai.brain.i18n.AliasPhrase;
 import elite.intel.ai.brain.i18n.AliasVocabulary;
-import elite.intel.ai.brain.vega.confirm.CommandFlagDangerousActionPolicy;
-import elite.intel.ai.brain.vega.confirm.DangerousActionPolicy;
 import elite.intel.ai.brain.vega.mind.CommanderThought;
 import elite.intel.ai.brain.vega.model.GameStateSnapshot;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
 import elite.intel.ai.brain.vega.model.llm.LlmToolDefinition;
-import elite.intel.ai.brain.vega.model.llm.LlmToolInvocation;
 
 import java.util.*;
 import java.util.function.Function;
@@ -23,12 +20,13 @@ import java.util.stream.Collectors;
 /**
  * VEGA's reflex gate (§2.5/§5.1): decides, before any thought is born, whether a commander utterance
  * is a pure reflex - an input that matches a training phrase, word for word or as a damaged transcript of one,
- * and resolves to exactly one safe action whose arguments are already known. Such an input is executed directly (no LLM, a {@code ReflexThought});
+ * and resolves to exactly one action whose arguments are already known. Such an input is executed directly (no LLM, a {@code ReflexThought});
  * everything else falls through to the full {@link CommanderThought}.
  * <p>
  * Deliberately strict, so a reflex never misfires. It requires all of: a full-phrase match (not word
  * overlap), exactly one matching action, every required argument supplied without inference, the action
- * currently visible, and not dangerous (a dangerous command must keep its confirmation flow). It covers
+ * currently visible. A dangerous command still resolves here: the reflex skips only the model, and
+ * {@code ReflexThought} asks the commander before it runs, exactly as an LLM-selected one would. It covers
  * COMMANDS and QUERIES (a verbatim query alias like "squadron carrier route" resolves it directly;
  * {@link elite.intel.vega.mind.ReflexThought} voices a query reflex from the query's own data), never macros.
  * <p>
@@ -39,7 +37,7 @@ import java.util.stream.Collectors;
  * <p>
  * It introduces no new classification, reusing the existing owners: {@link GameToolCandidates} for the visible
  * commands and their localized phrases/parameters, {@link AiActionLocalizations#splitPhraseGroup} for phrase
- * splitting, and the {@link DangerousActionPolicy} for the danger flag.
+ * splitting.
  * <p>
  * A second pass ({@link FuzzyAliasMatch}) runs only when nothing matched word for word, and treats the input
  * as a damaged transcript of one alias - "request lending permission" for "request landing permission". It is
@@ -55,7 +53,6 @@ public final class ReflexResolver {
      * of every parameter it declares. A reflex has to supply all of them without the LLM, either because there
      * are none or because the matched alias pins them all down literally. Optional parameters count too: an
      * alias that leaves one unset is a phrase the commander may still be qualifying, so it keeps the LLM path.
-     * The {@code danger} flag is sourced separately, from the {@link DangerousActionPolicy}.
      */
     public record CommandPhrase(String id, String phraseGroup, Set<String> parameters) {
 
@@ -112,52 +109,46 @@ public final class ReflexResolver {
     }
 
     private final Function<GameStateSnapshot, List<CommandPhrase>> commandSource;
-    private final DangerousActionPolicy dangerousActionPolicy;
     /**
      * Words the fuzzy pass treats as heard rather than damaged; see {@link #spokenWords()}.
      */
     private final Supplier<Set<String>> vocabularySource;
 
-    /** Production: commands from the live registries, visibility from the turn snapshot, danger from the command. */
+    /**
+     * Production: commands from the live registries, visibility from the turn snapshot.
+     */
     public ReflexResolver() {
-        this(new CommandFlagDangerousActionPolicy());
-    }
-
-    /** Production reusing a shared danger policy (e.g. the dispatcher's own instance). */
-    public ReflexResolver(DangerousActionPolicy dangerousActionPolicy) {
         // Lazy per-resolve: registries/language are read at resolve time, while visibility comes from the immutable
         // state supplied by the owning commander turn. Construction itself touches no game-state singleton.
-        this(ReflexResolver::collectVisibleCommands, dangerousActionPolicy);
+        this((Function<GameStateSnapshot, List<CommandPhrase>>) ReflexResolver::collectVisibleCommands);
     }
 
-    /** Test/advanced seam: supply the eligible commands and the danger policy directly. */
-    public ReflexResolver(Supplier<List<CommandPhrase>> commandSource, DangerousActionPolicy dangerousActionPolicy) {
-        this(snapshot -> commandSource.get(), dangerousActionPolicy);
+    /**
+     * Test/advanced seam: supply the eligible commands directly.
+     */
+    public ReflexResolver(Supplier<List<CommandPhrase>> commandSource) {
+        this(snapshot -> commandSource.get(), ReflexResolver::spokenWords);
     }
 
     /** Test seam: derive eligible commands from the exact commander-turn visibility snapshot. */
-    public ReflexResolver(Function<GameStateSnapshot, List<CommandPhrase>> commandSource,
-                          DangerousActionPolicy dangerousActionPolicy) {
-        this(commandSource, dangerousActionPolicy, ReflexResolver::spokenWords);
+    public ReflexResolver(Function<GameStateSnapshot, List<CommandPhrase>> commandSource) {
+        this(commandSource, ReflexResolver::spokenWords);
     }
 
     /**
      * Test seam: supply the commands and the vocabulary together, so a case that injects its own commands is
      * not also matched against the live alias bundles.
      */
-    ReflexResolver(Supplier<List<CommandPhrase>> commandSource, DangerousActionPolicy dangerousActionPolicy,
-                   Supplier<Set<String>> vocabularySource) {
-        this(snapshot -> commandSource.get(), dangerousActionPolicy, vocabularySource);
+    ReflexResolver(Supplier<List<CommandPhrase>> commandSource, Supplier<Set<String>> vocabularySource) {
+        this(snapshot -> commandSource.get(), vocabularySource);
     }
 
     /**
-     * Canonical constructor: commands, danger policy and vocabulary all explicit.
+     * Canonical constructor: commands and vocabulary both explicit.
      */
     private ReflexResolver(Function<GameStateSnapshot, List<CommandPhrase>> commandSource,
-                           DangerousActionPolicy dangerousActionPolicy,
                            Supplier<Set<String>> vocabularySource) {
         this.commandSource = commandSource;
-        this.dangerousActionPolicy = dangerousActionPolicy;
         this.vocabularySource = vocabularySource;
     }
 
@@ -217,11 +208,7 @@ public final class ReflexResolver {
         if (matches.size() != 1) {
             return Optional.empty(); // no command, or an ambiguous tie - let the LLM decide
         }
-        Reflex only = matches.get(0);
-        if (isDangerous(only.actionId())) {
-            return Optional.empty(); // dangerous needs the confirmation flow
-        }
-        return Optional.of(only);
+        return Optional.of(matches.get(0));
     }
 
     /**
@@ -302,12 +289,6 @@ public final class ReflexResolver {
     private static boolean isTrailingPunctuation(char c) {
         return c == '?' || c == '!' || c == '.' || c == ',' || c == ';' || c == ':'
                 || c == '？' || c == '！' || c == '。' || c == '，';
-    }
-
-    /** The per-command danger flag via the shared owner (args are ignored; the flag is per-command). */
-    private boolean isDangerous(String commandId) {
-        return dangerousActionPolicy.isDangerous(
-                new LlmToolInvocation(UUID.randomUUID().toString(), commandId, new JsonObject()));
     }
 
     /**

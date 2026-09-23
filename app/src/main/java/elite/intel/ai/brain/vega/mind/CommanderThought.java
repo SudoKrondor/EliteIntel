@@ -2,12 +2,9 @@ package elite.intel.ai.brain.vega.mind;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
-import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.ai.brain.i18n.TrailingStringAliasMatcher;
 import elite.intel.ai.brain.vega.VegaConfig;
 import elite.intel.ai.brain.vega.clarify.PendingClarification;
-import elite.intel.ai.brain.vega.confirm.ConfirmationCoordinator;
 import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
 import elite.intel.ai.brain.vega.memory.facts.MemoryFactContext;
 import elite.intel.ai.brain.vega.memory.facts.MergedFactCandidates;
@@ -18,15 +15,18 @@ import elite.intel.ai.brain.vega.prompt.Fact;
 import elite.intel.ai.brain.vega.tools.IntelActionTypeResolver.IntelActionType;
 import elite.intel.ai.brain.vega.tools.RequestInputFunction;
 import elite.intel.ai.brain.vega.tools.SpeakFunction;
-import elite.intel.i18n.Language;
-import elite.intel.session.SystemSession;
 import elite.intel.util.StringUtls;
 import elite.intel.util.json.JsonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 /**
  * A commander tool-calling turn: compose one prompt, receive the function calls it selected, and settle them in
@@ -47,16 +47,10 @@ public final class CommanderThought extends Thought {
 
     private static final Logger log = LogManager.getLogger(CommanderThought.class);
 
-    /** How long a dangerous action waits for the commander's confirmation before discard. */
-    private static final long CONFIRMATION_TIMEOUT_SECONDS = 30;
-    /** llm.properties key for the fixed, code-voiced dangerous-action confirmation prompt. */
-    private static final String CONFIRM_DANGEROUS_KEY = "handler.common.confirmDangerousAction";
     /**
      * Joins the answers of a batch into the turn's one VEGA reply.
      */
     private static final String ANSWER_SEPARATOR = "\n";
-
-    private enum ConfirmationOutcome { CONFIRMED, CANCELLED, TIMED_OUT, INTERRUPTED}
 
     /**
      * This turn's query answers in the order they were voiced, joined into its single completed record.
@@ -511,63 +505,6 @@ public final class CommanderThought extends Thought {
     // Tool-outcome settlement lives on Thought so deterministic reflexes follow the same memory rules.
 
     /**
-     * Holds the validated tool call and waits for the commander's confirmation. The model
-     * is never told an action is dangerous: the thought detects it from the danger policy after the response
-     * and voices a fixed, localized confirmation prompt itself (no LLM). On confirm the call runs; on
-     * cancel/timeout it is discarded. Confirmation and execution remain runtime/diagnostic state and
-     * contribute no conversational memory.
-     */
-    private void handleDangerousConfirmation(LlmToolInvocation invocation) {
-        if (!isRuntimeActive()) {
-            return;
-        }
-        VegaDiagnostics.info(trace(), "confirm", "dangerous action detected: " + invocation.name());
-
-        // Code-voiced confirmation prompt (no LLM); urgent so it preempts before anything runs.
-        String prompt = confirmDangerousActionPhrase();
-        voice(prompt, true);
-
-        ConfirmationOutcome outcome = awaitConfirmationOutcome();
-        if (!isRuntimeActive()) {
-            return;
-        }
-        VegaDiagnostics.info(trace(), "confirm", "outcome=" + outcome.name().toLowerCase(Locale.ROOT));
-        if (outcome == ConfirmationOutcome.CONFIRMED) {
-            settleGameCall(invocation);
-        }
-    }
-
-    /** Blocks on the confirmation coordinator; maps confirm/cancel/timeout/overlap to its typed runtime outcome. */
-    private ConfirmationOutcome awaitConfirmationOutcome() {
-        ConfirmationCoordinator coordinator = dependencies.confirmationCoordinator();
-        CompletableFuture<Boolean> wait = coordinator.open();
-        if (wait == null) {
-            return ConfirmationOutcome.CANCELLED; // an overlapping confirmation is already pending (§1.6.25)
-        }
-        inFlight = wait;
-        if (isStopped()) {
-            wait.cancel(true);
-        }
-        try {
-            return wait.get(CONFIRMATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                    ? ConfirmationOutcome.CONFIRMED
-                    : ConfirmationOutcome.CANCELLED;
-        } catch (TimeoutException timedOut) {
-            return ConfirmationOutcome.TIMED_OUT;
-        } catch (CancellationException interruptedWait) {
-            return ConfirmationOutcome.INTERRUPTED;
-        } catch (InterruptedException interruptedException) {
-            Thread.currentThread().interrupt();
-            return ConfirmationOutcome.INTERRUPTED;
-        } catch (ExecutionException failed) {
-            return ConfirmationOutcome.CANCELLED;
-        } finally {
-            inFlight = null;
-            coordinator.close(wait);
-        }
-    }
-
-    /**
      * Handles a turn that produced nothing to settle: speaks a fixed service phrase (no LLM) and leaves
      * conversational memory untouched. The turn ends.
      * <p>
@@ -599,12 +536,6 @@ public final class CommanderThought extends Thought {
             return;
         }
         VegaDiagnostics.debug(trace(), "discard", "incomplete turn discarded (no dialogue pair)");
-    }
-
-    /** The fixed, code-generated dangerous-action confirmation prompt in the commander's language (no LLM). */
-    private static String confirmDangerousActionPhrase() {
-        Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
-        return ResponseTextProvider.getText(language, CONFIRM_DANGEROUS_KEY);
     }
 
 }

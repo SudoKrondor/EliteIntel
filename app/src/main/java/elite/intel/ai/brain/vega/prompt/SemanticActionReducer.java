@@ -112,7 +112,8 @@ public final class SemanticActionReducer implements VegaActionReducer {
     private List<LlmToolDefinition> doSelect(Set<IntelActionCategory> allowedCategories, String currentInput,
                                              SemanticQuery semanticQuery,
                                              GameStateSnapshot gameStateSnapshot) {
-        List<GameToolCandidates.Candidate> candidates = candidateSource.apply(allowedCategories, gameStateSnapshot);
+        List<GameToolCandidates.Candidate> candidates = GameToolCandidates.admitted(
+                candidateSource.apply(allowedCategories, gameStateSnapshot), currentInput);
         if (candidates.isEmpty()) {
             if (!allowedCategories.isEmpty()) {
                 VegaDiagnostics.debugAmbient("reduce", "semantic: no candidates for " + allowedCategories);

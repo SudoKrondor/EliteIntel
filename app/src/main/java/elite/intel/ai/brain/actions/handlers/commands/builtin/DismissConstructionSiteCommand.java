@@ -42,6 +42,14 @@ public final class DismissConstructionSiteCommand implements IntelCommand {
     }
 
     /**
+     * Destroys stored state the commander cannot get back, so VEGA asks before it runs.
+     */
+    @Override
+    public boolean isDangerous() {
+        return true;
+    }
+
+    /**
      * App-side bookkeeping (no game input), and offered whenever there is a current build - including a stale
      * one the card has already withdrawn, which is exactly the one a commander is most likely to want gone.
      */

@@ -29,6 +29,14 @@ public final class ForgetHuntingGroundCommand implements IntelCommand {
         return ID;
     }
 
+    /**
+     * Destroys stored state the commander cannot get back, so VEGA asks before it runs.
+     */
+    @Override
+    public boolean isDangerous() {
+        return true;
+    }
+
     @Override
     public String llmDescription() {
         return "Forget the current star system as a pirate hunting ground, so it is never recommended again, "

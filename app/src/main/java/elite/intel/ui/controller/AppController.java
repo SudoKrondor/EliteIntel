@@ -5,6 +5,7 @@ import elite.intel.ai.ApiFactory;
 import elite.intel.ai.brain.LocalLlmModelCheck;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandLoadAnnouncement;
 import elite.intel.ai.brain.vega.input.VegaSubsystemGate;
+import elite.intel.ai.brain.vega.prompt.SemanticCatalogWarmer;
 import elite.intel.ai.ears.*;
 import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.hands.KeyBindCheck;
@@ -232,6 +233,8 @@ public class AppController {
 
     @Subscribe
     void onLanguageChangedEvent(LanguageChangedEvent event) {
+        // The new language's command phrases are all unembedded; embed them before its first order.
+        SemanticCatalogWarmer.warmInBackground();
         new Thread(this::restartEarsService, "EarsRestart-Lang-Thread").start();
         // Delay so the language-change announcement can finish playing before TTS rebuilds
         new Thread(() -> {
@@ -327,6 +330,9 @@ public class AppController {
                 }
 
                 transitionTo(ServicesStateEvent.State.RUNNING);
+                // Load the embedding model and embed the command catalog now, so the commander's first order
+                // does not pay ~4 s for it before the LLM is even asked.
+                SemanticCatalogWarmer.warmInBackground();
 
                 Timer connectionCheckTimer = new Timer(2000, e -> {
                     GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.connectingToLlm")));

@@ -408,6 +408,52 @@ class ThoughtTest {
     }
 
     /**
+     * A reflex skips the model, not the commander: a destructive command it recognizes still asks first.
+     */
+    @Test
+    void aDangerousReflexAsksBeforeRunning() throws Exception {
+        dangerous = invocation -> "clear_fleet_carrier_route".equals(invocation.name());
+        Thought thought = Thought.reflex(Urgency.NORMAL, "cancel carrier route", "clear_fleet_carrier_route",
+                dependencies(new IntelActionTypeResolver(id -> IntelActionType.COMMAND)));
+        Thread worker = new Thread(thought::run, "reflex-confirmation-test");
+        worker.start();
+        waitUntil(() -> !speech.requests.isEmpty());
+
+        assertTrue(execution.requests.isEmpty(), "nothing runs before the commander answers");
+        confirmation.confirm();
+        waitUntil(() -> execution.toolNames().contains("clear_fleet_carrier_route"));
+        worker.join(2000);
+        assertFalse(worker.isAlive(), "worker did not finish; the assertions below would be vacuous");
+
+        assertEquals(List.of("clear_fleet_carrier_route"), execution.toolNames());
+    }
+
+    /**
+     * A no discards the action and VEGA says so, rather than leaving the commander wondering.
+     */
+    @Test
+    void aDeclinedDangerousActionNeverRunsAndIsAcknowledged() throws Exception {
+        reducer.tools = List.of(new LlmToolDefinition("self_destruct", "Self destruct", "", List.of()));
+        llm.results.add(ok(call("self_destruct", new JsonObject())));
+        dangerous = invocation -> "self_destruct".equals(invocation.name());
+        IntelActionTypeResolver types = new IntelActionTypeResolver(id ->
+                "self_destruct".equals(id) ? IntelActionType.COMMAND : IntelActionType.SYSTEM);
+        Thought thought = Thought.commander(Urgency.NORMAL, "self destruct", dependencies(types));
+        Thread worker = new Thread(thought::run, "decline-test");
+        worker.start();
+        waitUntil(() -> !speech.requests.isEmpty());
+
+        confirmation.cancel();
+        waitUntil(() -> speech.requests.size() == 2);
+        worker.join(2000);
+        assertFalse(worker.isAlive(), "worker did not finish; the assertions below would be vacuous");
+
+        assertTrue(execution.requests.isEmpty(), "a declined action never runs");
+        assertNotEquals(speech.requests.get(0).text(), speech.requests.get(1).text(),
+                "the question is followed by an acknowledgement that it was dropped");
+    }
+
+    /**
      * One utterance, two questions. Observed with mistral-small on "check the loadout, what is our cargo
      * capacity": both queries are the commander's, so both run and both are answered, in the order asked.
      */

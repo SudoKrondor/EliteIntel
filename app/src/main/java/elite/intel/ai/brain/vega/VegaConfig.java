@@ -11,13 +11,9 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * The single place for VEGA's settings. VEGA is the application's only command mode; the
- * confirmation code word is still a hardcoded placeholder pending its own GUI/DB-backed value.
+ * The single place for VEGA's settings. VEGA is the application's only command mode.
  */
 public final class VegaConfig {
-
-    // TODO: back the confirmation code word by GUI/DB settings.
-    private static final String CONFIRMATION_CODE_WORD = "password";
 
     // The name itself lives with the identity clause it appears in - see VegaIdentity.
     private static final String VEGA_NAME = VegaIdentity.name();
@@ -80,20 +76,6 @@ public final class VegaConfig {
             forms.add(spoken.trim());
         }
         return List.copyOf(forms);
-    }
-
-    /**
-     * The spoken code word that confirms a frozen dangerous action (§2.13).
-     */
-    public static String confirmationCodeWord() {
-        return CONFIRMATION_CODE_WORD;
-    }
-
-    /**
-     * Whether the commander input is exactly the confirmation code word (trimmed, case-insensitive).
-     */
-    public static boolean isConfirmationCodeWord(String input) {
-        return input != null && input.strip().equalsIgnoreCase(CONFIRMATION_CODE_WORD);
     }
 
     /**

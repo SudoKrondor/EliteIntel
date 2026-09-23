@@ -29,6 +29,13 @@ public final class ConfirmationCoordinator {
         pending.compareAndSet(future, null);
     }
 
+    /**
+     * Whether a dangerous action is waiting on the commander's answer right now.
+     */
+    public boolean isPending() {
+        return pending.get() != null;
+    }
+
     /** Confirms the pending wait (no-op if none is open). Called by the confirmation-bus subscriber. */
     public void confirm() {
         CompletableFuture<Boolean> future = pending.get();

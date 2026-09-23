@@ -108,8 +108,7 @@ class ThoughtDispatcherTest {
                 invocation -> false, new ConfirmationCoordinator(),
                 new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
         ReflexResolver reflex = new ReflexResolver(
-                () -> List.of(new ReflexResolver.CommandPhrase("open_nav", "navigation", true)),
-                invocation -> false);
+                () -> List.of(new ReflexResolver.CommandPhrase("open_nav", "navigation", true)));
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, UrgencyPolicy.normalOnly(), reflex);
         dispatcher.start();
         dispatcher.submitCommanderInput("navigation");
@@ -145,8 +144,7 @@ class ThoughtDispatcherTest {
                 invocation -> false, new ConfirmationCoordinator(), clarification,
                 new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
         ReflexResolver reflex = new ReflexResolver(
-                () -> List.of(new ReflexResolver.CommandPhrase("open_nav", "navigation", true)),
-                invocation -> false);
+                () -> List.of(new ReflexResolver.CommandPhrase("open_nav", "navigation", true)));
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, UrgencyPolicy.normalOnly(), reflex);
         dispatcher.start();
 
@@ -189,8 +187,7 @@ class ThoughtDispatcherTest {
                 new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
         ReflexResolver reflex = new ReflexResolver(
                 () -> List.of(new ReflexResolver.CommandPhrase(
-                        "calculate_fleet_carrier_route", "calculate fleet carrier route", true)),
-                invocation -> false);
+                        "calculate_fleet_carrier_route", "calculate fleet carrier route", true)));
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, UrgencyPolicy.normalOnly(), reflex);
         dispatcher.start();
         dispatcher.submitCommanderInput("calculate fleet carrier route");
@@ -235,7 +232,7 @@ class ThoughtDispatcherTest {
                 observedStates.add(snapshot);
                 return List.of(new ReflexResolver.CommandPhrase(
                         "display_fleet_carrier_management_panel", "open fleet carrier management panel", true));
-            }, invocation -> false);
+            });
             ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, reflex);
             dispatcher.start();
             dispatcher.submitCommanderInput("open fleet career management panel");
@@ -279,8 +276,7 @@ class ThoughtDispatcherTest {
                 invocation -> false, new ConfirmationCoordinator(),
                 new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
         ReflexResolver reflex = new ReflexResolver(
-                () -> List.of(new ReflexResolver.CommandPhrase("stop_ship", "all stop", true)),
-                invocation -> false);
+                () -> List.of(new ReflexResolver.CommandPhrase("stop_ship", "all stop", true)));
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, reflex, s -> s); // identity normalizer
         dispatcher.start();
         String input = VegaConfig.vegaName() + ", all stop";
@@ -322,8 +318,7 @@ class ThoughtDispatcherTest {
                     invocation -> false, new ConfirmationCoordinator(),
                     new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
             ReflexResolver reflex = new ReflexResolver(
-                    () -> List.of(new ReflexResolver.CommandPhrase("stop_ship", "all stop", true)),
-                    invocation -> false);
+                    () -> List.of(new ReflexResolver.CommandPhrase("stop_ship", "all stop", true)));
             ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, reflex, s -> s); // identity normalizer
             dispatcher.start();
             dispatcher.submitCommanderInput("Вега, all stop"); // Cyrillic vocative + the reflex phrase
@@ -344,7 +339,7 @@ class ThoughtDispatcherTest {
         ReflexResolver noReflex = new ReflexResolver(() -> {
             exactAttempts.incrementAndGet();
             return List.of();
-        }, invocation -> false);
+        });
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm), noReflex, s -> s);
         dispatcher.start();
         dispatcher.submitCommanderInput("how is the ship");
@@ -360,7 +355,7 @@ class ThoughtDispatcherTest {
         // The normalizer corrects an acoustic STT error. The reflex matches nothing, so the turn takes the LLM
         // path and settles with speak; the committed pair must retain the same canonical wording the LLM saw.
         CapturingLlm llm = new CapturingLlm();
-        ReflexResolver noReflex = new ReflexResolver(() -> List.of(), invocation -> false);
+        ReflexResolver noReflex = new ReflexResolver(() -> List.of());
         Function<String, String> normalizer = s -> "open fleet career management panel".equals(s)
                 ? "open fleet carrier management panel" : s;
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm), noReflex, normalizer);
@@ -576,7 +571,7 @@ class ThoughtDispatcherTest {
                 (categories, currentInput) -> List.of(), new VegaState(),
                 invocation -> false, new ConfirmationCoordinator(), actionTypes);
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(
-                dependencies, UrgencyPolicy.normalOnly(), new ReflexResolver(() -> List.of(), invocation -> false),
+                dependencies, UrgencyPolicy.normalOnly(), new ReflexResolver(() -> List.of()),
                 Function.identity(), 50, 10);
         dispatcher.start();
 
@@ -636,7 +631,7 @@ class ThoughtDispatcherTest {
                 (categories, currentInput) -> List.of(), state,
                 invocation -> false, new ConfirmationCoordinator(), actionTypes);
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(
-                dependencies, UrgencyPolicy.normalOnly(), new ReflexResolver(() -> List.of(), invocation -> false));
+                dependencies, UrgencyPolicy.normalOnly(), new ReflexResolver(() -> List.of()));
         dispatcher.start();
 
         dispatcher.submitCommanderInput("slow one");
