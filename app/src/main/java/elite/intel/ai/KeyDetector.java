@@ -40,7 +40,10 @@ public class KeyDetector {
     private static final Map<ProviderEnum, Pattern> PATTERNS = Map.ofEntries(
             Map.entry(ProviderEnum.GROK, Pattern.compile("^xai-[a-zA-Z0-9_-]{40,100}$")),
             Map.entry(ProviderEnum.DEEPSEEK, Pattern.compile("^sk-[a-f0-9]{32}$")),
-            Map.entry(ProviderEnum.MISTRAL, Pattern.compile("^[a-zA-Z0-9]{32}$")),
+            // Both Mistral key shapes: the legacy 32 alphanumerics, which still authenticate, and
+            // the prefixed "mstrl_" key issued since. The prefix is unique to Mistral, so the new
+            // branch cannot collide with any other provider's pattern.
+            Map.entry(ProviderEnum.MISTRAL, Pattern.compile("^(?:[a-zA-Z0-9]{32}|mstrl_[a-zA-Z0-9_-]{20,100})$")),
             // Every OpenAI key shape, not the one length a key happened to have when this
             // was written: a legacy sk- key is 48 characters and a modern prefixed one has
             // no fixed length at all, so pinning 161 rejected both. The prefixed branch and
