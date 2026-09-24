@@ -1,5 +1,6 @@
 package elite.intel.session;
 
+import elite.intel.util.OsDetector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,6 +38,22 @@ public final class DirectorySetting {
     private static final Pattern QUOTED = Pattern.compile("\"([^\"]+)\"");
 
     private DirectorySetting() {
+    }
+
+    /**
+     * This platform's usual journal folder, used when nothing usable is stored.
+     * <p>
+     * Lives here rather than on {@code PlayerSession} because the database reads it while it is still starting:
+     * the journals name the commander whose database file to open, so it must be reachable without touching the
+     * session, which itself needs the database.
+     */
+    public static Path defaultJournalPath() {
+        if (OsDetector.getOs() == OsDetector.OS.WINDOWS) {
+            return Paths.get(System.getProperty("user.home"), "Saved Games", "Frontier Developments", "Elite Dangerous");
+        } else if (OsDetector.getOs() == OsDetector.OS.LINUX) {
+            return Paths.get(System.getProperty("user.home"), ".var", "app", "elite.intel.app", "ed-journal");
+        }
+        return Paths.get(System.getProperty("user.home"), "Library", "Application Support", "Frontier Developments", "Elite Dangerous");
     }
 
     /**

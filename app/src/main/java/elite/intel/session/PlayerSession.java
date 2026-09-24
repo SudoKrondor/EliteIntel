@@ -777,12 +777,7 @@ public class PlayerSession {
     }
 
     private static Path defaultJournalPath() {
-        if (OsDetector.getOs() == OsDetector.OS.WINDOWS) {
-            return Paths.get(System.getProperty("user.home"), "Saved Games", "Frontier Developments", "Elite Dangerous");
-        } else if (OsDetector.getOs() == OsDetector.OS.LINUX) {
-            return Paths.get(System.getProperty("user.home"), ".var", "app", "elite.intel.app", "ed-journal");
-        }
-        return Paths.get(System.getProperty("user.home"), "Library", "Application Support", "Frontier Developments", "Elite Dangerous");
+        return DirectorySetting.defaultJournalPath();
     }
 
     /**

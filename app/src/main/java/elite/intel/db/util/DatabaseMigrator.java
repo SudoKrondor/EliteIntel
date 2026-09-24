@@ -26,9 +26,42 @@ public class DatabaseMigrator {
      * Leading run of lines that carry no SQL: {@code --} comments and blank lines, in any mix.
      */
     private static final Pattern LEADING_NON_SQL_LINES = Pattern.compile("^(?:[ \\t]*--[^\\n]*\\n|[ \\t]*\\n)+");
-    private static final String MIGRATIONS_PATH = "/db-migration";
 
+    /**
+     * The two migration trees, one per kind of database file.
+     * <p>
+     * WHY two: the commander's own state lives in a file of its own ({@code cmdr_<FID>.db}), attached next to the
+     * shared file, so no query can ever read one commander's rows as another's. Each tree is applied to its own file
+     * opened as {@code main}, because an unqualified {@code CREATE TABLE} always lands in {@code main}: a commander
+     * migration run through the attachment would build its tables in the shared file instead.
+     * <p>
+     * The shared tree is the top level of {@code db-migration/} only. Every file written before the split lives
+     * there under the name it ran with, and is recorded in {@code schema_migration} by that name, so none of them
+     * could be moved without running again.
+     */
+    public enum Tree {
+        SHARED("db-migration"),
+        COMMANDER("db-migration/commander");
+
+        private final String path;
+
+        Tree(String path) {
+            this.path = path;
+        }
+
+        public String path() {
+            return path;
+        }
+    }
+
+    /**
+     * Applies the shared tree. Kept for callers that predate the commander tree.
+     */
     public static void migrate(Handle handle) throws Exception {
+        migrate(handle, Tree.SHARED);
+    }
+
+    public static void migrate(Handle handle, Tree tree) throws Exception {
         handle.execute("PRAGMA journal_mode = WAL;");
 
         handle.execute("""
@@ -38,7 +71,7 @@ public class DatabaseMigrator {
                 );
                 """);
 
-        Set<String> allFiles = findMigrationFiles();
+        Set<String> allFiles = findMigrationFiles(tree);
 
         var applied = handle.createQuery("SELECT version FROM schema_migration")
                 .mapTo(String.class)
@@ -47,10 +80,10 @@ public class DatabaseMigrator {
         for (String file : allFiles) {
             if (applied.contains(file)) continue;
 
-            log.info("Applying migration: {}", file);
+            log.info("Applying {} migration: {}", tree, file);
 
             String sql;
-            try (var in = DatabaseMigrator.class.getResourceAsStream(MIGRATIONS_PATH + "/" + file)) {
+            try (var in = DatabaseMigrator.class.getResourceAsStream("/" + tree.path() + "/" + file)) {
                 if (in == null) throw new IllegalStateException("Migration not found: " + file);
                 sql = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
                         .replace("\r\n", "\n");
@@ -77,7 +110,7 @@ public class DatabaseMigrator {
             handle.execute("INSERT INTO schema_migration (version) VALUES (?)", file);
         }
 
-        log.info("Migrations complete. Applied: {}", allFiles.size());
+        log.info("{} migrations complete. Applied: {}", tree, allFiles.size());
     }
 
 
@@ -151,10 +184,16 @@ public class DatabaseMigrator {
         return oneLine.length() <= 80 ? oneLine : oneLine.substring(0, 80);
     }
 
-    private static Set<String> findMigrationFiles() throws IOException, URISyntaxException {
+    /**
+     * The migration file names of one tree, in the order they apply.
+     * <p>
+     * Reads only the tree's own directory, never below it: the shared tree's directory holds the commander tree as
+     * a subdirectory, and walking into it would apply commander migrations to the shared file.
+     */
+    static Set<String> findMigrationFiles(Tree tree) throws IOException, URISyntaxException {
         Set<String> files = new TreeSet<>();
         ClassLoader cl = DatabaseMigrator.class.getClassLoader();
-        String path = "db-migration";
+        String path = tree.path();
 
         Enumeration<URL> urls = cl.getResources(path);
         while (urls.hasMoreElements()) {
@@ -169,7 +208,7 @@ public class DatabaseMigrator {
 
                 try (FileSystem fs = FileSystems.newFileSystem(jarUri, Collections.emptyMap())) {
                     Path root = fs.getPath("/" + path);
-                    try (var walk = Files.walk(root)) {
+                    try (var walk = Files.walk(root, 1)) {
                         walk.filter(Files::isRegularFile)
                                 .map(p -> p.getFileName().toString())
                                 .filter(n -> MIGRATION_PATTERN.matcher(n).matches())
@@ -178,7 +217,7 @@ public class DatabaseMigrator {
                 }
             } else if ("file".equals(protocol)) {
                 Path dir = Paths.get(url.toURI());
-                try (var walk = Files.walk(dir)) {
+                try (var walk = Files.walk(dir, 1)) {
                     walk.filter(Files::isRegularFile)
                             .map(p -> p.getFileName().toString())
                             .filter(n -> MIGRATION_PATTERN.matcher(n).matches())
@@ -188,7 +227,7 @@ public class DatabaseMigrator {
         }
 
         if (files.isEmpty()) {
-            throw new IllegalStateException("No migration files found in classpath: db-migration");
+            throw new IllegalStateException("No migration files found in classpath: " + path);
         }
         return files;
     }

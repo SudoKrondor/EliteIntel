@@ -1,8 +1,10 @@
 package elite.intel.junit.db.managers;
 
 import elite.intel.db.dao.ShipSettingsDao;
+import elite.intel.db.managers.ShipManager;
 import elite.intel.db.managers.ShipSettingsManager;
 import elite.intel.gameapi.SurfaceVehicle;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +23,16 @@ import static org.junit.jupiter.api.Assertions.*;
 class ShipSettingsVehicleBaysTest {
 
     private static final int SHIP_ID = 771_001;
+
+    /**
+     * Settings belong to a ship: ship_settings has a foreign key onto ship, so the ships must exist first.
+     */
+    @BeforeAll
+    static void registerShips() {
+        for (int id = SHIP_ID; id <= SHIP_ID + 3; id++) {
+            ShipManager.getInstance().save(id, "Test Ship " + id, 0, "sidewinder", "EMMA", "Test");
+        }
+    }
 
     @Test
     @DisplayName("a ship that has never been configured has four empty bays")
