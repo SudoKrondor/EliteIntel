@@ -34,8 +34,84 @@ BindForge manages four related but distinct file domains, described fully (with 
 |---|---|---|---|
 | Bind Domain | `.binds` | User configuration folder — one single shared location regardless of storefront | High — a lost or corrupted `.binds` file affects actual gameplay controls |
 | Device Identity Domain | `DeviceMappings.xml` | Inside the game **installation** folder — genuinely duplicated per storefront install | **High — reclassified 2026-09-08, see below.** Previously read: cosmetic only — affects button-label display, not gameplay |
-| Button Map Domain | `.buttonMap` (one per named device) | Inside the game installation folder, alongside `DeviceMappings.xml` | Cosmetic only |
-| Active Preset Domain | `StartPreset.#.start` | Same user configuration folder as `.binds` | Low — governs which `.binds` file is loaded per binding section |
+| Button Map Domain | `.buttonMap` (one per named device) | Inside the game installation folder, alongside `DeviceMappings.xml` | Labels only — **but protected like the others**, see below |
+| Active Preset Domain | `StartPreset.#.start` | Same user configuration folder as `.binds` | Governs which `.binds` file is loaded per binding section — **protected like the others**, see below |
+
+### Protection is uniform — settled 2026-09-21
+
+**Every managed file gets the same protection, whatever its loss impact.** The column above says what losing
+a file *does*; it does not say how carefully the file is guarded. Alan:
+
+> *"before a user/player edits devicemappings.xml and creates buttonmaps those 2 files mean nothing. the moment
+> they do edit/create those losing them breaks the binds file. […] Once BindForge is used, to create even just an
+> alias for a controller, just one, everything is important and needs to be protected at all cost. […] we should
+> just assume that if a player uses Elite Intel, all files are now needing protection. thats the simplest path."*
+
+**Both of the earlier readings were true, at different moments.** A factory `DeviceMappings.xml` and no
+`.buttonMap` files carry nothing of the commander's, and losing them costs nothing. The moment a commander names
+one controller, the files hold their work, and a reset to factory undoes it. Tracking which state each
+installation is in would be a way to be wrong about it. **So BindForge assumes the second state from the first
+run**: backup, restore, destructive-change detection and warnings treat all four domains alike, and no screen
+ranks one as safer to lose.
+
+### Every install gets the same files — settled 2026-09-23
+
+**BindForge keeps one configuration and applies it everywhere.** `.binds` and `StartPreset.#.start` are
+already shared by every install. `DeviceMappings.xml` and the `.buttonMap` files are duplicated per install,
+and BindForge keeps those copies **identical** — the same aliases and the same button and axis labels in every
+installation it knows about. There is no per-install configuration, no per-device switch, and no separate
+setup per storefront or per account.
+
+**"Mirroring" now means exactly that** (Alan, 2026-09-23). It used to name a per-device choice about which
+installations shared a definition; it now means every install matches the master, always.
+
+**Why, and it is measured rather than argued.** The shared `.binds` names devices by entries that live in a
+per-install file, so an install whose `DeviceMappings.xml` lacks them
+[rejects the whole preset and falls back to a factory one](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
+Divergence between installs is not a configuration a commander chose. It is a latent outage waiting for
+whichever install they launch next, and the only symptom is a log file nobody opens.
+
+**The master copy lives in Elite-Intel's own folder and is pushed out** — Krondor,
+[multi-install-proposal.md](../../multi-install-proposal.md) §2. No install is primary, because any file
+inside a game folder can be wiped by a patch, and a wipe looks exactly like the newest edit.
+
+**Three things this still owes**, none of them a per-install configuration:
+
+1. **One adoption choice, once.** When a user's installs already disagree — the common case for anyone who
+   customised one and not the others — something has to become the master. That question is asked once, not
+   per device and not per edit.
+2. **Honest reporting when a push cannot land.** An install on a disconnected drive, or one that refuses the
+   write, must be named: *"updated 2 of 3."* Silent partial success is the drift this model exists to remove.
+3. **A drift check after game updates.** A patch resets these files per install, which is the incident
+   BindForge was built for, so the check that finds divergence is the same one that offers to repair it.
+
+#### Offered, never forced — settled 2026-09-23
+
+**Standardisation is the target state, not something BindForge imposes.** Alan: *"we build BindForge to help
+when asked. not force a situation on the user… all we need to do at first is be the support mechanism."*
+
+So the default posture is **back up, detect, report — and write nothing to a game file until asked**:
+
+- **Every launch backs up every install's input configuration**, whether or not the user ever opens BindForge.
+  A commander who only ever edits in the game still gets protected; that is most of the value on its own.
+- **Startup reports what it found**, alongside the lines Elite-Intel already speaks about binding conflicts
+  and custom commands. On first run: *"BindForge has backed up all your &lt;install names&gt; input configuration
+  files"*, then *"you will need to make some decisions about your configuration setup, see BindForge for
+  details."*
+- **The decisions live in Alias Designer**, which shows the installs whose `DeviceMappings.xml` and
+  `.buttonMap` files disagree and offers the ways out — merge them, overwrite one install from another, or
+  pick one as the master. The user chooses; BindForge does not.
+- **Until they choose, nothing is pushed.** No master is imposed, no install is edited.
+
+**Why not force it, when divergence is a latent outage?** Because the app already behaves this way and it
+works: Elite-Intel has warned about binding conflicts for months without requiring anyone to act, and a
+commander can run for a long time with one harmless conflict. The same is true here — a divergent install only
+bites when that install is launched. Forcing a choice on a user who has not asked for one is how a backup tool
+turns into an obstacle, and the answer to *"what if they never edit anything in BindForge?"* has to be
+*"then it quietly protects them anyway."*
+
+*(This matches [First-Time Startup](#first-time-startup), which offers to fix a stock preset, accepts "no",
+and re-offers later.)*
 
 The Active Preset file has four lines, one per binding section, in a fixed order: General, Ship, SRV, On Foot. All four normally point at the same `.binds` filename (the common "single preset" case), but each line is independently settable — a valid, if unusual, "split preset" configuration. See [Preset Editor](preset-editor.md).
 
@@ -53,7 +129,9 @@ It was filed as cosmetic because its visible effect is button labels. That is wh
 **And hardware IDs do change.** See
 [VID/PID is not stable](alias-designer.md#vidpid-is-not-a-stable-identity). One commander's two VIRPIL devices carried six different PIDs across three snapshots between 2024-08 and 2026-09, while a Razer device and two Frontier-recognised devices in the same files never moved.
 
-So the loss impact is **high, not cosmetic**: a `DeviceMappings.xml` lost to a game update takes the indirection with it, and the bindings that depended on it revert to depending on an ID the vendor can change. `.buttonMap` remains genuinely cosmetic — it really is only labels.
+So the loss impact is **high, not cosmetic**: a `DeviceMappings.xml` lost to a game update takes the indirection with it, and the bindings that depended on it revert to depending on an ID the vendor can change. `.buttonMap` holds only labels — but under the [uniform protection rule](#protection-is-uniform--settled-2026-09-21) it is guarded exactly as carefully, because once a commander has written labels, losing them is losing their work.
+
+**Measured 2026-09-22, and it is worse than "those bindings stop working."** On a machine with two installs sharing one bindings folder, launching the install whose `DeviceMappings.xml` lacked the commander's two entries produced 141 `Failed to find GUID for device` lines and **the game fell back to the stock KEYBOARD & MOUSE preset in all four sections** — losing the keyboard and mouse bindings too, which referenced no device entry at all. The other install, reading the same `StartPreset` and the same `.binds`, loaded correctly. Nothing was rewritten on disk. Full method and numbers: [what happens when a `Device=` name has no entry](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
 
 A confirmed real-world incident — a game update that overwrote a user's `DeviceMappings.xml` — is the direct reason Alias Designer and File Manager were prioritised ahead of the rest of the BindForge suite. Game updates can overwrite or erase these files, but this is confirmed **not** universal or guaranteed — it happens on some updates for some users, not reliably reproducibly — so BindForge must always validate presence/correctness rather than assume either outcome.
 

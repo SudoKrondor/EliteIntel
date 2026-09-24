@@ -24,6 +24,12 @@ A checklist: "Everything" (checked by default, forcing all four domain checkboxe
 
 Triggered by Elite-Intel's own startup — deliberately, not tied to the game's own launch, so a backup isn't missed if the user launches the game first. Runs in the background without blocking startup.
 
+**It covers every detected install, and says so** (2026-09-23). The device files are per install, so a backup
+that silently covered one of three would be worth less than it appears. Startup reports what it protected —
+*"BindForge has backed up all your &lt;install names&gt; input configuration files"* — which is also how a user
+who never opens BindForge learns that their second install exists. See
+[Offered, never forced](overview.md#offered-never-forced--settled-2026-09-23).
+
 ### Retention
 
 Age-based: "keep backups for N days," default 30.
@@ -250,9 +256,10 @@ This screen used to list every detected installation with a Mirror checkbox and 
 Installations" button. **It is gone**, and the capability moved to
 [Alias Designer](alias-designer.md#per-installation-editing).
 
-The reason is that mirroring is a property *of a device*, not of a screen. A checkbox list forced one decision
-across every device at once; the per-device installation tabs let one controller be shared across installations
-while another stays local to one. That was impossible to express here.
+~~The reason is that mirroring is a property *of a device*, not of a screen.~~ **Superseded 2026-09-23:**
+mirroring is neither a screen nor a per-device property — it is the model. Every install holds the same device
+files, so there is nothing to choose on any screen. See
+[Every install gets the same files](overview.md#every-install-gets-the-same-files--settled-2026-09-23).
 
 Installation *management* — adding, relocating or removing an installation when detection gets it wrong —
 **now has a home: [Game Install Locations](#game-install-locations), below.** Alias Designer continues to
@@ -286,8 +293,12 @@ folder at all. **BindForge targets `elite-dangerous-odyssey-64` only** (Krondor'
 an Odyssey application), so the product is a constant rather than part of the identity. Recorded because
 the folder is visibly there, and because it is why the shipped reference file is Odyssey's specifically.
 
-Presenting these as one flat list of "locations" would imply the four domains live in comparable places and
-carry comparable risk. They do not: losing the first is a gameplay problem, losing the second is cosmetic.
+Presenting these as one flat list of "locations" would imply the four domains live in comparable places. They
+do not: one folder is shared, the other is one per storefront, and that difference is what the two sections
+show. ~~They do not carry comparable risk: losing the first is a gameplay problem, losing the second is
+cosmetic.~~ *Corrected 2026-09-21:* the two sections differ in **where** the files live, not in **how much they
+matter** — every managed file is protected alike, per
+[Protection is uniform](overview.md#protection-is-uniform--settled-2026-09-21).
 
 ### Actions
 
@@ -370,7 +381,7 @@ BindForge's settings tab (see [Settings Storage](../../01-host-integration/elite
 | Edit History retention | 10 (range 1–30) | How many historical versions [Edit History](#edit-history) keeps per file before dropping the oldest |
 
 **Where they are stored — proposed 2026-09-20:** a `bindforge_settings` table of their own, one column each;
-see [Settings Storage](../../01-host-integration/elite-intel-platform-map.md#proposed-a-bindforge_settings-table--for-krondor-to-accept-or-change).
+see [Settings Storage](../../01-host-integration/elite-intel-platform-map.md#a-bindforge_settings-table--approved).
 Two open points from that proposal belong here: whether Player Backups' [age limit](#retention) is a fourth
 setting or fixed at 30 days, and that *"BindForge's settings tab"* means a panel on Elite-Intel's Settings
 screen — not the Bind Editor's [Settings mode](bind-editor.md#settings--settled-2026-09-19), which edits the
@@ -400,7 +411,7 @@ time Elite-Intel starts, on a machine where the commander never asked for a sing
 first, the other has to land with it.
 
 **Edit History needs the first V1.2 migration.** The newest applied migration is `01050`, and the
-**`011XX` block is entirely free** — so Edit History's table is a new `011XX` file, and [an applied
+**The `02XXX` block is entirely free** — v1.2's block, corrected 2026-09-22 from `011XX`, which sat inside v1.1's - so Edit History's table is a new `02XXX` file, and [an applied
 migration is never edited](../../../CLAUDE.md).
 
 ## Export / Import — Considered, Then Cut

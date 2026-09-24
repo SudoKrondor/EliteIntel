@@ -1,6 +1,6 @@
 # Elite Dangerous — DeviceMappings.xml & .buttonMap Format Reference
 
-**Scope:** The two cosmetic, per-device support files that sit alongside `.binds`: `DeviceMappings.xml` (the device VID/PID registry) and `*.buttonMap` files (human-readable button/axis labels). Neither file affects gameplay — both exist purely to label devices/inputs in the game's own Controls UI (and, by extension, in any external tool that wants to show equivalent labels). See `EliteDangerous-BindsFileFormat.md` §4 for how the `Device=` attribute values these files support relate back to the `.binds` file itself.
+**Scope:** The two per-device support files that sit alongside `.binds`: `DeviceMappings.xml` (the device VID/PID registry) and `*.buttonMap` files (human-readable button/axis labels). ~~Neither file affects gameplay — both exist purely to label devices/inputs.~~ *Corrected 2026-09-21:* `.buttonMap` is labels only, but `DeviceMappings.xml` is not — `.binds` names a device by its entry once one exists, and without the file the game loads no bindings at all ([Why `DeviceMappings.xml` is not cosmetic](../overview.md#why-devicemappingsxml-is-not-cosmetic--reclassified-2026-09-08)). BindForge protects both exactly as it protects `.binds` ([Protection is uniform](../overview.md#protection-is-uniform--settled-2026-09-21)). See `EliteDangerous-BindsFileFormat.md` §4 for how the `Device=` attribute values these files support relate back to the `.binds` file itself.
 
 **Confidence:** These two formats are documented more thinly in the source material than `.binds` itself — several details below are inferred from a small number of examples rather than exhaustively verified against the full range of real device configurations. Gaps are called out explicitly in §3 rather than filled in with invented detail.
 
@@ -39,6 +39,39 @@ BindFileDeviceID = VID + PID   (8 hex characters, concatenated)
 Example: `VID=3344`, `PID=0259` → `.binds` file `Device="33440259"`.
 
 See `EliteDangerous-BindsFileFormat.md` §4.2 for the full discussion of this derivation, its implications (a device's `.binds` references going stale after a VID/PID change via vendor configuration software), and the caveat that exact formatting details (byte order, hex case, zero-padding) are not independently confirmed beyond this one matching example.
+
+### 1.2b What happens when a `Device=` name has no entry — measured 2026-09-22
+
+**The whole preset is rejected, not just that device's bindings.** Established by direct test on a machine
+holding two installs that share one `Options\Bindings` folder, so the only variable was the per-install
+`DeviceMappings.xml`.
+
+| | Steam install | Epic install |
+|---|---|---|
+| Entries for the commander's two sticks (`RVWAP`, `LVWAP`) | present | **absent** |
+| Shared `StartPreset.4.start` | names the commander's preset | the same file |
+| Shared `.binds` (144 bindings naming those sticks) | the same file | the same file |
+| Result on the Controls screen | preset loads; all four sections correct | **all four sections fall back to `KEYBOARD & MOUSE`** |
+
+The failing install wrote `BindingLoadingErrors.log` beside the `.binds` files, holding one
+`Failed to find GUID for device: RVWAP` line per unresolvable binding — **141 across the commander's two
+preset files**, roughly one per `Device=` reference, in file order.
+
+**Three facts worth separating:**
+
+1. **The loss is total, not partial.** The keyboard and mouse bindings in that preset — which reference no
+   device entry at all — went with it. A commander sees a factory preset, not a preset with gaps.
+2. **Loading changes nothing on disk.** Both `.binds` files and `StartPreset.#.start` kept their previous
+   timestamps through the failing launch, and all 144 `Device="..."` references survived intact. The game
+   degrades quietly rather than repairing or rewriting. *(The save path — opening Controls and committing a
+   change — was not tested and is a separate question.)*
+3. **The game validates every `.binds` in the folder**, not just the active preset: the log carried a block
+   for each of the two preset files present.
+
+**Why this matters beyond the device files.** `StartPreset.#.start` and `.binds` are shared by every install
+on the machine, and `DeviceMappings.xml` is not. So a file every install reads depends on a file each install
+owns privately — which is why a tool cannot treat "which install" as a detail. See
+[Protection is uniform](../overview.md#protection-is-uniform--settled-2026-09-21).
 
 ### 1.3 Additional per-device metadata (partially documented)
 

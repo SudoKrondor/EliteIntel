@@ -48,7 +48,7 @@ Four top-level sections, in priority order — backup and restore first, because
 loss matters more than editing it.
 
 - [Overview](02-features/bindforge/overview.md) — managed file domains, live file sync, data integrity
-- [Alias Designer](02-features/bindforge/alias-designer.md) — device naming, button/axis labels, and per-installation mirroring
+- [Alias Designer](02-features/bindforge/alias-designer.md) — device naming and button/axis labels, kept identical across every install
 - [Bind Editor](02-features/bindforge/bind-editor.md) — Game Mode, Anomalies, Settings and shared conflict detection in V1.2; Action Groups, Input Mode, Control Types and Controller Mode [deferred](00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16)
 - [Preset Editor](02-features/bindforge/preset-editor.md) — which `.binds` file loads per binding section
 - [File Manager](02-features/bindforge/file-manager.md) — backup and restore of all four file domains

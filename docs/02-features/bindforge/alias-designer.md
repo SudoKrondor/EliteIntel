@@ -84,6 +84,37 @@ Like SAVE and CLEAR, it **follows MIRROR**: resetting one mirrored installation 
 | [Onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13) | asked for a name | never asked |
 | What APPLY writes | the entry and its `.buttonMap` | the `.buttonMap` only |
 
+## Divergence between installs — one list, ranked by consequence
+
+**Added 2026-09-23.** Every install holds the same device files
+([Every install gets the same files](overview.md#every-install-gets-the-same-files--settled-2026-09-23)), so
+anywhere they disagree is something to resolve. Alias Designer is where that is shown and where the user
+decides — it is [offered, never forced](overview.md#offered-never-forced--settled-2026-09-23).
+
+**One list, not three.** Every kind of disagreement appears together, because splitting them would mean
+BindForge deciding which kinds deserve the user's attention. What ranks them instead is **a severity, shown
+as the row's colour**:
+
+| | Meaning | Examples |
+|---|---|---|
+| **Green** | consistent — every install says the same thing | the device matches the master everywhere |
+| **Yellow** | wrong, but nothing breaks | an orphan `.buttonMap` with no entry behind it; labels that differ between installs; an entry for a device no binding references |
+| **Red** | will stop bindings working | a device named in `.binds` has no entry in some install; the same name pointing at different hardware in two installs |
+
+**Severity is judged against the shared `.binds`, not against the device files alone.** That is what separates
+red from yellow: a missing entry only costs the commander something when a binding actually names that device.
+The [measured case](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22)
+is red by that rule — 144 bindings naming two sticks one install had never heard of, and the whole preset
+rejected — while the orphan `LVWAP.buttonMap` sitting beside it is yellow, because nothing resolves through it.
+
+**Colour is the row's text colour, not a fill or a pill** — the HUD canon's rule for state, and the same
+decision taken for the sync badge. See
+[the UI component map](ui-component-map.md#2-statusbadge-draws-a-pill).
+
+**The ways out**, offered per row: merge the installs' entries, overwrite one install from another, or take
+one install as the master. Which of these is offered depends on the row's kind, and none of them runs until
+the user picks one.
+
 ## VID/PID Is Not a Stable Identity
 
 **Confirmed 2026-09-08 from five `.binds` specimens spanning 2024-08 to 2026-09.** This document and
@@ -307,8 +338,9 @@ Three gaps were found while working the design through. **Two were settled by on
 - **What reaches the game's file.** Registration only touches the draft, so nothing lands in a real install
   until **Apply to Game Installs** runs. **Settled 2026-09-06: applying pushes only what changed**, never the
   whole set. Pushing everything accumulates entries for hardware plugged in once, years ago, and rewrites
-  rows no one touched; since both files are purely cosmetic, an entry for a device the player never named
-  carries no benefit. A narrow write is also a smaller thing to get wrong, and a smaller diff to show the
+  rows no one touched, and an entry for a device the player never named carries no benefit — no binding
+  depends on it. *(This used to say "since both files are purely cosmetic"; the decision stands, but that
+  reason did not — see [Protection is uniform](overview.md#protection-is-uniform--settled-2026-09-21).)* A narrow write is also a smaller thing to get wrong, and a smaller diff to show the
   player when a merge has to be explained.
 
 ## Onboarding — every controller gets a name and a `.buttonMap` — settled 2026-09-13

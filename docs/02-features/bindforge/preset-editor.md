@@ -71,6 +71,9 @@ A live, informational banner (updates as the dropdowns change, not only on save)
 - **IN SYNC** (green) — the draft matches the live Active Preset file.
 - **DRAFT** (amber) — the draft differs from the live file, whether or not those edits have been saved.
 
+**Shown as coloured text, not a pill** (settled 2026-09-21) — the state word in its colour, the way the AI tab's
+Quick Status panel shows KEYMAP — IN SYNC. See [the UI component map](ui-component-map.md#2-statusbadge-draws-a-pill).
+
 Preset Editor participates in [Live File Synchronization](overview.md#live-file-synchronization)'s [Destructive Change Detection](overview.md#destructive-change-detection): if the live Active Preset file changes externally to something that looks like data loss (for example, all four lines reset to a single default preset name that doesn't match what the user had configured), Preset Editor does not just quietly update its dropdowns to match. It flags the change as a suspected destructive reset rather than legitimate truth, and offers to restore the prior configuration, the same as every other managed domain.
 
 ## Discard

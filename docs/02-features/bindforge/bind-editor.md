@@ -715,7 +715,7 @@ written up above; this list keeps the record of what was asked and what the answ
 - ~~**Completely unbound bindings — shown in their group, or hidden?**~~ **Settled: shown**, with an empty
   value.
 - **Storage schema for user groups — still open.** Falls out during implementation. A new table means a new
-  `011XX` migration, and an applied migration is never edited. What has to persist is now settled: group
+  `02XXX` migration (v1.2's block, corrected 2026-09-22), and an applied migration is never edited. What has to persist is now settled: group
   name, ordered membership, and whether the group is a shipped default or the commander's own.
 ## Input Mode
 

@@ -62,9 +62,10 @@ listed so that older notes and mockups can be read correctly:
   data folder competing with the live game file for the role of source of truth. It is an artefact of the
   existing Elite-Intel bind editor's design generation; see
   [Conflict 3.6](conflicts-and-open-questions.md#36-working-copy-model--resolved-neither-original-option--a-third-sharper-model).
-- **Mirror** — one-way propagation of device configuration from BindForge's draft out to a live game
-  installation (deliberately not called "sync," since it is one-directional). Never applied automatically
-  on first import — see [First Run](../02-features/bindforge/alias-designer.md#first-run-and-hot-plug).
+- **Mirror** — keeping every installation's device files identical to BindForge's master copy.
+  **Redefined 2026-09-23:** it used to name a per-device switch choosing which installations shared one
+  definition. There is no switch now — all installs match, always. See
+  [Every install gets the same files](../02-features/bindforge/overview.md#every-install-gets-the-same-files--settled-2026-09-23).
 - **Alias Designer / Bind Editor / Preset Editor / File Manager** — BindForge's four top-level sections. See
   [BindForge Overview](../02-features/bindforge/overview.md#top-level-structure).
 - **Game Mode / Action Groups / Control Types / Controller Mode / Input Mode / Anomalies / Settings** — the

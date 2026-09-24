@@ -238,6 +238,17 @@ two versions of one name in the folder, open the game's Controls screen, and see
 which file a save writes back to.
 → [Preset Editor — what a line actually holds](../02-features/bindforge/preset-editor.md#what-a-line-actually-holds--the-preset-name-not-the-file-name)
 
+**16. ~~What does the game do with a `Device=` name its `DeviceMappings.xml` does not define?~~ ANSWERED
+2026-09-22 by direct test.** It logs one `Failed to find GUID for device: <name>` per reference into
+`BindingLoadingErrors.log` and **rejects the entire preset**, falling back to `KEYBOARD & MOUSE` in all four
+sections — keyboard and mouse bindings included. Loading writes nothing: both `.binds` files and
+`StartPreset.#.start` kept their timestamps, and every `Device="..."` reference survived. The game also
+validates *every* `.binds` in the folder, not just the active preset. Two installs sharing one bindings folder
+gave opposite results from this one difference. Full method:
+[§1.2b of the device-files reference](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
+**Still open:** the save path — whether committing a change on the Controls screen in that state writes the
+fallback into the shared `StartPreset.#.start`, which would carry the loss to every install on the machine.
+
 ## Core Platform
 
 **8. Linux/Proton path resolution — Krondor's, not a BindForge testing item.** *Reassigned 2026-09-06.* Not a one-time check but ongoing, given how much Linux path resolution varies by distro and by how an individual user has their Steam library configured — which is exactly why it is owned by the person running it. BindForge builds and tests Windows storefront detection; Krondor makes the edits his platform needs. Listed here so the dependency stays visible, not as work waiting on Alan. The journal path is confirmed against independent precedent (EDMarketConnector); the bindings-folder path is inferred from the same structure but not independently confirmed.

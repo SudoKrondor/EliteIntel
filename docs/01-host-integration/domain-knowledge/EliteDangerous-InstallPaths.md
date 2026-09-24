@@ -104,6 +104,14 @@ Client.log:            C:\Program Files (x86)\Frontier\EDLaunch\logs\
 Update.log:            C:\Program Files (x86)\Frontier\EDLaunch\logs\
 ```
 
+**Several commanders on one Frontier install does not mean several installs.** The launcher handles one
+account at a time, and the community workaround is to keep **several copies of the launcher**, each logged in
+to a different account, started from its own shortcut — one game installation, N launchers. *CMDR Reise Lang,
+relayed 2026-09-23: "I only use the Frontier launcher and have 3 cmdrs… The method I use allows me to have
+three different launchers and I run the one I want."* So install count and commander count are independent,
+which is what [the model](../../multi-install-proposal.md) already assumes: the commander comes from the
+journal, never from the install.
+
 **This is the underscore path**, and it is a real installation type rather than a mistake — see the
 correction in [§1](#1-the-two-different-file-families-have-different-multiplicity-rules). Note the two
 spellings sitting side by side in the block above: `Frontier Developments` with a space is the *user

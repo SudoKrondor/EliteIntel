@@ -56,7 +56,7 @@ device cannot represent the state — this is the same reasoning that killed the
 | `vid`, `pid` | hardware identity **as currently reported** — survives a rename, but **not a vendor firmware update**; see [VID/PID Is Not a Stable Identity](../02-features/bindforge/alias-designer.md#vidpid-is-not-a-stable-identity). Correlates to `.binds` `Device=` only for devices with no entry. **Compare case-insensitively** — see [Hex case](#hex-case-is-not-a-convention-in-frontiers-file). |
 | `device_name` | the XML element tag for this installation, which is also its `.buttonMap` filename stem |
 | `provenance` | `frontier` \| `user_preexisting` \| `bindforge` \| `unknown` — **approved 2026-09-06**, see [below](#the-table-cannot-solve-first-import) |
-| `mirrored` | whether this installation shares one definition with the other mirrored ones |
+| ~~`mirrored`~~ | **Superseded 2026-09-23** — every install holds the same files, so there is no per-device switch to record. See [Every install gets the same files](../02-features/bindforge/overview.md#every-install-gets-the-same-files--settled-2026-09-23). |
 | `alias_confirmed` | gates button/axis naming per [Device Editor](../02-features/bindforge/alias-designer.md#device-editor) |
 | `has_button_map` | whether a rename must also rename a file |
 | `previous_name` | orphan cleanup after a rename |
@@ -165,7 +165,7 @@ Two consequences for this table:
 
 ## Migration
 
-V1.2 work uses the `011XX` block (`000XX` = v1.0, `010XX` = v1.1). Highest applied as of 2026-09-02 is
+V1.2 work uses the `02XXX` block (`00XXX` = v1.0, `01XXX` = v1.1) - corrected 2026-09-22 by Krondor. Highest applied as of 2026-09-02 is
 `01045__ship_vehicle_bays.sql`, so the block is clean and the first script would be `01100__device_provenance.sql`.
 
 Migrations are applied once at application startup and **an applied migration is never edited** — a new

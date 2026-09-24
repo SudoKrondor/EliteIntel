@@ -160,7 +160,7 @@ open; what the commander sees is the tabs and the list above, both of which exis
 | Four section dropdowns | `HudComboBox` ✓ |
 | Set All to Same — a dropdown plus a button | `HudComboBox`, `HudButton` ✓ |
 | The live banner when the four do not match | `HudBanner` in the `INFO` state ✓ |
-| The sync badge | `StatusBadge` ✓ — but see **TENSION 2** |
+| The sync state — IN SYNC / DRAFT | a readout value in its state colour, as `HudStatusReadout` does ✓ — **no pill**, see [TENSION 2](#2-statusbadge-draws-a-pill) |
 | Revert and Save | `HudFooter.build(false, …)` with `HudUnsavedHint` ✓ |
 
 **Preset Editor needs nothing new** — which is another reason, beside needing no install discovery, to build it
@@ -270,8 +270,19 @@ visible at a glance on the group, survives intact.
 `StatusBadge` paints `fillRoundRect` and `drawRoundRect` — a rounded, tinted pill, the **IN SYNC** marker on
 the Bindings tab today. The canon lists its deliberate exceptions by name, and this is not one of them. **That
 is Krondor's to judge, not BindForge's to fix** — it predates BindForge and may be a known, accepted departure.
-What it settles for BindForge is narrower: **new status gets the canon's treatment, not the pill.** Preset
-Editor's sync badge can reuse `StatusBadge` as it stands, since that is the existing app's own sync marker.
+What it settles for BindForge is narrower: **new status gets the canon's treatment, not the pill.** ~~Preset
+Editor's sync badge can reuse `StatusBadge` as it stands, since that is the existing app's own sync marker.~~
+
+**Resolved 2026-09-21 — the pill goes** (Alan: *"there is already a status. we don't need the pill."*). Two
+facts decided it. **The widget has one user** — the Binding Profile's sync marker; `StatusBadge.State`, its
+colour list, is used everywhere and stays. And **that state is already shown the canon's way**: the AI tab's
+Quick Status panel carries **KEYMAP — IN SYNC** as a `HudStatusReadout` row, label left, value right in its
+state colour, no fill. So:
+
+- **Preset Editor shows IN SYNC / DRAFT as a readout value in its state colour**, not a pill.
+- **The Binding Profile's pill is replaced the same way** when the Bind Editor grows out of that panel. That
+  leaves the `StatusBadge` widget with no caller, so it is deleted then — the enum stays.
+- Not a bug ticket: a styling departure on one screen, fixed by the screen that owns it.
 
 ---
 

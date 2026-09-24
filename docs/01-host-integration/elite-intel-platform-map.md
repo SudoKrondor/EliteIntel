@@ -268,9 +268,25 @@ existing installations keep their behaviour. Names are camelCase, and related se
 informal prefix — `lmStudio*`, `pushToTalk*`, `localLlm*`, `noiseReduction*`. So the question was never
 *"which key prefix"* but **"which table, and what column names."**
 
-### Proposed: a `bindforge_settings` table — for Krondor to accept or change
+### A `bindforge_settings` table — approved
 
-**Proposed 2026-09-20. Not settled until Krondor agrees** — it is his schema.
+**Proposed 2026-09-20, approved by Krondor 2026-09-22**, who also set its shape:
+
+> *"We are NOT using .INI files for settings. we are using SQLite same as Google Chrome, Mozilla Firefox and
+> others. This provides us a way to version and modify things with new releases without messing with ugly
+> REGEX. Do settings go to Database, never in to .INI or .JSON files. Exception is Custom Commands, because
+> they can be shared between users."*
+>
+> *"For bind-forge settings create a singleton manager, DAO and database SQL table/column. Sounds like there
+> going to be a lot of very bind specific settings that are not directly related to game session or app
+> settings. Follow the same pattern as SystemSession singleton. Call it BindForgeSettings or something that
+> describes what it is at a glance."*
+
+**So the shape is settled:** a `BindForgeSettings` singleton in front of its own DAO and its own table,
+following `SystemSession`'s pattern — not columns bolted onto `game_session`. He also confirmed the general
+rule this sits under: **editing existing classes is fine** *"as long as it does not break existing
+functionality or create duplicate code. In case where you see potential code duplication consider
+refactoring."*
 
 **BindForge's own settings get a table of their own**, modelled exactly on `global_settings`: one row
 (`id = 1`) inserted by the same migration that creates it, one typed column per setting, each with a default.
@@ -295,7 +311,7 @@ what columns provide for free: a type, a default, and a migration that says why 
 - **Table names take `bindforge_`**, in the snake_case every existing table uses. That covers BindForge's data
   tables too, which are records rather than settings: `bindforge_edit_history`, the detected installations,
   and later the deferred Action Groups' user groups.
-- **Migrations in the `011XX` block**, never editing an applied one.
+- **Migrations in the `02XXX` block** — v1.2's block, set by Krondor 2026-09-22 (`00XXX` = v1.0, `01XXX` = v1.1) — never editing an applied one.
 - **Save every column, and prove it.** `global_settings` saves with `INSERT OR REPLACE`, which resets any
   column the statement does not list to its default. Two of its columns are missing from its save today —
   harmless, since nothing reads either, but it shows how easily a column falls out. BindForge's save lists every
