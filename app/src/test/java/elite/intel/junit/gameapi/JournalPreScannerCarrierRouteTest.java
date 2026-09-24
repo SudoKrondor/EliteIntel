@@ -2,6 +2,7 @@ package elite.intel.junit.gameapi;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import elite.intel.db.managers.FleetCarrierRouteManager;
+import elite.intel.db.util.Database;
 import elite.intel.gameapi.JournalPreScanner;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.gameapi.search.spansh.carrierroute.CarrierJump;
@@ -131,13 +132,15 @@ class JournalPreScannerCarrierRouteTest {
     }
 
     /**
-     * One CarrierLocation, which is all a carrier arrival the commander was not aboard for produces.
+     * One CarrierLocation, which is all a carrier arrival the commander was not aboard for produces, in a session
+     * that names the commander whose database is open: the pre-scan reads only that commander's journals.
      */
     private static void writeJournal(Path journalDir, String system, long systemAddress) throws IOException {
         String line = """
+                { "timestamp":"2026-07-30T04:24:09Z", "event":"Commander", "FID":"%s", "Name":"Test" }
                 { "timestamp":"2026-07-30T04:24:10Z", "event":"CarrierLocation", "CarrierType":"FleetCarrier",\
                  "CarrierID":3712500736, "StarSystem":"%s", "SystemAddress":%d, "BodyID":0 }
-                """.formatted(system, systemAddress);
+                """.formatted(Database.currentCommander(), system, systemAddress);
         Files.writeString(journalDir.resolve("Journal.2026-07-30T042410.01.log"), line);
     }
 

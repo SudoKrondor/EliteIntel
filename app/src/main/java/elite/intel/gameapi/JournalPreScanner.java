@@ -3,6 +3,7 @@ package elite.intel.gameapi;
 import com.google.common.eventbus.EventBus;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import elite.intel.db.util.Database;
 import elite.intel.eventbus.LoggedSubscriberFailures;
 import elite.intel.gameapi.journal.EventRegistry;
 import elite.intel.gameapi.journal.events.BaseEvent;
@@ -21,7 +22,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Reads the two most recent journal files (previous session + current) before
+ * Reads the current commander's two most recent journal files (previous session + current) before
  * the live JournalParser starts, and silently populates the DB with location
  * and ship data. Runs on its own thread; publishes only to a private EventBus
  * so no live subscribers (TTS, game input, EDSM) are ever triggered.
@@ -37,11 +38,12 @@ public class JournalPreScanner {
     private static final int JOURNALS_TO_SCAN = 2;
 
     public static void scan(Path journalDir) {
-        log.info("JournalPreScanner: scanning last {} journal(s) in {}", JOURNALS_TO_SCAN, journalDir);
+        log.info("JournalPreScanner: scanning last {} journal(s) of commander {} in {}", JOURNALS_TO_SCAN,
+                Database.currentCommander(), journalDir);
 
         List<Path> toScan;
         try {
-            toScan = JournalFiles.newest(journalDir, JOURNALS_TO_SCAN);
+            toScan = JournalCommander.newestOfCurrentCommander(journalDir, JOURNALS_TO_SCAN);
         } catch (IOException e) {
             log.warn("JournalPreScanner: cannot list {}: {}", journalDir, e.getMessage());
             return;

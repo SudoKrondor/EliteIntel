@@ -70,7 +70,16 @@ public interface HuntingGroundDao {
                      @Bind("high") int high,
                      @Bind("hazardous") int hazardous);
 
-    @SqlQuery("SELECT * FROM hunting_ground WHERE starSystem = :starSystem")
+    /**
+     * The shared ledger row, with whether this commander told us to forget it. The ledger is every commander's;
+     * forgetting a ground is one commander's choice and lives in their own {@code hunting_ground_forgotten}.
+     */
+    @SqlQuery("""
+            SELECT g.*,
+                   EXISTS (SELECT 1 FROM hunting_ground_forgotten f WHERE f.starSystem = g.starSystem) AS forgotten
+              FROM hunting_ground g
+             WHERE g.starSystem = :starSystem
+            """)
     Ground findByName(@Bind("starSystem") String starSystem);
 
     /**
@@ -84,7 +93,7 @@ public interface HuntingGroundDao {
             SELECT starSystem, resStandard, resLow, resHigh, resHazardous,
                    ((x - :x) * (x - :x) + (y - :y) * (y - :y) + (z - :z) * (z - :z)) AS distanceSq
               FROM hunting_ground
-             WHERE forgotten = 0
+             WHERE NOT EXISTS (SELECT 1 FROM hunting_ground_forgotten f WHERE f.starSystem = hunting_ground.starSystem)
                AND x IS NOT NULL
                AND ((x - :x) * (x - :x) + (y - :y) * (y - :y) + (z - :z) * (z - :z)) <= :maxDistanceSq
              ORDER BY CASE WHEN resHazardous > 0 THEN 4
@@ -101,10 +110,28 @@ public interface HuntingGroundDao {
                             @Bind("maxDistanceSq") double maxDistanceSq,
                             @Bind("limit") int limit);
 
-    @SqlUpdate("UPDATE hunting_ground SET forgotten = 1 WHERE starSystem = :starSystem")
-    int forget(@Bind("starSystem") String starSystem);
+    /**
+     * Forgets a ground for this commander only. Returns 1 when the ledger knows the system, as the old in-place
+     * update did, so callers can still tell "forgotten" from "never heard of it".
+     */
+    @SqlUpdate("""
+            INSERT OR IGNORE INTO hunting_ground_forgotten (starSystem)
+            SELECT starSystem FROM hunting_ground WHERE starSystem = :starSystem
+            """)
+    int forgetForCommander(@Bind("starSystem") String starSystem);
 
-    @SqlQuery("SELECT COUNT(*) FROM hunting_ground WHERE forgotten = 0")
+    @SqlQuery("SELECT COUNT(*) FROM hunting_ground WHERE starSystem = :starSystem")
+    int countNamed(@Bind("starSystem") String starSystem);
+
+    default int forget(String starSystem) {
+        forgetForCommander(starSystem);
+        return countNamed(starSystem);
+    }
+
+    @SqlQuery("""
+            SELECT COUNT(*) FROM hunting_ground g
+             WHERE NOT EXISTS (SELECT 1 FROM hunting_ground_forgotten f WHERE f.starSystem = g.starSystem)
+            """)
     int count();
 
     class GroundMapper implements RowMapper<Ground> {

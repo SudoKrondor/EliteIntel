@@ -176,6 +176,7 @@ sourceSets {
             include 'META-INF/MANIFEST.MF'
             include 'META-INF/licenses/*.txt'
             include '**/db-migration/*.sql'
+            include '**/db-migration/commander/*.sql'
             include '**/scripts/*.sh'
             include '**/scripts/*.bat'
             include 'version.txt'
@@ -222,6 +223,7 @@ test {
         excludeTags 'embedding-manual'
     }
     systemProperty 'elite.intel.db.url', 'jdbc:sqlite:file:testdb?mode=memory&cache=shared&busy_timeout=5000'
+    systemProperty 'elite.intel.db.commander.url', 'file:testcmdr_{fid}?mode=memory&cache=shared'
     systemProperty 'elite.intel.db.pool.size', '1'
     // CI has no X11, so any test that reaches AWT fails there and passes on a
     // developer's desktop. Run headless everywhere so that difference shows up
@@ -265,6 +267,7 @@ tasks.register('subscriberTest', Test) {
         excludeTags 'embedding-manual'
     }
     systemProperty 'elite.intel.db.url', 'jdbc:sqlite:file:testdb?mode=memory&cache=shared&busy_timeout=5000'
+    systemProperty 'elite.intel.db.commander.url', 'file:testcmdr_{fid}?mode=memory&cache=shared'
     systemProperty 'elite.intel.db.pool.size', '1'
     systemProperty 'java.awt.headless', 'true'
     testLogging {
