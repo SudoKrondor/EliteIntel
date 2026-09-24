@@ -49,6 +49,17 @@ class KeyDetectorTest {
                 KeyDetector.detectProvider("sk-ant-api03-" + "aB9_-".repeat(19), "LLM"));
     }
 
+    /**
+     * Mistral moved to prefixed "mstrl_" keys, but the legacy 32-character keys still authenticate,
+     * so a commander holding either must reach Mistral rather than UNKNOWN.
+     */
+    @Test
+    void bothMistralKeyShapesAreDetected() {
+        assertEquals(ProviderEnum.MISTRAL, KeyDetector.detectProvider("aB3dE6gH9jK2mN5pQ8sT1vW4yZ7bC0eF", "LLM"));
+        assertEquals(ProviderEnum.MISTRAL,
+                KeyDetector.detectProvider("mstrl_aB3dE6gH9jK2mN5pQ8sT1vW4yZ7bC0eF_x9Yz-Q1", "LLM"));
+    }
+
     @Test
     void existingAndFallbackDetectionRemainUnchanged() {
         assertEquals(ProviderEnum.GOOGLE_TTS,
