@@ -1,94 +1,48 @@
 package elite.intel.ai;
 
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.eventbus.GameEventBus;
-import elite.intel.eventbus.UiBus;
-import elite.intel.ui.event.AppLogEvent;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
-public class KeyDetector {
-    /**
-     * A mapping of ProviderEnum constants to their corresponding regular expression patterns used
-     * for validating API key formats for specific providers. Each entry maps a provider to its key
-     * format validation pattern.
-     * <p>
-     * The patterns are designed to match the unique structure of API keys associated with various
-     * providers and their respective functionalities, such as LLM (Large Language Model), STT
-     * (Speech-to-Text), or TTS (Text-to-Speech).
-     * <p>
-     * Example provider mappings and their corresponding patterns:
-     * - GROK: Matches keys consisting of 40 to 100 alphanumeric characters or hyphens.
-     * - GOOGLE_STT and GOOGLE_TTS: Matches keys starting with "AIzaSy" followed by 33 alphanumeric
-     * characters, underscores, or hyphens.
-     * - ANTHROPIC: Matches keys starting with "sk-ant-" followed by 80 to 90 alphanumeric characters
-     * or hyphens.
-     * - AWS_LLM, AWS_STT, AWS_TTS: Matches keys starting with "AKIA" or "ASIA," followed by 16
-     * alphanumeric characters.
-     * - AZURE_LLM, AZURE_STT, AZURE_TTS: Matches keys consisting of exactly 32 hexadecimal characters.
-     * - ELEVEN_LABS: Matches keys consisting of exactly 32 characters in hexadecimal or mixed case.
-     * - DEEP_GRAM: Matches keys in a UUID format (e.g., 8-4-4-4-12 hexadecimal segments).
-     * - IBM_WATSON_STT and IBM_WATSON_TTS: Matches keys containing 40 to 50 characters, which may
-     * include alphanumeric characters, plus signs (+), forward slashes (/), or equals signs (=).
-     * <p>
-     * This map is primarily used to validate and detect the provider of a given API key based on
-     * its format.
-     */
-    private static final Map<ProviderEnum, Pattern> PATTERNS = Map.ofEntries(
-            Map.entry(ProviderEnum.GROK, Pattern.compile("^xai-[a-zA-Z0-9_-]{40,100}$")),
-            Map.entry(ProviderEnum.DEEPSEEK, Pattern.compile("^sk-[a-f0-9]{32}$")),
-            // Both Mistral key shapes: the legacy 32 alphanumerics, which still authenticate, and
-            // the prefixed "mstrl_" key issued since. The prefix is unique to Mistral, so the new
-            // branch cannot collide with any other provider's pattern.
-            Map.entry(ProviderEnum.MISTRAL, Pattern.compile("^(?:[a-zA-Z0-9]{32}|mstrl_[a-zA-Z0-9_-]{20,100})$")),
-            // Every OpenAI key shape, not the one length a key happened to have when this
-            // was written: a legacy sk- key is 48 characters and a modern prefixed one has
-            // no fixed length at all, so pinning 161 rejected both. The prefixed branch and
-            // the 48-character legacy branch are each disjoint from DeepSeek's 32 hex
-            // characters, so widening this cannot make a DeepSeek key ambiguous.
-            Map.entry(ProviderEnum.OPENAI,
-                    Pattern.compile("^sk-(?:(?:proj|svcacct|admin)-[a-zA-Z0-9_-]{20,}|[a-zA-Z0-9]{48})$")),
-            Map.entry(ProviderEnum.GOOGLE_STT, Pattern.compile("^AIzaSy[a-zA-Z0-9_-]{33}$")),
-            Map.entry(ProviderEnum.GOOGLE_TTS, Pattern.compile("^AIzaSy[a-zA-Z0-9_-]{33}$")),
-            Map.entry(ProviderEnum.GEMINI, Pattern.compile("^(AIzaSy[a-zA-Z0-9_-]{33}|AQ\\.[a-zA-Z0-9_.-]{30,150})$")),
-            Map.entry(ProviderEnum.ANTHROPIC, Pattern.compile("^sk-ant-api\\d{2}-[a-zA-Z0-9_-]{93,97}$")),
-            Map.entry(ProviderEnum.AWS_LLM, Pattern.compile("^(AKIA|ASIA)[A-Z0-9]{16}$")),
-            Map.entry(ProviderEnum.AWS_STT, Pattern.compile("^(AKIA|ASIA)[A-Z0-9]{16}$")),
-            Map.entry(ProviderEnum.AWS_TTS, Pattern.compile("^(AKIA|ASIA)[A-Z0-9]{16}$")),
-            Map.entry(ProviderEnum.AZURE_LLM, Pattern.compile("^[0-9a-f]{32}$")),
-            Map.entry(ProviderEnum.AZURE_STT, Pattern.compile("^[0-9a-f]{32}$")),
-            Map.entry(ProviderEnum.AZURE_TTS, Pattern.compile("^[0-9a-f]{32}$")),
-            Map.entry(ProviderEnum.ELEVEN_LABS, Pattern.compile("^[0-9a-fA-F]{32}$")),
-            Map.entry(ProviderEnum.DEEP_GRAM, Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")),
-            Map.entry(ProviderEnum.IBM_WATSON_STT, Pattern.compile("^[a-zA-Z0-9+/=]{40,50}$")),
-            Map.entry(ProviderEnum.IBM_WATSON_TTS, Pattern.compile("^[a-zA-Z0-9+/=]{40,50}$"))
+/**
+ * Upgrade-only: names the cloud provider behind an API key stored before the provider became a setting of its
+ * own. {@link LlmProviderUpgrade} asks it once, for an install that has a key and no provider; nothing else
+ * may. The commander now picks the provider from a list, so a key format a vendor introduces from here on
+ * belongs to a commander who picked their provider by hand and never reaches this class.
+ * <p>
+ * FROZEN. Do not add or widen a pattern for a new key format - that is the maintenance treadmill this class
+ * was retired from. It goes away entirely once the upgraded installs have all passed through it.
+ */
+public final class KeyDetector {
+
+    private static final Map<ProviderEnum, Pattern> PATTERNS = Map.of(
+            ProviderEnum.GROK, Pattern.compile("^xai-[a-zA-Z0-9_-]{40,100}$"),
+            ProviderEnum.DEEPSEEK, Pattern.compile("^sk-[a-f0-9]{32}$"),
+            ProviderEnum.MISTRAL, Pattern.compile("^(?:[a-zA-Z0-9]{32}|mstrl_[a-zA-Z0-9_-]{20,100})$"),
+            ProviderEnum.OPENAI,
+            Pattern.compile("^sk-(?:(?:proj|svcacct|admin)-[a-zA-Z0-9_-]{20,}|[a-zA-Z0-9]{48})$"),
+            ProviderEnum.GEMINI, Pattern.compile("^(AIzaSy[a-zA-Z0-9_-]{33}|AQ\\.[a-zA-Z0-9_.-]{30,150})$"),
+            ProviderEnum.ANTHROPIC, Pattern.compile("^sk-ant-api\\d{2}-[a-zA-Z0-9_-]{93,97}$")
     );
 
+    private KeyDetector() {
+    }
+
     /**
-     * Detects the provider based on the API key format and category.
-     *
-     * @param key      The API key to analyze.
-     * @param category The expected category ("LLM", "STT", "TTS").
-     * @return The matched ProviderEnum or UNKNOWN if no match.
+     * The one provider whose historical key format matches, or empty when none does - or when more than one
+     * does, since a guess between two would send the key to a vendor it does not belong to. Silent either way:
+     * what the commander is told about an empty result is {@link elite.intel.setup.SetupCheck}'s to say.
      */
-    public static ProviderEnum detectProvider(String key, String category) {
+    public static Optional<ProviderEnum> detectLegacyProvider(String key) {
         if (key == null || key.isBlank()) {
-            return ProviderEnum.UNKNOWN;
+            return Optional.empty();
         }
-        List<ProviderEnum> matches = new ArrayList<>();
-        for (Map.Entry<ProviderEnum, Pattern> entry : PATTERNS.entrySet()) {
-            if (entry.getValue().matcher(key).matches() && entry.getKey().supportsCategory(category)) {
-                matches.add(entry.getKey());
-            }
-        }
-        if (matches.size() == 1) return matches.get(0);
-        if (matches.size() > 1) {
-            UiBus.publish(new AppLogEvent("Ambiguous key matches: " + matches));
-            GameEventBus.publish(new AiVoxResponseEvent("Multiple providers detected for category " + category));
-        }
-        return ProviderEnum.UNKNOWN;
+        String trimmed = key.trim();
+        List<ProviderEnum> matches = PATTERNS.entrySet().stream()
+                .filter(entry -> entry.getValue().matcher(trimmed).matches())
+                .map(Map.Entry::getKey)
+                .toList();
+        return matches.size() == 1 ? Optional.of(matches.getFirst()) : Optional.empty();
     }
 }

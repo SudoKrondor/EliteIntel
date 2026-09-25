@@ -1,5 +1,6 @@
 package elite.intel.ui.screen.settings;
 
+import elite.intel.ai.ProviderEnum;
 import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.db.managers.ShipManager;
@@ -62,7 +63,12 @@ public class AiServicesSettingsPanel extends JPanel {
     private HudSegmentedControl llmSourceControl;
     private JTextField addressField;
     private JTextField commandModelField;
+    private HudComboBox<ProviderOption> providerCombo;
     private JPasswordField apiKeyField;
+    /**
+     * Why SAVE is greyed out while the cloud setup is half-filled: no provider picked, or no key for it.
+     */
+    private HudBanner cloudIncompleteHint;
     private JCheckBox llmLockCheck;
 
     private HudSegmentedControl ttsSourceControl;
@@ -113,6 +119,10 @@ public class AiServicesSettingsPanel extends JPanel {
     private boolean savedLlmLocal;
     private String savedLmAddress = "", savedLmCommand = "";
     private String savedAiKey = "", savedTtsKey = "";
+    /**
+     * The stored provider, {@code null} for none.
+     */
+    private ProviderEnum savedProvider;
     private TtsProvider savedTtsProvider = TtsProvider.KOKORO;
     private int savedGoogleWaveNetPitch;
 
@@ -163,6 +173,15 @@ public class AiServicesSettingsPanel extends JPanel {
         // Right column - CLOUD SETUP.
         rightCol = transparentPanel(new GridBagLayout());
         GridBagConstraints rgc = baseGbc();
+        providerCombo = new HudComboBox<>(providerOptions(),
+                option -> option.provider() == null
+                        ? getText("settings.ai.provider.select")
+                        : option.provider().displayName(),
+                option -> option.provider() == null);
+        addLabel(rightCol, getText("settings.ai.provider"), rgc, 0);
+        addField(rightCol, providerCombo, rgc, 1, 1.0);
+
+        nextRow(rgc);
         apiKeyField = makePasswordField();
         llmLockCheck = makeCheckBox(getText("settings.cloud.locked"), true);
         // Field + lock in one BorderLayout cell: EAST reserves the checkbox's full width
@@ -174,12 +193,13 @@ public class AiServicesSettingsPanel extends JPanel {
         addField(rightCol, apiKeyRow, rgc, 1, 1.0);
 
         nextRow(rgc);
-        HudBanner supported = HudBanner.multiline(
-                getText("settings.cloud.supportedLlms") + " "
-                        + getText("settings.cloud.supportedLlms.names") + "\n"
-                        + getText("settings.cloud.modelAutoSelected"),
-                StatusBadge.State.INFO);
-        addSpanComponent(rightCol, supported, rgc);
+        cloudIncompleteHint = HudBanner.multiline(getText("settings.ai.provider.incomplete"), StatusBadge.State.STANDBY);
+        addSpanComponent(rightCol, cloudIncompleteHint, rgc);
+
+        nextRow(rgc);
+        // The dropdown lists the supported providers; what it cannot say is that the model follows from the choice.
+        HudBanner modelAutoSelected = HudBanner.multiline(getText("settings.cloud.modelAutoSelected"), StatusBadge.State.INFO);
+        addSpanComponent(rightCol, modelAutoSelected, rgc);
 
         JPanel llmLeftWrap = transparentPanel(new BorderLayout());
         llmLeftWrap.add(localCol, BorderLayout.NORTH);
@@ -302,6 +322,7 @@ public class AiServicesSettingsPanel extends JPanel {
             updateEnablement();
         });
         llmLockCheck.addItemListener(e -> updateEnablement());
+        providerCombo.addActionListener(e -> onProviderPicked());
         ttsLockCheck.addItemListener(e -> updateEnablement());
         googleWaveNetPitchSlider.addChangeListener(e -> recomputeDirty());
 
@@ -334,6 +355,8 @@ public class AiServicesSettingsPanel extends JPanel {
             lmCommand = nz(systemSession.getLmStudioCommandModel(), "");
             loadFields();
 
+            savedProvider = systemSession.getLlmProvider().orElse(null);
+            selectProvider(savedProvider);
             apiKeyField.setText(nz(systemSession.getAiApiKey(), ""));
             String storedTtsKey = nz(systemSession.getTtsApiKey(), "");
             ttsKeyField.setText(storedTtsKey);
@@ -397,7 +420,9 @@ public class AiServicesSettingsPanel extends JPanel {
         for (Component c : rightCol.getComponents()) {
             if (c instanceof JLabel || c instanceof HudBanner) c.setEnabled(cloud);
         }
+        providerCombo.setEnabled(cloud);
         apiKeyField.setEnabled(cloud && !llmLockCheck.isSelected());
+        cloudIncompleteHint.setVisible(isCloudSetupIncomplete());
         llmLockCheck.setEnabled(cloud);
 
         // Each TTS column lives or dies with the source switch, and its own engine switch picks which
@@ -428,6 +453,8 @@ public class AiServicesSettingsPanel extends JPanel {
     private void recomputeDirty() {
         if (loading) return;
         setDirty(isModified());
+        updateSaveEnablement();
+        cloudIncompleteHint.setVisible(isCloudSetupIncomplete());
     }
 
     private boolean isModified() {
@@ -436,6 +463,7 @@ public class AiServicesSettingsPanel extends JPanel {
         String newAiKey = new String(apiKeyField.getPassword());
         String newTtsKey = new String(ttsKeyField.getPassword());
         return newLocal != savedLlmLocal
+                || selectedProvider() != savedProvider
                 || selectedTtsProvider() != savedTtsProvider
                 || googleWaveNetPitchSlider.getValue() != savedGoogleWaveNetPitch
                 || !Objects.equals(newAiKey, savedAiKey)
@@ -448,13 +476,29 @@ public class AiServicesSettingsPanel extends JPanel {
         if (dirty == modified) return;
         dirty = modified;
         unsavedLabel.setVisible(modified);
-        saveButton.setEnabled(modified); // SAVE is only meaningful when there are unsaved edits
+        updateSaveEnablement();
         revalidate();
         repaint();
     }
 
     private void clearDirty() {
         setDirty(false);
+    }
+
+    /**
+     * SAVE is only meaningful when there are unsaved edits, and only possible when they are complete.
+     */
+    private void updateSaveEnablement() {
+        saveButton.setEnabled(dirty && !isCloudSetupIncomplete());
+    }
+
+    /**
+     * True while the cloud source is selected without a provider or without a key: a setup that could not
+     * answer the commander, so it is not saved. The local source does not need either.
+     */
+    private boolean isCloudSetupIncomplete() {
+        return llmSourceControl.getSelectedIndex() == SRC_CLOUD
+                && (selectedProvider() == null || apiKeyField.getPassword().length == 0);
     }
 
     // -------------------------------------------------------------------------
@@ -471,7 +515,11 @@ public class AiServicesSettingsPanel extends JPanel {
     public boolean save() {
         captureFields();
 
+        if (isCloudSetupIncomplete()) {
+            return false; // SAVE is greyed out for this; the tab-switch prompt can still ask
+        }
         boolean newLocal = llmSourceControl.getSelectedIndex() == SRC_LOCAL;
+        ProviderEnum newProvider = selectedProvider();
         TtsProvider newTtsProvider = selectedTtsProvider();
         String newAiKey = new String(apiKeyField.getPassword());
         String newTtsKey = new String(ttsKeyField.getPassword());
@@ -501,13 +549,15 @@ public class AiServicesSettingsPanel extends JPanel {
                 !Objects.equals(systemSession.getLmStudioAddress(), lmAddress)
                         || !Objects.equals(systemSession.getLmStudioCommandModel(), lmCommand);
         boolean brainChanged = newLocal != oldLocal
-                || localCfgChanged || !Objects.equals(oldAiKey, newAiKey);
+                || localCfgChanged || !Objects.equals(oldAiKey, newAiKey)
+                || newProvider != systemSession.getLlmProvider().orElse(null);
         boolean mouthChanged = newTtsProvider != oldTtsProvider || !Objects.equals(oldTtsKey, newTtsKey);
 
         systemSession.setLmStudioSettings(lmAddress, lmCommand);
         systemSession.setUseLocalCommandLlm(newLocal);
         systemSession.setUseLocalQueryLlm(newLocal);
         systemSession.setAiApiKey(newAiKey);
+        systemSession.setLlmProvider(newProvider);
         systemSession.setTtsProvider(newTtsProvider);
         systemSession.setTtsApiKey(newTtsKey);
         // Google reads the pitch per request, so a new value needs no restart - just the save.
@@ -524,6 +574,7 @@ public class AiServicesSettingsPanel extends JPanel {
         savedLmAddress = lmAddress;
         savedLmCommand = lmCommand;
         savedAiKey = newAiKey;
+        savedProvider = newProvider;
         savedTtsKey = newTtsKey;
         savedTtsProvider = newTtsProvider;
         savedGoogleWaveNetPitch = newPitch;
@@ -587,6 +638,61 @@ public class AiServicesSettingsPanel extends JPanel {
         ttsLocalHints.revalidate();
         ttsLocalHints.repaint();
         updateEnablement();
+    }
+
+    /**
+     * A key belongs to one provider, so picking a different one than the stored provider empties the key field
+     * (and unlocks it) for that provider's key, and picking the stored one back restores its key: an accidental
+     * pick costs nothing. An install with a key but no stored provider - one whose key format named none - keeps
+     * its key, because picking the provider is all it needs.
+     */
+    private void onProviderPicked() {
+        if (loading) return;
+        if (savedProvider != null) {
+            boolean backToSaved = selectedProvider() == savedProvider;
+            apiKeyField.setText(backToSaved ? savedAiKey : "");
+            if (!backToSaved) {
+                llmLockCheck.setSelected(false);
+            }
+        }
+        recomputeDirty();
+        updateEnablement();
+    }
+
+    /**
+     * The provider the dropdown shows, {@code null} while it shows the "select a provider" placeholder.
+     */
+    private ProviderEnum selectedProvider() {
+        ProviderOption option = (ProviderOption) providerCombo.getSelectedItem();
+        return option == null ? null : option.provider();
+    }
+
+    private void selectProvider(ProviderEnum provider) {
+        for (int i = 0; i < providerCombo.getItemCount(); i++) {
+            if (providerCombo.getItemAt(i).provider() == provider) {
+                providerCombo.setSelectedIndex(i);
+                return;
+            }
+        }
+    }
+
+    /**
+     * The placeholder (no provider) first, then every provider.
+     */
+    private static ProviderOption[] providerOptions() {
+        ProviderEnum[] providers = ProviderEnum.values();
+        ProviderOption[] options = new ProviderOption[providers.length + 1];
+        options[0] = new ProviderOption(null);
+        for (int i = 0; i < providers.length; i++) {
+            options[i + 1] = new ProviderOption(providers[i]);
+        }
+        return options;
+    }
+
+    /**
+     * One dropdown entry; {@code provider} is {@code null} for the "select a provider" placeholder.
+     */
+    private record ProviderOption(ProviderEnum provider) {
     }
 
     private static String nz(String value, String fallback) {

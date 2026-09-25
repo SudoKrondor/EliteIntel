@@ -2,70 +2,68 @@ package elite.intel.ai;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+/**
+ * The frozen, upgrade-only detector: each historical key shape still names its provider, so an install
+ * upgraded with one keeps working, and anything else - including a guess between two - names none.
+ */
 class KeyDetectorTest {
 
-    /**
-     * The Edge branch shipped a reserved "edge://" selector in the TTS key field. Selecting an engine is a
-     * setting of its own now, so this string is just an unrecognised key - the key detector must never route
-     * a provider selection again.
-     */
-    @Test
-    void theRetiredEdgeSelectorIsJustAnUnknownKey() {
-        assertEquals(ProviderEnum.UNKNOWN, KeyDetector.detectProvider("edge://", "TTS"));
-        assertEquals(ProviderEnum.UNKNOWN, KeyDetector.detectProvider("edge://", "LLM"));
-    }
-
-    /**
-     * The OpenAI pattern used to demand exactly 161 characters after "sk-", which is one key's
-     * length rather than a format. A legacy key is 48 characters and a project key has no fixed
-     * length, so both fell through to UNKNOWN and VEGA refused to start.
-     */
     @Test
     void everyOpenAiKeyShapeIsDetected() {
-        assertEquals(ProviderEnum.OPENAI, KeyDetector.detectProvider("sk-" + "a".repeat(48), "LLM"));
-        assertEquals(ProviderEnum.OPENAI, KeyDetector.detectProvider("sk-proj-" + "aB9_-".repeat(30), "LLM"));
-        assertEquals(ProviderEnum.OPENAI, KeyDetector.detectProvider("sk-svcacct-" + "aB9_-".repeat(30), "LLM"));
-        assertEquals(ProviderEnum.OPENAI, KeyDetector.detectProvider("sk-admin-" + "aB9_-".repeat(30), "LLM"));
+        assertEquals(Optional.of(ProviderEnum.OPENAI), KeyDetector.detectLegacyProvider("sk-" + "a".repeat(48)));
+        assertEquals(Optional.of(ProviderEnum.OPENAI), KeyDetector.detectLegacyProvider("sk-proj-" + "aB9_-".repeat(30)));
+        assertEquals(Optional.of(ProviderEnum.OPENAI), KeyDetector.detectLegacyProvider("sk-svcacct-" + "aB9_-".repeat(30)));
+        assertEquals(Optional.of(ProviderEnum.OPENAI), KeyDetector.detectLegacyProvider("sk-admin-" + "aB9_-".repeat(30)));
     }
 
-    /**
-     * A DeepSeek key is "sk-" and 32 hex characters, which the widened OpenAI pattern must not also
-     * match - two matches resolve to UNKNOWN, which would trade one broken provider for two.
-     */
     @Test
     void aDeepSeekKeyStaysUnambiguous() {
-        assertEquals(ProviderEnum.DEEPSEEK, KeyDetector.detectProvider("sk-" + "0123456789abcdef".repeat(2), "LLM"));
+        assertEquals(Optional.of(ProviderEnum.DEEPSEEK),
+                KeyDetector.detectLegacyProvider("sk-" + "0123456789abcdef".repeat(2)));
     }
 
-    /**
-     * A real Anthropic key must not also match the widened OpenAI pattern: two matches resolve to
-     * UNKNOWN, which is the failure this change exists to remove, arriving from the other side.
-     */
     @Test
-    void anAnthropicKeyDoesNotMatchTheWidenedOpenAiPattern() {
-        assertEquals(ProviderEnum.ANTHROPIC,
-                KeyDetector.detectProvider("sk-ant-api03-" + "aB9_-".repeat(19), "LLM"));
+    void anAnthropicKeyDoesNotMatchTheOpenAiPattern() {
+        assertEquals(Optional.of(ProviderEnum.ANTHROPIC),
+                KeyDetector.detectLegacyProvider("sk-ant-api03-" + "aB9_-".repeat(19)));
     }
 
-    /**
-     * Mistral moved to prefixed "mstrl_" keys, but the legacy 32-character keys still authenticate,
-     * so a commander holding either must reach Mistral rather than UNKNOWN.
-     */
     @Test
     void bothMistralKeyShapesAreDetected() {
-        assertEquals(ProviderEnum.MISTRAL, KeyDetector.detectProvider("aB3dE6gH9jK2mN5pQ8sT1vW4yZ7bC0eF", "LLM"));
-        assertEquals(ProviderEnum.MISTRAL,
-                KeyDetector.detectProvider("mstrl_aB3dE6gH9jK2mN5pQ8sT1vW4yZ7bC0eF_x9Yz-Q1", "LLM"));
+        assertEquals(Optional.of(ProviderEnum.MISTRAL), KeyDetector.detectLegacyProvider("aB3dE6gH9jK2mN5pQ8sT1vW4yZ7bC0eF"));
+        assertEquals(Optional.of(ProviderEnum.MISTRAL),
+                KeyDetector.detectLegacyProvider("mstrl_aB3dE6gH9jK2mN5pQ8sT1vW4yZ7bC0eF_x9Yz-Q1"));
     }
 
     @Test
-    void existingAndFallbackDetectionRemainUnchanged() {
-        assertEquals(ProviderEnum.GOOGLE_TTS,
-                KeyDetector.detectProvider("AIzaSy123456789012345678901234567890123", "TTS"));
-        assertEquals(ProviderEnum.UNKNOWN, KeyDetector.detectProvider(null, "TTS"));
-        assertEquals(ProviderEnum.UNKNOWN, KeyDetector.detectProvider("", "TTS"));
-        assertEquals(ProviderEnum.UNKNOWN, KeyDetector.detectProvider("not-a-key", "TTS"));
+    void bothGeminiKeyShapesAreDetected() {
+        assertEquals(Optional.of(ProviderEnum.GEMINI), KeyDetector.detectLegacyProvider("AIzaSy123456789012345678901234567890123"));
+        assertEquals(Optional.of(ProviderEnum.GEMINI), KeyDetector.detectLegacyProvider("AQ." + "aB9_.-".repeat(8)));
+    }
+
+    @Test
+    void aGrokKeyIsDetected() {
+        assertEquals(Optional.of(ProviderEnum.GROK), KeyDetector.detectLegacyProvider("xai-" + "aB9_-".repeat(10)));
+    }
+
+    /**
+     * A stored key read back with stray whitespace is still the same key.
+     */
+    @Test
+    void surroundingWhitespaceDoesNotHideTheProvider() {
+        assertEquals(Optional.of(ProviderEnum.GROK), KeyDetector.detectLegacyProvider("  xai-" + "aB9_-".repeat(10) + "\n"));
+    }
+
+    @Test
+    void nothingRecognisableNamesNoProvider() {
+        assertEquals(Optional.empty(), KeyDetector.detectLegacyProvider(null));
+        assertEquals(Optional.empty(), KeyDetector.detectLegacyProvider(""));
+        assertEquals(Optional.empty(), KeyDetector.detectLegacyProvider("   "));
+        assertEquals(Optional.empty(), KeyDetector.detectLegacyProvider("not-a-key"));
+        assertEquals(Optional.empty(), KeyDetector.detectLegacyProvider("edge://"));
     }
 }

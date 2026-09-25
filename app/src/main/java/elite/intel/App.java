@@ -1,6 +1,7 @@
 package elite.intel;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import elite.intel.ai.LlmProviderUpgrade;
 import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
 import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
@@ -56,6 +57,8 @@ public class App {
         // init kry and db first!
         Cypher.initializeKey();
         Database.init();
+        // Before anything builds an LLM client or the settings tab reads the provider.
+        LlmProviderUpgrade.run();
         CustomCommandRegistry.getInstance().load();
         CommandRegistry.getInstance().load();
         QueryRegistry.getInstance().load();
