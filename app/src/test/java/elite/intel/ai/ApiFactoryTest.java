@@ -31,13 +31,23 @@ class ApiFactoryTest {
     }
 
     /**
-     * Google without a usable key would start into silence, so the local engine stands in.
+     * Google without a key would start into silence, so the local engine stands in.
      */
     @Test
-    void googleWithoutAUsableKeyFallsBackToKokoro() {
+    void googleWithoutAKeyFallsBackToKokoro() {
         assertSame(KokoroTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, null, Language.EN, Language.EN));
         assertSame(KokoroTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, "", Language.EN, Language.EN));
-        assertSame(KokoroTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, "not-a-key", Language.EN, Language.EN));
+        assertSame(KokoroTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, "   ", Language.EN, Language.EN));
+    }
+
+    /**
+     * Whether Google has a key is a question of presence, never of format: a key shape Google introduces must
+     * not read as "no key" and quietly hand the commander's voice to Kokoro.
+     */
+    @Test
+    void aGoogleKeyInAnUnfamiliarFormatStillSelectsGoogle() {
+        assertSame(GoogleTTSImpl.getInstance(),
+                ApiFactory.selectMouth(TtsProvider.GOOGLE, "AQ.a-new-google-key-shape", Language.EN, Language.EN));
     }
 
     /**
@@ -51,7 +61,7 @@ class ApiFactoryTest {
             if (!language.isCyrillicScript()) continue;
             assertSame(SupertonicTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.KOKORO, null, language, Language.EN),
                     "stored Kokoro under " + language);
-            assertSame(SupertonicTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, "not-a-key", language, Language.EN),
+            assertSame(SupertonicTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, null, language, Language.EN),
                     "keyless Google under " + language);
             assertSame(EdgeTTSImpl.getInstance(), ApiFactory.selectMouth(TtsProvider.EDGE, null, language, Language.EN),
                     "a chosen Edge is kept under " + language);
@@ -70,7 +80,7 @@ class ApiFactoryTest {
         for (Language commander : Language.values()) {
             assertSame(SupertonicTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.KOKORO, null, commander, Language.RU),
                     "stored Kokoro, Russian client, commander speaking " + commander);
-            assertSame(SupertonicTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, "not-a-key", commander, Language.RU),
+            assertSame(SupertonicTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, null, commander, Language.RU),
                     "keyless Google, Russian client, commander speaking " + commander);
             assertSame(EdgeTTSImpl.getInstance(), ApiFactory.selectMouth(TtsProvider.EDGE, null, commander, Language.RU));
             assertSame(GoogleTTSImpl.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, GOOGLE_KEY, commander, Language.RU));

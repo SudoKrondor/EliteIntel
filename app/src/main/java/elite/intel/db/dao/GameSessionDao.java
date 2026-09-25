@@ -20,7 +20,7 @@ public interface GameSessionDao {
                                                              rmsThresholdLow, encryptedLLMKey, encryptedTTSKey,
                                                              speechSpeed, googleWaveNetPitch,
                                                              keyInputDelayMs,
-                                                             useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, ttsProvider, notificationVolume, sttThreads, voiceVolume, radioVolume,
+                                                             useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, ttsProvider, llmProvider, notificationVolume, sttThreads, voiceVolume, radioVolume,
                                                              lmStudioAddress, lmStudioCommandModel,
                                                              aiLanguage,
                                                              audioInputDevice, audioOutputDevice,
@@ -36,7 +36,7 @@ public interface GameSessionDao {
                                                       :rmsThresholdLow, :encryptedLLMKey, :encryptedTTSKey,
                                                       :speechSpeed, :googleWaveNetPitch,
                                                       :keyInputDelayMs,
-                                                      :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :ttsProvider, :notificationVolume, :sttThreads, :voiceVolume, :radioVolume,
+                                                      :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :ttsProvider, :llmProvider, :notificationVolume, :sttThreads, :voiceVolume, :radioVolume,
                                                       :lmStudioAddress, :lmStudioCommandModel,
                                                       :aiLanguage,
                                                       :audioInputDevice, :audioOutputDevice,
@@ -75,6 +75,7 @@ public interface GameSessionDao {
             session.setUseLocalQueryLlm(rs.getBoolean("useLocalQueryLlm"));
             session.setUseLocalTTS(rs.getBoolean("useLocalTTS"));
             session.setTtsProvider(rs.getString("ttsProvider"));
+            session.setLlmProvider(rs.getString("llmProvider"));
             session.setNotificationVolume(rs.getFloat("notificationVolume"));
             session.setSttThreads(rs.getInt("sttThreads"));
             session.setVoiceVolume(rs.getInt("voiceVolume"));
@@ -129,6 +130,12 @@ public interface GameSessionDao {
          */
         private boolean useLocalTTS;
         private String ttsProvider;
+        /**
+         * The cloud LLM provider the commander picked, as a {@link elite.intel.ai.ProviderEnum} name, or
+         * {@code null} for none. Text, and read back leniently, so a provider written by a newer build reads as
+         * "not selected" rather than breaking an older one.
+         */
+        private String llmProvider;
         private Integer sttThreads;
         private Integer voiceVolume;
         /**
@@ -279,6 +286,14 @@ public interface GameSessionDao {
 
         public void setTtsProvider(String ttsProvider) {
             this.ttsProvider = ttsProvider;
+        }
+
+        public String getLlmProvider() {
+            return llmProvider;
+        }
+
+        public void setLlmProvider(String llmProvider) {
+            this.llmProvider = llmProvider;
         }
 
         public Float getNotificationVolume() {

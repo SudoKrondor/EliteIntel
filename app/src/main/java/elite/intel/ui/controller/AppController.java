@@ -2,6 +2,7 @@ package elite.intel.ui.controller;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ApiFactory;
+import elite.intel.ai.LlmProviderResolver;
 import elite.intel.ai.brain.LocalLlmModelCheck;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandLoadAnnouncement;
 import elite.intel.ai.brain.vega.input.VegaSubsystemGate;
@@ -335,7 +336,9 @@ public class AppController {
                 SemanticCatalogWarmer.warmInBackground();
 
                 Timer connectionCheckTimer = new Timer(2000, e -> {
-                    GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.connectingToLlm")));
+                    if (!LlmProviderResolver.isCloudProviderMissing()) {
+                        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.connectingToLlm")));
+                    }
                     connectionCheck();
                 });
                 connectionCheckTimer.setRepeats(false);
@@ -391,6 +394,12 @@ public class AppController {
     private void connectionCheck() {
         bgExecutor.submit(() -> {
             try {
+                if (LlmProviderResolver.isCloudProviderMissing()) {
+                    // Nothing to probe: SetupCheck has already said to pick a provider, and probing the LM Studio
+                    // stand-in would announce a connection result for a model the commander never chose.
+                    UiBus.publish(new LlmConnectionStatusEvent(false));
+                    return;
+                }
                 // Probe the live analysis endpoint directly (VEGA and query handlers share the same
                 // provider config). Publishing LlmConnectionStatusEvent drives the UI + retry timer; the
                 // spoken result is silenced during silent retries via suppressConnectionFailSpeech.

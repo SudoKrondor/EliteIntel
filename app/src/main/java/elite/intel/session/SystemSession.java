@@ -1,5 +1,6 @@
 package elite.intel.session;
 
+import elite.intel.ai.ProviderEnum;
 import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
@@ -20,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Optional;
 
 public class SystemSession {
 
@@ -228,6 +230,26 @@ public class SystemSession {
                 return null;
             });
         }
+    }
+
+
+    /**
+     * The cloud LLM provider the commander picked, or empty when none is selected. Never inferred from the key.
+     */
+    public Optional<ProviderEnum> getLlmProvider() {
+        return Database.withDao(GameSessionDao.class, dao -> ProviderEnum.fromStored(dao.get().getLlmProvider()));
+    }
+
+    /**
+     * Stores the cloud LLM provider; {@code null} clears the selection.
+     */
+    public void setLlmProvider(ProviderEnum provider) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setLlmProvider(provider == null ? null : provider.name());
+            dao.save(session);
+            return Void.class;
+        });
     }
 
 

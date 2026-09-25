@@ -215,8 +215,44 @@ class SetupCheckTest {
         events.forEach(event -> assertFalse(event.canBeInterrupted(), "setup warnings must not be interruptible"));
     }
 
+    // ── cloud provider ───────────────────────────────────────────────────────
+
+    /**
+     * An install upgraded with a key whose format named no provider: the cloud is selected and nothing can
+     * answer, so the commander is told to pick one.
+     */
+    @Test
+    void aCloudSetupWithNoProviderIsToldToPickOne(@TempDir Path journals, @TempDir Path bindings) throws IOException {
+        Files.createFile(journals.resolve("Journal.2026-08-11T200621.01.log"));
+        Files.createFile(bindings.resolve("Custom.4.0.binds"));
+
+        List<String> spoken = capture(() -> checkWith(false, true, journals, bindings).check());
+
+        assertEquals(List.of(text("speech.setup.noLlmProvider")), spoken);
+    }
+
+    /**
+     * Nothing configured at all already says how to set a model up; asking for a provider on top of it would
+     * be a second warning about the same gap.
+     */
+    @Test
+    void theFreshInstallWarningIsNotDoubledByTheProviderOne(@TempDir Path journals, @TempDir Path bindings)
+            throws IOException {
+        Files.createFile(journals.resolve("Journal.2026-08-11T200621.01.log"));
+        Files.createFile(bindings.resolve("Custom.4.0.binds"));
+
+        List<String> spoken = capture(() -> checkWith(true, true, journals, bindings).check());
+
+        assertEquals(List.of(text("speech.setup.noLlm")), spoken);
+    }
+
     private static SetupCheck checkWith(boolean llmUnconfigured, Path journals, Path bindings) {
-        return new SetupCheck(new BindingsLoader(), () -> llmUnconfigured, () -> journals, () -> bindings);
+        return checkWith(llmUnconfigured, false, journals, bindings);
+    }
+
+    private static SetupCheck checkWith(boolean llmUnconfigured, boolean providerMissing, Path journals, Path bindings) {
+        return new SetupCheck(new BindingsLoader(), () -> llmUnconfigured, () -> providerMissing,
+                () -> journals, () -> bindings);
     }
 
     private static String text(String key) {

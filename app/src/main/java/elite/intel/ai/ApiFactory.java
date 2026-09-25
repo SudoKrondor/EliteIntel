@@ -48,16 +48,16 @@ public class ApiFactory {
         if (systemSession.useLocalQueryLlm()) {
             return LMStudioAnalysisEndpoint.getInstance(); // LM Studio is the only local host
         }
-        ProviderEnum provider = LlmProviderResolver.detectCloudProvider();
-        return switch (provider) {
+        // No provider selected: LM Studio stands in, as it always has for an unusable cloud setup. SetupCheck
+        // has already told the commander to pick one, and the connection check says nothing for this case.
+        return LlmProviderResolver.cloudProvider().<AiAnalysisInterface>map(provider -> switch (provider) {
             case GROK -> GrokAnalysisEndpoint.getInstance();
             case DEEPSEEK -> DeepSeekAnalysisEndpoint.getInstance();
             case MISTRAL -> MistralAnalysisEndpoint.getInstance();
             case OPENAI -> OpenAiAnalysisEndPoint.getInstance();
             case ANTHROPIC -> AnthropicAnalysisEndpoint.getInstance();
             case GEMINI -> GeminiAnalysisEndpoint.getInstance();
-            default -> LMStudioAnalysisEndpoint.getInstance();
-        };
+        }).orElseGet(LMStudioAnalysisEndpoint::getInstance);
 
     }
 
@@ -110,8 +110,7 @@ public class ApiFactory {
      * @param transmissions the language the game client writes radio transmissions in
      */
     static TtsProvider resolveProvider(TtsProvider provider, String ttsApiKey, Language language, Language transmissions) {
-        boolean googleWithoutKey = provider == TtsProvider.GOOGLE
-                && KeyDetector.detectProvider(ttsApiKey, "TTS") != ProviderEnum.GOOGLE_TTS;
+        boolean googleWithoutKey = provider == TtsProvider.GOOGLE && (ttsApiKey == null || ttsApiKey.isBlank());
         return TtsProvider.forSession(googleWithoutKey ? TtsProvider.KOKORO : provider, language, transmissions);
     }
 
