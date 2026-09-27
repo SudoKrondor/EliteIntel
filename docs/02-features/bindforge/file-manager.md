@@ -254,7 +254,7 @@ entries are ticked; a bindings layout is worth copying even when none of the har
 
 This screen used to list every detected installation with a Mirror checkbox and an "Apply to Selected Game
 Installations" button. **It is gone**, and the capability moved to
-[Alias Designer](alias-designer.md#per-installation-editing).
+[Alias Designer](alias-designer.md#one-record-and-where-it-lands--reworked-2026-09-26).
 
 ~~The reason is that mirroring is a property *of a device*, not of a screen.~~ **Superseded 2026-09-23:**
 mirroring is neither a screen nor a per-device property — it is the model. Every install holds the same device

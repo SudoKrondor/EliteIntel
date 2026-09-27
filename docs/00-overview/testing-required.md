@@ -111,11 +111,20 @@ orphaned `.buttonMap` files exist in the wild, which
 [File Manager's restore scope](../02-features/bindforge/file-manager.md#restore-scope) has to tolerate
 rather than treat as corruption.
 
+**Reframed 2026-09-23, and the original question answered itself.** They *do* differ — but differing is
+never legitimate. A shared `.binds` names devices by entries that live in these per-install files, so an
+install missing one
+[rejects the whole preset](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
+Difference is a latent outage, not a configuration, so
+[every install now gets the same files](../02-features/bindforge/overview.md#every-install-gets-the-same-files--settled-2026-09-23)
+and there is no per-install choice left to test.
+
 *Original question, for the record:* The
-per-installation model in [Alias Designer](../02-features/bindforge/alias-designer.md#per-installation-editing)
+per-installation model in [Alias Designer](../02-features/bindforge/alias-designer.md#one-record-and-where-it-lands--reworked-2026-09-26)
 assumes they can, and builds the UI around allowing it. Worth confirming against real multi-storefront setups
 whether that ever actually happens in practice, or whether every real user mirrors everything — which would
-make mirrored the sensible default rather than a choice.
+make mirrored the sensible default rather than a choice. *That last guess is what happened, though not for the
+reason it expected: not because everyone mirrors, but because not mirroring breaks the game.*
 
 **12. Does the game tolerate a `DeviceMappings.xml` entry for hardware that is not attached?** Entries outlive
 hardware, and BindForge lists and preserves them deliberately. Confirm the game ignores a stale entry rather

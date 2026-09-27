@@ -45,10 +45,26 @@ are **Frontier's**: they are present in the stock file.
 
 Sketch, not final:
 
-**The grain is one row per device per installation**, not one row per device. `DeviceMappings.xml` and
-`.buttonMap` are duplicated per storefront installation and can legitimately disagree, so a single row per
-device cannot represent the state — this is the same reasoning that killed the aggregate columns in
-[Alias Designer's device list](../02-features/bindforge/alias-designer.md#my-devices).
+**The grain is one row per device per installation**, not one row per device — **and this survives
+standardisation, for a different reason than it was written for.**
+
+It was justified by installations being allowed to disagree. They are not any more:
+[every install gets the same files](../02-features/bindforge/overview.md#every-install-gets-the-same-files--settled-2026-09-23),
+and the user edits one master. The obvious inference is that one row per device would now do.
+
+**It would not.** The rows do not describe what the user *chose* — the master holds that. They describe
+**what each installation actually contains**, which is a different fact and the only one that can detect
+drift. A game patch resets these files per installation; that is the incident BindForge exists for. With one
+row per device there is nothing to compare a patched installation against, so a wipe is indistinguishable
+from a device that was never configured. Per-installation rows are what let the
+[**M** marker](../02-features/bindforge/alias-designer.md#one-record-and-where-it-lands--reworked-2026-09-26)
+say *this installation matches the master* and the
+[divergence list](../02-features/bindforge/alias-designer.md#divergence-between-installs--one-list-ranked-by-consequence)
+say where it does not.
+
+So: **the master records intent, these rows record reality, and drift is the difference between them.**
+Collapsing the rows would remove the only copy of reality. *Do not "simplify" this to one row per device on
+the grounds that installations now match — knowing they match is exactly what the rows are for.*
 
 | Field | Purpose |
 |---|---|
@@ -123,21 +139,26 @@ uppercase beside PID `05c4` lowercase. Roughly half the file would mismatch a ca
 **every VID/PID comparison, lookup and key derivation must fold case**, and BindForge must not "normalise"
 Frontier's entries by rewriting them.
 
-### Two decisions, both now settled
+### Two decisions, one settled and one overtaken
 
-**~~Scope: working copy, or per install?~~ Settled 2026-09-02: per install.** The earlier assumption — one
-canonical working copy mirrored outward — cannot represent two installations holding deliberately different
-entries, which Alias Designer now supports. Rows multiply by installation count, and that is the correct cost.
+**~~Scope: working copy, or per install?~~ Settled 2026-09-02: per install — and it still holds.** The
+original argument (a single canonical copy cannot represent installations that deliberately differ) expired
+with standardisation. The conclusion did not: see the grain above. Rows multiply by installation count, and
+that is still the correct cost, because recording what each installation holds is the only way to notice one
+has been wiped.
 
-**~~Which installation seeds a device on first import?~~ Settled 2026-09-06: neither — both are preserved.**
-With per-installation rows nothing has to *win*, because each installation keeps its own row. When a device
-is found in two installations with different entries, BindForge records both exactly as found and marks the
-device **unmirrored**. It does not adopt one, and does not ask on first run.
+**~~Which installation seeds a device on first import?~~ Settled 2026-09-06: neither — both preserved,
+device left unmirrored. Overtaken 2026-09-23.** There is no `mirrored` flag to set any more, and leaving
+installations permanently disagreeing is the state standardisation exists to end. The replacement is
+[first setup](../02-features/bindforge/alias-designer.md#first-setup--reconciling-the-installs--settled-2026-09-23):
+BindForge reads every installation, shows what disagrees, and asks — once, per element.
 
-A first import cannot distinguish a deliberate difference from an accidental one, and the two mistakes do
-not cost the same: preserving an accidental difference costs one click to fix, while flattening a
-deliberate one destroys work BindForge cannot give back. So `mirrored` starts `false` for any device whose
-entries disagree, and `true` only where they already matched.
+**What carried over is the reasoning, which was always the valuable part.** *A first import cannot
+distinguish a deliberate difference from an accidental one, and the two mistakes do not cost the same:
+preserving an accidental difference costs one click to fix, while flattening a deliberate one destroys work
+BindForge cannot give back.* That is still why nothing is adopted automatically. The rows still record both
+installations exactly as found; what changed is that the user is asked to resolve it at setup rather than
+left with the difference indefinitely.
 
 ### The table cannot solve first import
 

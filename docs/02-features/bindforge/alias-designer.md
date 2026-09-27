@@ -6,7 +6,7 @@
 
 A single flat section with no sub-tabs: a device list, with the editor expanding inline beneath whichever device is open.
 
-Earlier drafts moved per-installation control into a separate "Installation Mirroring" screen, first inside Alias Designer and later inside [File Manager](file-manager.md). **Both are gone.** Which installations hold an entry for a device is a property *of that device*, so it belongs on the device's own row rather than on a screen the user has to go and find. See [Per-Installation Editing](#per-installation-editing).
+Earlier drafts moved per-installation control into a separate "Installation Mirroring" screen, first inside Alias Designer and later inside [File Manager](file-manager.md). **All of it is gone** — both screens, and the per-installation control itself, which [standardisation removed](overview.md#every-install-gets-the-same-files--settled-2026-09-23). What survives is the *reporting*: whether each installation matches the master for a device is a property of that device, so it sits on the device's own row rather than on a screen the user has to go and find. See [One record, and where it lands](#one-record-and-where-it-lands--reworked-2026-09-26).
 
 ## Device List
 
@@ -30,15 +30,20 @@ Columns, and why only these:
 | **Windows name** | what the hardware reports through the Device Service |
 | **VID / PID** | the hardware |
 | **Status** | `ATTACHED` or `MISSING` — whether the hardware is present right now |
-| **Installations** | one in-row tab per *detected* installation |
+| **Alias** | the name in the master, or *not added* |
+| **Installations** | one read-only marker per *detected* installation |
 
-The first three describe the hardware and are true no matter how many installations exist. **Everything else
-is per installation** — the alias, whether an entry exists, whether a `.buttonMap` exists — and none of it can
-honestly be reduced to a single cell. Two installations can disagree, and a list that averages them is lying.
-So those facts live on the in-row installation tabs, and the row itself carries no alias column.
+The first three describe the hardware and are true no matter how many installations exist. **The alias is now
+a column**, because there is one of them: the master's. *Under the original design there was no alias column,
+because each installation could hold a different name and a single cell would have been averaging them.
+[Standardisation](overview.md#every-install-gets-the-same-files--settled-2026-09-23) removed that, so the
+honest cell is the master's name.*
 
-Each in-row tab shows the installation name plus one marker: **M** when that installation is mirrored, or
-*not added* when it holds no entry for this device. Clicking a tab opens the device on that installation.
+**What stays per installation is whether each one has caught up.** Each marker names an installation and
+shows **M** when that installation matches the master for this device, *not added* when it holds no entry, or
+the [divergence colour](#divergence-between-installs--one-list-ranked-by-consequence) when it differs. The
+markers are a readout — clicking one does not open a per-installation editor, because there is no such thing;
+opening the row opens [the one record](#one-record-and-where-it-lands--reworked-2026-09-26).
 
 ### Built-in Devices
 
@@ -73,14 +78,15 @@ away, because there is no name to confirm.
 and on a built-in that entry is Frontier's. RESET LABELS removes only the `.buttonMap` the user or BindForge
 created, and the next [Elite-Intel startup](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller)
 generates a fresh one. A `.buttonMap` Frontier itself shipped — `VPCPanel`, `VPCThrottle` — is never removed.
-Like SAVE and CLEAR, it **follows MIRROR**: resetting one mirrored installation resets them all.
+Like SAVE and CLEAR, it reaches **every installation** on the next Apply — there is one record, so a reset is
+a reset everywhere.
 
 | | The user's entry | Built-in |
 |---|---|---|
 | Name | editable, as the [rename transaction](#renaming-a-device) | **locked** — Frontier's |
 | VID / PID | read-only | read-only |
 | Button and axis labels | editable once the name is confirmed | editable straight away |
-| Undo (follows MIRROR) | **CLEAR** — the entry and `.buttonMap` | **RESET LABELS** — only a `.buttonMap` BindForge or the user made |
+| Undo (reaches every install) | **CLEAR** — the entry and `.buttonMap` | **RESET LABELS** — only a `.buttonMap` BindForge or the user made |
 | [Onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13) | asked for a name | never asked |
 | What APPLY writes | the entry and its `.buttonMap` | the `.buttonMap` only |
 
@@ -246,7 +252,9 @@ game simply finds no device matching that entry, so the bindings do nothing, wit
 to search for. A user experiences it as *"my stick stopped working after an update."*
 
 **And an aliased device is the recoverable case.** Because `.binds` references the alias rather than the
-hex, the repair is one PID field per installation and every binding survives. A device with **no** entry
+hex, the repair is **one PID field, edited once and applied everywhere**, and every binding survives.
+*This used to read "one PID field per installation", from the design where each install was edited
+separately.* A device with **no** entry
 has its raw hex in every binding, and the same firmware update orphans all of them — in the specimen
 above, 131 bindings across two devices.
 
@@ -562,25 +570,57 @@ The editor **expands inline beneath the device's row**, one device open at a tim
 first; clicking the open row closes it. There is no separate editor panel and no "no device selected" state —
 a collapsed list is the resting state.
 
-### Per-Installation Editing
+### One record, and where it lands — reworked 2026-09-26
 
-`DeviceMappings.xml` and `.buttonMap` are genuinely duplicated per storefront installation, so **the editor
-edits one installation at a time.** The expansion carries a tab per detected installation, and switching tabs
-switches the whole record beneath it: alias, axis names, button names.
+**There is one record per device, and the user edits the master.** `DeviceMappings.xml` and `.buttonMap` are
+duplicated per installation, but BindForge keeps those copies identical, so there is nothing to choose between
+— see [Every install gets the same files](overview.md#every-install-gets-the-same-files--settled-2026-09-23).
+One alias, one set of axis and button labels, applied everywhere on Apply.
 
-The header names the installation and shows its **folder path**, read-only. That path is what makes a tab
-switch unambiguous — it is not merely a different data set, it is a different folder on disk.
+*This replaces the original design, where the expansion carried a **tab per installation** and a **MIRROR**
+button decided which installations shared a definition. Both existed to express deliberate per-install
+difference, which is no longer a state BindForge supports: divergence is not a configuration the user chose,
+it is a latent outage. Reconciling installs that already disagree is
+[a first-setup question asked once](#first-setup--reconciling-the-installs--settled-2026-09-23), not a
+per-device switch.*
 
-**MIRROR**, in the action row, is what keeps the common case cheap:
+#### The install strip — a readout, not a switch
 
-- **Mirrored installations share one definition.** Edit any one of them and every other mirrored installation
-  follows. Same hardware, same names, one edit — which is what nearly every player wants.
-- **Turn MIRROR off** and that installation is edited on its own. This is the case that earlier designs could
-  not express at all: they forced one definition on every installation.
-- Turning MIRROR back on **adopts** whatever the other mirrored installations already say.
+The strip along the top of the expansion stays, and it is **read-only**. It no longer selects which
+installation you are editing; it shows **which installations the user has, and whether each one matches the
+master for this device**:
 
-Together with whether an entry exists at all, that gives three per-installation states: *no entry*, *entry
-edited independently*, and *entry shared with the other mirrored installations*.
+```
+ Steam  M     Epic  M     Frontier  •
+        └─ matches the master        └─ does not
+```
+
+- **Each installation is named, with its folder path**, as before. The path is what makes a failed push
+  comprehensible: when Apply reports *"updated 2 of 3"*, the user can see which one and where it lives.
+- **The `M` indicator means "Matches"** — this installation's entry for this device is identical to the
+  master's. It is a **fact being reported, not a setting being toggled**, which is the whole difference from
+  the button it replaces.
+- **It carries the same severity colours as the
+  [divergence list](#divergence-between-installs--one-list-ranked-by-consequence)**, rather than inventing a
+  second vocabulary: green where the installation matches, yellow where it differs in a way that breaks
+  nothing, red where a binding names this device and the installation has no entry for it. Colour is the
+  text's colour, never a fill or a pill, per the HUD canon.
+
+**What the strip compares.** The installation against the **saved master** — never against the unsaved draft
+in front of the user. Otherwise every keystroke would flip three indicators to "differs", which is true and
+useless. Unsaved work is Edit Mode's job to report; the strip answers a different question: *what is actually
+on disk out there.*
+
+**Its scope is this device.** The whole-configuration view, ranked and with the ways out, remains the
+[divergence list](#divergence-between-installs--one-list-ranked-by-consequence). The strip is not a second
+home for drift reporting and offers no repairs — it is the same fact, narrowed to the device already open,
+at the moment the user is editing it.
+
+#### Two states, not three
+
+A device is either **configured** in the master or **not added**. The original design's third state — "entry
+edited independently of the other installations" — no longer exists. Where an installation's file disagrees
+with the master, that is drift to be resolved, not a configuration to be preserved.
 
 ### Fields and rules
 
@@ -612,24 +652,36 @@ edited independently*, and *entry shared with the other mirrored installations*.
 
 | Action | Scope | Touches a game installation? |
 |---|---|---|
-| **SAVE** | the open installation's record | **No** — draft only |
-| **DISCARD** | the open installation's record | No |
-| **CLEAR** | the open installation's record, **and every installation mirrored with it** — not offered on a built-in | No — see below |
-| **RESET LABELS** | a built-in's `.buttonMap` in the open installation, **and every installation mirrored with it** | No — draft only; see [built-ins](#built-in-controllers-in-my-devices--settled-2026-09-13) |
-| **MIRROR** | the open installation | No |
-| **APPLY TO GAME INSTALLS** | every installation with an entry | **Yes** |
+| **SAVE** | the device's record in the master | **No** — draft only |
+| **DISCARD** | the device's record in the master | No |
+| **CLEAR** | the device's entry and its `.buttonMap` — not offered on a built-in | No — see below |
+| **RESET LABELS** | a built-in's `.buttonMap` labels | No — draft only; see [built-ins](#built-in-controllers-in-my-devices--settled-2026-09-13) |
+| **APPLY TO GAME INSTALLS** | **every installation**, and reports per installation | **Yes** |
+
+*The **MIRROR** action is gone, along with the per-installation scoping that qualified CLEAR and RESET LABELS.
+There is one record, so every action reaches it and Apply carries it everywhere.*
 
 **SAVE is deliberately the safe one.** It is the button people press by habit, so it must never be the button
 that writes into a live game installation. Applying is a separate, deliberate action at the bottom of the
 screen.
 
+**APPLY reports per installation, and says so when it cannot finish.** *"Updated 3 of 3"* on the good day,
+*"updated 2 of 3 — Frontier install not reachable"* on the bad one. Silent partial success is exactly the
+drift this model exists to remove, so a push that half-lands must be visible
+([what standardisation owes, #2](overview.md#every-install-gets-the-same-files--settled-2026-09-23)). After a
+partial apply the install strip shows it: the installation that missed the write stops matching the master.
+
 **CLEAR, not Delete.** A device cannot be removed from the list while its hardware is attached — it would
-simply reappear, because the list is driven by what is plugged in. What CLEAR removes is the open installation's
-`DeviceMappings.xml` entry and its matching `.buttonMap` — **and, when that installation is mirrored, every
-installation mirrored with it**, because MIRROR means one shared definition and SAVE already reaches all of them
-(settled 2026-09-13). The device stays listed, showing *not added* for each installation cleared. Clearing every
-installation returns the device to the state it had before it was ever configured. To clear just one of several
-mirrored installations, turn MIRROR off on it first.
+simply reappear, because the list is driven by what is plugged in. What CLEAR removes is the device's
+`DeviceMappings.xml` entry and its matching `.buttonMap`, returning the device to the state it had before it
+was ever configured. The device stays listed, showing *not added*.
+
+**CLEAR now reaches every installation, so it asks first.** Under the original design it was scoped to one
+installation and its mirrors, and a user could clear a single install by turning MIRROR off first. Neither is
+true any more: there is one record, and clearing it clears the device everywhere on the next Apply. That is a
+wider blast radius than the button used to have, so it takes a confirm that **names the count** — *"Clear
+RHVCAPDirection from all 3 installations?"* — using
+[`HudConfirmDialog`](ui-component-map.md), never `JOptionPane`.
 
 This also replaces the old "delete and recreate to fix a wrong VID/PID" repair path, which never worked as
 written: automatic registration would re-add a connected device immediately.
@@ -642,13 +694,56 @@ A rename is **not** a single-field edit. The alias is the primary key of a three
 alias → <element tag> in DeviceMappings.xml → <alias>.buttonMap filename → possibly Device= in .binds
 ```
 
-So renaming has to be handled as one transaction:
+So renaming has to be handled as one all-or-nothing operation:
 
 1. Rename the element tag in `DeviceMappings.xml`.
 2. **Rename** the `.buttonMap` file — never create a second one. An orphaned `OldName.buttonMap` sits in the
    game's install folder where nothing will ever clean it up.
 3. Scan `.binds` for `Device="<old name>"` and rewrite or refuse. This is the dangerous one: `.binds` can
    reference a device *by name* as well as by VID/PID hex, so a rename can silently orphan bindings.
+
+### A rename spans every installation — added 2026-09-26
+
+**Steps 1 and 2 happen once per installation.** `DeviceMappings.xml` and the `.buttonMap` files are
+duplicated per install; only `.binds` is shared. So on a three-install machine a rename is not three file
+operations, it is **seven**: two in each installation, plus the one shared `.binds`.
+
+| File | Copies | Step |
+|---|---|---|
+| `DeviceMappings.xml` | one **per installation** | 1 |
+| `<alias>.buttonMap` | one **per installation** | 2 |
+| `.binds` | **one, shared by all of them** | 3 |
+
+*The original three-step list was written when a rename meant one installation's files. The steps are
+unchanged; what changed is how many times the first two run.*
+
+#### `.binds` goes last, and only if every installation succeeded
+
+**The shared file is the one that decides whether a half-finished rename is survivable.** Rename the entry in
+two installations, rewrite `.binds` to the new name, then fail on the third, and that third installation is
+now reading a `.binds` that names a device it has never heard of. It
+[rejects the entire preset and falls back to KEYBOARD & MOUSE in all four sections](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22)
+— measured, not predicted. The only symptom is a line in `BindingLoadingErrors.log`.
+
+So the order is fixed:
+
+1. **Rename in every installation first.** All of them, or the rename does not proceed.
+2. **Only then rewrite `.binds`.**
+
+**If any installation cannot be written — a locked file, an unmounted drive, a permission refusal — nothing
+is written at all.** Not the installations that would have succeeded, and certainly not `.binds`. The user is
+told which installation blocked it and why, and the old name stays everywhere. A rename that never started
+costs a retry; a rename that half-landed costs a working controller until someone reads a log file.
+
+**This is the one place Apply's "updated 2 of 3" reporting is not good enough.** A partial *push* leaves an
+installation stale, which the [install strip](#one-record-and-where-it-lands--reworked-2026-09-26) shows and
+the next Apply fixes. A partial *rename* leaves it broken, because the shared file moved underneath it.
+Partial success is acceptable for the first and not for the second.
+
+**Roll back what was already done.** If installation three fails after one and two were renamed, the two
+completed renames are undone before reporting the failure — the files were named for a backup-covered write,
+so the previous names are recoverable. Leaving them renamed while `.binds` still says the old name is the
+same breakage in the other direction.
 
 **Why the alias-confirm gate matters more than it looks.** Requiring the alias to be settled before button and
 axis naming unlocks means a `.buttonMap` is only ever created under a name the player has already looked at.
@@ -687,16 +782,18 @@ once-per-run version.
 *Not to be confused with a **control** disappearing from the game itself — a different case, in the
 [version-bump merge](overview.md#what-the-startup-check-actually-decides).*
 
-**Settled 2026-09-06 — first import takes the player's files exactly as they are.** No mirroring, no
-reconciliation, no adopting one installation's entry over another's. Where two installations hold
-different entries for the same device, both are preserved as they were found and the device is left
-**unmirrored**; BindForge does not decide which one was meant. Mirroring is one click away afterwards, and
-is the player's call to make once they can see both.
+**~~Settled 2026-09-06 — first import takes the player's files exactly as they are.~~ Superseded 2026-09-23
+by [first setup](#first-setup--reconciling-the-installs--settled-2026-09-23).** That ruling said BindForge
+would preserve both entries where two installations disagreed, leave the device **unmirrored**, and let the
+user mirror it later.
 
-The reasoning is that a first run has no way to tell a deliberate difference from an accidental one, and
-the failure modes are not symmetric: preserving a difference that turns out to be accidental costs one
-click, while flattening a difference that turns out to be deliberate destroys work the player cannot
-recover from BindForge.
+**What replaced it, and what survived it.** Standardisation removed the end state it aimed at — a device can
+no longer be left deliberately different per installation. What survived is its actual argument: *a first run
+cannot tell a deliberate difference from an accidental one, and the two mistakes do not cost the same.*
+First setup still never flattens silently. It reads every installation, shows what disagrees, and **asks**
+— once, per element, with the user choosing which value wins. So nothing is adopted without being seen, which
+is what the 2026-09-06 decision was protecting; it just gets resolved at setup instead of deferred
+indefinitely.
 
 ## Exit Prompt
 
