@@ -59,4 +59,4 @@ Elite-Intel's `DEVELOPERS.md` sets rules that apply to everything here:
 - **No JNI to unsigned libraries** unavailable on both Windows and Linux;
 - **No reading or modifying in-game memory**. Both are automatic PR rejections.
 
-Open questions and unresolved design decisions live in [conflicts-and-open-questions.md](conflicts-and-open-questions.md); scope decisions live in [v1.2-scope.md](v1.2-scope.md).
+Open questions and unresolved design decisions live in [conflicts-and-open-questions.md](../99-archive/conflicts-and-open-questions.md); scope decisions live in [v1.2-scope.md](v1.2-scope.md).

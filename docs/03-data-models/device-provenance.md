@@ -165,8 +165,17 @@ Two consequences for this table:
 
 ## Migration
 
-V1.2 work uses the `02XXX` block (`00XXX` = v1.0, `01XXX` = v1.1) - corrected 2026-09-22 by Krondor. Highest applied as of 2026-09-02 is
-`01045__ship_vehicle_bays.sql`, so the block is clean and the first script would be `01100__device_provenance.sql`.
+**BindForge writes in `12000–12499`.** The first two digits of a migration number are the version — `11XXX` =
+V1.1, `12XXX` = V1.2 — and V1.2's shared band is split between its two writers, BindForge taking
+`12000–12499` and user/galaxy work `12500–12999`. Krondor's
+[proposal §4](../multi-install-proposal.md#4-migrations-one-tree-per-file), accepted 2026-09-24. Files written before the band
+rule keep their numbers (`000XX` = V1.0, `010XX` = V1.1) and sort before `11000`, so filename order still
+holds.
+
+So this becomes **`db-migration/12000__device_provenance.sql`** — Krondor names it as the example in §4. Note
+the tree: the shared top level, never `user/`, which is his alone by the §5 contract. Out-of-order
+arrival between the two ranges is safe, because migrations are recorded by filename rather than by highest
+number applied.
 
 Migrations are applied once at application startup and **an applied migration is never edited** — a new
 numbered script is added instead. The schema above should settle before it becomes a numbered file.

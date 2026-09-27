@@ -92,10 +92,10 @@ settled. Until then, BindForge's conflict-detection algorithm (§4) should not h
 assumption that cross-section pairs are always safe.
 
 **What the implementation does in the meantime — recorded 2026-09-12.** `isSafeOverlap` treats a
-cross-vehicle pair as safe, and now says why in terms of the commander rather than the file: a control
+cross-vehicle pair as safe, and now says why in terms of the user rather than the file: a control
 they think of as one thing but Elite binds per vehicle — *the cargo scoop, the fire groups, the
 triggers, the panels, the maps, the lamps, night vision* — may sit on one key in all of them.
-**Commanders lay it out that way on purpose, and only one vehicle is ever occupied.**
+**Users lay it out that way on purpose, and only one vehicle is ever occupied.**
 
 That does not resolve the observation above, which was about *the game's own* check. It does mean
 flagging these pairs would be a false positive against real, deliberate layouts — so the open question
@@ -116,7 +116,7 @@ Confirmed by direct in-game testing on 2026-08-31, and implemented in Elite-Inte
 
 While an Elite text field has focus — the galaxy map's system search box above all — the game treats any
 keystroke that produces a **printable character** as typing, and never consults the `UI_*` bindings at all. A
-commander with `UI_Down` on `S` who types a system name and then presses their own "down" key appends an "s"
+user with `UI_Down` on `S` who types a system name and then presses their own "down" key appends an "s"
 to what they typed. Focus never leaves the box, and every keystroke after it is typed into the box too.
 
 **The modifier decides it, not the binding:**
@@ -128,7 +128,7 @@ to what they typed. Focus never leaves the box, and every keystroke after it is 
 | `Ctrl+S`, `Alt+S` | no | yes |
 
 **Shift is not a character-suppressing modifier** — it changes the character rather than removing it. That is
-why this layout silently works for some commanders and not others, and why the correct test is *"does this
+why this layout silently works for some users and not others, and why the correct test is *"does this
 chord type a character"*, never *"is this chord modified"*.
 
 Character-suppressing modifiers, per the implementation: `Key_LeftControl`, `Key_RightControl`, `Key_LeftAlt`,
@@ -136,7 +136,7 @@ Character-suppressing modifiers, per the implementation: `Key_LeftControl`, `Key
 
 ### Why it is invisible to the player
 
-A commander does not hit this by hand, because by hand they click the search result with the mouse. It only
+A user does not hit this by hand, because by hand they click the search result with the mouse. It only
 bites automation. That is why Elite-Intel announces it on **every** start rather than once — there is no way
 for the player to discover it through play, and it stops route plotting outright rather than degrading it.
 
@@ -149,7 +149,7 @@ cries wolf about a working layout gets tuned out."* BindForge's own validation s
 
 **Scope the check to where it actually bites.** `UI_Select` is deliberately excluded from the scan even though
 bare `Space` types a character: Frontier's default binds it that way, so including it would flag nearly every
-commander alive, and Select is only ever pressed once focus has already left the text box.
+user alive, and Select is only ever pressed once focus has already left the text box.
 
 ### The general shape
 
@@ -182,7 +182,7 @@ The first two are unusable. The third is usable and harmful, so it is warned abo
 | Chord | What happens | Where |
 |---|---|---|
 | `Alt+F4` | closes the focused window — quits the game | every desktop OS |
-| `Ctrl+Alt+F1`…`F12` | switches virtual terminal, dropping the commander to a TTY out of the running session | Linux only |
+| `Ctrl+Alt+F1`…`F12` | switches virtual terminal, dropping the user to a TTY out of the running session | Linux only |
 | `PrintScreen` | taken by Windows before the game sees it — a binding on it never fires | Windows |
 | the Windows key | the same | Windows |
 | the Copilot key | the same, on keyboards that have one | Windows |
@@ -204,11 +204,11 @@ game. **It is matched on the key alone, not on the chord.** With `Pause` on `Key
 `P`, on `Shift+P`, on `Alt+P`, on anything ending in P.
 
 So **whatever key sits on `Pause` is unusable for every other control, with any modifiers or none.** A
-second control sharing that key can never be pressed without dropping the commander out of the cockpit
+second control sharing that key can never be pressed without dropping the user out of the cockpit
 and into the options screen.
 
-**Which key that is comes from the commander's file.** It is a parameter, not a constant — and
-`gameMenuKeysFromSlots` reads *both* slots, because a commander with a key in Primary and another in
+**Which key that is comes from the user's file.** It is a parameter, not a constant — and
+`gameMenuKeysFromSlots` reads *both* slots, because a user with a key in Primary and another in
 Secondary has two keys that open the menu.
 
 ### How it was misdiagnosed, and why that matters
@@ -217,13 +217,13 @@ The auto-assigner handed out `Alt+P` on a file whose `Pause` was on `Key_P`, and
 options menu every time. The first reading blamed the `Alt+P` chord and added it as a fixed taboo.
 
 **But P was never special.** The reserved key is whatever sits on `Pause`; on that one file it happened to
-be P. A rule written from a single commander's file described that commander, not the game. Worth keeping
+be P. A rule written from a single user's file described that user, not the game. Worth keeping
 in view for every other rule in this document that rests on one observation.
 
 ### The corollary: the game-menu control is worth nothing and costs a key
 
 `Esc` opens that same menu whether or not `Pause` is bound to anything. So a key on `Pause` buys a second
-way into a screen the commander can already reach, and takes a key off the board for everything else.
+way into a screen the user can already reach, and takes a key off the board for everything else.
 
 Elite-Intel's auto-assigner therefore leaves `Pause` deliberately empty **and** pulls its key out of the
 assignment pool entirely — pulling the whole key, not the exact chord, since with the menu on P it would
@@ -235,12 +235,12 @@ otherwise still hand out `Alt+P` and `Shift+P`.
 cannot be rebound away.
 
 **Elite never writes it into a `.binds`.** On the controls screen, pressing `Esc` while a slot is waiting
-for input **clears** that slot rather than binding it — it is how a commander empties a binding they do not
+for input **clears** that slot rather than binding it — it is how a user empties a binding they do not
 want. So a file the game wrote never contains `Esc`; one can only arrive by hand-editing or from another
 tool. *Alan, in game, 2026-09-20.*
 
 That makes it differ from the `Pause` key twice over: it is a constant rather than something read from the
-file, and the game itself guarantees it is absent. **The risk is not a file the commander already has — it is
+file, and the game itself guarantees it is absent. **The risk is not a file the user already has — it is
 a tool offering `Esc` as assignable.** Elite-Intel's assign dropdown does today; see
 [`Esc`, and the difference between a key you can bind and a key you can press](../bind-editor.md#esc-and-the-difference-between-a-key-you-can-bind-and-a-key-you-can-press).
 
@@ -250,11 +250,11 @@ game has no other way into the menu. Refusing `Esc` as a binding must never remo
 ### Self-Sabotaging: `NumLock`
 
 `NumLock` is captured and fires like any other key, and that is the problem. Pressing it switches the
-numpad to a different set of codes, so **every numpad binding the commander has starts sending something
+numpad to a different set of codes, so **every numpad binding the user has starts sending something
 else** — silently, from one keypress, with nothing on screen to connect the two.
 
 It is not reserved: a binding on it works. So it is **assignable, with a warning**, rather than refused
-(*Alan, 2026-09-20*) — refusing it would overrule a commander who knows exactly what it does. Elite-Intel's
+(*Alan, 2026-09-20*) — refusing it would overrule a user who knows exactly what it does. Elite-Intel's
 auto-assigner already keeps the entire numpad out of its pool, partly for this reason, while the manual list
 still offers `NumLock` itself.
 
@@ -269,7 +269,7 @@ sorts conflicts into three tiers, and they are reported very differently:
 | **Curated** | a known pair whose consequence is worth spelling out — *"Deploying hardpoints will also toggle landing gear"* | its own line, with the curated wording |
 | **Plain overlap** | two actions on one chord, no special consequence known | collapsed into a single line listing the pairs |
 
-The collapsing is not cosmetic: a commander reassigning their controls produced **fifty-one** separate
+The collapsing is not cosmetic: a user reassigning their controls produced **fifty-one** separate
 "... and may interfere" lines in one burst, which buried everything else.
 
 **A worked example of promotion between tiers.** `UI_Select` sharing a key with the quick comms panel was
@@ -294,7 +294,7 @@ Elite-Intel is walking the interface.
 |---|---|---|
 | 1 | **Map camera vs UI navigation** | camera actions read as map-overlay, navigation as interface — but inside the galaxy or system map both are live at once |
 | 2 | **`UI_Select` vs quick comms** | Select is interface, comms is ship — but the comms panel is reachable with a panel already open |
-| 3 | **Panel-focus and map-open keys vs UI navigation** | the focus keys read as ship — but they are how a commander moves *between* panels, so they never stop being live |
+| 3 | **Panel-focus and map-open keys vs UI navigation** | the focus keys read as ship — but they are how a user moves *between* panels, so they never stop being live |
 
 The third was added by Krondor in September 2026 and is the most consequential of the three, because
 it breaks the walk rather than disturbing it. Every panel Elite-Intel opens it then steps through with
@@ -303,14 +303,14 @@ search field. On a shared chord each step *also* switches panel or throws the ma
 there, and **the walk runs on blind, every keystroke reporting success.**
 
 From a support bundle of 2026-09-09: `UI_Down` and `GalaxyMapOpen_Buggy` both on `Ctrl+S`, so every
-attempt to recover an SRV opened the galaxy map instead. **A commander doing it by hand never sees
+attempt to recover an SRV opened the galaxy map instead. **A user doing it by hand never sees
 this** — they are looking at the screen and simply stop when the map appears.
 
 The rule covers fifteen named actions — the four panel-focus keys and the two map-open toggles, in
 each vehicle context Elite names them for. **Named, not prefix-matched**, for the same reason the map
 camera family is: the action set is Frontier's, so a control they add later has to be opted in by
 someone who has decided it belongs. The remedy is separation — the interface keys and the panel/map
-keys have to be different chords; which layout is the commander's to pick.
+keys have to be different chords; which layout is the user's to pick.
 
 **Quick comms is deliberately absent from that list** even though it behaves the same way. It keeps its
 own rule, which reports it against `UI_Select` alone and leaves it an ordinary overlap against the

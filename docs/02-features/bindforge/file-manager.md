@@ -2,7 +2,7 @@
 
 **File Manager is BindForge's primary feature — the main reason BindForge exists.** Backing up the binds
 and configuration files is the most important thing this tool does: it safeguards the configuration the
-commander is using *right now*, and makes it survive the three things that take it away — **game updates,
+user is using *right now*, and makes it survive the three things that take it away — **game updates,
 computer upgrades, and hardware failure.** Editing bindings is the visible feature; not losing them is the
 one that matters.
 
@@ -143,8 +143,8 @@ restores regardless, since it goes to one shared folder that has no installation
 | Storefront match | *which installation does this go into?* | ask the player |
 | Hardware match | *do these device entries describe hardware this player has?* | refuse the device domains as not compatible — see [Browse for Backup File](#browse-for-backup-file) |
 
-Worth keeping distinct: a commander's own backup from their old PC fails the first check and passes the
-second. Another commander's backup can pass the first and fail the second. Conflating them would either
+Worth keeping distinct: a user's own backup from their old PC fails the first check and passes the
+second. Another player's backup can pass the first and fail the second. Conflating them would either
 refuse a legitimate restore or wave through someone else's hardware.
 
 ### Archive Format — ZIP
@@ -152,7 +152,7 @@ refuse a legitimate restore or wave through someone else's hardware.
 **Settled 2026-09-06.** One archive file per backup, not a folder tree.
 
 Chosen for portability rather than compression: a single file can be copied, kept, or handed to someone
-else when a commander's bindings break and they need to send what they had. RAR was considered and
+else when a user's bindings break and they need to send what they had. RAR was considered and
 rejected for a dull reason — Java ships `java.util.zip`, while RAR needs a third-party library and is
 proprietary.
 
@@ -168,7 +168,7 @@ reading existing folder-format backups is an open item.
 ### Browse for Backup File
 
 Restores from an archive that is **not** in the list — one copied off another machine, pulled out of a
-cloud folder, or sent by another commander. Same scope selection and same draft-only destination as any
+cloud folder, or sent by another player. Same scope selection and same draft-only destination as any
 other restore.
 
 *Recorded 2026-09-06:* this button appeared in the mockup with no specification behind it. It was named
@@ -183,8 +183,8 @@ archive format is what makes it worth having.
 | # | Case | Behaviour |
 |---|---|---|
 | 1 | **The player's own backup, from elsewhere** — an old machine, a cloud folder, before a reinstall | Restore everything. Same hardware, same VID/PIDs, all four domains apply. |
-| 2 | **Another commander's backup — the `.binds` half** | Restore it. This is the `.binds` file sharing the punchlist meant, and it is genuinely useful: a bindings layout is worth copying. |
-| 3 | **Another commander's backup — `DeviceMappings.xml` and `.buttonMap`** | **Refused.** BindForge says the device data is not compatible and restores the rest. |
+| 2 | **Another player's backup — the `.binds` half** | Restore it. This is the `.binds` file sharing the punchlist meant, and it is genuinely useful: a bindings layout is worth copying. |
+| 3 | **Another player's backup — `DeviceMappings.xml` and `.buttonMap`** | **Refused.** BindForge says the device data is not compatible and restores the rest. |
 
 **Why the third is refused rather than merely warned about.** Those files describe *their* hardware.
 Importing them writes device entries for controllers the player does not own — and nothing objects,
@@ -218,7 +218,7 @@ local `DeviceMappings.xml` and the rows in
 [device provenance](../../03-data-models/device-provenance.md), rather than against what happens to be
 plugged in at that moment, since a player may restore before reattaching a controller.
 
-**It never decides. It lists the device entries and the commander ticks.** The archive is a bag of
+**It never decides. It lists the device entries and the user ticks.** The archive is a bag of
 device entries, not one indivisible thing — which is how `DeviceMappings.xml` already works — so
 "case 1 or case 3" was the wrong shape of question. **A single archive can be both at once.**
 
@@ -229,15 +229,15 @@ Restore which device entries?
   [ ] X56 Throttle  not seen on this machine
 ```
 
-**BindForge's assessment sets the tick; the commander sets the outcome.** Entries matching hardware
+**BindForge's assessment sets the tick; the user sets the outcome.** Entries matching hardware
 it can see are pre-ticked, entries it cannot place are not. That keeps the common cases to a glance —
-a straight own-backup restore is all ticked, another commander's archive is all clear — while the
+a straight own-backup restore is all ticked, another player's archive is all clear — while the
 partial case, the one that started this question, needs exactly one correction.
 
-**Why the commander can answer this when BindForge cannot.** They know whether they still own the
+**Why the user can answer this when BindForge cannot.** They know whether they still own the
 X56. BindForge knows only that no attached device matches it, which is equally consistent with the
 stick being sold, unplugged, or on a desk in another room. This is the same conclusion reached for
-[device identity in Alias Designer](alias-designer.md#device-identity-is-the-commanders-to-confirm--settled-2026-09-12),
+[device identity in Alias Designer](alias-designer.md#device-identity-is-the-users-to-confirm--settled-2026-09-12),
 and for the same reason: there is no reliable hardware identity to compute from.
 
 **The refusal in case 3 stands, and this is how it is enforced** — not by classifying the archive, but
@@ -245,7 +245,7 @@ by leaving foreign entries unticked by default, so importing someone else's hard
 deliberate act rather than an unnoticed one. **Matching is compared against what BindForge knows
 locally** — the local `DeviceMappings.xml` plus the
 [provenance](../../03-data-models/device-provenance.md) rows — **not against what is plugged in right
-now**, since a commander may restore before reattaching a controller.
+now**, since a user may restore before reattaching a controller.
 
 **`.binds` is unaffected by any of this.** It is restored per case 2 regardless of which device
 entries are ticked; a bindings layout is worth copying even when none of the hardware is yours.
@@ -343,7 +343,7 @@ Consequences of that limit, so they are chosen rather than discovered:
 
 ## What a `.binds` File Might Not Be
 
-**Added 2026-09-17, measured rather than imagined.** Across 48,354 commander-shared files, **445 carry a
+**Added 2026-09-17, measured rather than imagined.** Across 48,354 player-shared files, **445 carry a
 `.binds` extension and are not bindings files** — 363 of them a `StartPreset.start` picked by mistake from the
 same folder, the rest other games' configs, device profiles, truncated files and stray XML. Full breakdown in
 [Bind Editor](bind-editor.md#a-binds-name-does-not-make-it-a-binds-file--2026-09-17).
@@ -356,7 +356,7 @@ could not identify.**
 ## Edit History
 
 **Confirmed in V1.2 (2026-09-09).** The reason it earns its place rather than being deferred: **it removes
-the need to take a full backup before every small experiment.** Without it, a commander who wants to try
+the need to take a full backup before every small experiment.** Without it, a user who wants to try
 one change either backs up the whole configuration first or risks not getting back. Neither is a fair
 price for adjusting one binding, and the second is how people end up with a layout they cannot recover.
 
@@ -407,12 +407,15 @@ here, and what is not:
 
 **Auto-backup and retention are one change, not two.** Today nothing prunes, and that is harmless because
 every backup is a deliberate button press. Add the launch trigger on its own and the folder grows every
-time Elite-Intel starts, on a machine where the commander never asked for a single backup. Whichever lands
+time Elite-Intel starts, on a machine where the user never asked for a single backup. Whichever lands
 first, the other has to land with it.
 
-**Edit History needs the first V1.2 migration.** The newest applied migration is `01050`, and the
-**The `02XXX` block is entirely free** — v1.2's block, corrected 2026-09-22 from `011XX`, which sat inside v1.1's - so Edit History's table is a new `02XXX` file, and [an applied
-migration is never edited](../../../CLAUDE.md).
+**Edit History needs a migration in BindForge's range.** Under Krondor's band rule
+([proposal §4](../../multi-install-proposal.md#4-migrations-one-tree-per-file), accepted 2026-09-24) the first
+two digits are the version, and V1.2's shared band is split between its two writers: **BindForge owns
+`12000–12499`**, user and galaxy work `12500–12999`. The range is empty, so Edit History's table is simply
+the next free number in it, in the shared top-level `db-migration/` tree — never `user/`, which is
+Krondor's alone. [An applied migration is never edited](../../../CLAUDE.md).
 
 ## Export / Import — Considered, Then Cut
 

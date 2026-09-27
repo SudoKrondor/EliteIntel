@@ -242,6 +242,94 @@ genuinely needs for the `DeviceMappings.xml` and `.buttonMap` domains that live 
 real-world paths are preserved in
 [domain-knowledge/EliteDangerous-InstallPaths.md](domain-knowledge/EliteDangerous-InstallPaths.md).
 
+### On Linux the game folders arrive as symlinks - recorded 2026-09-26
+
+`Installer.install4j`'s launcher fragment runs on **every** Linux start, finds the Steam Proton prefix, and
+creates two symlinks inside the app's own install directory (`~/.var/app/elite.intel.app`):
+
+| Symlink | Points at |
+|---|---|
+| `ed-bindings` | the prefix's `Options/Bindings` folder |
+| `ed-journal` | the prefix's `Saved Games/.../Elite Dangerous` folder |
+
+**Two consequences for BindForge.**
+
+**The path is not computed at runtime on Linux** - it is a symlink the launcher already resolved. Anything
+BindForge writes there arrives through that indirection, and a freshness check or file watcher has to cope
+with a path whose target can be replaced between launches.
+
+**That script finds at most one Steam installation**, first match wins, and there are
+[four candidate roots on Linux](domain-knowledge/EliteDangerous-InstallPaths.md#5a-linux-has-several-steam-roots-not-one---confirmed-2026-09-26).
+It is right for Elite-Intel, which needs one journal to watch. It is not a discovery mechanism BindForge can
+reuse, because BindForge needs every installation - and on Linux each Steam root carries its own bindings
+folder, not just its own `DeviceMappings.xml`.
+
+**Observed on Krondor's machine, 2026-09-26.** `ls -l ~/.var/app/elite.intel.app` shows both links present
+and pointing at **absolute** paths:
+
+```
+ed-bindings -> /home/alex/.steam/steam/steamapps/compatdata/359320/pfx/drive_c/users/steamuser/AppData/Local/Frontier Developments/Elite Dangerous/Options/Bindings
+ed-journal  -> /home/alex/.steam/steam/steamapps/compatdata/359320/pfx/drive_c/users/steamuser/Saved Games/Frontier Developments/Elite Dangerous
+```
+
+Absolute, not relative, and resolved at launch - so the link target is a complete answer on its own, and the
+`Frontier Developments` spacing survives into the prefix exactly as on Windows.
+
+### `GameInstallationProvider` - Krondor's proposal, 2026-09-26
+
+**One interface, one implementation per OS.** Krondor: *"if and when we change this for Linux the blast radius
+will be only the LinuxGameInstallationProviderImpl class and not all over the code in a bunch of IF/ELSE
+mess."* Everything that needs a game file asks the provider; nothing else in BindForge branches on operating
+system.
+
+| Implementation | How it finds installations |
+|---|---|
+| Windows | the storefront discovery in [InstallPaths](domain-knowledge/EliteDangerous-InstallPaths.md) - registry, `libraryfolders.vdf`, Epic manifests, the Frontier default locations |
+| Linux | enumerate the [four Steam roots](domain-knowledge/EliteDangerous-InstallPaths.md#5a-linux-has-several-steam-roots-not-one---confirmed-2026-09-26), resolving symlinks and de-duplicating by real path |
+
+**The primary installation on Linux has an exact definition, and it is already on disk:** the one
+`~/.var/app/elite.intel.app/ed-bindings` resolves to (Krondor, 2026-09-26). That is worth more than a
+heuristic - the launcher already picked one, Elite-Intel is already watching its journal, so BindForge
+agreeing with it costs nothing and disagreeing would be confusing. On Krondor's machine that is
+`.steam/steam`, the native install.
+
+**The contract must not assume one bindings folder.** This is the trap the interface exists to avoid, and the
+easiest one to design straight into it. If the provider exposes a single `getBindingsFolder()`, it has baked
+in the Windows model, and Linux - where the folder lives inside each Steam installation's Proton prefix -
+cannot be expressed without the if/else the interface was meant to remove. **Hang the bindings folder off the
+installation, not off the provider.** Windows then returns the same shared folder for every installation it
+reports, which is true, and Linux returns a different one per installation, which is also true. Callers write
+one loop either way, and Windows becomes the special case internally rather than in every caller.
+
+So an installation should be able to answer, at minimum: where its `DeviceMappings.xml` is, where its
+`DeviceButtonMaps` folder is, where its bindings folder is, which storefront it came from, and whether it is
+the primary. Whether `StartPreset` hangs off the installation or the provider follows the same rule as
+`.binds`, because they live together.
+
+**Where it goes:** `elite.intel.bindforge.install`, per the package decision, and **not** in
+`elite.intel.ai.hands`, which [stays as it is](../02-features/bindforge/overview.md#two-narrow-boundaries--one-stays-one-widens) through V1.2.
+
+**The arrangement it isolates is not final.** Krondor is weighing inverting the Linux symlinks - real
+bindings and journal folders in the app's install directory, each Steam prefix linking to them, so all three
+installations share one set. Under that, every Linux installation reports the **same** bindings folder, which
+is what Windows does today. A provider whose installations each carry their own folder handles both without a
+line changing; a provider with one `getBindingsFolder()` has to be rewritten for whichever arrangement it did
+not assume. *"As long as windows vs linux coupling is isolated we will not have to re-do code in BindForge
+when/if that change comes."*
+
+**One side-effect worth weighing before inverting them.** The game validates **every** `.binds` in the
+bindings folder, not only the active preset, and rejects the whole preset when one names a device the
+install's `DeviceMappings.xml` does not define -
+[measured 2026-09-22](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
+On Windows, where the folder is already shared, that is exactly how one install ended up falling back to
+KEYBOARD & MOUSE while its neighbour was fine. Linux is immune to that today **because** the folders are
+separate. Sharing them would import the failure onto Linux, where `DeviceMappings.xml` still differs per
+installation.
+
+**Status: accepted in principle, not yet designed.** No code exists. The Linux half also rests on a
+consequence nobody has observed yet - see
+[testing-required item 8](../00-overview/testing-required.md#core-platform).
+
 ---
 
 ## Settings Storage
@@ -261,7 +349,7 @@ Elite-Intel does not have one. Read from the tree:
 | `game_session` | one row, one typed column per setting | most app-wide settings — API keys, audio, LLM, push-to-talk, overlay, `keyInputDelayMs` |
 | `global_settings` | one row (`id = 1`, seeded by its migration), one typed column per setting | the automation toggles |
 | `ship_settings` | one row per ship | per-ship values |
-| `player` | one row | commander details, and `bindings_dir` |
+| `player` | one row | user details, and `bindings_dir` |
 
 **A setting is a column**, added by a numbered migration with a comment saying why, and a default chosen so
 existing installations keep their behaviour. Names are camelCase, and related settings already share an
@@ -311,14 +399,18 @@ what columns provide for free: a type, a default, and a migration that says why 
 - **Table names take `bindforge_`**, in the snake_case every existing table uses. That covers BindForge's data
   tables too, which are records rather than settings: `bindforge_edit_history`, the detected installations,
   and later the deferred Action Groups' user groups.
-- **Migrations in the `02XXX` block** — v1.2's block, set by Krondor 2026-09-22 (`00XXX` = v1.0, `01XXX` = v1.1) — never editing an applied one.
+- **Migrations in the `12000–12499` range** — BindForge's half of V1.2's band, set by Krondor's
+  [proposal §4](../multi-install-proposal.md#4-migrations-one-tree-per-file) and accepted 2026-09-24. The first two digits are the
+  version, so `11XXX` = V1.1 and `12XXX` = V1.2; V1.2's shared band is split because it has two writers, with
+  user and galaxy work taking `12500–12999`. Files already written keep their old numbers and are never
+  renamed. An applied migration is never edited.
 - **Save every column, and prove it.** `global_settings` saves with `INSERT OR REPLACE`, which resets any
   column the statement does not list to its default. Two of its columns are missing from its save today —
   harmless, since nothing reads either, but it shows how easily a column falls out. BindForge's save lists every
   column, and a round-trip test pins it.
 
 **What does not move.** Settings BindForge inherits by upgrading the editor in place stay exactly where they
-are: `game_session.keyInputDelayMs` and `player.bindings_dir`. Moving them would migrate every commander's
+are: `game_session.keyInputDelayMs` and `player.bindings_dir`. Moving them would migrate every user's
 stored values for no change in behaviour, through the busiest files in the tree. The line is **settings
 BindForge introduces**, not *every setting on a BindForge screen*.
 

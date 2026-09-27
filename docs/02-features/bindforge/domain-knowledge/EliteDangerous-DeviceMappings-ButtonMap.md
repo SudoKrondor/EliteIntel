@@ -48,19 +48,19 @@ holding two installs that share one `Options\Bindings` folder, so the only varia
 
 | | Steam install | Epic install |
 |---|---|---|
-| Entries for the commander's two sticks (`RVWAP`, `LVWAP`) | present | **absent** |
-| Shared `StartPreset.4.start` | names the commander's preset | the same file |
+| Entries for the user's two sticks (`RVWAP`, `LVWAP`) | present | **absent** |
+| Shared `StartPreset.4.start` | names the user's active preset | the same file |
 | Shared `.binds` (144 bindings naming those sticks) | the same file | the same file |
 | Result on the Controls screen | preset loads; all four sections correct | **all four sections fall back to `KEYBOARD & MOUSE`** |
 
 The failing install wrote `BindingLoadingErrors.log` beside the `.binds` files, holding one
-`Failed to find GUID for device: RVWAP` line per unresolvable binding — **141 across the commander's two
+`Failed to find GUID for device: RVWAP` line per unresolvable binding — **141 across the user's two
 preset files**, roughly one per `Device=` reference, in file order.
 
 **Three facts worth separating:**
 
 1. **The loss is total, not partial.** The keyboard and mouse bindings in that preset — which reference no
-   device entry at all — went with it. A commander sees a factory preset, not a preset with gaps.
+   device entry at all — went with it. A user sees a factory preset, not a preset with gaps.
 2. **Loading changes nothing on disk.** Both `.binds` files and `StartPreset.#.start` kept their previous
    timestamps through the failing launch, and all 144 `Device="..."` references survived intact. The game
    degrades quietly rather than repairing or rewriting. *(The save path — opening Controls and committing a

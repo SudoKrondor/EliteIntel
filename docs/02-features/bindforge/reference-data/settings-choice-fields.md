@@ -5,14 +5,14 @@ element's name, and **four independent sources agree on it**:
 
 | Source | What it contributed |
 |---|---|
-| **47,898 commander-shared `.binds` files** (after the [456 that were not binds files](../bind-editor.md#a-binds-name-does-not-make-it-a-binds-file--2026-09-17) were set aside) | every token in use, at a scale where a real option cannot hide and a hand edit stands out as one file in forty-eight thousand |
+| **47,898 player-shared `.binds` files** (after the [456 that were not binds files](../bind-editor.md#a-binds-name-does-not-make-it-a-binds-file--2026-09-17) were set aside) | every token in use, at a scale where a real option cannot hide and a hand edit stands out as one file in forty-eight thousand |
 | **Frontier's own `ControlSchemes\Help.txt`**, shipped with the game | the documented vocabularies for yaw-into-roll, throttle range, UI focus, headlook and gunsights |
-| **The 90 preset files Elite ships**, in all three installs | tokens no commander file happened to hold |
+| **The 90 preset files Elite ships**, in all three installs | tokens no user file happened to hold |
 | **The game itself**, on 2026-09-17 | labels read off the options screen, and values watched being written while one field was changed and its siblings held as controls |
 
 **Why that is enough to build against.** The corpus establishes what the game writes; Frontier's own
 documentation covers what nobody happened to have set; and the in-game passes tie each token to the words a
-commander actually sees. Where the three disagreed, the disagreement is recorded rather than smoothed over —
+user actually sees. Where the three disagreed, the disagreement is recorded rather than smoothed over —
 `Bindings_TrailingGunsights` is in Frontier's documentation and in **none** of the 47,898 files, which is
 precisely why the cross-check exists and why file counts alone were never treated as the whole answer.
 
@@ -21,7 +21,7 @@ vocabularies are the point, and they do not move unless Frontier changes a setti
 value, edit the row.
 
 **What a *choice field* is:** a setting whose value comes from a fixed list rather than a number the
-commander types or drags. BindForge gives these a dropdown, and **a dropdown may only offer values the
+user types or drags. BindForge gives these a dropdown, and **a dropdown may only offer values the
 game has been seen to write** — see
 [Bind Editor — settings entries](../bind-editor.md#settings-entries-are-rows-too--settled-2026-09-16).
 
@@ -76,7 +76,7 @@ options screen.
 ## Numeric choices — a dropdown wearing numbers
 
 The game stores these as floats, and the options screen offers a fixed list. **The stored number is the
-fraction the label names** — `0.10000000` is 10%. A free numeric field here would let a commander
+fraction the label names** — `0.10000000` is 10%. A free numeric field here would let a user
 type a value the game never offers.
 
 | Element | Values (files) | Labels |

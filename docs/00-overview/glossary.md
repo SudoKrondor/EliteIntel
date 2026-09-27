@@ -1,8 +1,12 @@
 # Glossary
 
+> **For the player's own files, accounts and installations — what a *user*, *commander*, *installation*,
+> *alias* or *`.buttonMap`* actually is — see [The Input Environment](input-environment.md).** That page
+> defines the real things on disk. This page defines **our** terms for what we build on top of them.
+
 Established project terminology. Where a term was named differently across design generations, the
 current/preferred term is listed first with prior names noted — see
-[conflicts-and-open-questions.md](conflicts-and-open-questions.md) for full detail on any naming change flagged
+[conflicts-and-open-questions.md](../99-archive/conflicts-and-open-questions.md) for full detail on any naming change flagged
 as unresolved.
 
 ## Naming Normalisation Applied Throughout This Package
@@ -56,12 +60,18 @@ listed so that older notes and mockups can be read correctly:
   [Reconciling BindForge Edits With In-Game Rebinds](../02-features/bindforge/overview.md#reconciling-bindforge-edits-with-in-game-rebinds).
 - **Working copy** — the same thing as a draft. Retained only where it names the actual code
   (`BindingsWorkingCopyRepository`); prefer *draft* in prose.
-- **Local master** — not a concept in this design. Used once in discussion on 2026-09-06 to mean *draft*;
-  recorded here so it is not mistaken for the dropped master-copy model below.
-- **Master copy** — **dropped, and not an option.** There is no persistent master copy in BindForge's own
-  data folder competing with the live game file for the role of source of truth. It is an artefact of the
-  existing Elite-Intel bind editor's design generation; see
-  [Conflict 3.6](conflicts-and-open-questions.md#36-working-copy-model--resolved-neither-original-option--a-third-sharper-model).
+- **Master** — BindForge's own copy of the user's input files, held in Elite-Intel's folder, and **the source
+  of truth**. Apply pushes it outward: `.binds` and `StartPreset` to the one shared bindings folder,
+  `DeviceMappings.xml` and `.buttonMap` to **every** installation. **Adopted 2026-09-24**, on Krondor's
+  [proposal §2](../multi-install-proposal.md#2-installations-your-side-elite-intel-keeps-the-master-copy).
+  **This reverses the 2026-09-06 decision**, which held that the live game file was the source of truth and
+  that a master copy was "dropped, and not an option". That was right for one installation and wrong for
+  several: each installation keeps its own `DeviceMappings.xml`, they demonstrably disagree, and a set of
+  disagreeing files cannot be the truth — so something has to arbitrate, and the master is it. A live file also
+  cannot be trusted on its own, because a game patch can wipe it and a wipe looks exactly like the newest edit.
+  The superseded reasoning is kept in the archive at
+  [Conflict 3.6](../99-archive/../99-archive/conflicts-and-open-questions.md#36-working-copy-model--resolved-neither-original-option--a-third-sharper-model).
+- **Local master** — not a concept in this design. Used once in discussion on 2026-09-06 to mean *draft*.
 - **Mirror** — keeping every installation's device files identical to BindForge's master copy.
   **Redefined 2026-09-23:** it used to name a per-device switch choosing which installations shared one
   definition. There is no switch now — all installs match, always. See

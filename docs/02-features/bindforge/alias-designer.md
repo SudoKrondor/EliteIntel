@@ -56,7 +56,7 @@ BUILT-IN**, where its button labels can be edited — see
 
 **A controller that matches one of Frontier's entries on VID/PID is shown as BUILT-IN**, in every
 installation, because Frontier's entry sits in each installation's `DeviceMappings.xml`. The entry exists, so
-the device is not *not added* — but the entry is not the commander's either, and the grid says which. The match
+the device is not *not added* — but the entry is not the user's either, and the grid says which. The match
 is made against the [shipped stock reference](reference-data/FrontierStock-README.md): `Thrustmaster T-Rudder`
 at `044F:B679` is Frontier's `<T-Rudder>`.
 
@@ -70,19 +70,122 @@ the old name back, leaving `.binds` pointing at a name that no longer exists.
 away, because there is no name to confirm.
 
 **RESET LABELS replaces CLEAR.** [CLEAR](#actions-and-what-each-one-reaches) removes an installation's entry,
-and on a built-in that entry is Frontier's. RESET LABELS removes only the `.buttonMap` the commander or BindForge
+and on a built-in that entry is Frontier's. RESET LABELS removes only the `.buttonMap` the user or BindForge
 created, and the next [Elite-Intel startup](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller)
 generates a fresh one. A `.buttonMap` Frontier itself shipped — `VPCPanel`, `VPCThrottle` — is never removed.
 Like SAVE and CLEAR, it **follows MIRROR**: resetting one mirrored installation resets them all.
 
-| | The commander's entry | Built-in |
+| | The user's entry | Built-in |
 |---|---|---|
 | Name | editable, as the [rename transaction](#renaming-a-device) | **locked** — Frontier's |
 | VID / PID | read-only | read-only |
 | Button and axis labels | editable once the name is confirmed | editable straight away |
-| Undo (follows MIRROR) | **CLEAR** — the entry and `.buttonMap` | **RESET LABELS** — only a `.buttonMap` BindForge or the commander made |
+| Undo (follows MIRROR) | **CLEAR** — the entry and `.buttonMap` | **RESET LABELS** — only a `.buttonMap` BindForge or the user made |
 | [Onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13) | asked for a name | never asked |
 | What APPLY writes | the entry and its `.buttonMap` | the `.buttonMap` only |
+
+## First setup — reconciling the installs — settled 2026-09-23
+
+**The handover.** Until a user opens Alias Designer, BindForge only backs up and reports
+([offered, never forced](overview.md#offered-never-forced--settled-2026-09-23)). First setup is the one time
+it asks anything: it turns whatever the installs currently hold into a single master set, after which every
+install matches it. *"Adopt"* stays reserved for what happens later, when someone edits in the game.
+
+**It can be opened and abandoned.** Nothing is written until the user presses the button at the end.
+
+### What it reads
+
+Every install's `DeviceMappings.xml` and `.buttonMap` files, plus two references that decide how rows are
+judged: **Frontier's stock list**, to tell the user's entries from the shipped ones, and the shared
+**`.binds`**, which decides [severity](#divergence-between-installs--one-list-ranked-by-consequence).
+
+**Stock entries are never compared, never written, never offered as a choice.** Every install runs the same
+game version — the live service forces an update before it will let anyone play — so their shipped entries are
+identical by construction. Alan's machine: Steam 53 elements, Epic 51, **the same 51 stock in both**, the
+difference being his two custom sticks.
+
+### Reconciliation is per device element, never per file
+
+The file is a container; the device element is the unit of meaning. **A file copy would delete any custom
+entry that exists only in the install being written to**, which is the one thing first setup must never do. So
+"overwrite Epic with Steam" means *replace Epic's custom elements with Steam's*, leaving everything else
+in place.
+
+Once stock is set aside, a custom element falls into one of four cases:
+
+| Case | Resolution |
+|---|---|
+| Same name, same VID/PID in every install | identical — nothing to do |
+| Present in one install only | the master takes it |
+| Same name, **different VID/PID** | a real conflict — pick one |
+| Same VID/PID, **different name** | a real conflict — and it is a rename, see below |
+
+**A name conflict is not a device-file edit.** The shared `.binds` names devices by their element name, and so
+does the `.buttonMap` filename. Choosing between `RVWAP` and `RightStick` therefore moves three things
+together — the element, every `Device="..."` in the shared `.binds`, and the `.buttonMap` file. First setup
+routes that into the existing [rename transaction](#renaming-a-device) rather than treating it as a simple
+choice.
+
+**`.buttonMap` files merge at the label, and that needs a merge view.** Unlike an entry, two label sets for
+one device combine: twenty labels in one install and five in another give twenty-five. But where both files
+name the *same* input differently, only the user can say which belongs in the master — so overwrite-or-merge
+is not a single answer for the file, it is an answer per input.
+
+**The merge view shows only the inputs that disagree**, one row each:
+
+| Input | Steam | Epic | |
+|---|---|---|---|
+| `Joy_1` | LV MAIN TRIGGER | TRIGGER 1 | pick one |
+| `Joy_4` | — | PINKY PADDLE | taken, nothing to ask |
+| `Joy_XAxis` | LVWAP_XAXIS | LVWAP_XAXIS | identical, not shown |
+
+- **Identical labels are not listed.** Showing what already agrees turns a short decision into a long one.
+- **A label present in only one file is taken**, on the same "show everything, ask about little" rule as the
+  element cases above — it appears in the result, not in the questions.
+- **Only genuine collisions are rows**, and each row is one click.
+- **Overwrite stays available for the whole file**, for a user who would rather not walk a list: *use Steam's
+  labels for this device*.
+
+The same view serves a later re-merge, when an install has drifted and its labels no longer match the master.
+
+### The flow
+
+1. **"Your files are backed up as of &lt;time&gt;"** — said first, because it is what makes the rest safe to touch.
+2. **The list**, every row coloured by severity, conflicts sorted to the top.
+3. **Two routes through:** resolve row by row, or **use one install as the master** — the blunt option, one
+   click, for a user who does not want to think about it. The backup makes it reversible.
+4. **A summary before any write:** *"The master will hold 6 devices and 5 buttonMaps. Apply to 2 installs?"*
+5. **Write, and report per install** — *"updated 2 of 2"*, or which one failed and why.
+
+**Two ways back, and both are taken — settled 2026-09-23.** First setup is the one operation that rewrites
+every install at once, so the launch backup alone is too blunt to undo it:
+
+- **A labelled backup immediately before the write**, so there is a restore point meaning *"just before I
+  standardised"* rather than *"whatever the last launch happened to catch."* It covers every install the
+  operation touches, because the operation spans them.
+- **An [Edit History](file-manager.md#edit-history) entry per file written**, so a single install's
+  `DeviceMappings.xml` or one `.buttonMap` can be walked back on its own without rolling back everything else.
+
+This makes Edit History a **dependency of first setup**, not a later nicety — worth knowing, since nothing of
+it exists in code yet.
+
+**Show everything, ask about little.** Every difference appears in the list, but only the two genuine
+conflicts above require an answer. A device present in just one install, or an orphan `.buttonMap`, has one
+sensible outcome and is resolved without a question.
+
+### An install that appears later
+
+It is backed up, then brought to the master. **Unless it already holds custom entries of its own** — then that
+install goes through first setup rather than being silently overwritten.
+
+### What the master actually is
+
+**For device identity, the master is the user's element set — not a copy of a `DeviceMappings.xml`.**
+Holding a whole file as the master would mean pushing one install's stock section into another, which is never
+wanted even though the stock sets agree. `.binds` and `StartPreset` are different: they are shared, whole
+files, and a file master is exactly right for them. *(A refinement to
+[multi-install-proposal.md](../../multi-install-proposal.md) §2, which describes the master as a file for all
+four domains.)*
 
 ## Divergence between installs — one list, ranked by consequence
 
@@ -102,7 +205,7 @@ as the row's colour**:
 | **Red** | will stop bindings working | a device named in `.binds` has no entry in some install; the same name pointing at different hardware in two installs |
 
 **Severity is judged against the shared `.binds`, not against the device files alone.** That is what separates
-red from yellow: a missing entry only costs the commander something when a binding actually names that device.
+red from yellow: a missing entry only costs the user something when a binding actually names that device.
 The [measured case](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22)
 is red by that rule — 144 bindings naming two sticks one install had never heard of, and the whole preset
 rejected — while the orphan `LVWAP.buttonMap` sitting beside it is yellow, because nothing resolves through it.
@@ -131,16 +234,16 @@ Two devices, six PIDs, none repeating. **The control group is in the same files:
 (`1532 0244`), `T-Rudder` and `vJoy` are byte-identical across all three snapshots. Only the VIRPIL
 devices moved.
 
-**The cause is firmware, not the commander.** VIRPIL's older *VPC Configuration Tool* exposed the PID as
+**The cause is firmware, not the user.** VIRPIL's older *VPC Configuration Tool* exposed the PID as
 a user-settable field; a firmware update between the first two snapshots changed it, and the newer *VPC
 Configurator* forced another firmware change and **removed the ability to set it at all**. So the
-commander cannot pin it, cannot predict it, and finds out afterwards.
+user cannot pin it, cannot predict it, and finds out afterwards.
 
 ### Why this matters more than a renumbering
 
 **The failure is silent.** The `DeviceMappings.xml` entry still exists. `.binds` still says `RVWAP`. The
 game simply finds no device matching that entry, so the bindings do nothing, with no error and nothing
-to search for. A commander experiences it as *"my stick stopped working after an update."*
+to search for. A user experiences it as *"my stick stopped working after an update."*
 
 **And an aliased device is the recoverable case.** Because `.binds` references the alias rather than the
 hex, the repair is one PID field per installation and every binding survives. A device with **no** entry
@@ -159,12 +262,12 @@ halves of this its natural job.
 beside an attached device matching no entry, is the signature of exactly this event. Offering to move the
 entry onto the new PID turns a silent breakage into one click.
 
-**Before the fact — devices referenced by hex.** A commander whose `.binds` names devices by raw hex is
+**Before the fact — devices referenced by hex.** A user whose `.binds` names devices by raw hex is
 one firmware update away from losing that layout and has no way to know it. BindForge can see the state
 and count the exposure: *"Two attached devices are referenced by hardware ID rather than by name. 131
 bindings depend on those IDs and would not survive a firmware update. Create aliases?"*
 
-### Device identity is the commander's to confirm — settled 2026-09-12
+### Device identity is the user's to confirm — settled 2026-09-12
 
 The question was how confident a match has to be before BindForge offers it. **The answer is that
 BindForge does not score confidence at all.**
@@ -178,11 +281,11 @@ BindForge does not score confidence at all.**
 - **One entry can cover several controllers.** Frontier's `<DualShock4>` matches both DS4 revisions
   through `<Alternative>` pairs.
 
-Same VID with an unmatched device is suggestive, never proof: a commander may equally have unplugged
+Same VID with an unmatched device is suggestive, never proof: a user may equally have unplugged
 one stick and plugged in another from the same vendor. **A percentage threshold here would be fake
 precision — a number defending a guess.**
 
-**The commander knows, and is the only one who does.** They know whether they flashed firmware or
+**The user knows, and is the only one who does.** They know whether they flashed firmware or
 bought a new stick. So BindForge states what it found and asks:
 
 ```
@@ -197,31 +300,31 @@ Same vendor, different product ID.
 Is this the same device?      [ Yes ]  [ No ]  [ Not now ]
 ```
 
-**What the dialog owes the commander** is evidence, not a verdict: the ID in the file, what is
+**What the dialog owes the user** is evidence, not a verdict: the ID in the file, what is
 attached instead, which halves match, and **how many bindings are at stake.** The binding count is
 what makes the question answerable — 131 is worth a moment's thought, 2 is not.
 
 | Answer | What happens |
 |---|---|
 | **Yes** | the alias is created and pointed at the attached device, in the draft. Every binding follows, because they reference the name — the one-field fix [described above](#why-this-matters-more-than-a-renumbering). |
-| **No** | nothing is written. The bindings stay orphaned, and BindForge **says so plainly** rather than falling silent, since that is the state the commander just confirmed. |
+| **No** | nothing is written. The bindings stay orphaned, and BindForge **says so plainly** rather than falling silent, since that is the state the user just confirmed. |
 | **Not now** | nothing is written and **the question is not asked again until the hardware situation changes.** Deferral is not a soft no, and re-asking on every launch turns a useful prompt into something to dismiss reflexively. |
 
 **This is the same shape as [Restore](file-manager.md#restoring-when-nothing-matches--ask-do-not-guess)
 and the [foreign-backup device list](file-manager.md#how-bindforge-tells-case-1-from-case-3--settled-2026-09-12):**
-where hardware identity is genuinely unknowable, BindForge asks a question the commander can answer
+where hardware identity is genuinely unknowable, BindForge asks a question the user can answer
 instead of computing an answer it cannot.
 
 ## What Changes When Hardware Changes
 
-**Settled 2026-09-12**, walking the scenarios a commander actually hits. They reduce to **two
-operations**, and which one runs is the commander's answer rather than BindForge's deduction.
+**Settled 2026-09-12**, walking the scenarios a user actually hits. They reduce to **two
+operations**, and which one runs is the user's answer rather than BindForge's deduction.
 
 | What BindForge sees | What it usually means | Operation |
 |---|---|---|
 | A device appears, nothing missing | **Addition** — a stick added to the setup | **Create**: new `DeviceMappings.xml` entry, new `.buttonMap` |
 | A device is missing, and something unrecognised is present | **Replacement, or a firmware update** | **Ask**, then **retarget**: the entry keeps its name, its VID/PID changes |
-| Missing, and the commander says none of the candidates is it | **A genuinely different device** | **Create**, and the old bindings stay orphaned |
+| Missing, and the user says none of the candidates is it | **A genuinely different device** | **Create**, and the old bindings stay orphaned |
 | A device is missing, nothing new present | **Unplugged, or sold** | **Nothing.** No prompt, no change |
 
 **A firmware update is not a third case.** It presents exactly as a replacement — an ID that is gone and
@@ -239,7 +342,7 @@ ask and nothing to fix.
 
 ### Ask about one missing device at a time
 
-**The one-missing-one-new pairing does not survive contact with reality.** This commander's own files:
+**The one-missing-one-new pairing does not survive contact with reality.** This user's own files:
 
 | Snapshot | LVWAP | RVWAP |
 |---|---|---|
@@ -250,7 +353,7 @@ ask and nothing to fix.
 **Both sticks changed PID in the same session, twice.** That is the VPC Configuration Tool flashing both
 devices at once, which is how firmware updates normally happen for a two-stick setup — not an edge case.
 So BindForge routinely sees *two* missing and *two* new, all from one vendor, with **no way to know which
-new ID is the left stick.** Pairing them by order or by proximity would silently swap a commander's
+new ID is the left stick.** Pairing them by order or by proximity would silently swap a user's
 joystick and throttle bindings.
 
 **So each missing device is presented on its own, listing every unmatched candidate:**
@@ -269,9 +372,9 @@ Which attached device is it?
 
 One mechanism covers one change, two, or five. **"None of these"** is what routes to *create* instead of
 *retarget*, and **"Not now"** defers without recording a wrong answer — see
-[the three answers](#device-identity-is-the-commanders-to-confirm--settled-2026-09-12).
+[the three answers](#device-identity-is-the-users-to-confirm--settled-2026-09-12).
 
-**Deferred, not rejected: press-to-identify.** Asking the commander to press a button on the missing
+**Deferred, not rejected: press-to-identify.** Asking the user to press a button on the missing
 device would identify it with certainty rather than by inference, and Elite-Intel already has the input
 capture to do it. It is a better answer where the hardware is attached and working, and it is worth
 revisiting once the capture path is in place. It cannot be the *only* answer, because the device may be
@@ -303,23 +406,23 @@ so some may now be in unexpected places.
   [ Review in Bind Editor ]   [ Dismiss ]
 ```
 
-**Why keep them rather than start clean.** A commander replacing a broken stick with a similar one has a
+**Why keep them rather than start clean.** A user replacing a broken stick with a similar one has a
 layout that mostly works, and rebuilding 131 bindings by hand to avoid a handful of misplaced ones is the
 worse trade. Keeping them is also **reversible** — it lands in the draft, and Discard puts everything
 back. Starting unbound destroys work that no later step can recover.
 
 **BindForge does not try to detect whether the model differs.** It has no map of which physical button is
 `Joy_5` on arbitrary hardware, and guessing would produce a confident wrong answer. The warning is shown
-whenever a retarget crosses to a device the commander picked from the candidate list, and a firmware
+whenever a retarget crosses to a device the user picked from the candidate list, and a firmware
 update that keeps the same layout costs them one dismissed dialog.
 
 ## Automatic Device Registration
 
 Any controller connected to the system — whether already connected when BindForge starts, or plugged in later during a session (hot-plug) — is automatically added to the My Devices working copy with no user action required. This applies the same "detect and inform, don't ask" principle already used for [First Run](#first-run-and-hot-plug) below, extended to individual devices as they're seen.
 
-- **Default alias:** the name the Device Service reports, **cleaned into a valid name** by the [default-name rule](#the-default-name-rule) — `Virpil Controls 20220720` becomes `VirpilControls20220720`. [Onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13) shows it to the commander before anything is written.
+- **Default alias:** the name the Device Service reports, **cleaned into a valid name** by the [default-name rule](#the-default-name-rule) — `Virpil Controls 20220720` becomes `VirpilControls20220720`. [Onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13) shows it to the user before anything is written.
 - **VID/PID:** filled in immediately from the connected hardware, same as any other device entry.
-- **A `.buttonMap` is created once the device has a name** — at [onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13) for a controller with no entry, or at [Elite-Intel startup](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller) for a connected controller that already has one. *Changed 2026-09-13: this used to say no `.buttonMap` stub is created until the commander labels something — see [why the rule moved](#it-is-the-alias-confirm-gate-moved-earlier).*
+- **A `.buttonMap` is created once the device has a name** — at [onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13) for a controller with no entry, or at [Elite-Intel startup](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller) for a connected controller that already has one. *Changed 2026-09-13: this used to say no `.buttonMap` stub is created until the user labels something — see [why the rule moved](#it-is-the-alias-confirm-gate-moved-earlier).*
 - **Registration itself touches only the working copy.** Detecting a controller writes nothing. The writes that follow it — a confirmed name, a generated `.buttonMap` — are among the few that reach a game installation outside Apply, and each is justified in [What onboarding writes, and when](#what-onboarding-writes-and-when) and in [Overview — writes outside Apply](overview.md#writes-outside-apply--the-complete-list).
 - **Hot-plugging into BindForge is safe; hot-plugging into a running game is not — those are different things.** BindForge can register a newly-connected controller into its own working copy at any time without risk. Physically connecting or disconnecting a controller while Elite Dangerous itself is running is a separate, game-level risk (it can crash the game) that exists independently of BindForge and is outside BindForge's control — automatic registration does not cause or worsen this; it just means BindForge's own device list stays current regardless of when the user plugs something in.
 
@@ -354,8 +457,8 @@ Three gaps were found while working the design through. **Two were settled by on
 
 ### It is the alias-confirm gate, moved earlier
 
-This used to be ruled out: *no `.buttonMap` stub is created* until the commander labels something. The reason was
-never the file. It was that a `.buttonMap` should only exist under **a name the commander has looked at**, because
+This used to be ruled out: *no `.buttonMap` stub is created* until the user labels something. The reason was
+never the file. It was that a `.buttonMap` should only exist under **a name the user has looked at**, because
 renaming afterwards is a [three-file transaction](#renaming-a-device). Onboarding keeps that property and drops
 the wait: the name is shown before anything is written. **Silent creation under a name nobody saw is still ruled
 out.**
@@ -368,7 +471,7 @@ out.**
 | A controller detected later — [hot-plug](#first-run-and-hot-plug) | that controller, if it has no entry |
 
 **A controller that already has a name is never asked** — a Frontier built-in such as `SaitekX56Joystick`, or an
-entry the commander made. There is no decision to put to them.
+entry the user made. There is no decision to put to them.
 
 ### What it asks: just a name
 
@@ -387,7 +490,7 @@ what the device reports. Labelling every button by pressing it would turn second
 stick. The generated labels can be renamed later in the [Device Editor](#device-editor) at no cost, because
 renaming a label does not rename the file.
 
-**Skipping takes the default name.** A controller never leaves onboarding unnamed; skipping is how a commander
+**Skipping takes the default name.** A controller never leaves onboarding unnamed; skipping is how a user
 who wants to get on with it says *use yours*. That keeps onboarding to a few clicks however many controllers are
 attached.
 
@@ -406,7 +509,7 @@ The name every controller is offered, and the constraint typed names are held to
    what keeps it within 50.
 
 *Steps 3 and 4 added 2026-09-13*, so the default always meets [alias validation](#fields-and-rules)'s 3–50
-character limit instead of offering a name the commander would then be told is invalid.
+character limit instead of offering a name the user would then be told is invalid.
 
 | Reported | Default | Why |
 |---|---|---|
@@ -417,7 +520,7 @@ character limit instead of offering a name the commander would then be told is i
 | `Thrustmaster Hotas Warthog Flight Stick And Throttle Combined Edition` | `ThrustmasterHotasWarthogFlightStickAndThrottleComb` | cut to 50 |
 | the same, when that name is taken | `ThrustmasterHotasWarthogFlightStickAndThrottleCom2` | shortened so the number fits |
 
-A name the commander **types** may also use `-` and `_` — see [alias validation](#fields-and-rules).
+A name the user **types** may also use `-` and `_` — see [alias validation](#fields-and-rules).
 
 ### What onboarding writes, and when
 
@@ -433,7 +536,7 @@ existing bindings, which only Apply ever does.
 
 **And the second case's writes have to land together.** Once an entry exists, `.binds` is expected to name the
 device ([format §4.0](domain-knowledge/EliteDangerous-BindsFileFormat.md#40-the-rule-confirmed-2026-09-08)), and
-there is no evidence the game honours the old hex references in the meantime — when this commander added `RVWAP`
+there is no evidence the game honours the old hex references in the meantime — when this user added `RVWAP`
 and `LVWAP`, the hex was replaced by hand. Writing the entry on its own could leave those bindings dead until
 Apply. See [testing item 13](../../00-overview/testing-required.md).
 
@@ -447,7 +550,7 @@ prompt, because there is nothing to decide. That covers Frontier's built-ins, wh
 
 - **Connected controllers only.** A device plugged in once, years ago, gets nothing.
 - **Every detected installation**, since `.buttonMap` files live inside each one.
-- **Never overwrites** a `.buttonMap` that exists, whether Frontier's or the commander's.
+- **Never overwrites** a `.buttonMap` that exists, whether Frontier's or the user's.
 - **After RESET LABELS** on a built-in, the next startup generates its `.buttonMap` afresh.
 
 It runs at Elite-Intel startup rather than when BindForge opens, so the labels are already there the first time
@@ -493,7 +596,7 @@ edited independently*, and *entry shared with the other mirrored installations*.
   cannot read.*
 - **The alias must be confirmed or changed before button/axis naming unlocks.** [Onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13)
   is where that happens. Confirming the offered name, typing another, or skipping — which accepts the
-  default — all count, because in each case the commander has been shown the name. A device is never fully
+  default — all count, because in each case the user has been shown the name. A device is never fully
   configured under a name nobody looked at. A later rename is the [multi-file transaction](#renaming-a-device).
   **A built-in has no name to confirm:** its labels unlock straight away, and its name stays
   [Frontier's](#built-in-controllers-in-my-devices--settled-2026-09-13).
@@ -565,6 +668,25 @@ detected installation, with no prompt — a status message informs the user this
 installation is detected, the draft starts empty and any connected devices are added via
 [Automatic Device Registration](#automatic-device-registration) above.
 
+### A missing controller is worth exactly one warning — settled 2026-09-24
+
+**Elite-Intel says once, at startup, which named controllers are not attached** — *"controller such and such
+is missing"* — and then waits and sees. Nothing is changed, nothing is repaired, and the message is not
+repeated.
+
+**Why so light a touch.** The user is expected to connect their controllers before starting the game;
+if they do not, the game will not load those bindings and they find out immediately in the cockpit. BindForge
+cannot fix that from outside, and a missing stick is usually a cable, not a configuration problem.
+
+**What it must not do** is treat an absent controller as a reason to change anything. An entry for hardware
+that is not plugged in stays exactly where it is — entries deliberately outlive hardware, which is what makes
+a stick work again when it is plugged back in. The
+[`ATTACHED` / `MISSING` column](#my-devices) is the standing version of this, and the startup line is the
+once-per-run version.
+
+*Not to be confused with a **control** disappearing from the game itself — a different case, in the
+[version-bump merge](overview.md#what-the-startup-check-actually-decides).*
+
 **Settled 2026-09-06 — first import takes the player's files exactly as they are.** No mirroring, no
 reconciliation, no adopting one installation's entry over another's. Where two installations hold
 different entries for the same device, both are preserved as they were found and the device is left
@@ -587,14 +709,14 @@ interrupts: **Save** or **Discard**. Neither touches a game installation.
 - **Recalibrate** — a feature to fix axis centre-point drift during live highlighting. Out of scope for this iteration.
 - **Duplicate-VID/PID handling — dropped from scope 2026-09-07; nothing is designed and nothing needs to be.**
   The existing `DeviceDuplicateWarningEvent` tells the player, and the alias-uniqueness rule below rejects the
-  second automatic registration on its own. Retained for the reasoning: Two connected devices of the identical model genuinely can report the same VID and PID (this is normal USB behaviour, not an edge case) — combined with [Automatic Device Registration](#automatic-device-registration), both would attempt to auto-register under the same default hardware-reported alias, which the alias-uniqueness rule would reject. Neither `.binds` nor `DeviceMappings.xml` has any field that could distinguish two entries sharing a VID/PID, and the game itself keys on VID/PID, so it could not act on a distinction even if BindForge drew one. That is why nothing is designed here rather than deferred: there is no design that would help. See [conflicts-and-open-questions.md](../../00-overview/conflicts-and-open-questions.md).
+  second automatic registration on its own. Retained for the reasoning: Two connected devices of the identical model genuinely can report the same VID and PID (this is normal USB behaviour, not an edge case) — combined with [Automatic Device Registration](#automatic-device-registration), both would attempt to auto-register under the same default hardware-reported alias, which the alias-uniqueness rule would reject. Neither `.binds` nor `DeviceMappings.xml` has any field that could distinguish two entries sharing a VID/PID, and the game itself keys on VID/PID, so it could not act on a distinction even if BindForge drew one. That is why nothing is designed here rather than deferred: there is no design that would help. See [conflicts-and-open-questions.md](../../99-archive/conflicts-and-open-questions.md).
 
 ## Design Considerations — Closed
 
-**The master-copy question is closed, and was already closed when this pointer was written.** Device
-configuration is edited against a **single draft** pushed to installations on Apply. There is no two-tier
-master-plus-shadow model and no persistent master copy competing with the live game file for the role of
-source of truth — see
-[Conflict 3.6](../../00-overview/conflicts-and-open-questions.md#36-working-copy-model--resolved-neither-original-option--a-third-sharper-model),
-resolved before the port. Confirmed again 2026-09-06: the idea is an inherited artefact of the existing
-Elite-Intel bind editor, not a live option.
+**The master-copy question is closed — in favour of the master, reversing the earlier answer (2026-09-24).**
+Device configuration is edited as a **draft against the master**, and Apply writes the master out to every
+installation. There is still no two-tier master-plus-shadow model; what changed is which side is
+authoritative. See [Master](../../00-overview/glossary.md#bindforge-terms) in the glossary for the reversal and
+why, and [The master and the draft](overview.md#the-master-and-the-draft--settled-2026-09-24). The superseded
+2026-09-06 reasoning is kept in the archive at
+[Conflict 3.6](../../99-archive/conflicts-and-open-questions.md#36-working-copy-model--resolved-neither-original-option--a-third-sharper-model).

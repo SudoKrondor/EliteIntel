@@ -151,7 +151,7 @@ behind it.
 
 **Controller capture is new wiring, not a new component.** *"The input pressed decides the tab"* — pressing a
 controller input moves to that device's tab and kind. That is `DeviceService` feeding the dialog while it is
-open; what the commander sees is the tabs and the list above, both of which exist.
+open; what the user sees is the tabs and the list above, both of which exist.
 
 ### Preset Editor
 
