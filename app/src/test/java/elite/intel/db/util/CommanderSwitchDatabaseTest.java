@@ -23,6 +23,9 @@ class CommanderSwitchDatabaseTest {
 
     private static final String ALPHA = "FTESTALPHA";
     private static final String BRAVO = "FTESTBRAVO";
+    // Where a test ends when it began on the pending file, which cannot be switched back to. Neither Alpha nor
+    // Bravo, so the next test's first switch to either of them is still a real switch.
+    private static final String PARKED = "FTESTPARKED";
 
     private String original;
     // Under test each commander's file is a named in-memory database, which SQLite discards when its last
@@ -40,7 +43,7 @@ class CommanderSwitchDatabaseTest {
 
     @AfterEach
     void putTheOriginalCommanderBack() {
-        Database.switchCommander(original.equals(Database.PENDING_COMMANDER) ? ALPHA : original);
+        Database.switchCommander(original.equals(Database.PENDING_COMMANDER) ? PARKED : original);
         alphaKeeper.close();
         bravoKeeper.close();
     }
