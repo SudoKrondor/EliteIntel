@@ -1141,9 +1141,23 @@ focused, Elite swallows any printable keystroke as text and never consults the `
 the shared conflict-detection service and the Conflicts *kind* are all built on pairs, and this has nothing to
 pair with.
 
-Elite-Intel already detects the one confirmed case: `BindingsMonitor.textTrappedUiNavigation()` is a pure read
-over the parsed bindings, backed by the side-effect-free `UiNavigationTextTrap`. **Both are directly reusable**,
-and doing so would be cheaper and more honest than BindForge growing a second implementation of the same check.
+~~Elite-Intel already detects the one confirmed case: `BindingsMonitor.textTrappedUiNavigation()`, backed by
+the side-effect-free `UiNavigationTextTrap`. Both are directly reusable.~~ **Gone, 2026-09-21 — Krondor
+deleted the detector, its spoken warning in all nine locales, and its test.**
+
+**The trap it caught was real and is now impossible.** UI up/down/left/right on a character-producing key — a
+bare or Shift letter, a digit, space — used to block route plotting, because the route plotter had to arrow
+down out of the galaxy map's search box. A letter bound to UI navigation typed into the box instead of moving
+the selection. Krondor's own words: *"The route plotter no longer has to arrow-down out of the galaxy map
+search box, so menu navigation is no longer required on the arrow keys or under Control."* The sequence is now
+Enter, UI_Right, UI_Select, yaw, so there is no text field to be trapped by.
+
+**What survives is the other half of the same rule**, which he kept deliberately: *"The rule that map camera
+keys must not share a chord with UI navigation is unchanged and still blocking."* That lives in
+`ReservedKeyChords`, which is still present and still feeds the [Reserved](#four-kinds-one-question) kind.
+
+So BindForge has nothing to reuse here and nothing to reimplement — the case it would have detected cannot
+arise.
 
 **Settled 2026-09-07: it is the `Invalid` kind under [Anomalies](#anomalies).** The presentation question
 that was deferred here dissolved rather than being answered — it only existed because the mode was called
@@ -1366,6 +1380,11 @@ first recorded.
 
 #### FN-1 in detail — scoped 2026-09-12
 
+> **One name in this record has since gone.** `UiNavigationTextTrap` was deleted on 2026-09-21, the day
+> after this shipped, when the route plotter stopped arrowing out of the galaxy map search box. The record
+> below is left as written — it is what was designed and built at the time, and rewriting it would destroy
+> the reason the decisions were made. `ReservedKeyChords` is unaffected and still in use.
+>
 > **Shipped 2026-09-20.** Built in the V1.1 maintenance line rather than as BindForge's first slice: a
 > blind spot in shipped conflict detection is a V1.1 bug, so it went out with V1.1 and reached
 > `V1.2-BindForge` through Krondor's merge. Commits `220271aa2` (the fix) and `bf1ad44ef`…`38188f9da` (the
@@ -1426,7 +1445,6 @@ what an editor needs. **Audited against the code 2026-09-12, including Krondor's
 | `recommendVehicleTwins` — `BindingProfilePanel` | ship/SRV twin nudge | twins called mismatched when their other slots agree |
 | `ReservedKeyChords.scan` | [Reserved](#four-kinds-one-question) | a chord Windows or the game menu swallows goes unreported if it sits in the discarded slot |
 | `ReservedKeyChords.gameMenuKeys` | Reserved, keyboard map | with Game Menu bound in both slots, only one of its keys is treated as reserved |
-| `UiNavigationTextTrap.scan` | [Invalid](#four-kinds-one-question) | a UI navigation key that types into the search box goes unreported if it sits in the discarded slot |
 
 ##### Correct with one slot — must not change
 
@@ -1449,12 +1467,15 @@ offending *slot cell* rather than the whole row. One new rule is needed: **Prima
 control on one chord is redundancy, not a conflict** — pressing it fires one action — so same-action pairs
 are skipped. `BindingProfilePanel.effectiveBindings()` is deleted, not updated.
 
-**Add alongside, for the two anomaly detectors** (the last three rows). `ReservedKeyChords` and
-`UiNavigationTextTrap` also drive Elite-Intel's own spoken warnings, and **for those the one-slot view is
-correct**: the text-trap warning exists because *Elite-Intel's* interface walk would type into the search
-box, and Elite-Intel presses the surviving slot. Only BindForge's Anomalies tab, where the user can
-press either slot, needs both. So each gains a both-slots entry point for BindForge, and the existing
-methods keep serving the voice path unchanged.
+**Add alongside, for the anomaly detector** (the last rows). ~~`ReservedKeyChords` and
+`UiNavigationTextTrap`~~ — **only `ReservedKeyChords` now; the text trap was
+[deleted 2026-09-21](#four-kinds-one-question).** It drives Elite-Intel's own spoken warnings too, and
+**for those the one-slot view is correct**: the warning exists because *Elite-Intel* presses the surviving
+slot. Only BindForge's Anomalies tab, where the user can press either slot, needs both. So it gains a
+both-slots entry point for BindForge, and the existing method keeps serving the voice path unchanged.
+
+*The same reasoning applied to the text trap while it existed: its warning fired because Elite-Intel's own
+interface walk would have typed into the galaxy map search box. That walk no longer happens.*
 
 **This is not a second way of doing the same thing**, which `CODING_STANDARD.md` would rule out. The two
 methods answer different questions — *"will the key I press be swallowed?"* and *"is anything in this file

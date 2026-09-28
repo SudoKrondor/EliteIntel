@@ -111,8 +111,18 @@ uncontested, and still does not work in a particular game context.**
 
 ### The confirmed case: UI navigation swallowed by a focused text field
 
-Confirmed by direct in-game testing on 2026-08-31, and implemented in Elite-Intel as
-`elite.intel.ai.hands.UiNavigationTextTrap`.
+Confirmed by direct in-game testing on 2026-08-31. **The game behaviour below is still true** — it is a fact
+about Elite Dangerous, not about any detector.
+
+**The detector that used to check for it is gone.** `elite.intel.ai.hands.UiNavigationTextTrap` was deleted on
+2026-09-21, along with its spoken warning in all nine locales, because **the thing it protected no longer
+happens**: Elite-Intel's route plotter stopped arrowing out of the galaxy map's search box, so nothing types
+into a focused text field any more. Krondor: *"menu navigation is no longer required on the arrow keys or
+under Control."*
+
+**Why this section stays anyway.** The game still swallows printable keystrokes while a text field has focus.
+Any future feature that drives Elite's interface through a search box meets this again, and the two design
+lessons at the end of the section are the reason it is worth keeping written down.
 
 While an Elite text field has focus — the galaxy map's system search box above all — the game treats any
 keystroke that produces a **printable character** as typing, and never consults the `UI_*` bindings at all. A

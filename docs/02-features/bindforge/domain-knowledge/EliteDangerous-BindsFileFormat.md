@@ -419,7 +419,7 @@ Key_Numpad_Multiply
 
 Left/Right variants of modifier keys are distinct tokens (`Key_LeftShift` ≠ `Key_RightShift`).
 
-**Fuller token list, recovered from `elite.intel.ai.hands.UiNavigationTextTrap` (2026-09-02).** These
+**Fuller token list, recovered from `elite.intel.ai.hands.UiNavigationTextTrap` (2026-09-02).** *That class was deleted 2026-09-21 and the list is now only here — do not go looking for the source.* These
 spellings were not in the original source material and are worth recording, because a parser that does not
 recognise a token cannot classify the binding that uses it:
 

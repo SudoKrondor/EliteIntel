@@ -152,8 +152,10 @@ unresolved questions stay in [conflicts-and-open-questions.md](99-archive/confli
    **Reused as-is:** `BindingsApplyService` (validate → backup → atomic write; **this is who owns the write
    path**), `BindingsWorkingCopyRepository` (drafts, BOM-preserving import, baseline fingerprints),
    `BindingsLoader` (which `.binds` is live — not re-derivable from the directory alone),
-   `BindingsBackupService`, `BindingConflictScanner`/`BindingConflictRules`, `UiNavigationTextTrap` plus
-   `BindingsMonitor.textTrappedUiNavigation()`, and `Bindings.GameCommand` for the full control-set naming.
+   `BindingsBackupService`, `BindingConflictScanner`/`BindingConflictRules`, `ReservedKeyChords`, and
+   `Bindings.GameCommand` for the full control-set naming. *This list used to include `UiNavigationTextTrap`
+   and `BindingsMonitor.textTrappedUiNavigation()`; both were deleted 2026-09-21 when the route plotter
+   stopped arrowing out of the galaxy map search box, so there is nothing left to reuse.*
 
    **Two deliberate restrictions, and they do not get the same answer** (settled 2026-09-12; the
    2026-09-06 reading had both staying narrow and BindForge building its own wider writer beside them,
