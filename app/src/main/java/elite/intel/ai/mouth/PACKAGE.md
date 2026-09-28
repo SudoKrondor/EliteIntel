@@ -8,14 +8,14 @@ The mouth package owns everything from a
 ## Pipeline Overview
 
 ```
-AiVoxResponseEvent  NavigationVocalisationEvent  RadioTransmissionEvent  …
+AiVoxResponseEvent  AiVoxDemoEvent  RadioTransmissionEvent  …
         │                       │                        │
         └───────────────────────┴──────┬─────────────────┘
                                        ▼
                           [VocalisationRouter]
-                          - normalise all types to VocalisationRequestEvent
-                          - gate: optional per event type (radar, discovery, …)
-                          - RadioTransmissionEvent: pick random non-session voice, isRadio=true
+                          - normalise system, audition, and radio requests
+                          - gate RadioTransmissionEvent on the radio toggle
+                          - local radio engine selects a voice; isRadio=true
                           - every request carries one request-scoped VocalisationHandle
                                        │
                           VocalisationRequestEvent (main EventBus)
@@ -29,8 +29,8 @@ AiVoxResponseEvent  NavigationVocalisationEvent  RadioTransmissionEvent  …
               KokoroTTS-Synthesis          TTSThread
               - split sentences            - split sentences
               - generate() via sherpa-onnx - Google Cloud API call
-              - RadioFilter (if isRadio)   - 24kHz LINEAR16
-              - AudioDeClicker.sanitize()        │
+              - fade + volume + effects    - 24kHz LINEAR16
+              - tones where enabled              │
                         │                   vocalizationQueue
               playbackQueue                VocalizationThread
               KokoroTTS-Playback           - SourceDataLine.write()
@@ -49,21 +49,15 @@ returns MPEG, which is decoded and validated before the shared PCM sanitation, v
 
 ## 1. Event Taxonomy
 
-All vox events are subclasses of a base vox event.
-`VocalisationRouter` is the single subscriber for all of them and normalises everything to
-`VocalisationRequestEvent`.
+The events below extend the base vox event and are normalised by `VocalisationRouter` to
+`VocalisationRequestEvent`. VEGA uses its speech gateway for tracked requests.
 
 | Event | Always routed? | canBeInterrupted | isRadio | Notes |
 |---|---|---|---|---|
-| `AiVoxResponseEvent` | Yes | true (default) | false | LLM spoken answer; optional `CompletableFuture<Void>` for SPEAK commands |
+| `AiVoxResponseEvent` | Yes | true unless it carries a completion future | false | LLM spoken answer; optional `CompletableFuture<Void>` for SPEAK commands |
 | `MissionCriticalAnnouncementEvent` | Yes | false | false | High-priority; not gated by settings |
-| `AiVoxDemoEvent` | Yes | true | false | UI voice preview; bypasses all session checks |
-| `NavigationVocalisationEvent` | Yes | true | false | Jump/route announcements |
-| `RadarContactAnnouncementEvent` | Setting-gated | true | false | Suppressed if radar voice disabled |
-| `DiscoveryAnnouncementEvent` | Setting-gated | true | false | Suppressed if discovery voice disabled |
-| `MiningAnnouncementEvent` | Setting-gated | true | false | Suppressed if mining voice disabled |
-| `RouteAnnouncementEvent` | Setting-gated | true | false | Suppressed if route voice disabled |
-| `RadioTransmissionEvent` | Yes | true | **true** | Random non-session voice; simulates NPC radio |
+| `AiVoxDemoEvent` | Yes | true | false for ship, true for carrier | Fleet/carrier voice audition; carrier uses the radio engine even when radio is off |
+| `RadioTransmissionEvent` | Only while radio is on | true | **true** | Local engine draws a voice unless the transmission names one |
 
 `TTSInterruptEvent` is handled directly by each backend; `VocalisationRouter`
 does not touch it.
@@ -73,9 +67,9 @@ does not touch it.
 | Field | Type | Meaning |
 |---|---|---|
 | `originType` | `Class<?>` | The original event class; used by Google to publish `VocalisationSuccessfulEvent` via reflection |
-| `voiceName` | `String` (nullable) | Override voice; null = use session-default voice |
+| `voiceName` | `String` (nullable) | Override voice; null draws a cast voice for radio or uses the provider default for ordinary speech |
 | `canBeInterrupted` | `boolean` | Whether `TTSInterruptEvent` mid-playback should abort this utterance |
-| `isRadio` | `boolean` | Apply `RadioFilter` during synthesis |
+| `isRadio` | `boolean` | Route through the local radio engine; use its enhanced or baseline radio processor |
 | `handle` | `VocalisationHandle` | Request id, interruptibility, ownership, and exactly-once completion |
 | `completionFuture` | `CompletableFuture<Void>` | The handle's non-null future; completed after final playback or another terminal outcome |
 
@@ -83,14 +77,14 @@ does not touch it.
 
 ## 2. `VocalisationRouter`
 
-`VocalisationRouter` is the central normaliser. It subscribes to every vox event type and converts each to a
-`VocalisationRequestEvent` on the main EventBus.
+`VocalisationRouter` normalises system responses, mission-critical announcements, Fleet/carrier auditions, and
+radio transmissions to `VocalisationRequestEvent` on the main EventBus. VEGA speech uses its own gateway.
 
 **`AiVoxResponseEvent` special handling**: If the event carries a
 `CompletableFuture`, `VocalisationRouter` passes it through to `VocalisationRequestEvent`; otherwise the request creates its own future. The eligible active Mouth claims the request's `VocalisationHandle` during the same EventBus dispatch. Guava queues reentrant posts, so the no-Mouth check runs through `GameEventBus.afterCurrentDispatch` only after the outer post has drained; checking immediately after a nested `publish` would reject the request before a Mouth sees it. Only the handle publishes `IsSpeakingEvent`, using a process-wide active-request count, so overlapping requests cannot report a false idle state. STT continues listening while the state is true and treats a commander transcript as barge-in.
 
 **`RadioTransmissionEvent` special handling**: The router sets `isRadio=true` on the resulting
-`VocalisationRequestEvent`; the engine `RadioVoicing` names draws a random voice of its own cast other than the current ship voice. Cloud mouths ignore it; a local engine owns this route, picked by the
+`VocalisationRequestEvent`; the local engine selected by `RadioVoicing` draws a voice from its own cast when the request does not name one. Cloud mouths ignore it; that local engine is picked by the
 **game
 client's** language (`GameLanguage`, off the journal header), because the words are the client's own prose: Kokoro for every client but the Russian one, Supertonic for that. When it is not the main mouth it runs as a dedicated `RADIO_MOUTH` service - Kokoro beside a Supertonic main under a Latin-script client; the reverse never arises, because a Russian client withdraws Kokoro as the main mouth too (`TtsProvider.forSession`: Kokoro must voice BOTH the commander's language and the client's, else Supertonic is the local engine). A radio task also carries the client's language into `generate(...)` (`SherpaOnnxTTS.languageOf`), and a RADIO-role engine is built for it; a client relaunched in another language restarts the mouth (`FileheaderEventSubscriber`).
 
@@ -138,8 +132,10 @@ KokoroTTS-Synthesis thread (daemon)
     │  pop SynthesisTask
     │  resetNumericLocale()
     │  tts.generate(text, sid, speed) → float[] samples → PCM bytes
-    │  if isRadio: RadioFilter.apply(pcm)
     │  AudioDeClicker.sanitize(pcm, fadeMs)   ← fade-in to suppress pop
+    │  apply volume (+ optional Supertonic boost)
+    │  enhanced processor, or baseline RadioFilter for radio
+    │  attach optional first/last sentence tones
     │  push PlaybackTask → playbackQueue (BlockingQueue)
     │
 KokoroTTS-Playback thread (daemon)
@@ -330,17 +326,45 @@ The `removeClicks` method exists but is commented out; only `applyFade` is activ
 
 ### `RadioFilter`
 
-Static utility. Applies a shortwave radio transmission effect in-place to a PCM-16 LE buffer at 24000 Hz mono. Called from the synthesis thread (after
-`generate()`, before `AudioDeClicker.sanitize()`) when `isRadio=true`.
+Static utility. Applies a shortwave radio transmission effect in-place to a PCM-16 LE buffer at 24000 Hz mono. Called from the synthesis thread after
+sanitization and volume control for radio requests. Eligible VEGA requests use `TransmissionAudio.degrade` when enhanced processing is enabled.
 
 **Processing chain**:
 
 1. Butterworth highpass biquad (fc=300 Hz, Q=0.707) - removes bass and voice fundamental
 2. Butterworth lowpass biquad (fc=5500 Hz, Q=0.707) - retains sibilance and upper harmonics
-3. Light static noise (NOISE_AMPLITUDE=50f, ~0.15% of full scale)
-4. GAIN=1.4 compensation for energy lost through the bandpass
+3. GAIN=1.4 compensation for energy lost through the bandpass; no synthetic static
 
-The biquad coefficients are precomputed constants (see class header for derivation). Implemented as direct-form II transposed biquad for numerical stability.
+The biquad coefficients are precomputed constants (see class header for derivation). The filters use a direct-form I recurrence.
+
+`TransmissionAudio` supplies gentle pre-filter saturation to give darker voices upper harmonics,
+an independent 1200–7000 Hz voice band, 4 kHz presence lift, compression and 25% more
+post-compression drive behind a soft ceiling, plus software-generated opening/closing tones. It replaces the baseline filter when
+enhanced processing is selected; neither path generates static. Radio traffic keeps the baseline filter
+when enhanced processing is off. The VEGA speech gateway marks its own requests explicitly; only those requests can gain
+the optional treatment while on foot or in an SRV. The first and last sentence of each request carry the
+tones, so a multi-sentence transmission has one pair and cancellation uses the existing playback queue.
+Supertonic 3 alone can apply 0–100% gain with a soft peak ceiling after the normal volume control.
+The tone slider scales the channel tones independently of the voice level; both settings persist per installation.
+
+The Audio Settings controls have two roles: **Opening and closing channel tones** and **Enhanced voice
+processing** select the sound; **Apply selected effects to radio chat and NPC messages** and **Apply selected
+effects to VEGA on foot or in an SRV** select the recipients. The former `enhancedRadioEffect` database and
+session name remains for compatibility even though the enhanced processor also applies to eligible VEGA speech.
+
+| Speech route | Its recipient switch | Enhanced processing | Result (tones are independent) |
+| --- | --- | --- | --- |
+| Radio chat / NPC | Off | Either | Standard `RadioFilter`; no optional tones or enhanced processing |
+| Radio chat / NPC | On | Off | Standard `RadioFilter`; optional tones if enabled |
+| Radio chat / NPC | On | On | `TransmissionAudio.degrade` instead of `RadioFilter`; optional tones if enabled |
+| VEGA aboard ship | Either | Either | Ordinary speech; no optional tones or radio processing |
+| VEGA on foot / in SRV | Off | Either | Ordinary speech; no optional tones or radio processing |
+| VEGA on foot / in SRV | On | Off | Ordinary speech; optional tones if enabled |
+| VEGA on foot / in SRV | On | On | `TransmissionAudio.degrade`; optional tones if enabled |
+
+The standard radio filter is part of the existing radio route and remains active when optional effects are
+disabled. Both recipient switches off therefore disable optional tones and enhanced processing, but do not
+make radio speech unfiltered.
 
 ---
 
@@ -387,8 +411,8 @@ Default: `JENNIFER`.
 Singleton, implements `VoiceProvider<VoiceSelectionParams>`.
 
 - `getUserSelectedVoice()` - reads `SystemSession.getGoogleVoice()`; falls back to `JENNIFER`.
-- `getRandomVoice()` - picks any `GoogleVoices` that is not the current session voice; used by `VocalisationRouter` for
-  `RadioTransmissionEvent`.
+- `getRandomVoice()` - picks any `GoogleVoices` that is not the current session voice for requests explicitly
+  marked random; radio transmissions use a local engine instead.
 - `getVoiceParams(voiceName)` - accepts either the enum constant name (`EMMA`) or the display name (
   `Emma`); applies the non-EN language override (see Section 5) before falling back to the static `voiceMap`.
 
@@ -416,8 +440,10 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 4. In `onVoiceProcessEvent()`:
     - Ignore events owned by another backend, then claim `event.handle()` before queueing.
     - Split text with the sentence regex.
-    - If `event.isRadio()`, apply `RadioFilter.apply(pcm)` after synthesis.
     - Call `AudioDeClicker.sanitize(pcm, fadeMs)` on each sentence chunk before write.
+    - Snapshot `TransmissionAudio.forRequest(event)` at admission. After volume, apply its enhanced processing
+      where enabled; otherwise radio speech retains `RadioFilter`. Attach optional tones to the first/last
+      sentence, keeping the treatment out of ordinary narration.
     - Carry the handle through every task and complete it after the last sentence.
 5. Implement `interruptAndClear()`: settle interruptible handles, drain queues, and flush the `SourceDataLine`.
 6. Subscribe to `TTSInterruptEvent`: a non-null `requestId` cancels only that handle; a global event settles all
@@ -449,7 +475,8 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | `edge/EdgeMp3Decoder` | MPEG to validated 24 kHz mono PCM-16 LE decoding |
 | `google/VoiceProvider<T>` | Interface for voice provider implementations |
 | `AudioDeClicker` | Fade-in + volume scaling on PCM-16 LE |
-| `RadioFilter` | Bandpass + static noise shortwave radio effect |
+| `RadioFilter` | Existing radio bandpass without synthetic static |
+| `TransmissionAudio` | Optional higher band, saturation, compression and channel tones |
 | `subscribers/events/VocalisationRequestEvent` | Normalised TTS event (origin, voice, flags, handle) |
 | `subscribers/events/AiVoxResponseEvent` | LLM spoken answer; carries optional CompletableFuture |
 | `subscribers/events/TTSInterruptEvent` | Global or request-id-targeted interrupt signal |
@@ -465,7 +492,6 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | Default Google voice | `JENNIFER` | `GoogleVoiceProvider` |
 | Edge escaped-text limit | `4096` UTF-8 bytes | `EdgeSentenceSplitter` |
 | Default Edge voice | `en-US-EmmaMultilingualNeural` | `EdgeVoices` |
-| `NOISE_AMPLITUDE` | `50f` (~0.15% full scale) | `RadioFilter` |
 | `GAIN` | `1.4f` | `RadioFilter` |
 | HP cutoff | `300 Hz` | `RadioFilter` |
 | LP cutoff | `5500 Hz` | `RadioFilter` |

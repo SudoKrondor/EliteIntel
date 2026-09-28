@@ -5,6 +5,10 @@ import elite.intel.ai.ApiFactory;
 import elite.intel.ai.LlmProviderResolver;
 import elite.intel.ai.brain.LocalLlmModelCheck;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandLoadAnnouncement;
+import elite.intel.ai.brain.health.AiServiceCheck;
+import elite.intel.ai.brain.health.AiServiceHealth;
+import elite.intel.ai.brain.health.AiServiceReport;
+import elite.intel.ai.brain.health.AiServiceVerdict;
 import elite.intel.ai.brain.vega.input.VegaSubsystemGate;
 import elite.intel.ai.brain.vega.prompt.SemanticCatalogWarmer;
 import elite.intel.ai.ears.*;
@@ -223,6 +227,8 @@ public class AppController {
             ServiceHolder brain = services.get(ServiceType.VEGA);
             if (brain == null) return;
             appendToLog("Restarting LLM service...");
+            // A restart is how a provider change takes effect; the old provider's record says nothing of the new one.
+            AiServiceHealth.getInstance().reset();
             brain.stop();
             brain.start();
             appendToLog("LLM service restarted");
@@ -324,6 +330,7 @@ public class AppController {
             try {
                 checkForUpdates();
                 UiBus.publish(new ClearConsoleEvent());
+                AiServiceHealth.getInstance().reset();
                 initServices();
 
                 for (ServiceHolder service : services.values()) {
@@ -394,20 +401,19 @@ public class AppController {
     private void connectionCheck() {
         bgExecutor.submit(() -> {
             try {
-                if (LlmProviderResolver.isCloudProviderMissing()) {
-                    // Nothing to probe: SetupCheck has already said to pick a provider, and probing the LM Studio
-                    // stand-in would announce a connection result for a model the commander never chose.
-                    UiBus.publish(new LlmConnectionStatusEvent(false));
+                // Probes the command model VEGA runs on. Publishing LlmConnectionStatusEvent drives the UI +
+                // retry timer; the spoken result is silenced during silent retries via suppressConnectionFailSpeech.
+                AiServiceVerdict verdict = AiServiceCheck.live().run();
+                UiBus.publish(new LlmConnectionStatusEvent(verdict.connected()));
+                if (verdict.isSetupGap()) {
+                    // SetupCheck has already said what is missing; saying it again right after adds nothing.
                     return;
                 }
-                // Probe the live analysis endpoint directly (VEGA and query handlers share the same
-                // provider config). Publishing LlmConnectionStatusEvent drives the UI + retry timer; the
-                // spoken result is silenced during silent retries via suppressConnectionFailSpeech.
-                boolean reachable = ApiFactory.getInstance().getAnalysisEndpoint().verifyConnection();
-                UiBus.publish(new LlmConnectionStatusEvent(reachable));
                 if (!suppressConnectionFailSpeech) {
-                    String key = reachable ? "speech.connectionSuccessful" : "speech.connectionFailed";
-                    GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedResponse(key)));
+                    String line = verdict.connected()
+                            ? StringUtls.localizedResponse("speech.connectionSuccessful")
+                            : AiServiceReport.spoken(verdict);
+                    GameEventBus.publish(new AiVoxResponseEvent(line));
                 }
             } catch (Exception e) {
                 log.warn("Connection check failed", e);

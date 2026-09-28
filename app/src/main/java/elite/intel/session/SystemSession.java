@@ -452,6 +452,86 @@ public class SystemSession {
         });
     }
 
+    public boolean isTransmissionTones() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isTransmissionTones());
+    }
+
+    public void setTransmissionTones(boolean enabled) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setTransmissionTones(enabled);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public boolean isEnhancedRadioEffect() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isEnhancedRadioEffect());
+    }
+
+    public void setEnhancedRadioEffect(boolean enabled) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setEnhancedRadioEffect(enabled);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public boolean isEffectsOnRadio() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isEffectsOnRadio());
+    }
+
+    public void setEffectsOnRadio(boolean enabled) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setEffectsOnRadio(enabled);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public boolean isEffectsOnVegaAway() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isEffectsOnVegaAway());
+    }
+
+    public void setEffectsOnVegaAway(boolean enabled) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setEffectsOnVegaAway(enabled);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public int getTransmissionToneVolume() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getTransmissionToneVolume());
+    }
+
+    public void setTransmissionToneVolume(int percent) {
+        if (percent < 0 || percent > 100) throw new IllegalArgumentException("Tone volume must be 0–100%");
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setTransmissionToneVolume(percent);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public int getSupertonicBoostPercent() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getSupertonicBoostPercent());
+    }
+
+    public void setSupertonicBoostPercent(int percent) {
+        if (percent < 0 || percent > 100) throw new IllegalArgumentException("Supertonic boost must be 0–100%");
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setSupertonicBoostPercent(percent);
+            dao.save(session);
+            return null;
+        });
+    }
+
     public void clearChatHistory() {
         Database.withDao(ChatHistoryDao.class, dao -> {
             dao.clear();

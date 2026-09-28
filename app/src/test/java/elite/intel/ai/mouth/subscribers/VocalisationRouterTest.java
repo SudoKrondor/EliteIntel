@@ -2,6 +2,7 @@ package elite.intel.ai.mouth.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ears.IsSpeakingEvent;
+import elite.intel.ai.mouth.subscribers.events.AiVoxDemoEvent;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.eventbus.GameEventBus;
@@ -62,6 +63,25 @@ class VocalisationRouterTest {
         router.onAiVoxResponseEvent(new AiVoxResponseEvent("course plotted", completion));
 
         assertTrue(completion.isCompletedExceptionally());
+    }
+
+    @Test
+    void fleetVoiceAuditionsKeepTheirShipAndCarrierRoutes() {
+        FakeMouth mouth = register(new FakeMouth());
+
+        router.onVoiceDemoEvent(new AiVoxDemoEvent("Ship check", "af_heart", false));
+        VocalisationRequestEvent ship = mouth.request;
+        assertEquals(AiVoxDemoEvent.class, ship.getOriginType());
+        assertEquals("af_heart", ship.getVoiceName());
+        assertFalse(ship.isRadio());
+        ship.handle().complete();
+
+        router.onVoiceDemoEvent(new AiVoxDemoEvent("Carrier check", "af_bella", true));
+        VocalisationRequestEvent carrier = mouth.request;
+        assertEquals(AiVoxDemoEvent.class, carrier.getOriginType());
+        assertEquals("af_bella", carrier.getVoiceName());
+        assertTrue(carrier.isRadio());
+        carrier.handle().complete();
     }
 
     private <T> T register(T subscriber) {

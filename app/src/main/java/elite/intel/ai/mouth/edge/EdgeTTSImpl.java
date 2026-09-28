@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.AudioDeClicker;
 import elite.intel.ai.mouth.MainVoicePlaybackGate;
 import elite.intel.ai.mouth.MouthInterface;
+import elite.intel.ai.mouth.TransmissionAudio;
 import elite.intel.ai.mouth.VocalisationHandle;
 import elite.intel.ai.mouth.subscribers.events.*;
 import elite.intel.eventbus.GameEventBus;
@@ -64,7 +65,9 @@ public final class EdgeTTSImpl implements MouthInterface {
             float gain,
             Class<? extends BaseVoxEvent> originType,
             long generation,
+            boolean firstSentence,
             boolean lastSentence,
+            TransmissionAudio.Options effects,
             VocalisationHandle handle
     ) {
     }
@@ -210,10 +213,11 @@ public final class EdgeTTSImpl implements MouthInterface {
         String rate = EdgeSsml.rate(settings.speechSpeed());
         float gain = Math.max(0, Math.min(100, settings.voiceVolume())) / 100f;
         long generation = interruptGeneration.get();
+        TransmissionAudio.Options effects = TransmissionAudio.forRequest(event);
         for (int i = 0; i < sentences.size(); i++) {
             synthesisQueue.add(new SynthesisTask(
                     sentences.get(i), selected, language, rate, gain,
-                    event.getOriginType(), generation, i == sentences.size() - 1, handle));
+                    event.getOriginType(), generation, i == 0, i == sentences.size() - 1, effects, handle));
         }
         publishAccepted(event);
     }
@@ -284,6 +288,13 @@ public final class EdgeTTSImpl implements MouthInterface {
         }
         AudioDeClicker.sanitize(pcm, 6);
         AudioDeClicker.applyVolume(pcm, task.gain());
+        if (task.effects().degradation()) {
+            TransmissionAudio.degrade(pcm);
+        }
+        if (task.effects().tones()) {
+            pcm = TransmissionAudio.frame(pcm, task.firstSentence(), task.lastSentence(),
+                    task.gain() * SystemSession.getInstance().getTransmissionToneVolume() / 100f);
+        }
         if (isObsolete(task.handle(), task.generation())) {
             return;
         }

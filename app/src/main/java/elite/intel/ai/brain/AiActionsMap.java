@@ -34,8 +34,8 @@ public class AiActionsMap {
      */
     public Map<String, String> actionMap(boolean isDryRun) {
         // Delegated to the self-describing registry generator (C1 migration). The generator
-        // reproduces the full composition and the trailing additions (mode fallback,
-        // CONNECTION_CHECK, custom commands) in the same order the manual addAliases path used.
+        // reproduces the full composition and the trailing additions (mode fallback, custom
+        // commands) in the same order the manual addAliases path used.
         return new AiActionMapGenerator()
                 .generate(status, isDryRun, systemSession.conversationalModeOn());
     }

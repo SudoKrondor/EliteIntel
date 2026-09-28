@@ -6,7 +6,6 @@ import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.commands.builtin.IgnoreNonsensicalInputCommand;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
-import elite.intel.ai.brain.actions.handlers.queries.ConnectionCheckQuery;
 import elite.intel.ai.brain.actions.handlers.queries.GeneralConversationQuery;
 import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
@@ -32,7 +31,6 @@ public final class GameToolCandidates {
      */
     private static final Set<String> EXCLUDED_IDS = Set.of(
             GeneralConversationQuery.ID,
-            ConnectionCheckQuery.ID,
             IgnoreNonsensicalInputCommand.ID);
 
     /**

@@ -28,7 +28,13 @@ public enum PromptCacheProfile {
      * stable, deterministic identifier and keeps its own cache key so it never pollutes the conversation
      * profiles' cached prefixes.
      */
-    KEY_GENERATION("vega-keygen", 0.2);
+    KEY_GENERATION("vega-keygen", 0.2),
+    /**
+     * The connection check's one-line test request ({@link elite.intel.ai.brain.health.AiServiceCheck}). Only
+     * whether an answer comes back matters, never what it says; its own key keeps it out of the other
+     * profiles' cached prefixes.
+     */
+    CONNECTION_PROBE("vega-probe", 0.0);
 
     private final String cacheKey;
     private final double temperature;

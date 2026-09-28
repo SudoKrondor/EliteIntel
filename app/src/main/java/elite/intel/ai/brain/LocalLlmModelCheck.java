@@ -61,7 +61,7 @@ public class LocalLlmModelCheck {
                 "Unsupported local LLM model configured: '" + model + "'. Supported: *" + SUPPORTED_LOCAL_MODEL_ROOT + "*"));
     }
 
-    static boolean isSupported(String model) {
+    public static boolean isSupported(String model) {
         return model != null && model.trim().toLowerCase().contains(SUPPORTED_LOCAL_MODEL_ROOT);
     }
 }

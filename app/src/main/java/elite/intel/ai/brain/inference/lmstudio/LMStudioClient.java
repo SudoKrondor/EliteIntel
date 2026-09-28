@@ -1,5 +1,7 @@
 package elite.intel.ai.brain.inference.lmstudio;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import elite.intel.ai.brain.AiTransportResult;
@@ -16,8 +18,14 @@ import org.apache.logging.log4j.Logger;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 public class LMStudioClient extends BaseAiClient implements Client {
 
@@ -25,6 +33,9 @@ public class LMStudioClient extends BaseAiClient implements Client {
 
     public static final Integer MODEL_COMMANDS = 1;
     public static final Integer MODEL_QUERIES = 2;
+
+    private static final String CHAT_COMPLETIONS_PATH = "/chat/completions";
+    private static final Duration MODEL_LIST_TIMEOUT = Duration.ofSeconds(3);
 
     private static final LMStudioClient INSTANCE = new LMStudioClient();
     private final SystemSession systemSession = SystemSession.getInstance();
@@ -84,6 +95,118 @@ public class LMStudioClient extends BaseAiClient implements Client {
         JsonObject response = super.sendJsonRequest(buildRequest(request));
         reportResponse(response, System.nanoTime() - t0);
         return response;
+    }
+
+    /**
+     * Asks LM Studio which models it can serve. This is the server's own answer, so it can tell "not running"
+     * apart from "running without the model", which a chat reply cannot: LM Studio silently serves whatever is
+     * loaded when the requested name is unknown or empty.
+     * <p>
+     * It bypasses {@link #sendTransportRequest} on purpose: a model list is not an AI answer, and recording its
+     * millisecond round-trip would drag the reply time a connection check reports toward zero.
+     */
+    public ModelListing listModels() {
+        Optional<URI> modelsUri = modelsUri(systemSession.getLmStudioAddress());
+        if (modelsUri.isEmpty()) {
+            return new ModelListing.Unknown();
+        }
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(modelsUri.get())
+                .GET()
+                .timeout(MODEL_LIST_TIMEOUT)
+                .build();
+        HttpResponse<String> response;
+        try {
+            response = sendAsync(request).get();
+        } catch (ExecutionException noAnswer) {
+            log.debug("LM Studio model list got no answer: {}", noAnswer.getMessage());
+            return new ModelListing.NotAnswering();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return new ModelListing.Unknown();
+        }
+        return parseModelList(response.statusCode(), response.body());
+    }
+
+    /**
+     * Where the model list lives, derived from the stored chat address, or empty when that address is not the
+     * standard {@code .../v1/chat/completions} shape and the list's location would only be a guess.
+     */
+    static Optional<URI> modelsUri(String chatAddress) {
+        if (chatAddress == null || !chatAddress.strip().endsWith(CHAT_COMPLETIONS_PATH)) {
+            return Optional.empty();
+        }
+        try {
+            String base = chatAddress.strip();
+            return Optional.of(URI.create(base.substring(0, base.length() - CHAT_COMPLETIONS_PATH.length()) + "/models"));
+        } catch (IllegalArgumentException malformed) {
+            log.warn("LM Studio address is not a valid URI: {}", chatAddress);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Reads the model ids out of an OpenAI-style {@code {"data":[{"id":...}]}} list. Any HTTP answer at all
+     * means the server is running, so one this cannot read is {@link ModelListing.Unknown}, never "not answering".
+     */
+    static ModelListing parseModelList(int statusCode, String body) {
+        if (statusCode < 200 || statusCode >= 300) {
+            log.warn("LM Studio model list answered HTTP {}", statusCode);
+            return new ModelListing.Unknown();
+        }
+        try {
+            JsonArray data = JsonParser.parseString(body).getAsJsonObject().getAsJsonArray("data");
+            if (data == null) {
+                return new ModelListing.Unknown();
+            }
+            Set<String> ids = new HashSet<>();
+            for (JsonElement model : data) {
+                ids.add(model.getAsJsonObject().get("id").getAsString());
+            }
+            return new ModelListing.Listed(ids);
+        } catch (RuntimeException unreadable) {
+            log.warn("LM Studio model list is unreadable: {}", unreadable.getMessage());
+            return new ModelListing.Unknown();
+        }
+    }
+
+    /**
+     * What LM Studio said about the models it can serve.
+     */
+    public sealed interface ModelListing {
+
+        /**
+         * No HTTP answer: the server is not running, or not at the stored address.
+         */
+        record NotAnswering() implements ModelListing {
+        }
+
+        /**
+         * The server is up, but what it serves could not be learned.
+         */
+        record Unknown() implements ModelListing {
+        }
+
+        /**
+         * The server is up and named the models it can serve.
+         */
+        record Listed(Set<String> ids) implements ModelListing {
+
+            public Listed {
+                ids = Set.copyOf(ids);
+            }
+
+            /**
+             * True when {@code model} is one of them. LM Studio ids carry a publisher prefix
+             * ({@code google/gemma-4-e4b}) that a commander may leave off, so a match on the part after the slash
+             * counts too.
+             */
+            public boolean includes(String model) {
+                String wanted = model.strip();
+                return ids.stream().anyMatch(id -> id.equalsIgnoreCase(wanted)
+                        || id.toLowerCase(Locale.ROOT).endsWith("/" + wanted.toLowerCase(Locale.ROOT)));
+            }
+        }
     }
 
     private void reportResponse(JsonObject response, long elapsed) {

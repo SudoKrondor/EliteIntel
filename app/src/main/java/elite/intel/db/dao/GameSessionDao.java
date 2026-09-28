@@ -21,6 +21,8 @@ public interface GameSessionDao {
                                                              speechSpeed, googleWaveNetPitch,
                                                              keyInputDelayMs,
                                                              useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, ttsProvider, llmProvider, notificationVolume, sttThreads, voiceVolume, radioVolume,
+                                                             transmissionTones, enhancedRadioEffect, effectsOnRadio, effectsOnVegaAway,
+                                                             transmissionToneVolume, supertonicBoostPercent,
                                                              lmStudioAddress, lmStudioCommandModel,
                                                              aiLanguage,
                                                              audioInputDevice, audioOutputDevice,
@@ -37,6 +39,8 @@ public interface GameSessionDao {
                                                       :speechSpeed, :googleWaveNetPitch,
                                                       :keyInputDelayMs,
                                                       :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :ttsProvider, :llmProvider, :notificationVolume, :sttThreads, :voiceVolume, :radioVolume,
+                                                      :transmissionTones, :enhancedRadioEffect, :effectsOnRadio, :effectsOnVegaAway,
+                                                      :transmissionToneVolume, :supertonicBoostPercent,
                                                       :lmStudioAddress, :lmStudioCommandModel,
                                                       :aiLanguage,
                                                       :audioInputDevice, :audioOutputDevice,
@@ -80,6 +84,12 @@ public interface GameSessionDao {
             session.setSttThreads(rs.getInt("sttThreads"));
             session.setVoiceVolume(rs.getInt("voiceVolume"));
             session.setRadioVolume(rs.getInt("radioVolume"));
+            session.setTransmissionTones(rs.getBoolean("transmissionTones"));
+            session.setEnhancedRadioEffect(rs.getBoolean("enhancedRadioEffect"));
+            session.setEffectsOnRadio(rs.getBoolean("effectsOnRadio"));
+            session.setEffectsOnVegaAway(rs.getBoolean("effectsOnVegaAway"));
+            session.setTransmissionToneVolume(rs.getInt("transmissionToneVolume"));
+            session.setSupertonicBoostPercent(rs.getInt("supertonicBoostPercent"));
             session.setLmStudioAddress(rs.getString("lmStudioAddress"));
             session.setLmStudioCommandModel(rs.getString("lmStudioCommandModel"));
             session.setAiLanguage(rs.getString("aiLanguage"));
@@ -142,6 +152,12 @@ public interface GameSessionDao {
          * Level of the radio engine's chatter, 0 to 100 percent, independent of {@link #voiceVolume}.
          */
         private Integer radioVolume;
+        private boolean transmissionTones;
+        private boolean enhancedRadioEffect;
+        private boolean effectsOnRadio = true;
+        private boolean effectsOnVegaAway;
+        private int transmissionToneVolume = 35;
+        private int supertonicBoostPercent;
         private String lmStudioAddress;
         private String lmStudioCommandModel;
         private String aiLanguage;
@@ -327,6 +343,19 @@ public interface GameSessionDao {
         public void setRadioVolume(Integer radioVolume) {
             this.radioVolume = radioVolume;
         }
+
+        public boolean isTransmissionTones() { return transmissionTones; }
+        public void setTransmissionTones(boolean value) { transmissionTones = value; }
+        public boolean isEnhancedRadioEffect() { return enhancedRadioEffect; }
+        public void setEnhancedRadioEffect(boolean value) { enhancedRadioEffect = value; }
+        public boolean isEffectsOnRadio() { return effectsOnRadio; }
+        public void setEffectsOnRadio(boolean value) { effectsOnRadio = value; }
+        public boolean isEffectsOnVegaAway() { return effectsOnVegaAway; }
+        public void setEffectsOnVegaAway(boolean value) { effectsOnVegaAway = value; }
+        public int getTransmissionToneVolume() { return transmissionToneVolume; }
+        public void setTransmissionToneVolume(int value) { transmissionToneVolume = value; }
+        public int getSupertonicBoostPercent() { return supertonicBoostPercent; }
+        public void setSupertonicBoostPercent(int value) { supertonicBoostPercent = value; }
 
         public String getLmStudioAddress() {
             return lmStudioAddress;

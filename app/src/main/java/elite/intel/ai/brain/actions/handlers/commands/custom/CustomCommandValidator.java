@@ -3,7 +3,6 @@ package elite.intel.ai.brain.actions.handlers.commands.custom;
 import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.commands.builtin.IgnoreNonsensicalInputCommand;
-import elite.intel.ai.brain.actions.handlers.queries.ConnectionCheckQuery;
 import elite.intel.ai.brain.actions.handlers.queries.GeneralConversationQuery;
 import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
@@ -213,8 +212,7 @@ public final class CustomCommandValidator {
     private static Set<String> builtInPhrases() {
         Set<String> floating = Set.of(
                 GeneralConversationQuery.ID,
-                IgnoreNonsensicalInputCommand.ID,
-                ConnectionCheckQuery.ID);
+                IgnoreNonsensicalInputCommand.ID);
         Language language = SystemSession.getInstance().getLanguage();
         Set<String> phrases = new HashSet<>();
         List<IntelAction> builtIns = new ArrayList<>();

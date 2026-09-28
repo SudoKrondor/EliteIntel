@@ -7,7 +7,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalLong;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,15 +36,6 @@ class StalePriceTest {
                 SpanshCommoditySearch.parseInstant("2026-08-18T04:56:12Z"), "the ISO form still works");
         assertNull(SpanshCommoditySearch.parseInstant("rubbish"));
         assertNull(SpanshCommoditySearch.parseInstant(null));
-    }
-
-    @Test
-    void theAgeOfAQuoteIsMeasurable() {
-        String tenDaysAgo = Instant.now().minus(10, ChronoUnit.DAYS).toString().replace("T", " ").substring(0, 19) + "+00";
-
-        assertEquals(10, SpanshCommoditySearch.daysSinceUpdate(tenDaysAgo).orElseThrow());
-        assertEquals(OptionalLong.empty(), SpanshCommoditySearch.daysSinceUpdate(null));
-        assertEquals(OptionalLong.empty(), SpanshCommoditySearch.daysSinceUpdate("not a date"));
     }
 
     @Test

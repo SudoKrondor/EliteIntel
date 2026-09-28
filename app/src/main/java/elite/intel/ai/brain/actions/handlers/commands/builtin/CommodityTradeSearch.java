@@ -22,7 +22,6 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.util.List;
 import java.util.OptionalInt;
-import java.util.OptionalLong;
 import java.util.stream.Collectors;
 
 /**
@@ -51,12 +50,6 @@ final class CommodityTradeSearch {
      * the mean is an ordinary market, and saying so in figures reads as precision the number does not carry.
      */
     private static final int AVERAGE_ENOUGH_PERCENT = 3;
-
-    /**
-     * Older than this and a Spansh price is worth flagging rather than quoting flat. Market prices move as
-     * demand is consumed, so a week-old figure is a starting point and not a quote.
-     */
-    private static final int STALE_AFTER_DAYS = 7;
 
     private CommodityTradeSearch() {
     }
@@ -156,7 +149,6 @@ final class CommodityTradeSearch {
             reminder += " " + StringUtls.localizedResponse("handler.commodity.partLoad", result.getSupply());
         }
         reminder += againstGalacticAverage(commodity, result.getPrice());
-        reminder += howOldThatPriceIs(result);
         VegaRuntime.narrator().filler(reminder, false);
         // What is stored is not the answer but the errand, phrased for the moment it is read back: on
         // arrival in that system. The system name, the distance, the price's age and how it compares to
@@ -245,7 +237,6 @@ final class CommodityTradeSearch {
             reminder += " " + StringUtls.localizedResponse("handler.commodity.partSale", result.getSupply());
         }
         reminder += againstGalacticAverage(commodity, result.getPrice());
-        reminder += howOldThatPriceIs(result);
         VegaRuntime.narrator().filler(reminder, false);
         String errand = StringUtls.localizedResponse("handler.commodity.sellReminder",
                 FuzzySearch.localizedCommodityName(commodity), result.getStationName(), result.getStationType(), result.getPrice());
@@ -306,26 +297,6 @@ final class CommodityTradeSearch {
         return " " + StringUtls.localizedResponse(
                 price > mean ? "handler.commodity.priceAboveAverage" : "handler.commodity.priceBelowAverage",
                 percent, mean);
-    }
-
-    /**
-     * A warning that the quoted price is second-hand and old, or nothing when it is neither.
-     * <p>
-     * <b>Why this is worth a sentence.</b> Spansh is crowd-sourced: its price is whatever the last commander
-     * to fly through uploaded, and it does not go stale gracefully - a market's price moves as its demand is
-     * consumed. Measured live: Spansh quoted Bari Gateway at 57,844 a tonne for Tritium from a row ten days
-     * old, the commander crossed two systems on the strength of it, and the board there was paying 53,992 -
-     * 3.4 million credits short over a full hold. Saying "they pay" of a number like that is a promise the
-     * app is in no position to make.
-     * <p>
-     * Silent when the figure came from a board the commander opened themselves, because then it is not a
-     * claim at all.
-     */
-    private static String howOldThatPriceIs(CommoditySearchResult result) {
-        if (result.isSeenFirstHand()) return "";
-        OptionalLong age = SpanshCommoditySearch.daysSinceUpdate(result.getMarketUpdatedAt());
-        if (age.isEmpty() || age.getAsLong() < STALE_AFTER_DAYS) return "";
-        return " " + StringUtls.localizedResponse("handler.commodity.priceAge", age.getAsLong());
     }
 
     /**

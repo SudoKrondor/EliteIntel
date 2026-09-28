@@ -94,7 +94,8 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
      * {@link #languageOf(VocalisationRequestEvent)}).
      */
     private record SynthesisTask(String text, String voiceName, boolean isRadio, Language language,
-                                 long generation, boolean lastSentence, VocalisationHandle handle) {
+                                 long generation, boolean firstSentence, boolean lastSentence,
+                                 TransmissionAudio.Options effects, VocalisationHandle handle) {
     }
 
     /**
@@ -355,13 +356,13 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
             // would change speaker mid-message.
             String voiceName = resolveVoiceName(event);
             Language language = languageOf(event);
-            // The filter follows the event alone. The ship voice used to be pushed through it whenever the
-            // commander left the main ship, to sound distant on foot or in the SRV, but the effect varied
-            // too much across voices and audio hardware - subtle on one, unintelligible static on another.
+            TransmissionAudio.Options effects = TransmissionAudio.forRequest(event);
+            // Snapshot the optional treatment for the whole request.
             for (int i = 0; i < sentences.size(); i++) {
                 boolean isLast = (i == sentences.size() - 1);
                 if (!synthesisQueue.offer(new SynthesisTask(
-                        sentences.get(i), voiceName, event.isRadio(), language, generation, isLast, handle))) {
+                        sentences.get(i), voiceName, event.isRadio(), language, generation,
+                        i == 0, isLast, effects, handle))) {
                     handle.fail(new IllegalStateException(engineName + " synthesis queue rejected vocalisation"));
                     return;
                 }
@@ -504,9 +505,10 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
 
     /**
      * The language the request's text is written in. A radio transmission is the game client's own prose,
-     * in the client's language; everything else - narration, a carrier voice audition, a system callout -
-     * we wrote ourselves in the commander's. The distinction is the origin, not the radio flag: an audition
-     * is flagged radio so it gets the transmission filter, but its words are ours.
+     * in the client's language. Everything else - narration, a carrier voice audition, a system callout -
+     * we wrote in the commander's language.
+     * The distinction is the origin, not the radio flag: a carrier audition is flagged radio so it gets
+     * the transmission filter, but its words are ours.
      * <p>
      * Only a model that takes the language per call (Supertonic) can honour a different one per task; Kokoro
      * has it baked in at build time and reads every task with the language it was built for.
@@ -561,8 +563,15 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                 // (Google and Edge drop them), so the fork between the two sliders lives here alone.
                 int volume = task.isRadio() ? systemSession.getRadioVolume() : systemSession.getVoiceVolume();
                 AudioDeClicker.applyVolume(pcm, volume / 100f);
-                if (task.isRadio()) {
-                    RadioFilter.apply(pcm);
+                int supertonicBoost = provider() == TtsProvider.SUPERTONIC
+                        ? systemSession.getSupertonicBoostPercent() : 0;
+                if (supertonicBoost > 0) {
+                    AudioDeClicker.boostSupertonic(pcm, supertonicBoost);
+                }
+                TransmissionAudio.processVoice(pcm, task.isRadio(), task.effects());
+                if (task.effects().tones()) {
+                    pcm = TransmissionAudio.frame(pcm, task.firstSentence(), task.lastSentence(),
+                            volume / 100f * systemSession.getTransmissionToneVolume() / 100f);
                 }
                 playbackQueue.put(new PlaybackTask(
                         pcm, task.generation(), task.lastSentence(), task.handle()));

@@ -217,6 +217,14 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
         @SerializedName("updated_at")
         private UpdatedAt updatedAt;
 
+        /**
+         * When the station's MARKET was last uploaded - not {@link #updatedAt}, which moves whenever anything
+         * about the station record does. Measured live, {@code updated_at} within a week let through a market
+         * last priced 13 days earlier.
+         */
+        @SerializedName("market_updated_at")
+        private UpdatedAt marketUpdatedAt;
+
         @SerializedName("distance_to_arrival")
         private RangeFilter distanceToArrival;
 
@@ -254,6 +262,10 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
 
         public void setUpdatedAt(UpdatedAt updatedAt) {
             this.updatedAt = updatedAt;
+        }
+
+        public void setMarketUpdatedAt(UpdatedAt marketUpdatedAt) {
+            this.marketUpdatedAt = marketUpdatedAt;
         }
 
         public SystemName getSystemName() {

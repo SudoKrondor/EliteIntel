@@ -1,6 +1,7 @@
 package elite.intel.gameapi.search;
 
 import elite.intel.db.managers.LocationManager;
+import elite.intel.db.managers.SearchExclusionManager;
 import elite.intel.gameapi.journal.events.dto.RankAndProgressDto;
 import elite.intel.gameapi.search.spansh.station.StationSearchHit;
 import elite.intel.session.PlayerSession;
@@ -48,6 +49,10 @@ import java.util.function.Predicate;
  * <p>A visit settles every kind: a system the location ledger holds a row for is one the commander has
  * jumped into, and a permit, once granted, is not taken back. The ledger is journal-fed only, so the
  * evidence is first-hand.
+ *
+ * <p>The same filter drops the systems the commander has struck from searches ({@link SearchExclusionManager}),
+ * because it is already the one place every route search asks "may I send the commander here?". A permit is
+ * one reason for no; a station that turned out not to exist is another.
  */
 public final class PermitLockedSystems {
 
@@ -151,7 +156,8 @@ public final class PermitLockedSystems {
      */
     public static <T> List<T> reachable(List<T> hits, Function<T, String> systemOf) {
         if (hits == null) return List.of();
-        return hits.stream().filter(hit -> isReachable(systemOf.apply(hit))).toList();
+        Set<String> excluded = SearchExclusionManager.getInstance().excludedKeys();
+        return hits.stream().filter(hit -> isReachable(systemOf.apply(hit), excluded)).toList();
     }
 
     /**
@@ -162,11 +168,20 @@ public final class PermitLockedSystems {
     }
 
     /**
-     * True when the commander may jump to {@code systemName}: it is not permit-locked, or the lock is
-     * one they meet, or they have been there before.
+     * True when the commander may be sent to {@code systemName}: they have not excluded it from searches, and
+     * it is not permit-locked, or the lock is one they meet, or they have been there before.
      */
     public static boolean isReachable(String systemName) {
-        if (systemName == null || !isLocked(systemName)) return true;
+        return isReachable(systemName, SearchExclusionManager.getInstance().excludedKeys());
+    }
+
+    private static boolean isReachable(String systemName, Set<String> excluded) {
+        if (systemName == null) return true;
+        if (excluded.contains(SearchExclusionManager.key(systemName))) {
+            log.debug("Dropping {}: the commander excluded it from searches", systemName);
+            return false;
+        }
+        if (!isLocked(systemName)) return true;
         RankAndProgressDto ranks = PlayerSession.getInstance().getRankAndProgressDto();
         boolean reachable = isReachable(systemName, ranks.getCombatRankFederation(), ranks.getCombatRankEmpire(),
                 ranks.hasEliteRank(), PermitLockedSystems::visited);

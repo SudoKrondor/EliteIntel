@@ -650,8 +650,10 @@ public abstract class Thought {
         }
         VegaDiagnostics.info(trace(), "confirm", "dangerous action detected: " + invocation.name());
 
-        // Code-voiced confirmation prompt (no LLM); urgent so it preempts before anything runs.
-        voice(responsePhrase(CONFIRM_DANGEROUS_KEY), true);
+        // Code-voiced confirmation prompt (no LLM); urgent so it preempts before anything runs. The command's own
+        // question when it has one - it names what is about to be done - else the generic one.
+        String question = dependencies.dangerousActionPolicy().confirmationPrompt(invocation);
+        voice(question == null || question.isBlank() ? responsePhrase(CONFIRM_DANGEROUS_KEY) : question, true);
 
         ConfirmationOutcome outcome = awaitConfirmationOutcome();
         if (!isRuntimeActive()) {

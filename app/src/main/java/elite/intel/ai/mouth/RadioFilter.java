@@ -1,7 +1,5 @@
 package elite.intel.ai.mouth;
 
-import java.util.Random;
-
 /**
  * Simulates a shortwave radio transmission effect on PCM-16 LE audio at 24000 Hz.
  * <p>
@@ -9,17 +7,10 @@ import java.util.Random;
  * <ol>
  *   <li>Butterworth highpass at 300 Hz - cuts bass rumble and voice fundamental</li>
  *   <li>Butterworth lowpass at 5500 Hz - passes sibilance and upper harmonics for shortwave character</li>
- *   <li>Light static noise - ~1% random amplitude</li>
  *   <li>Gain compensation - recovers level lost to the bandpass attenuation</li>
  * </ol>
  */
 public class RadioFilter {
-
-    // Light static: ~1.2% of full scale (out of 32767)
-    //private static final float NOISE_AMPLITUDE = 400f;
-    //private static final float NOISE_AMPLITUDE = 200f;  // ~0.6% - half as loud
-    //private static final float NOISE_AMPLITUDE = 100f;  // ~0.3% - quarter volume
-    private static final float NOISE_AMPLITUDE = 50f;     // ~0.15% - very subtle
 
     // Compensate for energy loss caused by the narrow bandpass, then reduce by 30%
     private static final float GAIN = 1.4f; // 2.0 (bandpass compensation) × 0.70 (−30% volume)
@@ -39,8 +30,6 @@ public class RadioFilter {
     private static final double LP_B2 = 0.25558;
     private static final double LP_A1 = -0.15333;
     private static final double LP_A2 = 0.17566;
-
-    private static final Random RNG = new Random();
 
     private RadioFilter() {
     }
@@ -63,11 +52,9 @@ public class RadioFilter {
         applyBiquad(samples, HP_B0, HP_B1, HP_B2, HP_A1, HP_A2);
         applyBiquad(samples, LP_B0, LP_B1, LP_B2, LP_A1, LP_A2);
 
-        // Add light static and apply gain compensation
-        float noiseScale = NOISE_AMPLITUDE / 32767f;
+        // Gain compensation only. No synthetic noise is introduced, including over silence.
         for (int i = 0; i < numSamples; i++) {
-            float noise = (RNG.nextFloat() * 2f - 1f) * noiseScale;
-            samples[i] = samples[i] * GAIN + noise;
+            samples[i] *= GAIN;
         }
 
         // Encode float → PCM-16 LE with clamp
@@ -81,7 +68,7 @@ public class RadioFilter {
     }
 
     /**
-     * Direct-form II transposed biquad, processes {@code x} in-place.
+     * Direct-form I biquad, processes {@code x} in-place.
      */
     private static void applyBiquad(float[] x, double b0, double b1, double b2, double a1, double a2) {
         double x1 = 0, x2 = 0, y1 = 0, y2 = 0;

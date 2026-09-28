@@ -95,12 +95,4 @@ public class GrokAnalysisEndpoint extends AiEndPoint implements AiAnalysisInterf
             return GrokClient.getInstance().createErrorResponse("Analysis error. Check logs.");
         }
     }
-
-    @Override
-    public boolean verifyConnection() {
-        GrokClient client = GrokClient.getInstance();
-        return probeChatStyle(client.createPrompt(GrokClient.MODEL_GROK_REASONING, 0.8f), client,
-                root -> root.has("choices") && !root.getAsJsonArray("choices").isEmpty());
-    }
-
 }

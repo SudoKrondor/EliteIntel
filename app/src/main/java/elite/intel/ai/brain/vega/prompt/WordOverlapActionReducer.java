@@ -1,7 +1,6 @@
 package elite.intel.ai.brain.vega.prompt;
 
 import elite.intel.ai.brain.actions.handlers.commands.builtin.IgnoreNonsensicalInputCommand;
-import elite.intel.ai.brain.actions.handlers.queries.ConnectionCheckQuery;
 import elite.intel.ai.brain.actions.handlers.queries.GeneralConversationQuery;
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
 import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
@@ -35,7 +34,6 @@ public final class WordOverlapActionReducer implements VegaActionReducer {
      */
     private static final Set<String> FALLBACK_IDS = Set.of(
             GeneralConversationQuery.ID,
-            ConnectionCheckQuery.ID,
             IgnoreNonsensicalInputCommand.ID);
 
     /** Words shorter than this carry no selection signal (mirrors the legacy tokenizer's length filter). */
