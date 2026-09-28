@@ -318,7 +318,7 @@ what makes the question answerable — 131 is worth a moment's thought, 2 is not
 | **No** | nothing is written. The bindings stay orphaned, and BindForge **says so plainly** rather than falling silent, since that is the state the user just confirmed. |
 | **Not now** | nothing is written and **the question is not asked again until the hardware situation changes.** Deferral is not a soft no, and re-asking on every launch turns a useful prompt into something to dismiss reflexively. |
 
-**This is the same shape as [Restore](file-manager.md#restoring-when-nothing-matches--ask-do-not-guess)
+**This is the same shape as [Restore](file-manager.md#restoring-onto-a-machine-whose-installations-differ--reworked-2026-09-26)
 and the [foreign-backup device list](file-manager.md#how-bindforge-tells-case-1-from-case-3--settled-2026-09-12):**
 where hardware identity is genuinely unknowable, BindForge asks a question the user can answer
 instead of computing an answer it cannot.

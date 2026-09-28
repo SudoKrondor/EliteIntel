@@ -74,8 +74,8 @@ The backup's own contents still bound what is possible, but the player chooses w
 |---|---|---|
 | `.binds` | **per file** | The only domain where the choice means anything. A player keeps several presets, and *"restore my Ship preset from June, leave the rest"* is a real thing to want. |
 | `StartPreset.#.start` | whole domain | One file. Nothing to choose between. |
-| `DeviceMappings.xml` | whole domain, **per installation** | One file per installation — the meaningful choice is *which installation*, and that selector is needed regardless. |
-| `.buttonMap` | whole domain, **per installation** | Travels with `DeviceMappings.xml`. Offering these individually is a trap rather than a feature — see below. |
+| `DeviceMappings.xml` | whole domain, **restored to every installation** | *Reworked 2026-09-26.* This row used to read "per installation", with a selector asking *which installation*. [Every install now holds the same files](overview.md#every-install-gets-the-same-files--settled-2026-09-23), so restoring into one and not the others would **create** the divergence BindForge exists to remove. |
+| `.buttonMap` | whole domain, **restored to every installation** | Travels with `DeviceMappings.xml`. Offering these individually is a trap rather than a feature — see below. |
 
 So file-level selection applies to exactly one domain. That is not a compromise; it falls out of the shape
 of the domains.
@@ -92,21 +92,56 @@ of the domains.
 hazard exists at whole-domain granularity too, so the validation is owed either way; and because the result
 lands in a draft, an inconsistent set is a thing to be shown, not a thing to be prevented.
 
-### Restore is not evenly scoped across the four domains, and the UI must not pretend otherwise
+### Restore never asks *which installation* — reworked 2026-09-26
 
-`.binds` and `StartPreset.#.start` live in the single shared user-config folder. **However many `.binds`
-files a player keeps — and they may keep as many as they like — that folder is not duplicated per
-installation**, so restoring them never asks *which installation*. `DeviceMappings.xml` and `.buttonMap`
-are duplicated per installation, so restoring those always does.
+**It used to, for the device domains.** `.binds` and `StartPreset.#.start` live in one shared folder, so they
+never had an installation to choose; `DeviceMappings.xml` and `.buttonMap` are duplicated per installation, so
+restoring them asked which one.
+
+**That question is gone.** Under
+[standardisation](overview.md#every-install-gets-the-same-files--settled-2026-09-23) every installation holds
+the same device files, so there is no correct answer to *which one* — restoring into a single installation
+manufactures exactly the drift the model exists to remove. A restore lands in the draft, and Apply carries it
+to every installation, the same path an edit takes.
+
+**The asymmetry did not disappear, it moved.** It is no longer about where a restore *goes*; it is about what
+the archive *holds*. A backup captures each installation's device files **as they were found**, which means an
+archive taken before standardisation, or after a patch wiped one installation, can contain several versions of
+the same file.
+
+**When those copies disagree, the restore asks the reconciliation question — not the routing one.** Which
+captured version becomes the master? That is the same question
+[first setup](alias-designer.md#first-setup--reconciling-the-installs--settled-2026-09-23) asks, with the same
+answer shape, and once answered the result goes everywhere. When the captured copies all agree — the normal
+case once a machine is standardised — there is nothing to ask.
 
 ### Installation identity — the storefront, and it is derived rather than assigned
 
 **Settled 2026-09-07.** A backup stamps each per-installation file with the **storefront** it came from —
 `steam`, `epic`, `frontier`. Nothing else, and nothing generated.
 
-This works because **a machine can hold only one copy per storefront.** A Steam or Epic account binds to a
-single Frontier account holding a single copy of the game, so the storefront name is already unique on any
-given machine — there is nothing to disambiguate.
+**~~This works because a machine can hold only one copy per storefront.~~ That premise was wrong, corrected
+2026-09-26.** It reasoned that a Steam or Epic account binds to one Frontier account holding one copy, so the
+storefront name is unique on any machine. Two pieces of evidence since say otherwise:
+
+- **Windows.** A user can keep a second Frontier-launcher install — Alan listed exactly that among the
+  possibilities — and the Frontier launcher can be run as
+  [several copies, one per account](../../01-host-integration/domain-knowledge/EliteDangerous-InstallPaths.md).
+- **Linux.** Native, Flatpak and Snap Steam are independent of one another and can all be installed at once,
+  each with its own login and its own game copy. Krondor, 2026-09-26: *"I had all three Steams installed."*
+  All three are storefront `steam`.
+
+So **the storefront is a label, not a key.** Where a machine holds more than one installation of the same
+storefront, the label alone cannot tell them apart, and its folder path is what distinguishes them.
+
+**What it is still for.** The label records **where a captured file came from**, so an archive can be read
+by a human and so a multi-installation capture is self-describing. What it no longer does is **route a
+restore** — nothing needs to match a backup's installation to an installation on this machine, because the
+device domains now go to all of them.
+
+That makes the correction above cheap. A duplicate storefront label was only ever a problem for routing, and
+routing is gone; two installations both labelled `steam` in an archive are now just two captured copies, which
+the reconciliation question above already knows how to handle.
 
 **The property that matters is that it is derived, not assigned.** Both machines independently arrive at
 the same label from their own detection, rather than one minting an identifier the other has to trust. So
@@ -127,25 +162,34 @@ project, so it fails precisely when it would be needed.
 rather than breaking — an unrecognised label simply finds no match, and the player is asked. Whether such
 an installation should carry a user-supplied label is undecided and cheap to defer.
 
-### Restoring when nothing matches — ask, do not guess
+### Restoring onto a machine whose installations differ — reworked 2026-09-26
 
-**Settled 2026-09-07.** If a backup's storefront matches no installation on this machine, BindForge **asks
-the player which installation to restore into**, showing what the archive says about where it came from.
+**~~Settled 2026-09-07: if a backup's storefront matches no installation, ask which installation to restore
+into.~~** That check existed to route a restore, and
+[routing is gone](#restore-never-asks-which-installation--reworked-2026-09-26): the device domains go to every
+installation, so nothing in the archive has to be matched to anything on this machine.
 
-It does not skip the device domains silently, and it does not refuse. **A new PC is the normal case for a
-portable single-file backup, not an error** — that is most of what the format is for. The `.binds` half
-restores regardless, since it goes to one shared folder that has no installation to match.
+**The case it was written for still happens, and is now simpler.** A backup made on a PC with Steam and Epic,
+restored onto one with only Steam, holds two captured copies of `DeviceMappings.xml` and the machine has one
+installation to fill. If the captured copies agree, that is the master and it goes in. If they disagree — the
+likely case for an archive predating standardisation — the
+[reconciliation question](#restore-never-asks-which-installation--reworked-2026-09-26) picks which one wins,
+then it goes in. Either way the count of installations either side is irrelevant.
 
-**This is a separate check from the compatibility one**, and they can both fire on the same archive:
+**A new PC is the normal case for a portable single-file backup, not an error** — that is most of what the
+format is for. It does not skip the device domains silently and it does not refuse.
+
+**One check survives, and it is the one that was always doing the real work:**
 
 | Check | Question | Failure |
 |---|---|---|
-| Storefront match | *which installation does this go into?* | ask the player |
-| Hardware match | *do these device entries describe hardware this player has?* | refuse the device domains as not compatible — see [Browse for Backup File](#browse-for-backup-file) |
+| Hardware match | *do these device entries describe hardware this user has?* | refuse the device domains as not compatible — see [Browse for Backup File](#browse-for-backup-file) |
 
-Worth keeping distinct: a user's own backup from their old PC fails the first check and passes the
-second. Another player's backup can pass the first and fail the second. Conflating them would either
-refuse a legitimate restore or wave through someone else's hardware.
+**Why that one is different in kind.** The storefront check asked a question about *this machine's layout*,
+which standardisation answered permanently. The hardware check asks whether the archive describes **somebody
+else's controllers**, which no amount of model-tidying answers — a user's own backup from their old PC passes
+it, another player's backup may not. Keeping them separate was right; what changed is that only one of them
+was ever about safety.
 
 ### Archive Format — ZIP
 
