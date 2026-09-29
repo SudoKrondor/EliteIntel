@@ -32,7 +32,12 @@ who never opens BindForge learns that their second install exists. See
 
 ### Retention
 
-Age-based: "keep backups for N days," default 30.
+Age-based: **keep backups for N days, default 30** — a [setting](#settings) since 2026-09-28, with a floor of
+one day.
+
+**Not the same retention as [Edit History's](#edit-history)**, which counts versions per file rather than
+days. One folder pruned by date, one history pruned by depth; they are separate settings and separate
+columns.
 
 ### Backup Status Values
 
@@ -422,12 +427,18 @@ BindForge's settings tab (see [Settings Storage](../../01-host-integration/elite
 |---|---|---|
 | Auto-backup on Elite-Intel launch | Enabled | Toggles [Player Backups — Auto-Backup on App Launch](#auto-backup-on-app-launch) |
 | Backup destination | Elite-Intel's default backup path | Where Player Backup ZIP archives are written |
+| Backup retention | 30 days (minimum 1) | How long a [Player Backup](#retention) is kept before it is pruned |
 | Edit History retention | 10 (range 1–30) | How many historical versions [Edit History](#edit-history) keeps per file before dropping the oldest |
 
-**Where they are stored — proposed 2026-09-20:** a `bindforge_settings` table of their own, one column each;
-see [Settings Storage](../../01-host-integration/elite-intel-platform-map.md#a-bindforge_settings-table--approved).
-Two open points from that proposal belong here: whether Player Backups' [age limit](#retention) is a fourth
-setting or fixed at 30 days, and that *"BindForge's settings tab"* means a panel on Elite-Intel's Settings
+**Where they are stored — built 2026-09-28:** a `bindforge_settings` table of their own, one column each;
+retention is range-checked (1–30) and the destination is rejected at the setter if the platform cannot
+represent it. **Resolving an unset destination to a real folder is not done here** —
+`PlayerBackupService.resolvePlayerBackupsDir()` already makes that decision and stays the only place that
+does. See [Settings Storage](../../01-host-integration/elite-intel-platform-map.md#a-bindforge_settings-table--built-2026-09-28).
+**Settled 2026-09-28: the age limit is a fourth setting**, defaulting to 30 days (Alan). It has a floor of
+one day and no ceiling — zero would make every backup older than the limit the moment it was written, so
+pruning would delete the backup it had just taken, while keeping backups longer only costs disk, which is the
+user's to spend. One open point from that proposal still belongs here: that *"BindForge's settings tab"* means a panel on Elite-Intel's Settings
 screen — not the Bind Editor's [Settings mode](bind-editor.md#settings--settled-2026-09-19), which edits the
 game's own settings inside the `.binds` file.
 
@@ -457,9 +468,9 @@ first, the other has to land with it.
 **Edit History needs a migration in BindForge's range.** Under Krondor's band rule
 ([proposal §4](../../multi-install-proposal.md#4-migrations-one-tree-per-file), accepted 2026-09-24) the first
 two digits are the version, and V1.2's shared band is split between its two writers: **BindForge owns
-`12000–12499`**, user and galaxy work `12500–12999`. The range is empty, so Edit History's table is simply
-the next free number in it, in the shared top-level `db-migration/` tree — never `user/`, which is
-Krondor's alone. [An applied migration is never edited](../../../CLAUDE.md).
+`12000–12499`**, commander and galaxy work `12500–12999`. The range holds one file so far — <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
+`12000__bindforge_settings.sql` — so Edit History's table is the next free number in it, in the shared
+top-level `db-migration/` tree, never `db-migration/commander/`, which is Krondor's alone. [An applied migration is never edited](../../../CLAUDE.md). <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
 
 ## Export / Import — Considered, Then Cut
 

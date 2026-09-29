@@ -58,6 +58,7 @@ SKIP_TERMINOLOGY = (
 SKIP_BARE_COMMANDER = SKIP_TERMINOLOGY + (
     'docs/VEGA_ARCHITECTURE.md',            # CommanderThought, submitCommanderInput, COMMANDER turns
     'docs/ED_HUD_REFERENCE.md',             # the HudCommanderBlock widget
+    'docs/SELF_DIAGNOSTIC.md',              # Krondor's, describing his own spoken feature
     'docs/00-overview/input-environment.md',  # defines the terms
     'CLAUDE.md',                            # defines the terms, and quotes the code vocabulary
 )
@@ -152,6 +153,30 @@ def slug(heading):
     return h.replace(' ', '-')
 
 
+def check_migration_paths():
+    """A `db-migration/<name>/` folder named in the docs must exist on disk.
+
+    The terminology sweep on 2026-09-26 replaced "commander" with "user" throughout the docs and caught
+    `db-migration/commander/` with it - a real directory, renamed in four files to one that does not exist.
+    The terminology rules could not see it, because "user" is the word they were putting in. This checks the
+    claim instead of the wording: the coding standard says a doc naming a migration must name one that is
+    really there.
+    """
+    base = os.path.join(ROOT, 'app', 'src', 'main', 'resources', 'db-migration')
+    if not os.path.isdir(base):
+        return []
+    errors = []
+    for path in markdown_files():
+        if skipped(path):
+            continue
+        for n, line in enumerate(io.open(path, encoding='utf-8'), 1):
+            for folder in re.findall(r'db-migration/([A-Za-z_][\w-]*)/', line):
+                if not os.path.isdir(os.path.join(base, folder)):
+                    errors.append((path, n, 'db-migration/%s/' % folder,
+                                   'no such folder - the migration trees are the top level and commander/'))
+    return errors
+
+
 def check_links():
     anchors = {}
     for path in markdown_files():
@@ -190,7 +215,7 @@ def check_links():
 # ---------------------------------------------------------------------------
 
 def main():
-    term_errors = check_terminology()
+    term_errors = check_terminology() + check_migration_paths()
     link_errors = check_links()
 
     if term_errors:

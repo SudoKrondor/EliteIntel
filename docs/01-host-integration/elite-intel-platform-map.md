@@ -287,11 +287,24 @@ system.
 | Windows | the storefront discovery in [InstallPaths](domain-knowledge/EliteDangerous-InstallPaths.md) - registry, `libraryfolders.vdf`, Epic manifests, the Frontier default locations |
 | Linux | enumerate the [four Steam roots](domain-knowledge/EliteDangerous-InstallPaths.md#5a-linux-has-several-steam-roots-not-one---confirmed-2026-09-26), resolving symlinks and de-duplicating by real path |
 
-**The primary installation on Linux has an exact definition, and it is already on disk:** the one
-`~/.var/app/elite.intel.app/ed-bindings` resolves to (Krondor, 2026-09-26). That is worth more than a
-heuristic - the launcher already picked one, Elite-Intel is already watching its journal, so BindForge
-agreeing with it costs nothing and disagreeing would be confusing. On Krondor's machine that is
-`.steam/steam`, the native install.
+**"Primary" on Linux is a narrow, local thing — and it is not a primary install.** Krondor's
+[proposal §2](../multi-install-proposal.md#2-installations-your-side-elite-intel-keeps-the-master-copy) is
+flat about the general case: *"No install is primary... it lives in a game folder, so a patch can wipe it
+too. No file inside a game install can be the source of truth."* Naming one install primary would rebuild the
+thing the master replaced.
+
+**What Linux actually needs a name for is different:** which installation's Proton prefix Elite-Intel is
+currently reading, because on Linux the bindings folder lives inside one. It has an exact definition and it is
+already on disk — the installation `~/.var/app/elite.intel.app/ed-bindings` resolves to (Krondor,
+2026-09-26). Worth more than a heuristic: the launcher already picked one and Elite-Intel is already watching
+its journal, so agreeing with it costs nothing and disagreeing would be confusing. On Krondor's machine that
+is `.steam/steam`, the native install.
+
+**Windows has no equivalent and must not pretend to.** One shared bindings folder, no launcher symlink,
+nothing to point at — so a `primary` flag there would be false everywhere, or true on whichever installation
+detection happened to return first. When the Linux provider is built, the concept gets named for what it is
+(the installation Elite-Intel is reading) rather than a general "primary" that invites a caller to treat it as
+authoritative.
 
 **The contract must not assume one bindings folder.** This is the trap the interface exists to avoid, and the
 easiest one to design straight into it. If the provider exposes a single `getBindingsFolder()`, it has baked
@@ -302,9 +315,9 @@ reports, which is true, and Linux returns a different one per installation, whic
 one loop either way, and Windows becomes the special case internally rather than in every caller.
 
 So an installation should be able to answer, at minimum: where its `DeviceMappings.xml` is, where its
-`DeviceButtonMaps` folder is, where its bindings folder is, which storefront it came from, and whether it is
-the primary. Whether `StartPreset` hangs off the installation or the provider follows the same rule as
-`.binds`, because they live together.
+`DeviceButtonMaps` folder is, where its bindings folder is, and which storefront it came from. **No `primary`
+flag**, for the reason above. Whether `StartPreset` hangs off the installation or the provider follows the
+same rule as `.binds`, because they live together.
 
 **Where it goes:** `elite.intel.bindforge.install`, per the package decision, and **not** in
 `elite.intel.ai.hands`, which [stays as it is](../02-features/bindforge/overview.md#two-narrow-boundaries--one-stays-one-widens) through V1.2.
@@ -356,9 +369,13 @@ existing installations keep their behaviour. Names are camelCase, and related se
 informal prefix — `lmStudio*`, `pushToTalk*`, `localLlm*`, `noiseReduction*`. So the question was never
 *"which key prefix"* but **"which table, and what column names."**
 
-### A `bindforge_settings` table — approved
+### A `bindforge_settings` table — built 2026-09-28
 
-**Proposed 2026-09-20, approved by Krondor 2026-09-22**, who also set its shape:
+**Proposed 2026-09-20, approved by Krondor 2026-09-22, built 2026-09-28** —
+`12000__bindforge_settings.sql`, `elite.intel.db.dao.BindForgeSettingsDao` and
+`elite.intel.db.managers.BindForgeSettingsManager`, with `BindForgeSettingsManagerTest` pinning the round
+trip. **The three settings are stored but nothing reads them yet**: the launch trigger, the destination
+lookup in `PlayerBackupService` and Edit History itself are all still to build. He set the shape:
 
 > *"We are NOT using .INI files for settings. we are using SQLite same as Google Chrome, Mozilla Firefox and
 > others. This provides us a way to version and modify things with new releases without messing with ugly
@@ -402,7 +419,7 @@ what columns provide for free: a type, a default, and a migration that says why 
 - **Migrations in the `12000–12499` range** — BindForge's half of V1.2's band, set by Krondor's
   [proposal §4](../multi-install-proposal.md#4-migrations-one-tree-per-file) and accepted 2026-09-24. The first two digits are the
   version, so `11XXX` = V1.1 and `12XXX` = V1.2; V1.2's shared band is split because it has two writers, with
-  user and galaxy work taking `12500–12999`. Files already written keep their old numbers and are never
+  commander and galaxy work taking `12500–12999`. Files already written keep their old numbers and are never <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
   renamed. An applied migration is never edited.
 - **Save every column, and prove it.** `global_settings` saves with `INSERT OR REPLACE`, which resets any
   column the statement does not list to its default. Two of its columns are missing from its save today —

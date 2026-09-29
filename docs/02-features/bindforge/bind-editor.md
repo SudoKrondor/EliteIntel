@@ -716,7 +716,7 @@ written up above; this list keeps the record of what was asked and what the answ
   value.
 - **Storage schema for user groups — still open.** Falls out during implementation. A new table means a new
   migration in BindForge's `12000–12499` range (see
-  [Migrations](../../01-host-integration/elite-intel-platform-map.md#a-bindforge_settings-table--approved)), and an applied
+  [Migrations](../../01-host-integration/elite-intel-platform-map.md#a-bindforge_settings-table--built-2026-09-28)), and an applied
   migration is never edited. What has to persist is now settled: group
   name, ordered membership, and whether the group is a shipped default or the user's own.
 ## Input Mode

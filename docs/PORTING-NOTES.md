@@ -228,7 +228,7 @@ unresolved questions stay in [conflicts-and-open-questions.md](99-archive/confli
    key–value pair, so the question is which table and what column names. **Settled: a `bindforge_settings` table
    of its own**, keeping BindForge out of the two busiest files in the tree. Its migration goes in BindForge's
    `12000–12499` range. See
-   [Settings Storage](01-host-integration/elite-intel-platform-map.md#a-bindforge_settings-table--approved).
+   [Settings Storage](01-host-integration/elite-intel-platform-map.md#a-bindforge_settings-table--built-2026-09-28).
 
 10. **Archive backup/restore (ZIP) does not exist.** BindForge's File Manager is built on it.
 

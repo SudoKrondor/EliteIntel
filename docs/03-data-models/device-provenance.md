@@ -188,13 +188,19 @@ Two consequences for this table:
 
 **BindForge writes in `12000–12499`.** The first two digits of a migration number are the version — `11XXX` =
 V1.1, `12XXX` = V1.2 — and V1.2's shared band is split between its two writers, BindForge taking
-`12000–12499` and user/galaxy work `12500–12999`. Krondor's
+`12000–12499` and commander/galaxy work `12500–12999`. Krondor's <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
 [proposal §4](../multi-install-proposal.md#4-migrations-one-tree-per-file), accepted 2026-09-24. Files written before the band
 rule keep their numbers (`000XX` = V1.0, `010XX` = V1.1) and sort before `11000`, so filename order still
 holds.
 
-So this becomes **`db-migration/12000__device_provenance.sql`** — Krondor names it as the example in §4. Note
-the tree: the shared top level, never `user/`, which is his alone by the §5 contract. Out-of-order
+So this becomes **`db-migration/<next free number in 12000–12499>__device_provenance.sql`**.
+
+*Deliberately not a specific number.* Krondor's §4 named 12000 as the example; `12000__bindforge_settings.sql`
+took it on 2026-09-28, and `12001__bindforge_installations.sql` took the renumbered one the same day. A
+migration number is never reused or renamed, so whichever file lands first owns the number — which means a
+doc cannot reserve one, and naming one here only creates a correction later. Take the next free number when
+the file is actually written. Note the tree: the shared top level, never `db-migration/commander/`, which <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
+is his alone by the §5 contract. Out-of-order
 arrival between the two ranges is safe, because migrations are recorded by filename rather than by highest
 number applied.
 
