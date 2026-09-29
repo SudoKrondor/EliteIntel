@@ -60,6 +60,28 @@ public class InstallationRegistry {
         return installations.record(Storefront.MANUAL.name(), root, true);
     }
 
+    /**
+     * Repoints an installation at a folder the user picked, keeping its id and everything keyed to it.
+     *
+     * @throws IllegalArgumentException if the folder is not an Elite Dangerous installation
+     */
+    public void relocate(long id, Path newRoot) {
+        // WHY: validated exactly as a hand-added folder is. Relocate is the same act - the user naming where
+        // the game is - so accepting something here that addByHand would refuse makes no sense.
+        if (!GameInstallation.looksLikeAnInstall(newRoot)) {
+            throw new IllegalArgumentException("Not an Elite Dangerous installation: " + newRoot
+                    + " (expected " + GameInstallation.controlSchemesUnder(newRoot) + ")");
+        }
+        installations.relocate(id, newRoot);
+    }
+
+    /**
+     * Drops an installation from the list, discarding what was held against it.
+     */
+    public void remove(long id) {
+        installations.remove(id);
+    }
+
     public List<InstallationRow> current() {
         return installations.findAll();
     }

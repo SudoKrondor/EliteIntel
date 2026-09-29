@@ -4,6 +4,7 @@ import elite.intel.ai.hands.BindingsApplyException;
 import elite.intel.ai.hands.BindingsMonitor;
 import elite.intel.ai.hands.PlayerBackupService;
 import elite.intel.ui.support.BindingApplyResultPresenter;
+import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.HudFooter;
 import elite.intel.ui.widget.HudPanel;
 import elite.intel.ui.widget.HudSection;
@@ -24,9 +25,15 @@ import static elite.intel.ui.theme.AppTheme.*;
 import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND;
 
 /**
- * The "Binding Management" sub-tab of BIND FORGE: a manual "Backup Now" action, a flat list of
- * existing {@code playerbackups} snapshots, and two restore actions plus a delete action on the
+ * The "Binding Management" sub-tab of BIND FORGE, which holds two tabs of its own.
+ * <p>
+ * <strong>Game Install Locations</strong> is where BindForge looks for the files it manages.
+ * <strong>Player Backups</strong> is this panel's original content: a manual "Backup Now" action, a flat
+ * list of existing {@code playerbackups} snapshots, and two restore actions plus a delete action on the
  * selected backup.
+ * <p>
+ * It becomes File Manager once Edit History joins them - a tab is named when it becomes what the name says,
+ * so the name waits until then.
  * <p>
  * Both restore actions share the same first step (loading the backup's file for the active
  * preset into the working copy as the new draft): "Restore to Editing Slot" stops there, the
@@ -41,6 +48,8 @@ public class BindingManagementPanel extends JPanel {
 
     private final PlayerBackupService backupService = PlayerBackupService.getInstance();
     private final BindingApplyResultPresenter applyResultPresenter = new BindingApplyResultPresenter(this);
+
+    private final GameInstallLocationsPanel gameInstallLocationsPanel = new GameInstallLocationsPanel();
 
     private DefaultTableModel tableModel;
     private JTable table;
@@ -58,8 +67,22 @@ public class BindingManagementPanel extends JPanel {
 
     private void buildUi() {
         setLayout(new BorderLayout());
-        setBorder(hudSubtabContentBorder());
         setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+
+        // WHY: this screen is growing into File Manager, which holds Game Install Locations, Player Backups
+        // and Edit History. The backup screen below becomes one of those tabs rather than the whole panel.
+        // The outer tab keeps its current name until it holds all three - a tab is named when it becomes
+        // what the name says.
+        JTabbedPane tabs = AppTheme.makeSectionTabs();
+        tabs.addTab(getText("bindings.tab.gameInstallLocations"), gameInstallLocationsPanel);
+        tabs.addTab(getText("bindings.tab.playerBackups"), buildPlayerBackupsTab());
+        add(tabs, BorderLayout.CENTER);
+    }
+
+    private JPanel buildPlayerBackupsTab() {
+        JPanel backups = new JPanel(new BorderLayout());
+        backups.setBorder(hudSubtabContentBorder());
+        backups.setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
         tableModel = new ReadOnlyTableModel(columnNames(), 0);
         table = new JTable(tableModel);
@@ -74,8 +97,9 @@ public class BindingManagementPanel extends JPanel {
                 6);
         section.body().add(HudTable.dataPlaneScrollPane(table), BorderLayout.CENTER);
 
-        add(section, BorderLayout.CENTER);
-        add(buildFooter(), BorderLayout.SOUTH);
+        backups.add(section, BorderLayout.CENTER);
+        backups.add(buildFooter(), BorderLayout.SOUTH);
+        return backups;
     }
 
     private JPanel buildFooter() {
@@ -100,6 +124,7 @@ public class BindingManagementPanel extends JPanel {
 
     public void initData() {
         refreshBackups();
+        gameInstallLocationsPanel.initData();
     }
 
     /**
