@@ -55,10 +55,10 @@ public class BindForgeSettingsManager {
     /**
      * The folder the user chose for Player Backup archives, or {@code null} when they have not chosen one.
      * <p>
-     * Deliberately returns the stored value rather than resolving it. {@code PlayerBackupService} already
-     * decides "chosen folder, else {@code AppPaths.getPlayerBackupsDir()}" in its own
-     * {@code resolvePlayerBackupsDir()}, and that stays the one place the decision is made - a second
-     * resolver here would be a rival that can disagree with it.
+     * Deliberately returns the stored value rather than resolving it. {@code PlayerBackupService} reads this
+     * and decides "chosen folder, else {@code AppPaths.getPlayerBackupsDir()}" in its own
+     * {@code resolvePlayerBackupsDir()}, and that is the one place the decision is made - a second resolver
+     * here would be a rival that can disagree with it.
      */
     public String getBackupDestination() {
         return Database.withDao(BindForgeSettingsDao.class, dao -> dao.get().getBackupDestination());

@@ -1,5 +1,6 @@
 package elite.intel.ai.hands;
 
+import elite.intel.db.managers.BindForgeSettingsManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -236,6 +237,37 @@ class PlayerBackupServiceTest {
         service.deleteBackup(backupFolder);
 
         assertThrows(IOException.class, () -> service.deleteBackup(backupFolder));
+    }
+
+    /**
+     * The chosen backup destination used to be stored and never read, so every backup went to the default
+     * folder however the setting was set. Built with no test override so the setting is the only thing
+     * deciding where the backup lands.
+     */
+    @Test
+    void createBackupHonoursTheChosenDestination() throws Exception {
+        Path bindingsDir = tempDir.resolve("bindings");
+        Files.createDirectories(bindingsDir);
+        write(bindingsDir.resolve("Custom.4.2.binds"), "<Root/>");
+        Path chosen = tempDir.resolve("my chosen backups");
+
+        BindForgeSettingsManager settings = BindForgeSettingsManager.getInstance();
+        String previous = settings.getBackupDestination();
+        try {
+            settings.setBackupDestination(chosen.toString());
+            Path backupFolder = serviceWithoutOverride(fixedClock("2026-06-24T18:30:00Z"))
+                    .createBackup(bindingsDir);
+
+            assertEquals(chosen.resolve("2026-06-24_18-30-00"), backupFolder);
+            assertTrue(Files.exists(backupFolder.resolve("Custom.4.2.binds")));
+        } finally {
+            settings.setBackupDestination(previous);
+        }
+    }
+
+    /** No {@code baseDirOverride}, so the destination comes from the setting or Elite-Intel's default. */
+    private PlayerBackupService serviceWithoutOverride(Clock clock) {
+        return service(null, clock, workingCopyRepo());
     }
 
     private PlayerBackupService service(Path playerBackupsDir, Clock clock) {

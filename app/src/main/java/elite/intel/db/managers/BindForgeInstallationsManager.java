@@ -38,6 +38,17 @@ public class BindForgeInstallationsManager {
     }
 
     /**
+     * The installation at {@code root}, or {@code null} when no row holds that folder.
+     * <p>
+     * A folder belongs to at most one installation - the table enforces it - so callers can ask before
+     * writing rather than reading the answer out of a constraint violation.
+     */
+    public InstallationRow findByPath(Path root) {
+        String rootPath = root.toString();
+        return Database.withDao(BindForgeInstallationsDao.class, dao -> dao.findByPath(rootPath));
+    }
+
+    /**
      * Records an installation, or leaves the existing row alone when that folder is already known.
      * <p>
      * Doing nothing on a repeat is what makes a rescan safe to run as often as the user likes: the row keeps

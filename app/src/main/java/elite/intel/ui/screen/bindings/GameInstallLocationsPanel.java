@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -54,6 +56,8 @@ public class GameInstallLocationsPanel extends JPanel {
     private JTable table;
     private JTextField configFolderField;
     private List<InstallationRow> currentRows = List.of();
+    private final AtomicBoolean refreshInProgress = new AtomicBoolean();
+    private Long pendingSelection;
 
     private JButton relocateButton;
     private JButton removeButton;
@@ -127,14 +131,51 @@ public class GameInstallLocationsPanel extends JPanel {
                 List.of(rescanButton, addButton, relocateButton, removeButton));
     }
 
+    /**
+     * Reads the installations and their device files off the EDT, same as
+     * {@code BindingManagementPanel.performBackup()}: each row's Device Files summary parses that
+     * installation's {@code DeviceMappings.xml} and lists its button maps, and an installation on a
+     * disconnected drive takes as long as the filesystem needs to say so.
+     * <p>
+     * A refresh already in flight is left to finish. This is called again on every ship-profile change, and
+     * nothing here depends on the ship.
+     */
     public void initData() {
-        refreshConfigFolder();
-        showRows(registry.current());
+        loadInBackground(registry::currentWithStartupScan);
     }
 
     private void performRescan() {
-        showRows(registry.rescan());
-        refreshConfigFolder();
+        loadInBackground(registry::rescan);
+    }
+
+    private void loadInBackground(Supplier<List<InstallationRow>> source) {
+        if (!refreshInProgress.compareAndSet(false, true)) return;
+        new Thread(() -> {
+            List<InstallationRow> rows = List.of();
+            List<Object[]> cells = List.of();
+            Path bindingsDir = null;
+            try {
+                rows = source.get();
+                cells = rows.stream().map(this::cellsOf).toList();
+                bindingsDir = PlayerSession.getInstance().getBindingsDir();
+            } catch (RuntimeException e) {
+                // WHY: broad on purpose. This is a thread boundary; an exception escaping it would kill the
+                // thread silently and leave the table as it was, with nothing to explain why.
+                log.warn("Could not refresh the installation list", e);
+            }
+            List<InstallationRow> loadedRows = rows;
+            List<Object[]> loadedCells = cells;
+            Path loadedBindingsDir = bindingsDir;
+            SwingUtilities.invokeLater(() -> {
+                showConfigFolder(loadedBindingsDir);
+                showRows(loadedRows, loadedCells);
+                if (pendingSelection != null) {
+                    selectRow(pendingSelection);
+                    pendingSelection = null;
+                }
+                refreshInProgress.set(false);
+            });
+        }, "BindForge-Installations").start();
     }
 
     private void performAdd() {
@@ -152,8 +193,10 @@ public class GameInstallLocationsPanel extends JPanel {
                     getText("button.ok"));
             return;
         }
-        showRows(registry.current());
-        selectRow(added.id());
+        // WHY: remembered rather than selected here. The list reloads off the EDT, so the row does not exist
+        // in the table yet - the selection happens when it does.
+        pendingSelection = added.id();
+        initData();
     }
 
     private void performRelocate() {
@@ -163,6 +206,16 @@ public class GameInstallLocationsPanel extends JPanel {
         if (chosen == null) return;
         try {
             registry.relocate(row.id(), chosen);
+        } catch (InstallationRegistry.AlreadyListedException e) {
+            // WHY: told apart from "not an installation" because the remedy differs. That folder is fine -
+            // it is simply somebody else's already - and naming which installation holds it is the whole
+            // of what the user needs to know.
+            HudConfirmDialog.info(this,
+                    getText("bindings.installLocations.relocate.alreadyListed.title"),
+                    getText("bindings.installLocations.relocate.alreadyListed.text",
+                            chosen.toString(), e.occupant().storefront()),
+                    getText("button.ok"));
+            return;
         } catch (IllegalArgumentException e) {
             HudConfirmDialog.info(this,
                     getText("bindings.installLocations.add.rejected.title"),
@@ -170,7 +223,7 @@ public class GameInstallLocationsPanel extends JPanel {
                     getText("button.ok"));
             return;
         }
-        showRows(registry.current());
+        initData();
     }
 
     private void performRemove() {
@@ -185,11 +238,10 @@ public class GameInstallLocationsPanel extends JPanel {
                 getText("button.cancel"));
         if (!confirmed) return;
         registry.remove(row.id());
-        showRows(registry.current());
+        initData();
     }
 
-    private void refreshConfigFolder() {
-        Path bindingsDir = PlayerSession.getInstance().getBindingsDir();
+    private void showConfigFolder(Path bindingsDir) {
         boolean found = bindingsDir != null && Files.isDirectory(bindingsDir);
         configFolderField.setText(bindingsDir == null
                 ? getText("bindings.installLocations.configFolder.unset")
@@ -198,22 +250,25 @@ public class GameInstallLocationsPanel extends JPanel {
                         : "bindings.installLocations.state.missing"));
     }
 
-    private void showRows(List<InstallationRow> rows) {
+    /** Everything one row displays. Built off the EDT, because the Device Files cell reads files. */
+    private Object[] cellsOf(InstallationRow row) {
+        return new Object[]{
+                row.storefront(),
+                row.rootPath(),
+                getText(row.addedByHand()
+                        ? "bindings.installLocations.source.addedByHand"
+                        : "bindings.installLocations.source.detected"),
+                describeDeviceFiles(row),
+                getText(row.missing()
+                        ? "bindings.installLocations.state.missing"
+                        : "bindings.installLocations.state.found")
+        };
+    }
+
+    private void showRows(List<InstallationRow> rows, List<Object[]> cells) {
         currentRows = rows;
         tableModel.setRowCount(0);
-        for (InstallationRow row : rows) {
-            tableModel.addRow(new Object[]{
-                    row.storefront(),
-                    row.rootPath(),
-                    getText(row.addedByHand()
-                            ? "bindings.installLocations.source.addedByHand"
-                            : "bindings.installLocations.source.detected"),
-                    describeDeviceFiles(row),
-                    getText(row.missing()
-                            ? "bindings.installLocations.state.missing"
-                            : "bindings.installLocations.state.found")
-            });
-        }
+        cells.forEach(tableModel::addRow);
         // WHY: after the rows, not with the columns. The widths are measured from what is actually in the
         // table, and an install path is only known once it is there.
         HudTable.fitColumnsToContent(table, MAX_COLUMN_WIDTH);

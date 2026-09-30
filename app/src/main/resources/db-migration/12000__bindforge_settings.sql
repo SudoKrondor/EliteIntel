@@ -10,8 +10,8 @@
 --
 -- backup_destination is deliberately nullable. The specified default is "Elite-Intel's default backup path",
 -- which is machine-specific, so writing an absolute path into a migration that runs on every installation
--- would be wrong. NULL means "the user has not chosen one". Resolving that to a real folder stays in
--- PlayerBackupService.resolvePlayerBackupsDir(), which already makes that decision - one resolver, not two.
+-- would be wrong. NULL means "the user has not chosen one". Resolving that to a real folder is done by
+-- PlayerBackupService.resolvePlayerBackupsDir(), which reads this column - one resolver, not two.
 --
 -- The two retentions are different things and both are settings (Alan, 2026-09-28). Player backups age
 -- out: keep them for N days, 30 by default. Edit History counts instead: keep N versions per file, 10 by

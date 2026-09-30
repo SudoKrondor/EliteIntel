@@ -13,6 +13,8 @@ import elite.intel.ui.widget.HudFooter;
 import elite.intel.ui.widget.HudPanel;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudTable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -21,6 +23,8 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -40,6 +44,8 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
  */
 public class AliasDesignerPanel extends JPanel {
 
+    private static final Logger log = LogManager.getLogger(AliasDesignerPanel.class);
+
     private static final int MAX_COLUMN_WIDTH = 420;
 
     private final InstallationRegistry registry;
@@ -47,6 +53,8 @@ public class AliasDesignerPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable table;
     private List<DeviceDivergence.Finding> currentFindings = List.of();
+    private Map<String, String> installLabels = Map.of();
+    private final AtomicBoolean refreshInProgress = new AtomicBoolean();
 
     public AliasDesignerPanel() {
         this(new InstallationRegistry(
@@ -88,23 +96,81 @@ public class AliasDesignerPanel extends JPanel {
         add(HudFooter.build(false, null, null, List.of(rescanButton)), BorderLayout.SOUTH);
     }
 
+    /**
+     * Reads the installations and their device files off the EDT, same as
+     * {@code BindingManagementPanel.performBackup()} - parsing every {@code .binds} and every installation's
+     * {@code DeviceMappings.xml} would otherwise freeze the window, and an installation on a spun-down or
+     * disconnected drive freezes it for as long as the filesystem takes to answer.
+     * <p>
+     * A refresh already in flight is left to finish rather than a second one being started beside it: this is
+     * called again on every ship-profile change, and nothing here depends on the ship.
+     */
     public void initData() {
-        showFindings(DeviceDivergenceScanner.scan(
-                controlSchemesByInstall(), PlayerSession.getInstance().getBindingsDir()));
+        if (!refreshInProgress.compareAndSet(false, true)) return;
+        new Thread(() -> {
+            Map<String, String> labels = Map.of();
+            List<DeviceDivergence.Finding> findings = List.of();
+            try {
+                List<InstallationRow> rows = registry.currentWithStartupScan();
+                labels = labelsFor(rows);
+                findings = DeviceDivergenceScanner.scan(
+                        controlSchemesByInstall(rows), PlayerSession.getInstance().getBindingsDir());
+            } catch (RuntimeException e) {
+                // WHY: broad on purpose. This is a thread boundary, and an exception escaping it would kill
+                // the thread silently and leave the table showing whatever it showed before, with no clue why.
+                log.warn("Could not refresh the divergence list", e);
+            }
+            Map<String, String> loadedLabels = labels;
+            List<DeviceDivergence.Finding> loadedFindings = findings;
+            SwingUtilities.invokeLater(() -> {
+                installLabels = loadedLabels;
+                showFindings(loadedFindings);
+                refreshInProgress.set(false);
+            });
+        }, "BindForge-Divergence").start();
     }
 
     /**
      * Only installations whose folder is there: a missing one cannot be read, and reporting its entries as
      * absent would fill the list with red caused by an unplugged drive.
+     * <p>
+     * Keyed by row id. <strong>Not by storefront</strong>, which is a label rather than a key - a machine can
+     * hold two Frontier copies, several hand-added installations, or three Steams on Linux, and keying by
+     * storefront would drop all but the last of them from the comparison without saying so.
      */
-    private Map<String, Path> controlSchemesByInstall() {
+    private Map<String, Path> controlSchemesByInstall(List<InstallationRow> rows) {
         Map<String, Path> byInstall = new LinkedHashMap<>();
-        for (InstallationRow row : registry.current()) {
+        for (InstallationRow row : rows) {
             if (row.missing()) continue;
-            byInstall.put(row.storefront(),
-                    GameInstallation.controlSchemesUnder(Path.of(row.rootPath())));
+            byInstall.put(keyOf(row), GameInstallation.controlSchemesUnder(Path.of(row.rootPath())));
         }
         return byInstall;
+    }
+
+    /** The identity a finding carries. Unique by construction, and never shown to the user. */
+    static String keyOf(InstallationRow row) {
+        return String.valueOf(row.id());
+    }
+
+    /**
+     * What each installation is called on screen.
+     * <p>
+     * The storefront alone where it identifies one installation, and the storefront with its folder where it
+     * does not - so two Frontier copies read as two different things rather than twice as "FRONTIER". Verbose
+     * only when being brief would be ambiguous.
+     */
+    static Map<String, String> labelsFor(List<InstallationRow> rows) {
+        Map<String, Long> countByStorefront = rows.stream()
+                .collect(Collectors.groupingBy(InstallationRow::storefront, Collectors.counting()));
+
+        Map<String, String> labels = new LinkedHashMap<>();
+        for (InstallationRow row : rows) {
+            boolean storefrontIsEnough = countByStorefront.getOrDefault(row.storefront(), 0L) == 1;
+            labels.put(keyOf(row), storefrontIsEnough
+                    ? row.storefront()
+                    : row.storefront() + " (" + row.rootPath() + ")");
+        }
+        return labels;
     }
 
     private void showFindings(List<DeviceDivergence.Finding> findings) {
@@ -115,7 +181,10 @@ public class AliasDesignerPanel extends JPanel {
                     getText(severityKey(finding.severity())),
                     finding.deviceName(),
                     getText(issueKey(finding.issue())),
-                    String.join(", ", finding.installs())
+                    finding.installs().stream()
+                            .map(key -> installLabels.getOrDefault(key, key))
+                            .sorted()
+                            .collect(Collectors.joining(", "))
             });
         }
         HudTable.fitColumnsToContent(table, MAX_COLUMN_WIDTH);

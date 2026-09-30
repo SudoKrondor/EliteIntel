@@ -35,6 +35,34 @@ class InstallationRegistryTest {
     void emptyTheList() {
         installations.findAll().forEach(row -> installations.remove(row.id()));
         detected.clear();
+        InstallationRegistry.forgetStartupScan();
+    }
+
+    /**
+     * A storefront installed since the last run is otherwise invisible until the user happens to press
+     * Rescan, and nothing on screen would tell them to.
+     */
+    @Test
+    void theFirstReadOfTheRunDetects() throws IOException {
+        detect(Storefront.STEAM, gameAt("steam"));
+
+        assertEquals(1, registry().currentWithStartupScan().size());
+    }
+
+    /**
+     * Called again on every ship-profile change, so detection must not run again with it - the registry,
+     * VDF and manifest reads would repeat for nothing.
+     */
+    @Test
+    void laterReadsInTheSameRunDoNotDetectAgain() throws IOException {
+        InstallationRegistry registry = registry();
+        detect(Storefront.STEAM, gameAt("steam"));
+        registry.currentWithStartupScan();
+
+        detect(Storefront.EPIC, gameAt("epic"));
+        List<InstallationRow> rows = registry.currentWithStartupScan();
+
+        assertEquals(1, rows.size(), "the second storefront waits for a rescan rather than appearing by itself");
     }
 
     @Test
@@ -123,6 +151,61 @@ class InstallationRegistryTest {
 
         assertEquals(1, rows.size());
         assertTrue(rows.get(0).addedByHand(), "it is still the only reason BindForge knows about it");
+    }
+
+    @Test
+    void relocatingOntoAFolderAnotherInstallHoldsIsRefusedByName() throws IOException {
+        Path steam = gameAt("steam");
+        Path epic = gameAt("epic");
+        detect(Storefront.STEAM, steam);
+        detect(Storefront.EPIC, epic);
+        InstallationRegistry registry = registry();
+        registry.rescan();
+        long epicId = idOf(epic);
+
+        InstallationRegistry.AlreadyListedException refused = assertThrows(
+                InstallationRegistry.AlreadyListedException.class, () -> registry.relocate(epicId, steam));
+
+        assertEquals("STEAM", refused.occupant().storefront(), "the user is told which installation holds it");
+        assertEquals(epic.toString(), rowOf(epicId).rootPath(), "and the one they were moving did not move");
+    }
+
+    /**
+     * Picking the folder it already has is a no-op, not a collision with itself - the row the check finds is
+     * the row being moved.
+     */
+    @Test
+    void relocatingAnInstallOntoItsOwnFolderIsAllowed() throws IOException {
+        Path steam = gameAt("steam");
+        detect(Storefront.STEAM, steam);
+        InstallationRegistry registry = registry();
+        registry.rescan();
+        long id = idOf(steam);
+
+        registry.relocate(id, steam);
+
+        assertEquals(steam.toString(), rowOf(id).rootPath());
+    }
+
+    @Test
+    void relocatingOntoAFolderThatIsNotAnInstallIsRefused() throws IOException {
+        Path steam = gameAt("steam");
+        detect(Storefront.STEAM, steam);
+        InstallationRegistry registry = registry();
+        registry.rescan();
+        long id = idOf(steam);
+        Path notAGame = Files.createDirectories(machine.resolve("Documents"));
+
+        assertThrows(IllegalArgumentException.class, () -> registry.relocate(id, notAGame));
+        assertEquals(steam.toString(), rowOf(id).rootPath(), "it stayed where it was");
+    }
+
+    private long idOf(Path root) {
+        return installations.findByPath(root).id();
+    }
+
+    private InstallationRow rowOf(long id) {
+        return installations.findAll().stream().filter(row -> row.id() == id).findFirst().orElseThrow();
     }
 
     private InstallationRegistry registry() {

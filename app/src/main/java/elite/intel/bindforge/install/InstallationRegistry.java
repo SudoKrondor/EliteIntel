@@ -6,6 +6,7 @@ import elite.intel.db.managers.BindForgeInstallationsManager;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Keeps the stored installation list in step with what is on disk.
@@ -15,6 +16,15 @@ import java.util.List;
  * supply: that the user added it by hand, or moved it.
  */
 public class InstallationRegistry {
+
+    /**
+     * Whether detection has run since the application started.
+     * <p>
+     * Static because "once per run" is a property of the run rather than of any one registry: the panels hold
+     * their own instances today, and two of them scanning at startup would do the same work twice. It becomes
+     * an instance field the moment they share a registry.
+     */
+    private static final AtomicBoolean DETECTED_THIS_RUN = new AtomicBoolean();
 
     private final GameInstallationProvider provider;
     private final BindForgeInstallationsManager installations;
@@ -34,6 +44,11 @@ public class InstallationRegistry {
      *
      * @return the list as it now stands, including rows detection did not produce
      */
+    /** Test seam: lets a test start from "detection has not run yet" rather than inheriting a sibling's run. */
+    static void forgetStartupScan() {
+        DETECTED_THIS_RUN.set(false);
+    }
+
     public List<InstallationRow> rescan() {
         for (GameInstallation detected : provider.findInstallations()) {
             installations.record(detected.storefront().name(), detected.root(), false);
@@ -53,26 +68,43 @@ public class InstallationRegistry {
     public InstallationRow addByHand(Path root) {
         // WHY: validated before it is accepted, because an arbitrary folder is not an installation and a bad
         // row would send every backup, restore and apply at the wrong place.
-        if (!GameInstallation.looksLikeAnInstall(root)) {
-            throw new IllegalArgumentException("Not an Elite Dangerous installation: " + root
-                    + " (expected " + GameInstallation.controlSchemesUnder(root) + ")");
-        }
+        requireAnInstallation(root);
         return installations.record(Storefront.MANUAL.name(), root, true);
     }
 
     /**
      * Repoints an installation at a folder the user picked, keeping its id and everything keyed to it.
      *
-     * @throws IllegalArgumentException if the folder is not an Elite Dangerous installation
+     * @throws IllegalArgumentException if the folder is not an Elite Dangerous installation, or if another
+     *                                  installation already occupies it
      */
     public void relocate(long id, Path newRoot) {
         // WHY: validated exactly as a hand-added folder is. Relocate is the same act - the user naming where
         // the game is - so accepting something here that addByHand would refuse makes no sense.
-        if (!GameInstallation.looksLikeAnInstall(newRoot)) {
-            throw new IllegalArgumentException("Not an Elite Dangerous installation: " + newRoot
-                    + " (expected " + GameInstallation.controlSchemesUnder(newRoot) + ")");
+        requireAnInstallation(newRoot);
+        // WHY: asked before writing rather than left to the table's UNIQUE constraint. The constraint is
+        // right and stays, but it surfaces as an opaque wrapped SQL failure that the caller cannot tell
+        // apart from a broken database - and that reached the user as nothing happening at all.
+        InstallationRow occupant = installations.findByPath(newRoot);
+        if (occupant != null && occupant.id() != id) {
+            throw new AlreadyListedException(newRoot, occupant);
         }
         installations.relocate(id, newRoot);
+    }
+
+    /** Thrown when the folder the user picked is already held by a different installation. */
+    public static class AlreadyListedException extends IllegalArgumentException {
+        private final transient InstallationRow occupant;
+
+        AlreadyListedException(Path folder, InstallationRow occupant) {
+            super("Already listed as " + occupant.storefront() + ": " + folder);
+            this.occupant = occupant;
+        }
+
+        /** The installation already at that folder, so the user can be told which one it is. */
+        public InstallationRow occupant() {
+            return occupant;
+        }
     }
 
     /**
@@ -82,8 +114,30 @@ public class InstallationRegistry {
         installations.remove(id);
     }
 
+    private static void requireAnInstallation(Path root) {
+        if (!GameInstallation.looksLikeAnInstall(root)) {
+            throw new IllegalArgumentException("Not an Elite Dangerous installation: " + root
+                    + " (expected " + GameInstallation.controlSchemesUnder(root) + ")");
+        }
+    }
+
     public List<InstallationRow> current() {
         return installations.findAll();
+    }
+
+    /**
+     * The list, having run detection once since the application started.
+     * <p>
+     * Detection belongs at startup: a storefront installed since the last run is otherwise invisible until
+     * the user happens to press Rescan, and they have no reason to - the screen shows one installation and
+     * looks correct. Everything downstream inherits that staleness, including a launch backup that would then
+     * cover fewer installations than it claims.
+     * <p>
+     * Once per run, not per call: this is reached from a refresh that also fires on every ship-profile
+     * change, and re-running the registry, VDF and manifest reads each time would be waste.
+     */
+    public List<InstallationRow> currentWithStartupScan() {
+        return DETECTED_THIS_RUN.compareAndSet(false, true) ? rescan() : current();
     }
 
     /**

@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -36,9 +37,13 @@ public final class DeviceDivergenceScanner {
         Map<String, List<Path>> orphansByInstall = new LinkedHashMap<>();
 
         controlSchemesByInstall.forEach((install, controlSchemes) -> {
-            List<DeviceEntry> entries = entriesOf(install, controlSchemes);
-            entriesByInstall.put(install, entries);
-            orphansByInstall.put(install, orphansOf(install, entries, controlSchemes));
+            Optional<List<DeviceEntry>> entries = entriesOf(install, controlSchemes);
+            // WHY: an installation whose file could not be read is left out of both maps entirely rather
+            // than added with no entries. Added empty, it would be indistinguishable from an installation
+            // that genuinely has none, and every entry the others hold would be reported missing from it.
+            if (entries.isEmpty()) return;
+            entriesByInstall.put(install, entries.get());
+            orphansByInstall.put(install, orphansOf(install, entries.get(), controlSchemes));
         });
 
         return DeviceDivergence.rank(
@@ -48,18 +53,18 @@ public final class DeviceDivergenceScanner {
     }
 
     /**
-     * An installation whose files cannot be read contributes no entries.
+     * The installation's device entries, or empty when its file could not be read.
      * <p>
-     * Deliberately not treated as "this installation has nothing", which would report every other
-     * installation's entries as missing from it and fill the list with red that is really one unreadable
-     * file. It is logged and the installation sits the comparison out.
+     * An empty {@code Optional} means "could not be read" and is not the same as an empty list, which means
+     * "read, and holds no entries". The caller drops the first from the comparison and keeps the second,
+     * because an installation that genuinely has no entries really does differ from the others.
      */
-    private static List<DeviceEntry> entriesOf(String install, Path controlSchemes) {
+    private static Optional<List<DeviceEntry>> entriesOf(String install, Path controlSchemes) {
         try {
-            return DeviceMappingsParser.parseIfPresent(controlSchemes.resolve("DeviceMappings.xml"));
+            return Optional.of(DeviceMappingsParser.parseIfPresent(controlSchemes.resolve("DeviceMappings.xml")));
         } catch (IOException e) {
             log.warn("Could not read device entries for {}: {}", install, e.getMessage());
-            return List.of();
+            return Optional.empty();
         }
     }
 

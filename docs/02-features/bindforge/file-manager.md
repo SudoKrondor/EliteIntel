@@ -432,9 +432,10 @@ BindForge's settings tab (see [Settings Storage](../../01-host-integration/elite
 
 **Where they are stored — built 2026-09-28:** a `bindforge_settings` table of their own, one column each;
 retention is range-checked (1–30) and the destination is rejected at the setter if the platform cannot
-represent it. **Resolving an unset destination to a real folder is not done here** —
-`PlayerBackupService.resolvePlayerBackupsDir()` already makes that decision and stays the only place that
-does. See [Settings Storage](../../01-host-integration/elite-intel-platform-map.md#a-bindforge_settings-table--built-2026-09-28).
+represent it. **Resolving an unset destination to a real folder is not done in the settings manager** —
+`PlayerBackupService.resolvePlayerBackupsDir()` reads the stored value and is the only place that decision is
+made. A destination that cannot be read falls back to the default rather than failing the backup: the backup
+is the thing being protected. See [Settings Storage](../../01-host-integration/elite-intel-platform-map.md#a-bindforge_settings-table--built-2026-09-28).
 **Settled 2026-09-28: the age limit is a fourth setting**, defaulting to 30 days (Alan). It has a floor of
 one day and no ceiling — zero would make every backup older than the limit the moment it was written, so
 pruning would delete the backup it had just taken, while keeping backups longer only costs disk, which is the
