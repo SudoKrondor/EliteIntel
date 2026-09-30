@@ -1,5 +1,8 @@
 package elite.intel.ui.screen.bindings;
 
+import elite.intel.bindforge.devices.ButtonMapAudit;
+import elite.intel.bindforge.devices.DeviceEntry;
+import elite.intel.bindforge.devices.DeviceMappingsParser;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.install.InstallationRegistry;
 import elite.intel.bindforge.install.WindowsGameInstallationProvider;
@@ -21,7 +24,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Stream;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -42,6 +44,9 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
 public class GameInstallLocationsPanel extends JPanel {
 
     private static final Logger log = LogManager.getLogger(GameInstallLocationsPanel.class);
+
+    /** Wide enough for a real install path, narrow enough that one cannot crowd out the other columns. */
+    private static final int MAX_COLUMN_WIDTH = 420;
 
     private final InstallationRegistry registry;
 
@@ -209,33 +214,44 @@ public class GameInstallLocationsPanel extends JPanel {
                             : "bindings.installLocations.state.found")
             });
         }
+        // WHY: after the rows, not with the columns. The widths are measured from what is actually in the
+        // table, and an install path is only known once it is there.
+        HudTable.fitColumnsToContent(table, MAX_COLUMN_WIDTH);
         updateSelectionActionsEnabled();
     }
 
     /**
      * What was actually found in this installation's {@code ControlSchemes} folder.
      * <p>
-     * A missing {@code DeviceButtonMaps} folder is the normal case rather than a fault - Frontier ships
-     * button maps for only a couple of devices - so it is reported as a count, not as an error.
+     * Reports the device entries, the button maps, and <strong>how many of those button maps resolve to
+     * nothing</strong>. An orphan is a file the game never reads: it is named for a device entry that is not
+     * there, so its labels are never shown. An entry with no button map is the opposite - the normal case,
+     * and not counted as a problem, because Frontier ships button maps for only a couple of devices.
      */
     private String describeDeviceFiles(InstallationRow row) {
         Path controlSchemes = GameInstallation.controlSchemesUnder(Path.of(row.rootPath()));
         if (!Files.isDirectory(controlSchemes)) {
             return getText("bindings.installLocations.deviceFiles.none");
         }
-        boolean hasMappings = Files.isRegularFile(controlSchemes.resolve("DeviceMappings.xml"));
-        return getText("bindings.installLocations.deviceFiles.summary",
-                hasMappings ? "DeviceMappings.xml" : getText("bindings.installLocations.deviceFiles.noMappings"),
-                String.valueOf(countButtonMaps(controlSchemes.resolve("DeviceButtonMaps"))));
-    }
-
-    private long countButtonMaps(Path deviceButtonMaps) {
-        if (!Files.isDirectory(deviceButtonMaps)) return 0;
-        try (Stream<Path> files = Files.list(deviceButtonMaps)) {
-            return files.filter(file -> file.getFileName().toString().endsWith(".buttonMap")).count();
+        Path deviceMappings = controlSchemes.resolve("DeviceMappings.xml");
+        if (!Files.isRegularFile(deviceMappings)) {
+            return getText("bindings.installLocations.deviceFiles.noMappings");
+        }
+        try {
+            List<DeviceEntry> entries = DeviceMappingsParser.parse(deviceMappings);
+            ButtonMapAudit.Result audit =
+                    ButtonMapAudit.audit(entries, controlSchemes.resolve("DeviceButtonMaps"));
+            int maps = audit.attached().size() + audit.orphaned().size();
+            return audit.isClean()
+                    ? getText("bindings.installLocations.deviceFiles.summary",
+                            entries.size(), maps)
+                    : getText("bindings.installLocations.deviceFiles.summaryWithOrphans",
+                            entries.size(), maps, audit.orphaned().size());
         } catch (IOException e) {
-            log.warn("Could not list {}: {}", deviceButtonMaps, e.getMessage());
-            return 0;
+            // WHY: a file that is there but cannot be read is a different state from one that is absent, and
+            // the user can act on it - so it is reported rather than folded into "nothing found".
+            log.warn("Could not read device files in {}: {}", controlSchemes, e.getMessage());
+            return getText("bindings.installLocations.deviceFiles.unreadable");
         }
     }
 
