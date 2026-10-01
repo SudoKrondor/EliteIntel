@@ -14,6 +14,9 @@ import elite.intel.gameapi.signals.*;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 
+import java.time.Duration;
+import java.time.Instant;
+
 import static elite.intel.util.StringUtls.localizedEvent;
 import static elite.intel.util.StringUtls.localizedEventPlural;
 
@@ -33,6 +36,7 @@ public class FSSSignalDiscoveredSubscriber {
     private final SystemSession systemSession = SystemSession.getInstance();
     private final ResourceSiteSweep resourceSites = new ResourceSiteSweep();
     private final ConflictZoneSweep conflictZoneSweep = new ConflictZoneSweep();
+    private final FssAnnouncementGate announcements = new FssAnnouncementGate();
 
     @Subscribe
     public void onFSSSignalDiscovered(FSSSignalDiscoveredEvent event) {
@@ -43,21 +47,39 @@ public class FSSSignalDiscoveredSubscriber {
             recordConflictZone(event, location);
 
             if (event.getUssTypeLocalised() != null && event.getUssTypeLocalised().equals("Nonhuman signal source")) {
-                publishVoice(localizedEvent("event.fss.signal.nonhuman", event.getThreatLevel()));
+                announceSignal(event, localizedEvent("event.fss.signal.nonhuman", event.getThreatLevel()));
             }
             if (event.getUssType() != null && event.getUssType().contains(USS_TYPE_SALVAGE)) {
-                announceSalvage("event.fss.signal.salvage.low", event);
+                announceSignal(event, salvageMessage("event.fss.signal.salvage.low", event));
             }
             if (event.getUssType() != null && event.getUssType().contains(USS_TYPE_VALUABLE_SALVAGE)) {
-                announceSalvage("event.fss.signal.salvage.valuable", event);
+                announceSignal(event, salvageMessage("event.fss.signal.salvage.valuable", event));
             }
             if (event.getUssType() != null && event.getUssType().contains(USS_TYPE_VERY_VALUABLE_SALVAGE)) {
-                announceSalvage("event.fss.signal.salvage.veryValuable", event);
+                announceSignal(event, salvageMessage("event.fss.signal.salvage.veryValuable", event));
             }
             if (event.getSignalName() != null && event.getSignalName().contains(NOTABLE_STELLAR_PHENOMENON)) {
-                publishVoice(localizedEvent("event.fss.notable.stellar.phenomenon"));
+                announceOnce(event, NOTABLE_STELLAR_PHENOMENON, localizedEvent("event.fss.notable.stellar.phenomenon"),
+                        FssAnnouncementGate.SYSTEM_FEATURE);
             }
         });
+    }
+
+    /**
+     * A short-lived signal: held back only when the same sentence was just said about the same system.
+     */
+    private void announceSignal(FSSSignalDiscoveredEvent event, String message) {
+        announceOnce(event, message, message, FssAnnouncementGate.SIGNAL_REPEAT);
+    }
+
+    /**
+     * Every FSS signal announcement is a discovery, so all of them follow the commander's discovery setting.
+     */
+    private void announceOnce(FSSSignalDiscoveredEvent event, String what, String message, Duration quiet) {
+        if (!Boolean.TRUE.equals(playerSession.isDiscoveryAnnouncementOn())) return;
+        String key = event.getSystemAddress() + "|" + what;
+        if (!announcements.shouldAnnounce(key, Instant.parse(event.getTimestamp()), quiet)) return;
+        publishVoice(message);
     }
 
     /**
@@ -133,7 +155,7 @@ public class FSSSignalDiscoveredSubscriber {
     }
 
 
-    private void announceSalvage(String qualityKey, FSSSignalDiscoveredEvent event) {
+    private String salvageMessage(String qualityKey, FSSSignalDiscoveredEvent event) {
         StringBuilder msg = new StringBuilder(localizedEvent(qualityKey));
 
         if (event.getUssTypeLocalised() != null && !event.getUssTypeLocalised().isBlank()) {
@@ -149,7 +171,7 @@ public class FSSSignalDiscoveredSubscriber {
             msg.append(localizedEvent("event.fss.signal.salvage.threatLevel", event.getThreatLevel()));
         }
 
-        publishVoice(msg.toString());
+        return msg.toString();
     }
 
     /**

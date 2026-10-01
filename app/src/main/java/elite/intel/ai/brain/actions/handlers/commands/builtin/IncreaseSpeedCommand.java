@@ -26,6 +26,14 @@ import java.util.List;
 public final class IncreaseSpeedCommand implements IntelCommand {
     public static final String ID = "increase_speed";
 
+    /**
+     * How long each throttle step holds its key. WHY not a tap: the throttle keys are read as held state each
+     * frame, and a tap (about 20 ms on the Robot path) can fall between two frames - the beeps sounded but the
+     * throttle never moved, while the same key pressed by hand worked. 120 ms is what UI select already needs
+     * to register (see RequestDockingCommand). Shared with {@link DecreaseSpeedCommand}.
+     */
+    static final int THROTTLE_STEP_HOLD_MS = 120;
+
     @Override
     public String llmDescription() {
         return "Increase the ship throttle by the number of notches given in 'key'.";
@@ -79,8 +87,8 @@ public final class IncreaseSpeedCommand implements IntelCommand {
         }
         String increase = bindingName();
         for (int i = 0; i < num; i++) {
-            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(increase)));
-            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
+            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingHold(increase, THROTTLE_STEP_HOLD_MS)));
+            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_3));
         }
         return null;
     }

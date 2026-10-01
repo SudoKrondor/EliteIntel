@@ -82,8 +82,8 @@ public final class DecreaseSpeedCommand implements IntelCommand {
 
         String decrease = bindingName();
         for (int i = 0; i < num; i++) {
-            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(decrease)));
-            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
+            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingHold(decrease, IncreaseSpeedCommand.THROTTLE_STEP_HOLD_MS)));
+            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_3));
         }
         return null;
     }

@@ -34,6 +34,22 @@ public class Database {
      */
     static final String PENDING_COMMANDER = "pending";
 
+    /**
+     * The connection settings every pooled connection opens the shared file with.
+     * <p>
+     * WHY {@code transaction_mode=IMMEDIATE}: a transaction can write both files (a location and the
+     * commander's visit to it, a player row and the user's preferences), and SQLite's default deferred
+     * transaction takes each file's write lock only when it first writes there. Two such transactions writing
+     * the files in opposite orders each held the lock the other needed: both waited out the busy timeout and
+     * failed with SQLITE_BUSY, losing the scan or the setting. IMMEDIATE takes the write lock on every attached
+     * file at BEGIN, always in the same order, so a second writer just waits its turn.
+     */
+    static final String CONNECTION_OPTIONS = "?journal_mode=WAL"
+            + "&busy_timeout=5000"
+            + "&synchronous=NORMAL"
+            + "&foreign_keys=ON"
+            + "&transaction_mode=IMMEDIATE";
+
     private static final String SHARED_URL;
 
     /**
@@ -213,11 +229,7 @@ public class Database {
         } catch (IOException e) {
             throw new RuntimeException("Unable to create database directory " + e.getMessage(), e);
         }
-        return "jdbc:sqlite:" + dbPath
-                + "?journal_mode=WAL"
-                + "&busy_timeout=5000"
-                + "&synchronous=NORMAL"
-                + "&foreign_keys=ON";
+        return "jdbc:sqlite:" + dbPath + CONNECTION_OPTIONS;
     }
 
     private static Pool openPool(String commanderLocation, String commander) {
