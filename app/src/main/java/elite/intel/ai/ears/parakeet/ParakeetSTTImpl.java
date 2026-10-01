@@ -503,10 +503,14 @@ public class ParakeetSTTImpl implements EarsInterface {
                 }
 
                 log.info("STT accepted: [{}] - {}", finalTranscript, capture);
-                UiBus.publish(new AppLogEvent("STT: [" + finalTranscript + "]"));
 
-                switch (MicrophoneGate.decide(capturedWithPttHeld,
-                        systemSession.isPushToTalkEnabled(), systemSession.isSleeping())) {
+                MicrophoneGate decision = MicrophoneGate.decide(capturedWithPttHeld,
+                        systemSession.isPushToTalkEnabled(), systemSession.isSleeping());
+                // An asleep transcript is labelled by the sleep gate, so the log never shows ignored words as input.
+                if (decision != MicrophoneGate.CLOSED_ASLEEP) {
+                    UiBus.publish(new AppLogEvent("STT: [" + finalTranscript + "]"));
+                }
+                switch (decision) {
                     case OPEN_PUSH_TO_TALK -> sendToAi(finalTranscript, true);
                     case OPEN_HANDS_FREE -> sendToAi(finalTranscript, false);
                     case CLOSED_PUSH_TO_TALK ->
@@ -568,8 +572,10 @@ public class ParakeetSTTImpl implements EarsInterface {
         String admitted = WakeBypass.forCurrentLanguage().admit(transcript);
         if (admitted == null) {
             log.info("STT dropped (asleep, not a wake phrase): [{}]", transcript);
+            UiBus.publish(new AppLogEvent("STT (asleep, ignored): [" + transcript + "]"));
             return;
         }
+        UiBus.publish(new AppLogEvent("STT: [" + transcript + "]"));
         sendToAi(admitted, false);
     }
 

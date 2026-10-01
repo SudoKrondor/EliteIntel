@@ -13,6 +13,7 @@ import elite.intel.ui.dialog.AudioInterfaceDialog;
 import elite.intel.ui.event.*;
 import elite.intel.ui.overlay.HudOverlaySettingsDialog;
 import elite.intel.ui.overlay.NativeHudOverlay;
+import elite.intel.ui.support.AiSetupReport;
 import elite.intel.ui.support.SupportBundle;
 import elite.intel.ui.telemetry.LlmSessionStatsSnapshot;
 import elite.intel.ui.telemetry.LlmSessionStatsTracker;
@@ -440,7 +441,8 @@ public class AiTabPanel extends JPanel {
                 // Passed unevaluated on purpose: rendering it enumerates the machine's audio devices, which
                 // blocks, and this runs on the EDT. The bundle worker calls it.
                 MicDiagnosticsReport::render,
-                customCommandsFile());
+                customCommandsFile(),
+                AiSetupReport::render);
 
         Thread.ofVirtual().name("diagnostics-bundle").start(() -> writeBundle(target, sources));
     }

@@ -112,10 +112,23 @@ public final class SupportBundle {
      *                       caller has no audio pipeline.
      * @param customCommands {@code custom-commands/custom_commands.json}, the commander's own macros. Null
      *                       when the caller cannot resolve the app data directory.
+     * @param aiSetup        the language model and voice engine in use (see {@link AiSetupReport}), written into
+     *                       the manifest. Deferred for the same reason as {@code micDiagnostics}: it reads the
+     *                       database. Null when the caller has no settings to report.
      */
     public record Sources(String appVersion, String sessionLog,
                           @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
-                          @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands) {
+                          @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands,
+                          @Nullable Supplier<String> aiSetup) {
+
+        /**
+         * Sources with no AI setup to report.
+         */
+        public Sources(String appVersion, String sessionLog,
+                       @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
+                       @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands) {
+            this(appVersion, sessionLog, appLog, journalDir, bindingsDir, micDiagnostics, customCommands, null);
+        }
 
         /**
          * Sources with no microphone diagnostics, for a caller that has no audio pipeline to ask.
@@ -514,6 +527,23 @@ public final class SupportBundle {
         return parent == null ? Path.of("").toAbsolutePath() : parent;
     }
 
+    /**
+     * The AI setup section, or a line saying why it is missing. Caught here for the reason
+     * {@link #writeMicDiagnostics} catches: it reads the database, and a report from a session whose database
+     * is failing must still carry its logs.
+     */
+    private static String aiSetup(@Nullable Supplier<String> aiSetup) {
+        if (aiSetup == null) {
+            return "";
+        }
+        try {
+            return aiSetup.get();
+        } catch (RuntimeException | LinkageError e) {
+            log.warn("Diagnostics bundle: could not collect the AI setup", e);
+            return "AI setup: could not be collected: " + e + "\n";
+        }
+    }
+
     private static String manifest(Sources sources, List<String> included, List<String> omitted) {
         StringBuilder text = new StringBuilder()
                 .append("Elite Intel support bundle\n")
@@ -528,6 +558,7 @@ public final class SupportBundle {
                 .append(desktop())
                 .append(displays())
                 .append(HardwareReport.describe(installDir(sources), sources.journalDir()))
+                .append(aiSetup(sources.aiSetup()))
                 .append("\nIncluded:\n");
         if (included.isEmpty()) {
             text.append("  (nothing)\n");

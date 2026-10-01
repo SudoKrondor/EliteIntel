@@ -1,11 +1,7 @@
 package elite.intel.ai.mouth.edge;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.AudioDeClicker;
-import elite.intel.ai.mouth.MainVoicePlaybackGate;
-import elite.intel.ai.mouth.MouthInterface;
-import elite.intel.ai.mouth.TransmissionAudio;
-import elite.intel.ai.mouth.VocalisationHandle;
+import elite.intel.ai.mouth.*;
 import elite.intel.ai.mouth.subscribers.events.*;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
@@ -287,14 +283,11 @@ public final class EdgeTTSImpl implements MouthInterface {
             return;
         }
         AudioDeClicker.sanitize(pcm, 6);
+        // WHY before the volume: the enhanced processor compresses, and would level a quiet slider setting
+        // back up to nearly full loudness.
+        TransmissionAudio.processVoice(pcm, false, task.effects()); // Edge never voices radio traffic
         AudioDeClicker.applyVolume(pcm, task.gain());
-        if (task.effects().degradation()) {
-            TransmissionAudio.degrade(pcm);
-        }
-        if (task.effects().tones()) {
-            pcm = TransmissionAudio.frame(pcm, task.firstSentence(), task.lastSentence(),
-                    task.gain() * SystemSession.getInstance().getTransmissionToneVolume() / 100f);
-        }
+        pcm = TransmissionAudio.withTones(pcm, task.effects(), task.firstSentence(), task.lastSentence(), task.gain());
         if (isObsolete(task.handle(), task.generation())) {
             return;
         }

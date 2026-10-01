@@ -141,6 +141,20 @@ public class UINavigator {
         }
     }
 
+    /**
+     * Backs out of an open panel, map or full-screen mode, and sends nothing when the game shows none.
+     * <p>
+     * WHY: {@link #closeOpenPanel()} always fires at least three UI_Back presses, which is harmless before a
+     * panel opens but not before a custom command - a macro started from the docked station menu would be
+     * backed out of the very screen it was recorded on.
+     */
+    public void closeOpenUi() {
+        if (status.getGuiFocus() == GuiFocus.NO_FOCUS && !isInDeepUiMode()) {
+            return;
+        }
+        closeOpenPanel();
+    }
+
     private boolean isInDeepUiMode() {
         if (status.isGalaxyMapOpen()) return true;
         if (status.isSystemMapOpen()) return true;

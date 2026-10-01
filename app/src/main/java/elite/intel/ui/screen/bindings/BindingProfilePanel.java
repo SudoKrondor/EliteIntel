@@ -847,8 +847,8 @@ public class BindingProfilePanel extends JPanel {
             Map<String, KeyBindingsParser.BindingSlots> bindings) {
         Map<String, Map<Set<String>, Set<String>>> byChord = new HashMap<>();
         for (BindingConflictScanner.Conflict conflict : BindingConflictScanner.scanSlots(bindings)) {
-            indexConflict(byChord, conflict.actionA(), conflict.actionB(), conflict.chord());
-            indexConflict(byChord, conflict.actionB(), conflict.actionA(), conflict.chord());
+            indexConflict(byChord, conflict.actionA(), conflict.actionB(), conflict.chordA());
+            indexConflict(byChord, conflict.actionB(), conflict.actionA(), conflict.chordB());
         }
         return new ConflictIndex(byChord);
     }
@@ -876,7 +876,7 @@ public class BindingProfilePanel extends JPanel {
 
     /**
      * Records one direction of one conflict: {@code partner} collides with {@code binding} on
-     * {@code chord}. The scan reports each pair once per shared chord, so a binding in conflict on
+     * {@code chord}, which is {@code binding}'s own chord - for a modifier shadow the partner's differs. The scan reports each pair once per shared chord, so a binding in conflict on
      * both its slots accumulates an entry per chord rather than keeping only the first.
      */
     private static void indexConflict(

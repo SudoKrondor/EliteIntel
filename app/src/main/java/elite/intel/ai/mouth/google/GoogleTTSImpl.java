@@ -508,13 +508,13 @@ public class GoogleTTSImpl implements MouthInterface {
                 throw new IllegalStateException("Google TTS produced empty audio");
             }
             AudioDeClicker.sanitize(audioData, 6);
-            AudioDeClicker.applyVolume(audioData, systemSession.getVoiceVolume() / 100f);
-            if (request.effects().degradation()) TransmissionAudio.degrade(audioData);
-            else if (request.isRadio()) RadioFilter.apply(audioData);
-            if (request.effects().tones()) {
-                audioData = TransmissionAudio.frame(audioData, request.firstSentence(), request.lastSentence(),
-                        systemSession.getVoiceVolume() / 100f * systemSession.getTransmissionToneVolume() / 100f);
-            }
+            // WHY before the volume: the enhanced processor compresses, and would level a quiet slider
+            // setting back up to nearly full loudness.
+            TransmissionAudio.processVoice(audioData, request.isRadio(), request.effects());
+            float voiceLevel = systemSession.getVoiceVolume() / 100f;
+            AudioDeClicker.applyVolume(audioData, voiceLevel);
+            audioData = TransmissionAudio.withTones(audioData, request.effects(), request.firstSentence(),
+                    request.lastSentence(), voiceLevel);
             // Use persistent line instead of opening/closing
             if (persistentLine == null || !persistentLine.isOpen()) {
                 log.warn("Persistent line not available, attempting to reopen");

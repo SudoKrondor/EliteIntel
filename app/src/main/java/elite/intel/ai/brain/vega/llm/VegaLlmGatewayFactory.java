@@ -97,4 +97,19 @@ public final class VegaLlmGatewayFactory {
                     .sendVegaRequest(body, GeminiClient.MODEL_FLASH)));
         };
     }
+
+    /**
+     * The model {@link #cloudGateway} sends VEGA's turns to for this provider, for the support bundle. Kept
+     * beside that switch, from the same constants, so a provider whose model changes is changed in both.
+     */
+    public static String cloudModel(ProviderEnum provider) {
+        return switch (provider) {
+            case MISTRAL -> MistralClient.MODEL;
+            case OPENAI -> OpenAiClient.MODEL_GPT;
+            case GROK -> GrokClient.MODEL_GROK_NON_REASONING;
+            case DEEPSEEK -> DeepSeekClient.MODEL;
+            case ANTHROPIC -> AnthropicClient.MODEL_COMMAND_MODEL;
+            case GEMINI -> GeminiClient.MODEL_FLASH;
+        };
+    }
 }

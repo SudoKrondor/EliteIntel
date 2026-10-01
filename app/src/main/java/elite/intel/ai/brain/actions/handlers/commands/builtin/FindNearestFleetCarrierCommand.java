@@ -69,9 +69,8 @@ public final class FindNearestFleetCarrierCommand implements IntelCommand {
         }
 
         final String finalPlayerCarrierCallSign = playerCarrierCallSign;
-        fleetCarriers.getResults().stream()
+        PermitLockedSystems.reachable(fleetCarriers.getResults(), FleetCarrierSearchResultsDto.Result::getSystemName).stream()
                 .filter(carrier -> finalPlayerCarrierCallSign == null || !finalPlayerCarrierCallSign.equals(carrier.getCallSign()))
-                .filter(carrier -> PermitLockedSystems.isReachable(carrier.getSystemName()))
                 .findFirst()
                 .ifPresentOrElse(
                         result -> {

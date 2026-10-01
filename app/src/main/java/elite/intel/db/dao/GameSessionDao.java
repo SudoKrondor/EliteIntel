@@ -154,7 +154,7 @@ public interface GameSessionDao {
         private Integer radioVolume;
         private boolean transmissionTones;
         private boolean enhancedRadioEffect;
-        private boolean effectsOnRadio = true;
+        private boolean effectsOnRadio;
         private boolean effectsOnVegaAway;
         private int transmissionToneVolume = 35;
         private int supertonicBoostPercent;

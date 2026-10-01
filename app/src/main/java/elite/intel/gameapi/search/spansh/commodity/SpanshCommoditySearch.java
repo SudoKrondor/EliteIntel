@@ -426,7 +426,6 @@ public final class SpanshCommoditySearch {
             int priceWeSaw = side == TradeSide.SELL ? seen.get().sellPrice() : seen.get().buyPrice();
             if (priceWeSaw > 0) {
                 market.setPrice(priceWeSaw);
-                market.setSeenFirstHand(true);
             }
             kept.add(market);
         }

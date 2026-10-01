@@ -755,4 +755,96 @@ class BindingConflictScannerTest {
         assertEquals("HeadLookToggle", recommendations.get(0).shipAction());
         assertEquals("HeadLookToggle_Buggy", recommendations.get(0).buggyAction());
     }
+
+    // --- modifier shadow: a chord's modifier bound on its own elsewhere ---
+
+    @Test
+    void chordWhoseModifierIsBoundOnItsOwnConflicts() {
+        // Field report 2026-09-30: UI Focus (hold) on bare Left Shift, Galaxy Map on Ctrl+Shift+J.
+        // Shift goes down first, UI Focus fires, the map never opens.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "UIFocus", Set.of("Key_LeftShift"),
+                "GalaxyMapOpen", Set.of("Key_LeftShift", "Key_LeftControl", "Key_J")));
+
+        assertEquals(1, conflicts.size());
+        Conflict c = conflicts.get(0);
+        assertEquals("GalaxyMapOpen", c.actionA());
+        assertEquals(Set.of("Key_LeftShift", "Key_LeftControl", "Key_J"), c.chordA());
+        assertEquals("UIFocus", c.actionB());
+        assertEquals(Set.of("Key_LeftShift"), c.chordB());
+        assertEquals(c.chordA(), c.chord(), "the announced chord is the full combination");
+        assertFalse(c.blocking());
+        assertTrue(c.description().contains("Left Shift"), c.description());
+    }
+
+    @Test
+    void bareModifierInAnotherVehicleDoesNotShadowTheChord() {
+        // On-foot sprint on Left Shift never fires while flying the ship.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "HumanoidSprintButton", Set.of("Key_LeftShift"),
+                "GalaxyMapOpen", Set.of("Key_LeftShift", "Key_J")));
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void bareModifierInASubModeOverlayDoesNotShadowTheChord() {
+        // Free camera's HUD toggle on Left Control exists only inside the camera.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "FreeCamToggleHUD", Set.of("Key_LeftControl"),
+                "GalaxyMapOpen", Set.of("Key_LeftControl", "Key_J")));
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void bareMainKeyStillCoexistsWithAModifiedChordOnIt() {
+        // Only modifier keys shadow: bare J and Ctrl+J are distinct chords, as before.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "ActionOne", Set.of("Key_J"),
+                "ActionTwo", Set.of("Key_LeftControl", "Key_J")));
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void chordOnADifferentModifierThanTheBareOneIsFree() {
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "UIFocus", Set.of("Key_LeftShift"),
+                "GalaxyMapOpen", Set.of("Key_RightControl", "Key_J")));
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void candidateHoldingAModifierBoundOnItsOwnIsRejected() {
+        CandidateConflict conflict = BindingConflictScanner.candidateConflict(
+                "GalaxyMapOpen", Set.of("Key_LeftShift", "Key_LeftControl", "Key_J"),
+                bindings("UIFocus", Set.of("Key_LeftShift")));
+
+        assertNotNull(conflict);
+        assertEquals("UIFocus", conflict.otherBinding());
+    }
+
+    @Test
+    void bareModifierCandidateIsRejectedWhenAChordAlreadyHoldsIt() {
+        CandidateConflict conflict = BindingConflictScanner.candidateConflict(
+                "UIFocus", Set.of("Key_LeftShift"),
+                bindings("GalaxyMapOpen", Set.of("Key_LeftShift", "Key_J")));
+
+        assertNotNull(conflict);
+        assertEquals("GalaxyMapOpen", conflict.otherBinding());
+    }
+
+    @Test
+    void surfaceScannerThirdPersonControlsNeverClashWithShipControls() {
+        // The Detailed Surface Scanner is a screen of its own: nothing else fires while it is up.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "UIFocus", Set.of("Key_LeftShift"),
+                "SAAThirdPersonFovInButton", Set.of("Key_LeftShift", "Key_F3"),
+                "SAAThirdPersonYawLeftButton", Set.of("Key_F4"),
+                "ToggleCargoScoop", Set.of("Key_F4")));
+
+        assertTrue(conflicts.isEmpty(), conflicts.toString());
+    }
 }

@@ -108,7 +108,7 @@ public final class ExcludeStarSystemFromSearchesCommand implements IntelCommand 
         if (starSystem == null) {
             return StringUtls.localizedResponse(wantsDestination(params)
                     ? "handler.searchExclusion.noDestination"
-                    : "handler.pirate.positionUnknown");
+                    : "handler.searchExclusion.positionUnknown");
         }
         if (!SearchExclusionManager.getInstance().exclude(starSystem)) {
             return StringUtls.localizedResponse("handler.searchExclusion.alreadyExcluded", starSystem);

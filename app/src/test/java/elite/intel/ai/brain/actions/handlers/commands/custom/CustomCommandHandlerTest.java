@@ -21,6 +21,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class CustomCommandHandlerTest {
 
     private static final Gson GSON = new Gson();
+    /**
+     * Stands in for the live UI reset, which reads the game's Status and would send UI_Back presses.
+     */
+    private static final Runnable NO_OPEN_UI = () -> {
+    };
 
     private final InputCapture inputCapture = new InputCapture();
     private final TestSpeakExecutor testSpeakExecutor = new TestSpeakExecutor();
@@ -55,6 +60,35 @@ class CustomCommandHandlerTest {
         GameInputStep step = inputCapture.events.getFirst().getSteps().getFirst();
         assertEquals(GameInputStep.Type.BINDING_FORCED_TAP, step.getType());
         assertEquals("TestBinding", step.getBindingId());
+    }
+
+    // --- UI reset ---
+
+    /**
+     * A panel left open swallows a macro's keystrokes, so whatever is open is backed out of before the
+     * first step reaches the game - never after it.
+     */
+    @Test
+    void openUiIsClosedBeforeTheFirstStep() {
+        List<String> order = new ArrayList<>();
+        Object stepRecorder = new Object() {
+            @Subscribe
+            public void on(GameInputSequenceEvent e) {
+                order.add("step");
+            }
+        };
+        GameControllerBus.register(stepRecorder);
+        try {
+            CustomCommandHandler handler = new CustomCommandHandler(deserialize("""
+                    {"id":"m","name":"M","phrases":"p","steps":[
+                      {"type":"BINDING_TAP","bindingId":"UI_Up"}
+                    ]}"""), testSpeakExecutor, () -> order.add("close"));
+            handler.handle("m", new JsonObject(), "");
+        } finally {
+            GameControllerBus.unregister(stepRecorder);
+        }
+
+        assertEquals(List.of("close", "step"), order);
     }
 
     // --- BINDING_HOLD ---
@@ -115,7 +149,7 @@ class CustomCommandHandlerTest {
                   {"type":"SPEAK","text":"Wait for me"},
                   {"type":"BINDING_TAP","bindingId":"AfterSpeak"}
                 ]}""");
-        CustomCommandHandler handler = new CustomCommandHandler(customCommand, blockingExecutor);
+        CustomCommandHandler handler = new CustomCommandHandler(customCommand, blockingExecutor, NO_OPEN_UI);
 
         Thread t = new Thread(() -> handler.handle("m", new JsonObject(), ""));
         t.start();
@@ -288,8 +322,8 @@ class CustomCommandHandlerTest {
                   {"type":"BINDING_TAP","bindingId":"CustomCommand2Step2"}
                 ]}""");
 
-        CustomCommandHandler h1 = new CustomCommandHandler(customCommand1, testSpeakExecutor);
-        CustomCommandHandler h2 = new CustomCommandHandler(customCommand2, testSpeakExecutor);
+        CustomCommandHandler h1 = new CustomCommandHandler(customCommand1, testSpeakExecutor, NO_OPEN_UI);
+        CustomCommandHandler h2 = new CustomCommandHandler(customCommand2, testSpeakExecutor, NO_OPEN_UI);
 
         CountDownLatch ready = new CountDownLatch(2);
         CountDownLatch go = new CountDownLatch(1);
@@ -354,8 +388,8 @@ class CustomCommandHandlerTest {
                   {"type":"BINDING_TAP","bindingId":"FastBinding"}
                 ]}""");
 
-        CustomCommandHandler slowHandler = new CustomCommandHandler(slowCustomCommand, testSpeakExecutor);
-        CustomCommandHandler fastHandler = new CustomCommandHandler(fastCustomCommand, testSpeakExecutor);
+        CustomCommandHandler slowHandler = new CustomCommandHandler(slowCustomCommand, testSpeakExecutor, NO_OPEN_UI);
+        CustomCommandHandler fastHandler = new CustomCommandHandler(fastCustomCommand, testSpeakExecutor, NO_OPEN_UI);
 
         Thread slowThread = new Thread(() -> slowHandler.handle("slow", new JsonObject(), ""));
         slowThread.start();
@@ -382,7 +416,7 @@ class CustomCommandHandlerTest {
                   {"type":"DELAY","durationMs":5000},
                   {"type":"SPEAK","text":"should not reach here"}
                 ]}""");
-        CustomCommandHandler handler = new CustomCommandHandler(customCommand, testSpeakExecutor);
+        CustomCommandHandler handler = new CustomCommandHandler(customCommand, testSpeakExecutor, NO_OPEN_UI);
 
         Thread t = new Thread(() -> handler.handle("m", new JsonObject(), ""));
         t.start();
@@ -398,7 +432,7 @@ class CustomCommandHandlerTest {
     // --- helpers ---
 
     private void runCustomCommand(String json) {
-        CustomCommandHandler handler = new CustomCommandHandler(deserialize(json), testSpeakExecutor);
+        CustomCommandHandler handler = new CustomCommandHandler(deserialize(json), testSpeakExecutor, NO_OPEN_UI);
         handler.handle("test_action", new JsonObject(), "");
     }
 

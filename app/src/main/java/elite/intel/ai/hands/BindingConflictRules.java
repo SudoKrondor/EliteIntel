@@ -138,6 +138,18 @@ public class BindingConflictRules {
     }
 
     /**
+     * Describes a modifier shadow: {@code chordAction} holds {@code modifier} as part of its chord, and
+     * {@code bareAction} is bound to that modifier on its own, so pressing the chord fires it as well.
+     * See {@link BindingConflictScanner}.
+     */
+    public static String describeModifierShadow(String chordAction, String bareAction, String modifier) {
+        String bare = StringUtls.humanizeBindingName(bareAction);
+        return StringUtls.humanizeBindingName(chordAction) + " uses " + BindingChordSpeech.describe(Set.of(modifier))
+                + " as a modifier, and that key on its own is " + bare
+                + " - pressing the combination also fires " + bare;
+    }
+
+    /**
      * Returns true when two actions sharing a key is safe and should not be flagged.
      * <p>
      * Unsafe first: {@link #isMapVersusUiNavigation}, {@link #isSelectVersusQuickComms} and
@@ -382,6 +394,10 @@ public class BindingConflictRules {
                 || action.startsWith("MovePlacement") || action.startsWith("Placement")
                 || action.startsWith("GalnetAudio")
                 || action.startsWith("MultiCrew") || action.startsWith("Store")
-                || action.startsWith("ExplorationFSS") || action.startsWith("ExplorationSAA");
+                || action.startsWith("ExplorationFSS") || action.startsWith("ExplorationSAA")
+                // The rest of the Detailed Surface Scanner: its third-person camera controls drop the
+                // "Exploration" prefix. The scanner is a screen of its own - while it is up, nothing
+                // else fires, not even from a HOTAS - so none of its controls can clash with a ship one.
+                || action.startsWith("SAAThirdPerson");
     }
 }

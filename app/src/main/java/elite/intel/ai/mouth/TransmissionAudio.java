@@ -14,6 +14,11 @@ public final class TransmissionAudio {
     private static final int TONE_SAMPLES = SAMPLE_RATE / 4;
     private static final int GAP_SAMPLES = SAMPLE_RATE * 35 / 1000;
     private static final int FADE_SAMPLES = SAMPLE_RATE * 5 / 1000;
+    /**
+     * Pitch of the radio beep that opens a message, and of the slightly lower one that closes it.
+     */
+    private static final int OPENING_TONE_HZ = 2525;
+    private static final int CLOSING_TONE_HZ = 2475;
     private static final double PRE_FILTER_DRIVE = 2.0;
     private static final double OUTPUT_DRIVE = 2.5;
 
@@ -51,10 +56,46 @@ public final class TransmissionAudio {
             envelope = (level > envelope ? attack : release) * envelope
                     + (1 - (level > envelope ? attack : release)) * level;
             double reduction = envelope > 0.10 ? Math.pow(0.10 / envelope, 3.0 / 4.0) : 1;
-            // 25% more makeup drive than before; the tanh ceiling keeps peaks smooth.
+            // Make-up drive after compression; the tanh ceiling rounds peaks off instead of clipping them.
             int sample = (int) Math.round(32767 * 0.92 * Math.tanh(band * reduction * OUTPUT_DRIVE));
             pcm[i] = (byte) sample;
             pcm[i + 1] = (byte) (sample >>> 8);
+        }
+    }
+
+    /**
+     * Frames a sentence with the radio beeps when they are on: the opening one before the first sentence, the
+     * closing one after the last. The beeps sit at the tone slider's share of {@code voiceLevel}.
+     */
+    public static byte[] withTones(byte[] pcm, Options options, boolean firstSentence, boolean lastSentence,
+                                   float voiceLevel) {
+        if (!options.tones()) return pcm;
+        float toneLevel = voiceLevel * SystemSession.getInstance().getTransmissionToneVolume() / 100f;
+        return frame(pcm, firstSentence, lastSentence, toneLevel);
+    }
+
+    /**
+     * Attach the beeps to the first/last sentence, so interruption and queue cancellation work normally.
+     */
+    public static byte[] frame(byte[] voice, boolean opening, boolean closing, float volume) {
+        if (!opening && !closing) return voice;
+        int prefix = opening ? (TONE_SAMPLES + GAP_SAMPLES) * 2 : 0;
+        int suffix = closing ? (GAP_SAMPLES + TONE_SAMPLES) * 2 : 0;
+        byte[] framed = new byte[prefix + voice.length + suffix];
+        if (opening) writeTone(framed, 0, OPENING_TONE_HZ, volume);
+        System.arraycopy(voice, 0, framed, prefix, voice.length);
+        if (closing) writeTone(framed, prefix + voice.length + GAP_SAMPLES * 2, CLOSING_TONE_HZ, volume);
+        return framed;
+    }
+
+    private static void writeTone(byte[] pcm, int offset, int frequency, float volume) {
+        double amplitude = 0.16 * Math.max(0, Math.min(1, volume));
+        for (int n = 0; n < TONE_SAMPLES; n++) {
+            double envelope = Math.min(1, Math.min(n, TONE_SAMPLES - 1 - n) / (double) FADE_SAMPLES);
+            int sample = (int) Math.round(32767 * amplitude * envelope
+                    * Math.sin(2 * Math.PI * frequency * n / SAMPLE_RATE));
+            pcm[offset + n * 2] = (byte) sample;
+            pcm[offset + n * 2 + 1] = (byte) (sample >>> 8);
         }
     }
 
@@ -98,29 +139,6 @@ public final class TransmissionAudio {
             double amplitude = Math.pow(10, gainDb / 40);
             return new Biquad(1 + alpha * amplitude, -2 * cosine, 1 - alpha * amplitude,
                     1 + alpha / amplitude, -2 * cosine, 1 - alpha / amplitude);
-        }
-    }
-
-    /** Attach the beeps to the first/last sentence, so interruption and queue cancellation work normally. */
-    public static byte[] frame(byte[] voice, boolean opening, boolean closing, float volume) {
-        if (!opening && !closing) return voice;
-        int prefix = opening ? (TONE_SAMPLES + GAP_SAMPLES) * 2 : 0;
-        int suffix = closing ? (GAP_SAMPLES + TONE_SAMPLES) * 2 : 0;
-        byte[] framed = new byte[prefix + voice.length + suffix];
-        if (opening) writeTone(framed, 0, 2525, volume);
-        System.arraycopy(voice, 0, framed, prefix, voice.length);
-        if (closing) writeTone(framed, prefix + voice.length + GAP_SAMPLES * 2, 2475, volume);
-        return framed;
-    }
-
-    private static void writeTone(byte[] pcm, int offset, int frequency, float volume) {
-        double amplitude = 0.16 * Math.max(0, Math.min(1, volume));
-        for (int n = 0; n < TONE_SAMPLES; n++) {
-            double envelope = Math.min(1, Math.min(n, TONE_SAMPLES - 1 - n) / (double) FADE_SAMPLES);
-            int sample = (int) Math.round(32767 * amplitude * envelope
-                    * Math.sin(2 * Math.PI * frequency * n / SAMPLE_RATE));
-            pcm[offset + n * 2] = (byte) sample;
-            pcm[offset + n * 2 + 1] = (byte) (sample >>> 8);
         }
     }
 }

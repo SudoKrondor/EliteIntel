@@ -133,8 +133,8 @@ KokoroTTS-Synthesis thread (daemon)
     │  resetNumericLocale()
     │  tts.generate(text, sid, speed) → float[] samples → PCM bytes
     │  AudioDeClicker.sanitize(pcm, fadeMs)   ← fade-in to suppress pop
-    │  apply volume (+ optional Supertonic boost)
     │  enhanced processor, or baseline RadioFilter for radio
+    │  apply volume (+ optional Supertonic boost)   ← after the processor, whose compressor would undo it
     │  attach optional first/last sentence tones
     │  push PlaybackTask → playbackQueue (BlockingQueue)
     │
@@ -326,8 +326,7 @@ The `removeClicks` method exists but is commented out; only `applyFade` is activ
 
 ### `RadioFilter`
 
-Static utility. Applies a shortwave radio transmission effect in-place to a PCM-16 LE buffer at 24000 Hz mono. Called from the synthesis thread after
-sanitization and volume control for radio requests. Eligible VEGA requests use `TransmissionAudio.degrade` when enhanced processing is enabled.
+Static utility. Applies a shortwave radio transmission effect in-place to a PCM-16 LE buffer at 24000 Hz mono. Called from the synthesis thread after sanitization and before volume control for radio requests. Eligible VEGA requests use `TransmissionAudio.degrade` when enhanced processing is enabled.
 
 **Processing chain**:
 
@@ -347,10 +346,9 @@ tones, so a multi-sentence transmission has one pair and cancellation uses the e
 Supertonic 3 alone can apply 0–100% gain with a soft peak ceiling after the normal volume control.
 The tone slider scales the channel tones independently of the voice level; both settings persist per installation.
 
-The Audio Settings controls have two roles: **Opening and closing channel tones** and **Enhanced voice
-processing** select the sound; **Apply selected effects to radio chat and NPC messages** and **Apply selected
-effects to VEGA on foot or in an SRV** select the recipients. The former `enhancedRadioEffect` database and
-session name remains for compatibility even though the enhanced processor also applies to eligible VEGA speech.
+The Audio Settings controls have two roles: **Radio beep at the start and end of each message** and **Radio
+effect** select the sound; **Apply selected effects to radio chat and NPC messages** and **Apply selected
+effects to VEGA on foot or in an SRV** select the recipients. The former `enhancedRadioEffect` database and session name (and the `settings.audio.transmission.degradation` bundle key) remains for compatibility even though the enhanced processor also applies to eligible VEGA speech.
 
 | Speech route | Its recipient switch | Enhanced processing | Result (tones are independent) |
 | --- | --- | --- | --- |
@@ -441,8 +439,7 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
     - Ignore events owned by another backend, then claim `event.handle()` before queueing.
     - Split text with the sentence regex.
     - Call `AudioDeClicker.sanitize(pcm, fadeMs)` on each sentence chunk before write.
-    - Snapshot `TransmissionAudio.forRequest(event)` at admission. After volume, apply its enhanced processing
-      where enabled; otherwise radio speech retains `RadioFilter`. Attach optional tones to the first/last
+   - Snapshot `TransmissionAudio.forRequest(event)` at admission. Before volume, apply its enhanced processing where enabled; otherwise radio speech retains `RadioFilter`. The volume goes last because the enhanced processor compresses and would otherwise level a quiet slider setting back up. Attach optional tones to the first/last
       sentence, keeping the treatment out of ordinary narration.
     - Carry the handle through every task and complete it after the last sentence.
 5. Implement `interruptAndClear()`: settle interruptible handles, drain queues, and flush the `SourceDataLine`.
@@ -477,6 +474,7 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | `AudioDeClicker` | Fade-in + volume scaling on PCM-16 LE |
 | `RadioFilter` | Existing radio bandpass without synthetic static |
 | `TransmissionAudio` | Optional higher band, saturation, compression and channel tones |
+| `supertonic/SupertonicBoost` | The commander's extra Supertonic 3 gain, with a soft peak ceiling |
 | `subscribers/events/VocalisationRequestEvent` | Normalised TTS event (origin, voice, flags, handle) |
 | `subscribers/events/AiVoxResponseEvent` | LLM spoken answer; carries optional CompletableFuture |
 | `subscribers/events/TTSInterruptEvent` | Global or request-id-targeted interrupt signal |

@@ -42,6 +42,14 @@ class TransmissionAudioTest {
     }
 
     @Test
+    void withTonesLeavesTheSentenceAloneWhileTheBeepIsOff() {
+        byte[] voice = {1, 2, 3, 4};
+        assertSame(voice, TransmissionAudio.withTones(voice, new TransmissionAudio.Options(false, true), true, true, 1));
+        assertEquals(voice.length + 2 * 2 * (6000 + 840),
+                TransmissionAudio.withTones(voice, new TransmissionAudio.Options(true, false), true, true, 1).length);
+    }
+
+    @Test
     void closingToneHasDistinctFrequencyAndFadedEnds() {
         byte[] first = TransmissionAudio.frame(new byte[0], true, false, 1);
         byte[] last = TransmissionAudio.frame(new byte[0], false, true, 1);
@@ -62,26 +70,6 @@ class TransmissionAudioTest {
         TransmissionAudio.degrade(pcm);
         assertTrue(maxAbs(pcm) < 32767);
         assertTrue(maxAbs(pcm) > 10000, "the treatment should preserve intelligible signal level");
-    }
-
-    @Test
-    void supertonicBoostRaisesNormalSamplesAndLimitsPeaks() {
-        byte[] pcm = {0x10, 0x27, (byte) 0xff, 0x7f}; // 10,000 and 32,767
-        AudioDeClicker.boostSupertonic(pcm, 20);
-        assertEquals(12000, sample(pcm, 0), 2);
-        assertTrue(sample(pcm, 1) > 29000);
-        assertTrue(sample(pcm, 1) < 32767);
-    }
-
-    @Test
-    void boostCanReachOneHundredPercentAndZeroLeavesOrdinarySamplesAlone() {
-        byte[] quiet = {0x10, 0x27}; // 10,000
-        AudioDeClicker.boostSupertonic(quiet, 100);
-        assertEquals(20000, sample(quiet, 0), 2);
-        byte[] zero = {0x10, 0x27};
-        AudioDeClicker.boostSupertonic(zero, 0);
-        assertEquals(10000, sample(zero, 0), 2);
-        assertThrows(IllegalArgumentException.class, () -> AudioDeClicker.boostSupertonic(zero, 101));
     }
 
     @Test

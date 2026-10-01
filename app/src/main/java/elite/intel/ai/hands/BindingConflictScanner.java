@@ -10,6 +10,14 @@ import java.util.*;
  * (galaxy map) and {@code Ctrl+Alt+Key_6} (pitch) coexist and fire distinctly. So two bindings
  * conflict only when they share the <strong>identical</strong> key-set, within the same active context.
  * <p>
+ * One exception, the <em>modifier shadow</em>: a chord whose modifier key is also bound
+ * <strong>on its own</strong> to another action in the same context. A modifier goes down before the
+ * rest of the chord - from the commander's hand and from EliteIntel alike - and for that moment it is
+ * the whole chord, so the bare binding fires. Reported from a support bundle of 2026-09-30: Galaxy Map
+ * on {@code Ctrl+Shift+J} with UI Focus (hold) on bare {@code Left Shift}, so every attempt to open the
+ * map pulled the view back toward the panels and the map never opened. Only the six keyboard modifier
+ * keys are judged this way; a bare <em>main</em> key and a modified chord on it still coexist.
+ * <p>
  * (An earlier model treated a bare key as a subset that "swallowed" modified chords on that key.
  * In-game testing disproved it - the failure that suggested it was a stale-bindings state, where ED
  * had not re-read the {@code .binds}, not a real conflict.)
@@ -32,15 +40,29 @@ public final class BindingConflictScanner {
     /**
      * One detected conflict between two actions, ordered so {@code actionA < actionB}.
      *
-     * @param chord    the shared key-set both actions are bound to, in Elite's raw tokens
-     *                 ({@code Key_W}, {@code Key_LeftControl}, ...). Kept raw so the domain stays
+     * @param chordA   the key-set {@code actionA} is bound to where the conflict happens, in Elite's raw
+     *                 tokens ({@code Key_W}, {@code Key_LeftControl}, ...). Kept raw so the domain stays
      *                 free of presentation; render it with {@link BindingChordSpeech} for the voice
      *                 warning, or {@code BindingSlotDisplayFormatter} for the Bindings tab.
+     * @param chordB   the same for {@code actionB}. Equal to {@code chordA} for an identical-chord clash;
+     *                 for a modifier shadow one of the two is the bare modifier and the other the chord
+     *                 that holds it, so each side has to name its own - the Bindings tab finds the slot to
+     *                 point at by matching it.
      * @param blocking whether this conflict stops EliteIntel driving the game outright rather than merely
      *                 risking interference - see {@link BindingConflictRules#isBlocking}. A blocking conflict
      *                 is announced on every start, not once.
      */
-    public record Conflict(String actionA, String actionB, Set<String> chord, String description, boolean blocking) {
+    public record Conflict(String actionA, Set<String> chordA, String actionB, Set<String> chordB,
+                           String description, boolean blocking) {
+
+        /**
+         * The chord to name when announcing this conflict: the one both share, or for a modifier shadow
+         * the full combination - "Left Control plus Left Shift plus J" says where to look, a bare
+         * "Left Shift" does not.
+         */
+        public Set<String> chord() {
+            return chordA.size() >= chordB.size() ? chordA : chordB;
+        }
     }
 
     /**
@@ -82,7 +104,8 @@ public final class BindingConflictScanner {
     }
 
     /**
-     * Scans <em>both</em> slots of every keyboard binding for same-context duplicate chords.
+     * Scans <em>both</em> slots of every keyboard binding for same-context duplicate chords and
+     * modifier shadows.
      *
      * @param slots action name → its Primary/Secondary pair, as from
      *              {@link BindingsMonitor#getBindingSlots()}
@@ -134,21 +157,58 @@ public final class BindingConflictScanner {
                 if (a.equals(b)) {
                     continue; // one action's own two slots - not a competitor
                 }
-                if (!ksA.equals(ksB)) {
-                    continue; // ED matches the exact chord; only identical chords clash
+                boolean sameChord = ksA.equals(ksB);
+                String shadowed = sameChord ? null : shadowedModifier(ksA, ksB);
+                if (!sameChord && shadowed == null) {
+                    continue; // ED matches the exact chord; only identical chords or a shadowed modifier clash
                 }
                 if (BindingConflictRules.isSafeOverlap(a, b)) {
                     continue; // different vehicle state or a sub-mode overlay → never co-fire
                 }
-                Set<String> chord = Set.copyOf(ksA);
-                if (!reported.add(new PairChord(a, b, chord))) {
+                Set<String> chordA = Set.copyOf(ksA);
+                Set<String> chordB = Set.copyOf(ksB);
+                Set<String> pairChord = chordA.size() >= chordB.size() ? chordA : chordB;
+                if (!reported.add(new PairChord(a, b, pairChord))) {
                     continue; // already reported for this pair on this chord, from another slot pairing
                 }
-                conflicts.add(new Conflict(a, b, chord, BindingConflictRules.describe(a, b),
-                        BindingConflictRules.isBlocking(a, b)));
+                String description;
+                if (sameChord) {
+                    description = BindingConflictRules.describe(a, b);
+                } else if (chordA == pairChord) {
+                    description = BindingConflictRules.describeModifierShadow(a, b, shadowed);
+                } else {
+                    description = BindingConflictRules.describeModifierShadow(b, a, shadowed);
+                }
+                // A shadow is never blocking: the blocking families are identical chords on a key the
+                // interface walk taps, which is a different failure with its own every-start warning.
+                conflicts.add(new Conflict(a, chordA, b, chordB, description,
+                        sameChord && BindingConflictRules.isBlocking(a, b)));
             }
         }
         return conflicts;
+    }
+
+    /**
+     * The modifier key one of the two key-sets holds as part of a chord while the other binds it on its
+     * own, or {@code null} when neither does. Symmetric in its arguments.
+     * <p>
+     * Only the keyboard modifier keys qualify ({@link BindingModifier#isSupportedKeyboardModifier}): they
+     * are what goes down first and stands alone for a moment. A bare main key against a modified chord on
+     * that key is the case Elite's exact matching keeps apart - see the class comment.
+     */
+    static String shadowedModifier(Set<String> ksA, Set<String> ksB) {
+        if (ksA.size() == 1 && ksB.size() > 1) {
+            return bareModifierHeldIn(ksA, ksB);
+        }
+        if (ksB.size() == 1 && ksA.size() > 1) {
+            return bareModifierHeldIn(ksB, ksA);
+        }
+        return null;
+    }
+
+    private static String bareModifierHeldIn(Set<String> bare, Set<String> chord) {
+        String key = bare.iterator().next();
+        return BindingModifier.isSupportedKeyboardModifier("Keyboard", key) && chord.contains(key) ? key : null;
     }
 
     /**
@@ -209,8 +269,8 @@ public final class BindingConflictScanner {
 
     /**
      * Reports the binding (if any) whose chord is identical to the candidate ({@code key} +
-     * {@code modifiers}) for {@code bindingId} within the same context, or {@code null} if the
-     * candidate is free. Used by the editor save-guard and the live keyboard widget.
+     * {@code modifiers}) for {@code bindingId} within the same context, or that shadows it through a
+     * modifier (see the class comment), or {@code null} if the candidate is free. Used by the editor save-guard and the live keyboard widget.
      * <p>
      * Judged against <em>both</em> slots of every existing binding: a chord sitting in some other
      * action's Secondary slot is taken, and a save-guard that cannot see it waves the player through
@@ -248,8 +308,8 @@ public final class BindingConflictScanner {
             if (other.equals(bindingId)) {
                 continue; // a binding never conflicts with its own other slot
             }
-            if (!candidate.equals(e.getValue())) {
-                continue; // exact chord match only
+            if (!candidate.equals(e.getValue()) && shadowedModifier(candidate, e.getValue()) == null) {
+                continue; // exact chord match, or a modifier one side binds on its own
             }
             if (BindingConflictRules.isSafeOverlap(bindingId, other)) {
                 continue;

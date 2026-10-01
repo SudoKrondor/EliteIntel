@@ -8,7 +8,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Spansh is a crowd-sourced copy of a market, and its price is whatever the last commander through
@@ -47,7 +48,6 @@ class StalePriceTest {
 
         assertEquals(53992, kept.getFirst().getPrice(), "what the game was actually paying");
         assertEquals(6862, kept.getFirst().getSupply());
-        assertTrue(kept.getFirst().isSeenFirstHand(), "no need to hedge a figure the game gave us");
     }
 
     @Test

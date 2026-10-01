@@ -13,6 +13,7 @@ import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.RadioTransmissionEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
+import elite.intel.ai.mouth.supertonic.SupertonicBoost;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.i18n.Language;
@@ -356,8 +357,11 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
             // would change speaker mid-message.
             String voiceName = resolveVoiceName(event);
             Language language = languageOf(event);
+            // WHY opt-in, and decided once per request: the ship voice used to be filtered whenever the commander
+            // left the main ship, and the effect varied too much across voices and audio hardware - subtle on one,
+            // unintelligible on another. Now it is the commander's choice, and one message never changes treatment
+            // half-way through.
             TransmissionAudio.Options effects = TransmissionAudio.forRequest(event);
-            // Snapshot the optional treatment for the whole request.
             for (int i = 0; i < sentences.size(); i++) {
                 boolean isLast = (i == sentences.size() - 1);
                 if (!synthesisQueue.offer(new SynthesisTask(
@@ -559,6 +563,9 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                 }
 
                 AudioDeClicker.sanitize(pcm, 5);
+                // WHY before the volume: the enhanced processor compresses, and would level a quiet slider
+                // setting back up to nearly full loudness.
+                TransmissionAudio.processVoice(pcm, task.isRadio(), task.effects());
                 // The radio has a level of its own: this engine is the only one that voices a transmission
                 // (Google and Edge drop them), so the fork between the two sliders lives here alone.
                 int volume = task.isRadio() ? systemSession.getRadioVolume() : systemSession.getVoiceVolume();
@@ -566,13 +573,10 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                 int supertonicBoost = provider() == TtsProvider.SUPERTONIC
                         ? systemSession.getSupertonicBoostPercent() : 0;
                 if (supertonicBoost > 0) {
-                    AudioDeClicker.boostSupertonic(pcm, supertonicBoost);
+                    SupertonicBoost.apply(pcm, supertonicBoost);
                 }
-                TransmissionAudio.processVoice(pcm, task.isRadio(), task.effects());
-                if (task.effects().tones()) {
-                    pcm = TransmissionAudio.frame(pcm, task.firstSentence(), task.lastSentence(),
-                            volume / 100f * systemSession.getTransmissionToneVolume() / 100f);
-                }
+                pcm = TransmissionAudio.withTones(pcm, task.effects(), task.firstSentence(), task.lastSentence(),
+                        volume / 100f);
                 playbackQueue.put(new PlaybackTask(
                         pcm, task.generation(), task.lastSentence(), task.handle()));
 

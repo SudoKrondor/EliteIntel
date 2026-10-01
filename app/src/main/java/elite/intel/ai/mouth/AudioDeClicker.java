@@ -18,23 +18,6 @@ public class AudioDeClicker {
         }
     }
 
-    /** Adjustable Supertonic gain with a soft peak ceiling, avoiding a flat clipped waveform at high levels. */
-    public static void boostSupertonic(byte[] pcm, int percent) {
-        if (percent < 0 || percent > 100) throw new IllegalArgumentException("Supertonic boost must be 0–100%");
-        double gain = 1 + percent / 100.0;
-        for (int i = 0; i + 1 < pcm.length; i += 2) {
-            short raw = (short) ((pcm[i + 1] << 8) | (pcm[i] & 0xff));
-            double raised = raw / 32768.0 * gain;
-            double magnitude = Math.abs(raised);
-            if (magnitude > 0.85) {
-                raised = Math.copySign(0.85 + 0.15 * (1 - Math.exp(-(magnitude - 0.85) / 0.15)), raised);
-            }
-            int sample = (int) Math.round(raised * 32767);
-            pcm[i] = (byte) sample;
-            pcm[i + 1] = (byte) (sample >>> 8);
-        }
-    }
-
     public static void sanitize(byte[] audioData, int fadeMs) {
         //removeClicks(audioData);
         applyFade(audioData, fadeMs, true);

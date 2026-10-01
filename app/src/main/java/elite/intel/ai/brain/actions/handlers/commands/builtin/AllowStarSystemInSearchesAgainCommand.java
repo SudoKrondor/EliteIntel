@@ -44,7 +44,7 @@ public final class AllowStarSystemInSearchesAgainCommand implements IntelCommand
     public String execute(JsonObject params, String responseText) {
         String starSystem = PlayerSession.getInstance().getPrimaryStarName();
         if (starSystem == null || starSystem.isBlank()) {
-            return StringUtls.localizedResponse("handler.pirate.positionUnknown");
+            return StringUtls.localizedResponse("handler.searchExclusion.positionUnknown");
         }
         return SearchExclusionManager.getInstance().allow(starSystem)
                 ? StringUtls.localizedResponse("handler.searchExclusion.allowed", starSystem)

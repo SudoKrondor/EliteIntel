@@ -369,4 +369,32 @@ class SupportBundleTest {
         assertTrue(result.omitted().stream().noneMatch(line -> line.startsWith("game state")),
                 result.omitted().toString());
     }
+
+    @Test
+    void theManifestCarriesTheAiSetup(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.writeTo(zip, new SupportBundle.Sources("1.1.0", "log", null, null, null, null, null,
+                () -> "AI setup:\n  LLM: cloud - MISTRAL, model ministral-8b-2512\n"));
+
+        String manifest = unzip(zip).get(SupportBundle.INFO_ENTRY);
+        assertTrue(manifest.contains("LLM: cloud - MISTRAL, model ministral-8b-2512"), manifest);
+    }
+
+    /**
+     * The settings are read from the database, and a failing database must not cost the bundle its logs.
+     */
+    @Test
+    void anAiSetupThatThrowsStillWritesTheBundle(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip, new SupportBundle.Sources("1.1.0", "log",
+                null, null, null, null, null, () -> {
+            throw new IllegalStateException("database is locked");
+        }));
+
+        assertTrue(result.included().contains(SupportBundle.SESSION_LOG_ENTRY), result.included().toString());
+        String manifest = unzip(zip).get(SupportBundle.INFO_ENTRY);
+        assertTrue(manifest.contains("AI setup: could not be collected"), manifest);
+    }
 }

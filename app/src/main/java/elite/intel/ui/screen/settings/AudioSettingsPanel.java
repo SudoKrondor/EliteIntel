@@ -13,6 +13,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.HierarchyEvent;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -262,8 +263,11 @@ public class AudioSettingsPanel extends JPanel {
         grid.add(tones, row);
         toneVolumeSlider = makeSlider(0, 100, systemSession.getTransmissionToneVolume());
         toneVolumeSlider.setEnabled(tones.isSelected());
-        toneVolumeSlider.addChangeListener(e ->
-                systemSession.setTransmissionToneVolume(toneVolumeSlider.getValue()));
+        toneVolumeSlider.addChangeListener(e -> {
+            if (!toneVolumeSlider.isAdjusting()) {
+                systemSession.setTransmissionToneVolume(toneVolumeSlider.getValue());
+            }
+        });
         tones.addActionListener(e -> {
             systemSession.setTransmissionTones(tones.isSelected());
             toneVolumeSlider.setEnabled(tones.isSelected());
@@ -286,8 +290,11 @@ public class AudioSettingsPanel extends JPanel {
         row.weightx = 0;
         grid.add(hudReadoutLabel(getText("settings.audio.supertonicBoost")), row);
         HudSlider supertonicBoostSlider = makeSlider(0, 100, systemSession.getSupertonicBoostPercent());
-        supertonicBoostSlider.addChangeListener(e ->
-                systemSession.setSupertonicBoostPercent(supertonicBoostSlider.getValue()));
+        supertonicBoostSlider.addChangeListener(e -> {
+            if (!supertonicBoostSlider.isAdjusting()) {
+                systemSession.setSupertonicBoostPercent(supertonicBoostSlider.getValue());
+            }
+        });
         row.gridx = 1;
         row.weightx = 1;
         grid.add(supertonicBoostSlider, row);
@@ -296,7 +303,7 @@ public class AudioSettingsPanel extends JPanel {
     }
 
     private static JCheckBox addAudioCheck(JPanel grid, GridBagConstraints row, int index, String label,
-                                      boolean selected, java.util.function.Consumer<Boolean> save) {
+                                           boolean selected, Consumer<Boolean> save) {
         JCheckBox check = makeCheckBox(getText(label), selected);
         check.addActionListener(e -> save.accept(check.isSelected()));
         row.gridy = index;

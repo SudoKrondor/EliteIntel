@@ -89,6 +89,23 @@ public class Status extends StatusFlags {
         });
     }
 
+    /**
+     * Records that the game has closed: no flags and no panel, the same state the game reports at its main
+     * menu. Everything else in the last reading is kept.
+     * <p>
+     * WHY: the reading is stored, and nothing promises the game's last Status.json was written at the main
+     * menu. Without this, the last in-game state - on foot, in an SRV - could outlive the game and keep
+     * deciding how VEGA sounds.
+     */
+    public void markGameClosed(String timestamp) {
+        GameEvents.StatusEvent closed = getStatus();
+        closed.setFlags(0);
+        closed.setFlags2(0);
+        closed.setGuiFocus(0);
+        closed.setTimestamp(timestamp);
+        setStatus(closed);
+    }
+
     // --- Serialization helpers ---
 
     private static String pipsToString(int[] pips) {

@@ -103,6 +103,37 @@ class BindingConflictPipelineTest {
     }
 
     /**
+     * The support bundle of 2026-09-30, cut down to the two controls involved: Galaxy Map's keyboard
+     * chord sits in the Secondary slot behind a joystick axis, and its Left Shift is UI Focus on its own.
+     */
+    @Test
+    void aModifierBoundOnItsOwnIsFoundAgainstASecondarySlotChordInARealFile() throws Exception {
+        Map<String, KeyBindingsParser.BindingSlots> slots = KeyBindingsParser.getInstance().parseBindingSlots(bindsFile("""
+                	<UIFocus>
+                		<Primary Device="Keyboard" Key="Key_LeftShift" />
+                		<Secondary Device="231D3200" Key="Joy_5" />
+                	</UIFocus>
+                	<UIFocusMode Value="Bindings_FocusModeHold" />
+                	<GalaxyMapOpen>
+                		<Primary Device="SaitekX56Throttle" Key="Pos_Joy_UAxis" />
+                		<Secondary Device="Keyboard" Key="Key_J">
+                			<Modifier Device="Keyboard" Key="Key_LeftShift" />
+                			<Modifier Device="Keyboard" Key="Key_LeftControl" />
+                		</Secondary>
+                	</GalaxyMapOpen>
+                """));
+
+        List<BindingConflictScanner.Conflict> conflicts = BindingConflictScanner.scanSlots(slots);
+
+        assertEquals(1, conflicts.size(), "the shadowed Left Shift should be reported once: " + conflicts);
+        BindingConflictScanner.Conflict conflict = conflicts.get(0);
+        assertEquals("GalaxyMapOpen", conflict.actionA());
+        assertEquals(Set.of("Key_J", "Key_LeftShift", "Key_LeftControl"), conflict.chordA());
+        assertEquals("UIFocus", conflict.actionB());
+        assertEquals(Set.of("Key_LeftShift"), conflict.chordB());
+    }
+
+    /**
      * A reserved chord in a Secondary slot is found from the file, not only from a hand-built map.
      */
     @Test
