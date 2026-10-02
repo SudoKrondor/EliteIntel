@@ -1,6 +1,8 @@
 # Data Model — Device Provenance
 
-**Status:** Design decision taken 2026-09-01. Schema not yet final; no migration written.
+**Status:** Design decision taken 2026-09-01. **Built 2026-10-01** as
+`db-migration/12002__bindforge_devices.sql`, which carries this table alongside the two the master needs —
+see [Migration](#migration).
 
 BindForge needs to know things about a device that **cannot be stored in any of the files it manages**:
 
@@ -73,9 +75,9 @@ the grounds that installations now match — knowing they match is exactly what 
 | `device_name` | the XML element tag for this installation, which is also its `.buttonMap` filename stem |
 | `provenance` | `frontier` \| `user_preexisting` \| `bindforge` \| `unknown` — **approved 2026-09-06**, see [below](#the-table-cannot-solve-first-import) |
 | ~~`mirrored`~~ | **Superseded 2026-09-23** — every install holds the same files, so there is no per-device switch to record. See [Every install gets the same files](../02-features/bindforge/overview.md#every-install-gets-the-same-files--settled-2026-09-23). |
-| `alias_confirmed` | gates button/axis naming per [Device Editor](../02-features/bindforge/alias-designer.md#device-editor) |
+| ~~`alias_confirmed`~~ | **Moved to the master 2026-10-01.** It gates button/axis naming per [Device Editor](../02-features/bindforge/alias-designer.md#device-editor), and that is a fact about the device, not about one installation: since standardisation there is [one record per device](../02-features/bindforge/alias-designer.md#one-record-and-where-it-lands--reworked-2026-09-26), so a name cannot be confirmed in Steam and unconfirmed in Epic. It sits on `bindforge_device_master`. |
 | `has_button_map` | whether a rename must also rename a file |
-| `previous_name` | orphan cleanup after a rename |
+| ~~`previous_name`~~ | **Moved to the master 2026-10-01**, for the same reason. A rename is one operation on the master that then renames a `.buttonMap` in *every* installation, so the name being renamed away from is one fact, not one per installation. It sits on `bindforge_device_master` and is cleared when the rename completes. |
 
 ### The key is `(install_id, device_name)` — approved 2026-09-06
 
@@ -86,9 +88,9 @@ primary pair plus **79** `<Alternative>` pairs, and `<DualShock4>` has three in 
 
 **The grain of a provenance record is one entry, and an entry is named by its XML element.** So the key is
 `(install_id, device_name)`, which is also what the file itself uses — the element tag is the identity, and
-it doubles as the `.buttonMap` filename stem. A rename updates the row and leaves `previous_name` behind for
-orphan cleanup; a device present in two installations has two rows that may legitimately carry different
-names, which is the divergence the design exists to allow.
+it doubles as the `.buttonMap` filename stem. A rename updates each installation's row, with the master
+holding the `previous_name` the orphan cleanup works from; a device present in two installations has two rows
+that may legitimately carry different names, which is the divergence the design exists to allow.
 
 **VID/PID stays on the row rather than moving to a child table**, because the multi-pair entries are all
 Frontier's, and Frontier's entries live in the shipped reference file rather than in this table. This table
@@ -194,6 +196,12 @@ rule keep their numbers (`000XX` = V1.0, `010XX` = V1.1) and sort before `11000`
 holds.
 
 So this becomes **`db-migration/<next free number in 12000–12499>__device_provenance.sql`**.
+
+**Built 2026-10-01 as `12002__bindforge_devices.sql`** — the next free number, and named for devices rather
+than provenance because one file carries all three tables: `bindforge_device_master` (the user's element set),
+`bindforge_device_labels` (its `.buttonMap` content) and `bindforge_device_installs` (this table). They are
+one change — the master is meaningless without something to compare it against — and splitting them across
+three migrations would only mean three numbers for one schema.
 
 *Deliberately not a specific number.* Krondor's §4 named 12000 as the example; `12000__bindforge_settings.sql`
 took it on 2026-09-28, and `12001__bindforge_installations.sql` took the renumbered one the same day. A
