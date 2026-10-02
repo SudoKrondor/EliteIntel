@@ -48,8 +48,10 @@ public class SilentPersistenceSubscriber {
     // Tracked across events so Loadout can record the commander that owns this ship.
     private String lastCommanderName = null;
 
-    // Seeded before the replay starts, then advanced by each replayed arrival. See recordArrival.
-    private String lastKnownCarrierSystem = playerSession.getCurrentFleetCarrierSystem();
+    // Where the carrier was when the app last ran, read before the replay rewrites it, and the last
+    // position the replay saw. Compared once the replay is over - see settleCarrierArrival.
+    private final String carrierSystemBeforeReplay = playerSession.getCurrentFleetCarrierSystem();
+    private String lastReplayedCarrierSystem = null;
 
     @Subscribe
     public void onLoadGame(LoadGameEvent event) {
@@ -175,6 +177,7 @@ public class SilentPersistenceSubscriber {
         // WHY: point at the id the row actually holds. LocationDto.setBodyId ignores a lower id, so
         // an event reporting BodyID 0 for an already identified body would leave the pointer stale.
         playerSession.setCurrentLocationId(arrival.getBodyId(), event.getSystemAddress());
+        lastReplayedCarrierSystem = event.getStarSystem();
         playerSession.setLastKnownCarrierLocation(event.getStarSystem());
         log.debug("PreScan: saved carrier jump destination {}", event.getStarSystem());
     }
@@ -203,7 +206,7 @@ public class SilentPersistenceSubscriber {
         if (!"FleetCarrier".equalsIgnoreCase(event.getCarrierType())) return;
 
         String starSystem = event.getStarSystem();
-        recordArrival(starSystem);
+        lastReplayedCarrierSystem = starSystem;
         playerSession.setLastKnownCarrierLocation(starSystem);
 
         CarrierDataDto carrierData = playerSession.getFleetCarrierData();
@@ -229,29 +232,32 @@ public class SilentPersistenceSubscriber {
     }
 
     /**
-     * Retires the scheduled departure this arrival completed, and voids the plotted route if the
-     * carrier left it behind.
+     * Called once the replay is over: retires the scheduled departure the carrier completed while the
+     * app was down, and voids the plotted route if the carrier left it behind.
      *
-     * <p>WHY tracked in a field rather than read back from the session: this class also writes
-     * {@code lastKnownCarrierLocation}, and a handler that reads the value it is about to write cannot
-     * tell an arrival from a position report. The field is seeded once, before the replay begins.
+     * <p>WHY once at the end rather than on each replayed CarrierLocation: the replay walks history
+     * forward from the oldest journal, but the system it is compared against is where the carrier was
+     * when the app last ran - its newest position. The first CarrierLocation of the replay is
+     * therefore usually an older system, and reading it as an arrival voided every route whose
+     * carrier had moved anywhere inside the replayed journals: a commander who jumped leg 1 and
+     * restarted the app found the rest of his route gone. Only the carrier's last position in the
+     * replay can say whether it moved since then.
      *
      * <p>WHY the departure time is cleared only on a move: the game writes CarrierLocation at every
      * LoadGame, where the carrier has not gone anywhere and a pending jump is still pending. Clearing
      * on every replay would forget it. A departure the carrier has demonstrably made is over, and
      * leaving it on file leaves the app counting down to a jump that already happened.
      *
-     * <p>WHY the route is dropped here rather than repaired after the replay: it used to be re-plotted,
-     * which is the one network call the pre-scan made - and since the destination came from the route
-     * being replaced, a route the commander had cleared came back at the next start. A carrier that
-     * jumped somewhere the route never mentioned is not on that voyage any more, and the app has
-     * nothing to say about a voyage the commander abandoned.
+     * <p>WHY the route is dropped rather than re-plotted: it used to be re-plotted, which is the one
+     * network call the pre-scan made - and since the destination came from the route being replaced,
+     * a route the commander had cleared came back at the next start. A carrier that jumped somewhere
+     * the route never mentioned is not on that voyage any more, and the app has nothing to say about
+     * a voyage the commander abandoned.
      */
-    private void recordArrival(String starSystem) {
-        String arrival = CarrierRouteLegs.normalise(starSystem);
-        if (CarrierRouteLegs.isSameSystem(lastKnownCarrierSystem, arrival)) return;
+    public void settleCarrierArrival() {
+        String arrival = CarrierRouteLegs.normalise(lastReplayedCarrierSystem);
+        if (arrival == null || CarrierRouteLegs.isSameSystem(carrierSystemBeforeReplay, arrival)) return;
 
-        lastKnownCarrierSystem = arrival;
         playerSession.setCarrierDepartureTime(null);
 
         // WHY consulted before anything else writes the route: the arrival leg is still in the table at

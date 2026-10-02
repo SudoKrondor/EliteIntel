@@ -55,7 +55,8 @@ public class JournalPreScanner {
         }
 
         EventBus privateBus = new EventBus(new LoggedSubscriberFailures("pre-scan"));
-        privateBus.register(new SilentPersistenceSubscriber());
+        SilentPersistenceSubscriber persistence = new SilentPersistenceSubscriber();
+        privateBus.register(persistence);
         FinancePreScanAccumulator finance = new FinancePreScanAccumulator();
         privateBus.register(finance);
         MaterialsPreScanAccumulator materials = new MaterialsPreScanAccumulator();
@@ -77,6 +78,7 @@ public class JournalPreScanner {
             processFile(file, privateBus);
         }
 
+        persistence.settleCarrierArrival();
         finance.persist();
         materials.persist();
 

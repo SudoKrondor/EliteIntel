@@ -3,6 +3,7 @@ package elite.intel.ai.brain.actions.handlers.commands.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
+import elite.intel.ai.hands.KeyProcessor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.managers.FleetCarrierRouteManager;
@@ -16,6 +17,7 @@ import elite.intel.util.PlayBeepEvent;
 import java.util.Collections;
 import java.util.Map;
 
+import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_UI_RIGHT;
 import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_UI_SELECT;
 
 /**
@@ -52,10 +54,13 @@ public final class EnterFleetCarrierDestinationCommand implements IntelCommand {
         if (!fleetCarrierRoute.isEmpty()) {
             Integer nextLeg = Collections.min(fleetCarrierRoute.keySet());
             CarrierJump carrierJump = fleetCarrierRoute.get(nextLeg);
-            if(carrierJump.getSystemName() != null) {
+            if (carrierJump.getSystemName() != null) {
                 GameControllerBus.publish(GameInputSequenceEvent.of(
                         GameInputStep.text(carrierJump.getSystemName()),
-                        GameInputStep.delay(250),
+                        GameInputStep.rawKey(KeyProcessor.KEY_ENTER, 0, 0),
+                        GameInputStep.delay(500), // Required minimum delay
+                        GameInputStep.bindingTap(BINDING_UI_RIGHT.getGameBinding()),
+                        GameInputStep.delay(500), // Required minimum delay
                         GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding())
                 ));
                 GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
