@@ -21,10 +21,7 @@ import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AiResponseLogEvent;
 import elite.intel.ui.event.AppLogEvent;
-import elite.intel.util.AudioPlayer;
-import elite.intel.util.PlayBeepEvent;
-import elite.intel.util.SherpaOnnxNatives;
-import elite.intel.util.StringUtls;
+import elite.intel.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -538,8 +535,9 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                 resetNumericLocale();
                 GeneratedAudio audio = generate(
                         tts,
-                        //Remove dots, TTS say "dot" all the time.
-                        task.text().replace(".", " "),
+                        // Numbers the voice would misread go to words first, while their sign and point are
+                        // still there. Then remove dots, TTS say "dot" all the time.
+                        SignedAndDecimalNumbers.inWords(task.text(), task.language()).replace(".", " "),
                         sidOf(task.voiceName()),
                         1f + systemSession.getSpeechSpeed(),
                         task.language()

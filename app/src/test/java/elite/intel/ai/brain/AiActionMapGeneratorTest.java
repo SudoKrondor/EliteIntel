@@ -148,6 +148,7 @@ class AiActionMapGeneratorTest {
             "navigate_to_pirate_mission_provider",
             "navigate_to_pirate_mission_target",
             "navigate_to_squadron_carrier",
+            "navigate_to_star_system_or_place_named_aloud",
             "open_fss_scan_system",
             "plot_route_next_neutron_star_waypoint",
             "query_bio_scans_and_samples_in_star_system",

@@ -34,6 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 import static elite.intel.eventbus.AudioMonitorBus.publish;
 import static java.util.Arrays.copyOf;
@@ -50,6 +51,7 @@ public class ParakeetSTTImpl implements EarsInterface {
     private static final long MAX_BACKOFF_MS = 60000;
     private static final long INFERENCE_TIMEOUT_SEC = 4;
     private static final int MIN_AUDIO_MS = 1500;
+    private static final Pattern SENTENCE_PUNCTUATION = Pattern.compile("[?!;:]|(?<!\\d)[.,]|[.,](?!\\d)");
     private static final int MIN_AUDIO_BYTES = SAMPLE_RATE * 2 * MIN_AUDIO_MS / 1000;
     private static final double LEADING_TRIM_THRESHOLD_FACTOR = 3.0; // trim leading frames below NOISE_FLOOR * this
     private static final int MAX_UTTERANCE_MS = 8000;
@@ -561,7 +563,16 @@ public class ParakeetSTTImpl implements EarsInterface {
             if (!sb.isEmpty()) sb.append(" ");
             sb.append(tokens[i]);
         }
-        return sb.toString().replace("?", "").replace("!", "").replace(";", "").replace(":", "").replace(",", "").replace(".", "");
+        return stripPunctuation(sb.toString());
+    }
+
+    /**
+     * Drops the sentence punctuation Parakeet writes, but keeps a point or comma between two digits: that one
+     * is part of a number. "latitude 62.123" must reach VEGA as 62.123 - stripped, it read as 62123 and
+     * surface navigation had no coordinate left to go to.
+     */
+    static String stripPunctuation(String transcript) {
+        return SENTENCE_PUNCTUATION.matcher(transcript).replaceAll("");
     }
 
     /**

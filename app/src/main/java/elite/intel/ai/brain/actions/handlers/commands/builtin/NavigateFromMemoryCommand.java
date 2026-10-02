@@ -18,7 +18,8 @@ public final class NavigateFromMemoryCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Plot a route to the system name currently on the clipboard (paste-from-memory navigation).";
+        return "Plot a route to the star system name the commander copied to the clipboard from a website such as "
+                + "INARA or Spansh (paste-from-memory navigation). Never for a system the commander names aloud.";
     }
 
 
