@@ -5,6 +5,7 @@ import elite.intel.bindforge.devices.DeviceDivergenceScanner;
 import elite.intel.bindforge.devices.DeviceEntry;
 import elite.intel.bindforge.devices.DeviceMappingsParser;
 import elite.intel.bindforge.devices.FrontierStockDevices;
+import elite.intel.bindforge.devices.InstallationDeviceScanner;
 import elite.intel.bindforge.devices.MyDevice;
 import elite.intel.bindforge.devices.MyDeviceList;
 import elite.intel.bindforge.install.GameInstallation;
@@ -67,6 +68,7 @@ public class AliasDesignerPanel extends JPanel {
     private Map<String, String> installLabels = Map.of();
     private final AtomicBoolean refreshInProgress = new AtomicBoolean();
     private boolean deviceServiceRunning;
+    private final InstallationDeviceScanner deviceScanner = new InstallationDeviceScanner();
 
     public AliasDesignerPanel() {
         this(new InstallationRegistry(
@@ -146,6 +148,7 @@ public class AliasDesignerPanel extends JPanel {
             try {
                 List<InstallationRow> rows = registry.currentWithStartupScan();
                 labels = labelsFor(rows);
+                recordWhatEachInstallationHolds(rows);
                 findings = DeviceDivergenceScanner.scan(
                         controlSchemesByInstall(rows), PlayerSession.getInstance().getBindingsDir());
                 myDevices = readMyDevices(rows);
@@ -164,6 +167,26 @@ public class AliasDesignerPanel extends JPanel {
                 refreshInProgress.set(false);
             });
         }, "BindForge-Divergence").start();
+    }
+
+    /**
+     * Records what each installation's device files hold right now.
+     * <p>
+     * A write on a refresh, which is deliberate: these rows are BindForge's only record of what is actually
+     * on disk, and they are worth nothing if they are older than the disk. The installation list is already
+     * refreshed the same way, on the same trigger.
+     * <p>
+     * Nothing on screen reads these rows yet - they are what the per-installation markers will compare
+     * against - but they have to be recorded before anything can notice a file changing underneath them.
+     */
+    private void recordWhatEachInstallationHolds(List<InstallationRow> rows) {
+        for (InstallationRow row : rows) {
+            // WHY: a missing installation is skipped rather than scanned and found empty. Its folder is not
+            // there, so reading it would record no devices - which is indistinguishable from a game patch
+            // having wiped the file, and would raise exactly the alarm these rows exist to raise.
+            if (row.missing()) continue;
+            deviceScanner.scan(row.id(), GameInstallation.controlSchemesUnder(Path.of(row.rootPath())));
+        }
     }
 
     /**
