@@ -4,7 +4,7 @@ BindForge owns the game's `.binds` file and the rules about what is in it. The k
 
 | Package | Holds |
 |---|---|
-| `bindforge.io` | Finding, parsing, watching, editing, applying and backing up `.binds` files (`BindingsLoader`, `KeyBindingsParser`, `BindingsMonitor`, `BindingsWriter`, `BindingsWorkingCopyRepository`, `BindingsApplyService`, `BindingsBackupService`, `PlayerBackupService`) and their request/result types |
+| `bindforge.io` | Finding, parsing, watching, editing, applying and backing up `.binds` files (`BindingsLoader`, `KeyBindingsParser`, `BindingsMonitor`, `BindingsWriter`, `BindingsWorkingCopyRepository`, `BindingsApplyService`, `PlayerBackupService`) and their request/result types. The generic file mechanics they share (atomic replace, timestamped backups) live in `elite.intel.io`, outside BindForge |
 | `bindforge.model` | The shared vocabulary: modifiers, slot types, the game's control sections and row labels (`BindingDisplayNames`), the assignable key list (`EliteKeyboardKeys`) |
 | `bindforge.rules` | Judging a file: conflict detection and its context rules, reserved chords, key availability, the missing-binding auto-assigner and its safe key pool, and the startup check that speaks the results (`KeyBindCheck`) |
 | `bindforge.devices`, `bindforge.install` | V1.2: device mappings and game installations |
@@ -110,7 +110,7 @@ Write sequence for a single slot assignment:
 5. Key availability check: reject if the chosen key + full modifier set is already used by another slot in the same file (
    `KEY_OCCUPIED`). Modifier order is not significant - the set is compared.
 6. Second stale-file guard (between read and write).
-7. Atomic write: `tmp` file → `Files.move(ATOMIC_MOVE)` with non-atomic fallback.
+7. Atomic write through `elite.intel.io.AtomicFiles` (unique temp file, flushed, renamed over the target, non-atomic fallback).
 
 `assignKeyboardKey()` - plain key, no modifier.
 `assignKeyboardKeyWithModifier()` - key + one supported keyboard modifier (thin wrapper).
@@ -127,8 +127,8 @@ Pushes the approved working copy to the game directory:
 1. Read working copy bytes.
 2. Round-trip XML validation (strips BOM before parse).
 3. Conflict check: reject if game file changed since the draft was created.
-4. Backup current game file to `elite-intel/bindings/backups/` via `BindingsBackupService`.
-5. Atomic write to game directory (temp + move).
+4. Backup current game file to `elite-intel/bindings/backups/` via `elite.intel.io.TimestampedBackups`.
+5. Atomic write to game directory (`AtomicFiles`).
 6. `workingCopyRepo.markApplied()` updates the baseline hash to the newly written content.
 
 ### Conflict & Missing Binding Detection

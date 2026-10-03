@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.handlers.commands.custom;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
+import elite.intel.io.AtomicFiles;
 import elite.intel.util.AppPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -9,7 +10,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
 /**
  * Loads and persists customCommands from {@code custom_commands.json} in the app data directory.
  * <p>
- * Saves are written to a {@code .tmp} file and atomically renamed to {@code custom_commands.json},
- * reducing the risk of corruption on crash. A {@code custom_commands.json.bak} backup of the previous
+ * Saves replace {@code custom_commands.json} through {@link AtomicFiles}, so a crash mid-save never
+ * leaves a half-written file. A {@code custom_commands.json.bak} backup of the previous
  * file is kept alongside. If the main file is unreadable or corrupt, the backup is automatically
  * tried and a diagnostic warning is logged.
  * <p>
@@ -139,8 +139,7 @@ public final class CustomCommandRepository {
      * Production code always calls {@link #save(List)}.
      * <p>
      * The existing file is backed up to {@code <name>.bak} before the new data is written.
-     * Data is first serialized and validated by round-trip, then written to {@code <name>.tmp},
-     * and finally atomically renamed to replace the target file.
+     * Data is first serialized and validated by round-trip, then replaced through {@link AtomicFiles}.
      */
     boolean save(List<CustomCommandDefinition> customCommands, Path path) {
         try {
@@ -168,15 +167,7 @@ public final class CustomCommandRepository {
                 }
             }
 
-            // Write to a temp file then atomically rename to minimize the corruption window.
-            Path tmp = path.resolveSibling(path.getFileName() + ".tmp");
-            Files.writeString(tmp, json, StandardCharsets.UTF_8);
-            try {
-                Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException e) {
-                log.debug("Atomic move not supported on this filesystem - falling back to non-atomic replace");
-                Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING);
-            }
+            AtomicFiles.write(path, json.getBytes(StandardCharsets.UTF_8));
 
             log.info("Saved {} custom command(s) to {}", customCommands.size(), path);
             return true;

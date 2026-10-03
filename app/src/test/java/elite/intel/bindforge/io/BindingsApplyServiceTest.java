@@ -1,5 +1,6 @@
 package elite.intel.bindforge.io;
 
+import elite.intel.io.TimestampedBackups;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -83,7 +84,7 @@ class BindingsApplyServiceTest {
     }
 
     private BindingsApplyService service(BindingsWorkingCopyRepository repo) {
-        return new BindingsApplyService(repo, new BindingsBackupService(), tempDir.resolve("backups"));
+        return new BindingsApplyService(repo, new TimestampedBackups(), tempDir.resolve("backups"));
     }
 
     private Path gameFile() throws Exception {

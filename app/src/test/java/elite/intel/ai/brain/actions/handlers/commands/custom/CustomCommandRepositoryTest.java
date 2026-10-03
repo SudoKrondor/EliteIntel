@@ -379,14 +379,6 @@ class CustomCommandRepositoryTest {
     }
 
     @Test
-    void saveTempFileIsRemovedAfterSuccessfulSave() {
-        repo.save(List.of(makeCustomCommand("custom_command_tmp_file", "Temp")), customCommandsFile());
-
-        Path tmp = customCommandsFile().resolveSibling("custom_commands.json.tmp");
-        assertFalse(Files.exists(tmp), "Temp file should not remain after a successful save");
-    }
-
-    @Test
     void savedFileIsReadableAfterSave() {
         CustomCommandDefinition customCommand = makeCustomCommand("custom_command_persisted", "Persisted");
         repo.save(List.of(customCommand), customCommandsFile());
