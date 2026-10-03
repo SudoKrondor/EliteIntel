@@ -415,6 +415,18 @@ A bounded, per-file undo system — distinct in purpose from Player Backups. Whe
 
 **Retention:** count-based, not age-based (unlike Player Backups) — configurable per the BindForge Settings tab (see [Settings](#settings) below), 1–30 entries, default 10, per file. Once the limit is reached, the oldest entry is dropped as a new one is added.
 
+**Storage: the files alone, no database table — settled 2026-10-03 (Alan).** This section described a History
+folder holding the replaced versions, while [What exists in code today](#what-exists-in-code-today--checked-2026-09-18)
+said Edit History needed a migration. Those are two designs, and only one is needed. **The folder is the
+record**: each kept version is a file whose name carries its timestamp, so the folder listing *is* the
+history, sorted. Counting to ten and dropping the oldest needs no table.
+
+A table would have to be kept in step with the folder, and the two could then disagree — a version listed but
+not on disk, or on disk and invisible. Since the folder is what a restore actually reads from, the table could
+only ever be a second opinion about it. The entries are also throwaway by design: capped at thirty, replaced
+constantly, and worth nothing once restored from. That is not what a migration — which can never be edited
+afterwards — is for.
+
 **Browsing and restoring:** the Edit History sub-tab lists entries per managed file domain, each with a timestamp. Selecting an entry shows what it contains and offers a Restore action, which goes through the same confirmation-and-Controlled-Replace path as a Player Backup restore (see [Restore](#restore) above) — the current live version is itself backed up before the historical version is written over it, so restoring never destroys the ability to undo the restore itself.
 
 **Scope:** applies to all four managed file domains uniformly — Bind, Device Identity, Button Map, and Active Preset — since every one of them goes through a write path that can now feed Edit History.
@@ -466,12 +478,14 @@ every backup is a deliberate button press. Add the launch trigger on its own and
 time Elite-Intel starts, on a machine where the user never asked for a single backup. Whichever lands
 first, the other has to land with it.
 
-**Edit History needs a migration in BindForge's range.** Under Krondor's band rule
-([proposal §4](../../multi-install-proposal.md#4-migrations-one-tree-per-file), accepted 2026-09-24) the first
-two digits are the version, and V1.2's shared band is split between its two writers: **BindForge owns
-`12000–12499`**, commander and galaxy work `12500–12999`. The range holds one file so far — <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
-`12000__bindforge_settings.sql` — so Edit History's table is the next free number in it, in the shared
-top-level `db-migration/` tree, never `db-migration/commander/`, which is Krondor's alone. [An applied migration is never edited](../../../CLAUDE.md). <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
+**~~Edit History needs a migration in BindForge's range.~~ Superseded 2026-10-03** — it needs no table at
+all. The kept versions are files whose names carry their timestamps, and the folder listing is the history;
+see [Storage](#edit-history). The band rule that paragraph described still stands and still applies to
+everything else BindForge stores: **BindForge owns `12000–12499`**, commander and galaxy work `12500–12999`, per Krondor's <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
+[proposal §4](../../multi-install-proposal.md#4-migrations-one-tree-per-file), accepted 2026-09-24, in the
+shared top-level `db-migration/` tree and never `db-migration/commander/`, which is Krondor's alone. <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
+The range held one file when this was written and now holds three — `12000__bindforge_settings.sql`,
+`12001__bindforge_installations.sql` and `12002__bindforge_devices.sql`. [An applied migration is never edited](../../../CLAUDE.md).
 
 ## Export / Import — Considered, Then Cut
 
