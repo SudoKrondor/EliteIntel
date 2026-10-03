@@ -278,7 +278,7 @@ live file. So a freshness check compares **content**, never timestamps: a file t
 exactly what BindForge already has, and treating that as a conflict would put a pointless question in front
 of the user every time they visited the options screen.
 
-Whenever BindForge is opened, or whenever a live file changes while BindForge is running (detected by `ai.hands.BindingsMonitor`, which already watches the bindings directory and is [extended to cover the game installation folders too](#external-change-detection-stays-in-one-place) rather than BindForge adding a second watcher; see [File Access](../../01-host-integration/elite-intel-platform-map.md#file-access)), BindForge compares its local working copy against the live file's current state.
+Whenever BindForge is opened, or whenever a live file changes while BindForge is running (detected by `bindforge.io.BindingsMonitor`, which already watches the bindings directory and is [extended to cover the game installation folders too](#external-change-detection-stays-in-one-place) rather than BindForge adding a second watcher; see [File Access](../../01-host-integration/elite-intel-platform-map.md#file-access)), BindForge compares its local working copy against the live file's current state.
 
 - If the local copy is simply behind — the live file changed in a way that doesn't lose anything the user has customized — BindForge treats the live file as newer truth and offers to refresh the local working copy to match it.
 - If the local working copy already has unsaved edits at the moment a live-file change is detected, BindForge does not silently pick a winner. It surfaces the conflict to the user, using the same pattern as [Unsaved Work on Exit](#unsaved-work-on-exit): keep editing the current local draft (ignoring the incoming live change for now), or refresh from the live file (discarding the unsaved local edits).
@@ -558,7 +558,10 @@ the next cheapest step if this turns out to bite anyone in practice.
 
 ## Upgrading the Existing Bind Editor
 
-Elite-Intel already ships a bind editor — `ui.screen.BindingsTabPanel`, backed by ~20 classes in `elite.intel.ai.hands`. **BindForge is that editor, upgraded.** It is not a second section built beside it, and there is nothing to retire: anything BindForge was specified to do is built *into* the existing editor and grown up to these specs. See [Phased rollout](../../00-overview/v1.2-scope.md#phased-rollout--revised-2026-09-08) for the order, and [why the build-alongside plan was replaced](../../00-overview/v1.2-scope.md#the-bindforge-name-is-returning-not-arriving) for the reasoning.
+Elite-Intel already ships a bind editor — `ui.screen.BindingsTabPanel`, backed by ~20 classes that moved from `elite.intel.ai.hands` to `elite.intel.bindforge.io`, `.model` and `.rules` on 2026-10-03.
+**BindForge is that editor,
+upgraded.** It is not a second section built beside it, and there is nothing to retire: anything BindForge was specified to do is built
+*into* the existing editor and grown up to these specs. See [Phased rollout](../../00-overview/v1.2-scope.md#phased-rollout--revised-2026-09-08) for the order, and [why the build-alongside plan was replaced](../../00-overview/v1.2-scope.md#the-bindforge-name-is-returning-not-arriving) for the reasoning.
 
 That settles what used to be this document's hardest open question — which component owns the write path — by removing the second component. What follows is what the decision obliges.
 
@@ -575,7 +578,8 @@ catch that, because it governs atomicity *within* an operation, not ownership *a
 
 ### Two narrow boundaries — one stays, one widens
 
-`elite.intel.ai.hands` holds two deliberate restrictions. Under the old plan BindForge sidestepped both by building its own. Under this one they have to be faced directly, and **they do not have the same answer.**
+`elite.intel.bindforge.io` holds two deliberate restrictions. Under the old plan BindForge sidestepped both by building its own. Under this one they have to be faced directly, and
+**they do not have the same answer.**
 
 **`KeyBindingsParser` stays exactly as narrow as it is.** It is a read-only, keyboard-only boundary feeding command execution — the path that presses real keys in the player's ship. Its narrowness is what stops a non-keyboard assignment from becoming executable by accident. BindForge reads `.binds` for editing through its own full-fidelity path and **must not widen the parser to do it**; the two readers answer different questions, and the parser's answer must stay small.
 

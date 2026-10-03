@@ -440,7 +440,7 @@ it, colours an on-screen keyboard free and used, and warns about conflicts, rese
 key *before* anything is kept — leaving all validation and writing to `BindingsWriter`. It already dims the
 window behind it, too. The earlier design, a floating popup *"modelled directly on the base game's own rebind
 popup"*, described a dialog nobody built while this one shipped. The class keeps its name under the
-[package freeze](../../00-overview/v1.2-scope.md#the-code-stays-where-it-is--stated-by-krondor-2026-09-12);
+[merge rule](../../00-overview/v1.2-scope.md#the-bindings-code-moved-once-to-eliteintelbindforge--2026-10-03);
 what it shows and what it captures grows.
 
 **One dialog for every slot, with tabs that grey out what cannot fill it** (Alan, 2026-09-13). Earlier the
@@ -962,8 +962,7 @@ it puts the control back on the list.
 ### Open items — carried from the punch list, 2026-09-09
 - **Which voice command depends on this binding?** Selecting a missing control ought to name the
   command(s) that stop working without it — far more useful than the action's own name. No design, and it
-  reaches into territory `BindingsMonitor` deliberately avoids: it does not consult the custom-command
-  registry, precisely so `ai.hands` never points back at `ai.brain`. Any design here has to respect that
+  reaches into territory `BindingsMonitor` deliberately avoids: it does not consult the custom-command registry, precisely so `bindforge` never points back at `ai.brain`. Any design here has to respect that
   boundary or move the lookup somewhere that legitimately sees both.
 
 ### Conflicts (the kind)
@@ -1166,7 +1165,8 @@ under a wrong label and inventing a second home for it.
 
 ### A third category: reserved keys — and this one BindForge can actively cause
 
-**Added 2026-09-06**, from `elite.intel.ai.hands.ReservedKeyChords`, which landed upstream on 2026-09-05.
+**Added
+2026-09-06**, from `ReservedKeyChords` (now `elite.intel.bindforge.rules.ReservedKeyChords`), which landed upstream on 2026-09-05.
 Full rules in
 [Reserved Keys](domain-knowledge/EliteDangerous-ConflictRules.md#3c-a-third-category-reserved-keys).
 
@@ -1493,7 +1493,7 @@ swallowed?"* — and they live on the same class rather than a parallel one.
   five local `existing` variables; **no test body's expectations change.** `ReservedKeyChordsTest` (11
   calls) and `UiNavigationTextTrapTest` (6 calls) are **not touched at all**, because those fixes add a
   method rather than change one. That matters because he adds tests to these files weekly — see
-  [the package freeze](../../00-overview/v1.2-scope.md#the-code-stays-where-it-is--stated-by-krondor-2026-09-12).
+  [the merge rule](../../00-overview/v1.2-scope.md#the-bindings-code-moved-once-to-eliteintelbindforge--2026-10-03).
 
 ##### What it does touch that is easy to miss
 
@@ -1502,7 +1502,7 @@ swallowed?"* — and they live on the same class rather than a parallel one.
   Elite-Intel sends. **That is Krondor's call, not BindForge's**: the persist path can keep the warning
   exactly as it is by filtering to the slot `getBindings()` returns. *Corrected 2026-09-12; an earlier
   version of this section said the spoken warning was unaffected.*
-- **`ai/hands/PACKAGE.md` documents "primary slot wins over secondary".** That stays true of the executor's
+- **`bindforge/PACKAGE.md` documents "primary slot wins over secondary".** That stays true of the executor's
   view and must gain a line describing the both-slots view **in the same change**, or it becomes the kind of
   half-true documentation the coding standard treats as an incomplete change.
 

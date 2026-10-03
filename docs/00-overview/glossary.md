@@ -54,8 +54,7 @@ listed so that older notes and mockups can be read correctly:
 - **Binding element** — the parsed representation of one action's key/button/axis assignment. See
   [Binding Schema](../03-data-models/binding-schema.md).
 - **Draft** — the copy a player edits; never the live game file directly. **The preferred term throughout
-  this documentation as of 2026-09-06.** Elite-Intel already implements it
-  (`ai.hands.BindingsWorkingCopyRepository`, `AppPaths.getBindingsWorkingDir()`), and carries a baseline
+  this documentation as of 2026-09-06.** Elite-Intel already implements it (`bindforge.io.BindingsWorkingCopyRepository`, `AppPaths.getBindingsWorkingDir()`), and carries a baseline
   fingerprint alongside each one so an in-game rebind can be told apart from a BindForge edit — see
   [Reconciling BindForge Edits With In-Game Rebinds](../02-features/bindforge/overview.md#reconciling-bindforge-edits-with-in-game-rebinds).
 - **Working copy** — the same thing as a draft. Retained only where it names the actual code

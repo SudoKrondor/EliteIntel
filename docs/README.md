@@ -82,8 +82,7 @@ beside the current one, and nothing is retired — the Bindings section is grown
 what the BindForge name says. See [Phased rollout](00-overview/v1.2-scope.md#phased-rollout--revised-2026-09-08).
 
 That answers what used to be the blocking question before code — which component owns the on-disk write
-path — by removing the second component: the existing pipeline is BindForge's pipeline. What remains is
-which of `elite.intel.ai.hands`'s deliberate restrictions grow with it — see
+path — by removing the second component: the existing pipeline is BindForge's pipeline. What remains is which of `elite.intel.bindforge.io`'s deliberate restrictions grow with it — see
 [PORTING-NOTES §7](PORTING-NOTES.md#7-open-questions-this-port-creates) and
 [Upgrading the Existing Bind Editor](02-features/bindforge/overview.md#upgrading-the-existing-bind-editor).
 
