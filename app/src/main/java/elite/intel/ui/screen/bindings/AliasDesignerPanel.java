@@ -2,11 +2,16 @@ package elite.intel.ui.screen.bindings;
 
 import elite.intel.bindforge.devices.DeviceDivergence;
 import elite.intel.bindforge.devices.DeviceDivergenceScanner;
-import elite.intel.bindforge.devices.DeviceIdentities;
+import elite.intel.bindforge.devices.DeviceEntry;
+import elite.intel.bindforge.devices.DeviceMappingsParser;
+import elite.intel.bindforge.devices.FrontierStockDevices;
+import elite.intel.bindforge.devices.MyDevice;
+import elite.intel.bindforge.devices.MyDeviceList;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.install.InstallationRegistry;
 import elite.intel.bindforge.install.WindowsGameInstallationProvider;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
+import elite.intel.db.managers.BindForgeDeviceMasterManager;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.model.Device;
 import elite.intel.session.PlayerSession;
@@ -22,6 +27,7 @@ import org.apache.logging.log4j.Logger;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -55,9 +61,12 @@ public class AliasDesignerPanel extends JPanel {
 
     private DefaultTableModel tableModel;
     private JTable table;
+    private DefaultTableModel myDevicesModel;
+    private JTable myDevicesTable;
     private List<DeviceDivergence.Finding> currentFindings = List.of();
     private Map<String, String> installLabels = Map.of();
     private final AtomicBoolean refreshInProgress = new AtomicBoolean();
+    private boolean deviceServiceRunning;
 
     public AliasDesignerPanel() {
         this(new InstallationRegistry(
@@ -92,10 +101,30 @@ public class AliasDesignerPanel extends JPanel {
                 6);
         section.body().add(HudTable.dataPlaneScrollPane(table), BorderLayout.CENTER);
 
+        myDevicesModel = new ReadOnlyTableModel(myDevicesColumnNames(), 0);
+        myDevicesTable = new JTable(myDevicesModel);
+        myDevicesTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        HudTable.style(myDevicesTable);
+
+        HudSection myDevices = new HudSection(
+                getText("bindings.aliasDesigner.section.myDevices"),
+                new BorderLayout(),
+                HudPanel.Variant.FLAT,
+                6);
+        myDevices.body().add(HudTable.dataPlaneScrollPane(myDevicesTable), BorderLayout.CENTER);
+
         JButton rescanButton = makeButton(getText("bindings.aliasDesigner.button.recheck"));
         rescanButton.addActionListener(e -> initData());
 
-        add(section, BorderLayout.CENTER);
+        // WHY: stacked rather than tabbed. The two answer different questions - what devices there are, and
+        // where the installations disagree about them - and a user resolving a divergence wants the device it
+        // names in sight. Equal halves because neither is the subordinate of the other.
+        JPanel stacked = new JPanel(new GridLayout(2, 1, 0, 6));
+        stacked.setOpaque(false);
+        stacked.add(myDevices);
+        stacked.add(section);
+
+        add(stacked, BorderLayout.CENTER);
         add(HudFooter.build(false, null, null, List.of(rescanButton)), BorderLayout.SOUTH);
     }
 
@@ -113,12 +142,13 @@ public class AliasDesignerPanel extends JPanel {
         new Thread(() -> {
             Map<String, String> labels = Map.of();
             List<DeviceDivergence.Finding> findings = List.of();
+            List<MyDevice> myDevices = List.of();
             try {
                 List<InstallationRow> rows = registry.currentWithStartupScan();
                 labels = labelsFor(rows);
                 findings = DeviceDivergenceScanner.scan(
                         controlSchemesByInstall(rows), PlayerSession.getInstance().getBindingsDir());
-                readAttachedControllers();
+                myDevices = readMyDevices(rows);
             } catch (RuntimeException e) {
                 // WHY: broad on purpose. This is a thread boundary, and an exception escaping it would kill
                 // the thread silently and leave the table showing whatever it showed before, with no clue why.
@@ -126,8 +156,10 @@ public class AliasDesignerPanel extends JPanel {
             }
             Map<String, String> loadedLabels = labels;
             List<DeviceDivergence.Finding> loadedFindings = findings;
+            List<MyDevice> loadedMyDevices = myDevices;
             SwingUtilities.invokeLater(() -> {
                 installLabels = loadedLabels;
+                showMyDevices(loadedMyDevices);
                 showFindings(loadedFindings);
                 refreshInProgress.set(false);
             });
@@ -135,31 +167,48 @@ public class AliasDesignerPanel extends JPanel {
     }
 
     /**
-     * Reads the attached controllers and works out each one's VID/PID.
-     * <p>
-     * The device list this screen is meant to show is the union of live hardware and file entries, so this is
-     * the half that is not in any file. Nothing is displayed from it yet - {@link DeviceIdentities} logs what
-     * it made of each controller, which is how the GUID reading gets confirmed against hardware whose
-     * VID/PID is known independently.
+     * Gathers the four things the device list is built from: the attached controllers, every installation's
+     * device entries, the master's records, and Frontier's shipped list.
      * <p>
      * {@code DeviceService} runs as one of the application's services, so with those stopped it reports no
-     * controllers at all. That is said plainly rather than left to look like an empty list, because "nothing
-     * is plugged in" and "nothing is looking" are very different states.
+     * controllers at all. The list still builds - the file half needs no hardware - but it is then only half
+     * a list, and {@link #showMyDevices} says so on screen rather than leaving an absence to be mistaken for
+     * "nothing is plugged in".
      */
-    private void readAttachedControllers() {
-        DeviceService devices = DeviceService.getInstance();
-        if (!devices.isAvailable()) {
-            log.info("Device service is not running, so no controllers can be read - start the services to "
-                    + "see attached hardware here");
-            return;
+    private List<MyDevice> readMyDevices(List<InstallationRow> rows) {
+        DeviceService service = DeviceService.getInstance();
+        deviceServiceRunning = service.isAvailable();
+        if (!deviceServiceRunning) {
+            log.info("Device service is not running, so no controllers can be read - the list will show only "
+                    + "what the installations' files name");
         }
-        for (Device device : devices.getConnectedDevices()) {
-            // WHY: the result is deliberately unused. DeviceIdentities logs what it read each controller's
-            // GUID as, and nothing consumes those identities until the device list is built. Written as a
-            // loop rather than forEach over a mapping function, so the discarded return reads as the
-            // intention it is rather than as a dropped assignment.
-            DeviceIdentities.of(device);
-        }
+        List<Device> attached = deviceServiceRunning ? service.getConnectedDevices() : List.of();
+
+        return MyDeviceList.build(
+                attached,
+                MyDeviceList.entriesAcross(entriesByInstall(rows).values()),
+                BindForgeDeviceMasterManager.getInstance().findAll(),
+                FrontierStockDevices.getInstance());
+    }
+
+    /**
+     * Each present installation's device entries.
+     * <p>
+     * An installation whose file cannot be read is left out rather than counted as holding nothing. The device
+     * list is a union, so a missing contribution only makes it shorter - but silently treating an unreadable
+     * file as an empty one would hide a real problem behind a shorter list.
+     */
+    private Map<String, List<DeviceEntry>> entriesByInstall(List<InstallationRow> rows) {
+        Map<String, List<DeviceEntry>> byInstall = new LinkedHashMap<>();
+        controlSchemesByInstall(rows).forEach((install, controlSchemes) -> {
+            try {
+                byInstall.put(install,
+                        DeviceMappingsParser.parseIfPresent(controlSchemes.resolve("DeviceMappings.xml")));
+            } catch (IOException e) {
+                log.warn("Could not read device entries for {}: {}", install, e.getMessage());
+            }
+        });
+        return byInstall;
     }
 
     /**
@@ -203,6 +252,49 @@ public class AliasDesignerPanel extends JPanel {
                     : row.storefront() + " (" + row.rootPath() + ")");
         }
         return labels;
+    }
+
+    private String[] myDevicesColumnNames() {
+        return new String[]{
+                getText("bindings.aliasDesigner.column.device"),
+                getText("bindings.aliasDesigner.column.vidPid"),
+                getText("bindings.aliasDesigner.column.status"),
+                getText("bindings.aliasDesigner.column.alias")
+        };
+    }
+
+    private void showMyDevices(List<MyDevice> devices) {
+        myDevicesModel.setRowCount(0);
+        for (MyDevice device : devices) {
+            myDevicesModel.addRow(new Object[]{
+                    device.label(),
+                    device.vid() + ":" + device.pid(),
+                    getText(device.attached()
+                            ? "bindings.aliasDesigner.status.attached"
+                            : "bindings.aliasDesigner.status.missing"),
+                    aliasCell(device)
+            });
+        }
+        // WHY: said in the table rather than only in the log. An empty list because nothing is plugged in and
+        // an empty list because nothing is looking are different states, and the second is the one a user
+        // cannot diagnose.
+        if (!deviceServiceRunning) {
+            myDevicesModel.addRow(new Object[]{
+                    getText("bindings.aliasDesigner.deviceService.stopped"), "", "", ""});
+        }
+        HudTable.fitColumnsToContent(myDevicesTable, MAX_COLUMN_WIDTH);
+    }
+
+    /**
+     * The master's name for this device, or why there is not one.
+     * <p>
+     * A built-in is not <em>not added</em>: Frontier's entry already names it, so there is nothing for
+     * BindForge to create, and saying "not added" would invite the user to add what the game already has.
+     */
+    private String aliasCell(MyDevice device) {
+        if (device.alias() != null) return device.alias();
+        if (device.builtIn()) return getText("bindings.aliasDesigner.alias.builtIn");
+        return getText("bindings.aliasDesigner.alias.notAdded");
     }
 
     private void showFindings(List<DeviceDivergence.Finding> findings) {
