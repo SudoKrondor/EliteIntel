@@ -114,7 +114,7 @@ specs listed as work to be done:
 - **`overlay/`** is a native C overlay with **an OpenVR backend already in the tree**, driven over a documented
   stdin protocol. StarVizion's VR requirement has a shipping implementation path, not a green field.
 - **`elite.intel.bindforge.io`, `.model` and `.rules`** hold ~20 binding classes including
-  `BindingsWorkingCopyRepository`, `BindingsBackupService`, `BindingConflictScanner`, and `BindingsApplyService` — the working-copy, backup, and conflict-detection concepts BindForge specifies, already partly built.
+  `BindingsWorkingCopyRepository`, `elite.intel.io.TimestampedBackups`, `BindingConflictScanner`, and `BindingsApplyService` — the working-copy, backup, and conflict-detection concepts BindForge specifies, already partly built.
   *They lived in `elite.intel.ai.hands` until 2026-10-03; that package now only presses keys.*
 - **`AppPaths`** already provisions `getBindingsWorkingDir()` and `getBindingsBackupDir()`.
 
@@ -154,7 +154,7 @@ unresolved questions stay in [conflicts-and-open-questions.md](99-archive/confli
    **Reused as-is:** `BindingsApplyService` (validate → backup → atomic write; **this is who owns the write
    path**), `BindingsWorkingCopyRepository` (drafts, BOM-preserving import, baseline fingerprints),
    `BindingsLoader` (which `.binds` is live — not re-derivable from the directory alone),
-   `BindingsBackupService`, `BindingConflictScanner`/`BindingConflictRules`, `ReservedKeyChords`, and
+   `elite.intel.io.TimestampedBackups`, `BindingConflictScanner`/`BindingConflictRules`, `ReservedKeyChords`, and
    `Bindings.GameCommand` for the full control-set naming. *This list used to include `UiNavigationTextTrap`
    and `BindingsMonitor.textTrappedUiNavigation()`; both were deleted 2026-09-21 when the route plotter
    stopped arrowing out of the galaxy map search box, so there is nothing left to reuse.*
