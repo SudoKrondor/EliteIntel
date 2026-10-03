@@ -11,6 +11,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -62,6 +63,20 @@ public final class DeviceMappingsParser {
     public static List<DeviceEntry> parseIfPresent(Path deviceMappings) throws IOException {
         if (!Files.isRegularFile(deviceMappings)) return List.of();
         return parse(deviceMappings);
+    }
+
+    /**
+     * The same, from an open stream - which is how Frontier's shipped reference copy is read, since it
+     * travels inside the jar rather than sitting on disk.
+     *
+     * @param what names the source in an error, a resource path having no useful {@code toString}
+     */
+    public static List<DeviceEntry> parse(InputStream xml, String what) throws IOException {
+        try {
+            return entriesOf(newDocumentBuilder().parse(xml));
+        } catch (SAXException | ParserConfigurationException e) {
+            throw new IOException("Could not read " + what + ": " + e.getMessage(), e);
+        }
     }
 
     private static List<DeviceEntry> entriesOf(Document document) {

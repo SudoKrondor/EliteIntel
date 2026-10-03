@@ -11,19 +11,23 @@
 ### 1.1 File structure
 
 ```xml
-<DeviceMappings>
+<Root>
     <VPCPanel>
         <PID>0259</PID>
         <VID>3344</VID>
     </VPCPanel>
     <T-Rudder>
-        <PID>0BF3</PID>
+        <PID>B679</PID>
         <VID>044F</VID>
     </T-Rudder>
-</DeviceMappings>
+</Root>
 ```
 
-- Root element: `<DeviceMappings>`.
+- Root element: `<Root>`. **Corrected 2026-10-01** — this section previously said `<DeviceMappings>`, which
+  is the filename rather than the tag. Frontier's own shipped file opens `<Root>`, as does every real
+  `DeviceMappings.xml`; see the
+  [stock capture](../reference-data/FrontierStock-DeviceMappings.xml). *(The `T-Rudder` PID above was wrong
+  with it — Frontier's entry is `B679`, not `0BF3`.)*
 - One child element per device, named with the device's logical name. This name is what shows up as a *named* `Device=` value elsewhere in `.binds` (e.g. `RVWAP`, `T-Rudder`) instead of a VID/PID hex string.
 - `<VID>` — Vendor ID, 4 hex characters.
 - `<PID>` — Product ID, 4 hex characters.
