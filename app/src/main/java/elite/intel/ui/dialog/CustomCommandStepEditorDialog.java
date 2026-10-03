@@ -1,8 +1,8 @@
 package elite.intel.ui.dialog;
 
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandStep;
-import elite.intel.ai.hands.BindingModifier;
 import elite.intel.ai.hands.KeyBindingExecutor;
+import elite.intel.bindforge.model.BindingModifier;
 import elite.intel.ui.support.BindingSlotDisplayFormatter;
 import elite.intel.ui.support.CustomCommandStepPickerItem;
 import elite.intel.ui.theme.AppTheme;

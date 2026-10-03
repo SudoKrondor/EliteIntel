@@ -1,7 +1,7 @@
 package elite.intel.ui.support;
 
-import elite.intel.ai.hands.BindingsApplyException;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.bindforge.io.BindingsApplyException;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.util.StringUtls;
 

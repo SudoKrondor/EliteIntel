@@ -1,9 +1,9 @@
 package elite.intel.setup;
 
 import elite.intel.ai.LlmProviderResolver;
-import elite.intel.ai.hands.BindingsLoader;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
+import elite.intel.bindforge.io.BindingsLoader;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;

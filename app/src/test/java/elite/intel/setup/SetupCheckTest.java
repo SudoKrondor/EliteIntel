@@ -1,8 +1,8 @@
 package elite.intel.setup;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.hands.BindingsLoader;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
+import elite.intel.bindforge.io.BindingsLoader;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;

@@ -1,7 +1,7 @@
 package elite.intel.ui.support;
 
 
-import elite.intel.ai.hands.BindingSaveResult;
+import elite.intel.bindforge.io.BindingSaveResult;
 
 import javax.swing.*;
 import java.awt.*;

@@ -1,6 +1,6 @@
 package elite.intel.ui.support;
 
-import elite.intel.ai.hands.BindingSlotType;
+import elite.intel.bindforge.model.BindingSlotType;
 import elite.intel.ui.render.BindingSlotCellRenderer;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.BindingConflictPopup;

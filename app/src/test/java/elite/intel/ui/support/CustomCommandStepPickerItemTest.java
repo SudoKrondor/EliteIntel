@@ -1,7 +1,7 @@
 package elite.intel.ui.support;
 
-import elite.intel.ai.hands.BindingDisplayNames;
-import elite.intel.ai.hands.BindingSection;
+import elite.intel.bindforge.model.BindingDisplayNames;
+import elite.intel.bindforge.model.BindingSection;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

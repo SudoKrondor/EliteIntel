@@ -1,6 +1,13 @@
 package elite.intel.ui.dialog;
 
-import elite.intel.ai.hands.*;
+import elite.intel.bindforge.io.KeyBindingsParser;
+import elite.intel.bindforge.model.BindingDisplayNames;
+import elite.intel.bindforge.model.BindingModifier;
+import elite.intel.bindforge.model.BindingSlotType;
+import elite.intel.bindforge.model.EliteKeyboardKeys;
+import elite.intel.bindforge.rules.BindingConflictScanner;
+import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
+import elite.intel.bindforge.rules.ReservedKeyChords;
 import elite.intel.ui.support.AssignKeyboardBindingSelection;
 import elite.intel.ui.support.BindingSlotDisplayFormatter;
 import elite.intel.ui.theme.AppTheme;

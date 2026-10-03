@@ -1,7 +1,7 @@
 package elite.intel.ui.dialog;
 
-import elite.intel.ai.hands.BindingSlotType;
-import elite.intel.ai.hands.KeyBindingsParser;
+import elite.intel.bindforge.io.KeyBindingsParser;
+import elite.intel.bindforge.model.BindingSlotType;
 import elite.intel.ui.support.BindingSlotDisplayFormatter;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.HudBanner;

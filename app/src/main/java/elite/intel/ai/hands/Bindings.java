@@ -1,5 +1,7 @@
 package elite.intel.ai.hands;
 
+import elite.intel.bindforge.io.BindingsMonitor;
+
 /**
  * Represents the available actions and their associated game commands for
  * the in-game control system. The class helps in mapping specific actions

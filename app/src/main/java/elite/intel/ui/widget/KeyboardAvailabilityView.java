@@ -1,6 +1,10 @@
 package elite.intel.ui.widget;
 
-import elite.intel.ai.hands.*;
+import elite.intel.bindforge.io.KeyBindingsParser;
+import elite.intel.bindforge.model.BindingSlotType;
+import elite.intel.bindforge.model.EliteKeyboardKeys;
+import elite.intel.bindforge.rules.BindingConflictScanner;
+import elite.intel.bindforge.rules.ReservedKeyChords;
 
 import javax.swing.*;
 import java.awt.*;

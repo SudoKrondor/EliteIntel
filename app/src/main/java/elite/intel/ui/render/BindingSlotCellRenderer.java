@@ -1,6 +1,6 @@
 package elite.intel.ui.render;
 
-import elite.intel.ai.hands.BindingDisplayNames;
+import elite.intel.bindforge.model.BindingDisplayNames;
 import elite.intel.ui.support.BindingsGroupTableFactory;
 import elite.intel.ui.widget.HudTable;
 

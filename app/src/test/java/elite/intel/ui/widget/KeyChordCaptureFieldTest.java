@@ -1,6 +1,6 @@
 package elite.intel.ui.widget;
 
-import elite.intel.ai.hands.BindingModifier;
+import elite.intel.bindforge.model.BindingModifier;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashSet;
