@@ -1,8 +1,8 @@
 package elite.intel.ui.support;
 
 
-import elite.intel.ai.hands.BindingModifier;
-import elite.intel.ai.hands.BindingSlotType;
+import elite.intel.bindforge.model.BindingModifier;
+import elite.intel.bindforge.model.BindingSlotType;
 
 import java.util.List;
 

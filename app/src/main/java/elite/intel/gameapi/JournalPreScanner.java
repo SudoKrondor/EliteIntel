@@ -7,10 +7,7 @@ import elite.intel.db.util.Database;
 import elite.intel.eventbus.LoggedSubscriberFailures;
 import elite.intel.gameapi.journal.EventRegistry;
 import elite.intel.gameapi.journal.events.BaseEvent;
-import elite.intel.gameapi.journal.subscribers.ConflictZoneSubscriber;
-import elite.intel.gameapi.journal.subscribers.DockedMarketSubscriber;
-import elite.intel.gameapi.journal.subscribers.ResourceSiteSubscriber;
-import elite.intel.gameapi.journal.subscribers.SilentPersistenceSubscriber;
+import elite.intel.gameapi.journal.subscribers.*;
 import elite.intel.util.json.GsonFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,6 +70,9 @@ public class JournalPreScanner {
         privateBus.register(new ResourceSiteSubscriber());
         // And for the conflict-zone fight, which is the same marker for the other kind of war.
         privateBus.register(new ConflictZoneSubscriber());
+        // And for the vehicle the commander is sitting in: the Nomad reports as an SRV, and a commander who
+        // starts the app already flying one would otherwise get wheeled-SRV keys until they stowed it.
+        privateBus.register(new DeployedVehicleSubscriber());
 
         for (Path file : toScan) {
             processFile(file, privateBus);

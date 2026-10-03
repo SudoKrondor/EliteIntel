@@ -1,7 +1,14 @@
 package elite.intel.ui.screen.bindings;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.hands.*;
+import elite.intel.bindforge.io.*;
+import elite.intel.bindforge.model.BindingDisplayNames;
+import elite.intel.bindforge.model.BindingModifier;
+import elite.intel.bindforge.model.BindingSection;
+import elite.intel.bindforge.model.BindingSlotType;
+import elite.intel.bindforge.rules.BindingConflictScanner;
+import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
+import elite.intel.bindforge.rules.MissingBindingAutoAssigner;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;

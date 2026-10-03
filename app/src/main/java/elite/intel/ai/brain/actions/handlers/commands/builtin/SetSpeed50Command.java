@@ -18,9 +18,9 @@ public final class SetSpeed50Command extends SimpleTapCommand {
         super(ID, Bindings.GameCommand.BINDING_SET_SPEED50.getGameBinding());
     }
 
-    /// in any vehicle
+    /// ship throttle keys: the main ship, a fighter or the Nomad - a wheeled SRV has no throttle notches and ignores them
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return (status.isInMainShip() || status.isInSrv() || status.isInFighter()) && (!status.isDocked() && !status.isLanded());
+        return (status.isInMainShip() || status.isInNomad() || status.isInFighter()) && (!status.isDocked() && !status.isLanded());
     }
 }

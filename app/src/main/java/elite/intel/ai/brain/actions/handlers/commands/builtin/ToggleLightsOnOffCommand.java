@@ -33,7 +33,11 @@ public final class ToggleLightsOnOffCommand implements IntelCommand {
     public String execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 
-        if (status.isInSrv()) {
+        if (status.isInNomad()) {
+            // The Nomad reports as an SRV but its lights are a plain on/off, like a ship's: no high beam to
+            // step through, so the SRV's double tap below would switch them on and straight back off.
+            toggleLights(Bindings.GameCommand.BINDING_BUGGY_LIGHTS_TOGGLE.getGameBinding());
+        } else if (status.isInSrv()) {
             if (status.isSrvHighBeam()) {
                 toggleLights(Bindings.GameCommand.BINDING_BUGGY_LIGHTS_TOGGLE.getGameBinding());
             } else {

@@ -1,8 +1,8 @@
 package elite.intel.ui.screen.bindings;
 
-import elite.intel.ai.hands.BindingsApplyException;
-import elite.intel.ai.hands.BindingsMonitor;
-import elite.intel.ai.hands.PlayerBackupService;
+import elite.intel.bindforge.io.BindingsApplyException;
+import elite.intel.bindforge.io.BindingsMonitor;
+import elite.intel.bindforge.io.PlayerBackupService;
 import elite.intel.ui.support.BindingApplyResultPresenter;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.HudFooter;

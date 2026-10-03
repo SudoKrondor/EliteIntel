@@ -55,11 +55,12 @@ public final class DecreaseSpeedCommand implements IntelCommand {
     }
 
     /**
-     * vehicle throttle
+     * The ship throttle keys: the main ship, a fighter or the Nomad (which flies on the ship's controls). A
+     * wheeled SRV ignores them - its throttle is a separate set of buggy controls.
      */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv() || status.isInFighter();
+        return status.isInMainShip() || status.isInNomad() || status.isInFighter();
     }
 
     @Override

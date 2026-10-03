@@ -1,6 +1,7 @@
 package elite.intel.ai.hands;
 
 import elite.intel.ai.hands.KeyBindingExecutor.NormalizedChord;
+import elite.intel.bindforge.rules.SafeKeyboardKeys;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

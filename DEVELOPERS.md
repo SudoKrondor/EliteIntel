@@ -6,6 +6,7 @@
 - [elite.intel.db](app/src/main/java/elite/intel/db/DEVELOPER.md)
 - [elite.intel.ai.mouth](app/src/main/java/elite/intel/ai/mouth/DEVELOPER.md)
 - [elite.intel.ai.hands](app/src/main/java/elite/intel/ai/hands/DEVELOPER.md)
+- [elite.intel.bindforge](app/src/main/java/elite/intel/bindforge/PACKAGE.md)
 - [elite.intel.ai.ears](app/src/main/java/elite/intel/ai/ears/DEVELOPER.md)
 - [elite.intel.ai.brain](app/src/main/java/elite/intel/ai/brain/DEVELOPER.md)
 

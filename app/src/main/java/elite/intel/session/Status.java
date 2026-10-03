@@ -347,6 +347,15 @@ public class Status extends StatusFlags {
         return isInSrv(getStatus().getFlags());
     }
 
+    /**
+     * In the Nomad. The game reports it as an SRV ({@link #isInSrv()} is true in it, and stays true), so this
+     * narrows that by the vehicle the journal says was deployed - see {@link DeployedVehicle}. Its panels and
+     * maps answer the SRV ({@code _Buggy}) bindings; its flight controls and lights work like a ship's.
+     */
+    public boolean isInNomad() {
+        return isInSrv() && DeployedVehicle.getInstance().isNomad();
+    }
+
     public boolean isInMainShip() {
         return isInMainShip(getStatus().getFlags());
     }

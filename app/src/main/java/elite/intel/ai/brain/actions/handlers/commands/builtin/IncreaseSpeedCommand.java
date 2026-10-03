@@ -62,10 +62,12 @@ public final class IncreaseSpeedCommand implements IntelCommand {
         return ID;
     }
 
-    /** Ship throttle: only while piloting the main ship and not docked/landed (no throttle when stationary). */
+    /**
+     * Ship throttle keys: main ship, fighter or Nomad (a wheeled SRV ignores them), and not while stationary.
+     */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return (status.isInMainShip() || status.isInFighter() || status.isInSrv()) && (!status.isDocked() && !status.isOnFoot());
+        return (status.isInMainShip() || status.isInFighter() || status.isInNomad()) && (!status.isDocked() && !status.isOnFoot());
     }
 
     @Override

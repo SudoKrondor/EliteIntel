@@ -1,6 +1,6 @@
 package elite.intel.ui.widget;
 
-import elite.intel.ai.hands.BindingModifier;
+import elite.intel.bindforge.model.BindingModifier;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.util.KeyCaptureMapper;
 

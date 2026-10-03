@@ -1,9 +1,10 @@
 package elite.intel.ui.widget;
 
-import elite.intel.ai.hands.BindingConflictScanner;
-import elite.intel.ai.hands.EliteKeyboardKeys;
-import elite.intel.ai.hands.KeyBindingsParser;
-import elite.intel.ai.hands.ReservedKeyChords;
+import elite.intel.bindforge.io.KeyBindingsParser;
+import elite.intel.bindforge.model.BindingSlotType;
+import elite.intel.bindforge.model.EliteKeyboardKeys;
+import elite.intel.bindforge.rules.BindingConflictScanner;
+import elite.intel.bindforge.rules.ReservedKeyChords;
 
 import javax.swing.*;
 import java.awt.*;
@@ -32,6 +33,7 @@ public class KeyboardAvailabilityView extends JPanel {
     private static final double UNITS_PER_ROW = 15;
 
     private final String bindingId;
+    private final BindingSlotType slotType;
     private final Map<String, KeyBindingsParser.BindingSlots> existingSlots;
     /**
      * The keys the commander has on the game menu, which no other control may use - read once, because
@@ -47,8 +49,10 @@ public class KeyboardAvailabilityView extends JPanel {
     private record Key(String token, String label, double width, boolean modifier) {
     }
 
-    public KeyboardAvailabilityView(String bindingId, Map<String, KeyBindingsParser.BindingSlots> existingSlots) {
+    public KeyboardAvailabilityView(String bindingId, BindingSlotType slotType,
+                                    Map<String, KeyBindingsParser.BindingSlots> existingSlots) {
         this.bindingId = bindingId;
+        this.slotType = slotType;
         this.existingSlots = existingSlots == null ? Map.of() : existingSlots;
         this.gameMenuKeys = ReservedKeyChords.GAME_MENU_ACTION.equals(bindingId)
                 ? Set.of()
@@ -321,7 +325,7 @@ public class KeyboardAvailabilityView extends JPanel {
             return HUD_COLOR_ROLE_WARNING;
         }
         boolean conflicts = BindingConflictScanner.candidateConflictInSlots(
-                bindingId, token, heldModifiers, existingSlots) != null;
+                bindingId, slotType, token, heldModifiers, existingSlots) != null;
         return conflicts ? HUD_COLOR_ROLE_DANGER : HUD_COLOR_ROLE_SUCCESS;
     }
 }

@@ -4,6 +4,8 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.bindforge.io.BindingsMonitor;
+import elite.intel.bindforge.io.KeyBindingsParser;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.SystemSession;

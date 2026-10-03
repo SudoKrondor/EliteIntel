@@ -1,10 +1,10 @@
 package elite.intel.session.ui;
 
 import elite.intel.ai.hands.Bindings;
-import elite.intel.ai.hands.BindingsMonitor;
-import elite.intel.ai.hands.KeyBindingsParser;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
+import elite.intel.bindforge.io.BindingsMonitor;
+import elite.intel.bindforge.io.KeyBindingsParser;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.session.Status;
 import elite.intel.session.StatusFlags;

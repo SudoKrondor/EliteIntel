@@ -1,8 +1,8 @@
 package elite.intel.ui.support;
 
 
-import elite.intel.ai.hands.BindingDisplayNames;
 import elite.intel.ai.hands.Bindings;
+import elite.intel.bindforge.model.BindingDisplayNames;
 
 import java.util.*;
 

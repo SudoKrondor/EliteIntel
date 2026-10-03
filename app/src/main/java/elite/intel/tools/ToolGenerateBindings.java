@@ -1,7 +1,7 @@
 package elite.intel.tools;
 
-import elite.intel.ai.hands.BindingsLoader;
-import elite.intel.ai.hands.KeyBindingsParser;
+import elite.intel.bindforge.io.BindingsLoader;
+import elite.intel.bindforge.io.KeyBindingsParser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
