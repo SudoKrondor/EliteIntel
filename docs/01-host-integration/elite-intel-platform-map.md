@@ -118,8 +118,13 @@ From `elite.intel.devices.PACKAGE.md`:
   `DeviceButtonEvent`, `DeviceServiceStateEvent`, `DeviceDuplicateWarningEvent`.
 - **Axis range is normalised to [−1.0, +1.0]** — exactly the range the StarVizion spec assumes.
 - Delta-only publication: axes on value change, buttons on press/release transition only.
-- `model/DeviceIdentity` resolves VID/PID and a `bindsHexId` that matches the `Device=` attribute in
-  `.binds` axis XML — the correlation BindForge needs, already solved.
+- `model/DeviceIdentity` carries VID/PID and a `bindsHexId` that matches the `Device=` attribute in
+  `.binds` axis XML. **Corrected 2026-10-02: it does not *resolve* anything** — it is a bare record with no
+  factory, nothing in the tree constructed one, and `DeviceService` reads VID/PID from SDL only for its own
+  duplicate check, into a private map it never publishes. So the correlation was *described* rather than
+  solved, and a consumer derives it from `Device.guid`, which is what `PACKAGE.md` says to do. BindForge's
+  `DeviceIdentities` does it, confirmed against four real controllers — see
+  [the device list](../02-features/bindforge/alias-designer.md#my-devices).
 - `model/ButtonInputMapper` translates SDL3 indices to `.binds` tokens (`Joy_N`, `Joy_XAxis` … `Joy_RZAxis`).
 - Duplicate VID/PID devices are detected and warned about, with `usbPath` available to tell two identical
   units apart — which is precisely the open question the StellarCore conflict notes raised.

@@ -2,10 +2,13 @@ package elite.intel.ui.screen.bindings;
 
 import elite.intel.bindforge.devices.DeviceDivergence;
 import elite.intel.bindforge.devices.DeviceDivergenceScanner;
+import elite.intel.bindforge.devices.DeviceIdentities;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.install.InstallationRegistry;
 import elite.intel.bindforge.install.WindowsGameInstallationProvider;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
+import elite.intel.devices.DeviceService;
+import elite.intel.devices.model.Device;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
@@ -115,6 +118,7 @@ public class AliasDesignerPanel extends JPanel {
                 labels = labelsFor(rows);
                 findings = DeviceDivergenceScanner.scan(
                         controlSchemesByInstall(rows), PlayerSession.getInstance().getBindingsDir());
+                readAttachedControllers();
             } catch (RuntimeException e) {
                 // WHY: broad on purpose. This is a thread boundary, and an exception escaping it would kill
                 // the thread silently and leave the table showing whatever it showed before, with no clue why.
@@ -128,6 +132,34 @@ public class AliasDesignerPanel extends JPanel {
                 refreshInProgress.set(false);
             });
         }, "BindForge-Divergence").start();
+    }
+
+    /**
+     * Reads the attached controllers and works out each one's VID/PID.
+     * <p>
+     * The device list this screen is meant to show is the union of live hardware and file entries, so this is
+     * the half that is not in any file. Nothing is displayed from it yet - {@link DeviceIdentities} logs what
+     * it made of each controller, which is how the GUID reading gets confirmed against hardware whose
+     * VID/PID is known independently.
+     * <p>
+     * {@code DeviceService} runs as one of the application's services, so with those stopped it reports no
+     * controllers at all. That is said plainly rather than left to look like an empty list, because "nothing
+     * is plugged in" and "nothing is looking" are very different states.
+     */
+    private void readAttachedControllers() {
+        DeviceService devices = DeviceService.getInstance();
+        if (!devices.isAvailable()) {
+            log.info("Device service is not running, so no controllers can be read - start the services to "
+                    + "see attached hardware here");
+            return;
+        }
+        for (Device device : devices.getConnectedDevices()) {
+            // WHY: the result is deliberately unused. DeviceIdentities logs what it read each controller's
+            // GUID as, and nothing consumes those identities until the device list is built. Written as a
+            // loop rather than forEach over a mapping function, so the discarded return reads as the
+            // intention it is rather than as a dropped assignment.
+            DeviceIdentities.of(device);
+        }
     }
 
     /**

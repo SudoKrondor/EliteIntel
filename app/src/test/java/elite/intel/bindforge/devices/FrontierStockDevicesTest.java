@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,6 +57,23 @@ class FrontierStockDevicesTest {
         assertEquals(51, stock.entries().size(), "51 device elements");
         assertEquals(136, stock.entries().stream().mapToInt(e -> e.hardware().size()).sum(),
                 "136 VID/PID tuples, because an entry owns a set of them rather than one");
+    }
+
+    /**
+     * Both accessors claim the file's own order, and an immutable {@code Map} cannot supply it - its
+     * iteration order is unspecified, hash-derived, and salted per JVM run, so a list built from one would
+     * come out shuffled differently on every launch. A size check would never notice. These are the first
+     * five and last two elements of the capture, read from the file itself.
+     */
+    @Test
+    void theEntriesComeBackInTheOrderTheFileListsThem() {
+        List<String> names = stock.names();
+
+        assertEquals(List.of("GamePad", "BlackWidow", "SaitekAV8R03", "SaitekX55Joystick", "SaitekX56Joystick"),
+                names.subList(0, 5));
+        assertEquals(List.of("VPCPanel", "VPCThrottle"), names.subList(names.size() - 2, names.size()));
+        assertEquals(names, stock.entries().stream().map(DeviceEntry::name).toList(),
+                "names() and entries() describe the same list in the same order");
     }
 
     @Test

@@ -158,8 +158,27 @@ A resolved identity suitable for `.binds` file correlation. Not produced by
 ### SDL3 GUID
 
 `readGuid(id)` calls `SDL_GetJoystickGUIDForID` + `SDL_GUIDToString` via a stack-allocated
-`MemoryStack` to produce the 32-character hex string. The GUID encodes VID, PID, and bus type; extracting bytes 8-11 (little-endian) yields the VID and PID used for
-`.binds` correlation. Returns `""` on failure (logged at DEBUG level).
+`MemoryStack` to produce the 32-character hex string. Returns `""` on failure (logged at DEBUG level).
+
+The GUID encodes bus type, a CRC of the device name, VID, PID and version. Read as hex characters, **VID is
+at 8–11 and PID at 16–19**, each written little-endian:
+
+```
+03002cec44330000f483000000000000
+bus  crc  vid  --   pid  --
+                3344      83F4
+```
+
+**Corrected 2026-10-02.** This passage read "extracting bytes 8-11 (little-endian) yields the VID and PID".
+Those are hex character positions rather than bytes — bytes 8-11 would be the PID field plus two zeros — and
+it gave no position for the PID at all, which is the half a consumer has to find for itself. Confirmed on
+four controllers attached at once, each against a source outside this code: two VIRPIL sticks against a
+USB-level capture, a Thrustmaster T-Rudder against Frontier's own shipped device list, and vJoy against its
+published ids.
+
+`DeviceIdentity` is a record and builds none of this itself — the derivation lives with the consumer, as the
+note under [Data Model](#deviceidentity-record) says. BindForge's `DeviceIdentities` is the one that does it
+today, and its test carries those four real GUIDs.
 
 ---
 

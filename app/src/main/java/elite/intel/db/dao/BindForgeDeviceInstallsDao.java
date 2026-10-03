@@ -1,5 +1,6 @@
 package elite.intel.db.dao;
 
+import elite.intel.bindforge.devices.Provenance;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.StatementContext;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
@@ -59,6 +60,8 @@ public interface BindForgeDeviceInstallsDao {
                 @Bind("pid") String pid,
                 @Bind("provenance") String provenance,
                 @Bind("hasButtonMap") boolean hasButtonMap);
+    // The provenance bind is the stored lowercase form - Provenance.stored(). It is a String here because
+    // this is the SQL seam: JDBI would bind an enum by name(), which is uppercase and fails the CHECK.
 
     @SqlUpdate("""
             DELETE FROM bindforge_device_installs
@@ -79,18 +82,17 @@ public interface BindForgeDeviceInstallsDao {
                     rs.getString("device_name"),
                     rs.getString("vid"),
                     rs.getString("pid"),
-                    rs.getString("provenance"),
+                    Provenance.fromStored(rs.getString("provenance")),
                     rs.getBoolean("has_button_map"));
         }
     }
 
     /**
      * @param deviceName   the element tag exactly as that installation's file spells it
-     * @param provenance   one of {@code frontier}, {@code user_preexisting}, {@code bindforge} or
-     *                     {@code unknown} - whether BindForge may touch this entry
+     * @param provenance   whether BindForge may touch this entry
      * @param hasButtonMap whether a {@code .buttonMap} exists under this name in that installation
      */
-    record InstallDeviceRow(long installId, String deviceName, String vid, String pid, String provenance,
+    record InstallDeviceRow(long installId, String deviceName, String vid, String pid, Provenance provenance,
                             boolean hasButtonMap) {
     }
 }

@@ -5,11 +5,10 @@ import elite.intel.bindforge.devices.DeviceEntry.HardwareId;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Frontier's shipped {@code DeviceMappings.xml}, as captured on 2026-09-06 and carried inside the jar.
@@ -35,12 +34,22 @@ public final class FrontierStockDevices {
         private static final FrontierStockDevices INSTANCE = load();
     }
 
+    /**
+     * The entries as the file lists them.
+     * <p>
+     * Order lives here rather than in the maps below, because an immutable {@code Map} does not keep any.
+     * {@code Map.copyOf} iterates in an unspecified, hash-derived order that is additionally salted per JVM
+     * run - so a list rendered from it would come out differently on every launch. The maps are lookups and
+     * need no order at all; this field is what has one.
+     */
+    private final List<DeviceEntry> inFileOrder;
+
     private final Map<String, DeviceEntry> byName;
     private final Map<HardwareId, DeviceEntry> byHardware;
 
     private FrontierStockDevices(List<DeviceEntry> entries) {
-        Map<String, DeviceEntry> names = new LinkedHashMap<>();
-        Map<HardwareId, DeviceEntry> hardware = new LinkedHashMap<>();
+        Map<String, DeviceEntry> names = new HashMap<>();
+        Map<HardwareId, DeviceEntry> hardware = new HashMap<>();
         for (DeviceEntry entry : entries) {
             names.put(entry.name(), entry);
             // WHY: every pair an entry claims, not just its primary. <DualShock4> matches two physically
@@ -50,6 +59,7 @@ public final class FrontierStockDevices {
                 hardware.putIfAbsent(id, entry);
             }
         }
+        this.inFileOrder = List.copyOf(entries);
         this.byName = Map.copyOf(names);
         this.byHardware = Map.copyOf(hardware);
     }
@@ -92,14 +102,19 @@ public final class FrontierStockDevices {
         return Optional.ofNullable(byHardware.get(new HardwareId(vid, pid)));
     }
 
-    /** Every element name Frontier ships - 51 of them in this capture. */
-    public Set<String> names() {
-        return byName.keySet();
+    /**
+     * Every element name Frontier ships - 51 of them in this capture - in the order the file lists them.
+     * <p>
+     * Derived from the ordered list rather than taken from the lookup map's key set, which has no order worth
+     * showing anyone.
+     */
+    public List<String> names() {
+        return inFileOrder.stream().map(DeviceEntry::name).toList();
     }
 
     /** Every entry, in the order the file lists them. */
     public List<DeviceEntry> entries() {
-        return List.copyOf(byName.values());
+        return inFileOrder;
     }
 
     private static FrontierStockDevices load() {

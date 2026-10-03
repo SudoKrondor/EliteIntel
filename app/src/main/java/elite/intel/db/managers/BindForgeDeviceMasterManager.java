@@ -4,6 +4,7 @@ import elite.intel.db.dao.BindForgeDeviceMasterDao;
 import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
 import elite.intel.db.dao.BindForgeDeviceMasterDao.LabelRow;
 import elite.intel.db.util.Database;
+import org.jdbi.v3.core.Handle;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -65,12 +66,18 @@ public class BindForgeDeviceMasterManager {
      * belongs with the naming code, so this is the table's own uniqueness and nothing more.
      */
     public DeviceRow record(String deviceName, String vid, String pid, boolean aliasConfirmed) {
-        return Database.withDao(BindForgeDeviceMasterDao.class, dao -> {
-            DeviceRow existing = dao.findByName(deviceName);
-            if (existing != null) return existing;
-            dao.insert(deviceName, vid, pid, aliasConfirmed);
-            return dao.findByName(deviceName);
-        });
+        // WHY: in a transaction, so the look-before-insert is not a race. Without one the row can appear
+        // between the check and the insert, turning a repeat call - which is meant to be harmless - into a
+        // UNIQUE violation thrown at whatever happened to call it second.
+        try (Handle handle = Database.init()) {
+            return handle.inTransaction(h -> {
+                BindForgeDeviceMasterDao dao = h.attach(BindForgeDeviceMasterDao.class);
+                DeviceRow existing = dao.findByName(deviceName);
+                if (existing != null) return existing;
+                dao.insert(deviceName, vid, pid, aliasConfirmed);
+                return dao.findByName(deviceName);
+            });
+        }
     }
 
     /**
@@ -156,15 +163,21 @@ public class BindForgeDeviceMasterManager {
     /**
      * Replaces this device's labels with the set given.
      * <p>
-     * A whole-set replacement rather than a merge, in one DAO call so a failure part way through cannot leave
-     * a device carrying half of one label set and half of another. Generating labels for a device whose axis
-     * or button count changed is exactly that case.
+     * A whole-set replacement rather than a merge, because generating labels for a device whose axis or
+     * button count changed must not leave it holding some of the old set beside some of the new.
+     * <p>
+     * In a transaction, not merely in one call. {@code Database.withDao} borrows a handle in autocommit, so
+     * the delete would commit on its own and a failure part way through the inserts would leave exactly the
+     * mixture this method exists to prevent - and the device would then write that partial set outward on the
+     * next Apply.
      */
     public void replaceLabels(long deviceId, Map<String, String> labels) {
-        Database.withDao(BindForgeDeviceMasterDao.class, dao -> {
-            dao.deleteLabels(deviceId);
-            labels.forEach((token, label) -> dao.putLabel(deviceId, token, label));
-            return Void.TYPE;
-        });
+        try (Handle handle = Database.init()) {
+            handle.useTransaction(h -> {
+                BindForgeDeviceMasterDao dao = h.attach(BindForgeDeviceMasterDao.class);
+                dao.deleteLabels(deviceId);
+                labels.forEach((token, label) -> dao.putLabel(deviceId, token, label));
+            });
+        }
     }
 }

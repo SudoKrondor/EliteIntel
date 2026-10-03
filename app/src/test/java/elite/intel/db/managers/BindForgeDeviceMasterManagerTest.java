@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -111,6 +112,30 @@ class BindForgeDeviceMasterManagerTest {
 
         assertEquals("B1", master.labelsOf(id).get("Joy_1"));
         assertEquals("PINKY PADDLE", master.labelsOf(id).get("Joy_2"));
+    }
+
+    /**
+     * The delete and the inserts are one transaction, not merely one call.
+     * <p>
+     * {@code Database.withDao} borrows a handle in autocommit, under which the delete commits by itself and a
+     * failure part way through the inserts leaves the device holding a mixture of both label sets - which it
+     * would then write outward on the next Apply. The null token below fails its NOT NULL constraint after
+     * the first label has already been written, which is exactly that moment.
+     */
+    @Test
+    void aFailedLabelReplacementLeavesTheOriginalSetIntact() {
+        long id = master.record("LVWAP", "3344", "83F4", true).id();
+        master.replaceLabels(id, labels("Joy_1", "B1", "Joy_2", "B2"));
+
+        Map<String, String> halfBad = new LinkedHashMap<>();
+        halfBad.put("Joy_1", "NEW");
+        halfBad.put(null, "no token, so this insert fails");
+        assertThrows(RuntimeException.class, () -> master.replaceLabels(id, halfBad));
+
+        Map<String, String> labels = master.labelsOf(id);
+        assertEquals(2, labels.size(), "the original pair survived, rather than being half replaced");
+        assertEquals("B1", labels.get("Joy_1"), "and was not overwritten by the attempt");
+        assertEquals("B2", labels.get("Joy_2"));
     }
 
     /** CLEAR returns a device to "not added", which means its labels go with it. */
