@@ -10,11 +10,13 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -74,6 +76,38 @@ class FrontierStockDevicesTest {
         assertEquals(List.of("VPCPanel", "VPCThrottle"), names.subList(names.size() - 2, names.size()));
         assertEquals(names, stock.entries().stream().map(DeviceEntry::name).toList(),
                 "names() and entries() describe the same list in the same order");
+    }
+
+    /**
+     * A repeated element tag would mean a later capture arrived broken, and the loss would otherwise be
+     * silent: one entry replaces the other, the count drops, and the sha256 guard reports only that the bytes
+     * changed - which is exactly what a legitimate re-capture looks like. The device whose entry vanished
+     * would then look like the user's, and BindForge would offer to rename something Frontier owns.
+     */
+    @Test
+    void aReferenceNamingOneElementTwiceIsRefused() {
+        List<DeviceEntry> duplicated = List.of(
+                new DeviceEntry("T-Rudder", Set.of(new DeviceEntry.HardwareId("044F", "B679"))),
+                new DeviceEntry("T-Rudder", Set.of(new DeviceEntry.HardwareId("044F", "0BF3"))));
+
+        IllegalStateException refused =
+                assertThrows(IllegalStateException.class, () -> new FrontierStockDevices(duplicated));
+
+        assertTrue(refused.getMessage().contains("T-Rudder"), "and it names which tag, so it can be found");
+    }
+
+    /**
+     * Unlike a repeated name, two entries claiming one VID/PID pair is something Frontier's file could
+     * legitimately do, so the earlier entry wins rather than the load failing.
+     */
+    @Test
+    void twoEntriesClaimingOneHardwarePairResolveToTheFirst() {
+        DeviceEntry.HardwareId shared = new DeviceEntry.HardwareId("044F", "B679");
+        FrontierStockDevices stock = new FrontierStockDevices(List.of(
+                new DeviceEntry("First", Set.of(shared)),
+                new DeviceEntry("Second", Set.of(shared))));
+
+        assertEquals("First", stock.covering("044F", "B679").orElseThrow().name());
     }
 
     @Test

@@ -47,14 +47,29 @@ public final class FrontierStockDevices {
     private final Map<String, DeviceEntry> byName;
     private final Map<HardwareId, DeviceEntry> byHardware;
 
-    private FrontierStockDevices(List<DeviceEntry> entries) {
+    /** Package-private as a test seam: the shipped resource cannot hold a malformed list, and a test must. */
+    FrontierStockDevices(List<DeviceEntry> entries) {
         Map<String, DeviceEntry> names = new HashMap<>();
         Map<HardwareId, DeviceEntry> hardware = new HashMap<>();
         for (DeviceEntry entry : entries) {
-            names.put(entry.name(), entry);
+            // WHY: a repeated element tag throws rather than quietly replacing the entry already under it.
+            // It cannot happen in the shipped capture - 51 distinct names, verified - so it would mean a
+            // later capture arrived broken, and the damage would be invisible: an entry would vanish from
+            // Frontier's list, the device it names would start looking like the user's, and the sha256 test
+            // guarding this file would report only that the bytes changed, which is expected after a
+            // re-capture. Loud, for the same reason load() refuses to carry on without the resource at all.
+            DeviceEntry clash = names.put(entry.name(), entry);
+            if (clash != null) {
+                throw new IllegalStateException(
+                        "Frontier stock reference names <" + entry.name() + "> twice: " + RESOURCE);
+            }
             // WHY: every pair an entry claims, not just its primary. <DualShock4> matches two physically
             // different controllers through its alternatives, and <GamePad> covers eighty - a lookup on the
             // primary alone would call most of Frontier's own hardware unrecognised.
+            //
+            // First wins, and deliberately unlike the names above: two entries legitimately claiming one pair
+            // is a thing Frontier's own file could do, and resolving to the earlier of them is a choice rather
+            // than a broken file.
             for (HardwareId id : entry.hardware()) {
                 hardware.putIfAbsent(id, entry);
             }

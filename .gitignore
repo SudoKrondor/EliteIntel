@@ -58,3 +58,8 @@ CLAUDE.md
 /code-integrity-review-fr.md
 .idea/
 /commit-message.txt
+
+#-- PYTHON
+# Bytecode the docs checker writes on every run. Regenerable cache, never data.
+__pycache__/
+*.pyc
