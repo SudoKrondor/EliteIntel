@@ -28,11 +28,15 @@ public final class SpeakFunction implements SystemFunction {
 
     /**
      * The words a {@code speak} invocation carries, with any response envelope the model wrapped them in
-     * removed (see {@link SpokenTextEnvelope}). Every reader of {@link #PARAM_TEXT} goes through here so the
-     * line that is spoken and the line that is remembered are the same one.
+     * removed (see {@link SpokenTextEnvelope}) and the characters a speech engine reads aloud stripped
+     * (see {@link SpokenTextSymbols}). Every reader of {@link #PARAM_TEXT} goes through here so the line
+     * that is spoken and the line that is remembered are the same one - which is why the strip belongs
+     * here and not in the mouth: an em dash the commander hears as a minus sign should not survive into
+     * the chat panel or the dialogue history either.
      */
     public static String textOf(JsonObject arguments) {
-        return SpokenTextEnvelope.unwrap(JsonUtils.getAsStringOrEmpty(arguments, PARAM_TEXT));
+        return SpokenTextSymbols.strip(
+                SpokenTextEnvelope.unwrap(JsonUtils.getAsStringOrEmpty(arguments, PARAM_TEXT)));
     }
 
     @Override

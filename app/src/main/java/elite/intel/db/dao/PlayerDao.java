@@ -6,6 +6,7 @@ import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
 import org.jdbi.v3.sqlobject.customizer.BindBean;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
+import org.jdbi.v3.sqlobject.transaction.Transaction;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,44 +14,71 @@ import java.sql.SQLException;
 @RegisterRowMapper(PlayerDao.PlayerMapper.class)
 public interface PlayerDao {
 
-    // always row 1
-    @SqlQuery("SELECT * FROM player WHERE id = 1")
+    /*
+     * The row is stored in two halves. The commander's own state lives in player, in the commander's own
+     * database file, and the user's preferences (announcement toggles, the journal and bindings folders) live in
+     * user_preferences in the shared file, because they belong to the person rather than to any one commander.
+     * Both are always row 1 and share column names, so callers still see one Player.
+     */
+    @SqlQuery("""
+            SELECT p.*, u.*
+              FROM player p
+              CROSS JOIN user_preferences u
+             WHERE p.id = 1 AND u.id = 1
+            """)
     Player get();
+
+    @Transaction
+    default void save(Player player) {
+        saveCommanderHalf(player);
+        saveUserHalf(player);
+    }
 
     @SqlUpdate("""
                     INSERT OR REPLACE INTO player
                       (id, current_primary_star, carrier_departure_time, crew_wags_payout,
                        current_ship, current_ship_name, current_location_id, current_wealth,
-                       is_discovery_announcement_on, final_destination, game_version,
+                       final_destination, game_version,
                        goods_sold_this_session, highest_single_transaction, in_game_name,
-                       insurance_claims, is_mining_announcement_on, is_navigation_announcement_on,
-                       is_radio_transmission_on, is_route_announcement_on,
-                       is_planetary_approach_announcement_on, is_cargo_scoop_pickup_announcement_on, is_address_me_on,
+                       insurance_claims,
                        last_known_carrier_location, last_scan_id, market_profits,
                        personal_credits_available, player_highest_military_rank,
                        player_name, ships_owned, species_first_logged,
                        total_bounty_claimed, total_distance_traveled, total_hyperspace_distance,
                        total_profits_from_exploration, total_systems_visited, exobiology_profits, alternative_name,
-                       journal_dir, bindings_dir, game_build, bounty_collected_lifetime, homeSystemId,
-                       systemAddress, currentGenus, radarAnnouncementOn
+                       game_build, bounty_collected_lifetime, homeSystemId,
+                       systemAddress, currentGenus
                     )
                     VALUES (1, :currentPrimaryStar,
                        :carrierDepartureTime, :crewWagsPayout,
                        :currentShip, :currentShipName, :currentLocationId, :currentWealth,
-                       :discoveryAnnouncementOn, :finalDestination, :gameVersion,
+                       :finalDestination, :gameVersion,
                        :goodsSoldThisSession, :highestSingleTransaction, :inGameName,
-                       :insuranceClaims, :miningAnnouncementOn, :navigationAnnouncementOn,
-                       :radioTransmissionOn, :routeAnnouncementOn,
-                       :planetaryApproachAnnouncementOn, :cargoScoopPickupAnnouncementOn, :addressMeOn,
+                       :insuranceClaims,
                        :lastKnownCarrierLocation, :lastScanId, :marketProfits,
                        :personalCreditsAvailable, :playerHighestMilitaryRank,
                        :playerName, :shipsOwned, :speciesFirstLogged, :totalBountyClaimed, :totalDistanceTraveled,
                        :totalHyperspaceDistance, :totalProfitsFromExploration, :totalSystemsVisited, :exobiologyProfits, :alternativeName,
-                       :journalDirectory, :bindingsDirectory, :gameBuild, :bountyCollectedLifetime, :homeSystemId,
-                       :systemAddress, :currentGenus, :radarAnnouncementOn
+                       :gameBuild, :bountyCollectedLifetime, :homeSystemId,
+                       :systemAddress, :currentGenus
                     )
             """)
-    void save(@BindBean Player player);
+    void saveCommanderHalf(@BindBean Player player);
+
+    @SqlUpdate("""
+                    INSERT OR REPLACE INTO user_preferences
+                      (id, is_discovery_announcement_on, is_mining_announcement_on, is_navigation_announcement_on,
+                       is_radio_transmission_on, is_route_announcement_on,
+                       is_planetary_approach_announcement_on, is_cargo_scoop_pickup_announcement_on, is_address_me_on,
+                       radarAnnouncementOn, journal_dir, bindings_dir
+                    )
+                    VALUES (1, :discoveryAnnouncementOn, :miningAnnouncementOn, :navigationAnnouncementOn,
+                       :radioTransmissionOn, :routeAnnouncementOn,
+                       :planetaryApproachAnnouncementOn, :cargoScoopPickupAnnouncementOn, :addressMeOn,
+                       :radarAnnouncementOn, :journalDirectory, :bindingsDirectory
+                    )
+            """)
+    void saveUserHalf(@BindBean Player player);
 
 
     class Player {

@@ -24,7 +24,7 @@ public final class NavigateToCoordinatesCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Start surface navigation guidance to the latitude 'lat' and longitude 'lon' on the current planetary body.";
+        return "Start surface navigation guidance to the latitude 'lat' and longitude 'lon' on the current or approached planetary body.";
     }
 
 
@@ -62,10 +62,13 @@ public final class NavigateToCoordinatesCommand implements IntelCommand {
         return ID;
     }
 
-    /** Surface navigation to lat/long: needs a planetary surface reference (in ship/SRV near the body, or on foot). */
+    /**
+     * Surface navigation to lat/long needs only the game's own coordinates. It reports them in ship, SRV or on
+     * foot alike, and in supercruise from inside a body's gravity well, early enough to plan the descent.
+     */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.hasLatLong() || status.isOnFootOnPlanet() || status.isOnFootExterior();
+        return true;
     }
 
     @Override

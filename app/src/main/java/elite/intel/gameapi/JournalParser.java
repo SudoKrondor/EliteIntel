@@ -209,6 +209,9 @@ public class JournalParser implements Runnable, ManagedService {
                                 String eventType = eventJson.get("event").getAsString();
                                 BaseEvent event = EventRegistry.createEvent(eventType, eventJson);
                                 if (event != null && !event.isReplay() && !event.isExpired()) {
+                                    // A new commander's own database must be open before anything handles
+                                    // the event that names them.
+                                    CommanderSwitch.beforePublishing(event);
                                     GameEventBus.publish(event);
                                     webSocketBroadcaster.broadcast(event.toJson());
                                     UiBus.publish(new AppLogDebugEvent("\tProcessing Event: " + eventType));

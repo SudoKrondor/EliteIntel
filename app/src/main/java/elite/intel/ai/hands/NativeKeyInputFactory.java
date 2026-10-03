@@ -23,8 +23,9 @@ class NativeKeyInputFactory {
     static NativeKeyInput create(Robot robot) {
         String os = System.getProperty("os.name", "").toLowerCase();
 
-        log.info("[factory] OS='{}' Java='{}' user='{}'",
-                os, System.getProperty("java.version"), System.getProperty("user.name"));
+        log.info("[factory] OS='{}' Java='{}' user='{}' robotMethod='{}'",
+                os, System.getProperty("java.version"), System.getProperty("user.name"),
+                System.getProperty("awt.robot.screenshotMethod", "jdk default"));
 
         if (os.contains("win")) {
             try {

@@ -67,11 +67,26 @@ public class UiNavCommon {
     }
 
 
-    public static void prepToKnownUiPositionWhileInTheShipAtStation() {
+    /**
+     * Drives the docked menu's cursor to its top row, so a caller can reach a row by counting
+     * <em>down</em> from a known anchor. Landing puts the cursor on the second row, not the first, so
+     * the walk has to climb to the ceiling first; the extra taps past it are absorbed by the clamp.
+     * <p>
+     * WHY the top and not the bottom: this used to tap down three times and anchor on the floor, which
+     * assumed the bottom row can always take focus. It cannot. The bottom row is Disembark, and where
+     * the port has no concourse to disembark into - a colonisation construction site - the game draws it
+     * greyed out and the cursor stops one row short of it. Every count back up from there was then one
+     * row high, so "open station services" selected the row above it instead. Reported from a support
+     * bundle of 2026-09-22, at Orbital Construction Site: Nakano's Folly.
+     * <p>
+     * The top row is the safe anchor because it is the one row the menu always draws live: the greyed
+     * entries are the services this port does not offer, and they sit at the bottom.
+     */
+    public static void prepToTopOfTheDockedMenu() {
         GameControllerBus.publish(GameInputSequenceEvent.of(
-                GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_DOWN.getGameBinding()),
-                GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_DOWN.getGameBinding()),
-                GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_DOWN.getGameBinding())
+                GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
+                GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
+                GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding())
         ));
     }
 }

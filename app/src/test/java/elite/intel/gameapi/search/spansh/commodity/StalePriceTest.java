@@ -7,9 +7,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalLong;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Spansh is a crowd-sourced copy of a market, and its price is whatever the last commander through
@@ -40,15 +40,6 @@ class StalePriceTest {
     }
 
     @Test
-    void theAgeOfAQuoteIsMeasurable() {
-        String tenDaysAgo = Instant.now().minus(10, ChronoUnit.DAYS).toString().replace("T", " ").substring(0, 19) + "+00";
-
-        assertEquals(10, SpanshCommoditySearch.daysSinceUpdate(tenDaysAgo).orElseThrow());
-        assertEquals(OptionalLong.empty(), SpanshCommoditySearch.daysSinceUpdate(null));
-        assertEquals(OptionalLong.empty(), SpanshCommoditySearch.daysSinceUpdate("not a date"));
-    }
-
-    @Test
     void ourOwnLookAtTheBoardCorrectsThePriceNotJustTheQuantity() {
         CommoditySearchResult bari = spanshSaid("Col 285 Sector IB-X d1-60", "Bari Gateway", 57844, 14713);
 
@@ -57,7 +48,6 @@ class StalePriceTest {
 
         assertEquals(53992, kept.getFirst().getPrice(), "what the game was actually paying");
         assertEquals(6862, kept.getFirst().getSupply());
-        assertTrue(kept.getFirst().isSeenFirstHand(), "no need to hedge a figure the game gave us");
     }
 
     @Test

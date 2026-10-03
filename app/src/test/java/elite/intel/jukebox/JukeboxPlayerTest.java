@@ -456,7 +456,7 @@ class JukeboxPlayerTest {
         @Override
         public AudioSource open(Path file, long startMs) throws IOException {
             attempts.incrementAndGet();
-            String path = file.toString();
+            String path = file.toString().replace('\\', '/');
             if (unopenable.contains(path)) {
                 throw new IOException("no such file: " + path);
             }

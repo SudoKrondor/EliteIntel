@@ -65,7 +65,13 @@ class ReflexAliasFormsTest {
             Map.entry("close window", "exit_close"),
             Map.entry("close the panel", "exit_close"),
             Map.entry("close the map", "exit_close"),
-            Map.entry("back out", "exit_close"));
+            Map.entry("back out", "exit_close"),
+            // The self diagnostic is asked for when the model may be what is broken, so it has to be reachable
+            // without one. "do we have llm connection" is the question a fresh install actually asked.
+            Map.entry("run a diagnostic", "query_vega_self_diagnostic"),
+            Map.entry("self diagnostic", "query_vega_self_diagnostic"),
+            Map.entry("is the ai connected", "query_vega_self_diagnostic"),
+            Map.entry("do we have llm connection", "query_vega_self_diagnostic"));
 
     @Test
     void shortShipCommandsCarryAUniqueBareReflexForm() throws Exception {

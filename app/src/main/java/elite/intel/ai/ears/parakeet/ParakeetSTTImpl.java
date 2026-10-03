@@ -34,6 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 import static elite.intel.eventbus.AudioMonitorBus.publish;
 import static java.util.Arrays.copyOf;
@@ -50,6 +51,7 @@ public class ParakeetSTTImpl implements EarsInterface {
     private static final long MAX_BACKOFF_MS = 60000;
     private static final long INFERENCE_TIMEOUT_SEC = 4;
     private static final int MIN_AUDIO_MS = 1500;
+    private static final Pattern SENTENCE_PUNCTUATION = Pattern.compile("[?!;:]|(?<!\\d)[.,]|[.,](?!\\d)");
     private static final int MIN_AUDIO_BYTES = SAMPLE_RATE * 2 * MIN_AUDIO_MS / 1000;
     private static final double LEADING_TRIM_THRESHOLD_FACTOR = 3.0; // trim leading frames below NOISE_FLOOR * this
     private static final int MAX_UTTERANCE_MS = 8000;
@@ -452,8 +454,10 @@ public class ParakeetSTTImpl implements EarsInterface {
             // other trace anywhere - no UI line, no event - so the reason has to travel with the transcript.
             // The peak is here because Amplifier normalizes to a peak: one loud sample anywhere in the
             // capture (a beep, a knock) sets the gain for the whole utterance and leaves the voice quiet.
+            // The floor goes with it because the same peak decides whether there is a voice to normalize
+            // at all - measured against the room, so a quiet microphone is still lifted.
             byte[] conditioned = padAudio(trimLeadingLowEnergy(pcmBytes));
-            byte[] forDecoder = Amplifier.amplify(conditioned);
+            byte[] forDecoder = Amplifier.amplify(conditioned, NOISE_FLOOR);
             // Peak alone cannot tell speech from silence: one button click in an otherwise empty buffer
             // reads the same as a spoken phrase. RMS is the sustained level, so the pair separates them -
             // a high peak over a low RMS is a transient, not a voice.
@@ -501,10 +505,14 @@ public class ParakeetSTTImpl implements EarsInterface {
                 }
 
                 log.info("STT accepted: [{}] - {}", finalTranscript, capture);
-                UiBus.publish(new AppLogEvent("STT: [" + finalTranscript + "]"));
 
-                switch (MicrophoneGate.decide(capturedWithPttHeld,
-                        systemSession.isPushToTalkEnabled(), systemSession.isSleeping())) {
+                MicrophoneGate decision = MicrophoneGate.decide(capturedWithPttHeld,
+                        systemSession.isPushToTalkEnabled(), systemSession.isSleeping());
+                // An asleep transcript is labelled by the sleep gate, so the log never shows ignored words as input.
+                if (decision != MicrophoneGate.CLOSED_ASLEEP) {
+                    UiBus.publish(new AppLogEvent("STT: [" + finalTranscript + "]"));
+                }
+                switch (decision) {
                     case OPEN_PUSH_TO_TALK -> sendToAi(finalTranscript, true);
                     case OPEN_HANDS_FREE -> sendToAi(finalTranscript, false);
                     case CLOSED_PUSH_TO_TALK ->
@@ -555,7 +563,16 @@ public class ParakeetSTTImpl implements EarsInterface {
             if (!sb.isEmpty()) sb.append(" ");
             sb.append(tokens[i]);
         }
-        return sb.toString().replace("?", "").replace("!", "").replace(";", "").replace(":", "").replace(",", "").replace(".", "");
+        return stripPunctuation(sb.toString());
+    }
+
+    /**
+     * Drops the sentence punctuation Parakeet writes, but keeps a point or comma between two digits: that one
+     * is part of a number. "latitude 62.123" must reach VEGA as 62.123 - stripped, it read as 62123 and
+     * surface navigation had no coordinate left to go to.
+     */
+    static String stripPunctuation(String transcript) {
+        return SENTENCE_PUNCTUATION.matcher(transcript).replaceAll("");
     }
 
     /**
@@ -566,8 +583,10 @@ public class ParakeetSTTImpl implements EarsInterface {
         String admitted = WakeBypass.forCurrentLanguage().admit(transcript);
         if (admitted == null) {
             log.info("STT dropped (asleep, not a wake phrase): [{}]", transcript);
+            UiBus.publish(new AppLogEvent("STT (asleep, ignored): [" + transcript + "]"));
             return;
         }
+        UiBus.publish(new AppLogEvent("STT: [" + transcript + "]"));
         sendToAi(admitted, false);
     }
 

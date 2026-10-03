@@ -1,5 +1,6 @@
 package elite.intel.session;
 
+import elite.intel.ai.ProviderEnum;
 import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
@@ -20,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Optional;
 
 public class SystemSession {
 
@@ -231,6 +233,26 @@ public class SystemSession {
     }
 
 
+    /**
+     * The cloud LLM provider the commander picked, or empty when none is selected. Never inferred from the key.
+     */
+    public Optional<ProviderEnum> getLlmProvider() {
+        return Database.withDao(GameSessionDao.class, dao -> ProviderEnum.fromStored(dao.get().getLlmProvider()));
+    }
+
+    /**
+     * Stores the cloud LLM provider; {@code null} clears the selection.
+     */
+    public void setLlmProvider(ProviderEnum provider) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setLlmProvider(provider == null ? null : provider.name());
+            dao.save(session);
+            return Void.class;
+        });
+    }
+
+
     public String readVersionFromResources() {
         try {
             InputStream is = getClass().getResourceAsStream("/version.txt");
@@ -411,6 +433,100 @@ public class SystemSession {
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
             session.setVoiceVolume(volume);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    /// 0 to 100 %, the radio engine's level: station, police and NPC chatter, independent of the ship's voice.
+    public int getRadioVolume() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getRadioVolume());
+    }
+
+    public void setRadioVolume(int volume) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setRadioVolume(volume);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public boolean isTransmissionTones() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isTransmissionTones());
+    }
+
+    public void setTransmissionTones(boolean enabled) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setTransmissionTones(enabled);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public boolean isEnhancedRadioEffect() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isEnhancedRadioEffect());
+    }
+
+    public void setEnhancedRadioEffect(boolean enabled) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setEnhancedRadioEffect(enabled);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public boolean isEffectsOnRadio() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isEffectsOnRadio());
+    }
+
+    public void setEffectsOnRadio(boolean enabled) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setEffectsOnRadio(enabled);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public boolean isEffectsOnVegaAway() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isEffectsOnVegaAway());
+    }
+
+    public void setEffectsOnVegaAway(boolean enabled) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setEffectsOnVegaAway(enabled);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public int getTransmissionToneVolume() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getTransmissionToneVolume());
+    }
+
+    public void setTransmissionToneVolume(int percent) {
+        if (percent < 0 || percent > 100) throw new IllegalArgumentException("Tone volume must be 0–100%");
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setTransmissionToneVolume(percent);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public int getSupertonicBoostPercent() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getSupertonicBoostPercent());
+    }
+
+    public void setSupertonicBoostPercent(int percent) {
+        if (percent < 0 || percent > 100) throw new IllegalArgumentException("Supertonic boost must be 0–100%");
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setSupertonicBoostPercent(percent);
             dao.save(session);
             return null;
         });

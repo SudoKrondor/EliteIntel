@@ -13,6 +13,7 @@ import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.RadioTransmissionEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
+import elite.intel.ai.mouth.supertonic.SupertonicBoost;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.i18n.Language;
@@ -20,10 +21,7 @@ import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AiResponseLogEvent;
 import elite.intel.ui.event.AppLogEvent;
-import elite.intel.util.AudioPlayer;
-import elite.intel.util.PlayBeepEvent;
-import elite.intel.util.SherpaOnnxNatives;
-import elite.intel.util.StringUtls;
+import elite.intel.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -94,7 +92,8 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
      * {@link #languageOf(VocalisationRequestEvent)}).
      */
     private record SynthesisTask(String text, String voiceName, boolean isRadio, Language language,
-                                 long generation, boolean lastSentence, VocalisationHandle handle) {
+                                 long generation, boolean firstSentence, boolean lastSentence,
+                                 TransmissionAudio.Options effects, VocalisationHandle handle) {
     }
 
     /**
@@ -355,13 +354,16 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
             // would change speaker mid-message.
             String voiceName = resolveVoiceName(event);
             Language language = languageOf(event);
-            // The filter follows the event alone. The ship voice used to be pushed through it whenever the
-            // commander left the main ship, to sound distant on foot or in the SRV, but the effect varied
-            // too much across voices and audio hardware - subtle on one, unintelligible static on another.
+            // WHY opt-in, and decided once per request: the ship voice used to be filtered whenever the commander
+            // left the main ship, and the effect varied too much across voices and audio hardware - subtle on one,
+            // unintelligible on another. Now it is the commander's choice, and one message never changes treatment
+            // half-way through.
+            TransmissionAudio.Options effects = TransmissionAudio.forRequest(event);
             for (int i = 0; i < sentences.size(); i++) {
                 boolean isLast = (i == sentences.size() - 1);
                 if (!synthesisQueue.offer(new SynthesisTask(
-                        sentences.get(i), voiceName, event.isRadio(), language, generation, isLast, handle))) {
+                        sentences.get(i), voiceName, event.isRadio(), language, generation,
+                        i == 0, isLast, effects, handle))) {
                     handle.fail(new IllegalStateException(engineName + " synthesis queue rejected vocalisation"));
                     return;
                 }
@@ -504,9 +506,10 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
 
     /**
      * The language the request's text is written in. A radio transmission is the game client's own prose,
-     * in the client's language; everything else - narration, a carrier voice audition, a system callout -
-     * we wrote ourselves in the commander's. The distinction is the origin, not the radio flag: an audition
-     * is flagged radio so it gets the transmission filter, but its words are ours.
+     * in the client's language. Everything else - narration, a carrier voice audition, a system callout -
+     * we wrote in the commander's language.
+     * The distinction is the origin, not the radio flag: a carrier audition is flagged radio so it gets
+     * the transmission filter, but its words are ours.
      * <p>
      * Only a model that takes the language per call (Supertonic) can honour a different one per task; Kokoro
      * has it baked in at build time and reads every task with the language it was built for.
@@ -532,8 +535,9 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                 resetNumericLocale();
                 GeneratedAudio audio = generate(
                         tts,
-                        //Remove dots, TTS say "dot" all the time.
-                        task.text().replace(".", " "),
+                        // Numbers the voice would misread go to words first, while their sign and point are
+                        // still there. Then remove dots, TTS say "dot" all the time.
+                        SignedAndDecimalNumbers.inWords(task.text(), task.language()).replace(".", " "),
                         sidOf(task.voiceName()),
                         1f + systemSession.getSpeechSpeed(),
                         task.language()
@@ -557,10 +561,20 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                 }
 
                 AudioDeClicker.sanitize(pcm, 5);
-                AudioDeClicker.applyVolume(pcm, systemSession.getVoiceVolume() / 100f);
-                if (task.isRadio()) {
-                    RadioFilter.apply(pcm);
+                // WHY before the volume: the enhanced processor compresses, and would level a quiet slider
+                // setting back up to nearly full loudness.
+                TransmissionAudio.processVoice(pcm, task.isRadio(), task.effects());
+                // The radio has a level of its own: this engine is the only one that voices a transmission
+                // (Google and Edge drop them), so the fork between the two sliders lives here alone.
+                int volume = task.isRadio() ? systemSession.getRadioVolume() : systemSession.getVoiceVolume();
+                AudioDeClicker.applyVolume(pcm, volume / 100f);
+                int supertonicBoost = provider() == TtsProvider.SUPERTONIC
+                        ? systemSession.getSupertonicBoostPercent() : 0;
+                if (supertonicBoost > 0) {
+                    SupertonicBoost.apply(pcm, supertonicBoost);
                 }
+                pcm = TransmissionAudio.withTones(pcm, task.effects(), task.firstSentence(), task.lastSentence(),
+                        volume / 100f);
                 playbackQueue.put(new PlaybackTask(
                         pcm, task.generation(), task.lastSentence(), task.handle()));
 

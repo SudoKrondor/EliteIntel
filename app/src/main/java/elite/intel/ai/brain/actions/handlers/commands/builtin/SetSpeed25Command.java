@@ -21,6 +21,6 @@ public final class SetSpeed25Command extends SimpleTapCommand {
     /// in vehicle only
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return (status.isInMainShip() || status.isInSrv() || status.isInFighter()) && (!status.isDocked() && !status.isLanded());
+        return (status.isInMainShip() || status.isInNomad() || status.isInFighter()) && (!status.isDocked() && !status.isLanded());
     }
 }

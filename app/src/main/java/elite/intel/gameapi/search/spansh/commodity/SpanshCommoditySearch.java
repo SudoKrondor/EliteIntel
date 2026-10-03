@@ -4,6 +4,7 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.StationMarketsManager;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.search.PermitLockedSystems;
 import elite.intel.gameapi.search.spansh.station.DockingEffort;
 import elite.intel.gameapi.search.spansh.station.StationSearchClient;
 import elite.intel.gameapi.search.spansh.station.marketstation.TradeStationSearchCriteria;
@@ -98,6 +99,17 @@ public final class SpanshCommoditySearch {
      * {@code FindNearestFleetCarrierCommand} has always used for the same reason.
      */
     private static final int CARRIER_SEEN_WITHIN_DAYS = 1;
+    /**
+     * How recently a market's prices must have been uploaded for it to be offered at all, carrier or not.
+     * <p>
+     * Spansh keeps a market forever once someone has uploaded it, and nothing marks one that has since gone.
+     * Measured live 2026-09-27: asked for Battle Weapons, it named Oz Prospect in Hyades Sector WI-S b4-4, a
+     * Coriolis in a commander-colonised system, from a market last uploaded 355 days earlier - and the
+     * commander arrived to find no starport there at all. A station anyone still docks at is re-uploaded
+     * within days; a week of silence is a price that has moved, or a port that is not there any more.
+     * Of 132 markets selling Battle Weapons within 60 ly of that search, 11 passed this window.
+     */
+    static final int MARKET_PRICED_WITHIN_DAYS = 7;
     /**
      * Stations to fetch when only the nearest one is wanted. The page comes back in distance order, so the
      * answer is the first row; the rest are here only so a station rejected below has a successor.
@@ -324,8 +336,9 @@ public final class SpanshCommoditySearch {
 
     /**
      * One search: which station types to ask about, how many tonnes a market must have on our side of the
-     * counter - stock when buying, demand when selling - and whether the station has to have been seen recently. Only a carrier needs that last one - a starport is still where
-     * Spansh last recorded it however long ago that was.
+     * counter - stock when buying, demand when selling - and whether the station has to have been seen
+     * recently. Only a carrier needs that last one, because it moves; every attempt, carrier or not, also
+     * demands a fresh market - see {@link #MARKET_PRICED_WITHIN_DAYS}.
      */
     record Attempt(List<String> stationTypes, int minUnits, int maxDistanceLy, boolean mustBeRecentlySeen) {
         @Override
@@ -353,7 +366,8 @@ public final class SpanshCommoditySearch {
 
         TradeStationSearchResultDto response = StationSearchClient.getInstance().searchStations(criteria);
         // A failed POST, a search that times out and an empty body all arrive here as a null.
-        return response == null || response.getResults() == null ? List.of() : response.getResults();
+        if (response == null || response.getResults() == null) return List.of();
+        return PermitLockedSystems.reachable(response.getResults(), TradeStationSearchResultDto.StationResult::getSystemName);
     }
 
     /**
@@ -412,7 +426,6 @@ public final class SpanshCommoditySearch {
             int priceWeSaw = side == TradeSide.SELL ? seen.get().sellPrice() : seen.get().buyPrice();
             if (priceWeSaw > 0) {
                 market.setPrice(priceWeSaw);
-                market.setSeenFirstHand(true);
             }
             kept.add(market);
         }
@@ -455,17 +468,6 @@ public final class SpanshCommoditySearch {
                 return null;
             }
         }
-    }
-
-    /**
-     * How stale Spansh's word on this market is, or empty when it does not say. The price is the whole
-     * answer to "where do I sell this", and a price nobody has re-uploaded in ten days is a different claim
-     * from one uploaded this morning.
-     */
-    public static OptionalLong daysSinceUpdate(String marketUpdatedAt) {
-        Instant updated = parseInstant(marketUpdatedAt);
-        return updated == null ? OptionalLong.empty()
-                : OptionalLong.of(Math.max(0, ChronoUnit.DAYS.between(updated, Instant.now())));
     }
 
     /**
@@ -715,14 +717,11 @@ public final class SpanshCommoditySearch {
         filters.setDistanceToArrival(new TradeStationSearchCriteria.RangeFilter(0, profile.getMaxLsFromArrival()));
         filters.setServices(List.of(new TradeStationSearchCriteria.Service(List.of(TradeStationSearchCriteria.MARKET_SERVICE))));
         filters.setMarketplace(List.of(marketplace));
+        Instant now = Instant.now();
+        filters.setMarketUpdatedAt(since(now, MARKET_PRICED_WITHIN_DAYS));
         if (attempt.mustBeRecentlySeen()) {
             // Only a sighting this recent says anything about where the carrier is NOW.
-            Instant now = Instant.now();
-            TradeStationSearchCriteria.UpdatedAt seen = new TradeStationSearchCriteria.UpdatedAt();
-            seen.setComparison("<=>");
-            seen.setValue(List.of(
-                    ISO.format(now.minus(CARRIER_SEEN_WITHIN_DAYS, ChronoUnit.DAYS)), ISO.format(now)));
-            filters.setUpdatedAt(seen);
+            filters.setUpdatedAt(since(now, CARRIER_SEEN_WITHIN_DAYS));
         }
         if (profile.isRequiresLargePad()) {
             filters.setLargePads(new TradeStationSearchCriteria.RangeFilter(1, LARGE_PADS_MANY));
@@ -735,6 +734,16 @@ public final class SpanshCommoditySearch {
         criteria.setSize(returnClosest ? NEAREST_CANDIDATES : BEST_PRICE_CANDIDATES);
         criteria.setPage(0);
         return criteria;
+    }
+
+    /**
+     * The window from {@code days} before {@code now} up to {@code now}, as Spansh's date filters take it.
+     */
+    private static TradeStationSearchCriteria.UpdatedAt since(Instant now, int days) {
+        TradeStationSearchCriteria.UpdatedAt window = new TradeStationSearchCriteria.UpdatedAt();
+        window.setComparison("<=>");
+        window.setValue(List.of(ISO.format(now.minus(days, ChronoUnit.DAYS)), ISO.format(now)));
+        return window;
     }
 
     /**

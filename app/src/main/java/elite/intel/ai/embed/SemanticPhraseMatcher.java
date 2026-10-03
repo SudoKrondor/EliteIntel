@@ -1,5 +1,6 @@
 package elite.intel.ai.embed;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -74,6 +75,23 @@ public final class SemanticPhraseMatcher {
             }
         }
         return new Match(bestIndex, best);
+    }
+
+    /**
+     * Embeds every catalog phrase not cached yet, ahead of the turn that would otherwise pay for it. Takes the embed
+     * lock one phrase at a time, so a commander turn arriving mid-warm interleaves instead of waiting it out.
+     *
+     * @return how many phrases were embedded by this call (already-cached ones cost nothing and are not counted)
+     */
+    public int warm(Collection<String> phrases) {
+        int embedded = 0;
+        for (String phrase : phrases) {
+            if (phrase != null && !phrase.isBlank() && !phraseCache.containsKey(phrase)) {
+                vectorFor(phrase);
+                embedded++;
+            }
+        }
+        return embedded;
     }
 
     /**

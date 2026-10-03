@@ -1,7 +1,9 @@
 package elite.intel.junit.db.managers;
 
 import elite.intel.db.dao.ShipSettingsDao;
+import elite.intel.db.managers.ShipManager;
 import elite.intel.db.managers.ShipSettingsManager;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -16,6 +18,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ShipSettingsHgeAlertsTest {
 
     private static final int SHIP_ID = 918_273;
+
+    /**
+     * Settings belong to a ship: ship_settings has a foreign key onto ship, so the ships must exist first.
+     */
+    @BeforeAll
+    static void registerShips() {
+        for (int id = SHIP_ID; id <= SHIP_ID + 2; id++) {
+            ShipManager.getInstance().save(id, "Test Ship " + id, 0, "sidewinder", "EMMA", "Test");
+        }
+    }
 
     @Test
     @DisplayName("a ship that has never been configured stays quiet")

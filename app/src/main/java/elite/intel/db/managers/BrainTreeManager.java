@@ -43,12 +43,14 @@ public class BrainTreeManager {
         });
     }
 
-    public StellarObjectSearchResultDto.Result findNearestWithMaterial(String material, double x, double y, double z){
-        return Database.withDao(BrainTreesDao.class, dao ->{
-            List<BrainTreesDao.BrainTreeLocation> entity = dao.findByMaterialNearest(material, x, y, z, 1);
-            if(entity.isEmpty()) return null;
-            return GsonFactory.getGson().fromJson(entity.get(0).getJson(), StellarObjectSearchResultDto.Result.class);
-        });
+    /**
+     * The {@code limit} sites nearest the given point that yield {@code material}, nearest first. More than
+     * one because the nearest may sit in a system the commander cannot enter, and the caller decides that.
+     */
+    public List<StellarObjectSearchResultDto.Result> findNearestWithMaterial(String material, double x, double y, double z, int limit) {
+        return Database.withDao(BrainTreesDao.class, dao -> dao.findByMaterialNearest(material, x, y, z, limit).stream()
+                .map(entity -> GsonFactory.getGson().fromJson(entity.getJson(), StellarObjectSearchResultDto.Result.class))
+                .toList());
     }
 
     public int getCount() {

@@ -25,8 +25,9 @@ public final class ResponseTextProvider {
     }
 
     public static String getText(Language language, String key, Object... args) {
-        String pattern = resolveText(locale(language), key);
-        return args.length == 0 ? pattern : MessageFormat.format(pattern, args);
+        Locale locale = locale(language);
+        String pattern = resolveText(locale, key);
+        return args.length == 0 ? pattern : new MessageFormat(pattern, locale).format(args);
     }
 
     private static String resolveText(Locale locale, String key) {

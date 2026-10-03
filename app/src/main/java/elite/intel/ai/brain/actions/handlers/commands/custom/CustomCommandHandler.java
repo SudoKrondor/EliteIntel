@@ -7,6 +7,7 @@ import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.UiBus;
+import elite.intel.session.ui.UINavigator;
 import elite.intel.ui.event.AppLogEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,15 +30,19 @@ public final class CustomCommandHandler implements IntelAction {
 
     private final CustomCommandDefinition customCommand;
     private final CustomCommandSpeakExecutor speakExecutor;
+    private final Runnable closeOpenUi;
 
     public CustomCommandHandler(CustomCommandDefinition customCommand) {
-        this(customCommand, SynchronousCustomCommandSpeech.DEFAULT);
+        this(customCommand, SynchronousCustomCommandSpeech.DEFAULT, () -> new UINavigator().closeOpenUi());
     }
 
-    /** Package-private: allows tests to inject a fast non-blocking speak executor. */
-    CustomCommandHandler(CustomCommandDefinition customCommand, CustomCommandSpeakExecutor speakExecutor) {
+    /**
+     * Package-private: allows tests to inject a fast non-blocking speak executor and a stand-in for the UI reset.
+     */
+    CustomCommandHandler(CustomCommandDefinition customCommand, CustomCommandSpeakExecutor speakExecutor, Runnable closeOpenUi) {
         this.customCommand = customCommand;
         this.speakExecutor = speakExecutor;
+        this.closeOpenUi = closeOpenUi;
     }
 
     @Override
@@ -50,6 +55,10 @@ public final class CustomCommandHandler implements IntelAction {
         CUSTOM_COMMAND_LOCK.lock();
         try {
             log.info("Executing custom command '{}' ({} step(s))", customCommand.getName(), customCommand.getSteps().size());
+            // WHY: a macro is recorded from a clean screen, the same as every built-in UI action assumes. Left
+            // open, a panel swallows its keystrokes - a Maintenance macro's UI_Up presses walked the inventory
+            // panel instead of the station menu (commander bundle 2026-09-30).
+            closeOpenUi.run();
             PendingInputSequence pendingInput = new PendingInputSequence();
             for (int i = 0; i < customCommand.getSteps().size(); i++) {
                 CustomCommandStep step = customCommand.getSteps().get(i);

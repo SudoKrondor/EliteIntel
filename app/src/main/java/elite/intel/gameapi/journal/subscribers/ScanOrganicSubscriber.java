@@ -37,17 +37,46 @@ public class ScanOrganicSubscriber {
     private final CodexEntryManager codexEntryManager = CodexEntryManager.getInstance();
     private final Status status = Status.getInstance();
 
-    private static void announce(String sb) {
+    private static final String BASE_INSTRUCTIONS = """
+                Use ONLY facts from sensorData-no invention, external knowledge, or additions like planet/system/payment/bonus/vehicles/scan stages.
+                Rephrase to natural, immersive speech:
+                    - Key elements ONLY: genus/species logged, distance/completion if stated.
+                    - Use "we", "You" - NEVER "ship", "SRV", or "vehicle".
+                    %s
+                    Output EXACTLY:
+                        {"text_to_speech_response": "your natural rephrase"}
+            """;
+
+    /**
+     * The first sample carries no genus list, so the model must not produce one.
+     *
+     * <p>WHY this is spelled out rather than left to the base rules: one instruction used to serve every
+     * stage, and its "if Remaining genus is listed, list it" clause primed small models to invent a list
+     * when none was sent - made-up genera, one name repeated until the token budget ran out, or a survey
+     * declared complete mid-way.
+     */
+    static final String FIRST_SAMPLE_INSTRUCTIONS = BASE_INSTRUCTIONS.formatted(
+            "- Say NOTHING about other genus, remaining organics, or whether the survey is complete.");
+
+    /**
+     * The final sample is the only stage whose payload carries the remaining genus list.
+     */
+    static final String FINAL_SAMPLE_INSTRUCTIONS = BASE_INSTRUCTIONS.formatted(
+            "- If 'Remaining genus' listed, name exactly those genus, each once, and no others.");
+
+    private static void announce(String sb, String instructions) {
         if (PlayerSession.getInstance().isDiscoveryAnnouncementOn()) {
-            VegaRuntime.narrator().narrate(sb, """
-                        Use ONLY facts from sensorData-no invention, external knowledge, or additions like planet/system/payment/bonus/vehicles/scan stages.
-                        Rephrase to natural, immersive speech:
-                            - Key elements ONLY: genus/species logged, distance/completion if stated.
-                            - Use "we", "You" - NEVER "ship", "SRV", or "vehicle".
-                            - If 'Remaining genus' listed, provide the exact and detailed list of genus, do not provide a vague reference. 
-                            Output EXACTLY:
-                                {"text_to_speech_response": "your natural rephrase"}
-                    """);
+            VegaRuntime.narrator().narrate(sb, instructions);
+        }
+    }
+
+    /**
+     * Voices a finished line as-is. The second sample is only an acknowledgement, so there is nothing
+     * for the model to rephrase - and every chance it had, it added a genus list or a survey verdict.
+     */
+    private static void announceVerbatim(String phrase) {
+        if (PlayerSession.getInstance().isDiscoveryAnnouncementOn()) {
+            VegaRuntime.narrator().announce(phrase, false);
         }
     }
 
@@ -94,14 +123,14 @@ public class ScanOrganicSubscriber {
                 bioSampleDto.setScanXof3(1);
                 recordBioScan(event, starName, bioSampleDto);
                 deleteScannedCodexEntry(genusSymbol, currentLocation);
-                announce(sb.toString());
+                announce(sb.toString(), FIRST_SAMPLE_INSTRUCTIONS);
 
             } else if (scan2.equalsIgnoreCase(scanType)) {
                 BioSampleDto bioSampleDto = createBioSampleDto(genus, species, genusSymbol, speciesSymbol, isOurDiscovery);
                 bioSampleDto.setScanXof3(2);
                 recordBioScan(event, starName, bioSampleDto);
                 deleteScannedCodexEntry(genusSymbol, currentLocation);
-                announce(localizedEvent("event.organic.sampleLogged", genus));
+                announceVerbatim(localizedEvent("event.organic.sampleLogged", genus));
             } else if (scan3.equalsIgnoreCase(scanType)) {
                 sb = new StringBuilder();
                 sb.append(localizedEvent("event.organic.finalSample", genus)).append(" ");
@@ -143,7 +172,7 @@ public class ScanOrganicSubscriber {
                     sb.append(spokenList(remainingSpecies.stream().map(GenusDto::getGenusLocalised).toList()));
                 }
 
-                announce(sb.toString());
+                announce(sb.toString(), FINAL_SAMPLE_INSTRUCTIONS);
             }
         });
     }

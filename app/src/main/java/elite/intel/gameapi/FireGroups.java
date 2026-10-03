@@ -10,6 +10,7 @@ import elite.intel.util.SleepNoThrow;
 import java.util.HashMap;
 import java.util.Map;
 
+import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_BUGGY_CYCLE_FIRE_GROUP_NEXT;
 import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_CYCLE_NEXT_FIRE_GROUP;
 
 public class FireGroups {
@@ -85,11 +86,16 @@ public class FireGroups {
 
     public static void cycleToGroup(int targetGroup) {
         Status status = Status.getInstance();
+        // A wheeled SRV cycles its groups on its own key; the ship's is inert there. The Nomad flies on the
+        // ship's controls, so it keeps the ship's key.
+        String cycleNext = status.isInSrv() && !status.isInNomad()
+                ? BINDING_BUGGY_CYCLE_FIRE_GROUP_NEXT.getGameBinding()
+                : BINDING_CYCLE_NEXT_FIRE_GROUP.getGameBinding();
         for (int attempt = 0; attempt < 16; attempt++) {
             if (targetGroup == status.getFireGroup()) break;
             int groupBefore = status.getFireGroup();
             GameControllerBus.publish(GameInputSequenceEvent.of(
-                    GameInputStep.bindingTap(BINDING_CYCLE_NEXT_FIRE_GROUP.getGameBinding()),
+                    GameInputStep.bindingTap(cycleNext),
                     GameInputStep.delay(1000)
             ));
             long deadline = System.currentTimeMillis() + 1000;

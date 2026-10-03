@@ -16,6 +16,17 @@ public interface IntelCommand extends IntelAction {
         return false;
     }
 
+    /**
+     * The question VEGA asks before a {@link #isDangerous() dangerous} command runs, or null for the generic
+     * "this can't be undone - shall I proceed?". Worth overriding when the call's target is worked out at run
+     * time and the commander should hear it before saying yes.
+     *
+     * @param params the arguments the command will be executed with
+     */
+    default String confirmationPrompt(JsonObject params) {
+        return null;
+    }
+
     default VoiceStrategy voiceStrategy() {
         return VoiceStrategy.CANNED;
     }

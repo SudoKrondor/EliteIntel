@@ -157,7 +157,7 @@ public class Bindings {
         BINDING_BACKWARD_THRUST_BUTTON("BackwardThrustButton"),
         BINDING_BACKWARD_THRUST_BUTTON_LANDING("BackwardThrustButton_Landing"),
         BINDING_BLOCK_MOUSE_DECAY("BlockMouseDecay"),
-        BINDING_BUGGY_CYCLE_FIRE_GROUP_NEXT("BuggyCycleFireGroupNext"),
+        BINDING_BUGGY_CYCLE_FIRE_GROUP_NEXT("BuggyCycleFireGroupNext", DRIVEN),
         BINDING_BUGGY_CYCLE_FIRE_GROUP_PREVIOUS("BuggyCycleFireGroupPrevious"),
         BINDING_BUGGY_PITCH_DOWN_BUTTON("BuggyPitchDownButton"),
         BINDING_BUGGY_PITCH_UP_BUTTON("BuggyPitchUpButton"),

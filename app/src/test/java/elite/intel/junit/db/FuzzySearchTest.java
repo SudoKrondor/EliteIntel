@@ -1,11 +1,16 @@
 package elite.intel.junit.db;
 
 import elite.intel.db.FuzzySearch;
+import elite.intel.db.dao.CommodityDao;
+import elite.intel.db.dao.ShipModuleDao;
 import elite.intel.db.managers.MaterialManager;
+import elite.intel.db.util.Database;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -115,6 +120,55 @@ class FuzzySearchTest {
     @Test
     void commodityMatchUnknownReturnsNull() {
         assertNull(FuzzySearch.fuzzyCommodityMatch("xxxxxxxxxx", 3));
+    }
+
+    // ── fuzzyShipModuleMatch (ship_modules is migration-seeded ref data, English only) ──
+
+    @Test
+    void shipModuleMatchExactInputReturnsCanonicalCase() {
+        assertEquals("Fuel Scoop", FuzzySearch.fuzzyShipModuleMatch("fuel scoop", 3));
+    }
+
+    @Test
+    void shipModuleMatchToleratesAPlural() {
+        assertEquals("Fuel Scoop", FuzzySearch.fuzzyShipModuleMatch("fuel scoops", 3));
+    }
+
+    @Test
+    void shipModuleMatchUnknownReturnsNull() {
+        assertNull(FuzzySearch.fuzzyShipModuleMatch("xxxxxxxxxx", 3));
+    }
+
+    @Test
+    void aModuleNameIsKnownWordForWordAndACommodityIsNot() {
+        assertTrue(FuzzySearch.isShipModuleName("cargo rack"));
+        assertTrue(FuzzySearch.isShipModuleName("Fuel Scoop"));
+        assertFalse(FuzzySearch.isShipModuleName("gold"));
+        assertFalse(FuzzySearch.isShipModuleName(null));
+    }
+
+    /**
+     * Spansh files the Mk II cabins under two spellings; a search sent with one misses the other.
+     */
+    @Test
+    void everySpellingOfAModuleIsReturnedTheGivenOneFirst() {
+        assertEquals(List.of("MkII Business Class Passenger Cabin", "Mk II Business Class Passenger Cabin"),
+                FuzzySearch.shipModuleSpellings("MkII Business Class Passenger Cabin"));
+        assertEquals(List.of("Fuel Scoop"), FuzzySearch.shipModuleSpellings("fuel scoop"));
+    }
+
+    /**
+     * The find-commodity command lets a word-for-word module name win over the commodity catalogue, which
+     * is only safe while no commodity is spelled like a module - or that good becomes unbuyable by voice.
+     */
+    @Test
+    void noCommodityIsSpelledLikeAModule() {
+        List<String> modules = Database.withDao(ShipModuleDao.class, ShipModuleDao::getAllNamesLowerCase);
+        assertFalse(modules.isEmpty());
+        for (String module : modules) {
+            assertNull(Database.withDao(CommodityDao.class, dao -> dao.getOriginalCase(module)),
+                    () -> "a commodity is spelled like the module " + module);
+        }
     }
 
     // ── commoditySymbol (non-localized FDevIDs symbol for cargo matching) ──

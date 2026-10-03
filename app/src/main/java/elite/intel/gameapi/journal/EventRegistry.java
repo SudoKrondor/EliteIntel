@@ -37,6 +37,7 @@ public class EventRegistry {
         registerEvent("MarketBuy", MarketBuyEvent.class);
         registerEvent("MarketSell", MarketSellEvent.class);
         registerEvent("Disembark", DisembarkEvent.class);
+        registerEvent("Embark", EmbarkEvent.class);
         registerEvent("SellOrganicData", SellOrganicDataEvent.class);
         registerEvent("MultiSellExplorationData", MultiSellExplorationDataEvent.class);
         registerEvent("CodexEntry", CodexEntryEvent.class);
@@ -54,6 +55,7 @@ public class EventRegistry {
         registerEvent("DockingGranted", DockingGrantedEvent.class);
         registerEvent("DockSRV", DockSRVEvent.class);
         registerEvent("LaunchSRV", LaunchSRVEvent.class);
+        registerEvent("LaunchVessel", LaunchVesselEvent.class);
         registerEvent("FSSBodySignals", FSSBodySignalsEvent.class);
         registerEvent("ApproachSettlement", ApproachSettlementEvent.class);
         registerEvent("Missions", MissionsEvent.class);
@@ -95,6 +97,7 @@ public class EventRegistry {
         registerEvent("MissionCompleted", MissionCompletedEvent.class);
         registerEvent("MissionFailed", MissionFailedEvent.class);
         registerEvent("MissionRedirected", MissionRedirectedEvent.class);
+        registerEvent("Music", MusicEvent.class);
         registerEvent("NavRoute", NavRouteEvent.class);
         registerEvent("NavRouteClear", NavRouteClearEvent.class);
         registerEvent("NpcCrewPaidWage", NpcCrewPaidWageEvent.class);
@@ -106,6 +109,7 @@ public class EventRegistry {
         registerEvent("RedeemVoucher", RedeemVoucherEvent.class);
         registerEvent("Reputation", ReputationEvent.class);
         registerEvent("Scan", ScanEvent.class);
+        registerEvent("SendText", SendTextEvent.class);
         registerEvent("Scanned", ScannedEvent.class);
         registerEvent("ShipTargeted", ShipTargetedEvent.class);
         registerEvent("ShipyardBuy", ShipyardBuyEvent.class);

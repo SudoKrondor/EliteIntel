@@ -11,6 +11,7 @@ import elite.intel.session.PlayerSession;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -80,9 +81,11 @@ class PreScanCarrierLocationTest {
         EventBus privateBus = new EventBus("pre-scan-test");
         session.setLastKnownCarrierLocation("Eephaik LY-R b47-6");
         session.setCarrierDepartureTime("2026-07-30T04:24:10Z");
-        privateBus.register(new SilentPersistenceSubscriber());
+        SilentPersistenceSubscriber replay = new SilentPersistenceSubscriber();
+        privateBus.register(replay);
 
         privateBus.post(carrierLocation("Eephaik CX-V b31-9", 20299220533521L));
+        replay.settleCarrierArrival();
 
         // Blank, not null: the column is NOT NULL DEFAULT '', and "no departure scheduled" is what
         // every reader of this value tests for (see AnalyzeCarrierDepartureEtaQuery).
@@ -101,9 +104,11 @@ class PreScanCarrierLocationTest {
         EventBus privateBus = new EventBus("pre-scan-test");
         session.setLastKnownCarrierLocation("Eephaik CX-V b31-9");
         session.setCarrierDepartureTime("2026-07-30T06:00:00Z");
-        privateBus.register(new SilentPersistenceSubscriber());
+        SilentPersistenceSubscriber replay = new SilentPersistenceSubscriber();
+        privateBus.register(replay);
 
         privateBus.post(carrierLocation("Eephaik CX-V b31-9", 20299220533521L));
+        replay.settleCarrierArrival();
 
         assertEquals("2026-07-30T06:00:00Z", session.getCarrierDepartureTime(),
                 "the carrier has not moved, so its scheduled jump is still ahead of it");
@@ -124,9 +129,11 @@ class PreScanCarrierLocationTest {
         route.setFleetCarrierRoute(Map.of(1, leg("Dryooe Flyou GB-I c24-147"), 2, leg("Colonia")));
 
         EventBus privateBus = new EventBus("pre-scan-test");
-        privateBus.register(new SilentPersistenceSubscriber());
+        SilentPersistenceSubscriber replay = new SilentPersistenceSubscriber();
+        privateBus.register(replay);
 
         privateBus.post(carrierLocation("Eephaik CX-V b31-9", 20299220533521L));
+        replay.settleCarrierArrival();
 
         assertFalse(route.hasStoredLegs(),
                 "the carrier jumped somewhere the route never mentioned; that voyage is over");
@@ -141,10 +148,12 @@ class PreScanCarrierLocationTest {
         route.setFleetCarrierRoute(Map.of(1, leg("Dryooe Flyou GB-I c24-147"), 2, leg("Colonia")));
 
         EventBus privateBus = new EventBus("pre-scan-test");
-        privateBus.register(new SilentPersistenceSubscriber());
+        SilentPersistenceSubscriber replay = new SilentPersistenceSubscriber();
+        privateBus.register(replay);
 
         // The carrier flew the leg it was plotted to fly.
         privateBus.post(carrierLocation("Dryooe Flyou GB-I c24-147", 20299220533521L));
+        replay.settleCarrierArrival();
 
         assertEquals("Colonia", route.getFinalDestination(),
                 "an on-route arrival leaves the voyage standing");
@@ -159,11 +168,49 @@ class PreScanCarrierLocationTest {
         route.setFleetCarrierRoute(Map.of(1, leg("Dryooe Flyou GB-I c24-147"), 2, leg("Colonia")));
 
         EventBus privateBus = new EventBus("pre-scan-test");
-        privateBus.register(new SilentPersistenceSubscriber());
+        SilentPersistenceSubscriber replay = new SilentPersistenceSubscriber();
+        privateBus.register(replay);
 
         privateBus.post(carrierLocation("Eephaik CX-V b31-9", 20299220533521L));
+        replay.settleCarrierArrival();
 
         assertEquals("Colonia", route.getFinalDestination(), "the carrier has not moved");
+        route.clear();
+    }
+
+    /**
+     * The replay walks the journals forward from the oldest, so it meets the carrier's older positions
+     * before its newest one. Read against where the carrier was when the app last ran, the first of
+     * them looked like a jump off the route and voided it: a commander who flew leg 1 of a route with
+     * the app running and then restarted the app found the rest of the route gone. Only the last
+     * position the replay sees says whether the carrier moved while the app was down.
+     */
+    @Test
+    void olderPositionsInTheReplayAreHistoryNotArrivals() {
+        FleetCarrierRouteManager route = FleetCarrierRouteManager.getInstance();
+        route.clear();
+        session.setLastKnownCarrierLocation("Hyades Sector MH-V c2-8");
+        route.setFleetCarrierRoute(Map.of(1, leg("Col 285 Sector RX-M b22-2"),
+                2, leg("Col 359 Sector BT-B b16-1"), 3, leg("HIP 90424")));
+        // The app was running for leg 1, so the carrier is on file at the end of it.
+        session.setLastKnownCarrierLocation("Col 285 Sector RX-M b22-2");
+        session.setCarrierDepartureTime("2026-10-02T16:52:10Z");
+
+        EventBus privateBus = new EventBus("pre-scan-test");
+        SilentPersistenceSubscriber replay = new SilentPersistenceSubscriber();
+        privateBus.register(replay);
+
+        // The two journals replayed at the next start: logins before the jump, then the jump itself.
+        privateBus.post(carrierLocation("Hyades Sector MH-V c2-8", 20299220533521L));
+        privateBus.post(carrierLocation("Hyades Sector MH-V c2-8", 20299220533521L));
+        privateBus.post(carrierLocation("Col 285 Sector RX-M b22-2", 20299220533521L));
+        replay.settleCarrierArrival();
+
+        assertEquals(List.of("Col 359 Sector BT-B b16-1", "HIP 90424"),
+                route.getFleetCarrierRoute().values().stream().map(CarrierJump::getSystemName).toList(),
+                "the carrier has not moved since the app last ran; the rest of its route stands");
+        assertEquals("2026-10-02T16:52:10Z", session.getCarrierDepartureTime(),
+                "a departure scheduled after the last replayed arrival is still ahead of the carrier");
         route.clear();
     }
 

@@ -24,6 +24,9 @@ import java.util.*;
  *       one batch.</li>
  *   <li><b>Never bind a modifier on its own.</b> Every assignment is a main key,
  *       optionally with modifiers - never {@code Left Alt} by itself.</li>
+ *   <li><b>Never hold a modifier that fires something else.</b> A modifier the commander has
+ *       bound on its own to a control live alongside the target (UI Focus on {@code Left Shift})
+ *       is never handed out with it - see {@link BindingConflictScanner}'s modifier shadow.</li>
  *   <li><b>Never touch the game menu.</b> Elite's {@code Pause} control is left unbound, and whatever
  *       key a commander has put on it is taken out of the pool entirely - see {@link ReservedKeyChords}.</li>
  *   <li><b>Never arm a control that throws the cargo away.</b> See {@link #LEFT_TO_THE_COMMANDER}.</li>
@@ -99,10 +102,11 @@ public class MissingBindingAutoAssigner {
     public Plan planAll(Map<String, ReadOnlyBindingSlots> slots) {
         Set<SafeKeyboardKeys.Chord> occupied = new HashSet<>(occupiedChords(slots));
         Set<String> gameMenuKeys = ReservedKeyChords.gameMenuKeysFromSlots(slots);
+        Map<String, Set<String>> bareModifierOwners = bareModifierOwners(slots);
         List<PlannedEdit> edits = new ArrayList<>();
         List<SkippedBinding> skipped = new ArrayList<>();
         for (String bindingId : unboundTargets(slots)) {
-            assignOne(bindingId, slots.get(bindingId), occupied, gameMenuKeys, edits, skipped);
+            assignOne(bindingId, slots.get(bindingId), occupied, gameMenuKeys, bareModifierOwners, edits, skipped);
         }
         return new Plan(edits, skipped);
     }
@@ -128,7 +132,8 @@ public class MissingBindingAutoAssigner {
             return new Plan(edits, skipped);
         }
         Set<SafeKeyboardKeys.Chord> occupied = new HashSet<>(occupiedChords(slots));
-        assignOne(bindingId, binding, occupied, ReservedKeyChords.gameMenuKeysFromSlots(slots), edits, skipped);
+        assignOne(bindingId, binding, occupied, ReservedKeyChords.gameMenuKeysFromSlots(slots),
+                bareModifierOwners(slots), edits, skipped);
         return new Plan(edits, skipped);
     }
 
@@ -137,6 +142,7 @@ public class MissingBindingAutoAssigner {
             ReadOnlyBindingSlots binding,
             Set<SafeKeyboardKeys.Chord> occupied,
             Set<String> gameMenuKeys,
+            Map<String, Set<String>> bareModifierOwners,
             List<PlannedEdit> edits,
             List<SkippedBinding> skipped
     ) {
@@ -159,7 +165,8 @@ public class MissingBindingAutoAssigner {
             skipped.add(new SkippedBinding(bindingId, slotSkipReason(binding)));
             return;
         }
-        SafeKeyboardKeys.Chord chord = firstFreeChord(occupied, gameMenuKeys);
+        SafeKeyboardKeys.Chord chord = firstFreeChord(occupied, gameMenuKeys,
+                shadowedModifiers(bindingId, bareModifierOwners));
         if (chord == null) {
             skipped.add(new SkippedBinding(bindingId, SkipReason.NO_FREE_KEY));
             return;
@@ -217,13 +224,57 @@ public class MissingBindingAutoAssigner {
         return slot != null && !isWritableEmpty(slot);
     }
 
-    private SafeKeyboardKeys.Chord firstFreeChord(Set<SafeKeyboardKeys.Chord> occupied, Set<String> gameMenuKeys) {
+    private SafeKeyboardKeys.Chord firstFreeChord(Set<SafeKeyboardKeys.Chord> occupied, Set<String> gameMenuKeys,
+                                                  Set<String> shadowedModifiers) {
         for (SafeKeyboardKeys.Chord chord : SafeKeyboardKeys.orderedChords()) {
-            if (!occupied.contains(chord) && isAssignable(chord, gameMenuKeys)) {
+            if (!occupied.contains(chord) && isAssignable(chord, gameMenuKeys)
+                    && (chord.modifier() == null || !shadowedModifiers.contains(chord.modifier().key()))) {
                 return chord;
             }
         }
         return null;
+    }
+
+    /**
+     * The modifier keys {@code bindingId} must not be given, because each is bound on its own to a
+     * control that is live alongside it - pressing the chord would fire that control first.
+     * <p>
+     * Judged per target with the same context rule the conflict scan uses
+     * ({@link BindingConflictRules#isSafeOverlap}), so on-foot Sprint on {@code Left Shift} does not
+     * take Shift away from a ship control. A context-blind version of a guard like this once emptied
+     * the pool on real files; this one only ever removes a modifier the scan would report.
+     */
+    private Set<String> shadowedModifiers(String bindingId, Map<String, Set<String>> bareModifierOwners) {
+        Set<String> shadowed = new HashSet<>();
+        for (Map.Entry<String, Set<String>> entry : bareModifierOwners.entrySet()) {
+            for (String owner : entry.getValue()) {
+                if (!owner.equals(bindingId) && !BindingConflictRules.isSafeOverlap(bindingId, owner)) {
+                    shadowed.add(entry.getKey());
+                    break;
+                }
+            }
+        }
+        return shadowed;
+    }
+
+    /**
+     * Modifier key → the actions bound to that key on its own (keyboard, no modifiers), from either slot.
+     */
+    private Map<String, Set<String>> bareModifierOwners(Map<String, ReadOnlyBindingSlots> slots) {
+        Map<String, Set<String>> owners = new HashMap<>();
+        for (Map.Entry<String, ReadOnlyBindingSlots> entry : slots.entrySet()) {
+            addIfBareModifier(entry.getKey(), entry.getValue().primary(), owners);
+            addIfBareModifier(entry.getKey(), entry.getValue().secondary(), owners);
+        }
+        return owners;
+    }
+
+    private void addIfBareModifier(String action, ReadOnlyBindingSlot slot, Map<String, Set<String>> owners) {
+        if (slot == null || !"Keyboard".equals(slot.device()) || slot.key() == null
+                || !isModifierKey(slot.key()) || !slot.bindingModifiers().isEmpty()) {
+            return;
+        }
+        owners.computeIfAbsent(slot.key(), k -> new TreeSet<>()).add(action);
     }
 
     /**

@@ -54,16 +54,31 @@ public class SupertonicTTS extends SherpaOnnxTTS {
         return false;
     }
 
+    /**
+     * WHY the model is never asked to go faster than this: above its own pace Supertonic keeps the clip's
+     * length but renders the last word as silence ("Preparing for FTL" came out "Preparing for F" about two
+     * times in three at 1.15, and still about one in ten at 1.0). At its default pace it spoke 45 of 45 whole;
+     * the rest of the pace is added afterwards by {@link TimeStretch}, which keeps the pitch.
+     */
+    private static final float MAX_MODEL_SPEED = SPEED_MULTIPLIER;
+
     @Override
     protected GeneratedAudio generate(OfflineTts tts, String text, int sid, float speed, Language language) {
+        float pace = speed * SPEED_MULTIPLIER;
+        float modelPace = Math.min(pace, MAX_MODEL_SPEED);
         GenerationConfig genConfig = new GenerationConfig();
         genConfig.setSid(sid);
-        genConfig.setSpeed(speed * SPEED_MULTIPLIER);
+        genConfig.setSpeed(modelPace);
         genConfig.setNumSteps(NUM_STEPS);
         genConfig.setExtra(Map.of("lang", supertonicLangCode(language)));
         Consumer<float[]> noStreaming = samples -> {
         };
-        return tts.generateWithConfigAndCallback(text, genConfig, noStreaming);
+        GeneratedAudio audio = tts.generateWithConfigAndCallback(text, genConfig, noStreaming);
+        if (pace <= modelPace || audio == null || audio.getSamples() == null) {
+            return audio;
+        }
+        float[] faster = TimeStretch.speedUp(audio.getSamples(), audio.getSampleRate(), pace / modelPace);
+        return new GeneratedAudio(faster, audio.getSampleRate());
     }
 
     /**

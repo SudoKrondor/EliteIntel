@@ -8,6 +8,7 @@ import elite.intel.gameapi.journal.events.ProspectedAsteroidEvent;
 import elite.intel.session.PlayerSession;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Set;
 
 import static elite.intel.util.StringUtls.capitalizeWords;
@@ -56,7 +57,7 @@ public class ProspectorSubscriber {
                 if (miningTargets.contains(prospectedMaterial)) {
                     if (!sb.isEmpty()) sb.append(" ");
                     sb.append(localizedEvent("event.mining.prospectorDetected",
-                            String.format("%.2f", material.getProportion()), material.getName()));
+                            String.format(Locale.ROOT, "%.2f", material.getProportion()), material.getName()));
                     break;
                 }
             }

@@ -486,6 +486,68 @@ class MissingBindingAutoAssignerTest {
         }
     }
 
+    /**
+     * Support bundle of 2026-09-30: UI Focus (hold) on bare Left Shift, and a file full of auto-fixed
+     * Shift chords on ship controls - each of which fired UI Focus before its own key landed.
+     */
+    @Test
+    void aModifierBoundOnItsOwnIsNeverHandedOutToAControlLiveBesideIt() throws Exception {
+        Map<String, ReadOnlyBindingSlots> slots = parse("""
+                <Root>
+                    <UIFocus>
+                        <Primary Device="Keyboard" Key="Key_LeftShift" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </UIFocus>
+                    <ToggleCargoScoop>
+                        <Primary Device="{NoDevice}" Key="" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </ToggleCargoScoop>
+                    <LandingGearToggle>
+                        <Primary Device="{NoDevice}" Key="" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </LandingGearToggle>
+                    <UseBoostJuice>
+                        <Primary Device="{NoDevice}" Key="" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </UseBoostJuice>
+                </Root>
+                """);
+
+        Plan plan = assigner.planAll(slots);
+
+        assertEquals(3, plan.edits().size());
+        for (PlannedEdit edit : plan.edits()) {
+            assertNotEquals("Key_LeftShift", edit.modifier() == null ? null : edit.modifier().key(),
+                    edit.bindingId() + " was given Left Shift, which fires UI Focus");
+        }
+    }
+
+    @Test
+    void aModifierBoundOnItsOwnInAnotherVehicleStaysInThePool() throws Exception {
+        // On-foot Sprint on Left Shift never fires in the ship, so Shift stays available there.
+        Map<String, ReadOnlyBindingSlots> slots = parse("""
+                <Root>
+                    <HumanoidSprintButton>
+                        <Primary Device="Keyboard" Key="Key_LeftShift" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </HumanoidSprintButton>
+                    <LandingGearToggle>
+                        <Primary Device="{NoDevice}" Key="" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </LandingGearToggle>
+                    <ToggleCargoScoop>
+                        <Primary Device="{NoDevice}" Key="" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </ToggleCargoScoop>
+                </Root>
+                """);
+
+        Plan plan = assigner.planAll(slots);
+
+        assertEquals(2, plan.edits().size());
+        assertEquals("Key_LeftShift", plan.edits().get(1).modifier().key());
+    }
+
     private Map<String, ReadOnlyBindingSlots> parse(String xml) throws Exception {
         Path file = tempDir.resolve("test-" + System.nanoTime() + ".binds");
         Files.write(file, xml.getBytes(StandardCharsets.UTF_8));

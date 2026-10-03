@@ -217,6 +217,14 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
         @SerializedName("updated_at")
         private UpdatedAt updatedAt;
 
+        /**
+         * When the station's MARKET was last uploaded - not {@link #updatedAt}, which moves whenever anything
+         * about the station record does. Measured live, {@code updated_at} within a week let through a market
+         * last priced 13 days earlier.
+         */
+        @SerializedName("market_updated_at")
+        private UpdatedAt marketUpdatedAt;
+
         @SerializedName("distance_to_arrival")
         private RangeFilter distanceToArrival;
 
@@ -244,6 +252,9 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
         @SerializedName("marketplace")
         private List<Marketplace> marketplace;
 
+        @SerializedName("modules")
+        private List<OutfittingModule> modules;
+
 
         public UpdatedAt getUpdatedAt() {
             return updatedAt;
@@ -251,6 +262,10 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
 
         public void setUpdatedAt(UpdatedAt updatedAt) {
             this.updatedAt = updatedAt;
+        }
+
+        public void setMarketUpdatedAt(UpdatedAt marketUpdatedAt) {
+            this.marketUpdatedAt = marketUpdatedAt;
         }
 
         public SystemName getSystemName() {
@@ -298,6 +313,67 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
 
         public void setDistanceToStarSystem(Distance distanceToStarSystem) {
             this.distance = distanceToStarSystem;
+        }
+
+        /**
+         * Modules the station's outfitting must stock; see {@link OutfittingModule}.
+         */
+        public void setModules(List<OutfittingModule> modules) {
+            this.modules = modules;
+        }
+    }
+
+    /**
+     * A module the station's outfitting must stock, as one nested question about a SINGLE listing: "a Fuel
+     * Scoop, of size 6, rated B" is one {@code OutfittingModule}, not three filters, so the size and the
+     * rating are read against the same module and not anywhere in the shop.
+     * <p>
+     * Spansh's names for the two halves of a module's designation are the other way round from the
+     * commander's: what a pilot calls the SIZE (1 to 8, the slot it fits) Spansh calls {@code class}, and
+     * what a pilot calls the CLASS (A to E, A being best) Spansh calls {@code rating}. Every value is sent
+     * inside a {@code {"value": [...]}} wrapper, which is the shape the site's own search form posts.
+     */
+    public static class OutfittingModule {
+
+        @SerializedName("name")
+        private final Values<String> name;
+
+        @SerializedName("class")
+        private Values<Integer> size;
+
+        @SerializedName("rating")
+        private Values<String> rating;
+
+        /**
+         * @param names the module's name in Spansh's vocabulary, in every spelling it might be filed under;
+         *              matched exactly, so a name Spansh does not know matches no station
+         */
+        public OutfittingModule(List<String> names) {
+            this.name = new Values<>(names);
+        }
+
+        /**
+         * The slot size, 1 to 8. Null leaves it unconstrained.
+         */
+        public void setSize(Integer size) {
+            this.size = size == null ? null : new Values<>(List.of(size));
+        }
+
+        /**
+         * The quality letter, A to E. Null leaves it unconstrained.
+         */
+        public void setRating(String rating) {
+            this.rating = rating == null ? null : new Values<>(List.of(rating));
+        }
+
+        private static class Values<T> {
+
+            @SerializedName("value")
+            private final List<T> value;
+
+            private Values(List<T> value) {
+                this.value = value;
+            }
         }
     }
 

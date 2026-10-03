@@ -88,7 +88,7 @@ public interface MassacreMissionDao {
                   + (MAX(m.providerZ) - :z) * (MAX(m.providerZ) - :z)) AS distanceSq
               FROM massacre_mission m
               JOIN hunting_ground g ON g.starSystem = m.targetSystem
-             WHERE g.forgotten = 0
+             WHERE NOT EXISTS (SELECT 1 FROM hunting_ground_forgotten f WHERE f.starSystem = g.starSystem)
                AND m.providerX IS NOT NULL
                AND (:targetSystem IS NULL OR m.targetSystem = :targetSystem)
              GROUP BY m.providerSystem, m.targetSystem, m.targetFaction

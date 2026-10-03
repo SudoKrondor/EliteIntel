@@ -42,10 +42,20 @@ public class StringUtls {
     }
 
 
+    private static final Pattern DECIMAL_FRACTION = Pattern.compile("(?<=\\d)\\.\\d+");
+
+    /**
+     * Reads the whole number out of a model-supplied value, dropping any fraction and any punctuation or words
+     * around it: "25", "1,000,000 credits" and "1.0" all read as the number they mean.
+     * <p>
+     * WHY the fraction is cut before the punctuation is stripped: a model may send a JSON number as {@code 1.0},
+     * and stripping the dot read that as ten - "reduce speed by one" fired ten throttle taps (Grok, commander
+     * bundle 2026-09-30).
+     */
     public static Integer getIntSafely(@Nullable String value) {
         if (value == null) return null;
         try {
-            return Integer.parseInt(value.replaceAll("[^0-9]", ""));
+            return Integer.parseInt(DECIMAL_FRACTION.matcher(value).replaceAll("").replaceAll("[^0-9]", ""));
         } catch (NumberFormatException e) {
             return null;
         }

@@ -57,7 +57,7 @@ public final class AiActionAliasTextProvider {
         }
     }
 
-    private static Locale locale(Language language) {
+    static Locale locale(Language language) {
         return switch (language) {
             case RU -> Locale.forLanguageTag("ru");
             case UK -> Locale.forLanguageTag("uk");

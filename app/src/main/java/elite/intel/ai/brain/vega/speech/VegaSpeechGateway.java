@@ -56,7 +56,7 @@ public final class VegaSpeechGateway implements SpeechGateway {
         if (request.urgency() == Urgency.URGENT) {
             publisher.accept(new TTSInterruptEvent());
         }
-        VocalisationRequestEvent event = VocalisationRequestEvent.tracked(
+        VocalisationRequestEvent event = VocalisationRequestEvent.trackedVega(
                 request.requestId(), request.text(), ORIGIN, true, done);
         try {
             // Same-thread EventBus delivery may still be reentrant/queued. Check after the complete current

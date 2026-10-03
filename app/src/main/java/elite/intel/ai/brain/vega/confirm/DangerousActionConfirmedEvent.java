@@ -10,8 +10,6 @@ public final class DangerousActionConfirmedEvent {
 
     /** Where the confirmation came from. */
     public enum Source {
-        /** STT code word from settings. */
-        VOICE_CODE_WORD,
         /** Input module key/button. */
         INPUT_BUTTON
     }

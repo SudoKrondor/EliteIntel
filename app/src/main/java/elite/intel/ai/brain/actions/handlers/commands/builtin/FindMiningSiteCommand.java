@@ -10,6 +10,7 @@ import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.gameapi.inputs.RoutePlotter;
+import elite.intel.gameapi.search.PermitLockedSystems;
 import elite.intel.gameapi.search.spansh.stellarobjects.ReserveLevel;
 import elite.intel.gameapi.search.spansh.stellarobjects.StellarObjectSearch;
 import elite.intel.gameapi.search.spansh.stellarobjects.StellarObjectSearchResultDto;
@@ -116,7 +117,8 @@ public final class FindMiningSiteCommand implements IntelCommand {
             return StringUtls.localizedResponse("handler.miningSite.notFound");
         }
 
-        Optional<StellarObjectSearchResultDto.Result> result = miningLocations.getResults().stream().findFirst();
+        Optional<StellarObjectSearchResultDto.Result> result = PermitLockedSystems.reachable(
+                miningLocations.getResults(), StellarObjectSearchResultDto.Result::getSystemName).stream().findFirst();
         if (result.isPresent()) {
             String found = StringUtls.localizedResponse("handler.miningSite.found", result.get().getSystemName(), result.get().getBodyName());
             // Spoken on arrival in that system, where "found in X system" is no longer news.

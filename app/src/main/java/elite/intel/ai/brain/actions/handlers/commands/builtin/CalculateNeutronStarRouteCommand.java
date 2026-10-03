@@ -192,9 +192,8 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
      * Reads a number a model may have written any of several ways.
      * <p>
      * A decimal is parsed as a decimal first, because these arrive as JSON numbers and a model that answers
-     * {@code 6.0} means six: stripping the punctuation out of the digits, which is what {@code getIntSafely}
-     * does, would read that as sixty and quietly plot a route nobody asked for. {@code getIntSafely} still
-     * catches the wordier forms - "70 percent" - that are not a number at all.
+     * {@code 6.5} is closer to seven than to the six {@code getIntSafely} would cut it to. {@code getIntSafely}
+     * still catches the wordier forms - "70 percent" - that are not a number at all.
      */
     static Integer parseWholeNumber(String raw) {
         if (raw == null) {

@@ -43,15 +43,7 @@ public class KeyBindCheck {
         // every start for as long as it is in the file, because a once-only warning leaves a permanently
         // broken setup permanently silent. See BindingConflictRules#isBlocking.
         if (!blocking.isEmpty()) {
-            // The keys are named rather than described as "W A S D": Frontier's default lands there, but a
-            // commander who has already remapped hears a layout that is not theirs and stops listening.
-            List<String> conflictingKeys = BindingChordSpeech.distinctChords(
-                    blocking.stream().map(BindingConflictScanner.Conflict::chord).toList());
-            GameEventBus.publish(new AiVoxResponseEvent(
-                    // The count drives singular/plural wording in every locale; the joined list is what is read out.
-                    StringUtls.localizedSpeech("speech.bindingConflictsBlocking",
-                            conflictingKeys.size(), String.join(", ", conflictingKeys))
-            ));
+            speakBlocking("speech.bindingConflictsBlocking", blocking);
             blocking.forEach(c -> {
                 String line = "[" + BindingChordSpeech.describe(c.chord()) + "] " + c.description();
                 UiBus.publish(new AppLogEvent("BLOCKING binding conflict: " + line));
@@ -61,34 +53,14 @@ public class KeyBindCheck {
             });
         }
 
-        // Second, and also unconditionally: UI direction keys a focused text field eats as text. Same
-        // class of problem as a blocking conflict - route plotting cannot work and playing the game will
-        // never reveal it - but it is a property of one binding rather than a clash between two, so it is
-        // detected separately. See UiNavigationTextTrap.
-        List<UiNavigationTextTrap.TrappedBinding> textTrapped = monitor.textTrappedUiNavigation();
-        if (!textTrapped.isEmpty()) {
-            List<String> trappedKeys = BindingChordSpeech.distinctChords(
-                    textTrapped.stream().map(UiNavigationTextTrap.TrappedBinding::chord).toList());
-            GameEventBus.publish(new AiVoxResponseEvent(
-                    StringUtls.localizedSpeech("speech.bindingUiNavTypesText",
-                            trappedKeys.size(), String.join(", ", trappedKeys))
-            ));
-            textTrapped.forEach(t -> {
-                String line = "[" + BindingChordSpeech.describe(t.chord()) + "] " + t.action()
-                        + " types a character, so a focused search box keeps the keystroke";
-                UiBus.publish(new AppLogEvent("BLOCKING binding problem: " + line));
-                log.error("UI navigation typed into text field: {}", line);
-            });
-        }
-
-        // Third, and also unconditionally: keys and chords that must never be bound to anything - the key
+        // Second, and also unconditionally: keys and chords that must never be bound to anything - the key
         // the commander has on the game menu, Alt+F4, Linux Ctrl+Alt+F*. EliteIntel refuses to assign one,
         // but Elite's own controls screen has no such rule, so a file written there can already hold one.
         // Same class of problem again - the commander cannot tell from playing why that one control
         // behaves oddly, only that the game keeps pausing. See ReservedKeyChords.
         List<ReservedKeyChords.ReservedBinding> reserved = monitor.reservedChordBindings();
         if (!reserved.isEmpty()) {
-            speakReservedWarnings(reserved, ReservedKeyChords.gameMenuKeys(monitor.getBindings()));
+            speakReservedWarnings(reserved, ReservedKeyChords.gameMenuKeysFromExecutableSlots(monitor.getBindingSlots()));
             reserved.forEach(r -> {
                 String line = "[" + BindingChordSpeech.describe(r.chord()) + "] "
                         + StringUtls.humanizeBindingName(r.action())
@@ -134,6 +106,28 @@ public class KeyBindCheck {
                         + plainOverlaps.size() + "): " + String.join(", ", plainOverlaps)));
             }
         }
+    }
+
+    /**
+     * Speaks one blocking warning naming the chords involved, or says nothing when there are none.
+     * <p>
+     * The keys are named rather than described as "W A S D": Frontier's default lands there, but a
+     * commander who has already remapped hears a layout that is not theirs and stops listening.
+     * <p>
+     * One message for every blocking family, which their shared consequence earns: each of the three
+     * stops a walk reaching what it was sent for, so "route plotting cannot work" is true of all of them.
+     * A family that does something else needs its own line, not this one.
+     */
+    private void speakBlocking(String speechKey, List<BindingConflictScanner.Conflict> conflicts) {
+        if (conflicts.isEmpty()) {
+            return;
+        }
+        List<String> conflictingKeys = BindingChordSpeech.distinctChords(
+                conflicts.stream().map(BindingConflictScanner.Conflict::chord).toList());
+        GameEventBus.publish(new AiVoxResponseEvent(
+                // The count drives singular/plural wording in every locale; the joined list is what is read out.
+                StringUtls.localizedSpeech(speechKey, conflictingKeys.size(), String.join(", ", conflictingKeys))
+        ));
     }
 
     /**

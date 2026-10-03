@@ -2,9 +2,15 @@ package elite.intel.ui.controller;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ApiFactory;
+import elite.intel.ai.LlmProviderResolver;
 import elite.intel.ai.brain.LocalLlmModelCheck;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandLoadAnnouncement;
+import elite.intel.ai.brain.health.AiServiceCheck;
+import elite.intel.ai.brain.health.AiServiceHealth;
+import elite.intel.ai.brain.health.AiServiceReport;
+import elite.intel.ai.brain.health.AiServiceVerdict;
 import elite.intel.ai.brain.vega.input.VegaSubsystemGate;
+import elite.intel.ai.brain.vega.prompt.SemanticCatalogWarmer;
 import elite.intel.ai.ears.*;
 import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.hands.KeyBindCheck;
@@ -117,6 +123,11 @@ public class AppController {
         systemSession.setVoiceVolume(event.getVolume());
     }
 
+    @Subscribe
+    public void onRadioVolumeChangedEvent(RadioVolumeChangedEvent event) {
+        systemSession.setRadioVolume(event.volume());
+    }
+
     /**
      * Answers every request to move the Sleep/Wake gate - the AI tab button, and the spoken "go to sleep" /
      * "wake up" commands alike. Persists the new state, announces it so the views that show the gate are told
@@ -216,6 +227,8 @@ public class AppController {
             ServiceHolder brain = services.get(ServiceType.VEGA);
             if (brain == null) return;
             appendToLog("Restarting LLM service...");
+            // A restart is how a provider change takes effect; the old provider's record says nothing of the new one.
+            AiServiceHealth.getInstance().reset();
             brain.stop();
             brain.start();
             appendToLog("LLM service restarted");
@@ -227,6 +240,8 @@ public class AppController {
 
     @Subscribe
     void onLanguageChangedEvent(LanguageChangedEvent event) {
+        // The new language's command phrases are all unembedded; embed them before its first order.
+        SemanticCatalogWarmer.warmInBackground();
         new Thread(this::restartEarsService, "EarsRestart-Lang-Thread").start();
         // Delay so the language-change announcement can finish playing before TTS rebuilds
         new Thread(() -> {
@@ -315,6 +330,7 @@ public class AppController {
             try {
                 checkForUpdates();
                 UiBus.publish(new ClearConsoleEvent());
+                AiServiceHealth.getInstance().reset();
                 initServices();
 
                 for (ServiceHolder service : services.values()) {
@@ -322,9 +338,14 @@ public class AppController {
                 }
 
                 transitionTo(ServicesStateEvent.State.RUNNING);
+                // Load the embedding model and embed the command catalog now, so the commander's first order
+                // does not pay ~4 s for it before the LLM is even asked.
+                SemanticCatalogWarmer.warmInBackground();
 
                 Timer connectionCheckTimer = new Timer(2000, e -> {
-                    GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.connectingToLlm")));
+                    if (!LlmProviderResolver.isCloudProviderMissing()) {
+                        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.connectingToLlm")));
+                    }
                     connectionCheck();
                 });
                 connectionCheckTimer.setRepeats(false);
@@ -380,14 +401,19 @@ public class AppController {
     private void connectionCheck() {
         bgExecutor.submit(() -> {
             try {
-                // Probe the live analysis endpoint directly (VEGA and query handlers share the same
-                // provider config). Publishing LlmConnectionStatusEvent drives the UI + retry timer; the
-                // spoken result is silenced during silent retries via suppressConnectionFailSpeech.
-                boolean reachable = ApiFactory.getInstance().getAnalysisEndpoint().verifyConnection();
-                UiBus.publish(new LlmConnectionStatusEvent(reachable));
+                // Probes the command model VEGA runs on. Publishing LlmConnectionStatusEvent drives the UI +
+                // retry timer; the spoken result is silenced during silent retries via suppressConnectionFailSpeech.
+                AiServiceVerdict verdict = AiServiceCheck.live().run();
+                UiBus.publish(new LlmConnectionStatusEvent(verdict.connected()));
+                if (verdict.isSetupGap()) {
+                    // SetupCheck has already said what is missing; saying it again right after adds nothing.
+                    return;
+                }
                 if (!suppressConnectionFailSpeech) {
-                    String key = reachable ? "speech.connectionSuccessful" : "speech.connectionFailed";
-                    GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedResponse(key)));
+                    String line = verdict.connected()
+                            ? StringUtls.localizedResponse("speech.connectionSuccessful")
+                            : AiServiceReport.spoken(verdict);
+                    GameEventBus.publish(new AiVoxResponseEvent(line));
                 }
             } catch (Exception e) {
                 log.warn("Connection check failed", e);

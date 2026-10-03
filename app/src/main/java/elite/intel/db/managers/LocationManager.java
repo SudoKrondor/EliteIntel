@@ -115,7 +115,7 @@ public class LocationManager {
         if (!hasText(locationName)) return;
 
         Database.withDao(LocationDao.class, dao -> {
-            dao.upsert(location.getBodyId(), locationName, location.getStarName(), location.getSystemAddress(), location.toJson());
+            dao.save(location.getBodyId(), locationName, location.getStarName(), location.getSystemAddress(), location.toJson());
             return null;
         });
     }

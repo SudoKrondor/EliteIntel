@@ -82,6 +82,35 @@ class SupportBundleTest {
     }
 
     @Test
+    void carriesTheCustomCommandsFileRawWhenTheCommanderHasOne(@TempDir Path tmp) throws IOException {
+        Path commands = write(tmp, "custom_commands.json", "[{\"actionKey\":\"engage_autopilot\"}]");
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.1.0", "log", null, null, null, null, commands));
+
+        // Byte for byte, not the loaded-and-validated view: a malformed command is a thing being reported,
+        // and loading would drop it before the bundle ever saw it.
+        assertEquals("[{\"actionKey\":\"engage_autopilot\"}]", unzip(zip).get("custom_commands.json"));
+        assertTrue(result.included().contains("custom_commands.json"));
+    }
+
+    @Test
+    void sayingTheCommanderHasNoCustomCommandsIsItselfTheAnswer(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+
+        // The path resolves, the file does not exist. Reported rather than silent, because "could this
+        // have been a macro of theirs" is a question the bundle should answer without a follow-up.
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.1.0", "log", null, null, null, null,
+                        tmp.resolve("custom_commands.json")));
+
+        assertFalse(result.included().contains("custom_commands.json"));
+        assertTrue(result.omitted().stream().anyMatch(line -> line.equals("custom commands - none defined")),
+                result.omitted().toString());
+    }
+
+    @Test
     void aCallerWithNoAudioPipelineIsNotAnIncompleteBundle(@TempDir Path tmp) throws IOException {
         Path zip = tmp.resolve("bundle.zip");
 
@@ -108,10 +137,12 @@ class SupportBundleTest {
             write(journalDir, state, "{}");
         }
         write(bindingsDir, "Custom.4.0.binds", "<Root/>");
+        Path commands = write(tmp, "custom_commands.json", "[]");
         Path zip = tmp.resolve("bundle.zip");
 
         SupportBundle.Result result = SupportBundle.writeTo(zip,
-                new SupportBundle.Sources("1.1.0", "system log line", appLog, journalDir, bindingsDir));
+                new SupportBundle.Sources("1.1.0", "system log line", appLog, journalDir, bindingsDir,
+                        () -> "Verdict: all good", commands));
 
         Map<String, String> entries = unzip(zip);
         assertTrue(result.omitted().isEmpty(), () -> "omitted: " + result.omitted());
@@ -121,6 +152,8 @@ class SupportBundleTest {
         assertEquals("{\"event\":\"Fileheader\"}", entries.get("Journal.2026-08-04T100000.01.log"));
         assertEquals("<Root/>", entries.get("Custom.4.0.binds"));
         assertEquals("{}", entries.get("Status.json"));
+        assertEquals("[]", entries.get("custom_commands.json"));
+        assertEquals("Verdict: all good", entries.get(SupportBundle.MIC_DIAGNOSTICS_ENTRY));
     }
 
     /**
@@ -335,5 +368,33 @@ class SupportBundleTest {
 
         assertTrue(result.omitted().stream().noneMatch(line -> line.startsWith("game state")),
                 result.omitted().toString());
+    }
+
+    @Test
+    void theManifestCarriesTheAiSetup(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.writeTo(zip, new SupportBundle.Sources("1.1.0", "log", null, null, null, null, null,
+                () -> "AI setup:\n  LLM: cloud - MISTRAL, model ministral-8b-2512\n"));
+
+        String manifest = unzip(zip).get(SupportBundle.INFO_ENTRY);
+        assertTrue(manifest.contains("LLM: cloud - MISTRAL, model ministral-8b-2512"), manifest);
+    }
+
+    /**
+     * The settings are read from the database, and a failing database must not cost the bundle its logs.
+     */
+    @Test
+    void anAiSetupThatThrowsStillWritesTheBundle(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip, new SupportBundle.Sources("1.1.0", "log",
+                null, null, null, null, null, () -> {
+            throw new IllegalStateException("database is locked");
+        }));
+
+        assertTrue(result.included().contains(SupportBundle.SESSION_LOG_ENTRY), result.included().toString());
+        String manifest = unzip(zip).get(SupportBundle.INFO_ENTRY);
+        assertTrue(manifest.contains("AI setup: could not be collected"), manifest);
     }
 }

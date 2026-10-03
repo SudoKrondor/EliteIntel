@@ -2,6 +2,9 @@ package elite.intel.ai.hands;
 
 import elite.intel.ai.hands.BindingConflictScanner.CandidateConflict;
 import elite.intel.ai.hands.BindingConflictScanner.Conflict;
+import elite.intel.ai.hands.BindingConflictScanner.Recommendation;
+import elite.intel.ai.hands.BindingConflictScanner.SlotRef;
+import elite.intel.ai.hands.KeyBindingsParser.BindingSlotType;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
@@ -91,8 +94,8 @@ class BindingConflictScannerTest {
 
     @Test
     void uiNavigationNeverConflictsWithShipAction() {
-        // The UI panel is its own input context - ship controls are disabled while it is open, so a
-        // shared key cannot fire both. CycleNextSubsystem (ship) vs UI_Right (UI) is safe.
+        // The panel that has focus is reading that key, so the ship binding on it does not also fire.
+        // CycleNextSubsystem (ship) vs UI_Right (interface) is safe.
         List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
                 "CycleNextSubsystem", Set.of("Key_RightArrow"),
                 "UI_Right", Set.of("Key_RightArrow")));
@@ -240,6 +243,43 @@ class BindingConflictScannerTest {
                 "CycleNextSubsystem", Set.of("Key_LeftControl", "Key_D"))).isEmpty());
     }
 
+    // --- Interface Mode controls are their own context, in every vehicle ---
+
+    @Test
+    void interfaceModeControlsDoNotConflictWithAnyVehicleControl() {
+        // Verbatim from a commander's file of 2026-09-22: pips on the arrow keys with UI navigation in
+        // the arrows' secondary slots, panel and page cycles on C/E/Q alongside on-foot tools, Select on
+        // Space with jump and the SRV vertical thrusters. Thirteen pairs, every one of them fine in game:
+        // the focused panel is reading the key, so the vehicle binding on it does not also fire.
+        assertTrue(BindingConflictScanner.scanKeysets(bindings(
+                "UI_Up", Set.of("Key_UpArrow"),
+                "IncreaseEnginesPower", Set.of("Key_UpArrow"),
+                "IncreaseEnginesPower_Buggy", Set.of("Key_UpArrow"),
+                "UI_Down", Set.of("Key_DownArrow"),
+                "ResetPowerDistribution", Set.of("Key_DownArrow"),
+                "UI_Select", Set.of("Key_Space"),
+                "HumanoidJumpButton", Set.of("Key_Space"),
+                "VerticalThrustersButton", Set.of("Key_Space"),
+                "CycleNextPanel", Set.of("Key_E"),
+                "HumanoidToggleMissionHelpPanelButton", Set.of("Key_E"),
+                "CycleNextPage", Set.of("Key_C"),
+                "HumanoidToggleShieldsButton", Set.of("Key_C"))).isEmpty());
+    }
+
+    @Test
+    void panelAndPageCyclesAreInterfaceControlsNotShipOnes() {
+        // CycleNextPanel carries no UI_ prefix and sits under GENERAL, so the name fallback used to make
+        // it context "ship" - reporting it against ship controls it never co-fires with, and clearing it
+        // against the SRV and on-foot controls it shares a context with. Both directions, one test.
+        assertTrue(BindingConflictScanner.scanKeysets(bindings(
+                "CycleNextPanel", Set.of("Key_E"),
+                "RightThrustButton", Set.of("Key_E"))).isEmpty());
+
+        assertEquals(1, BindingConflictScanner.scanKeysets(bindings(
+                "CyclePreviousPanel", Set.of("Key_Q"),
+                "UI_Left", Set.of("Key_Q"))).size());
+    }
+
     @Test
     void separatingPanelKeysFromUiKeysClearsTheBlockingConflict() {
         // The remedy is separation, exactly as for the map camera: move the SRV map keys off the chords
@@ -368,6 +408,23 @@ class BindingConflictScannerTest {
                 "HumanoidPrimaryInteractButton", Set.of("Key_G")));
 
         assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void emoteSlotsBelongToTheEmoteWheel() {
+        // The commander's own layout: the slots sit on modified 0 and 1, and on the wheel's key. They are
+        // picked from the wheel, so neither the bare modifiers under them nor the wheel key is a clash.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "HumanoidCrouchButton", Set.of("Key_LeftControl"),
+                "HumanoidSprintButton", Set.of("Key_LeftShift"),
+                "HumanoidWalkButton", Set.of("Key_LeftAlt"),
+                "HumanoidEmoteWheelButton", Set.of("Key_B"),
+                "HumanoidEmoteSlot1", Set.of("Key_B"),
+                "HumanoidEmoteSlot2", Set.of("Key_LeftControl", "Key_0"),
+                "HumanoidEmoteSlot3", Set.of("Key_LeftShift", "Key_0"),
+                "HumanoidEmoteSlot4", Set.of("Key_LeftAlt", "Key_0")));
+
+        assertTrue(conflicts.isEmpty(), conflicts.toString());
     }
 
     @Test
@@ -543,6 +600,29 @@ class BindingConflictScannerTest {
     }
 
     @Test
+    void candidateNamesTheSameBindingWhateverOrderTheSlotsArrivedIn() {
+        // Two controls hold the taken chord, so the save-guard has to pick one to name. It sorts by
+        // action then slot before answering, which is the only reason the commander is not told a
+        // different name each time the dialog opens.
+        Map<SlotRef, Set<String>> forwards = new LinkedHashMap<>();
+        forwards.put(new SlotRef("ShipSpotLightToggle", BindingSlotType.SECONDARY), Set.of("Key_W"));
+        forwards.put(new SlotRef("LandingGearToggle", BindingSlotType.PRIMARY), Set.of("Key_W"));
+
+        Map<SlotRef, Set<String>> backwards = new LinkedHashMap<>();
+        backwards.put(new SlotRef("LandingGearToggle", BindingSlotType.PRIMARY), Set.of("Key_W"));
+        backwards.put(new SlotRef("ShipSpotLightToggle", BindingSlotType.SECONDARY), Set.of("Key_W"));
+
+        CandidateConflict first = BindingConflictScanner.candidateConflictInSlotKeysets(
+                "GalaxyMapOpen", Set.of("Key_W"), forwards);
+        CandidateConflict second = BindingConflictScanner.candidateConflictInSlotKeysets(
+                "GalaxyMapOpen", Set.of("Key_W"), backwards);
+
+        assertNotNull(first);
+        assertEquals("LandingGearToggle", first.otherBinding(), "the first by action order wins");
+        assertEquals(first, second, "insertion order must not change which binding is named");
+    }
+
+    @Test
     void candidateBareChordIsCleanWhenOnlyModifiedVariantsExist() {
         // bare Y is free even though Ctrl+Shift+Alt+Y is taken (different chord).
         Map<String, Set<String>> existing = bindings(
@@ -566,5 +646,288 @@ class BindingConflictScannerTest {
         CandidateConflict conflict = BindingConflictScanner.candidateConflict(
                 "GalaxyMapOpen", Set.of("Key_LeftControl", "Key_Y"), existing);
         assertNull(conflict);
+    }
+
+    // --- both slots: chords a single-slot scan could not see ---
+
+    /**
+     * Typed fixture builder: one chord per slot, kept in insertion order so a test can also pin what
+     * the scan does with arrival order.
+     */
+    private static final class Slots {
+        private final Map<SlotRef, Set<String>> m = new LinkedHashMap<>();
+
+        Slots put(String action, BindingSlotType slot, String... keys) {
+            m.put(new SlotRef(action, slot), Set.of(keys));
+            return this;
+        }
+
+        /**
+         * A long-press slot: {@code <Hold Value="1"/>}, shown by Elite as {@code [1](HOLD)}.
+         */
+        Slots hold(String action, BindingSlotType slot, String... keys) {
+            m.put(new SlotRef(action, slot, true), Set.of(keys));
+            return this;
+        }
+
+        Map<SlotRef, Set<String>> build() {
+            return m;
+        }
+    }
+
+    private static Slots slots() {
+        return new Slots();
+    }
+
+    @Test
+    void chordSharedBetweenOnePrimaryAndAnotherSecondaryConflicts() {
+        // The case the action-keyed scan could not express: EliteIntel presses Move Up's Primary F, and
+        // Move Down holds the same F in its Secondary. Both fire in-game; nothing reported it.
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots()
+                .put("MoveUp", BindingSlotType.PRIMARY, "Key_F")
+                .put("MoveDown", BindingSlotType.SECONDARY, "Key_F").build());
+
+        assertEquals(1, conflicts.size());
+        assertEquals("MoveDown", conflicts.get(0).actionA()); // still ordered A < B by action name
+        assertEquals("MoveUp", conflicts.get(0).actionB());
+    }
+
+    @Test
+    void mapCameraOnAPrimaryVersusUiNavigationOnASecondaryIsBlocking() {
+        // The shape this fix exists for: the map camera and UI navigation are both live in the galaxy
+        // map, so a chord they share stops EliteIntel driving it - and splitting that chord across
+        // slots is how it used to go unseen.
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots()
+                .put("CamTranslateForward", BindingSlotType.PRIMARY, "Key_Z")
+                .put("UI_Up", BindingSlotType.SECONDARY, "Key_Z").build());
+
+        assertEquals(1, conflicts.size());
+        assertTrue(conflicts.get(0).blocking());
+    }
+
+    @Test
+    void oneActionHoldingTheSameChordInBothSlotsIsNotAConflict() {
+        // Two ways to fire one action is a setup, not a clash.
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots()
+                .put("GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_Y")
+                .put("GalaxyMapOpen", BindingSlotType.SECONDARY, "Key_Y").build());
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void anActionPairSharingAChordThroughSeveralSlotsIsReportedOnce() {
+        // Four slot pairings produce the same clash; the player has one problem, not four.
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots()
+                .put("ActionOne", BindingSlotType.PRIMARY, "Key_Y")
+                .put("ActionOne", BindingSlotType.SECONDARY, "Key_Y")
+                .put("ActionTwo", BindingSlotType.PRIMARY, "Key_Y")
+                .put("ActionTwo", BindingSlotType.SECONDARY, "Key_Y").build());
+
+        assertEquals(1, conflicts.size());
+    }
+
+    @Test
+    void contextRulesStillApplyAcrossSlots() {
+        // A ship action and its SRV twin never co-fire, whichever slots hold the chord.
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(slots()
+                .put("HeadLookToggle", BindingSlotType.PRIMARY, "Key_O")
+                .put("HeadLookToggle_Buggy", BindingSlotType.SECONDARY, "Key_O").build());
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void candidateChordIsTakenWhenItSitsInAnotherActionsSecondary() {
+        // The save-guard's job: a chord parked in someone else's Secondary is not free.
+        Map<SlotRef, Set<String>> existing = slots()
+                .put("LandingGearToggle", BindingSlotType.SECONDARY, "Key_LeftControl", "Key_Y").build();
+
+        CandidateConflict conflict = BindingConflictScanner.candidateConflictInSlotKeysets(
+                "GalaxyMapOpen", Set.of("Key_LeftControl", "Key_Y"), existing);
+
+        assertNotNull(conflict);
+        assertEquals("LandingGearToggle", conflict.otherBinding());
+    }
+
+    // --- press versus press-and-hold ---
+
+    @Test
+    void aPressAndALongPressOnOneKeyAreTwoControls() {
+        // The commander's on-foot layout, as Elite shows it: 1 selects the primary weapon, [1](HOLD) uses a
+        // health pack; 2 and [2](HOLD) the same for the secondary weapon and an energy cell. J and [J](HOLD)
+        // are the utility weapon and the suit tool.
+        Map<SlotRef, Set<String>> layout = slots()
+                .put("HumanoidSelectPrimaryWeaponButton", BindingSlotType.PRIMARY, "Key_1")
+                .hold("HumanoidHealthPack", BindingSlotType.PRIMARY, "Key_1")
+                .put("HumanoidSelectSecondaryWeaponButton", BindingSlotType.PRIMARY, "Key_2")
+                .hold("HumanoidBattery", BindingSlotType.PRIMARY, "Key_2")
+                .put("HumanoidSelectUtilityWeaponButton", BindingSlotType.PRIMARY, "Key_J")
+                .hold("HumanoidSwitchToSuitTool", BindingSlotType.PRIMARY, "Key_J")
+                .build();
+
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(layout);
+
+        assertTrue(conflicts.isEmpty(), conflicts.toString());
+    }
+
+    @Test
+    void twoLongPressesOnOneKeyStillClash() {
+        Map<SlotRef, Set<String>> layout = slots()
+                .hold("HumanoidHealthPack", BindingSlotType.PRIMARY, "Key_1")
+                .hold("HumanoidBattery", BindingSlotType.PRIMARY, "Key_1")
+                .build();
+
+        assertEquals(1, BindingConflictScanner.scanSlotKeysets(layout).size());
+    }
+
+    @Test
+    void twoPressesOnAHeldKeyStillClash() {
+        Map<SlotRef, Set<String>> layout = slots()
+                .put("HumanoidSelectPrimaryWeaponButton", BindingSlotType.PRIMARY, "Key_1")
+                .hold("HumanoidHealthPack", BindingSlotType.PRIMARY, "Key_1")
+                .put("HumanoidJumpButton", BindingSlotType.PRIMARY, "Key_1")
+                .build();
+
+        List<Conflict> conflicts = BindingConflictScanner.scanSlotKeysets(layout);
+
+        assertEquals(1, conflicts.size(), conflicts.toString());
+        assertEquals("HumanoidJumpButton", conflicts.getFirst().actionA());
+        assertEquals("HumanoidSelectPrimaryWeaponButton", conflicts.getFirst().actionB());
+    }
+
+    @Test
+    void aPressCandidateIsFreeOnAKeyOnlyHeldElsewhere() {
+        Map<SlotRef, Set<String>> existing = slots()
+                .hold("HumanoidHealthPack", BindingSlotType.PRIMARY, "Key_1").build();
+
+        assertNull(BindingConflictScanner.candidateConflictInSlotKeysets(
+                "HumanoidSelectPrimaryWeaponButton", Set.of("Key_1"), false, existing));
+        assertNotNull(BindingConflictScanner.candidateConflictInSlotKeysets(
+                        "HumanoidBattery", Set.of("Key_1"), true, existing),
+                "a long press is still taken by another long press");
+    }
+
+    @Test
+    void candidateIgnoresTheEditedBindingsOwnSecondary() {
+        Map<SlotRef, Set<String>> existing = slots()
+                .put("GalaxyMapOpen", BindingSlotType.SECONDARY, "Key_Y").build();
+
+        assertNull(BindingConflictScanner.candidateConflictInSlotKeysets(
+                "GalaxyMapOpen", Set.of("Key_Y"), existing));
+    }
+
+    @Test
+    void twinsSharingAChordInEitherSlotAreNotRecommended() {
+        // Ship on Primary, SRV on Secondary, same key: already unified, so no nudge.
+        List<Recommendation> recommendations = BindingConflictScanner.recommendVehicleTwinsFromSlotKeysets(slots()
+                .put("HeadLookToggle", BindingSlotType.PRIMARY, "Key_O")
+                .put("HeadLookToggle_Buggy", BindingSlotType.SECONDARY, "Key_O").build());
+
+        assertTrue(recommendations.isEmpty());
+    }
+
+    @Test
+    void twinsWithNoChordInCommonAreStillRecommended() {
+        List<Recommendation> recommendations = BindingConflictScanner.recommendVehicleTwinsFromSlotKeysets(slots()
+                .put("HeadLookToggle", BindingSlotType.PRIMARY, "Key_O")
+                .put("HeadLookToggle_Buggy", BindingSlotType.PRIMARY, "Key_P")
+                .put("HeadLookToggle_Buggy", BindingSlotType.SECONDARY, "Key_Q").build());
+
+        assertEquals(1, recommendations.size());
+        assertEquals("HeadLookToggle", recommendations.get(0).shipAction());
+        assertEquals("HeadLookToggle_Buggy", recommendations.get(0).buggyAction());
+    }
+
+    // --- modifier shadow: a chord's modifier bound on its own elsewhere ---
+
+    @Test
+    void chordWhoseModifierIsBoundOnItsOwnConflicts() {
+        // Field report 2026-09-30: UI Focus (hold) on bare Left Shift, Galaxy Map on Ctrl+Shift+J.
+        // Shift goes down first, UI Focus fires, the map never opens.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "UIFocus", Set.of("Key_LeftShift"),
+                "GalaxyMapOpen", Set.of("Key_LeftShift", "Key_LeftControl", "Key_J")));
+
+        assertEquals(1, conflicts.size());
+        Conflict c = conflicts.get(0);
+        assertEquals("GalaxyMapOpen", c.actionA());
+        assertEquals(Set.of("Key_LeftShift", "Key_LeftControl", "Key_J"), c.chordA());
+        assertEquals("UIFocus", c.actionB());
+        assertEquals(Set.of("Key_LeftShift"), c.chordB());
+        assertEquals(c.chordA(), c.chord(), "the announced chord is the full combination");
+        assertFalse(c.blocking());
+        assertTrue(c.description().contains("Left Shift"), c.description());
+    }
+
+    @Test
+    void bareModifierInAnotherVehicleDoesNotShadowTheChord() {
+        // On-foot sprint on Left Shift never fires while flying the ship.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "HumanoidSprintButton", Set.of("Key_LeftShift"),
+                "GalaxyMapOpen", Set.of("Key_LeftShift", "Key_J")));
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void bareModifierInASubModeOverlayDoesNotShadowTheChord() {
+        // Free camera's HUD toggle on Left Control exists only inside the camera.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "FreeCamToggleHUD", Set.of("Key_LeftControl"),
+                "GalaxyMapOpen", Set.of("Key_LeftControl", "Key_J")));
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void bareMainKeyStillCoexistsWithAModifiedChordOnIt() {
+        // Only modifier keys shadow: bare J and Ctrl+J are distinct chords, as before.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "ActionOne", Set.of("Key_J"),
+                "ActionTwo", Set.of("Key_LeftControl", "Key_J")));
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void chordOnADifferentModifierThanTheBareOneIsFree() {
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "UIFocus", Set.of("Key_LeftShift"),
+                "GalaxyMapOpen", Set.of("Key_RightControl", "Key_J")));
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void candidateHoldingAModifierBoundOnItsOwnIsRejected() {
+        CandidateConflict conflict = BindingConflictScanner.candidateConflict(
+                "GalaxyMapOpen", Set.of("Key_LeftShift", "Key_LeftControl", "Key_J"),
+                bindings("UIFocus", Set.of("Key_LeftShift")));
+
+        assertNotNull(conflict);
+        assertEquals("UIFocus", conflict.otherBinding());
+    }
+
+    @Test
+    void bareModifierCandidateIsRejectedWhenAChordAlreadyHoldsIt() {
+        CandidateConflict conflict = BindingConflictScanner.candidateConflict(
+                "UIFocus", Set.of("Key_LeftShift"),
+                bindings("GalaxyMapOpen", Set.of("Key_LeftShift", "Key_J")));
+
+        assertNotNull(conflict);
+        assertEquals("GalaxyMapOpen", conflict.otherBinding());
+    }
+
+    @Test
+    void surfaceScannerThirdPersonControlsNeverClashWithShipControls() {
+        // The Detailed Surface Scanner is a screen of its own: nothing else fires while it is up.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "UIFocus", Set.of("Key_LeftShift"),
+                "SAAThirdPersonFovInButton", Set.of("Key_LeftShift", "Key_F3"),
+                "SAAThirdPersonYawLeftButton", Set.of("Key_F4"),
+                "ToggleCargoScoop", Set.of("Key_F4")));
+
+        assertTrue(conflicts.isEmpty(), conflicts.toString());
     }
 }

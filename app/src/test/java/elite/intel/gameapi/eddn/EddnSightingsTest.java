@@ -12,6 +12,10 @@ import elite.intel.util.Cypher;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -37,21 +41,21 @@ class EddnSightingsTest {
     void oneSweepFillsBothLedgers() {
         String envelope = """
                 {"$schemaRef": "https://eddn.edcd.io/schemas/fsssignaldiscovered/1",
-                 "header": {"uploaderID": "abc", "softwareName": "E:D Market Connector [Windows]", "gatewayTimestamp": "2026-09-14T20:00:05.1Z"},
-                 "message": {"event": "FSSSignalDiscovered", "horizons": true, "odyssey": true, "timestamp": "2026-09-14T20:00:01Z",
+                 "header": {"uploaderID": "abc", "softwareName": "E:D Market Connector [Windows]", "gatewayTimestamp": "%1$s"},
+                 "message": {"event": "FSSSignalDiscovered", "horizons": true, "odyssey": true, "timestamp": "%1$s",
                    "SystemAddress": 90001, "StarSystem": "Eddn Sweep A", "StarPos": [10000.0, 0.0, 0.0],
                    "signals": [
-                     {"timestamp": "2026-09-14T20:00:01Z", "SignalName": "Keats Landing", "SignalType": "Outpost", "IsStation": true},
-                     {"timestamp": "2026-09-14T20:00:01Z", "SignalName": "$MULTIPLAYER_SCENARIO79_TITLE;", "SignalType": "ResourceExtraction"},
-                     {"timestamp": "2026-09-14T20:00:01Z", "SignalName": "$MULTIPLAYER_SCENARIO79_TITLE;", "SignalType": "ResourceExtraction"},
-                     {"timestamp": "2026-09-14T20:00:01Z", "SignalName": "$MULTIPLAYER_SCENARIO77_TITLE;", "SignalType": "ResourceExtraction"},
-                     {"timestamp": "2026-09-14T20:00:01Z", "SignalName": "$Warzone_PointRace_High:#index=1;", "SignalType": "Combat"},
-                     {"timestamp": "2026-09-14T20:00:01Z", "SignalName": "$Warzone_PointRace_Low:#index=1;", "SignalType": "Combat"},
-                     {"timestamp": "2026-09-14T20:00:01Z", "SignalName": "$Warzone_PointRace_Low:#index=1;", "SignalType": "Combat"},
-                     {"timestamp": "2026-09-14T20:00:01Z", "SignalName": "$Warzone_PointRace_Low:#index=2;", "SignalType": "Combat"},
-                     {"timestamp": "2026-09-14T20:00:01Z", "SignalName": "$Warzone_Powerplay_Med:#index=1;", "SignalType": "Combat"}
+                     {"timestamp": "%1$s", "SignalName": "Keats Landing", "SignalType": "Outpost", "IsStation": true},
+                     {"timestamp": "%1$s", "SignalName": "$MULTIPLAYER_SCENARIO79_TITLE;", "SignalType": "ResourceExtraction"},
+                     {"timestamp": "%1$s", "SignalName": "$MULTIPLAYER_SCENARIO79_TITLE;", "SignalType": "ResourceExtraction"},
+                     {"timestamp": "%1$s", "SignalName": "$MULTIPLAYER_SCENARIO77_TITLE;", "SignalType": "ResourceExtraction"},
+                     {"timestamp": "%1$s", "SignalName": "$Warzone_PointRace_High:#index=1;", "SignalType": "Combat"},
+                     {"timestamp": "%1$s", "SignalName": "$Warzone_PointRace_Low:#index=1;", "SignalType": "Combat"},
+                     {"timestamp": "%1$s", "SignalName": "$Warzone_PointRace_Low:#index=1;", "SignalType": "Combat"},
+                     {"timestamp": "%1$s", "SignalName": "$Warzone_PointRace_Low:#index=2;", "SignalType": "Combat"},
+                     {"timestamp": "%1$s", "SignalName": "$Warzone_Powerplay_Med:#index=1;", "SignalType": "Combat"}
                    ]}}
-                """;
+                """.formatted(minutesAgo(50));
 
         assertTrue(sightings.accept(envelope));
 
@@ -71,16 +75,16 @@ class EddnSightingsTest {
         String envelope = """
                 {"header": {"uploaderID": "abc", "softwareName": "EDDiscovery"},
                  "$schemaRef": "https://eddn.edcd.io/schemas/journal/1",
-                 "message": {"timestamp": "2026-09-14T20:10:00Z", "event": "FSDJump",
+                 "message": {"timestamp": "%s", "event": "FSDJump",
                    "StarSystem": "Eddn War B", "SystemAddress": 90002, "StarPos": [11000.0, 0.0, 0.0],
                    "Factions": [{"Name": "Starlance Alpha", "FactionState": "War"}],
                    "Conflicts": [
                      {"WarType": "election", "Status": "active", "Faction1": {"Name": "Voters", "Stake": "", "WonDays": 1}, "Faction2": {"Name": "Others", "Stake": "", "WonDays": 0}},
                      {"WarType": "war", "Status": "active", "Faction1": {"Name": "Starlance Alpha", "Stake": "Cole Vista", "WonDays": 3}, "Faction2": {"Name": "Explorer on Tour", "Stake": "Marques Prospect", "WonDays": 3}}
                    ]}}
-                """;
+                """.formatted(minutesAgo(40));
         assertTrue(sightings.accept(envelope));
-        sightings.accept(sweep("Eddn War B", 90002, 11000.0, "2026-09-14T20:10:30Z",
+        sightings.accept(sweep("Eddn War B", 90002, 11000.0, minutesAgo(39),
                 "$Warzone_PointRace_Med:#index=1;"));
 
         WarZone war = ConflictZoneManager.getInstance()
@@ -92,17 +96,17 @@ class EddnSightingsTest {
 
     @Test
     void anArrivalWithNoWarEndsTheOneOnFile() {
-        sightings.accept(sweep("Eddn Peace C", 90003, 12000.0, "2026-09-14T20:20:00Z",
+        sightings.accept(sweep("Eddn Peace C", 90003, 12000.0, minutesAgo(30),
                 "$Warzone_PointRace_High:#index=1;"));
         Coordinates near = new Coordinates("Eddn Near C", 12000.5, 0, 0);
         assertFalse(ConflictZoneManager.getInstance().bestWarZones(near, 1).isEmpty());
 
         String envelope = """
                 {"$schemaRef": "https://eddn.edcd.io/schemas/journal/1", "header": {},
-                 "message": {"timestamp": "2026-09-14T21:00:00Z", "event": "Location", "Docked": true,
+                 "message": {"timestamp": "%s", "event": "Location", "Docked": true,
                    "StarSystem": "Eddn Peace C", "SystemAddress": 90003, "StarPos": [12000.0, 0.0, 0.0],
                    "Factions": [{"Name": "Somebody", "FactionState": "Boom"}]}}
-                """;
+                """.formatted(minutesAgo(10));
         assertTrue(sightings.accept(envelope));
 
         assertTrue(ConflictZoneManager.getInstance().bestWarZones(near, 1).isEmpty(),
@@ -116,9 +120,17 @@ class EddnSightingsTest {
                 """), "a commodity message is never parsed, so its shape cannot hurt");
         assertFalse(sightings.accept("""
                 {"$schemaRef": "https://eddn.edcd.io/schemas/journal/1", "header": {},
-                 "message": {"timestamp": "2026-09-14T21:00:00Z", "event": "Scan", "StarSystem": "Eddn Scan D", "SystemAddress": 90004, "StarPos": [1,2,3]}}
-                """), "a Scan says nothing about wars");
+                 "message": {"timestamp": "%s", "event": "Scan", "StarSystem": "Eddn Scan D", "SystemAddress": 90004, "StarPos": [1,2,3]}}
+                """.formatted(minutesAgo(5))), "a Scan says nothing about wars");
         assertNull(ConflictZoneManager.getInstance().zonesIn("Eddn Scan D"));
+    }
+
+    /**
+     * A timestamp shortly before the test runs. Sightings are dated against the real clock and a war unseen
+     * for a week expires, so a fixed date turns every war in these cases stale once it is a week old.
+     */
+    private static String minutesAgo(int minutes) {
+        return Instant.now().minus(Duration.ofMinutes(minutes)).truncatedTo(ChronoUnit.SECONDS).toString();
     }
 
     private static String sweep(String starSystem, long address, double x, String timestamp, String... symbols) {

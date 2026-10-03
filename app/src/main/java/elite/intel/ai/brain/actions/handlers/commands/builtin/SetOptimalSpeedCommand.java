@@ -28,10 +28,12 @@ public final class SetOptimalSpeedCommand implements IntelCommand {
         return ID;
     }
 
-    /** Ship throttle: only while piloting the main ship and not docked/landed (no throttle when stationary). */
+    /**
+     * Ship throttle keys: main ship, fighter or Nomad (a wheeled SRV ignores them), and not while stationary.
+     */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return (status.isInMainShip() || status.isInSrv() || status.isInFighter()) && (!status.isDocked() && !status.isLanded());
+        return (status.isInMainShip() || status.isInNomad() || status.isInFighter()) && (!status.isDocked() && !status.isLanded());
     }
 
     @Override

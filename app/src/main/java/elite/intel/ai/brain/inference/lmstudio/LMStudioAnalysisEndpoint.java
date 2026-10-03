@@ -93,12 +93,4 @@ public class LMStudioAnalysisEndpoint extends AiEndPoint implements AiAnalysisIn
             return err;
         }
     }
-
-    @Override
-    public boolean verifyConnection() {
-        LMStudioClient client = LMStudioClient.getInstance();
-        return probeChatStyle(client.createPrompt(LMStudioClient.MODEL_QUERIES, 0.70f), client,
-                root -> root.has("choices") && !root.getAsJsonArray("choices").isEmpty());
-    }
-
 }

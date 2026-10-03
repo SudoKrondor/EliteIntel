@@ -20,7 +20,9 @@ public interface GameSessionDao {
                                                              rmsThresholdLow, encryptedLLMKey, encryptedTTSKey,
                                                              speechSpeed, googleWaveNetPitch,
                                                              keyInputDelayMs,
-                                                             useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, ttsProvider, notificationVolume, sttThreads, voiceVolume,
+                                                             useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, ttsProvider, llmProvider, notificationVolume, sttThreads, voiceVolume, radioVolume,
+                                                             transmissionTones, enhancedRadioEffect, effectsOnRadio, effectsOnVegaAway,
+                                                             transmissionToneVolume, supertonicBoostPercent,
                                                              lmStudioAddress, lmStudioCommandModel,
                                                              aiLanguage,
                                                              audioInputDevice, audioOutputDevice,
@@ -36,7 +38,9 @@ public interface GameSessionDao {
                                                       :rmsThresholdLow, :encryptedLLMKey, :encryptedTTSKey,
                                                       :speechSpeed, :googleWaveNetPitch,
                                                       :keyInputDelayMs,
-                                                      :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :ttsProvider, :notificationVolume, :sttThreads, :voiceVolume,
+                                                      :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :ttsProvider, :llmProvider, :notificationVolume, :sttThreads, :voiceVolume, :radioVolume,
+                                                      :transmissionTones, :enhancedRadioEffect, :effectsOnRadio, :effectsOnVegaAway,
+                                                      :transmissionToneVolume, :supertonicBoostPercent,
                                                       :lmStudioAddress, :lmStudioCommandModel,
                                                       :aiLanguage,
                                                       :audioInputDevice, :audioOutputDevice,
@@ -75,9 +79,17 @@ public interface GameSessionDao {
             session.setUseLocalQueryLlm(rs.getBoolean("useLocalQueryLlm"));
             session.setUseLocalTTS(rs.getBoolean("useLocalTTS"));
             session.setTtsProvider(rs.getString("ttsProvider"));
+            session.setLlmProvider(rs.getString("llmProvider"));
             session.setNotificationVolume(rs.getFloat("notificationVolume"));
             session.setSttThreads(rs.getInt("sttThreads"));
             session.setVoiceVolume(rs.getInt("voiceVolume"));
+            session.setRadioVolume(rs.getInt("radioVolume"));
+            session.setTransmissionTones(rs.getBoolean("transmissionTones"));
+            session.setEnhancedRadioEffect(rs.getBoolean("enhancedRadioEffect"));
+            session.setEffectsOnRadio(rs.getBoolean("effectsOnRadio"));
+            session.setEffectsOnVegaAway(rs.getBoolean("effectsOnVegaAway"));
+            session.setTransmissionToneVolume(rs.getInt("transmissionToneVolume"));
+            session.setSupertonicBoostPercent(rs.getInt("supertonicBoostPercent"));
             session.setLmStudioAddress(rs.getString("lmStudioAddress"));
             session.setLmStudioCommandModel(rs.getString("lmStudioCommandModel"));
             session.setAiLanguage(rs.getString("aiLanguage"));
@@ -128,8 +140,24 @@ public interface GameSessionDao {
          */
         private boolean useLocalTTS;
         private String ttsProvider;
+        /**
+         * The cloud LLM provider the commander picked, as a {@link elite.intel.ai.ProviderEnum} name, or
+         * {@code null} for none. Text, and read back leniently, so a provider written by a newer build reads as
+         * "not selected" rather than breaking an older one.
+         */
+        private String llmProvider;
         private Integer sttThreads;
         private Integer voiceVolume;
+        /**
+         * Level of the radio engine's chatter, 0 to 100 percent, independent of {@link #voiceVolume}.
+         */
+        private Integer radioVolume;
+        private boolean transmissionTones;
+        private boolean enhancedRadioEffect;
+        private boolean effectsOnRadio;
+        private boolean effectsOnVegaAway;
+        private int transmissionToneVolume = 35;
+        private int supertonicBoostPercent;
         private String lmStudioAddress;
         private String lmStudioCommandModel;
         private String aiLanguage;
@@ -276,6 +304,14 @@ public interface GameSessionDao {
             this.ttsProvider = ttsProvider;
         }
 
+        public String getLlmProvider() {
+            return llmProvider;
+        }
+
+        public void setLlmProvider(String llmProvider) {
+            this.llmProvider = llmProvider;
+        }
+
         public Float getNotificationVolume() {
             return notificationVolume;
         }
@@ -299,6 +335,27 @@ public interface GameSessionDao {
         public void setVoiceVolume(Integer voiceVolume) {
             this.voiceVolume = voiceVolume;
         }
+
+        public Integer getRadioVolume() {
+            return radioVolume;
+        }
+
+        public void setRadioVolume(Integer radioVolume) {
+            this.radioVolume = radioVolume;
+        }
+
+        public boolean isTransmissionTones() { return transmissionTones; }
+        public void setTransmissionTones(boolean value) { transmissionTones = value; }
+        public boolean isEnhancedRadioEffect() { return enhancedRadioEffect; }
+        public void setEnhancedRadioEffect(boolean value) { enhancedRadioEffect = value; }
+        public boolean isEffectsOnRadio() { return effectsOnRadio; }
+        public void setEffectsOnRadio(boolean value) { effectsOnRadio = value; }
+        public boolean isEffectsOnVegaAway() { return effectsOnVegaAway; }
+        public void setEffectsOnVegaAway(boolean value) { effectsOnVegaAway = value; }
+        public int getTransmissionToneVolume() { return transmissionToneVolume; }
+        public void setTransmissionToneVolume(int value) { transmissionToneVolume = value; }
+        public int getSupertonicBoostPercent() { return supertonicBoostPercent; }
+        public void setSupertonicBoostPercent(int value) { supertonicBoostPercent = value; }
 
         public String getLmStudioAddress() {
             return lmStudioAddress;

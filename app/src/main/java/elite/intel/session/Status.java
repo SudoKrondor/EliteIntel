@@ -11,6 +11,11 @@ public class Status extends StatusFlags {
     private static volatile Status instance; // Singleton instance
     private boolean isFighterOut = false;
     private boolean okToAnnounceLoadout = true;
+    /**
+     * Whether the journal last reported the galaxy map's own music track. In memory only: it is the map's
+     * live state, not something to carry across a restart. See {@link #isGalaxyMapOpen()} for why it exists.
+     */
+    private volatile boolean galaxyMapMusicPlaying = false;
 
     private Status() {
         //
@@ -84,6 +89,23 @@ public class Status extends StatusFlags {
         });
     }
 
+    /**
+     * Records that the game has closed: no flags and no panel, the same state the game reports at its main
+     * menu. Everything else in the last reading is kept.
+     * <p>
+     * WHY: the reading is stored, and nothing promises the game's last Status.json was written at the main
+     * menu. Without this, the last in-game state - on foot, in an SRV - could outlive the game and keep
+     * deciding how VEGA sounds.
+     */
+    public void markGameClosed(String timestamp) {
+        GameEvents.StatusEvent closed = getStatus();
+        closed.setFlags(0);
+        closed.setFlags2(0);
+        closed.setGuiFocus(0);
+        closed.setTimestamp(timestamp);
+        setStatus(closed);
+    }
+
     // --- Serialization helpers ---
 
     private static String pipsToString(int[] pips) {
@@ -144,8 +166,25 @@ public class Status extends StatusFlags {
         return getGuiFocus() == GuiFocus.STATION_SERVICES;
     }
 
+    /**
+     * Whether the galaxy map is up, by either signal the game gives.
+     * <p>
+     * WHY two signals: Status.json carries {@code GuiFocus} only while the commander is in a vehicle. On foot
+     * the field is absent altogether, so a map opened from the concourse never showed here, and every step
+     * gated on it either waited out its whole timeout (the route plotter sat 15 s on an open map before
+     * typing - commander bundle 2026-09-20) or never fired (the close-before-open toggle). The journal's
+     * {@code Music} cue is {@code GalaxyMap} exactly while the map is open, in every context, and is the only
+     * signal on foot; in a vehicle the two agree, and whichever the game writes first counts.
+     */
     public boolean isGalaxyMapOpen() {
-        return getGuiFocus() == GuiFocus.GALAXY_MAP;
+        return getGuiFocus() == GuiFocus.GALAXY_MAP || galaxyMapMusicPlaying;
+    }
+
+    /**
+     * Recorded from the journal's {@code Music} cue: true while the galaxy map's track plays.
+     */
+    public void setGalaxyMapMusicPlaying(boolean playing) {
+        this.galaxyMapMusicPlaying = playing;
     }
 
     public boolean isSystemMapOpen() {
@@ -306,6 +345,15 @@ public class Status extends StatusFlags {
 
     public boolean isInSrv() {
         return isInSrv(getStatus().getFlags());
+    }
+
+    /**
+     * In the Nomad. The game reports it as an SRV ({@link #isInSrv()} is true in it, and stays true), so this
+     * narrows that by the vehicle the journal says was deployed - see {@link DeployedVehicle}. Its panels and
+     * maps answer the SRV ({@code _Buggy}) bindings; its flight controls and lights work like a ship's.
+     */
+    public boolean isInNomad() {
+        return isInSrv() && DeployedVehicle.getInstance().isNomad();
     }
 
     public boolean isInMainShip() {

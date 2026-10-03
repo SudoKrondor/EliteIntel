@@ -32,6 +32,14 @@ public final class SetHomeSystemCommand implements IntelCommand {
         return ID;
     }
 
+    /**
+     * Sets the home system, but that overrides whatever home system was set before.
+     */
+    @Override
+    public boolean isDangerous() {
+        return true;
+    }
+
     /** App-side bookkeeping (tags current system as home); executable in any location. */
     @Override
     public boolean isVisibleForLLM(Status status) {

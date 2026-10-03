@@ -13,17 +13,18 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
     private final String voiceName;
     private final boolean canBeInterrupted;
     private final boolean isRadio;
+    private final boolean vegaSpeech;
     private final String speaker;
     private final String speakerKey;
     private final Set<String> reservedVoices;
     private final VocalisationHandle handle;
 
     public VocalisationRequestEvent(String textToVoice, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted) {
-        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, null, Set.of(), null);
+        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, null, Set.of(), null, false);
     }
 
     public VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted) {
-        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, false, null, null, Set.of(), null);
+        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, false, null, null, Set.of(), null, false);
     }
 
     public VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, boolean isRadio, @Nullable String speaker) {
@@ -35,19 +36,17 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
     }
 
     public VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, boolean isRadio, @Nullable String speaker, Set<String> reservedVoices, @Nullable String speakerKey) {
-        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, isRadio, speaker, null, reservedVoices, speakerKey);
+        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, isRadio, speaker, null, reservedVoices, speakerKey, false);
     }
 
     /**
      * Used when a completion signal is required (e.g. when routing a customCommand SPEAK request).
      */
     public VocalisationRequestEvent(String textToVoice, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, @Nullable CompletableFuture<Void> completionFuture) {
-        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of(), null);
+        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of(), null, false);
     }
 
-    /**
-     * Creates a tracked VEGA request while preserving its correlation id through the Mouth pipeline.
-     */
+    /** Creates a tracked request while preserving its correlation id through the Mouth pipeline. */
     public static VocalisationRequestEvent tracked(
             String requestId,
             String textToVoice,
@@ -56,7 +55,15 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
             CompletableFuture<Void> completionFuture
     ) {
         return new VocalisationRequestEvent(
-                requestId, textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of(), null);
+                requestId, textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of(), null, false);
+    }
+
+    /** Only the VEGA speech gateway sets this marker; other system responses use the ordinary route. */
+    public static VocalisationRequestEvent trackedVega(
+            String requestId, String textToVoice, Class<? extends BaseVoxEvent> originType,
+            boolean canBeInterrupted, CompletableFuture<Void> completionFuture) {
+        return new VocalisationRequestEvent(
+                requestId, textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of(), null, true);
     }
 
     private VocalisationRequestEvent(
@@ -69,7 +76,8 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
             @Nullable String speaker,
             @Nullable CompletableFuture<Void> completionFuture,
             Set<String> reservedVoices,
-            @Nullable String speakerKey
+            @Nullable String speakerKey,
+            boolean vegaSpeech
     ) {
         super(textToVoice, false);
         this.voiceName = voiceName;
@@ -77,6 +85,7 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
         this.originType = originType;
         this.canBeInterrupted = canBeInterrupted;
         this.isRadio = isRadio;
+        this.vegaSpeech = vegaSpeech;
         this.speaker = speaker;
         this.speakerKey = speakerKey;
         this.handle = new VocalisationHandle(requestId, canBeInterrupted, completionFuture);
@@ -100,6 +109,11 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
      */
     public boolean isRadio() {
         return isRadio;
+    }
+
+    /** True only for requests sent by VEGA's speech gateway, never for system callouts. */
+    public boolean isVegaSpeech() {
+        return vegaSpeech;
     }
 
     /**

@@ -13,4 +13,11 @@ public interface DangerousActionPolicy {
 
     /** Whether this tool invocation is a dangerous action that must be confirmed before execution. */
     boolean isDangerous(LlmToolInvocation invocation);
+
+    /**
+     * The action's own confirmation question, or null for the generic one.
+     */
+    default String confirmationPrompt(LlmToolInvocation invocation) {
+        return null;
+    }
 }

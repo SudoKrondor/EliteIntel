@@ -1,10 +1,12 @@
 package elite.intel.ai.brain.vega.input;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.vega.VegaConfig;
+import elite.intel.ai.brain.i18n.ConfirmationReplies;
+import elite.intel.ai.brain.vega.VegaAddressing;
 import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.ai.brain.vega.VegaRuntimeGraph;
 import elite.intel.ai.brain.vega.VegaRuntimeGraphFactory;
+import elite.intel.ai.brain.vega.confirm.ConfirmationCoordinator;
 import elite.intel.ai.brain.vega.confirm.DangerousActionConfirmedEvent;
 import elite.intel.ai.brain.vega.execution.ExecutionGateway;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
@@ -13,6 +15,8 @@ import elite.intel.ai.brain.vega.speech.SpeechGateway;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.NormalizedUserInputEvent;
 import elite.intel.gameapi.UserInputEvent;
+import elite.intel.i18n.Language;
+import elite.intel.session.SystemSession;
 import elite.intel.ui.controller.ManagedService;
 
 /**
@@ -59,7 +63,9 @@ public final class VegaSubsystemGate implements ManagedService {
     }
 
     /**
-     * Commander voice input gate. A spoken confirmation code word confirms a frozen dangerous action.
+     * Commander voice input gate. While a dangerous action waits for confirmation, the next utterance answers it:
+     * a yes runs it, a no discards it, and anything else discards it and is then handled as the new request it
+     * is - the commander has moved on, and a destructive action never runs on anything short of a clear yes.
      */
     @Subscribe
     public void onUserInput(UserInputEvent event) {
@@ -68,12 +74,23 @@ public final class VegaSubsystemGate implements ManagedService {
             return;
         }
         String input = event.getUserInput();
-        if (VegaConfig.isConfirmationCodeWord(input)) {
-            // The code word never reaches the dispatcher, so this branch echoes it to the UI/OBS listeners
-            // itself. It is matched literally, so the raw transcript is exactly what VEGA acted on.
-            GameEventBus.publish(new NormalizedUserInputEvent(input));
-            runtimeGraph.confirmationCoordinator().confirm();
-            return;
+        ConfirmationCoordinator confirmation = runtimeGraph.confirmationCoordinator();
+        if (confirmation.isPending()) {
+            Language language = SystemSession.getInstance().getLanguage();
+            switch (ConfirmationReplies.classify(language, VegaAddressing.stripLeadingName(input))) {
+                case AFFIRMATIVE -> {
+                    // An answer never reaches the dispatcher, so this branch echoes it to the UI/OBS listeners.
+                    GameEventBus.publish(new NormalizedUserInputEvent(input));
+                    confirmation.confirm();
+                    return;
+                }
+                case NEGATIVE -> {
+                    GameEventBus.publish(new NormalizedUserInputEvent(input));
+                    confirmation.cancel();
+                    return;
+                }
+                case OTHER -> confirmation.cancel(); // frees the commander lane before the new request queues on it
+            }
         }
         // Everything else is echoed by the dispatcher, which alone knows the canonical form of the words.
         runtimeGraph.thoughtDispatcher().submitCommanderInput(input);

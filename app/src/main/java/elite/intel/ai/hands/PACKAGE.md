@@ -57,12 +57,8 @@ The public API. Every command handler that needs to press keys builds a
 ```java
 GameControllerBus.publish(GameInputSequenceEvent.of(
         GameInputStep.bindingTap(BINDING_GALAXY_MAP.getGameBinding()),
-        GameInputStep.
-
-delay(3000),
-    GameInputStep.
-
-rawKey(KeyProcessor.KEY_ENTER)
+        GameInputStep.delay(3000),
+        GameInputStep.rawKey(KeyProcessor.KEY_ENTER, 0, 0)  // no modifier, tap not hold
 ));
 ```
 
@@ -193,7 +189,10 @@ Monitors the bindings directory via `WatchService` on a dedicated background thr
 On startup and on any `.binds` file create/modify event:
 
 1. Re-resolves the active file via `BindingsLoader`.
-2. Parses it with `KeyBindingsParser.parseBindings()`.
+2. Parses it with `KeyBindingsParser.parseBindingSlots()`, then derives the execution view with
+   `toExecutableBindings()`. Both are published as one immutable snapshot, so `getBindings()`
+   (the one key per control that EliteIntel presses) and `getBindingSlots()` (both slots, for
+   conflict scanning) can never be read from different generations of the file.
 3. Publishes `BindingsUpdatedEvent` on the EventBus.
 
 After each file event:
@@ -325,7 +324,7 @@ Classifies a binding ID into a
 `GlobalSettingsManager` toggle.
 
 **`RoutePlotter.plotRoute(destination)`** - publishes a full galaxy-map navigation sequence:
-wait for any open map to close → open galaxy map → wait for `GuiFocus` to report it open → settle → zoom in → navigate to search → type destination → arrow-down → Enter → Enter. The two waits are
+wait for any open map to close → open galaxy map → wait for `GuiFocus` to report it open → settle → zoom in → navigate to search → type destination → Enter → `UI_Right` → `UI_Select` → yaw to grab focus. The two waits are
 `WAIT_UNTIL` steps rather than fixed delays: the map takes seconds to appear on slower hardware, and every step after it is worthless if it fires while the map is still opening.
 
 **`UiNavCommon`** - shared UI helpers: `close()` (handles open system/galaxy map, then

@@ -6,7 +6,6 @@ import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
 import elite.intel.ai.brain.actions.handlers.commands.builtin.IgnoreNonsensicalInputCommand;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
-import elite.intel.ai.brain.actions.handlers.queries.ConnectionCheckQuery;
 import elite.intel.ai.brain.actions.handlers.queries.GeneralConversationQuery;
 import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import elite.intel.ai.brain.actions.handlers.queries.RegisterQuery;
@@ -18,8 +17,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
-
-import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
 
 /**
  * Builds the legacy phrase-to-action map from available, localized commands and queries. Action ids provide the
@@ -74,7 +71,6 @@ public class AiActionMapGenerator {
         } else {
             map.put("ignore_nonsensical_input", IgnoreNonsensicalInputCommand.ID);
         }
-        map.put(CONNECTION_CHECK_COMMAND, ConnectionCheckQuery.ID);
         CustomCommandRegistry.getInstance().contributeToActionMap(map);
 
         return map;

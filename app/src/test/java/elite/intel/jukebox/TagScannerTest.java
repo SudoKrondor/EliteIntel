@@ -180,7 +180,7 @@ class TagScannerTest {
 
         @Override
         public TrackTags read(Path file) throws IOException {
-            String path = file.toString();
+            String path = file.toString().replace('\\', '/');
             reads.incrementAndGet();
             opened.add(path);
             if (failures.contains(path)) throw new IOException("cannot read " + path);

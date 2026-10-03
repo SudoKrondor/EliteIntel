@@ -9,6 +9,8 @@ import elite.intel.gameapi.search.spansh.traderoute.TradeRouteSearchCriteria;
 import elite.intel.util.json.GsonFactory;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
@@ -257,6 +259,26 @@ class CommodityMarketSearchTest {
         // A starport is where Spansh last recorded it however old the record is; filtering static markets by
         // sighting age would discard real answers for no gain.
         assertFalse(filtersOf(criteriaOf(profile(), "Gold", 60, true)).has("updated_at"));
+    }
+
+    @Test
+    void everyAttemptDemandsAMarketPricedWithinTheWeek() {
+        // Measured live 2026-09-27: Spansh named Oz Prospect for Battle Weapons from a market uploaded 355
+        // days earlier, and the commander arrived to find no starport in the system at all. The window goes
+        // on MARKET_updated_at: updated_at moves with any change to the station record and let a 13-day-old
+        // price through.
+        for (List<String> types : List.of(TradeStationSearchCriteria.StationType.EVERY_STATIC_TRADE_TYPE,
+                TradeStationSearchCriteria.StationType.CARRIER_TRADE_TYPES)) {
+            JsonObject filters = filtersOf(criteriaOf(profile(), "Gold", 60, false, types, 1));
+
+            assertTrue(filters.has("market_updated_at"), () -> types + " " + filters);
+            JsonArray window = filters.getAsJsonObject("market_updated_at").getAsJsonArray("value");
+            Instant from = Instant.parse(window.get(0).getAsString());
+            Instant to = Instant.parse(window.get(1).getAsString());
+            assertEquals(SpanshCommoditySearch.MARKET_PRICED_WITHIN_DAYS, Duration.between(from, to).toDays());
+            assertEquals("<=>", filters.getAsJsonObject("market_updated_at").get("comparison").getAsString(),
+                    "a bare comparison is accepted by Spansh and then matches nothing");
+        }
     }
 
     @Test

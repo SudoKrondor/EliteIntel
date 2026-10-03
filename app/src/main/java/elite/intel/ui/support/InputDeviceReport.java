@@ -181,7 +181,7 @@ final class InputDeviceReport {
         List<String> mice = new ArrayList<>();
         WmiResult<PointingDeviceProperty> mouseRows = wmi.queryWMI(new WmiQuery<>("Win32_PointingDevice", PointingDeviceProperty.class));
         for (int i = 0; i < mouseRows.getResultCount(); i++) {
-            int buttons = WmiUtil.getUint16(mouseRows, PointingDeviceProperty.NUMBEROFBUTTONS, i);
+            long buttons = safeUint(mouseRows.getValue(PointingDeviceProperty.NUMBEROFBUTTONS, i));
             mice.add(windowsDevice(WmiUtil.getString(mouseRows, PointingDeviceProperty.DESCRIPTION, i),
                     WmiUtil.getString(mouseRows, PointingDeviceProperty.DEVICEID, i))
                     + (buttons > 0 ? " " + buttons + " buttons" : ""));
@@ -208,5 +208,15 @@ final class InputDeviceReport {
     private static String lines(String label, List<String> devices) {
         if (devices.isEmpty()) return label + ": none recognised";
         return String.join("\n", devices.stream().map(device -> label + ": " + device).toList());
+    }
+
+    private static long safeUint(Object value) {
+        if (value instanceof Number number) return number.longValue();
+        if (value == null) return 0;
+        try {
+            return Long.parseLong(value.toString().trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 }

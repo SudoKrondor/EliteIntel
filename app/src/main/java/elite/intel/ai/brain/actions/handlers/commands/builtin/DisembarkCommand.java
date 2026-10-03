@@ -49,7 +49,7 @@ public final class DisembarkCommand implements IntelCommand {
         UiNavCommon.close();
         if (status.isInSrv()) {
             GameControllerBus.publish(GameInputSequenceEvent.of(
-                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL_BUGGY.getGameBinding()),
                     // Ensure the cursor is at the top before navigating to disembark.
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_LEFT.getGameBinding()),
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_LEFT.getGameBinding()),

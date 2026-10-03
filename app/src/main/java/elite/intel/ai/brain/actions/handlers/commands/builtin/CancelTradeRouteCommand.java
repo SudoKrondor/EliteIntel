@@ -28,6 +28,14 @@ public final class CancelTradeRouteCommand implements IntelCommand {
         return ID;
     }
 
+    /**
+     * Destroys stored state the commander cannot get back, so VEGA asks before it runs.
+     */
+    @Override
+    public boolean isDangerous() {
+        return true;
+    }
+
     /** App-side bookkeeping (no game input); executable in any location. */
     @Override
     public boolean isVisibleForLLM(Status status) {

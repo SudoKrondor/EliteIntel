@@ -218,10 +218,11 @@ public class GoogleTTSImpl implements MouthInterface {
 
             String[] sentences = text.split("(?<=[.!?])\\s+(?=\\S)");
             long generation = interruptGeneration.get();
+            TransmissionAudio.Options effects = TransmissionAudio.forRequest(event);
             for (int i = 0; i < sentences.length; i++) {
                 boolean isLast = (i == sentences.length - 1);
                 ttsQueue.put(new VoiceRequest(sentences[i], voiceName, (1f + systemSession.getSpeechSpeed()),
-                        event.getOriginType(), event.isRadio(), generation, isLast, handle));
+                        event.getOriginType(), event.isRadio(), generation, i == 0, isLast, effects, handle));
             }
 
             GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
@@ -507,8 +508,13 @@ public class GoogleTTSImpl implements MouthInterface {
                 throw new IllegalStateException("Google TTS produced empty audio");
             }
             AudioDeClicker.sanitize(audioData, 6);
-            AudioDeClicker.applyVolume(audioData, systemSession.getVoiceVolume() / 100f);
-            if (request.isRadio()) RadioFilter.apply(audioData);
+            // WHY before the volume: the enhanced processor compresses, and would level a quiet slider
+            // setting back up to nearly full loudness.
+            TransmissionAudio.processVoice(audioData, request.isRadio(), request.effects());
+            float voiceLevel = systemSession.getVoiceVolume() / 100f;
+            AudioDeClicker.applyVolume(audioData, voiceLevel);
+            audioData = TransmissionAudio.withTones(audioData, request.effects(), request.firstSentence(),
+                    request.lastSentence(), voiceLevel);
             // Use persistent line instead of opening/closing
             if (persistentLine == null || !persistentLine.isOpen()) {
                 log.warn("Persistent line not available, attempting to reopen");
@@ -629,7 +635,8 @@ public class GoogleTTSImpl implements MouthInterface {
 
     private record VoiceRequest(String text, String voiceName, double speechRate,
                                 Class<? extends BaseVoxEvent> originType, boolean isRadio,
-                                long generation, boolean lastSentence, VocalisationHandle handle) {
+                                long generation, boolean firstSentence, boolean lastSentence,
+                                TransmissionAudio.Options effects, VocalisationHandle handle) {
     }
 
     private record VocalizationRequest(String text, String voiceName, Class<? extends BaseVoxEvent> originType,

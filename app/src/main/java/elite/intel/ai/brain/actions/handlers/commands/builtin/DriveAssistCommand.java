@@ -58,6 +58,6 @@ public final class DriveAssistCommand extends SimpleTapCommand {
 
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInSrv();
+        return status.isInSrv() && !status.isInNomad(); // the Nomad flies: no wheels, no drive assist
     }
 }

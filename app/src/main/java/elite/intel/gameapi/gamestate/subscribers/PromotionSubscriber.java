@@ -24,6 +24,13 @@ public class PromotionSubscriber {
         PlayerSession session = PlayerSession.getInstance();
         RankAndProgressDto rankAndProgressDto = session.getRankAndProgressDto();
 
+        // Whatever career this promotion is in, the highest rank held moves with it - a commander who
+        // just turned Elite has earned Shinrarta Dezhra now, not at the next game load.
+        for (Integer careerRank : new Integer[]{combatRank, tradeRank, exploreRank, soldier, exobiologyRank, event.getCqc()}) {
+            rankAndProgressDto.raiseCareerRank(careerRank);
+        }
+        session.setRankAndProgressDto(rankAndProgressDto);
+
         if (imperialNavyRank != null) {
             String string = Ranks.getImperialRankMap().get(imperialNavyRank);
             VegaRuntime.narrator().narrate(localizedEvent("event.promotion.imperialNavy", string), "Congratulate the commander on their promotion and state the new rank clearly.");

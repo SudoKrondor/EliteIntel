@@ -45,6 +45,7 @@ class VegaSpeechGatewayTest {
         assertEquals("r1", event.handle().requestId());
         assertEquals("docking clamps released", event.getText());
         assertTrue(event.canBeInterrupted());
+        assertTrue(event.isVegaSpeech(), "only the VEGA gateway may opt into the away-from-ship effect");
         // The future the caller gets is exactly the one the Mouth completes.
         assertSame(result, event.getCompletionFuture());
         assertFalse(result.isDone());

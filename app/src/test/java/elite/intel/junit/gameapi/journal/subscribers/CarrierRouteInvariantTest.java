@@ -106,9 +106,11 @@ class CarrierRouteInvariantTest {
     @Test
     void case1_appStartedAfterTheJumpCompleted() {
         EventBus preScanBus = new EventBus("pre-scan-test");
-        preScanBus.register(new SilentPersistenceSubscriber());
+        SilentPersistenceSubscriber replay = new SilentPersistenceSubscriber();
+        preScanBus.register(replay);
 
         preScanBus.post(carrierLocation("Sifeae RK-E b54-1")); // carrier reached C while we were down
+        replay.settleCarrierArrival();
 
         assertEquals(List.of("Pro Eurl FV-M c21-1", "Pro Eurl EG-V c16-4"), remainingSystems());
     }

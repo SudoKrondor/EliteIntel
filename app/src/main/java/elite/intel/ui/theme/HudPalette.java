@@ -234,7 +234,7 @@ public final class HudPalette {
     public static final float HUD_FONT_CHECKBOX       = HUD_FONT_SM;   // 12f - checkbox form-control (section 4.1)
     public static final float HUD_FONT_ICON_BUTTON    = HUD_FONT_LG;  // 16f - icon buttons (info, etc.) in a 24x24 box
     public static final float HUD_FONT_BADGE_ROLE     = HUD_FONT_XS;   // 11
-    public static final float HUD_FONT_COMMANDER_NAME = HUD_FONT_MD;   // 14
+    public static final float HUD_FONT_COMMANDER_NAME = HUD_FONT_LG;   // 16 - CMDR/ship values in top bar, level with the app title
     public static final float HUD_FONT_APP_TITLE      = HUD_FONT_LG;   // 16 - app title in top bar
     public static final float HUD_FONT_BANNER         = HUD_FONT_MD;   // 14 - banner message text
     public static final float HUD_FONT_TOOLTIP        = HUD_FONT_SM;   // 12 - hover tooltip text (global ToolTip.font)

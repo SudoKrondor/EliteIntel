@@ -7,7 +7,7 @@ import elite.intel.ai.brain.vega.model.llm.LlmToolInvocation;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * A reflex: {@code ReflexResolver} matched a commander input to exactly one safe action - word for word, or as a
+ * A reflex: {@code ReflexResolver} matched a commander input to exactly one action - word for word, or as a
  * damaged transcript of one training phrase - along with any arguments that alias itself pins down (e.g.
  * "target fsd" -> {@code key=fsd}). It runs on the commander lane like a {@link CommanderThought} but skips the
  * LLM entirely - no prompt, no thinking loop, no tool selection, and no argument extraction. Every input that
@@ -16,6 +16,9 @@ import java.util.concurrent.CompletableFuture;
  * A COMMAND reflex just executes the command: a side effect, not dialogue, so nothing is filed to memory and the
  * handler owns any spoken outcome. A QUERY reflex runs the query's own data-grounded analysis path and publishes
  * a commander/VEGA pair only after a successful non-blank answer exists.
+ * <p>
+ * A dangerous command is still asked about first ({@link #handleDangerousConfirmation}): the reflex skips the
+ * model, never the commander's say-so.
  * <p>
  * The handler detaches exactly like an LLM-selected game call. A queued future is cancellable; a handler already
  * started may finish operationally, but interruption discards its late speech and memory result.
@@ -54,6 +57,11 @@ final class ReflexThought extends Thought {
 
     private CompletableFuture<Void> beginReflex() {
         LlmToolInvocation inv = new LlmToolInvocation(newId(), actionId, arguments);
+        if (dependencies.dangerousActionPolicy().isDangerous(inv)) {
+            // Recognized without the model, but still asked before it runs: a reflex skips only the LLM.
+            handleDangerousConfirmation(inv);
+            return CompletableFuture.completedFuture(null);
+        }
         CompletableFuture<JsonObject> execution = submitExecution(inv);
         inFlight = execution;
         if (isStopped()) {

@@ -47,7 +47,7 @@ public class HistoricalMissionScanner {
         try {
             // The last four by the stamp in their names, oldest first - the mtime sort this replaced took
             // the four OLDEST files in the folder, which on a long-lived install never held a live mission.
-            journalFiles = JournalFiles.newest(journalDir, 4);
+            journalFiles = JournalCommander.newestOfCurrentCommander(journalDir, 4);
         } catch (IOException e) {
             log.error("Failed to list journal files", e);
             return Collections.emptyList();

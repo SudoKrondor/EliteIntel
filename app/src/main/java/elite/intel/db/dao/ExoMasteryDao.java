@@ -14,10 +14,11 @@ import java.util.List;
 /**
  * The Exo-Mastery catalogue and the commander's progress through it.
  * <p>
- * Three tables, one ledger: a system holds bodies, a body holds species, and the body carries the one
- * flag that matters - {@code completed}, meaning the game will not let this body be sampled again.
- * The catalogue rows are replaceable (they come from a file), the flags are not: every upsert here
- * leaves {@code completed} and {@code sampled} alone, and the purge keeps every completed body.
+ * The catalogue is three shared tables: a system holds bodies, a body holds species. It comes from a file and is
+ * replaceable. The progress is the commander's own and lives in their file: {@code exo_mastery_harvest} holds the
+ * bodies they sampled out ({@code completed}, meaning the game will not let this body be sampled again) and
+ * {@code exo_mastery_sample} the species they have scanned. A harvest keeps the body's value as it was, so the
+ * harvested total survives the catalogue being purged or replaced.
  * <p>
  * Callers go through {@code ExoMasteryManager} rather than touching this directly.
  */
@@ -42,7 +43,7 @@ public interface ExoMasteryDao {
                       @Bind("z") double z);
 
     /**
-     * The catalogue half of a body row. {@code completed} is deliberately not in the update list.
+     * A catalogue body row. Whether the commander completed it is theirs, in {@code exo_mastery_harvest}.
      */
     @SqlUpdate("""
             INSERT INTO exo_mastery_body (systemAddress, bodyId, starSystem, bodyName, bodyType, value)
@@ -61,7 +62,7 @@ public interface ExoMasteryDao {
                     @Bind("value") long value);
 
     /**
-     * The catalogue half of a species row. {@code sampled} is deliberately not in the update list.
+     * A catalogue species row. Whether the commander sampled it is theirs, in {@code exo_mastery_sample}.
      */
     @SqlUpdate("""
             INSERT INTO exo_mastery_species (systemAddress, bodyId, speciesSymbol, speciesName, colonies, value)
@@ -82,27 +83,39 @@ public interface ExoMasteryDao {
      * Adopts what the location table already knows: a body whose survey-complete latch is set was
      * sampled out before the catalogue arrived, so it is completed on arrival rather than offered.
      * <p>
-     * A read of another manager's table, in SQL, because the alternative is loading every location
-     * row's JSON to look at one boolean. The body is matched on the row's own {@code inGameId} column,
-     * which is the journal BodyID the location manager keys on; only the latch has to come out of the
-     * JSON, where it is stored as true and read back by SQLite's {@code ->>} as 1.
+     * A read of another manager's tables, in SQL, because the alternative is loading every location
+     * row's JSON to look at one boolean. The body is matched on the location row's own {@code inGameId}
+     * column, which is the journal BodyID the location manager keys on. The latch is the commander's, so it
+     * comes out of their {@code location_visit} flags, where it is stored as true and read back by SQLite's
+     * {@code ->>} as 1.
      */
     @SqlUpdate("""
-            UPDATE exo_mastery_body
-               SET completed = TRUE, completedAt = :completedAt
-             WHERE completed = FALSE
-               AND EXISTS (SELECT 1 FROM location l
-                            WHERE l.systemAddress = exo_mastery_body.systemAddress
-                              AND l.inGameId = exo_mastery_body.bodyId
-                              AND l.json ->> '$.bioScansCompleted' = 1)
+            INSERT OR IGNORE INTO exo_mastery_harvest (systemAddress, bodyId, value, completedAt)
+            SELECT b.systemAddress, b.bodyId, b.value, :completedAt
+              FROM exo_mastery_body b
+             WHERE EXISTS (SELECT 1 FROM location l
+                             JOIN location_visit v ON v.locationName = l.locationName
+                            WHERE l.systemAddress = b.systemAddress
+                              AND l.inGameId = b.bodyId
+                              AND v.flags ->> '$.bioScansCompleted' = 1)
             """)
     int adoptCompletedLocations(@Bind("completedAt") String completedAt);
 
     @SqlUpdate("DELETE FROM exo_mastery_system")
     void deleteSystems();
 
-    @SqlUpdate("DELETE FROM exo_mastery_body WHERE completed = FALSE")
-    void deleteUncompletedBodies();
+    /**
+     * The body catalogue, except the bodies the open commander completed, which stay listed as the record of
+     * what they sampled. Another commander's completed bodies go with the catalogue, but their harvest (and so
+     * their harvested total) is kept in their own file, value and all.
+     */
+    @SqlUpdate("""
+            DELETE FROM exo_mastery_body
+             WHERE NOT EXISTS (SELECT 1 FROM exo_mastery_harvest h
+                                WHERE h.systemAddress = exo_mastery_body.systemAddress
+                                  AND h.bodyId = exo_mastery_body.bodyId)
+            """)
+    void deleteUnharvestedBodies();
 
     /**
      * Species rows belong to their body: once the uncompleted bodies are gone, so are theirs.
@@ -117,36 +130,70 @@ public interface ExoMasteryDao {
 
     // --------------------------------------------------------------- progress
 
-    @SqlUpdate("""
-            UPDATE exo_mastery_body
-               SET completed = :completed,
-                   completedAt = CASE WHEN :completed THEN :completedAt ELSE NULL END
-             WHERE systemAddress = :systemAddress AND bodyId = :bodyId AND completed != :completed
-            """)
-    int setBodyCompleted(@Bind("systemAddress") long systemAddress,
-                         @Bind("bodyId") long bodyId,
-                         @Bind("completed") boolean completed,
-                         @Bind("completedAt") String completedAt);
+    /**
+     * Records that a body is sampled out, or that it is not.
+     *
+     * @return 1 when that changed anything, 0 when it was already so or the catalogue has no such body
+     */
+    default int setBodyCompleted(long systemAddress, long bodyId, boolean completed, String completedAt) {
+        return completed ? harvest(systemAddress, bodyId, completedAt) : unharvest(systemAddress, bodyId);
+    }
 
     @SqlUpdate("""
-            UPDATE exo_mastery_body
-               SET completed = TRUE, completedAt = :completedAt
-             WHERE systemAddress = :systemAddress AND completed = FALSE
+            INSERT OR IGNORE INTO exo_mastery_harvest (systemAddress, bodyId, value, completedAt)
+            SELECT systemAddress, bodyId, value, :completedAt
+              FROM exo_mastery_body
+             WHERE systemAddress = :systemAddress AND bodyId = :bodyId
+            """)
+    int harvest(@Bind("systemAddress") long systemAddress,
+                @Bind("bodyId") long bodyId,
+                @Bind("completedAt") String completedAt);
+
+    @SqlUpdate("DELETE FROM exo_mastery_harvest WHERE systemAddress = :systemAddress AND bodyId = :bodyId")
+    int unharvest(@Bind("systemAddress") long systemAddress, @Bind("bodyId") long bodyId);
+
+    @SqlUpdate("""
+            INSERT OR IGNORE INTO exo_mastery_harvest (systemAddress, bodyId, value, completedAt)
+            SELECT systemAddress, bodyId, value, :completedAt
+              FROM exo_mastery_body
+             WHERE systemAddress = :systemAddress
             """)
     int completeSystem(@Bind("systemAddress") long systemAddress, @Bind("completedAt") String completedAt);
 
+    /**
+     * Records a species as sampled.
+     *
+     * @return 1 when the catalogue lists this species on this body (sampled before or not), 0 when it does not
+     */
+    default int markSampled(long systemAddress, long bodyId, String speciesSymbol) {
+        recordSample(systemAddress, bodyId, speciesSymbol);
+        return countSpecies(systemAddress, bodyId, speciesSymbol);
+    }
+
     @SqlUpdate("""
-            UPDATE exo_mastery_species
-               SET sampled = TRUE
+            INSERT OR IGNORE INTO exo_mastery_sample (systemAddress, bodyId, speciesSymbol)
+            SELECT systemAddress, bodyId, speciesSymbol
+              FROM exo_mastery_species
              WHERE systemAddress = :systemAddress AND bodyId = :bodyId AND speciesSymbol = :speciesSymbol
             """)
-    int markSampled(@Bind("systemAddress") long systemAddress,
-                    @Bind("bodyId") long bodyId,
-                    @Bind("speciesSymbol") String speciesSymbol);
+    int recordSample(@Bind("systemAddress") long systemAddress,
+                     @Bind("bodyId") long bodyId,
+                     @Bind("speciesSymbol") String speciesSymbol);
 
     @SqlQuery("""
             SELECT COUNT(*) FROM exo_mastery_species
-             WHERE systemAddress = :systemAddress AND bodyId = :bodyId AND sampled = FALSE
+             WHERE systemAddress = :systemAddress AND bodyId = :bodyId AND speciesSymbol = :speciesSymbol
+            """)
+    int countSpecies(@Bind("systemAddress") long systemAddress,
+                     @Bind("bodyId") long bodyId,
+                     @Bind("speciesSymbol") String speciesSymbol);
+
+    @SqlQuery("""
+            SELECT COUNT(*) FROM exo_mastery_species s
+             WHERE s.systemAddress = :systemAddress AND s.bodyId = :bodyId
+               AND NOT EXISTS (SELECT 1 FROM exo_mastery_sample x
+                                WHERE x.systemAddress = s.systemAddress AND x.bodyId = s.bodyId
+                                  AND x.speciesSymbol = s.speciesSymbol)
             """)
     int countUnsampledSpecies(@Bind("systemAddress") long systemAddress, @Bind("bodyId") long bodyId);
 
@@ -158,7 +205,12 @@ public interface ExoMasteryDao {
     @SqlQuery("SELECT COUNT(*) FROM exo_mastery_body WHERE systemAddress = :systemAddress AND bodyId = :bodyId")
     int countBody(@Bind("systemAddress") long systemAddress, @Bind("bodyId") long bodyId);
 
-    @SqlQuery("SELECT COUNT(*) FROM exo_mastery_body WHERE systemAddress = :systemAddress AND completed = FALSE")
+    @SqlQuery("""
+            SELECT COUNT(*) FROM exo_mastery_body b
+             WHERE b.systemAddress = :systemAddress
+               AND NOT EXISTS (SELECT 1 FROM exo_mastery_harvest h
+                                WHERE h.systemAddress = b.systemAddress AND h.bodyId = b.bodyId)
+            """)
     int countRemainingBodies(@Bind("systemAddress") long systemAddress);
 
     /**
@@ -170,7 +222,8 @@ public interface ExoMasteryDao {
             SELECT s.systemAddress, s.starSystem, s.x, s.y, s.z, SUM(b.value) AS remainingValue
               FROM exo_mastery_system s
               JOIN exo_mastery_body b ON b.systemAddress = s.systemAddress
-             WHERE b.completed = FALSE
+             WHERE NOT EXISTS (SELECT 1 FROM exo_mastery_harvest h
+                                WHERE h.systemAddress = b.systemAddress AND h.bodyId = b.bodyId)
              GROUP BY s.systemAddress
              ORDER BY remainingValue DESC, s.starSystem ASC
              LIMIT :limit
@@ -178,16 +231,19 @@ public interface ExoMasteryDao {
     List<Site> richestRemaining(@Bind("limit") int limit);
 
     @SqlQuery("""
-            SELECT * FROM exo_mastery_body
-             WHERE systemAddress = :systemAddress
-             ORDER BY completed ASC, value DESC, bodyName ASC
+            SELECT b.*,
+                   EXISTS (SELECT 1 FROM exo_mastery_harvest h
+                            WHERE h.systemAddress = b.systemAddress AND h.bodyId = b.bodyId) AS completed
+              FROM exo_mastery_body b
+             WHERE b.systemAddress = :systemAddress
+             ORDER BY completed ASC, b.value DESC, b.bodyName ASC
             """)
     List<Body> bodiesIn(@Bind("systemAddress") long systemAddress);
 
     /**
      * The catalogue's size and the commander's progress through it, in one row. Only catalogued
      * bodies count towards the totals, so after a purge the totals go to zero while the harvested
-     * side - the completed bodies kept through it - still reads.
+     * side - the commander's own harvest, value kept - still reads.
      */
     @SqlQuery("""
             SELECT (SELECT COUNT(*) FROM exo_mastery_system) AS systems,
@@ -195,8 +251,8 @@ public interface ExoMasteryDao {
                      WHERE EXISTS (SELECT 1 FROM exo_mastery_system s WHERE s.systemAddress = b.systemAddress)) AS bodies,
                    (SELECT COALESCE(SUM(b.value), 0) FROM exo_mastery_body b
                      WHERE EXISTS (SELECT 1 FROM exo_mastery_system s WHERE s.systemAddress = b.systemAddress)) AS totalValue,
-                   (SELECT COUNT(*) FROM exo_mastery_body WHERE completed = TRUE) AS completedBodies,
-                   (SELECT COALESCE(SUM(value), 0) FROM exo_mastery_body WHERE completed = TRUE) AS harvestedValue
+                   (SELECT COUNT(*) FROM exo_mastery_harvest) AS completedBodies,
+                   (SELECT COALESCE(SUM(value), 0) FROM exo_mastery_harvest) AS harvestedValue
             """)
     Stats stats();
 

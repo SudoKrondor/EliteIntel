@@ -92,11 +92,4 @@ public class DeepSeekAnalysisEndpoint extends AiEndPoint implements AiAnalysisIn
             return DeepSeekClient.getInstance().createErrorResponse("Analysis error. Check logs.");
         }
     }
-
-    @Override
-    public boolean verifyConnection() {
-        DeepSeekClient client = DeepSeekClient.getInstance();
-        return probeChatStyle(client.createPrompt(DeepSeekClient.MODEL, 0.8f), client,
-                root -> root.has("choices") && !root.getAsJsonArray("choices").isEmpty());
-    }
 }

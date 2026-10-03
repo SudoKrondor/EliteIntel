@@ -18,7 +18,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * The single home for engineering materials: identity, translations, and how many the commander holds.
+ * The single home for engineering materials: identity and translations (shared by every commander), and how many
+ * the commander holds (their own {@code material_inventory}).
  * <p>
  * Every row is keyed by {@code symbol} — the journal's non-localized {@code Name} field, e.g.
  * {@code basicconductors} or {@code guardian_powercell}. That is the only material identifier the game
@@ -47,10 +48,20 @@ public interface MaterialNameDao {
 
     // ── identity ─────────────────────────────────────────────────────────────
 
-    @SqlQuery("SELECT * FROM material_names WHERE symbol = :symbol")
+    /**
+     * A catalogue row with what this commander holds of it. The catalogue is shared; the amount lives in the
+     * commander's own {@code material_inventory}, and a material they hold none of has no row there.
+     */
+    String WITH_AMOUNT = """
+            SELECT m.*, COALESCE(i.amount, 0) AS amount
+              FROM material_names m
+              LEFT JOIN material_inventory i ON i.symbol = m.symbol
+            """;
+
+    @SqlQuery(WITH_AMOUNT + " WHERE m.symbol = :symbol")
     Material findBySymbol(@Bind("symbol") String symbol);
 
-    @SqlQuery("SELECT * FROM material_names ORDER BY materialType, name")
+    @SqlQuery(WITH_AMOUNT + " ORDER BY m.materialType, m.name")
     List<Material> listAll();
 
     // ── on-hand amounts ──────────────────────────────────────────────────────
@@ -59,7 +70,10 @@ public interface MaterialNameDao {
      * Replaces the held amount. The Materials journal event is a full inventory snapshot, so its
      * counts are absolute and overwrite whatever we had.
      */
-    @SqlUpdate("UPDATE material_names SET amount = :amount WHERE symbol = :symbol")
+    @SqlUpdate("""
+            INSERT INTO material_inventory (symbol, amount) VALUES (:symbol, :amount)
+            ON CONFLICT(symbol) DO UPDATE SET amount = excluded.amount
+            """)
     void setAmount(@Bind("symbol") String symbol, @Bind("amount") int amount);
 
     /**
@@ -67,19 +81,24 @@ public interface MaterialNameDao {
      * which reports a delta rather than a total.
      */
     @SqlUpdate("""
-            UPDATE material_names
-               SET amount = MIN(amount + :delta, COALESCE(maxCapacity, amount + :delta))
-             WHERE symbol = :symbol
+            INSERT INTO material_inventory (symbol, amount)
+            SELECT m.symbol, MIN(:delta, COALESCE(m.maxCapacity, :delta))
+              FROM material_names m
+             WHERE m.symbol = :symbol
+            ON CONFLICT(symbol) DO UPDATE SET
+                amount = MIN(material_inventory.amount + :delta,
+                             COALESCE((SELECT maxCapacity FROM material_names WHERE symbol = :symbol),
+                                      material_inventory.amount + :delta))
             """)
     void addAmount(@Bind("symbol") String symbol, @Bind("delta") int delta);
 
     /**
      * Deducts spent material, flooring at zero. Used by EngineerCraft and Synthesis.
      */
-    @SqlUpdate("UPDATE material_names SET amount = MAX(amount - :used, 0) WHERE symbol = :symbol")
+    @SqlUpdate("UPDATE material_inventory SET amount = MAX(amount - :used, 0) WHERE symbol = :symbol")
     void subtractAmount(@Bind("symbol") String symbol, @Bind("used") int used);
 
-    @SqlUpdate("UPDATE material_names SET amount = 0")
+    @SqlUpdate("DELETE FROM material_inventory")
     void clearAmounts();
 
     /**

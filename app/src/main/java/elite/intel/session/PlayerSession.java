@@ -5,6 +5,7 @@ import elite.intel.db.dao.ShipScansDao;
 import elite.intel.db.managers.*;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.carrier.CarrierStatsReading;
 import elite.intel.gameapi.data.FsdTarget;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
@@ -12,6 +13,7 @@ import elite.intel.gameapi.journal.events.CarrierStatsEvent;
 import elite.intel.gameapi.journal.events.ReputationEvent;
 import elite.intel.gameapi.journal.events.dto.*;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
+import elite.intel.ui.event.RadioTransmissionStateChangedEvent;
 import elite.intel.util.OsDetector;
 import elite.intel.util.Ranks;
 import org.apache.commons.lang3.StringUtils;
@@ -53,6 +55,7 @@ public class PlayerSession {
     private final LocationManager locationManager = LocationManager.getInstance();
     private final SuitInventory suitInventory = SuitInventory.getInstance();
     private boolean shipAutoDeparted = false;
+    private String announcedPointOfInterest;
 
     private PlayerSession() {
         GameEventBus.register(this);
@@ -580,6 +583,10 @@ public class PlayerSession {
         return Database.withDao(PlayerDao.class, dao -> dao.get().getRadioTransmissionOn());
     }
 
+    /**
+     * The one write path for the radio switch, so the UI is told of every flip from here - the spoken toggle
+     * command and the Commander tab's checkbox both land in this method - rather than from each caller.
+     */
     public void setRadioTransmissionOn(Boolean radioTransmissionOn) {
         Database.withDao(PlayerDao.class, dao -> {
             PlayerDao.Player player = dao.get();
@@ -587,6 +594,7 @@ public class PlayerSession {
             dao.save(player);
             return Void.class;
         });
+        UiBus.publish(new RadioTransmissionStateChangedEvent(Boolean.TRUE.equals(radioTransmissionOn)));
     }
 
     public Boolean isMiningAnnouncementOn() {
@@ -769,12 +777,7 @@ public class PlayerSession {
     }
 
     private static Path defaultJournalPath() {
-        if (OsDetector.getOs() == OsDetector.OS.WINDOWS) {
-            return Paths.get(System.getProperty("user.home"), "Saved Games", "Frontier Developments", "Elite Dangerous");
-        } else if (OsDetector.getOs() == OsDetector.OS.LINUX) {
-            return Paths.get(System.getProperty("user.home"), ".var", "app", "elite.intel.app", "ed-journal");
-        }
-        return Paths.get(System.getProperty("user.home"), "Library", "Application Support", "Frontier Developments", "Elite Dangerous");
+        return DirectorySetting.defaultJournalPath();
     }
 
     /**
@@ -985,6 +988,24 @@ public class PlayerSession {
 
     public boolean isShipAutoDeparted() {
         return shipAutoDeparted;
+    }
+
+    /**
+     * Records that the point of interest under a touchdown has been spoken, and says whether this is the
+     * first time: an exobiology run lands at the same beacon a dozen times in a row, and the commander
+     * needs to hear where they are once per stay, not on every hop. The latch is keyed on the body so a
+     * fresh planet is announced again, and {@link #clearAnnouncedPointOfInterest()} lifts it when the
+     * ship leaves for supercruise.
+     */
+    public synchronized boolean markPointOfInterestAnnounced(long bodyId, String pointOfInterest) {
+        String key = bodyId + "|" + pointOfInterest;
+        if (key.equals(announcedPointOfInterest)) return false;
+        announcedPointOfInterest = key;
+        return true;
+    }
+
+    public synchronized void clearAnnouncedPointOfInterest() {
+        announcedPointOfInterest = null;
     }
 }
 

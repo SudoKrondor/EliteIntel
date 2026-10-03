@@ -4,6 +4,7 @@ import com.ibm.icu.text.RuleBasedNumberFormat;
 import com.ibm.icu.util.ULocale;
 import elite.intel.i18n.Language;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -46,6 +47,17 @@ public final class NumberWords {
      */
     private static final Map<Language, RuleBasedNumberFormat> SPELLERS = new ConcurrentHashMap<>();
 
+    /**
+     * Enough for any figure written out in full - a coordinate is given to four decimal places - where
+     * every digit the text carries is meant to be heard.
+     */
+    private static final int MAX_WRITTEN_FRACTION_DIGITS = 6;
+
+    /**
+     * Same as {@link #SPELLERS}, but for {@link #ofWritten}: kept apart so the credit rounding stays at two places.
+     */
+    private static final Map<Language, RuleBasedNumberFormat> WRITTEN_SPELLERS = new ConcurrentHashMap<>();
+
     private NumberWords() {
     }
 
@@ -70,13 +82,27 @@ public final class NumberWords {
         }
     }
 
+    /**
+     * A number exactly as it was written, every fraction digit kept, e.g. {@code -62.123} as
+     * "minus sixty-two point one two three".
+     */
+    public static String ofWritten(BigDecimal value, Language language) {
+        RuleBasedNumberFormat speller = WRITTEN_SPELLERS.computeIfAbsent(language,
+                lang -> newSpeller(lang, MAX_WRITTEN_FRACTION_DIGITS));
+        synchronized (speller) {
+            return clean(speller.format(value));
+        }
+    }
+
     private static RuleBasedNumberFormat spellerFor(Language language) {
-        return SPELLERS.computeIfAbsent(language, lang -> {
-            RuleBasedNumberFormat speller =
-                    new RuleBasedNumberFormat(new ULocale(tag(lang)), RuleBasedNumberFormat.SPELLOUT);
-            speller.setMaximumFractionDigits(MAX_FRACTION_DIGITS);
-            return speller;
-        });
+        return SPELLERS.computeIfAbsent(language, lang -> newSpeller(lang, MAX_FRACTION_DIGITS));
+    }
+
+    private static RuleBasedNumberFormat newSpeller(Language language, int maxFractionDigits) {
+        RuleBasedNumberFormat speller =
+                new RuleBasedNumberFormat(new ULocale(tag(language)), RuleBasedNumberFormat.SPELLOUT);
+        speller.setMaximumFractionDigits(maxFractionDigits);
+        return speller;
     }
 
     /**

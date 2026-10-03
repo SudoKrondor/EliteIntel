@@ -9,6 +9,7 @@ import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.gameapi.ReminderContact;
 import elite.intel.gameapi.inputs.RoutePlotter;
+import elite.intel.gameapi.search.PermitLockedSystems;
 import elite.intel.gameapi.search.spansh.station.CurrentSystemFilter;
 import elite.intel.gameapi.search.spansh.station.interstellarfactors.InterstellarFactorsResultDto;
 import elite.intel.gameapi.search.spansh.station.interstellarfactors.InterstellarFactorsSearch;
@@ -60,7 +61,8 @@ public final class FindInterstellarFactorCommand implements IntelCommand {
                 coordinates.x(), coordinates.y(), coordinates.z(), 100, 6000, shipManager.requireLargePad()
         );
 
-        results = CurrentSystemFilter.exclude(results, PlayerSession.getInstance().getPrimaryStarName());
+        results = PermitLockedSystems.reachable(
+                CurrentSystemFilter.exclude(results, PlayerSession.getInstance().getPrimaryStarName()));
         if (results.isEmpty()) {
             return StringUtls.localizedResponse("handler.interstellarFactors.notFound");
         }

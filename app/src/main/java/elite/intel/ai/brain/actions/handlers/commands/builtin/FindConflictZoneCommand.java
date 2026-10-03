@@ -9,6 +9,7 @@ import elite.intel.db.dao.LocationDao.Coordinates;
 import elite.intel.db.managers.ConflictZoneManager;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.inputs.RoutePlotter;
+import elite.intel.gameapi.search.PermitLockedSystems;
 import elite.intel.gameapi.signals.WarZone;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
@@ -56,11 +57,11 @@ public final class FindConflictZoneCommand implements IntelCommand {
     }
 
     /**
-     * Route plotting taps the ship-only GalaxyMapOpen bind, so it works only in the main-ship cockpit.
+     * Route plotting is available anywhere in the game, so the command is offered everywhere.
      */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip();
+        return true;
     }
 
     @Override
@@ -70,7 +71,7 @@ public final class FindConflictZoneCommand implements IntelCommand {
         Coordinates here = locationManager.getGalacticCoordinates();
         if (here == null) return StringUtls.localizedResponse("handler.pirate.positionUnknown");
 
-        List<WarZone> zones = conflictZones.bestWarZones(here, range);
+        List<WarZone> zones = PermitLockedSystems.reachable(conflictZones.bestWarZones(here, range), WarZone::starSystem);
         if (zones.isEmpty()) return StringUtls.localizedResponse("handler.war.noZonesKnown", range);
 
         WarZone best = zones.getFirst();

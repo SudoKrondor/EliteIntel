@@ -55,11 +55,12 @@ public final class DecreaseSpeedCommand implements IntelCommand {
     }
 
     /**
-     * vehicle throttle
+     * The ship throttle keys: the main ship, a fighter or the Nomad (which flies on the ship's controls). A
+     * wheeled SRV ignores them - its throttle is a separate set of buggy controls.
      */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv() || status.isInFighter();
+        return status.isInMainShip() || status.isInNomad() || status.isInFighter();
     }
 
     @Override
@@ -82,8 +83,8 @@ public final class DecreaseSpeedCommand implements IntelCommand {
 
         String decrease = bindingName();
         for (int i = 0; i < num; i++) {
-            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(decrease)));
-            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
+            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingHold(decrease, IncreaseSpeedCommand.THROTTLE_STEP_HOLD_MS)));
+            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_3));
         }
         return null;
     }

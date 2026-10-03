@@ -3,6 +3,7 @@ package elite.intel.ai.brain;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
+import elite.intel.ai.brain.health.AiServiceHealth;
 import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.session.SystemSession;
 import org.apache.logging.log4j.LogManager;
@@ -11,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -62,17 +64,23 @@ public class BaseAiClient {
     protected AiTransportResult sendTransportRequest(HttpRequest request) {
         currentRequestThread = Thread.currentThread();
         CompletableFuture<HttpResponse<String>> exchange = null;
+        AiServiceHealth health = AiServiceHealth.getInstance();
         try {
+            long startedNanos = System.nanoTime();
             // Keep the provider-facing API synchronous, but retain the physical exchange future so interrupting
             // a VEGA gateway task cancels the socket-level request instead of only abandoning its result.
             exchange = sendAsync(request);
             HttpResponse<String> response = exchange.get();
             int code = response.statusCode();
             if (code < 200 || code >= 300) {
+                health.recordRefused(code);
                 String body = response.body();
                 log.error("HTTP {} – response: {}", code, body);
                 return AiTransportResult.failure(httpFailureKind(code), code, "HTTP " + code);
             }
+            // WHY: a 2xx is an answer even when its body turns out unusable below - the service is up, and a
+            // connection check must not report it as down.
+            health.recordAnswered(Duration.ofNanos(System.nanoTime() - startedNanos));
             try {
                 return AiTransportResult.success(JsonParser.parseString(response.body()).getAsJsonObject());
             } catch (RuntimeException malformed) {
@@ -87,6 +95,7 @@ public class BaseAiClient {
             Thread.currentThread().interrupt();
             return AiTransportResult.failure(AiTransportResult.FailureKind.CANCELLED, null, "Request interrupted");
         } catch (ExecutionException e) {
+            health.recordUnreachable();
             Throwable cause = e.getCause();
             String message = cause != null ? cause.getMessage() : e.getMessage();
             return AiTransportResult.failure(AiTransportResult.FailureKind.TRANSIENT, null,

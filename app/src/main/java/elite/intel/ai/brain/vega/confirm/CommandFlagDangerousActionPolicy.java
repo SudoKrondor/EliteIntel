@@ -35,4 +35,10 @@ public final class CommandFlagDangerousActionPolicy implements DangerousActionPo
         IntelAction action = commandHandlers.get(invocation.name());
         return action instanceof IntelCommand command && command.isDangerous();
     }
+
+    @Override
+    public String confirmationPrompt(LlmToolInvocation invocation) {
+        IntelAction action = commandHandlers.get(invocation.name());
+        return action instanceof IntelCommand command ? command.confirmationPrompt(invocation.arguments()) : null;
+    }
 }

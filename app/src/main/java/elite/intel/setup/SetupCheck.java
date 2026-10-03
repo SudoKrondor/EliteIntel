@@ -1,5 +1,6 @@
 package elite.intel.setup;
 
+import elite.intel.ai.LlmProviderResolver;
 import elite.intel.ai.hands.BindingsLoader;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
@@ -27,7 +28,9 @@ import java.util.stream.Stream;
  * language model and the wrong journal folder:
  * <ul>
  *   <li><b>No language model at all.</b> Points at the free Mistral tier or the local Gemma model, at the
- *       website for instructions, and at audio calibration.</li>
+ *       website for instructions, and at audio calibration. Short of that, a cloud setup with <b>no provider
+ *       picked</b> - an install upgraded with a key whose format named no provider - is sent to the settings
+ *       tab to pick one.</li>
  *   <li><b>No journal files</b> where the app is looking. Without them it knows nothing about the game.</li>
  *   <li><b>No bindings files</b> where the app is looking. Without them it cannot fly anything. This one
  *       splits in two: a folder that is not Elite's bindings folder at all (fix the setting), and Elite's
@@ -56,12 +59,14 @@ public class SetupCheck {
 
     private final BindingsLoader bindingsLoader;
     private final BooleanSupplier llmUnconfigured;
+    private final BooleanSupplier cloudProviderMissing;
     private final Supplier<Path> journalDir;
     private final Supplier<Path> bindingsDir;
 
     private SetupCheck() {
         this(new BindingsLoader(),
                 SetupCheck::isLlmUnconfigured,
+                LlmProviderResolver::isCloudProviderMissing,
                 () -> PlayerSession.getInstance().getJournalPath(),
                 () -> PlayerSession.getInstance().getBindingsDir());
     }
@@ -69,10 +74,11 @@ public class SetupCheck {
     /**
      * Seam for tests: everything this reads about the install comes through here.
      */
-    SetupCheck(BindingsLoader bindingsLoader, BooleanSupplier llmUnconfigured,
+    SetupCheck(BindingsLoader bindingsLoader, BooleanSupplier llmUnconfigured, BooleanSupplier cloudProviderMissing,
                Supplier<Path> journalDir, Supplier<Path> bindingsDir) {
         this.bindingsLoader = bindingsLoader;
         this.llmUnconfigured = llmUnconfigured;
+        this.cloudProviderMissing = cloudProviderMissing;
         this.journalDir = journalDir;
         this.bindingsDir = bindingsDir;
     }
@@ -89,6 +95,9 @@ public class SetupCheck {
     public void check() {
         if (llmUnconfigured.getAsBoolean()) {
             warn("speech.setup.noLlm", "No LLM is configured (no cloud API key and no local model).");
+        } else if (cloudProviderMissing.getAsBoolean()) {
+            warn("speech.setup.noLlmProvider",
+                    "Cloud LLM selected but no provider is chosen. Pick one on the AI Services settings tab.");
         }
 
         Path journals = journalDir.get();

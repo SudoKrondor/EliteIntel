@@ -109,19 +109,6 @@ class RefuelStationSearchTest {
     }
 
     @Test
-    void theRadiusWidensTwiceBeforeGivingUp() {
-        assertEquals(List.of(40, 80, 1000), RefuelStationSearch.radiiToTry(40));
-    }
-
-    /**
-     * A commander who already asked for a wide sweep keeps it: the bubble rung must never narrow the search.
-     */
-    @Test
-    void anAlreadyWideAskIsNeverNarrowed() {
-        assertEquals(List.of(2000, 4000), RefuelStationSearch.radiiToTry(2000));
-    }
-
-    @Test
     void aStationTheShipCannotLandOnIsNotAnAnswer() {
         List<RefuelStation> found = RefuelStationSearch.rank(page(), ShipPadSizes.LARGE);
 

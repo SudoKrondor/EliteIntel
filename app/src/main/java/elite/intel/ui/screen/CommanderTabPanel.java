@@ -23,6 +23,7 @@ import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
+import elite.intel.ui.event.CommanderChangedEvent;
 import elite.intel.ui.event.TTSProviderChangedEvent;
 import elite.intel.ui.screen.settings.SettingsPopup;
 import elite.intel.ui.screen.settings.ShipSettingsPopup;
@@ -177,6 +178,21 @@ public class CommanderTabPanel extends JPanel {
     public CommanderTabPanel() {
         buildUi();
         UiBus.register(this);
+    }
+
+    /**
+     * A commander loaded in the game. When it is a different one, the database has already switched to their own
+     * file, so the fleet grid, the commander name and every per-commander field must be read again or the tab
+     * keeps showing the previous commander's ships.
+     */
+    @Subscribe
+    public void onCommanderChanged(CommanderChangedEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            if (fleetTable.isEditing()) {
+                fleetTable.getCellEditor().cancelCellEditing();
+            }
+            initData();
+        });
     }
 
     @Subscribe

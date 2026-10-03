@@ -3,13 +3,11 @@ package elite.intel.gameapi;
 import com.google.common.eventbus.EventBus;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import elite.intel.db.util.Database;
 import elite.intel.eventbus.LoggedSubscriberFailures;
 import elite.intel.gameapi.journal.EventRegistry;
 import elite.intel.gameapi.journal.events.BaseEvent;
-import elite.intel.gameapi.journal.subscribers.ConflictZoneSubscriber;
-import elite.intel.gameapi.journal.subscribers.DockedMarketSubscriber;
-import elite.intel.gameapi.journal.subscribers.ResourceSiteSubscriber;
-import elite.intel.gameapi.journal.subscribers.SilentPersistenceSubscriber;
+import elite.intel.gameapi.journal.subscribers.*;
 import elite.intel.util.json.GsonFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,7 +19,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Reads the two most recent journal files (previous session + current) before
+ * Reads the current commander's two most recent journal files (previous session + current) before
  * the live JournalParser starts, and silently populates the DB with location
  * and ship data. Runs on its own thread; publishes only to a private EventBus
  * so no live subscribers (TTS, game input, EDSM) are ever triggered.
@@ -37,11 +35,12 @@ public class JournalPreScanner {
     private static final int JOURNALS_TO_SCAN = 2;
 
     public static void scan(Path journalDir) {
-        log.info("JournalPreScanner: scanning last {} journal(s) in {}", JOURNALS_TO_SCAN, journalDir);
+        log.info("JournalPreScanner: scanning last {} journal(s) of commander {} in {}", JOURNALS_TO_SCAN,
+                Database.currentCommander(), journalDir);
 
         List<Path> toScan;
         try {
-            toScan = JournalFiles.newest(journalDir, JOURNALS_TO_SCAN);
+            toScan = JournalCommander.newestOfCurrentCommander(journalDir, JOURNALS_TO_SCAN);
         } catch (IOException e) {
             log.warn("JournalPreScanner: cannot list {}: {}", journalDir, e.getMessage());
             return;
@@ -53,7 +52,8 @@ public class JournalPreScanner {
         }
 
         EventBus privateBus = new EventBus(new LoggedSubscriberFailures("pre-scan"));
-        privateBus.register(new SilentPersistenceSubscriber());
+        SilentPersistenceSubscriber persistence = new SilentPersistenceSubscriber();
+        privateBus.register(persistence);
         FinancePreScanAccumulator finance = new FinancePreScanAccumulator();
         privateBus.register(finance);
         MaterialsPreScanAccumulator materials = new MaterialsPreScanAccumulator();
@@ -70,11 +70,15 @@ public class JournalPreScanner {
         privateBus.register(new ResourceSiteSubscriber());
         // And for the conflict-zone fight, which is the same marker for the other kind of war.
         privateBus.register(new ConflictZoneSubscriber());
+        // And for the vehicle the commander is sitting in: the Nomad reports as an SRV, and a commander who
+        // starts the app already flying one would otherwise get wheeled-SRV keys until they stowed it.
+        privateBus.register(new DeployedVehicleSubscriber());
 
         for (Path file : toScan) {
             processFile(file, privateBus);
         }
 
+        persistence.settleCarrierArrival();
         finance.persist();
         materials.persist();
 

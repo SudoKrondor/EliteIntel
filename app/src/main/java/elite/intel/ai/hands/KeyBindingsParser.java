@@ -112,9 +112,26 @@ public class KeyBindingsParser {
      * before this map is built, preserving the historical keyboard-only behavior.
      */
     public Map<String, KeyBinding> parseBindings(File file) throws Exception {
-        Map<String, BindingSlots> bindingSlots = parseBindingSlots(file);
+        Map<String, KeyBinding> bindings = toExecutableBindings(parseBindingSlots(file));
+        log.info("Parsed {} bindings from file: {}", bindings.size(), file.getName());
+        return bindings;
+    }
+
+    /**
+     * Collapses each action's slot pair to the single key EliteIntel will actually press.
+     * <p>
+     * The Primary wins whenever it holds a key; the Secondary is used only when the Primary is
+     * something we cannot press - a HOTAS button, a joystick axis - because those slots were already
+     * filtered out by {@link #toExecutableSlots}. This is the execution view, and it is deliberately
+     * lossy: {@link BindingConflictScanner} must not be fed from here, because the slot this discards
+     * can still collide with another action in game.
+     *
+     * @param slots action name → its keyboard-usable Primary/Secondary pair
+     * @return action name → the one binding to press; actions with neither slot usable are omitted
+     */
+    public Map<String, KeyBinding> toExecutableBindings(Map<String, BindingSlots> slots) {
         Map<String, KeyBinding> bindings = new HashMap<>();
-        for (Map.Entry<String, BindingSlots> entry : bindingSlots.entrySet()) {
+        for (Map.Entry<String, BindingSlots> entry : slots.entrySet()) {
             KeyBinding keyBinding = entry.getValue().primary() != null
                     ? entry.getValue().primary()
                     : entry.getValue().secondary();
@@ -122,7 +139,6 @@ public class KeyBindingsParser {
                 bindings.put(entry.getKey(), keyBinding);
             }
         }
-        log.info("Parsed {} bindings from file: {}", bindings.size(), file.getName());
         return bindings;
     }
 
@@ -133,7 +149,25 @@ public class KeyBindingsParser {
      * assignments are ignored here even though {@link #parseReadOnlyBindingSlots(File)} can display them.
      */
     public Map<String, BindingSlots> parseBindingSlots(File file) throws Exception {
-        Map<String, ReadOnlyBindingSlots> readOnlySlots = parseReadOnlyBindingSlots(file);
+        Map<String, BindingSlots> bindings = toExecutableSlots(parseReadOnlyBindingSlots(file));
+        log.info("Parsed {} binding slots from file: {}", bindings.size(), file.getName());
+        return bindings;
+    }
+
+    /**
+     * Reduces already-parsed slots to the keyboard-only pair EliteIntel can act on, keeping
+     * <em>both</em> slots instead of collapsing them to one.
+     * <p>
+     * WHY it is exposed rather than inlined: callers that already hold parsed
+     * {@link ReadOnlyBindingSlots} - the bindings UI, which needs the HOTAS rows for display -
+     * must not re-read the file, and must not hand-roll their own keyboard filter. A second
+     * private copy of this reduction is how a chord in a Secondary slot came to be invisible to
+     * {@link BindingConflictScanner} in the first place.
+     *
+     * @param readOnlySlots action name → both parsed slots, device assignments included
+     * @return action name → its keyboard-usable Primary/Secondary pair; actions with neither are omitted
+     */
+    public Map<String, BindingSlots> toExecutableSlots(Map<String, ReadOnlyBindingSlots> readOnlySlots) {
         Map<String, BindingSlots> bindings = new HashMap<>();
         for (Map.Entry<String, ReadOnlyBindingSlots> entry : readOnlySlots.entrySet()) {
             KeyBinding primaryBinding = toExecutableBinding(entry.getValue().primary());
@@ -142,7 +176,6 @@ public class KeyBindingsParser {
                 bindings.put(entry.getKey(), new BindingSlots(primaryBinding, secondaryBinding));
             }
         }
-        log.info("Parsed {} binding slots from file: {}", bindings.size(), file.getName());
         return bindings;
     }
 

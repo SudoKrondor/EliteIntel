@@ -1,5 +1,6 @@
 package elite.intel.ai.brain.vega.llm;
 
+import elite.intel.ai.LlmProviderResolver;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandKeyDeriver;
 import elite.intel.ai.brain.vega.model.llm.*;
 import org.apache.logging.log4j.LogManager;
@@ -60,7 +61,7 @@ public final class CustomCommandKeyGenerator {
      * @param phrases   the command's comma-separated trigger phrases (the colloquial meanings), any language
      * @param takenKeys action keys already used by other commands, excluded from the result for uniqueness
      * @return a routing-safe, unique English snake_case key
-     * @throws KeyGenerationException when no supported provider is configured, the model does not respond in
+     * @throws KeyGenerationException when no cloud provider is selected, the model does not respond in
      *                                time, or it returns nothing usable
      */
     public static String generate(String phrases, Collection<String> takenKeys) throws KeyGenerationException {
@@ -68,15 +69,12 @@ public final class CustomCommandKeyGenerator {
             throw new KeyGenerationException("No trigger phrases to generate a key from.");
         }
 
-        LlmGateway gateway;
-        try {
-            gateway = VegaLlmGatewayFactory.create();
-        } catch (UnsupportedOperationException e) {
-            // The factory throws this (with its supported-provider message) when the configured provider has
-            // no wired adapter; pass that guidance straight through to the commander. Any other runtime
-            // failure is unexpected and propagates so it is logged by the caller rather than misreported here.
-            throw new KeyGenerationException(e.getMessage());
+        if (LlmProviderResolver.isCloudProviderMissing()) {
+            // The factory would hand back the stand-in gateway, which answers nothing; say why instead.
+            throw new KeyGenerationException(
+                    "No cloud AI provider is selected. Choose one on the AI Services settings tab, then try again.");
         }
+        LlmGateway gateway = VegaLlmGatewayFactory.create();
         // The gateway owns a single-thread executor; close it once the (single, blocking) call has returned
         // so repeated generations do not leak a thread each.
         try (gateway) {

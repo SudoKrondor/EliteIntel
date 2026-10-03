@@ -24,6 +24,13 @@ public class Ranks {
     }
 
     /**
+     * The journal rank number at which every career - combat, trade, exploration, mercenary, exobiology
+     * and CQC - turns Elite; the Elite I-V tiers sit above it. The rank the Pilots Federation opens
+     * Shinrarta Dezhra at.
+     */
+    public static final int ELITE = 8;
+
+    /**
      * Federation navy ranks ordered by journal rank number: the list index equals the number the
      * journal reports for that rank (index 0 = unranked). Single source of truth for both the
      * index-to-name lookup used by promotion announcements and the English names the honorific
@@ -353,6 +360,34 @@ public class Ranks {
                     ? honorificFor(getImperialHonorificMap(), IMPERIAL_RANKS, imperialRank)
                     : honorificFor(getFederationHonorificMap(), FEDERATION_RANKS, federationRank);
         }
+    }
+
+    /**
+     * The journal rank number of a Federation navy rank named in English, e.g. 4 for "Petty Officer".
+     * For code that keys a rule on a rank - a permit threshold - so the rule reads as the rank's name
+     * and cannot silently mean a different tier if the list is ever re-ordered.
+     *
+     * @throws IllegalArgumentException when no Federation rank has that name
+     */
+    public static int federationRankNumber(String englishName) {
+        return rankNumber(FEDERATION_RANKS, englishName);
+    }
+
+    /**
+     * The journal rank number of an Imperial navy rank named in English, e.g. 4 for "Squire".
+     *
+     * @throws IllegalArgumentException when no Imperial rank has that name
+     * @see #federationRankNumber
+     */
+    public static int imperialRankNumber(String englishName) {
+        return rankNumber(IMPERIAL_RANKS, englishName);
+    }
+
+    private static int rankNumber(List<RankTier> ranks, String englishName) {
+        for (int index = 0; index < ranks.size(); index++) {
+            if (ranks.get(index).englishName().equalsIgnoreCase(englishName)) return index;
+        }
+        throw new IllegalArgumentException("No such navy rank: " + englishName);
     }
 
     /**

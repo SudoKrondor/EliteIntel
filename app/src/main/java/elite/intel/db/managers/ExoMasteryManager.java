@@ -111,7 +111,7 @@ public class ExoMasteryManager {
     }
 
     /**
-     * Unloads the catalogue, keeping every completed body and its species so the record of what has
+     * Unloads the catalogue, keeping every body the open commander completed so the record of what has
      * been sampled - and the harvested total on the stats panel - survives the feature being off.
      */
     public void purge() {
@@ -119,7 +119,7 @@ public class ExoMasteryManager {
             handle.useTransaction(h -> {
                 ExoMasteryDao dao = h.attach(ExoMasteryDao.class);
                 dao.deleteSystems();
-                dao.deleteUncompletedBodies();
+                dao.deleteUnharvestedBodies();
                 dao.deleteOrphanSpecies();
             });
         }

@@ -115,6 +115,10 @@ public class RoutePlotter {
         // that was not taking input yet: the search field never got focus and the system name was typed
         // into nothing. Watching the game's own state costs nothing on a fast machine and does not
         // guess on a slow one.
+        //
+        // On foot the game's own state is the journal's Music cue, not GuiFocus - Status.json has no such
+        // field outside a vehicle, and this wait sat out its full 15 s on a map that had opened within a
+        // second (commander bundle 2026-09-20). Status.isGalaxyMapOpen() reads both signals.
         steps.add(GameInputStep.waitUntil("galaxy map open", status::isGalaxyMapOpen, GALAXY_MAP_OPEN_TIMEOUT_MS));
         steps.addAll(List.of(
 
@@ -130,10 +134,13 @@ public class RoutePlotter {
                 ///NOTE These two keys are a workaround for the in-game map UI behavior.
                 ///ENTER key after the destination is typed in, slide right to the button and hit select
                 GameInputStep.rawKey(KeyProcessor.KEY_ENTER, 0, 0),
+                GameInputStep.delay(500), // Required minimum delay
                 GameInputStep.bindingTap(BINDING_UI_RIGHT.getGameBinding()),
+                GameInputStep.delay(500), // Required minimum delay
                 GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding()),
-
-                ///Yaw to grab the focus. Another work around
+                //-------------------------------------------------------------------
+                ///Yaw to grab the focus. Another workaround
+                GameInputStep.delay(3000), // Required minimum delay
                 GameInputStep.bindingHold(BINDING_CAM_YAW_LEFT.getGameBinding(), 20)
         ));
 

@@ -36,7 +36,7 @@ public final class RequestDockingCommand implements IntelCommand {
     /// Ship, Nomad or Fighter
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInFighter() || status.isInSrv(); ///Nomad is a flying SRV
+        return status.isInMainShip() || status.isInFighter() || status.isInNomad(); /// a wheeled SRV cannot dock
     }
 
     @Override
@@ -58,13 +58,17 @@ public final class RequestDockingCommand implements IntelCommand {
             navigator.closeAndRestore(StatusFlags.GuiFocus.EXTERNAL_PANEL);
         }
         else {
+            // The Nomad reports as an SRV, and its panels answer the SRV's keys, not the fighter's.
+            String rolePanel = status.isInSrv()
+                    ? Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL_BUGGY.getGameBinding()
+                    : Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding();
             GameControllerBus.publish(GameInputSequenceEvent.of(
-                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding()),
+                    GameInputStep.bindingTap(rolePanel),
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_LEFT.getGameBinding()),
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_DOWN.getGameBinding()),
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_RIGHT.getGameBinding()),
                     GameInputStep.bindingHold(Bindings.GameCommand.BINDING_UI_SELECT.getGameBinding(), 120),
-                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding())
+                    GameInputStep.bindingTap(rolePanel)
             ));
         }
         return null;
