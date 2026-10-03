@@ -4,12 +4,17 @@ import elite.intel.bindforge.model.BindingModifier;
 import elite.intel.bindforge.model.BindingSlotType;
 import elite.intel.bindforge.model.EliteKeyboardKeys;
 import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
+import elite.intel.io.AtomicFiles;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -154,27 +159,10 @@ public class BindingsWriter {
     }
 
     private BindingSaveResult writeReplacement(Path file, EncodedXml updatedXml) {
-        Path tempFile = file.getParent().resolve(
-                "." + file.getFileName() + ".elite-intel-" + UUID.randomUUID() + ".tmp");
         try {
-            Files.write(
-                    tempFile,
-                    encode(updatedXml),
-                    StandardOpenOption.CREATE_NEW,
-                    StandardOpenOption.WRITE
-            );
-            try {
-                Files.move(tempFile, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-            } catch (AtomicMoveNotSupportedException e) {
-                Files.move(tempFile, file, StandardCopyOption.REPLACE_EXISTING);
-            }
+            AtomicFiles.write(file, encode(updatedXml));
             return BindingSaveResult.SAVED;
         } catch (IOException e) {
-            try {
-                Files.deleteIfExists(tempFile);
-            } catch (IOException ignored) {
-                // Best-effort cleanup; the save result already reports failure.
-            }
             return BindingSaveResult.WRITE_FAILED;
         }
     }

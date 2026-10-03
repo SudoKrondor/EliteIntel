@@ -1,5 +1,7 @@
 package elite.intel.bindforge.io;
 
+import elite.intel.io.AtomicFiles;
+import elite.intel.io.TimestampedBackups;
 import elite.intel.util.AppPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -8,8 +10,8 @@ import org.xml.sax.InputSource;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.IOException;
 import java.io.StringReader;
-import java.nio.file.*;
-import java.util.UUID;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Applies a working copy bindings file to the Elite Dangerous game directory.
@@ -24,20 +26,20 @@ public class BindingsApplyService {
     private static final Logger log = LogManager.getLogger(BindingsApplyService.class);
 
     private final BindingsWorkingCopyRepository workingCopyRepo;
-    private final BindingsBackupService backupService;
+    private final TimestampedBackups backups;
     private final Path backupDirectory;
 
     public BindingsApplyService() {
-        this(new BindingsWorkingCopyRepository(), new BindingsBackupService(), null);
+        this(new BindingsWorkingCopyRepository(), new TimestampedBackups(), null);
     }
 
-    BindingsApplyService(BindingsWorkingCopyRepository workingCopyRepo, BindingsBackupService backupService) {
-        this(workingCopyRepo, backupService, null);
+    BindingsApplyService(BindingsWorkingCopyRepository workingCopyRepo, TimestampedBackups backups) {
+        this(workingCopyRepo, backups, null);
     }
 
-    BindingsApplyService(BindingsWorkingCopyRepository workingCopyRepo, BindingsBackupService backupService, Path backupDirectory) {
+    BindingsApplyService(BindingsWorkingCopyRepository workingCopyRepo, TimestampedBackups backups, Path backupDirectory) {
         this.workingCopyRepo = workingCopyRepo;
-        this.backupService = backupService;
+        this.backups = backups;
         this.backupDirectory = backupDirectory;
     }
 
@@ -122,7 +124,9 @@ public class BindingsApplyService {
         }
         try {
             Path backupDir = backupDirectory != null ? backupDirectory : AppPaths.getBindingsBackupDir();
-            Path backupPath = backupService.createBackup(gameBindsFile, backupDir);
+            // WHY: the copy's name ends in .bak, not .binds, so neither the game nor BindingsLoader
+            // offers a backup as a loadable profile.
+            Path backupPath = backups.create(gameBindsFile, backupDir);
             log.info("Backed up game bindings to {}", backupPath);
             return backupPath;
         } catch (IOException e) {
@@ -131,25 +135,12 @@ public class BindingsApplyService {
     }
 
     private Path writeToGameDir(Path gameBindsFile, byte[] content, Path backupPath) throws BindingsApplyException {
-        Path parent = gameBindsFile.getParent();
-        Path tmp = parent.resolve("." + gameBindsFile.getFileName()
-                + ".elite-intel-" + UUID.randomUUID() + ".tmp");
         try {
-            Files.createDirectories(parent);
-            Files.write(tmp, content, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
-            try {
-                Files.move(tmp, gameBindsFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException e) {
-                log.debug("Atomic move not supported for apply — falling back");
-                Files.move(tmp, gameBindsFile, StandardCopyOption.REPLACE_EXISTING);
-            }
+            Files.createDirectories(gameBindsFile.getParent());
+            AtomicFiles.write(gameBindsFile, content);
             log.info("Applied bindings to {}", gameBindsFile);
             return backupPath;
         } catch (IOException e) {
-            try {
-                Files.deleteIfExists(tmp);
-            } catch (IOException ignored) {
-            }
             throw new BindingsApplyException("Could not write bindings to game directory: " + e.getMessage(), e);
         }
     }

@@ -1,5 +1,6 @@
 package elite.intel.bindforge.io;
 
+import elite.intel.io.AtomicFiles;
 import elite.intel.util.AppPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -7,7 +8,9 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -28,7 +31,6 @@ public class BindingsWorkingCopyRepository {
 
     private static final Logger log = LogManager.getLogger(BindingsWorkingCopyRepository.class);
     private static final String BASELINE_HASH_SUFFIX = ".elite-intel.base.sha256";
-    private static final String TMP_SUFFIX = ".tmp";
     private final Path workingDirectory;
 
     public BindingsWorkingCopyRepository() {
@@ -98,15 +100,7 @@ public class BindingsWorkingCopyRepository {
             }
         }
 
-        Path tmp = workingCopy.resolveSibling(workingCopy.getFileName() + ".tmp");
-        Files.writeString(tmp, xmlContent, StandardCharsets.UTF_8,
-                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        try {
-            Files.move(tmp, workingCopy, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        } catch (AtomicMoveNotSupportedException e) {
-            log.debug("Atomic move not supported for working copy — falling back");
-            Files.move(tmp, workingCopy, StandardCopyOption.REPLACE_EXISTING);
-        }
+        AtomicFiles.write(workingCopy, xmlContent.getBytes(StandardCharsets.UTF_8));
         log.debug("Saved working copy for '{}' to {}", presetFileName, workingCopy);
     }
 
@@ -268,25 +262,12 @@ public class BindingsWorkingCopyRepository {
     private void writeBaselineHash(String presetFileName, String hash) throws IOException {
         Path baselineHashPath = baselineHashPath(presetFileName);
         Files.createDirectories(baselineHashPath.getParent());
-        Path tmp = baselineHashPath.resolveSibling(baselineHashPath.getFileName() + TMP_SUFFIX);
-        Files.writeString(tmp, hash + System.lineSeparator(), StandardCharsets.UTF_8,
-                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
-        try {
-            Files.move(tmp, baselineHashPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        } catch (AtomicMoveNotSupportedException e) {
-            Files.move(tmp, baselineHashPath, StandardCopyOption.REPLACE_EXISTING);
-        }
+        AtomicFiles.write(baselineHashPath, (hash + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
     }
 
     private void copyReplacing(Path source, Path target) throws IOException {
         Files.createDirectories(target.getParent());
-        Path tmp = target.resolveSibling(target.getFileName() + TMP_SUFFIX);
-        Files.copy(source, tmp, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
-        try {
-            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        } catch (AtomicMoveNotSupportedException e) {
-            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
-        }
+        AtomicFiles.copy(source, target);
     }
 
     private String sha256(Path file) throws IOException {
