@@ -259,7 +259,7 @@ competing possibilities — [testing item 9](../../../00-overview/testing-requir
 original wording had it backwards, saying devices *configured through* `DeviceMappings.xml` use hex. The
 opposite is true: an entry is what **replaces** the hex with a name.
 
-**Confirmed against five specimens spanning 2024-08 to 2026-09**, including the same commander's file
+**Confirmed against five specimens spanning 2024-08 to 2026-09**, including the same user's file
 before and after adding entries for the same two devices.
 
 **`.binds` cannot tell who authored an entry.** `SaitekX56Joystick` is a Frontier-shipped element and
@@ -268,6 +268,11 @@ before and after adding entries for the same two devices.
 convenience.
 
 `Keyboard` and `Mouse` are neither — they appear in no `DeviceMappings.xml` and are reserved literals.
+
+**Consequence: a name that does not resolve costs the whole preset.** Measured 2026-09-22 — an install whose
+`DeviceMappings.xml` holds no entry for a name used in `.binds` logs one `Failed to find GUID for device` per
+reference and falls back to a factory preset in all four sections, keyboard and mouse bindings included. See
+[§1.2b of the device-files reference](EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
 
 **Consequence: renaming a device is a multi-file operation.** The element name in `DeviceMappings.xml`,
 every `Device="..."` in `.binds` that uses it, and the `.buttonMap` filename all have to move together.
@@ -414,7 +419,7 @@ Key_Numpad_Multiply
 
 Left/Right variants of modifier keys are distinct tokens (`Key_LeftShift` ≠ `Key_RightShift`).
 
-**Fuller token list, recovered from `elite.intel.ai.hands.UiNavigationTextTrap` (2026-09-02).** These
+**Fuller token list, recovered from `elite.intel.ai.hands.UiNavigationTextTrap` (2026-09-02).** *That class was deleted 2026-09-21 and the list is now only here — do not go looking for the source.* These
 spellings were not in the original source material and are worth recording, because a parser that does not
 recognise a token cannot classify the binding that uses it:
 
@@ -538,7 +543,7 @@ update, which no in-file marker would survive either — see `EliteDangerous-Dev
 6. The in-game Control Bindings UI is not a complete or fully accurate inventory of the `.binds` schema — real bindable elements exist that the UI never shows, and at least one UI row doesn't correspond to any real XML element at all (§8).
 7. Controller/joystick device identity in the file is an opaque, undecodable hex string — no VID/PID/device-type distinction survives into the format alone (§4.2).
 8. `DeviceMappings.xml`/`.buttonMap` genuinely duplicate per storefront install; `.binds` does not — these two file families have different multiplicity rules on disk (§7; full detail in `EliteDangerous-InstallPaths.md`).
-9. Game updates can silently wipe the cosmetic files, and occasionally the bindings themselves, with no confirmed guaranteed pattern for when this happens (§7).
+9. Game updates can silently wipe the device files (`DeviceMappings.xml`, `.buttonMap` — not cosmetic once a user has named a device, see [Protection is uniform](../overview.md#protection-is-uniform--settled-2026-09-21)), and occasionally the bindings themselves, with no confirmed guaranteed pattern for when this happens (§7).
 10. `KeyboardLayout` stores its value as element text content, not an attribute — the one structural outlier in the whole file (§2.4).
 
 ---

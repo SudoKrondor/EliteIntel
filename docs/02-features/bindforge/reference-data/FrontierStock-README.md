@@ -69,7 +69,11 @@ it.
 
 ## Maintenance
 
-Re-capture when Frontier adds device support. Comparing the shipped `.binds` presets across two installations
+**Re-capture on every game version bump, and whenever Frontier adds device support.** This capture is
+scoped to the version it came from: the wipe test that uses it asks "is this file identical to what
+Frontier shipped?", and after an update Frontier ships something else. Until the re-capture lands, the
+wipe test reports `unknown` rather than guessing — see
+[New slots are the only thing an update brings](../overview.md#new-slots-are-the-only-thing-an-update-brings--settled-2026-09-24). Comparing the shipped `.binds` presets across two installations
 of different vintages found them identical, which suggests `ControlSchemes` changes rarely — but that is an
 observation from one machine, not a guarantee. See
 [testing-required.md](../../../00-overview/testing-required.md) item 10, which captures all four file domains

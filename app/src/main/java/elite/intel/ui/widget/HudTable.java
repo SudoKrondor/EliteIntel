@@ -8,6 +8,8 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
 import java.awt.*;
 
 /**
@@ -27,6 +29,49 @@ public final class HudTable {
         style(table, HudPalette.HUD_TABLE_ROW_HEIGHT, HudPalette.HUD_TABLE_HEADER_HEIGHT,
                 HudPalette.HUD_FONT_TABLE_ROW, HudPalette.HUD_FONT_TABLE_HEADER, 5, 4);
     }
+
+    /**
+     * Sizes every column to the widest thing actually in it - its header or one of its cells - so nothing is
+     * cut off and nobody has to drag a divider.
+     * <p>
+     * Measured through each column's own renderer rather than guessed in pixels, which is what makes it
+     * survive localization: the same table is German and Russian too, and those run considerably longer than
+     * the English the numbers would have been picked from.
+     * <p>
+     * Call it after the rows are in. Widths are a snapshot of the current content, so a table that reloads
+     * calls this again.
+     *
+     * @param table   the table to size, already populated
+     * @param maxWidth the widest any single column may become, so one long value - a full install path -
+     *                 cannot push every other column off the screen
+     */
+    public static void fitColumnsToContent(JTable table, int maxWidth) {
+        for (int column = 0; column < table.getColumnCount(); column++) {
+            int width = headerWidth(table, column);
+            for (int row = 0; row < table.getRowCount(); row++) {
+                width = Math.max(width, cellWidth(table, row, column));
+            }
+            width = Math.min(width + COLUMN_PADDING, maxWidth);
+            table.getColumnModel().getColumn(column).setPreferredWidth(width);
+        }
+    }
+
+    private static int headerWidth(JTable table, int column) {
+        TableColumn tableColumn = table.getColumnModel().getColumn(column);
+        TableCellRenderer renderer = tableColumn.getHeaderRenderer();
+        if (renderer == null) renderer = table.getTableHeader().getDefaultRenderer();
+        Component rendered = renderer.getTableCellRendererComponent(
+                table, tableColumn.getHeaderValue(), false, false, -1, column);
+        return rendered.getPreferredSize().width;
+    }
+
+    private static int cellWidth(JTable table, int row, int column) {
+        Component rendered = table.prepareRenderer(table.getCellRenderer(row, column), row, column);
+        return rendered.getPreferredSize().width;
+    }
+
+    /** Breathing room either side of the widest value, so text never touches the column divider. */
+    private static final int COLUMN_PADDING = 18;
 
     /**
      * Applies compact HUD table styling for dense cockpit data panels.

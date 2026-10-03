@@ -15,20 +15,11 @@ body{margin:0;background:#151B22;padding:24px;font-family:'Segoe UI',system-ui,-
 .ei-subtab.active{background:#D39207;color:#090D12}
 .ei-section{margin-bottom:22px}
 .ei-section-head{color:#FF822E;font-weight:700;font-size:12px;letter-spacing:.5px;padding-bottom:6px;border-bottom:1px solid #B85A14;margin-bottom:10px}
-.ei-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #151B22;font-size:13px}
-.ei-row:last-child{border-bottom:none}
 .ei-btn{border:1px solid #B85A14;color:#FF7100;background:transparent;padding:8px 18px;font-weight:700;font-size:12px;letter-spacing:.5px;border-radius:4px;cursor:pointer}
 .ei-btn.primary{background:#FF7100;color:#090D12}
 .ei-field{background:#101721;border:1px solid #2D3A44;border-radius:3px;color:#C2C2C2;font-size:13px;padding:6px 8px;width:100%;box-sizing:border-box;font-family:inherit}
 .ei-field[readonly]{color:#8FA0AD;border-color:#24313A}
 .ei-label{font-size:11px;color:#8FA0AD;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;display:block}
-.ei-2col{display:grid;grid-template-columns:1fr 1fr;gap:24px}
-.ei-badge-ok{color:#4FC56B;font-size:12px}
-.ei-badge-warn{color:#D39207;font-size:12px}
-.ei-controllerlist{list-style:none;padding:0;margin:0;font-size:13px}
-.ei-controllerlist li{padding:5px 0;display:flex;align-items:center;gap:8px;cursor:pointer}
-.ei-dot{width:9px;height:9px;border-radius:50%;border:1px solid #B85A14;display:inline-block}
-.ei-dot.sel{background:#FF7100}
 .ei-editbanner{color:#D39207;font-size:12px;font-weight:700;letter-spacing:.5px;padding:8px 0;border-top:1px solid #1F1808;margin-top:16px}
 .ei-editactions{display:flex;gap:10px;justify-content:flex-end;padding-top:10px}
 .ei-note{font-size:11px;color:#6F7D89;margin-top:10px}
@@ -294,36 +285,25 @@ body{margin:0;background:#151B22;padding:24px;font-family:'Segoe UI',system-ui,-
 .im-detect-value{background:#101721;border:1px solid #2D3A44;border-radius:3px;color:#FF7100;font-size:14px;font-weight:700;padding:10px;text-align:center;margin-bottom:14px}
 .im-detect-value.empty{color:#6F7D89;font-weight:400;font-size:12px}
 .im-listcol{max-height:420px;overflow-y:auto}
-.im-row{display:flex;align-items:center;gap:10px;padding:9px 14px;font-size:13px;border-bottom:1px solid #131A22}
 .im-sectiontag{color:#8FA0AD;border:1px solid #2D3A44;background:#101721;padding:2px 6px;border-radius:2px;font-size:10px;letter-spacing:.5px;flex-shrink:0;width:78px;text-align:center}
-.im-bindname{color:#C2C2C2;flex:1}
-.im-slot{color:#6F7D89;font-size:11px}
 
 /* --- embedded in the Elite-Intel shell: drop the outer inset so padding isn't doubled --- */
 html.embedded,html.embedded body{background:#090D12}
 html.embedded body{padding:0}
 html.embedded .ei-frame{border-radius:0;padding:14px}
 
-/* --- Alias Designer: selectable device rows --- */
-.ei-row.selectable{cursor:pointer;padding-left:8px;padding-right:8px;border-left:3px solid transparent}
-.ei-row.selectable:hover{background:#101721}
-.ei-row.selected{background:#101721;border-left-color:#FF7100}
-.ei-controllerlist li{cursor:pointer;padding:3px 0}
-.ei-controllerlist li:hover{color:#E6E6E6}
 #alias-editor-body.disabled{opacity:.35;pointer-events:none}
-.ei-editor-empty{display:none;padding:16px 2px 4px;color:#8FA0AD;font-size:13px}
-.ei-editor-empty.on{display:block}
 
 /* --- Alias Designer: naming locked until the alias is confirmed --- */
 #alias-io-section.locked{opacity:.35;pointer-events:none}
 .ei-lock-note{display:none;margin:4px 0 12px;padding:9px 11px;background:#1A1206;border-left:3px solid #D39207;color:#D39207;font-size:12px;line-height:1.5}
 .ei-lock-note.on{display:block}
 
-/* --- My Devices: per-install mirror grid --- */
+/* --- My Devices: the device grid --- */
 /* WHY: the three hardware columns size to their own content rather than to fixed fractions, so a
    long device name does not leave a gulf before the next column, and every pixel left over goes
    to INSTALLATIONS - which is the column that grows when another installation is detected. */
-.ei-devgrid{display:grid;grid-template-columns:22px auto auto auto minmax(0,1fr);
+.ei-devgrid{display:grid;grid-template-columns:22px auto auto auto auto minmax(0,1fr);
             column-gap:26px;align-items:center}
 .ei-devgrid .hdr:first-child,.ei-devcell.first{margin-right:-14px}
 .ei-devcell.rowtabs{display:flex;gap:6px;flex-wrap:wrap;padding:6px 4px}
@@ -335,27 +315,20 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
 .ei-rowtab.empty{color:#5A6368}
 .ei-rowtab-alias{font-weight:400;letter-spacing:0;font-size:10.5px;color:#C2C2C2}
 .ei-rowtab.empty .ei-rowtab-alias,.ei-rowtab-alias.dim{color:#4A5560;font-style:italic}
+/* WHY: the marker was a mirror FLAG (a setting). It is now a match STATE (a fact), so it carries
+   the divergence list's severities instead of on/off - green matches, yellow differs harmlessly,
+   red will stop bindings working. Colour is the text's colour, never a fill: the HUD canon's rule. */
 .ei-rowtab-mir{font-size:8px;letter-spacing:0;padding:1px 4px;border:1px solid #4FC56B;color:#4FC56B}
+.ei-rowtab-mir.warn{border-color:#D39207;color:#D39207}
+.ei-rowtab-mir.bad{border-color:#D94F4F;color:#D94F4F}
 .ei-insthead{margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #B85A14}
-.ei-instline{display:flex;align-items:center;gap:12px}
+.ei-instline{display:flex;align-items:center;gap:12px;margin-bottom:5px}
 .ei-instlbl{font-size:11px;letter-spacing:1px;font-weight:700;color:#FF9330;flex:none}
 .ei-instpath{flex:1;background:#090D12;border:1px solid #24313A;color:#8FA0AD;
              font-family:Consolas,"Courier New",monospace;font-size:11.5px;padding:5px 9px;
              cursor:default}
 .ei-insthead .sub{display:block;margin-top:7px;font-weight:400;letter-spacing:.3px;
                   color:#8FA0AD;font-size:11.5px}
-.ei-mirbtn{font-family:inherit;font-size:10px;font-weight:700;letter-spacing:1px;padding:7px 14px;
-           background:#12171B;border:1px solid #3A4855;color:#5A6368;cursor:pointer;margin-right:auto}
-.ei-mirbtn.on{border-color:#4FC56B;color:#4FC56B}
-.ei-insttabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
-.ei-insttab{display:flex;align-items:center;gap:8px;font-family:inherit;font-size:11px;font-weight:700;
-            letter-spacing:.8px;padding:7px 12px;background:#101721;border:1px solid #24313A;
-            color:#8FA0AD;cursor:pointer}
-.ei-insttab.active{background:#1A1206;border-color:#B85A14;color:#FF9330}
-.ei-mirrorchip{font-size:8.5px;letter-spacing:.4px;padding:2px 6px;border-radius:2px;
-               border:1px solid #3A4855;color:#3A4855}
-.ei-mirrorchip.on{border-color:#4FC56B;color:#4FC56B}
-.ei-notadded{font-size:8.5px;letter-spacing:.3px;color:#5A6368;font-weight:400}
 .ei-devexpand{grid-column:1/-1;padding:16px 18px 14px;margin:0 0 4px;background:#0C1117;
               border:1px solid #B85A14;border-top:2px solid #FF7100}
 .ei-chev{color:#FF7100;font-size:10px;transition:transform .12s ease;display:inline-block}
@@ -375,13 +348,6 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
 .ei-devcell.c{text-align:center}
 .ei-devcell.sel{background:#101721}
 .ei-devcell.sel.first{box-shadow:inset 3px 0 0 #FF7100}
-.ei-devname-off{color:#5A6368;font-size:10.5px;letter-spacing:.4px;margin-left:6px}
-.ei-mirror{font-family:inherit;font-size:9px;font-weight:700;letter-spacing:.4px;padding:3px 8px;
-           border-radius:2px;cursor:pointer;white-space:nowrap;background:transparent;
-           border:1px solid #24313A;color:#3A4855;transition:all .1s ease}
-.ei-mirror:hover{border-color:#33D7E8;color:#33D7E8}
-.ei-mirror.on{color:#4FC56B;border-color:#4FC56B}
-.ei-mirror.local{color:#D39207;border-color:#D39207}
 </style>
 <script>try{if(window.self!==window.top){document.documentElement.className+=" embedded";}}catch(e){document.documentElement.className+=" embedded";}</script>
 </head>
@@ -416,7 +382,7 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
       </div>
       <div class="ei-devgrid" id="mydevice-grid"></div>
       <div class="ei-note" style="margin-top:10px">
-        Every device Windows reports is listed, attached or not &mdash; an entry can outlive the hardware. <b>ADDED</b> means the device has an entry in at least one installation's <code>DeviceMappings.xml</code>. Open a device to edit it: each detected installation gets its own tab, so Steam and Epic can hold different names if you want them to. <b style="color:#4FC56B">MIRROR</b> on a tab means that installation shares one definition with the other mirrored ones &mdash; edit any of them and the rest follow. Turn it off to edit that installation on its own. <b>CLEAR</b> removes the entry from the open installation and every installation mirrored with it; the device stays listed because the hardware is still attached. <b style="color:#33D7E8">BUILT-IN</b> marks Frontier&#39;s own entry: its name and VID/PID are locked, its button labels are not, and <b>RESET LABELS</b> takes the place of CLEAR.</div>
+        Every device Windows reports is listed, attached or not &mdash; an entry can outlive the hardware. <b>Open a device to edit it.</b> There is one record per device &mdash; the master &mdash; and every installation gets the same one, so there is no per-installation editing and nothing to choose between. The markers under <b>INSTALLATIONS</b> are a readout, not a switch: <b style="color:#4FC56B">M</b> means that installation already matches the master, <b style="color:#D39207">differs</b> means its labels have drifted but nothing is broken, and <b style="color:#D94F4F">no entry</b> means a <code>.binds</code> naming this device would be rejected there &mdash; the whole preset, falling back to keyboard and mouse. <b>APPLY TO GAME INSTALLS</b> is what repairs that, and it reports per installation. <b>CLEAR</b> removes the entry and its <code>.buttonMap</code> from every installation, so it asks first; the device stays listed because the hardware is still attached. <b style="color:#33D7E8">BUILT-IN</b> marks Frontier&#39;s own entry: its name and VID/PID are locked, its button labels are not, and <b>RESET LABELS</b> takes the place of CLEAR.</div>
       <div class="ei-editactions" style="margin-top:16px">
         <span class="ei-note" style="margin:0 auto 0 0;max-width:640px">SAVE keeps changes in BindForge's draft. Nothing reaches a game installation until you apply.</span>
         <button class="ei-btn primary" id="alias-apply-installs" onclick="eiApplyToInstalls()">APPLY TO GAME INSTALLS</button>
@@ -499,7 +465,6 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
       </div>
       <div class="ei-editbanner" id="alias-editbanner">EDIT MODE &mdash; SAVE YOUR CHANGES (saves to the draft only &mdash; Apply to Game Installs, below, is what reaches a real install)</div>
       <div class="ei-editactions">
-        <button class="ei-mirbtn" id="alias-mirror-btn" onclick="eiToggleActiveMirror()">MIRROR</button>
         <button class="ei-btn" id="alias-clear-btn" style="border-color:#D94F4F;color:#D94F4F" onclick="eiClearDevice()">CLEAR</button>
         <button class="ei-btn" id="alias-reset-btn" style="display:none" onclick="eiResetLabels()" title="Removes the .buttonMap you or BindForge made. Frontier&#39;s entry is never touched.">RESET LABELS</button>
         <button class="ei-btn" onclick="eiDiscardDevice()">DISCARD</button>
@@ -1152,49 +1117,60 @@ function eiShowIO(v){
 }
 
 /* ---------- Alias Designer: device selection ---------- */
+// WHY: reworked 2026-09-26. There is ONE record per device - the master, which is what the user
+// edits - and `installs` is no longer a set of editable alternatives but a record of what each
+// installation currently holds on disk. The master is intent; the installs are reality; the
+// difference between them is drift, which is what the M marker reports. See Alias Designer,
+// "One record, and where it lands", and device-provenance.md on why the per-install rows survive.
 var eiDevices = {
   rhvcap: {
     winName:'VIRPIL Controls 20220720', vid:'3344', pid:'43F4', connected:true,
     axisCount:6, buttonCount:32,
+    master:{added:true, alias:'RHVCAPDirection', aliasConfirmed:true, buttonMap:true,
+            axes:['Roll','Pitch','Twist','','',''], buttons:{1:'RH_1stStageTrig', 2:'Thumb Button'}},
     installs:{
-      steam:{added:true, mirror:true,  alias:'RHVCAPDirection', aliasConfirmed:true, buttonMap:true,
+      steam:{added:true, alias:'RHVCAPDirection', buttonMap:true,
              axes:['Roll','Pitch','Twist','','',''], buttons:{1:'RH_1stStageTrig', 2:'Thumb Button'}},
-      epic: {added:true, mirror:true,  alias:'RHVCAPDirection', aliasConfirmed:true, buttonMap:true,
+      epic: {added:true, alias:'RHVCAPDirection', buttonMap:true,
              axes:['Roll','Pitch','Twist','','',''], buttons:{1:'RH_1stStageTrig', 2:'Thumb Button'}}
     }
   },
   trudder: {
     winName:'Thrustmaster T-Rudder', vid:'044F', pid:'B679', connected:true,
     axisCount:3, buttonCount:0,
+    master:{added:true, builtin:true, alias:'T-Rudder', aliasConfirmed:true, buttonMap:false,
+            axes:['','',''], buttons:{}},
     installs:{
-      steam:{added:true, mirror:true, builtin:true, alias:'T-Rudder', aliasConfirmed:true, buttonMap:false,
-             axes:['','',''], buttons:{}},
-      epic: {added:true, mirror:true, builtin:true, alias:'T-Rudder', aliasConfirmed:true, buttonMap:false,
-             axes:['','',''], buttons:{}}
+      steam:{added:true, builtin:true, alias:'T-Rudder', buttonMap:false, axes:['','',''], buttons:{}},
+      epic: {added:true, builtin:true, alias:'T-Rudder', buttonMap:false, axes:['','',''], buttons:{}}
     }
   },
+  // WHY: drift that BREAKS something - Epic's entry is under a different name, so a shared .binds
+  // naming "Throttle" finds nothing there and the whole preset is rejected. Red, per the severity
+  // table in Alias Designer. Apply is what repairs it.
   throttle: {
     winName:'VPC Throttle MongoosT-50CM3', vid:'3344', pid:'83F3', connected:true,
     axisCount:6, buttonCount:24,
+    master:{added:true, alias:'Throttle', aliasConfirmed:true, buttonMap:false,
+            axes:['','','Throttle','','',''], buttons:{}},
     installs:{
-      steam:{added:true,  mirror:false, alias:'Throttle', aliasConfirmed:true, buttonMap:false,
-             axes:['','','Throttle','','',''], buttons:{}},
-      // WHY: deliberately divergent from Steam - this is the case the per-installation tabs exist
-      // for, and the mockup has to show it actually differing rather than assert that it can.
-      epic: {added:true,  mirror:false, alias:'ThrottleQuadrant', aliasConfirmed:true, buttonMap:true,
+      steam:{added:true, alias:'Throttle', buttonMap:false, axes:['','','Throttle','','',''], buttons:{}},
+      epic: {added:true, alias:'ThrottleQuadrant', buttonMap:true,
              axes:['Thrust L/R','Thrust U/D','Main Throttle','','',''],
              buttons:{1:'Flaps Toggle', 2:'Boost', 3:'Cargo Scoop'}}
     }
   },
-  // WHY: a built-in whose hardware is no longer plugged in - Frontier's entry is in every installation,
-  // and Epic still carries the commander's labels for it. It still has to be listed, and its labels resettable.
+  // WHY: drift that breaks NOTHING - same entry name everywhere, but Epic carries labels the master
+  // does not. Yellow. Also a built-in whose hardware is unplugged: Frontier's entry is in every
+  // installation, it still has to be listed, and its labels still resettable.
   t16000: {
     winName:'T.16000M', vid:'044F', pid:'B10A', connected:false,
     axisCount:4, buttonCount:16,
+    master:{added:true, builtin:true, alias:'T16000M', aliasConfirmed:true, buttonMap:false,
+            axes:['','','',''], buttons:{}},
     installs:{
-      steam:{added:true, mirror:false, builtin:true, alias:'T16000M', aliasConfirmed:true, buttonMap:false,
-             axes:['','','',''], buttons:{}},
-      epic: {added:true,  mirror:false, builtin:true, alias:'T16000M', aliasConfirmed:true,  buttonMap:true,
+      steam:{added:true, builtin:true, alias:'T16000M', buttonMap:false, axes:['','','',''], buttons:{}},
+      epic: {added:true, builtin:true, alias:'T16000M', buttonMap:true,
              axes:['X','Y','Twist','Throttle'], buttons:{1:'Trigger'}}
     }
   }
@@ -1206,9 +1182,27 @@ var EI_INSTALLS = [
   {id:'steam', label:'STEAM', path:'E:\\SteamLibrary\\steamapps\\common\\Elite Dangerous\\'},
   {id:'epic',  label:'EPIC',  path:'C:\\Program Files\\Epic\\EliteDangerous\\'}
 ];
-var eiActiveInstall = 'steam';
 
-function eiInst(d){ return d.installs[eiActiveInstall]; }
+// WHY: the editor edits the master and nothing else. There is deliberately no "active installation"
+// any more - the variable and its accessor were deleted rather than left for someone to wire back up.
+function eiMaster(d){ return d.master; }
+
+// WHY: "does this installation match the master?" is COMPUTED, never stored. It was a stored
+// per-device switch (mirror) when installations were allowed to differ on purpose; it is now a
+// fact about what is on disk, and storing a fact you can derive is how the two drift apart.
+// The three failing states carry the divergence list's severities rather than a second vocabulary:
+//   entry  - the installation's entry is missing or under another name. A shared .binds naming the
+//            master's name resolves to nothing there, so the whole preset is rejected. RED.
+//   labels - same entry, different button/axis labels. Nothing breaks. YELLOW.
+function eiMatchState(d, instId){
+  var m = d.master, r = d.installs[instId];
+  if(!m.added)            return 'nomaster';
+  if(!r || !r.added)      return 'entry';
+  if(r.alias !== m.alias) return 'entry';
+  var sameAxes = (r.axes || []).join('') === (m.axes || []).join('');
+  var sameBtns = JSON.stringify(r.buttons || {}) === JSON.stringify(m.buttons || {});
+  return (sameAxes && sameBtns) ? 'match' : 'labels';
+}
 function eiAnyAdded(d){
   return EI_INSTALLS.some(function(i){ return d.installs[i.id].added; });
 }
@@ -1466,11 +1460,15 @@ function obDone(){
     var d = OB_NEW[id], buttons = {}, axes = [], installs = {};
     for (var b = 1; b <= d.buttonCount; b++) buttons[b] = 'Button ' + b;
     for (var a = 0; a < d.axisCount; a++) axes.push(OB_AXIS_NAMES[a] + ' Axis');
+    // WHY: onboarding writes the MASTER. The installations start not matching it, because nothing
+    // has been applied yet - which is the honest state and what the markers should show.
+    var master = {added:true, alias:s.names[id], aliasConfirmed:true, buttonMap:!d.hexBindings,
+                  axes:axes.slice(), buttons:JSON.parse(JSON.stringify(buttons))};
     EI_INSTALLS.forEach(function(i){
-      installs[i.id] = {added:!d.hexBindings, draft:!!d.hexBindings, mirror:true, alias:s.names[id], aliasConfirmed:true,
-                        buttonMap:!d.hexBindings, axes:axes.slice(), buttons:JSON.parse(JSON.stringify(buttons))};
+      installs[i.id] = {added:false, alias:'', buttonMap:false, axes:axes.map(function(){ return ''; }), buttons:{}};
     });
-    eiDevices[id] = {winName:d.winName, vid:d.vid, pid:d.pid, connected:true, axisCount:d.axisCount, buttonCount:d.buttonCount, installs:installs};
+    eiDevices[id] = {winName:d.winName, vid:d.vid, pid:d.pid, connected:true, axisCount:d.axisCount,
+                     buttonCount:d.buttonCount, master:master, installs:installs};
     eiDeviceOrder.push(id);
   });
   document.getElementById('tab-mydevices').innerHTML = 'MY DEVICES &nbsp;(' + eiDeviceOrder.length + ')';
@@ -1485,8 +1483,12 @@ function eiRenderDeviceRows(){
   var grid = document.getElementById('mydevice-grid');
   if(!grid) return;
 
+  // WHY: ALIAS is a column now. It could not be one before - each installation could hold a
+  // different name, so a single cell would have been averaging them. There is one name now: the
+  // master's. See Alias Designer, "One record, and where it lands".
   var html = '<div class="hdr"></div><div class="hdr l">WINDOWS NAME</div>'
            + '<div class="hdr l">VID&nbsp;&nbsp;PID</div><div class="hdr l">STATUS</div>'
+           + '<div class="hdr l">ALIAS</div>'
            + '<div class="hdr l">INSTALLATIONS</div>';
 
   eiDeviceOrder.forEach(function(id){
@@ -1498,20 +1500,21 @@ function eiRenderDeviceRows(){
                            : '<span class="ei-missing">MISSING</span>';
     var pick = ' data-pick="' + id + '"';
 
-    // one in-row tab per detected installation - per-install state lives here, so the row never
-    // has to average two installations into a single misleading cell
+    // one read-only marker per detected installation. It was a tab that selected an installation
+    // to edit; there is one record now, so it reports whether each installation has caught up.
     var rowTabs = '';
     EI_INSTALLS.forEach(function(i){
       var r = d.installs[i.id];
-      var on = open && (i.id === eiActiveInstall);
-      var cls = 'ei-rowtab' + (on ? ' active' : '') + (r.added ? '' : ' empty');
-      // the marker slot holds either the mirror flag or the not-added state, never an alias -
-      // an alias is per installation and belongs in the expansion, not averaged into the row
-      var mark = r.builtin ? '<span class="ei-rowtab-alias builtin">built-in</span>'
-               : r.added ? (r.mirror ? '<span class="ei-rowtab-mir">M</span>' : '')
-                         : (r.draft ? '<span class="ei-rowtab-alias dim">draft</span>'
-                                    : '<span class="ei-rowtab-alias dim">not added</span>');
-      rowTabs += '<button class="' + cls + '" data-rowtab="' + id + '|' + i.id + '">'
+      var st  = eiMatchState(d, i.id);
+      var cls = 'ei-rowtab' + (open ? ' active' : '') + (r.added ? '' : ' empty');
+      // WHY: a readout, not a switch. M means this installation matches the master; the warn/bad
+      // variants are the divergence list's yellow and red, narrowed to this one device.
+      var mark = st === 'match'  ? '<span class="ei-rowtab-mir">M</span>'
+               : st === 'labels' ? '<span class="ei-rowtab-mir warn" title="labels differ from the master - nothing breaks">differs</span>'
+               : st === 'entry'  ? '<span class="ei-rowtab-mir bad" title="no matching entry here - a .binds naming the master’s device would be rejected">no entry</span>'
+               :                   '<span class="ei-rowtab-alias dim">not added</span>';
+      if(r.builtin && st === 'match') mark = '<span class="ei-rowtab-alias builtin">built-in</span>';
+      rowTabs += '<button class="' + cls + '" data-rowtab="' + id + '">'
                + i.label + mark + '</button>';
     });
 
@@ -1521,6 +1524,9 @@ function eiRenderDeviceRows(){
           + '<div class="ei-devcell' + sel + '"' + pick + ' style="color:#8FA0AD">'
           + d.vid + '&nbsp;&nbsp;' + d.pid + '</div>'
           + '<div class="ei-devcell' + sel + '"' + pick + '>' + st + '</div>'
+          + '<div class="ei-devcell' + sel + '"' + pick + '>' + (d.master.added
+              ? '<span class="ei-rowtab-alias">' + d.master.alias + '</span>'
+              : '<span class="ei-rowtab-alias dim">not added</span>') + '</div>'
           + '<div class="ei-devcell rowtabs' + sel + '">' + rowTabs + '</div>';
 
     if(open) html += '<div class="ei-devexpand" id="ei-expand-slot"></div>';
@@ -1545,8 +1551,7 @@ function eiBindGridEvents(grid){
   grid.addEventListener('click', function(e){
     var rt = e.target.closest('[data-rowtab]');
     if(rt){
-      var parts = rt.getAttribute('data-rowtab').split('|');
-      eiOpenDeviceInstall(parts[0], parts[1]);
+      eiSelectDevice(rt.getAttribute('data-rowtab'));
       return;
     }
     var pick = e.target.closest('[data-pick]');
@@ -1556,18 +1561,6 @@ function eiBindGridEvents(grid){
 
 // clicking an installation tab opens that device on that installation; clicking the one already
 // open closes the row, so the accordion still behaves like an accordion
-function eiOpenDeviceInstall(devId, instId){
-  if(eiSelectedDevice === devId && eiActiveInstall === instId){
-    eiSelectedDevice = null;
-  } else {
-    eiSelectedDevice = devId;
-    eiActiveInstall = instId;
-  }
-  eiPendingConfirm = false;
-  eiRenderDeviceRows();
-  eiRenderDeviceEditor();
-}
-
 function eiSelectDevice(id){
   if(!eiDevices[id]) return;
   eiSelectedDevice = (eiSelectedDevice === id) ? null : id;
@@ -1576,35 +1569,7 @@ function eiSelectDevice(id){
   eiRenderDeviceEditor();
 }
 
-function eiToggleActiveMirror(){
-  if(eiSelectedDevice) eiToggleMirror(eiActiveInstall, null);
-}
 
-// WHY: mirrored installations share one definition, so turning MIRROR on adopts whatever the other
-// mirrored installations already say. The common case (same hardware, same names) needs one edit.
-function eiToggleMirror(instId, ev){
-  if(ev) ev.stopPropagation();
-  if(!eiSelectedDevice) return;
-  var d = eiDevices[eiSelectedDevice];
-  var rec = d.installs[instId];
-  rec.mirror = !rec.mirror;
-  if(rec.mirror){
-    var src = null;
-    EI_INSTALLS.forEach(function(i){
-      if(i.id !== instId && d.installs[i.id].mirror && d.installs[i.id].added) src = d.installs[i.id];
-    });
-    if(src){
-      rec.alias = src.alias;
-      rec.aliasConfirmed = src.aliasConfirmed;
-      rec.axes = src.axes.slice();
-      rec.buttons = JSON.parse(JSON.stringify(src.buttons));
-      rec.buttonMap = src.buttonMap;
-      rec.added = true;
-    }
-  }
-  eiRenderDeviceRows();
-  eiRenderDeviceEditor();
-}
 
 function eiConfirmAlias(){
   if(!eiSelectedDevice) return;
@@ -1633,7 +1598,7 @@ function eiPathOf(instId){
 function eiSaveDevice(){
   if(!eiSelectedDevice) return;
   var d = eiDevices[eiSelectedDevice];
-  var rec = eiInst(d);
+  var rec = eiMaster(d);
 
   if(!rec.builtin) rec.alias = document.getElementById('alias-name').value;   // a built-in's name is Frontier's
   rec.aliasConfirmed = true;
@@ -1650,27 +1615,17 @@ function eiSaveDevice(){
   });
   rec.buttonMap = Object.keys(rec.buttons).length > 0 || rec.axes.some(function(v){ return !!v; });
 
-  var propagated = [];
-  if(rec.mirror){
-    EI_INSTALLS.forEach(function(i){
-      if(i.id === eiActiveInstall) return;
-      var o = d.installs[i.id];
-      if(!o.mirror) return;
-      o.alias = rec.alias;
-      o.aliasConfirmed = true;
-      o.added = true;
-      o.axes = rec.axes.slice();
-      o.buttons = JSON.parse(JSON.stringify(rec.buttons));
-      o.buttonMap = rec.buttonMap;
-      propagated.push(i.label);
-    });
-  }
+  // WHY: SAVE writes the master and stops. It deliberately does not touch d.installs - those record
+  // what is on disk, and nothing is on disk until Apply. Saving used to propagate into the mirrored
+  // installations right here, which conflated "the user decided" with "the file changed".
+  var behind = EI_INSTALLS.filter(function(i){ return eiMatchState(d, i.id) !== 'match'; }).length;
 
   eiRenderDeviceRows();
   eiRenderDeviceEditor();
-  eiFlashBanner(propagated.length
-    ? 'SAVED to the draft for ' + eiLabelOf(eiActiveInstall) + ', mirrored to ' + propagated.join(', ')
-    : 'SAVED to the draft for ' + eiLabelOf(eiActiveInstall) + ' only');
+  eiFlashBanner(behind
+    ? 'SAVED to the draft - ' + behind + ' of ' + EI_INSTALLS.length +
+      ' installations do not match yet. Apply to Game Installs is what carries it out.'
+    : 'SAVED to the draft - nothing reaches a game installation until you apply');
 }
 
 function eiDiscardDevice(){
@@ -1682,50 +1637,43 @@ function eiDiscardDevice(){
 
 // WHY: the device is still physically attached, so it cannot leave the list. What CLEAR removes is
 // this installation's DeviceMappings.xml entry and its matching .buttonMap.
-// WHY: MIRROR means one shared definition, so an undo reaches every mirrored installation, exactly as SAVE does.
-function eiMirrorTargets(d){
-  if(!d.installs[eiActiveInstall].mirror) return [eiActiveInstall];
-  return EI_INSTALLS.filter(function(i){
-    return i.id === eiActiveInstall || d.installs[i.id].mirror;
-  }).map(function(i){ return i.id; });
-}
-
 function eiResetLabels(){
   if(!eiSelectedDevice) return;
   var d = eiDevices[eiSelectedDevice];
-  if(!eiInst(d).builtin) return;
-  var targets = eiMirrorTargets(d);
-  targets.forEach(function(instId){
-    var rec = d.installs[instId];
-    rec.axes = rec.axes.map(function(){ return ''; });
-    rec.buttons = {};
-    if(!rec.frontierButtonMap) rec.buttonMap = false;   // a .buttonMap Frontier shipped is never removed
-  });
+  var m = eiMaster(d);
+  if(!m.builtin) return;
+  m.axes = m.axes.map(function(){ return ''; });
+  m.buttons = {};
+  if(!m.frontierButtonMap) m.buttonMap = false;   // a .buttonMap Frontier shipped is never removed
   eiPendingConfirm = false;
   eiRenderDeviceRows();
   eiRenderDeviceEditor();
-  eiFlashBanner('LABELS RESET for ' + targets.map(function(id){ return eiLabelOf(id); }).join(', ') + ' - ' +
-    eiInst(d).alias + '.buttonMap removed from the draft. Frontier\u2019s entry is untouched, and the next startup generates fresh labels');
+  eiFlashBanner('LABELS RESET in the draft - ' + m.alias +
+    '.buttonMap removed. Frontier’s entry is untouched, and the next startup generates fresh labels');
 }
 
+// WHY: CLEAR reaches every installation now, which is a wider blast radius than the button used to
+// have - it was scoped to one installation and its mirrors, and a user could clear a single one by
+// turning MIRROR off first. Neither exists any more, so it asks first, and the question names the count.
 function eiClearDevice(){
   if(!eiSelectedDevice) return;
   var d = eiDevices[eiSelectedDevice];
-  var targets = eiMirrorTargets(d);
-  targets.forEach(function(instId){
-    var rec = d.installs[instId];
-    rec.added = false;
-    rec.mirror = false;
-    rec.aliasConfirmed = false;
-    rec.buttonMap = false;
-    rec.axes = rec.axes.map(function(){ return ''; });
-    rec.buttons = {};
-  });
+  var m = eiMaster(d);
+  var n = EI_INSTALLS.length;
+  var nl2 = String.fromCharCode(10, 10);
+  if(!window.confirm('Clear ' + m.alias + ' from all ' + n + ' installations?' + nl2 +
+      'This removes its DeviceMappings.xml entry and its .buttonMap everywhere on the next Apply. ' +
+      'The device stays listed because the hardware is still attached.')) return;
+  m.added = false;
+  m.aliasConfirmed = false;
+  m.buttonMap = false;
+  m.axes = m.axes.map(function(){ return ''; });
+  m.buttons = {};
   eiPendingConfirm = false;
   eiRenderDeviceRows();
   eiRenderDeviceEditor();
-  eiFlashBanner('CLEARED from ' + targets.map(function(id){ return eiLabelOf(id); }).join(', ') +
-    ' - the device stays listed because the hardware is still attached');
+  eiFlashBanner('CLEARED in the draft - will be removed from all ' + n +
+    ' installations on Apply. The device stays listed because the hardware is still attached');
 }
 
 function eiFlashBanner(msg){
@@ -1739,7 +1687,7 @@ function eiFlashBanner(msg){
 
 function eiApplyAliasLock(){
   var d = eiSelectedDevice ? eiDevices[eiSelectedDevice] : null;
-  var rec = d ? eiInst(d) : null;
+  var rec = d ? eiMaster(d) : null;
   var locked = !!rec && !rec.builtin && !rec.aliasConfirmed && !eiPendingConfirm;
   var sec  = document.getElementById('alias-io-section');
   var note = document.getElementById('alias-lock-note');
@@ -1749,25 +1697,48 @@ function eiApplyAliasLock(){
   if(btn)  btn.style.display = locked ? '' : 'none';
 }
 
+// WHY: Apply is the only thing that reaches a game installation, and it carries the master to EVERY
+// one of them - that is the whole model. It reports per installation because a push that half-lands
+// is exactly the drift this design exists to remove, so silent partial success is not allowed.
 function eiApplyToInstalls(){
   var lines = [];
   eiDeviceOrder.forEach(function(id){
-    var d = eiDevices[id];
+    var d = eiDevices[id], m = d.master;
     EI_INSTALLS.forEach(function(i){
-      var r = d.installs[i.id];
-      if(r.builtin){
-        if(r.buttonMap) lines.push(i.label + '  ->  ' + r.alias + '.buttonMap only  (Frontier\u2019s entry untouched)');
-      } else if(r.added){
-        lines.push(i.label + '  ->  ' + r.alias + (r.mirror ? '  (mirrored)' : '  (this install only)'));
-      } else if(r.draft){
-        lines.push(i.label + '  ->  ' + r.alias + '  (entry, .buttonMap and .binds rewrite, together)');
+      var state = eiMatchState(d, i.id);
+      if(state === 'match'){
+        lines.push(i.label + '  ->  ' + m.alias + '  (already matches, nothing to write)');
+      } else if(state === 'nomaster'){
+        lines.push(i.label + '  ->  ' + (d.installs[i.id].added ? 'remove ' + d.installs[i.id].alias : 'nothing'));
+      } else if(m.builtin){
+        lines.push(i.label + '  ->  ' + m.alias + '.buttonMap only  (Frontier’s entry untouched)');
+      } else {
+        lines.push(i.label + '  ->  ' + m.alias +
+          (state === 'entry' ? '  (entry + .buttonMap)' : '  (.buttonMap labels)'));
       }
     });
   });
+  // WHY: the master lands in every installation, after which every installation matches it - which
+  // is what turns the row markers green. Simulated so the mockup demonstrates the repair, not just
+  // the diagnosis.
+  eiDeviceOrder.forEach(function(id){
+    var d = eiDevices[id], m = d.master;
+    EI_INSTALLS.forEach(function(i){
+      d.installs[i.id] = {
+        added: m.added, builtin: m.builtin, alias: m.alias, buttonMap: m.buttonMap,
+        axes: (m.axes || []).slice(), buttons: JSON.parse(JSON.stringify(m.buttons || {}))
+      };
+    });
+  });
+  eiRenderDeviceRows();
+  eiRenderDeviceEditor();
   var nl = String.fromCharCode(10);
   alert(lines.length
-    ? 'Would write DeviceMappings.xml and .buttonMap:' + nl + nl + lines.join(nl) + nl + nl + 'Not built in this mockup.'
-    : 'No installation has any device entries, so nothing would be written.');
+    ? 'Would write DeviceMappings.xml and .buttonMap to all ' + EI_INSTALLS.length +
+      ' installations:' + nl + nl + lines.join(nl) + nl + nl +
+      'A real apply reports what landed - "updated 2 of 3" when one cannot be written.' + nl +
+      'Not built in this mockup.'
+    : 'Nothing to write.');
 }
 
 function eiSelectDefaultDevice(){
@@ -1781,31 +1752,36 @@ function eiRenderDeviceEditor(){
   if(host) host.style.display = d ? '' : 'none';
   if(!d) return;
 
-  var rec = eiInst(d);
+  var rec = eiMaster(d);
 
+  // WHY: this used to name the ONE installation being edited, with its path, because the expansion
+  // carried a tab per installation. There is one record now, so the header answers a different
+  // question: which installations does the user have, and has each one caught up? Read-only.
   var head = document.getElementById('alias-insthead');
   if(head){
-    head.innerHTML =
-        '<div class="ei-instline">'
-      +   '<span class="ei-instlbl">' + eiLabelOf(eiActiveInstall) + '</span>'
-      +   '<input class="ei-instpath" readonly value="' + eiPathOf(eiActiveInstall) + '"'
-      +     ' title="' + eiPathOf(eiActiveInstall) + '">'
-      + '</div>'
+    var strip = EI_INSTALLS.map(function(i){
+      var st = eiMatchState(d, i.id);
+      var mk = st === 'match'  ? '<span class="ei-rowtab-mir">M</span>'
+             : st === 'labels' ? '<span class="ei-rowtab-mir warn">differs</span>'
+             : st === 'entry'  ? '<span class="ei-rowtab-mir bad">no entry</span>'
+             :                   '<span class="ei-rowtab-alias dim">not added</span>';
+      return '<div class="ei-instline">'
+           +   '<span class="ei-instlbl">' + i.label + '</span>' + mk
+           +   '<input class="ei-instpath" readonly value="' + i.path + '" title="' + i.path + '">'
+           + '</div>';
+    }).join('');
+    var behind = EI_INSTALLS.filter(function(i){ return eiMatchState(d, i.id) !== 'match'; }).length;
+    head.innerHTML = strip
       + '<div class="sub">' + (rec.builtin
-          ? 'Frontier&rsquo;s built-in entry &mdash; its name and VID/PID are locked; labels are saved to <code>' + rec.alias + '.buttonMap</code>'
+          ? 'Frontier&rsquo;s built-in entry &mdash; its name and VID/PID are locked; labels are saved to <code>' + rec.alias + '.buttonMap</code>. '
           : rec.added
-          ? 'editing this installation&rsquo;s <code>DeviceMappings.xml</code> entry and <code>.buttonMap</code>'
-          : 'this device has no entry in this installation yet &mdash; SAVE adds one')
+          ? 'Editing the master &mdash; one <code>DeviceMappings.xml</code> entry and one <code>.buttonMap</code>, applied to every installation. '
+          : 'This device has no entry yet &mdash; SAVE adds one to the master. ')
+      + (behind
+          ? '<b style="color:#D39207">' + behind + ' of ' + EI_INSTALLS.length +
+            ' installations do not match it yet</b> &mdash; Apply is what carries it out.'
+          : '<b style="color:#4FC56B">All ' + EI_INSTALLS.length + ' installations match.</b>')
       + '</div>';
-  }
-
-  var mb = document.getElementById('alias-mirror-btn');
-  if(mb){
-    mb.classList.toggle('on', !!rec.mirror);
-    mb.textContent = rec.mirror ? 'MIRRORED' : 'MIRROR';
-    mb.title = rec.mirror
-      ? 'Shares one definition with the other mirrored installations'
-      : 'This installation is edited on its own';
   }
 
   document.getElementById('alias-name').value = rec.alias;
@@ -1920,10 +1896,11 @@ function fmBuildScope(row){
          +  '</div>';
   }
 
-  // Both device domains are duplicated per installation, so the meaningful choice here is which
-  // installation rather than which file.
+  // WHY: this used to offer "restore into: [Steam] [Epic]". Every installation holds the same
+  // device files now, so restoring into one and not the others would manufacture exactly the drift
+  // the model removes. The restore lands in the draft and Apply carries it to all of them.
   if(devmap.length || maps.length){
-    html += '<div class="ei-rs-group"><h5>Device files &mdash; whole domain, per installation</h5>';
+    html += '<div class="ei-rs-group"><h5>Device files &mdash; whole domain, every installation</h5>';
     if(devmap.length){
       html += '<label><input type="checkbox" class="rs-item" checked disabled '
            +  'style="accent-color:#FF7100">DeviceMappings.xml</label>';
@@ -1934,12 +1911,10 @@ function fmBuildScope(row){
            +  maps.join(', ') + '</label>'
            +  '<div class="ei-rs-tie">Each is named for its device entry in DeviceMappings.xml, so they travel with it rather than being picked one by one.</div>';
     }
-    html += '<div class="ei-rs-inst">Restore into:';
-    EI_INSTALLS.forEach(function(inst){
-      html += '<label><input type="checkbox" class="rs-inst" checked disabled '
-           +  'style="accent-color:#FF7100">' + inst.label + '</label>';
-    });
-    html += '</div></div>';
+    html += '<div class="ei-rs-inst">Restores to the draft, then Apply writes all '
+         +  EI_INSTALLS.length + ' installations: '
+         +  EI_INSTALLS.map(function(inst){ return inst.label; }).join(', ')
+         +  '. There is no per-installation choice &mdash; they all hold the same files.</div></div>';
   }
 
   document.getElementById('fm-restore-scope-body').innerHTML = html;
@@ -2840,7 +2815,7 @@ function eiShowFM(v){
 }
 
 // What BindForge found at each installation. Rendered from EI_INSTALLS so this screen and the
-// per-installation tabs in Alias Designer can never disagree about which installations exist.
+// installation markers in Alias Designer can never disagree about which installations exist.
 var EI_GI_META = {
   steam: {found:true, devmap:true, buttonMaps:2, source:'auto-detected'},
   epic:  {found:true, devmap:true, buttonMaps:0, source:'auto-detected'}

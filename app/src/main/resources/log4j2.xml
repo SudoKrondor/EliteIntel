@@ -79,6 +79,19 @@
              counts. "Push-to-talk does nothing" and "my HOTAS stopped working" are both answered
              by whether the device was ever seen, and nothing else in the bundle records that. -->
         <Logger name="elite.intel.devices" level="info"/>
+        <!-- Also louder than elite.intel, and it has to be. BindForge's failures are all quiet ones:
+             an unreadable DeviceMappings.xml, an installation that cannot be refreshed, a backup
+             destination that will not parse. Each is handled by carrying on with less, which is the
+             right behaviour and leaves nothing on screen - so the warn line is the only record that
+             it happened, and at the parent's error level it was being discarded. Info rather than
+             warn because one line genuinely belongs at info: what BindForge read a controller's
+             VID/PID as. That reading is silent when wrong - every controller simply fails to match
+             its entry, with no error anywhere - so it must be visible without turning logging up. -->
+        <Logger name="elite.intel.bindforge" level="info"/>
+        <!-- The same, for the screens: they hold the thread boundaries where a background refresh
+             reports what it could not do, and the line saying the device service is not running at
+             all, which otherwise looks identical to having no controllers plugged in. -->
+        <Logger name="elite.intel.ui.screen.bindings" level="info"/>
         <!-- Also louder than elite.intel, for the same reason as the overlay above. Memory
              consolidation used to announce its failures out loud, which told the commander
              about housekeeping they can do nothing about (the batch is retried, and falls

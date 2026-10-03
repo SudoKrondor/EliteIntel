@@ -100,6 +100,10 @@ The ported specs rely on this in a few places — most importantly BindForge rai
 destructive-change detection. Some visible equivalent is needed; a badge on the tab title is the obvious
 candidate, but it does not exist yet and would be new UI work. **Flagged as an open item.**
 
+*Updated 2026-09-20:* `HudTabbedPane` has no badge. The app's existing workaround is the count in the tab
+title — *USED BINDINGS (252)* — which serves the Anomalies count outright; a destructive-change **Error** state
+is the case a count cannot carry. See [the UI component map](../02-features/bindforge/ui-component-map.md#4-a-badge-on-a-tab).
+
 ---
 
 ## Device Input
@@ -114,8 +118,13 @@ From `elite.intel.devices.PACKAGE.md`:
   `DeviceButtonEvent`, `DeviceServiceStateEvent`, `DeviceDuplicateWarningEvent`.
 - **Axis range is normalised to [−1.0, +1.0]** — exactly the range the StarVizion spec assumes.
 - Delta-only publication: axes on value change, buttons on press/release transition only.
-- `model/DeviceIdentity` resolves VID/PID and a `bindsHexId` that matches the `Device=` attribute in
-  `.binds` axis XML — the correlation BindForge needs, already solved.
+- `model/DeviceIdentity` carries VID/PID and a `bindsHexId` that matches the `Device=` attribute in
+  `.binds` axis XML. **Corrected 2026-10-02: it does not *resolve* anything** — it is a bare record with no
+  factory, nothing in the tree constructed one, and `DeviceService` reads VID/PID from SDL only for its own
+  duplicate check, into a private map it never publishes. So the correlation was *described* rather than
+  solved, and a consumer derives it from `Device.guid`, which is what `PACKAGE.md` says to do. BindForge's
+  `DeviceIdentities` does it, confirmed against four real controllers — see
+  [the device list](../02-features/bindforge/alias-designer.md#my-devices).
 - `model/ButtonInputMapper` translates SDL3 indices to `.binds` tokens (`Joy_N`, `Joy_XAxis` … `Joy_RZAxis`).
 - Duplicate VID/PID devices are detected and warned about, with `usbPath` available to tell two identical
   units apart — which is precisely the open question the StellarCore conflict notes raised.
@@ -238,6 +247,107 @@ genuinely needs for the `DeviceMappings.xml` and `.buttonMap` domains that live 
 real-world paths are preserved in
 [domain-knowledge/EliteDangerous-InstallPaths.md](domain-knowledge/EliteDangerous-InstallPaths.md).
 
+### On Linux the game folders arrive as symlinks - recorded 2026-09-26
+
+`Installer.install4j`'s launcher fragment runs on **every** Linux start, finds the Steam Proton prefix, and
+creates two symlinks inside the app's own install directory (`~/.var/app/elite.intel.app`):
+
+| Symlink | Points at |
+|---|---|
+| `ed-bindings` | the prefix's `Options/Bindings` folder |
+| `ed-journal` | the prefix's `Saved Games/.../Elite Dangerous` folder |
+
+**Two consequences for BindForge.**
+
+**The path is not computed at runtime on Linux** - it is a symlink the launcher already resolved. Anything
+BindForge writes there arrives through that indirection, and a freshness check or file watcher has to cope
+with a path whose target can be replaced between launches.
+
+**That script finds at most one Steam installation**, first match wins, and there are
+[four candidate roots on Linux](domain-knowledge/EliteDangerous-InstallPaths.md#5a-linux-has-several-steam-roots-not-one---confirmed-2026-09-26).
+It is right for Elite-Intel, which needs one journal to watch. It is not a discovery mechanism BindForge can
+reuse, because BindForge needs every installation - and on Linux each Steam root carries its own bindings
+folder, not just its own `DeviceMappings.xml`.
+
+**Observed on Krondor's machine, 2026-09-26.** `ls -l ~/.var/app/elite.intel.app` shows both links present
+and pointing at **absolute** paths:
+
+```
+ed-bindings -> /home/alex/.steam/steam/steamapps/compatdata/359320/pfx/drive_c/users/steamuser/AppData/Local/Frontier Developments/Elite Dangerous/Options/Bindings
+ed-journal  -> /home/alex/.steam/steam/steamapps/compatdata/359320/pfx/drive_c/users/steamuser/Saved Games/Frontier Developments/Elite Dangerous
+```
+
+Absolute, not relative, and resolved at launch - so the link target is a complete answer on its own, and the
+`Frontier Developments` spacing survives into the prefix exactly as on Windows.
+
+### `GameInstallationProvider` - Krondor's proposal, 2026-09-26
+
+**One interface, one implementation per OS.** Krondor: *"if and when we change this for Linux the blast radius
+will be only the LinuxGameInstallationProviderImpl class and not all over the code in a bunch of IF/ELSE
+mess."* Everything that needs a game file asks the provider; nothing else in BindForge branches on operating
+system.
+
+| Implementation | How it finds installations |
+|---|---|
+| Windows | the storefront discovery in [InstallPaths](domain-knowledge/EliteDangerous-InstallPaths.md) - registry, `libraryfolders.vdf`, Epic manifests, the Frontier default locations |
+| Linux | enumerate the [four Steam roots](domain-knowledge/EliteDangerous-InstallPaths.md#5a-linux-has-several-steam-roots-not-one---confirmed-2026-09-26), resolving symlinks and de-duplicating by real path |
+
+**"Primary" on Linux is a narrow, local thing — and it is not a primary install.** Krondor's
+[proposal §2](../multi-install-proposal.md#2-installations-your-side-elite-intel-keeps-the-master-copy) is
+flat about the general case: *"No install is primary... it lives in a game folder, so a patch can wipe it
+too. No file inside a game install can be the source of truth."* Naming one install primary would rebuild the
+thing the master replaced.
+
+**What Linux actually needs a name for is different:** which installation's Proton prefix Elite-Intel is
+currently reading, because on Linux the bindings folder lives inside one. It has an exact definition and it is
+already on disk — the installation `~/.var/app/elite.intel.app/ed-bindings` resolves to (Krondor,
+2026-09-26). Worth more than a heuristic: the launcher already picked one and Elite-Intel is already watching
+its journal, so agreeing with it costs nothing and disagreeing would be confusing. On Krondor's machine that
+is `.steam/steam`, the native install.
+
+**Windows has no equivalent and must not pretend to.** One shared bindings folder, no launcher symlink,
+nothing to point at — so a `primary` flag there would be false everywhere, or true on whichever installation
+detection happened to return first. When the Linux provider is built, the concept gets named for what it is
+(the installation Elite-Intel is reading) rather than a general "primary" that invites a caller to treat it as
+authoritative.
+
+**The contract must not assume one bindings folder.** This is the trap the interface exists to avoid, and the
+easiest one to design straight into it. If the provider exposes a single `getBindingsFolder()`, it has baked
+in the Windows model, and Linux - where the folder lives inside each Steam installation's Proton prefix -
+cannot be expressed without the if/else the interface was meant to remove. **Hang the bindings folder off the
+installation, not off the provider.** Windows then returns the same shared folder for every installation it
+reports, which is true, and Linux returns a different one per installation, which is also true. Callers write
+one loop either way, and Windows becomes the special case internally rather than in every caller.
+
+So an installation should be able to answer, at minimum: where its `DeviceMappings.xml` is, where its
+`DeviceButtonMaps` folder is, where its bindings folder is, and which storefront it came from. **No `primary`
+flag**, for the reason above. Whether `StartPreset` hangs off the installation or the provider follows the
+same rule as `.binds`, because they live together.
+
+**Where it goes:** `elite.intel.bindforge.install`, per the package decision, and **not** in
+`elite.intel.ai.hands`, which [stays as it is](../02-features/bindforge/overview.md#two-narrow-boundaries--one-stays-one-widens) through V1.2.
+
+**The arrangement it isolates is not final.** Krondor is weighing inverting the Linux symlinks - real
+bindings and journal folders in the app's install directory, each Steam prefix linking to them, so all three
+installations share one set. Under that, every Linux installation reports the **same** bindings folder, which
+is what Windows does today. A provider whose installations each carry their own folder handles both without a
+line changing; a provider with one `getBindingsFolder()` has to be rewritten for whichever arrangement it did
+not assume. *"As long as windows vs linux coupling is isolated we will not have to re-do code in BindForge
+when/if that change comes."*
+
+**One side-effect worth weighing before inverting them.** The game validates **every** `.binds` in the
+bindings folder, not only the active preset, and rejects the whole preset when one names a device the
+install's `DeviceMappings.xml` does not define -
+[measured 2026-09-22](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
+On Windows, where the folder is already shared, that is exactly how one install ended up falling back to
+KEYBOARD & MOUSE while its neighbour was fine. Linux is immune to that today **because** the folders are
+separate. Sharing them would import the failure onto Linux, where `DeviceMappings.xml` still differs per
+installation.
+
+**Status: accepted in principle, not yet designed.** No code exists. The Linux half also rests on a
+consequence nobody has observed yet - see
+[testing-required item 8](../00-overview/testing-required.md#core-platform).
+
 ---
 
 ## Settings Storage
@@ -246,8 +356,108 @@ Settings live in SQLite via `db.dao.GlobalSettingsDao` / `db.managers.GlobalSett
 `ShipSettingsDao` for per-ship values — not per-plugin isolated files.
 
 The StellarCore isolation guarantee ("a plugin's settings physically cannot collide with another's, since they
-are different files in different folders") does not hold. BindForge and StarVizion settings live in the same
-store as everything else and must be namespaced by key convention.
+are different files in different folders") does not hold. ~~BindForge and StarVizion settings live in the same
+store as everything else and must be namespaced by key convention.~~
+
+**Corrected 2026-09-20: there are no keys to namespace.** That sentence assumed a key–value store, and
+Elite-Intel does not have one. Read from the tree:
+
+| Table | Shape | Holds |
+|---|---|---|
+| `game_session` | one row, one typed column per setting | most app-wide settings — API keys, audio, LLM, push-to-talk, overlay, `keyInputDelayMs` |
+| `global_settings` | one row (`id = 1`, seeded by its migration), one typed column per setting | the automation toggles |
+| `ship_settings` | one row per ship | per-ship values |
+| `player` | one row | user details, and `bindings_dir` |
+
+**A setting is a column**, added by a numbered migration with a comment saying why, and a default chosen so
+existing installations keep their behaviour. Names are camelCase, and related settings already share an
+informal prefix — `lmStudio*`, `pushToTalk*`, `localLlm*`, `noiseReduction*`. So the question was never
+*"which key prefix"* but **"which table, and what column names."**
+
+### A `bindforge_settings` table — built 2026-09-28
+
+**Proposed 2026-09-20, approved by Krondor 2026-09-22, built 2026-09-28** —
+`12000__bindforge_settings.sql`, `elite.intel.db.dao.BindForgeSettingsDao` and
+`elite.intel.db.managers.BindForgeSettingsManager`, with `BindForgeSettingsManagerTest` pinning the round
+trip. **The three settings are stored but nothing reads them yet**: the launch trigger, the destination
+lookup in `PlayerBackupService` and Edit History itself are all still to build. He set the shape:
+
+> *"We are NOT using .INI files for settings. we are using SQLite same as Google Chrome, Mozilla Firefox and
+> others. This provides us a way to version and modify things with new releases without messing with ugly
+> REGEX. Do settings go to Database, never in to .INI or .JSON files. Exception is Custom Commands, because
+> they can be shared between users."*
+>
+> *"For bind-forge settings create a singleton manager, DAO and database SQL table/column. Sounds like there
+> going to be a lot of very bind specific settings that are not directly related to game session or app
+> settings. Follow the same pattern as SystemSession singleton. Call it BindForgeSettings or something that
+> describes what it is at a glance."*
+
+**So the shape is settled:** a `BindForgeSettings` singleton in front of its own DAO and its own table,
+following `SystemSession`'s pattern — not columns bolted onto `game_session`. He also confirmed the general
+rule this sits under: **editing existing classes is fine** *"as long as it does not break existing
+functionality or create duplicate code. In case where you see potential code duplication consider
+refactoring."*
+
+**BindForge's own settings get a table of their own**, modelled exactly on `global_settings`: one row
+(`id = 1`) inserted by the same migration that creates it, one typed column per setting, each with a default.
+StarVizion, when it comes, does the same as `starvizion_settings`.
+
+**Why not add columns to `game_session`, which is what most settings do.** Because of who else is in that
+file. Over the last 90 days `GameSessionDao` changed in **19** commits and `SystemSession` in **32** — two of
+the busiest files in the codebase, and nearly all of it Krondor's. Every BindForge setting added there edits the
+same DAO, the same session class and the same long SQL statement he is editing that week. That is precisely the
+merging trouble the [package freeze](../00-overview/v1.2-scope.md#the-code-stays-where-it-is--stated-by-krondor-2026-09-12)
+exists to prevent. A table of its own touches none of his files: the migration, DAO and manager are all new, and
+*"new code is free."* `GlobalSettingsDao`, the model being copied, changed in **3**.
+
+**Why not a key–value table.** It would be a second way of storing a setting beside the one the codebase
+already uses everywhere — which `CODING_STANDARD.md` names as a design anti-pattern — and it would give up
+what columns provide for free: a type, a default, and a migration that says why the value exists.
+
+**The conventions:**
+
+- **The table is the namespace, so columns carry no prefix.** `editHistoryRetention`, not
+  `bindForgeEditHistoryRetention` — just as `global_settings` does not prefix its columns with `global`.
+- **Table names take `bindforge_`**, in the snake_case every existing table uses. That covers BindForge's data
+  tables too, which are records rather than settings: `bindforge_edit_history`, the detected installations,
+  and later the deferred Action Groups' user groups.
+- **Migrations in the `12000–12499` range** — BindForge's half of V1.2's band, set by Krondor's
+  [proposal §4](../multi-install-proposal.md#4-migrations-one-tree-per-file) and accepted 2026-09-24. The first two digits are the
+  version, so `11XXX` = V1.1 and `12XXX` = V1.2; V1.2's shared band is split because it has two writers, with
+  commander and galaxy work taking `12500–12999`. Files already written keep their old numbers and are never <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
+  renamed. An applied migration is never edited.
+- **Save every column, and prove it.** `global_settings` saves with `INSERT OR REPLACE`, which resets any
+  column the statement does not list to its default. Two of its columns are missing from its save today —
+  harmless, since nothing reads either, but it shows how easily a column falls out. BindForge's save lists every
+  column, and a round-trip test pins it.
+
+**What does not move.** Settings BindForge inherits by upgrading the editor in place stay exactly where they
+are: `game_session.keyInputDelayMs` and `player.bindings_dir`. Moving them would migrate every user's
+stored values for no change in behaviour, through the busiest files in the tree. The line is **settings
+BindForge introduces**, not *every setting on a BindForge screen*.
+
+**What goes in it** — the three settings [File Manager](../02-features/bindforge/file-manager.md#settings)
+specifies:
+
+| Column | Type | Default | |
+|---|---|---|---|
+| `autoBackupOnLaunch` | boolean | `true` | Player Backups on Elite-Intel launch |
+| `backupDirectory` | text | `null`, meaning Elite-Intel's default backup path | where Player Backup archives are written |
+| `editHistoryRetention` | integer | `10` | versions kept per file, 1–30 |
+
+`backupDirectory` defaults to `null` rather than a stored path, so the default follows `AppPaths` if it
+ever changes instead of freezing whatever path it was on the day the row was written.
+
+**Two questions this raises, both in the spec rather than the schema:**
+
+- **Is Player Backups' age limit a setting?** File Manager's [Retention](../02-features/bindforge/file-manager.md#retention)
+  gives *"keep backups for N days," default 30*, but the Settings table does not list it. Either it is a
+  fourth column or it is fixed at 30 — the spec should say which.
+- **"Settings" means two things in BindForge.** The Bind Editor's
+  [Settings mode](../02-features/bindforge/bind-editor.md#settings--settled-2026-09-19) edits the game's own
+  settings entries, which live in the `.binds` file and never touch SQLite. File Manager's *"BindForge's settings
+  tab"* means BindForge's own preferences, stored here. Per the paragraph below, those preferences belong as a
+  panel on Elite-Intel's Settings screen, not a tab inside BindForge — which also keeps the two apart.
 
 The Settings UI is `ui.screen.SettingsTabPanel` with panels under `ui.screen.settings/`
 (`AiServicesSettingsPanel`, `AudioSettingsPanel`, …). BindForge and StarVizion settings become additional
@@ -259,6 +469,13 @@ panels there, following the existing pattern.
 
 There is no Theme Service and no theme-changed notification. `ui.theme` provides `AppTheme`, `HudPalette`,
 `HudGlyphs`, and `HudForms` — a fixed visual language rather than a swappable runtime theme.
+
+**That language is written down**, in [`ED_HUD_REFERENCE.md`](../ED_HUD_REFERENCE.md) — *"the single source of
+truth for HUD component design"*, which every UI change is checked against. It names the component for each
+job, and it requires any component added to the HUD layer to update the matching section of that file in the
+same commit. How BindForge's screens map onto it, and what it lacks, is in the
+[BindForge UI Component Map](../02-features/bindforge/ui-component-map.md). *Added 2026-09-20; this section
+previously did not mention the canon at all.*
 
 The specs' rule "plugins use theme values and never hardcode colours" still applies as good practice, and
 `InputMonitorPalette` shows the established pattern for a feature-local palette. But live theme switching is

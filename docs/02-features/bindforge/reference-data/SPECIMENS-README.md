@@ -24,7 +24,7 @@ and one kept. Nothing was lost — they differed only in filename.*
 **Device naming — [testing item 9](../../../00-overview/testing-required.md).** `Custom.4.2.binds` names
 Frontier built-ins (`SaitekX56Joystick`); the live profile names user-defined aliases (`RVWAP`, `LVWAP`); the
 2024 and 2025 files name the *same two devices* in **hex**, before their `DeviceMappings.xml` entries existed.
-One commander's files, before and after — which is the migration Alias Designer performs, documented by
+One player's files, before and after — which is the migration Alias Designer performs, documented by
 accident.
 
 **VID+PID order — [testing item 2](../../../00-overview/testing-required.md).** Every Virpil hex value begins

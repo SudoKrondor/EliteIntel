@@ -9,8 +9,8 @@ documents about work that *is* happening.
 ## What it was
 
 The third plugin of the **EDO StellarCore** design, alongside BindForge and StarVizion. Where those two are
-about *controls*, FlightDeck was about **commander and session data** — reading the journal into a durable
-store and presenting the commander's own history and current state back to them.
+about *controls*, FlightDeck was about **user and session data** — reading the journal into a durable
+store and presenting the user's own history and current state back to them.
 
 Its full specification was written for the StellarCore set and not carried across. That set is superseded,
 so treat this document as what survives: the idea, and the reason it is parked. If FlightDeck is ever
@@ -20,7 +20,7 @@ written for a host that was never built.
 ## Why it is not being built
 
 **Elite-Intel already covers most of its ground.** Elite-Intel parses journals into a SQLite cache and tracks
-commander and session state for its own purposes — the LLM needs that state to answer questions, so the data
+user and session state for its own purposes — the LLM needs that state to answer questions, so the data
 layer FlightDeck would have built already exists and is already in use.
 
 That makes FlightDeck the one plugin of the three whose core value the new host *duplicates* rather than
@@ -35,7 +35,7 @@ Three things left the documentation set because FlightDeck was their only consum
 |---|---|
 | **Frontier CAPI, and its OAuth2 flow** (`FrontierAuthService.md`) | CAPI supplies market prices, fleet-carrier status and ship loadout — data outside the journal. Only FlightDeck needed it. Neither BindForge nor StarVizion has any CAPI dependency, and [telemetry](../03-data-models/telemetry.md) confirmed every field it wants comes from the journal or `Status.json`. |
 | **Ship-type lookup data models** (`ship-type-lookup.md`, `EliteDangerous-ShipTypes.md`, `ShipType_DisplayName_Seed_Data.md`) | A canonical map from journal ship identifiers to display names. |
-| **Journal and commander data models** (`journal-and-commander-data.md`) | The store FlightDeck would have read from. |
+| **Journal and user data models** (`journal-and-user-data.md`) | The store FlightDeck would have read from. |
 
 **CAPI is worth a second look only if something else ever needs it.** It was deferred indefinitely rather than
 rejected — the note in the original scope was that it would be revisited "once FlightDeck is picked up." With

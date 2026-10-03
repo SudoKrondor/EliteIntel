@@ -2,7 +2,7 @@
 
 **File Manager is BindForge's primary feature — the main reason BindForge exists.** Backing up the binds
 and configuration files is the most important thing this tool does: it safeguards the configuration the
-commander is using *right now*, and makes it survive the three things that take it away — **game updates,
+user is using *right now*, and makes it survive the three things that take it away — **game updates,
 computer upgrades, and hardware failure.** Editing bindings is the visible feature; not losing them is the
 one that matters.
 
@@ -24,9 +24,20 @@ A checklist: "Everything" (checked by default, forcing all four domain checkboxe
 
 Triggered by Elite-Intel's own startup — deliberately, not tied to the game's own launch, so a backup isn't missed if the user launches the game first. Runs in the background without blocking startup.
 
+**It covers every detected install, and says so** (2026-09-23). The device files are per install, so a backup
+that silently covered one of three would be worth less than it appears. Startup reports what it protected —
+*"BindForge has backed up all your &lt;install names&gt; input configuration files"* — which is also how a user
+who never opens BindForge learns that their second install exists. See
+[Offered, never forced](overview.md#offered-never-forced--settled-2026-09-23).
+
 ### Retention
 
-Age-based: "keep backups for N days," default 30.
+Age-based: **keep backups for N days, default 30** — a [setting](#settings) since 2026-09-28, with a floor of
+one day.
+
+**Not the same retention as [Edit History's](#edit-history)**, which counts versions per file rather than
+days. One folder pruned by date, one history pruned by depth; they are separate settings and separate
+columns.
 
 ### Backup Status Values
 
@@ -68,8 +79,8 @@ The backup's own contents still bound what is possible, but the player chooses w
 |---|---|---|
 | `.binds` | **per file** | The only domain where the choice means anything. A player keeps several presets, and *"restore my Ship preset from June, leave the rest"* is a real thing to want. |
 | `StartPreset.#.start` | whole domain | One file. Nothing to choose between. |
-| `DeviceMappings.xml` | whole domain, **per installation** | One file per installation — the meaningful choice is *which installation*, and that selector is needed regardless. |
-| `.buttonMap` | whole domain, **per installation** | Travels with `DeviceMappings.xml`. Offering these individually is a trap rather than a feature — see below. |
+| `DeviceMappings.xml` | whole domain, **restored to every installation** | *Reworked 2026-09-26.* This row used to read "per installation", with a selector asking *which installation*. [Every install now holds the same files](overview.md#every-install-gets-the-same-files--settled-2026-09-23), so restoring into one and not the others would **create** the divergence BindForge exists to remove. |
+| `.buttonMap` | whole domain, **restored to every installation** | Travels with `DeviceMappings.xml`. Offering these individually is a trap rather than a feature — see below. |
 
 So file-level selection applies to exactly one domain. That is not a compromise; it falls out of the shape
 of the domains.
@@ -86,21 +97,56 @@ of the domains.
 hazard exists at whole-domain granularity too, so the validation is owed either way; and because the result
 lands in a draft, an inconsistent set is a thing to be shown, not a thing to be prevented.
 
-### Restore is not evenly scoped across the four domains, and the UI must not pretend otherwise
+### Restore never asks *which installation* — reworked 2026-09-26
 
-`.binds` and `StartPreset.#.start` live in the single shared user-config folder. **However many `.binds`
-files a player keeps — and they may keep as many as they like — that folder is not duplicated per
-installation**, so restoring them never asks *which installation*. `DeviceMappings.xml` and `.buttonMap`
-are duplicated per installation, so restoring those always does.
+**It used to, for the device domains.** `.binds` and `StartPreset.#.start` live in one shared folder, so they
+never had an installation to choose; `DeviceMappings.xml` and `.buttonMap` are duplicated per installation, so
+restoring them asked which one.
+
+**That question is gone.** Under
+[standardisation](overview.md#every-install-gets-the-same-files--settled-2026-09-23) every installation holds
+the same device files, so there is no correct answer to *which one* — restoring into a single installation
+manufactures exactly the drift the model exists to remove. A restore lands in the draft, and Apply carries it
+to every installation, the same path an edit takes.
+
+**The asymmetry did not disappear, it moved.** It is no longer about where a restore *goes*; it is about what
+the archive *holds*. A backup captures each installation's device files **as they were found**, which means an
+archive taken before standardisation, or after a patch wiped one installation, can contain several versions of
+the same file.
+
+**When those copies disagree, the restore asks the reconciliation question — not the routing one.** Which
+captured version becomes the master? That is the same question
+[first setup](alias-designer.md#first-setup--reconciling-the-installs--settled-2026-09-23) asks, with the same
+answer shape, and once answered the result goes everywhere. When the captured copies all agree — the normal
+case once a machine is standardised — there is nothing to ask.
 
 ### Installation identity — the storefront, and it is derived rather than assigned
 
 **Settled 2026-09-07.** A backup stamps each per-installation file with the **storefront** it came from —
 `steam`, `epic`, `frontier`. Nothing else, and nothing generated.
 
-This works because **a machine can hold only one copy per storefront.** A Steam or Epic account binds to a
-single Frontier account holding a single copy of the game, so the storefront name is already unique on any
-given machine — there is nothing to disambiguate.
+**~~This works because a machine can hold only one copy per storefront.~~ That premise was wrong, corrected
+2026-09-26.** It reasoned that a Steam or Epic account binds to one Frontier account holding one copy, so the
+storefront name is unique on any machine. Two pieces of evidence since say otherwise:
+
+- **Windows.** A user can keep a second Frontier-launcher install — Alan listed exactly that among the
+  possibilities — and the Frontier launcher can be run as
+  [several copies, one per account](../../01-host-integration/domain-knowledge/EliteDangerous-InstallPaths.md).
+- **Linux.** Native, Flatpak and Snap Steam are independent of one another and can all be installed at once,
+  each with its own login and its own game copy. Krondor, 2026-09-26: *"I had all three Steams installed."*
+  All three are storefront `steam`.
+
+So **the storefront is a label, not a key.** Where a machine holds more than one installation of the same
+storefront, the label alone cannot tell them apart, and its folder path is what distinguishes them.
+
+**What it is still for.** The label records **where a captured file came from**, so an archive can be read
+by a human and so a multi-installation capture is self-describing. What it no longer does is **route a
+restore** — nothing needs to match a backup's installation to an installation on this machine, because the
+device domains now go to all of them.
+
+That makes the correction above cheap. A duplicate storefront label was only ever a problem for routing, and
+routing is gone; two installations both labelled `steam` in an archive are now just two captured copies, which
+the reconciliation question above already knows how to handle.
 
 **The property that matters is that it is derived, not assigned.** Both machines independently arrive at
 the same label from their own detection, rather than one minting an identifier the other has to trust. So
@@ -121,32 +167,41 @@ project, so it fails precisely when it would be needed.
 rather than breaking — an unrecognised label simply finds no match, and the player is asked. Whether such
 an installation should carry a user-supplied label is undecided and cheap to defer.
 
-### Restoring when nothing matches — ask, do not guess
+### Restoring onto a machine whose installations differ — reworked 2026-09-26
 
-**Settled 2026-09-07.** If a backup's storefront matches no installation on this machine, BindForge **asks
-the player which installation to restore into**, showing what the archive says about where it came from.
+**~~Settled 2026-09-07: if a backup's storefront matches no installation, ask which installation to restore
+into.~~** That check existed to route a restore, and
+[routing is gone](#restore-never-asks-which-installation--reworked-2026-09-26): the device domains go to every
+installation, so nothing in the archive has to be matched to anything on this machine.
 
-It does not skip the device domains silently, and it does not refuse. **A new PC is the normal case for a
-portable single-file backup, not an error** — that is most of what the format is for. The `.binds` half
-restores regardless, since it goes to one shared folder that has no installation to match.
+**The case it was written for still happens, and is now simpler.** A backup made on a PC with Steam and Epic,
+restored onto one with only Steam, holds two captured copies of `DeviceMappings.xml` and the machine has one
+installation to fill. If the captured copies agree, that is the master and it goes in. If they disagree — the
+likely case for an archive predating standardisation — the
+[reconciliation question](#restore-never-asks-which-installation--reworked-2026-09-26) picks which one wins,
+then it goes in. Either way the count of installations either side is irrelevant.
 
-**This is a separate check from the compatibility one**, and they can both fire on the same archive:
+**A new PC is the normal case for a portable single-file backup, not an error** — that is most of what the
+format is for. It does not skip the device domains silently and it does not refuse.
+
+**One check survives, and it is the one that was always doing the real work:**
 
 | Check | Question | Failure |
 |---|---|---|
-| Storefront match | *which installation does this go into?* | ask the player |
-| Hardware match | *do these device entries describe hardware this player has?* | refuse the device domains as not compatible — see [Browse for Backup File](#browse-for-backup-file) |
+| Hardware match | *do these device entries describe hardware this user has?* | refuse the device domains as not compatible — see [Browse for Backup File](#browse-for-backup-file) |
 
-Worth keeping distinct: a commander's own backup from their old PC fails the first check and passes the
-second. Another commander's backup can pass the first and fail the second. Conflating them would either
-refuse a legitimate restore or wave through someone else's hardware.
+**Why that one is different in kind.** The storefront check asked a question about *this machine's layout*,
+which standardisation answered permanently. The hardware check asks whether the archive describes **somebody
+else's controllers**, which no amount of model-tidying answers — a user's own backup from their old PC passes
+it, another player's backup may not. Keeping them separate was right; what changed is that only one of them
+was ever about safety.
 
 ### Archive Format — ZIP
 
 **Settled 2026-09-06.** One archive file per backup, not a folder tree.
 
 Chosen for portability rather than compression: a single file can be copied, kept, or handed to someone
-else when a commander's bindings break and they need to send what they had. RAR was considered and
+else when a user's bindings break and they need to send what they had. RAR was considered and
 rejected for a dull reason — Java ships `java.util.zip`, while RAR needs a third-party library and is
 proprietary.
 
@@ -162,7 +217,7 @@ reading existing folder-format backups is an open item.
 ### Browse for Backup File
 
 Restores from an archive that is **not** in the list — one copied off another machine, pulled out of a
-cloud folder, or sent by another commander. Same scope selection and same draft-only destination as any
+cloud folder, or sent by another player. Same scope selection and same draft-only destination as any
 other restore.
 
 *Recorded 2026-09-06:* this button appeared in the mockup with no specification behind it. It was named
@@ -177,8 +232,8 @@ archive format is what makes it worth having.
 | # | Case | Behaviour |
 |---|---|---|
 | 1 | **The player's own backup, from elsewhere** — an old machine, a cloud folder, before a reinstall | Restore everything. Same hardware, same VID/PIDs, all four domains apply. |
-| 2 | **Another commander's backup — the `.binds` half** | Restore it. This is the `.binds` file sharing the punchlist meant, and it is genuinely useful: a bindings layout is worth copying. |
-| 3 | **Another commander's backup — `DeviceMappings.xml` and `.buttonMap`** | **Refused.** BindForge says the device data is not compatible and restores the rest. |
+| 2 | **Another player's backup — the `.binds` half** | Restore it. This is the `.binds` file sharing the punchlist meant, and it is genuinely useful: a bindings layout is worth copying. |
+| 3 | **Another player's backup — `DeviceMappings.xml` and `.buttonMap`** | **Refused.** BindForge says the device data is not compatible and restores the rest. |
 
 **Why the third is refused rather than merely warned about.** Those files describe *their* hardware.
 Importing them writes device entries for controllers the player does not own — and nothing objects,
@@ -212,7 +267,7 @@ local `DeviceMappings.xml` and the rows in
 [device provenance](../../03-data-models/device-provenance.md), rather than against what happens to be
 plugged in at that moment, since a player may restore before reattaching a controller.
 
-**It never decides. It lists the device entries and the commander ticks.** The archive is a bag of
+**It never decides. It lists the device entries and the user ticks.** The archive is a bag of
 device entries, not one indivisible thing — which is how `DeviceMappings.xml` already works — so
 "case 1 or case 3" was the wrong shape of question. **A single archive can be both at once.**
 
@@ -223,15 +278,15 @@ Restore which device entries?
   [ ] X56 Throttle  not seen on this machine
 ```
 
-**BindForge's assessment sets the tick; the commander sets the outcome.** Entries matching hardware
+**BindForge's assessment sets the tick; the user sets the outcome.** Entries matching hardware
 it can see are pre-ticked, entries it cannot place are not. That keeps the common cases to a glance —
-a straight own-backup restore is all ticked, another commander's archive is all clear — while the
+a straight own-backup restore is all ticked, another player's archive is all clear — while the
 partial case, the one that started this question, needs exactly one correction.
 
-**Why the commander can answer this when BindForge cannot.** They know whether they still own the
+**Why the user can answer this when BindForge cannot.** They know whether they still own the
 X56. BindForge knows only that no attached device matches it, which is equally consistent with the
 stick being sold, unplugged, or on a desk in another room. This is the same conclusion reached for
-[device identity in Alias Designer](alias-designer.md#device-identity-is-the-commanders-to-confirm--settled-2026-09-12),
+[device identity in Alias Designer](alias-designer.md#device-identity-is-the-users-to-confirm--settled-2026-09-12),
 and for the same reason: there is no reliable hardware identity to compute from.
 
 **The refusal in case 3 stands, and this is how it is enforced** — not by classifying the archive, but
@@ -239,7 +294,7 @@ by leaving foreign entries unticked by default, so importing someone else's hard
 deliberate act rather than an unnoticed one. **Matching is compared against what BindForge knows
 locally** — the local `DeviceMappings.xml` plus the
 [provenance](../../03-data-models/device-provenance.md) rows — **not against what is plugged in right
-now**, since a commander may restore before reattaching a controller.
+now**, since a user may restore before reattaching a controller.
 
 **`.binds` is unaffected by any of this.** It is restored per case 2 regardless of which device
 entries are ticked; a bindings layout is worth copying even when none of the hardware is yours.
@@ -248,11 +303,12 @@ entries are ticked; a bindings layout is worth copying even when none of the har
 
 This screen used to list every detected installation with a Mirror checkbox and an "Apply to Selected Game
 Installations" button. **It is gone**, and the capability moved to
-[Alias Designer](alias-designer.md#per-installation-editing).
+[Alias Designer](alias-designer.md#one-record-and-where-it-lands--reworked-2026-09-26).
 
-The reason is that mirroring is a property *of a device*, not of a screen. A checkbox list forced one decision
-across every device at once; the per-device installation tabs let one controller be shared across installations
-while another stays local to one. That was impossible to express here.
+~~The reason is that mirroring is a property *of a device*, not of a screen.~~ **Superseded 2026-09-23:**
+mirroring is neither a screen nor a per-device property — it is the model. Every install holds the same device
+files, so there is nothing to choose on any screen. See
+[Every install gets the same files](overview.md#every-install-gets-the-same-files--settled-2026-09-23).
 
 Installation *management* — adding, relocating or removing an installation when detection gets it wrong —
 **now has a home: [Game Install Locations](#game-install-locations), below.** Alias Designer continues to
@@ -286,8 +342,12 @@ folder at all. **BindForge targets `elite-dangerous-odyssey-64` only** (Krondor'
 an Odyssey application), so the product is a constant rather than part of the identity. Recorded because
 the folder is visibly there, and because it is why the shipped reference file is Odyssey's specifically.
 
-Presenting these as one flat list of "locations" would imply the four domains live in comparable places and
-carry comparable risk. They do not: losing the first is a gameplay problem, losing the second is cosmetic.
+Presenting these as one flat list of "locations" would imply the four domains live in comparable places. They
+do not: one folder is shared, the other is one per storefront, and that difference is what the two sections
+show. ~~They do not carry comparable risk: losing the first is a gameplay problem, losing the second is
+cosmetic.~~ *Corrected 2026-09-21:* the two sections differ in **where** the files live, not in **how much they
+matter** — every managed file is protected alike, per
+[Protection is uniform](overview.md#protection-is-uniform--settled-2026-09-21).
 
 ### Actions
 
@@ -332,7 +392,7 @@ Consequences of that limit, so they are chosen rather than discovered:
 
 ## What a `.binds` File Might Not Be
 
-**Added 2026-09-17, measured rather than imagined.** Across 48,354 commander-shared files, **445 carry a
+**Added 2026-09-17, measured rather than imagined.** Across 48,354 player-shared files, **445 carry a
 `.binds` extension and are not bindings files** — 363 of them a `StartPreset.start` picked by mistake from the
 same folder, the rest other games' configs, device profiles, truncated files and stray XML. Full breakdown in
 [Bind Editor](bind-editor.md#a-binds-name-does-not-make-it-a-binds-file--2026-09-17).
@@ -345,7 +405,7 @@ could not identify.**
 ## Edit History
 
 **Confirmed in V1.2 (2026-09-09).** The reason it earns its place rather than being deferred: **it removes
-the need to take a full backup before every small experiment.** Without it, a commander who wants to try
+the need to take a full backup before every small experiment.** Without it, a user who wants to try
 one change either backs up the whole configuration first or risks not getting back. Neither is a fair
 price for adjusting one binding, and the second is how people end up with a layout they cannot recover.
 
@@ -367,7 +427,21 @@ BindForge's settings tab (see [Settings Storage](../../01-host-integration/elite
 |---|---|---|
 | Auto-backup on Elite-Intel launch | Enabled | Toggles [Player Backups — Auto-Backup on App Launch](#auto-backup-on-app-launch) |
 | Backup destination | Elite-Intel's default backup path | Where Player Backup ZIP archives are written |
+| Backup retention | 30 days (minimum 1) | How long a [Player Backup](#retention) is kept before it is pruned |
 | Edit History retention | 10 (range 1–30) | How many historical versions [Edit History](#edit-history) keeps per file before dropping the oldest |
+
+**Where they are stored — built 2026-09-28:** a `bindforge_settings` table of their own, one column each;
+retention is range-checked (1–30) and the destination is rejected at the setter if the platform cannot
+represent it. **Resolving an unset destination to a real folder is not done in the settings manager** —
+`PlayerBackupService.resolvePlayerBackupsDir()` reads the stored value and is the only place that decision is
+made. A destination that cannot be read falls back to the default rather than failing the backup: the backup
+is the thing being protected. See [Settings Storage](../../01-host-integration/elite-intel-platform-map.md#a-bindforge_settings-table--built-2026-09-28).
+**Settled 2026-09-28: the age limit is a fourth setting**, defaulting to 30 days (Alan). It has a floor of
+one day and no ceiling — zero would make every backup older than the limit the moment it was written, so
+pruning would delete the backup it had just taken, while keeping backups longer only costs disk, which is the
+user's to spend. One open point from that proposal still belongs here: that *"BindForge's settings tab"* means a panel on Elite-Intel's Settings
+screen — not the Bind Editor's [Settings mode](bind-editor.md#settings--settled-2026-09-19), which edits the
+game's own settings inside the `.binds` file.
 
 ## What exists in code today — checked 2026-09-18
 
@@ -389,12 +463,15 @@ here, and what is not:
 
 **Auto-backup and retention are one change, not two.** Today nothing prunes, and that is harmless because
 every backup is a deliberate button press. Add the launch trigger on its own and the folder grows every
-time Elite-Intel starts, on a machine where the commander never asked for a single backup. Whichever lands
+time Elite-Intel starts, on a machine where the user never asked for a single backup. Whichever lands
 first, the other has to land with it.
 
-**Edit History needs the first V1.2 migration.** The newest applied migration is `01050`, and the
-**`011XX` block is entirely free** — so Edit History's table is a new `011XX` file, and [an applied
-migration is never edited](../../../CLAUDE.md).
+**Edit History needs a migration in BindForge's range.** Under Krondor's band rule
+([proposal §4](../../multi-install-proposal.md#4-migrations-one-tree-per-file), accepted 2026-09-24) the first
+two digits are the version, and V1.2's shared band is split between its two writers: **BindForge owns
+`12000–12499`**, commander and galaxy work `12500–12999`. The range holds one file so far — <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
+`12000__bindforge_settings.sql` — so Edit History's table is the next free number in it, in the shared
+top-level `db-migration/` tree, never `db-migration/commander/`, which is Krondor's alone. [An applied migration is never edited](../../../CLAUDE.md). <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
 
 ## Export / Import — Considered, Then Cut
 

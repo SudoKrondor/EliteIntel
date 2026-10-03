@@ -25,7 +25,7 @@ read from that commit's source tree.
 | `00-overview/vision.md` | `00-overview/vision.md` | **Rewritten** — its premise was the shell. |
 | `00-overview/glossary.md` | `00-overview/glossary.md` | **Rewritten** — host terms replaced, the third plugin dropped. |
 | `00-overview/v1.2-scope.md` | `00-overview/v1.2-scope.md` | Scope sections rewritten; feature lists preserved verbatim. |
-| `00-overview/conflicts-and-open-questions.md` | same | **Preserved as historical record**, with a standing-corrections header. |
+| `99-archive/conflicts-and-open-questions.md` | same | **Preserved as historical record**, with a standing-corrections header. |
 | `00-overview/testing-required.md` | same | Unchanged but for link retargeting. Still fully valid. |
 | `01-core-platform/domain-knowledge/` (2 of 3) | `01-host-integration/domain-knowledge/` | ED path knowledge kept; host-layout sections replaced. |
 | `03-data-models/binding-schema.md` | same | Unchanged but for link retargeting. |
@@ -40,9 +40,9 @@ Both mockups (`BindForge_Mockup.html` 94 KB, `StarVizion_Mockup.html` 73 KB), th
 | Not ported | Reason |
 |---|---|
 | All of `01-core-platform/` (8 specs) | Specified a host shell that no longer needs building. Superseded by the platform map. |
-| `02-plugins/flightdeck/**` | Not being ported. Elite-Intel already parses journals and tracks commander/session state for its own purposes. |
+| `02-plugins/flightdeck/**` | Not being ported. Elite-Intel already parses journals and tracks user/session state for its own purposes. |
 | `00-overview/scope.md` | Described the StellarCore documentation pass itself, not the product. See §6 for why it is worth reading anyway. |
-| `03-data-models/journal-and-commander-data.md`, `ship-type-lookup.md`, `EliteDangerous-ShipTypes.md`, `ShipType_DisplayName_Seed_Data.md` | Data models for the third plugin — see [Other Ideas](04-other-ideas/FlightDeck.md). |
+| `03-data-models/journal-and-user-data.md`, `ship-type-lookup.md`, `EliteDangerous-ShipTypes.md`, `ShipType_DisplayName_Seed_Data.md` | Data models for the third plugin — see [Other Ideas](04-other-ideas/FlightDeck.md). |
 | `01-core-platform/domain-knowledge/FrontierAuthService.md` | CAPI OAuth2 — only that plugin needed it. |
 
 All of it remains in the source archive, untouched, if any of it is ever wanted.
@@ -82,7 +82,7 @@ Elite-Intel's `AppPaths` reality.
 
 BindForge's **Dormant Mode** — a hard write-block for the entire time Elite Dangerous was running — was
 removed at Alan's direction. It is gone from the specs, the glossary, the testing backlog and the mockup; the
-historical entries in `conflicts-and-open-questions.md` are preserved with a standing correction.
+historical entries in `99-archive/conflicts-and-open-questions.md` are preserved with a standing correction.
 
 Why it is defensible: the spec itself already recorded that the block window was wider than the risk — the game
 only re-reads `.binds` when its in-game Controls menu opens — and flagged narrowing it as a testing-required
@@ -131,7 +131,7 @@ than as the destination.
 ## 7. Open Questions This Port Creates
 
 Ordered by how much they block. These are **new** — questions created by the host change, not inherited. Older
-unresolved questions stay in [conflicts-and-open-questions.md](00-overview/conflicts-and-open-questions.md).
+unresolved questions stay in [conflicts-and-open-questions.md](99-archive/conflicts-and-open-questions.md).
 
 ### P1 — Blocking
 
@@ -152,8 +152,10 @@ unresolved questions stay in [conflicts-and-open-questions.md](00-overview/confl
    **Reused as-is:** `BindingsApplyService` (validate → backup → atomic write; **this is who owns the write
    path**), `BindingsWorkingCopyRepository` (drafts, BOM-preserving import, baseline fingerprints),
    `BindingsLoader` (which `.binds` is live — not re-derivable from the directory alone),
-   `BindingsBackupService`, `BindingConflictScanner`/`BindingConflictRules`, `UiNavigationTextTrap` plus
-   `BindingsMonitor.textTrappedUiNavigation()`, and `Bindings.GameCommand` for the full control-set naming.
+   `BindingsBackupService`, `BindingConflictScanner`/`BindingConflictRules`, `ReservedKeyChords`, and
+   `Bindings.GameCommand` for the full control-set naming. *This list used to include `UiNavigationTextTrap`
+   and `BindingsMonitor.textTrappedUiNavigation()`; both were deleted 2026-09-21 when the route plotter
+   stopped arrowing out of the galaxy map search box, so there is nothing left to reuse.*
 
    **Two deliberate restrictions, and they do not get the same answer** (settled 2026-09-12; the
    2026-09-06 reading had both staying narrow and BindForge building its own wider writer beside them,
@@ -162,9 +164,9 @@ unresolved questions stay in [conflicts-and-open-questions.md](00-overview/confl
    `KeyBindingsParser` **stays as narrow as it is** — a read-only, keyboard-only boundary feeding command
    execution. BindForge reads `.binds` for editing through its own full-fidelity path instead.
 
-   `BindingsWriter` **widens to every device.** Its refusal — *"The commander bound that device in the
+   `BindingsWriter` **widens to every device.** Its refusal — *"The user bound that device in the
    game and this application does not take it away"* — is right for an assistant acting on its own
-   initiative and stays right there, but it does not describe a commander deliberately editing their own
+   initiative and stays right there, but it does not describe a user deliberately editing their own
    bindings, which is what a bind editor is for. The boundary becomes **who initiated the write**, not
    which device is in the slot. Widening the writer does not widen the parser, so non-keyboard
    assignments still cannot reach command execution. See
@@ -221,6 +223,12 @@ unresolved questions stay in [conflicts-and-open-questions.md](00-overview/confl
 
 9. **Settings are not isolated.** Everything shares one SQLite store. BindForge and StarVizion settings need a
    key-namespacing convention.
+
+   **Reframed 2026-09-20 — there are no keys.** Elite-Intel stores each setting as a typed column, not a
+   key–value pair, so the question is which table and what column names. **Settled: a `bindforge_settings` table
+   of its own**, keeping BindForge out of the two busiest files in the tree. Its migration goes in BindForge's
+   `12000–12499` range. See
+   [Settings Storage](01-host-integration/elite-intel-platform-map.md#a-bindforge_settings-table--built-2026-09-28).
 
 10. **Archive backup/restore (ZIP) does not exist.** BindForge's File Manager is built on it.
 

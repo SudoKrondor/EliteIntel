@@ -24,14 +24,16 @@ open questions the port created.
 | Know what the host provides and what's missing | [Elite-Intel Platform Map](01-host-integration/elite-intel-platform-map.md) |
 | Understand why these tools exist | [Vision](00-overview/vision.md) |
 | Know what v1 means | [V1 Scope](00-overview/v1.2-scope.md) |
+| **Understand the player's files, accounts and installs** | **[The Input Environment](00-overview/input-environment.md)** — read this before touching input config |
 | Look up a term | [Glossary](00-overview/glossary.md) |
 | See what was considered and parked | [Other Ideas](04-other-ideas/) |
+| See a closed argument's history | [Archive](99-archive/) — read-only; the live doc always wins |
 | See the mockups | [Elite-Intel shell](01-host-integration/mockups/EliteIntel_Shell_Mockup.html) — open this first; its tab bar links to both feature mockups |
 
 ## Layout
 
 ```
-00-overview/            Vision, scope, glossary, open questions, testing backlog
+00-overview/            Vision, scope, input environment, glossary, testing backlog
 01-host-integration/    What Elite-Intel provides, + Elite Dangerous path domain knowledge
     mockups/            Elite-Intel shell mockup (entry point to the two feature mockups)
 02-features/
@@ -39,6 +41,8 @@ open questions the port created.
     starvizion/         Specs, mockup, punchlists
 03-data-models/         Binding schema, device provenance, telemetry
 04-other-ideas/         Considered and parked - not scheduled, kept so the reasoning survives
+99-archive/             CLOSED - historical record only. Never edit, never cite as current design
+
 ```
 
 ## BindForge
@@ -47,25 +51,21 @@ Four top-level sections, in priority order — backup and restore first, because
 loss matters more than editing it.
 
 - [Overview](02-features/bindforge/overview.md) — managed file domains, live file sync, data integrity
-- [Alias Designer](02-features/bindforge/alias-designer.md) — device naming, button/axis labels, and
-  per-installation mirroring
-- [Bind Editor](02-features/bindforge/bind-editor.md) — Game Mode, Anomalies, Settings and shared
-  conflict detection in V1.2; Action Groups, Input Mode, Control Types and Controller Mode [deferred](00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16)
+- [Alias Designer](02-features/bindforge/alias-designer.md) — device naming and button/axis labels, kept identical across every install
+- [Bind Editor](02-features/bindforge/bind-editor.md) — Game Mode, Anomalies, Settings and shared conflict detection in V1.2; Action Groups, Input Mode, Control Types and Controller Mode [deferred](00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16)
 - [Preset Editor](02-features/bindforge/preset-editor.md) — which `.binds` file loads per binding section
 - [File Manager](02-features/bindforge/file-manager.md) — backup and restore of all four file domains
+- [UI Component Map](02-features/bindforge/ui-component-map.md) — each screen mapped onto the HUD kit, and what the kit lacks
 - [Roadmap](02-features/bindforge/roadmap.md)
-- [Domain knowledge](02-features/bindforge/domain-knowledge/) — `.binds` format, action catalog, conflict
-  rules, `DeviceMappings.xml`/`.buttonMap`, and the interactive conflict-matrix pages
-- [Reference data](02-features/bindforge/reference-data/) — `ActionCatalog.json` and the binding-zone
-  spreadsheets
+- [Domain knowledge](02-features/bindforge/domain-knowledge/) — `.binds` format, action catalog, conflict rules, `DeviceMappings.xml`/`.buttonMap`, and the interactive conflict-matrix pages
+- [Reference data](02-features/bindforge/reference-data/) — `ActionCatalog.json` and the binding-zone spreadsheets
 - [Mockup](02-features/bindforge/mockups/BindForge_Mockup.html)
 - [Device Provenance](03-data-models/device-provenance.md) — why device ownership must live in the database
 
 ## StarVizion
 
 - [Overview](02-features/starvizion/overview.md)
-- [Vizlets and the Node System](02-features/starvizion/vizlet-and-node-system.md) — Vizlets, NeuroNodes, the
-  eight primitives
+- [Vizlets and the Node System](02-features/starvizion/vizlet-and-node-system.md) — Vizlets, NeuroNodes, the eight primitives
 - [StarCalc Expression Engine](02-features/starvizion/starcalc-expression-engine.md)
 - [HoloFrames and Persistence](02-features/starvizion/holoframes-and-persistence.md)
 - [UI Layout](02-features/starvizion/ui-layout.md) — editor UI and mode-based visibility

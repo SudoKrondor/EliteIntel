@@ -43,22 +43,24 @@ removed.** Verified against the live folder and the
 | `KeyboardMouseOnly.binds` (a shipped preset, no suffix) | `KeyboardMouseOnly` |
 
 **Get this wrong and the failure is silent.** A section repointed at a name no file answers to does not
-raise an error — the game simply loads something else, and the commander discovers it in the cockpit. This
+raise an error — the game simply loads something else, and the user discovers it in the cockpit. This
 is the one write in BindForge where a single mistyped string costs a flight.
 
 ### A name does not identify a file
 
-**One name can mean several files.** `reference-data/` holds both `Custom.3.0.binds` and
-`Custom.4.2.binds`, and each reduces to `Custom`. The game resolves which one to load by its own version, so
-**BindForge must not assume a name maps to exactly one file** — the dropdowns offer *names*, which is what the
-file stores and what the game's own preset list shows.
+~~**One name can mean several files.**~~ **Withdrawn 2026-09-21: a live folder never holds two versions of
+one preset** (Alan). `reference-data/` does hold both `Custom.3.0.binds` and `Custom.4.2.binds`, but they are
+collected specimens, not one user's folder. In a live install Elite migrates an older-version file to the
+current version under the same name and the old one goes, and **only the Live game is supported** — so the name
+in `StartPreset.#.start` identifies exactly one file. The dropdowns still offer *names*, because that is what
+the file stores and what the game's own preset list shows.
 
 **And the suffix is not guaranteed.** `Custom.4.2 (2).binds` — a real file, from a download that de-duplicated
 by adding ` (2)` — does not fit `name.major.minor.binds`, so its whole basename is the name. A transform that
 assumes a version suffix would mangle it. Strip a suffix **only when one is there**.
 
-*Both are in the shipped specimens rather than hypothetical, which is why they are written down here rather
-than discovered during implementation.*
+*The `(2)` file is in the shipped specimens rather than hypothetical, which is why it is written down here
+rather than discovered during implementation.*
 
 ## Consistency Warning
 
@@ -68,6 +70,9 @@ A live, informational banner (updates as the dropdowns change, not only on save)
 
 - **IN SYNC** (green) — the draft matches the live Active Preset file.
 - **DRAFT** (amber) — the draft differs from the live file, whether or not those edits have been saved.
+
+**Shown as coloured text, not a pill** (settled 2026-09-21) — the state word in its colour, the way the AI tab's
+Quick Status panel shows KEYMAP — IN SYNC. See [the UI component map](ui-component-map.md#2-statusbadge-draws-a-pill).
 
 Preset Editor participates in [Live File Synchronization](overview.md#live-file-synchronization)'s [Destructive Change Detection](overview.md#destructive-change-detection): if the live Active Preset file changes externally to something that looks like data loss (for example, all four lines reset to a single default preset name that doesn't match what the user had configured), Preset Editor does not just quietly update its dropdowns to match. It flags the change as a suspected destructive reset rather than legitimate truth, and offers to restore the prior configuration, the same as every other managed domain.
 
@@ -111,7 +116,7 @@ configuration this screen exists to support. The shipped specimen `StartPreset.4
 `KeyboardMouseOnly / Custom / Custom / Custom`, so today's code would report *KeyboardMouseOnly* as **the**
 active preset and silently ignore what Ship, SRV and On Foot are pointing at.
 
-**This is not a bug in what it was written for.** It answers *“which preset is the commander on?”* for a
+**This is not a bug in what it was written for.** It answers *“which preset is the user on?”* for a
 single-preset setup, which is what the assistant needed. BindForge needs the four values, so the honest
 change is a **second method returning all four** rather than altering what the existing one promises — the
 same shape as [the Missing scan's two questions](bind-editor.md#missing-has-two-shapes--added-2026-09-12),

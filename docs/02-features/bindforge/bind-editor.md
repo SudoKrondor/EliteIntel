@@ -12,7 +12,7 @@ makes them cheap to build when they come back — each mode's own section below 
 
 - A Bindings File dropdown plus Load button, above everything. Load performs the standard [Live File Synchronization](overview.md#live-file-synchronization) freshness check for the Bind Domain before opening the file for editing.
 - A Search box, above all mode tabs — filters whichever list is currently showing in whichever mode tab is active. **It clears in one action**: a × appears inside the field once there is anything to clear, and Esc does the same for anyone whose hands are already on the keyboard — which, in a bind editor, is most of them. Clearing restores the full list and returns focus to the field. Controller Mode is picture-based, not a list, so how (or whether) Search applies there is still open.
-- A **Show Anomalies Only** checkbox, on the same line as Search. **It belongs to Game Mode and appears only there** (settled 2026-09-15). It filters the grid to rows carrying an anomaly — any of the [four kinds](#four-kinds-one-question), not conflicts alone. Leaving Game Mode hides it **and clears it**, so a filter is never left applied where nothing on screen explains it. **Why it exists when [Anomalies](#anomalies) has its own tab:** the tab answers *what is wrong*, gathering every anomaly by kind and severity away from the game's own layout; the checkbox answers *what is wrong here*, keeping the sections and groups the commander is already working in. *Until 2026-09-15 this was shared shell state that meant something different in each mode. [Action Groups](#action-groups) has no filter of its own as a result, and needs none: it is not where conflicts get fixed.*
+- A **Show Anomalies Only** checkbox, on the same line as Search. **It belongs to Game Mode and appears only there** (settled 2026-09-15). It filters the grid to rows carrying an anomaly — any of the [four kinds](#four-kinds-one-question), not conflicts alone. Leaving Game Mode hides it **and clears it**, so a filter is never left applied where nothing on screen explains it. **Why it exists when [Anomalies](#anomalies) has its own tab:** the tab answers *what is wrong*, gathering every anomaly by kind and severity away from the game's own layout; the checkbox answers *what is wrong here*, keeping the sections and groups the user is already working in. *Until 2026-09-15 this was shared shell state that meant something different in each mode. [Action Groups](#action-groups) has no filter of its own as a result, and needs none: it is not where conflicts get fixed.*
 - Mode tabs: **Game Mode**, **Anomalies** and **[Settings](#settings--settled-2026-09-19)** in V1.2 (settled 2026-09-16,
   Settings added 2026-09-19). **Action Groups**, **Control Types**, **Controller Mode** and **Input Mode** are
   documented below but [are not in the mode bar](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16)
@@ -62,7 +62,7 @@ button-type, 70 axis-type and 93 standalone settings.** The settings are not a r
 nearly a fifth of the file, and until now not one of them was reachable outside the game.
 
 **They also have a tab of their own** — [Settings](#settings--settled-2026-09-19) lists every one of them in a single place,
-for the commander who knows the game has an option somewhere without knowing which section hid it. Same rows,
+for the user who knows the game has an option somewhere without knowing which section hid it. Same rows,
 same editors, same values.
 
 **Where a settings row goes: with its own subgroup, at the foot of it.** The
@@ -91,17 +91,17 @@ than written by hand: 34 token choices, 3 numeric choices, 45 booleans and 21 fr
 | **Enum** | 31 | dropdown | `YawToRollMode` `Bindings_YawIntoRollNone`, `MouseYMode` `Bindings_MousePitch`; **23 of the 31 hold an empty value**, which is the game's default rather than a missing one |
 
 `KeyboardLayout` is the one entry with no `Value` attribute at all — it carries the layout as element text.
-It is read-only: the game writes it from the OS keyboard layout, and nothing a commander does in a bind
+It is read-only: the game writes it from the OS keyboard layout, and nothing a user does in a bind
 editor should claim to change that.
 
 **Floats are a plain numeric field, not a slider.** A slider has to know its range, and nothing in any of the
-five specimen files tells us what the maximum sensitivity is. A field writes exactly what the commander
+five specimen files tells us what the maximum sensitivity is. A field writes exactly what the user
 typed, which is the same contract the rest of BindForge keeps with the file.
 
 **Except that three of them are not really floats — found 2026-09-16.** The game's options screen shows
 **Headlook Button Increments** as a four-choice dropdown — CONTINUOUS, SMALL INCREMENTS, MEDIUM INCREMENTS,
 LARGE INCREMENTS — and the file stores it as `HeadlookIncrement` = `0.00000000`. `ThrottleIncrement` and
-`BuggyThrottleIncrement` have the same shape. **A numeric field would let a commander type a value the game
+`BuggyThrottleIncrement` have the same shape. **A numeric field would let a user type a value the game
 never offers**, so these three are dropdowns like any other enumerated setting, and the number behind each
 label is captured by the same testing. *Nothing in the file distinguishes them from a genuine float — the
 difference is only visible on the options screen, which is why it took looking.*
@@ -147,7 +147,7 @@ removing the element** — an editor that “tidied away” empty attributes wou
 
 **So there is no single rule for empty**, and nothing may normalise it. An empty value is that element's
 default choice, whatever the game decided it should be, and BindForge writes back exactly the form the file
-already held unless the commander picks something else. *This is also the second reason the vocabularies
+already held unless the user picks something else. *This is also the second reason the vocabularies
 have to be captured per element rather than per family: the family tells you the tokens, not the default.*
 
 | Element | In-game name | Choices on screen | Tokens known |
@@ -238,7 +238,7 @@ Epic Odyssey — so it is not a stray file or a mod. This is the answer to *“i
 
 **A second source, in the same folders: 90 shipped preset files.** Scanning every `.binds` Frontier ships
 (`SaitekX52.binds`, `KeyboardMouseOnly.binds`, `DualShock4Controller.binds` and the rest) yields tokens no
-commander file held — `FocusOption_Show`, `Bindings_YawIntoRollTime`, `Bindings_ThrottleForewardOnly` and
+player file held — `FocusOption_Show`, `Bindings_YawIntoRollTime`, `Bindings_ThrottleForewardOnly` and
 `Bindings_TraditionalGunsights`. **Frontier's own files are the cheapest evidence there is**, and BindForge's
 testing should start there before anyone touches the options screen.
 
@@ -264,14 +264,14 @@ a legacy or short-lived token, not current, which is also what six files in fort
 **`ThrottleIncrement` is the interesting disagreement.** Frontier's file says *any number between 0.0 and 1.0*,
 while the modern options screen offers a fixed list — CONTINUOUS, 10%, 12.5%, 16.7%, 25% and more. Both are
 true: the field accepts any fraction, and the UI offers a chosen few. **BindForge offers the UI's list**, because
-matching what the commander sees in the game is the entire point of the editor — and the list's values are
+matching what the user sees in the game is the entire point of the editor — and the list's values are
 what the remaining testing captures.
 
 #### A third source: EDRefCard's repository — 2026-09-16
 
 [EDRefCard](https://github.com/richardbuckle/EDRefCard), the community reference-card generator, keeps **152
 `.binds` files in its public repository** — Frontier's shipped defaults for four game versions (3.3, 3.5, 4.0a
-and Odyssey patch 8) plus around two dozen real commander files kept as test cases. Scanning them closed
+and Odyssey patch 8) plus around two dozen real player files kept as test cases. Scanning them closed
 almost everything that was left, and **one result would have made a reasonable guess wrong**.
 
 | Finding | Why it matters |
@@ -286,17 +286,17 @@ almost everything that was left, and **one result would have made a reasonable g
 **What that leaves is two tokens.** The value behind *Focuses the panel*, and the value behind *Push to mute*.
 Both are one selection each in the game, and until they are observed BindForge offers the options it can
 write and says why — `FocusOption_Focus` and `mute_pushToMute` are the obvious guesses, and
-`Bindings_ThrottleForewardOnlyFreeCam` is why obvious guesses are not written to a commander's file.
+`Bindings_ThrottleForewardOnlyFreeCam` is why obvious guesses are not written to a user's file.
 
 **Where these came from matters.** All three sources so far — the game folder, Frontier's 90 shipped presets,
 and a public source repository — were free to read. [edrefcard.info](https://edrefcard.info/list) lists 3,888
-commander-shared configs and would be a far richer sample, but **its `robots.txt` allows `/list` and disallows
+player-shared configs and would be a far richer sample, but **its `robots.txt` allows `/list` and disallows
 everything else, including `/configs/`**, so those files are not ours to crawl. Recorded here so the question
 is settled rather than rediscovered.
 
 #### A fourth source: 48,354 community configs — 2026-09-17
 
-Alan holds a corpus of **48,354 commander-shared `.binds` files**, scanned read-only and diffed against
+Alan holds a corpus of **48,354 player-shared `.binds` files**, scanned read-only and diffed against
 every value the earlier sources held.
 
 **The version attributes name the writer, not the game — corrected 2026-09-17.** An earlier draft of this
@@ -356,7 +356,7 @@ The corpus is the first evidence of what BindForge will actually be handed, and 
 - **437 files have no `<Root>` element at all.** Measured: **363 are plain-text lists of preset names**, the
   shape of a `StartPreset` file rather than a binds file, saved with the wrong extension; 47 are some other
   XML; and 27 are HTML pages, which are artifacts of however the corpus was collected rather than anything a
-  commander's game produced. **A bind editor will be handed files that are not bind files** — by far the most
+  user's game produced. **A bind editor will be handed files that are not bind files** — by far the most
   likely being the `StartPreset` that sits beside them in the same folder.
 - **Structurally wrong files**: `Deadzone`, `Inverted`, `ToggleOn`, `Hold` and `Modifier1` appearing as top-level
   elements, where they belong inside a binding.
@@ -365,7 +365,7 @@ The corpus is the first evidence of what BindForge will actually be handed, and 
 **What that requires of BindForge**, none of which was written down before: a file that contains a value no
 vocabulary knows **still opens**; the unknown value is **shown as it is and preserved on write**, never silently
 corrected to the nearest legal token; an element BindForge does not recognise is **left alone rather than
-dropped**; and none of this counts as damage, because the commander's game has been reading these files
+dropped**; and none of this counts as damage, because the user's game has been reading these files
 quite happily.
 
 ##### A `.binds` name does not make it a binds file — 2026-09-17
@@ -379,11 +379,11 @@ quite happily.
 | `<Bindings>`, `<FastEventsMapping>`, `<inputmap>`, `<profile>` | 16 | other tools' input configs and device profiles |
 | `<KeyboardLayout>` | 2 | a real binds file whose `<Root>` element has been truncated away |
 | `<plist>`, `<FilesMatch>`, `<li>`, hand-made XML | ~14 | a macOS property list, an Apache config snippet, HTML fragments, one-offs |
-| `<!DOCTYPE html>` | 27 | artifacts of how the corpus was collected, not commander files |
+| `<!DOCTYPE html>` | 27 | artifacts of how the corpus was collected, not player files |
 
 **The 363 are the ones that matter, and they are not a mystery:** `StartPreset.start` lives in the **same
 folder** as the `.binds` files, with a similar name and a similar job, so it is the obvious wrong file to
-grab. A commander sharing their bindings picks it by accident — 363 times out of 48,354.
+grab. A player sharing their bindings picks it by accident — 363 times out of 48,354.
 
 **So BindForge identifies a file by its content, not its name.** On load it checks for a `<Root>` element
 carrying binding children, and when that is absent it **says what the file looks like instead** — *“this is a
@@ -396,14 +396,14 @@ normalised, not replaced with a binds file wearing the same name. Someone's `Sta
 game's configuration, is not BindForge's to rewrite.
 
 *Open, and Alan's call: whether an unrecognised settings value earns a row in [Anomalies](#anomalies).* It fits
-the *[Invalid](#four-kinds-one-question)* kind by meaning — it will not do what the commander expects — but
+the *[Invalid](#four-kinds-one-question)* kind by meaning — it will not do what the user expects — but
 [settings are currently never anomalies](#settings-entries-are-rows-too--settled-2026-09-16), and the whole
 class is five files in forty-eight thousand.
 
 #### Enums need their vocabularies captured first — settled 2026-09-16
 
 An enum's value is a **token naming one choice from a fixed set**, the way the game writes the option the
-commander picked from a dropdown: `Bindings_MouseYaw` means the mouse's X axis yaws, `Bindings_MouseRoll`
+user picked from a dropdown: `Bindings_MouseYaw` means the mouse's X axis yaws, `Bindings_MouseRoll`
 means it rolls. **The problem is that a file only ever contains the token it happens to hold.** Across all
 five specimens, `YawToRollMode` is `Bindings_YawIntoRollNone` every single time — whatever the game calls its
 on-states, no file we have has ever contained one.
@@ -435,7 +435,7 @@ Carried forward from a proven, already-real pattern, not invented fresh:
 ### Capture Dialog — settled 2026-09-13
 
 **BindForge captures through Krondor's existing dialog, grown — not a new one.**
-`AssignKeyboardBindingDialog` already does the hard parts: it captures a chord by having the commander press
+`AssignKeyboardBindingDialog` already does the hard parts: it captures a chord by having the user press
 it, colours an on-screen keyboard free and used, and warns about conflicts, reserved chords and the game-menu
 key *before* anything is kept — leaving all validation and writing to `BindingsWriter`. It already dims the
 window behind it, too. The earlier design, a floating popup *"modelled directly on the base game's own rebind
@@ -480,7 +480,7 @@ findable.
 | controller › AXES | greyed — a button slot cannot take a whole axis | enabled when the device reports axes; the default page |
 | a controller with nothing enabled | the whole tab greyed | the whole tab greyed — for instance a device with no axes |
 
-**Greyed, not hidden.** Every tab stays in view with a tooltip saying why it is unavailable. A commander
+**Greyed, not hidden.** Every tab stays in view with a tooltip saying why it is unavailable. A user
 looking for their button box on an axis row learns *"this device reports no axes"* instead of wondering where
 it went.
 
@@ -517,14 +517,14 @@ NEW INPUT        [ NOT DEFINED ]
 | NEW INPUT | the capture field | yes | yes |
 | INVERTED, DEADZONE | the axis row's settings | — | yes |
 
-**Why both names.** The in-game name is what the commander recognises, and it is ambiguous on its own — the
+**Why both names.** The in-game name is what the user recognises, and it is ambiguous on its own — the
 game has four different rows called *Move Forward*, which is why CONTROL carries the section and group. The XML
-tag is what the file, a support bundle and another commander's `.binds` all say. Today the dialog's
-**SELECTED BINDING** row shows only the tag, so the first thing a commander reads is `CamTranslateZHold`.
+tag is what the file, a support bundle and another player's `.binds` all say. Today the dialog's
+**SELECTED BINDING** row shows only the tag, so the first thing a user reads is `CamTranslateZHold`.
 
 #### Nothing is kept until SAVE
 
-The commander presses the input, reads whatever the dialog says about it — in use, reserved, the game-menu
+The user presses the input, reads whatever the dialog says about it — in use, reserved, the game-menu
 key, a conflict — and then presses **SAVE**. **SAVE writes to the draft**; Apply is still the only thing that
 reaches the game. **CLEAR BINDING** empties the slot, and **BACK** or Esc leaves with nothing changed.
 
@@ -590,7 +590,8 @@ has one: a skip option would defeat the purpose of warning at all.
 Krondor's wording is *"Conflicts with {0}; may not work"*, and `CandidateConflict` carries a single
 `otherBinding`. **The target is every action sharing that exact chord**, which needs that record to hold a list
 and needs [FN-1](#fn-1-in-detail--scoped-2026-09-12) fixed first — otherwise a binding in the discarded slot
-cannot be named at all.
+cannot be named at all. *FN-1 was fixed 2026-09-20, so a binding in either slot can now be found; the record
+still holds one name, and making it a list is what remains.*
 
 #### What the dialog cannot do yet — gaps in the code, not in the design
 
@@ -671,23 +672,23 @@ The capture lands in each member's **Primary** slot, always — never Secondary,
 “whichever slot is free”. A group is a statement about intent, so its members should hold the control in the
 same place; picking a slot per member would make what the group did depend on what each member happened to
 have. **Any existing Primary value is an overwrite and must be confirmed**, with the value at stake named. A
-commander who wants the group's control in Secondary slots moves it there per binding in
+user who wants the group's control in Secondary slots moves it there per binding in
 [Game Mode](#game-mode) — which also means the *old* Primary is never silently displaced.
 
 **Confirmation semantics (resolved):** the capture is attempted against every member binding in the group. For any member where applying it would either overwrite an existing, different value, or create a new conflict with a binding *outside* the group, that member gets its own row in one consolidated confirmation dialog — modelled on the base game's own "already bound" warning, but covering every affected member at once rather than one dialog per binding. Each row shows whatever is actually at stake for that specific member (the existing value being overwritten, the new conflict it would create, or both together when both apply) with its own toggle so the player can confirm or skip that member individually — applying to the rest of the group is never all-or-nothing because one member happens to be contested. Members with no existing value and no new conflict apply immediately, with nothing to confirm.
 
 **Conflict prevention:** adding a binding already in another group is blocked, with an explicit warning
 naming both groups — and the ALL BINDINGS row is dimmed beforehand, so the refusal is not the first the
-commander hears of it.
+user hears of it.
 
 **A member with nothing bound is shown (settled 2026-09-16)** — listed in its group with an empty value,
-not hidden. Hiding it would make the group misreport itself: a commander reading “Move Left” wants to know
+not hidden. Hiding it would make the group misreport itself: a user reading “Move Left” wants to know
 that the On Foot member has nothing on it, and that is precisely the member Assign Control to Group applies
 to with nothing to confirm. It is also [an anomaly worth reporting](#four-kinds-one-question) when
 Elite-Intel drives the control — reported in Game Mode and [Anomalies](#anomalies), where anomalies are
 handled.
 
-**No anomaly filtering here — settled 2026-09-15.** Alan: *"action groups aren't really a place to fix conflicts."* This is a curated view of **intent**, while a conflict is a property of a **chord**, and the commander resolves one in [Game Mode](#game-mode) or [Anomalies](#anomalies) where the chord and its rivals are both in view. So the shell's [Show Anomalies Only checkbox](#shell-common-to-all-modes) does not appear in this mode, and no equivalent of its own is planned.
+**No anomaly filtering here — settled 2026-09-15.** Alan: *"action groups aren't really a place to fix conflicts."* This is a curated view of **intent**, while a conflict is a property of a **chord**, and the user resolves one in [Game Mode](#game-mode) or [Anomalies](#anomalies) where the chord and its rivals are both in view. So the shell's [Show Anomalies Only checkbox](#shell-common-to-all-modes) does not appear in this mode, and no equivalent of its own is planned.
 
 **Conflict state still shows here**, from the [shared detection service](#shared-conflict-detection): a group holding a binding that clashes with something outside it is still marked, because noticing is useful even where fixing is not. *An earlier design filtered the group list down to exactly those groups, driven by the shell checkbox; that went with the checkbox.* Group-internal duplicates cannot arise in any case, since a binding belongs to at most one group.
 
@@ -714,8 +715,10 @@ written up above; this list keeps the record of what was asked and what the answ
 - ~~**Completely unbound bindings — shown in their group, or hidden?**~~ **Settled: shown**, with an empty
   value.
 - **Storage schema for user groups — still open.** Falls out during implementation. A new table means a new
-  `011XX` migration, and an applied migration is never edited. What has to persist is now settled: group
-  name, ordered membership, and whether the group is a shipped default or the commander's own.
+  migration in BindForge's `12000–12499` range (see
+  [Migrations](../../01-host-integration/elite-intel-platform-map.md#a-bindforge_settings-table--built-2026-09-28)), and an applied
+  migration is never edited. What has to persist is now settled: group
+  name, ordered membership, and whether the group is a shipped default or the user's own.
 ## Input Mode
 
 **Status: designed in full, and deferred to a later release (2026-09-16)** — see [The V1.2 release is
@@ -739,7 +742,7 @@ of anomaly it originally named, and for the detection service.)*
 
 ### Four kinds, one question
 
-**Settled 2026-09-07.** Four different causes produce the same experience — the commander presses
+**Settled 2026-09-07.** Four different causes produce the same experience — the user presses
 something and it does not do what they expected. They belong in one place because the question is the
 same in every case: *why didn't that work?*
 
@@ -753,7 +756,7 @@ same in every case: *why didn't that work?*
 #### Missing has two shapes — added 2026-09-12
 
 **The two shapes are scoped differently, settled 2026-09-16.** Shape one is **every control in the file with
-nothing bound** — BindForge manages the commander's bindings, not Elite-Intel's subset of them, so an
+nothing bound** — BindForge manages the user's bindings, not Elite-Intel's subset of them, so an
 unbound control is a fact about their file whoever was going to press it. Shape two stays scoped to the
 controls Elite-Intel drives, because *“Elite-Intel cannot press this”* means nothing about a control it
 never presses.
@@ -769,35 +772,36 @@ neither is an absence — 23 of the 31 enums sit empty in a perfectly healthy fi
 
 **Elite-Intel can only simulate keyboard input.** Krondor, 2026-09-12: *"the app can't use / simulate
 any input except keyboard."* So from the assistant's side there are two ways a control it drives can
-be undriveable, and they look completely different to the commander:
+be undriveable, and they look completely different to the user:
 
-| Shape | The file says | The commander sees | Remedy |
+| Shape | The file says | The user sees | Remedy |
 |---|---|---|---|
 | **Nothing bound** | no assignment in either slot | an empty row | bind it |
 | **Bound, but not to a keyboard** | a HOTAS, joystick, gamepad or mouse assignment | **a perfectly normal binding** | add a keyboard binding in the free slot |
 
-The second is the dangerous one, because **nothing looks wrong.** The commander bound it, the game
+The second is the dangerous one, because **nothing looks wrong.** The user bound it, the game
 honours it, their hardware works — and the assistant silently cannot use that control. Elite-Intel
 already detects exactly this (`KeyBindingsParser.isBoundToNonKeyboardDeviceOnly`) and its only output
-today is a line in the log, which no commander reads.
+today is a line in the log, which no user reads.
 
-**This must not become noise for HOTAS commanders.** It applies *only to controls Elite-Intel
-actually drives*, exactly as the first shape already does. A commander who flies entirely on a stick
+**This must not become noise for HOTAS users.** It applies *only to controls Elite-Intel
+actually drives*, exactly as the first shape already does. A user who flies entirely on a stick
 has hundreds of non-keyboard bindings and almost none of them matter here; flagging them all would
 bury the handful that stop the assistant working. The existing detector makes the same distinction
 for the same reason — its `// WHY:` records an earlier version that warned on 345 of 352 actions and
 was worse than silent.
 
 **The remedy is additive, which is why this is comfortable.** `.binds` gives every control two slots.
-A control held on a HOTAS in Primary can take a keyboard binding in Secondary without the commander
+A control held on a HOTAS in Primary can take a keyboard binding in Secondary without the user
 losing anything — both fire. So the fix BindForge offers is *"add a keyboard binding here so the
-assistant can use it too"*, never *"replace your stick binding"*. See
-[FN-1](#known-scanner-defects--all-still-open), which currently makes the scanner blind to the very
-Secondary slot this remedy writes to.
+assistant can use it too"*, never *"replace your stick binding"*. Until 2026-09-20,
+[FN-1](#fn-1-in-detail--scoped-2026-09-12) made the scanner blind to the very Secondary slot this remedy
+writes to. It is fixed, so the remedy can now confirm its own work: a keyboard binding added in Secondary is
+scanned like any other.
 
 **Why not "Conflicts", "Warnings", "Errors" or "Problems".** *Conflicts* was the original and only
 describes one of the four. *Warnings* understates — a reserved binding will never fire and a blocking
-conflict stops the assistant working, and calling those advisory teaches commanders to ignore the tab.
+conflict stops the assistant working, and calling those advisory teaches users to ignore the tab.
 *Errors* overstates at the other end — a plain overlap is legal and often deliberate, and labelling a
 working setup broken earns the same shrug by the opposite route. The set genuinely spans "can never work"
 to "probably fine, just so you know", so **any single-severity word is wrong at one end.** *Anomaly* is
@@ -812,7 +816,7 @@ own count. **All** is the default.
 **The mode tab's badge counts every anomaly, all four kinds** (settled 2026-09-16) — the number on the tab
 is the number of rows behind it, which is the only version of the badge that never lies. **It is a large
 number, and that is honest:** with Missing covering every unbound control, `Custom.4.2.binds` produces 245
-Missing beside 1 Reserved, 4 conflict groups and 2 Invalid — a badge of 252. A commander who has bound
+Missing beside 1 Reserved, 4 conflict groups and 2 Invalid — a badge of 252. A user who has bound
 their whole file sees a small one. *An earlier draft had this counting conflicts alone, which predates the
 rename.*
 
@@ -832,7 +836,7 @@ a binding four levels deep.
 | Conflict — curated | 5 | works, with a known side effect |
 | Conflict — plain overlap | 6 | legal, possibly deliberate |
 
-**Bound-but-broken ranks above not-bound**, because the commander believes those already work. An unbound
+**Bound-but-broken ranks above not-bound**, because the user believes those already work. An unbound
 control at least fails honestly.
 
 **This ordering is what keeps the ALL tab usable now that Missing is the whole file.** Missing outnumbers
@@ -852,14 +856,14 @@ The state has two sources.
 | Control | Why | Kind of argument |
 |---|---|---|
 | `Pause` (Game Menu) | `Esc` opens that menu whether or not it is bound, so a key there buys a second route to a screen already reachable and takes a key off the board for everything else | **economy** |
-| `EjectAllCargo`, `EjectAllCargo_Buggy` | the hold empties into space; it cannot be undone and cannot be done by halves. Neither the commander's finger nor a misheard phrase to the assistant should be able to trigger it | **safety** |
+| `EjectAllCargo`, `EjectAllCargo_Buggy` | the hold empties into space; it cannot be undone and cannot be done by halves. Neither the user's finger nor a misheard phrase to the assistant should be able to trigger it | **safety** |
 
 **The two reasons are different and both should survive.** Game Menu is about a key being wasted; cargo
 ejection is about what the control does when it fires. Collapsing them into one "skip list" loses the
 argument — and the argument is what tells a future maintainer whether some third control belongs here.
 Elite-Intel keeps them apart too, as `GAME_MENU_LEFT_UNBOUND` and `LEFT_UNBOUND_ON_PURPOSE`.
 
-**Player-marked — the same state, chosen rather than shipped.** A commander must be able to mark a control
+**Player-marked — the same state, chosen rather than shipped.** A user must be able to mark a control
 *leave this empty* so it stops being reported. Confirmed needed 2026-07-12; storage resolved to the database
 on 2026-07-17, because `.binds` does not preserve comments and there is nowhere in the file to put a marker.
 
@@ -882,7 +886,7 @@ Toggle HUD             —           —           ON PURPOSE
 | *(blank)* | **The common case.** Either Elite-Intel can drive the control, or it never needs to. |
 | **NOT BOUND** | Elite-Intel drives this control and nothing is assigned — [Missing, first shape](#missing-has-two-shapes--added-2026-09-12). |
 | **CAN'T PRESS** | Assigned, but only to a device Elite-Intel cannot send input to — [Missing, second shape](#missing-has-two-shapes--added-2026-09-12). |
-| **ON PURPOSE** | The commander has said stop reporting this. |
+| **ON PURPOSE** | The user has said stop reporting this. |
 
 **Why a column rather than a menu item.** A context menu hides the state as well as the action: nothing in
 the grid would distinguish *empty* from *empty on purpose*, which is the whole distinction being drawn. A
@@ -895,10 +899,10 @@ what Missing reports, which is action-level. A per-slot mark would also have no 
 other slot is bound. This is the one place BindForge does **not** use the slot as its grain; everywhere
 else — merging, conflicts, capture — [the slot is the unit](overview.md#merge-grain-the-slot-not-the-action--settled-2026-09-07).
 
-**ON PURPOSE silences both shapes, and that is deliberate.** A commander who flies on a stick and does not
+**ON PURPOSE silences both shapes, and that is deliberate.** A user who flies on a stick and does not
 want Elite-Intel touching their landing gear marks it once. Whether the slot is empty or holds `Joy_12`,
 their intent is the same — *stop asking* — so it is one mark and one database table rather than two states
-a commander would have to tell apart. **Marking never changes a binding:** a control marked while bound to
+a user would have to tell apart. **Marking never changes a binding:** a control marked while bound to
 a stick stays bound to the stick, and the game goes on using it. Only the reporting stops.
 
 **Reversible, and reversible the same way it was set.** Clearing the mark returns the control to whichever
@@ -906,7 +910,7 @@ state it would otherwise have had — blank, NOT BOUND, or CAN'T PRESS. The mark
 ([storage settled 2026-07-17](#intentionally-unbound--a-state-not-an-anomaly)), so clearing it is a delete
 and nothing in `.binds` is touched in either direction.
 
-**Hovering a mark gives the reason**, in the commander's terms rather than the file's: *"Bound to Joy_4.
+**Hovering a mark gives the reason**, in the user's terms rather than the file's: *"Bound to Joy_4.
 Elite-Intel can only send keyboard input, so it cannot use this control. Add a keyboard binding in the free
 slot and both will work."* That sentence is the remedy as well as the explanation — the
 [additive fix](#missing-has-two-shapes--added-2026-09-12), never a replacement.
@@ -926,11 +930,11 @@ construction.
 | **Any automatic assignment** | never offered a key, and **the skip is reported with its reason** rather than passed over silently |
 | **Manual binding** | **still allowed** |
 
-**"The assistant will not bind it" is not "you may not bind it."** A commander who deliberately puts a key on
+**"The assistant will not bind it" is not "you may not bind it."** A user who deliberately puts a key on
 cargo ejection has, by that act, decided they want it — which is the whole distinction. BindForge warns on
 that path and does not block it. Blocking would be BindForge overruling the person whose bindings these are.
 
-**Reporting the skip matters more than it looks.** A commander who runs an auto-fix and still sees a control
+**Reporting the skip matters more than it looks.** A user who runs an auto-fix and still sees a control
 listed as unassigned will assume the fix missed one. Saying *why* it was skipped is the difference between a
 deliberate design and an apparent bug.
 
@@ -941,12 +945,12 @@ widened Missing beyond the controls Elite-Intel drives. The state should be expl
 
 ### What a row offers — settled 2026-09-16
 
-Anomalies is where the commander reads the list, so it is where they act on it. Every row opens the
+Anomalies is where the user reads the list, so it is where they act on it. Every row opens the
 [capture dialog](#capture-dialog--settled-2026-09-13) in place, and a **MISSING** row can also be marked
 **ON PURPOSE** from here.
 
 **Marking from the tab rather than only from the grid** is the difference between silencing a control and
-hunting for it: a commander working down a list of 245 unbound controls, deciding which ones they are
+hunting for it: a user working down a list of 245 unbound controls, deciding which ones they are
 never going to bind, would otherwise have to find each one in Game Mode to say so. The mark is [the same
 one the ASSISTANT column sets](#the-mechanism-an-assistant-column-in-the-grid--settled-2026-09-12) — one
 state, one table, two places it can be set — and the row leaves the MISSING list as soon as it is set,
@@ -966,7 +970,7 @@ it puts the control back on the list.
 
 **Status: in scope for V1.2, and designed.** Surfaces the [Shared Conflict Detection](#shared-conflict-detection) service's output directly, rather than requiring the player to spot conflict colouring row-by-row inside Game Mode. The conflict count appears on the CONFLICTS sub-tab; the mode tab's own badge [counts every anomaly](#structure).
 
-**Layout:** conflicts are grouped by the shared input causing them — each group header names the shared key/chord and how many binds share it, expandable/collapsible the same way Game Mode's grid groups work. Inside a group, each row is tagged with its section plus the action name — the same row shape Game Mode uses, so a conflict reads the same wherever the commander meets it. *Until 2026-09-16 this sentence pointed at Input Mode's list, which is now [deferred](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16).*
+**Layout:** conflicts are grouped by the shared input causing them — each group header names the shared key/chord and how many binds share it, expandable/collapsible the same way Game Mode's grid groups work. Inside a group, each row is tagged with its section plus the action name — the same row shape Game Mode uses, so a conflict reads the same wherever the user meets it. *Until 2026-09-16 this sentence pointed at Input Mode's list, which is now [deferred](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16).*
 
 **Editing from here:** clicking a row opens the same [capture dialog](#capture-dialog--settled-2026-09-13) used everywhere else, right in place — resolving an anomaly never requires leaving the Anomalies tab and jumping to Game Mode.
 
@@ -979,8 +983,8 @@ inline with the binds. but we could also make it easy to see them all at once”
 **Both places, and the split is one this editor already makes.** [Anomalies](#anomalies) gathers every
 anomaly away from the game's layout while the [Show Anomalies Only checkbox](#shell-common-to-all-modes)
 answers the same question inside it; settings divide on exactly that line. **Inline rows answer *what is set
-here*** while the commander is working in a group — mouse sensitivity sitting with the mouse bindings it
-affects. **This tab answers *what can I set*** — which is the question a commander arrives with when they know
+here*** while the user is working in a group — mouse sensitivity sitting with the mouse bindings it
+affects. **This tab answers *what can I set*** — which is the question a user arrives with when they know
 the game has an option somewhere and do not know which section hid it.
 
 **One model, two views.** The tab renders the same rows with the same editors — checkbox, numeric field,
@@ -1002,25 +1006,25 @@ two.
 **A settings value no vocabulary knows shows *here*, on its own row, marked as unrecognised and preserved
 exactly as written.** That was left open on 2026-09-17, when the only candidate home was [Anomalies](#anomalies):
 it fits the *[Invalid](#four-kinds-one-question)* kind by meaning — the game will discard a token it does not
-know — but putting five files in forty-eight thousand into the tab a commander opens to find broken bindings
+know — but putting five files in forty-eight thousand into the tab a user opens to find broken bindings
 would be a poor trade. **A Settings tab gives it the obvious home instead:** beside the value, where the
-commander can see what it is and choose a real option, rather than in a list of things that stop the game
+user can see what it is and choose a real option, rather than in a list of things that stop the game
 working.
 
 The rule underneath is unchanged: BindForge **shows the unknown value and writes it back untouched** unless
-the commander picks something else — see
+the user picks something else — see
 [real files are messier than any specification](#real-files-are-messier-than-any-specification).
 
 ## Mouse Inputs Are Chosen, Not Captured
 
 **Settled 2026-09-07.** Keyboard and controller inputs are captured by pressing them. **Mouse inputs are
 picked from a list instead**, and the game itself sets that precedent — Elite's own Mouse Controls screen
-assigns mouse behaviour through dropdowns and sliders, not by asking the commander to waggle anything.
+assigns mouse behaviour through dropdowns and sliders, not by asking the user to waggle anything.
 
 ### The reason capture does not work here
 
 A capture dialog can safely swallow every keystroke, because keyboard is not how the dialog is operated.
-It cannot safely swallow every **click**, because clicking is how a commander would cancel. Elite resolves
+It cannot safely swallow every **click**, because clicking is how a user would cancel. Elite resolves
 this by making its whole popup a capture surface with `Esc` as the only exit; BindForge does not need to,
 because the mouse token space is tiny and completely fixed:
 
@@ -1034,7 +1038,7 @@ it does not click by accident**, and the capture window is precisely when a hand
 scroll would bind something nobody chose.
 
 **Do not cap the button count.** Accept whatever the file already contains and offer whatever the system
-reports, rather than hardcoding `Mouse_1..4`. Four is what one commander's file happens to use, not a
+reports, rather than hardcoding `Mouse_1..4`. Four is what one player's file happens to use, not a
 limit.
 
 ### Mouse is three different element shapes, and only one of them is a binding
@@ -1112,14 +1116,14 @@ Conflict-detection data and logic are shared across every Bind Editor mode — G
 - Modifier order does not affect the game's own conflict recognition — two captures of the same key set in different orderings are correctly recognised as the same combination.
 - A binding matches by its exact chord (main key plus exactly its modifier set). Holding extra modifiers does not trigger a binding with fewer of them, and a bare key and a modified chord on the same key are two fully independent bindings that both fire — they do not suppress each other.
 - Elite's own conflict-checking is genuinely context-aware, operating at two levels:
-  - **Macro level (top-level sections):** the four sections (General/Ship/SRV/On Foot) are *assumed* isolated from each other for conflict purposes, but this is **not fully confirmed** — there is at least one unconfirmed observation of an apparent cross-section conflict between Ship and SRV during testing. If real, a cross-section conflict matrix would be needed in addition to the four per-section matrices that exist today. This is the single most important open item in BindForge's conflict-detection design — see [conflicts-and-open-questions.md](../../00-overview/conflicts-and-open-questions.md).
+  - **Macro level (top-level sections):** the four sections (General/Ship/SRV/On Foot) are *assumed* isolated from each other for conflict purposes, but this is **not fully confirmed** — there is at least one unconfirmed observation of an apparent cross-section conflict between Ship and SRV during testing. If real, a cross-section conflict matrix would be needed in addition to the four per-section matrices that exist today. This is the single most important open item in BindForge's conflict-detection design — see [conflicts-and-open-questions.md](../../99-archive/conflicts-and-open-questions.md).
   - **Micro level (within a section):** conflict relationships between subgroups are **not predictable from category alone** and had to be tested pair by pair. Two confirmed examples of the game's own conflict-checking being wrong relative to real gameplay exclusivity: Multi-Crew conflicts with nearly the entire main Ship cluster even though a player can never simultaneously be in their own cockpit and a crewmate's seat — a confirmed Frontier bug that BindForge's own scanner should **not** mirror; conversely, SRV's Driving Turret Controls subgroup is correctly isolated (only conflicts with Driving Mode Switches), matching the same real-world exclusivity logic correctly. On Foot Controls, among the subgroups tested so far, is fully connected — every tested subgroup conflicts with every other one.
 - **A real conflict, for BindForge's own scanner, means:** the same key/chord **and** both actions sit in subgroups the tested conflict matrices mark as conflicting (or, for an untested pair, treated conservatively as a conflict until tested). This is deliberately neither "same key anywhere in the file" (too broad — would flag Multi-Crew-style false positives project-wide) nor "same key within the same top-level section" (too coarse — would miss subgroups that are correctly exempt from their section's main cluster).
 - **The base game's own rebind dialog is a confirmed-incomplete source of truth:** when a key is shared by three actions, the dialog names only the most recently bound one, never the others — direct proof the game's own conflict UI only reports the most recent collision, not every existing one. This justifies BindForge's own scanner listing every conflict, once the scanner itself is proven correct (see below).
 - **A collision between one action's Secondary slot and another action's Primary slot is a real, confirmed conflict** — any scanner comparing only each action's single "winning" slot will systematically miss these.
 - **The game does not consider a hold-bound action and a tap-bound action sharing a key to be conflicting at all.** Hold/Tap identity must be folded into whatever defines "the same combination" for conflict-comparison purposes — an earlier scanner that ignored this produced a confirmed false positive.
 - **FSS-mode-entry nuance:** the action that enters FSS scanning mode genuinely conflicts with other ship actions sharing its key — a blanket rule that suppresses every scan-related action as "always safe" is wrong for at least this one action, even though the FSS subgroup as a whole is correctly isolated from the rest of Ship Controls at the macro level. The nuance is that subgroup-level isolation does not guarantee every individual action within it is exempt from every possible collision.
-- **UI-action-vs-ship-action assignment is allowed by the game with no warning, but this only answers "can this be assigned," not "is it behaviorally safe when both are live simultaneously."** This distinction was tested but not cleanly resolved — a second, behaviour-focused round of testing (rather than assignment-focused) is still needed. See [conflicts-and-open-questions.md](../../00-overview/conflicts-and-open-questions.md).
+- **UI-action-vs-ship-action assignment is allowed by the game with no warning, but this only answers "can this be assigned," not "is it behaviorally safe when both are live simultaneously."** This distinction was tested but not cleanly resolved — a second, behaviour-focused round of testing (rather than assignment-focused) is still needed. See [conflicts-and-open-questions.md](../../99-archive/conflicts-and-open-questions.md).
 
 See [BindForge's conflict-testing domain knowledge](domain-knowledge/EliteDangerous-ConflictRules.md) and the [interactive conflict-matrix test pages](domain-knowledge/ConflictMatrix-General.html) for the full, per-subgroup empirical results this section summarizes.
 
@@ -1137,9 +1141,23 @@ focused, Elite swallows any printable keystroke as text and never consults the `
 the shared conflict-detection service and the Conflicts *kind* are all built on pairs, and this has nothing to
 pair with.
 
-Elite-Intel already detects the one confirmed case: `BindingsMonitor.textTrappedUiNavigation()` is a pure read
-over the parsed bindings, backed by the side-effect-free `UiNavigationTextTrap`. **Both are directly reusable**,
-and doing so would be cheaper and more honest than BindForge growing a second implementation of the same check.
+~~Elite-Intel already detects the one confirmed case: `BindingsMonitor.textTrappedUiNavigation()`, backed by
+the side-effect-free `UiNavigationTextTrap`. Both are directly reusable.~~ **Gone, 2026-09-21 — Krondor
+deleted the detector, its spoken warning in all nine locales, and its test.**
+
+**The trap it caught was real and is now impossible.** UI up/down/left/right on a character-producing key — a
+bare or Shift letter, a digit, space — used to block route plotting, because the route plotter had to arrow
+down out of the galaxy map's search box. A letter bound to UI navigation typed into the box instead of moving
+the selection. Krondor's own words: *"The route plotter no longer has to arrow-down out of the galaxy map
+search box, so menu navigation is no longer required on the arrow keys or under Control."* The sequence is now
+Enter, UI_Right, UI_Select, yaw, so there is no text field to be trapped by.
+
+**What survives is the other half of the same rule**, which he kept deliberately: *"The rule that map camera
+keys must not share a chord with UI navigation is unchanged and still blocking."* That lives in
+`ReservedKeyChords`, which is still present and still feeds the [Reserved](#four-kinds-one-question) kind.
+
+So BindForge has nothing to reuse here and nothing to reimplement — the case it would have detected cannot
+arise.
 
 **Settled 2026-09-07: it is the `Invalid` kind under [Anomalies](#anomalies).** The presentation question
 that was deferred here dissolved rather than being answered — it only existed because the mode was called
@@ -1156,16 +1174,22 @@ A reserved key **cannot be used for anything, whatever else is or is not bound t
 action, no game state — the key is off the board. Two sources:
 
 - **The operating system.** `Alt+F4` closes the game window; on Linux `Ctrl+Alt+F1..F12` drops the
-  commander to a TTY. Fixed, matched on the whole key-set.
-- **Elite's own game-menu key.** Whatever the commander has on `Pause` is unusable for every other
+  user to a TTY. Fixed, matched on the whole key-set.
+- **Elite's own game-menu key.** Whatever the user has on `Pause` is unusable for every other
   control — **matched on the key alone, ignoring modifiers.** With the menu on `P`, then `P`, `Shift+P`
-  and `Alt+P` all pause the game and open the options screen. Read from the commander's file, both slots,
+  and `Alt+P` all pause the game and open the options screen. Read from the user's file, both slots,
   so it is a parameter rather than a constant.
+
+*Widened 2026-09-20 into three classes — Game-Claimed, OS-Claimed and Self-Sabotaging — which add `Esc`,
+`PrintScreen`, the Windows and Copilot keys, and `NumLock`. See
+[§3c](domain-knowledge/EliteDangerous-ConflictRules.md#3c-a-third-category-reserved-keys), and
+[`Esc`](#esc-and-the-difference-between-a-key-you-can-bind-and-a-key-you-can-press) below for what it means
+for the editor.*
 
 **This is the category BindForge is most likely to inflict on someone**, and it is the reason to treat it
 ahead of the other two. The first two are conditions BindForge *finds*; this one it can *create*. Input
 Mode capturing a chord that ends in the game-menu key produces a binding that will never fire, and the
-commander has nothing to look at to work out why — there is no second action to blame. Elite's own
+user has nothing to look at to work out why — there is no second action to blame. Elite's own
 controls screen has no such rule, so a file written there can already contain one.
 
 Three obligations, all satisfiable with existing code rather than new detection:
@@ -1192,8 +1216,53 @@ Anomalies — Reserved shows the per-row remedy, not a shared footnote.**
 **And BindForge should leave `Pause` unbound rather than filling it.** `Esc` opens that menu whether or
 not `Pause` is bound, so a key there buys a second route into a screen already reachable and costs a key
 everywhere else. Elite-Intel's auto-assigner already does exactly this — skips the control *and* pulls
-its key from the pool — and reports the skip rather than passing over it silently, so a commander who
+its key from the pool — and reports the skip rather than passing over it silently, so a user who
 runs it and still sees the control listed as missing is told why.
+
+### `Esc`, and the difference between a key you can bind and a key you can press
+
+**Added 2026-09-20.** `Esc` is [Game-Claimed](domain-knowledge/EliteDangerous-ConflictRules.md#3c-a-third-category-reserved-keys)
+outright, and it is the one the current editor gets wrong: `EliteKeyboardKeys.ASSIGNABLE_KEYS` lists
+`Key_Escape`, so the assign dropdown offers it. A user who takes the offer gets a binding that can never
+fire — and when Elite-Intel drives that control, it presses `Esc` and opens the game menu instead.
+
+**The fix is one entry, because the two jobs are already two lists.** Traced through the code 2026-09-20:
+
+| | Bindable | Pressable |
+|---|---|---|
+| Source | `EliteKeyboardKeys.ASSIGNABLE_KEYS` | every `KEY_*` field on `KeyProcessor`, via `KeyBindingExecutor.knownEliteKeyNames()` |
+| Token form | `Key_Escape` | `KEY_ESCAPE` |
+| Read by | assign dropdown, `BindingsWriter`'s guard, keyboard map | the custom-command `RAW_KEY` picker and executor |
+
+No class reads both. So removing `Key_Escape` from the bindable list:
+
+- stops the dropdown offering it;
+- makes `BindingsWriter` refuse to write it, so the rule holds even if the UI is bypassed;
+- greys it out on the keyboard map;
+- **still lets a user clear an existing `Esc` binding** — the writer skips its key check for a clear;
+- **still displays one**, since nothing on the display path reads the list;
+- **leaves custom commands untouched.** A `RAW_KEY` step resolves through the pressable list, so a custom
+  command that exits the game still reaches `Esc`.
+
+**BindForge must keep the two lists apart.** They look like duplication and are not: one answers *"may a
+game control be bound to this?"*, the other *"can Elite-Intel send this?"* Merging them would either put
+`Esc` back in the dropdown or take it away from custom commands. **A guard test pins it** —
+`knownEliteKeyNames()` contains `KEY_ESCAPE`, and `isAssignable("Key_Escape")` is false — so a future
+tidy-up fails loudly instead of silently breaking a user's exit command.
+
+**An `Esc` binding already in a file is shown**, flagged reserved, with the remedy *clear it* (Alan,
+2026-09-20). Reporting one at startup — a Game-Claimed rule in `ReservedKeyChords` — is **deferred**: the game
+cannot write one, so it would only ever catch a hand-edited file.
+
+**The other classes, briefly.** `PrintScreen`, the Windows key and the Copilot key are already absent from
+`ASSIGNABLE_KEYS`, so nothing changes for them. **`NumLock` stays assignable, with a warning** (Alan,
+2026-09-20): it fires fine, but pressing it changes what every numpad binding sends, and refusing it would
+overrule a user who knows that. The warning belongs in Input Mode when it is captured, and on the
+keyboard map.
+
+**Rolled into BindForge rather than patched in V1.1 first — decided 2026-09-20.** It only bites a user
+who deliberately picks `Esc` from the dropdown and finds out on the first press, which is small next to the
+cost of changing the same editor twice.
 
 ### Conflicts have severity, and Anomalies shows it
 
@@ -1206,7 +1275,7 @@ The current design treats a conflict as present or absent. Elite-Intel sorts the
 | **Curated** | a known pair with a consequence worth spelling out — *"deploying hardpoints will also toggle landing gear"* |
 | **Plain overlap** | two actions, one chord, no known consequence |
 
-**A flat list treats all three the same, and the evidence says that fails.** One commander reassigning
+**A flat list treats all three the same, and the evidence says that fails.** One user reassigning
 controls generated fifty-one plain-overlap warnings in a single burst, which buried the handful that
 mattered. That is the same failure the [conflict matrices](domain-knowledge/EliteDangerous-ConflictMatrix.md)
 exist to prevent in the other direction — crying wolf until the signal is ignored.
@@ -1233,9 +1302,9 @@ same `BindingConflictRules.isSafeOverlap()` underneath and diverge in scope:
 |---|---|---|
 | 1 | **Database / voice / log** — `BindingsMonitor.checkForConflictsAndPersist()` → `binding_conflicts` table, driven by `KeyBindCheck` | Narrow. Filters to pairs touching a control Elite-Intel drives, deliberately, to keep the spoken warning quiet. |
 | 2 | **The Binding Profile UI** — `BindingProfilePanel` calls `BindingConflictScanner.scan()` directly | Broad. Every conflict the scanner finds, unfiltered. |
-| 3 | **The assign dialog and keyboard map** — `candidateConflict()` | Per-candidate. Colours each key while a commander is choosing one. |
+| 3 | **The assign dialog and keyboard map** — `candidateConflict()` | Per-candidate. Colours each key while a user is choosing one. |
 
-**The screen a commander actually looks at does not read the database at all.** Only `BindingsMonitor`,
+**The screen a user actually looks at does not read the database at all.** Only `BindingsMonitor`,
 `BindingConflictDao` and `BindingConflictManager` touch `binding_conflicts` — no UI class does, confirmed
 by repository search in July and again in September. So "the persisted set" and "what the user sees" have
 never been the same thing.
@@ -1246,9 +1315,14 @@ than a second computation arriving at a different answer to "is this a conflict"
 a filtering decision into the computation path, which is the SRP/DRY objection
 Elite-Intel's own `CODING_STANDARD.md` raises directly.
 
-### Known scanner defects — all still open
+### Known scanner defects — FN-1 fixed, three still open
 
-**All four are live work rather than history.** FN-1, FP-1 and FP-3 were each confirmed against the game
+**Updated 2026-09-20: FN-1 is fixed** — shipped in the V1.1 maintenance line and merged into
+`V1.2-BindForge` the same day. See [FN-1 in detail](#fn-1-in-detail--scoped-2026-09-12) for what shipped and
+where the build departed from the design. **FP-1, FP-3 and FN-6 are still open**, and nothing below about
+them has changed.
+
+*As recorded before the fix:* **All four are live work rather than history.** FN-1, FP-1 and FP-3 were each confirmed against the game
 itself rather than suspected, and verified against the code on 2026-09-09. FN-6 was a suspicion until
 2026-09-12, when it was confirmed by reading the same code — see below.
 
@@ -1260,7 +1334,7 @@ change.** FN-6, never checked before, is now confirmed rather than suspected.
 
 | ID | Defect | What the game actually does | Still open? |
 |---|---|---|---|
-| **FN-1** | **Secondary-slot blindness.** One slot per action is kept and the other discarded before any conflict check runs. | Treats a Secondary-vs-Primary collision as **a real conflict**. | **Yes.** `toKeysets()` still builds one keyset per action from a single `KeyBinding`. |
+| **FN-1** | **Secondary-slot blindness.** One slot per action is kept and the other discarded before any conflict check runs. | Treats a Secondary-vs-Primary collision as **a real conflict**. | **No — fixed 2026-09-20.** The scan keys each chord by action *and* slot, so both slots are compared. `toKeysets()` is gone. |
 | **FP-1** | **Hold and tap are not part of combo identity.** | Does **not** warn when a hold-bound and a tap-bound action share a key. | **Yes.** `buildKeyset()` and `keysetOf()` read `key` and `modifiers` only — never `hold`, although `KeyBinding` carries it. |
 | **FP-3** | **Sub-state over-suppression.** Any `ExplorationFSS*` / `ExplorationSAA*` action is blanket-treated as safe. | **Does** warn — `ExplorationFSSEnter` sharing a key with `DeployHardpointToggle` is a genuine conflict. | **Yes.** `isSubStateModeAction()` still matches on those prefixes and `isSafeOverlap()` returns true for either side. |
 | **FN-6** | **A non-keyboard modifier drops the whole slot.** Not just the modifier — the entire binding never reaches the conflict map. | Warns normally; the chord exists as far as the game is concerned. | **Yes, and confirmed 2026-09-12** — no longer a suspicion. `isKeyboardUsable()` requires the main key be `Keyboard` **and every modifier** be `Keyboard`, so one HOTAS modifier voids the slot. |
@@ -1275,9 +1349,14 @@ Both conflict paths apply it independently: `BindingsMonitor` through `parseBind
 `BindingProfilePanel.executableBinding()` with its own copy of the same check — which is itself worth
 noting under [one writer, one way](overview.md#there-is-one-writer-and-it-already-exists).
 
+*Updated 2026-09-20:* the FN-1 fix deleted `BindingProfilePanel`'s copy. Both conflict paths now reach the
+gate through `KeyBindingsParser.toExecutableSlots()`, so FN-6 has one place to be fixed in on the conflict
+side. The gate itself is untouched, and FN-6 is exactly as open as before. (`MissingBindingAutoAssigner`
+keeps a slot-level check of its own, outside the conflict path.)
+
 **The gate is correct where it was written and wrong where BindForge needs it.** Elite-Intel cannot
 press a HOTAS modifier, so excluding those chords from *command execution* is right. A bind editor is
-not executing anything: it has to tell the commander their chord collides whether or not the assistant
+not executing anything: it has to tell the user their chord collides whether or not the assistant
 could ever press it. **This is the same shape as
 [widening `BindingsWriter`](overview.md#two-narrow-boundaries--one-stays-one-widens)** — a restriction
 that protects the assistant, applied to an editor where it silently hides real problems. The remedy is
@@ -1288,6 +1367,10 @@ where it is.
 kept. An action whose Primary is a HOTAS-modified chord and whose Secondary is plain keyboard is
 scanned on its Secondary alone, with nothing reporting that the Primary was discarded.
 
+*Updated 2026-09-20:* with FN-1 fixed they no longer compound — every surviving slot is scanned. FN-6 still
+voids a HOTAS-modified slot on its own, so in that example the Secondary is scanned and the Primary is
+still dropped without a word. The example still holds; only its cause got simpler.
+
 **One thing did improve.** `contextOf()` now reads an action's vehicle from
 `BindingDisplayNames.lookup(action).section()` — the game's own OPTIONS › CONTROLS screen — falling
 back to substring-matching the tag only for `GENERAL` and `OTHER`. Context is the basis of every
@@ -1296,6 +1379,36 @@ to contain `Buggy` makes the whole safe/unsafe split more trustworthy than when 
 first recorded.
 
 #### FN-1 in detail — scoped 2026-09-12
+
+> **One name in this record has since gone.** `UiNavigationTextTrap` was deleted on 2026-09-21, the day
+> after this shipped, when the route plotter stopped arrowing out of the galaxy map search box. The record
+> below is left as written — it is what was designed and built at the time, and rewriting it would destroy
+> the reason the decisions were made. `ReservedKeyChords` is unaffected and still in use.
+>
+> **Shipped 2026-09-20.** Built in the V1.1 maintenance line rather than as BindForge's first slice: a
+> blind spot in shipped conflict detection is a V1.1 bug, so it went out with V1.1 and reached
+> `V1.2-BindForge` through Krondor's merge. Commits `220271aa2` (the fix) and `bf1ad44ef`…`38188f9da` (the
+> cleanup after review) by Alan; `ac24c5de3` (the two detectors) by Krondor; merged to `V1.1-Release` as
+> `2d0367be7` and to `V1.2-BindForge` as `02e9c0ab7`.
+>
+> **The rest of this section is the design as scoped, kept as the record.** The build followed it, except:
+>
+> | The design said | What shipped | Why |
+> |---|---|---|
+> | The two anomaly detectors **gain** a both-slots method; the one-slot methods keep serving the spoken warnings | `ReservedKeyChords.scan` and `UiNavigationTextTrap.scan` were **switched** to both slots, and the startup warnings with them | Elite fires either slot. A Secondary on `Alt+F4` still closes the game, and the trap bites the user's own keypresses — *"in our hands or theirs"*, per `UiNavigationTextTrap`'s own javadoc — not only Elite-Intel's |
+> | Whether the spoken conflict warning sees more is **Krondor's call** | It does. Conflicts are scanned on both slots, still filtered to pairs touching a control Elite-Intel drives | Settled by what he merged |
+> | `ReservedKeyChordsTest` and `UiNavigationTextTrapTest` **not touched**; no test expectations change | Both suites were migrated to slot-map fixtures, the untyped helper this change added to the conflict tests became a typed builder, and each detector gained Secondary-slot cases | Replacing the detectors, rather than adding to them, made it unavoidable — and the typed builder cleared the `@SuppressWarnings` review had flagged repeatedly |
+> | `Conflict` gains the slot, so Game Mode can colour the **slot cell** | `Conflict` still names actions and carries the **chord**; the panel finds the slot by matching it. Rows are still coloured whole | The action stayed the unit of judgement. Slot-cell colouring is **still to build**, and the chord is enough to build it from |
+>
+> **Found in review, not foreseen here:** `getBindingSlots()` returns `null` until a parse succeeds, and the
+> first version of the both-slot conflict path would have thrown on a fresh install. Each scanner now guards
+> `null` itself; Krondor chose that over changing the accessor.
+>
+> **Known debt left by the build:** the public trio is named unevenly — `scanSlots`,
+> `recommendVehicleTwinsFromSlots`, `candidateConflictInSlots` — because the suffixes once told them apart from
+> the action-keyed methods they replaced. Those methods are gone; four test-only adapters remain, each with a
+> note saying why, until ~45 older tests move to slot-map fixtures. The older `bindings(Object...)` helper
+> those tests build through keeps its `@SuppressWarnings("unchecked")` until then, and goes with them.
 
 **It is a dependency, not a cleanup.** Two specified features are built on top of it and cannot be
 correct without it:
@@ -1332,7 +1445,6 @@ what an editor needs. **Audited against the code 2026-09-12, including Krondor's
 | `recommendVehicleTwins` — `BindingProfilePanel` | ship/SRV twin nudge | twins called mismatched when their other slots agree |
 | `ReservedKeyChords.scan` | [Reserved](#four-kinds-one-question) | a chord Windows or the game menu swallows goes unreported if it sits in the discarded slot |
 | `ReservedKeyChords.gameMenuKeys` | Reserved, keyboard map | with Game Menu bound in both slots, only one of its keys is treated as reserved |
-| `UiNavigationTextTrap.scan` | [Invalid](#four-kinds-one-question) | a UI navigation key that types into the search box goes unreported if it sits in the discarded slot |
 
 ##### Correct with one slot — must not change
 
@@ -1355,12 +1467,15 @@ offending *slot cell* rather than the whole row. One new rule is needed: **Prima
 control on one chord is redundancy, not a conflict** — pressing it fires one action — so same-action pairs
 are skipped. `BindingProfilePanel.effectiveBindings()` is deleted, not updated.
 
-**Add alongside, for the two anomaly detectors** (the last three rows). `ReservedKeyChords` and
-`UiNavigationTextTrap` also drive Elite-Intel's own spoken warnings, and **for those the one-slot view is
-correct**: the text-trap warning exists because *Elite-Intel's* interface walk would type into the search
-box, and Elite-Intel presses the surviving slot. Only BindForge's Anomalies tab, where the commander can
-press either slot, needs both. So each gains a both-slots entry point for BindForge, and the existing
-methods keep serving the voice path unchanged.
+**Add alongside, for the anomaly detector** (the last rows). ~~`ReservedKeyChords` and
+`UiNavigationTextTrap`~~ — **only `ReservedKeyChords` now; the text trap was
+[deleted 2026-09-21](#four-kinds-one-question).** It drives Elite-Intel's own spoken warnings too, and
+**for those the one-slot view is correct**: the warning exists because *Elite-Intel* presses the surviving
+slot. Only BindForge's Anomalies tab, where the user can press either slot, needs both. So it gains a
+both-slots entry point for BindForge, and the existing method keeps serving the voice path unchanged.
+
+*The same reasoning applied to the text trap while it existed: its warning fired because Elite-Intel's own
+interface walk would have typed into the galaxy map search box. That walk no longer happens.*
 
 **This is not a second way of doing the same thing**, which `CODING_STANDARD.md` would rule out. The two
 methods answer different questions — *"will the key I press be swallowed?"* and *"is anything in this file

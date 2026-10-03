@@ -1,6 +1,8 @@
 # Data Model — Device Provenance
 
-**Status:** Design decision taken 2026-09-01. Schema not yet final; no migration written.
+**Status:** Design decision taken 2026-09-01. **Built 2026-10-01** as
+`db-migration/12002__bindforge_devices.sql`, which carries this table alongside the two the master needs —
+see [Migration](#migration).
 
 BindForge needs to know things about a device that **cannot be stored in any of the files it manages**:
 
@@ -45,10 +47,26 @@ are **Frontier's**: they are present in the stock file.
 
 Sketch, not final:
 
-**The grain is one row per device per installation**, not one row per device. `DeviceMappings.xml` and
-`.buttonMap` are duplicated per storefront installation and can legitimately disagree, so a single row per
-device cannot represent the state — this is the same reasoning that killed the aggregate columns in
-[Alias Designer's device list](../02-features/bindforge/alias-designer.md#my-devices).
+**The grain is one row per device per installation**, not one row per device — **and this survives
+standardisation, for a different reason than it was written for.**
+
+It was justified by installations being allowed to disagree. They are not any more:
+[every install gets the same files](../02-features/bindforge/overview.md#every-install-gets-the-same-files--settled-2026-09-23),
+and the user edits one master. The obvious inference is that one row per device would now do.
+
+**It would not.** The rows do not describe what the user *chose* — the master holds that. They describe
+**what each installation actually contains**, which is a different fact and the only one that can detect
+drift. A game patch resets these files per installation; that is the incident BindForge exists for. With one
+row per device there is nothing to compare a patched installation against, so a wipe is indistinguishable
+from a device that was never configured. Per-installation rows are what let the
+[**M** marker](../02-features/bindforge/alias-designer.md#one-record-and-where-it-lands--reworked-2026-09-26)
+say *this installation matches the master* and the
+[divergence list](../02-features/bindforge/alias-designer.md#divergence-between-installs--one-list-ranked-by-consequence)
+say where it does not.
+
+So: **the master records intent, these rows record reality, and drift is the difference between them.**
+Collapsing the rows would remove the only copy of reality. *Do not "simplify" this to one row per device on
+the grounds that installations now match — knowing they match is exactly what the rows are for.*
 
 | Field | Purpose |
 |---|---|
@@ -56,10 +74,10 @@ device cannot represent the state — this is the same reasoning that killed the
 | `vid`, `pid` | hardware identity **as currently reported** — survives a rename, but **not a vendor firmware update**; see [VID/PID Is Not a Stable Identity](../02-features/bindforge/alias-designer.md#vidpid-is-not-a-stable-identity). Correlates to `.binds` `Device=` only for devices with no entry. **Compare case-insensitively** — see [Hex case](#hex-case-is-not-a-convention-in-frontiers-file). |
 | `device_name` | the XML element tag for this installation, which is also its `.buttonMap` filename stem |
 | `provenance` | `frontier` \| `user_preexisting` \| `bindforge` \| `unknown` — **approved 2026-09-06**, see [below](#the-table-cannot-solve-first-import) |
-| `mirrored` | whether this installation shares one definition with the other mirrored ones |
-| `alias_confirmed` | gates button/axis naming per [Device Editor](../02-features/bindforge/alias-designer.md#device-editor) |
+| ~~`mirrored`~~ | **Superseded 2026-09-23** — every install holds the same files, so there is no per-device switch to record. See [Every install gets the same files](../02-features/bindforge/overview.md#every-install-gets-the-same-files--settled-2026-09-23). |
+| ~~`alias_confirmed`~~ | **Moved to the master 2026-10-01.** It gates button/axis naming per [Device Editor](../02-features/bindforge/alias-designer.md#device-editor), and that is a fact about the device, not about one installation: since standardisation there is [one record per device](../02-features/bindforge/alias-designer.md#one-record-and-where-it-lands--reworked-2026-09-26), so a name cannot be confirmed in Steam and unconfirmed in Epic. It sits on `bindforge_device_master`. |
 | `has_button_map` | whether a rename must also rename a file |
-| `previous_name` | orphan cleanup after a rename |
+| ~~`previous_name`~~ | **Moved to the master 2026-10-01**, for the same reason. A rename is one operation on the master that then renames a `.buttonMap` in *every* installation, so the name being renamed away from is one fact, not one per installation. It sits on `bindforge_device_master` and is cleared when the rename completes. |
 
 ### The key is `(install_id, device_name)` — approved 2026-09-06
 
@@ -70,9 +88,9 @@ primary pair plus **79** `<Alternative>` pairs, and `<DualShock4>` has three in 
 
 **The grain of a provenance record is one entry, and an entry is named by its XML element.** So the key is
 `(install_id, device_name)`, which is also what the file itself uses — the element tag is the identity, and
-it doubles as the `.buttonMap` filename stem. A rename updates the row and leaves `previous_name` behind for
-orphan cleanup; a device present in two installations has two rows that may legitimately carry different
-names, which is the divergence the design exists to allow.
+it doubles as the `.buttonMap` filename stem. A rename updates each installation's row, with the master
+holding the `previous_name` the orphan cleanup works from; a device present in two installations has two rows
+that may legitimately carry different names, which is the divergence the design exists to allow.
 
 **VID/PID stays on the row rather than moving to a child table**, because the multi-pair entries are all
 Frontier's, and Frontier's entries live in the shipped reference file rather than in this table. This table
@@ -123,21 +141,26 @@ uppercase beside PID `05c4` lowercase. Roughly half the file would mismatch a ca
 **every VID/PID comparison, lookup and key derivation must fold case**, and BindForge must not "normalise"
 Frontier's entries by rewriting them.
 
-### Two decisions, both now settled
+### Two decisions, one settled and one overtaken
 
-**~~Scope: working copy, or per install?~~ Settled 2026-09-02: per install.** The earlier assumption — one
-canonical working copy mirrored outward — cannot represent two installations holding deliberately different
-entries, which Alias Designer now supports. Rows multiply by installation count, and that is the correct cost.
+**~~Scope: working copy, or per install?~~ Settled 2026-09-02: per install — and it still holds.** The
+original argument (a single canonical copy cannot represent installations that deliberately differ) expired
+with standardisation. The conclusion did not: see the grain above. Rows multiply by installation count, and
+that is still the correct cost, because recording what each installation holds is the only way to notice one
+has been wiped.
 
-**~~Which installation seeds a device on first import?~~ Settled 2026-09-06: neither — both are preserved.**
-With per-installation rows nothing has to *win*, because each installation keeps its own row. When a device
-is found in two installations with different entries, BindForge records both exactly as found and marks the
-device **unmirrored**. It does not adopt one, and does not ask on first run.
+**~~Which installation seeds a device on first import?~~ Settled 2026-09-06: neither — both preserved,
+device left unmirrored. Overtaken 2026-09-23.** There is no `mirrored` flag to set any more, and leaving
+installations permanently disagreeing is the state standardisation exists to end. The replacement is
+[first setup](../02-features/bindforge/alias-designer.md#first-setup--reconciling-the-installs--settled-2026-09-23):
+BindForge reads every installation, shows what disagrees, and asks — once, per element.
 
-A first import cannot distinguish a deliberate difference from an accidental one, and the two mistakes do
-not cost the same: preserving an accidental difference costs one click to fix, while flattening a
-deliberate one destroys work BindForge cannot give back. So `mirrored` starts `false` for any device whose
-entries disagree, and `true` only where they already matched.
+**What carried over is the reasoning, which was always the valuable part.** *A first import cannot
+distinguish a deliberate difference from an accidental one, and the two mistakes do not cost the same:
+preserving an accidental difference costs one click to fix, while flattening a deliberate one destroys work
+BindForge cannot give back.* That is still why nothing is adopted automatically. The rows still record both
+installations exactly as found; what changed is that the user is asked to resolve it at setup rather than
+left with the difference indefinitely.
 
 ### The table cannot solve first import
 
@@ -165,8 +188,29 @@ Two consequences for this table:
 
 ## Migration
 
-V1.2 work uses the `011XX` block (`000XX` = v1.0, `010XX` = v1.1). Highest applied as of 2026-09-02 is
-`01045__ship_vehicle_bays.sql`, so the block is clean and the first script would be `01100__device_provenance.sql`.
+**BindForge writes in `12000–12499`.** The first two digits of a migration number are the version — `11XXX` =
+V1.1, `12XXX` = V1.2 — and V1.2's shared band is split between its two writers, BindForge taking
+`12000–12499` and commander/galaxy work `12500–12999`. Krondor's <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
+[proposal §4](../multi-install-proposal.md#4-migrations-one-tree-per-file), accepted 2026-09-24. Files written before the band
+rule keep their numbers (`000XX` = V1.0, `010XX` = V1.1) and sort before `11000`, so filename order still
+holds.
+
+So this becomes **`db-migration/<next free number in 12000–12499>__device_provenance.sql`**.
+
+**Built 2026-10-01 as `12002__bindforge_devices.sql`** — the next free number, and named for devices rather
+than provenance because one file carries all three tables: `bindforge_device_master` (the user's element set),
+`bindforge_device_labels` (its `.buttonMap` content) and `bindforge_device_installs` (this table). They are
+one change — the master is meaningless without something to compare it against — and splitting them across
+three migrations would only mean three numbers for one schema.
+
+*Deliberately not a specific number.* Krondor's §4 named 12000 as the example; `12000__bindforge_settings.sql`
+took it on 2026-09-28, and `12001__bindforge_installations.sql` took the renumbered one the same day. A
+migration number is never reused or renamed, so whichever file lands first owns the number — which means a
+doc cannot reserve one, and naming one here only creates a correction later. Take the next free number when
+the file is actually written. Note the tree: the shared top level, never `db-migration/commander/`, which <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
+is his alone by the §5 contract. Out-of-order
+arrival between the two ranges is safe, because migrations are recorded by filename rather than by highest
+number applied.
 
 Migrations are applied once at application startup and **an applied migration is never edited** — a new
 numbered script is added instead. The schema above should settle before it becomes a numbered file.

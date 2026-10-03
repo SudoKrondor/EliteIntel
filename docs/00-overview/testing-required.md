@@ -1,6 +1,6 @@
 # Testing Required
 
-A consolidated checklist of everything in this documentation package that's confirmed as a real, standing question — not a design decision — waiting on hands-on testing against real hardware and/or a real Elite Dangerous install. Each item links back to its full write-up in [conflicts-and-open-questions.md](conflicts-and-open-questions.md) and the relevant plugin doc. Nothing here blocks writing more documentation; these are implementation/verification tasks for later.
+A consolidated checklist of everything in this documentation package that's confirmed as a real, standing question — not a design decision — waiting on hands-on testing against real hardware and/or a real Elite Dangerous install. Each item links back to its full write-up in [conflicts-and-open-questions.md](../99-archive/conflicts-and-open-questions.md) and the relevant plugin doc. Nothing here blocks writing more documentation; these are implementation/verification tasks for later.
 
 ---
 
@@ -9,13 +9,13 @@ A consolidated checklist of everything in this documentation package that's conf
 **1. ~~Duplicate-VID/PID controllers~~ — DROPPED FROM SCOPE 2026-09-07. No longer a testing item.**
 BindForge designs nothing for two identical controllers; the existing duplicate warning and the
 alias-uniqueness rule already give defined behaviour, and Elite Dangerous cannot act on the distinction
-regardless. See [Conflict 3.7](conflicts-and-open-questions.md#37-duplicate-vidpid-devices--resolved-confirmed-real-but-the-fix-needs-hands-on-testing-not-a-design-decision).
+regardless. See [Conflict 3.7](../99-archive/conflicts-and-open-questions.md#37-duplicate-vidpid-devices--resolved-confirmed-real-but-the-fix-needs-hands-on-testing-not-a-design-decision).
 The two DualShock 4 controllers acquired 2026-09-06 would not have covered it anyway — their PIDs differ
 (`05C4` vs `09CC`) — though they did settle the neighbouring case of two devices sharing one entry, see
 item 9.
 
 *Original question, for the record:* Connect two controllers of the identical model (VID and PID both match) and determine what Elite Dangerous actually does with two `DeviceMappings.xml` entries pointing at the same VID/PID: does it support both usefully, or silently conflate them? Neither `.binds` nor `DeviceMappings.xml` has any field that could distinguish two such entries, so this determines whether BindForge's auto-registration/disambiguation behaviour (see [Alias Designer — Automatic Device Registration](../02-features/bindforge/alias-designer.md#automatic-device-registration)) is even useful at the file-format level, not just how to present it.
-→ [Conflict 3.7](conflicts-and-open-questions.md#37-duplicate-vidpid-devices--resolved-confirmed-real-but-the-fix-needs-hands-on-testing-not-a-design-decision)
+→ [Conflict 3.7](../99-archive/conflicts-and-open-questions.md#37-duplicate-vidpid-devices--resolved-confirmed-real-but-the-fix-needs-hands-on-testing-not-a-design-decision)
 
 **2. ~~VID/PID-to-device-identifier derivation~~ — half answered 2026-09-08; the button/axis offset is
 still open.** The **VID+PID order is confirmed**: a 2025-05 specimen carries `334483F3` and `334443F4`
@@ -24,10 +24,10 @@ same file reads `15320244`. BindForge should still **read both orders** — fixe
 extra comparison — and never writes hex at all. What remains is the numbering offset only.
 
 *Original wording:* confirm the VID+PID hex-concatenation rule for device identifiers, and confirm the 0-based (live input) vs. 1-based (`Joy_N` in `.binds`) numbering offset, both stated confidently in some source documents but flagged unverified in others with no bridging confirmation.
-→ [Conflict 3.15](conflicts-and-open-questions.md#315-vidpid-device-id-derivation-and-the-buttonaxis-index-off-by-one--resolved-logged-as-testing-required) · [Binding Schema](../03-data-models/binding-schema.md#live-input-to-file-format-numbering-offset-needs-independent-testing)
+→ [Conflict 3.15](../99-archive/conflicts-and-open-questions.md#315-vidpid-device-id-derivation-and-the-buttonaxis-index-off-by-one--resolved-logged-as-testing-required) · [Binding Schema](../03-data-models/binding-schema.md#live-input-to-file-format-numbering-offset-needs-independent-testing)
 
 **3. Cross-section conflict isolation** — confirm whether BindForge's four top-level sections (General/Ship/SRV/On Foot) are genuinely conflict-isolated from each other, or whether there's a real cross-section conflict (an unconfirmed observation during testing suggested a possible Ship↔SRV collision). This determines whether a cross-section conflict matrix is needed in addition to the four per-section matrices that already exist — the single most consequential open empirical question in BindForge's conflict-detection design.
-→ [Conflict 3.16](conflicts-and-open-questions.md#316-cross-section-conflict-isolation-may-be-wrong--merged-into-38) · [Bind Editor — Shared Conflict Detection](../02-features/bindforge/bind-editor.md#how-the-game-actually-resolves-conflicts-confirmed-by-direct-in-game-testing)
+→ [Conflict 3.16](../99-archive/conflicts-and-open-questions.md#316-cross-section-conflict-isolation-may-be-wrong--merged-into-38) · [Bind Editor — Shared Conflict Detection](../02-features/bindforge/bind-editor.md#how-the-game-actually-resolves-conflicts-confirmed-by-direct-in-game-testing)
 
 **4. UI-action-vs-ship-action behavioural safety** — confirmed assignable to the same key with no in-game warning, but whether it's actually safe when both are live simultaneously (not just whether the assignment is *allowed*) needs a second, behaviour-focused round of testing.
 → [Bind Editor — Shared Conflict Detection](../02-features/bindforge/bind-editor.md#how-the-game-actually-resolves-conflicts-confirmed-by-direct-in-game-testing)
@@ -47,7 +47,7 @@ both, and the rule is now known.** *No longer a testing item.*
 > `.binds` names a device by its `DeviceMappings.xml` element name, matched on VID/PID. With no matching
 > entry it falls back to VID+PID hex.
 
-Confirmed from five specimens spanning 2024-08 to 2026-09, including the same commander's file before and
+Confirmed from five specimens spanning 2024-08 to 2026-09, including the same user's file before and
 after adding entries for the same two devices — the two VIRPIL sticks appear as `334483F3`/`334443F4` in
 the 2025 file and as `RVWAP`/`LVWAP` today. See
 [§4.0 of the format reference](../02-features/bindforge/domain-knowledge/EliteDangerous-BindsFileFormat.md#40-the-rule-confirmed-2026-09-08).
@@ -111,11 +111,20 @@ orphaned `.buttonMap` files exist in the wild, which
 [File Manager's restore scope](../02-features/bindforge/file-manager.md#restore-scope) has to tolerate
 rather than treat as corruption.
 
+**Reframed 2026-09-23, and the original question answered itself.** They *do* differ — but differing is
+never legitimate. A shared `.binds` names devices by entries that live in these per-install files, so an
+install missing one
+[rejects the whole preset](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
+Difference is a latent outage, not a configuration, so
+[every install now gets the same files](../02-features/bindforge/overview.md#every-install-gets-the-same-files--settled-2026-09-23)
+and there is no per-install choice left to test.
+
 *Original question, for the record:* The
-per-installation model in [Alias Designer](../02-features/bindforge/alias-designer.md#per-installation-editing)
+per-installation model in [Alias Designer](../02-features/bindforge/alias-designer.md#one-record-and-where-it-lands--reworked-2026-09-26)
 assumes they can, and builds the UI around allowing it. Worth confirming against real multi-storefront setups
 whether that ever actually happens in practice, or whether every real user mirrors everything — which would
-make mirrored the sensible default rather than a choice.
+make mirrored the sensible default rather than a choice. *That last guess is what happened, though not for the
+reason it expected: not because everyone mirrors, but because not mirroring breaks the game.*
 
 **12. Does the game tolerate a `DeviceMappings.xml` entry for hardware that is not attached?** Entries outlive
 hardware, and BindForge lists and preserves them deliberately. Confirm the game ignores a stale entry rather
@@ -208,7 +217,7 @@ testing adds is the labels, and any value the files have never held.
 
 **Capture what empty means, per element.** An empty value is that element's default *choice*, and the choice
 differs: `""` reads DOES NOTHING on a panel-focus entry, FULL RANGE on `ThrottleRange` and OFF on
-`MouseBuggyYMode`. Record it alongside the tokens — it is what BindForge shows for a setting the commander
+`MouseBuggyYMode`. Record it alongside the tokens — it is what BindForge shows for a setting the user
 has never touched.
 
 **Confirm which panel element is which.** `LeftPanelFocusOptions`, `RightPanelFocusOptions`, `RolePanelFocusOptions`
@@ -226,7 +235,10 @@ Noting where each one appears on screen costs nothing extra while the options sc
 
 → [Bind Editor — Enums need their vocabularies captured first](../02-features/bindforge/bind-editor.md#enums-need-their-vocabularies-captured-first--settled-2026-09-16)
 
-**15. What does the game do when two files share one preset name?** *Added 2026-09-17.* `Custom.3.0.binds`
+**15. ~~What does the game do when two files share one preset name?~~ WITHDRAWN 2026-09-21 — it cannot
+happen.** Alan: Elite migrates an older-version `.binds` to the current version under the same name, so a
+live folder never holds `Custom.3.0` beside `Custom.4.2`, and only the Live game is supported. The pair in
+`reference-data/` is two collected specimens, not one folder. *Original entry, for the record:* *Added 2026-09-17.* `Custom.3.0.binds`
 and `Custom.4.2.binds` both reduce to the preset name `Custom`, which is what `StartPreset.#.start` stores —
 so the name in that file cannot distinguish them. Presumably the game loads the one matching its own version
 and shows a single entry, but that is an assumption, and
@@ -235,7 +247,33 @@ two versions of one name in the folder, open the game's Controls screen, and see
 which file a save writes back to.
 → [Preset Editor — what a line actually holds](../02-features/bindforge/preset-editor.md#what-a-line-actually-holds--the-preset-name-not-the-file-name)
 
+**16. ~~What does the game do with a `Device=` name its `DeviceMappings.xml` does not define?~~ ANSWERED
+2026-09-22 by direct test.** It logs one `Failed to find GUID for device: <name>` per reference into
+`BindingLoadingErrors.log` and **rejects the entire preset**, falling back to `KEYBOARD & MOUSE` in all four
+sections — keyboard and mouse bindings included. Loading writes nothing: both `.binds` files and
+`StartPreset.#.start` kept their timestamps, and every `Device="..."` reference survived. The game also
+validates *every* `.binds` in the folder, not just the active preset. Two installs sharing one bindings folder
+gave opposite results from this one difference. Full method:
+[§1.2b of the device-files reference](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
+**Still open:** the save path — whether committing a change on the Controls screen in that state writes the
+fallback into the shared `StartPreset.#.start`, which would carry the loss to every install on the machine.
+
 ## Core Platform
 
 **8. Linux/Proton path resolution — Krondor's, not a BindForge testing item.** *Reassigned 2026-09-06.* Not a one-time check but ongoing, given how much Linux path resolution varies by distro and by how an individual user has their Steam library configured — which is exactly why it is owned by the person running it. BindForge builds and tests Windows storefront detection; Krondor makes the edits his platform needs. Listed here so the dependency stays visible, not as work waiting on Alan. The journal path is confirmed against independent precedent (EDMarketConnector); the bindings-folder path is inferred from the same structure but not independently confirmed.
-→ [Conflict 1.5](conflicts-and-open-questions.md#15-linuxproton-bindings-folder-path--resolved-reframed-as-ongoing-testing-feedback-not-a-one-time-check) · [Path Resolution](../01-host-integration/elite-intel-platform-map.md#path-resolution)
+→ [Conflict 1.5](../99-archive/conflicts-and-open-questions.md#15-linuxproton-bindings-folder-path--resolved-reframed-as-ongoing-testing-feedback-not-a-one-time-check) · [Path Resolution](../01-host-integration/elite-intel-platform-map.md#path-resolution)
+
+**Updated 2026-09-26 — both paths are now confirmed**, read out of `Installer.install4j`, which ships and runs
+on every Linux start. What replaced them is harder. Krondor: *"I had all three Steams installed... I can have
+at least 3 Steams and be logged in to all three with different steam accounts."* Since `compatdata` sits under
+the Steam root, **each Steam installation carries its own Proton prefix, so its own bindings folder and its own
+journal folder** — which is the one place Linux breaks the Windows model, where those are one shared set per
+player. Still needing a real machine, and all of it Krondor's platform:
+
+- **Confirm three concurrent Steam roots really do produce three independent bindings folders**, rather than
+  sharing a library. The reasoning is sound; nobody has looked.
+- **Confirm `$HOME/.steam/steam` is a symlink to `$HOME/.local/share/Steam`** on a live install, since a
+  detector that does not resolve it reports the same installation twice.
+- **Decide what a Linux install list should show** when the same game appears under native, Flatpak and Snap
+  Steam with different Steam logins.
+→ [§5a–5c of the install-paths reference](../01-host-integration/domain-knowledge/EliteDangerous-InstallPaths.md#5a-linux-has-several-steam-roots-not-one---confirmed-2026-09-26)

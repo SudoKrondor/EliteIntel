@@ -104,6 +104,14 @@ Client.log:            C:\Program Files (x86)\Frontier\EDLaunch\logs\
 Update.log:            C:\Program Files (x86)\Frontier\EDLaunch\logs\
 ```
 
+**Several users on one Frontier install does not mean several installs.** The launcher handles one
+account at a time, and the community workaround is to keep **several copies of the launcher**, each logged in
+to a different account, started from its own shortcut — one game installation, N launchers. *CMDR Reise Lang,
+relayed 2026-09-23: "I only use the Frontier launcher and have 3 cmdrs… The method I use allows me to have
+three different launchers and I run the one I want."* So install count and user count are independent,
+which is what [the model](../../multi-install-proposal.md) already assumes: the user comes from the
+journal, never from the install.
+
 **This is the underscore path**, and it is a real installation type rather than a mistake — see the
 correction in [§1](#1-the-two-different-file-families-have-different-multiplicity-rules). Note the two
 spellings sitting side by side in the block above: `Frontier Developments` with a space is the *user
@@ -258,6 +266,8 @@ Elite Dangerous is not natively ported to Linux; it typically runs under Steam P
 
 (`359320` is ED's Steam AppID — the same value used in `libraryfolders.vdf`'s `apps` map on Windows, §2.) `pfx` is the Wine prefix root; everything below `drive_c/users/steamuser/AppData/Local/...` mirrors the Windows path structure from §1, including the same `Frontier Developments` spacing.
 
+**Both halves are now confirmed by Elite-Intel's own installer** - see [§5a](#5a-linux-has-several-steam-roots-not-one---confirmed-2026-09-26), which reads the exact paths out of `Installer.install4j`. The note below records how they stood before that.
+
 **The journal half of this path (`Saved Games/Frontier Developments/Elite Dangerous`) is confirmed as of 2026-07-22** — it exactly matches what EDMarketConnector's own official wiki instructs Linux users to configure, independent community precedent from a tool actively used on real Proton installs, not just our own analogy from general conventions. The bindings half (`Options/Bindings`) uses the same `AppData/Local` structure one level over and is very likely correct by the same logic, but wasn't independently spelled out by that source — treat it as strongly supported, not yet independently confirmed the same way.
 
 Additional considerations if/when this is implemented:
@@ -266,6 +276,83 @@ Additional considerations if/when this is implemented:
 - The Wine prefix is tied to the Linux user who installed/ran the game; multi-user Linux machines complicate "find every install," though this is an unlikely edge case for a single-user desktop companion app.
 - Frontier-launcher-direct and Epic installs are not meaningfully supported on Linux outside of community Wine setups — Proton via Steam is the realistic Linux path to design for.
 - The same per-storefront-vs-shared multiplicity split from §1 presumably still applies once inside the Proton prefix (i.e. `.binds`/`StartPreset` shared, `DeviceMappings.xml`/`.buttonMap` per-install), but this has not been separately verified for the Linux/Proton case — it's an inference from the Windows behaviour, not an independent confirmation.
+
+---
+
+### 5a. Linux has several Steam roots, not one - confirmed 2026-09-26
+
+**The paths below are not inferred. They are read from `Installer.install4j`**, the launcher fragment that
+ships with Elite-Intel and runs on every Linux start. That makes them authoritative for where the app looks
+today, and it upgrades the Proton prefix layout above from "strongly supported" to **confirmed by shipping
+code**.
+
+Steam can be installed from several stores, and they are independent of one another - there is no registry on
+Linux to arbitrate. Krondor, 2026-09-26: *"I had all three Steams installed... I can have at least 3 Steams
+and be logged in to all three with different steam accounts."* The four roots the installer probes, in its own
+order:
+
+| Root | Which Steam |
+|---|---|
+| `$HOME/.steam/steam` | **a symlink**, normally to the native install below |
+| `$HOME/snap/steam/common/.local/share/Steam` | Snap |
+| `$HOME/.local/share/Steam` | native / distro package |
+| `$HOME/.var/app/com.valvesoftware.Steam/.local/share/Steam` | Flatpak |
+
+It then falls back to asking `flatpak list --app` for `com.valvesoftware.Steam`, and `snap list` for `steam`,
+if the directory probes found nothing.
+
+**Two things a detector must not inherit from that script.**
+
+**It stops at the first match.** The probes are an `elif` chain, so exactly one root is ever chosen, and
+`$HOME/.steam/steam` is tried first. On a machine with native *and* Flatpak *and* Snap Steam, Elite-Intel
+today sees only the native one, silently. That is correct for its own purpose - it needs one journal folder to
+watch - and wrong for BindForge, which has to enumerate **all** of them.
+
+**`.steam/steam` and `.local/share/Steam` are usually the same install.** The first is a symlink to the
+second. Anything that walks the list above without resolving symlinks and de-duplicating by real path will
+report one Steam installation twice.
+
+### 5b. On Linux the bindings folder is per Steam root
+
+The prefix the installer builds is:
+
+```
+$STEAM_FOLDER/steamapps/compatdata/359320/pfx/drive_c/users/steamuser
+```
+
+with `AppData/Local/Frontier Developments/Elite Dangerous/Options/Bindings` and
+`Saved Games/Frontier Developments/Elite Dangerous` beneath it.
+
+`compatdata` lives under the **Steam root**. So each Steam installation carries its own Wine prefix, its own
+`AppData`, and therefore **its own bindings folder and its own journal folder**. Three Steam clients means
+three of each.
+
+**This is the one place Linux breaks the Windows model.** On Windows a single `%LOCALAPPDATA%` tree is shared
+by every storefront, which is why `.binds` and `StartPreset` are one set per player. Inside a Proton prefix
+there is no shared AppData at all. On Linux, **`.binds` and `StartPreset` are installation-scoped**, exactly
+as `DeviceMappings.xml` and `.buttonMap` already are everywhere. See
+[The Input Environment](../../00-overview/input-environment.md), whose counting rules describe Windows.
+
+It does not change the master: BindForge still keeps one, it simply has more destinations to push to.
+
+### 5c. How Elite-Intel reaches the game on Linux today
+
+The launcher fragment creates two symlinks inside the app's own install directory
+(`~/.var/app/elite.intel.app`, per the installer's `customInstallBaseDir`):
+
+| Symlink | Points at |
+|---|---|
+| `ed-bindings` | the Proton prefix's `Options/Bindings` folder |
+| `ed-journal` | the Proton prefix's `Saved Games/.../Elite Dangerous` folder |
+
+They are rebuilt on every launch, skipped entirely when both already resolve, and skipped silently when Steam
+is absent or Elite Dangerous has never been run under Proton - a missing symlink is not an error, it means
+there is no prefix yet. The script never exits non-zero, by design: a failure here must not stop the app
+starting.
+
+**So on Linux, "the bindings folder" that Elite-Intel reads is a symlink in its own install directory**, not a
+path it computes at runtime. Anything BindForge writes on Linux arrives through that indirection, and a
+detector that enumerates several Steam roots will be looking at more folders than the two symlinks point to.
 
 ---
 
@@ -301,7 +388,7 @@ someone checks, which costs nothing — the manual path exists regardless.
 
 1. **Automatic detection, where implemented,** should scan/enumerate using the mechanisms in §2–§3 (and, for Linux, §5) purely to *suggest* a default. It should never be the sole path to a working configuration.
 2. **A manual override — a folder-picker style "browse and select" flow — must always be present, not just a fallback of last resort.** Whatever path the user selects should be persisted so they are never asked twice for the same install. This is the right default behaviour for: Linux/Proton users where automatic `compatdata` discovery fails (non-default Steam library, unusual Wine setup, or the path pattern in §5 simply turning out to be wrong once checked against a real install); any future Frontier path-naming change that breaks a hardcoded assumption; and any storefront-specific quirk not yet accounted for here.
-3. **If more than one product folder is found** (e.g. both a legacy and a current product folder from an old pre-merge install), surface all of them to the user as named choices rather than silently picking one — avoids silently pointing a tool at the wrong product's files.
+3. **Only the Live product folder counts.** *Corrected 2026-09-21:* this rule used to say that when both a legacy and a current product folder turn up in one old pre-merge install, both should be offered as named choices. **Only the Live game is supported** (Alan: *"we don't support anything but live"*), which is what [*"BindForge targets `elite-dangerous-odyssey-64` only"*](#confirmed-2026-09-07-one-installation-can-hold-several-products-each-with-its-own-controlschemes) above already says — so discovery takes that product folder and ignores any other, rather than offering a choice the user should never make. Separate storefront installs are a different thing and are still each listed.
 
 **Standing flag:** the journal half of the Linux/Proton path in §5 is confirmed via independent community precedent (EDMarketConnector); the bindings half is strongly supported by the same structure but not independently spelled out. Hands-on testing against a real Proton install is still the eventual gold-standard check, and the manual-override path must stay fully functional on Linux regardless.
 

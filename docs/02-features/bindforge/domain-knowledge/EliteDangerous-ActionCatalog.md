@@ -128,7 +128,7 @@ Reused labels observed:
 |---|---|---|
 | Ship - Toggle Camera Suite | `PhotoCameraToggle` | Yes |
 | SRV - Toggle Camera Suite | `PhotoCameraToggle_Buggy` | Yes |
-| Commander - Toggle Camera Suite | `PhotoCameraToggle_Humanoid` | Yes |
+| User - Toggle Camera Suite | `PhotoCameraToggle_Humanoid` | Yes |
 | Previous Camera | `VanityCameraScrollLeft` | Yes |
 | Next Camera | `VanityCameraScrollRight` | Yes |
 | Enter Free Camera | `ToggleFreeCam` | Yes |

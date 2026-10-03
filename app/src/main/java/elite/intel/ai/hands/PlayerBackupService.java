@@ -1,5 +1,6 @@
 package elite.intel.ai.hands;
 
+import elite.intel.db.managers.BindForgeSettingsManager;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.event.BindingsUpdatedEvent;
@@ -201,12 +202,40 @@ public class PlayerBackupService {
         return new PlayerBackup(folder, folder.getFileName().toString(), fileNames);
     }
 
+    /**
+     * Where a backup is written: the folder the user chose, or Elite-Intel's own when they have not chosen
+     * one.
+     * <p>
+     * The single place that decision is made. {@code BindForgeSettingsManager} deliberately stores the raw
+     * value and does not resolve it, so there is no second resolver to disagree with this one.
+     */
     private Path resolvePlayerBackupsDir() throws IOException {
         if (baseDirOverride != null) {
             Files.createDirectories(baseDirOverride);
             return baseDirOverride;
         }
-        return AppPaths.getPlayerBackupsDir();
+        Path chosen = chosenBackupDestination();
+        if (chosen == null) {
+            return AppPaths.getPlayerBackupsDir();
+        }
+        Files.createDirectories(chosen);
+        return chosen;
+    }
+
+    /**
+     * The user's chosen backup folder, or {@code null} for the default.
+     * <p>
+     * A setting that cannot be read must not stop a backup being taken: writing to the default folder is a
+     * far better outcome than failing, because the backup is the thing being protected here.
+     */
+    private Path chosenBackupDestination() {
+        try {
+            String chosen = BindForgeSettingsManager.getInstance().getBackupDestination();
+            return chosen == null || chosen.isBlank() ? null : Path.of(chosen);
+        } catch (RuntimeException e) {
+            log.warn("Could not read the chosen backup destination, using the default: {}", e.getMessage());
+            return null;
+        }
     }
 
     /** Appends a numeric suffix on collision (two backups requested within the same second). */
