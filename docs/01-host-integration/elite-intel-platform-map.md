@@ -21,7 +21,7 @@ section of this document.
 | StellarCore service | Elite-Intel equivalent | State |
 |---|---|---|
 | Device Service | `elite.intel.devices.DeviceService` + `eventbus.DeviceBus` | **Exists, complete** |
-| File Service | `java.nio` directly, plus `ai.hands.Bindings*Service` classes | **Partial** — no central broker |
+| File Service | `java.nio` directly, plus the `bindforge.io.Bindings*Service` classes | **Partial** — no central broker |
 | Path Service | `elite.intel.util.AppPaths` | **Exists, narrower** |
 | Settings Service | `db.dao.GlobalSettingsDao` / `GlobalSettingsManager` (SQLite) | **Exists, different shape** |
 | Theme Service | `ui.theme.AppTheme`, `HudPalette`, `HudGlyphs`, `HudForms` | **Exists, not a service** |
@@ -175,23 +175,24 @@ StarVizion implementation begins — it is the most direct evidence of what the 
 Elite-Intel has **no central file broker**. There is no Controlled Replace pattern, no shared backup-then-write
 service, no archive/restore service, and no Watch Path facility available generically.
 
-What exists instead is BindForge-shaped already, in `elite.intel.ai.hands`:
+What exists instead is BindForge-shaped already, and since 2026-10-03 it lives under `elite.intel.bindforge`
+(it moved out of `elite.intel.ai.hands`, which now only presses keys):
 
 | Class | Role |
 |---|---|
-| `BindingsLoader`, `KeyBindingsParser` | read and parse `.binds` |
-| `BindingsWriter` | write `.binds` |
-| `BindingsWorkingCopyRepository` | the **working copy** concept, already implemented |
-| `BindingsBackupService` | timestamped backups |
-| `BindingsApplyService`, `BindingsApplyException`, `BindingSaveResult` | apply-to-game with typed failure |
-| `BindingsMonitor` | external-change detection |
-| `BindingConflictScanner`, `BindingConflictRules` | conflict detection |
-| `BindingSection`, `BindingDisplayNames` | in-game section, group and row label for a `.binds` tag |
+| `io.BindingsLoader`, `io.KeyBindingsParser` | read and parse `.binds` |
+| `io.BindingsWriter` | write `.binds` |
+| `io.BindingsWorkingCopyRepository` | the **working copy** concept, already implemented |
+| `io.BindingsBackupService` | timestamped backups |
+| `io.BindingsApplyService`, `io.BindingsApplyException`, `io.BindingSaveResult` | apply-to-game with typed failure |
+| `io.BindingsMonitor` | external-change detection |
+| `rules.BindingConflictScanner`, `rules.BindingConflictRules` | conflict detection |
+| `model.BindingSection`, `model.BindingDisplayNames` | in-game section, group and row label for a `.binds` tag |
 | `db.dao.BindingConflictDao`, `db.managers.BindingConflictManager` | conflict persistence |
 
 This is a substantial head start and a substantial constraint: BindForge is not being written on a blank page,
-it is being grown out of an existing implementation whose choices it must either adopt or deliberately replace.
-**The single most important next task is a detailed read of `elite.intel.ai.hands` against the ported
+it is being grown out of an existing implementation whose choices it must either adopt or deliberately replace. **The
+single most important next task is a detailed read of `elite.intel.bindforge.io`/`.rules` against the ported
 [BindForge specs](../02-features/bindforge/overview.md)**, to determine what is reusable, what conflicts, and
 what must be rewritten.
 
@@ -324,8 +325,8 @@ So an installation should be able to answer, at minimum: where its `DeviceMappin
 flag**, for the reason above. Whether `StartPreset` hangs off the installation or the provider follows the
 same rule as `.binds`, because they live together.
 
-**Where it goes:** `elite.intel.bindforge.install`, per the package decision, and **not** in
-`elite.intel.ai.hands`, which [stays as it is](../02-features/bindforge/overview.md#two-narrow-boundaries--one-stays-one-widens) through V1.2.
+**Where it goes:** `elite.intel.bindforge.install`, per the package decision, beside the `.binds` code in
+`bindforge.io` and `bindforge.rules` and **not** in `elite.intel.ai.hands`, which only presses keys.
 
 **The arrangement it isolates is not final.** Krondor is weighing inverting the Linux symlinks - real
 bindings and journal folders in the app's install directory, each Steam prefix linking to them, so all three
@@ -405,8 +406,7 @@ StarVizion, when it comes, does the same as `starvizion_settings`.
 **Why not add columns to `game_session`, which is what most settings do.** Because of who else is in that
 file. Over the last 90 days `GameSessionDao` changed in **19** commits and `SystemSession` in **32** — two of
 the busiest files in the codebase, and nearly all of it Krondor's. Every BindForge setting added there edits the
-same DAO, the same session class and the same long SQL statement he is editing that week. That is precisely the
-merging trouble the [package freeze](../00-overview/v1.2-scope.md#the-code-stays-where-it-is--stated-by-krondor-2026-09-12)
+same DAO, the same session class and the same long SQL statement he is editing that week. That is precisely the merging trouble the [merge rule](../00-overview/v1.2-scope.md#the-bindings-code-moved-once-to-eliteintelbindforge--2026-10-03)
 exists to prevent. A table of its own touches none of his files: the migration, DAO and manager are all new, and
 *"new code is free."* `GlobalSettingsDao`, the model being copied, changed in **3**.
 

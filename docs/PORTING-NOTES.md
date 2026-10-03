@@ -113,9 +113,9 @@ specs listed as work to be done:
   working, small-scale ancestor of StarVizion.
 - **`overlay/`** is a native C overlay with **an OpenVR backend already in the tree**, driven over a documented
   stdin protocol. StarVizion's VR requirement has a shipping implementation path, not a green field.
-- **`elite.intel.ai.hands`** holds ~20 binding classes including `BindingsWorkingCopyRepository`,
-  `BindingsBackupService`, `BindingConflictScanner`, and `BindingsApplyService` — the working-copy, backup, and
-  conflict-detection concepts BindForge specifies, already partly built.
+- **`elite.intel.bindforge.io`, `.model` and `.rules`** hold ~20 binding classes including
+  `BindingsWorkingCopyRepository`, `BindingsBackupService`, `BindingConflictScanner`, and `BindingsApplyService` — the working-copy, backup, and conflict-detection concepts BindForge specifies, already partly built.
+  *They lived in `elite.intel.ai.hands` until 2026-10-03; that package now only presses keys.*
 - **`AppPaths`** already provisions `getBindingsWorkingDir()` and `getBindingsBackupDir()`.
 
 ## 6. A Note Worth Recording
@@ -135,7 +135,8 @@ unresolved questions stay in [conflicts-and-open-questions.md](99-archive/confli
 
 ### P1 — Blocking
 
-1. **What does BindForge borrow from `elite.intel.ai.hands`, and who owns the write path?**
+1. **What does BindForge borrow from the bindings code (then `elite.intel.ai.hands`, now `elite.intel.bindforge`), and
+   who owns the write path?**
 
    **Settled (2026-09-08, replacing the 2026-09-01 answer):** BindForge **is** the existing bind editor,
    upgraded in place. Nothing is built separately and nothing is retired, so the question is no longer
@@ -146,7 +147,8 @@ unresolved questions stay in [conflicts-and-open-questions.md](99-archive/confli
    how much Krondor built into the Bindings section through September; the inventory below survived the
    change intact, because reading the package is what produced it.*
 
-   **Answered 2026-09-06 after reading the package.** `ai.hands` divides into a pipeline BindForge reuses
+   **Answered 2026-09-06 after reading the
+   package.** The bindings code (`ai.hands` then, `bindforge.io`/`.rules` since 2026-10-03) divides into a pipeline BindForge reuses
    whole and two doors it cannot fit through.
 
    **Reused as-is:** `BindingsApplyService` (validate → backup → atomic write; **this is who owns the write

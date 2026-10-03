@@ -170,7 +170,8 @@ case is confirmed; the rest is unexplored.
 
 ## 3c. A Third Category: Reserved Keys
 
-**Documented 2026-09-06 from `elite.intel.ai.hands.ReservedKeyChords`,** which Elite-Intel gained on
+**Documented 2026-09-06 from `ReservedKeyChords` (
+now `elite.intel.bindforge.rules.ReservedKeyChords`),** which Elite-Intel gained on
 2026-09-05. Neither of the categories above covers it.
 
 A reserved key is one that **cannot be used for anything, regardless of what else is bound to it.** There
