@@ -13,6 +13,8 @@ emit "OBJ${T}MASSACRE CONTRACT${T}KREMAINN - BLOCH TERMINAL"
 emit "BAR${T}PIRATES${T}12${T}20${T}normal"
 emit "ROW${T}REWARD${T}4,120,000 cr${T}normal"
 emit "ROW${T}EXPIRES${T}2d 04h${T}warn"
+# A track: the route card's next stars, green scoopable, red not.
+emit "ROW${T}JUMPS${T}12${T}normal${T}good,good,critical,good,critical,critical,good"
 emit "END"
 sleep 1
 

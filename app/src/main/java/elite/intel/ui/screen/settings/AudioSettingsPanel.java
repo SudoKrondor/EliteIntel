@@ -285,19 +285,6 @@ public class AudioSettingsPanel extends JPanel {
         radioScope.setToolTipText(getText("settings.audio.transmission.radio.help"));
         addAudioCheck(grid, row, 3, "settings.audio.transmission.vegaAway",
                 systemSession.isEffectsOnVegaAway(), systemSession::setEffectsOnVegaAway);
-        row.gridy = 4;
-        row.gridwidth = 1;
-        row.weightx = 0;
-        grid.add(hudReadoutLabel(getText("settings.audio.supertonicBoost")), row);
-        HudSlider supertonicBoostSlider = makeSlider(0, 100, systemSession.getSupertonicBoostPercent());
-        supertonicBoostSlider.addChangeListener(e -> {
-            if (!supertonicBoostSlider.isAdjusting()) {
-                systemSession.setSupertonicBoostPercent(supertonicBoostSlider.getValue());
-            }
-        });
-        row.gridx = 1;
-        row.weightx = 1;
-        grid.add(supertonicBoostSlider, row);
 
         return grid;
     }

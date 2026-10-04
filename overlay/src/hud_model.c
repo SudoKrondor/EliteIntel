@@ -72,6 +72,21 @@ static State parse_state(const char *s) {
     return ST_NORMAL;
 }
 
+/// Reads a comma-separated list of states into a row's track, keeping the
+/// first MAX_TRACK. A stop this binary cannot name reads as normal, the same
+/// fallback a row's own state gets, so it still holds its place on the line.
+static void parse_track(char *s, Row *r) {
+    r->track_count = 0;
+    if (!s || !*s) return;
+    while (r->track_count < MAX_TRACK) {
+        char *comma = strchr(s, ',');
+        if (comma) *comma = '\0';
+        r->track[r->track_count++] = parse_state(s);
+        if (!comma) break;
+        s = comma + 1;
+    }
+}
+
 /// Advances a byte index past one whole UTF-8 character. Advancing by bytes
 /// would split multi-byte glyphs and render replacement characters mid-word,
 /// which matters for every non-English locale the app ships.
@@ -212,6 +227,7 @@ int hud_handle_command(char *line, int *quit) {
         snprintf(r->label, sizeof(r->label), "%s", n > 1 ? f[1] : "");
         snprintf(r->value, sizeof(r->value), "%s", n > 2 ? f[2] : "");
         r->state = parse_state(n > 3 ? f[3] : NULL);
+        parse_track(n > 4 ? f[4] : NULL, r);
         return 0;
     }
     if (!strcmp(f[0], "BAR") && model.staging.row_count < MAX_ROWS) {

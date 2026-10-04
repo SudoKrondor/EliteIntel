@@ -27,6 +27,8 @@ public class SystemSession {
 
     public static final int GOOGLE_WAVENET_PITCH_MIN = -20;
     public static final int GOOGLE_WAVENET_PITCH_MAX = 20;
+    public static final int SUPERTONIC_BOOST_MIN = 0;
+    public static final int SUPERTONIC_BOOST_MAX = 100;
 
     /**
      * Range of the pause the input executor holds after each keystroke it sends to the game, in
@@ -523,7 +525,9 @@ public class SystemSession {
     }
 
     public void setSupertonicBoostPercent(int percent) {
-        if (percent < 0 || percent > 100) throw new IllegalArgumentException("Supertonic boost must be 0–100%");
+        if (percent < SUPERTONIC_BOOST_MIN || percent > SUPERTONIC_BOOST_MAX) {
+            throw new IllegalArgumentException("Supertonic boost must be 0–100%");
+        }
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
             session.setSupertonicBoostPercent(percent);

@@ -82,6 +82,11 @@ public class AiServicesSettingsPanel extends JPanel {
      */
     private JLabel googleWaveNetPitchLabel;
     private HudSlider googleWaveNetPitchSlider;
+    /**
+     * Supertonic's output boost: Supertonic alone reads it, so the slider lives in Supertonic's segment.
+     */
+    private JLabel supertonicBoostLabel;
+    private HudSlider supertonicBoostSlider;
 
     /**
      * Whether Kokoro is on offer. It cannot pronounce Cyrillic, so for a Russian or Ukrainian commander - or a
@@ -102,6 +107,10 @@ public class AiServicesSettingsPanel extends JPanel {
      */
     private HudBanner ttsKokoroUnavailable;
     private JPanel ttsLocalHints;
+    /**
+     * Supertonic's boost row and banner together: shown while Supertonic is the local engine, hidden for Kokoro.
+     */
+    private JPanel ttsSupertonicConfig;
     /**
      * Google's key row and banner together: shown while Google is the cloud engine, hidden for Edge.
      */
@@ -125,6 +134,7 @@ public class AiServicesSettingsPanel extends JPanel {
     private ProviderEnum savedProvider;
     private TtsProvider savedTtsProvider = TtsProvider.KOKORO;
     private int savedGoogleWaveNetPitch;
+    private int savedSupertonicBoost;
 
     /** Suppresses dirty-marking while controls are populated programmatically. */
     private boolean loading = false;
@@ -229,9 +239,23 @@ public class AiServicesSettingsPanel extends JPanel {
         // One banner is shown at a time: the selected engine's, or the "why Kokoro is greyed out" one.
         ttsKokoroHint = HudBanner.multiline(getText("settings.ai.voice.local.hint"), StatusBadge.State.INFO);
         ttsSupertonicHint = HudBanner.multiline(getText("settings.ai.voice.supertonic.hint"), StatusBadge.State.INFO);
+        // Supertonic: its boost row above its banner, mirroring Google's pitch row on the cloud side.
+        JPanel supertonicForm = transparentPanel(new GridBagLayout());
+        GridBagConstraints sgc = baseGbc();
+        supertonicBoostSlider = new HudSlider(
+                SystemSession.SUPERTONIC_BOOST_MIN, SystemSession.SUPERTONIC_BOOST_MAX, 1,
+                SystemSession.SUPERTONIC_BOOST_MIN);
+        supertonicBoostLabel = addLabel(supertonicForm, getText("settings.ai.supertonicBoost"), sgc, 0);
+        supertonicBoostLabel.setPreferredSize(
+                new Dimension(supertonicBoostLabel.getPreferredSize().width, HUD_SLIDER_HEIGHT));
+        supertonicBoostLabel.setBorder(BorderFactory.createEmptyBorder(HUD_SLIDER_VALUE_AREA, 0, 0, 0));
+        addField(supertonicForm, supertonicBoostSlider, sgc, 1, 1.0);
+        ttsSupertonicConfig = transparentPanel(new BorderLayout(0, HUD_GAP));
+        ttsSupertonicConfig.add(supertonicForm, BorderLayout.NORTH);
+        ttsSupertonicConfig.add(ttsSupertonicHint, BorderLayout.CENTER);
         ttsLocalHints = transparentPanel(new BorderLayout());
         ttsLocalHints.add(ttsKokoroHint, BorderLayout.NORTH);
-        ttsLocalHints.add(ttsSupertonicHint, BorderLayout.CENTER);
+        ttsLocalHints.add(ttsSupertonicConfig, BorderLayout.CENTER);
         ttsLeftCol.add(ttsLocalHints, BorderLayout.CENTER);
 
         JPanel ttsRightCol = transparentPanel(new BorderLayout(0, HUD_GAP));
@@ -325,6 +349,7 @@ public class AiServicesSettingsPanel extends JPanel {
         providerCombo.addActionListener(e -> onProviderPicked());
         ttsLockCheck.addItemListener(e -> updateEnablement());
         googleWaveNetPitchSlider.addChangeListener(e -> recomputeDirty());
+        supertonicBoostSlider.addChangeListener(e -> recomputeDirty());
 
         onTextChange(addressField);
         onTextChange(commandModelField);
@@ -362,6 +387,8 @@ public class AiServicesSettingsPanel extends JPanel {
             ttsKeyField.setText(storedTtsKey);
             int storedPitch = systemSession.getGoogleWaveNetPitch();
             googleWaveNetPitchSlider.setValue(storedPitch);
+            int storedBoost = systemSession.getSupertonicBoostPercent();
+            supertonicBoostSlider.setValue(storedBoost);
             TtsProvider ttsProvider = systemSession.getTtsProvider();
             ttsSourceControl.setSelectedIndex(ttsProvider.isLocal() ? SRC_LOCAL : SRC_CLOUD);
             if (ttsProvider.isLocal()) {
@@ -379,6 +406,7 @@ public class AiServicesSettingsPanel extends JPanel {
             savedTtsKey = storedTtsKey;
             savedTtsProvider = ttsProvider;
             savedGoogleWaveNetPitch = storedPitch;
+            savedSupertonicBoost = storedBoost;
 
             updateEnablement();
         } finally {
@@ -433,10 +461,14 @@ public class AiServicesSettingsPanel extends JPanel {
         ttsLocalEngineControl.setEnabled(!ttsCloud);
         // The "cannot pronounce this language" banner replaces both engine hints and is the reason the Kokoro
         // segment is dead, so it stays legible while cloud is selected.
+        // The boost row belongs to Supertonic whether or not Kokoro is offered; only its banner gives way.
         ttsKokoroHint.setVisible(kokoroOffered && !supertonic);
-        ttsSupertonicHint.setVisible(kokoroOffered && supertonic);
+        ttsSupertonicConfig.setVisible(supertonic);
+        ttsSupertonicHint.setVisible(kokoroOffered);
         ttsKokoroHint.setEnabled(!ttsCloud);
         ttsSupertonicHint.setEnabled(!ttsCloud);
+        supertonicBoostLabel.setEnabled(!ttsCloud);
+        supertonicBoostSlider.setEnabled(!ttsCloud);
         ttsCloudEngineControl.setEnabled(ttsCloud);
         ttsGoogleConfig.setVisible(!edge);
         ttsEdgeHint.setVisible(edge);
@@ -466,6 +498,7 @@ public class AiServicesSettingsPanel extends JPanel {
                 || selectedProvider() != savedProvider
                 || selectedTtsProvider() != savedTtsProvider
                 || googleWaveNetPitchSlider.getValue() != savedGoogleWaveNetPitch
+                || supertonicBoostSlider.getValue() != savedSupertonicBoost
                 || !Objects.equals(newAiKey, savedAiKey)
                 || !Objects.equals(newTtsKey, savedTtsKey)
                 || !Objects.equals(lmAddress, savedLmAddress)
@@ -524,6 +557,7 @@ public class AiServicesSettingsPanel extends JPanel {
         String newAiKey = new String(apiKeyField.getPassword());
         String newTtsKey = new String(ttsKeyField.getPassword());
         int newPitch = googleWaveNetPitchSlider.getValue();
+        int newBoost = supertonicBoostSlider.getValue();
 
         // Every engine names its voices differently, so any engine change - not just local/cloud - invalidates
         // the fleet's stored voices.
@@ -562,6 +596,8 @@ public class AiServicesSettingsPanel extends JPanel {
         systemSession.setTtsApiKey(newTtsKey);
         // Google reads the pitch per request, so a new value needs no restart - just the save.
         systemSession.setGoogleWaveNetPitch(newPitch);
+        // Supertonic reads its boost per utterance, so the same holds.
+        systemSession.setSupertonicBoostPercent(newBoost);
 
         UiBus.publish(new AppLogEvent("AI services config saved"));
         if (brainChanged) UiBus.publish(new RestartBrainEvent());
@@ -578,6 +614,7 @@ public class AiServicesSettingsPanel extends JPanel {
         savedTtsKey = newTtsKey;
         savedTtsProvider = newTtsProvider;
         savedGoogleWaveNetPitch = newPitch;
+        savedSupertonicBoost = newBoost;
 
         clearDirty();
         return true;

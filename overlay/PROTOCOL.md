@@ -43,7 +43,7 @@ An overlay built before colours existed ignores every `col_` key, exactly as it 
 
 ```
 OBJ <title> <subtitle>
-ROW <label> <value>
+ROW <label> <value> <state> [<track>]
 BAR <label> <current> <max> <state>
 END
 ```
@@ -51,6 +51,10 @@ END
 Replaces the objective card atomically. `OBJ` opens it, `ROW`/`BAR` add lines in order,
 `END` commits and triggers a resize+repaint. An empty `subtitle` is allowed. `state` is one of `normal`, `good`, `warn`,
 `critical` and drives the value colour only, never the layout.
+
+`track` is optional: a comma-separated list of states, e.g. `good,good,critical`, drawn as dots on a line between the label and the value, nearest stop on the left, each dot in its own state's colour. The route card uses it for the next stars ahead — green where the star can be scooped, red where it cannot. At most 7 stops (`MAX_TRACK`), laid out on a fixed pitch of 7 slots, so a route running out draws a shorter line rather than spreading its last dots across the card; extras are dropped.
+
+It is a trailing field on `ROW` rather than a verb of its own so that an overlay built before tracks existed, which reads a `ROW`'s first four fields and ignores the rest, still draws the plain label/value row instead of losing it. That is why it did not bump the protocol version.
 
 ```
 CLR

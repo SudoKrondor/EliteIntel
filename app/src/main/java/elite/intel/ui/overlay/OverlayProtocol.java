@@ -195,11 +195,23 @@ public final class OverlayProtocol {
             } else {
                 out.add("ROW" + TAB + sanitize(row.label())
                         + TAB + sanitize(row.value() == null ? "" : row.value())
-                        + TAB + state(row.state()));
+                        + TAB + state(row.state())
+                        + (row.hasTrack() ? TAB + track(row.track()) : ""));
             }
         }
         out.add("END");
         return out;
+    }
+
+    /**
+     * The stops of a track as one comma-separated field, e.g. {@code good,good,critical}.
+     * <p>
+     * One field rather than one per stop, and appended after the state rather than given a verb of its own,
+     * because an overlay built before tracks existed reads a ROW's first four fields and ignores the rest: it
+     * draws the plain label/value row it always did instead of losing the row.
+     */
+    private static String track(List<HudRow.State> stops) {
+        return String.join(",", stops.stream().map(OverlayProtocol::state).toList());
     }
 
     private static String state(HudRow.State state) {
