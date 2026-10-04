@@ -96,9 +96,13 @@ that may legitimately carry different names, which is the divergence the design 
 Frontier's, and Frontier's entries live in the shipped reference file rather than in this table. This table
 records what BindForge knows about entries it might *touch*, and a player-added entry carries one pair.
 
-**Settled 2026-09-13 for Frontier's entries: BindForge never edits one.** A built-in's name and VID/PID pairs
-are Frontier's definition and stay locked; only a `.buttonMap` under its name can be created — see
-[Built-in controllers in My Devices](../02-features/bindforge/alias-designer.md#built-in-controllers-in-my-devices--settled-2026-09-13).
+~~**Settled 2026-09-13 for Frontier's entries: BindForge never edits one.**~~ **Reversed 2026-10-04:** a
+user with the controller attached may rename a Frontier entry or shadow it with one of their own, and from then
+on it is the user's element like any other. Measured safe, and recoverable because BindForge carries Frontier's
+shipped list — see [Built-in controllers in My Devices](../02-features/bindforge/alias-designer.md#built-in-controllers-in-my-devices--settled-2026-09-13)
+and [the first match wins](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12d-two-entries-for-one-vidpid-the-first-in-the-file-wins--measured-2026-10-03).
+**Provenance still governs what BindForge does unasked:** an entry it has not been told is the user's stays
+`FRONTIER` or `UNKNOWN`, and is never touched without the user choosing to.
 
 **Still open, and cheap to defer:** what happens if a player adds `<Alternative>` pairs by hand. Not observed;
 recorded so the single-pair assumption is a decision rather than an oversight.

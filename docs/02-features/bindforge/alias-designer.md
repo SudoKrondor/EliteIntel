@@ -65,10 +65,31 @@ the device is not *not added* — but the entry is not the user's either, and th
 is made against the [shipped stock reference](reference-data/FrontierStock-README.md): `Thrustmaster T-Rudder`
 at `044F:B679` is Frontier's `<T-Rudder>`.
 
-**Its name and VID/PID are locked** (Alan, 2026-09-13). A built-in element is Frontier's **definition**, not a
+**Reversed 2026-10-04 — a built-in can be renamed, or shadowed by an entry of the user's** (Alan). Measured:
+when two elements claim one VID/PID, [the first in the file wins](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12d-two-entries-for-one-vidpid-the-first-in-the-file-wins--measured-2026-10-03),
+and renaming Frontier's `<T-Rudder>` in place loaded normally and survived a game save. The two reasons for
+the lock below no longer hold:
+
+- *"A game update restores Frontier's file."* It can, and that is a wipe like any other: BindForge carries
+  Frontier's shipped list and the user's master, so [the startup check](overview.md#what-the-startup-check-actually-decides)
+  detects it and Apply puts the user's version back.
+- *"Renaming one renames every controller it covers."* True for a rename, which is why **shadowing** is
+  offered beside it: a user element at the top of the file, carrying only the attached controller's VID/PID,
+  wins for that controller and leaves Frontier's element in place for the rest. For a single-pair entry like
+  `<T-Rudder>` the two give the same result.
+
+**Either one is offered only for a controller the user has attached** — the VID/PID comes from the hardware,
+as it does for any device. Both are ordinary user elements from then on: mastered, written
+[at the top of `<Root>`](#what-the-master-actually-is), and a rename goes through the
+[rename transaction](#renaming-a-device), rewriting every `.binds` that names the old element — Frontier's
+name included. *The same test showed what skipping that costs: an inactive preset still naming `T-Rudder`
+logged six `Failed to find GUID` lines.* How the device editor presents rename versus shadow is not designed
+yet.
+
+~~**Its name and VID/PID are locked** (Alan, 2026-09-13). A built-in element is Frontier's **definition**, not a
 label on one stick: `<DualShock4>` matches both DualShock 4 revisions, and `<GamePad>` carries 80 VID/PID pairs,
 so renaming one renames every controller it covers. And a game update that restores Frontier's file would put
-the old name back, leaving `.binds` pointing at a name that no longer exists.
+the old name back, leaving `.binds` pointing at a name that no longer exists.~~
 
 **Its button and axis labels are editable.** They are saved as a `.buttonMap` under Frontier's name —
 `T-Rudder.buttonMap` — which changes nothing about how the game recognises the device. Labels unlock straight
@@ -83,7 +104,7 @@ a reset everywhere.
 
 | | The user's entry | Built-in |
 |---|---|---|
-| Name | editable, as the [rename transaction](#renaming-a-device) | **locked** — Frontier's |
+| Name | editable, as the [rename transaction](#renaming-a-device) | ~~locked~~ renamed or shadowed, when the controller is attached — the entry then becomes the user's (2026-10-04, above) |
 | VID / PID | read-only | read-only |
 | Button and axis labels | editable once the name is confirmed | editable straight away |
 | Undo (reaches every install) | **CLEAR** — the entry and `.buttonMap` | **RESET LABELS** — only a `.buttonMap` BindForge or the user made |
@@ -194,7 +215,12 @@ install goes through first setup rather than being silently overwritten.
 **For device identity, the master is the user's element set — not a copy of a `DeviceMappings.xml`.**
 Holding a whole file as the master would mean pushing one install's stock section into another, which is never
 wanted even though the stock sets agree. `.binds` and `StartPreset` are different: they are shared, whole
-files, and a file master is exactly right for them. *(A refinement to
+files, and a file master is exactly right for them.
+
+**The user's elements go at the top of `<Root>` — settled 2026-10-04.** When two elements claim one VID/PID,
+[the first in the file wins](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12d-two-entries-for-one-vidpid-the-first-in-the-file-wins--measured-2026-10-03),
+so a user's entry written after Frontier's is silently ignored. Writing the user's elements first means
+anything they set up on purpose is what the game uses. Frontier's elements keep their order beneath them. *(A refinement to
 [multi-install-proposal.md](../../multi-install-proposal.md) §2, which describes the master as a file for all
 four domains.)*
 

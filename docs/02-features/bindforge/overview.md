@@ -197,7 +197,7 @@ valid starting `.binds`, or whether the game's own first save does something to 
 |---|---|
 | `.binds` | **one master per file** — every preset in the folder, not only the active one |
 | `StartPreset.#.start` | one master, one file |
-| `DeviceMappings.xml` | [the user's element set](alias-designer.md#what-the-master-actually-is); Frontier's stock entries are never mastered, never pushed |
+| `DeviceMappings.xml` | [the user's element set](alias-designer.md#what-the-master-actually-is), written at the top of `<Root>`; Frontier's stock entries are never mastered, never pushed — **unless the user renames or shadows one, which makes it theirs** ([2026-10-04](alias-designer.md#built-in-controllers-in-my-devices--settled-2026-09-13)) |
 | `.buttonMap` | one master per file the user or BindForge made; Frontier's shipped maps are left alone |
 
 **Every preset is a first-class file, not just the active one.** A user editing a preset they are not

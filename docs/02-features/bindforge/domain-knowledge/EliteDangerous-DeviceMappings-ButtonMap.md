@@ -116,6 +116,55 @@ looked correct and the content was gone. Re-indent what is there; never regenera
 while an edited layout is in place. The session above opened the game normally and did not exercise that
 path.)*
 
+### 1.2d Two entries for one VID/PID: the first in the file wins — measured 2026-10-03
+
+**The question:** can a user give a Frontier-recognised controller a name of their own? Two ways were tried on
+the developer's Steam install, using the Thrustmaster T.Flight pedals (`044F:B679`), which Frontier ships as
+`<T-Rudder>`.
+
+**Test 1 — a duplicate, added after Frontier's entry.** A `<MyRudder>` element carrying the same VID/PID was
+appended at the end of `<Root>`, with a `MyRudder.buttonMap` beside it. **The game ignored it.** The pedals
+stayed `T-Rudder`, with no labels from `MyRudder.buttonMap`. When two elements claim the same VID/PID, **the
+first one in file order wins** (Alan), and the other is never used.
+
+**Test 2 — Frontier's entry renamed in place.** `<T-Rudder>` was renamed to `<MyRudder>` at its own position,
+which left one entry for that hardware. The test recorded:
+
+| | Result |
+|---|---|
+| The active preset (`DualVirpilDawnTreader.4.2.binds`) | loads; it names the pedals `Device="MyRudder"` (2 bindings) |
+| A game save at 00:08:41 (`.binds` and `StartPreset.4.start` written together) | **keeps `MyRudder`** — the game writes the name it resolved |
+| `DeviceMappings.xml` | **not rewritten** by the game after the edit at 23:49 — the renamed entry stands |
+| The inactive preset (`DualVirpilTesting.4.2.binds`) | still names `T-Rudder` 6 times, and `BindingLoadingErrors.log` carries **6× `Failed to find GUID for device: T-Rudder`** |
+
+The active preset's two `T-Rudder` references were changed to `MyRudder` **by hand** (Alan) — the game did not
+rename them. What the game did was keep the new name through its own save, re-emitting `MyRudder` rather than
+reverting to Frontier's.
+
+**Four conclusions:**
+
+1. **Position decides, not authorship.** Nothing in the file marks Frontier's entries, and the game treats
+   them like any other. An entry placed **before** Frontier's wins over it. So BindForge writes the user's
+   elements **at the top of `<Root>`**, where anything the user does on purpose is the one the game uses — and
+   moves a user element it finds further down up to the top (Alan, 2026-10-04).
+2. **Frontier's entries can be renamed or removed without breaking the game.** The rename loaded normally and
+   survived a game save. What makes this safe for BindForge is that it carries
+   [Frontier's shipped list](../reference-data/FrontierStock-README.md) itself, so any Frontier entry can be
+   put back. *This reverses "BindForge never edits a Frontier entry" (2026-09-13) — see
+   [Built-in controllers in My Devices](../alias-designer.md#built-in-controllers-in-my-devices--settled-2026-09-13).*
+3. **A rename still costs every preset that names the old element** — including presets that are not active,
+   because [the game validates every `.binds` in the folder](#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
+   Test 2's inactive preset is that failure, measured again. A Frontier name is no different from a user's
+   name here: [the rename transaction](../alias-designer.md#renaming-a-device) rewrites every `.binds`.
+4. **Shadowing is the narrower tool for a multi-pair entry.** A user element at the top carrying only *their*
+   controller's VID/PID wins for that controller, and leaves Frontier's element in place for everything else
+   it covers. For `<T-Rudder>` (one pair), shadowing and renaming give the same result. For `<GamePad>`
+   (80 pairs), renaming renames every controller on it, while shadowing takes one.
+
+**Not a reason to prune.** Removing Frontier entries nobody uses is safe by the same evidence, but it buys a
+shorter file at a real cost: a controller plugged in later, such as a friend's gamepad, finds no entry and
+is bound by raw hex. Pruning is something a user may ask for, never something BindForge does to tidy up.
+
 ### 1.3 Additional per-device metadata — confirmed 2026-10-03
 
 The source material noted two possibilities without a confirmed schema. **Both are now confirmed against

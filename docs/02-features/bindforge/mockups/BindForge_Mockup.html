@@ -1600,7 +1600,15 @@ function eiSaveDevice(){
   var d = eiDevices[eiSelectedDevice];
   var rec = eiMaster(d);
 
-  if(!rec.builtin) rec.alias = document.getElementById('alias-name').value;   // a built-in's name is Frontier's
+  // WHY (2026-10-04): a built-in's name is no longer locked. Renaming it makes the entry the user's -
+  // written at the top of DeviceMappings.xml, where the first VID/PID match wins - and Apply rewrites
+  // every .binds that names Frontier's old name. Leaving the name alone keeps it Frontier's.
+  var newAlias = document.getElementById('alias-name').value;
+  if(rec.builtin && newAlias !== rec.alias){
+    rec.renamedFrom = rec.alias;
+    rec.builtin = false;
+  }
+  rec.alias = newAlias;
   rec.aliasConfirmed = true;
   rec.added = true;
   eiPendingConfirm = false;
@@ -1712,9 +1720,12 @@ function eiApplyToInstalls(){
         lines.push(i.label + '  ->  ' + (d.installs[i.id].added ? 'remove ' + d.installs[i.id].alias : 'nothing'));
       } else if(m.builtin){
         lines.push(i.label + '  ->  ' + m.alias + '.buttonMap only  (Frontier’s entry untouched)');
+      } else if(m.renamedFrom){
+        lines.push(i.label + '  ->  ' + m.alias + '  (renamed from Frontier’s ' + m.renamedFrom +
+          ' - entry at the top + .buttonMap; every .binds naming ' + m.renamedFrom + ' is rewritten)');
       } else {
         lines.push(i.label + '  ->  ' + m.alias +
-          (state === 'entry' ? '  (entry + .buttonMap)' : '  (.buttonMap labels)'));
+          (state === 'entry' ? '  (entry at the top + .buttonMap)' : '  (.buttonMap labels)'));
       }
     });
   });
@@ -1773,7 +1784,10 @@ function eiRenderDeviceEditor(){
     var behind = EI_INSTALLS.filter(function(i){ return eiMatchState(d, i.id) !== 'match'; }).length;
     head.innerHTML = strip
       + '<div class="sub">' + (rec.builtin
-          ? 'Frontier&rsquo;s built-in entry &mdash; its name and VID/PID are locked; labels are saved to <code>' + rec.alias + '.buttonMap</code>. '
+          ? 'Frontier&rsquo;s built-in entry &mdash; labels are saved to <code>' + rec.alias + '.buttonMap</code>. '
+            + 'Rename it to make it yours: it is then written at the top of <code>DeviceMappings.xml</code>, where it wins. '
+          : rec.renamedFrom
+          ? 'Your entry, renamed from Frontier&rsquo;s <code>' + rec.renamedFrom + '</code> &mdash; Apply also rewrites every <code>.binds</code> that names <code>' + rec.renamedFrom + '</code>. '
           : rec.added
           ? 'Editing the master &mdash; one <code>DeviceMappings.xml</code> entry and one <code>.buttonMap</code>, applied to every installation. '
           : 'This device has no entry yet &mdash; SAVE adds one to the master. ')
@@ -1786,8 +1800,8 @@ function eiRenderDeviceEditor(){
 
   document.getElementById('alias-name').value = rec.alias;
   var nameInput = document.getElementById('alias-name');
-  nameInput.readOnly = !!rec.builtin;
-  nameInput.title = rec.builtin ? 'Frontier\u2019s name \u2014 locked, because the entry is Frontier\u2019s definition' : '';
+  nameInput.readOnly = false;
+  nameInput.title = rec.builtin ? 'Frontier\u2019s name \u2014 rename it to make the entry yours' : '';
   document.getElementById('alias-clear-btn').style.display = rec.builtin ? 'none' : '';
   document.getElementById('alias-reset-btn').style.display = rec.builtin ? '' : 'none';
   document.getElementById('alias-vid').value  = d.vid;
