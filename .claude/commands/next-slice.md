@@ -1,11 +1,11 @@
 ---
-description: Start the next BindForge build slice from its brief in docs/build/
+description: Start the next BindForge build slice from its brief in docs/05-build-plan/
 argument-hint: "<section>  — core, alias-designer, preset-editor, file-manager, ..."
 ---
 
 Section: $ARGUMENTS
 
-You are building one slice of BindForge. The plan and the routine are in `docs/build/`, and they replace the
+You are building one slice of BindForge. The plan and the routine are in `docs/05-build-plan/`, and they replace the
 conversation history a long session would have carried — so follow them rather than improvising.
 
 # 1. Before anything else
@@ -16,8 +16,8 @@ conversation history a long session would have carried — so follow them rather
 
 # 2. Read
 
-1. `docs/build/README.md` — the routine and the rules every section inherits.
-2. `docs/build/<section>.md` for the section named above. If none was given, list the sections from the README
+1. `docs/05-build-plan/README.md` — the routine and the rules every section inherits.
+2. `docs/05-build-plan/<section>.md` for the section named above. If none was given, list the sections from the README
    and ask which.
    - **If the brief does not exist yet**, writing it is this session's slice. Follow "Writing a new brief" in
      the README, read the section's spec end to end to do it, and stop when the brief is written.
@@ -43,7 +43,7 @@ shared code (`bindforge.io`, `bindforge.rules`, `elite.intel.io`, `AppPaths`).
 
 # 5. When Alan says the tests pass
 
-1. Update `docs/build/<section>.md`: mark the slice **done** with the date, add a hand-off note at the top of
+1. Update `docs/05-build-plan/<section>.md`: mark the slice **done** with the date, add a hand-off note at the top of
    that list — what was decided and where it is recorded, what was found, what the next slice needs — and
    mark the following slice **next**. Fix the brief's "Built" table if it changed.
 2. Run `python scripts/check_docs.py` and fix anything it reports.
