@@ -247,6 +247,29 @@ class CustomCommandHandlerTest {
         assertEquals(KeyBindingExecutor.resolveKeyCode("KEY_LEFTCONTROL"), step.getKeyCode());
     }
 
+    // --- TYPE_TEXT ---
+
+    /**
+     * The commander's "Talk at Vega" command: Enter opens the comms text box, then the text is typed into it.
+     * Both must reach the executor as one sequence, in that order, with the text untouched - {@code @} has no
+     * key of its own, and the trailing space leaves the cursor ready for the commander's own words.
+     */
+    @Test
+    void typeTextStepTypesItsTextAfterTheKeyThatOpenedTheField() {
+        runCustomCommand("""
+                {"id":"m","name":"M","phrases":"p","steps":[
+                  {"type":"RAW_KEY","rawKey":"KEY_ENTER","durationMs":0},
+                  {"type":"TYPE_TEXT","text":"@VEGA "}
+                ]}""");
+
+        assertEquals(1, inputCapture.events.size());
+        List<GameInputStep> steps = inputCapture.events.getFirst().getSteps();
+        assertEquals(2, steps.size());
+        assertEquals(GameInputStep.Type.RAW_KEY, steps.getFirst().getType());
+        assertEquals(GameInputStep.Type.TEXT, steps.get(1).getType());
+        assertEquals("@VEGA ", steps.get(1).getText());
+    }
+
     // --- multi-step ordering ---
 
     @Test

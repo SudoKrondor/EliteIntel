@@ -73,17 +73,52 @@ public final class CustomCommandEditorDialog extends JDialog {
     private CustomCommandDefinition result;
 
     public CustomCommandEditorDialog(Component parent, CustomCommandDefinition customCommand, List<CustomCommandDefinition> existingCustomCommands) {
+        this(parent, customCommand, customCommand, existingCustomCommands);
+    }
+
+    /**
+     * Opens a new custom command pre-filled from {@code source} (see {@link #duplicateDraft}). It saves as a
+     * separate command with its own id, and only once its phrases and action key no longer collide with the
+     * original's - the validator enforces that, so a copy cannot be saved without being edited.
+     */
+    public static CustomCommandEditorDialog duplicateOf(Component parent, CustomCommandDefinition source,
+                                                        List<CustomCommandDefinition> existingCustomCommands) {
+        return new CustomCommandEditorDialog(parent, null, duplicateDraft(source), existingCustomCommands);
+    }
+
+    /**
+     * @param editing the saved command being edited, or {@code null} when creating a new one
+     * @param prefill what the form starts with: {@code editing} itself, a duplicate draft, or {@code null}
+     */
+    private CustomCommandEditorDialog(Component parent, CustomCommandDefinition editing, CustomCommandDefinition prefill,
+                                      List<CustomCommandDefinition> existingCustomCommands) {
         super(
                 SwingUtilities.getWindowAncestor(parent),
-                customCommand == null ? getText("actions.customCommands.editor.newTitle") : getText("actions.customCommands.editor.editTitle"),
+                editing == null ? getText("actions.customCommands.editor.newTitle") : getText("actions.customCommands.editor.editTitle"),
                 ModalityType.APPLICATION_MODAL
         );
         setUndecorated(true);
         this.existingCustomCommands = existingCustomCommands == null ? List.of() : List.copyOf(existingCustomCommands);
-        this.originalId = customCommand == null ? null : customCommand.getId();
-        this.originalActionKey = customCommand == null ? null : customCommand.getActionKey();
-        populate(customCommand);
+        this.originalId = editing == null ? null : editing.getId();
+        this.originalActionKey = editing == null ? null : editing.getActionKey();
+        populate(prefill);
         buildUi();
+    }
+
+    /**
+     * The form contents for a copy of {@code source}: its name with a copy suffix, its phrases and steps, and
+     * no id, action key or description. WHY no key: the original's key is taken, so the empty field prompts the
+     * commander to press Generate rather than meet a uniqueness error on Save. WHY no description: the editor
+     * cannot show or edit it, so a copied one would keep describing the original in the Actions catalog.
+     */
+    static CustomCommandDefinition duplicateDraft(CustomCommandDefinition source) {
+        return new CustomCommandDefinition(
+                "",
+                "",
+                getText("actions.customCommands.editor.copyName", source.getName()),
+                "",
+                source.getPhrases(),
+                source.getSteps());
     }
 
     public CustomCommandDefinition showDialog() {
@@ -636,7 +671,7 @@ public final class CustomCommandEditorDialog extends JDialog {
 
         private static String stepValue(CustomCommandStep step) {
             return switch (step.getType()) {
-                case SPEAK -> step.getText();
+                case SPEAK, TYPE_TEXT -> step.getText();
                 case BINDING_TAP, BINDING_HOLD -> step.getBindingId();
                 case DELAY -> "";
                 case RAW_KEY -> new BindingSlotDisplayFormatter().formatRawKeyStep(step.getRawKey(), step.getRawKeyModifier());

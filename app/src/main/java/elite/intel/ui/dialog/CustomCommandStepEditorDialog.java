@@ -31,6 +31,11 @@ public final class CustomCommandStepEditorDialog extends JDialog {
 
     private final JLabel valueLabel   = AppTheme.hudReadoutLabel("");
     private final HudTextField valueField = new HudTextField();
+    /**
+     * Shown for TYPE_TEXT only: the text goes wherever focus is, so an earlier step must open a text field.
+     */
+    private final HudBanner typeTextHint = HudBanner.multiline(
+            getText("actions.customCommands.editor.step.typeTextHint"), StatusBadge.State.INFO);
 
     private final JLabel bindingLabel = AppTheme.hudReadoutLabel(getText("actions.customCommands.editor.step.bindingId"));
     private final List<CustomCommandStepPickerItem> bindingItems = new ArrayList<>(CustomCommandStepPickerItem.bindingItems());
@@ -73,7 +78,7 @@ public final class CustomCommandStepEditorDialog extends JDialog {
         typeCombo.setSelectedItem(step.getType());
         durationStepper.setValue(Math.max(0, step.getDurationMs()));   // HudStepper.setValue(int)
         switch (step.getType()) {
-            case SPEAK -> valueField.setText(step.getText());
+            case SPEAK, TYPE_TEXT -> valueField.setText(step.getText());
             case BINDING_TAP, BINDING_HOLD ->
                     selectPickerItem(bindingCombo, bindingItems, step.getBindingId(), getText("actions.customCommands.editor.step.unknownBinding"));
             case DELAY -> valueField.setText("");
@@ -121,6 +126,7 @@ public final class CustomCommandStepEditorDialog extends JDialog {
 
         addRow(panel, gbc, getText("actions.customCommands.editor.step.type"), typeCombo);
         addRow(panel, gbc, valueLabel, valueField);
+        addHintRow(panel, gbc, typeTextHint);
         addRow(panel, gbc, bindingLabel, bindingCombo);
         addRow(panel, gbc, rawKeyLabel, rawKeyCombo);
         addRow(panel, gbc, rawModLabel, rawModCombo);
@@ -156,15 +162,39 @@ public final class CustomCommandStepEditorDialog extends JDialog {
         gbc.anchor = GridBagConstraints.CENTER;
     }
 
+    /**
+     * A wrapped note under the field column, as wide as the fields and aligned with them.
+     */
+    private void addHintRow(JPanel panel, GridBagConstraints gbc, JComponent hint) {
+        gbc.gridx = 1;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.WEST;
+        // WHY: a line-wrapping text area reports a height for whatever narrow width it last had, so pack()
+        // stretched the dialog to the full screen height. Lay it out once at the field width and pin the
+        // wrapped height it reports there, as HudConfirmDialog does for its message.
+        int width = HudPalette.HUD_PICKER_FIELD_WIDTH;
+        hint.setSize(width, Short.MAX_VALUE);
+        hint.doLayout();
+        Dimension hintSize = new Dimension(width, hint.getPreferredSize().height);
+        hint.setPreferredSize(hintSize);
+        hint.setMinimumSize(hintSize);
+        panel.add(hint, gbc);
+        gbc.gridy++;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.CENTER;
+    }
+
     private void updateFieldsForType() {
         CustomCommandStep.Type type = selectedType();
-        boolean hasText    = type == CustomCommandStep.Type.SPEAK;
+        boolean hasText    = type == CustomCommandStep.Type.SPEAK || type == CustomCommandStep.Type.TYPE_TEXT;
         boolean hasBinding = type == CustomCommandStep.Type.BINDING_TAP || type == CustomCommandStep.Type.BINDING_HOLD;
         boolean isRawKey   = type == CustomCommandStep.Type.RAW_KEY;
         boolean hasDuration = type == CustomCommandStep.Type.BINDING_HOLD || type == CustomCommandStep.Type.DELAY || isRawKey;
 
         valueLabel.setVisible(hasText);
         valueField.setVisible(hasText);
+        typeTextHint.setVisible(type == CustomCommandStep.Type.TYPE_TEXT);
         bindingLabel.setVisible(hasBinding);
         bindingCombo.setVisible(hasBinding);
         rawKeyLabel.setVisible(isRawKey);
@@ -197,6 +227,9 @@ public final class CustomCommandStepEditorDialog extends JDialog {
         int duration = durationStepper.getValue();
         return switch (type) {
             case SPEAK -> new CustomCommandStep(type, null, 0, value);
+            // WHY: typed exactly as entered - a trailing space after "@VEGA" is what leaves the cursor ready
+            // for the commander's own words.
+            case TYPE_TEXT -> new CustomCommandStep(type, null, 0, valueField.getText());
             case BINDING_TAP -> new CustomCommandStep(type, selectedPickerId(bindingCombo), 0, null);
             case BINDING_HOLD -> new CustomCommandStep(type, selectedPickerId(bindingCombo), duration, null);
             case DELAY -> new CustomCommandStep(type, null, duration, null);
@@ -250,6 +283,7 @@ public final class CustomCommandStepEditorDialog extends JDialog {
             case DELAY        -> getText("actions.customCommands.editor.step.type.delay");
             case SPEAK        -> getText("actions.customCommands.editor.step.type.speak");
             case RAW_KEY      -> getText("actions.customCommands.editor.step.type.rawKey");
+            case TYPE_TEXT    -> getText("actions.customCommands.editor.step.type.typeText");
         };
     }
 

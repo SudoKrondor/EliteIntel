@@ -98,8 +98,8 @@ public final class CustomCommandDefinition {
 
     /**
      * Returns the ordered list of distinct binding IDs used by {@link CustomCommandStep.Type#BINDING_TAP}
-     * and {@link CustomCommandStep.Type#BINDING_HOLD} steps. {@code DELAY}, {@code SPEAK}, and
-     * {@code RAW_KEY} steps are excluded. Duplicate binding IDs appear only once, in
+     * and {@link CustomCommandStep.Type#BINDING_HOLD} steps. Every other step type is excluded.
+     * Duplicate binding IDs appear only once, in
      * first-occurrence order.
      */
     public List<String> distinctBindingIds() {

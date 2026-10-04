@@ -29,13 +29,27 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  */
 public final class CommandDetailsDialog extends JDialog {
 
+    /**
+     * What the Edit, Duplicate and Delete buttons do on a custom command's details, owned by the custom command
+     * list panel. Named so a call site cannot wire one button to another's action by argument order.
+     */
+    public record CustomCommandActions(Runnable edit, Runnable duplicate, Runnable delete) {
+        public CustomCommandActions {
+            Objects.requireNonNull(edit, "edit");
+            Objects.requireNonNull(duplicate, "duplicate");
+            Objects.requireNonNull(delete, "delete");
+        }
+    }
+
     private static final Pattern PARAMETER_BLOCK = Pattern.compile("\\{([^}]+)}");
     private final CommandCatalogEntry entry;
     private final List<String> phrases;
     private final boolean showPhraseCorrection;
     private final String sequenceText;
-    private final Runnable editAction;
-    private final Runnable deleteAction;
+    /**
+     * {@code null} for entries that are not custom commands: no Edit, Duplicate or Delete buttons.
+     */
+    private final CustomCommandActions customCommandActions;
 
     public CommandDetailsDialog(Component parent, CommandCatalogEntry entry) {
         this(parent, entry, AiActionLocalizations.phrasesForAction(entry.id()), true);
@@ -63,11 +77,12 @@ public final class CommandDetailsDialog extends JDialog {
             boolean showPhraseCorrection,
             String sequenceText
     ) {
-        this(parent, entry, phrases, showPhraseCorrection, sequenceText, null, null);
+        this(parent, entry, phrases, showPhraseCorrection, sequenceText, null);
     }
 
     /**
-     * Creates a customCommand details dialog with optional editing actions owned by the custom command list panel.
+     * Creates a customCommand details dialog; {@code customCommandActions} adds its Edit, Duplicate and Delete
+     * buttons, or {@code null} shows none.
      */
     public CommandDetailsDialog(
             Component parent,
@@ -75,16 +90,14 @@ public final class CommandDetailsDialog extends JDialog {
             List<String> phrases,
             boolean showPhraseCorrection,
             String sequenceText,
-            Runnable editAction,
-            Runnable deleteAction
+            CustomCommandActions customCommandActions
     ) {
         super(SwingUtilities.getWindowAncestor(parent), dialogTitle(entry), ModalityType.APPLICATION_MODAL);
         this.entry = Objects.requireNonNull(entry, "entry");
         this.phrases = phrases == null ? List.of() : List.copyOf(phrases);
         this.showPhraseCorrection = showPhraseCorrection;
         this.sequenceText = sequenceText == null ? "" : sequenceText;
-        this.editAction = editAction;
-        this.deleteAction = deleteAction;
+        this.customCommandActions = customCommandActions;
         buildUi();
     }
 
@@ -121,16 +134,11 @@ public final class CommandDetailsDialog extends JDialog {
                 .primary(run)            // right side, outermost
                 .dismiss(close);         // left side
 
-        // edit/delete are optional extras, grouped on the right to the left of primary (run)
-        if (editAction != null) {
-            JButton edit = AppTheme.makeButtonSubtle(getText("actions.customCommands.action.edit"));
-            edit.addActionListener(event -> runAfterClose(editAction));
-            b.extra(edit);
-        }
-        if (deleteAction != null) {
-            JButton delete = AppTheme.makeButtonSubtle(getText("actions.customCommands.action.delete"));
-            delete.addActionListener(event -> runAfterClose(deleteAction));
-            b.extra(delete);
+        // edit/duplicate/delete are custom-command extras, grouped on the right to the left of primary (run)
+        if (customCommandActions != null) {
+            b.extra(actionButton("actions.customCommands.action.edit", customCommandActions.edit()));
+            b.extra(actionButton("actions.customCommands.action.duplicate", customCommandActions.duplicate()));
+            b.extra(actionButton("actions.customCommands.action.delete", customCommandActions.delete()));
         }
 
         setContentPane(AppTheme.hudModalScaffold(b.build()));
@@ -281,6 +289,12 @@ public final class CommandDetailsDialog extends JDialog {
 
     private JLabel detailLabel(String text) {
         return AppTheme.hudReadoutLabel(text);
+    }
+
+    private JButton actionButton(String labelKey, Runnable action) {
+        JButton button = AppTheme.makeButtonSubtle(getText(labelKey));
+        button.addActionListener(event -> runAfterClose(action));
+        return button;
     }
 
     private void runAfterClose(Runnable action) {

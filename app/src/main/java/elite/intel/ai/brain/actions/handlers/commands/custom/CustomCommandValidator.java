@@ -177,7 +177,7 @@ public final class CustomCommandValidator {
                 continue;
             }
             switch (step.getType()) {
-                case SPEAK -> requireText(step.getText(), prefix + "text is required.", errors);
+                case SPEAK, TYPE_TEXT -> requireText(step.getText(), prefix + "text is required.", errors);
                 case BINDING_TAP -> requireText(step.getBindingId(), prefix + "bindingId is required.", errors);
                 case BINDING_HOLD -> {
                     requireText(step.getBindingId(), prefix + "bindingId is required.", errors);

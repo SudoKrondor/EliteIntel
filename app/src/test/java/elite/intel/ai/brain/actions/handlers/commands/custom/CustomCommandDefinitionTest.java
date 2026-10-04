@@ -85,6 +85,15 @@ class CustomCommandDefinitionTest {
     }
 
     @Test
+    void typeTextStepWithBlankTextIsRejected() {
+        CustomCommandDefinition customCommand = deserialize("""
+                {"id": "custom_command_x", "name": "T", "phrases": "p",
+                 "steps": [{"type":"TYPE_TEXT","text":"   "}]}
+                """);
+        assertThrows(IllegalArgumentException.class, customCommand::validate);
+    }
+
+    @Test
     void descriptionIsOptionalAndDefaultsToEmpty() {
         CustomCommandDefinition customCommand = deserialize("""
                 {"id": "custom_command_x", "name": "T", "phrases": "p",

@@ -25,7 +25,12 @@ public final class CustomCommandStep {
          * Requires {@code rawKey} (uppercase Elite key name, e.g. {@code "KEY_W"}).
          * {@code rawKeyModifier} is optional (e.g. {@code "KEY_LEFTCONTROL"}); {@code durationMs} is 0 for a tap.
          */
-        RAW_KEY
+        RAW_KEY,
+        /**
+         * Type {@code text} character by character into whichever game text field has focus. Requires {@code text}.
+         * Reaches characters no single key can, such as {@code @}; an earlier step must open the field.
+         */
+        TYPE_TEXT
     }
 
     private final Type type;
@@ -80,7 +85,7 @@ public final class CustomCommandStep {
             }
             case DELAY ->
                 require(durationMs >= 0, stepIndex, "durationMs");
-            case SPEAK ->
+            case SPEAK, TYPE_TEXT ->
                 require(text != null && !text.isBlank(), stepIndex, "text");
             case RAW_KEY ->
                 require(rawKey != null && !rawKey.isBlank(), stepIndex, "rawKey");

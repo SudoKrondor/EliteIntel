@@ -241,6 +241,25 @@ class CustomCommandRepositoryTest {
         assertEquals("throttle set to percent", loaded.getFirst().getSteps().getFirst().getText());
     }
 
+    /**
+     * The legacy strip runs on every load; it must not trim or collapse text it has nothing to strip from.
+     * The trailing space after "@VEGA" is what leaves the comms cursor ready for the commander's words.
+     */
+    @Test
+    void typeTextKeepsItsWhitespaceAcrossALoad() throws IOException {
+        Files.writeString(customCommandsFile(), """
+                [{"id":"custom_command_talk","actionKey":"custom_command_talk","name":"Talk at Vega",
+                  "description":"","phrases":"talk at vega",
+                  "steps":[{"type":"RAW_KEY","rawKey":"KEY_ENTER","durationMs":0},
+                           {"type":"TYPE_TEXT","text":"@VEGA  hello "}]}]
+                """, StandardCharsets.UTF_8);
+
+        List<CustomCommandDefinition> loaded = repo.load(customCommandsFile());
+
+        assertEquals(1, loaded.size());
+        assertEquals("@VEGA  hello ", loaded.getFirst().getSteps().get(1).getText());
+    }
+
     @Test
     void legacyPlaceholderIsStrippedFromTriggerPhrases() throws IOException {
         // Placeholders used to hint the LLM at values to extract. Nothing extracts values now, so a

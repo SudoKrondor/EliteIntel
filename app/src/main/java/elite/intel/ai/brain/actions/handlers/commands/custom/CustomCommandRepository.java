@@ -285,21 +285,24 @@ public final class CustomCommandRepository {
     }
 
     /**
-     * Strips now-unresolvable {@code ${param}} tokens from a SPEAK step's text.
+     * Strips now-unresolvable {@code ${param}} tokens from a SPEAK step's text. Text without one is left
+     * untouched. WHY: this runs on every load, and other step types carry text whose whitespace is the point
+     * (a TYPE_TEXT {@code "@VEGA "} keeps its trailing space so the cursor is ready for the commander's words).
      */
     private static void stripParamReferences(JsonElement stepElement) {
         if (!stepElement.isJsonObject()) return;
         JsonObject step = stepElement.getAsJsonObject();
+        JsonElement type = step.get("type");
+        if (type == null || !type.isJsonPrimitive() || !"SPEAK".equalsIgnoreCase(type.getAsString())) return;
         JsonElement text = step.get("text");
         if (text == null || !text.isJsonPrimitive()) return;
 
         String original = text.getAsString();
+        if (!PARAM_PLACEHOLDER.matcher(original).find()) return;
         String stripped = collapseWhitespace(PARAM_PLACEHOLDER.matcher(original).replaceAll(""));
-        if (!stripped.equals(original)) {
-            log.warn("Custom command SPEAK text contained parameter references that can no longer be resolved -"
-                    + " speaking \"{}\" instead of \"{}\"", stripped, original);
-            step.addProperty("text", stripped);
-        }
+        log.warn("Custom command SPEAK text contained parameter references that can no longer be resolved -"
+                + " speaking \"{}\" instead of \"{}\"", stripped, original);
+        step.addProperty("text", stripped);
     }
 
     /**

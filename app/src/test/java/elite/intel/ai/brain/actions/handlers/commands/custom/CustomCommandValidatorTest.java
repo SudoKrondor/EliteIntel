@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -69,6 +70,15 @@ class CustomCommandValidatorTest {
         ));
 
         assertFalse(CustomCommandValidator.validate(candidate, List.of(), null).isEmpty());
+    }
+
+    @Test
+    void rejectsTypeTextStepWithoutText() {
+        CustomCommandDefinition candidate = customCommand("custom_command_candidate", "Candidate", "candidate phrase", List.of(
+                new CustomCommandStep(CustomCommandStep.Type.TYPE_TEXT, null, 0, "")
+        ));
+
+        assertEquals(List.of("Step 1: text is required."), CustomCommandValidator.validate(candidate, List.of(), null));
     }
 
     // --- actionKey format and length validation ---

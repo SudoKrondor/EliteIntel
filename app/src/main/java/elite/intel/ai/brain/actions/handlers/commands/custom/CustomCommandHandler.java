@@ -139,6 +139,11 @@ public final class CustomCommandHandler implements IntelAction {
                 UiBus.publish(new AppLogEvent("Custom command step: RAW_KEY " + step.getRawKey() + logSuffix));
                 pendingInput.addInput(GameInputStep.rawKey(keyCode, modCode, step.getDurationMs()));
             }
+
+            case TYPE_TEXT -> {
+                UiBus.publish(new AppLogEvent("Custom command step: TYPE_TEXT \"" + step.getText() + "\""));
+                pendingInput.addInput(GameInputStep.text(step.getText()));
+            }
         }
     }
 
