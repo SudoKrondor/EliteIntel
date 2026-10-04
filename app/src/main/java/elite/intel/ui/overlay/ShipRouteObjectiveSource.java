@@ -30,6 +30,9 @@ import java.util.function.Supplier;
  * "jumps left" on arrival. Taking it from anywhere else would let the card and the voice disagree about one
  * route. Legs are the systems still ahead: the game rewrites NavRoute.json as they are flown, and the system
  * the commander is standing in is not among them.
+ * <p>
+ * The jumps row also carries the next few stars as a track of dots, so a run of stars with no fuel shows up
+ * before the commander is in it.
  */
 public class ShipRouteObjectiveSource implements HudObjectiveSource {
 
@@ -73,7 +76,7 @@ public class ShipRouteObjectiveSource implements HudObjectiveSource {
         nextWaypoint(legs, finalSystem).ifPresent(next ->
                 rows.add(HudRow.of(HudText.get("overlay.card.row.next"), next.toUpperCase())));
         if (jumps > 0) {
-            rows.add(HudRow.of(HudText.get("overlay.card.row.jumps"), String.valueOf(jumps)));
+            rows.add(HudRow.track(HudText.get("overlay.card.row.jumps"), String.valueOf(jumps), fuelStops(legs)));
         }
 
         // No subtitle: the destination is a labelled row, and naming it twice on one card reads as an error.
@@ -143,6 +146,18 @@ public class ShipRouteObjectiveSource implements HudObjectiveSource {
         String next = trimToNull(legs.getFirst().getName());
         if (next == null || next.equalsIgnoreCase(finalSystem)) return Optional.empty();
         return Optional.of(next);
+    }
+
+    /**
+     * The next stars along the route, nearest first, each green where it can be scooped and red where it
+     * cannot. The scoopable flag is the one stored when the route was plotted, the same one the voice reads
+     * from, so the card never calls a star a fuel star the commander was told is not one.
+     */
+    static List<HudRow.State> fuelStops(List<NavRouteDto> legs) {
+        return legs.stream()
+                .limit(HudRow.MAX_TRACK)
+                .map(leg -> leg.isScoopable() ? HudRow.State.GOOD : HudRow.State.CRITICAL)
+                .toList();
     }
 
     private static String trimToNull(String value) {

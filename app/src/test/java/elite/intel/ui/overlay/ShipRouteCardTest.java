@@ -85,6 +85,32 @@ class ShipRouteCardTest {
         assertEquals("COLONIA", valueOf(card, "DESTINATION"));
     }
 
+    /**
+     * The jumps row carries the next stars as a track: green where the star can be scooped, red where it cannot.
+     */
+    @Test
+    void theJumpsRowShowsWhichOfTheNextStarsCanRefuel() {
+        List<NavRouteDto> route = legs("A", "B", "C");
+        route.get(0).setScoopable(true);
+        route.get(2).setScoopable(true);
+
+        HudObjective card = new ShipRouteObjectiveSource(() -> "C", () -> route, () -> null)
+                .currentObjective().orElseThrow();
+        HudRow jumps = card.rows().stream().filter(row -> "JUMPS".equals(row.label())).findFirst().orElseThrow();
+
+        assertEquals("3", jumps.value());
+        assertEquals(List.of(HudRow.State.GOOD, HudRow.State.CRITICAL, HudRow.State.GOOD), jumps.track());
+    }
+
+    @Test
+    void theTrackShowsOnlyTheNearestStars() {
+        List<NavRouteDto> route = legs("A", "B", "C", "D", "E", "F", "G", "H", "I", "J");
+
+        assertEquals(HudRow.MAX_TRACK, ShipRouteObjectiveSource.fuelStops(route).size());
+        assertEquals("10", valueOf(source("J", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J")
+                .currentObjective().orElseThrow(), "JUMPS"), "the count still covers the whole route");
+    }
+
     @Test
     void nextWaypointIgnoresABlankOrDuplicateName() {
         assertEquals(Optional.empty(), ShipRouteObjectiveSource.nextWaypoint(List.of(), "Sol"));

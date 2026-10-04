@@ -183,7 +183,8 @@ What exists instead is BindForge-shaped already, and since 2026-10-03 it lives u
 | `io.BindingsLoader`, `io.KeyBindingsParser` | read and parse `.binds` |
 | `io.BindingsWriter` | write `.binds` |
 | `io.BindingsWorkingCopyRepository` | the **working copy** concept, already implemented |
-| `io.BindingsBackupService` | timestamped backups |
+| `elite.intel.io.TimestampedBackups` | timestamped backups — **moved out of BindForge 2026-10-03**, replacing `io.BindingsBackupService`, because it knows nothing about `.binds` and StarVizion will want it too. See [the shared write path](#the-shared-write-path-is-eliteintelio--built-2026-10-03) |
+| `elite.intel.io.AtomicFiles` | safe replace: temp file, flush, rename over the target |
 | `io.BindingsApplyService`, `io.BindingsApplyException`, `io.BindingSaveResult` | apply-to-game with typed failure |
 | `io.BindingsMonitor` | external-change detection |
 | `rules.BindingConflictScanner`, `rules.BindingConflictRules` | conflict detection |
@@ -606,9 +607,46 @@ through Controlled Replace was unavoidable. Elite-Intel has no such chokepoint. 
 `java.nio.file.Files.write` directly, and nothing stops it.
 
 The principle therefore has to be upheld by the code itself: backup-then-temp-then-atomic-replace, applied
-without exception. There is one write path, not a BindForge one — `BindingsBackupService` and
-`BindingsWriter` are already it, and both should be audited against this rule as they are grown, the writer
-especially, since it is [widening to cover every device](../02-features/bindforge/overview.md#two-narrow-boundaries--one-stays-one-widens).
+without exception.
+
+### The shared write path is `elite.intel.io` — built 2026-10-03
+
+**Two classes, and nothing above them knows what a `.binds` file is:**
+
+| Class | What it does |
+|---|---|
+| `io.AtomicFiles` | `write(target, bytes)` and `copy(source, target)`. The content goes to a uniquely named hidden temp file beside the target, is flushed to disk, then renamed over it. The temp file is removed if any step fails. |
+| `io.TimestampedBackups` | Keeps `<name>.<yyyyMMdd-HHmmss>.bak` copies before a file is replaced, with `-1`, `-2`… when two land in the same second, and pruning to a kept count. Every name ends `.bak`, so a copy is never mistaken for a loadable file. |
+
+*This replaces an earlier note here saying "there is one write path, not a BindForge one — `BindingsBackupService`
+and `BindingsWriter` are already it". Neither was: the same temp-then-rename was written out by hand in six
+places, and `BindingsBackupService` has since been folded into `TimestampedBackups`.*
+
+**What the six copies disagreed about.** `BindingsWriter` and `BindingsApplyService` used a unique temp name
+and deleted it on failure. `BindingsWorkingCopyRepository` (three sites) and `CustomCommandRepository` used a
+fixed `<name>.tmp` and never cleaned it up — so two writers on one file collided, and a failed write left a
+stray file beside the real one. All six now call `AtomicFiles`, which fixed that in production.
+
+**It also flushes before the rename, which none of the six did.** Without it, a power loss *after* the rename
+can leave the target empty on file systems that reorder the rename ahead of the data — the rename trick
+quietly stops working. Opening for `WRITE` and writing nothing leaves the timestamps alone, so it is free.
+
+**Why it is not under `bindforge`.** StarVizion will want the same four behaviours, and any later module will
+too. Under `bindforge` it would have to either depend on BindForge or copy it — and copying it is how six
+versions of four lines came about. Deliberately not named `filemanager`, which would read as BindForge's
+[File Manager](../02-features/bindforge/file-manager.md) screen.
+
+**Changes to it go on `V1.1-Release` and merge up — never converted on a V1.2 branch (Krondor, 2026-10-03).**
+These classes are called from files he ships fixes to weekly. Converting a caller on `V1.2-BindForge` while he
+fixes the same file on `V1.1-Release` produces a conflict in the most sensitive code in the project, and the
+real risk is not a bad merge but silently dropping a rule already shipped to users. The whole conversion was
+therefore done as one change on `V1.1-Release` and merged up.
+
+**Still to come: watching.** A folder watcher is deliberately *not* in this package yet. `AuxiliaryFilesMonitor`
+polls rather than using `WatchService`, because notifications for files another process writes arrive late, get
+merged, or never arrive, and a missed one is never recovered. `DeviceMappings.xml` is written by the game, so
+that applies directly — when BindForge needs to watch device files, it goes here with polling or a watch plus a
+periodic re-check, not a bare `WatchService`.
 
 ---
 

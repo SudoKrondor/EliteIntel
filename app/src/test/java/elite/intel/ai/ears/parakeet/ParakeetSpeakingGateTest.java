@@ -1,7 +1,10 @@
 package elite.intel.ai.ears.parakeet;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.brain.actions.handlers.commands.builtin.InterruptCommand;
+import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.ai.brain.vega.input.BargeInEvent;
+import elite.intel.ai.ears.MicrophoneGate;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.UserInputEvent;
@@ -53,6 +56,40 @@ class ParakeetSpeakingGateTest {
                 "Parakeet must not duplicate the TTS interrupt owned by BargeInController");
         assertTrue(recorder.has(BargeInEvent.class));
         assertTrue(recorder.has(UserInputEvent.class));
+    }
+
+    @Test
+    void anInterruptPhraseHeardOverPlaybackStopsHerAndGoesNoFurther() throws Exception {
+        String interrupt = AiActionLocalizations.phrasesForAction(InterruptCommand.ID).getFirst();
+
+        admitInterruptOnly(interrupt, MicrophoneGate.OPEN_HANDS_FREE);
+
+        assertTrue(recorder.has(BargeInEvent.class));
+        assertFalse(recorder.has(UserInputEvent.class), "nothing heard over playback reaches the LLM");
+    }
+
+    @Test
+    void anythingElseHeardOverPlaybackIsDropped() throws Exception {
+        admitInterruptOnly("plot route home", MicrophoneGate.OPEN_HANDS_FREE);
+
+        assertFalse(recorder.has(BargeInEvent.class));
+        assertFalse(recorder.has(UserInputEvent.class));
+    }
+
+    @Test
+    void asleepNotEvenAnInterruptPhraseGetsPastPlayback() throws Exception {
+        String interrupt = AiActionLocalizations.phrasesForAction(InterruptCommand.ID).getFirst();
+
+        admitInterruptOnly(interrupt, MicrophoneGate.CLOSED_ASLEEP);
+
+        assertFalse(recorder.has(BargeInEvent.class));
+        assertFalse(recorder.has(UserInputEvent.class));
+    }
+
+    private void admitInterruptOnly(String transcript, MicrophoneGate decision) throws Exception {
+        Method method = ParakeetSTTImpl.class.getDeclaredMethod("admitInterruptOnly", String.class, MicrophoneGate.class);
+        method.setAccessible(true);
+        method.invoke(stt, transcript, decision);
     }
 
     private void sendToAi(String transcript, boolean pttCapture) throws Exception {

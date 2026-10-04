@@ -135,7 +135,9 @@
         <Logger name="elite.intel.util.NavigationUtils" level="error"/>
         <Logger name="elite.intel.ai.hands" level="debug"/>
         <!-- The bindings IO and rules code moved out of ai.hands and keeps the debug level it had
-             there. Named one by one so the rest of bindforge keeps the elite.intel default. -->
+             there. Named one by one rather than raising all of elite.intel.bindforge, which is already
+             set to info above for BindForge's own failure diagnostics - these three are louder than
+             that, not louder than elite.intel's error default. -->
         <Logger name="elite.intel.bindforge.io" level="debug"/>
         <Logger name="elite.intel.bindforge.model" level="debug"/>
         <Logger name="elite.intel.bindforge.rules" level="debug"/>

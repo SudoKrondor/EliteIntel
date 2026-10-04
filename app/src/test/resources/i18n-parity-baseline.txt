@@ -12,4 +12,3 @@
 # Deliberate: ai_action_aliases_fr.properties folds the full "systemes" phrasing into
 # transfer_power_to_shields (the two commands have the same in-game effect). A competing
 # French key here would duplicate aliases across sibling commands and worsen routing.
-ai_action_aliases|fr|MISSING|transfer_power_to_ship_systems

@@ -427,6 +427,38 @@ only ever be a second opinion about it. The entries are also throwaway by design
 constantly, and worth nothing once restored from. That is not what a migration — which can never be edited
 afterwards — is for.
 
+**Where the folder is: under Elite-Intel's own data folder — settled 2026-10-03 (Alan).**
+`%LOCALAPPDATA%\elite-intel` on Windows, and whatever `AppPaths.getAppDataBase()` resolves to elsewhere —
+the same root already holding the database, the working copies and the player backups.
+
+*This replaces "that file's own History folder", which read as **beside the file**. For `DeviceMappings.xml`
+and `.buttonMap` that would be inside the game installation, which the patcher replaces wholesale on every
+update — so the history would be deleted by precisely the event a user most wants to step back from. It is
+also the event this whole feature exists because of.*
+
+**What gets kept: whatever is unique — settled 2026-10-03 (Alan).** Before overwriting a file, its current
+content is kept; a file whose content is identical to one already kept during the same operation is not kept
+again.
+
+*This replaces "an Edit History entry per file written, so a single install's `DeviceMappings.xml` or one
+`.buttonMap` can be walked back on its own". The goal was never one-entry-per-install, it was losing nothing
+unique — and per-install was how that was reached when installations were still allowed to differ.
+[Standardisation](overview.md#every-install-gets-the-same-files--settled-2026-09-23) ended that, so an entry
+per installation would now be several byte-identical copies of one file.*
+
+The rule falls out the same way without a special case for first setup:
+
+| When | What differs | What is kept |
+|---|---|---|
+| [First setup](alias-designer.md#first-setup--reconciling-the-installs--settled-2026-09-23) | the installations disagree — that is why it is running | one entry per installation, which is the state worth returning to |
+| Every later Apply | nothing; they all hold the master's last output | one entry |
+| An installation edited outside BindForge, or wiped by a patch | that one installation | its unique content, before it is overwritten |
+
+**Note what is *not* kept for device identity: the master.** For `.binds` and `StartPreset` the master is a
+whole file and can be copied. For device identity [the master is the user's element set](alias-designer.md#what-the-master-actually-is)
+— rows, not a file — so there is nothing to copy, and the file being overwritten is the only file in the
+transaction. That is why the rule is phrased around what is written rather than around the master.
+
 **Browsing and restoring:** the Edit History sub-tab lists entries per managed file domain, each with a timestamp. Selecting an entry shows what it contains and offers a Restore action, which goes through the same confirmation-and-Controlled-Replace path as a Player Backup restore (see [Restore](#restore) above) — the current live version is itself backed up before the historical version is written over it, so restoring never destroys the ability to undo the restore itself.
 
 **Scope:** applies to all four managed file domains uniformly — Bind, Device Identity, Button Map, and Active Preset — since every one of them goes through a write path that can now feed Edit History.

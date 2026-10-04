@@ -77,14 +77,69 @@ on the machine, and `DeviceMappings.xml` is not. So a file every install reads d
 owns privately — which is why a tool cannot treat "which install" as a detail. See
 [Protection is uniform](../overview.md#protection-is-uniform--settled-2026-09-21).
 
-### 1.3 Additional per-device metadata (partially documented)
+### 1.2c The game parses it as XML, and does not reformat it — measured 2026-10-03
 
-The source material notes two further possibilities, without giving a full confirmed schema:
+**The question:** when BindForge writes this file, must it reproduce Frontier's own layout? Their file is
+indented with tabs, crams `<PID>` and `<VID>` onto the opening tag's line, and keeps each `<Alternative>` on
+one line. If the game read any of that as structure, a generated file would fail — and
+[§1.2b](#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22) shows what failure costs.
 
-- Some devices may have **alternative VID/PID pairs** — additional child elements beyond the single `<PID>`/`<VID>` pair shown above. Whether this takes the shape of a wrapper element (e.g. something like `<Alternative>`) or a differently-named sibling pair is **not confirmed**.
-- Some devices may carry a metadata element related to **icon support** in the game's UI, referred to only generically in the source notes as "`SupportsIcons` or similar." The exact tag name and value shape are **not confirmed**.
+**The test.** The developer's Steam install was rewritten with the same content in a different layout, then
+played. Nothing else was changed: identical element order, identical VID/PID values *including their original
+hex case*, the file's `<!-- XB1 Controller -->` comment left where it was inside `<GamePad>`, all five
+`<SupportsIcons>` elements kept, and CRLF line endings preserved so they were not a second variable.
 
-**Practical takeaway:** a parser should not assume every device element has exactly two children (`<PID>`, `<VID>`) and nothing else — real devices may carry additional, currently unconfirmed child elements — but no specific additional tag name (`<Alternative>`, `<SupportsIcons>`, or otherwise) should be hardcoded until confirmed against a real multi-VID device's `DeviceMappings.xml`.
+| | Before | After |
+|---|---|---|
+| Indentation | tabs | four spaces |
+| `<PID>`/`<VID>` | on the opening tag's line | one per line |
+| `<Alternative>` | one line | four lines |
+| Declaration | `<?xml version="1.0" encoding="UTF-8" ?>` | `<?xml version="1.0" encoding="UTF-8"?>` |
+| Tags, VID/PID pairs | 840, 138 | **identical** |
+
+**Three results:**
+
+1. **The bindings loaded normally** — no fallback to `KEYBOARD & MOUSE`, and **no `BindingLoadingErrors.log`
+   was written**, which §1.2b establishes is what an unresolvable device produces.
+2. **The game did not rewrite the file.** It wrote `.binds` and `StartPreset.4.start` during the session, so
+   it was reading and saving normally, and left `DeviceMappings.xml` in the new layout untouched.
+3. **So the file is parsed as XML, not matched as text.** Whitespace, line breaks and the declaration's
+   spacing carry no meaning.
+
+**What this licenses, and what it does not.** BindForge may write clean, readable XML rather than reproducing
+Frontier's inconsistent spacing. It may **not** reconstruct the file from the tags it knows about — see
+[§1.3](#13-additional-per-device-metadata--confirmed-2026-10-03). *The first attempt at this very test silently
+dropped all five `<SupportsIcons>` elements, because it emitted only `PID`, `VID` and `Alternative`. The file
+looked correct and the content was gone. Re-indent what is there; never regenerate it.*
+
+*(Still untested: whether the game rewrites the file when a device is added or removed in the Controls screen
+while an edited layout is in place. The session above opened the game normally and did not exercise that
+path.)*
+
+### 1.3 Additional per-device metadata — confirmed 2026-10-03
+
+The source material noted two possibilities without a confirmed schema. **Both are now confirmed against
+Frontier's own shipped file** ([the stock capture](../reference-data/FrontierStock-README.md)) and the
+developer's edited Steam copy.
+
+- **`<Alternative>` is real, and it is a wrapper.** It holds its own `<PID>`/`<VID>` pair, as a sibling of the
+  element's primary pair. The stock file carries **85** of them across 51 elements — **79 on `<GamePad>`
+  alone**, with `<DualShock4>` holding two. *This is why a provenance record is keyed by element name rather
+  than by VID/PID: keyed on hardware, `<GamePad>` would become eighty rows describing one entry.*
+- **`<SupportsIcons>` is real**, and the name in the source notes was right. Five appear in the developer's
+  file. Its value shape has not been examined, and **BindForge has no reason to read it** — it is Frontier's
+  metadata about their own UI.
+
+**Practical takeaway, and it is sharper than before.** A parser must not assume a device element has exactly
+two children — but the useful rule is the write-side one: **preserve every child element rather than
+regenerating the ones you recognise.** Emitting only `PID`, `VID` and `Alternative` drops `<SupportsIcons>`
+silently, leaving a file that looks correct and has lost content. That failure was produced once, during
+[the formatting test](#12c-the-game-parses-it-as-xml-and-does-not-reformat-it--measured-2026-10-03), by code
+written from this section's own warning.
+
+**There may be more tags than these two.** Neither file is a schema, and a device nobody here owns may carry
+something else again — which is the whole argument for preserving the unrecognised rather than listing the
+recognised.
 
 ### 1.4 File location and per-storefront duplication
 

@@ -112,6 +112,33 @@ static void draw_right(cairo_t *cr, PangoLayout *l, double right, double y, cons
     pango_cairo_show_layout(cr, l);
 }
 
+/// Draws a row's track: one dot per stop on a line, nearest stop on the left,
+/// each dot in its own state's colour. Spans [x0, x1] at a fixed pitch of
+/// MAX_TRACK slots, so fewer stops draw a shorter line, and a span too narrow
+/// for that pitch keeps the stops that still fit rather than overlapping them.
+static void draw_track(cairo_t *cr, const Row *r, double x0, double x1, double cy) {
+    double radius = sz(5);
+    double pitch = (x1 - x0 - radius * 2) / (MAX_TRACK - 1);
+    if (pitch < radius * 3) return;
+
+    int count = r->track_count;
+    double first = x0 + radius;
+    double last = first + pitch * (count - 1);
+
+    if (count > 1) {
+        set_rgb(cr, col(HUD_COL_DISABLED), 1.0);
+        cairo_set_line_width(cr, sz(2));
+        cairo_move_to(cr, first, cy);
+        cairo_line_to(cr, last, cy);
+        cairo_stroke(cr);
+    }
+    for (int i = 0; i < count; i++) {
+        set_rgb(cr, color_for(r->track[i]), 1.0);
+        cairo_arc(cr, first + pitch * i, cy, radius, 0, 2 * G_PI);
+        cairo_fill(cr);
+    }
+}
+
 /// Renders the whole frame and returns the height the content needs, so the
 /// caller can size the window to it. Pass draw=0 to measure only.
 int hud_render(cairo_t *cr, int width, int draw) {
@@ -161,8 +188,18 @@ int hud_render(cairo_t *cr, int width, int draw) {
                         cairo_fill(cr);
                     }
                 }
-            } else if (r->value[0] && draw) {
-                draw_right(cr, body, right, y, r->value, color_for(r->state));
+            } else if (draw) {
+                int tw = 0, th;
+                if (r->value[0]) {
+                    draw_right(cr, body, right, y, r->value, color_for(r->state));
+                    pango_layout_set_text(body, r->value, -1);
+                    pango_layout_get_pixel_size(body, &tw, &th);
+                }
+                // Starts where a progress bar starts, so a track and a bar on
+                // the same card line up under one another.
+                if (r->track_count > 0) {
+                    draw_track(cr, r, pad + sz(150), right - tw - sz(12), y + body_h * 0.5);
+                }
             }
             y += body_h + sz(2);
         }

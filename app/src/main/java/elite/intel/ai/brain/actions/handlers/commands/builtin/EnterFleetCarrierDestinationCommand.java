@@ -17,8 +17,7 @@ import elite.intel.util.PlayBeepEvent;
 import java.util.Collections;
 import java.util.Map;
 
-import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_UI_RIGHT;
-import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_UI_SELECT;
+import static elite.intel.ai.hands.Bindings.GameCommand.*;
 
 /**
  * Owns its own execution: body migrated 1:1 from the legacy EnterNextCarrierDestinationHandler,
@@ -58,6 +57,8 @@ public final class EnterFleetCarrierDestinationCommand implements IntelCommand {
                 GameControllerBus.publish(GameInputSequenceEvent.of(
                         GameInputStep.text(carrierJump.getSystemName()),
                         GameInputStep.rawKey(KeyProcessor.KEY_ENTER, 0, 0),
+                        GameInputStep.delay(500), // Required minimum delay
+                        GameInputStep.bindingTap(BINDING_UI_UP.getGameBinding()),
                         GameInputStep.delay(500), // Required minimum delay
                         GameInputStep.bindingTap(BINDING_UI_RIGHT.getGameBinding()),
                         GameInputStep.delay(500), // Required minimum delay

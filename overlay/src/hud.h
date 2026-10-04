@@ -28,6 +28,10 @@
 #define HUD_POS_UNSET INT_MIN
 
 #define MAX_ROWS   8
+// Stops on a row's track, and the number of slots the renderer lays them out
+// on. A fixed pitch, so a route running out visibly shortens rather than
+// spreading three dots across the whole card. Must match HudRow.MAX_TRACK.
+#define MAX_TRACK  7
 // Exchanges kept on screen. Lines wrap, so a chatty reply is already several
 // rows tall; more than this and the transcript grows over the canopy.
 #define MAX_LINES  3
@@ -94,6 +98,8 @@ typedef struct {
     char  value[128];
     int   current, max;      // max > 0 => progress bar
     State state;
+    State track[MAX_TRACK];  // dots between label and value, nearest first
+    int   track_count;       // 0 => no track
 } Row;
 
 typedef struct {

@@ -65,6 +65,7 @@ public class ParakeetSTTImpl implements EarsInterface {
     private final AtomicBoolean isStopping = new AtomicBoolean(false);
     private final AtomicBoolean isListening = new AtomicBoolean(false);
     private final AtomicBoolean isSpeaking = new AtomicBoolean(false);
+    private final PlaybackEcho playbackEcho = new PlaybackEcho();
     /**
      * The mapped controller button's current level: under push-to-talk this alone is the capture window.
      */
@@ -288,6 +289,7 @@ public class ParakeetSTTImpl implements EarsInterface {
 
             boolean isActive = false;
             boolean capturedWithPttHeld = false;
+            boolean capturedOverPlayback = false;
             int consecutiveVoice = 0;
             int consecutiveSilence = 0;
             audioCollector.reset();
@@ -317,6 +319,8 @@ public class ParakeetSTTImpl implements EarsInterface {
                 );
 
                 boolean pushToTalk = systemSession.isPushToTalkEnabled();
+                // Hands-free only: while VEGA or the radio is playing, the microphone may be hearing the speakers.
+                boolean playbackAudible = !pushToTalk && playbackEcho.isAudible();
                 boolean wasActive;
 
                 if (pushToTalk) {
@@ -379,11 +383,16 @@ public class ParakeetSTTImpl implements EarsInterface {
                         isActive = true;
                         justActivated = true;
                         capturedWithPttHeld = false;
+                        capturedOverPlayback = false;
                         audioCollector.reset();
                         for (byte[] frame : preRoll) audioCollector.write(frame, 0, frame.length);
                         preRoll.clear();
                         log.info("VAD: speech started (rms={}, threshold={})", (int) rms, (int) RMS_THRESHOLD_HIGH);
                     }
+
+                    // Any frame of the capture heard over playback taints all of it: only an interrupt
+                    // phrase may come out of it (see transcribeAndDispatch).
+                    if (isActive && playbackAudible) capturedOverPlayback = true;
 
                     wasActive = isActive;
                     if (isActive && consecutiveSilence >= EXIT_SILENCE_FRAMES) {
@@ -402,7 +411,8 @@ public class ParakeetSTTImpl implements EarsInterface {
 
                 // Under push-to-talk a closed window is not silence - it is everything said with the button
                 // up - so only frames at ambient level may teach the noise profile what the room sounds like.
-                boolean quietEnoughToProfileNoise = !isActive && (!pushToTalk || rms <= RMS_THRESHOLD_LOW);
+                // A frame heard over playback may be the speakers, not the room, so it teaches nothing either.
+                boolean quietEnoughToProfileNoise = !isActive && !playbackAudible && (!pushToTalk || rms <= RMS_THRESHOLD_LOW);
                 if (quietEnoughToProfileNoise && systemSession.isNoiseReductionEnabled()) {
                     SpectralNoiseReducer.getInstance().accumulateNoise(audio, audioLen);
                 }
@@ -410,19 +420,21 @@ public class ParakeetSTTImpl implements EarsInterface {
                 if (wasActive && !isActive && audioCollector.size() > 0) {
                     final byte[] utterance = audioCollector.toByteArray();
                     final boolean pttHeldDuringCapture = capturedWithPttHeld;
+                    final boolean heardOverPlayback = capturedOverPlayback;
                     DumpAudioForTesting.getInstance().dumpAudioAsWav(utterance, SAMPLE_RATE);
                     audioCollector.reset();
                     int pending = pendingTranscriptions.get();
                     if (pending > 0) log.warn("Transcription queue backed up: {} utterances waiting", pending);
                     pendingTranscriptions.incrementAndGet();
-                    submitWithTimeout(utterance, pttHeldDuringCapture);
+                    submitWithTimeout(utterance, pttHeldDuringCapture, heardOverPlayback);
                 }
             }
         }
     }
 
-    private void submitWithTimeout(byte[] utterance, boolean capturedWithPttHeld) {
-        Future<?> future = transcriptionExecutor.submit(() -> transcribeAndDispatch(utterance, capturedWithPttHeld));
+    private void submitWithTimeout(byte[] utterance, boolean capturedWithPttHeld, boolean heardOverPlayback) {
+        Future<?> future = transcriptionExecutor.submit(
+                () -> transcribeAndDispatch(utterance, capturedWithPttHeld, heardOverPlayback));
         Thread watchdog = new Thread(() -> {
             try {
                 future.get(INFERENCE_TIMEOUT_SEC, TimeUnit.SECONDS);
@@ -444,7 +456,7 @@ public class ParakeetSTTImpl implements EarsInterface {
         watchdog.start();
     }
 
-    private void transcribeAndDispatch(byte[] pcmBytes, boolean capturedWithPttHeld) {
+    private void transcribeAndDispatch(byte[] pcmBytes, boolean capturedWithPttHeld, boolean heardOverPlayback) {
         pendingTranscriptions.decrementAndGet();
         try {
             if (systemSession.isNoiseReductionEnabled()) {
@@ -508,6 +520,10 @@ public class ParakeetSTTImpl implements EarsInterface {
 
                 MicrophoneGate decision = MicrophoneGate.decide(capturedWithPttHeld,
                         systemSession.isPushToTalkEnabled(), systemSession.isSleeping());
+                if (heardOverPlayback && decision != MicrophoneGate.OPEN_PUSH_TO_TALK) {
+                    admitInterruptOnly(finalTranscript, decision);
+                    return;
+                }
                 // An asleep transcript is labelled by the sleep gate, so the log never shows ignored words as input.
                 if (decision != MicrophoneGate.CLOSED_ASLEEP) {
                     UiBus.publish(new AppLogEvent("STT: [" + finalTranscript + "]"));
@@ -528,12 +544,29 @@ public class ParakeetSTTImpl implements EarsInterface {
     }
 
     /**
+     * A hands-free capture heard over VEGA or the radio. With speakers the microphone hears her too, so the
+     * transcript may be her own words: nothing in it is an order except an exact interrupt phrase, which stops
+     * her and goes no further. Asleep, not even that - a sleeping VEGA listens for her wake phrase only, and
+     * that is not admitted over her own voice either.
+     */
+    private void admitInterruptOnly(String transcript, MicrophoneGate decision) {
+        if (decision == MicrophoneGate.OPEN_HANDS_FREE && isInterruptPhrase(transcript)) {
+            log.info("Interrupt phrase heard over playback: {}", transcript);
+            UiBus.publish(new AppLogEvent("STT: [" + transcript + "]"));
+            GameEventBus.publish(new BargeInEvent());
+            return;
+        }
+        log.info("STT dropped (heard over playback, not an interrupt phrase): [{}]", transcript);
+    }
+
+    /**
      * Strips leading trash tokens Parakeet prepends to real utterances, e.g.
      * "mm-hmm. fire lasers" → "fire lasers".
      * Returns empty string if the entire transcript is trash (Case 1 block).
      * Matching is punctuation-tolerant: "okay," and "okay." both match "okay".
+     * A lone "and" is what Parakeet makes of a key or controller click picked up hands-free.
      */
-    private @NonNull String stripTrashPrefix(String transcript) {
+    static @NonNull String stripTrashPrefix(String transcript) {
         String[] tokens = transcript.split("\\s+");
         int start = 0;
         outer:
@@ -600,7 +633,8 @@ public class ParakeetSTTImpl implements EarsInterface {
                 return;
             }
             // BargeInController is the sole fan-out owner: it emits one TTS interrupt and interrupts thoughts.
-            // Recognition stays active during playback; every non-control transcript continues as normal input.
+            // A hands-free capture heard over playback never gets here, so this is a push-to-talk order, or a
+            // hands-free one captured before playback began - either continues as normal input.
             GameEventBus.publish(new BargeInEvent());
         } else {
             GameEventBus.publish(new TTSInterruptEvent());
@@ -621,10 +655,14 @@ public class ParakeetSTTImpl implements EarsInterface {
         return false;
     }
 
-    /** Tracks TTS lifecycle only to identify barge-in; recognition and normal command dispatch stay active. */
+    /**
+     * Tracks TTS lifecycle: a hands-free capture heard while anything plays admits only an interrupt phrase
+     * (see {@link PlaybackEcho}), and a transcript dispatched over playback is a barge-in.
+     */
     @Subscribe
     public void onIsSpeakingEvent(IsSpeakingEvent event) {
         isSpeaking.set(event.isSpeaking());
+        playbackEcho.onPlayback(event.isSpeaking());
     }
 
     /**

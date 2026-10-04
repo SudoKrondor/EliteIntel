@@ -169,8 +169,13 @@ every install at once, so the launch backup alone is too blunt to undo it:
 - **A labelled backup immediately before the write**, so there is a restore point meaning *"just before I
   standardised"* rather than *"whatever the last launch happened to catch."* It covers every install the
   operation touches, because the operation spans them.
-- **An [Edit History](file-manager.md#edit-history) entry per file written**, so a single install's
-  `DeviceMappings.xml` or one `.buttonMap` can be walked back on its own without rolling back everything else.
+- **An [Edit History](file-manager.md#edit-history) entry for every file whose content is unique**, so one
+  installation's `DeviceMappings.xml` or one `.buttonMap` can be walked back on its own without rolling back
+  everything else. At first setup the installations disagree — that is why it is running — so this is one
+  entry each, which is the state worth returning to. *Reworded 2026-10-03: this said "an entry per file
+  written", which after [standardisation](overview.md#every-install-gets-the-same-files--settled-2026-09-23)
+  would mean several byte-identical copies of one file on every later Apply. See
+  [what gets kept](file-manager.md#edit-history).*
 
 This makes Edit History a **dependency of first setup**, not a later nicety — worth knowing, since nothing of
 it exists in code yet.

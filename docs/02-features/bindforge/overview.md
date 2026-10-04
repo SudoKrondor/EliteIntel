@@ -567,7 +567,7 @@ That settles what used to be this document's hardest open question — which com
 
 ### There is one writer, and it already exists
 
-`BindingsApplyService`, `BindingsWorkingCopyRepository`, `BindingsWriter`, `BindingsBackupService` and `AppPaths.getBindingsWorkingDir()` are **BindForge's pipeline already**. They are not borrowed from a neighbour; the neighbour is the thing being upgraded. The [draft model](#live-file-synchronization) this document describes is the working-copy repository that exists today, with Apply as the only path to a live file — save
+`BindingsApplyService`, `BindingsWorkingCopyRepository`, `BindingsWriter`, `elite.intel.io.TimestampedBackups` and `AppPaths.getBindingsWorkingDir()` are **BindForge's pipeline already**. They are not borrowed from a neighbour; the neighbour is the thing being upgraded. The [draft model](#live-file-synchronization) this document describes is the working-copy repository that exists today, with Apply as the only path to a live file — save
 [three documented exceptions](#writes-outside-apply--the-complete-list), each of which creates something that
 did not exist rather than modifying anything.
 

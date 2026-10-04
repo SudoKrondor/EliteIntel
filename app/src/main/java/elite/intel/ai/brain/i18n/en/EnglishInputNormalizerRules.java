@@ -111,7 +111,7 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
     public List<String> trashPhrases() {
         return List.of(
                 "--", "mm-hmm", "uh-huh", "hmm", "mm", "uh", "um", "ah", "oh", "huh", "eh",
-                "yeah", "yep", "yup", "nope", "it", "an", "cool", "the",
+                "yeah", "yep", "yup", "nope", "it", "an", "and", "cool", "the",
                 "okay", "ok", "got it", "alright", "alrighty", "sure", "right",
                 "hello", "hi", "hey", "bye", "goodbye",
                 "so", "well", "now", "anyway", "actually", "basically", "literally",

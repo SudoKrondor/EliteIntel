@@ -36,6 +36,27 @@ class OverlayProtocolTest {
         assertEquals("END", lines.get(3), "the overlay only swaps the card on END");
     }
 
+    /**
+     * The track rides as a fifth field on an ordinary ROW, so an overlay built before tracks existed reads the
+     * first four and still draws the row.
+     */
+    @Test
+    void aTrackIsOneCommaSeparatedFieldAfterTheState() {
+        List<String> lines = OverlayProtocol.objective(new HudObjective("r", "ROUTE", null, List.of(
+                HudRow.track("JUMPS", "3", List.of(HudRow.State.GOOD, HudRow.State.CRITICAL, HudRow.State.GOOD)),
+                HudRow.of("NEXT", "SOL"))));
+
+        assertEquals("ROW\tJUMPS\t3\tnormal\tgood,critical,good", lines.get(1));
+        assertEquals("ROW\tNEXT\tSOL\tnormal", lines.get(2), "a row with no track gains no field");
+    }
+
+    @Test
+    void aTrackKeepsOnlyAsManyStopsAsTheRendererHasSlots() {
+        HudRow row = HudRow.track("JUMPS", "40", java.util.Collections.nCopies(40, HudRow.State.GOOD));
+
+        assertEquals(HudRow.MAX_TRACK, row.track().size());
+    }
+
     @Test
     void aMissingSubtitleStillEmitsItsField() {
         // The C side splits on tabs by position; dropping the field would shift

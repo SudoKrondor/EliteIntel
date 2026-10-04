@@ -173,6 +173,9 @@ the gate is timed by the thread that owns the capture window, not by the thread 
 
 Because a closed PTT window is not silence, `SpectralNoiseReducer.accumulateNoise` only takes frames at or below `RMS_THRESHOLD_LOW` while PTT is armed - otherwise speech made with the button up would teach the noise profile that the room sounds like a commander.
 
+**Heard over playback (hands-free
+only):** while `IsSpeakingEvent` says VEGA or a radio transmission is playing, and for `PlaybackEcho.TAIL_MS` (300ms) after, the VAD still runs, but any capture with a frame in that window is marked `heardOverPlayback`, and no frame in it teaches the noise profile. After transcription such a capture admits only an exact localized interrupt phrase (`BargeInEvent`, nothing routed to the LLM); everything else is dropped, and asleep even the interrupt is dropped. This is for commanders on speakers, whose microphone would otherwise transcribe VEGA's own voice as an order - speakers and headphones cannot be told apart, so both get the same rule. Push-to-talk is untouched - a held button still captures and barges in over playback.
+
 **Frame monitor:** every processed frame publishes an `AudioMonitorEvent` (via
 `AudioMonitorBus`, not the main `EventBusManager`) containing raw PCM + RMS + thresholds. The waveform visualizer (
 `AudioWaveformPanel`) subscribes to this.
@@ -235,8 +238,8 @@ Per-frame AGC with separate attack (0.40) and release (0.98) smoothing coefficie
 
 ### Trash filtering (`stripTrashPrefix`)
 
-Parakeet occasionally prepends filler tokens (`mm-hmm`, `okay`, etc.) to real utterances.
-`stripTrashPrefix` strips any leading sequence matching `Reducer.trashSttWords`
+Parakeet occasionally prepends filler tokens (`mm-hmm`, `okay`, etc.) to real utterances, and hands-free it transcribes a key or controller click as a lone `and`.
+`stripTrashPrefix` strips any leading sequence matching `InputNormalizerLocalizations.trashPhrases()`
 (punctuation-tolerant), then removes trailing punctuation from the remainder. Transcripts that are entirely trash are silently discarded.
 
 ### Microphone gating (`MicrophoneGate`)
@@ -265,11 +268,8 @@ The prefix must be at the start, which is what stops "do not listen, open the ma
 
 ### TTS gate (`IsSpeakingEvent`)
 
-While the app is speaking (`isSpeaking == true`):
-
-- PTT-captured transcripts: interrupt TTS (`TTSInterruptEvent`) and dispatch normally.
-- Transcripts matching a localized interrupt phrase: interrupt TTS, discard transcript.
-- All other transcripts: silently dropped.
+A hands-free capture heard over playback admits only an interrupt phrase (see *Heard over
+playback* above). A transcript dispatched while the app is speaking - a PTT capture, or a hands-free one captured before playback began - publishes `BargeInEvent` (TTS and thought interrupt) and is dispatched normally; a hands-free transcript that is exactly a localized interrupt phrase only interrupts.
 
 ### Final dispatch
 
@@ -289,7 +289,7 @@ While the app is speaking (`isSpeaking == true`):
 4. Publish `AudioMonitorEvent` on each captured frame (via `AudioMonitorBus.publish`)
    so the waveform visualizer stays live.
 5. Publish `UserInputEvent(transcript)` when transcription completes.
-6. Subscribe to `IsSpeakingEvent` to gate transcripts while TTS is speaking.
+6. Subscribe to `IsSpeakingEvent` and admit only an interrupt phrase from a hands-free capture heard while TTS is speaking (`PlaybackEcho`).
 7. Use `StreamNormalizer` if your backend processes frames in real time rather than complete utterances.
 8. Wire the new implementation in `AppController` / `ApiFactory` alongside the existing provider selection logic.
 
