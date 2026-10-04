@@ -20,7 +20,7 @@ data; most of what the spec describes is still ahead.
 | The tab | `ui.screen.bindings.AliasDesignerPanel` — My Devices above the divergence list, in `BindingsTabPanel` |
 | My Devices — four of its five columns | `bindforge.devices.MyDeviceList` (the union, a pure function), `MyDevice`. Built-ins show `BUILT-IN` in the Alias column |
 | Hardware VID/PID | `bindforge.devices.DeviceIdentities` — from SDL's GUID; confirmed on four controllers, real GUIDs in its test |
-| Frontier's shipped list | `bindforge.devices.FrontierStockDevices`, resource `bindforge/FrontierStock-DeviceMappings.xml` |
+| Frontier's shipped list | `bindforge.devicefiles.FrontierStockDevices`, resource `bindforge/FrontierStock-DeviceMappings.xml` |
 | Divergence list | `DeviceDivergenceScanner`, `DeviceDivergence` (red if `.binds` names the device, yellow otherwise), `BindsDeviceReferences`, `ButtonMapAudit` |
 | What each installation holds | `InstallationDeviceScanner`, run on every refresh; rows in `bindforge_device_installs` |
 | Game Install Locations screen | `ui.screen.bindings.GameInstallLocationsPanel` — in Binding Management, where the spec puts it in File Manager |
@@ -60,7 +60,7 @@ That is A3.
 
 ## Boundaries
 
-- **Owns** `bindforge.devices`, `bindforge.install` and `ui.screen.bindings.AliasDesignerPanel`.
+- **Owns** `bindforge.devices`, `bindforge.devicefiles`, `bindforge.install` and `ui.screen.bindings.AliasDesignerPanel`.
 - **Writes through Core, never around it.** No slice here writes a game file itself.
 - **The Game Install Locations screen belongs to File Manager** — fix bugs in it here if a slice needs to, but its
   move into File Manager is that section's work.

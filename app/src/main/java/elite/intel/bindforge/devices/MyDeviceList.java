@@ -1,6 +1,8 @@
 package elite.intel.bindforge.devices;
 
-import elite.intel.bindforge.devices.DeviceEntry.HardwareId;
+import elite.intel.bindforge.devicefiles.DeviceEntry;
+import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
+import elite.intel.bindforge.devicefiles.FrontierStockDevices;
 import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
 import elite.intel.devices.model.Device;
 import elite.intel.devices.model.DeviceIdentity;

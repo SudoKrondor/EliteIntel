@@ -7,7 +7,17 @@ BindForge owns the game's `.binds` file and the rules about what is in it. The k
 | `bindforge.io` | Finding, parsing, watching, editing, applying and backing up `.binds` files (`BindingsLoader`, `KeyBindingsParser`, `BindingsMonitor`, `BindingsWriter`, `BindingsWorkingCopyRepository`, `BindingsApplyService`, `PlayerBackupService`) and their request/result types. The generic file mechanics they share (atomic replace, timestamped backups) live in `elite.intel.io`, outside BindForge |
 | `bindforge.model` | The shared vocabulary: modifiers, slot types, the game's control sections and row labels (`BindingDisplayNames`), the assignable key list (`EliteKeyboardKeys`) |
 | `bindforge.rules` | Judging a file: conflict detection and its context rules, reserved chords, key availability, the missing-binding auto-assigner and its safe key pool, and the startup check that speaks the results (`KeyBindCheck`) |
-| `bindforge.devices`, `bindforge.install` | V1.2: device mappings and game installations |
+| `bindforge.devicefiles` | V1.2: each installation's `DeviceMappings.xml` and `.buttonMap` files - reading (`DeviceMappingsParser`, `InstallationDeviceScanner`, `ButtonMapAudit`), Frontier's shipped list and who owns an entry (`FrontierStockDevices`, `Provenance`, `ProvenanceRule`), and comparing installations against each other and against `.binds` (`DeviceMappingsComparison`, `DeviceDivergenceScanner`, `BindsDeviceReferences`) |
+| `bindforge.devices` | V1.2: the user's controllers as BindForge lists them - live hardware from `elite.intel.devices` matched to the entries in those files (`MyDeviceList`, `MyDevice`, `DeviceIdentities`) |
+| `bindforge.install` | V1.2: finding game installations (`InstallationRegistry`, `GameInstallationProvider`) |
+
+**Three packages with "device" in the name, three different things:**
+
+| Package | Is about |
+|---|---|
+| `elite.intel.devices` | the hardware, live - polling, push-to-talk, the Device Service |
+| `bindforge.devices` | the user's controllers, as the My Devices list shows them |
+| `bindforge.devicefiles` | the device files inside each game installation |
 
 ---
 

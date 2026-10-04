@@ -20,11 +20,11 @@ once here so no tab builds its own.
 |---|---|
 | Safe replace, timestamped copies, pruning | `elite.intel.io.AtomicFiles`, `elite.intel.io.TimestampedBackups` (`create`, `prune`) — Krondor's, tested. **Never write a game file any other way.** |
 | Device master store | migration `12002`; `db.managers.BindForgeDeviceMasterManager` (devices and their labels), `BindForgeDeviceInstallsManager` (`FoundDevice`, transactional `replaceForInstall`) |
-| What each installation holds | `bindforge.devices.InstallationDeviceScanner`, run on every Alias Designer refresh |
-| Who owns an entry | `bindforge.devices.Provenance`, `ProvenanceRule` — a read only ever yields `FRONTIER` or `UNKNOWN` |
+| What each installation holds | `bindforge.devicefiles.InstallationDeviceScanner`, run on every Alias Designer refresh |
+| Who owns an entry | `bindforge.devicefiles.Provenance`, `ProvenanceRule` — a read only ever yields `FRONTIER` or `UNKNOWN` |
 | Installations | migration `12001`; `bindforge.install.InstallationRegistry` |
 | Settings | migration `12000`; `BindForgeSettingsManager` — `getEditHistoryRetention()` (1–30, default 10), backup destination, backup retention days |
-| Reading device files | `bindforge.devices.DeviceMappingsParser` (path or stream, keeps `<Alternative>`), `FrontierStockDevices` (`ships`, `covering`), `ButtonMapAudit` |
+| Reading device files | `bindforge.devicefiles.DeviceMappingsParser` (path or stream, keeps `<Alternative>`), `FrontierStockDevices` (`ships`, `covering`), `ButtonMapAudit` |
 | `.binds` draft and apply | `bindforge.io.BindingsWorkingCopyRepository` (drafts in `elite-intel/bindings/`), `BindingsApplyService`, `BindingsMonitor` |
 
 **The `.binds` master is only a hash today.** `BindingsWorkingCopyRepository` records a baseline fingerprint
@@ -57,7 +57,7 @@ Growing it touches `bindforge.io` — see C4.
 
 ## Boundaries
 
-- **New BindForge code** goes under `elite.intel.bindforge` — `devices`, `install`, or a new package if Apply
+- **New BindForge code** goes under `elite.intel.bindforge` — `devicefiles` (C1 writes device files), `devices`, `install`, or a new package if Apply
   wants one. Decide in the sources table.
 - **`bindforge.io`, `bindforge.rules`, `elite.intel.io`, `AppPaths`** are shared with V1.1. Slices that need them
   are blocked until the question in [the README](README.md#one-question-to-settle-with-krondor-before-sections-3-5-and-6) is answered.

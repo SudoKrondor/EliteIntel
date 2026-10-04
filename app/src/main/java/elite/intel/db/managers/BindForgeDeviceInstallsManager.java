@@ -1,6 +1,6 @@
 package elite.intel.db.managers;
 
-import elite.intel.bindforge.devices.Provenance;
+import elite.intel.bindforge.devicefiles.Provenance;
 import elite.intel.db.dao.BindForgeDeviceInstallsDao;
 import elite.intel.db.dao.BindForgeDeviceInstallsDao.InstallDeviceRow;
 import elite.intel.db.util.Database;

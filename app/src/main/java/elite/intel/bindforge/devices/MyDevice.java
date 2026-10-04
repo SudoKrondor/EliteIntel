@@ -1,5 +1,7 @@
 package elite.intel.bindforge.devices;
 
+import elite.intel.bindforge.devicefiles.DeviceEntry;
+
 /**
  * One row of the My Devices list: a controller, whether BindForge learned of it from the hardware or from a
  * file.

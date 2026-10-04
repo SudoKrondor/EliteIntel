@@ -1,11 +1,11 @@
 package elite.intel.ui.screen.bindings;
 
-import elite.intel.bindforge.devices.DeviceDivergence;
-import elite.intel.bindforge.devices.DeviceDivergenceScanner;
-import elite.intel.bindforge.devices.DeviceEntry;
-import elite.intel.bindforge.devices.DeviceMappingsParser;
-import elite.intel.bindforge.devices.FrontierStockDevices;
-import elite.intel.bindforge.devices.InstallationDeviceScanner;
+import elite.intel.bindforge.devicefiles.DeviceDivergence;
+import elite.intel.bindforge.devicefiles.DeviceDivergenceScanner;
+import elite.intel.bindforge.devicefiles.DeviceEntry;
+import elite.intel.bindforge.devicefiles.DeviceMappingsParser;
+import elite.intel.bindforge.devicefiles.FrontierStockDevices;
+import elite.intel.bindforge.devicefiles.InstallationDeviceScanner;
 import elite.intel.bindforge.devices.MyDevice;
 import elite.intel.bindforge.devices.MyDeviceList;
 import elite.intel.bindforge.install.GameInstallation;

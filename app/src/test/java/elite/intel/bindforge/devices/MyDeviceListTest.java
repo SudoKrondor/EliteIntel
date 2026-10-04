@@ -1,5 +1,7 @@
 package elite.intel.bindforge.devices;
 
+import elite.intel.bindforge.devicefiles.DeviceEntry;
+import elite.intel.bindforge.devicefiles.FrontierStockDevices;
 import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
 import elite.intel.devices.model.Device;
 import org.junit.jupiter.api.Test;

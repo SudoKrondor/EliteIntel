@@ -1,5 +1,6 @@
 package elite.intel.bindforge.devices;
 
+import elite.intel.bindforge.devicefiles.DeviceEntry;
 import elite.intel.devices.model.Device;
 import elite.intel.devices.model.DeviceIdentity;
 import org.apache.logging.log4j.LogManager;

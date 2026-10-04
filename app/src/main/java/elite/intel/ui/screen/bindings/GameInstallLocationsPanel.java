@@ -1,8 +1,8 @@
 package elite.intel.ui.screen.bindings;
 
-import elite.intel.bindforge.devices.ButtonMapAudit;
-import elite.intel.bindforge.devices.DeviceEntry;
-import elite.intel.bindforge.devices.DeviceMappingsParser;
+import elite.intel.bindforge.devicefiles.ButtonMapAudit;
+import elite.intel.bindforge.devicefiles.DeviceEntry;
+import elite.intel.bindforge.devicefiles.DeviceMappingsParser;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.install.InstallationRegistry;
 import elite.intel.bindforge.install.WindowsGameInstallationProvider;
