@@ -683,14 +683,32 @@ with the master, that is drift to be resolved, not a configuration to be preserv
 
 | Action | Scope | Touches a game installation? |
 |---|---|---|
-| **SAVE** | the device's record in the master | **No** — draft only |
-| **DISCARD** | the device's record in the master | No |
+| **SAVE** | the device's record in the draft | **No** — draft only |
+| **DISCARD** | the device's record in the draft | No |
 | **CLEAR** | the device's entry and its `.buttonMap` — not offered on a built-in | No — see below |
 | **RESET LABELS** | a built-in's `.buttonMap` labels | No — draft only; see [built-ins](#built-in-controllers-in-my-devices--settled-2026-09-13) |
 | **APPLY TO GAME INSTALLS** | **every installation**, and reports per installation | **Yes** |
 
 *The **MIRROR** action is gone, along with the per-installation scoping that qualified CLEAR and RESET LABELS.
 There is one record, so every action reaches it and Apply carries it everywhere.*
+
+*The table said SAVE's scope was "the device's record in the master" while marking it "draft only". The draft
+is right; corrected 2026-10-04.*
+
+**Where the draft lives — settled 2026-10-04 (Alan).** In two database tables shaped like the master's
+(`12003__bindforge_device_draft.sql`, `BindForgeDeviceDraftManager`), not in a working folder of files: the
+master is already rows, so Apply is a plain copy. The first edit copies the **whole** master set into the
+draft; no draft means no saved edits. **Apply copies the draft into the master *before* pushing**
+(`bindforge.devicefiles.DeviceApply`), so a write that fails loses nothing — the edits sit in the master, the
+installation that missed them stops matching it, and the next Apply retries. Applying reports the devices the
+draft removed, because the push itself never removes an entry; whatever removes them (CLEAR, a rename) works
+from that list.
+
+**DISCARD is still two things in this spec**, and which the button does is the Actions slice's to settle:
+throwing away edits not yet saved ([Unsaved Work on Exit](overview.md#unsaved-work-on-exit)), or putting the
+draft back to the master (*"Discard puts everything back"* under
+[retargeting](#retargeting-keeps-the-bindings-and-says-what-it-cannot-promise)). The draft supports both a
+per-device revert and dropping the whole draft.
 
 **SAVE is deliberately the safe one.** It is the button people press by habit, so it must never be the button
 that writes into a live game installation. Applying is a separate, deliberate action at the bottom of the

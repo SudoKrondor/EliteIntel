@@ -207,6 +207,11 @@ than provenance because one file carries all three tables: `bindforge_device_mas
 one change — the master is meaningless without something to compare it against — and splitting them across
 three migrations would only mean three numbers for one schema.
 
+**The device draft followed on 2026-10-04 as `12003__bindforge_device_draft.sql`** — `bindforge_device_draft`
+and `bindforge_device_draft_labels`, the same shape as the master's two tables, plus a one-row marker saying a
+draft exists. Saved edits live there until Apply copies them into the master. See
+[Alias Designer — where the draft lives](../02-features/bindforge/alias-designer.md#actions-and-what-each-one-reaches).
+
 *Deliberately not a specific number.* Krondor's §4 named 12000 as the example; `12000__bindforge_settings.sql`
 took it on 2026-09-28, and `12001__bindforge_installations.sql` took the renumbered one the same day. A
 migration number is never reused or renamed, so whichever file lands first owns the number — which means a

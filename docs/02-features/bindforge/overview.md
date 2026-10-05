@@ -524,7 +524,7 @@ The same reasoning covers file-level non-binding settings such as `KeyboardLayou
 
 **Settled 2026-09-12:** [the conflict dialog](#the-conflict-dialog--settled-2026-09-12) resolves per slot, which is why the grain above is the thing it needed to know.
 
-**Gap:** all of the above exists for `.binds` only. `DeviceMappings.xml` and `.buttonMap` have no draft, no baseline and no staleness check. Extending the same three-fingerprint treatment to them is new work.
+**Gap:** all of the above exists for `.binds` only. `DeviceMappings.xml` and `.buttonMap` have no baseline and no staleness check. Extending the same three-fingerprint treatment to them is new work. *They have a draft since 2026-10-04 — two tables beside the master, see [Alias Designer — where the draft lives](alias-designer.md#actions-and-what-each-one-reaches).*
 
 ## Writing While the Game Is Running
 

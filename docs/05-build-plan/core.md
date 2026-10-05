@@ -26,6 +26,7 @@ once here so no tab builds its own.
 | Settings | migration `12000`; `BindForgeSettingsManager` — `getEditHistoryRetention()` (1–30, default 10), backup destination, backup retention days |
 | Reading device files | `bindforge.devicefiles.DeviceMappingsParser` (path or stream, keeps `<Alternative>`), `FrontierStockDevices` (`ships`, `covering`), `ButtonMapAudit` |
 | Device-file write (C1) | `bindforge.devicefiles.DeviceFilesPush` — Apply for `DeviceMappings.xml` and `.buttonMap`, per installation, with Edit History in `elite-intel/bindings/history/<installId>/`; `DeviceMappingsMerge`, `ButtonMapWriter`, `DeviceFileXml` (the layout). **No caller yet** |
+| Device draft and Apply (C2) | migration `12003`; `db.managers.BindForgeDeviceDraftManager` — the first edit copies the whole master in; `promote()` makes it the master and returns the devices it removed; `revert(masterId)`, `discard()`. `bindforge.devicefiles.DeviceApply` — promote, then `DeviceFilesPush.push()`. **No caller yet** |
 | `.binds` draft and apply | `bindforge.io.BindingsWorkingCopyRepository` (drafts in `elite-intel/bindings/`), `BindingsApplyService`, `BindingsMonitor` |
 
 **The `.binds` master is only a hash today.** `BindingsWorkingCopyRepository` records a baseline fingerprint
@@ -69,8 +70,8 @@ Growing it touches `bindforge.io` — see C4.
 | # | Slice | Status |
 |---|---|---|
 | C1 | **Device-file write** — merge the master's elements into each installation's `DeviceMappings.xml` and `.buttonMap`; keep unique prior content; atomic replace; prune; per installation, reported | **done 2026-10-04** |
-| C2 | **Device draft** — where unapplied device edits live; SAVE writes the draft, APPLY promotes it | **next** — design question first |
-| C3 | **Startup check for device files** — each installation against the master: unchanged, wiped (matches the stock reference), or edited; adopt or revert | ready after doc conflict 1 |
+| C2 | **Device draft** — where unapplied device edits live; SAVE writes the draft, APPLY promotes it | **done 2026-10-04** |
+| C3 | **Startup check for device files** — each installation against the master: unchanged, wiped (matches the stock reference), or edited; adopt or revert | **next** — settle doc conflict 1 with Alan first |
 | C4 | **`.binds` and `StartPreset`** — whole-file master, Edit History on apply, the version-bump merge | blocked — `bindforge.io` |
 | C5 | **Change detection for the install folders** | blocked — `elite.intel.io`; doc conflict 2 |
 | C6 | **Unsaved work on exit** — Save or Discard, never Apply | ready |
@@ -122,6 +123,17 @@ Growing it touches `bindforge.io` — see C4.
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
+
+- **2026-10-04 — C2 built.** The device draft is two tables beside the master (`12003`), not a working folder
+  of files: the master is already rows, so Apply is a plain copy (Alan). **The draft goes into the master before
+  the push**, so a failed write loses no edits. Recorded in [alias-designer.md, Actions](../02-features/bindforge/alias-designer.md#actions-and-what-each-one-reaches).
+  **Found:** a `;` inside a migration comment breaks the runner, which splits on it — `MigrationLayoutTest`
+  catches it. **Later slices owe C2:** *A10* picks which DISCARD the button means (unsaved edits, or the draft
+  back to the master — the spec says both) and acts on `DeviceApply.Result.removed()`. *A6 onboarding and A1
+  first setup* write the master outside Apply — if a draft exists then, the same write must land in it too, or
+  the next Apply drops it. *A11* must clear `previous_name` in the draft as well as the master if a draft exists
+  when a rename completes. **C3 needs:** doc conflict 1 settled first; the install strip and startup check
+  compare against the master, never the draft.
 
 - **2026-10-04 — C1 built.** `DeviceFilesPush.push()` pushes the stored master to every stored installation and
   returns a per-installation `Report`; nothing calls it yet. Decisions are in alias-designer.md under Apply, the

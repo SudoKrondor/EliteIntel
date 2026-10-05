@@ -48,8 +48,8 @@ it is the machinery every tab writes through, so it comes first and is built onl
 
 | # | Section | Brief | Spec | State |
 |---|---|---|---|---|
-| 1 | **Core** — master and draft, Apply, Edit History filling, startup check | [core.md](core.md) | [overview.md](../02-features/bindforge/overview.md) | C1 done; C2 is next |
-| 2 | **Alias Designer** | [alias-designer.md](alias-designer.md) | [alias-designer.md](../02-features/bindforge/alias-designer.md) | device list built; A6 and A8 ready, A1 waits on Core C2 |
+| 1 | **Core** — master and draft, Apply, Edit History filling, startup check | [core.md](core.md) | [overview.md](../02-features/bindforge/overview.md) | C1, C2 done; C3 is next |
+| 2 | **Alias Designer** | [alias-designer.md](alias-designer.md) | [alias-designer.md](../02-features/bindforge/alias-designer.md) | device list built; A1, A6 and A8 ready |
 | 3 | **Preset Editor** | *not yet written* | [preset-editor.md](../02-features/bindforge/preset-editor.md) | nothing built |
 | 4 | **File Manager** — Edit History browsing, auto-backup and retention, restore scope | *not yet written* | [file-manager.md](../02-features/bindforge/file-manager.md) | Install Locations built; Player Backups manual only |
 | 5 | **Bind Editor: editing** — Game Mode, Settings, capture dialog, mouse inputs | *not yet written* | [bind-editor.md](../02-features/bindforge/bind-editor.md) | the grid exists in `BindingProfilePanel` |

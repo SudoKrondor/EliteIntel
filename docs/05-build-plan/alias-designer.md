@@ -69,7 +69,7 @@ That is A3.
 
 | # | Slice | Needs | Status |
 |---|---|---|---|
-| A1 | **First setup** — turn what the installations hold into the master: per element, the four cases, a name conflict routed into the rename, a labelled backup and Edit History before writing | Core C1, C2 | waiting |
+| A1 | **First setup** — turn what the installations hold into the master: per element, the four cases, a name conflict routed into the rename, a labelled backup and Edit History before writing | Core C1, C2 (both done) | ready |
 | A2 | **`.buttonMap` label merge** — one row per input that disagrees, nothing else | A1 | waiting |
 | A3 | **Divergence against the master** — replace installation-against-installation | A1 | waiting |
 | A4 | **Installations markers** — `M`, *not added*, severity colour | A1 | waiting |
@@ -77,7 +77,7 @@ That is A3.
 | A6 | **Onboarding** — the default-name rule and alias validation | Core C1 (done) | ready |
 | A7 | **Automatic registration and hot-plug** — `DeviceBus` connect and disconnect | A6 | waiting |
 | A8 | **`.buttonMap` generation at Elite-Intel startup** — connected, named, none on disk | Core C1 (done) | ready — needs a create-only write, see core.md |
-| A9 | **Device Editor** — inline expansion, install strip, labels, live highlighting | C2 | waiting |
+| A9 | **Device Editor** — inline expansion, install strip, labels, live highlighting | C2 (done) | ready |
 | A10 | **Actions** — SAVE, DISCARD, CLEAR, RESET LABELS, APPLY, reported per installation | A9 | waiting |
 | A11 | **Rename** — every installation first, `.binds` last, all or nothing | A10 | waiting |
 | A12 | **When hardware changes** — a missing device, the identity question, retarget, one missing device at a time | A11 | waiting |
