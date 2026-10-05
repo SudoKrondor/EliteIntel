@@ -522,8 +522,9 @@ see [Storage](#edit-history). The band rule that paragraph described still stand
 everything else BindForge stores: **BindForge owns `12000–12499`**, commander and galaxy work `12500–12999`, per Krondor's <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
 [proposal §4](../../multi-install-proposal.md#4-migrations-one-tree-per-file), accepted 2026-09-24, in the
 shared top-level `db-migration/` tree and never `db-migration/commander/`, which is Krondor's alone. <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
-The range held one file when this was written and now holds four — `12000__bindforge_settings.sql`,
-`12001__bindforge_installations.sql`, `12002__bindforge_devices.sql` and `12003__bindforge_device_draft.sql`. [An applied migration is never edited](../../../CLAUDE.md).
+The range held one file when this was written and now holds five — `12000__bindforge_settings.sql`,
+`12001__bindforge_installations.sql`, `12002__bindforge_devices.sql`, `12003__bindforge_device_draft.sql` and
+`12004__bindforge_device_pending_removal.sql`. [An applied migration is never edited](../../../CLAUDE.md).
 
 ## Export / Import — Considered, Then Cut
 

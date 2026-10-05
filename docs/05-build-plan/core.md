@@ -26,7 +26,7 @@ once here so no tab builds its own.
 | Settings | migration `12000`; `BindForgeSettingsManager` — `getEditHistoryRetention()` (1–30, default 10), backup destination, backup retention days |
 | Reading device files | `bindforge.devicefiles.DeviceMappingsParser` (path or stream, keeps `<Alternative>`), `FrontierStockDevices` (`ships`, `covering`), `ButtonMapAudit` |
 | Device-file write (C1) | `bindforge.devicefiles.DeviceFilesPush` — Apply for `DeviceMappings.xml` and `.buttonMap`, per installation, with Edit History in `elite-intel/bindings/history/<installId>/`; `DeviceMappingsMerge`, `ButtonMapWriter`, `DeviceFileXml` (the layout). **No caller yet** |
-| Device draft and Apply (C2) | migration `12003`; `db.managers.BindForgeDeviceDraftManager` — the first edit copies the whole master in; `promote()` makes it the master and returns the devices it removed; `revert(masterId)`, `discard()`. `bindforge.devicefiles.DeviceApply` — promote, then `DeviceFilesPush.push()`. **No caller yet** |
+| Device draft and Apply (C2) | migrations `12003`, `12004`; `db.managers.BindForgeDeviceDraftManager` — `start()` copies the whole master in (a started draft may hold no edits, so `isStarted()` is not "changed"); `promote()` makes it the master and stores what it removed as pending removals (`BindForgeDeviceMasterManager.pendingRemovals()`, `clearPendingRemoval`); `revert(masterId)`, `discard()`. Master ids change on every promote. `bindforge.devicefiles.DeviceApply` — promote, then `DeviceFilesPush.push()`. **No caller yet** |
 | `.binds` draft and apply | `bindforge.io.BindingsWorkingCopyRepository` (drafts in `elite-intel/bindings/`), `BindingsApplyService`, `BindingsMonitor` |
 
 **The `.binds` master is only a hash today.** `BindingsWorkingCopyRepository` records a baseline fingerprint
@@ -124,12 +124,20 @@ Growing it touches `bindforge.io` — see C4.
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
 
+- **2026-10-04 — C2 review fixes** (`code-integrity-review.md`). Removed devices are now **stored** as pending
+  removals (`12004`, Alan's choice over taking removal out of the draft), not only returned; renaming back to
+  the original name leaves no rename pending; `exists()` became `isStarted()`; promote empties the draft before
+  the master; revert refuses a name clash by name; the draft DAO uses the master DAO on the same handle instead
+  of copying its queries. Recorded in alias-designer.md under Actions. **Left for later, from the review:** the
+  master's own `rename` sets `previous_name` without `COALESCE`, so two renames lose the name on disk (A11);
+  multi-statement master writes in A1/A6 should run in a transaction like the draft manager's.
+
 - **2026-10-04 — C2 built.** The device draft is two tables beside the master (`12003`), not a working folder
   of files: the master is already rows, so Apply is a plain copy (Alan). **The draft goes into the master before
   the push**, so a failed write loses no edits. Recorded in [alias-designer.md, Actions](../02-features/bindforge/alias-designer.md#actions-and-what-each-one-reaches).
   **Found:** a `;` inside a migration comment breaks the runner, which splits on it — `MigrationLayoutTest`
   catches it. **Later slices owe C2:** *A10* picks which DISCARD the button means (unsaved edits, or the draft
-  back to the master — the spec says both) and acts on `DeviceApply.Result.removed()`. *A6 onboarding and A1
+  back to the master — the spec says both) and removes the files for each pending removal, clearing it after. *A6 onboarding and A1
   first setup* write the master outside Apply — if a draft exists then, the same write must land in it too, or
   the next Apply drops it. *A11* must clear `previous_name` in the draft as well as the master if a draft exists
   when a rename completes. **C3 needs:** doc conflict 1 settled first; the install strip and startup check

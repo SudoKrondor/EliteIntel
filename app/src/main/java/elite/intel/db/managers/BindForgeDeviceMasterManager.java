@@ -19,6 +19,10 @@ import java.util.Map;
  * <p>
  * Frontier's shipped entries are never in here. They are read from the stock reference that ships with the
  * application, because this table records only what BindForge might touch.
+ * <p>
+ * <strong>A master device's id is not stable across an Apply.</strong> Applying the draft empties and refills
+ * this table ({@link BindForgeDeviceDraftManager#promote()}), so every device gets a new id. Identify a device
+ * by its name across an Apply, and re-read the rows afterwards.
  */
 public class BindForgeDeviceMasterManager {
 
@@ -139,6 +143,22 @@ public class BindForgeDeviceMasterManager {
     public void remove(long id) {
         Database.withDao(BindForgeDeviceMasterDao.class, dao -> {
             dao.delete(id);
+            return Void.TYPE;
+        });
+    }
+
+    /**
+     * Devices an Apply took out of the master whose entries and {@code .buttonMap} files are still in the
+     * installations, by name. Whatever removes those files works from this list, and clears each name once done.
+     */
+    public List<String> pendingRemovals() {
+        return Database.withDao(BindForgeDeviceMasterDao.class, BindForgeDeviceMasterDao::pendingRemovals);
+    }
+
+    /** Marks a removal finished, once every installation's entry and {@code .buttonMap} for it are gone. */
+    public void clearPendingRemoval(String deviceName) {
+        Database.withDao(BindForgeDeviceMasterDao.class, dao -> {
+            dao.clearPendingRemoval(deviceName);
             return Void.TYPE;
         });
     }

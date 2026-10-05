@@ -684,7 +684,7 @@ with the master, that is drift to be resolved, not a configuration to be preserv
 | Action | Scope | Touches a game installation? |
 |---|---|---|
 | **SAVE** | the device's record in the draft | **No** — draft only |
-| **DISCARD** | the device's record in the draft | No |
+| **DISCARD** | the draft — whether one device or all of it is for the Actions slice to settle, see below | No |
 | **CLEAR** | the device's entry and its `.buttonMap` — not offered on a built-in | No — see below |
 | **RESET LABELS** | a built-in's `.buttonMap` labels | No — draft only; see [built-ins](#built-in-controllers-in-my-devices--settled-2026-09-13) |
 | **APPLY TO GAME INSTALLS** | **every installation**, and reports per installation | **Yes** |
@@ -700,15 +700,22 @@ is right; corrected 2026-10-04.*
 master is already rows, so Apply is a plain copy. The first edit copies the **whole** master set into the
 draft; no draft means no saved edits. **Apply copies the draft into the master *before* pushing**
 (`bindforge.devicefiles.DeviceApply`), so a write that fails loses nothing — the edits sit in the master, the
-installation that missed them stops matching it, and the next Apply retries. Applying reports the devices the
-draft removed, because the push itself never removes an entry; whatever removes them (CLEAR, a rename) works
-from that list.
+installation that missed them stops matching it, and the next Apply retries.
+
+**A device the draft removed is kept as a pending removal** (`12004__bindforge_device_pending_removal.sql`,
+added after review the same day). The push never removes an entry, so the device leaves the master while its
+entry and `.buttonMap` stay in every installation; the list is stored in the same transaction as the Apply, so
+a crash before the cleanup forgets nothing, and a name put back in the master stops being pending. Whatever
+removes the files (CLEAR) works from that list. **A rename does not:** its old `.buttonMap` is found through
+`previous_name`, which Apply carries into the master. **Master ids change on every Apply**, because the
+master is emptied and refilled, so a device is identified by name across one.
 
 **DISCARD is still two things in this spec**, and which the button does is the Actions slice's to settle:
 throwing away edits not yet saved ([Unsaved Work on Exit](overview.md#unsaved-work-on-exit)), or putting the
 draft back to the master (*"Discard puts everything back"* under
 [retargeting](#retargeting-keeps-the-bindings-and-says-what-it-cannot-promise)). The draft supports both a
-per-device revert and dropping the whole draft.
+per-device revert and dropping the whole draft. **A started draft may hold no edits** — the editor starts one
+before reading the rows it changes — so "a draft exists" is not "the user changed something".
 
 **SAVE is deliberately the safe one.** It is the button people press by habit, so it must never be the button
 that writes into a live game installation. Applying is a separate, deliberate action at the bottom of the

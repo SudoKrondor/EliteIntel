@@ -209,7 +209,9 @@ three migrations would only mean three numbers for one schema.
 
 **The device draft followed on 2026-10-04 as `12003__bindforge_device_draft.sql`** — `bindforge_device_draft`
 and `bindforge_device_draft_labels`, the same shape as the master's two tables, plus a one-row marker saying a
-draft exists. Saved edits live there until Apply copies them into the master. See
+draft exists. Saved edits live there until Apply copies them into the master. **`12004` adds
+`bindforge_device_pending_removal`**: devices an Apply took out of the master whose entries are still in the
+installations, kept until whatever removes the files clears them. See
 [Alias Designer — where the draft lives](../02-features/bindforge/alias-designer.md#actions-and-what-each-one-reaches).
 
 *Deliberately not a specific number.* Krondor's §4 named 12000 as the example; `12000__bindforge_settings.sql`

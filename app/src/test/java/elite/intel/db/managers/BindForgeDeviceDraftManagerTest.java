@@ -31,6 +31,7 @@ class BindForgeDeviceDraftManagerTest {
     void aMasterOfTwoDevicesAndNoDraft() {
         draft.discard();
         master.findAll().forEach(row -> master.remove(row.id()));
+        master.pendingRemovals().forEach(master::clearPendingRemoval);
         lvwap = master.record("LVWAP", "3344", "83F4", true).id();
         master.replaceLabels(lvwap, labels("Joy_1", "LV MAIN TRIGGER", "Joy_2", "PINKY"));
         master.record("RVWAP", "3344", "03F5", true);
@@ -38,7 +39,7 @@ class BindForgeDeviceDraftManagerTest {
 
     @Test
     void thereIsNoDraftUntilTheFirstEdit() {
-        assertFalse(draft.exists());
+        assertFalse(draft.isStarted());
         assertTrue(draft.findAll().isEmpty(), "with no draft, the device list reads the master");
     }
 
@@ -46,7 +47,7 @@ class BindForgeDeviceDraftManagerTest {
     void theFirstEditCopiesTheWholeMasterIntoTheDraft() {
         draft.record("TRudder2", "044F", "B679", false);
 
-        assertTrue(draft.exists());
+        assertTrue(draft.isStarted());
         assertEquals(List.of("LVWAP", "RVWAP", "TRudder2"), names(draft.findAll()));
         DraftRow copied = draft.findByName("LVWAP");
         assertEquals(lvwap, copied.masterId(), "a copied device remembers the master row it came from");
@@ -78,7 +79,7 @@ class BindForgeDeviceDraftManagerTest {
         List<String> removed = draft.promote();
 
         assertTrue(removed.isEmpty());
-        assertFalse(draft.exists());
+        assertFalse(draft.isStarted());
         assertTrue(draft.findAll().isEmpty());
         assertEquals(List.of("LVWAP", "RVWAP", "TRudder2"), master.findAll().stream().map(DeviceRow::deviceName).toList());
         assertEquals(labels("Joy_1", "TRIGGER"), master.labelsOf(master.findByName("LVWAP").id()),
@@ -86,16 +87,30 @@ class BindForgeDeviceDraftManagerTest {
     }
 
     /**
-     * Apply never removes anything from a game file, so a device removed in the draft is reported: its entry is
-     * still in every installation, and whatever removes it works from this list.
+     * Apply never removes anything from a game file, so a device removed in the draft is kept as a pending
+     * removal: its entry is still in every installation, and the list has to outlive the call that made it.
      */
     @Test
-    void aRemovedDeviceIsReportedWhenTheDraftIsPromoted() {
+    void aRemovedDeviceIsKeptAsAPendingRemoval() {
         draft.start();
         draft.remove(draft.findByName("RVWAP").id());
 
         assertEquals(List.of("RVWAP"), draft.promote());
         assertNull(master.findByName("RVWAP"));
+        assertEquals(List.of("RVWAP"), master.pendingRemovals(), "stored, not only returned");
+    }
+
+    /** A cleanup must never remove an entry the user has put back in the meantime. */
+    @Test
+    void aDevicePutBackInTheMasterIsNoLongerPendingRemoval() {
+        draft.start();
+        draft.remove(draft.findByName("RVWAP").id());
+        draft.promote();
+
+        draft.record("RVWAP", "3344", "03F5", true);
+        draft.promote();
+
+        assertTrue(master.pendingRemovals().isEmpty());
     }
 
     @Test
@@ -152,7 +167,7 @@ class BindForgeDeviceDraftManagerTest {
         draft.start();
         draft.findAll().forEach(row -> draft.remove(row.id()));
 
-        assertTrue(draft.exists());
+        assertTrue(draft.isStarted());
         assertEquals(List.of("LVWAP", "RVWAP"), draft.promote());
         assertTrue(master.findAll().isEmpty());
     }
@@ -169,7 +184,7 @@ class BindForgeDeviceDraftManagerTest {
 
         draft.discard();
 
-        assertFalse(draft.exists());
+        assertFalse(draft.isStarted());
         assertTrue(draft.findAll().isEmpty());
         assertEquals(2, master.findAll().size());
     }
@@ -207,8 +222,59 @@ class BindForgeDeviceDraftManagerTest {
     void aFailedFirstEditLeavesNoDraft() {
         assertThrows(RuntimeException.class, () -> draft.record(null, "044F", "B679", false));
 
-        assertFalse(draft.exists());
+        assertFalse(draft.isStarted());
         assertTrue(draft.findAll().isEmpty());
+    }
+
+    @Test
+    void renamingBackToTheOriginalNameLeavesNoRenamePending() {
+        draft.start();
+        long row = draft.findByName("LVWAP").id();
+
+        draft.rename(row, "Left");
+        draft.rename(row, "LVWAP");
+
+        assertNull(draft.findByName("LVWAP").previousName(), "the installations already hold this name");
+    }
+
+    /** Opening a device starts a draft before anything is changed, so a started draft is not "unsaved edits". */
+    @Test
+    void startingADraftWithoutEditingLeavesTheDraftEqualToTheMaster() {
+        draft.start();
+
+        assertTrue(draft.isStarted(), "started, though nothing has been changed");
+        assertEquals(List.of("LVWAP", "RVWAP"), names(draft.findAll()));
+        assertTrue(draft.promote().isEmpty());
+        assertEquals(labels("Joy_1", "LV MAIN TRIGGER", "Joy_2", "PINKY"),
+                master.labelsOf(master.findByName("LVWAP").id()));
+    }
+
+    @Test
+    void revertingIsRefusedWhenAnotherDraftDeviceHasTakenTheName() {
+        draft.start();
+        draft.rename(draft.findByName("LVWAP").id(), "Left");
+        long taker = draft.record("LVWAP", "044F", "B679", false).id();
+
+        IllegalStateException refused = assertThrows(IllegalStateException.class, () -> draft.revert(lvwap));
+
+        assertTrue(refused.getMessage().contains("LVWAP"), refused.getMessage());
+        assertNotNull(draft.findByName("Left"), "the refused revert changed nothing");
+        assertEquals(taker, draft.findByName("LVWAP").id());
+    }
+
+    /**
+     * A master row deleted while a draft exists - only a write outside Apply can do that - turns its draft row into
+     * a device added in the draft. Recorded so the behaviour is known rather than discovered.
+     */
+    @Test
+    void aMasterDeviceDeletedDuringADraftBecomesADeviceAddedInTheDraft() {
+        draft.start();
+
+        master.remove(lvwap);
+
+        assertNull(draft.findByName("LVWAP").masterId());
+        assertTrue(draft.promote().isEmpty(), "nothing is reported removed - the draft still holds it");
+        assertNotNull(master.findByName("LVWAP"));
     }
 
     private static List<String> names(List<DraftRow> rows) {

@@ -21,8 +21,9 @@ import java.util.function.Supplier;
 public final class DeviceApply {
 
     /**
-     * @param removed devices the draft removed from the master. Their entries are still in every installation:
-     *                the push adds and updates only, so removing them is the job of whatever asked for it
+     * @param removed devices the draft removed from the master. Their entries are still in every installation,
+     *                since the push adds and updates only - they are stored as pending removals, and this is
+     *                the same list for the caller's report
      * @param report  what happened in each installation
      */
     public record Result(List<String> removed, Report report) {

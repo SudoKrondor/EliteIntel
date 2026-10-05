@@ -27,6 +27,9 @@ public interface BindForgeDeviceMasterDao {
     @SqlQuery("SELECT * FROM bindforge_device_master WHERE device_name = :deviceName")
     DeviceRow findByName(@Bind("deviceName") String deviceName);
 
+    @SqlQuery("SELECT * FROM bindforge_device_master WHERE id = :id")
+    DeviceRow findById(@Bind("id") long id);
+
     /**
      * The master entry for a piece of hardware. Matched case-insensitively by the column collation, because
      * Frontier's file has no case convention and a VID read from hardware need not match the case a file used.
@@ -42,6 +45,29 @@ public interface BindForgeDeviceMasterDao {
                 @Bind("vid") String vid,
                 @Bind("pid") String pid,
                 @Bind("aliasConfirmed") boolean aliasConfirmed);
+
+    /** Inserts a device as the draft holds it, including a rename still to be carried out in the installations. */
+    @SqlUpdate("""
+            INSERT INTO bindforge_device_master (device_name, vid, pid, alias_confirmed, previous_name)
+            VALUES (:deviceName, :vid, :pid, :aliasConfirmed, :previousName)
+            """)
+    void insertWithPreviousName(@Bind("deviceName") String deviceName,
+                                @Bind("vid") String vid,
+                                @Bind("pid") String pid,
+                                @Bind("aliasConfirmed") boolean aliasConfirmed,
+                                @Bind("previousName") String previousName);
+
+    @SqlUpdate("DELETE FROM bindforge_device_master")
+    void deleteAll();
+
+    @SqlUpdate("INSERT OR IGNORE INTO bindforge_device_pending_removal (device_name) VALUES (:deviceName)")
+    void addPendingRemoval(@Bind("deviceName") String deviceName);
+
+    @SqlQuery("SELECT device_name FROM bindforge_device_pending_removal ORDER BY device_name")
+    List<String> pendingRemovals();
+
+    @SqlUpdate("DELETE FROM bindforge_device_pending_removal WHERE device_name = :deviceName")
+    void clearPendingRemoval(@Bind("deviceName") String deviceName);
 
     @SqlUpdate("UPDATE bindforge_device_master SET alias_confirmed = :confirmed WHERE id = :id")
     void setAliasConfirmed(@Bind("id") long id, @Bind("confirmed") boolean confirmed);

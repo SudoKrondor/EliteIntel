@@ -15,8 +15,13 @@ import java.util.List;
  * The device draft - the user's saved but unapplied device edits. Callers go through
  * {@link elite.intel.db.managers.BindForgeDeviceDraftManager} rather than using this directly.
  * <p>
- * Also holds the statements that copy between the draft and the master, because both directions are the draft's
- * operations: starting one copies the master in, and applying one copies it back out.
+ * Also holds the two statements that read the master on the draft's behalf - copying labels in when a draft
+ * starts, and finding what a draft removed. Everything else about the master is {@link BindForgeDeviceMasterDao}'s,
+ * attached to the same handle.
+ * <p>
+ * {@code master_id} is {@code ON DELETE SET NULL}: a master row deleted while a draft exists - by a write outside
+ * Apply - turns its draft row into a device added in the draft. Applying does not rely on that, and empties the
+ * draft before it empties the master.
  */
 @RegisterRowMapper(BindForgeDeviceDraftDao.DraftRowMapper.class)
 public interface BindForgeDeviceDraftDao {
@@ -53,11 +58,15 @@ public interface BindForgeDeviceDraftDao {
     /**
      * Renames a draft device. The name kept is the one the installations hold, which is the master's: renaming
      * twice before an Apply must still find the {@code .buttonMap} under the first name. A device added in the
-     * draft has no files anywhere yet, so it keeps no previous name.
+     * draft has no files anywhere yet, so it keeps no previous name, and nor does one renamed back to the name the
+     * installations already hold - there is nothing left to rename.
      */
     @SqlUpdate("""
             UPDATE bindforge_device_draft
-            SET previous_name = CASE WHEN master_id IS NULL THEN NULL ELSE COALESCE(previous_name, device_name) END,
+            SET previous_name = CASE
+                                    WHEN master_id IS NULL THEN NULL
+                                    WHEN COALESCE(previous_name, device_name) = :deviceName THEN NULL
+                                    ELSE COALESCE(previous_name, device_name) END,
                 device_name   = :deviceName
             WHERE id = :id
             """)
@@ -91,19 +100,7 @@ public interface BindForgeDeviceDraftDao {
     @SqlUpdate("DELETE FROM bindforge_device_draft_labels WHERE device_id = :deviceId")
     void deleteLabels(@Bind("deviceId") long deviceId);
 
-    // --- Copying between the draft and the master ---
-
-    @SqlQuery("SELECT * FROM bindforge_device_master ORDER BY device_name")
-    @RegisterRowMapper(BindForgeDeviceMasterDao.DeviceRowMapper.class)
-    List<BindForgeDeviceMasterDao.DeviceRow> findAllMaster();
-
-    @SqlQuery("SELECT * FROM bindforge_device_master WHERE id = :id")
-    @RegisterRowMapper(BindForgeDeviceMasterDao.DeviceRowMapper.class)
-    BindForgeDeviceMasterDao.DeviceRow findMasterById(@Bind("id") long id);
-
-    @SqlQuery("SELECT * FROM bindforge_device_master WHERE device_name = :deviceName")
-    @RegisterRowMapper(BindForgeDeviceMasterDao.DeviceRowMapper.class)
-    BindForgeDeviceMasterDao.DeviceRow findMasterByName(@Bind("deviceName") String deviceName);
+    // --- Reading the master, for starting a draft and applying one ---
 
     @SqlUpdate("""
             INSERT INTO bindforge_device_draft_labels (device_id, input_token, label)
@@ -118,25 +115,6 @@ public interface BindForgeDeviceDraftDao {
             ORDER BY device_name
             """)
     List<String> masterNamesNotInDraft();
-
-    @SqlUpdate("DELETE FROM bindforge_device_master")
-    void deleteAllMaster();
-
-    @SqlUpdate("""
-            INSERT INTO bindforge_device_master (device_name, vid, pid, alias_confirmed, previous_name)
-            VALUES (:deviceName, :vid, :pid, :aliasConfirmed, :previousName)
-            """)
-    void insertMaster(@Bind("deviceName") String deviceName,
-                      @Bind("vid") String vid,
-                      @Bind("pid") String pid,
-                      @Bind("aliasConfirmed") boolean aliasConfirmed,
-                      @Bind("previousName") String previousName);
-
-    @SqlUpdate("""
-            INSERT INTO bindforge_device_labels (device_id, input_token, label)
-            SELECT :masterId, input_token, label FROM bindforge_device_draft_labels WHERE device_id = :draftId
-            """)
-    void copyLabelsToMaster(@Bind("masterId") long masterId, @Bind("draftId") long draftId);
 
 
     class DraftRowMapper implements RowMapper<DraftRow> {

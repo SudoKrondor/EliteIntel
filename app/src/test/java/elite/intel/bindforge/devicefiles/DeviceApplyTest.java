@@ -72,7 +72,7 @@ class DeviceApplyTest {
 
         assertEquals(Outcome.WRITTEN, result.report().installations().getFirst().outcome());
         assertTrue(Files.readString(steam.controlSchemes().resolve("DeviceMappings.xml")).contains("<RVWAP>"));
-        assertFalse(draft.exists(), "applied edits are no longer a draft");
+        assertFalse(draft.isStarted(), "applied edits are no longer a draft");
     }
 
     /**
