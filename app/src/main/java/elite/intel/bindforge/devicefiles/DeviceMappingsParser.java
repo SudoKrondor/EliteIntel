@@ -6,9 +6,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,7 +44,7 @@ public final class DeviceMappingsParser {
      */
     public static List<DeviceEntry> parse(Path deviceMappings) throws IOException {
         try {
-            Document document = newDocumentBuilder().parse(deviceMappings.toFile());
+            Document document = DeviceFileXml.newDocumentBuilder().parse(deviceMappings.toFile());
             return entriesOf(document);
         } catch (SAXException | ParserConfigurationException e) {
             throw new IOException("Could not read " + deviceMappings + ": " + e.getMessage(), e);
@@ -73,7 +70,7 @@ public final class DeviceMappingsParser {
      */
     public static List<DeviceEntry> parse(InputStream xml, String what) throws IOException {
         try {
-            return entriesOf(newDocumentBuilder().parse(xml));
+            return entriesOf(DeviceFileXml.newDocumentBuilder().parse(xml));
         } catch (SAXException | ParserConfigurationException e) {
             throw new IOException("Could not read " + what + ": " + e.getMessage(), e);
         }
@@ -125,16 +122,5 @@ public final class DeviceMappingsParser {
             }
         }
         return null;
-    }
-
-    // WHY: external entities are switched off. These files come from a game folder rather than the network,
-    // but a DeviceMappings.xml is also something a user can be talked into pasting in from a forum, and
-    // turning off what we never use costs nothing.
-    private static DocumentBuilder newDocumentBuilder() throws ParserConfigurationException {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        factory.setExpandEntityReferences(false);
-        return factory.newDocumentBuilder();
     }
 }

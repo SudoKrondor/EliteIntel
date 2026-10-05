@@ -702,6 +702,27 @@ drift this model exists to remove, so a push that half-lands must be visible
 ([what standardisation owes, #2](overview.md#every-install-gets-the-same-files--settled-2026-09-23)). After a
 partial apply the install strip shows it: the installation that missed the write stops matching the master.
 
+**What Apply does per installation — settled 2026-10-04 (Alan), built in `bindforge.devicefiles.DeviceFilesPush`:**
+
+- **Partial success for every cause, each one named.** A missing folder and a failed write are treated alike:
+  that installation is left as it was and reported with the reason — *"Epic: folder not found"*, *"Frontier:
+  DeviceMappings.xml is locked by another program"* — while the others are written. *A rename is the exception,
+  and needs all of them or none; see [below](#binds-goes-last-and-only-if-every-installation-succeeded).*
+- **Within one installation, all or nothing.** Its `DeviceMappings.xml` and its `.buttonMap` files change
+  together. If one write fails, the ones already written there are put back, so no installation holds a new
+  entry with old labels.
+- **No `DeviceMappings.xml` at all → rebuilt from Frontier's.** Without the file the game loads no bindings,
+  so it is seeded from the stock copy BindForge carries, the user's elements are added, and the report says so.
+- **A `.buttonMap` is written whole from the master.** Labels the master no longer holds — after RESET LABELS,
+  or an axis the device stopped reporting — leave the file too. The replaced file is kept in
+  [Edit History](file-manager.md#edit-history). A device with no labels gets no file.
+- **A built-in still under Frontier's name gets its `.buttonMap` only.** Its element is left exactly where and
+  as it is, per the table above.
+- **Apply adds and updates; it does not remove.** CLEAR, a rename and RESET LABELS each remove something, and
+  each brings its own list of what to remove — the master alone cannot tell a cleared device from an entry
+  BindForge never owned.
+- **A file already matching the master is not rewritten**, so a second Apply with nothing new writes nothing.
+
 **CLEAR, not Delete.** A device cannot be removed from the list while its hardware is attached — it would
 simply reappear, because the list is driven by what is plugged in. What CLEAR removes is the device's
 `DeviceMappings.xml` entry and its matching `.buttonMap`, returning the device to the state it had before it

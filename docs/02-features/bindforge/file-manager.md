@@ -431,6 +431,12 @@ afterwards — is for.
 `%LOCALAPPDATA%\elite-intel` on Windows, and whatever `AppPaths.getAppDataBase()` resolves to elsewhere —
 the same root already holding the database, the working copies and the player backups.
 
+**The path, for device files — built 2026-10-04:** `elite-intel\bindings\history\<installation id>\`, with
+`.buttonMap` copies in a `DeviceButtonMaps\` folder beneath it. Keyed by installation id rather than storefront,
+because two installations' files share a name and the id survives a relocate. Each copy is named
+`<file>.<yyyyMMdd-HHmmss>.bak` by `elite.intel.io.TimestampedBackups`, so the listing sorts as the history.
+`AppPaths.getBindingsWorkingDir()` supplies the root, which kept `AppPaths` — shared with V1.1 — unchanged.
+
 *This replaces "that file's own History folder", which read as **beside the file**. For `DeviceMappings.xml`
 and `.buttonMap` that would be inside the game installation, which the patcher replaces wholesale on every
 update — so the history would be deleted by precisely the event a user most wants to step back from. It is
@@ -503,7 +509,7 @@ here, and what is not:
 | [Retention](#retention) | **does not exist.** Nothing prunes anything; backups accumulate until deleted by hand |
 | [Backup status values](#backup-status-values) | **not reachable yet** — Full / Partial / Custom needs the installation list that [detection](#open) would supply |
 | [Game Install Locations](#game-install-locations) | **not built** — see the section's own [Open](#open) note |
-| [Edit History](#edit-history) | **nothing at all** — no class, no table, no migration |
+| [Edit History](#edit-history) | **writing built for device files** (2026-10-04, `bindforge.devicefiles.DeviceFilesPush` — see [the path](#edit-history)); `.binds` and `StartPreset` not yet, and no browsing or restore |
 
 **Auto-backup and retention are one change, not two.** Today nothing prunes, and that is harmless because
 every backup is a deliberate button press. Add the launch trigger on its own and the folder grows every

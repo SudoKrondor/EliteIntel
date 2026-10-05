@@ -25,6 +25,7 @@ once here so no tab builds its own.
 | Installations | migration `12001`; `bindforge.install.InstallationRegistry` |
 | Settings | migration `12000`; `BindForgeSettingsManager` — `getEditHistoryRetention()` (1–30, default 10), backup destination, backup retention days |
 | Reading device files | `bindforge.devicefiles.DeviceMappingsParser` (path or stream, keeps `<Alternative>`), `FrontierStockDevices` (`ships`, `covering`), `ButtonMapAudit` |
+| Device-file write (C1) | `bindforge.devicefiles.DeviceFilesPush` — Apply for `DeviceMappings.xml` and `.buttonMap`, per installation, with Edit History in `elite-intel/bindings/history/<installId>/`; `DeviceMappingsMerge`, `ButtonMapWriter`, `DeviceFileXml` (the layout). **No caller yet** |
 | `.binds` draft and apply | `bindforge.io.BindingsWorkingCopyRepository` (drafts in `elite-intel/bindings/`), `BindingsApplyService`, `BindingsMonitor` |
 
 **The `.binds` master is only a hash today.** `BindingsWorkingCopyRepository` records a baseline fingerprint
@@ -67,17 +68,17 @@ Growing it touches `bindforge.io` — see C4.
 
 | # | Slice | Status |
 |---|---|---|
-| C1 | **Device-file write** — merge the master's elements into each installation's `DeviceMappings.xml` and `.buttonMap`; keep unique prior content; atomic replace; prune; every installation or none | **next** |
-| C2 | **Device draft** — where unapplied device edits live; SAVE writes the draft, APPLY promotes it | ready — design question first |
+| C1 | **Device-file write** — merge the master's elements into each installation's `DeviceMappings.xml` and `.buttonMap`; keep unique prior content; atomic replace; prune; per installation, reported | **done 2026-10-04** |
+| C2 | **Device draft** — where unapplied device edits live; SAVE writes the draft, APPLY promotes it | **next** — design question first |
 | C3 | **Startup check for device files** — each installation against the master: unchanged, wiped (matches the stock reference), or edited; adopt or revert | ready after doc conflict 1 |
 | C4 | **`.binds` and `StartPreset`** — whole-file master, Edit History on apply, the version-bump merge | blocked — `bindforge.io` |
 | C5 | **Change detection for the install folders** | blocked — `elite.intel.io`; doc conflict 2 |
 | C6 | **Unsaved work on exit** — Save or Discard, never Apply | ready |
 | C7 | **First-time startup** | after Preset Editor can read all four `StartPreset` lines |
 
-### C1 in detail — designed 2026-10-03, decisions 2026-10-04, sources table not yet approved
+### C1 in detail — designed 2026-10-03, built 2026-10-04
 
-**Decided with Alan, 2026-10-04** — to be recorded in the specs when C1 is built:
+**Decided with Alan, 2026-10-04** — recorded in [alias-designer.md, Apply](../02-features/bindforge/alias-designer.md#actions-and-what-each-one-reaches) and [file-manager.md, Edit History](../02-features/bindforge/file-manager.md#edit-history):
 
 1. **Partial success, reported per installation.** A missing folder or a failed write skips that
    installation and names the reason (*"updated 2 of 3 — Epic: folder not found"*). **Within one
@@ -121,6 +122,21 @@ Growing it touches `bindforge.io` — see C4.
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
+
+- **2026-10-04 — C1 built.** `DeviceFilesPush.push()` pushes the stored master to every stored installation and
+  returns a per-installation `Report`; nothing calls it yet. Decisions are in alias-designer.md under Apply, the
+  history path in file-manager.md. **Found:** the first VID/PID match in the file wins, so user elements go at
+  the top ([domain doc §1.2d](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12d-two-entries-for-one-vidpid-the-first-in-the-file-wins--measured-2026-10-03));
+  the built-in name lock was reversed. **Also done this session:** the device-file classes moved to
+  `bindforge.devicefiles` (`bindforge.devices` keeps the user's controllers), and `docs/build/` became
+  `docs/05-build-plan/`, because `.gitignore`'s `build/` had kept it out of git.
+- **What later slices owe C1.** *Removals:* CLEAR, rename (`previous_name`) and RESET LABELS each need an
+  explicit removal list, since the master cannot tell a cleared device from one BindForge never owned.
+  *Rename:* needs all-or-none across installations on top of C1's per-installation unit. *Hand edits after
+  first setup:* overwritten by Apply until C3 exists, recoverable from Edit History only. *A8 (startup
+  `.buttonMap`):* must never overwrite, so it needs a create-only path rather than `push()`.
+- **C2 needs:** where the device draft lives. The master tables are what `push()` reads, so SAVE writing straight
+  into them would make SAVE an unapplied Apply - the design question the slice table names.
 
 - **2026-10-03 — brief written.** Sessions before this one built the master store, the stock reference, the GUID
   derivation, the device list and the installation scan; this brief records their state. C1's design came out of

@@ -74,9 +74,9 @@ That is A3.
 | A3 | **Divergence against the master** — replace installation-against-installation | A1 | waiting |
 | A4 | **Installations markers** — `M`, *not added*, severity colour | A1 | waiting |
 | A5 | **Built-in Devices tab** — Frontier's list, read-only | — | ready |
-| A6 | **Onboarding** — the default-name rule and alias validation | Core C1 | waiting |
+| A6 | **Onboarding** — the default-name rule and alias validation | Core C1 (done) | ready |
 | A7 | **Automatic registration and hot-plug** — `DeviceBus` connect and disconnect | A6 | waiting |
-| A8 | **`.buttonMap` generation at Elite-Intel startup** — connected, named, none on disk | Core C1 | waiting |
+| A8 | **`.buttonMap` generation at Elite-Intel startup** — connected, named, none on disk | Core C1 (done) | ready — needs a create-only write, see core.md |
 | A9 | **Device Editor** — inline expansion, install strip, labels, live highlighting | C2 | waiting |
 | A10 | **Actions** — SAVE, DISCARD, CLEAR, RESET LABELS, APPLY, reported per installation | A9 | waiting |
 | A11 | **Rename** — every installation first, `.binds` last, all or nothing | A10 | waiting |
