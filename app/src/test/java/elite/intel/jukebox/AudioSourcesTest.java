@@ -40,6 +40,7 @@ class AudioSourcesTest {
         assertTrue(AudioSources.isPlayable(Path.of("book.m4b")), "audiobooks arrive as .m4b");
         assertTrue(AudioSources.isPlayable(Path.of("song.ogg")));
         assertTrue(AudioSources.isPlayable(Path.of("song.oga")), "Xiph's own audio extension");
+        assertTrue(AudioSources.isPlayable(Path.of("rip.wav")));
         assertTrue(AudioSources.isPlayable(Path.of("RIPPED.FLAC")),
                 "a file ripped on Windows may well be named .FLAC and is no less playable for it");
     }

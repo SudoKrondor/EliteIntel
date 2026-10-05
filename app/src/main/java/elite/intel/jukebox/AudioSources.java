@@ -34,6 +34,7 @@ final class AudioSources {
         // The extension Xiph actually specifies for Ogg audio. Rarer than .ogg in the wild, but a
         // library tagged by a strict tool will use it, and it is the same file either way.
         BY_EXTENSION.put(".oga", VorbisAudioSource::open);
+        BY_EXTENSION.put(".wav", WavAudioSource::open);
     }
 
     private AudioSources() {
