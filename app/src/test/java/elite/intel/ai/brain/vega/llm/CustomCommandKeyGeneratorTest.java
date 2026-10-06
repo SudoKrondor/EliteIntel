@@ -46,11 +46,17 @@ class CustomCommandKeyGeneratorTest {
         assertEquals("navigate_to_mission", key);
     }
 
+    /**
+     * A key the model has already given another command means the phrases name the same intent; a suffixed
+     * twin ("go_to_mission_2") would be a sibling tool the router cannot tell apart, so it is refused.
+     */
     @Test
-    void appendsSuffixWhenKeyCollidesWithAnExistingCommand() throws Exception {
+    void refusesAKeyAnotherCommandAlreadyOwns() {
         LlmGateway gateway = gatewayReturning(request -> "go_to_mission");
-        String key = CustomCommandKeyGenerator.generate(gateway, "go to mission", List.of("go_to_mission"));
-        assertEquals("go_to_mission_2", key);
+        CustomCommandKeyGenerator.KeyGenerationException failure = assertThrows(
+                CustomCommandKeyGenerator.KeyGenerationException.class,
+                () -> CustomCommandKeyGenerator.generate(gateway, "go to the mission", List.of("GO_TO_MISSION")));
+        assertTrue(failure.getMessage().contains("'go_to_mission'"));
     }
 
     @Test

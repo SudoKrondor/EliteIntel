@@ -59,10 +59,11 @@ public final class CustomCommandKeyGenerator {
      * Generates a unique English action key for {@code phrases}.
      *
      * @param phrases   the command's comma-separated trigger phrases (the colloquial meanings), any language
-     * @param takenKeys action keys already used by other commands, excluded from the result for uniqueness
+     * @param takenKeys action keys already used by other commands; the result is never one of them
      * @return a routing-safe, unique English snake_case key
      * @throws KeyGenerationException when no cloud provider is selected, the model does not respond in
-     *                                time, or it returns nothing usable
+     *                                time, it returns nothing usable, or it names an intent another command
+     *                                already owns
      */
     public static String generate(String phrases, Collection<String> takenKeys) throws KeyGenerationException {
         if (phrases == null || phrases.isBlank()) {
@@ -124,7 +125,19 @@ public final class CustomCommandKeyGenerator {
             log.warn("Action-key generation produced no usable key from model output: {}", raw);
             throw new KeyGenerationException("The language model did not return a usable key. Please try again.");
         }
-        return CustomCommandKeyDeriver.uniquify(base, takenKeys);
+        // WHY refuse rather than suffix: the model named these phrases' intent exactly as it named another
+        // command's, so the router cannot tell them apart either. An "open_comms_2" beside "open_comms" is a
+        // sibling tool that defeats the reflex and leaves the model to pick one at random - most often a
+        // duplicated command whose phrases were only lightly edited.
+        if (isTaken(base, takenKeys)) {
+            throw new KeyGenerationException("These phrases describe the same command as the existing '" + base
+                    + "'. Reword them to say what this command does differently.");
+        }
+        return base;
+    }
+
+    private static boolean isTaken(String key, Collection<String> takenKeys) {
+        return takenKeys != null && takenKeys.stream().anyMatch(key::equalsIgnoreCase);
     }
 
     /**

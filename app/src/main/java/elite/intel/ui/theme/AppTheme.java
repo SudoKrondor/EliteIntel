@@ -543,8 +543,10 @@ public class AppTheme {
      * <ul>
      *   <li>Value colour {@link #HUD_COLOR_ROLE_PRIMARY_ACTION} (enabled) / {@link #HUD_COLOR_ROLE_DISABLED} (disabled) - matches the
      *       renderer-painted value of non-editable combos.</li>
-     *   <li>Text inset {@link #HUD_COMBO_ITEM_INSET_H}/{@link #HUD_COMBO_ITEM_INSET_V}, equal to the
-     *       renderer item inset. FlatLaf's own {@code JTextField.padding} is zeroed so it does not add
+     *   <li>Horizontal text inset {@link #HUD_COMBO_ITEM_INSET_H}, equal to the renderer item inset.
+     *       No vertical inset: the combo's own {@link #hudComboBorder()} already pads the field, and a
+     *       picker is held to {@link #HUD_FIELD_HEIGHT}, so a second vertical inset here leaves the
+     *       text field too short and clips the typed text. FlatLaf's own {@code JTextField.padding} is zeroed so it does not add
      *       on top of our border - FlatLaf computes that padding once, before our border exists, and
      *       would otherwise shift the value text to the right.</li>
      *   <li>{@link #HUD_COMBO_EDITOR_LOCKED} + {@link #HUD_LOCKED_FOREGROUND} so {@link #applyDarkPalette}
@@ -561,10 +563,8 @@ public class AppTheme {
         editor.setCaretColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
         editor.setSelectionColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
         editor.setSelectedTextColor(HUD_COLOR_ROLE_SELECTED_TEXT);
-        // Border carries the full text inset; equals the non-editable renderer item inset.
-        editor.setBorder(new EmptyBorder(
-                HUD_COMBO_ITEM_INSET_V, HUD_COMBO_ITEM_INSET_H,
-                HUD_COMBO_ITEM_INSET_V, HUD_COMBO_ITEM_INSET_H));
+        // Horizontal inset only: the combo border already supplies the vertical padding.
+        editor.setBorder(new EmptyBorder(0, HUD_COMBO_ITEM_INSET_H, 0, HUD_COMBO_ITEM_INSET_H));
         // Neutralise FlatLaf's injected editor padding so only our border defines the inset.
         editor.putClientProperty(FlatClientProperties.TEXT_FIELD_PADDING, new Insets(0, 0, 0, 0));
         editor.setFont(editor.getFont().deriveFont(HUD_FONT_FIELD_VALUE));

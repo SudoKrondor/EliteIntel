@@ -78,8 +78,7 @@ public final class CustomCommandEditorDialog extends JDialog {
 
     /**
      * Opens a new custom command pre-filled from {@code source} (see {@link #duplicateDraft}). It saves as a
-     * separate command with its own id, and only once its phrases and action key no longer collide with the
-     * original's - the validator enforces that, so a copy cannot be saved without being edited.
+     * separate command with its own id, once the commander has written its phrases and generated its key.
      */
     public static CustomCommandEditorDialog duplicateOf(Component parent, CustomCommandDefinition source,
                                                         List<CustomCommandDefinition> existingCustomCommands) {
@@ -106,10 +105,11 @@ public final class CustomCommandEditorDialog extends JDialog {
     }
 
     /**
-     * The form contents for a copy of {@code source}: its name with a copy suffix, its phrases and steps, and
-     * no id, action key or description. WHY no key: the original's key is taken, so the empty field prompts the
-     * commander to press Generate rather than meet a uniqueness error on Save. WHY no description: the editor
-     * cannot show or edit it, so a copied one would keep describing the original in the Actions catalog.
+     * The form contents for a copy of {@code source}: its name with a copy suffix and its steps, and no id,
+     * phrases, action key or description. WHY no phrases: the steps are what a copy reuses, the phrases are
+     * what tells it apart. Copied phrases invite a one-word edit that leaves two commands the router cannot
+     * tell apart, so the commander writes them fresh. WHY no key: it is generated from those phrases. WHY no
+     * description: the editor cannot show or edit it, so a copied one would keep describing the original.
      */
     static CustomCommandDefinition duplicateDraft(CustomCommandDefinition source) {
         return new CustomCommandDefinition(
@@ -117,7 +117,7 @@ public final class CustomCommandEditorDialog extends JDialog {
                 "",
                 getText("actions.customCommands.editor.copyName", source.getName()),
                 "",
-                source.getPhrases(),
+                "",
                 source.getSteps());
     }
 

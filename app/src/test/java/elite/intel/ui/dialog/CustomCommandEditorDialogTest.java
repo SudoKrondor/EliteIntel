@@ -58,12 +58,13 @@ class CustomCommandEditorDialogTest {
     }
 
     /**
-     * A copy keeps what the commander wants to reuse - phrases and steps - but not the original's identity:
-     * no id, so it saves as a new command, no action key, so Generate is the obvious next step, and no
-     * description, which the editor cannot show and would go on describing the original.
+     * A copy keeps what the commander wants to reuse - the steps - but nothing that identifies the original:
+     * no id, so it saves as a new command, no phrases, so it cannot become a near-twin the router cannot tell
+     * apart, no action key, which is generated from the new phrases, and no description, which the editor
+     * cannot show and would go on describing the original.
      */
     @Test
-    void duplicateDraftKeepsPhrasesAndStepsButNotIdentity() {
+    void duplicateDraftKeepsStepsButNotIdentity() {
         List<CustomCommandStep> steps = List.of(
                 new CustomCommandStep(CustomCommandStep.Type.RAW_KEY, null, 0, null, "KEY_ENTER", null),
                 new CustomCommandStep(CustomCommandStep.Type.TYPE_TEXT, null, 0, "@VEGA "));
@@ -76,7 +77,7 @@ class CustomCommandEditorDialogTest {
         assertEquals("", draft.getActionKey());
         assertEquals(getText("actions.customCommands.editor.copyName", "Talk at Vega"), draft.getName());
         assertEquals("", draft.getDescription());
-        assertEquals("talk at vega", draft.getPhrases());
+        assertEquals("", draft.getPhrases());
         assertEquals(steps, draft.getSteps());
     }
 }
