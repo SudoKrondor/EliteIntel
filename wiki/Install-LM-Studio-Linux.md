@@ -249,7 +249,6 @@ Open the **Settings tab** in Elite Intel:
 - **LLM Model**: paste in the model ID string from `curl http://localhost:1234/v1/models`.
 - **Command LLM**: set to the same model ID.
 - **Query LLM**: set to the same model ID.
-- Click **Stop** then **Start** on the AI tab to apply changes.
 
 ---
 

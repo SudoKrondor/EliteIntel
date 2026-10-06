@@ -11,6 +11,8 @@ Elite Intel connects your voice to your ship. No command lists to memorize, no r
 
 Data is sourced in real time from [Spansh](https://spansh.co.uk/) and [EDSM](https://www.edsm.net/).
 
+[[youtube:fo9oIDTzJAs]]
+
 **Supported languages:** English, Spanish, French, German, Italian, Portuguese, Brazilian Portuguese, Ukrainian, Russian
 
 > ### ⚠️ A language model (LLM) is required
@@ -18,7 +20,8 @@ Data is sourced in real time from [Spansh](https://spansh.co.uk/) and [EDSM](htt
 > Run a model locally on your own GPU, or use the **free** cloud tier at
 > 👉 **[console.mistral.ai](https://console.mistral.ai/)** 👈 — no credit card required.
 > See [Free Cloud LLM](cloud-llm-options) or [Choose your LLM](installing-local-llms).
-
+>
+> Providers can change their services at any time and without warning.
 ---
 
 ## Intelligence, Not Just Automation
