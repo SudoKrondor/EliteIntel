@@ -17,3 +17,6 @@ distribution/overlays/elite-intel-overlay filter=lfs diff=lfs merge=lfs -text
 distribution/overlays/*.exe filter=lfs diff=lfs merge=lfs -text
 distribution/overlays/*.dll filter=lfs diff=lfs merge=lfs -text
 distribution/overlays/*.so filter=lfs diff=lfs merge=lfs -text
+# Frontier's stock DeviceMappings.xml is a byte-exact capture (CRLF, sha256 in FrontierStock-README.md)
+app/src/main/resources/bindforge/FrontierStock-DeviceMappings.xml -text
+docs/02-features/bindforge/reference-data/FrontierStock-DeviceMappings.xml -text
