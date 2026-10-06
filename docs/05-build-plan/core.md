@@ -57,6 +57,15 @@ Growing it touches `bindforge.io` — see C4.
    process writes need polling, or a watch plus a periodic re-check, in `elite.intel.io` — see "Still to come:
    watching" in the platform map. `DeviceMappings.xml` is written by the game. **Before C5.**
 
+## Known issues
+
+- **The `.binds` close prompt breaks [Unsaved Work on Exit](../02-features/bindforge/overview.md#unsaved-work-on-exit).**
+  `BindingProfilePanel.promptCloseWithDraft()`, called from `AppView.windowClosing`, is the three-option dialog
+  replaced on 2026-09-06: **Apply to Game** first, then Keep Draft and Discard, in a `JOptionPane`. It fires on an
+  *unapplied* draft, which the spec does not treat as unsaved work. Shipped in V1.1, in files Krondor maintains on
+  `V1.1-Release` — not fixed on this branch. Not settled: whether it goes, or becomes Keep Draft / Discard. Raise
+  with Alan and Krondor; it does not wait on C6.
+
 ## Boundaries
 
 - **New BindForge code** goes under `elite.intel.bindforge` — `devicefiles` (C1 writes device files), `devices`, `install`, or a new package if Apply
@@ -74,7 +83,7 @@ Growing it touches `bindforge.io` — see C4.
 | C3 | **Startup check for device files** — each installation against the master: unchanged, wiped (matches the stock reference), or edited; adopt or revert | **done 2026-10-05** |
 | C4 | **`.binds` and `StartPreset`** — whole-file master, Edit History on apply, the version-bump merge | blocked — `bindforge.io` |
 | C5 | **Change detection for the install folders** | blocked — `elite.intel.io`; doc conflict 2 |
-| C6 | **Unsaved work on exit** — Save or Discard, never Apply | **next** |
+| C6 | **Unsaved work on exit** — Save or Discard, never Apply | after Alias Designer A10 — nothing holds unsaved edits until then; see the 2026-10-06 note |
 | C7 | **First-time startup** | after Preset Editor can read all four `StartPreset` lines |
 
 ### C1 in detail — designed 2026-10-03, built 2026-10-04
@@ -123,6 +132,13 @@ Growing it touches `bindforge.io` — see C4.
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
+
+- **2026-10-06 — C6 deferred, no code (Alan).** C6 guards edits held on screen and not yet saved, and nothing in
+  BindForge holds any: the `.binds` grid writes every edit straight into its draft, and the screen designed with
+  a SAVE button — the Alias Designer editor — is not built. Built now, the guard would rest on guesses. **It
+  comes after A10** (SAVE and DISCARD), built against the real editor. **Found:** the existing close prompt
+  breaks the spec — now under Known issues. **No Core slice is ready:** C4 and C5 are blocked, C7 waits on
+  Preset Editor. The next work is in [alias-designer.md](alias-designer.md).
 
 - **2026-10-05 — C3 built.** Doc conflict 1 settled: Freshness Checks and Destructive Change Detection
   rewritten for the master model. Six rulings for the device-file check are in
