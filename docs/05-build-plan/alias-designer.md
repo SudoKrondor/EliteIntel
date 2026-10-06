@@ -78,7 +78,7 @@ That is A3.
 | A7 | **Automatic registration and hot-plug** — `DeviceBus` connect and disconnect | A6 | waiting |
 | A8 | **`.buttonMap` generation at Elite-Intel startup** — connected, named, none on disk | Core C1 (done) | ready — needs a create-only write, see core.md |
 | A9 | **Device Editor** — inline expansion, install strip, labels, live highlighting | C2 (done) | ready |
-| A10 | **Actions** — SAVE, DISCARD, CLEAR, RESET LABELS, APPLY, reported per installation | A9 | waiting |
+| A10 | **Actions** — SAVE, DISCARD, CLEAR, RESET LABELS, APPLY, reported per installation. Unlocks [Core C6](core.md#slices), the exit prompt, which needs an editor holding unsaved edits | A9 | waiting |
 | A11 | **Rename** — every installation first, `.binds` last, all or nothing | A10 | waiting |
 | A12 | **When hardware changes** — a missing device, the identity question, retarget, one missing device at a time | A11 | waiting |
 | A13 | **The missing-controller warning**, once per run | — | ready |
