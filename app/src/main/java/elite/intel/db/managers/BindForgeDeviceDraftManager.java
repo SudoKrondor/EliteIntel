@@ -9,6 +9,7 @@ import elite.intel.db.util.Database;
 import org.jdbi.v3.core.Handle;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -208,6 +209,113 @@ public class BindForgeDeviceDraftManager {
             removed.forEach(master::addPendingRemoval);
             return removed;
         });
+    }
+
+    /**
+     * A device as the master or the draft holds it, labels included - what adopting an installation plans with.
+     *
+     * @param masterId for a master device its own id; for a draft device the master row it was copied from, or
+     *                 {@code null} for one added in the draft
+     */
+    public record StoredDevice(Long masterId, String deviceName, String vid, String pid, boolean aliasConfirmed,
+                               String previousName, Map<String, String> labels) {
+        public StoredDevice {
+            Objects.requireNonNull(deviceName, "deviceName");
+            labels = Collections.unmodifiableMap(new LinkedHashMap<>(labels));
+        }
+    }
+
+    /** @param draft the draft's devices, or {@code null} when no draft is started */
+    public record Stored(List<StoredDevice> master, List<StoredDevice> draft) {
+    }
+
+    /**
+     * A draft device to write, and the master device it belongs to by name - master ids are only known once the
+     * master has been written.
+     *
+     * @param masterName the master device this draft device was copied from, or {@code null} for one the draft
+     *                   added
+     */
+    public record DraftWrite(String masterName, StoredDevice device) {
+    }
+
+    /**
+     * @param master  the whole master as it is to be. Ids are ignored: a device keeps its row when its name is
+     *                already in the master, and gets a new one otherwise
+     * @param removed devices leaving the master, recorded as pending removals - their entries are still in the
+     *                other installations
+     * @param draft   the whole draft as it is to be, or {@code null} to leave the draft alone
+     */
+    public record AdoptionWrite(List<StoredDevice> master, List<String> removed, List<DraftWrite> draft) {
+    }
+
+    /**
+     * Adopts what an installation holds: reads the master and the draft, lets {@code plan} decide, and writes
+     * both, in one transaction (Alan, 2026-10-05). A failure leaves the master and the draft as they were, and an
+     * edit saved between the read and the write cannot be overwritten by a plan made without it.
+     * <p>
+     * Master devices that survive keep their rows and ids, so nothing else pointing at them is disturbed.
+     *
+     * @param plan returns what to write, or {@code null} to write nothing
+     */
+    public void adopt(Function<Stored, AdoptionWrite> plan) {
+        inTransaction(daos -> {
+            BindForgeDeviceMasterDao master = daos.master();
+            BindForgeDeviceDraftDao draft = daos.draft();
+            AdoptionWrite write = plan.apply(new Stored(storedMaster(master), storedDraft(draft)));
+            if (write == null) return null;
+
+            // WHY: the draft is emptied first, as promote does, so no draft row is left pointing at a master row
+            // this adoption removes.
+            if (write.draft() != null) draft.deleteAll();
+            for (String name : write.removed()) {
+                DeviceRow row = master.findByName(name);
+                if (row != null) master.delete(row.id());
+                master.addPendingRemoval(name);
+            }
+            for (StoredDevice device : write.master()) {
+                DeviceRow row = master.findByName(device.deviceName());
+                if (row == null) {
+                    master.insert(device.deviceName(), device.vid(), device.pid(), device.aliasConfirmed());
+                    row = master.findByName(device.deviceName());
+                } else if (!Objects.equals(row.vid(), device.vid()) || !Objects.equals(row.pid(), device.pid())) {
+                    master.retarget(row.id(), device.vid(), device.pid());
+                }
+                master.deleteLabels(row.id());
+                long masterId = row.id();
+                device.labels().forEach((token, label) -> master.putLabel(masterId, token, label));
+            }
+            if (write.draft() != null) {
+                for (DraftWrite row : write.draft()) {
+                    StoredDevice device = row.device();
+                    Long masterId = row.masterName() == null ? null : master.findByName(row.masterName()).id();
+                    draft.insert(masterId, device.deviceName(), device.vid(), device.pid(), device.aliasConfirmed(),
+                            device.previousName());
+                    long draftId = draft.findByName(device.deviceName()).id();
+                    device.labels().forEach((token, label) -> draft.putLabel(draftId, token, label));
+                }
+            }
+            return null;
+        });
+    }
+
+    private static List<StoredDevice> storedMaster(BindForgeDeviceMasterDao master) {
+        List<StoredDevice> devices = new ArrayList<>();
+        for (DeviceRow row : master.findAll()) {
+            devices.add(new StoredDevice(row.id(), row.deviceName(), row.vid(), row.pid(), row.aliasConfirmed(),
+                    row.previousName(), labelMap(master.labelsOf(row.id()))));
+        }
+        return devices;
+    }
+
+    private static List<StoredDevice> storedDraft(BindForgeDeviceDraftDao draft) {
+        if (!draft.exists()) return null;
+        List<StoredDevice> devices = new ArrayList<>();
+        for (DraftRow row : draft.findAll()) {
+            devices.add(new StoredDevice(row.masterId(), row.deviceName(), row.vid(), row.pid(), row.aliasConfirmed(),
+                    row.previousName(), labelMap(draft.labelsOf(row.id()))));
+        }
+        return devices;
     }
 
     private static void startIfNone(Daos daos) {

@@ -93,6 +93,27 @@ class DeviceMappingsParserTest {
         assertTrue(thrown.getMessage().contains("DeviceMappings.xml"), "the message names the file");
     }
 
+    /** The primary pair is what Apply writes and the master holds; alternatives are not it. */
+    @Test
+    void primariesAreEachElementsOwnPairInDocumentOrderWithoutItsAlternatives() throws IOException {
+        byte[] xml = """
+                <Root>
+                	<GamePad><PID>028E</PID><VID>045E</VID>
+                		<Alternative><PID>028F</PID><VID>045E</VID></Alternative></GamePad>
+                	<RVWAP><PID>43f4</PID><VID>3344</VID></RVWAP>
+                	<Bare/>
+                	<RVWAP><PID>FFFF</PID><VID>FFFF</VID></RVWAP>
+                </Root>
+                """.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        Map<String, DeviceEntry.HardwareId> primaries = DeviceMappingsParser.primaries(xml);
+
+        assertEquals(List.of("GamePad", "RVWAP", "Bare"), List.copyOf(primaries.keySet()));
+        assertEquals(new DeviceEntry.HardwareId("045E", "028E"), primaries.get("GamePad"));
+        assertEquals(new DeviceEntry.HardwareId("3344", "43F4"), primaries.get("RVWAP"), "the first wins, as in the game");
+        assertEquals(new DeviceEntry.HardwareId("", ""), primaries.get("Bare"));
+    }
+
     private Map<String, DeviceEntry> byName(List<DeviceEntry> entries) {
         return entries.stream().collect(Collectors.toMap(DeviceEntry::name, Function.identity()));
     }

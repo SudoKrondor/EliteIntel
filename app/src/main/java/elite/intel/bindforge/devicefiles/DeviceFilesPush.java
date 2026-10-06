@@ -170,13 +170,33 @@ public final class DeviceFilesPush {
         return new Report(results);
     }
 
+    /**
+     * Pushes the master to one installation: <strong>revert</strong>, for an installation the startup check
+     * found wiped or edited (Alan, 2026-10-05). The same push as Apply, so it adds and updates only, and an entry
+     * hand-added in that installation stays.
+     *
+     * @return the report, holding that installation alone - or nothing, when no stored installation has that id
+     */
+    public Report push(long installId) {
+        List<MasterDevice> devices = master.get();
+        List<InstallationResult> results = new ArrayList<>();
+        for (Target target : targets.get()) {
+            if (target.installId() != installId) continue;
+            InstallationResult result = pushTo(target, devices, retention.getAsInt(), new HashSet<>());
+            log.info("Device files for {} ({}), reverted to the master: {}{}", target.storefront(),
+                    target.controlSchemes(), result.outcome(), result.reason() == null ? "" : " - " + result.reason());
+            results.add(result);
+        }
+        return new Report(results);
+    }
+
     private InstallationResult pushTo(Target target, List<MasterDevice> devices, int keep, Set<String> kept) {
         if (target.missing() || !Files.isDirectory(target.controlSchemes())) {
             return result(target, Outcome.SKIPPED_MISSING, "folder not found: " + target.controlSchemes(), false);
         }
         Plan plan;
         try {
-            plan = plan(target, devices);
+            plan = plan(target, devices, stock);
         } catch (IOException e) {
             return result(target, Outcome.FAILED, "could not read its device files: " + e.getMessage(), false);
         }
@@ -198,15 +218,20 @@ public final class DeviceFilesPush {
         return new InstallationResult(target, Outcome.WRITTEN, null, plan.seeded(), written);
     }
 
-    /** Everything the installation needs written, worked out before anything is touched. */
-    private Plan plan(Target target, List<MasterDevice> devices) throws IOException {
+    /**
+     * Everything the installation needs written, worked out before anything is touched.
+     * <p>
+     * Also what the startup check means by "matches the master": no writes. One definition, so the check and
+     * Apply cannot disagree about whether an installation is up to date.
+     */
+    static Plan plan(Target target, List<MasterDevice> devices, FrontierStockDevices stock) throws IOException {
         List<FileWrite> writes = new ArrayList<>();
 
         Path deviceMappings = target.controlSchemes().resolve(DEVICE_MAPPINGS);
         byte[] current = readIfPresent(deviceMappings);
         boolean seeded = current == null;
         DeviceMappingsMerge.Result merged =
-                DeviceMappingsMerge.merge(seeded ? stockFile() : current, userEntries(devices));
+                DeviceMappingsMerge.merge(seeded ? stockFile() : current, userEntries(devices, stock));
         if (seeded || merged.changed()) writes.add(new FileWrite(deviceMappings, current, merged.content()));
 
         Path buttonMaps = target.controlSchemes().resolve(BUTTON_MAPS);
@@ -226,7 +251,7 @@ public final class DeviceFilesPush {
      * controllers, and writing one controller's VID/PID over its primary pair would break the rest. Its
      * {@code .buttonMap} is still written.
      */
-    private List<UserEntry> userEntries(List<MasterDevice> devices) {
+    private static List<UserEntry> userEntries(List<MasterDevice> devices, FrontierStockDevices stock) {
         return devices.stream()
                 .filter(device -> !stock.ships(device.name()))
                 .map(device -> new UserEntry(device.name(), device.vid(), device.pid()))
@@ -293,7 +318,7 @@ public final class DeviceFilesPush {
     // WHY: a missing resource throws rather than seeding an empty file. A DeviceMappings.xml without
     // Frontier's entries leaves every Frontier-recognised controller unresolvable, so a packaging mistake must
     // be loud - the same reason FrontierStockDevices refuses to load without it.
-    private static byte[] stockFile() throws IOException {
+    static byte[] stockFile() throws IOException {
         try (InputStream xml = DeviceFilesPush.class.getResourceAsStream(FrontierStockDevices.RESOURCE)) {
             if (xml == null) {
                 throw new IllegalStateException("Frontier stock reference is missing from the jar: "
@@ -311,14 +336,14 @@ public final class DeviceFilesPush {
         }
     }
 
-    private static List<Target> storedInstallations() {
+    static List<Target> storedInstallations() {
         return BindForgeInstallationsManager.getInstance().findAll().stream()
                 .map(row -> new Target(row.id(), row.storefront(),
                         GameInstallation.controlSchemesUnder(Path.of(row.rootPath())), row.missing()))
                 .toList();
     }
 
-    private static List<MasterDevice> storedMaster() {
+    static List<MasterDevice> storedMaster() {
         BindForgeDeviceMasterManager masterStore = BindForgeDeviceMasterManager.getInstance();
         List<MasterDevice> devices = new ArrayList<>();
         for (DeviceRow row : masterStore.findAll()) {
@@ -335,9 +360,9 @@ public final class DeviceFilesPush {
      * @param previous what the file held before, or {@code null} when it did not exist - which is also what
      *                 putting it back means
      */
-    private record FileWrite(Path path, byte[] previous, byte[] content) {
+    record FileWrite(Path path, byte[] previous, byte[] content) {
     }
 
-    private record Plan(List<FileWrite> writes, boolean seeded) {
+    record Plan(List<FileWrite> writes, boolean seeded) {
     }
 }

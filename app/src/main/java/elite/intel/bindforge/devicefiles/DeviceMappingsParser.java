@@ -12,8 +12,10 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -74,6 +76,32 @@ public final class DeviceMappingsParser {
         } catch (SAXException | ParserConfigurationException e) {
             throw new IOException("Could not read " + what + ": " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Each element's own {@code <VID>} and {@code <PID>} - its primary pair, alternatives left out - by element
+     * name, in document order.
+     * <p>
+     * {@link DeviceEntry} holds an element's pairs as a set, so which one is primary is lost there. The primary
+     * pair is the one Apply writes and the one the master holds, so comparing a file against the master needs it.
+     * An element named twice keeps its first, because the game resolves to the first match.
+     *
+     * @return an element with neither child maps to an empty pair rather than being left out, since the element
+     *         itself is still there
+     * @throws IOException if the bytes are not well-formed XML
+     */
+    public static Map<String, DeviceEntry.HardwareId> primaries(byte[] xml) throws IOException {
+        Map<String, DeviceEntry.HardwareId> primaries = new LinkedHashMap<>();
+        Element root = DeviceFileXml.parse(xml).getDocumentElement();
+        if (root == null) return primaries;
+
+        NodeList children = root.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            if (!(children.item(i) instanceof Element element)) continue;
+            primaries.putIfAbsent(element.getTagName(), new DeviceEntry.HardwareId(
+                    directChildText(element, VID), directChildText(element, PID)));
+        }
+        return primaries;
     }
 
     private static List<DeviceEntry> entriesOf(Document document) {

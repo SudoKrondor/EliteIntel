@@ -242,6 +242,35 @@ keep the draft, and raise a conflict only for the bindings the draft and the ado
 **Backups first, always.** Any adopt or revert is a write, so it takes the backup-before-write every other
 write takes, and lands an [Edit History](file-manager.md#edit-history) entry.
 
+#### For the device files — settled 2026-10-05 (Alan)
+
+`DeviceMappings.xml` and `.buttonMap` are checked per installation, against the master's
+[element set](alias-designer.md#what-the-master-actually-is) and labels. Built in
+`bindforge.devicefiles.DeviceFilesCheck` and `DeviceFilesAdopt`; revert is `DeviceFilesPush.push(installId)`.
+
+1. **Unchanged means Apply would write nothing, and the installation holds no entry of the user's that the master
+   lacks** — the master's elements lead the file as the push puts them, and every `.buttonMap` is what the push
+   would write. The second half was found while building: Apply never removes, so a hand-added entry leaves it
+   nothing to write. Pending removals and a rename's old name are expected to linger and do not count.
+2. **Wiped means byte-identical to Frontier's stock file, or no file at all.** `DeviceMappings.xml` carries no
+   version, so the *game update added controls* row does not apply to it, and the stock reference cannot be
+   marked stale. A patch that ships a **newer** stock file therefore reads as *edited*, with every one of the
+   user's entries listed as gone — which fails safe, since nothing is ever adopted on its own. *A master holding
+   only labels on Frontier's own entries expects the stock file, so for it a stock file is not a wipe.*
+3. **An empty master means first setup has not run**, and the check compares nothing. Before then every custom
+   entry would read as an edit, and [nothing is forced](#offered-never-forced--settled-2026-09-23).
+4. **Adopt changes the master, never a game file.** The other installations then stop matching it, and the
+   user's next Apply brings them in line. An entry the installation no longer has leaves the master as a
+   [pending removal](alias-designer.md#actions-and-what-each-one-reaches); an entry it has that the master does
+   not is added — unless it is already a pending removal or the old name of a rename, which are expected to
+   linger. Adopting a **wiped** installation is refused: that would empty the master into Frontier's file.
+5. **Adopt with a draft compares device by device, label by label**, against the master as it was before the
+   adopt. What the draft left alone takes the adopted value; what only the draft changed keeps the draft's; what
+   both changed differently keeps the draft's and is reported as a conflict. Master and draft change in one
+   transaction.
+6. **Revert pushes the whole master to that one installation**, through the same push as Apply — so it adds
+   and updates, and an entry hand-added there stays (C1's *no removals*).
+
 ### New slots are the only thing an update brings — settled 2026-09-24
 
 **A game update adds binding slots. It has never taken one away or renamed one** (Alan, 2026-09-24). So the
@@ -278,18 +307,38 @@ live file. So a freshness check compares **content**, never timestamps: a file t
 exactly what BindForge already has, and treating that as a conflict would put a pointless question in front
 of the user every time they visited the options screen.
 
-Whenever BindForge is opened, or whenever a live file changes while BindForge is running (detected by `bindforge.io.BindingsMonitor`, which already watches the bindings directory and is [extended to cover the game installation folders too](#external-change-detection-stays-in-one-place) rather than BindForge adding a second watcher; see [File Access](../../01-host-integration/elite-intel-platform-map.md#file-access)), BindForge compares its local working copy against the live file's current state.
+**Rewritten 2026-10-05 for the master model (Alan).** A freshness check *is* [the startup
+check](#what-the-startup-check-actually-decides): the game's file is compared against the **master**, never the
+other way round, and nothing is refreshed from it without the user's say.
 
-- If the local copy is simply behind — the live file changed in a way that doesn't lose anything the user has customized — BindForge treats the live file as newer truth and offers to refresh the local working copy to match it.
-- If the local working copy already has unsaved edits at the moment a live-file change is detected, BindForge does not silently pick a winner. It surfaces the conflict to the user, using the same pattern as [Unsaved Work on Exit](#unsaved-work-on-exit): keep editing the current local draft (ignoring the incoming live change for now), or refresh from the live file (discarding the unsaved local edits).
+- **The game's file differs from the master** — it was edited in the game or by hand. BindForge offers
+  **adopt** (take it into the master) or **revert** (push the master back over it). It never adopts on its own.
+- **A draft exists when that happens** — adopt moves the master, the draft is kept, and only what the draft and
+  the adopted file **both** changed is raised as a conflict, as [the startup check](#what-the-startup-check-actually-decides)
+  says.
+
+*Replaced — the working-copy model, kept because older notes use its wording:*
+
+~~Whenever BindForge is opened, or whenever a live file changes while BindForge is running (detected by `bindforge.io.BindingsMonitor`, which already watches the bindings directory and is [extended to cover the game installation folders too](#external-change-detection-stays-in-one-place) rather than BindForge adding a second watcher; see [File Access](../../01-host-integration/elite-intel-platform-map.md#file-access)), BindForge compares its local working copy against the live file's current state.~~
+
+- ~~If the local copy is simply behind — the live file changed in a way that doesn't lose anything the user has customized — BindForge treats the live file as newer truth and offers to refresh the local working copy to match it.~~
+- ~~If the local working copy already has unsaved edits at the moment a live-file change is detected, BindForge does not silently pick a winner. It surfaces the conflict to the user, using the same pattern as [Unsaved Work on Exit](#unsaved-work-on-exit): keep editing the current local draft (ignoring the incoming live change for now), or refresh from the live file (discarding the unsaved local edits).~~
 
 ### Destructive Change Detection
 
-Not every live-file change is legitimate. Elite Dangerous itself has, at least once, overwritten a player's `DeviceMappings.xml` back to factory defaults during a game update — the same real-world incident referenced above — and there is no guarantee a future update couldn't do the same to any of the other three domains.
+**Rewritten 2026-10-05 for the master model (Alan).** Data loss is the startup check's **wiped** outcome: the
+game's file matches [Frontier's stock reference](reference-data/FrontierStock-README.md), or is gone. The
+master is never refreshed from a game file, so the source for the repair is always there, and the repair is
+**revert** — offered, never automatic — raised as an Error-level condition (Elite-Intel's tabbed UI has no
+badge affordance yet, see [Status Badges](../../01-host-integration/elite-intel-platform-map.md#status-badges)).
 
-BindForge does not treat "the live file changed" and "the live file is now correct" as the same thing. Before refreshing its local working copy from a changed live file, BindForge checks whether the change looks like **data loss** rather than a legitimate update — specifically, whether content the working copy (or a recent File Manager backup) already knows about is now missing from the live file: custom device aliases gone from `DeviceMappings.xml`, bindings reverted to defaults, or anything else that would mean a normal freshness refresh would silently make BindForge complicit in overwriting the user's own configuration with a damaged file.
+*Replaced — the working-copy model:*
 
-**If a change looks like data loss:** BindForge does not sync its working copy to match. Instead, it raises this as an Error-level condition (Elite-Intel's tabbed UI has no badge affordance yet — some visible equivalent is required, see [Status Badges](../../01-host-integration/elite-intel-platform-map.md#status-badges)) and offers to **restore** the missing configuration back onto the live file immediately — the roles reverse, and the working copy (or, if the working copy itself is somehow unavailable, the most recent File Manager backup) becomes the source used to overwrite the damaged live file, through the same backed-up, atomic write every other BindForge write already uses (see [Data Integrity Principle](#data-integrity-principle)).
+~~Not every live-file change is legitimate. Elite Dangerous itself has, at least once, overwritten a player's `DeviceMappings.xml` back to factory defaults during a game update — the same real-world incident referenced above — and there is no guarantee a future update couldn't do the same to any of the other three domains.~~
+
+~~BindForge does not treat "the live file changed" and "the live file is now correct" as the same thing. Before refreshing its local working copy from a changed live file, BindForge checks whether the change looks like **data loss** rather than a legitimate update — specifically, whether content the working copy (or a recent File Manager backup) already knows about is now missing from the live file: custom device aliases gone from `DeviceMappings.xml`, bindings reverted to defaults, or anything else that would mean a normal freshness refresh would silently make BindForge complicit in overwriting the user's own configuration with a damaged file.~~
+
+~~**If a change looks like data loss:** BindForge does not sync its working copy to match. Instead, it raises this as an Error-level condition (Elite-Intel's tabbed UI has no badge affordance yet — some visible equivalent is required, see [Status Badges](../../01-host-integration/elite-intel-platform-map.md#status-badges)) and offers to **restore** the missing configuration back onto the live file immediately — the roles reverse, and the working copy (or, if the working copy itself is somehow unavailable, the most recent File Manager backup) becomes the source used to overwrite the damaged live file, through the same backed-up, atomic write every other BindForge write already uses (see [Data Integrity Principle](#data-integrity-principle)).~~
 
 This is a general behaviour, not specific to Alias Designer — see also [Bind Editor — Shell](bind-editor.md#shell-common-to-all-modes) and [Preset Editor — Sync Badge](preset-editor.md#sync-badge) for how each section surfaces it.
 

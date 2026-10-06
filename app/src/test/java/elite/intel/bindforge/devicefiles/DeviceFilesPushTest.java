@@ -206,10 +206,36 @@ class DeviceFilesPushTest {
         assertFalse(result.seededFromStock());
     }
 
+    /** Revert: the master pushed to one installation, and no other installation touched (Alan, 2026-10-05). */
+    @Test
+    void revertPushesTheMasterToThatInstallationAlone() throws IOException {
+        Target steam = installation(1, "STEAM");
+        Target epic = installation(2, "EPIC");
+
+        Report report = pusher(List.of(steam, epic), List.of(RVWAP)).push(2);
+
+        assertEquals(1, report.installations().size());
+        assertEquals(Outcome.WRITTEN, resultFor(report, epic).outcome());
+        assertTrue(read(epic.controlSchemes().resolve("DeviceMappings.xml")).contains("<RVWAP>"));
+        assertEquals(DEVICE_MAPPINGS, read(steam.controlSchemes().resolve("DeviceMappings.xml")));
+        assertEquals(List.of(epic), rescanned);
+    }
+
+    @Test
+    void revertingAnInstallationThatIsNotStoredReportsNothing() throws IOException {
+        Target steam = installation(1, "STEAM");
+
+        assertTrue(pusher(List.of(steam), List.of(RVWAP)).push(9).installations().isEmpty());
+        assertEquals(DEVICE_MAPPINGS, read(steam.controlSchemes().resolve("DeviceMappings.xml")));
+    }
+
     private Report push(List<Target> targets, List<MasterDevice> master) {
-        DeviceFilesPush push = new DeviceFilesPush(() -> targets, () -> master, FrontierStockDevices.getInstance(),
+        return pusher(targets, master).push();
+    }
+
+    private DeviceFilesPush pusher(List<Target> targets, List<MasterDevice> master) {
+        return new DeviceFilesPush(() -> targets, () -> master, FrontierStockDevices.getInstance(),
                 new TimestampedBackups(), history, () -> 10, rescanned::add);
-        return push.push();
     }
 
     private Target installation(long id, String storefront) throws IOException {

@@ -27,6 +27,7 @@ once here so no tab builds its own.
 | Reading device files | `bindforge.devicefiles.DeviceMappingsParser` (path or stream, keeps `<Alternative>`), `FrontierStockDevices` (`ships`, `covering`), `ButtonMapAudit` |
 | Device-file write (C1) | `bindforge.devicefiles.DeviceFilesPush` — Apply for `DeviceMappings.xml` and `.buttonMap`, per installation, with Edit History in `elite-intel/bindings/history/<installId>/`; `DeviceMappingsMerge`, `ButtonMapWriter`, `DeviceFileXml` (the layout). **No caller yet** |
 | Device draft and Apply (C2) | migrations `12003`, `12004`; `db.managers.BindForgeDeviceDraftManager` — `start()` copies the whole master in (a started draft may hold no edits, so `isStarted()` is not "changed"); `promote()` makes it the master and stores what it removed as pending removals (`BindForgeDeviceMasterManager.pendingRemovals()`, `clearPendingRemoval`); `revert(masterId)`, `discard()`. Master ids change on every promote. `bindforge.devicefiles.DeviceApply` — promote, then `DeviceFilesPush.push()`. **No caller yet** |
+| Startup check, adopt, revert (C3) | `bindforge.devicefiles.DeviceFilesCheck` — each installation against the saved master: `UNCHANGED`, `WIPED`, `EDITED` (with element and label changes), `MISSING`, `UNREADABLE`; an empty master reports *not set up*. `DeviceFilesAdopt` — the installation into the master (and the draft, three-way) through `BindForgeDeviceDraftManager.adopt()`, one transaction. Revert is `DeviceFilesPush.push(installId)`. Helpers: `ButtonMapReader`, `DeviceMappingsParser.primaries()`. **No caller yet** |
 | `.binds` draft and apply | `bindforge.io.BindingsWorkingCopyRepository` (drafts in `elite-intel/bindings/`), `BindingsApplyService`, `BindingsMonitor` |
 
 **The `.binds` master is only a hash today.** `BindingsWorkingCopyRepository` records a baseline fingerprint
@@ -48,10 +49,9 @@ Growing it touches `bindforge.io` — see C4.
 
 ## Known doc conflicts — settle with Alan when a slice reaches them
 
-1. **[Freshness Checks](../02-features/bindforge/overview.md#freshness-checks) and [Destructive Change
-   Detection](../02-features/bindforge/overview.md#destructive-change-detection) still describe the old model**,
-   where the live file is truth and the working copy refreshes from it. The sections above them say that was
-   inverted on 2026-09-24 — the master is truth, and the startup check decides adopt or revert. **Before C3.**
+1. ~~**Freshness Checks and Destructive Change Detection still describe the old model.**~~ **Settled 2026-10-05**
+   (Alan): both rewritten for the master model, the old text struck through, in
+   [overview.md](../02-features/bindforge/overview.md#freshness-checks).
 2. **[External change detection stays in one place](../02-features/bindforge/overview.md#external-change-detection-stays-in-one-place)
    says to extend `BindingsMonitor`'s `WatchService` to the install folders.** Krondor, 2026-10-03: files another
    process writes need polling, or a watch plus a periodic re-check, in `elite.intel.io` — see "Still to come:
@@ -71,10 +71,10 @@ Growing it touches `bindforge.io` — see C4.
 |---|---|---|
 | C1 | **Device-file write** — merge the master's elements into each installation's `DeviceMappings.xml` and `.buttonMap`; keep unique prior content; atomic replace; prune; per installation, reported | **done 2026-10-04** |
 | C2 | **Device draft** — where unapplied device edits live; SAVE writes the draft, APPLY promotes it | **done 2026-10-04** |
-| C3 | **Startup check for device files** — each installation against the master: unchanged, wiped (matches the stock reference), or edited; adopt or revert | **next** — settle doc conflict 1 with Alan first |
+| C3 | **Startup check for device files** — each installation against the master: unchanged, wiped (matches the stock reference), or edited; adopt or revert | **done 2026-10-05** |
 | C4 | **`.binds` and `StartPreset`** — whole-file master, Edit History on apply, the version-bump merge | blocked — `bindforge.io` |
 | C5 | **Change detection for the install folders** | blocked — `elite.intel.io`; doc conflict 2 |
-| C6 | **Unsaved work on exit** — Save or Discard, never Apply | ready |
+| C6 | **Unsaved work on exit** — Save or Discard, never Apply | **next** |
 | C7 | **First-time startup** | after Preset Editor can read all four `StartPreset` lines |
 
 ### C1 in detail — designed 2026-10-03, built 2026-10-04
@@ -123,6 +123,18 @@ Growing it touches `bindforge.io` — see C4.
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
+
+- **2026-10-05 — C3 built.** Doc conflict 1 settled: Freshness Checks and Destructive Change Detection
+  rewritten for the master model. Six rulings for the device-file check are in
+  [overview.md, For the device files](../02-features/bindforge/overview.md#for-the-device-files--settled-2026-10-05-alan):
+  unchanged is "Apply writes nothing *and* no hand-added entry"; wiped is byte-identical to stock or no file
+  (no version in `DeviceMappings.xml`, so a newer stock file reads as edited — fails safe); empty master =
+  not set up; adopt writes the master only, refuses a wipe, stores lost entries as pending removals; the draft
+  merges three-way per device and per label. **Found:** `DeviceEntry` holds pairs as a set, so the primary pair
+  was unrecoverable — `DeviceMappingsParser.primaries()` added; Apply's no-removal rule hid hand-added entries
+  from a plan-only "unchanged". **Later slices owe C3:** *A3/A4* call `check()` for divergence and the `M`
+  markers; the startup report line and the Error-level wipe condition have no caller yet; *C5* re-runs the
+  check when a file changes. **C6 needs:** the draft's "has edits" test — `isStarted()` is not it (C2 note).
 
 - **2026-10-04 — C2 review fixes** (`code-integrity-review.md`). Removed devices are now **stored** as pending
   removals (`12004`, Alan's choice over taking removal out of the draft), not only returned; renaming back to

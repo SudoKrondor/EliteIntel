@@ -2,9 +2,14 @@ package elite.intel.db.managers;
 
 import elite.intel.db.dao.BindForgeDeviceDraftDao.DraftRow;
 import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
+import elite.intel.db.managers.BindForgeDeviceDraftManager.AdoptionWrite;
+import elite.intel.db.managers.BindForgeDeviceDraftManager.DraftWrite;
+import elite.intel.db.managers.BindForgeDeviceDraftManager.Stored;
+import elite.intel.db.managers.BindForgeDeviceDraftManager.StoredDevice;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -275,6 +280,79 @@ class BindForgeDeviceDraftManagerTest {
         assertNull(draft.findByName("LVWAP").masterId());
         assertTrue(draft.promote().isEmpty(), "nothing is reported removed - the draft still holds it");
         assertNotNull(master.findByName("LVWAP"));
+    }
+
+    /**
+     * Adopt writes the master and the draft together. A surviving device keeps its row, so the draft still points
+     * at it; a device leaving the master becomes a pending removal (2026-10-05).
+     */
+    @Test
+    void adoptingWritesTheMasterAndTheDraftInOneGo() {
+        draft.start();
+        long rvwap = master.findByName("RVWAP").id();
+        List<Stored> seen = new ArrayList<>();
+
+        draft.adopt(stored -> {
+            seen.add(stored);
+            StoredDevice lvwapNow = new StoredDevice(lvwap, "LVWAP", "3344", "83F5", true, null,
+                    labels("Joy_1", "GAME TRIGGER"));
+            StoredDevice stick = new StoredDevice(null, "STICK2", "1234", "0001", true, null, labels("Joy_1", "FIRE"));
+            return new AdoptionWrite(List.of(lvwapNow, stick), List.of("RVWAP"), List.of(
+                    new DraftWrite("LVWAP", lvwapNow),
+                    new DraftWrite(null, new StoredDevice(rvwap, "RVWAP", "3344", "03F5", true, null, Map.of())),
+                    new DraftWrite("STICK2", stick)));
+        });
+
+        assertEquals(List.of("LVWAP", "RVWAP"), seen.getFirst().master().stream().map(StoredDevice::deviceName).toList());
+        assertEquals(2, seen.getFirst().draft().size(), "the started draft is handed to the plan");
+
+        DeviceRow adopted = master.findByName("LVWAP");
+        assertEquals(lvwap, adopted.id(), "a surviving device keeps its row");
+        assertEquals("83F5", adopted.pid());
+        assertEquals(labels("Joy_1", "GAME TRIGGER"), master.labelsOf(lvwap));
+        assertNull(master.findByName("RVWAP"));
+        assertEquals(List.of("RVWAP"), master.pendingRemovals());
+        assertEquals(labels("Joy_1", "FIRE"), master.labelsOf(master.findByName("STICK2").id()));
+
+        assertTrue(draft.isStarted());
+        assertEquals(lvwap, draft.findByName("LVWAP").masterId());
+        assertNull(draft.findByName("RVWAP").masterId(), "kept by the draft, no longer from a master device");
+        assertEquals(master.findByName("STICK2").id(), draft.findByName("STICK2").masterId());
+    }
+
+    @Test
+    void anAdoptWithNoDraftLeavesTheDraftUnstarted() {
+        draft.adopt(stored -> {
+            assertNull(stored.draft());
+            return new AdoptionWrite(List.of(new StoredDevice(lvwap, "LVWAP", "3344", "83F4", true, null,
+                    labels("Joy_1", "LV MAIN TRIGGER", "Joy_2", "PINKY"))), List.of(), null);
+        });
+
+        assertFalse(draft.isStarted());
+        assertNotNull(master.findByName("RVWAP"), "the write names the whole master, but only removes what it lists");
+    }
+
+    @Test
+    void aPlanThatReturnsNothingWritesNothing() {
+        draft.adopt(stored -> null);
+
+        assertEquals(List.of("LVWAP", "RVWAP"), master.findAll().stream().map(DeviceRow::deviceName).toList());
+        assertFalse(draft.isStarted());
+    }
+
+    @Test
+    void aFailedAdoptLeavesTheMasterAndTheDraftAsTheyWere() {
+        draft.start();
+
+        assertThrows(RuntimeException.class, () -> draft.adopt(stored -> new AdoptionWrite(
+                List.of(new StoredDevice(null, "STICK2", "1234", "0001", true, null, Map.of())),
+                List.of("RVWAP"),
+                List.of(new DraftWrite("NO-SUCH-DEVICE", stored.draft().getFirst())))));
+
+        assertNotNull(master.findByName("RVWAP"));
+        assertNull(master.findByName("STICK2"));
+        assertTrue(master.pendingRemovals().isEmpty());
+        assertEquals(List.of("LVWAP", "RVWAP"), names(draft.findAll()));
     }
 
     private static List<String> names(List<DraftRow> rows) {
