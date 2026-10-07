@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.inference.gemini.GeminiClient;
 import elite.intel.ai.brain.vega.model.llm.*;
 import elite.intel.util.json.GsonFactory;
 
@@ -54,9 +55,11 @@ public final class GeminiLlmAdapter implements LlmProviderAdapter {
 
         body.add("contents", renderContents(request.messages()));
 
+        // No temperature/topP/topK and no thinkingBudget: Google deprecated them, and upcoming models reject
+        // them with HTTP 400.
         JsonObject generationConfig = new JsonObject();
-        generationConfig.addProperty("temperature", request.profile().temperature());
         generationConfig.addProperty("maxOutputTokens", MAX_OUTPUT_TOKENS);
+        generationConfig.add("thinkingConfig", GeminiClient.minimalThinking());
         body.add("generationConfig", generationConfig);
 
         if (!request.tools().isEmpty()) {

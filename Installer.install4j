@@ -90,6 +90,30 @@ else
         fi
     fi
 
+    # Steam Deck (SteamOS): Steam lives in /home/deck/.steam/steam, but the
+    # `steam` command is not always on the launcher's PATH there, so the
+    # checks above can miss it. Use it only when nothing found so far holds
+    # the Elite Dangerous Proton prefix, so a working detection is never
+    # overridden.
+    DECK_STEAM_FOLDER="/home/deck/.steam/steam"
+    if [ ! -d "$STEAM_FOLDER/steamapps/compatdata/359320/pfx" ] &amp;&amp; [ -d "$DECK_STEAM_FOLDER/steamapps/compatdata/359320/pfx" ]; then
+        STEAM_FOLDER="$DECK_STEAM_FOLDER"
+    fi
+
+    # Steam Deck with the game on the SD card: the Proton prefix lives in the
+    # card's own Steam library, not under /home/deck. Older SteamOS mounts the
+    # card at /run/media/mmcblk0p1 (first MMC device, first partition), newer
+    # SteamOS at /run/media/deck/&lt;label or UUID&gt;. Same rule as above: only when
+    # nothing found so far holds the prefix.
+    if [ ! -d "$STEAM_FOLDER/steamapps/compatdata/359320/pfx" ]; then
+        for SD_LIBRARY in /run/media/mmcblk0p1 /run/media/deck/*; do
+            if [ -d "$SD_LIBRARY/steamapps/compatdata/359320/pfx" ]; then
+                STEAM_FOLDER="$SD_LIBRARY"
+                break
+            fi
+        done
+    fi
+
     # -----------------------------------------------------------------
     # Create ed-bindings / ed-journal symlinks
     # -----------------------------------------------------------------

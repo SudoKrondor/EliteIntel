@@ -39,6 +39,12 @@ public interface ShipDao {
             """)
     void save(@BindBean ShipDao.Ship ship);
 
+    /**
+     * Forgets a ship. Its ship_settings and trade_profile rows go with it (ON DELETE CASCADE).
+     */
+    @SqlUpdate("DELETE FROM ship WHERE shipId = :shipId")
+    int delete(@Bind("shipId") int shipId);
+
 
     class ShipRowMapper implements RowMapper<Ship> {
         @Override public Ship map(ResultSet rs, StatementContext ctx) throws SQLException {
