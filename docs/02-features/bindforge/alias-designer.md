@@ -561,6 +561,18 @@ character limit instead of offering a name the user would then be told is invali
 
 A name the user **types** may also use `-` and `_` — see [alias validation](#fields-and-rules).
 
+**Settled while building it — 2026-10-06 (Alan).** Built as `bindforge.devices.DeviceNames`.
+
+- **"Letters" means ASCII `A–Z`, `a–z`, with accents folded first.** XML would accept `Contrôleur` as a tag, but
+  the same text is a filename the game opens, and nobody has tested what it does with one. Folding keeps the
+  name readable — `Contrôleur X` becomes `ControleurX` — and any other script is dropped, so `手柄 12` becomes
+  `Device12`. A **typed** name is held to the same: a non-ASCII letter is refused.
+- **Numbering starts at 2**, as `TRudder2` shows, and the lowest free number wins. The name is shortened by
+  as many characters as the number has digits, so the tenth copy of the cut Warthog name ends `…Co10`.
+- **A device's own current name is not a clash** when its rename is validated — `Lvwap` to `LVWAP` is allowed.
+  The caller leaves it out of the names it passes. How renaming or shadowing a built-in treats Frontier's name
+  is the [Device Editor](#device-editor) and [rename](#renaming-a-device) slices' to settle.
+
 ### What onboarding writes, and when
 
 | The controller | Written | When |

@@ -19,6 +19,7 @@ data; most of what the spec describes is still ahead.
 |---|---|
 | The tab | `ui.screen.bindings.AliasDesignerPanel` — My Devices above the divergence list, in `BindingsTabPanel` |
 | My Devices — four of its five columns | `bindforge.devices.MyDeviceList` (the union, a pure function), `MyDevice`. Built-ins show `BUILT-IN` in the Alias column |
+| Device names | `bindforge.devices.DeviceNames` — the default-name rule, alias validation (`Verdict`, `Problem`), `sameName`, and `needingName` (who onboarding asks). Pure; the caller passes the names already taken |
 | Hardware VID/PID | `bindforge.devices.DeviceIdentities` — from SDL's GUID; confirmed on four controllers, real GUIDs in its test |
 | Frontier's shipped list | `bindforge.devicefiles.FrontierStockDevices`, resource `bindforge/FrontierStock-DeviceMappings.xml` |
 | Divergence list | `DeviceDivergenceScanner`, `DeviceDivergence` (red if `.binds` names the device, yellow otherwise), `BindsDeviceReferences`, `ButtonMapAudit` |
@@ -74,9 +75,10 @@ That is A3.
 | A3 | **Divergence against the master** — replace installation-against-installation | A1 | waiting |
 | A4 | **Installations markers** — `M`, *not added*, severity colour | A1 | waiting |
 | A5 | **Built-in Devices tab** — Frontier's list, read-only | — | ready |
-| A6 | **Onboarding** — the default-name rule and alias validation | Core C1 (done) | ready |
-| A7 | **Automatic registration and hot-plug** — `DeviceBus` connect and disconnect | A6 | waiting |
-| A8 | **`.buttonMap` generation at Elite-Intel startup** — connected, named, none on disk | Core C1 (done) | ready — needs a create-only write, see core.md |
+| A6 | **Onboarding: the rule** — the default-name rule and alias validation | Core C1 (done) | **done 2026-10-06** |
+| A6b | **Onboarding: the dialog and its writes** — name the controllers `needingName` returns, then write the entry and a generated `.buttonMap` straight away. A controller `.binds` names by hex waits for Apply, with a `.binds` rewrite | A6, A8 | waiting — the hex case is `bindforge.io`, so it is blocked until the question in the README is answered |
+| A7 | **Automatic registration and hot-plug** — `DeviceBus` connect and disconnect | A6b | waiting |
+| A8 | **`.buttonMap` generation at Elite-Intel startup** — connected, named, none on disk | Core C1 (done) | **next** — needs a create-only write (see core.md) and a fix for the axis-6 bug below |
 | A9 | **Device Editor** — inline expansion, install strip, labels, live highlighting | C2 (done) | ready |
 | A10 | **Actions** — SAVE, DISCARD, CLEAR, RESET LABELS, APPLY, reported per installation. Unlocks [Core C6](core.md#slices), the exit prompt, which needs an editor holding unsaved edits | A9 | waiting |
 | A11 | **Rename** — every installation first, `.binds` last, all or nothing | A10 | waiting |
@@ -90,6 +92,16 @@ while Core is in progress.
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
+
+- **2026-10-06 — A6 built: the rule, not the dialog** (Alan). `bindforge.devices.DeviceNames` is pure, and the
+  spec's six examples are its tests. Decided and recorded in [the default-name rule](../02-features/bindforge/alias-designer.md#the-default-name-rule):
+  ASCII letters only with accents folded; numbering starts at 2 and shortens by the number's width; a device's
+  own name is not a clash with itself. **Split:** the onboarding dialog and its writes became **A6b**, because
+  the hex case rewrites `.binds` (blocked on `bindforge.io`) and generated labels need A8's generator. **A8
+  needs:** a create-only `.buttonMap` write in `bindforge.devicefiles` (never `push()`), and a fix for
+  `ButtonInputMapper.axisToBindsToken` throwing at axis 6 and above. A6b will reuse A8's label generator.
+  **Callers owe the rule:** the names-taken set is the master's names, every installation's entries and
+  Frontier's `names()`, minus the device's own name when it is renamed.
 
 - **2026-10-03 — brief written.** Built so far: install detection, device-file parsing, the orphan check, severity,
   the divergence list, the master store, Frontier's stock reference, the hardware VID/PID derivation, My Devices
