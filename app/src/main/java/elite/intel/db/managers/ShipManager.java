@@ -72,6 +72,16 @@ public class ShipManager {
         });
     }
 
+    /**
+     * Drops a sold ship from the fleet, with its settings and trade profile. The game never reuses a
+     * ShipID, so a ship bought again comes back as a new row on its first Loadout.
+     *
+     * @return true when the ship was known and is now gone
+     */
+    public boolean forgetSoldShip(int shipId) {
+        return Database.withDao(ShipDao.class, dao -> dao.delete(shipId)) > 0;
+    }
+
     public ShipDao.Ship getShipById(int shipId) {
         return Database.withDao(ShipDao.class, dao -> dao.findShip(shipId));
     }
