@@ -44,6 +44,21 @@ class GeminiLlmAdapterTest {
     }
 
     @Test
+    void sendsMinimalThinkingLevelAndNoDeprecatedParameters() {
+        JsonObject generationConfig = JsonParser.parseString(adapter.buildRequestBody(request(
+                        List.of(LlmMessage.of(LlmMessageRole.USER, "hi")), List.of(speakTool())))).getAsJsonObject()
+                .getAsJsonObject("generationConfig");
+
+        // Upcoming Gemini models answer HTTP 400 to any of these.
+        for (String deprecated : List.of("temperature", "topP", "topK")) {
+            assertFalse(generationConfig.has(deprecated), deprecated + " must not be sent to Gemini");
+        }
+        JsonObject thinkingConfig = generationConfig.getAsJsonObject("thinkingConfig");
+        assertFalse(thinkingConfig.has("thinkingBudget"), "thinkingBudget is rejected by upcoming models");
+        assertEquals("minimal", thinkingConfig.get("thinkingLevel").getAsString());
+    }
+
+    @Test
     void buildsFunctionDeclarationsWithUppercaseSchemaAndAnyMode() {
         JsonObject json = JsonParser.parseString(adapter.buildRequestBody(request(
                 List.of(LlmMessage.of(LlmMessageRole.USER, "hi")), List.of(speakTool())))).getAsJsonObject();

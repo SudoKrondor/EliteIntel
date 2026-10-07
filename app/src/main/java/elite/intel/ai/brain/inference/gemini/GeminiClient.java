@@ -16,7 +16,7 @@ import java.time.Duration;
 
 public class GeminiClient extends BaseAiClient implements Client {
 
-    public static final String MODEL_FLASH = "gemini-3.1-flash-lite-preview";
+    public static final String MODEL_FLASH = "gemini-3.1-flash-lite";
     private static final String API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
     private static final GeminiClient instance = new GeminiClient();
 
@@ -35,15 +35,29 @@ public class GeminiClient extends BaseAiClient implements Client {
         return null;
     }
 
+    /**
+     * {@code temp} is ignored: Google deprecated temperature/topP/topK, and upcoming Gemini models reject them
+     * with HTTP 400.
+     */
     @Override
     public JsonObject createPrompt(String model, float temp) {
         this.currentModel = model;
         JsonObject generationConfig = new JsonObject();
-        generationConfig.addProperty("temperature", temp);
         generationConfig.addProperty("maxOutputTokens", 1024);
+        generationConfig.add("thinkingConfig", minimalThinking());
         JsonObject prompt = new JsonObject();
         prompt.add("generationConfig", generationConfig);
         return prompt;
+    }
+
+    /**
+     * The least thinking {@link #MODEL_FLASH} supports - the Gemini twin of LM Studio's
+     * {@code reasoning_effort: none}. The pipeline needs no reasoning, and thinking only adds latency.
+     */
+    public static JsonObject minimalThinking() {
+        JsonObject thinkingConfig = new JsonObject();
+        thinkingConfig.addProperty("thinkingLevel", "minimal");
+        return thinkingConfig;
     }
 
     @Override
