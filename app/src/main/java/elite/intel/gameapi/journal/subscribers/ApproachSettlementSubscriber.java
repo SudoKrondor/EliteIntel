@@ -4,15 +4,36 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.ApproachSettlementEvent;
+import elite.intel.gameapi.journal.events.FileheaderEvent;
 import elite.intel.session.PlayerSession;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static elite.intel.util.StringUtls.localizedEvent;
 
 public class ApproachSettlementSubscriber {
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
+
+    /**
+     * The settlements already announced in this game session, keyed by {@link #settlementKey}.
+     *
+     * <p>WHY: a commander pulling materials out of a settlement lands there over and over, and the
+     * game logs an {@code ApproachSettlement} every time. The record is still refreshed on each
+     * approach, but VEGA describes a settlement once per session, which is one journal file.
+     */
+    private final Set<String> announcedThisSession = ConcurrentHashMap.newKeySet();
+
+    /**
+     * A new game session forgets which settlements were announced. A {@code part} above 1 is the
+     * game continuing the same session in a fresh file, so it is not a new session.
+     */
+    @Subscribe
+    public void onFileheaderEvent(FileheaderEvent event) {
+        if (event.getPart() <= 1) announcedThisSession.clear();
+    }
 
     @Subscribe
     public void onApproachSettlementEvent(ApproachSettlementEvent event) {
@@ -30,7 +51,7 @@ public class ApproachSettlementSubscriber {
                     event.getSystemAddress(), starSystem, settlement.recordKey(), event.getMarketID());
             if (!availableData.isEmpty()) sb.append(" ").append(localizedEvent("event.approach.settlement.moreData"));
 
-            if (playerSession.isRouteAnnouncementOn()) {
+            if (playerSession.isRouteAnnouncementOn() && firstApproachThisSession(event)) {
                 String instructions = """
                             Approaching settlement.
                             Provide very brief summary for the settlement data.
@@ -39,6 +60,21 @@ public class ApproachSettlementSubscriber {
                 VegaRuntime.narrator().narrate(sb.toString(), instructions);
             }
         });
+    }
+
+    /**
+     * True the first time this session the settlement is approached, false on every return to it.
+     */
+    boolean firstApproachThisSession(ApproachSettlementEvent event) {
+        return announcedThisSession.add(settlementKey(event));
+    }
+
+    /**
+     * Name within system rather than {@code MarketID}: a settlement with no market reports none, and
+     * the name is unique within its system.
+     */
+    private static String settlementKey(ApproachSettlementEvent event) {
+        return event.getSystemAddress() + "/" + event.getName();
     }
 
     /**
