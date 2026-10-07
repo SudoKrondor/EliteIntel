@@ -29,6 +29,10 @@ public record GameInstallation(Storefront storefront, Path root, Path controlSch
      */
     public static final String LIVE_PRODUCT = "elite-dangerous-odyssey-64";
 
+    public static final String DEVICE_MAPPINGS = "DeviceMappings.xml";
+    public static final String DEVICE_BUTTON_MAPS = "DeviceButtonMaps";
+    public static final String BUTTON_MAP_SUFFIX = ".buttonMap";
+
     public GameInstallation {
         Objects.requireNonNull(storefront, "storefront");
         Objects.requireNonNull(root, "root");
@@ -55,7 +59,7 @@ public record GameInstallation(Storefront storefront, Path root, Path controlSch
     }
 
     public Path deviceMappings() {
-        return controlSchemes.resolve("DeviceMappings.xml");
+        return deviceMappingsIn(controlSchemes);
     }
 
     /**
@@ -63,6 +67,29 @@ public record GameInstallation(Storefront storefront, Path root, Path controlSch
      * not a fault - Frontier ships button maps for only a couple of devices, and Horizons ships none.
      */
     public Path deviceButtonMaps() {
-        return controlSchemes.resolve("DeviceButtonMaps");
+        return deviceButtonMapsIn(controlSchemes);
+    }
+
+    // WHY: the device-file paths are spelled once, here. Apply, the startup check and the startup .buttonMap each
+    // decide which file is a device's, and a typo in one copy would make them disagree.
+
+    /** The {@code DeviceMappings.xml} in a {@code ControlSchemes} folder, whether or not it exists. */
+    public static Path deviceMappingsIn(Path controlSchemes) {
+        return controlSchemes.resolve(DEVICE_MAPPINGS);
+    }
+
+    /** The {@code DeviceButtonMaps} folder in a {@code ControlSchemes} folder, whether or not it exists. */
+    public static Path deviceButtonMapsIn(Path controlSchemes) {
+        return controlSchemes.resolve(DEVICE_BUTTON_MAPS);
+    }
+
+    /**
+     * A device's {@code .buttonMap} in a {@code ControlSchemes} folder: the filename stem is the device's element
+     * name in {@code DeviceMappings.xml}.
+     *
+     * @throws java.nio.file.InvalidPathException when the name cannot be a filename - an XML tag may hold a colon
+     */
+    public static Path buttonMapIn(Path controlSchemes, String deviceName) {
+        return deviceButtonMapsIn(controlSchemes).resolve(deviceName + BUTTON_MAP_SUFFIX);
     }
 }

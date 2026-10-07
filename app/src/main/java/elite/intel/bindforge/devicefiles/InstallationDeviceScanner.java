@@ -1,5 +1,6 @@
 package elite.intel.bindforge.devicefiles;
 
+import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.db.managers.BindForgeDeviceInstallsManager;
 import elite.intel.db.managers.BindForgeDeviceInstallsManager.FoundDevice;
 import org.apache.logging.log4j.LogManager;
@@ -71,7 +72,7 @@ public final class InstallationDeviceScanner {
      */
     public List<FoundDevice> read(Path controlSchemes) throws IOException {
         List<DeviceEntry> entries = DeviceMappingsParser.parseIfPresent(
-                controlSchemes.resolve("DeviceMappings.xml"));
+                GameInstallation.deviceMappingsIn(controlSchemes));
         Set<String> withButtonMap = buttonMapOwners(entries, controlSchemes);
 
         List<FoundDevice> found = new ArrayList<>();
@@ -97,7 +98,7 @@ public final class InstallationDeviceScanner {
      * none is the normal case rather than a fault - Frontier ships button maps for two of its 51 entries.
      */
     private static Set<String> buttonMapOwners(List<DeviceEntry> entries, Path controlSchemes) throws IOException {
-        ButtonMapAudit.Result audit = ButtonMapAudit.audit(entries, controlSchemes.resolve("DeviceButtonMaps"));
+        ButtonMapAudit.Result audit = ButtonMapAudit.audit(entries, GameInstallation.deviceButtonMapsIn(controlSchemes));
         Set<String> owners = new LinkedHashSet<>();
         audit.attached().forEach(attachment -> owners.add(attachment.deviceName()));
         return owners;

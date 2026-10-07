@@ -1,5 +1,7 @@
 package elite.intel.bindforge.devicefiles;
 
+import elite.intel.bindforge.install.GameInstallation;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,7 +24,7 @@ import java.util.stream.Stream;
  */
 public final class ButtonMapAudit {
 
-    private static final String SUFFIX = ".buttonMap";
+    private static final String SUFFIX = GameInstallation.BUTTON_MAP_SUFFIX;
 
     private ButtonMapAudit() {
     }

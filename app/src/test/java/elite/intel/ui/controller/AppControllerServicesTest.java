@@ -65,6 +65,15 @@ class AppControllerServicesTest {
         }
     }
 
+    /** The startup .buttonMap acts on the device poll loop's connect events, so it comes up after it. */
+    @Test
+    void buttonMapStartupComesUpAfterTheDevices() {
+        List<ServiceType> order =
+                List.copyOf(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO).keySet());
+        assertTrue(order.contains(ServiceType.BUTTON_MAP_STARTUP));
+        assertTrue(order.indexOf(ServiceType.DEVICE) < order.indexOf(ServiceType.BUTTON_MAP_STARTUP));
+    }
+
     @Test
     void audioComesUpBeforeVegaAndJournal() {
         List<ServiceType> order =

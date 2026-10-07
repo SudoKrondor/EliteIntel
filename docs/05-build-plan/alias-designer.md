@@ -22,6 +22,7 @@ data; most of what the spec describes is still ahead.
 | Device names | `bindforge.devices.DeviceNames` — the default-name rule, alias validation (`Verdict`, `Problem`), `sameName`, and `needingName` (who onboarding asks). Pure; the caller passes the names already taken |
 | Hardware VID/PID | `bindforge.devices.DeviceIdentities` — from SDL's GUID; confirmed on four controllers, real GUIDs in its test |
 | Frontier's shipped list | `bindforge.devicefiles.FrontierStockDevices`, resource `bindforge/FrontierStock-DeviceMappings.xml` |
+| Startup `.buttonMap` (A8) | `bindforge.devicefiles.ButtonMapGeneration` (per installation, create-only), `ButtonMapLabels` (the generated labels); `bindforge.devices.ButtonMapStartup` runs it on every connect, started as `BUTTON_MAP_STARTUP` in `AppController` |
 | Divergence list | `DeviceDivergenceScanner`, `DeviceDivergence` (red if `.binds` names the device, yellow otherwise), `BindsDeviceReferences`, `ButtonMapAudit` |
 | What each installation holds | `InstallationDeviceScanner`, run on every refresh; rows in `bindforge_device_installs` |
 | Game Install Locations screen | `ui.screen.bindings.GameInstallLocationsPanel` — in Binding Management, where the spec puts it in File Manager |
@@ -46,11 +47,14 @@ That is A3.
 
 ## Known issues — fix when a slice passes them
 
-- **[alias-designer.md](../02-features/bindforge/alias-designer.md) says Frontier ships "139 device elements".**
-  It is 51 elements carrying 136 VID/PID pairs — the README of the stock capture, and the tests, both say so.
+
 - **`AliasDesignerPanel`'s class javadoc says the panel is "not in the tab bar".** It is.
-- **`ButtonInputMapper.axisToBindsToken` throws for axis index 6 and above.** Generating labels "sized to what
-  the device reports" will hit it on any controller with seven or more axes.
+- **`ButtonInputMapper.axisToBindsToken` throws for axis index 6 and above.** A8 went around it (`ButtonMapLabels`
+  labels all eight tokens); the class is shared with V1.1, so the fix — add U and V — is Krondor's, and the
+  Bind Editor's capture needs it.
+- **SDL numbers axes without gaps**, so anything mapping an SDL axis index to a game token is wrong for a stick
+  reporting X, Y and RZ. A8 sidesteps it by labelling all eight. Recorded under [the startup `.buttonMap`](../02-features/bindforge/alias-designer.md#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller);
+  it will bite the Device Editor's live highlighting and the capture dialog too.
 - **Still open from the first code review:**
   - **#7 — paths are stored as typed**, so `E:\SteamLibrary\…` and `e:\steamlibrary\…\` become two rows for one
     installation. Discussed 2026-09-30 and leaning towards deleting **relocate** altogether, since Remove then
@@ -70,7 +74,7 @@ That is A3.
 
 | # | Slice | Needs | Status |
 |---|---|---|---|
-| A1 | **First setup** — turn what the installations hold into the master: per element, the four cases, a name conflict routed into the rename, a labelled backup and Edit History before writing | Core C1, C2 (both done) | ready |
+| A1 | **First setup** — turn what the installations hold into the master: per element, the four cases, a name conflict routed into the rename, a labelled backup and Edit History before writing | Core C1, C2 (both done) | **next** |
 | A2 | **`.buttonMap` label merge** — one row per input that disagrees, nothing else | A1 | waiting |
 | A3 | **Divergence against the master** — replace installation-against-installation | A1 | waiting |
 | A4 | **Installations markers** — `M`, *not added*, severity colour | A1 | waiting |
@@ -78,9 +82,9 @@ That is A3.
 | A6 | **Onboarding: the rule** — the default-name rule and alias validation | Core C1 (done) | **done 2026-10-06** |
 | A6b | **Onboarding: the dialog and its writes** — name the controllers `needingName` returns, then write the entry and a generated `.buttonMap` straight away. A controller `.binds` names by hex waits for Apply, with a `.binds` rewrite | A6, A8 | waiting — the hex case is `bindforge.io`, so it is blocked until the question in the README is answered |
 | A7 | **Automatic registration and hot-plug** — `DeviceBus` connect and disconnect | A6b | waiting |
-| A8 | **`.buttonMap` generation at Elite-Intel startup** — connected, named, none on disk | Core C1 (done) | **next** — needs a create-only write (see core.md) and a fix for the axis-6 bug below |
+| A8 | **`.buttonMap` generation at Elite-Intel startup** — connected, named, none on disk | Core C1 (done) | **done 2026-10-06** |
 | A9 | **Device Editor** — inline expansion, install strip, labels, live highlighting | C2 (done) | ready |
-| A10 | **Actions** — SAVE, DISCARD, CLEAR, RESET LABELS, APPLY, reported per installation. Unlocks [Core C6](core.md#slices), the exit prompt, which needs an editor holding unsaved edits | A9 | waiting |
+| A10 | **Actions** — SAVE, DISCARD, CLEAR, RESET LABELS, APPLY, reported per installation. Unlocks [Core C6](core.md#slices), the exit prompt, which needs an editor holding unsaved edits. **RESET LABELS must delete the `.buttonMap` in every installation**, or A8 never regenerates it | A9 | waiting |
 | A11 | **Rename** — every installation first, `.binds` last, all or nothing | A10 | waiting |
 | A12 | **When hardware changes** — a missing device, the identity question, retarget, one missing device at a time | A11 | waiting |
 | A13 | **The missing-controller warning**, once per run | — | ready |
@@ -92,6 +96,24 @@ while Core is in progress.
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
+
+- **2026-10-06 — A8 review fixes** (`code-integrity-review.md`, Alan). All eight axis labels whenever a
+  controller has any axis, instead of by position; devices the game draws itself are skipped — `<SupportsIcons>`
+  and `<GamePad>` — after Frontier's readme confirmed icon tokens (`[x52b1]`); the create-only write publishes by
+  hard link, so it refuses atomically on Linux too; temp cleanup no longer masks the outcome; device-file paths
+  live once in `GameInstallation` (`deviceMappingsIn`, `buttonMapIn`), used by Push, Check, the scanners and both
+  panels; `ButtonMapStartupTest` added. All recorded in the spec. Frontier's readme is in `reference-data`; its
+  "put maps in the bindings folder" line does **not** change where `.buttonMap` lives — the installation's
+  `ControlSchemes\DeviceButtonMaps`, as documented (Alan).
+
+- **2026-10-06 — A8 built** (Alan). `ButtonMapGeneration` creates a `.buttonMap` for a connected controller an
+  installation already names, never over an existing file; decisions recorded in
+  [the startup `.buttonMap`](../02-features/bindforge/alias-designer.md#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller):
+  every connect, not only startup; the name is per installation (first match); a device the master labels is
+  skipped as C3's drift; axes by position X–V; no hats (they report as buttons). **Found:** SDL compacts axis
+  indices — see Known issues. Started as `BUTTON_MAP_STARTUP` in `AppController.buildServices` after `DEVICE`
+  (Alan: no need to wait on Krondor for one line; diagnostics stubs it). **A6b reuses** `ButtonMapLabels` and `ButtonMapGeneration.createNew`. **A1 next** — first setup will
+  meet generated maps for built-ins in every installation; they are identical, so they merge without a question.
 
 - **2026-10-06 — A6 built: the rule, not the dialog** (Alan). `bindforge.devices.DeviceNames` is pure, and the
   spec's six examples are its tests. Decided and recorded in [the default-name rule](../02-features/bindforge/alias-designer.md#the-default-name-rule):

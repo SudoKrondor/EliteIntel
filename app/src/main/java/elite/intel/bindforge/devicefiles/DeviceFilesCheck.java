@@ -3,6 +3,7 @@ package elite.intel.bindforge.devicefiles;
 import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush.MasterDevice;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush.Target;
+import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
 import elite.intel.db.managers.BindForgeDeviceMasterManager;
 import org.apache.logging.log4j.LogManager;
@@ -40,9 +41,6 @@ public final class DeviceFilesCheck {
 
     private static final Logger log = LogManager.getLogger(DeviceFilesCheck.class);
 
-    private static final String DEVICE_MAPPINGS = "DeviceMappings.xml";
-    private static final String BUTTON_MAPS = "DeviceButtonMaps";
-    private static final String BUTTON_MAP_SUFFIX = ".buttonMap";
 
     public enum State {
         /** Apply would write nothing: the installation holds what the master says. */
@@ -187,7 +185,7 @@ public final class DeviceFilesCheck {
         if (target.missing() || !Files.isDirectory(target.controlSchemes())) {
             return nothingCompared(target, State.MISSING, "folder not found: " + target.controlSchemes());
         }
-        Path deviceMappings = target.controlSchemes().resolve(DEVICE_MAPPINGS);
+        Path deviceMappings = GameInstallation.deviceMappingsIn(target.controlSchemes());
         boolean pushWouldWrite;
         byte[] current;
         Map<String, HardwareId> inFile;
@@ -276,18 +274,17 @@ public final class DeviceFilesCheck {
      */
     private static List<LabelChange> labelChanges(Target target, List<MasterDevice> devices,
                                                   List<ElementChange> elements) {
-        Path buttonMaps = target.controlSchemes().resolve(BUTTON_MAPS);
         List<LabelChange> changes = new ArrayList<>();
 
         for (MasterDevice device : devices) {
             // WHY: a device with no labels gets no file from the push, so whatever sits under its name - often
             // Frontier's own map - is not the master's to compare.
             if (device.labels().isEmpty()) continue;
-            changes.addAll(compareLabels(device.name(), device.labels(), buttonMaps.resolve(device.name() + BUTTON_MAP_SUFFIX)));
+            changes.addAll(compareLabels(device.name(), device.labels(), GameInstallation.buttonMapIn(target.controlSchemes(), device.name())));
         }
         for (ElementChange element : elements) {
             if (element.kind() != ElementKind.ADDED) continue;
-            Path buttonMap = buttonMaps.resolve(element.deviceName() + BUTTON_MAP_SUFFIX);
+            Path buttonMap = GameInstallation.buttonMapIn(target.controlSchemes(), element.deviceName());
             if (Files.isRegularFile(buttonMap)) changes.addAll(compareLabels(element.deviceName(), Map.of(), buttonMap));
         }
         return changes;

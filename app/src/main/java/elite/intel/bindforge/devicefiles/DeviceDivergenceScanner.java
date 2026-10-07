@@ -1,5 +1,6 @@
 package elite.intel.bindforge.devicefiles;
 
+import elite.intel.bindforge.install.GameInstallation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -61,7 +62,7 @@ public final class DeviceDivergenceScanner {
      */
     private static Optional<List<DeviceEntry>> entriesOf(String install, Path controlSchemes) {
         try {
-            return Optional.of(DeviceMappingsParser.parseIfPresent(controlSchemes.resolve("DeviceMappings.xml")));
+            return Optional.of(DeviceMappingsParser.parseIfPresent(GameInstallation.deviceMappingsIn(controlSchemes)));
         } catch (IOException e) {
             log.warn("Could not read device entries for {}: {}", install, e.getMessage());
             return Optional.empty();
@@ -70,7 +71,7 @@ public final class DeviceDivergenceScanner {
 
     private static List<Path> orphansOf(String install, List<DeviceEntry> entries, Path controlSchemes) {
         try {
-            return ButtonMapAudit.audit(entries, controlSchemes.resolve("DeviceButtonMaps")).orphaned();
+            return ButtonMapAudit.audit(entries, GameInstallation.deviceButtonMapsIn(controlSchemes)).orphaned();
         } catch (IOException e) {
             log.warn("Could not audit button maps for {}: {}", install, e.getMessage());
             return List.of();

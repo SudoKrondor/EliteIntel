@@ -226,6 +226,13 @@ Each child element's tag is an input token drawn from the same vocabulary as `.b
 
 `<DeviceName>` matches the element tag name used for that device in `DeviceMappings.xml`. Examples: `VPCPanel.buttonMap` corresponds to `<VPCPanel>` in `DeviceMappings.xml`; `T-Rudder.buttonMap` corresponds to `<T-Rudder>`.
 
+**Where it lives: the installation's `ControlSchemes\DeviceButtonMaps\`** — Frontier's maps and the user's alike,
+one set per installation (Alan, 2026-10-06: *"no reason to doubt these fundamental file positions"*).
+[Frontier's readme for custom button names](../reference-data/Frontier-ButtonMap-Readme.txt) tells users to put
+them in the bindings folder instead; that instruction is not what this project builds on, and does not reopen the
+location. The readme is kept for its icon tokens (§2.4) and its note that a change shows on re-entering the
+controls screen.
+
 ### 2.3 Input codes supported
 
 A `.buttonMap` file may contain labels for any of:
@@ -244,7 +251,12 @@ Observed label text styles:
 - Directional indicators: `Clockwise`, `Up`, `Left`
 - Axis names: `A1`, `A2`
 
-**Gap — no confirmed icon token syntax.** The source material does not document any structured "icon token" format inside a label value (e.g. a placeholder like `{icon:...}`). Every observed label is plain text. If Elite's own UI renders icons for some devices, the mechanism behind that is not established by the available source material — do not assume a token syntax exists without confirming it against a real `.buttonMap` file taken from a device the in-game UI is known to show icons for.
+**Icon tokens — confirmed 2026-10-06 from Frontier's own readme.** A label may be an icon name in square
+brackets: `<Joy_1>[x360A]</Joy_1>` shows the Xbox 360 A-button icon in place of `Joy_1`. The readme lists the
+sets: `x360…`, `xb1…` (Xbox One), `ps4…`, `x52…`, `x52pro…`, `hts4…` (T.Flight HOTAS 4) and `xb1hts…` (T.Flight
+Hotas One). Those last four match the elements Frontier's file marks `<SupportsIcons>` (§1.3), so for those
+devices the game draws icons by itself, and a plain-text label would replace them. *This replaces a "gap — no
+confirmed icon token syntax" note; the readme is the confirmation it asked for.*
 
 ### 2.5 Fallback behaviour
 
@@ -264,5 +276,5 @@ Carried forward explicitly rather than papered over:
 
 - Exact schema for a device with alternative VID/PID pairs in `DeviceMappings.xml` (§1.3) — real, but shape unconfirmed.
 - Exact schema/tag name for any icon-support metadata in `DeviceMappings.xml` (§1.3) — real, but shape unconfirmed.
-- Whether `.buttonMap` labels ever encode an icon reference rather than plain text (§2.4) — no evidence found either way in the source material.
+- ~~Whether `.buttonMap` labels ever encode an icon reference rather than plain text (§2.4).~~ **Answered 2026-10-06:** they can — `[x360A]` and the like, from Frontier's readme.
 - Exact VID/PID → hex-ID formatting details (byte order, case, zero-padding) — see `EliteDangerous-BindsFileFormat.md` §4.2 for the same caveat, since it applies equally to `DeviceMappings.xml` as the origin of those values.

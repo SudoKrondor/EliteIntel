@@ -288,14 +288,14 @@ public class GameInstallLocationsPanel extends JPanel {
         if (!Files.isDirectory(controlSchemes)) {
             return getText("bindings.installLocations.deviceFiles.none");
         }
-        Path deviceMappings = controlSchemes.resolve("DeviceMappings.xml");
+        Path deviceMappings = GameInstallation.deviceMappingsIn(controlSchemes);
         if (!Files.isRegularFile(deviceMappings)) {
             return getText("bindings.installLocations.deviceFiles.noMappings");
         }
         try {
             List<DeviceEntry> entries = DeviceMappingsParser.parse(deviceMappings);
             ButtonMapAudit.Result audit =
-                    ButtonMapAudit.audit(entries, controlSchemes.resolve("DeviceButtonMaps"));
+                    ButtonMapAudit.audit(entries, GameInstallation.deviceButtonMapsIn(controlSchemes));
             int maps = audit.attached().size() + audit.orphaned().size();
             return audit.isClean()
                     ? getText("bindings.installLocations.deviceFiles.summary",

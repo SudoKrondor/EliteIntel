@@ -416,7 +416,7 @@ not exist; none changes an existing binding, entry or file.
 |---|---|---|
 | A custom preset from a factory one | [First-Time Startup](#it-applies-immediately--settled-2026-09-12), on **Create** | a new `.binds`; one reversible `StartPreset` line; the factory preset untouched |
 | A controller's name | [onboarding](alias-designer.md#what-onboarding-writes-and-when), when the name is confirmed or the default taken — **only for a controller `.binds` does not reference by hex** | adds a new `DeviceMappings.xml` entry beside the existing ones; creates a `.buttonMap` that did not exist |
-| A generated `.buttonMap` | [Elite-Intel startup](alias-designer.md#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller), for a connected, named controller without one | creates a file that did not exist; never overwrites |
+| A generated `.buttonMap` | [Elite-Intel startup](alias-designer.md#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller), for a connected, named controller without one — and when such a controller connects later (2026-10-06) | creates a file that did not exist; never overwrites |
 
 **What is never on this list:** anything that rewrites existing player data. Naming a controller that `.binds`
 already references by hex rewrites its bindings, so it waits for Apply — entry and rewrite together.

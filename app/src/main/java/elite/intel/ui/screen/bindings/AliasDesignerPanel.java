@@ -226,7 +226,7 @@ public class AliasDesignerPanel extends JPanel {
         controlSchemesByInstall(rows).forEach((install, controlSchemes) -> {
             try {
                 byInstall.put(install,
-                        DeviceMappingsParser.parseIfPresent(controlSchemes.resolve("DeviceMappings.xml")));
+                        DeviceMappingsParser.parseIfPresent(GameInstallation.deviceMappingsIn(controlSchemes)));
             } catch (IOException e) {
                 log.warn("Could not read device entries for {}: {}", install, e.getMessage());
             }

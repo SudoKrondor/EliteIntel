@@ -54,9 +54,6 @@ public final class DeviceFilesPush {
 
     private static final Logger log = LogManager.getLogger(DeviceFilesPush.class);
 
-    private static final String DEVICE_MAPPINGS = "DeviceMappings.xml";
-    private static final String BUTTON_MAPS = "DeviceButtonMaps";
-    private static final String BUTTON_MAP_SUFFIX = ".buttonMap";
 
     /**
      * One installation as the push sees it.
@@ -227,17 +224,16 @@ public final class DeviceFilesPush {
     static Plan plan(Target target, List<MasterDevice> devices, FrontierStockDevices stock) throws IOException {
         List<FileWrite> writes = new ArrayList<>();
 
-        Path deviceMappings = target.controlSchemes().resolve(DEVICE_MAPPINGS);
+        Path deviceMappings = GameInstallation.deviceMappingsIn(target.controlSchemes());
         byte[] current = readIfPresent(deviceMappings);
         boolean seeded = current == null;
         DeviceMappingsMerge.Result merged =
                 DeviceMappingsMerge.merge(seeded ? stockFile() : current, userEntries(devices, stock));
         if (seeded || merged.changed()) writes.add(new FileWrite(deviceMappings, current, merged.content()));
 
-        Path buttonMaps = target.controlSchemes().resolve(BUTTON_MAPS);
         for (MasterDevice device : devices) {
             if (device.labels().isEmpty()) continue;
-            Path buttonMap = buttonMaps.resolve(device.name() + BUTTON_MAP_SUFFIX);
+            Path buttonMap = GameInstallation.buttonMapIn(target.controlSchemes(), device.name());
             byte[] content = ButtonMapWriter.write(device.labels());
             byte[] previous = readIfPresent(buttonMap);
             if (!Arrays.equals(previous, content)) writes.add(new FileWrite(buttonMap, previous, content));
@@ -263,7 +259,9 @@ public final class DeviceFilesPush {
             if (write.previous() == null) continue;
             if (!kept.add(sha256(write.previous()))) continue;
             Path folder = historyRoot.resolve(String.valueOf(target.installId()));
-            if (write.path().getFileName().toString().endsWith(BUTTON_MAP_SUFFIX)) folder = folder.resolve(BUTTON_MAPS);
+            if (write.path().getFileName().toString().endsWith(GameInstallation.BUTTON_MAP_SUFFIX)) {
+                folder = folder.resolve(GameInstallation.DEVICE_BUTTON_MAPS);
+            }
             backups.create(write.path(), folder);
             backups.prune(folder, write.path().getFileName().toString(), keep);
         }

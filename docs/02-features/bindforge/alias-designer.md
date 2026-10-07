@@ -371,8 +371,8 @@ an ID that is new — and BindForge cannot distinguish a reflash from a warranty
 *"yes, this is the same device"* produces the correct outcome for both.
 
 **Addition is only simple when Frontier does not already know the device.** The stock
-`DeviceMappings.xml` ships **139 device elements**
-([the built-in list](#built-in-devices)). A controller already in there is already named by the game, and
+`DeviceMappings.xml` ships **51 device elements carrying 136 VID/PID pairs**
+([the built-in list](#built-in-devices); *corrected 2026-10-06 from "139 device elements"*). A controller already in there is already named by the game, and
 there is nothing for BindForge to create.
 
 **A missing device is not an error.** Hardware gets unplugged. The entry stays valid, the bindings stay
@@ -606,6 +606,47 @@ prompt, because there is nothing to decide. That covers Frontier's built-ins, wh
 
 It runs at Elite-Intel startup rather than when BindForge opens, so the labels are already there the first time
 the capture dialog is used. **Startup never names anything:** a controller with no name waits for onboarding.
+
+**Settled while building it — 2026-10-06 (Alan).** Built as `bindforge.devicefiles.ButtonMapGeneration`
+(`ButtonMapLabels` for the labels), run by `bindforge.devices.ButtonMapStartup`.
+
+- **It acts on every connect, not only at startup.** The Device Service gives no signal that its first
+  enumeration is done, but it reports every controller present then as a connect — so this covers startup
+  exactly, and a named controller plugged in later meets the same rule. Naming an unnamed one is still
+  onboarding's.
+- **"Named" is per installation:** the first element in *that installation's* `DeviceMappings.xml` claiming the
+  controller's VID/PID, primary or `<Alternative>` — the one the game uses
+  ([domain doc §1.2d](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12d-two-entries-for-one-vidpid-the-first-in-the-file-wins--measured-2026-10-03)).
+  Until first setup the installations can disagree, and each gets the file its own name needs.
+- **A device the game draws itself is skipped** *(after review)*: an element carrying `<SupportsIcons>` — in
+  Frontier's file the X52, X52 Pro, T.Flight HOTAS 4 and T.Flight Hotas One — and `<GamePad>`. Frontier's own
+  [readme for `.buttonMap`](reference-data/Frontier-ButtonMap-Readme.txt) says a label may be an icon token such as `[x52b1]`
+  ([domain doc §2.4](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#24-label-values)), and these
+  devices get the game's icons, so `Button 3` would put text where an icon was. A pad on `<GamePad>` is bound
+  by the game's own `GamePad_` tokens, so `Joy_` labels on it would never show. *`<DualShock4>` is generated
+  as usual — unverified whether the game binds it by `Joy_` tokens.*
+- **A device the master holds labels for is skipped.** Apply writes its file from the master, so a missing one
+  is drift for [the startup check](overview.md#for-the-device-files--settled-2026-10-05-alan) to report and
+  revert. The master is never written here.
+- **Create-only to the end:** the file is written beside the target and published under its name by a hard
+  link, which refuses atomically when the file exists, on Windows and Linux alike; where a volume refuses hard
+  links, a move that does not replace is used instead. A file that appears meanwhile is kept. Nothing is
+  replaced, so nothing goes to Edit History.
+- **A controller with any axis gets all eight axis labels, `X Axis` through `V Axis`** *(after review; replaces
+  labelling by position)*. SDL numbers a controller's axes without gaps, while the game names them by which axis
+  they are: a stick reporting X, Y and RZ is axes 0, 1 and 2, and nothing says which is which, so labelling by
+  position would label Z and leave the twist raw. A label for an axis the device lacks is never shown, so all
+  eight miss nothing. *"Sized to what the device reports"* above holds for buttons only.
+- **No hat labels.** The Device Service reads no hats, and in Elite Dangerous a hat mostly reports as buttons,
+  which get `Button N` like any other — so the `Hat 1 Up` labels [onboarding](#what-it-asks-just-a-name) mentions
+  are not generated.
+- **Labels are English and fixed** — file content the game displays, not Elite-Intel's interface text.
+- **Started as a service**, `BUTTON_MAP_STARTUP` in `AppController.buildServices`, after `DEVICE`. Diagnostics
+  mode stubs it, as it does the other services touching game files.
+- **After RESET LABELS it regenerates only if the file is gone.** Generation never replaces, so RESET LABELS
+  (the [Actions](#actions-and-what-each-one-reaches) slice) must delete the `.buttonMap` in every installation
+  for the line above about a fresh file to hold.
+
 
 ## Device Editor
 
