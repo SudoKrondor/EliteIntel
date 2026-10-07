@@ -17,6 +17,7 @@ UI-Commander-Tab: Вкладка «Командир»
 UI-Actions-Tab: Вкладка «Действия»
 UI-Bindings-Tab: Вкладка «Бинды»
 UI-Settings-Tab: Вкладка «Настройки»
+UI-Jukebox-Tab: Вкладка «Музыка»
 UI-Stats-Tab: Вкладка «Статистика»
 UI-HUD-Overlay: HUD-оверлей
 installing-local-llms: Выбрать LLM
@@ -25,6 +26,7 @@ Install-LM-Studio-Linux: LM Studio  Linux
 Install-LM-Studio-Windows: LM Studio  Windows
 AMD-RX-7800XT-LLM-Setup: AMD RX Series
 General-Operation: Общее использование
+Custom-Commands: Свои команды
 TradeRoutePlotting: Торговля и прибыль
 Search-galaxy-with-EliteIntel: Поиск по галактике
 Discovery-Assistance: Исследование

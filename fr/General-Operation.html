@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fonctionnement général  EliteIntel</title>
-    <meta name="description" content="Elite Intel est conçu pour une interaction naturelle. Cette page décrit les concepts clés pour une utilisation efficace. Mémoriser des commandes spécifiques n&#39;e">
+    <meta name="description" content="Elite Intel est conçu pour une interaction naturelle. Cette page décrit les notions clés pour">
     <link rel="canonical" href="https://www.elite-intel.org/fr/General-Operation.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/General-Operation.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/General-Operation.html">
@@ -13,7 +13,7 @@
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/General-Operation.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/General-Operation.html">
     <meta property="og:title" content="Fonctionnement général  EliteIntel">
-    <meta property="og:description" content="Elite Intel est conçu pour une interaction naturelle. Cette page décrit les concepts clés pour une utilisation efficace. Mémoriser des commandes spécifiques n&#39;e">
+    <meta property="og:description" content="Elite Intel est conçu pour une interaction naturelle. Cette page décrit les notions clés pour">
     <meta property="og:url" content="https://www.elite-intel.org/fr/General-Operation.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Actions</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Bindings</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Onglet Paramètres</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Onglet Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Onglet Statistiques</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">Comment faire ?</div>
             <a href="General-Operation.html" class="nav-link active"><img src="../images/manual.png" class="inline" height="20" alt=""> Opération générale</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Créer vos propres commandes</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Commerce et profit</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Explorer la galaxie</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Exploration &amp; Exobiologie</a>
@@ -88,24 +90,41 @@
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
 <h1>Fonctionnement général</h1>
-<p>Elite Intel est conçu pour une interaction naturelle. Cette page décrit les concepts clés pour une utilisation efficace. Mémoriser des commandes spécifiques <strong>n&#39;est pas nécessaire</strong>. Parlez naturellement et l&#39;IA <strong>détermine votre intention par probabilité</strong>, donc vous devez exprimer clairement ce que vous voulez sans être ambigu sur ce que vous attendez de l&#39;application. Plus vous êtes ambigu, plus la probabilité que le LLM devine correctement votre intention est faible.</p>
-<h2>Contrôles du jeu, commandes et requêtes</h2>
-<p>Elite Intel aide avec les opérations de contrôle du vaisseau, comme Voice Attack, mais ce n&#39;est pas tout ce qu&#39;il peut faire. 
-Il peut trouver des choses pour vous, comme des courtiers technologiques, des négociants en matériaux, calculer des routes commerciales ou monétiser votre
-route existante. Il aide pour le suivi des missions, la gestion des missions massacre de pirates, l&#39;exploration, l&#39;exobiologie, 
-et la gestion du Fleet Carrier. Il génère des réponses vocales pour les requêtes au lieu d&#39;utiliser des répliques prédéfinies.
-Ainsi, chaque réponse à une requête sera différente. La créativité des réponses dépendra de la Personnalité que vous sélectionnez
-et des capacités du modèle que vous utilisez.</p>
-<p><em>Ce n&#39;est pas seulement une alternative à Voice Attack, c&#39;est un ordinateur de bord avec un cerveau. Cependant, il ne jugera pas votre 
-façon de jouer, ne pilotera pas votre vaisseau à votre place et n&#39;opérera pas en AFK.</em> </p>
-<p>Elite Intel effectue des analyses de données à partir des fichiers journaux du jeu, de Spansh et d&#39;EDSM. 
-Les requêtes spécifiques retournent des réponses détaillées. Les requêtes larges retournent des résumés.</p>
-<p>En mode conversation, l&#39;IA supporte également des requêtes de connaissances générales au-delà d&#39;Elite Dangerous. Sa connaissance du
-lore d&#39;Elite Dangerous dépend du modèle utilisé. Certains modèles n&#39;en ont aucune idée et fourniront une réponse aléatoire
-à une question aléatoire, d&#39;autres connaissent effectivement le lore.</p>
-<p>Consultez les autres pages et les vidéos YouTube sur un sujet spécifique sur ce site</p>
+<p>Elite Intel est conçu pour une interaction naturelle. Cette page décrit les notions clés pour
+bien l&#39;utiliser. Mémoriser des commandes précises n&#39;est <strong>pas nécessaire</strong>. Parlez naturellement
+et Vega <strong>déduit votre intention de ce que vous voulez dire</strong> ; il faut donc exprimer ce que vous
+voulez sans ambiguïté. Plus vous êtes ambigu, moins Vega a de chances de choisir la bonne action.</p>
+<h2>Commandes du jeu, ordres et requêtes</h2>
+<p>Elite Intel aide à piloter le vaisseau, comme Voice Attack, mais ne s&#39;arrête pas là. Il peut
+trouver des choses pour vous, comme des courtiers en technologie ou des marchands de matériaux,
+calculer des routes commerciales ou monétiser votre trajet actuel. Il aide au suivi des missions, à
+l&#39;empilement des missions de massacre de pirates, à la chasse aux primes, à l&#39;exploration, à
+l&#39;exobiologie, au transport pour la colonisation et à la gestion des vaisseaux-mères. Il génère des
+réponses parlées aux requêtes au lieu de répliques toutes faites, donc chaque réponse est
+différente. Son degré de créativité dépend de la personnalité choisie pour votre vaisseau et des
+capacités du modèle utilisé.</p>
+<p><em>Ce n&#39;est pas seulement une alternative à Voice Attack, c&#39;est un ordinateur de bord doté d&#39;un
+cerveau. Mais il ne jugera pas votre façon de jouer, ne pilotera pas à votre place et ne jouera pas
+en AFK.</em></p>
+<p>Elite Intel analyse les données des fichiers journal du jeu, de Spansh et d&#39;EDSM. Les requêtes
+précises donnent des réponses détaillées ; les requêtes générales, des résumés.</p>
+<p>Vega peut aussi simplement converser — lore du jeu, build de vaisseau, tout autre sujet. Sa
+connaissance du lore d&#39;Elite Dangerous dépend du modèle : certains le connaissent, d&#39;autres
+inventent une réponse.</p>
+<h2>Trois façons de donner un ordre</h2>
+<ul>
+<li><strong>Parler.</strong> Mains libres, ou en <a href="UI-Settings-Tab.html">push-to-talk</a> sur un bouton de manette ou de
+souris.</li>
+<li><strong>Le taper dans le chat du jeu.</strong> Commencez la ligne par <code>@Vega</code> — <em>« @Vega trouve une
+marchandise tritium »</em>. Idéal pour les noms que la reconnaissance vocale comprend mal. Voir
+<a href="AllCommands.html">Toutes les commandes</a>.</li>
+<li><strong>Cliquer.</strong> Toute commande peut être lancée depuis l&#39;<a href="UI-Actions-Tab.html">onglet Actions</a>, qui montre
+aussi ce qui est disponible là où vous êtes.</li>
+</ul>
+<p>Voir <a href="AllCommands.html">Toutes les commandes</a> pour ce que vous pouvez demander, et les autres pages et
+vidéos YouTube de ce site pour des sujets précis.</p>
 <hr>
-<p>Communauté 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 
         </div>
     </main>

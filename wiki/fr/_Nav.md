@@ -17,6 +17,7 @@ UI-Commander-Tab: Onglet Commandant
 UI-Actions-Tab: Onglet Actions
 UI-Bindings-Tab: Onglet Bindings
 UI-Settings-Tab: Onglet Paramètres
+UI-Jukebox-Tab: Onglet Jukebox
 UI-Stats-Tab: Onglet Statistiques
 UI-HUD-Overlay: Overlay HUD
 installing-local-llms: Choisir votre LLM
@@ -25,6 +26,7 @@ Install-LM-Studio-Linux: LM Studio  Linux
 Install-LM-Studio-Windows: LM Studio  Windows
 AMD-RX-7800XT-LLM-Setup: AMD RX Series
 General-Operation: Opération générale
+Custom-Commands: Créer vos propres commandes
 TradeRoutePlotting: Commerce et profit
 Search-galaxy-with-EliteIntel: Explorer la galaxie
 Discovery-Assistance: Exploration & Exobiologie

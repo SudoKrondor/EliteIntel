@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eigene Befehle erstellen  EliteIntel</title>
+    <meta name="description" content="Ein eigener Befehl ist ein Makro: eine Liste von Schritten — Tastendrücke, Pausen, getippter Text,">
+    <link rel="canonical" href="https://www.elite-intel.org/de/Custom-Commands.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Custom-Commands.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Custom-Commands.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/Custom-Commands.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Custom-Commands.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Custom-Commands.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Custom-Commands.html">
+    <meta property="og:title" content="Eigene Befehle erstellen  EliteIntel">
+    <meta property="og:description" content="Ein eigener Befehl ist ein Makro: eine Liste von Schritten — Tastendrücke, Pausen, getippter Text,">
+    <meta property="og:url" content="https://www.elite-intel.org/de/Custom-Commands.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases/latest" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../Custom-Commands.html" class="locale-link">EN</a><a href="../fr/Custom-Commands.html" class="locale-link">FR</a><a href="../es/Custom-Commands.html" class="locale-link">ES</a><span class="locale-current">DE</span><a href="../uk/Custom-Commands.html" class="locale-link">UK</a><a href="../ru/Custom-Commands.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Startseite</a>
+
+            <div class="nav-section">Anwendung</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Benutzeroberfläche</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Reiter Vega</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Reiter Kommandant</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Reiter Aktionen</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Reiter Bindings</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Reiter Einstellungen</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Reiter Jukebox</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Reiter Statistik</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-Overlay</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> LLM auswählen</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 Kostenloses Cloud-LLM</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Wie mache ich...?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Allgemeiner Betrieb</a>
+            <a href="Custom-Commands.html" class="nav-link active"><img src="../images/manual.png" class="inline" height="20" alt=""> Eigene Befehle erstellen</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Handel &amp; Profit</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Galaxie erkunden</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Entdeckung &amp; Exobiologie</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Piraten-Missionen</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Alle Befehle</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Systembefehle</a>
+
+            <div class="nav-section">Community</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Matrix-Chat ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Datenschutzrichtlinie</a>
+            <a href="Contact.html" class="nav-link">📧 Entwickler kontaktieren</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Eigene Befehle erstellen</h1>
+<p>Ein eigener Befehl ist ein Makro: eine Liste von Schritten — Tastendrücke, Pausen, getippter Text,
+gesprochene Zeilen —, die abläuft, wenn du eine deiner Phrasen sagst. Nimm einen, wenn die
+integrierten Befehle nicht tun, was du willst, oder wenn du immer wieder dieselbe Tastenfolge
+drückst.</p>
+<p>Eigene Befehle liegen im <a href="UI-Actions-Tab.html">Reiter Aktionen → Eigene Befehle</a>. Diese Seite baut zwei
+davon von Grund auf.</p>
+<hr>
+<h2>Bevor du anfängst</h2>
+<ul>
+<li><strong>Ein Sprachmodell muss laufen.</strong> Es erzeugt den Aktionsschlüssel und ordnet deine Phrasen zu.
+Starte zuerst die Dienste im <a href="UI-Vega-Tab.html">Vega-Reiter</a>.</li>
+<li><strong>Jede verwendete Steuerung braucht eine Tastaturbelegung.</strong> Elite Intel drückt Tasten; eine
+Steuerung, die nur auf deinem HOTAS liegt, kann ein Makro nicht drücken. Der
+<a href="UI-Bindings-Tab.html">Reiter Bindings</a> zeigt, was fehlt, und <strong>Fehlende Belegungen automatisch
+zuweisen</strong> behebt es in einem Rutsch.</li>
+</ul>
+<hr>
+<h2>Beispiel 1: Gegenmaßnahmen auf ein Wort</h2>
+<p>Ziel: <em>„Gegenmaßnahmen los“</em> sagen und Wärmesenke, Täuschkörper und Schildzelle bekommen, mit
+Bestätigung von Vega.</p>
+<h3>1. Befehl anlegen</h3>
+<p>Öffne <strong>Aktionen → Eigene Befehle</strong> und drücke <strong>Neu</strong>.</p>
+<h3>2. Namen und Phrasen eintragen</h3>
+<ul>
+<li><p><strong>Name:</strong> <code>Gegenmaßnahmen</code></p>
+</li>
+<li><p><strong>Was du sagst:</strong> eine Phrase pro Zeile (Kommas gehen auch):</p>
+<pre><code>gegenmaßnahmen los
+alle gegenmaßnahmen
+verteidigungspaket
+</code></pre>
+</li>
+</ul>
+<p>Schreib die Phrasen so, wie du sie unter Druck wirklich sagen würdest. Sie müssen sich <strong>von
+integrierten Befehlen unterscheiden</strong> — eine Phrase, die schon einem integrierten Befehl gehört
+(<em>„Wärmesenke“</em>, <em>„Täuschkörper einsetzen“</em>), wird abgelehnt, weil Vega die beiden nie
+auseinanderhalten könnte.</p>
+<h3>3. Aktionsschlüssel erzeugen</h3>
+<p>Drück <strong>Erzeugen</strong>. Das Sprachmodell macht aus deinen Phrasen einen englischen <code>snake_case</code>-Schlüssel
+wie <code>deploy_all_countermeasures</code>. Von Hand eintippen kannst du ihn nicht — er wird zu dem Namen, den
+das Modell sieht, und muss daher in einer Form sein, die das Modell immer wiedergeben kann. Er ist
+englisch, auch wenn deine Phrasen es nicht sind.</p>
+<h3>4. Schritte hinzufügen</h3>
+<p>Drück für jeden Schritt <strong>Schritt hinzufügen</strong>. Wähle im Dialog den <strong>Typ</strong> und füll aus, was dieser
+Typ verlangt. Die Liste <strong>Bindung</strong> ist wie der Steuerungsbildschirm des Spiels beschriftet —
+<em>Schiffsteuerung / Cooling / Deploy Heatsink</em> — und du kannst darin tippen, um zu filtern (probier
+<code>heat</code>, <code>srv</code>, <code>chaff</code>). Die Namen der Steuerungen stehen dort auf Englisch.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Typ</th>
+<th>Wert</th>
+<th>Dauer ms</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Binding-Tap</td>
+<td>Deploy Heatsink</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Verzögerung</td>
+<td></td>
+<td>150</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Binding-Tap</td>
+<td>Use Chaff Launcher</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Verzögerung</td>
+<td></td>
+<td>150</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Binding-Tap</td>
+<td>Use Shield Cell</td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Sprechen</td>
+<td>Gegenmaßnahmen ausgelöst.</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Mit <strong>Schritt bearbeiten</strong>, <strong>Schritt entfernen</strong> und den Knöpfen <strong>▲ ▼</strong> korrigierst du die
+Reihenfolge.</p>
+<h3>5. Speichern und testen</h3>
+<p>Drück <strong>Speichern</strong>. Stimmt etwas nicht, sagt dir eine Prüfmeldung was — siehe <em>Fehlersuche</em> unten
+auf dieser Seite. Der Befehl erscheint jetzt in der Liste.</p>
+<p>Klick auf seine Zeile und dann <strong>Ausführen</strong>, um ihn ohne Sprechen zu testen. Funktioniert er, sag
+ihn: <em>„Gegenmaßnahmen los.“</em> Du kannst ihn auch im Spielchat tippen: <code>@Vega gegenmaßnahmen los</code>.</p>
+<hr>
+<h2>Beispiel 2: eine Route zu einem Ort, den du oft anfliegst</h2>
+<p>Zu einem laut genannten System plottet Vega keine Route — Namen sind genau das, woran die
+Spracherkennung am häufigsten scheitert. Für einen Ort, den du regelmäßig anfliegst, bedient ein
+Makro die Galaxiekarte für dich, jedes Mal gleich.</p>
+<p><img src="../images/ui-custom-command-navigation.png" alt="Eigener Befehl, der eine Route zum Jameson Memorial plottet"></p>
+<p><strong>Was du sagst:</strong> <em>Route zum Jameson Memorial</em>, <em>bring mich zum Jameson Memorial</em>, <em>Jameson
+Memorial Route</em>. Dann <strong>Erzeugen</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Typ</th>
+<th>Wert</th>
+<th>Dauer ms</th>
+<th>Was er tut</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Binding-Tap</td>
+<td>GALAXYMAPOPEN</td>
+<td></td>
+<td>Galaxiekarte öffnen</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Verzögerung</td>
+<td></td>
+<td>1000</td>
+<td>Die Karte laden lassen</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Binding-Halten</td>
+<td>CAMZOOMIN</td>
+<td>500</td>
+<td>Die Kartenkamera zoomen</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Binding-Tap</td>
+<td>UI_LEFT</td>
+<td></td>
+<td>Zum Suchfeld gehen</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Binding-Tap</td>
+<td>UI_RIGHT</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Binding-Tap</td>
+<td>UI_SELECT</td>
+<td></td>
+<td>Das Suchfeld öffnen</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Text eingeben</td>
+<td>SHINRARTA DEZHRA</td>
+<td></td>
+<td>Den Systemnamen tippen</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Tastendruck</td>
+<td>ENTER</td>
+<td>50</td>
+<td>Suchen</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Verzögerung</td>
+<td></td>
+<td>500</td>
+<td>Auf das Ergebnis warten</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Binding-Tap</td>
+<td>UI_RIGHT</td>
+<td></td>
+<td>In das Ergebnisfeld wechseln</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Binding-Halten</td>
+<td>UI_UP</td>
+<td>500</td>
+<td>Zum obersten Knopf hochlaufen</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Binding-Tap</td>
+<td>UI_SELECT</td>
+<td></td>
+<td>Die Route plotten</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Verzögerung</td>
+<td></td>
+<td>3000</td>
+<td>Warten, bis die Route geplottet ist</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Binding-Tap</td>
+<td>CAMYAWLEFT</td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Für einen anderen Ort wählst du diesen Befehl, drückst <strong>Duplizieren</strong>, änderst Namen, Phrasen und
+das System in Schritt 7 und lässt einen neuen Schlüssel <strong>Erzeugen</strong>. Duplizieren lässt Phrasen und
+Schlüssel absichtlich leer, damit die beiden Befehle nie gleich klingen.</p>
+<p>Starte so ein Makro <strong>im Flug</strong>, mit geschlossener Galaxiekarte — der erste Schritt öffnet sie, und
+eine schon offene Karte würde er stattdessen schließen.</p>
+<hr>
+<h2>Die Schritttypen</h2>
+<table>
+<thead>
+<tr>
+<th>Typ</th>
+<th>Felder</th>
+<th>Wofür</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Binding-Tap</strong></td>
+<td>Bindung</td>
+<td>Eine Spielsteuerung einmal drücken</td>
+</tr>
+<tr>
+<td><strong>Binding-Halten</strong></td>
+<td>Bindung, Dauer ms</td>
+<td>Eine Spielsteuerung halten — Schub, Kamera, durch ein Menü scrollen</td>
+</tr>
+<tr>
+<td><strong>Verzögerung</strong></td>
+<td>Dauer ms</td>
+<td>Dem Spiel Zeit geben: ein Panel öffnet, eine Karte lädt, eine Suche läuft</td>
+</tr>
+<tr>
+<td><strong>Sprechen</strong></td>
+<td>Text</td>
+<td>Vega etwas sagen lassen — eine Bestätigung oder was das Makro gerade getan hat</td>
+</tr>
+<tr>
+<td><strong>Tastendruck</strong></td>
+<td>Rohtaste, Modifikator, Dauer ms</td>
+<td>Eine Taste drücken, die keine Spielbelegung ist: Enter, Escape, ein Buchstabe. Die Dauer ist die Haltezeit</td>
+</tr>
+<tr>
+<td><strong>Text eingeben</strong></td>
+<td>Text</td>
+<td>Zeichen in das Feld tippen, das den Fokus hat — ein Suchfeld, die Chatzeile</td>
+</tr>
+</tbody></table>
+<p><strong>Binding-Schritte sind besser als Tastendruck.</strong> Eine Bindung folgt der Taste, die das Spiel
+tatsächlich nutzt; das Makro funktioniert also weiter, wenn du die Steuerung neu belegst. Nimm
+Tastendruck nur für Tasten ohne Spielbelegung, etwa Enter in einem Textfeld.</p>
+<p><strong>Text eingeben landet dort, wo der Tastaturfokus ist.</strong> Öffne zuerst das Feld — mit einem
+Binding-Schritt, der ein Suchfeld öffnet, oder mit <strong>Tastendruck: Enter</strong> für den Comms-Chat. Sonst
+kommen die Buchstaben als Tastendrücke bei deiner Schiffssteuerung an.</p>
+<hr>
+<h2>Tipps</h2>
+<ul>
+<li><strong>Verzögerungen sind die übliche Lösung.</strong> Wird ein Schritt scheinbar übersprungen, war das Spiel
+noch nicht bereit. Verlängere die Verzögerung davor oder schiebe <strong>Tempo der Tastatureingabe</strong> im
+<a href="UI-Bindings-Tab.html">Reiter Bindings</a> Richtung Langsam — das fügt nach jedem gesendeten Tastendruck
+eine Pause ein.</li>
+<li><strong>Mehrere Phrasen, eindeutige Bedeutung.</strong> Du musst keine Phrase wörtlich sagen; Vega ordnet nach
+Bedeutung zu. Je mehr sich deine Phrasen von anderen Befehlen unterscheiden, desto zuverlässiger
+wird deiner gewählt.</li>
+<li><strong>Sprechen-Schritte lassen Makros wie einen Teil des Schiffs wirken</strong> und bestätigen, dass das
+Makro wirklich lief.</li>
+<li><strong>Teile sie.</strong> <strong>Exportieren</strong> schreibt ausgewählte Befehle in eine Datei; <strong>Importieren</strong> liest
+eine. Ein Import ersetzt deinen aktuellen Satz, der aber vorher gesichert wird — <strong>Aus Sicherung
+wiederherstellen</strong> holt ihn zurück.</li>
+<li><strong>Achte auf die Startmeldung.</strong> Beim Start der Dienste sagt Vega, wie viele eigene Befehle geladen
+wurden und wie viele die Prüfung nicht bestanden.</li>
+</ul>
+<hr>
+<h2>Fehlersuche</h2>
+<p>Die Prüfmeldungen beim Speichern erscheinen auf Englisch.</p>
+<table>
+<thead>
+<tr>
+<th>Meldung oder Symptom</th>
+<th>Was tun</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><em>Füge oben mindestens eine Formulierung hinzu, bevor du einen Schlüssel erzeugst.</em></td>
+<td>Erst mindestens eine Phrase schreiben</td>
+</tr>
+<tr>
+<td><em>Aktionsschlüssel konnte nicht erzeugt werden.</em></td>
+<td>Das Sprachmodell hat nicht geantwortet. Prüfe die KI-Anzeige im Vega-Reiter und versuch es erneut</td>
+</tr>
+<tr>
+<td><em>Phrase collides with a built-in action alias</em></td>
+<td>Diese Phrase startet schon einen integrierten Befehl. Formuliere sie um</td>
+</tr>
+<tr>
+<td><em>Phrase collides with another custom command</em> / <em>Duplicate phrase</em></td>
+<td>Zwei Befehle — oder einer doppelt — nutzen diese Phrase. Ändere eine</td>
+</tr>
+<tr>
+<td><em>Action key collides with a built-in command</em> / <em>must be unique</em></td>
+<td>Formuliere die Phrasen um und <strong>Erzeugen</strong> erneut</td>
+</tr>
+<tr>
+<td><em>At least one step is required</em> / <em>… is required</em> / <em>durationMs must be positive</em></td>
+<td>Einem Schritt fehlt Bindung, Text, Taste oder Dauer</td>
+</tr>
+<tr>
+<td>Das Makro läuft, aber etwas wird übersprungen</td>
+<td>Verzögerung davor einfügen oder verlängern, oder Tempo der Tastatureingabe verlangsamen</td>
+</tr>
+<tr>
+<td>Vega reagiert mit etwas anderem</td>
+<td>Phrasen unverwechselbarer machen oder getippt ausführen: <code>@Vega &lt;Phrase&gt;</code></td>
+</tr>
+<tr>
+<td>Ein Binding-Schritt tut nichts</td>
+<td>Diese Steuerung hat keine Tastaturbelegung — siehe <a href="UI-Bindings-Tab.html">Reiter Bindings</a></td>
+</tr>
+</tbody></table>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

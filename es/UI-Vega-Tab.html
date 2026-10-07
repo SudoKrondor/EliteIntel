@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Pestaña Acciones</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Pestaña Bindings</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Pestaña Ajustes</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Pestaña Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Pestaña Estadísticas</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">¿Cómo hago...?</div>
             <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Operación general</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Crear tus propios comandos</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Comercio y beneficio</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Explorar la galaxia</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Exploración &amp; Exobiología</a>
@@ -92,18 +94,20 @@
 dejas abierta mientras vuelas. Arranca y detiene la pila de IA, muestra lo que Vega oyó y dijo,
 informa del estado de cada subsistema y abre el overlay dentro del juego.</p>
 <p><img src="../images/ui-tab-vega.png" alt="Pestaña Vega"></p>
-<p>La pestaña se reparte en cuatro zonas: los registros de <strong>conversación</strong> y <strong>diagnóstico</strong> a la
-izquierda, <strong>Estado rápido</strong> y <strong>Accesos directos</strong> en la barra lateral derecha, y la franja de
-telemetría <strong>Resumen del sistema</strong> en la parte inferior.</p>
+<p>La pestaña se divide en cuatro zonas: los registros de <strong>Conversación</strong> y <strong>Diagnósticos</strong> a la
+izquierda, <strong>Estado rápido</strong> y <strong>Atajos</strong> en la barra lateral derecha, y la franja de telemetría
+<strong>Resumen del sistema</strong> abajo.</p>
 <hr>
 <h2>Conversación</h2>
-<p>Todo lo que dijiste y todo lo que Vega respondió, en un único flujo. Tus líneas van alineadas a la
+<p>Todo lo que dijiste y todo lo que Vega respondió, en un solo flujo. Tus líneas van a la
 izquierda y las respuestas de Vega a la derecha, para que una sesión larga siga siendo legible de
-un vistazo.</p>
-<h2>Diagnóstico / Mensajes del sistema</h2>
-<p>El registro técnico: arranques de servicios, resultados de calibración, avisos de asignaciones,
-operaciones de archivo. Nunca se habla; existe para que veas qué está haciendo la aplicación.</p>
-<p>Hay cuatro botones en la cabecera de la sección:</p>
+un vistazo. Los comandos que escribes en el chat del juego (ver <a href="AllCommands.html">Todos los comandos</a>)
+aparecen aquí igual que los hablados.</p>
+<h2>Diagnósticos / mensajes del sistema</h2>
+<p>El registro técnico — arranques de servicios, resultados de calibración, avisos de bindings, lo
+que oyó el reconocimiento de voz (<code>STT: [...]</code>), operaciones con archivos. Nunca se lee en voz
+alta; está para que veas qué está haciendo la app.</p>
+<p>En la cabecera de la sección hay cuatro botones:</p>
 <table>
 <thead>
 <tr>
@@ -113,46 +117,46 @@ operaciones de archivo. Nunca se habla; existe para que veas qué está haciendo
 </thead>
 <tbody><tr>
 <td><strong>Copiar</strong></td>
-<td>Copia al portapapeles el texto que hayas seleccionado en el registro. Solo se activa cuando hay una selección.</td>
+<td>Copia al portapapeles el texto seleccionado en el registro.</td>
 </tr>
 <tr>
-<td><strong>Guardar paquete de depuración</strong></td>
-<td>Escribe un <code>.zip</code> con marca de tiempo que contiene el registro del sistema, el registro de la aplicación, tu archivo de diario en vivo y tus asignaciones. <strong>Esto es lo que hay que adjuntar a un informe de error.</strong></td>
+<td><strong>Guardar paquete de soporte</strong></td>
+<td>Escribe un <code>.zip</code> con marca de tiempo para un informe de error: este registro, el registro de la aplicación, tu journal y los archivos de estado en vivo del juego, tus bindings, tus comandos personalizados, un resumen del hardware y un resumen de los <em>niveles</em> del micrófono (nunca audio). Lo que no se pudo recoger aparece listado dentro del paquete. <strong>Esto es lo que adjuntas a un informe de error.</strong></td>
 </tr>
 <tr>
 <td><strong>Volcar la memoria de Vega</strong></td>
-<td>Escribe una instantánea JSON de la memoria de trabajo de Vega para la sesión actual. Solo disponible mientras los servicios están en marcha.</td>
+<td>Escribe una instantánea JSON de la memoria de trabajo de Vega en la sesión actual. Solo funciona con los servicios en marcha.</td>
 </tr>
 <tr>
 <td><strong>Borrar</strong></td>
-<td>Vacía el registro de diagnóstico y su transcripción de exportación.</td>
+<td>Vacía el registro de diagnósticos.</td>
 </tr>
 </tbody></table>
 <hr>
 <h2>Estado rápido</h2>
-<p>Seis lecturas en vivo. Cada una muestra un estado y un color, así que un vistazo basta para saber
-si la pila está sana.</p>
+<p>Seis indicadores en vivo. Cada uno muestra un estado y un color, así que un vistazo basta para
+saber si la pila está sana.</p>
 <table>
 <thead>
 <tr>
-<th>Lectura</th>
+<th>Indicador</th>
 <th>Estados</th>
 </tr>
 </thead>
 <tbody><tr>
 <td><strong>STT</strong></td>
-<td><code>En espera</code> (servicios detenidos) · <code>En pausa</code> (te ignora) · <code>Escuchando</code></td>
+<td><code>En espera</code> (servicios detenidos) · <code>Escuchando</code> · <code>En pausa</code> (te ignora) · <code>Push to Talk</code> (solo el botón asignado abre el micrófono)</td>
 </tr>
 <tr>
-<td><strong>IA</strong></td>
-<td><code>En espera</code> · <code>Sin conexión</code> (no pudo conectar) · o el nombre del proveedor que está respondiendo de verdad</td>
+<td><strong>LLM</strong></td>
+<td><code>En espera</code> · <code>Sin conexión</code> (no pudo conectar) · el nombre del proveedor que realmente respondió, o <code>Activo</code></td>
 </tr>
 <tr>
 <td><strong>TTS</strong></td>
-<td><code>En espera</code> · <code>Local</code> (Kokoro) · <code>Nube</code> (Google)</td>
+<td><code>En espera</code> · <code>Local</code> (Kokoro / Supertonic) · <code>Nube</code> (Google / Microsoft Edge)</td>
 </tr>
 <tr>
-<td><strong>Bindings</strong></td>
+<td><strong>Asignaciones</strong></td>
 <td><code>Todo correcto</code>, o <code>N sin asignar</code></td>
 </tr>
 <tr>
@@ -160,14 +164,14 @@ si la pila está sana.</p>
 <td>Cuántos comandos personalizados hay cargados</td>
 </tr>
 <tr>
-<td><strong>Teclas</strong></td>
-<td><code>Sincronizado</code> con el juego, o <code>Modificado</code>: tienes un borrador de asignaciones sin aplicar</td>
+<td><strong>Mapa de teclas</strong></td>
+<td><code>Sincronizado</code> con el juego, o <code>Modificado</code> — tienes un borrador de bindings sin aplicar</td>
 </tr>
 </tbody></table>
-<p>La lectura de <strong>IA</strong> merece atención. No informa de lo que <em>configuraste</em>, informa de qué proveedor
-respondió realmente a la última petición.</p>
+<p>Merece la pena vigilar el indicador <strong>LLM</strong>. No informa de lo que <em>configuraste</em>, sino de qué
+proveedor respondió de verdad.</p>
 <hr>
-<h2>Accesos directos</h2>
+<h2>Atajos</h2>
 <table>
 <thead>
 <tr>
@@ -177,38 +181,38 @@ respondió realmente a la última petición.</p>
 </thead>
 <tbody><tr>
 <td><strong>Iniciar / Detener servicios</strong></td>
-<td>Conmuta toda la pila de IA. El botón se desactiva solo mientras arranca o se detiene, para que no pueda dispararse dos veces.</td>
+<td>Activa o desactiva toda la pila de IA. El botón se bloquea mientras arranca o se detiene para que no se pulse dos veces.</td>
 </tr>
 <tr>
-<td><strong>Dormir / Despertar</strong></td>
-<td>En modo <em>despierto</em> Vega escucha continuamente. En modo <em>dormido</em> te ignora salvo que uses la palabra de paso <code>listen</code> o digas <code>Wake up!</code>. Se desactiva mientras pulsar para hablar está activo: en modo PTT el botón <em>es</em> la compuerta.</td>
+<td><strong>DORMIR / DESPERTAR</strong></td>
+<td>Despierta, Vega escucha continuamente. Dormida, ignora todo salvo una frase para despertarla (<code>despierta</code>) o una orden precedida de <code>escucha</code> — <em>«Escúchame, baja el tren de aterrizaje.»</em> Desactivado mientras Push to Talk está activo: entonces el botón asignado es la puerta.</td>
 </tr>
 <tr>
-<td><strong>Mostrar / Ocultar overlay</strong></td>
-<td>Muestra el <a href="UI-HUD-Overlay.html">overlay HUD</a> siempre visible. Si falta el binario del overlay, el botón se mantiene honesto e informa del fallo en el registro en lugar de fingir un overlay que no existe.</td>
+<td><strong>MOSTRAR / OCULTAR OVERLAY</strong></td>
+<td>Muestra el <a href="UI-HUD-Overlay.html">overlay HUD</a> siempre visible. La app recuerda cómo lo dejaste y lo restaura en el siguiente arranque. Si falta el binario del overlay, el interruptor lo indica en el registro en vez de fingir un overlay que no existe.</td>
 </tr>
 <tr>
-<td><strong>Ajustes de overlay</strong></td>
-<td>Abre los <a href="UI-HUD-Overlay.html">ajustes del overlay HUD</a>: transparencia, tamaño del texto y dónde se dibuja (monitor, visor VR, ambos).</td>
+<td><strong>AJUSTES DE OVERLAY</strong></td>
+<td>Abre los <a href="UI-HUD-Overlay.html">ajustes del overlay HUD</a> — transparencia, tamaño del texto, colores y dónde se dibuja (monitor, visor VR, ambos o una ventana de captura).</td>
 </tr>
 <tr>
 <td><strong>Dispositivos de audio</strong></td>
-<td>Abre el diálogo de interfaz de audio para elegir micrófono y altavoz. Los cambios se aplican en el siguiente arranque de servicios.</td>
+<td>Elige micrófono y altavoz. El cambio surte efecto al momento: solo se reinicia el reconocimiento de voz (micrófono) o la voz (altavoz).</td>
 </tr>
 <tr>
 <td><strong>Calibrar audio</strong></td>
-<td>Mide tu ruido de fondo y tu nivel de voz y fija la compuerta de audio. Solo disponible mientras los servicios están en marcha. Ejecútalo una vez antes de tu primer vuelo, y de nuevo si cambias de micrófono o de sala.</td>
+<td>Mide el ruido de fondo y el nivel de tu voz y ajusta la puerta de voz. Solo disponible con los servicios en marcha. Hazlo una vez antes del primer vuelo, y otra vez si cambias de micrófono o de habitación.</td>
 </tr>
 <tr>
 <td><strong>Actualizar</strong></td>
-<td>Aparece cuando hay una versión nueva disponible.</td>
+<td>Aparece cuando hay una nueva versión disponible.</td>
 </tr>
 </tbody></table>
-<p>Entre los dos grupos de botones está el <strong>bloque del comandante</strong>: tu nombre, tu nave, el reloj y
+<p>Entre los dos grupos de botones está el <strong>bloque del comandante</strong> — tu nombre, tu nave, la hora y
 tu saldo de créditos en vivo.</p>
 <hr>
 <h2>Resumen del sistema</h2>
-<p>Una franja de telemetría de seis bloques en la parte inferior de la pestaña:</p>
+<p>Una franja de telemetría de seis bloques al pie de la pestaña:</p>
 <table>
 <thead>
 <tr>
@@ -230,15 +234,15 @@ tu saldo de créditos en vivo.</p>
 </tr>
 <tr>
 <td><strong>Tokens / hora</strong></td>
-<td>Una tasa proyectada. Permanece en blanco los primeros 10 minutos mientras recopila datos</td>
+<td>Un ritmo proyectado. Se queda vacío los primeros 10 minutos mientras reúne datos</td>
 </tr>
 <tr>
 <td><strong>Caché ahorrada</strong></td>
-<td>Tokens servidos desde caché. El <code>0</code> se muestra a propósito: es información, no un dato ausente</td>
+<td>Tokens servidos desde la caché. El <code>0</code> se muestra a propósito — es información, no un dato que falte</td>
 </tr>
 <tr>
 <td><strong>Última velocidad</strong></td>
-<td>Tokens por segundo en la última respuesta</td>
+<td>Tokens por segundo de la última respuesta</td>
 </tr>
 </tbody></table>
 <p>Para el desglose completo, consulta la <a href="UI-Stats-Tab.html">pestaña Estadísticas</a>.</p>

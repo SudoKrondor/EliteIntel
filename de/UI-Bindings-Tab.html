@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reiter „Bindings&quot;  EliteIntel</title>
-    <meta name="description" content="Belegungen waren eine Ecke des Reiters Aktionen; sie haben jetzt einen eigenen Reiter mit">
+    <title>Reiter Bindings  EliteIntel</title>
+    <meta name="description" content="dein Schiff, indem es die Tasten drückt, auf die Elite Dangerous belegt ist. Hat eine Steuerung">
     <link rel="canonical" href="https://www.elite-intel.org/de/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Bindings-Tab.html">
@@ -12,8 +12,8 @@
     <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Bindings-Tab.html">
-    <meta property="og:title" content="Reiter „Bindings&quot;  EliteIntel">
-    <meta property="og:description" content="Belegungen waren eine Ecke des Reiters Aktionen; sie haben jetzt einen eigenen Reiter mit">
+    <meta property="og:title" content="Reiter Bindings  EliteIntel">
+    <meta property="og:description" content="dein Schiff, indem es die Tasten drückt, auf die Elite Dangerous belegt ist. Hat eine Steuerung">
     <meta property="og:url" content="https://www.elite-intel.org/de/UI-Bindings-Tab.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Reiter Aktionen</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub active"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Reiter Bindings</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Reiter Einstellungen</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Reiter Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Reiter Statistik</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-Overlay</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">Wie mache ich...?</div>
             <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Allgemeiner Betrieb</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Eigene Befehle erstellen</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Handel &amp; Profit</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Galaxie erkunden</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Entdeckung &amp; Exobiologie</a>
@@ -87,28 +89,40 @@
     </aside>
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
-<h1>Reiter „Bindings&quot;</h1>
-<p><img src="../images/keys-binding.png" class="inline" height="20" alt="Bindings"> <strong>Neu in V1.1.</strong>
-Belegungen waren eine Ecke des Reiters Aktionen; sie haben jetzt einen eigenen Reiter mit
-vollwertigem Editor.</p>
-<p>Elite Intel bedient dein Schiff, indem es die Tasten drückt, auf die Elite Dangerous belegt ist.
-Hat eine Steuerung keine Tastaturbelegung, kann Elite Intel sie nicht nutzen — in diesem Reiter
-findest du das heraus und behebst es.</p>
+<h1>Reiter Bindings</h1>
+<p><img src="../images/keys-binding.png" class="inline" height="20" alt="Bindings"> Elite Intel bedient
+dein Schiff, indem es die Tasten drückt, auf die Elite Dangerous belegt ist. Hat eine Steuerung
+keine Tastaturbelegung, kann Elite Intel sie nicht nutzen — hier findest du das heraus und
+behebst es.</p>
 <p>Zwei Unterreiter: <strong>Bindungsprofil</strong> und <strong>Bindungsverwaltung</strong>.</p>
 <hr>
 <h2>Bindungsprofil</h2>
 <p><img src="../images/ui-tab-bindings-profile.png" alt="Bindungsprofil"></p>
 <h3>Welche Datei verwendet wird</h3>
+<p><strong>Belegungsordner</strong> — optional. Leer gelassen wird der Standardort von Elite Dangerous
+verwendet; nutze die <strong>⋮</strong>-Auswahl, wenn deine Installation woanders liegt. Ein unbrauchbarer
+Ordner wird abgelehnt und die vorherige Einstellung bleibt.</p>
 <p><strong>Profil</strong> — automatisch erkannt. Elite Intel liest den aktiven <code>StartPreset</code>-Eintrag und greift
 notfalls auf die neueste <code>.binds</code>-Datei zurück.</p>
-<p><strong>Datei</strong> — die <code>.binds</code>-Datei, die aktuell für Diagnose und Zuweisung genutzt wird.</p>
-<p><strong>Belegungsordner</strong> — optional. Lass ihn leer, dann wird der Standardort von Elite Dangerous
-verwendet; setze ihn, wenn deine Installation an einem ungewöhnlichen Ort liegt.</p>
-<p>Beide Felder haben eine ⓘ-Schaltfläche, die genau erklärt, wie der Wert zustande kam.</p>
+<p><strong>Datei</strong> — die <code>.binds</code>-Datei, die gerade für Diagnose und Zuweisung verwendet wird.</p>
+<p>Profil und Datei tragen je ein <strong>ⓘ</strong>, das genau erklärt, wie der Wert gewählt wurde.</p>
+<blockquote>
+<p><strong>„Keine Belegungen gefunden“ trotz richtigem Ordner?</strong> Elite Dangerous schreibt erst dann eine
+<code>.binds</code>-Datei, wenn du etwas anpasst. Öffne im Spiel <em>Optionen → Steuerung</em>, ändere irgendeine
+Belegung, und Elite Intel findet die Datei.</p>
+</blockquote>
+<h3>Tempo der Tastatureingabe</h3>
+<p>Ein Schieberegler <strong>Schnell ↔ Langsam</strong> für die Pause, die Elite Intel nach jedem an das Spiel
+gesendeten Tastendruck hält. Schnell ist der Standard. Verschluckt das Spiel auf langsamerer
+Hardware Tastendrücke aus einer Folge — ein Makro läuft nur halb, ein Panel öffnet auf dem
+falschen Reiter —, schiebe ihn Richtung <strong>Langsam</strong>.</p>
 <h3>Die Belegungstabellen</h3>
-<p>Zwei Tabellen: <strong>Verwendete Belegungen</strong> und <strong>Fehlende Belegungen</strong>, jeweils mit einer Anzahl.
-Belegungen sind nach Kategorie gruppiert:</p>
-<p>Schiff / Flug · Kampf · UI-Panels · Karten · Erkundung · Kamera · SRV · Zu Fuß · Sonstiges</p>
+<p>Zwei Reiter: <strong>Verwendete Belegungen</strong> und <strong>Fehlende Belegungen</strong>, jeweils mit Anzahl. Die
+Zeilen sind unter den Überschriften des Spiels gruppiert — <strong>Allgemeine Steuerung</strong>,
+<strong>Schiffsteuerung</strong>, <strong>SRV-Steuerung</strong>, <strong>Steuerung zu Fuß</strong>, <strong>Sonstige Steuerung</strong> — in derselben
+Reihenfolge wie im Steuerungsbildschirm des Spiels, damit du beide nebeneinander lesen kannst.</p>
+<p><strong>Suche</strong> grenzt beide Tabellen beim Tippen ein. Sie durchsucht Bereich, Gruppe,
+Steuerungsname und den rohen <code>.binds</code>-Tag. <strong>Nur Konflikte anzeigen</strong> filtert auf die Probleme.</p>
 <table>
 <thead>
 <tr>
@@ -130,87 +144,103 @@ Belegungen sind nach Kategorie gruppiert:</p>
 </tr>
 <tr>
 <td><strong>Schnellkorrektur</strong></td>
-<td>Weist genau dieser einen Steuerung eine sichere freie Taste zu</td>
+<td>Reiter <em>Fehlende</em>: weist dieser einen Steuerung eine sichere freie Tastaturtaste zu</td>
 </tr>
 <tr>
 <td><strong>Löschen</strong></td>
-<td>Entfernt die Tastaturbelegung und lässt Controller- und HOTAS-Belegungen unberührt</td>
+<td>Reiter <em>Verwendete</em>: entfernt die Tastaturbelegung (Primär, Sekundär oder beide); Controller- und HOTAS-Belegungen bleiben unberührt</td>
 </tr>
 </tbody></table>
 <blockquote>
 <p><strong>HOTAS und Controller werden angezeigt, sind aber nicht bearbeitbar.</strong> Elite Intel führt über
-Tastaturbelegungen aus, andere Geräte erscheinen daher nur zur Diagnose.</p>
+Tastaturbelegungen aus, andere Geräte erscheinen nur zur Diagnose.</p>
 </blockquote>
-<p><strong>Nur Konflikte anzeigen</strong> filtert die Tabellen auf die Problemfälle.</p>
 <h3>Konflikte</h3>
-<p>Elite Dangerous wertet einen Akkord nur dann als Konflikt, wenn es <em>exakt</em> derselbe Akkord ist —
-<code>G</code> und <code>Shift+G</code> koexistieren problemlos. Elite Intel nutzt dieselbe Regel und meldet damit genau
-das, was auch das Spiel meldet.</p>
-<p>Konfliktzeilen sind eingefärbt; beim Überfahren erscheint <strong>Teilt <em>Taste</em> mit:</strong> samt Liste.</p>
-<p>Du siehst eventuell auch <strong>Schiff/SRV-Zwilling — viele belegen es gleich wie:</strong> — kein Konflikt,
-sondern ein Vorschlag. Manche Schiffs- und SRV-Steuerungen werden üblicherweise auf dieselbe Taste
-gelegt.</p>
+<p>Elite Dangerous wertet eine Tastenkombination nur dann als Konflikt, wenn sie <em>exakt</em> gleich ist
+— <code>G</code> und <code>Shift+G</code> vertragen sich problemlos. Elite Intel nutzt dieselbe Regel und meldet also,
+was auch das Spiel meldet.</p>
+<p>Zeilen mit Konflikt sind rot, und beim Überfahren zeigt eine Zeile <strong>Teilt <em>Taste</em> mit:</strong> und
+die Liste — für jeden Platz mit Konflikt, nicht nur den ersten.</p>
+<p>Du siehst vielleicht auch <strong>Schiff/SRV-Gegenstück - viele belegen es gleich wie:</strong> auf einer
+cyanfarbenen Zeile. Das ist kein Konflikt, sondern ein Vorschlag: einige Schiffs- und
+SRV-Steuerungen werden üblicherweise auf dieselbe Taste gelegt.</p>
+<p>Vega <strong>spricht</strong> außerdem über Belegungen, die tatsächlich etwas kaputt machen, und nennt die
+Tasten im Diagnoseprotokoll:</p>
+<ul>
+<li><strong>Bewegung auf der Galaxiekarte und Navigation in der Oberfläche auf derselben Taste.</strong> Das
+Plotten von Routen funktioniert erst, wenn Karte und Oberfläche getrennte Tasten haben.</li>
+<li><strong>Eine Steuerung auf deiner Spielmenü-Taste.</strong> Elite öffnet das Spielmenü bei jeder
+Kombination, die auf diese Taste endet, also lässt sich die Steuerung nie drücken. Die Lösung:
+die Spielmenü-Belegung im Spiel löschen — Escape öffnet das Menü ohnehin.</li>
+<li><strong>Eine Steuerung auf einer Kombination, die das Betriebssystem zuerst abfängt</strong> (etwa
+Alt+F4). Sie zu drücken schließt das Spiel oder beendet deine Sitzung.</li>
+</ul>
 <h3>Eine Belegung bearbeiten</h3>
-<p>Klicke einen Platz an, um den Zuweisungsdialog zu öffnen.</p>
+<p>Klicke auf einen Platz, um den Zuweisungsdialog zu öffnen.</p>
 <p><img src="../images/ui-bindings-assign.png" alt="Taste zuweisen"></p>
-<p>Er zeigt die gewählte Belegung, den Platz und den aktuellen Wert. Dann <strong>klicke ins Feld und drücke
-die gewünschten Tasten</strong> — Modifikatoren und Taste zusammen. Esc bricht ab. Akkorde mit mehreren
-Modifikatoren werden unterstützt.</p>
-<p>Eine Live-Tastaturkarte zeigt, was verfügbar ist: <strong>Halte Strg/Umschalt/Alt gedrückt, um die für
-diese Kombination freien Tasten zu sehen — grün ist frei, rot ist bereits belegt.</strong> Vom
-Betriebssystem reservierte Tasten sind markiert und können nicht zugewiesen werden.</p>
+<p>Er zeigt die gewählte Belegung, den Platz und den aktuellen Wert. Dann <strong>klicke in das Feld und
+drücke die gewünschten Tasten</strong> — Modifikatoren und Taste zusammen. Esc bricht ab.
+Kombinationen mit bis zu drei Modifikatoren werden unterstützt.</p>
+<p>Eine Live-Tastaturkarte zeigt, was frei ist: <strong>Halte Strg/Shift/Alt, um die für diese
+Kombination freien Tasten zu sehen — grün ist frei, rot ist belegt.</strong> Reservierte Tasten (die
+Spielmenü-Taste, Alt+F4, unter Linux Strg+Alt+F-Tasten) sind markiert und können nicht
+zugewiesen werden.</p>
 <p><strong>Belegung löschen</strong> entfernt die Zuweisung.</p>
-<h3>Fehlende beheben</h3>
-<p>Eine Schaltfläche, die <strong>jeder</strong> Steuerung ohne Tastaturbelegung sichere, layoutfreundliche
+<h3>Fehlende Belegungen automatisch zuweisen</h3>
+<p>Ein Knopf, der <strong>jeder</strong> Steuerung ohne Tastaturbelegung sichere, layoutfreundliche
 Tastaturtasten zuweist.</p>
 <ul>
-<li>Bestehende Belegungen werden nie verändert.</li>
-<li>Keine Taste wird je doppelt verwendet.</li>
-<li>Die Änderungen gehen <strong>nur in deinen Entwurf</strong>.</li>
+<li>Bestehende Belegungen werden nie geändert.</li>
+<li>Keine Taste wird doppelt vergeben.</li>
+<li>Die Änderungen landen <strong>nur im Entwurf</strong> — prüfe sie, dann Anwenden.</li>
 </ul>
-<p>Sie meldet, was sie getan hat, und was sie übersprungen hat und warum: beide Plätze bereits auf
-einem Controller, keine freie sichere Taste mehr übrig, oder kein Platz, der sich sicher bearbeiten
-ließe.</p>
-<h3>Entwurf, Anwenden, Zurücksetzen</h3>
-<p>Änderungen gehen <strong>nicht</strong> direkt an Elite Dangerous. Sie sammeln sich in einem Entwurf, und das
-Statusabzeichen zeigt <strong>Entwurf — nicht auf Spiel angewendet</strong> oder <strong>Synchron</strong>. Derselbe Zustand
-erscheint in der Anzeige <em>Tasten</em> im Vega-Reiter.</p>
+<p>Er meldet, was er getan hat und was er übersprungen hat und warum: beide Plätze schon auf einem
+Controller, keine sichere Taste mehr frei oder kein sicher bearbeitbarer Platz. Zwei Steuerungen
+bleiben <strong>absichtlich unbelegt</strong>: das Spielmenü (Escape öffnet es bereits) und <em>gesamte Fracht
+abwerfen</em> (es leert den Laderaum ins All, und kein Elite-Intel-Befehl drückt es — belege es von
+Hand, wenn du es willst).</p>
+<h3>Entwurf, Anwenden, Zurück</h3>
+<p>Änderungen gehen <strong>nicht</strong> direkt an Elite Dangerous. Sie sammeln sich in einem Entwurf, und
+das Abzeichen zeigt <strong>Entwurf</strong> oder <strong>Synchron</strong>. Derselbe Zustand erscheint in der Anzeige
+<em>Tasten</em> auf dem Vega-Reiter.</p>
 <table>
 <thead>
 <tr>
-<th>Schaltfläche</th>
-<th>Funktion</th>
+<th>Knopf</th>
+<th>Was er tut</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Auf Spiel anwenden</strong></td>
-<td>Schreibt den Entwurf in deine <code>.binds</code>-Datei und legt vorher eine Sicherung an</td>
+<td><strong>Anwenden</strong></td>
+<td>Schreibt den Entwurf in deine <code>.binds</code>-Datei und sichert vorher eine Kopie der alten</td>
 </tr>
 <tr>
-<td><strong>Aus Spiel zurücksetzen</strong></td>
+<td><strong>Zurück</strong></td>
 <td>Verwirft den Entwurf und lädt neu aus der Spieldatei</td>
 </tr>
 </tbody></table>
 <blockquote>
 <p><strong>Öffne und schließe nach dem Anwenden den Steuerungsbildschirm in Elite Dangerous.</strong> Das Spiel
-liest seine Belegungen nur beim Öffnen dieses Bildschirms neu ein. Elite Intel sagt das auch laut.</p>
+liest seine Belegungen nur beim Öffnen dieses Bildschirms neu ein. Vega sagt das auch laut.</p>
 </blockquote>
-<p>Hat sich die Belegungsdatei des Spiels nach dem Anlegen deines Entwurfs geändert, verweigert
-Anwenden und bittet dich, zuerst neu zu laden oder zu verwerfen, statt stillschweigend die Änderung
-eines anderen zu überschreiben.</p>
-<p>Schließt du die App mit einem nicht angewendeten Entwurf, wirst du gefragt, ob du <strong>Auf Spiel
-anwenden</strong>, <strong>Entwurf behalten</strong> oder <strong>Verwerfen</strong> willst.</p>
+<p>Wurde die Belegungsdatei des Spiels geändert, nachdem dein Entwurf entstanden ist, verweigert
+Anwenden und bittet dich, zuerst neu zu laden oder zu verwerfen, statt die Änderung eines anderen
+stillschweigend zu überschreiben.</p>
+<p>Schließt du die App mit einem nicht angewendeten Entwurf, wirst du gefragt: <strong>Auf Spiel
+anwenden</strong>, <strong>Entwurf behalten</strong> oder <strong>Verwerfen</strong>.</p>
 <hr>
 <h2>Bindungsverwaltung</h2>
 <p><img src="../images/ui-tab-bindings-management.png" alt="Bindungsverwaltung"></p>
-<p>Deine Belegungssicherungen, gelistet nach dem Datum unter <strong>Erstellt</strong> und den <strong>Dateien</strong>, die
-jede enthält. Elite Intel legt vor jedem Anwenden automatisch eine an; <strong>Jetzt sichern</strong> legt eine
-auf Zuruf an.</p>
+<p><strong>Spieler-Backups</strong> — Schnappschüsse, die du selbst mit <strong>Jetzt sichern</strong> anlegst, aufgelistet
+nach Datum <strong>Erstellt</strong> und den <strong>Dateien</strong>, die jeder enthält. Leg einen an, bevor du
+experimentierst.</p>
+<p>(Unabhängig davon speichert jedes <strong>Anwenden</strong> vorher still eine Kopie der Spieldatei in
+<code>elite-intel/bindings/backups/</code>. Das ist ein Sicherheitsnetz und wird hier nicht aufgelistet.)</p>
 <table>
 <thead>
 <tr>
-<th>Schaltfläche</th>
-<th>Funktion</th>
+<th>Knopf</th>
+<th>Was er tut</th>
 </tr>
 </thead>
 <tbody><tr>
@@ -219,10 +249,15 @@ auf Zuruf an.</p>
 </tr>
 <tr>
 <td><strong>Live wiederherstellen</strong></td>
-<td>Lädt sie und wendet sie direkt auf das Spiel an. Die üblichen Sicherheitsprüfungen laufen weiterhin</td>
+<td>Lädt sie und wendet sie direkt im Spiel an. Die üblichen Sicherheitsprüfungen laufen trotzdem</td>
+</tr>
+<tr>
+<td><strong>Sicherung löschen</strong></td>
+<td>Löscht die Sicherung endgültig</td>
 </tr>
 </tbody></table>
-<p>Beide ersetzen ungespeicherte Änderungen im aktuellen Entwurf, und beide fragen vorher nach.</p>
+<p>Jede dieser Aktionen fragt vorher nach. Beide Wiederherstellungen ersetzen ungespeicherte
+Änderungen im aktuellen Entwurf.</p>
 <hr>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

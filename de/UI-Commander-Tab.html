@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reiter „Kommandant&quot;  EliteIntel</title>
-    <meta name="description" content="Schiff automatisch für dich erledigt, worüber Vega ungefragt berichtet und mit welcher Stimme jeder">
+    <title>Reiter Kommandant  EliteIntel</title>
+    <meta name="description" content="welcher Stimme jeder Rumpf deiner Flotte spricht, was dein Schiff automatisch für dich erledigt,">
     <link rel="canonical" href="https://www.elite-intel.org/de/UI-Commander-Tab.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Commander-Tab.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Commander-Tab.html">
@@ -12,8 +12,8 @@
     <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Commander-Tab.html">
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Commander-Tab.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Commander-Tab.html">
-    <meta property="og:title" content="Reiter „Kommandant&quot;  EliteIntel">
-    <meta property="og:description" content="Schiff automatisch für dich erledigt, worüber Vega ungefragt berichtet und mit welcher Stimme jeder">
+    <meta property="og:title" content="Reiter Kommandant  EliteIntel">
+    <meta property="og:description" content="welcher Stimme jeder Rumpf deiner Flotte spricht, was dein Schiff automatisch für dich erledigt,">
     <meta property="og:url" content="https://www.elite-intel.org/de/UI-Commander-Tab.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Reiter Aktionen</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Reiter Bindings</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Reiter Einstellungen</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Reiter Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Reiter Statistik</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-Overlay</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">Wie mache ich...?</div>
             <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Allgemeiner Betrieb</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Eigene Befehle erstellen</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Handel &amp; Profit</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Galaxie erkunden</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Entdeckung &amp; Exobiologie</a>
@@ -87,29 +89,148 @@
     </aside>
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
-<h1>Reiter „Kommandant&quot;</h1>
-<p><img src="../images/controller.png" class="inline" height="20" alt="Kommandant"> Wer du bist, was dein
-Schiff automatisch für dich erledigt, worüber Vega ungefragt berichtet und mit welcher Stimme jeder
-Rumpf deiner Flotte spricht.</p>
+<h1>Reiter Kommandant</h1>
+<p><img src="../images/controller.png" class="inline" height="20" alt="Kommandant"> Wer du bist, mit
+welcher Stimme jeder Rumpf deiner Flotte spricht, was dein Schiff automatisch für dich erledigt,
+was Vega dir ungefragt mitteilt, und der Exo-Meisterschaft-Katalog.</p>
 <p><img src="../images/ui-tab-commander.png" alt="Reiter Kommandant"></p>
+<p>Oben sitzt der Streifen <strong>Kommandantenprofil</strong>; darunter liegen vier Unterreiter:
+<strong>Flottenverwaltung</strong>, <strong>Globale Schiffseinstellungen</strong>, <strong>Ansagen</strong> und <strong>Exo-Meisterschaft</strong>.</p>
 <hr>
 <h2>Kommandantenprofil</h2>
-<p><strong>Kommandant-Name</strong> — überschreibt deinen Namen im Spiel für die Sprachausgabe. Nutze das, wenn
-Vega dein Handle verstümmelt oder du schlicht anders genannt werden möchtest. Wird gespeichert,
-sobald du Enter drückst oder wegklickst.</p>
+<p><strong>Kommandant-Name</strong> — der Name, mit dem Vega dich ab und zu anspricht. Nutze ihn, wenn Vega
+deinen Spielnamen verstümmelt oder du einfach anders genannt werden willst. Gespeichert wird
+mit Enter oder beim Wegklicken.</p>
+<p><strong>Mich ansprechen</strong> — ausgeschaltet spricht Vega dich gar nicht an: kein Name, kein Rang, kein
+Titel.</p>
 <blockquote>
-<p>Der <strong>Journal-Ordner</strong> ist in V1.1 nach <a href="UI-Settings-Tab.html">Einstellungen → Allgemein</a> gewandert,
-der <strong>Belegungsordner</strong> in den <a href="UI-Bindings-Tab.html">Reiter Bindings</a>.</p>
+<p>Der <strong>Journal-Ordner</strong> liegt unter <a href="UI-Settings-Tab.html">Einstellungen → Allgemein</a>, der
+<strong>Belegungsordner</strong> im <a href="UI-Bindings-Tab.html">Reiter Bindings</a>.</p>
 </blockquote>
 <hr>
-<h2>Schiffsoptionen</h2>
-<p>Automatisierungen, die Vega für dich ausführt. Jede ist ein einfacher Schalter, der sofort
-durchschreibt. Für alle nützlich — und für Kommandanten mit Behinderung wirklich ermöglichend.</p>
+<h2>Flottenverwaltung</h2>
+<p>Eine Zeile pro Schiff, das du besitzt, gefolgt von deinem <strong>Flottenträger</strong> und
+<strong>Schwadronsträger</strong>, falls vorhanden. Elite Intel erkennt deine Flotte aus dem Spieljournal; du
+fügst nie Schiffe von Hand hinzu. Fliegst du mehrere Kommandanten auf einem PC, folgt die Liste
+dem gerade im Spiel geladenen Kommandanten.</p>
+<table>
+<thead>
+<tr>
+<th>Spalte</th>
+<th>Hinweise</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Schiff</strong></td>
+<td>Der Name deines Schiffs (bei einem Träger: Name und Rufzeichen)</td>
+</tr>
+<tr>
+<td><strong>Schiffsmodell</strong></td>
+<td>Der Rumpftyp, oder <em>Flottenträger</em> / <em>Schwadronsträger</em></td>
+</tr>
+<tr>
+<td><strong>Stimme</strong></td>
+<td>Anklicken zum Auswählen. Eine Änderung spielt sofort eine Zeile in dieser Stimme ab, damit du sie probehören kannst</td>
+</tr>
+<tr>
+<td><strong>Persönlichkeit</strong></td>
+<td><code>Professionell</code> · <code>Locker</code> · <code>Freundlich</code> · <code>Unberechenbar</code> · <code>Seven of Nine</code> · <code>Großmaul-Söldner</code> · <code>Dein Ex-Freund</code> · <code>Deine Ex-Freundin</code> · <code>Draufgängerisch</code></td>
+</tr>
+<tr>
+<td><strong>⚙</strong></td>
+<td>Öffnet die Einstellungen dieses Schiffs (siehe unten)</td>
+</tr>
+</tbody></table>
+<p><strong>Zur Stimmenliste.</strong> Angeboten wird jede Stimme der Sprachausgabe, die in
+<a href="UI-Settings-Tab.html">Einstellungen → KI-Dienste</a> gewählt ist, männlich wie weiblich — die gewählte
+Stimme entscheidet auch, ob Vega auf diesem Schiff von sich als <em>er</em> oder <em>sie</em> spricht.</p>
+<ul>
+<li><strong>Kokoro</strong> und <strong>Supertonic 3</strong> (lokal) — beschriftet als <code>Name - Akzent</code>.</li>
+<li><strong>Google</strong> (Cloud) — beschriftet als <code>Name - Akzent · HD</code> oder <code>· Standard</code>. Auf Englisch
+unterscheidet der Akzent die Stimmen. In jeder anderen Sprache wird jede Stimme in dieser
+Sprache erzeugt, daher zeigt die Beschriftung Geschlecht und Qualitätsstufe statt eines
+irreführenden englischen Akzents.</li>
+<li><strong>Microsoft Edge</strong> (Cloud) — beschriftet als <code>Name - Akzent</code>.</li>
+</ul>
+<blockquote>
+<p>Ein Wechsel der Sprachausgabe setzt die Stimme jedes Schiffs auf die Standardstimme der neuen
+Engine zurück. Die <strong>Persönlichkeiten bleiben erhalten</strong>. Die App fragt vorher nach.</p>
+</blockquote>
+<p><strong>Träger-Zeilen</strong> haben eine Stimme und sonst nichts — ein Träger wird nicht von Vega
+bemannt, er hat also weder Persönlichkeit noch Einstellungen. Die Stimme ist die, mit der seine
+<strong>Flugkontrolle</strong> über Funk antwortet. Steht sie auf <strong>Zufällig</strong>, antwortet jedes Mal ein
+anderer Lotse; wählst du eine, wird die Hörprobe als Funkspruch abgespielt, denn nur so wirst du
+sie je hören.</p>
+<hr>
+<h2>Schiffseinstellungen (der ⚙-Knopf)</h2>
+<p>Einstellungen pro Schiff, denn eine Bergbau-Python und eine Kampf-Corvette wollen nicht dasselbe
+Verhalten. Änderungen werden gespeichert, wenn du den Dialog mit <strong>Zurück</strong> schließt.</p>
+<p><img src="../images/ui-ship-settings.png" alt="Schiffseinstellungen"></p>
+<p><strong>System beim Eintritt scannen</strong> — führt beim Eintreffen in einem System einen
+Entdeckungsscan aus. Wähle die <strong>Feuergruppe</strong> (A–H) und den <strong>Auslöser</strong> (1 oder 2), auf dem
+dein Entdeckungsscanner liegt. Ist dein HUD im Kampfmodus, wechselt Elite Intel in den
+Analysemodus, scannt und wechselt zurück.</p>
+<p><strong>Fahrzeugbuchten</strong> — was du in jeder Bucht des Fahrzeughangars hast (<strong>Bucht 1–4</strong>: <em>Leer</em>,
+<em>Scarab</em>, <em>Scorpion</em> oder <em>Rhino</em>). Das Journal nennt den Hangar, aber nie seinen Inhalt; so
+öffnet <em>„SRV ausfahren“</em> die richtige Bucht — und weiß, ob das Schiff vorher landen muss (Scarab,
+Scorpion) oder schweben darf (Rhino). Es werden immer alle vier Buchten angezeigt, egal welcher
+Hangar eingebaut ist, damit deine Auswahl einen Umbau übersteht.</p>
+<p><strong>Materialhinweis bei hochwertigen Emissionen</strong> — meldet, wenn ein Signal mit hochwertigen
+Emissionen im System Materialien trägt, für die sich ein Halt lohnt.</p>
+<p><strong>Handelsprofil</strong> — die Vorgaben, an die sich Elite Intel beim Planen einer Handelsroute für
+dieses Schiff hält. Jede davon lässt sich auch per Stimme setzen:
+<em>„Handelsprofil maximale Stopps ändern vier“</em>.</p>
+<table>
+<thead>
+<tr>
+<th>Einstellung</th>
+<th>Bedeutung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Planetare Häfen erlauben</strong></td>
+<td>Oberflächenhäfen in Routen aufnehmen</td>
+</tr>
+<tr>
+<td><strong>Verbotene Waren erlauben</strong></td>
+<td>Waren aufnehmen, die irgendwo auf der Route illegal sind</td>
+</tr>
+<tr>
+<td><strong>Genehmigungspflichtige Systeme erlauben</strong></td>
+<td>Systeme aufnehmen, die eine Genehmigung erfordern</td>
+</tr>
+<tr>
+<td><strong>Flottenträger erlauben</strong></td>
+<td>Flottenträger von Spielern als Märkte aufnehmen</td>
+</tr>
+<tr>
+<td><strong>Hochburgsysteme erlauben</strong></td>
+<td>Thargoiden-/Machthochburgen aufnehmen</td>
+</tr>
+<tr>
+<td><strong>Max. Ls vom Eintritt</strong></td>
+<td>Wie weit eine Station vom Ankunftsstern entfernt sein darf</td>
+</tr>
+<tr>
+<td><strong>Max. Stopps</strong></td>
+<td>Anzahl der Etappen der Route</td>
+</tr>
+<tr>
+<td><strong>Startkapital</strong></td>
+<td>Credits, die der Routenplaner ausgeben darf</td>
+</tr>
+</tbody></table>
+<p>Wie Routen geflogen werden, steht unter <a href="TradeRoutePlotting.html">Handel &amp; Profit</a>.</p>
+<hr>
+<h2>Globale Schiffseinstellungen</h2>
+<p>Automatisierungen, die Vega für dich ausführt, auf jedem Schiff. Jede ist ein einfacher
+Schalter, der sofort speichert. Nützlich für alle und für Kommandanten mit Behinderungen eine
+echte Erleichterung.</p>
 <table>
 <thead>
 <tr>
 <th>Schalter</th>
-<th>Funktion</th>
+<th>Was er tut</th>
 </tr>
 </thead>
 <tbody><tr>
@@ -118,45 +239,41 @@ durchschreibt. Für alle nützlich — und für Kommandanten mit Behinderung wir
 </tr>
 <tr>
 <td><strong>Lichter für FSD-Sprung automatisch ausschalten</strong></td>
-<td>Schaltet die Schiffsbeleuchtung vor einem Sprung aus</td>
+<td>Schaltet vor einem Sprung die Schiffslichter aus</td>
 </tr>
 <tr>
 <td><strong>Nachtsicht für FSD-Sprung automatisch ausschalten</strong></td>
-<td>Deaktiviert die Nachtsicht vor einem Sprung</td>
+<td>Schaltet vor einem Sprung die Nachtsicht ab</td>
 </tr>
 <tr>
 <td><strong>Waffen für FSD-Sprung automatisch einfahren</strong></td>
-<td>Fährt die Hardpoints vor einem Sprung ein</td>
+<td>Fährt vor einem Sprung die Waffen ein</td>
 </tr>
 <tr>
 <td><strong>Fahrwerk für FSD-Sprung automatisch einfahren</strong></td>
-<td>Zieht das Fahrwerk vor einem Sprung ein</td>
+<td>Fährt vor einem Sprung das Fahrwerk ein</td>
 </tr>
 <tr>
 <td><strong>Frachtgreifer für FSD-Sprung automatisch einfahren</strong></td>
-<td>Fährt den Greifer vor einem Sprung ein</td>
+<td>Fährt vor einem Sprung die Frachtschaufel ein</td>
 </tr>
 <tr>
 <td><strong>Fahrwerk beim Start automatisch einfahren</strong></td>
-<td>Zieht das Fahrwerk nach dem Abheben ein</td>
-</tr>
-<tr>
-<td><strong>UI automatisch verlassen, bevor ein anderes Panel geöffnet wird</strong></td>
-<td>Schließt das offene Panel, bevor das nächste geöffnet wird, damit Panel-Befehle nicht kollidieren</td>
+<td>Fährt nach dem Abheben das Fahrwerk ein</td>
 </tr>
 <tr>
 <td><strong>Lichter beim SRV-Aussetzen automatisch ausschalten</strong></td>
-<td>Schaltet die Beleuchtung aus, wenn du den SRV aussetzt</td>
+<td>Schaltet die Lichter aus, wenn du den SRV aussetzt</td>
 </tr>
 <tr>
-<td><strong>Jäger-Andocken bei FSD-Sprung anfordern und FTL abbrechen, falls Jäger außerhalb</strong></td>
-<td><em>Derzeit deaktiviert</em> — wartet auf einen Frontier-Fix für einen Nomad-bezogenen Fehler</td>
+<td><strong>Nächsten Neutronensprung beim Kegel-Boost automatisch plotten</strong></td>
+<td>Auf einer <a href="AllCommands.html">Neutronenroute</a> wird der nächste Neutronen-Wegpunkt geplottet, sobald du durch den Kegel geboostet hast</td>
 </tr>
 </tbody></table>
 <hr>
 <h2>Ansagen</h2>
-<p>Alles, was Vega ungefragt von sich aus meldet. Alle elf Schalter liegen jetzt an einem Ort, sodass
-es einen einzigen Bildschirm gibt, den du prüfst, wenn etwas zu viel — oder zu wenig — redet.</p>
+<p>Alles, was Vega ungefragt sagt, an einem Ort — ein einziger Bildschirm, wenn etwas zu viel
+redet oder zu wenig.</p>
 <p><img src="../images/ui-commander-announcements.png" alt="Ansagen"></p>
 <table>
 <thead>
@@ -167,19 +284,23 @@ es einen einzigen Bildschirm gibt, den du prüfst, wenn etwas zu viel — oder z
 </thead>
 <tbody><tr>
 <td><strong>Entdeckungen ansagen</strong></td>
-<td>Bemerkenswerte Himmelskörper, Erstentdeckungen, biologische Signale</td>
+<td>Bemerkenswerte Körper, Erstentdeckungen, biologische Signale. Steuert auch die Exobiologie-Karte im <a href="UI-HUD-Overlay.html">HUD-Overlay</a></td>
 </tr>
 <tr>
-<td><strong>Routenfortschritt ansagen</strong></td>
-<td>Wo du dich auf einer geplanten Route befindest</td>
+<td><strong>Planetenanflug ansagen</strong></td>
+<td>Fakten über den Körper, den du anfliegst</td>
 </tr>
 <tr>
 <td><strong>Radarkontakte ansagen</strong></td>
-<td>Schiffe, die auf dem Scanner erscheinen</td>
+<td>Schiffe, die auf dem Scanner auftauchen</td>
 </tr>
 <tr>
 <td><strong>Bergbau ansagen</strong></td>
-<td>Bergbauereignisse und Ausbeute</td>
+<td>Prospektortreffer und Materialfunde für deine Abbauziele</td>
+</tr>
+<tr>
+<td><strong>Frachtschaufel-Aufnahmen ansagen</strong></td>
+<td>Was du gerade eingesammelt hast</td>
 </tr>
 <tr>
 <td><strong>Navigation ansagen</strong></td>
@@ -187,133 +308,57 @@ es einen einzigen Bildschirm gibt, den du prüfst, wenn etwas zu viel — oder z
 </tr>
 <tr>
 <td><strong>Funkübertragungen</strong></td>
-<td>Rollengetreues Funkgeplauder, in einer eigenen Funkstimme gesprochen</td>
+<td>Funkverkehr in der Spielwelt, gesprochen mit eigenen Funkstimmen</td>
 </tr>
 <tr>
-<td><strong>Sprungziel ansagen</strong></td>
-<td>Welches das nächste System ist</td>
+<td><strong>Routenansagen</strong></td>
+<td>Hauptschalter für alles, was rund um einen Sprung gesagt wird. Die Schalter darunter wirken nur, solange er an ist</td>
 </tr>
 <tr>
-<td><strong>Verkehr am Ziel ansagen</strong></td>
-<td>Verkehrsmeldungen für dein Ziel</td>
+<td>&nbsp;&nbsp;↳ <strong>Sprungziel ansagen</strong></td>
+<td>Was das nächste System ist</td>
 </tr>
 <tr>
-<td><strong>Verluste am Ziel ansagen</strong></td>
+<td>&nbsp;&nbsp;↳ <strong>Verkehr am Ziel ansagen</strong></td>
+<td>Verkehrsberichte für dein Ziel</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;↳ <strong>Verluste am Ziel ansagen</strong></td>
 <td>Jüngste Todesfälle im Zielsystem</td>
 </tr>
 <tr>
-<td><strong>Verbleibende Sprünge ansagen</strong></td>
-<td>Verbleibende Sprünge auf der Route</td>
+<td>&nbsp;&nbsp;↳ <strong>Ankunft ansagen</strong></td>
+<td>Eine Zeile bei der Ankunft</td>
 </tr>
 <tr>
-<td><strong>Verfügbarkeit von Treibstoffsternen ansagen</strong></td>
-<td>Ob das Ziel einen scoopbaren Stern hat</td>
+<td>&nbsp;&nbsp;↳ <strong>Verbleibende Sprünge ansagen</strong></td>
+<td>Verbleibende Sprünge der Route</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;&nbsp;&nbsp;↳ <strong>Verfügbarkeit von Treibstoffsternen ansagen</strong></td>
+<td>Ob das Ziel einen schöpfbaren Stern hat — gesprochen als Teil der Zeile zu den verbleibenden Sprüngen</td>
 </tr>
 </tbody></table>
-<p>Die ersten sechs lassen sich auch per Sprache umschalten, deshalb liest dieser Bildschirm sie neu
-ein, sobald du den Reiter öffnest — ein gesprochenes <code>toggle all announcements</code> wird hier
-widergespiegelt.</p>
+<p>Die meisten lassen sich auch per Stimme umschalten (<em>„Radar Ansagen aus“</em>, <em>„alle Ansagen
+ausschalten“</em>), daher liest die Seite sie bei jedem Öffnen des Reiters neu ein.</p>
 <hr>
-<h2>Stimmenkonfiguration der Flotte</h2>
-<p>Eine Zeile je Schiff in deinem Besitz. Elite Intel entdeckt deine Flotte aus dem Spieljournal; du
-fügst Schiffe nicht von Hand hinzu.</p>
-<table>
-<thead>
-<tr>
-<th>Spalte</th>
-<th>Anmerkungen</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><strong>Schiff</strong></td>
-<td>Der von dir vergebene Schiffsname</td>
-</tr>
-<tr>
-<td><strong>Schiffsmodell</strong></td>
-<td>Der Rumpftyp</td>
-</tr>
-<tr>
-<td><strong>Stimme</strong></td>
-<td>Zum Auswählen klicken. Eine Änderung spielt sofort einen Demosatz in dieser Stimme ab, damit du sie anhören kannst</td>
-</tr>
-<tr>
-<td><strong>Persönlichkeit</strong></td>
-<td><code>Professionell</code> · <code>Locker</code> · <code>Freundlich</code> · <code>Unberechenbar</code> · <code>Draufgängerisch</code></td>
-</tr>
-<tr>
-<td><strong>⚙</strong></td>
-<td>Öffnet die Einstellungen dieses Schiffs</td>
-</tr>
-</tbody></table>
-<p><strong>Zur Stimmenliste.</strong> Schiffsstimmen sind weiblich. Welche Stimmen erscheinen, hängt von der unter
-<a href="UI-Settings-Tab.html">Einstellungen → KI-Dienste</a> gewählten Sprachausgabe ab:</p>
-<ul>
-<li><strong>Lokal (Kokoro)</strong> — 53 Stimmen, beschriftet als <code>Name - Akzent</code>. Kein Schlüssel, kein Download,
-keine Einrichtung.</li>
-<li><strong>Cloud (Google)</strong> — beschriftet als <code>Name - Akzent · HD</code> oder <code>· Standard</code>. Im Englischen
-unterscheidet der Akzent die Stimmen. In jeder anderen Sprache wird jede Stimme in dieser Sprache
-synthetisiert, daher zeigt die Beschriftung Geschlecht und Qualitätsstufe statt eines
-irreführenden englischen Akzents.</li>
-</ul>
-<blockquote>
-<p>Ein Wechsel der Sprachausgabe setzt die Stimme jedes Schiffs auf die Vorgabe der neuen Engine
-zurück. Die <strong>Persönlichkeiten deiner Schiffe bleiben erhalten</strong>. Die App warnt dich vorher.</p>
-</blockquote>
-<hr>
-<h2>Schiffseinstellungen (die ⚙-Schaltfläche)</h2>
-<p>Einstellungen je Schiff, denn eine Bergbau-Python und eine Kampf-Corvette wollen nicht dasselbe
-Verhalten.</p>
-<p><img src="../images/ui-ship-settings.png" alt="Schiffseinstellungen"></p>
-<p><strong>System beim Eintritt scannen</strong> — führt bei der Ankunft in einem System einen Entdeckungsscan
-durch. Wähle die <strong>Feuergruppe</strong> (A–H) und den <strong>Auslöser</strong> (1 oder 2), auf dem dein
-Entdeckungsscanner liegt. Steht dein HUD im Kampfmodus, wechselt Elite Intel in den Analysemodus,
-scannt und wechselt zurück.</p>
-<p><strong>Materialhinweis bei hochwertigen Emissionen</strong> — sagt dir, wenn ein Signal hochwertiger Emissionen
-im System Materialien führt, für die sich ein Halt lohnt.</p>
-<p><strong>Handelsprofil</strong> — die Randbedingungen, an die sich Elite Intel hält, wenn es für dieses Schiff
-eine Handelsroute plant. Jede davon lässt sich auch per Sprache setzen:
-<em>„alter trade profile, set max stops to four&quot;</em>.</p>
-<table>
-<thead>
-<tr>
-<th>Einstellung</th>
-<th>Bedeutung</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><strong>Planetare Häfen erlauben</strong></td>
-<td>Oberflächenhäfen in Routen einbeziehen</td>
-</tr>
-<tr>
-<td><strong>Verbotene Waren erlauben</strong></td>
-<td>Fracht einbeziehen, die irgendwo auf der Route illegal ist</td>
-</tr>
-<tr>
-<td><strong>Genehmigungspflichtige Systeme erlauben</strong></td>
-<td>Systeme einbeziehen, die eine Genehmigung erfordern</td>
-</tr>
-<tr>
-<td><strong>Flottenträger erlauben</strong></td>
-<td>Flottenträger von Spielern als Märkte einbeziehen</td>
-</tr>
-<tr>
-<td><strong>Hochburgsysteme erlauben</strong></td>
-<td>Hochburgsysteme von Thargoiden/Mächten einbeziehen</td>
-</tr>
-<tr>
-<td><strong>Max. Ls vom Eintritt</strong></td>
-<td>Wie weit eine Station vom Ankunftsstern entfernt liegen darf</td>
-</tr>
-<tr>
-<td><strong>Max. Stopps</strong></td>
-<td>Anzahl der Etappen in der Route</td>
-</tr>
-<tr>
-<td><strong>Startkapital</strong></td>
-<td>Credits, die der Routenplaner ausgeben darf</td>
-</tr>
-</tbody></table>
-<p>Wie Routen geflogen werden, steht unter <a href="TradeRoutePlotting.html">Handel &amp; Profit</a>.</p>
+<h2>Exo-Meisterschaft</h2>
+<p>Ein Katalog von Sternsystemen nahe der Blase, deren Planeten hochwertige Exobiologie tragen,
+gesammelt von der Community über Spansh.</p>
+<ol>
+<li>Drücke <strong>Exo-Meisterschaft aktivieren</strong>. Der Katalog wird heruntergeladen und importiert,
+jede Hälfte mit eigenem Fortschrittsbalken.</li>
+<li>Ist er geladen, zeigt die Seite <strong>Sternsysteme</strong>, <strong>Planeten und Monde</strong>, den <strong>Erwarteten
+Wert</strong> des ganzen Katalogs und wie viel davon du <strong>Abgeerntet</strong> hast.</li>
+<li>Im Flug sagst du <em>„bring mich zum nächsten Exobiologie-Ziel“</em>, und Vega plottet einen Kurs
+zum reichsten System, das du noch nicht abgeerntet hast.</li>
+</ol>
+<p>Fertige Planeten werden beim Scannen abgehakt. Was du vor der Installation von Elite Intel
+beprobt hast, kannst du per Stimme abschreiben — <em>„wir haben diesen Körper bereits beprobt“</em> oder
+für ein ganzes System <em>„markiere dieses System als abgeerntet“</em>.</p>
+<p><strong>Exo-Meisterschaft deaktivieren</strong> entfernt den Katalog nach Rückfrage von deinem Rechner.
+Bereits abgeerntete Planeten bleiben gespeichert, damit ein späteres Aktivieren dich nicht wieder
+dorthin schickt.</p>
 <hr>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

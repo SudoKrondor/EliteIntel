@@ -1,12 +1,12 @@
 # HUD Overlay
 
-**New in V1.1.** An always-on-top overlay that puts your current objectives on screen — in the
-game window, or inside a VR headset.
+An always-on-top overlay that puts your current objective, and your conversation with Vega, on
+screen — in the game window, or inside a VR headset.
 
 ![HUD overlay in game](images/ui-overlay-ingame.png)
 
-It replaces the old OBS overlay window. The overlay runs out of process, so it does not
-compete with the game or the app for the interface thread.
+The overlay runs in its own process, so it does not compete with the game or the app for the
+interface thread.
 
 The card is drawn to the cockpit's geometry rather than square to your monitor, so it leans the
 way the ship's own panels lean at that spot on screen — move it and the lean changes to suit. Its
@@ -16,31 +16,49 @@ far a value appears to fall depends on **TEXT SIZE** as well as placement — th
 the cockpit, so smaller text means shorter rows and the same drop crosses more of them.
 
 Turn it on with **DISPLAY OVERLAY** on the [Vega tab](UI-Vega-Tab), and configure it with
-**OVERLAY SETUP** next to it.
+**OVERLAY SETUP** next to it. The app remembers whether you left it on and restores it on the
+next launch.
 
-> If the overlay binary is missing from the distribution, the toggle stays off and says so in
-> the diagnostics log. It will not claim an overlay that is not there.
+> If the overlay binary is missing from the distribution, the toggle says so in the diagnostics
+> log. It will not claim an overlay that is not there.
 
 ---
 
 ## What it shows
 
-The overlay draws **cards** — one per live objective, derived from what you are actually doing.
-Cards appear and disappear on their own; there is nothing to configure.
+### One objective card
 
-| Card | Appears when |
-|------|--------------|
-| **EXOBIOLOGY** | You are sampling organics — genus, and what is left to find |
-| **MASSACRE CONTRACT** | You are running massacre missions — kills required, stack, reward |
-| **MINING** | You are mining — hold, limpets, target commodity |
-| **TRADE ROUTE** | A trade route is plotted — commodity, buy, sell, margin, leg *n* of *m* |
-| **CARGO OPPORTUNITY** | A profitable cargo has been spotted for what you are carrying |
-| **MISSION** | A featured mission — target, cargo or passengers, expiry, reward |
-| **PLOTTED ROUTE** | A route is set — destination, next system, jumps remaining |
-| **MATERIAL TRADER** · **TECHNOLOGY BROKER** · **INTERSTELLAR FACTORS** · **VISTA GENOMICS** | You have set a destination reminder to go see one |
+Only one card fits, so the overlay shows the **most important thing you are doing right now**
+and switches by itself as that changes. There is nothing to configure.
 
-The featured mission card picks its mission the way you would: the one at your route
-destination first, then one in your current system, then the most recently accepted.
+Work you committed to always beats work the app volunteered, in this order:
+
+| Rank | Card | Appears when |
+|------|------|--------------|
+| 1 | **MASSACRE CONTRACT** | You are running massacre missions — kills required, stack, reward |
+| 1 | **MISSION** | You have accepted missions — the featured one's target, cargo or passengers, expiry and reward, plus what the rest of the stack is worth |
+| 2 | **TRADE ROUTE** | A trade route is plotted — commodity, buy, sell, margin, leg *n* of *m* |
+| 2 | **CARGO OPPORTUNITY** | Vega found a profitable buy/sell pair for spare cargo space on your journey |
+| 2 | **CONSTRUCTION SITE** | You are hauling for a colonisation build — progress, what is outstanding, and what to load on the next run |
+| 2 | **COMMODITY FOUND** / **SHOPPING LIST** / **SELL CARGO** | A commodity search found a market and a route is plotted to it — what to buy (or sell), stock and price |
+| 3 | **MINING** | You have mining targets, a refinery fitted, and are not in supercruise — hold, limpets, targets |
+| 3 | **EXOBIOLOGY** | Genuses are left to sample in this system — shown only while *Announce discoveries* is on |
+| 3 | **BOUNTY HUNTING** | You are in a resource extraction site — site type, bounties in the hold, kills |
+| 3 | **CONFLICT ZONE** | You are in a conflict zone — zone intensity, your side, combat bonds in hand |
+| 3 | **PLOTTED ROUTE** | A route is set — destination, next system, jumps remaining |
+
+The **plotted route** card takes a more specific title when Vega worked out the destination for
+you and the route still goes there: **MATERIAL TRADER**, **TECHNOLOGY BROKER**, **INTERSTELLAR
+FACTORS**, **VISTA GENOMICS**, **REFUEL** or **OUTFITTING**, with the station and type added. A
+plot somewhere else clears that detail, so an old errand can never claim the card.
+
+The **mission** card features the mission whose destination is the end of your plotted route;
+otherwise the one that expires soonest.
+
+### The conversation
+
+Under the card, the overlay types out the exchange as it happens — what you said, Vega's reply,
+and radio traffic — each in its own colour. Useful when you play with the voice turned down.
 
 ---
 
@@ -53,11 +71,20 @@ purpose. A single "opacity" slider would fade the text along with the backdrop, 
 what makes a dimmed overlay unreadable over a bright planet surface. Fade the background; leave
 the text alone.
 
+### Text colors
+
+One colour picker per role, so you can tune the overlay for your cockpit colours or your eyes:
+
+**Objective title** · **Good** · **Warning** · **Critical** · **Labels** · **Your words** ·
+**Ship AI** · **Radio traffic**
+
+**Reset colors** puts every colour back to the one the overlay ships with.
+
 ### DISPLAY ON
 
 | Mode | What it does |
 |------|--------------|
-| **Monitor** | A desktop window. The default, and what every version before V1.1 did. The card leans to match the cockpit, and the lean changes with where you place it — see below |
+| **Monitor** | A desktop window. The default. The card leans to match the cockpit, and the lean changes with where you place it |
 | **VR headset** | A SteamVR overlay. Needs SteamVR running. If VR cannot be had it falls back to a desktop window, so you are never left with nothing |
 | **Monitor and headset** | Both at once, fed identical data. Useful if you fly in VR but stream or record from the monitor |
 | **VR capture window** | A plain, flat, opaque window for a capture tool to pin |

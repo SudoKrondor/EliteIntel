@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pestaña Bindings  EliteIntel</title>
-    <meta name="description" content="Los bindings eran un rincón de la pestaña Acciones; ahora tienen pestaña propia, con un editor">
+    <meta name="description" content="tu nave pulsando las teclas que Elite Dangerous tiene asignadas. Si un control no tiene binding">
     <link rel="canonical" href="https://www.elite-intel.org/es/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Bindings-Tab.html">
@@ -13,7 +13,7 @@
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Bindings-Tab.html">
     <meta property="og:title" content="Pestaña Bindings  EliteIntel">
-    <meta property="og:description" content="Los bindings eran un rincón de la pestaña Acciones; ahora tienen pestaña propia, con un editor">
+    <meta property="og:description" content="tu nave pulsando las teclas que Elite Dangerous tiene asignadas. Si un control no tiene binding">
     <meta property="og:url" content="https://www.elite-intel.org/es/UI-Bindings-Tab.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Pestaña Acciones</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub active"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Pestaña Bindings</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Pestaña Ajustes</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Pestaña Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Pestaña Estadísticas</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">¿Cómo hago...?</div>
             <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Operación general</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Crear tus propios comandos</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Comercio y beneficio</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Explorar la galaxia</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Exploración &amp; Exobiología</a>
@@ -88,27 +90,39 @@
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
 <h1>Pestaña Bindings</h1>
-<p><img src="../images/keys-binding.png" class="inline" height="20" alt="Bindings"> <strong>Nuevo en V1.1.</strong>
-Los bindings eran un rincón de la pestaña Acciones; ahora tienen pestaña propia, con un editor
-completo.</p>
-<p>Elite Intel pilota tu nave pulsando las teclas a las que Elite Dangerous está asignado. Si un
-control no tiene asignación de teclado, Elite Intel no puede usarlo, y esta pestaña es donde lo
-descubres y lo arreglas.</p>
+<p><img src="../images/keys-binding.png" class="inline" height="20" alt="Bindings"> Elite Intel maneja
+tu nave pulsando las teclas que Elite Dangerous tiene asignadas. Si un control no tiene binding
+de teclado, Elite Intel no puede usarlo — aquí es donde lo descubres y lo arreglas.</p>
 <p>Dos subpestañas: <strong>Perfil de bindings</strong> y <strong>Gestión de bindings</strong>.</p>
 <hr>
 <h2>Perfil de bindings</h2>
 <p><img src="../images/ui-tab-bindings-profile.png" alt="Perfil de bindings"></p>
-<h3>Qué archivo se está usando</h3>
-<p><strong>Perfil</strong>: detectado automáticamente. Elite Intel lee la entrada <code>StartPreset</code> activa y, si hace
-falta, recurre al archivo <code>.binds</code> más reciente.</p>
-<p><strong>Archivo</strong>: el archivo <code>.binds</code> que se está usando ahora mismo para diagnóstico y asignación.</p>
-<p><strong>Directorio de Bindings</strong>: opcional. Déjalo en blanco y se usa la ubicación estándar de Elite
-Dangerous; ponlo si tu instalación está en un sitio poco habitual.</p>
-<p>Ambos campos tienen un botón ⓘ que explica exactamente cómo se eligió el valor.</p>
+<h3>Qué archivo se usa</h3>
+<p><strong>Directorio de Bindings</strong> — opcional. Si lo dejas vacío se usa la ubicación estándar de Elite
+Dangerous; usa el selector <strong>⋮</strong> si tu instalación está en otro sitio. Una carpeta inservible se
+rechaza y se mantiene el ajuste anterior.</p>
+<p><strong>Perfil</strong> — detectado automáticamente. Elite Intel lee la entrada <code>StartPreset</code> activa y, si
+hace falta, recurre al archivo <code>.binds</code> más reciente.</p>
+<p><strong>Archivo</strong> — el archivo <code>.binds</code> que se está usando para el diagnóstico y la asignación.</p>
+<p>Perfil y Archivo llevan cada uno un <strong>ⓘ</strong> que explica exactamente cómo se eligió el valor.</p>
+<blockquote>
+<p><strong>¿«No encuentro los bindings» con la carpeta correcta?</strong> Elite Dangerous no escribe un archivo
+<code>.binds</code> hasta que personalizas algo. Abre <em>Opciones → Controles</em> en el juego, cambia cualquier
+asignación, y Elite Intel encontrará el archivo.</p>
+</blockquote>
+<h3>Ritmo de entrada de teclas</h3>
+<p>Un deslizador <strong>Rápido ↔ Lento</strong> para la pausa que Elite Intel hace tras cada pulsación que
+envía al juego. Rápido es el valor por defecto. Si en un equipo más lento el juego pierde
+pulsaciones de una secuencia — una macro que se ejecuta a medias, un panel que se abre en la
+pestaña equivocada —, muévelo hacia <strong>Lento</strong>.</p>
 <h3>Las tablas de bindings</h3>
-<p>Dos tablas: <strong>Bindings usados</strong> y <strong>Bindings faltantes</strong>, cada una con su recuento. Los bindings se
-agrupan por categoría:</p>
-<p>Nave / vuelo · Combate · Paneles de IU · Mapas · Exploración · Cámara · SRV · A pie · Varios</p>
+<p>Dos pestañas: <strong>Bindings usados</strong> y <strong>Bindings faltantes</strong>, cada una con su recuento. Las filas
+se agrupan bajo los encabezados del propio juego — <strong>Controles generales</strong>, <strong>Controles de nave</strong>,
+<strong>Controles de SRV</strong>, <strong>Controles a pie</strong>, <strong>Otros controles</strong> — en el mismo orden que la pantalla
+de Controles del juego, para que puedas leer ambas en paralelo.</p>
+<p><strong>Buscar</strong> acota las dos tablas mientras escribes. Busca en la sección, el grupo, el nombre del
+control y la etiqueta <code>.binds</code> original. <strong>Mostrar solo conflictos</strong> filtra las tablas a los
+problemas.</p>
 <table>
 <thead>
 <tr>
@@ -126,54 +140,67 @@ agrupan por categoría:</p>
 </tr>
 <tr>
 <td><strong>Estado</strong></td>
-<td><code>Faltante</code> · <code>Sin teclado</code> (asignado, pero solo a un mando) · <code>Sin definir</code></td>
+<td><code>Faltante</code> · <code>Sin teclado</code> (asignado, pero solo a un mando) · <code>No definido</code></td>
 </tr>
 <tr>
 <td><strong>Corrección rápida</strong></td>
-<td>Asigna una tecla libre y segura a este control concreto</td>
+<td>Pestaña <em>faltantes</em>: asigna una tecla de teclado libre y segura a este control</td>
 </tr>
 <tr>
 <td><strong>Borrar</strong></td>
-<td>Quita la asignación de teclado, dejando intactas las de mando y HOTAS</td>
+<td>Pestaña <em>usados</em>: quita el binding de teclado (principal, secundario o ambos), sin tocar los de mando y HOTAS</td>
 </tr>
 </tbody></table>
 <blockquote>
-<p><strong>Los HOTAS y mandos se muestran pero no se pueden editar.</strong> Elite Intel ejecuta a través de
-asignaciones de teclado, así que los demás dispositivos aparecen solo para diagnóstico.</p>
+<p><strong>HOTAS y mandos se muestran pero no se pueden editar.</strong> Elite Intel ejecuta mediante bindings
+de teclado, así que los demás dispositivos aparecen solo para diagnóstico.</p>
 </blockquote>
-<p><strong>Mostrar solo conflictos</strong> filtra las tablas para dejar los problemas.</p>
 <h3>Conflictos</h3>
-<p>Elite Dangerous considera que un acorde entra en conflicto solo cuando es <em>exactamente</em> el mismo
-acorde: <code>G</code> y <code>Shift+G</code> conviven sin problema. Elite Intel usa la misma regla, así que marca lo que
-el juego marca de verdad.</p>
-<p>Las filas en conflicto se colorean, y al pasar el ratón se muestra <strong>Comparte <em>tecla</em> con:</strong> y la
-lista.</p>
-<p>También puedes ver <strong>Gemelo nave/SRV — muchos lo asignan igual que:</strong>, que no es un conflicto sino
-una sugerencia. Algunos controles de nave y de SRV se asignan por convención a la misma tecla.</p>
+<p>Elite Dangerous considera conflicto una combinación solo cuando es <em>exactamente</em> la misma — <code>G</code> y
+<code>Mayús+G</code> conviven sin problema. Elite Intel usa la misma regla, así que señala lo que el juego
+señala de verdad.</p>
+<p>Las filas en conflicto salen en rojo, y al pasar el ratón muestran <strong>Comparte <em>tecla</em> con:</strong> y la
+lista — para cada ranura en conflicto, no solo la primera.</p>
+<p>También puedes ver <strong>Equivalente nave/SRV - muchos lo asignan igual que:</strong> en una fila cian. No es
+un conflicto, es una sugerencia: algunos controles de nave y de SRV se suelen asignar a la misma
+tecla.</p>
+<p>Vega además <strong>habla</strong> de los bindings que de verdad rompen algo, y nombra las teclas en el
+registro de diagnósticos:</p>
+<ul>
+<li><strong>El movimiento del mapa galáctico y la navegación de la interfaz en la misma tecla.</strong> Trazar
+rutas no funcionará hasta que el mapa y la interfaz tengan teclas separadas.</li>
+<li><strong>Un control en tu tecla del menú del juego.</strong> Elite abre el menú del juego con cualquier
+combinación que termine en esa tecla, así que el control no se puede pulsar nunca. La solución
+es borrar la asignación del menú del juego en el juego — Escape abre ese menú de todos modos.</li>
+<li><strong>Un control en una combinación que el sistema operativo captura antes</strong> (como Alt+F4).
+Pulsarla cierra el juego o te saca de la sesión.</li>
+</ul>
 <h3>Editar un binding</h3>
 <p>Haz clic en una ranura para abrir el diálogo de asignación.</p>
 <p><img src="../images/ui-bindings-assign.png" alt="Asignar una tecla"></p>
-<p>Muestra el binding seleccionado, la ranura y el valor actual. Después <strong>haz clic en el campo y pulsa
-las teclas que quieras</strong>, modificadores y tecla juntos. Esc cancela. Se admiten acordes con varios
-modificadores.</p>
-<p>Un mapa de teclado en vivo muestra lo disponible: <strong>mantén Ctrl/Mayús/Alt para ver las teclas libres
-para esa combinación; verde es libre, rojo ya está en uso.</strong> Las teclas reservadas por el sistema
-operativo se marcan y no se pueden asignar.</p>
-<p><strong>Borrar binding</strong> elimina la asignación.</p>
-<h3>Corregir faltantes</h3>
-<p>Un botón que asigna teclas seguras y compatibles con tu distribución a <strong>todos</strong> los controles que
-no tienen asignación de teclado.</p>
+<p>Muestra el binding seleccionado, la ranura y el valor actual. Luego <strong>haz clic en el campo y
+pulsa las teclas que quieras</strong> — modificadores y tecla a la vez. Esc cancela. Se admiten
+combinaciones de hasta tres modificadores.</p>
+<p>Un mapa del teclado en vivo muestra qué hay libre: <strong>mantén Ctrl/Mayús/Alt para ver las teclas
+libres para esa combinación — verde es libre, rojo ya está en uso.</strong> Las teclas reservadas (la
+del menú del juego, Alt+F4, Ctrl+Alt+F en Linux) aparecen marcadas y no se pueden asignar.</p>
+<p><strong>Borrar binding</strong> quita la asignación.</p>
+<h3>Autoasignar bindings faltantes</h3>
+<p>Un botón que asigna teclas seguras y compatibles con tu distribución de teclado a <strong>todos</strong> los
+controles sin binding de teclado.</p>
 <ul>
-<li>Las asignaciones existentes nunca se modifican.</li>
-<li>Ninguna tecla se reutiliza jamás.</li>
-<li>Los cambios van <strong>solo a tu borrador</strong>.</li>
+<li>Las asignaciones existentes nunca se cambian.</li>
+<li>Ninguna tecla se reutiliza.</li>
+<li>Los cambios van <strong>solo al borrador</strong> — revísalos y luego aplica.</li>
 </ul>
 <p>Informa de lo que hizo, y de lo que omitió y por qué: ambas ranuras ya en un mando, sin teclas
-seguras libres, o ninguna ranura que se pudiera editar con seguridad.</p>
+seguras libres o sin ranura editable de forma segura. Dos controles se dejan <strong>sin asignar a
+propósito</strong>: el menú del juego (Escape ya lo abre) y <em>expulsar toda la carga</em> (vacía la bodega al
+espacio y ningún comando de Elite Intel lo pulsa — asígnalo a mano si lo quieres).</p>
 <h3>Borrador, Aplicar, Revertir</h3>
-<p>Las ediciones <strong>no</strong> van directas a Elite Dangerous. Se acumulan en un borrador, y la insignia de
-estado muestra <strong>Borrador — sin aplicar al juego</strong> o <strong>Sincronizado</strong>. El mismo estado aparece en la
-lectura <em>Teclas</em> de la pestaña Vega.</p>
+<p>Los cambios <strong>no</strong> van directos a Elite Dangerous. Se acumulan en un borrador, y la insignia
+muestra <strong>Borrador</strong> o <strong>Sincronizado</strong>. El mismo estado aparece en el indicador <em>Mapa de teclas</em>
+de la pestaña Vega.</p>
 <table>
 <thead>
 <tr>
@@ -182,28 +209,29 @@ lectura <em>Teclas</em> de la pestaña Vega.</p>
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Aplicar al juego</strong></td>
-<td>Escribe el borrador en tu archivo <code>.binds</code>, haciendo antes una copia de seguridad</td>
+<td><strong>Aplicar</strong></td>
+<td>Escribe el borrador en tu archivo <code>.binds</code>, guardando antes una copia del anterior</td>
 </tr>
 <tr>
-<td><strong>Revertir desde el juego</strong></td>
+<td><strong>Revertir</strong></td>
 <td>Descarta el borrador y recarga desde el archivo del juego</td>
 </tr>
 </tbody></table>
 <blockquote>
-<p><strong>Tras aplicar, abre y luego cierra la pantalla de Controles en Elite Dangerous.</strong> El juego solo
-relee sus asignaciones cuando se abre esa pantalla. Elite Intel también lo dice en voz alta.</p>
+<p><strong>Tras aplicar, abre y cierra la pantalla de Controles en Elite Dangerous.</strong> El juego solo
+vuelve a leer sus asignaciones al abrir esa pantalla. Vega también te lo dice en voz alta.</p>
 </blockquote>
-<p>Si el archivo de asignaciones del juego cambió después de crear tu borrador, Aplicar se niega y te
-pide recargar o descartar primero, en lugar de sobrescribir en silencio la edición de otro.</p>
-<p>Si cierras la aplicación con un borrador sin aplicar, se te pregunta si quieres <strong>Aplicar al juego</strong>,
-<strong>Conservar borrador</strong> o <strong>Descartar</strong>.</p>
+<p>Si el archivo de bindings del juego cambió después de crear tu borrador, Aplicar se niega y te
+pide que recargues o descartes antes, en vez de sobrescribir en silencio el cambio de otro.</p>
+<p>Si cierras la app con un borrador sin aplicar, se te pregunta si quieres <strong>Aplicar al juego</strong>,
+<strong>Mantener borrador</strong> o <strong>Descartar</strong>.</p>
 <hr>
 <h2>Gestión de bindings</h2>
 <p><img src="../images/ui-tab-bindings-management.png" alt="Gestión de bindings"></p>
-<p>Tus copias de seguridad de asignaciones, listadas por fecha de <strong>Creada</strong> y por los <strong>Archivos</strong> que
-contiene cada una. Elite Intel hace una automáticamente antes de cada Aplicar; <strong>Copiar ahora</strong> hace
-una cuando se lo pides.</p>
+<p><strong>Copias de seguridad del jugador</strong> — instantáneas que haces tú con <strong>Copiar ahora</strong>, listadas por
+fecha (<strong>Creada</strong>) y los <strong>Archivos</strong> que contiene cada una. Haz una antes de experimentar.</p>
+<p>(Aparte, cada <strong>Aplicar</strong> guarda antes en silencio una copia del archivo del juego en
+<code>elite-intel/bindings/backups/</code>. Son una red de seguridad y no se listan aquí.)</p>
 <table>
 <thead>
 <tr>
@@ -213,14 +241,19 @@ una cuando se lo pides.</p>
 </thead>
 <tbody><tr>
 <td><strong>Restaurar al borrador</strong></td>
-<td>Carga la copia en tu borrador, para que puedas revisarla antes de que toque el juego</td>
+<td>Carga la copia en tu borrador, para que la revises antes de que toque el juego</td>
 </tr>
 <tr>
 <td><strong>Restaurar en vivo</strong></td>
-<td>La carga y la aplica al juego directamente. Las comprobaciones habituales de aplicación segura siguen ejecutándose</td>
+<td>La carga y la aplica directamente al juego. Las comprobaciones de seguridad habituales se siguen haciendo</td>
+</tr>
+<tr>
+<td><strong>Eliminar copia de seguridad</strong></td>
+<td>Elimina la copia para siempre</td>
 </tr>
 </tbody></table>
-<p>Cualquiera de las dos sustituye los cambios sin guardar del borrador actual, y ambas preguntan antes.</p>
+<p>Todas preguntan antes. Las dos restauraciones sustituyen los cambios sin guardar del borrador
+actual.</p>
 <hr>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

@@ -1,25 +1,26 @@
 # Pestaña Ajustes
 
-<img src="images/settings.png" class="inline" height="20" alt="Ajustes"> La fontanería. Una franja
-**General** que se aplica en todas partes, y luego tres subpestañas: **Servicios de IA**, **Audio**
-y **Push To Talk**.
+<img src="images/settings.png" class="inline" height="20" alt="Ajustes"> La fontanería. Una
+franja **General** que vale para todo, y luego tres subpestañas: **Servicios de IA**, **Audio** y
+**Push To Talk**. El botón de actualización está en el pie — *La aplicación está actualizada* o
+*Actualización disponible*.
 
 ---
 
 ## General
 
-Se muestra encima de las subpestañas, porque se aplica a todas ellas.
+Se muestra encima de las subpestañas porque se aplica a todas.
 
-**Idioma**: el idioma tanto de tus comandos de voz como de la propia interfaz de la aplicación.
-Elegir uno vuelve a renderizar toda la ventana de inmediato y Vega anuncia el cambio en voz alta.
+**Idioma** — el idioma de tus órdenes de voz y de la propia interfaz de la app. Al elegir uno, la
+ventana entera se redibuja al momento y Vega anuncia el cambio en voz alta.
 
-Compatibles: inglés, español, francés, alemán, italiano, portugués, portugués de Brasil, ucraniano,
-ruso.
+Admitidos: inglés, ruso, ucraniano, alemán, francés, español, italiano, portugués, portugués de
+Brasil.
 
-**Directorio de Journal**: donde Elite Dangerous escribe sus archivos de diario. Opcional: déjalo en
-blanco y se usa la ubicación estándar de tu plataforma. Así es como Elite Intel sabe qué ocurre
-alrededor de tu nave, de modo que si está mal la aplicación está efectivamente ciega, y lo dirá al
-arrancar.
+**Directorio de Journal** — donde Elite Dangerous escribe sus archivos de journal. Opcional: si
+lo dejas vacío se usa la ubicación estándar de tu plataforma. Así sabe Elite Intel qué ocurre
+alrededor de tu nave; si está mal, la app queda prácticamente ciega y lo dice al arrancar. Una
+carpeta inservible se rechaza y se mantiene el ajuste anterior.
 
 ---
 
@@ -27,65 +28,76 @@ arrancar.
 
 ![Servicios de IA](images/ui-tab-settings-ai.png)
 
-**Reescrito en V1.1.** Las antiguas casillas «Usar» dispersas han desaparecido. Ahora hay dos
-conmutadores —uno para el modelo de lenguaje y otro para la voz— y el lado no usado de cada uno se
-atenúa, así que resulta obvio cuál está activo.
+Dos selectores — uno para el modelo de lenguaje y otro para la voz — y el lado que no se usa se
+atenúa para que quede claro cuál está activo.
 
-Es también la única pestaña de la aplicación que trabaja sobre un **borrador**. No se escribe nada
-hasta que pulsas **Guardar**, e intentar salir con ediciones sin guardar te pide *Guardar*,
+Es la única pestaña de la app que trabaja con un **borrador**. No se escribe nada hasta que
+pulsas **Guardar**, y si intentas salir con cambios sin guardar te pregunta *Guardar*,
 *Descartar* o *Seguir editando*.
 
 ### Modelo de lenguaje (LLM)
 
-Alterna entre **Configuración local** y **Configuración en la nube**.
+Cambia entre **LMSTudio** (local) y **Configuración en la nube**.
 
-**Configuración local**
+**LMSTudio**
 
 | Campo | Notas |
 |-------|-------|
-| **Dirección** | Por defecto, la URL habitual de LM Studio. Apúntala a la IP de otra máquina si la inferencia corre en otro punto de tu red |
-| **Modelo** | El nombre del modelo. **Un solo campo**: V1.1 usa un único modelo para comandos y consultas |
+| **Dirección** | Por defecto, la URL de LM Studio, `http://localhost:1234/v1/chat/completions`. Pon la IP de otra máquina si la inferencia corre en otro equipo de tu red |
+| **Modelo** | El nombre del modelo. Un solo modelo atiende órdenes y consultas |
 
-El modelo local por defecto y recomendado es **`google/gemma-4-e4b`**. Elite Intel te avisa al
-arrancar si tu modelo local es otro; otros modelos pueden funcionar mal o no funcionar en absoluto.
+El modelo local admitido es **`google/gemma-4-e4b`**. Elite Intel te avisa al arrancar si tu
+modelo local es otro; otros modelos pueden funcionar mal o no funcionar.
 
-Guías de instalación: [LM Studio en Linux](Install-LM-Studio-Linux) ·
+Guías: [LM Studio en Linux](Install-LM-Studio-Linux) ·
 [LM Studio en Windows](Install-LM-Studio-Windows) ·
 [Serie AMD RX](AMD-RX-7800XT-LLM-Setup)
 
 **Configuración en la nube**
 
-Un campo: tu **Clave API**, con una casilla **Bloqueado** al lado para que una clave guardada no se
-pueda editar por accidente. Desmarca Bloqueado para cambiarla.
+| Campo | Notas |
+|-------|-------|
+| **Proveedor** | Elige uno: **Anthropic (Claude)**, **OpenAI**, **Google (Gemini)**, **xAI (Grok)**, **DeepSeek**, **Mistral** |
+| **Clave API** | Tu clave para ese proveedor, con una casilla **Bloqueado** al lado para que una clave guardada no se edite por accidente. Desmárcala para cambiarla |
 
-Proveedores compatibles: **Gemini, Grok, OpenAI, Claude, Deepseek, Mistral.**
+No eliges modelo — se selecciona automáticamente el adecuado para tu proveedor.
 
-> Ya no eliges modelo. Elite Intel reconoce el proveedor por la forma de tu clave y selecciona él
-> mismo el modelo adecuado.
+Una clave pertenece a un proveedor: al elegir otro proveedor, el campo de la clave se vacía para
+que pegues la de ese proveedor, y al volver a elegir el proveedor guardado vuelve su clave, así
+que un clic accidental no cuesta nada. **Guardar** sigue en gris hasta que proveedor y clave
+están rellenos.
 
-Mistral tiene un plan gratuito y es la forma más fácil de empezar.
-Consulta [Opciones de LLM en la nube](cloud-llm-options) para saber cómo obtener una clave de cada
-proveedor.
+Mistral tiene un nivel gratuito y es la forma más fácil de empezar.
+Cómo conseguir una clave de cada proveedor: [Opciones de LLM en la nube](cloud-llm-options).
 
 ### Voz (TTS)
 
-Alterna entre **Local · Kokoro** y **Nube · Google**.
+Cambia entre **Local · Kokoro / Supertonic** y **Nube · Google / Edge**. Cada lado tiene un
+segundo selector para elegir el motor.
 
-- **Local · Kokoro** no tiene configuración alguna. 53 voces, integradas, sin clave y sin descarga.
-- **Nube · Google** necesita una **Clave de Google TTS**, con la misma casilla Bloqueado.
+| Motor | Dónde se ejecuta | Notas |
+|--------|---------------|-------|
+| **Kokoro** | En tu PC | El predeterminado. Sin clave, nada sale de tu PC. No sabe pronunciar el cirílico — ver abajo |
+| **Supertonic 3** | En tu PC | Diez voces, todos los idiomas, incluidos ruso y ucraniano. Sin clave. Tiene un deslizador **Amplificación de Supertonic 3 (0–100 %)** para subir su nivel |
+| **Google** | Servidores de Google | Google Cloud Text-to-Speech. Necesita una **Clave de Google TTS** (con la misma casilla Bloqueado). Tiene un deslizador **Tono de Google WaveNet** para las voces WaveNet |
+| **Microsoft Edge** | Servidores de Microsoft | Las voces de lectura en voz alta en línea de Microsoft. Sin clave |
 
-> Cambiar de motor restablece la voz de cada nave a la voz por defecto del nuevo motor. Las
-> personalidades de las naves se conservan. Se te pide confirmación antes de que ocurra.
+**Kokoro y el cirílico.** Cuando el idioma de la app es ruso o ucraniano — o cuando tu *cliente
+del juego* escribe la charla de radio en ruso —, el segmento de Kokoro aparece en gris, un aviso
+explica por qué, y habla Supertonic 3 en su lugar.
+
+> Cambiar de motor restablece la voz de cada nave a la voz predeterminada del nuevo motor. Las
+> personalidades de las naves se conservan. Se te pide confirmación antes.
 
 ### Pie
 
-**Restaurar valores predeterminados** devuelve la configuración del modelo de lenguaje a LM Studio
-local con el modelo por defecto, y guarda de inmediato. **Guardar** confirma todo lo demás; está
-atenuado hasta que algo cambia de verdad, y entonces aparece a su lado el aviso **Cambios sin
-guardar**.
+**Restaurar valores predeterminados** devuelve el modelo de lenguaje a LM Studio local con la
+dirección y el modelo por defecto, y guarda al momento. **Guardar** aplica todo lo demás; está en
+gris hasta que algo cambia de verdad, y entonces aparece al lado el aviso **Cambios sin guardar**.
 
-Guardar reinicia solo lo que hace falta: cambiar el modelo reinicia el cerebro, cambiar la clave de
-voz reinicia la boca.
+Al guardar solo se reinicia lo necesario — cambiar el modelo o la clave reinicia el cerebro;
+cambiar el motor de voz o su clave reinicia la voz. Los deslizadores de tono y amplificación se
+aplican sin reiniciar.
 
 ---
 
@@ -95,74 +107,93 @@ voz reinicia la boca.
 
 ### Dispositivos de audio
 
-Desplegables **Mic.** y **Altavoz**, o *(Predeterminado del sistema)*. Los mismos selectores están
-disponibles desde el botón **Dispositivos de audio** de la pestaña Vega.
+Listas **Mic.** y **Altavoz**, o *(Predeterminado del sistema)*. Los mismos selectores están en el
+botón **Dispositivos de audio** de la pestaña Vega. El cambio se aplica al momento — solo se
+reinicia el servicio que usa el dispositivo.
 
-> Los cambios de dispositivo surten efecto en el **siguiente arranque de servicios**.
-
-**Activar reducción de ruido** con una intensidad **Baja / Media / Alta**. Empieza en Media. Alta es
-para salas realmente ruidosas: es agresiva, y filtrar de más puede costarte precisión en la
+**Activar reducción de ruido** con intensidad **Bajo / Medio / Alto**. Empieza en Medio. Alto es
+para salas realmente ruidosas — es agresivo, y filtrar de más puede costarte precisión en la
 transcripción.
+
+Debajo de los dispositivos hay dos pestañas.
 
 ### Niveles de audio
 
 | Deslizador | Qué hace |
 |--------|--------------|
 | **Volumen de voz** | Lo alto que habla Vega |
+| **Volumen de radio** | Lo altas que suenan las transmisiones de radio. En gris mientras las transmisiones de radio están desactivadas |
 | **Velocidad de voz TTS** | Lo rápido que habla Vega |
-| **Volumen de pitidos** | El pitido de confirmación: suena cuando la transcripción ha terminado y el modelo de lenguaje ya tiene tu entrada |
-| **Hilos de STT** | Hilos de CPU para la transcripción (4–11). Una petición mínima, no una reserva: la aplicación pide esta cantidad, usa lo que le da el procesador y los libera cuando termina el trabajo |
+| **Volumen de pitidos** | El pitido de confirmación — suena cuando el reconocimiento de voz ha terminado y el modelo de lenguaje tiene tu entrada |
+| **Hilos de STT** | Hilos de CPU para la transcripción (4–11). Es una petición mínima, no una reserva: la app pide tantos, usa los que le da el procesador y los libera al terminar |
 
-### Monitor del micrófono
+El volumen de la música no está aquí — está en la [pestaña Jukebox](UI-Jukebox-Tab), para que
+nunca bajes el equivocado.
 
-Un medidor en vivo en el lateral derecho. Hay tres cosas que leer en él:
+### Audio de transmisiones
 
-- **FLOOR**: tu nivel de ruido cuando *no* estás hablando.
-- **GATE**: el umbral. El audio por encima de la compuerta se transmite para transcribir; cuando cae
-  por debajo, lo capturado se transcribe y se envía al modelo de lenguaje.
-- **CLIP**: estás saturando el micrófono. Todo lo que quede por encima de esta línea se transcribe
-  mal.
+Cómo suenan los mensajes de radio.
 
-Quieres un hueco claro entre FLOOR y tu nivel al hablar, y que nada toque CLIP. Si no es lo que ves,
-ejecuta **CALIBRAR AUDIO** en la pestaña Vega: fija la compuerta por ti y te avisa si la diferencia
-entre voz y ruido es demasiado pequeña para trabajar.
+| Control | Qué hace |
+|---------|--------------|
+| **Pitido de radio al principio y al final de cada mensaje** | Tonos de squelch alrededor de cada transmisión, con su propio deslizador de volumen |
+| **Efecto de radio** | Un sonido de radio más marcado y degradado |
+| **Aplicar los efectos seleccionados al chat de radio y a los mensajes de PNJ** | Los tonos y el efecto de radio de arriba se aplican al tráfico de radio. Desactivado, la voz de radio conserva su filtro estándar |
+| **Aplicar los efectos seleccionados a VEGA a pie o en un SRV** | Vega suena como por el comunicador cuando no estás en la nave |
+
+### Monitor de micrófono
+
+Un medidor en vivo en el lado derecho. Se lee así:
+
+- **FLOOR** — tu nivel de ruido cuando *no* hablas.
+- **GATE** — el umbral. El audio por encima de la puerta se captura para transcribir; cuando
+  baja de ella, lo capturado se transcribe y se envía al modelo de lenguaje.
+- **CLIP** — estás saturando el micrófono. Todo lo que llega ahí se transcribe mal.
+
+El estado indica **OPEN**, **MARGINAL**, **CLOSED** o **HOT** (saturando). Bajo el medidor aparece
+un aviso en lenguaje claro cuando algo va mal: *Micrófono sin calibrar*, o *Micrófono demasiado
+débil para la sala* — sube el nivel de entrada en la configuración de sonido del sistema
+operativo y vuelve a calibrar. Si el micrófono está bien, no aparece ningún aviso.
+
+Si el medidor no muestra una separación clara entre FLOOR y tu nivel al hablar, ejecuta
+**Calibrar audio** en la pestaña Vega — ajusta la puerta por ti y te avisa si la separación es
+demasiado pequeña para trabajar.
 
 ---
 
 ## Push To Talk
 
-![Push to talk](images/ui-tab-settings-push-to-talk.png)
+![Push to Talk](images/ui-tab-settings-push-to-talk.png)
 
-Pulsar para hablar funciona con un **botón de mando o HOTAS**, no de teclado. Cedes un botón y ganas
-un micrófono que está cerrado salvo cuando quieres tenerlo abierto.
+Con Push to Talk activado, el micrófono está cerrado hasta que mantienes un botón. Lo que capte
+sin el botón pulsado se descarta como ruido ambiente.
 
 | Control | Notas |
 |---------|-------|
-| **Activar Push to Talk** | El interruptor maestro. Todo lo demás está desactivado hasta que esté encendido |
-| **Controlador** | Cualquier mando conectado que Elite Intel pueda ver. Vuelve a seleccionar automáticamente tu mando guardado cuando se reconecta |
-| **Botón** | Qué botón de ese mando |
+| **Activar Push to Talk** | El interruptor principal |
+| **Controlador** | Cualquier mando o HOTAS conectado. Tu controlador guardado se vuelve a seleccionar solo cuando se reconecta |
+| **Botón** | Qué botón de él |
+| **Botón del ratón** | Un segundo disparador: *Botón central*, *Botón 4 (atrás)* o *Botón 5 (adelante)*. Útil a pie o en el SRV, cuando el HOTAS queda lejos. El izquierdo y el derecho no se ofrecen — con ellos disparas tus armas |
 
-Dos modos:
+Mantén el botón, habla, suelta. Pulsarlo también **corta a Vega a media frase**, así que nunca
+tienes que esperar a que termine.
 
-- **Alternar para dormir / despertar**: el botón cambia a Vega entre dormida y escuchando. Mientras
-  duerme, Vega ignora todo salvo `Wake up!`, y la palabra de paso `listen` / `listen up` sigue
-  colando un único comando: *«Listen up — lower the landing gear.»*
-- **Push To Talk**: Vega ignora todo por defecto. Mantén el botón, oye un pitido, habla, suelta. Un
-  segundo pitido confirma que tu entrada se está procesando.
-
-Mientras pulsar para hablar está activo, el botón **Dormir / Despertar** de la pestaña Vega queda
-desactivado: el botón del mando es la compuerta.
-
-El botón funciona abras o no esta pestaña alguna vez.
+Mientras Push to Talk está activo, el botón **DORMIR / DESPERTAR** de la pestaña Vega está
+desactivado — el botón es la puerta. Un cambio aquí surte efecto en la siguiente pulsación, y el
+botón funciona tanto si abres esta pestaña como si no.
 
 ---
 
-## Dónde viven los ajustes
+## Dónde se guardan los ajustes
 
-Todos los ajustes y datos se guardan en una base de datos SQLite:
+Todos los ajustes y datos se guardan en tu PC:
 
-- **Linux:** `~/.local/share/elite-intel/elite-intel/db/`
-- **Windows:** `%APPDATA%\elite-intel\db\`
+- **Linux:** `~/.local/share/elite-intel/` (o `$XDG_DATA_HOME/elite-intel/`)
+- **Windows:** `%LOCALAPPDATA%\elite-intel\`
+
+La base de datos está en `db`, los comandos personalizados en `custom-commands` (con su propio
+`backups`), tus instantáneas manuales de bindings en `playerbackups`, y las copias automáticas
+previas a Aplicar en `bindings/backups`.
 
 ---
 

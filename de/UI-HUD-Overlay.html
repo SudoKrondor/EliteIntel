@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HUD-Overlay  EliteIntel</title>
-    <meta name="description" content="Neu in V1.1. Ein Overlay, das immer im Vordergrund liegt und deine aktuellen Ziele auf den">
+    <meta name="description" content="Ein immer im Vordergrund liegendes Overlay, das dein aktuelles Ziel und dein Gespräch mit Vega">
     <link rel="canonical" href="https://www.elite-intel.org/de/UI-HUD-Overlay.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-HUD-Overlay.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-HUD-Overlay.html">
@@ -13,7 +13,7 @@
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-HUD-Overlay.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-HUD-Overlay.html">
     <meta property="og:title" content="HUD-Overlay  EliteIntel">
-    <meta property="og:description" content="Neu in V1.1. Ein Overlay, das immer im Vordergrund liegt und deine aktuellen Ziele auf den">
+    <meta property="og:description" content="Ein immer im Vordergrund liegendes Overlay, das dein aktuelles Ziel und dein Gespräch mit Vega">
     <meta property="og:url" content="https://www.elite-intel.org/de/UI-HUD-Overlay.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Reiter Aktionen</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Reiter Bindings</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Reiter Einstellungen</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Reiter Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Reiter Statistik</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub active"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-Overlay</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">Wie mache ich...?</div>
             <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Allgemeiner Betrieb</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Eigene Befehle erstellen</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Handel &amp; Profit</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Galaxie erkunden</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Entdeckung &amp; Exobiologie</a>
@@ -88,78 +90,120 @@
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
 <h1>HUD-Overlay</h1>
-<p><strong>Neu in V1.1.</strong> Ein Overlay, das immer im Vordergrund liegt und deine aktuellen Ziele auf den
-Bildschirm bringt — im Spielfenster oder im VR-Headset.</p>
+<p>Ein immer im Vordergrund liegendes Overlay, das dein aktuelles Ziel und dein Gespräch mit Vega
+auf den Bildschirm bringt — ins Spielfenster oder in ein VR-Headset.</p>
 <p><img src="../images/ui-overlay-ingame.png" alt="HUD-Overlay im Spiel"></p>
-<p>Es ersetzt das alte OBS-Overlay-Fenster. Das Overlay läuft in einem eigenen Prozess und
-konkurriert daher weder mit dem Spiel noch mit der App um den Oberflächen-Thread.</p>
-<p>Die Karte wird nach der Geometrie des Cockpits gezeichnet, nicht rechtwinklig zum Monitor. Sie
-neigt sich also so, wie sich die Panels des Schiffs an dieser Stelle des Bildschirms neigen —
-verschiebst du sie, ändert sich die Neigung entsprechend. Ihre Zeilen sind schräge Linien, weshalb
-ein Wert deutlich tiefer sitzen kann als die Beschriftung, zu der er gehört: Lies jede Zeile
-entlang der Schräge, genau wie die Anzeigen des Spiels daneben. Wie weit ein Wert abzurutschen
-scheint, hängt außer von der Platzierung auch von der <strong>TEXTGRÖSSE</strong> ab — die Neigung gibt das
-Cockpit vor, kleinerer Text bedeutet also kürzere Zeilen, und derselbe Versatz überspannt mehr
-davon.</p>
-<p>Schalte es mit <strong>OVERLAY ANZEIGEN</strong> im <a href="UI-Vega-Tab.html">Vega-Reiter</a> ein und konfiguriere es mit
-<strong>OVERLAY-EINSTELLUNGEN</strong> daneben.</p>
+<p>Das Overlay läuft in einem eigenen Prozess und konkurriert daher weder mit dem Spiel noch mit
+der App um den Oberflächen-Thread.</p>
+<p>Die Karte ist an der Geometrie des Cockpits ausgerichtet statt rechtwinklig zum Monitor, sie
+neigt sich also so, wie sich die Schiffspanels an dieser Stelle des Bildschirms neigen —
+verschiebst du sie, ändert sich die Neigung mit. Ihre Zeilen sind schräge Linien; deshalb kann
+ein Wert spürbar tiefer sitzen als sein Etikett: lies jede Zeile entlang der Schräge, so wie die
+Anzeigen des Spiels daneben. Wie tief ein Wert scheinbar fällt, hängt auch von der
+<strong>TEXTGRÖSSE</strong> ab — die Neigung ist vom Cockpit vorgegeben, kleinerer Text bedeutet kürzere
+Zeilen, und derselbe Abfall kreuzt mehr davon.</p>
+<p>Schalte es mit <strong>OVERLAY ANZEIGEN</strong> im <a href="UI-Vega-Tab.html">Vega-Reiter</a> ein und richte es mit
+<strong>OVERLAY-EINSTELLUNGEN</strong> daneben ein. Die App merkt sich, ob du es angelassen hast, und stellt
+es beim nächsten Start wieder her.</p>
 <blockquote>
-<p>Fehlt die Overlay-Binärdatei in der Distribution, bleibt der Schalter aus und sagt das im
-Diagnoseprotokoll. Es wird kein Overlay behauptet, das es nicht gibt.</p>
+<p>Fehlt die Overlay-Datei in der Distribution, meldet der Schalter das im Diagnoseprotokoll. Er
+täuscht kein Overlay vor, das es nicht gibt.</p>
 </blockquote>
 <hr>
-<h2>Was es anzeigt</h2>
-<p>Das Overlay zeichnet <strong>Karten</strong> — eine je aktivem Ziel, abgeleitet aus dem, was du tatsächlich
-tust. Karten erscheinen und verschwinden von selbst; es gibt nichts zu konfigurieren.</p>
+<h2>Was es zeigt</h2>
+<h3>Eine Zielkarte</h3>
+<p>Es passt nur eine Karte, also zeigt das Overlay <strong>das Wichtigste, was du gerade tust</strong>, und
+wechselt von selbst, wenn sich das ändert. Es gibt nichts einzustellen.</p>
+<p>Arbeit, die du angenommen hast, schlägt immer Arbeit, die die App vorschlägt, in dieser
+Reihenfolge:</p>
 <table>
 <thead>
 <tr>
+<th>Rang</th>
 <th>Karte</th>
 <th>Erscheint, wenn</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>EXOBIOLOGIE</strong></td>
-<td>Du Organismen beprobst — Gattung und was noch zu finden ist</td>
-</tr>
-<tr>
+<td>1</td>
 <td><strong>VERNICHTUNGSAUFTRAG</strong></td>
-<td>Du Vernichtungsmissionen fliegst — nötige Abschüsse, Stapel, Belohnung</td>
+<td>Du Massaker-Missionen fliegst — benötigte Abschüsse, Stapel, Belohnung</td>
 </tr>
 <tr>
-<td><strong>BERGBAU</strong></td>
-<td>Du Bergbau betreibst — Laderaum, Limpets, Zielware</td>
-</tr>
-<tr>
-<td><strong>HANDELSROUTE</strong></td>
-<td>Eine Handelsroute geplant ist — Ware, Einkauf, Verkauf, Marge, Etappe <em>n</em> von <em>m</em></td>
-</tr>
-<tr>
-<td><strong>FRACHTCHANCE</strong></td>
-<td>Für deine Ladung eine gewinnbringende Fracht entdeckt wurde</td>
-</tr>
-<tr>
+<td>1</td>
 <td><strong>MISSION</strong></td>
-<td>Eine hervorgehobene Mission — Ziel, Fracht oder Passagiere, Ablauf, Belohnung</td>
+<td>Du Missionen angenommen hast — Ziel, Fracht oder Passagiere, Ablauf und Belohnung der hervorgehobenen, plus der Wert des restlichen Stapels</td>
 </tr>
 <tr>
+<td>2</td>
+<td><strong>HANDELSROUTE</strong></td>
+<td>Eine Handelsroute geplottet ist — Ware, Kauf, Verkauf, Marge, Etappe <em>n</em> von <em>m</em></td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>FRACHTCHANCE</strong></td>
+<td>Vega für freien Laderaum auf deiner Reise ein lohnendes Kauf-/Verkaufspaar gefunden hat</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>BAUSTELLE</strong></td>
+<td>Du für einen Kolonisierungsbau lieferst — Fortschritt, Ausstehendes und was du beim nächsten Flug laden sollst</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>WARE GEFUNDEN</strong> / <strong>EINKAUFSLISTE</strong> / <strong>FRACHT VERKAUF</strong></td>
+<td>Eine Warensuche einen Markt gefunden hat und eine Route dorthin geplottet ist — was zu kaufen (oder verkaufen) ist, Bestand und Preis</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>BERGBAU</strong></td>
+<td>Du Abbauziele hast, eine Raffinerie eingebaut ist und du nicht im Supercruise bist — Laderaum, Drohnen, Ziele</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>EXOBIOLOGIE</strong></td>
+<td>In diesem System noch Gattungen zu beproben sind — nur solange <em>Entdeckungen ansagen</em> an ist</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>KOPFGELDJAGD</strong></td>
+<td>Du in einer Ressourcenabbaustätte bist — Art der Stätte, Kopfgelder im Laderaum, Abschüsse</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>KONFLIKTZONE</strong></td>
+<td>Du in einer Konfliktzone bist — Intensität, deine Seite, Kampfanleihen in der Hand</td>
+</tr>
+<tr>
+<td>3</td>
 <td><strong>GEPLANTE ROUTE</strong></td>
 <td>Eine Route gesetzt ist — Ziel, nächstes System, verbleibende Sprünge</td>
 </tr>
-<tr>
-<td><strong>MATERIALHÄNDLER</strong> · <strong>TECHNOLOGIEHÄNDLER</strong> · <strong>INTERSTELLARE FAKTOREN</strong> · <strong>VISTA GENOMICS</strong></td>
-<td>Du eine Zielerinnerung gesetzt hast, um einen davon aufzusuchen</td>
-</tr>
 </tbody></table>
-<p>Die Karte der hervorgehobenen Mission wählt ihre Mission so, wie du es tun würdest: zuerst die am
-Ziel deiner Route, dann eine in deinem aktuellen System, dann die zuletzt angenommene.</p>
+<p>Die Karte <strong>geplante Route</strong> bekommt einen genaueren Titel, wenn Vega das Ziel für dich ermittelt
+hat und die Route noch dorthin führt: <strong>MATERIALHÄNDLER</strong>, <strong>TECHNOLOGIEHÄNDLER</strong>,
+<strong>INTERSTELLARE FAKTOREN</strong>, <strong>VISTA GENOMICS</strong>, <strong>AUFTANKEN</strong> oder <strong>AUSRÜSTUNG</strong>, ergänzt um
+Station und Typ. Ein Plot woandershin löscht dieses Detail, sodass ein alter Auftrag die Karte nie
+an sich reißen kann.</p>
+<p>Die <strong>Missions</strong>-Karte hebt die Mission hervor, deren Ziel das Ende deiner geplotteten Route ist;
+sonst die, die am frühesten abläuft.</p>
+<h3>Das Gespräch</h3>
+<p>Unter der Karte tippt das Overlay den Austausch mit, während er passiert — was du gesagt hast,
+Vegas Antwort und den Funkverkehr —, jeweils in eigener Farbe. Nützlich, wenn du mit leiser
+Stimme spielst.</p>
 <hr>
 <h2>Overlay-Einstellungen</h2>
 <p><img src="../images/ui-overlay-settings.png" alt="Overlay-Einstellungen"></p>
-<p><strong>HINTERGRUND-TRANSPARENZ</strong> (0–100 %) und <strong>TEXTGRÖSSE</strong> (75–200 %) sind bewusst zwei getrennte
-Regler. Ein einzelner „Deckkraft&quot;-Regler würde den Text zusammen mit dem Hintergrund ausblenden —
-und genau das macht ein abgedunkeltes Overlay über einer hellen Planetenoberfläche unlesbar. Blende
-den Hintergrund aus, lass den Text in Ruhe.</p>
+<p><strong>HINTERGRUND-TRANSPARENZ</strong> (0–100 %) und <strong>TEXTGRÖSSE</strong> (75–200 %) sind absichtlich zwei
+getrennte Regler. Ein einzelner „Deckkraft“-Regler würde den Text mit dem Hintergrund
+ausblenden — genau das macht ein abgedunkeltes Overlay über einer hellen Planetenoberfläche
+unlesbar. Blende den Hintergrund aus; lass den Text in Ruhe.</p>
+<h3>Textfarben</h3>
+<p>Ein Farbwähler pro Rolle, damit du das Overlay an deine Cockpitfarben oder deine Augen anpassen
+kannst:</p>
+<p><strong>Auftragstitel</strong> · <strong>Gut</strong> · <strong>Warnung</strong> · <strong>Kritisch</strong> · <strong>Beschriftungen</strong> · <strong>Deine Worte</strong> ·
+<strong>Schiffs-KI</strong> · <strong>Funkverkehr</strong></p>
+<p><strong>Farben zurücksetzen</strong> setzt jede Farbe auf den Auslieferungswert des Overlays zurück.</p>
 <h3>ANZEIGE AUF</h3>
 <table>
 <thead>
@@ -170,44 +214,44 @@ den Hintergrund aus, lass den Text in Ruhe.</p>
 </thead>
 <tbody><tr>
 <td><strong>Monitor</strong></td>
-<td>Ein Desktop-Fenster. Die Vorgabe, und was jede Version vor V1.1 getan hat. Die Karte neigt sich passend zum Cockpit, und die Neigung ändert sich mit der Platzierung — siehe oben</td>
+<td>Ein Desktopfenster. Der Standard. Die Karte neigt sich passend zum Cockpit, und die Neigung ändert sich mit der Position</td>
 </tr>
 <tr>
 <td><strong>VR-Headset</strong></td>
-<td>Ein SteamVR-Overlay. Benötigt ein laufendes SteamVR. Ist VR nicht verfügbar, fällt es auf ein Desktop-Fenster zurück, du stehst also nie ohne da</td>
+<td>Ein SteamVR-Overlay. Braucht laufendes SteamVR. Ist VR nicht verfügbar, fällt es auf ein Desktopfenster zurück, damit du nie ohne dastehst</td>
 </tr>
 <tr>
 <td><strong>Monitor und Headset</strong></td>
-<td>Beides gleichzeitig, mit identischen Daten versorgt. Nützlich, wenn du in VR fliegst, aber vom Monitor streamst oder aufnimmst</td>
+<td>Beides gleichzeitig, mit identischen Daten. Nützlich, wenn du in VR fliegst, aber vom Monitor streamst oder aufnimmst</td>
 </tr>
 <tr>
 <td><strong>VR-Aufnahmefenster</strong></td>
-<td>Ein schlichtes, flaches, undurchsichtiges Fenster, das ein Aufnahmewerkzeug anheften kann</td>
+<td>Ein schlichtes, flaches, deckendes Fenster, das ein Aufnahmewerkzeug anheften kann</td>
 </tr>
 </tbody></table>
 <h3>Zum VR-Aufnahmefenster</h3>
 <p>Dieser Modus spricht <strong>nicht</strong> mit SteamVR. Starte dein Aufnahmewerkzeug — Desktop+, OVR Toolkit
-oder Virtual Desktop — und wähle das Fenster mit dem Namen <strong>„EliteIntel HUD (VR capture)&quot;</strong>.</p>
-<p>Warum es das gibt: Der SteamVR-Modus übergibt dem Compositor pro getipptem Zeichen eine vollständige
-Textur, und auf einem gestreamten Headset wurde das als echte Einbuße bei der Bildrate gemeldet.
-Ein Aufnahmewerkzeug greift das Fenster auf der GPU nach eigenem Zeitplan ab und bietet dir
-Platzierungs- und Krümmungsregler, die diese App nicht hat.</p>
-<p>Es ist ein eigener Modus statt „richte dein Aufnahmewerkzeug auf das Monitor-Fenster&quot;, weil jenes
-Fenster geneigt und durchsichtig ist und als Werkzeugfenster gilt — und solche filtern
-Aufnahme-Auswahldialoge vollständig heraus.</p>
+oder Virtual Desktop — und wähle das Fenster <strong>„EliteIntel HUD (VR capture)“</strong>.</p>
+<p>Warum es das gibt: Der SteamVR-Modus übergibt dem Compositor pro getipptem Zeichen eine volle
+Textur, und auf einem gestreamten Headset kostete das nachweislich Bildrate. Ein
+Aufnahmewerkzeug holt sich das Fenster auf der GPU nach eigenem Takt und bietet Platzierungs- und
+Krümmungsoptionen, die diese App nicht hat.</p>
+<p>Es ist ein eigener Modus statt „richte dein Aufnahmewerkzeug auf das Monitor-Fenster“, weil
+jenes Fenster geneigt, durchsichtig und ein Werkzeugfenster ist — und solche Fenster blenden
+Aufnahmeauswahlen ganz aus.</p>
 <h3>POSITION IM HEADSET</h3>
-<p>Acht Platzierungen: <strong>Oben, Oben rechts, Rechts, Unten rechts, Unten, Unten links, Links, Oben
-links.</strong></p>
+<p>Acht Platzierungen: <strong>Oben, Oben rechts, Rechts, Unten rechts, Unten, Unten links, Links,
+Oben links.</strong></p>
 <blockquote>
-<p><strong>Das HUD ist vor deinem Sitz fixiert und folgt deinem Kopf nicht.</strong> Die gewählte Richtung wird
-von dort aus gemessen, wohin du nach SteamVRs <em>Sitzposition zurücksetzen</em> blickst — ein Neuzentrieren
-deiner Ansicht verschiebt das HUD also mitsamt dem Cockpit, und genau das willst du. Schaust du
-weg, bleibt das HUD, wo du es gelassen hast, exakt wie ein physisches Panel.</p>
+<p><strong>Das HUD steht fest vor deinem Sitzplatz und folgt nicht dem Kopf.</strong> Die gewählte Richtung
+wird von deiner Blickrichtung nach SteamVRs <em>Sitzposition zurücksetzen</em> gemessen — neu
+zentrieren bewegt das HUD also mit dem Cockpit, und genau das willst du. Schaust du weg, bleibt
+das HUD, wo du es gelassen hast, genau wie ein echtes Panel.</p>
 </blockquote>
 <hr>
 <h2>In einer anderen Sprache lesen</h2>
-<p>Die Kartenbeschriftungen folgen der Sprache der App, und Zahlen werden so gruppiert, wie diese
-Sprache gruppiert. Vom Spiel gelieferte Namen — Systeme, Stationen, Waren — gehen unverändert durch.</p>
+<p>Kartenbeschriftungen folgen der Sprache der App, und Zahlen werden so gruppiert, wie diese
+Sprache es tut. Namen aus dem Spiel — Systeme, Stationen, Waren — bleiben unverändert.</p>
 <hr>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

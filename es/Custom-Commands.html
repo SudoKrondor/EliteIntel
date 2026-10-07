@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear tus propios comandos  EliteIntel</title>
+    <meta name="description" content="Un comando personalizado es una macro: una lista de pasos — pulsaciones, pausas, texto escrito,">
+    <link rel="canonical" href="https://www.elite-intel.org/es/Custom-Commands.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Custom-Commands.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Custom-Commands.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/Custom-Commands.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Custom-Commands.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Custom-Commands.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Custom-Commands.html">
+    <meta property="og:title" content="Crear tus propios comandos  EliteIntel">
+    <meta property="og:description" content="Un comando personalizado es una macro: una lista de pasos — pulsaciones, pausas, texto escrito,">
+    <meta property="og:url" content="https://www.elite-intel.org/es/Custom-Commands.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases/latest" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../Custom-Commands.html" class="locale-link">EN</a><a href="../fr/Custom-Commands.html" class="locale-link">FR</a><span class="locale-current">ES</span><a href="../de/Custom-Commands.html" class="locale-link">DE</a><a href="../uk/Custom-Commands.html" class="locale-link">UK</a><a href="../ru/Custom-Commands.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Inicio</a>
+
+            <div class="nav-section">Aplicación</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Instalación</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Interfaz</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Pestaña Vega</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Pestaña Comandante</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Pestaña Acciones</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Pestaña Bindings</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Pestaña Ajustes</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Pestaña Jukebox</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Pestaña Estadísticas</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Elegir tu LLM</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 LLM gratuito en la nube</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">¿Cómo hago...?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Operación general</a>
+            <a href="Custom-Commands.html" class="nav-link active"><img src="../images/manual.png" class="inline" height="20" alt=""> Crear tus propios comandos</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Comercio y beneficio</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Explorar la galaxia</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Exploración &amp; Exobiología</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Navegación</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Misiones pirata</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Todos los comandos</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Comandos del sistema</a>
+
+            <div class="nav-section">Comunidad</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Chat Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Política de privacidad</a>
+            <a href="Contact.html" class="nav-link">📧 Contactar al desarrollador</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Crear tus propios comandos</h1>
+<p>Un comando personalizado es una macro: una lista de pasos — pulsaciones, pausas, texto escrito,
+frases habladas — que se ejecuta cuando dices una de tus frases. Úsalo cuando los comandos
+integrados no hacen lo que quieres, o cuando repites una y otra vez la misma secuencia de teclas.</p>
+<p>Los comandos personalizados están en <a href="UI-Actions-Tab.html">Acciones → Comandos personalizados</a>. Esta
+página construye dos desde cero.</p>
+<hr>
+<h2>Antes de empezar</h2>
+<ul>
+<li><strong>Debe haber un modelo de lenguaje en marcha.</strong> Genera la clave de acción y empareja tus frases.
+Arranca antes los servicios en la <a href="UI-Vega-Tab.html">pestaña Vega</a>.</li>
+<li><strong>Cada control que uses necesita un binding de teclado.</strong> Elite Intel pulsa teclas; un control
+asignado solo a tu HOTAS no lo puede pulsar una macro. La <a href="UI-Bindings-Tab.html">pestaña Bindings</a>
+muestra lo que falta, y <strong>Autoasignar bindings faltantes</strong> lo arregla de una vez.</li>
+</ul>
+<hr>
+<h2>Ejemplo 1: contramedidas de un tirón</h2>
+<p>Objetivo: decir <em>«lanza contramedidas»</em> y obtener disipador térmico, chaff y célula de escudo, con
+confirmación de Vega.</p>
+<h3>1. Crear el comando</h3>
+<p>Abre <strong>Acciones → Comandos personalizados</strong> y pulsa <strong>Nuevo</strong>.</p>
+<h3>2. Nombre y frases</h3>
+<ul>
+<li><p><strong>Nombre:</strong> <code>Contramedidas</code></p>
+</li>
+<li><p><strong>Lo que dirás:</strong> una frase por línea (también valen comas):</p>
+<pre><code>lanza contramedidas
+todas las contramedidas
+paquete defensivo
+</code></pre>
+</li>
+</ul>
+<p>Escribe las frases como las dirías de verdad bajo presión. Deben ser <strong>distintas de los comandos
+integrados</strong> — una frase que ya pertenece a un comando integrado (<em>«disipador térmico»</em>, <em>«chaff»</em>)
+se rechaza, porque Vega nunca podría distinguirlas.</p>
+<h3>3. Generar la clave de acción</h3>
+<p>Pulsa <strong>Generar</strong>. El modelo de lenguaje convierte tus frases en una clave <code>snake_case</code> en inglés,
+como <code>deploy_all_countermeasures</code>. No se puede escribir a mano — se convierte en el nombre que ve el
+modelo, así que debe tener una forma que el modelo siempre pueda repetir. Está en inglés aunque tus
+frases no lo estén.</p>
+<h3>4. Añadir los pasos</h3>
+<p>Pulsa <strong>Agregar paso</strong> para cada uno. En el diálogo elige el <strong>Tipo</strong> y rellena lo que pide. La
+lista <strong>Binding</strong> está etiquetada como la pantalla de Controles del juego — <em>Controles de nave /
+Cooling / Deploy Heatsink</em> — y puedes escribir en ella para filtrar (prueba <code>heat</code>, <code>srv</code>,
+<code>chaff</code>). Los nombres de los controles aparecen en inglés.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Tipo</th>
+<th>Valor</th>
+<th>Duración ms</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Pulsación de binding</td>
+<td>Deploy Heatsink</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Retraso</td>
+<td></td>
+<td>150</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Pulsación de binding</td>
+<td>Use Chaff Launcher</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Retraso</td>
+<td></td>
+<td>150</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Pulsación de binding</td>
+<td>Use Shield Cell</td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Hablar</td>
+<td>Contramedidas fuera.</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Usa <strong>Editar paso</strong>, <strong>Quitar paso</strong> y los botones <strong>▲ ▼</strong> para ajustar el orden.</p>
+<h3>5. Guardar y probar</h3>
+<p>Pulsa <strong>Guardar</strong>. Si algo está mal, un mensaje de validación te dice qué — mira <em>Solución de
+problemas</em> al final de esta página. El comando aparece ahora en la lista.</p>
+<p>Haz clic en su fila y luego en <strong>Ejecutar</strong> para probarlo sin hablar. Cuando funcione, dilo:
+<em>«Lanza contramedidas.»</em> También puedes escribirlo en el chat del juego: <code>@Vega lanza contramedidas</code>.</p>
+<hr>
+<h2>Ejemplo 2: una ruta a un lugar que visitas a menudo</h2>
+<p>Vega no traza una ruta a un sistema que nombras en voz alta — los nombres son donde más falla el
+reconocimiento de voz. Para un lugar al que vuelas a menudo, una macro maneja el mapa galáctico por
+ti, siempre igual.</p>
+<p><img src="../images/ui-custom-command-navigation.png" alt="Comando personalizado que traza una ruta a Jameson Memorial"></p>
+<p><strong>Lo que dirás:</strong> <em>ruta a jameson memorial</em>, <em>llévame a jameson memorial</em>, <em>jameson memorial
+ruta</em>. Luego <strong>Generar</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Tipo</th>
+<th>Valor</th>
+<th>Duración ms</th>
+<th>Qué hace</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Pulsación de binding</td>
+<td>GALAXYMAPOPEN</td>
+<td></td>
+<td>Abrir el mapa galáctico</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Retraso</td>
+<td></td>
+<td>1000</td>
+<td>Dejar que cargue el mapa</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Mantener binding</td>
+<td>CAMZOOMIN</td>
+<td>500</td>
+<td>Hacer zoom con la cámara del mapa</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Pulsación de binding</td>
+<td>UI_LEFT</td>
+<td></td>
+<td>Ir al campo de búsqueda</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Pulsación de binding</td>
+<td>UI_RIGHT</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Pulsación de binding</td>
+<td>UI_SELECT</td>
+<td></td>
+<td>Abrir el campo de búsqueda</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Escribir texto</td>
+<td>SHINRARTA DEZHRA</td>
+<td></td>
+<td>Escribir el nombre del sistema</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Tecla directa</td>
+<td>ENTER</td>
+<td>50</td>
+<td>Buscar</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Retraso</td>
+<td></td>
+<td>500</td>
+<td>Esperar el resultado</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Pulsación de binding</td>
+<td>UI_RIGHT</td>
+<td></td>
+<td>Entrar en el panel de resultados</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Mantener binding</td>
+<td>UI_UP</td>
+<td>500</td>
+<td>Subir hasta el botón superior</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Pulsación de binding</td>
+<td>UI_SELECT</td>
+<td></td>
+<td>Trazar la ruta</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Retraso</td>
+<td></td>
+<td>3000</td>
+<td>Esperar a que se trace la ruta</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Pulsación de binding</td>
+<td>CAMYAWLEFT</td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Para otro lugar, selecciona este comando, pulsa <strong>Duplicar</strong>, cambia el nombre, las frases y el
+sistema del paso 7, y <strong>Genera</strong> una clave nueva. Duplicar deja a propósito vacías las frases y la
+clave, para que los dos comandos nunca suenen igual.</p>
+<p>Lanza una macro así <strong>en vuelo</strong>, con el mapa galáctico cerrado — el primer paso lo abre, y con el
+mapa ya abierto lo cerraría.</p>
+<hr>
+<h2>Los tipos de paso</h2>
+<table>
+<thead>
+<tr>
+<th>Tipo</th>
+<th>Campos</th>
+<th>Para qué</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Pulsación de binding</strong></td>
+<td>Binding</td>
+<td>Pulsar un control del juego una vez</td>
+</tr>
+<tr>
+<td><strong>Mantener binding</strong></td>
+<td>Binding, Duración ms</td>
+<td>Mantener un control — acelerador, cámara, desplazarse por un menú</td>
+</tr>
+<tr>
+<td><strong>Retraso</strong></td>
+<td>Duración ms</td>
+<td>Dar tiempo al juego: un panel que se abre, un mapa que carga, una búsqueda</td>
+</tr>
+<tr>
+<td><strong>Hablar</strong></td>
+<td>Texto</td>
+<td>Que Vega diga algo — una confirmación, o lo que acaba de hacer la macro</td>
+</tr>
+<tr>
+<td><strong>Tecla directa</strong></td>
+<td>Tecla directa, Modificador, Duración ms</td>
+<td>Pulsar una tecla que no es un binding del juego: Enter, Escape, una letra. La duración es cuánto se mantiene</td>
+</tr>
+<tr>
+<td><strong>Escribir texto</strong></td>
+<td>Texto</td>
+<td>Escribir caracteres en el campo con el foco — una caja de búsqueda, la línea del chat</td>
+</tr>
+</tbody></table>
+<p><strong>Mejor pasos de binding que Tecla directa.</strong> Un binding sigue la tecla que el juego usa de verdad,
+así que la macro sigue funcionando si reasignas el control. Usa Tecla directa solo para teclas sin
+binding, como Enter dentro de un campo de texto.</p>
+<p><strong>Escribir texto va adonde esté el foco del teclado.</strong> Abre antes el campo — con un paso de binding
+que abra una caja de búsqueda, o con <strong>Tecla directa: Enter</strong> para el chat de comunicaciones. Si no,
+las letras llegan a los controles de la nave como pulsaciones.</p>
+<hr>
+<h2>Consejos</h2>
+<ul>
+<li><strong>Los retrasos suelen ser la solución.</strong> Si un paso parece saltarse, el juego no estaba listo.
+Alarga el retraso anterior o mueve <strong>Ritmo de entrada de teclas</strong> en la
+<a href="UI-Bindings-Tab.html">pestaña Bindings</a> hacia Lento — añade una pausa tras cada pulsación enviada.</li>
+<li><strong>Varias frases, significado claro.</strong> No hace falta decir la frase al pie de la letra; Vega
+empareja por significado. Cuanto más se distingan tus frases de otros comandos, con más fiabilidad
+se elegirá el tuyo.</li>
+<li><strong>Los pasos Hablar hacen que las macros parezcan parte de la nave</strong>, y confirman que la macro se
+ejecutó.</li>
+<li><strong>Compártelos.</strong> <strong>Exportar</strong> escribe los comandos elegidos en un archivo; <strong>Importar</strong> lee uno.
+Importar sustituye tu conjunto actual, pero antes se hace una copia — <strong>Restaurar desde copia de
+seguridad</strong> lo recupera.</li>
+<li><strong>Fíjate en el mensaje de arranque.</strong> Al iniciar los servicios, Vega dice cuántos comandos
+personalizados cargó y cuántos no pasaron la validación.</li>
+</ul>
+<hr>
+<h2>Solución de problemas</h2>
+<p>Los mensajes de validación al guardar aparecen en inglés.</p>
+<table>
+<thead>
+<tr>
+<th>Mensaje o síntoma</th>
+<th>Qué hacer</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><em>Añade al menos una frase arriba antes de generar una clave.</em></td>
+<td>Escribe primero al menos una frase</td>
+</tr>
+<tr>
+<td><em>No se pudo generar una clave de acción.</em></td>
+<td>El modelo de lenguaje no respondió. Mira el indicador LLM de la pestaña Vega y vuelve a intentarlo</td>
+</tr>
+<tr>
+<td><em>Phrase collides with a built-in action alias</em></td>
+<td>Esa frase ya ejecuta un comando integrado. Cámbiala</td>
+</tr>
+<tr>
+<td><em>Phrase collides with another custom command</em> / <em>Duplicate phrase</em></td>
+<td>Dos comandos — o el mismo dos veces — usan esa frase. Cambia una</td>
+</tr>
+<tr>
+<td><em>Action key collides with a built-in command</em> / <em>must be unique</em></td>
+<td>Reformula las frases y <strong>Genera</strong> de nuevo</td>
+</tr>
+<tr>
+<td><em>At least one step is required</em> / <em>… is required</em> / <em>durationMs must be positive</em></td>
+<td>A un paso le falta binding, texto, tecla o duración</td>
+</tr>
+<tr>
+<td>La macro se ejecuta pero algo se salta</td>
+<td>Añade o alarga un Retraso antes de ese paso, o ralentiza el ritmo de entrada</td>
+</tr>
+<tr>
+<td>Vega responde con otra cosa</td>
+<td>Haz tus frases más distintivas, o ejecútalo escrito: <code>@Vega &lt;frase&gt;</code></td>
+</tr>
+<tr>
+<td>Un paso de binding no hace nada</td>
+<td>Ese control no tiene binding de teclado — ver la <a href="UI-Bindings-Tab.html">pestaña Bindings</a></td>
+</tr>
+</tbody></table>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

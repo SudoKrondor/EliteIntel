@@ -1,27 +1,44 @@
 # Fonctionnement général
 
-Elite Intel est conçu pour une interaction naturelle. Cette page décrit les concepts clés pour une utilisation efficace. Mémoriser des commandes spécifiques **n'est pas nécessaire**. Parlez naturellement et l'IA **détermine votre intention par probabilité**, donc vous devez exprimer clairement ce que vous voulez sans être ambigu sur ce que vous attendez de l'application. Plus vous êtes ambigu, plus la probabilité que le LLM devine correctement votre intention est faible.
+Elite Intel est conçu pour une interaction naturelle. Cette page décrit les notions clés pour
+bien l'utiliser. Mémoriser des commandes précises n'est **pas nécessaire**. Parlez naturellement
+et Vega **déduit votre intention de ce que vous voulez dire** ; il faut donc exprimer ce que vous
+voulez sans ambiguïté. Plus vous êtes ambigu, moins Vega a de chances de choisir la bonne action.
 
-## Contrôles du jeu, commandes et requêtes
+## Commandes du jeu, ordres et requêtes
 
-Elite Intel aide avec les opérations de contrôle du vaisseau, comme Voice Attack, mais ce n'est pas tout ce qu'il peut faire. 
-Il peut trouver des choses pour vous, comme des courtiers technologiques, des négociants en matériaux, calculer des routes commerciales ou monétiser votre
-route existante. Il aide pour le suivi des missions, la gestion des missions massacre de pirates, l'exploration, l'exobiologie, 
-et la gestion du Fleet Carrier. Il génère des réponses vocales pour les requêtes au lieu d'utiliser des répliques prédéfinies.
-Ainsi, chaque réponse à une requête sera différente. La créativité des réponses dépendra de la Personnalité que vous sélectionnez
-et des capacités du modèle que vous utilisez.
+Elite Intel aide à piloter le vaisseau, comme Voice Attack, mais ne s'arrête pas là. Il peut
+trouver des choses pour vous, comme des courtiers en technologie ou des marchands de matériaux,
+calculer des routes commerciales ou monétiser votre trajet actuel. Il aide au suivi des missions, à
+l'empilement des missions de massacre de pirates, à la chasse aux primes, à l'exploration, à
+l'exobiologie, au transport pour la colonisation et à la gestion des vaisseaux-mères. Il génère des
+réponses parlées aux requêtes au lieu de répliques toutes faites, donc chaque réponse est
+différente. Son degré de créativité dépend de la personnalité choisie pour votre vaisseau et des
+capacités du modèle utilisé.
 
-_Ce n'est pas seulement une alternative à Voice Attack, c'est un ordinateur de bord avec un cerveau. Cependant, il ne jugera pas votre 
-façon de jouer, ne pilotera pas votre vaisseau à votre place et n'opérera pas en AFK._ 
+_Ce n'est pas seulement une alternative à Voice Attack, c'est un ordinateur de bord doté d'un
+cerveau. Mais il ne jugera pas votre façon de jouer, ne pilotera pas à votre place et ne jouera pas
+en AFK._
 
-Elite Intel effectue des analyses de données à partir des fichiers journaux du jeu, de Spansh et d'EDSM. 
-Les requêtes spécifiques retournent des réponses détaillées. Les requêtes larges retournent des résumés.
+Elite Intel analyse les données des fichiers journal du jeu, de Spansh et d'EDSM. Les requêtes
+précises donnent des réponses détaillées ; les requêtes générales, des résumés.
 
-En mode conversation, l'IA supporte également des requêtes de connaissances générales au-delà d'Elite Dangerous. Sa connaissance du
-lore d'Elite Dangerous dépend du modèle utilisé. Certains modèles n'en ont aucune idée et fourniront une réponse aléatoire
-à une question aléatoire, d'autres connaissent effectivement le lore.
+Vega peut aussi simplement converser — lore du jeu, build de vaisseau, tout autre sujet. Sa
+connaissance du lore d'Elite Dangerous dépend du modèle : certains le connaissent, d'autres
+inventent une réponse.
 
-Consultez les autres pages et les vidéos YouTube sur un sujet spécifique sur ce site
+## Trois façons de donner un ordre
+
+- **Parler.** Mains libres, ou en [push-to-talk](UI-Settings-Tab) sur un bouton de manette ou de
+  souris.
+- **Le taper dans le chat du jeu.** Commencez la ligne par `@Vega` — *« @Vega trouve une
+  marchandise tritium »*. Idéal pour les noms que la reconnaissance vocale comprend mal. Voir
+  [Toutes les commandes](AllCommands).
+- **Cliquer.** Toute commande peut être lancée depuis l'[onglet Actions](UI-Actions-Tab), qui montre
+  aussi ce qui est disponible là où vous êtes.
+
+Voir [Toutes les commandes](AllCommands) pour ce que vous pouvez demander, et les autres pages et
+vidéos YouTube de ce site pour des sujets précis.
 
 ----
-Communauté 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈

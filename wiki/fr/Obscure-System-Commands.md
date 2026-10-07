@@ -1,81 +1,165 @@
-# Commandes système méconnues
+# Commandes système en détail
 
-EliteIntel utilise une interface minimale sans menus ni panneaux de paramètres complexes. Un ensemble complet de fonctionnalités est disponible via des commandes vocales. Tous les paramètres et fonctions sont accessibles par la parole naturelle.
+[Toutes les commandes](AllCommands) liste ce que vous pouvez dire. Cette page couvre les commandes
+qui demandent un peu plus d'explications : ce qu'il faut faire *avant* de les dire, ce qu'elles
+font vraiment, et les pièges.
 
-## Paramètres activables/désactivables
+Tout ceci fonctionne à la voix, tapé dans le chat du jeu sous la forme `@Vega …`, ou d'un clic
+dans l'[onglet Actions](UI-Actions-Tab).
 
-Activez ou désactivez ces paramètres par commandes vocales :
+---
 
-- **Annonces de route [On/Off]**: « Turn Route Announcements On. » EliteIntel annonce des détails sur votre prochain saut, notamment si l'étoile est écumable, la sécurité du système et d'autres informations pertinentes. Lorsque désactivé, les annonces s'arrêtent. Les requêtes manuelles restent disponibles. *Par défaut : On*
-- **Annonces de découverte [On/Off]**: « Turn Discovery Announcements On. » EliteIntel annonce les systèmes cartographiés en premier, les planètes de haute valeur, les signaux biologiques et les découvertes similaires. *Par défaut : On*
-- **Annonces d'extraction et de matériaux [On/Off]**: « Turn Mining Announcements On. » EliteIntel signale les touches des limpets de prospection et les découvertes de matériaux. *Par défaut : Off*
-- **Ajouter une cible d'extraction [Nom du matériau]**: « Add Mining Target Painite. » EliteIntel signale les touches pour ce matériau spécifique. Aucun effet si aucune cible n'est définie. *Par défaut : Off*
-- **Radio [On/Off]**: « Turn On the Radio. » EliteIntel annonce les transmissions radio pertinentes telles que les menaces de pirates, tout en filtrant le trafic de routine comme les diffusions commerciales. Utile pour les courses de cargo. *Par défaut : Off*
-- **Mode Streaming [On/Off]**: « Set Streaming Mode On. » EliteIntel ne répond qu'aux commandes préfixées par « Computer. » Utile pour le streaming ou en escadron. Dites « Computer, turn streaming mode off » pour désactiver.
-- **Vision nocturne [On/Off]**: « Night vision on. » Active/désactive la vision nocturne dans le vaisseau ou le SRV.
-- **Phares [On/Off]**: « Headlights on. »
-- **Assistance de conduite [On/Off]**: « Drive assist off. »
+## Réglages que vous basculez à la voix
 
-## Navigation et recherche
+Chaque annonce vocale a son interrupteur vocal, et chacun correspond à un interrupteur de
+l'[onglet Commandant → Annonces](UI-Commander-Tab), où vous voyez d'un coup d'œil ce qui est actif.
 
-Au-delà du tracé de route basique, EliteIntel prend en charge une navigation ciblée :
+- **Annonces de route** : *« Désactive les annonces de route. »* Coupe tout ce qui est dit autour
+  d'un saut — système suivant, trafic, pertes, arrivée, sauts restants, étoile récoltable. Les
+  requêtes manuelles fonctionnent toujours.
+- **Annonces de découverte** : *« Active les annonces de découverte. »* Premières découvertes,
+  corps de valeur, signaux biologiques. Pilote aussi la carte Exobiologie de
+  l'[overlay HUD](UI-HUD-Overlay).
+- **Approche planétaire** : *« Active les annonces d'approche planétaire. »*
+- **Annonces de minage** : *« Active les annonces de minage. »* Les touches du prospecteur pour vos
+  cibles. Définissez d'abord des cibles : *« Ajoute une cible de minage painite. »* Sans cible, il
+  n'y a rien à annoncer.
+- **Récupérations de la trappe** : *« Annonce les récupérations de la trappe. »*
+- **Contacts radar** : *« Désactive les annonces radar. »*
+- **Radio** : *« Active la radio. »* Le trafic radio du jeu — menaces pirates, contrôle du trafic —
+  avec ses propres voix radio. Volume et effets dans [Paramètres → Audio](UI-Settings-Tab).
+- **Tout d'un coup** : *« Désactive toutes les annonces. »*
+- **Vision nocturne / lumières / assistance de conduite** : *« Active la vision nocturne. »*
+  *« Éteins les phares. »* *« Désactive l'assistance de conduite. »*
 
-- **Naviguer vers des coordonnées**: « Navigate to latitude 41.4325 longitude -75.2309. » EliteIntel vous guide de l'orbite à moins de 50 mètres. La navigation du côté obscur nécessite un vol aux instruments.
-- **Naviguer vers un échantillon biologique / entrée du codex**: « Navigate to next bio sample » ou « Navigate to nearest codex entry. » EliteIntel navigue vers le biologique balisé le plus proche. Il donne la priorité au genre actif si l'un est en cours de suivi.
-- **Naviguer vers la zone d'atterrissage**: « Navigate to landing zone. » Navigue vers vos dernières coordonnées d'atterrissage au sol connues.
-- **Naviguer vers le Fleet Carrier**: « Navigate to carrier » ou « Return to base. » Trace une route vers le dernier système connu du transporteur.
-- **Rentrer à la maison**: « Take me home. » Trace une route vers votre système d'origine configuré.
-- **Définir le système d'origine**: « Set as home system. » Marque votre système actuel comme système d'origine.
-- **Tracer une route de Fleet Carrier**: Ouvrez la carte galactique et sélectionnez une étoile. Copiez son nom en utilisant le dernier bouton à droite dans l'interface de la carte galactique. Dites « Calculate Fleet Carrier Route. » EliteIntel construit la route si le système est dans Spansh.
-- **Entrer la prochaine destination du Fleet Carrier**: Ouvrez la carte galactique du Fleet Carrier et cliquez sur le champ de texte supérieur. Dites « Enter next Fleet Carrier destination. » EliteIntel colle le nom du prochain système dans le champ.
-- **Trouver le courtier technologique humain/gardien le plus proche**: « Find nearest Human tech broker. » EliteIntel trace une route. Après l'arrivée, dites « Remind me where we need to go » pour un rappel de station.
-- **Trouver le marchand de matériaux le plus proche**: « Find nearest raw material trader » / « encoded » / « manufactured. » EliteIntel trouve et trace une route.
-- **Trouver des Brain Trees**: « Find brain trees within 500 light years. » EliteIntel repère les emplacements de biologie Guardian.
-- **Trouver un site d'extraction**: « Find where we can mine some Osmium within 200 light years. » EliteIntel trouve un système avec des anneaux adaptés et trace la route.
-- **Trouver du carburant pour Fleet Carrier (Tritium)**: « Find where we can mine some carrier fuel within 300 light years. » EliteIntel recherche des systèmes d'anneaux contenant du Tritium.
-- **Trouver une marchandise**: « Find where we can buy Bromellite within 150 light years. » EliteIntel interroge EDSM et trace une route vers le meilleur marché.
-- **Trouver le Vista Genomics le plus proche**: « Find nearest Vista Genomics. » Trace une route vers le Vista Genomics le plus proche pour le dépôt d'échantillons biologiques.
-- **Trouver le Fleet Carrier le plus proche**: « Find nearest Fleet Carrier. » Utile quand un Fleet Carrier est nécessaire à proximité.
+> **En stream ou en escadre ?** Il n'existe pas de « mode streaming ». Pour que Vega ne réagisse
+> pas aux autres voix, mettez-la en veille (*« Mise en veille »*) et faites précéder l'ordre
+> occasionnel de *« Écoute-moi, … »* — ou utilisez le [push-to-talk](UI-Settings-Tab), qui ignore
+> tout tant que le bouton n'est pas maintenu.
 
-## Commandes de combat et de mission
+---
 
-- **Trouver des zones de chasse**: « Find hunting grounds. » EliteIntel repère les sites d'extraction de ressources dangereuses ou les zones de combat correspondant aux paramètres de la mission.
-- **Tracer une route de reconnaissance**: « Navigate / plot recon route to hunting ground. » EliteIntel trace un chemin de reconnaissance vers le système cible.
-- **Naviguer vers le fournisseur de mission**: « Navigate to system with matching mission provider » ou « Navigate to a confirmed pirate massacre mission provider. » EliteIntel trace une route vers le fournisseur de mission.
-- **Naviguer vers la mission active**: « Navigate to active mission. » Navigue vers l'objectif de la mission en cours.
-- **Confirmer / Ignorer la zone de chasse**: « Confirm hunting ground » ou « Ignore hunting ground. » Indique à EliteIntel s'il faut utiliser ou ignorer cet emplacement.
+## Navigation et recherche de lieux
 
-## Raccourcis de contrôle du vaisseau
+Vega trace des routes vers le résultat d'une recherche, vers des lieux qu'elle connaît ou vers des
+coordonnées de surface. Elle ne trace pas de route vers un système nommé à voix haute — voir
+[une commande perso pour les lieux fréquents](UI-Actions-Tab).
 
-- **Distribution d'énergie**: « All power to shields, » « engines, » « weapons, » ou « Equalize power. » Une seule commande rééquilibre tous les condensateurs d'énergie. Particulièrement utile en VR, où les délais de traitement cloud augmentent le temps de réponse.
-- **Retour au HUD**: « Exit to HUD. » Quitte les menus imbriqués en une seule commande.
-- **Scan FSS / Honk**: « Open FSS and scan » ou « Honk. » Déclenche le scan de découverte.
-- **Définir la vitesse optimale**: « Set optimal speed. » Règle les gaz à 75 % pour le supercruise. Émettez cette commande environ 20 secondes avant la cible pour éviter les boucles orbitales.
-- **Cibler le prochain système de la route**: « Target next system in route. » EliteIntel sélectionne le prochain waypoint sur la route tracée.
-- **Verrouillage de navigation en escadron**: « Wing nav lock. » Verrouille sur la navigation d'un coéquipier.
-- **Cibler un sous-système**: « Target power plant. » Verrouille le ciblage du sous-système.
-- **Congédier le vaisseau / Extraction**: « Dismiss ship » / « Go to orbit » / « Return to surface, requesting extraction. »
+- **Navigation vers des coordonnées** : *« Navigue vers les coordonnées latitude 41,43 longitude
+  -75,23. »* Guidage de l'orbite jusqu'au point sur le corps actuel ou approché. Côté nuit, vous
+  volez aux instruments.
+- **Prochain échantillon / entrée codex** : *« Navigue vers le prochain échantillon biologique. »*
+  Vous guide vers l'organisme enregistré le plus proche sur cette planète. *« Supprime cette entrée
+  codex »* abandonne celle que vous suivez.
+- **Zone d'atterrissage** : *« Navigue vers la zone d'atterrissage. »* Retour là où votre vaisseau
+  s'est posé.
+- **Votre porte-vaisseau** : *« Navigue vers le porte-vaisseau »* / *« navigue vers le
+  porte-vaisseau d'escadron. »* Trace vers sa dernière position connue — ou vers votre système de
+  base si aucun n'est connu.
+- **Base** : *« Définis le système de base »* marque votre position actuelle (avec confirmation) ;
+  *« ramène-moi à la base »* trace le retour.
+- **Navigation depuis la mémoire** : copiez un nom de système (Ctrl+C) depuis INARA, Spansh ou un
+  message de chat, puis dites *« navigue depuis la mémoire. »* Vega ouvre la carte galactique et
+  trace la route.
+- **Route du porte-vaisseau** : ouvrez la carte galactique, sélectionnez la destination, copiez son
+  nom, puis dites *« calcule la route du porte-vaisseau. »* La route vient de Spansh, le système
+  doit donc y être connu.
+- **Prochaine destination du porte-vaisseau** : ouvrez la carte galactique *du porte-vaisseau* et
+  dites *« entre la destination du porte-vaisseau. »* Vega saisit l'étape suivante de la route
+  enregistrée et la confirme — à répéter après chaque saut.
+- **Route neutronique** : copiez le nom de la destination depuis la carte galactique et dites
+  *« calcule l'itinéraire des étoiles à neutrons »* (option *« …avec efficacité 60 »*). Après
+  chaque boost, *« va à la prochaine étoile à neutrons »* — ou activez *Tracer le prochain saut
+  neutronique lors du boost dans le cône* dans l'[onglet Commandant](UI-Commander-Tab).
+- **Marchands et courtiers** : *« Trouve un marchand de matériaux bruts / de données codées / de
+  matériaux manufacturés »*, *« trouve un courtier de technologies humaines / gardiennes »*,
+  *« trouve Vista Genomics le plus proche »*, *« trouve l'Interstellar Factor le plus proche. »* Vega
+  trace la route et laisse un rappel avec la station ; à l'arrivée, demandez *« quel est le rappel
+  actif ? »*
+- **Brain trees** : *« Trouve des brain trees pour [matériau] dans un rayon de 500 années-lumière. »*
+  Trouve un brain tree gardien qui fournit ce matériau brut.
+- **Sites de minage** : *« Où miner de l'osmium dans 200 années-lumière ? »* Fonctionne aussi pour
+  le tritium.
+- **Acheter et vendre** : *« Trouve une marchandise bromellite »* — précisez *la plus proche* ou
+  *le meilleur prix* ; marche aussi pour les modules. *« Où puis-je vendre de l'or ? »*
+- **Carburant** : *« Trouve une station de ravitaillement. »*
+- **Mauvais résultats de recherche** : si une recherche vous renvoie sans cesse vers un endroit qui
+  ne fonctionne pas, dites *« exclure ce système des recherches »* (ou *« exclure le système de
+  destination des recherches »*). Annulation depuis le système : *« débannis ce système. »*
 
-## Commandes utilitaires et de session
+---
 
-- **Définir un rappel**: « Set reminder, pick up Painite from Hutton Orbital. » EliteIntel stocke le rappel pour la session. Dites « Remind me » pour le récupérer.
-- **Effacer les rappels**: « Clear reminders. » Efface la file de rappels.
-- **Effacer les entrées du codex**: « Clear codex entries. » Efface toutes les entrées biologiques scannées. Utilisez avec précaution.
-- **Supprimer une entrée du codex**: « Delete codex entry. » Supprime la dernière entrée.
-- **Vider le cache**: « Clear cache. » Vide tout le cache de session. À utiliser uniquement quand la session est dans un état irrécupérable.
-- **Monétiser la route**: « Monetize route. » EliteIntel analyse la route tracée pour des opportunités de profit commercial ou d'exploration.
-- **Vérifier la connexion LLM**: « Verify LLM connection. » Confirme que le backend IA est accessible et répond.
-- **Interrompre / Silence**: « Interrupt, » « Silence, » ou « Cancel. » Arrête la sortie de synthèse vocale active.
-- **Analyse de biome**: « Run biome analysis on [système stellaire / nom de planète]. » EliteIntel rapporte les espèces probables à cet emplacement avant l'atterrissage.
-- **Finances du Fleet Carrier**: « Open fleet carrier data and tell me how long we can operate. » EliteIntel calcule le nombre de semaines d'opération à partir du solde actuel.
-- **Portée du Fleet Carrier**: « What is the range of our fleet carrier? » EliteIntel calcule la portée dans le pire des cas à partir du tritium en dépôt et en stockage du transporteur.
-- **Combien de temps le Carrier peut-il opérer ?**: « Use reserve balance, how long can we run the carrier with 31 million credits per week? » Précisez le solde à utiliser. EliteIntel effectue le calcul.
+## Combat et missions
+
+- **Apprendre d'abord de votre historique** : *« Analyse les journaux pour les terrains de
+  chasse. »* Lit vos journaux de jeu enregistrés et apprend chaque système à sites d'extraction de
+  ressources et chaque donneur de massacres pirates que vous avez croisé. À faire une fois après
+  l'installation.
+- **Terrains de chasse** : *« Trouve un terrain de chasse à 100 années-lumière. »* Un système avec
+  des sites d'extraction de ressources, parmi ceux que vous avez traversés. *« Oublie ce terrain de
+  chasse »* en retire un.
+- **Empiler les massacres** : *« Trouve des missions de massacre de pirates »*, *« navigue vers le
+  fournisseur de missions pirates »*, *« navigue vers la cible de mission pirate »*, *« combien de
+  kills restants ? »*
+- **Zones de conflit** : *« Trouve une zone de conflit. »*
+- **Missions** : *« Navigue vers la mission active. »* *« Trouve la marchandise de la mission »*
+  cherche où acheter ce qu'une mission active demande encore — celle qui expire le plus tôt et dont
+  vous n'avez pas déjà la cargaison.
+- **Sous-systèmes** : *« Cible la centrale électrique »* (aussi moteurs, FSD, distributeur, survie,
+  bouclier).
+
+---
+
+## Raccourcis de pilotage
+
+- **Distribution de puissance** : *« Priorité aux boucliers »*, *« priorité aux moteurs »*,
+  *« équilibre le distributeur. »* Un seul ordre règle tous les pips.
+- **Fermer / quitter** : *« Ferme le panneau »* ou *« quitte l'écran actuel »* sort du panneau ou de
+  la carte ouverte.
+- **Scan** : *« Scanne le système »* déclenche le scanner de découverte sur le groupe de tir défini
+  par vaisseau (onglet Commandant → ⚙). *« Ouvre l'analyseur de système »* ouvre le FSS.
+- **Vitesse optimale** : *« Règle la vitesse optimale. »* Met les gaz à 75 % — le point idéal en
+  supercroisière. Dites-le environ 20 secondes avant la cible pour ne pas tourner autour.
+- **Cibler le prochain système de la route** : *« Cible la prochaine destination. »*
+- **Wing nav lock** : *« Suis l'ailier. »*
+- **Groupes de tir** : *« Groupe de tir bravo »* — lettres OTAN ou chiffres.
+- **Renvoyer / rappeler** : *« Renvoie le vaisseau en orbite »* ; *« viens me chercher »* le fait
+  revenir.
+
+---
+
+## Utilitaires et session
+
+- **Rappels** : *« Crée un rappel, récupérer la painite à Hutton Orbital. »* Conservé jusqu'à ce
+  que vous l'effaciez ; *« quel est le rappel actif ? »* le relit. *« Efface les rappels »*
+  demande confirmation.
+- **Minuteurs** : *« Rappelle-moi dans 20 minutes de vérifier le porte-vaisseau. »*
+- **Monétiser la route** : *« Monétise la route. »* Trouve une paire achat/vente rentable le long
+  de la route tracée et l'enregistre comme rappel — du commerce, pas de l'exploration. Elle apparaît
+  sur l'[overlay HUD](UI-HUD-Overlay) comme *Opportunité fret*.
+- **Autodiagnostic** : *« Lance un diagnostic. »* Teste la connexion au modèle de langage et
+  indique s'il répond et à quelle vitesse.
+- **Interrompre** : *« Arrête de parler. »* Coupe Vega en pleine phrase. En push-to-talk, appuyer
+  sur le bouton fait de même.
+- **Analyse du biome** : *« Quel est le biome de cette planète ? »* Indique ce qui pousse
+  probablement là avant l'atterrissage.
+- **Finances et portée du porte-vaisseau** : *« Statut du porte-vaisseau. »* Carburant, réserve,
+  portée de saut, solde et autonomie.
+- **Chantiers** : *« Avancement du chantier »*, *« trouve la marchandise pour le chantier »*,
+  *« ramène-moi au chantier »*, *« oublie le chantier. »*
+
+---
 
 ## Notes d'utilisation
 
-- **Langage naturel**: La syntaxe de commande formelle n'est pas requise. La parole naturelle est prise en charge.
-- **Utilisateurs VR**: Les commandes de distribution d'énergie et de retour au HUD réduisent l'impact des délais de traitement cloud en VR.
-- **Navigation du côté obscur**: Naviguer vers des coordonnées sur le côté obscur d'une planète nécessite un vol aux instruments.
+- **Langage naturel** : pas de syntaxe imposée. Dites ce que vous voulez dire.
+- **Les noms dans le chat** : les noms de systèmes, de stations et de marchandises sont ce que la
+  reconnaissance vocale rate le plus. Tapez ces ordres : `@Vega trouve une marchandise tritium`.
+- **Les commandes destructrices demandent confirmation** : effacer rappels, cibles de minage,
+  missions ou une route, supprimer une entrée codex, oublier un terrain de chasse, exclure un
+  système ou définir une nouvelle base. Répondez *oui* ; tout le reste annule.
+- **VR** : la distribution de puissance et fermer/quitter vous évitent de fouiller les menus dans
+  le casque.
 
 ----
-Communauté 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈

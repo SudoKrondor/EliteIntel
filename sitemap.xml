@@ -29,6 +29,15 @@
     <xhtml:link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Contact.html"/>
   </url>
   <url>
+    <loc>https://www.elite-intel.org/Custom-Commands.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Custom-Commands.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Custom-Commands.html"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/Custom-Commands.html"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Custom-Commands.html"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Custom-Commands.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Custom-Commands.html"/>
+  </url>
+  <url>
     <loc>https://www.elite-intel.org/Customizing-your-AI.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Customizing-your-AI.html"/>
     <xhtml:link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Customizing-your-AI.html"/>
@@ -180,6 +189,15 @@
     <xhtml:link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-HUD-Overlay.html"/>
     <xhtml:link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-HUD-Overlay.html"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-HUD-Overlay.html"/>
+  </url>
+  <url>
+    <loc>https://www.elite-intel.org/UI-Jukebox-Tab.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Jukebox-Tab.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Jukebox-Tab.html"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Jukebox-Tab.html"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Jukebox-Tab.html"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Jukebox-Tab.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Jukebox-Tab.html"/>
   </url>
   <url>
     <loc>https://www.elite-intel.org/UI-Settings-Tab.html</loc>

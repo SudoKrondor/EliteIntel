@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onglet Jukebox  EliteIntel</title>
+    <meta name="description" content="partir de vos propres fichiers, jouée sous Vega plutôt que par-dessus. Chaque fois que Vega parle,">
+    <link rel="canonical" href="https://www.elite-intel.org/fr/UI-Jukebox-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Jukebox-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Jukebox-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Jukebox-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Jukebox-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Jukebox-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Jukebox-Tab.html">
+    <meta property="og:title" content="Onglet Jukebox  EliteIntel">
+    <meta property="og:description" content="partir de vos propres fichiers, jouée sous Vega plutôt que par-dessus. Chaque fois que Vega parle,">
+    <meta property="og:url" content="https://www.elite-intel.org/fr/UI-Jukebox-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases/latest" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI-Jukebox-Tab.html" class="locale-link">EN</a><span class="locale-current">FR</span><a href="../es/UI-Jukebox-Tab.html" class="locale-link">ES</a><a href="../de/UI-Jukebox-Tab.html" class="locale-link">DE</a><a href="../uk/UI-Jukebox-Tab.html" class="locale-link">UK</a><a href="../ru/UI-Jukebox-Tab.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Accueil</a>
+
+            <div class="nav-section">Application</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Interface</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Onglet Vega</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Onglet Commandant</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Actions</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Bindings</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Onglet Paramètres</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub active"><img src="../images/speaker.png" class="inline" height="20" alt=""> Onglet Jukebox</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Onglet Statistiques</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Choisir votre LLM</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 LLM cloud gratuit</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Comment faire ?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Opération générale</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Créer vos propres commandes</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Commerce et profit</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Explorer la galaxie</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Exploration &amp; Exobiologie</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Missions pirates</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Toutes les commandes</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Commandes système</a>
+
+            <div class="nav-section">Communauté</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Chat Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Politique de confidentialité</a>
+            <a href="Contact.html" class="nav-link">📧 Contacter le développeur</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Onglet Jukebox</h1>
+<p><img src="../images/speaker.png" class="inline" height="20" alt="Jukebox"> Votre propre musique, à
+partir de vos propres fichiers, jouée sous Vega plutôt que par-dessus. Chaque fois que Vega parle,
+la musique baisse automatiquement et remonte quand elle a fini — vous ne ratez aucune annonce.</p>
+<p>Rien à installer, pas de compte, pas de service de streaming. L&#39;onglet se lit de haut en bas :
+<strong>Bibliothèque musicale</strong>, <strong>Liste de lecture</strong>, <strong>Lecture</strong>.</p>
+<hr>
+<h2>Bibliothèque musicale</h2>
+<p>D&#39;où vient la musique.</p>
+<ul>
+<li><strong>Parcourir...</strong> — choisissez un dossier de musique. Elite Intel le parcourt, sous-dossiers
+compris, et ajoute à la liste chaque fichier lisible trouvé. Les fichiers arrivent dans l&#39;ordre
+des dossiers, donc les chapitres d&#39;un livre audio arrivent dans l&#39;ordre.</li>
+<li><strong>Réanalyser</strong> — reparcourir le dossier à la recherche de fichiers ajoutés depuis.</li>
+</ul>
+<p><strong>Formats pris en charge :</strong> MP3, FLAC, M4A / M4B (AAC), OGG / OGA (Vorbis) et WAV. Les fichiers
+que le Jukebox ne sait pas lire (WMA, Apple Lossless, achats protégés par DRM, Opus) sont ignorés.</p>
+<hr>
+<h2>Liste de lecture</h2>
+<p>La liste est la file d&#39;attente : ce que vous voyez est l&#39;ordre de lecture.</p>
+<table>
+<thead>
+<tr>
+<th>Colonne</th>
+<th>Signification</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>#</strong></td>
+<td>Position. Un ▶ marque la piste en cours</td>
+</tr>
+<tr>
+<td><strong>Titre</strong> · <strong>Artiste</strong> · <strong>Album</strong></td>
+<td>Lus dans les tags des fichiers. Une grande bibliothèque se remplit en quelques secondes</td>
+</tr>
+<tr>
+<td><strong>Durée</strong></td>
+<td>Durée de la piste</td>
+</tr>
+</tbody></table>
+<ul>
+<li><strong>Double-cliquez</strong> sur une piste pour la lire.</li>
+<li><strong>Faites glisser</strong> les lignes pour les réordonner. L&#39;ordre est enregistré.</li>
+<li>Cliquer sur un en-tête de colonne ne trie <strong>pas</strong> — cela détruirait un ordre arrangé à la main.
+Le tri se trouve dans le menu contextuel.</li>
+</ul>
+<p>Un fichier disparu du disque est marqué <strong>manquant</strong>.</p>
+<h3>Menu contextuel</h3>
+<table>
+<thead>
+<tr>
+<th>Élément</th>
+<th>Ce qu&#39;il fait</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Lire maintenant</strong></td>
+<td>Lit la piste sélectionnée</td>
+</tr>
+<tr>
+<td><strong>Lire ensuite</strong></td>
+<td>Place les pistes sélectionnées juste après la piste en cours</td>
+</tr>
+<tr>
+<td><strong>Retirer de la liste</strong></td>
+<td>Les retire de la liste (les fichiers sur le disque ne sont pas touchés)</td>
+</tr>
+<tr>
+<td><strong>Afficher dans le gestionnaire de fichiers</strong></td>
+<td>Ouvre le dossier qui contient le fichier</td>
+</tr>
+<tr>
+<td><strong>Copier artiste et titre</strong></td>
+<td>Dans le presse-papiers</td>
+</tr>
+<tr>
+<td><strong>Ajouter un dossier...</strong></td>
+<td>Ajoute la musique d&#39;un autre dossier</td>
+</tr>
+<tr>
+<td><strong>Importer une liste de lecture...</strong></td>
+<td>Ajoute les pistes nommées par une liste <code>.m3u</code> / <code>.m3u8</code></td>
+</tr>
+<tr>
+<td><strong>Retirer les fichiers manquants</strong></td>
+<td>Supprime chaque entrée dont le fichier a disparu</td>
+</tr>
+<tr>
+<td><strong>Vider la liste</strong></td>
+<td>Retire toutes les pistes (demande confirmation ; les fichiers sur le disque ne sont pas supprimés)</td>
+</tr>
+<tr>
+<td><strong>Trier par</strong> → Titre / Artiste / Dossier</td>
+<td>Un tri ponctuel qui réécrit l&#39;ordre de la liste</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Lecture</h2>
+<ul>
+<li><strong>La tête de lecture</strong> — où vous en êtes dans la piste. Faites-la glisser pour vous déplacer ; la
+lecture saute quand vous relâchez.</li>
+<li><strong>Précédent · Lecture/Pause · Arrêt · Suivant</strong> — les commandes de transport. <strong>Arrêt</strong> rembobine
+la piste au début ; <strong>Pause</strong> garde votre position.</li>
+<li><strong>Ordre</strong> — <em>Séquentiel</em> ou <em>Aléatoire</em>.</li>
+<li><strong>Volume</strong> — le niveau propre de la musique. Il est ici et non dans les paramètres Audio, pour ne
+jamais baisser Vega par erreur.</li>
+</ul>
+<p>Votre position dans une piste est mémorisée d&#39;une session à l&#39;autre — pratique pour les livres
+audio —, mais le Jukebox ne se met jamais à jouer tout seul au lancement de l&#39;application.</p>
+<hr>
+<h2>Commandes vocales</h2>
+<p>Chaque commande musicale nomme la <em>musique</em>, une <em>piste</em> ou un <em>morceau</em>, pour ne jamais entrer en
+collision avec les commandes du vaisseau.</p>
+<table>
+<thead>
+<tr>
+<th>Dites</th>
+<th>Ce qui se passe</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><em>« Jouer la musique »</em> / <em>« lancer la musique »</em></td>
+<td>Démarrer ou reprendre</td>
+</tr>
+<tr>
+<td><em>« Mettre la musique en pause »</em> / <em>« arrêter la musique »</em></td>
+<td>Pause — « jouer la musique » reprend là où elle s&#39;est arrêtée</td>
+</tr>
+<tr>
+<td><em>« Piste suivante »</em> / <em>« passer ce morceau »</em></td>
+<td>Piste suivante</td>
+</tr>
+<tr>
+<td><em>« Piste précédente »</em></td>
+<td>Piste précédente</td>
+</tr>
+<tr>
+<td><em>« Redémarrer la playlist »</em></td>
+<td>Retour à la première piste</td>
+</tr>
+<tr>
+<td><em>« Mélanger la musique »</em> / <em>« musique aléatoire »</em></td>
+<td>Ordre aléatoire</td>
+</tr>
+<tr>
+<td><em>« Mets le morceau Rocket Man »</em></td>
+<td>Cherche une piste par titre ou artiste et la joue. Si rien ne correspond vraiment, Vega le dit plutôt que de jouer la mauvaise</td>
+</tr>
+</tbody></table>
+<p>Elles fonctionnent aussi tapées dans le chat du jeu — voir <a href="AllCommands.html">Toutes les commandes</a>.</p>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

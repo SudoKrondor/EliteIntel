@@ -1,252 +1,360 @@
-# EliteIntel AI Queries & Commands Guide
+# Elite Intel Commands & Queries
 
-Hey Commander! This is a reference for the kinds of things you can ask or tell your **Elite Intel** sidekick.
-**Ideally - You don't need to memorize any of these** - just speak naturally, and the app figures out what you mean. This
-list exists so you know what's possible, not so you can recite scripts.
+Hey Commander! This is a reference for the kinds of things you can ask or tell **Vega**, your
+ship's AI. **You don't need to memorise any of it** — speak naturally and Vega works out what you
+mean. The phrases below are examples, not scripts: what matters is the meaning, not the exact
+words.
+
+> **The definitive, always-current list is in the app.** The
+> [Actions tab → Built-in Commands](UI-Actions-Tab) lists every command and query this build has,
+> filtered to what you can use where you are right now, with the training phrases in your own
+> language. You can run any of them from there with a click.
 
 ---
 
-## App
+## Talking to Vega
 
-- Check missing or unbound key bindings.
-- Sleep / Wake Up (Ignores user voice input in sleep mode, by pass by saying 'Listen Up', or switch back by saying 'Wake up')
+**Speak naturally.** *"Gear down"*, *"lower the landing gear"* and *"prepare for landing"* all do
+the same thing. The more clearly you say what you want, the more reliably it happens.
 
-## Exploration & Location
+**Addressing her by name is optional.** *"Vega, gear down"* works exactly like *"gear down"*.
 
-- Enable / Disable discovery announcements.
-- Where are we right now?
-- How far are we from the Bubble / our fleet carrier / last bio-sample?
-- How far to a specific planet, moon, or station?
-- What materials are available on this planet / moon?
-- Analyze the most recent scan / body data.
-- What's the ETA for our fleet carrier jump?
-- What time is it / current UTC time? (real-time clock query)
-- Analyze the biome for this star system.
-- Which planets still need bio or organic scans?
-- What bio scans have we completed?
-- What organics do we still have to scan?
-- What landable planets or moons are in this system?
-- What signals are in this system?
-- Which planets have geo signals?
-- Open FSS and scan. / Perform filtered spectrum scan.
-- System security, who controls this system, faction control?
-- What is our player profile / ranks / stats?
+**Sleep and wake.**
 
-## Exobiology
+- *"Sleep"* / *"ignore me"* / *"do not monitor"* — Vega stops listening.
+- *"Wake up"* — she listens again.
+- *"Listen up, …"* — while asleep, gets **one** order through without waking her:
+  *"Listen up, jump to hyperspace."*
 
-- What bio scans have we completed? / current star system (completed, partial, remaining).
-- Exploration profit potential in this system.
-- Last bio-sample location and distance. (requires codex entry scan with composition analyzer)
-- Navigate to next bio-sample / organic / codex entry. (requires codex entry scan with composition analyzer)
-- What organics or biology is on this planet / moon?
-- Navigate to next organic / sample / codex entry.
-- Biome analysis for [star system / planet / moon name].
+**Interrupt.** Say *"interrupt"* to cut Vega off mid-sentence. With
+[push-to-talk](UI-Settings-Tab) on, simply pressing the button does the same.
 
-## Fleet Carrier
+**Destructive commands ask first.** Clearing reminders, mining targets, active missions, a
+trade, neutron or carrier route, deleting a codex entry, forgetting a hunting ground, dismissing a
+construction site, excluding a system from searches, or setting a new home system — Vega asks
+you to confirm. Answer *yes* to go ahead; *no*, or anything else, cancels it.
 
-Make sure you mention carrier, else it might think you are talking about the ship!
+---
 
-- What is our carrier range (includes reserve fuel if manually set) / stats / fuel.
-- Set carrier fuel reserve [amount] (sets the fleet carrier tritium reserve)
-- Where is our carrier jumping next?
-- How long until carrier arrival? (Fleet carrier ETA)
-- What's my fleet carrier fuel status / jump range / fuel reserve?
-- How long can we operate on current funds?
-- How far can carrier jump with current tritium?
-- What's on the carrier route? / How many jumps remaining on carrier route?
-- Distance from the fleet carrier?
-- Fleet carriers in this system?
+## Typing commands in the game chat
 
-## Ship & Systems
+Speech recognition will always mangle some words — system names, commodity names, *Tritium*.
+For those, **type the order into the in-game chat** instead. Start the line with `@Vega`:
 
-- Enable / Disable route announcements.
-- Is the next star scoopable?
-- Analyze FSD target (allegiance, traffic, security, geo/bio data, etc.).
-- What's in my cargo hold?
-- What's your loadout?
-- Analyze our route. (summary of the route, fuel availability)
-- Fuel availability on route / next fuel stop.
-- Do we have [material]? / How much [material] do we have? / Material inventory.
-- What rank are we / player profile?
+```
+@Vega find where to buy tritium within 200 light years
+@Vega add mining target painite
+@vega, gear down
+```
 
-## Stations & Markets
+- Any capitalisation works, and a comma or colon after the name is fine.
+- The line is handled exactly as if you had said it, and it interrupts Vega if she is speaking.
+- Use the **local** channel. Only your own sent lines are read — nothing another commander types
+  can ever give Vega an order.
+- In Russian and Ukrainian the Cyrillic spelling (`@Вега`) works too.
 
-- What services are at local stations?
-- Outfitting / ship parts / modules for sale here?
-- Any ships for sale at this station?
-- Monetize my route (requires a trade profile set see Trade Profile Setup)
-- Calculate trade route (requires a trade profile set see Trade Profile Setup)
-- Where do I need to go to buy/sell [commodity]?
-- What's in the local market?
-- Data for stations, ports, and settlements in system.
-- Remind me [blah] (reads reminders set during trade route run, tells you what station to go to etc.)
-- What is our current trade plan / trade route / trade legs?
+---
 
-## Trade Profile Setup
+## ⚙️ App & Session
 
-- Change trade profile starting budget [amount]. (sets the starting capital for the trade route)
-- Change trade profile max distance [X]. (will filter stations for this range from entry)
-- Change trade profile max stops [N]. (route will be no longer than N stops)
-- Change trade profile allow prohibited cargo [on/off].
-- Change trade profile allow planetary port [on/off].
-- Change trade profile allow permit systems [on/off].
-- Change trade profile allow strongholds [on/off].
-- Trade profile / trade settings / trade configuration. (describe current profile)
-- List trade route parameters.
+- Sleep / wake up / *"listen up, [command]"* — see above.
+- *"Interrupt"* — stop speaking.
+- *"Run a diagnostic"* / *"are you working properly?"* — Vega checks herself and reports.
+- *"What time is it?"* — real-world UTC time.
+- *"Set reminder [text]"* — a standing note; *"what was the reminder?"* reads it back.
+- *"Remind me in 10 minutes to check the carrier"* — a countdown timer.
+- *"Clear reminders."*
 
-## ⚔️ Combat & Missions
+### Announcements on/off
 
-- Radar contact on/off (turns the radar announcements on and off)
-- Find hunting grounds (Will find target/mission provider pairs. Will tell you to fly to a target system and confirm the presence of the resource extraction site)
-- Recon hunting ground / navigate to hunting ground (navigate to the target star system to scout it)
-- Ignore hunting ground (skip the current hunting ground candidate)
-- Confirm hunting ground (will manually confirm the presence of the resource extraction site, might be needed if we didn't detect it from beacon or auto-discovery)
-- Navigate to mission provider system. / Navigate to pirate mission provider.
-- Navigate to an active mission / plot route to active mission. (will navigate to the active mission star system)
-- How many pirate kills left? (calculates the stack)
-- Massacre mission progress / kills remaining / bounty hunt progress.
-- What active missions do I have? (any missions, not just pirate)
-- Total bounties collected this session.
-- Target Subsystems commands: 'target drive', 'target fsd', 'target power distributor', 'target powerplant', 'target life support'. NOTE: optional subsystems are not included in the list.
-- Target wingman 1 (wingman alpha) / wingman 2 (wingman bravo) / wingman 3 (wingman charlie).
-- Priority target / target highest threat / next enemy / select hostile.
+- *"Turn off radar announcements"* / *"radar announcements on"*
+- *"Discovery announcements on / off"*
+- *"Route announcements on / off"*
+- *"Planetary approach announcements on / off"*
+- *"Mining announcements on / off"*
+- *"Announce cargo scoop pickups"* / *"stop announcing cargo scoop pickups"*
+- *"Radio on / off"* — radio transmissions
+- *"All announcements off"* / *"turn on all announcements"*
 
-## 🧭 Navigation Commands
+Every one of these is also a toggle on the [Commander tab → Announcements](UI-Commander-Tab).
 
-- Navigate to coordinates [latitude] [longitude]. (will guide you from orbit to location within 1 km, once landed within 100m)
-- Navigate to landing zone. (will give you GPS nav back to where your ship landed last time)
-- Navigate to next bio sample / codex entry.
-- Navigate to nearest Fleet Carrier.
-- Navigate to carrier / go to carrier / return to carrier.
-- Navigate to / go to / head to / fly to / take me to / set course to / guide me to / plot route to [destination].
-- Navigate to next trade stop / go to next trade stop.
-- Calculate Fleet Carrier route. *(Open galaxy map, select star, copy name to clipboard first.)*
-- Enter carrier destination / set carrier destination. *(Open Fleet Carrier galaxy map first.)*
-- Calculate trade route / plot profitable trade route.
-- Find nearest Vista Genomics.
-- Find nearest human / guardian tech broker.
-- Find nearest raw / encoded / manufactured material trader.
-- Find / locate / search for brain trees [within X light years].
-- Find mining location for [material] [within X light years].
-- Find where we can mine Tritium [within X light years].
-- Find where we can buy [commodity] [within X light years].
-- Find hunting grounds.
-- Cancel navigation.
-- Plot route to Fleet Carrier.
-- Take me home / navigate to home system.
-- Set as home system.
-- Set optimal speed. *(Sets throttle to 75% for supercruise approach.)*
-- Increase / Decrease speed by [amount]. 1-10
-- Set carrier fuel reserve to [amount]. (sets the fleet carrier tritium reserve)
-- Select FDS destination / target destination. (selects the next system in the plotted route)
-- Wing nav lock / lock wingman nav.
-- Select / target highest threat / next hostile / target enemy.
-- Navigate from memory. (This will open the galaxy map and navigate to the location you have copied from somewhere via Ctrl+C.)
+---
 
 ## 🎮 Ship Controls
 
-- Gear up / down | deploy / retract landing gear.
-- Deploy / retract hardpoints / weapons.
-- Weapons Hot! (same as deploy hardpoints)
-- Deploy heat sink.
-- Deploy / recover SRV / car / buggy.
-- Board ship / return SRV / SRV dock. (recovers SRV while in SRV mode)
-- Disembark. (exit ship on foot)
-- Open / close cargo scoop, cargo bay, cargo hatch.
-- Request docking. / Contact tower, get a landing pad, parking spot etc.
-- Launch ship / leave station / detach from station.
-- Taxi to landing / auto land / autopilot landing.
-- Engage Supercruise / enter supercruise / go supercruise.
-- Jump to hyperspace / enter hyperspace / lets go / next waypoint. (actual jump, not supercruise)
-- Drop out / drop here / drop ftl / leave supercruise / drop from supercruise.
-- Full stop / engine stop / set speed zero / kill engines.
-- Set speed to: quarter / half / three-quarter / full throttle.
-- Set speed plus / minus [amount].
-- All power to shields / engines / weapons. Equalize power. / max shields, max engines, max weapons.
-- Combat mode / switch to combat mode → switches to combat HUD.
-- Analysis mode / switch to analysis mode / explorer mode → switches to analysis HUD.
-- Night vision (on / off).
-- Headlights (on / off).
-- Drive assist on / off. (SRV mode)
-- Dismiss ship / go to orbit / go play.
-- Return to the surface / pick me up.
-- Open FSS and scan / honk / scan system / run a scan / discovery scan / system scan / full spectrum scan. (Will open the full FSS UI and honk)
-- Show / display - galaxy map / local map / close map.
-- Exit / close (Exits menus / tabs / sub-menus and drops you to HUD).
-- Interrupt / shut up / silence / cancel [stops TTS mid-sentence].
-- Activate (activates whatever is selected in the UI).
+- **Landing gear:** *"gear down"*, *"prepare for landing"* / *"gear up"*
+- **Hardpoints:** *"hardpoints"*, *"weapons hot"*, *"weapons free"* / *"retract hardpoints"*,
+  *"weapons cold"*, *"stand down"*
+- **Cargo scoop:** *"open / close cargo scoop"*
+- **Lights / night vision:** *"lights on"*, *"headlights off"*, *"night vision"*
+- **HUD mode:** *"combat mode"* / *"analysis mode"*
+- **Defensive:** *"heat sink"*, *"deploy shield cell"*, *"chaff"* / *"flares"*
+- **Fire groups:** *"fire group bravo"*, *"select fire group 3"*
+- **Power:** *"power to shields / engines / weapons / systems"* (*"max shields"*, *"pips to
+  engines"*), *"equalize power"*
+- **Head look:** *"look ahead"* / *"recenter view"*
+- **Activate:** *"activate"* — presses whatever is selected in the open panel.
 
-## 🎙️ Fighter Commands
+### Throttle
 
-- Deploy fighter / launch fighter / send out fighter.
-- Order fighters to defend the ship.
-- Order fighter to focus on my target / attack my target / fire at will / fighter open orders.
-- Order fighter to hold fire / fighter cease fire.
-- Order fighter to return to mothership / recall fighter / fighter dock.
+- *"Full stop"* / *"kill engines"* / *"all stop"*
+- *"Quarter throttle"*, *"half speed"*, *"three quarters throttle"*, *"full throttle"*
+- *"Increase speed by 2"* / *"slow down by 1"*
+- *"Optimal speed"* — sets the throttle for a supercruise approach.
 
-## 📺 UI Panels
+### Flight
 
-Say **show**, **open**, or **display** followed by the panel name:
-
-- Navigation panel
-- Transactions panel
-- Contacts panel
-- Chat panel / comms panel
-- Email inbox panel
-- Social panel
-- History panel
-- Squadron panel
-- Status panel
-- Commander panel / role panel / knee board
-- Crew panel
-- Home panel (internal panel)
-- Modules panel
-- Fire groups
-- Inventory panel
-- Storage panel
-- Fighter panel
-- Carrier management panel
-- Galaxy map
-- Local / system map
-- Services panel (SRV docked at station)
-
-Other panel commands:
-- Exit / close panel (exits menus and returns to HUD).
-
-## ⚙️ App & Session Commands
-
-- **"Ignore me" / "do not monitor" / "sleep"** → puts the app to sleep (ignores all input).
-- **"Wake up"** → resumes normal listening.
-- **"Listen up [command]"** → bypass: passes a single command or query through while the app stays asleep. The "listen up" prefix is stripped before the command reaches the AI. Example: *"Listen up, jump to hyperspace"* executes the jump without waking the app.
-- Set reminder [text]. / Remind me [text].
-- Clear reminders.
-- Toggle route announcements on / off.
-- Toggle discovery announcements on / off.
-- Toggle mining and material announcements on / off.
-- Toggle radio chatter / radio traffic on / off.
-- Disable all announcements.
-- Radar contact announcement on / off.
-- Add mining target [material name].
-- Remove mining target [material name].
-- Clear mining targets.
-- Delete codex entry. (Deletes the codex entry you are GPS tracking)
-
-## 💬 General Chat (Conversation Mode must be ON)
-
-By default the app runs in **Strict Mode**: if input doesn't match a known command or query it is silently ignored.
-This is intentional  it prevents STT noise and background chatter from triggering random actions mid-flight.
-
-Enable **Conversation Mode** in the Settings tab to turn on free-form chat. When on, anything that doesn't match a
-command falls back to general conversation  game lore, real-world topics, ship builds, whatever. The AI is not just
-a command parser when you want it to be more.
-
-Local LLMs will respond but will be stiff. Cloud LLMs (Claude, OpenAI, xAI, Mistral, Deepseek) are recommended for conversation.
+- *"Launch"* / *"undock"* / *"take off"* — leave the pad.
+- *"Request docking"* / *"request landing permission"*
+- *"Taxi"* / *"auto dock"* — hand the landing to the docking computer.
+- *"Enter supercruise"* / *"supercruise"*
+- *"Jump"* / *"enter hyperspace"* / *"let's go"* / *"next waypoint"* — the actual jump.
+- *"Drop out"* / *"drop here"* / *"leave supercruise"*
+- *"Target destination"* — selects the next system on your plotted route.
+- *"Honk"* / *"discovery scan"* — fires the discovery scanner (see the per-ship honk setting on
+  the [Commander tab](UI-Commander-Tab)).
+- *"Open FSS"* / *"full spectrum scan"* — opens the FSS and scans.
 
 ---
 
-[More commands here](https://github.com/SudoKrondor/EliteIntel/wiki/Obscure-System-Commands)
+## 🚙 SRV, Fighter & On Foot
+
+- *"Deploy SRV"* / *"launch SRV"* — opens the right hangar bay (set your bays under each ship's
+  ⚙ settings on the [Commander tab](UI-Commander-Tab)).
+- *"Launch nomad"* / *"deploy planetary scout"*
+- *"Board ship"* / *"recover SRV"* / *"SRV dock"* — from the SRV.
+- *"Drive assist on / off"*
+- *"Disembark"* / *"step outside"*
+- *"Dismiss ship"* / *"go play"* — send the ship to orbit.
+- *"Pick me up"* / *"return to surface"* — call it back.
+- *"Station services"* — the services panel, when docked in an SRV.
+
+### Fighter orders
+
+- *"Deploy fighter"*
+- *"Fighter defend"* · *"Fighter attack my target"* · *"Fire at will"* · *"Fighter hold fire"* ·
+  *"Recall fighter"*
+
+---
+
+## ⚔️ Combat & Missions
+
+- **Targets:** *"target highest threat"*, *"next enemy"*, *"select hostile"*
+- **Subsystems:** *"target FSD"*, *"target power plant"*, *"target drive"*, *"target power
+  distributor"*, *"target life support"*, *"target shield"*
+- **Wing:** *"target wingman one / two / three"* (or *alpha / bravo / charlie*),
+  *"wing nav lock"* / *"follow wingman"*
+- *"What are our missions?"* / *"mission status"* — everything on your board.
+- *"Navigate to active mission"* / *"take me to mission"*
+- *"Find mission cargo"* — where to buy what an active mission still needs, and plot it.
+- *"Clear active missions"*
+- *"Total bounties"* — bounties collected.
+
+### Pirate massacre stacking
+
+- *"Find pirate massacre missions"* / *"where can I stack massacre missions?"*
+- *"Navigate to pirate mission provider"*
+- *"Navigate to pirate mission target"*
+- *"How many kills left?"* / *"massacre progress"*
+
+### Bounty hunting & conflict zones
+
+- *"Find hunting grounds within 100 light years"* — a system with resource extraction sites,
+  from systems you have already flown through.
+- *"Scan journals for hunting grounds"* — learn RES systems and massacre providers from your old
+  journals in one go. Run it once after installing.
+- *"Forget this hunting ground"*
+- *"Find a conflict zone"* / *"where is the nearest war?"*
+
+See [Pirate Missions](Pirate-Massacre-Mission-Tracking).
+
+---
+
+## 🧭 Navigation
+
+Vega plots routes to **the result of a search**, to places she already knows, or to surface
+coordinates. She **cannot** navigate to a system you simply name aloud — names are where speech
+recognition fails most, and a wrong guess sends you to the wrong side of the bubble. Use
+*navigate from memory*, or — for a place you visit often — build a
+[custom command that plots the route for you](UI-Actions-Tab).
+
+- *"Navigate from memory"* / *"paste from memory"* — copy a system name (from INARA, Spansh, a
+  chat message…) with Ctrl+C first; Vega opens the galaxy map and plots to it.
+- *"Take me home"* / *"set home system"*
+- *"Navigate to fleet carrier"* / *"navigate to squadron carrier"*
+- *"Navigate to next trade stop"*
+- *"Cancel navigation"*
+
+### On a planet
+
+- *"Navigate to coordinates latitude 12.5 longitude -40.2"* — guidance from orbit to the spot.
+- *"Navigate to landing zone"* / *"back to LZ"* — back to where your ship landed.
+- *"Navigate to next bio sample"* / *"go to codex entry"* — the nearest tagged organic.
+- *"Delete this codex entry"*
+
+### Neutron highway
+
+- *"Calculate neutron route"* — copy the destination name from the galaxy map first.
+  Options: *"…efficiency 60"*, *"…with supercharge"*.
+- *"Next neutron star"* — plot to the next neutron waypoint (or let the *auto plot next neutron
+  jump* setting do it on the [Commander tab](UI-Commander-Tab)).
+- *"Clear neutron route"*
+
+### Finding places
+
+Every *find* command plots a route to what it finds, and puts it on the
+[HUD overlay](UI-HUD-Overlay).
+
+- *"Find raw / encoded / manufactured material trader"*
+- *"Find human / guardian tech broker"*
+- *"Find nearest Vista Genomics"*
+- *"Find nearest interstellar factor"* / *"where can I pay off my bounty?"*
+- *"Find a fuel station"* / *"I need fuel"*
+- *"Find nearest fleet carrier"*
+- *"Find brain trees within 500 light years"*
+- *"Find where to mine painite within 200 light years"* / *"find mining site"*
+- *"Exclude this system from searches"* (or *"that system"* — your destination) — when a search
+  keeps sending you somewhere that does not work. *"Allow this system in searches again"*, said
+  from inside it, undoes it.
+
+---
+
+## 💰 Trade & Markets
+
+- *"Where can I buy [commodity] within 100 light years?"* — also works for ship modules. Say
+  *nearest* or *best price*.
+- *"Where can I sell [commodity]?"*
+- *"Calculate trade route"* — uses this ship's trade profile.
+- *"Monetize route"* — a profitable cargo for the journey you are already on.
+- *"What is our trade route?"* / *"trade legs"*
+- *"Navigate to next trade stop"*
+- *"Cancel trade route"*
+- *"Local markets"* · *"Station details"* / *"what services here?"* · *"Outfitting"* ·
+  *"Shipyard"* / *"ships for sale"*
+- *"What are we carrying?"* — cargo hold.
+
+### Trade profile
+
+Also editable per ship on the [Commander tab](UI-Commander-Tab) ⚙ settings.
+
+- *"Trade profile"* — describe the current one.
+- *"Change trade profile starting budget 5 million"*
+- *"Change trade profile max stops 4"*
+- *"Change trade profile max distance 1000"*
+- *"Allow / block prohibited cargo"*
+- *"Allow / block planetary ports"*
+- *"Allow / block permit systems"*
+- *"Allow / block strongholds"*
+
+See [Trade & Profit](TradeRoutePlotting) and [Commodity Searching](Search-galaxy-with-EliteIntel).
+
+---
+
+## 🏗️ Colonisation
+
+- *"Find construction cargo"* — what the construction site still needs, where to buy it, and
+  how to fill the hold.
+- *"Construction site progress"* / *"how is the build going?"*
+- *"Take me back to the construction site"*
+- *"Dismiss the construction site"* — stop tracking it.
+
+---
+
+## 🛰️ Fleet Carrier
+
+Say *carrier* — or *squadron carrier* — or Vega may think you mean the ship.
+
+- *"Carrier status"* — fuel, range with current tritium, finances, how long you can operate.
+- *"Set carrier fuel reserve 200"* — tritium kept in reserve.
+- *"Calculate fleet carrier route"* — copy the destination name from the galaxy map first.
+- *"Enter carrier destination"* — with the carrier's galaxy map open, Vega types the next leg in
+  and confirms it.
+- *"Carrier route"* / *"jumps left on carrier"*
+- *"Carrier ETA"* / *"when does the carrier arrive?"*
+- *"Distance to carrier"*
+- *"Cancel carrier route"*
+- *"Carriers in system"*
+
+---
+
+## 🌠 Exploration & Exobiology
+
+- *"Where are we?"* — current location.
+- *"Distance to the bubble"* / *"how far from Sol?"*
+- *"How far to [planet / moon / station]?"*
+- *"Last scan"* — the most recent body you scanned.
+- *"Planets in system"* / *"landable planets"* / *"rings in system"*
+- *"Signals in system"* · *"Geo signals"*
+- *"System security"* / *"who controls this system?"*
+- *"FSD target info"* / *"next jump"* — analyse the system you are about to jump to.
+- *"Route analysis"* / *"jumps left"* / *"is the next star scoopable?"*
+- *"Exploration profits"* — what your scans are worth.
+- *"Planet materials"* — what is on this body.
+- *"Bio signals in system"* · *"What's left to scan?"* · *"Analyze biome"*
+- *"Distance to last bio sample"*
+- *"We have already sampled this body"* — mark it done if you sampled it before installing.
+
+### Exo-Mastery
+
+Once the catalogue is enabled on the [Commander tab](UI-Commander-Tab):
+
+- *"Take me to the next exobiology site"* — the richest system you have not sampled out yet.
+- *"Flag this system as harvested"* — write off a whole system you did before.
+
+See [Discovery](Discovery-Assistance).
+
+---
+
+## ⛏️ Mining
+
+- *"Add mining target painite"* / *"remove mining target painite"* / *"clear mining targets"*
+- *"Mining announcements on"* — prospector hits for your targets.
+- *"Find where to mine [material]"*
+
+With targets set and a refinery fitted, the [HUD overlay](UI-HUD-Overlay) shows a mining card.
+
+---
+
+## 👤 Commander & Ship
+
+- *"Player profile"* — ranks and progress.
+- *"Ship loadout"* / *"what am I flying?"*
+- *"Material inventory"* / *"how much [material] do we have?"*
+
+---
+
+## 📺 Panels & Maps
+
+Say **show**, **open**, or just the panel name:
+
+- *Navigation* · *Transactions* · *Contacts* · *Comms / chat* · *Email inbox* · *Social* ·
+  *History* · *Squadron* · *Status* · *Radar*
+- *Commander panel* (*knee board*) · *Crew* · *Internal* (*home*) · *Modules* · *Fire groups* ·
+  *Inventory* · *Storage* · *Fighter panel*
+- *Carrier management*
+- *Galaxy map* · *System map*
+- *"Next / previous panel"*, *"next / previous page"* — cycle tabs inside a panel.
+- *"Close"* / *"exit"* / *"close map"* — back to the HUD.
+
+---
+
+## 🎵 Music
+
+*"Play music"*, *"pause the music"*, *"next track"*, *"previous track"*, *"restart the
+playlist"*, *"shuffle the music"*, *"play the song [title]"*. See the
+[Jukebox tab](UI-Jukebox-Tab).
+
+---
+
+## Your own commands
+
+Anything missing, you can build yourself: [Actions → Custom Commands](UI-Actions-Tab). Custom
+commands are triggered by your own phrases, spoken or typed in chat, exactly like the built-in
+ones.
+
+---
 
 Fly Dangerous, Commander! o7
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈 | Open Source [**GitHub**](https://github.com/SudoKrondor/EliteIntel) | [YouTube](https://www.youtube.com/@SudoKrondor) | [Twitch](https://www.twitch.tv/sudokrondor) | Cretive Commons License |
+Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈 | Open Source [**GitHub**](https://github.com/SudoKrondor/EliteIntel) | [YouTube](https://www.youtube.com/@SudoKrondor) | [Twitch](https://www.twitch.tv/sudokrondor) | Creative Commons License |

@@ -1,249 +1,375 @@
-# Guide des requêtes et commandes IA d'EliteIntel
+# Commandes et requêtes d'Elite Intel
 
-Salut Commander ! Voici une référence des types de choses que vous pouvez demander à votre compagnon **Elite Intel**.
-**Idéalement, vous n'avez pas besoin de mémoriser quoi que ce soit**  parlez naturellement et l'application comprend ce que vous voulez dire. Cette liste existe pour vous montrer ce qui est possible, pas pour vous faire réciter des scripts.
+Salut, Commandant ! Voici une référence de ce que vous pouvez demander ou ordonner à **Vega**, l'IA
+de votre vaisseau. **Inutile de mémoriser quoi que ce soit** — parlez naturellement et Vega
+comprend ce que vous voulez dire. Les phrases ci-dessous sont des exemples, pas des scripts : ce
+qui compte, c'est le sens, pas les mots exacts.
+
+> **La liste de référence, toujours à jour, est dans l'application.** L'[onglet Actions →
+> Commandes intégrées](UI-Actions-Tab) liste chaque commande et requête de cette version, filtrées
+> sur ce que vous pouvez utiliser là où vous êtes, avec les phrases d'entraînement dans votre
+> langue. Vous pouvez y lancer n'importe laquelle d'un clic.
 
 ---
 
-## Application
+## Parler à Vega
 
-- Vérifier les raccourcis clavier manquants ou non assignés.
-- Veille / Réveil (En mode veille, l'entrée vocale est ignorée. Dites 'Listen Up' pour transmettre une commande, ou 'Wake up' pour revenir en mode normal)
+**Parlez naturellement.** *« Sors le train d'atterrissage »*, *« déploie le train d'atterrissage »*
+et *« sors le train »* font la même chose. Plus vous dites clairement ce que vous voulez, plus
+c'est fiable.
 
-## Exploration et localisation
+**L'appeler par son nom est facultatif.** *« Vega, sors le train »* fonctionne exactement comme
+*« sors le train »*.
 
-- Activer / Désactiver les annonces de découverte.
-- Où sommes-nous en ce moment ?
-- Quelle est la distance depuis la Bulle / notre Fleet Carrier / le dernier échantillon bio ?
-- Quelle est la distance jusqu'à une planète, une lune ou une station spécifique ?
-- Quels matériaux sont disponibles sur cette planète / lune ?
-- Analyser le scan le plus récent / les données du corps.
-- Quel est l'ETA pour le saut de notre Fleet Carrier ?
-- Quelle heure est-il / heure UTC actuelle ? (requête d'horloge en temps réel)
-- Analyser le biome de ce système stellaire.
-- Quelles planètes nécessitent encore des scans bio ou organiques ?
-- Quels scans bio avons-nous effectués ?
-- Quels organismes nous reste-t-il à scanner ?
-- Quelles planètes ou lunes sont atterrissables dans ce système ?
-- Quels signaux y a-t-il dans ce système ?
-- Quelles planètes ont des signaux géologiques ?
-- Ouvrir le FSS et scanner. / Effectuer un scan à spectre filtré.
-- Sécurité du système, qui contrôle ce système, contrôle factionnaire ?
-- Quel est notre profil joueur / grades / statistiques ?
+**Veille et réveil.**
 
-## Exobiologie
+- *« Mise en veille »* / *« désactive les commandes vocales »* — Vega n'écoute plus.
+- *« Réveille-toi »* — elle écoute de nouveau.
+- *« Écoute-moi, … »* — pendant la veille, fait passer **un** ordre sans la réveiller :
+  *« Écoute-moi, saute en hyperespace. »*
 
-- Quels scans bio avons-nous effectués ? / système stellaire actuel (complétés, partiels, restants).
-- Potentiel de profit d'exploration dans ce système.
-- Localisation et distance du dernier échantillon bio. (nécessite un scan d'entrée au codex avec l'analyseur de composition)
-- Naviguer vers le prochain échantillon bio / organique / entrée du codex. (nécessite un scan d'entrée au codex avec l'analyseur de composition)
-- Quels organismes ou biologie y a-t-il sur cette planète / lune ?
-- Naviguer vers le prochain organique / échantillon / entrée du codex.
-- Analyse du biome pour [nom du système stellaire / planète / lune].
+**Interrompre.** Dites *« arrête de parler »* ou *« interromps »* pour couper Vega en pleine
+phrase. Avec le [push-to-talk](UI-Settings-Tab) activé, appuyer sur le bouton suffit.
 
-## Fleet Carrier
+**Les commandes destructrices demandent confirmation.** Effacer les rappels, les cibles de minage
+ou les missions actives, effacer une route commerciale, neutronique ou de porte-vaisseau, supprimer
+une entrée du codex, oublier un terrain de chasse, écarter un chantier, exclure un système des
+recherches ou définir un nouveau système de base — Vega vous demande de confirmer. Répondez *oui*
+pour continuer ; *non*, ou toute autre réponse, annule.
 
-Mentionnez bien "carrier", sinon l'IA pourrait penser que vous parlez du vaisseau !
+---
 
-- Quelle est la portée de notre carrier (inclut le carburant de réserve si défini manuellement) / statistiques / carburant.
-- Définir la réserve de carburant du carrier [quantité] (définit la réserve de tritium du Fleet Carrier)
-- Où notre carrier saute-t-il ensuite ?
-- Dans combien de temps le carrier arrive-t-il ? (ETA du Fleet Carrier)
-- Quel est le statut du carburant / la portée de saut / la réserve de carburant de mon Fleet Carrier ?
-- Combien de temps pouvons-nous opérer avec les fonds actuels ?
-- Jusqu'où le carrier peut-il sauter avec le tritium actuel ?
-- Quelle est la route du carrier ? / Combien de sauts restants sur la route du carrier ?
-- Distance depuis le Fleet Carrier ?
-- Des Fleet Carriers dans ce système ?
+## Taper des commandes dans le chat du jeu
 
-## Vaisseau et systèmes
+La reconnaissance vocale écorchera toujours certains mots — noms de systèmes, de marchandises,
+*tritium*. Dans ce cas, **tapez l'ordre dans le chat du jeu**. Commencez la ligne par `@Vega` :
 
-- Activer / Désactiver les annonces de route.
-- L'étoile suivante est-elle scoopable ?
-- Analyser la cible FSD (allégeance, trafic, sécurité, données géo/bio, etc.).
-- Qu'est-ce qu'il y a dans ma soute ?
-- Quelle est votre configuration ?
-- Analyser notre route. (résumé de la route, disponibilité du carburant)
-- Disponibilité du carburant sur la route / prochain ravitaillement.
-- Avons-nous [matériau] ? / Quelle quantité de [matériau] avons-nous ? / Inventaire des matériaux.
-- Quel est notre grade / profil joueur ?
+```
+@Vega trouve une marchandise tritium
+@Vega ajoute une cible de minage painite
+@vega, sors le train
+```
 
-## Stations et marchés
+- La casse n'a pas d'importance, et une virgule ou deux-points après le nom sont acceptés.
+- La ligne est traitée exactement comme si vous l'aviez dite, et interrompt Vega si elle parle.
+- Utilisez le canal **local**. Seules vos propres lignes envoyées sont lues — rien de ce qu'un autre
+  commandant tape ne peut donner d'ordre à Vega.
 
-- Quels services sont disponibles dans les stations locales ?
-- Équipement / pièces de vaisseau / modules en vente ici ?
-- Des vaisseaux à vendre dans cette station ?
-- Monétiser ma route (nécessite un profil de commerce configuré, voir Configuration du profil de commerce)
-- Calculer une route commerciale (nécessite un profil de commerce configuré, voir Configuration du profil de commerce)
-- Où dois-je aller pour acheter/vendre [marchandise] ?
-- Qu'y a-t-il sur le marché local ?
-- Données sur les stations, ports et établissements du système.
-- Rappelle-moi [texte] (lit les rappels définis pendant un parcours commercial, vous indique quelle station rejoindre, etc.)
-- Quel est notre plan commercial / route commerciale / étapes de la route actuelle ?
+---
 
-## Configuration du profil de commerce
+## ⚙️ Application et session
 
-- Changer le capital de départ du profil commercial [montant]. (définit le capital initial pour la route commerciale)
-- Changer la distance maximale du profil commercial [X]. (filtre les stations selon cette distance depuis l'entrée)
-- Changer le nombre maximum d'escales du profil commercial [N]. (la route n'aura pas plus de N escales)
-- Changer le profil commercial pour autoriser les cargaisons prohibées [on/off].
-- Changer le profil commercial pour autoriser les ports planétaires [on/off].
-- Changer le profil commercial pour autoriser les systèmes à permis [on/off].
-- Changer le profil commercial pour autoriser les forteresses [on/off].
-- Profil commercial / paramètres de commerce / configuration commerciale. (décrit le profil actuel)
-- Lister les paramètres de la route commerciale.
+- Veille / réveille-toi / *« écoute-moi, [ordre] »* — voir plus haut.
+- *« Arrête de parler »* — stoppe la parole.
+- *« Lance un diagnostic »* — Vega se vérifie et fait son rapport.
+- *« Quelle heure est-il ? »* — l'heure UTC réelle.
+- *« Crée un rappel [texte] »* — une note permanente ; *« quel est le rappel actif ? »* la relit.
+- *« Rappelle-moi dans 10 minutes de vérifier le porte-vaisseau »* — un minuteur.
+- *« Efface les rappels. »*
+
+### Annonces on/off
+
+- *« Désactive les annonces radar »* / *« active les annonces de contact radar »*
+- *« Active / désactive les annonces de découverte »*
+- *« Active / désactive les annonces de route »*
+- *« Active / désactive les annonces d'approche planétaire »*
+- *« Active / désactive les annonces de minage »*
+- *« Annonce les récupérations de la trappe »*
+- *« Active / désactive la radio »* — transmissions radio
+- *« Désactive toutes les annonces »*
+
+Chacune est aussi un interrupteur de l'[onglet Commandant → Annonces](UI-Commander-Tab).
+
+---
+
+## 🎮 Commandes du vaisseau
+
+- **Train d'atterrissage :** *« sors le train »* / *« rentre le train »*
+- **Armes :** *« points d'emport »*, *« sors les armes »* / *« range les armes »*
+- **Trappe :** *« ouvre / ferme la trappe »*
+- **Lumières / vision nocturne :** *« allume les phares »*, *« éteins les phares »*, *« vision
+  nocturne »*
+- **Mode du HUD :** *« mode combat »* / *« mode analyse »*
+- **Défense :** *« lance un dissipateur thermique »*, *« utilise une cellule de bouclier »*,
+  *« lance les paillettes »*
+- **Groupes de tir :** *« groupe de tir bravo »*, *« sélectionne le groupe de tir 3 »*
+- **Puissance :** *« priorité aux boucliers / moteurs / armes »*, *« puissance aux systèmes »*,
+  *« équilibre le distributeur »*
+- **Vue tête :** *« réinitialise la vue tête »*
+- **Activer :** *« active »* — valide ce qui est sélectionné dans le panneau ouvert.
+
+### Poussée
+
+- *« Arrête le vaisseau »* / *« coupe les gaz »*
+- *« Quart de poussée »*, *« demi poussée »*, *« trois quarts de poussée »*, *« plein gaz »*
+- *« Augmente la vitesse de 2 »* / *« ralentis de 1 »*
+- *« Règle la vitesse optimale »* — vitesse d'approche en supercroisière.
+
+### Vol
+
+- *« Décolle »* / *« lance le vaisseau »* — quitter la plateforme.
+- *« Demande d'appontage »* / *« demande l'atterrissage »*
+- *« Pilotage automatique »* — laisser l'appontage à l'ordinateur.
+- *« Entre en super navigation »*
+- *« Saute en hyperespace »* / *« lance le saut FSD »* — le saut lui-même.
+- *« Sors de la super navigation »*
+- *« Cible la prochaine destination »* — sélectionne le système suivant de votre route tracée.
+- *« Scanne le système »* / *« scan de découverte »* — déclenche le scanner de découverte (voir le
+  réglage par vaisseau dans l'[onglet Commandant](UI-Commander-Tab)).
+- *« Ouvre l'analyseur de système »* / *« lance l'analyse complète du système »* — ouvre le FSS et
+  scanne.
+
+---
+
+## 🚙 SRV, chasseur et à pied
+
+- *« Déploie le VRS »* — ouvre la bonne baie du hangar (réglez vos baies dans les réglages ⚙ de
+  chaque vaisseau, [onglet Commandant](UI-Commander-Tab)).
+- *« Déploie le nomad »*
+- *« Récupère le VRS »* / *« remonte à bord »* — depuis le SRV.
+- *« Active / désactive l'assistance de conduite »*
+- *« Je débarque »* / *« sors du vaisseau »*
+- *« Renvoie le vaisseau en orbite »*
+- *« Viens me chercher »* / *« retour à la surface »* — le rappeler.
+- *« Services station »* — le panneau des services, amarré en SRV.
+
+### Ordres au chasseur
+
+- *« Déploie le chasseur »*
+- *« Chasseur en défense »* · *« Attaque ma cible »* · *« Chasseur feu à volonté »* · *« Chasseur
+  cesse le feu »* · *« Rappelle le chasseur »*
+
+---
 
 ## ⚔️ Combat et missions
 
-- Annonces de contact radar on/off (active ou désactive les annonces radar)
-- Trouver des zones de chasse (Trouvera des paires cible/fournisseur de mission. Vous indiquera de voler vers un système cible et confirmera la présence du site d'extraction de ressources)
-- Reconnaître la zone de chasse / naviguer vers la zone de chasse (naviguer vers le système stellaire cible pour l'explorer)
-- Ignorer la zone de chasse (passer la zone de chasse candidate actuelle)
-- Confirmer la zone de chasse (confirmera manuellement la présence du site d'extraction de ressources, peut être nécessaire si nous ne l'avons pas détecté depuis la balise ou par découverte automatique)
-- Naviguer vers le système du fournisseur de mission. / Naviguer vers le fournisseur de mission pirate.
-- Naviguer vers une mission active / tracer une route vers une mission active. (naviguera vers le système stellaire de la mission active)
-- Combien de kills pirates restants ? (calcule la pile)
-- Progression de la mission massacre / kills restants / progression de la chasse aux primes.
-- Quelles missions actives ai-je ? (toutes missions, pas seulement les pirates)
-- Total des primes collectées cette session.
-- Commandes de ciblage des sous-systèmes : 'target drive', 'target fsd', 'target power distributor', 'target powerplant', 'target life support'. NOTE : les sous-systèmes optionnels ne sont pas inclus dans la liste.
-- Cibler équipier 1 (wingman alpha) / équipier 2 (wingman bravo) / équipier 3 (wingman charlie).
-- Cible prioritaire / cible la plus grande menace / ennemi suivant / sélectionner hostile.
+- **Cibles :** *« cible la menace prioritaire »*, *« sélectionne l'ennemi le plus dangereux »*
+- **Sous-systèmes :** *« cible le FSD »*, *« cible les moteurs »*, *« cible la centrale
+  électrique »*, et distributeur, survie, bouclier
+- **Escadre :** *« cible l'ailier un / deux / trois »* (ou *ailier alpha / bravo / charlie*),
+  *« suis l'ailier »*
+- *« Missions actives »* / *« liste les missions en cours »* — tout votre tableau.
+- *« Navigue vers la mission active »*
+- *« Trouve la marchandise de la mission »* — où acheter ce qu'une mission active demande encore,
+  avec la route.
+- *« Efface toutes les missions actives »*
+- *« Total des primes »* — primes accumulées.
 
-## 🧭 Commandes de navigation
+### Empiler les massacres de pirates
 
-- Naviguer vers les coordonnées [latitude] [longitude]. (guidera de l'orbite vers la localisation dans un rayon de 1 km, puis à 100m une fois atterri)
-- Naviguer vers la zone d'atterrissage. (donnera un guidage GPS vers l'endroit où votre vaisseau a atterri la dernière fois)
-- Naviguer vers le prochain échantillon bio / entrée du codex.
-- Naviguer vers le Fleet Carrier le plus proche.
-- Naviguer vers le carrier / rejoindre le carrier / retourner au carrier.
-- Naviguer vers / aller à / se diriger vers / voler vers / m'emmener à / mettre cap sur / me guider vers / tracer une route vers [destination].
-- Naviguer vers la prochaine escale commerciale / aller à la prochaine escale commerciale.
-- Calculer la route du Fleet Carrier. *(Ouvrez la carte galactique, sélectionnez une étoile, copiez le nom dans le presse-papiers d'abord.)*
-- Entrer la destination du carrier / définir la destination du carrier. *(Ouvrez d'abord la carte galactique du Fleet Carrier.)*
-- Calculer une route commerciale / tracer une route commerciale rentable.
-- Trouver le Vista Genomics le plus proche.
-- Trouver le courtier technologique humain / guardian le plus proche.
-- Trouver le négociant en matériaux bruts / encodés / manufacturés le plus proche.
-- Trouver / localiser / rechercher des brain trees [dans un rayon de X années-lumière].
-- Trouver un site minier pour [matériau] [dans un rayon de X années-lumière].
-- Trouver où miner du Tritium [dans un rayon de X années-lumière].
-- Trouver où acheter [marchandise] [dans un rayon de X années-lumière].
-- Trouver des zones de chasse.
-- Annuler la navigation.
-- Tracer une route vers le Fleet Carrier.
-- Me ramener à la maison / naviguer vers le système d'origine.
-- Définir comme système d'origine.
-- Vitesse optimale. *(Règle les gaz à 75% pour l'approche en supercruise.)*
-- Augmenter / Diminuer la vitesse de [quantité]. 1-10
-- Définir la réserve de carburant du carrier à [quantité]. (définit la réserve de tritium du Fleet Carrier)
-- Sélectionner la destination FDS / sélectionner la destination. (sélectionne le prochain système sur la route tracée)
-- Verrouillage de navigation en aile / verrouiller la navigation de l'équipier.
-- Sélectionner / cibler la plus grande menace / prochain hostile / cibler ennemi.
-- Naviguer depuis la mémoire. (Ouvre la carte galactique et navigue vers la localisation que vous avez copiée via Ctrl+C.)
+- *« Trouve des missions de massacre de pirates »*
+- *« Navigue vers le fournisseur de missions pirates »*
+- *« Navigue vers la cible de mission pirate »*
+- *« Combien de kills restants ? »* / *« progression de la mission pirate »*
 
-## 🎮 Contrôles du vaisseau
+### Chasse aux primes et zones de conflit
 
-- Train d'atterrissage rentré / sorti | déployer / rétracter le train d'atterrissage.
-- Déployer / rétracter les points d'ancrage / armes.
-- Armes prêtes ! (identique à déployer les points d'ancrage)
-- Déployer le dissipateur thermique.
-- Déployer / récupérer le SRV / la voiture / le buggy.
-- Monter à bord du vaisseau / récupérer le SRV / amarrer le SRV. (récupère le SRV en mode SRV)
-- Débarquer. (sortir du vaisseau à pied)
-- Ouvrir / fermer la trappe à cargaison, la soute, l'écoutille cargo.
-- Demander l'amarrage. / Contacter la tour, obtenir un pas d'atterrissage, une place de parking, etc.
-- Lancer le vaisseau / quitter la station / se détacher de la station.
-- Taxi vers l'atterrissage / atterrissage automatique / pilote automatique d'atterrissage.
-- Activer le supercruise / entrer en supercruise / aller en supercruise.
-- Saut hyperspatial / entrer en hyperespace / on y va / prochain waypoint. (saut réel, pas le supercruise)
-- Sortir / sortir ici / sortir du FTL / quitter le supercruise / sortir du supercruise.
-- Stop complet / arrêt moteur / vitesse zéro / couper les moteurs.
-- Régler la vitesse à : un quart / moitié / trois quarts / pleine puissance.
-- Vitesse plus / moins [quantité].
-- Toute puissance sur les boucliers / moteurs / armes. Égaliser la puissance. / boucliers max, moteurs max, armes max.
-- Mode combat / passer en mode combat → passe à l'affichage de combat.
-- Mode analyse / passer en mode analyse / mode explorateur → passe à l'affichage d'analyse.
-- Vision nocturne (on / off).
-- Phares (on / off).
-- Assistance de conduite on / off. (mode SRV)
-- Renvoyer le vaisseau / aller en orbite / aller jouer.
-- Retourner à la surface / venez me chercher.
-- Ouvrir le FSS et scanner / honk / scanner le système / effectuer un scan / scan de découverte / scan du système / scan à spectre complet. (Ouvrira l'interface FSS complète et effectuera le honk)
-- Afficher / ouvrir - carte galactique / carte locale / fermer la carte.
-- Quitter / fermer (Quitte les menus / onglets / sous-menus et retourne à l'affichage principal).
-- Interrompre / tais-toi / silence / annuler [arrête la synthèse vocale en cours].
-- Activer (active ce qui est sélectionné dans l'interface).
+- *« Trouve un terrain de chasse à 100 années-lumière »* — un système avec des sites d'extraction
+  de ressources, parmi ceux que vous avez déjà traversés.
+- *« Analyse les journaux pour les terrains de chasse »* — apprend d'un coup les systèmes à RES et
+  les donneurs de massacres à partir de vos anciens journaux. À faire une fois après l'installation.
+- *« Oublie ce terrain de chasse »*
+- *« Trouve une zone de conflit »* / *« où est la guerre la plus proche ? »*
 
-## 🎙️ Commandes du chasseur
-
-- Déployer le chasseur / lancer le chasseur / envoyer le chasseur.
-- Ordonner aux chasseurs de défendre le vaisseau.
-- Ordonner au chasseur de se concentrer sur ma cible / attaquer ma cible / tir à volonté / ordres libres pour le chasseur.
-- Ordonner au chasseur de cesser le feu / chasseur cessez le feu.
-- Ordonner au chasseur de retourner au vaisseau mère / rappeler le chasseur / chasseur amarre.
-
-## 📺 Panneaux de l'interface
-
-Dites **afficher**, **ouvrir**, ou **afficher** suivi du nom du panneau :
-
-- Panneau de navigation
-- Panneau des transactions
-- Panneau des contacts
-- Panneau de chat / panneau de communications
-- Panneau de la boîte mail
-- Panneau social
-- Panneau d'historique
-- Panneau d'escadron
-- Panneau d'état
-- Panneau Commander / panneau de rôle / carnet de bord
-- Panneau d'équipage
-- Panneau d'accueil (panneau interne)
-- Panneau des modules
-- Groupes de feu
-- Panneau d'inventaire
-- Panneau de stockage
-- Panneau du chasseur
-- Panneau de gestion du carrier
-- Carte galactique
-- Carte locale / du système
-- Panneau des services (SRV amarré à une station)
-
-Autres commandes de panneau :
-- Quitter / fermer le panneau (quitte les menus et retourne à l'affichage principal).
-
-## ⚙️ Commandes de l'application et de session
-
-- **"Ignore me" / "do not monitor" / "sleep"** → met l'application en veille (ignore toutes les entrées).
-- **"Wake up"** → reprend l'écoute normale.
-- **"Listen up [commande]"** → contournement : transmet une seule commande ou requête pendant que l'application reste en veille. Le préfixe "listen up" est supprimé avant que la commande atteigne l'IA. Exemple : *"Listen up, jump to hyperspace"* exécute le saut sans réveiller l'application.
-- Définir un rappel [texte]. / Rappelle-moi [texte].
-- Effacer les rappels.
-- Activer / désactiver les annonces de route.
-- Activer / désactiver les annonces de découverte.
-- Activer / désactiver les annonces d'exploitation minière et de matériaux.
-- Activer / désactiver les bavardages radio / trafic radio.
-- Désactiver toutes les annonces.
-- Annonces de contact radar on / off.
-- Ajouter une cible minière [nom du matériau].
-- Supprimer une cible minière [nom du matériau].
-- Effacer les cibles minières.
-- Supprimer l'entrée du codex. (Supprime l'entrée du codex que vous suivez en GPS)
-
-## 💬 Chat général (le mode conversation doit être ACTIVÉ)
-
-Par défaut, l'application fonctionne en **Mode strict** : si une entrée ne correspond pas à une commande ou requête connue, elle est silencieusement ignorée.
-C'est intentionnel  cela empêche le bruit du STT et les bavardages en arrière-plan de déclencher des actions aléatoires en plein vol.
-
-Activez le **Mode conversation** dans l'onglet Paramètres pour activer le chat libre. Lorsqu'il est activé, tout ce qui ne correspond pas à une commande bascule vers la conversation générale  lore du jeu, sujets du monde réel, configurations de vaisseaux, tout ce que vous voulez. L'IA n'est pas seulement un analyseur de commandes quand vous voulez qu'elle soit davantage.
-
-Les LLMs locaux répondront mais seront rigides. Les LLMs cloud (Claude, OpenAI, xAI, Mistral, Deepseek) sont recommandés pour la conversation.
+Voir [Missions pirates](Pirate-Massacre-Mission-Tracking).
 
 ---
 
-[Plus de commandes ici](https://github.com/SudoKrondor/EliteIntel/wiki/Obscure-System-Commands)
+## 🧭 Navigation
 
-Volez dangereusement, Commander ! o7
+Vega trace des routes vers **le résultat d'une recherche**, vers des lieux qu'elle connaît déjà ou
+vers des coordonnées de surface. Elle ne peut **pas** naviguer vers un système que vous nommez
+simplement à voix haute — les noms sont ce que la reconnaissance vocale rate le plus, et une erreur
+vous envoie à l'autre bout de la Bulle. Pour cela, utilisez *naviguer depuis la mémoire* ou — pour
+un lieu fréquent — une [commande perso qui trace la route pour vous](UI-Actions-Tab).
+
+- *« Navigue depuis la mémoire »* / *« colle depuis la mémoire »* — copiez d'abord un nom de
+  système (depuis INARA, Spansh, un message de chat…) avec Ctrl+C ; Vega ouvre la carte galactique
+  et trace la route.
+- *« Ramène-moi à la base »* / *« définis le système de base »*
+- *« Navigue vers le porte-vaisseau »* / *« navigue vers le porte-vaisseau d'escadron »*
+- *« Navigue vers le prochain arrêt commercial »*
+- *« Annule la navigation »*
+
+### Sur une planète
+
+- *« Navigue vers les coordonnées latitude 12,5 longitude -40,2 »* — guidage de l'orbite jusqu'au
+  point.
+- *« Navigue vers la zone d'atterrissage »* — retour là où votre vaisseau s'est posé.
+- *« Navigue vers le prochain échantillon biologique »* — l'organique marqué le plus proche.
+- *« Supprime cette entrée codex »*
+
+### Autoroute neutronique
+
+- *« Calcule l'itinéraire des étoiles à neutrons »* — copiez d'abord le nom de la destination depuis
+  la carte galactique. Options : *« …avec efficacité 60 »*, *« …avec suralimentation »*.
+- *« Va à la prochaine étoile à neutrons »* — trace vers le prochain point neutronique (ou laissez
+  faire le réglage *Tracer le prochain saut neutronique* de l'[onglet Commandant](UI-Commander-Tab)).
+- *« Efface la route des étoiles à neutrons »*
+
+### Trouver des lieux
+
+Chaque commande *trouve* trace une route vers ce qu'elle trouve et l'affiche sur
+l'[overlay HUD](UI-HUD-Overlay).
+
+- *« Trouve un marchand de matériaux bruts / de données codées / de matériaux manufacturés »*
+- *« Trouve un courtier de technologies humaines / gardiennes »*
+- *« Trouve Vista Genomics le plus proche »*
+- *« Trouve l'Interstellar Factor le plus proche »* / *« où payer mes amendes »*
+- *« Trouve une station de ravitaillement »*
+- *« Trouve le porte-vaisseau le plus proche »*
+- *« Trouve des brain trees dans un rayon de 500 années-lumière »*
+- *« Où miner de la painite »* / *« trouve un site de minage »*
+- *« Exclure ce système des recherches »* (ou *« le système de destination »*) — quand une recherche
+  vous renvoie sans cesse vers un endroit qui ne fonctionne pas. *« Débannis ce système »*, dit
+  depuis ce système, annule l'exclusion.
+
+---
+
+## 💰 Commerce et marchés
+
+- *« Trouve une marchandise [nom] »* — fonctionne aussi pour les modules de vaisseau ; précisez *la
+  plus proche* ou *le meilleur prix*.
+- *« Où puis-je vendre [marchandise] ? »*
+- *« Calcule une route commerciale »* — utilise le profil commercial de ce vaisseau.
+- *« Monétise la route »* — une cargaison rentable pour le trajet que vous faites déjà.
+- *« Route commerciale »* / *« quel est notre plan commercial actuel ? »*
+- *« Navigue vers le prochain arrêt commercial »*
+- *« Annule la route commerciale »*
+- *« Quels sont les marchés locaux »* · *« Détails de la station »* / *« quels services propose
+  cette station »* · *« Modules en vente »* · *« Quels vaisseaux sont à vendre »*
+- *« Que contient la soute ? »*
+
+### Profil commercial
+
+Modifiable aussi par vaisseau dans les réglages ⚙ de l'[onglet Commandant](UI-Commander-Tab).
+
+- *« Profil commercial »* — décrit le profil actuel.
+- *« Change le budget de départ du profil commercial à 5 millions »*
+- *« Change le nombre maximum d'arrêts du profil commercial à 4 »*
+- *« Change la distance maximum du profil commercial à 1000 »*
+- *« Autorise / interdis les marchandises interdites »*
+- *« Autorise / interdis les ports planétaires »*
+- *« Autorise / interdis les systèmes à permis »*
+- *« Autorise / interdis les bastions »*
+
+Voir [Commerce et profit](TradeRoutePlotting) et [Explorer la galaxie](Search-galaxy-with-EliteIntel).
+
+---
+
+## 🏗️ Colonisation
+
+- *« Trouve la marchandise pour le chantier »* — ce dont le chantier a encore besoin, où l'acheter et
+  comment remplir la soute.
+- *« Avancement du chantier »* / *« comment avance la construction ? »*
+- *« Ramène-moi au chantier »*
+- *« Oublie le chantier »* — arrêter de le suivre.
+
+---
+
+## 🛰️ Porte-vaisseau
+
+Dites *porte-vaisseau* — ou *porte-vaisseau d'escadron* — sinon Vega peut croire que vous parlez du
+vaisseau.
+
+- *« Statut du porte-vaisseau »* — carburant, portée avec le tritium actuel, finances.
+- *« Définis la réserve de tritium à 200 »*
+- *« Calcule la route du porte-vaisseau »* — copiez d'abord le nom de la destination depuis la carte
+  galactique.
+- *« Entre la destination du porte-vaisseau »* — carte galactique du porte-vaisseau ouverte, Vega
+  saisit l'étape suivante et la confirme.
+- *« Quel est l'itinéraire de mon porte-vaisseau »* / *« combien de sauts pour le porte-vaisseau »*
+- *« ETA du porte-vaisseau »* / *« quand arrive mon porte-vaisseau ? »*
+- *« Distance jusqu'au porte-vaisseau »*
+- *« Annule la route du porte-vaisseau »*
+- *« Combien de porte-vaisseaux dans le système »*
+
+---
+
+## 🌠 Exploration et exobiologie
+
+- *« Où sommes-nous ? »* — position actuelle.
+- *« Distance depuis Sol »* / *« à quelle distance de la Bulle sommes-nous ? »*
+- *« Quelle est la distance jusqu'à cette planète »*
+- *« Quel a été le dernier scan »*
+- *« Quels sont les corps du système »* / *« y a-t-il des planètes atterrissables »*
+- *« Quels signaux sont détectés »* · *« Y a-t-il des signaux géologiques »*
+- *« Qui contrôle ce système »* / *« niveau de sécurité du système »*
+- *« Quelle est la cible FSD actuelle »* — analyse le système vers lequel vous allez sauter.
+- *« Route tracée »* / *« carburant au prochain arrêt »*
+- *« Combien rapportent les scans d'exploration »*
+- *« Quels matériaux trouve-t-on sur cette planète »*
+- *« Organiques scannés dans le système »* · *« Liste les échantillons exobiologiques »* · *« Quel
+  est le biome de cette planète »*
+- *« Distance depuis le dernier échantillon biologique »*
+- *« Nous avons déjà prélevé ce corps »* — à marquer comme fait si vous l'avez prélevé avant
+  l'installation.
+
+### Exo-Maîtrise
+
+Une fois le catalogue activé dans l'[onglet Commandant](UI-Commander-Tab) :
+
+- *« Emmène-moi au prochain site d'exobiologie »* — le système le plus riche que vous n'avez pas
+  encore épuisé.
+- *« Marque ce système comme récolté »* — déclarer fait tout un système.
+
+Voir [Découverte et exobiologie](Discovery-Assistance).
+
+---
+
+## ⛏️ Minage
+
+- *« Ajoute une cible de minage painite »* / *« retire une cible de minage painite »* / *« efface
+  toutes les cibles de minage »*
+- *« Active les annonces de minage »* — touches du prospecteur pour vos cibles.
+- *« Où miner [matériau] »*
+
+Avec des cibles définies et une raffinerie montée, l'[overlay HUD](UI-HUD-Overlay) affiche une
+carte d'extraction.
+
+---
+
+## 👤 Commandant et vaisseau
+
+- *« Quel est mon profil de commandant »* — grades et progression.
+- *« Configuration du vaisseau »* / *« modules du vaisseau »*
+- *« Inventaire des matériaux »* / *« combien de [matériau] avons-nous ? »*
+
+---
+
+## 📺 Panneaux et cartes
+
+Dites le nom du panneau, avec *montre* si vous voulez :
+
+- *Navigation* · *Transactions* · *Contacts* · *Chat / communications* · *Boîte de réception* ·
+  *Panneau social* · *Historique* · *Escadron* · *Statut* · *Radar*
+- *Panneau commandant* · *Équipage* · *Panneau accueil* · *Modules* · *Groupes de tir* ·
+  *Inventaire* · *Stockage* · *Panneau chasseur*
+- *Gestion du porte-vaisseau*
+- *Carte galactique* · *Carte du système*
+- *« Panneau suivant / précédent »*, *« page suivante / précédente »* — parcourir les onglets d'un
+  panneau.
+- *« Ferme le panneau »* / *« quitte l'écran actuel »* — retour au HUD.
+
+---
+
+## 🎵 Musique
+
+*« Jouer la musique »*, *« mettre la musique en pause »*, *« piste suivante »*, *« piste
+précédente »*, *« redémarrer la playlist »*, *« mélanger la musique »*, *« mets le morceau
+[titre] »*. Voir l'[onglet Jukebox](UI-Jukebox-Tab).
+
+---
+
+## Vos propres commandes
+
+Ce qui manque, vous le construisez vous-même : [Actions → Commandes perso](UI-Actions-Tab). Les
+commandes perso se déclenchent avec vos propres phrases, dites ou tapées dans le chat, exactement
+comme les commandes intégrées.
+
+---
+
+Fly Dangerous, Commandant ! o7
 
 ----
-Communauté 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈 | Open Source [**GitHub**](https://github.com/SudoKrondor/EliteIntel) | [YouTube](https://www.youtube.com/@SudoKrondor) | [Twitch](https://www.twitch.tv/sudokrondor) | Licence Creative Commons |
+Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈 | Open Source [**GitHub**](https://github.com/SudoKrondor/EliteIntel) | [YouTube](https://www.youtube.com/@SudoKrondor) | [Twitch](https://www.twitch.tv/sudokrondor) | Creative Commons License |

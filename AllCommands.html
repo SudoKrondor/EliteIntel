@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EliteIntel AI Queries &amp; Commands Guide  EliteIntel</title>
-    <meta name="description" content="Hey Commander! This is a reference for the kinds of things you can ask or tell your Elite Intel sidekick.">
+    <title>Elite Intel Commands &amp; Queries  EliteIntel</title>
+    <meta name="description" content="Hey Commander! This is a reference for the kinds of things you can ask or tell Vega, your">
     <link rel="canonical" href="https://www.elite-intel.org/AllCommands.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/AllCommands.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/AllCommands.html">
@@ -12,8 +12,8 @@
     <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/AllCommands.html">
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/AllCommands.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/AllCommands.html">
-    <meta property="og:title" content="EliteIntel AI Queries &amp; Commands Guide  EliteIntel">
-    <meta property="og:description" content="Hey Commander! This is a reference for the kinds of things you can ask or tell your Elite Intel sidekick.">
+    <meta property="og:title" content="Elite Intel Commands &amp; Queries  EliteIntel">
+    <meta property="og:description" content="Hey Commander! This is a reference for the kinds of things you can ask or tell Vega, your">
     <meta property="og:url" content="https://www.elite-intel.org/AllCommands.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Actions Tab</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Bindings Tab</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="images/settings.png" class="inline" height="20" alt=""> Settings Tab</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="images/speaker.png" class="inline" height="20" alt=""> Jukebox Tab</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="images/stats.png" class="inline" height="20" alt=""> Stats Tab</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> HUD Overlay</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">How Do I…?</div>
             <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Make Your Own Commands</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Search the Galaxy</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery &amp; ExoBiology</a>
@@ -87,247 +89,324 @@
     </aside>
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
-<h1>EliteIntel AI Queries &amp; Commands Guide</h1>
-<p>Hey Commander! This is a reference for the kinds of things you can ask or tell your <strong>Elite Intel</strong> sidekick.
-<strong>Ideally - You don&#39;t need to memorize any of these</strong> - just speak naturally, and the app figures out what you mean. This
-list exists so you know what&#39;s possible, not so you can recite scripts.</p>
+<h1>Elite Intel Commands &amp; Queries</h1>
+<p>Hey Commander! This is a reference for the kinds of things you can ask or tell <strong>Vega</strong>, your
+ship&#39;s AI. <strong>You don&#39;t need to memorise any of it</strong> — speak naturally and Vega works out what you
+mean. The phrases below are examples, not scripts: what matters is the meaning, not the exact
+words.</p>
+<blockquote>
+<p><strong>The definitive, always-current list is in the app.</strong> The
+<a href="UI-Actions-Tab.html">Actions tab → Built-in Commands</a> lists every command and query this build has,
+filtered to what you can use where you are right now, with the training phrases in your own
+language. You can run any of them from there with a click.</p>
+</blockquote>
 <hr>
-<h2>App</h2>
+<h2>Talking to Vega</h2>
+<p><strong>Speak naturally.</strong> <em>&quot;Gear down&quot;</em>, <em>&quot;lower the landing gear&quot;</em> and <em>&quot;prepare for landing&quot;</em> all do
+the same thing. The more clearly you say what you want, the more reliably it happens.</p>
+<p><strong>Addressing her by name is optional.</strong> <em>&quot;Vega, gear down&quot;</em> works exactly like <em>&quot;gear down&quot;</em>.</p>
+<p><strong>Sleep and wake.</strong></p>
 <ul>
-<li>Check missing or unbound key bindings.</li>
-<li>Sleep / Wake Up (Ignores user voice input in sleep mode, by pass by saying &#39;Listen Up&#39;, or switch back by saying &#39;Wake up&#39;)</li>
+<li><em>&quot;Sleep&quot;</em> / <em>&quot;ignore me&quot;</em> / <em>&quot;do not monitor&quot;</em> — Vega stops listening.</li>
+<li><em>&quot;Wake up&quot;</em> — she listens again.</li>
+<li><em>&quot;Listen up, …&quot;</em> — while asleep, gets <strong>one</strong> order through without waking her:
+<em>&quot;Listen up, jump to hyperspace.&quot;</em></li>
 </ul>
-<h2>Exploration &amp; Location</h2>
+<p><strong>Interrupt.</strong> Say <em>&quot;interrupt&quot;</em> to cut Vega off mid-sentence. With
+<a href="UI-Settings-Tab.html">push-to-talk</a> on, simply pressing the button does the same.</p>
+<p><strong>Destructive commands ask first.</strong> Clearing reminders, mining targets, active missions, a
+trade, neutron or carrier route, deleting a codex entry, forgetting a hunting ground, dismissing a
+construction site, excluding a system from searches, or setting a new home system — Vega asks
+you to confirm. Answer <em>yes</em> to go ahead; <em>no</em>, or anything else, cancels it.</p>
+<hr>
+<h2>Typing commands in the game chat</h2>
+<p>Speech recognition will always mangle some words — system names, commodity names, <em>Tritium</em>.
+For those, <strong>type the order into the in-game chat</strong> instead. Start the line with <code>@Vega</code>:</p>
+<pre><code>@Vega find where to buy tritium within 200 light years
+@Vega add mining target painite
+@vega, gear down
+</code></pre>
 <ul>
-<li>Enable / Disable discovery announcements.</li>
-<li>Where are we right now?</li>
-<li>How far are we from the Bubble / our fleet carrier / last bio-sample?</li>
-<li>How far to a specific planet, moon, or station?</li>
-<li>What materials are available on this planet / moon?</li>
-<li>Analyze the most recent scan / body data.</li>
-<li>What&#39;s the ETA for our fleet carrier jump?</li>
-<li>What time is it / current UTC time? (real-time clock query)</li>
-<li>Analyze the biome for this star system.</li>
-<li>Which planets still need bio or organic scans?</li>
-<li>What bio scans have we completed?</li>
-<li>What organics do we still have to scan?</li>
-<li>What landable planets or moons are in this system?</li>
-<li>What signals are in this system?</li>
-<li>Which planets have geo signals?</li>
-<li>Open FSS and scan. / Perform filtered spectrum scan.</li>
-<li>System security, who controls this system, faction control?</li>
-<li>What is our player profile / ranks / stats?</li>
+<li>Any capitalisation works, and a comma or colon after the name is fine.</li>
+<li>The line is handled exactly as if you had said it, and it interrupts Vega if she is speaking.</li>
+<li>Use the <strong>local</strong> channel. Only your own sent lines are read — nothing another commander types
+can ever give Vega an order.</li>
+<li>In Russian and Ukrainian the Cyrillic spelling (<code>@Вега</code>) works too.</li>
 </ul>
-<h2>Exobiology</h2>
+<hr>
+<h2>⚙️ App &amp; Session</h2>
 <ul>
-<li>What bio scans have we completed? / current star system (completed, partial, remaining).</li>
-<li>Exploration profit potential in this system.</li>
-<li>Last bio-sample location and distance. (requires codex entry scan with composition analyzer)</li>
-<li>Navigate to next bio-sample / organic / codex entry. (requires codex entry scan with composition analyzer)</li>
-<li>What organics or biology is on this planet / moon?</li>
-<li>Navigate to next organic / sample / codex entry.</li>
-<li>Biome analysis for [star system / planet / moon name].</li>
+<li>Sleep / wake up / <em>&quot;listen up, [command]&quot;</em> — see above.</li>
+<li><em>&quot;Interrupt&quot;</em> — stop speaking.</li>
+<li><em>&quot;Run a diagnostic&quot;</em> / <em>&quot;are you working properly?&quot;</em> — Vega checks herself and reports.</li>
+<li><em>&quot;What time is it?&quot;</em> — real-world UTC time.</li>
+<li><em>&quot;Set reminder [text]&quot;</em> — a standing note; <em>&quot;what was the reminder?&quot;</em> reads it back.</li>
+<li><em>&quot;Remind me in 10 minutes to check the carrier&quot;</em> — a countdown timer.</li>
+<li><em>&quot;Clear reminders.&quot;</em></li>
 </ul>
-<h2>Fleet Carrier</h2>
-<p>Make sure you mention carrier, else it might think you are talking about the ship!</p>
+<h3>Announcements on/off</h3>
 <ul>
-<li>What is our carrier range (includes reserve fuel if manually set) / stats / fuel.</li>
-<li>Set carrier fuel reserve [amount] (sets the fleet carrier tritium reserve)</li>
-<li>Where is our carrier jumping next?</li>
-<li>How long until carrier arrival? (Fleet carrier ETA)</li>
-<li>What&#39;s my fleet carrier fuel status / jump range / fuel reserve?</li>
-<li>How long can we operate on current funds?</li>
-<li>How far can carrier jump with current tritium?</li>
-<li>What&#39;s on the carrier route? / How many jumps remaining on carrier route?</li>
-<li>Distance from the fleet carrier?</li>
-<li>Fleet carriers in this system?</li>
+<li><em>&quot;Turn off radar announcements&quot;</em> / <em>&quot;radar announcements on&quot;</em></li>
+<li><em>&quot;Discovery announcements on / off&quot;</em></li>
+<li><em>&quot;Route announcements on / off&quot;</em></li>
+<li><em>&quot;Planetary approach announcements on / off&quot;</em></li>
+<li><em>&quot;Mining announcements on / off&quot;</em></li>
+<li><em>&quot;Announce cargo scoop pickups&quot;</em> / <em>&quot;stop announcing cargo scoop pickups&quot;</em></li>
+<li><em>&quot;Radio on / off&quot;</em> — radio transmissions</li>
+<li><em>&quot;All announcements off&quot;</em> / <em>&quot;turn on all announcements&quot;</em></li>
 </ul>
-<h2>Ship &amp; Systems</h2>
-<ul>
-<li>Enable / Disable route announcements.</li>
-<li>Is the next star scoopable?</li>
-<li>Analyze FSD target (allegiance, traffic, security, geo/bio data, etc.).</li>
-<li>What&#39;s in my cargo hold?</li>
-<li>What&#39;s your loadout?</li>
-<li>Analyze our route. (summary of the route, fuel availability)</li>
-<li>Fuel availability on route / next fuel stop.</li>
-<li>Do we have [material]? / How much [material] do we have? / Material inventory.</li>
-<li>What rank are we / player profile?</li>
-</ul>
-<h2>Stations &amp; Markets</h2>
-<ul>
-<li>What services are at local stations?</li>
-<li>Outfitting / ship parts / modules for sale here?</li>
-<li>Any ships for sale at this station?</li>
-<li>Monetize my route (requires a trade profile set see Trade Profile Setup)</li>
-<li>Calculate trade route (requires a trade profile set see Trade Profile Setup)</li>
-<li>Where do I need to go to buy/sell [commodity]?</li>
-<li>What&#39;s in the local market?</li>
-<li>Data for stations, ports, and settlements in system.</li>
-<li>Remind me [blah] (reads reminders set during trade route run, tells you what station to go to etc.)</li>
-<li>What is our current trade plan / trade route / trade legs?</li>
-</ul>
-<h2>Trade Profile Setup</h2>
-<ul>
-<li>Change trade profile starting budget [amount]. (sets the starting capital for the trade route)</li>
-<li>Change trade profile max distance [X]. (will filter stations for this range from entry)</li>
-<li>Change trade profile max stops [N]. (route will be no longer than N stops)</li>
-<li>Change trade profile allow prohibited cargo [on/off].</li>
-<li>Change trade profile allow planetary port [on/off].</li>
-<li>Change trade profile allow permit systems [on/off].</li>
-<li>Change trade profile allow strongholds [on/off].</li>
-<li>Trade profile / trade settings / trade configuration. (describe current profile)</li>
-<li>List trade route parameters.</li>
-</ul>
-<h2>⚔️ Combat &amp; Missions</h2>
-<ul>
-<li>Radar contact on/off (turns the radar announcements on and off)</li>
-<li>Find hunting grounds (Will find target/mission provider pairs. Will tell you to fly to a target system and confirm the presence of the resource extraction site)</li>
-<li>Recon hunting ground / navigate to hunting ground (navigate to the target star system to scout it)</li>
-<li>Ignore hunting ground (skip the current hunting ground candidate)</li>
-<li>Confirm hunting ground (will manually confirm the presence of the resource extraction site, might be needed if we didn&#39;t detect it from beacon or auto-discovery)</li>
-<li>Navigate to mission provider system. / Navigate to pirate mission provider.</li>
-<li>Navigate to an active mission / plot route to active mission. (will navigate to the active mission star system)</li>
-<li>How many pirate kills left? (calculates the stack)</li>
-<li>Massacre mission progress / kills remaining / bounty hunt progress.</li>
-<li>What active missions do I have? (any missions, not just pirate)</li>
-<li>Total bounties collected this session.</li>
-<li>Target Subsystems commands: &#39;target drive&#39;, &#39;target fsd&#39;, &#39;target power distributor&#39;, &#39;target powerplant&#39;, &#39;target life support&#39;. NOTE: optional subsystems are not included in the list.</li>
-<li>Target wingman 1 (wingman alpha) / wingman 2 (wingman bravo) / wingman 3 (wingman charlie).</li>
-<li>Priority target / target highest threat / next enemy / select hostile.</li>
-</ul>
-<h2>🧭 Navigation Commands</h2>
-<ul>
-<li>Navigate to coordinates [latitude] [longitude]. (will guide you from orbit to location within 1 km, once landed within 100m)</li>
-<li>Navigate to landing zone. (will give you GPS nav back to where your ship landed last time)</li>
-<li>Navigate to next bio sample / codex entry.</li>
-<li>Navigate to nearest Fleet Carrier.</li>
-<li>Navigate to carrier / go to carrier / return to carrier.</li>
-<li>Navigate to / go to / head to / fly to / take me to / set course to / guide me to / plot route to [destination].</li>
-<li>Navigate to next trade stop / go to next trade stop.</li>
-<li>Calculate Fleet Carrier route. <em>(Open galaxy map, select star, copy name to clipboard first.)</em></li>
-<li>Enter carrier destination / set carrier destination. <em>(Open Fleet Carrier galaxy map first.)</em></li>
-<li>Calculate trade route / plot profitable trade route.</li>
-<li>Find nearest Vista Genomics.</li>
-<li>Find nearest human / guardian tech broker.</li>
-<li>Find nearest raw / encoded / manufactured material trader.</li>
-<li>Find / locate / search for brain trees [within X light years].</li>
-<li>Find mining location for [material] [within X light years].</li>
-<li>Find where we can mine Tritium [within X light years].</li>
-<li>Find where we can buy [commodity] [within X light years].</li>
-<li>Find hunting grounds.</li>
-<li>Cancel navigation.</li>
-<li>Plot route to Fleet Carrier.</li>
-<li>Take me home / navigate to home system.</li>
-<li>Set as home system.</li>
-<li>Set optimal speed. <em>(Sets throttle to 75% for supercruise approach.)</em></li>
-<li>Increase / Decrease speed by [amount]. 1-10</li>
-<li>Set carrier fuel reserve to [amount]. (sets the fleet carrier tritium reserve)</li>
-<li>Select FDS destination / target destination. (selects the next system in the plotted route)</li>
-<li>Wing nav lock / lock wingman nav.</li>
-<li>Select / target highest threat / next hostile / target enemy.</li>
-<li>Navigate from memory. (This will open the galaxy map and navigate to the location you have copied from somewhere via Ctrl+C.)</li>
-</ul>
+<p>Every one of these is also a toggle on the <a href="UI-Commander-Tab.html">Commander tab → Announcements</a>.</p>
+<hr>
 <h2>🎮 Ship Controls</h2>
 <ul>
-<li>Gear up / down | deploy / retract landing gear.</li>
-<li>Deploy / retract hardpoints / weapons.</li>
-<li>Weapons Hot! (same as deploy hardpoints)</li>
-<li>Deploy heat sink.</li>
-<li>Deploy / recover SRV / car / buggy.</li>
-<li>Board ship / return SRV / SRV dock. (recovers SRV while in SRV mode)</li>
-<li>Disembark. (exit ship on foot)</li>
-<li>Open / close cargo scoop, cargo bay, cargo hatch.</li>
-<li>Request docking. / Contact tower, get a landing pad, parking spot etc.</li>
-<li>Launch ship / leave station / detach from station.</li>
-<li>Taxi to landing / auto land / autopilot landing.</li>
-<li>Engage Supercruise / enter supercruise / go supercruise.</li>
-<li>Jump to hyperspace / enter hyperspace / lets go / next waypoint. (actual jump, not supercruise)</li>
-<li>Drop out / drop here / drop ftl / leave supercruise / drop from supercruise.</li>
-<li>Full stop / engine stop / set speed zero / kill engines.</li>
-<li>Set speed to: quarter / half / three-quarter / full throttle.</li>
-<li>Set speed plus / minus [amount].</li>
-<li>All power to shields / engines / weapons. Equalize power. / max shields, max engines, max weapons.</li>
-<li>Combat mode / switch to combat mode → switches to combat HUD.</li>
-<li>Analysis mode / switch to analysis mode / explorer mode → switches to analysis HUD.</li>
-<li>Night vision (on / off).</li>
-<li>Headlights (on / off).</li>
-<li>Drive assist on / off. (SRV mode)</li>
-<li>Dismiss ship / go to orbit / go play.</li>
-<li>Return to the surface / pick me up.</li>
-<li>Open FSS and scan / honk / scan system / run a scan / discovery scan / system scan / full spectrum scan. (Will open the full FSS UI and honk)</li>
-<li>Show / display - galaxy map / local map / close map.</li>
-<li>Exit / close (Exits menus / tabs / sub-menus and drops you to HUD).</li>
-<li>Interrupt / shut up / silence / cancel [stops TTS mid-sentence].</li>
-<li>Activate (activates whatever is selected in the UI).</li>
+<li><strong>Landing gear:</strong> <em>&quot;gear down&quot;</em>, <em>&quot;prepare for landing&quot;</em> / <em>&quot;gear up&quot;</em></li>
+<li><strong>Hardpoints:</strong> <em>&quot;hardpoints&quot;</em>, <em>&quot;weapons hot&quot;</em>, <em>&quot;weapons free&quot;</em> / <em>&quot;retract hardpoints&quot;</em>,
+<em>&quot;weapons cold&quot;</em>, <em>&quot;stand down&quot;</em></li>
+<li><strong>Cargo scoop:</strong> <em>&quot;open / close cargo scoop&quot;</em></li>
+<li><strong>Lights / night vision:</strong> <em>&quot;lights on&quot;</em>, <em>&quot;headlights off&quot;</em>, <em>&quot;night vision&quot;</em></li>
+<li><strong>HUD mode:</strong> <em>&quot;combat mode&quot;</em> / <em>&quot;analysis mode&quot;</em></li>
+<li><strong>Defensive:</strong> <em>&quot;heat sink&quot;</em>, <em>&quot;deploy shield cell&quot;</em>, <em>&quot;chaff&quot;</em> / <em>&quot;flares&quot;</em></li>
+<li><strong>Fire groups:</strong> <em>&quot;fire group bravo&quot;</em>, <em>&quot;select fire group 3&quot;</em></li>
+<li><strong>Power:</strong> <em>&quot;power to shields / engines / weapons / systems&quot;</em> (<em>&quot;max shields&quot;</em>, <em>&quot;pips to
+engines&quot;</em>), <em>&quot;equalize power&quot;</em></li>
+<li><strong>Head look:</strong> <em>&quot;look ahead&quot;</em> / <em>&quot;recenter view&quot;</em></li>
+<li><strong>Activate:</strong> <em>&quot;activate&quot;</em> — presses whatever is selected in the open panel.</li>
 </ul>
-<h2>🎙️ Fighter Commands</h2>
+<h3>Throttle</h3>
 <ul>
-<li>Deploy fighter / launch fighter / send out fighter.</li>
-<li>Order fighters to defend the ship.</li>
-<li>Order fighter to focus on my target / attack my target / fire at will / fighter open orders.</li>
-<li>Order fighter to hold fire / fighter cease fire.</li>
-<li>Order fighter to return to mothership / recall fighter / fighter dock.</li>
+<li><em>&quot;Full stop&quot;</em> / <em>&quot;kill engines&quot;</em> / <em>&quot;all stop&quot;</em></li>
+<li><em>&quot;Quarter throttle&quot;</em>, <em>&quot;half speed&quot;</em>, <em>&quot;three quarters throttle&quot;</em>, <em>&quot;full throttle&quot;</em></li>
+<li><em>&quot;Increase speed by 2&quot;</em> / <em>&quot;slow down by 1&quot;</em></li>
+<li><em>&quot;Optimal speed&quot;</em> — sets the throttle for a supercruise approach.</li>
 </ul>
-<h2>📺 UI Panels</h2>
-<p>Say <strong>show</strong>, <strong>open</strong>, or <strong>display</strong> followed by the panel name:</p>
+<h3>Flight</h3>
 <ul>
-<li>Navigation panel</li>
-<li>Transactions panel</li>
-<li>Contacts panel</li>
-<li>Chat panel / comms panel</li>
-<li>Email inbox panel</li>
-<li>Social panel</li>
-<li>History panel</li>
-<li>Squadron panel</li>
-<li>Status panel</li>
-<li>Commander panel / role panel / knee board</li>
-<li>Crew panel</li>
-<li>Home panel (internal panel)</li>
-<li>Modules panel</li>
-<li>Fire groups</li>
-<li>Inventory panel</li>
-<li>Storage panel</li>
-<li>Fighter panel</li>
-<li>Carrier management panel</li>
-<li>Galaxy map</li>
-<li>Local / system map</li>
-<li>Services panel (SRV docked at station)</li>
+<li><em>&quot;Launch&quot;</em> / <em>&quot;undock&quot;</em> / <em>&quot;take off&quot;</em> — leave the pad.</li>
+<li><em>&quot;Request docking&quot;</em> / <em>&quot;request landing permission&quot;</em></li>
+<li><em>&quot;Taxi&quot;</em> / <em>&quot;auto dock&quot;</em> — hand the landing to the docking computer.</li>
+<li><em>&quot;Enter supercruise&quot;</em> / <em>&quot;supercruise&quot;</em></li>
+<li><em>&quot;Jump&quot;</em> / <em>&quot;enter hyperspace&quot;</em> / <em>&quot;let&#39;s go&quot;</em> / <em>&quot;next waypoint&quot;</em> — the actual jump.</li>
+<li><em>&quot;Drop out&quot;</em> / <em>&quot;drop here&quot;</em> / <em>&quot;leave supercruise&quot;</em></li>
+<li><em>&quot;Target destination&quot;</em> — selects the next system on your plotted route.</li>
+<li><em>&quot;Honk&quot;</em> / <em>&quot;discovery scan&quot;</em> — fires the discovery scanner (see the per-ship honk setting on
+the <a href="UI-Commander-Tab.html">Commander tab</a>).</li>
+<li><em>&quot;Open FSS&quot;</em> / <em>&quot;full spectrum scan&quot;</em> — opens the FSS and scans.</li>
 </ul>
-<p>Other panel commands:</p>
-<ul>
-<li>Exit / close panel (exits menus and returns to HUD).</li>
-</ul>
-<h2>⚙️ App &amp; Session Commands</h2>
-<ul>
-<li><strong>&quot;Ignore me&quot; / &quot;do not monitor&quot; / &quot;sleep&quot;</strong> → puts the app to sleep (ignores all input).</li>
-<li><strong>&quot;Wake up&quot;</strong> → resumes normal listening.</li>
-<li><strong>&quot;Listen up [command]&quot;</strong> → bypass: passes a single command or query through while the app stays asleep. The &quot;listen up&quot; prefix is stripped before the command reaches the AI. Example: <em>&quot;Listen up, jump to hyperspace&quot;</em> executes the jump without waking the app.</li>
-<li>Set reminder [text]. / Remind me [text].</li>
-<li>Clear reminders.</li>
-<li>Toggle route announcements on / off.</li>
-<li>Toggle discovery announcements on / off.</li>
-<li>Toggle mining and material announcements on / off.</li>
-<li>Toggle radio chatter / radio traffic on / off.</li>
-<li>Disable all announcements.</li>
-<li>Radar contact announcement on / off.</li>
-<li>Add mining target [material name].</li>
-<li>Remove mining target [material name].</li>
-<li>Clear mining targets.</li>
-<li>Delete codex entry. (Deletes the codex entry you are GPS tracking)</li>
-</ul>
-<h2>💬 General Chat (Conversation Mode must be ON)</h2>
-<p>By default the app runs in <strong>Strict Mode</strong>: if input doesn&#39;t match a known command or query it is silently ignored.
-This is intentional  it prevents STT noise and background chatter from triggering random actions mid-flight.</p>
-<p>Enable <strong>Conversation Mode</strong> in the Settings tab to turn on free-form chat. When on, anything that doesn&#39;t match a
-command falls back to general conversation  game lore, real-world topics, ship builds, whatever. The AI is not just
-a command parser when you want it to be more.</p>
-<p>Local LLMs will respond but will be stiff. Cloud LLMs (Claude, OpenAI, xAI, Mistral, Deepseek) are recommended for conversation.</p>
 <hr>
-<p><a href="Obscure-System-Commands.html">More commands here</a></p>
+<h2>🚙 SRV, Fighter &amp; On Foot</h2>
+<ul>
+<li><em>&quot;Deploy SRV&quot;</em> / <em>&quot;launch SRV&quot;</em> — opens the right hangar bay (set your bays under each ship&#39;s
+⚙ settings on the <a href="UI-Commander-Tab.html">Commander tab</a>).</li>
+<li><em>&quot;Launch nomad&quot;</em> / <em>&quot;deploy planetary scout&quot;</em></li>
+<li><em>&quot;Board ship&quot;</em> / <em>&quot;recover SRV&quot;</em> / <em>&quot;SRV dock&quot;</em> — from the SRV.</li>
+<li><em>&quot;Drive assist on / off&quot;</em></li>
+<li><em>&quot;Disembark&quot;</em> / <em>&quot;step outside&quot;</em></li>
+<li><em>&quot;Dismiss ship&quot;</em> / <em>&quot;go play&quot;</em> — send the ship to orbit.</li>
+<li><em>&quot;Pick me up&quot;</em> / <em>&quot;return to surface&quot;</em> — call it back.</li>
+<li><em>&quot;Station services&quot;</em> — the services panel, when docked in an SRV.</li>
+</ul>
+<h3>Fighter orders</h3>
+<ul>
+<li><em>&quot;Deploy fighter&quot;</em></li>
+<li><em>&quot;Fighter defend&quot;</em> · <em>&quot;Fighter attack my target&quot;</em> · <em>&quot;Fire at will&quot;</em> · <em>&quot;Fighter hold fire&quot;</em> ·
+<em>&quot;Recall fighter&quot;</em></li>
+</ul>
+<hr>
+<h2>⚔️ Combat &amp; Missions</h2>
+<ul>
+<li><strong>Targets:</strong> <em>&quot;target highest threat&quot;</em>, <em>&quot;next enemy&quot;</em>, <em>&quot;select hostile&quot;</em></li>
+<li><strong>Subsystems:</strong> <em>&quot;target FSD&quot;</em>, <em>&quot;target power plant&quot;</em>, <em>&quot;target drive&quot;</em>, <em>&quot;target power
+distributor&quot;</em>, <em>&quot;target life support&quot;</em>, <em>&quot;target shield&quot;</em></li>
+<li><strong>Wing:</strong> <em>&quot;target wingman one / two / three&quot;</em> (or <em>alpha / bravo / charlie</em>),
+<em>&quot;wing nav lock&quot;</em> / <em>&quot;follow wingman&quot;</em></li>
+<li><em>&quot;What are our missions?&quot;</em> / <em>&quot;mission status&quot;</em> — everything on your board.</li>
+<li><em>&quot;Navigate to active mission&quot;</em> / <em>&quot;take me to mission&quot;</em></li>
+<li><em>&quot;Find mission cargo&quot;</em> — where to buy what an active mission still needs, and plot it.</li>
+<li><em>&quot;Clear active missions&quot;</em></li>
+<li><em>&quot;Total bounties&quot;</em> — bounties collected.</li>
+</ul>
+<h3>Pirate massacre stacking</h3>
+<ul>
+<li><em>&quot;Find pirate massacre missions&quot;</em> / <em>&quot;where can I stack massacre missions?&quot;</em></li>
+<li><em>&quot;Navigate to pirate mission provider&quot;</em></li>
+<li><em>&quot;Navigate to pirate mission target&quot;</em></li>
+<li><em>&quot;How many kills left?&quot;</em> / <em>&quot;massacre progress&quot;</em></li>
+</ul>
+<h3>Bounty hunting &amp; conflict zones</h3>
+<ul>
+<li><em>&quot;Find hunting grounds within 100 light years&quot;</em> — a system with resource extraction sites,
+from systems you have already flown through.</li>
+<li><em>&quot;Scan journals for hunting grounds&quot;</em> — learn RES systems and massacre providers from your old
+journals in one go. Run it once after installing.</li>
+<li><em>&quot;Forget this hunting ground&quot;</em></li>
+<li><em>&quot;Find a conflict zone&quot;</em> / <em>&quot;where is the nearest war?&quot;</em></li>
+</ul>
+<p>See <a href="Pirate-Massacre-Mission-Tracking.html">Pirate Missions</a>.</p>
+<hr>
+<h2>🧭 Navigation</h2>
+<p>Vega plots routes to <strong>the result of a search</strong>, to places she already knows, or to surface
+coordinates. She <strong>cannot</strong> navigate to a system you simply name aloud — names are where speech
+recognition fails most, and a wrong guess sends you to the wrong side of the bubble. Use
+<em>navigate from memory</em>, or — for a place you visit often — build a
+<a href="UI-Actions-Tab.html">custom command that plots the route for you</a>.</p>
+<ul>
+<li><em>&quot;Navigate from memory&quot;</em> / <em>&quot;paste from memory&quot;</em> — copy a system name (from INARA, Spansh, a
+chat message…) with Ctrl+C first; Vega opens the galaxy map and plots to it.</li>
+<li><em>&quot;Take me home&quot;</em> / <em>&quot;set home system&quot;</em></li>
+<li><em>&quot;Navigate to fleet carrier&quot;</em> / <em>&quot;navigate to squadron carrier&quot;</em></li>
+<li><em>&quot;Navigate to next trade stop&quot;</em></li>
+<li><em>&quot;Cancel navigation&quot;</em></li>
+</ul>
+<h3>On a planet</h3>
+<ul>
+<li><em>&quot;Navigate to coordinates latitude 12.5 longitude -40.2&quot;</em> — guidance from orbit to the spot.</li>
+<li><em>&quot;Navigate to landing zone&quot;</em> / <em>&quot;back to LZ&quot;</em> — back to where your ship landed.</li>
+<li><em>&quot;Navigate to next bio sample&quot;</em> / <em>&quot;go to codex entry&quot;</em> — the nearest tagged organic.</li>
+<li><em>&quot;Delete this codex entry&quot;</em></li>
+</ul>
+<h3>Neutron highway</h3>
+<ul>
+<li><em>&quot;Calculate neutron route&quot;</em> — copy the destination name from the galaxy map first.
+Options: <em>&quot;…efficiency 60&quot;</em>, <em>&quot;…with supercharge&quot;</em>.</li>
+<li><em>&quot;Next neutron star&quot;</em> — plot to the next neutron waypoint (or let the <em>auto plot next neutron
+jump</em> setting do it on the <a href="UI-Commander-Tab.html">Commander tab</a>).</li>
+<li><em>&quot;Clear neutron route&quot;</em></li>
+</ul>
+<h3>Finding places</h3>
+<p>Every <em>find</em> command plots a route to what it finds, and puts it on the
+<a href="UI-HUD-Overlay.html">HUD overlay</a>.</p>
+<ul>
+<li><em>&quot;Find raw / encoded / manufactured material trader&quot;</em></li>
+<li><em>&quot;Find human / guardian tech broker&quot;</em></li>
+<li><em>&quot;Find nearest Vista Genomics&quot;</em></li>
+<li><em>&quot;Find nearest interstellar factor&quot;</em> / <em>&quot;where can I pay off my bounty?&quot;</em></li>
+<li><em>&quot;Find a fuel station&quot;</em> / <em>&quot;I need fuel&quot;</em></li>
+<li><em>&quot;Find nearest fleet carrier&quot;</em></li>
+<li><em>&quot;Find brain trees within 500 light years&quot;</em></li>
+<li><em>&quot;Find where to mine painite within 200 light years&quot;</em> / <em>&quot;find mining site&quot;</em></li>
+<li><em>&quot;Exclude this system from searches&quot;</em> (or <em>&quot;that system&quot;</em> — your destination) — when a search
+keeps sending you somewhere that does not work. <em>&quot;Allow this system in searches again&quot;</em>, said
+from inside it, undoes it.</li>
+</ul>
+<hr>
+<h2>💰 Trade &amp; Markets</h2>
+<ul>
+<li><em>&quot;Where can I buy [commodity] within 100 light years?&quot;</em> — also works for ship modules. Say
+<em>nearest</em> or <em>best price</em>.</li>
+<li><em>&quot;Where can I sell [commodity]?&quot;</em></li>
+<li><em>&quot;Calculate trade route&quot;</em> — uses this ship&#39;s trade profile.</li>
+<li><em>&quot;Monetize route&quot;</em> — a profitable cargo for the journey you are already on.</li>
+<li><em>&quot;What is our trade route?&quot;</em> / <em>&quot;trade legs&quot;</em></li>
+<li><em>&quot;Navigate to next trade stop&quot;</em></li>
+<li><em>&quot;Cancel trade route&quot;</em></li>
+<li><em>&quot;Local markets&quot;</em> · <em>&quot;Station details&quot;</em> / <em>&quot;what services here?&quot;</em> · <em>&quot;Outfitting&quot;</em> ·
+<em>&quot;Shipyard&quot;</em> / <em>&quot;ships for sale&quot;</em></li>
+<li><em>&quot;What are we carrying?&quot;</em> — cargo hold.</li>
+</ul>
+<h3>Trade profile</h3>
+<p>Also editable per ship on the <a href="UI-Commander-Tab.html">Commander tab</a> ⚙ settings.</p>
+<ul>
+<li><em>&quot;Trade profile&quot;</em> — describe the current one.</li>
+<li><em>&quot;Change trade profile starting budget 5 million&quot;</em></li>
+<li><em>&quot;Change trade profile max stops 4&quot;</em></li>
+<li><em>&quot;Change trade profile max distance 1000&quot;</em></li>
+<li><em>&quot;Allow / block prohibited cargo&quot;</em></li>
+<li><em>&quot;Allow / block planetary ports&quot;</em></li>
+<li><em>&quot;Allow / block permit systems&quot;</em></li>
+<li><em>&quot;Allow / block strongholds&quot;</em></li>
+</ul>
+<p>See <a href="TradeRoutePlotting.html">Trade &amp; Profit</a> and <a href="Search-galaxy-with-EliteIntel.html">Commodity Searching</a>.</p>
+<hr>
+<h2>🏗️ Colonisation</h2>
+<ul>
+<li><em>&quot;Find construction cargo&quot;</em> — what the construction site still needs, where to buy it, and
+how to fill the hold.</li>
+<li><em>&quot;Construction site progress&quot;</em> / <em>&quot;how is the build going?&quot;</em></li>
+<li><em>&quot;Take me back to the construction site&quot;</em></li>
+<li><em>&quot;Dismiss the construction site&quot;</em> — stop tracking it.</li>
+</ul>
+<hr>
+<h2>🛰️ Fleet Carrier</h2>
+<p>Say <em>carrier</em> — or <em>squadron carrier</em> — or Vega may think you mean the ship.</p>
+<ul>
+<li><em>&quot;Carrier status&quot;</em> — fuel, range with current tritium, finances, how long you can operate.</li>
+<li><em>&quot;Set carrier fuel reserve 200&quot;</em> — tritium kept in reserve.</li>
+<li><em>&quot;Calculate fleet carrier route&quot;</em> — copy the destination name from the galaxy map first.</li>
+<li><em>&quot;Enter carrier destination&quot;</em> — with the carrier&#39;s galaxy map open, Vega types the next leg in
+and confirms it.</li>
+<li><em>&quot;Carrier route&quot;</em> / <em>&quot;jumps left on carrier&quot;</em></li>
+<li><em>&quot;Carrier ETA&quot;</em> / <em>&quot;when does the carrier arrive?&quot;</em></li>
+<li><em>&quot;Distance to carrier&quot;</em></li>
+<li><em>&quot;Cancel carrier route&quot;</em></li>
+<li><em>&quot;Carriers in system&quot;</em></li>
+</ul>
+<hr>
+<h2>🌠 Exploration &amp; Exobiology</h2>
+<ul>
+<li><em>&quot;Where are we?&quot;</em> — current location.</li>
+<li><em>&quot;Distance to the bubble&quot;</em> / <em>&quot;how far from Sol?&quot;</em></li>
+<li><em>&quot;How far to [planet / moon / station]?&quot;</em></li>
+<li><em>&quot;Last scan&quot;</em> — the most recent body you scanned.</li>
+<li><em>&quot;Planets in system&quot;</em> / <em>&quot;landable planets&quot;</em> / <em>&quot;rings in system&quot;</em></li>
+<li><em>&quot;Signals in system&quot;</em> · <em>&quot;Geo signals&quot;</em></li>
+<li><em>&quot;System security&quot;</em> / <em>&quot;who controls this system?&quot;</em></li>
+<li><em>&quot;FSD target info&quot;</em> / <em>&quot;next jump&quot;</em> — analyse the system you are about to jump to.</li>
+<li><em>&quot;Route analysis&quot;</em> / <em>&quot;jumps left&quot;</em> / <em>&quot;is the next star scoopable?&quot;</em></li>
+<li><em>&quot;Exploration profits&quot;</em> — what your scans are worth.</li>
+<li><em>&quot;Planet materials&quot;</em> — what is on this body.</li>
+<li><em>&quot;Bio signals in system&quot;</em> · <em>&quot;What&#39;s left to scan?&quot;</em> · <em>&quot;Analyze biome&quot;</em></li>
+<li><em>&quot;Distance to last bio sample&quot;</em></li>
+<li><em>&quot;We have already sampled this body&quot;</em> — mark it done if you sampled it before installing.</li>
+</ul>
+<h3>Exo-Mastery</h3>
+<p>Once the catalogue is enabled on the <a href="UI-Commander-Tab.html">Commander tab</a>:</p>
+<ul>
+<li><em>&quot;Take me to the next exobiology site&quot;</em> — the richest system you have not sampled out yet.</li>
+<li><em>&quot;Flag this system as harvested&quot;</em> — write off a whole system you did before.</li>
+</ul>
+<p>See <a href="Discovery-Assistance.html">Discovery</a>.</p>
+<hr>
+<h2>⛏️ Mining</h2>
+<ul>
+<li><em>&quot;Add mining target painite&quot;</em> / <em>&quot;remove mining target painite&quot;</em> / <em>&quot;clear mining targets&quot;</em></li>
+<li><em>&quot;Mining announcements on&quot;</em> — prospector hits for your targets.</li>
+<li><em>&quot;Find where to mine [material]&quot;</em></li>
+</ul>
+<p>With targets set and a refinery fitted, the <a href="UI-HUD-Overlay.html">HUD overlay</a> shows a mining card.</p>
+<hr>
+<h2>👤 Commander &amp; Ship</h2>
+<ul>
+<li><em>&quot;Player profile&quot;</em> — ranks and progress.</li>
+<li><em>&quot;Ship loadout&quot;</em> / <em>&quot;what am I flying?&quot;</em></li>
+<li><em>&quot;Material inventory&quot;</em> / <em>&quot;how much [material] do we have?&quot;</em></li>
+</ul>
+<hr>
+<h2>📺 Panels &amp; Maps</h2>
+<p>Say <strong>show</strong>, <strong>open</strong>, or just the panel name:</p>
+<ul>
+<li><em>Navigation</em> · <em>Transactions</em> · <em>Contacts</em> · <em>Comms / chat</em> · <em>Email inbox</em> · <em>Social</em> ·
+<em>History</em> · <em>Squadron</em> · <em>Status</em> · <em>Radar</em></li>
+<li><em>Commander panel</em> (<em>knee board</em>) · <em>Crew</em> · <em>Internal</em> (<em>home</em>) · <em>Modules</em> · <em>Fire groups</em> ·
+<em>Inventory</em> · <em>Storage</em> · <em>Fighter panel</em></li>
+<li><em>Carrier management</em></li>
+<li><em>Galaxy map</em> · <em>System map</em></li>
+<li><em>&quot;Next / previous panel&quot;</em>, <em>&quot;next / previous page&quot;</em> — cycle tabs inside a panel.</li>
+<li><em>&quot;Close&quot;</em> / <em>&quot;exit&quot;</em> / <em>&quot;close map&quot;</em> — back to the HUD.</li>
+</ul>
+<hr>
+<h2>🎵 Music</h2>
+<p><em>&quot;Play music&quot;</em>, <em>&quot;pause the music&quot;</em>, <em>&quot;next track&quot;</em>, <em>&quot;previous track&quot;</em>, <em>&quot;restart the
+playlist&quot;</em>, <em>&quot;shuffle the music&quot;</em>, <em>&quot;play the song [title]&quot;</em>. See the
+<a href="UI-Jukebox-Tab.html">Jukebox tab</a>.</p>
+<hr>
+<h2>Your own commands</h2>
+<p>Anything missing, you can build yourself: <a href="UI-Actions-Tab.html">Actions → Custom Commands</a>. Custom
+commands are triggered by your own phrases, spoken or typed in chat, exactly like the built-in
+ones.</p>
+<hr>
 <p>Fly Dangerous, Commander! o7</p>
 <hr>
-<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈 | Open Source <a href="https://github.com/SudoKrondor/EliteIntel"><strong>GitHub</strong></a> | <a href="https://www.youtube.com/@SudoKrondor">YouTube</a> | <a href="https://www.twitch.tv/sudokrondor">Twitch</a> | Cretive Commons License |</p>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈 | Open Source <a href="https://github.com/SudoKrondor/EliteIntel"><strong>GitHub</strong></a> | <a href="https://www.youtube.com/@SudoKrondor">YouTube</a> | <a href="https://www.twitch.tv/sudokrondor">Twitch</a> | Creative Commons License |</p>
 
         </div>
     </main>

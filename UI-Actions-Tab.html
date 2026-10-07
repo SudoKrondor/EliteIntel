@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub active"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Actions Tab</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Bindings Tab</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="images/settings.png" class="inline" height="20" alt=""> Settings Tab</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="images/speaker.png" class="inline" height="20" alt=""> Jukebox Tab</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="images/stats.png" class="inline" height="20" alt=""> Stats Tab</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> HUD Overlay</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">How Do I…?</div>
             <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Make Your Own Commands</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Search the Galaxy</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery &amp; ExoBiology</a>
@@ -98,14 +100,15 @@ Intel can do, and everything you have taught it to do. Two sub-tabs: <strong>Bui
 to do?&quot;</em></p>
 <h3>The scope picker</h3>
 <p>The picker at the top left holds <strong>ALL</strong>, plus every physical situation you can be in: in ship,
-in SRV, in fighter, in taxi, on foot; docked, landed, gliding, in supercruise, at a ring, in
-orbit, in deep space.</p>
+in SRV, in fighter, in taxi; on foot (station, hangar, social space, planet); docked, landed,
+gliding, in supercruise, at a ring, in orbit, in deep space.</p>
 <ul>
 <li>It <strong>follows the live game</strong> — walk out of your ship and the picker moves to <em>On foot</em> by
 itself, and the list below changes with it.</li>
 <li>The moment you pick a scope by hand, it <strong>stops following</strong> and stays where you put it.</li>
 <li><strong>ALL</strong> lists every action this build has, including ones you cannot use where you are.
 A specific situation lists <strong>only what is usable there</strong>.</li>
+<li>If the game is not running, the picker shows <strong>ALL</strong>.</li>
 </ul>
 <p>Beside it, a read-only <strong>Place</strong> field shows the concrete location the game is reporting —
 station, body, or system.</p>
@@ -113,15 +116,15 @@ station, body, or system.</p>
 <p>A plain, literal text filter over the listed actions: their names, their action keys, and the
 spoken phrases that trigger them. What you type is what is looked for.</p>
 <blockquote>
-<p>This is deliberately <strong>not</strong> the companion&#39;s routing. Vega&#39;s dispatch ranks by <em>meaning</em>, so
-typing &quot;find&quot; there would surface commands that share no word with it and give you no way to
-see why. A literal search is the one you want when you are reading a list.</p>
+<p>This is deliberately <strong>not</strong> Vega&#39;s routing. Vega matches by <em>meaning</em>, so typing &quot;find&quot; there
+would surface commands that share no word with it and give you no way to see why. A literal
+search is the one you want when you are reading a list.</p>
 </blockquote>
 <h3>Available commands and queries</h3>
 <p>One combined, alphabetically sorted list across three columns, holding built-in actions, your
 custom macros, and queries for the chosen scope. It updates live from game events while the
-tab is open.</p>
-<p><strong>Double-click any entry</strong> to open its details.</p>
+tab is open — including a custom command you create while it is showing.</p>
+<p><strong>Click any entry</strong> (or select it and press Enter) to open its details.</p>
 <h3>Command details</h3>
 <table>
 <thead>
@@ -151,22 +154,28 @@ tab is open.</p>
 <td>The spoken phrases that route to it, in your current language</td>
 </tr>
 </tbody></table>
-<p>Three buttons:</p>
+<p>Buttons:</p>
 <ul>
 <li><strong>Run</strong> — execute it right now from the app, without speaking. If the command takes
 parameters, a small form appears first.</li>
 <li><strong>Suggest a better translation</strong> — opens a pre-filled GitHub issue with the command id, your
-language, and the current phrases, so you can propose better wording for your locale. This is
-how the non-English phrase sets get better; please use it.</li>
-<li><strong>Close</strong></li>
+language, the current phrases, and your suggested phrases, so you can propose better wording
+for your locale. This is how the non-English phrase sets get better; please use it.</li>
+<li><strong>Back</strong> — close the dialog.</li>
 </ul>
 <p>See also: <a href="AllCommands.html">All Commands &amp; Queries</a>.</p>
 <hr>
 <h2>Custom Commands</h2>
 <p><img src="images/ui-tab-actions-custom.png" alt="Custom commands"></p>
-<p>Your own macros — a named sequence of steps, triggered by things you say. Similar in spirit to
-VoiceAttack, but matched by meaning rather than by an exact phrase.</p>
-<p>The table lists each command&#39;s <strong>Name</strong> and its <strong>Training phrases</strong>, with a search box above it.</p>
+<blockquote>
+<p>Step-by-step walkthrough: <a href="Custom-Commands.html">Make Your Own Commands</a>.</p>
+</blockquote>
+<p>Your own macros — a named sequence of steps, triggered by things you say (or type in the game
+chat). Similar in spirit to VoiceAttack, but matched by meaning rather than by an exact phrase.</p>
+<p>The table lists each command&#39;s <strong>Name</strong> and its <strong>Training phrases</strong>, with a search box above
+it. <strong>Click a row</strong> to open its details, which show the step <strong>Sequence</strong> and offer <strong>Run</strong>,
+<strong>Edit</strong>, <strong>Duplicate</strong> and <strong>Delete</strong>.</p>
+<p>Along the top:</p>
 <table>
 <thead>
 <tr>
@@ -179,30 +188,20 @@ VoiceAttack, but matched by meaning rather than by an exact phrase.</p>
 <td>Create a command</td>
 </tr>
 <tr>
-<td><strong>Edit</strong></td>
-<td>Edit the selected command</td>
-</tr>
-<tr>
-<td><strong>Delete</strong></td>
-<td>Delete the selected command (with confirmation)</td>
-</tr>
-<tr>
 <td><strong>Export</strong></td>
-<td>Write selected commands to a file you can share</td>
+<td>Pick commands and write them to a file you can share</td>
 </tr>
 <tr>
 <td><strong>Import</strong></td>
-<td>Read commands from a file. Your current set is backed up first</td>
+<td>Read commands from a file. The import dialog marks each entry <em>Ready</em>, <em>Conflict</em> (its action key already exists and will be overwritten) or <em>Invalid</em>. Importing <strong>replaces</strong> your current set — it is backed up first, and you are offered <strong>Open backups folder</strong> afterwards</td>
 </tr>
 <tr>
 <td><strong>Restore from backup</strong></td>
 <td>Bring back the set that was replaced by an import</td>
 </tr>
-<tr>
-<td><strong>Open backups folder</strong></td>
-<td>Opens the folder on disk</td>
-</tr>
 </tbody></table>
+<p><strong>Duplicate</strong> opens the editor pre-filled with a copy&#39;s name and its steps, but <strong>no phrases
+and no action key</strong> — write fresh phrases for it, so the two commands stay easy to tell apart.</p>
 <blockquote>
 <p>If the custom command file is ever found corrupt on startup, Elite Intel loads from backup
 automatically and tells you it did so.</p>
@@ -222,16 +221,12 @@ automatically and tells you it did so.</p>
 <td>What you call it</td>
 </tr>
 <tr>
-<td><strong>Description</strong></td>
-<td>What it does</td>
-</tr>
-<tr>
 <td><strong>What you&#39;ll say</strong></td>
 <td>The phrases you would use to run it — <strong>one per line</strong></td>
 </tr>
 <tr>
 <td><strong>Action key</strong></td>
-<td>The internal identifier. Press <strong>Generate</strong> and the language model writes one for you from your phrases. It must be ASCII snake_case, because it becomes a tool name the model sees — so let the Generate button do it. Add at least one phrase before generating</td>
+<td>The internal identifier. Press <strong>Generate</strong> and the language model writes one from your phrases. It is always English snake_case, whatever language your phrases are in, because it becomes a tool name the model sees — so it cannot be typed by hand. Add at least one phrase before generating</td>
 </tr>
 </tbody></table>
 <p><strong>Steps</strong> — the sequence, in order. Add, edit, remove, and move steps up and down.</p>
@@ -265,12 +260,151 @@ automatically and tells you it did so.</p>
 </tr>
 <tr>
 <td><strong>Raw Key</strong></td>
-<td>Raw Key, Modifier</td>
+<td>Raw Key, Modifier, Duration ms</td>
 <td>Press a key that is not bound to anything in the game</td>
 </tr>
+<tr>
+<td><strong>Type Text</strong></td>
+<td>Text</td>
+<td>Type text into whichever field has focus</td>
+</tr>
 </tbody></table>
+<p><strong>Type Text</strong> goes wherever the keyboard focus is. Open the text field with an earlier step —
+for example <strong>Raw Key: Enter</strong> to open the comms chat — or the text arrives at your ship controls
+as key presses.</p>
 <p>Prefer <strong>Binding</strong> steps over <strong>Raw Key</strong> where you can — bindings follow whatever keys the
 game is actually using, so they survive you re-binding a control.</p>
+<h3>Example: a route to a place you visit often</h3>
+<p>Vega&#39;s built-in navigation plots a route only to the <strong>result of a search</strong> (a trader, a market,
+a hunting ground…), to places she already knows (home, your carrier, a mission), or to the
+system on your clipboard. She will not plot to a system you simply name aloud — names are where
+speech recognition fails most. For a place you fly to regularly, a custom command does it
+exactly, every time:</p>
+<p><img src="images/ui-custom-command-navigation.png" alt="Custom command that plots a route to Jameson Memorial"></p>
+<p><strong>What you&#39;ll say:</strong> <em>route to jameson memorial</em>, <em>take me to jameson memorial</em>, <em>jameson
+memorial route</em> — then <strong>Generate</strong> the action key.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Step</th>
+<th>Value</th>
+<th>Duration ms</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Binding Tap</td>
+<td>GALAXYMAPOPEN</td>
+<td></td>
+<td>Open the galaxy map</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Delay</td>
+<td></td>
+<td>1000</td>
+<td>Let the map load</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Binding Hold</td>
+<td>CAMZOOMIN</td>
+<td>500</td>
+<td>Zoom the map camera</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Binding Tap</td>
+<td>UI_LEFT</td>
+<td></td>
+<td>Move to the search field</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Binding Tap</td>
+<td>UI_RIGHT</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Binding Tap</td>
+<td>UI_SELECT</td>
+<td></td>
+<td>Open the search field</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Type Text</td>
+<td>SHINRARTA DEZHRA</td>
+<td></td>
+<td>Type the system name — no speech recognition involved</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Raw Key</td>
+<td>ENTER</td>
+<td>50</td>
+<td>Search</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Delay</td>
+<td></td>
+<td>500</td>
+<td>Wait for the result</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Binding Tap</td>
+<td>UI_RIGHT</td>
+<td></td>
+<td>Move into the result panel</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Binding Hold</td>
+<td>UI_UP</td>
+<td>500</td>
+<td>Run up to the top button</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Binding Tap</td>
+<td>UI_SELECT</td>
+<td></td>
+<td>Plot the route</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Delay</td>
+<td></td>
+<td>3000</td>
+<td>Wait for the route to be plotted</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Binding Tap</td>
+<td>CAMYAWLEFT</td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>To make your own, copy it with <strong>Duplicate</strong>, change the name, the phrases and the <strong>Type Text</strong>
+system, and generate a new key.</p>
+<p>Tips:</p>
+<ul>
+<li><strong>Phrases can be separated by commas</strong> as well as by new lines.</li>
+<li><strong>Delays depend on your PC.</strong> If the map is not ready when the next step fires, raise the
+delays — or move <strong>Key Input Pacing</strong> on the <a href="UI-Bindings-Tab.html">Bindings tab</a> towards Slow.</li>
+<li><strong>Every Binding step needs a keyboard binding</strong> in the game. If a control is unbound, the
+<a href="UI-Bindings-Tab.html">Bindings tab</a> shows it under <em>Missing bindings</em>.</li>
+<li>Vega opens and reads the galaxy map the same way for her own route commands, so a command
+that starts from a <strong>freshly opened</strong> map is the reliable pattern — do not start from a map
+that is already open.</li>
+</ul>
 <h3>Using them</h3>
 <p>Speak normally. You do not have to reproduce a training phrase word for word — you have to
 convey the same meaning. The more distinct your phrases are from other commands, the more

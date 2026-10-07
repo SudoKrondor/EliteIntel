@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Make Your Own Commands  EliteIntel</title>
+    <meta name="description" content="A custom command is a macro: a list of steps — key presses, pauses, typed text, spoken lines —">
+    <link rel="canonical" href="https://www.elite-intel.org/Custom-Commands.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Custom-Commands.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Custom-Commands.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/Custom-Commands.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Custom-Commands.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Custom-Commands.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Custom-Commands.html">
+    <meta property="og:title" content="Make Your Own Commands  EliteIntel">
+    <meta property="og:description" content="A custom command is a macro: a list of steps — key presses, pauses, typed text, spoken lines —">
+    <meta property="og:url" content="https://www.elite-intel.org/Custom-Commands.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases/latest" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><span class="locale-current">EN</span><a href="fr/Custom-Commands.html" class="locale-link">FR</a><a href="es/Custom-Commands.html" class="locale-link">ES</a><a href="de/Custom-Commands.html" class="locale-link">DE</a><a href="uk/Custom-Commands.html" class="locale-link">UK</a><a href="ru/Custom-Commands.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="images/elite-logo.png" class="inline" height="20" alt=""> Home</a>
+
+            <div class="nav-section">App</div>
+            <a href="Installation.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> User Interface</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Vega Tab</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="images/controller.png" class="inline" height="20" alt=""> Commander Tab</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Actions Tab</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Bindings Tab</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="images/settings.png" class="inline" height="20" alt=""> Settings Tab</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="images/speaker.png" class="inline" height="20" alt=""> Jukebox Tab</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="images/stats.png" class="inline" height="20" alt=""> Stats Tab</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> HUD Overlay</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Choose your LLM</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> 🆓 Free Cloud LLM</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">How Do I…?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="Custom-Commands.html" class="nav-link active"><img src="images/manual.png" class="inline" height="20" alt=""> Make Your Own Commands</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Search the Galaxy</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery &amp; ExoBiology</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Pirate Missions</a>
+            <a href="AllCommands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> All Commands &amp; Queries</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> System Commands</a>
+
+            <div class="nav-section">Community</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="images/communications.png" class="inline" height="20" alt=""> Matrix Chat ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Privacy Policy</a>
+            <a href="Contact.html" class="nav-link">📧 Contact Developer</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Make Your Own Commands</h1>
+<p>A custom command is a macro: a list of steps — key presses, pauses, typed text, spoken lines —
+that runs when you say one of your phrases. Use one when the built-in commands do not do what you
+want, or when you do the same sequence of key presses over and over.</p>
+<p>Custom commands live on the <a href="UI-Actions-Tab.html">Actions tab → Custom Commands</a>. This page walks
+through building two of them from scratch.</p>
+<hr>
+<h2>Before you start</h2>
+<ul>
+<li><strong>A language model must be running.</strong> The action key is generated by it, and your phrases are
+matched by it. Start services on the <a href="UI-Vega-Tab.html">Vega tab</a> first.</li>
+<li><strong>Every control you use needs a keyboard binding.</strong> Elite Intel presses keys, so a control bound
+only to your HOTAS cannot be pressed by a macro. The <a href="UI-Bindings-Tab.html">Bindings tab</a> shows what
+is missing, and <strong>Auto-Assign Missing Binds</strong> fixes it in one go.</li>
+</ul>
+<hr>
+<h2>Example 1: countermeasures in one breath</h2>
+<p>Goal: say <em>&quot;pop countermeasures&quot;</em> and get a heat sink, chaff and a shield cell, with Vega
+confirming.</p>
+<h3>1. Create the command</h3>
+<p>Open <strong>Actions → Custom Commands</strong> and press <strong>New</strong>.</p>
+<h3>2. Name it and write your phrases</h3>
+<ul>
+<li><p><strong>Name:</strong> <code>Countermeasures</code></p>
+</li>
+<li><p><strong>What you&#39;ll say:</strong> one phrase per line (commas work too):</p>
+<pre><code>pop countermeasures
+deploy all countermeasures
+defensive package
+</code></pre>
+</li>
+</ul>
+<p>Write the phrases the way you would actually say them under pressure. Make them <strong>different from
+built-in commands</strong> — a phrase that already belongs to a built-in command (<em>&quot;deploy heat sink&quot;</em>,
+<em>&quot;chaff&quot;</em>) is rejected, because Vega could never tell the two apart.</p>
+<h3>3. Generate the action key</h3>
+<p>Press <strong>Generate</strong>. The language model turns your phrases into an English <code>snake_case</code> key such
+as <code>deploy_all_countermeasures</code>. You cannot type it by hand — it becomes the name the model sees,
+so it must be in a form the model can always repeat back. It is English even when your phrases are
+not.</p>
+<h3>4. Add the steps</h3>
+<p>Press <strong>Add step</strong> for each one. In the step dialog pick the <strong>Type</strong>, then fill in what that type
+asks for. The <strong>Binding</strong> list is labelled like the game&#39;s own Controls screen —
+<em>Ship controls / Cooling / Deploy Heatsink</em> — and you can type in it to filter (try <code>heat</code>, <code>srv</code>,
+<code>chaff</code>).</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Type</th>
+<th>Value</th>
+<th>Duration ms</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Binding Tap</td>
+<td>Deploy Heatsink</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Delay</td>
+<td></td>
+<td>150</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Binding Tap</td>
+<td>Use Chaff Launcher</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Delay</td>
+<td></td>
+<td>150</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Binding Tap</td>
+<td>Use Shield Cell</td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Speak</td>
+<td>Countermeasures away.</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Use <strong>Edit step</strong>, <strong>Remove step</strong> and the <strong>▲ ▼</strong> buttons to fix the order.</p>
+<h3>5. Save and test</h3>
+<p>Press <strong>Save</strong>. If something is wrong, a validation message tells you what — see
+<em>Troubleshooting</em> at the bottom of this page. The command now appears in the list.</p>
+<p>Click its row, then <strong>Run</strong>, to test it without speaking. When it works, say it:
+<em>&quot;Pop countermeasures.&quot;</em> You can also type it in the game chat: <code>@Vega pop countermeasures</code>.</p>
+<hr>
+<h2>Example 2: a route to a place you visit often</h2>
+<p>Vega will not plot a route to a system you name aloud — names are where speech recognition goes
+wrong most. For a place you fly to regularly, a macro drives the galaxy map for you, the same way
+every time.</p>
+<p><img src="images/ui-custom-command-navigation.png" alt="Custom command that plots a route to Jameson Memorial"></p>
+<p><strong>What you&#39;ll say:</strong> <em>route to jameson memorial</em>, <em>take me to jameson memorial</em>, <em>jameson memorial
+route</em>. Then <strong>Generate</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Type</th>
+<th>Value</th>
+<th>Duration ms</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Binding Tap</td>
+<td>GALAXYMAPOPEN</td>
+<td></td>
+<td>Open the galaxy map</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Delay</td>
+<td></td>
+<td>1000</td>
+<td>Let the map load</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Binding Hold</td>
+<td>CAMZOOMIN</td>
+<td>500</td>
+<td>Zoom the map camera</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Binding Tap</td>
+<td>UI_LEFT</td>
+<td></td>
+<td>Move to the search field</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Binding Tap</td>
+<td>UI_RIGHT</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Binding Tap</td>
+<td>UI_SELECT</td>
+<td></td>
+<td>Open the search field</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Type Text</td>
+<td>SHINRARTA DEZHRA</td>
+<td></td>
+<td>Type the system name</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Raw Key</td>
+<td>ENTER</td>
+<td>50</td>
+<td>Search</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Delay</td>
+<td></td>
+<td>500</td>
+<td>Wait for the result</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Binding Tap</td>
+<td>UI_RIGHT</td>
+<td></td>
+<td>Move into the result panel</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Binding Hold</td>
+<td>UI_UP</td>
+<td>500</td>
+<td>Run up to the top button</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Binding Tap</td>
+<td>UI_SELECT</td>
+<td></td>
+<td>Plot the route</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Delay</td>
+<td></td>
+<td>3000</td>
+<td>Wait for the route to be plotted</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Binding Tap</td>
+<td>CAMYAWLEFT</td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>To make one for another place, select this command, press <strong>Duplicate</strong>, then change the name, the
+phrases and the system in step 7, and <strong>Generate</strong> a new key. Duplicate deliberately leaves the
+phrases and key empty, so the two commands never sound alike.</p>
+<p>Start such a macro from <strong>flight</strong>, with the galaxy map closed — the first step opens it, and on an
+already open map it would close it instead.</p>
+<hr>
+<h2>The step types</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Fields</th>
+<th>Use it for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Binding Tap</strong></td>
+<td>Binding</td>
+<td>Press a game control once</td>
+</tr>
+<tr>
+<td><strong>Binding Hold</strong></td>
+<td>Binding, Duration ms</td>
+<td>Hold a game control — throttle, camera, scrolling a menu</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>Duration ms</td>
+<td>Give the game time: a panel opening, a map loading, a search finishing</td>
+</tr>
+<tr>
+<td><strong>Speak</strong></td>
+<td>Text</td>
+<td>Have Vega say something — a confirmation, or a reminder of what the macro just did</td>
+</tr>
+<tr>
+<td><strong>Raw Key</strong></td>
+<td>Raw Key, Modifier, Duration ms</td>
+<td>Press a key that is not a game binding: Enter, Escape, a letter. Duration is how long it is held</td>
+</tr>
+<tr>
+<td><strong>Type Text</strong></td>
+<td>Text</td>
+<td>Type characters into the field that has focus — a search box, the chat line</td>
+</tr>
+</tbody></table>
+<p><strong>Prefer Binding steps to Raw Key.</strong> A binding follows whatever key the game actually uses, so the
+macro keeps working if you rebind the control. Use Raw Key only for keys the game has no binding
+for, such as Enter inside a text field.</p>
+<p><strong>Type Text goes wherever the keyboard focus is.</strong> Open the field first — a Binding step that
+opens a search box, or <strong>Raw Key: Enter</strong> to open the comms chat. Otherwise the letters arrive at
+your ship controls as key presses.</p>
+<hr>
+<h2>Tips</h2>
+<ul>
+<li><strong>Delays are the usual fix.</strong> If a step seems to be skipped, the game was not ready for it.
+Lengthen the delay before it, or move <strong>Key Input Pacing</strong> on the <a href="UI-Bindings-Tab.html">Bindings tab</a>
+towards Slow — that adds a pause after every keystroke Elite Intel sends.</li>
+<li><strong>Several phrases, distinct meaning.</strong> You do not have to say a phrase word for word; Vega matches
+by meaning. The more your phrases differ from other commands, the more reliably yours is chosen.</li>
+<li><strong>Speak steps make macros feel like part of the ship</strong>, and tell you the macro actually ran.</li>
+<li><strong>Share them.</strong> <strong>Export</strong> writes chosen commands to a file; <strong>Import</strong> reads one. Importing
+replaces your current set, but it is backed up first and <strong>Restore from backup</strong> brings it back.</li>
+<li><strong>Check the startup line.</strong> When services start, Vega says how many custom commands loaded and how
+many failed validation.</li>
+</ul>
+<hr>
+<h2>Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Message or symptom</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><em>Add at least one phrase above before generating a key.</em></td>
+<td>Write at least one phrase first</td>
+</tr>
+<tr>
+<td><em>Could not generate an action key.</em></td>
+<td>The language model did not answer. Check the LLM readout on the Vega tab and try again</td>
+</tr>
+<tr>
+<td><em>Phrase collides with a built-in action alias</em></td>
+<td>That phrase already runs a built-in command. Reword it</td>
+</tr>
+<tr>
+<td><em>Phrase collides with another custom command</em> / <em>Duplicate phrase</em></td>
+<td>Two commands — or the same one twice — use that phrase. Change one</td>
+</tr>
+<tr>
+<td><em>Action key collides with a built-in command</em> / <em>must be unique</em></td>
+<td>Reword your phrases and <strong>Generate</strong> again</td>
+</tr>
+<tr>
+<td><em>At least one step is required</em> / <em>… is required</em> / <em>durationMs must be positive</em></td>
+<td>A step is missing its binding, text, key or duration</td>
+</tr>
+<tr>
+<td>The macro runs but something is skipped</td>
+<td>Add or lengthen a Delay before that step, or slow Key Input Pacing</td>
+</tr>
+<tr>
+<td>Vega answers with something else</td>
+<td>Make your phrases more distinctive, or run it typed: <code>@Vega &lt;phrase&gt;</code></td>
+</tr>
+<tr>
+<td>A binding step does nothing</td>
+<td>That control has no keyboard binding — see the <a href="UI-Bindings-Tab.html">Bindings tab</a></td>
+</tr>
+</tbody></table>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

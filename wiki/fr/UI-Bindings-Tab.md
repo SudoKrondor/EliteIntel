@@ -1,12 +1,9 @@
 # Onglet Bindings
 
-<img src="images/keys-binding.png" class="inline" height="20" alt="Bindings"> **Nouveau en V1.1.**
-Les assignations occupaient un coin de l'onglet Actions ; elles ont désormais leur propre onglet,
-avec un éditeur complet.
-
-Elite Intel pilote votre vaisseau en appuyant sur les touches auxquelles Elite Dangerous est
-assigné. Si un contrôle n'a pas d'assignation clavier, Elite Intel ne peut pas s'en servir — c'est
-dans cet onglet que vous le découvrez et que vous le corrigez.
+<img src="images/keys-binding.png" class="inline" height="20" alt="Bindings"> Elite Intel pilote
+votre vaisseau en appuyant sur les touches qu'Elite Dangerous a assignées. Si une commande n'a pas
+de raccourci clavier, Elite Intel ne peut pas l'utiliser — c'est ici que vous le découvrez et que
+vous le corrigez.
 
 Deux sous-onglets : **Profil de raccourcis** et **Gestion des raccourcis**.
 
@@ -18,98 +15,127 @@ Deux sous-onglets : **Profil de raccourcis** et **Gestion des raccourcis**.
 
 ### Quel fichier est utilisé
 
-**Profil** — détecté automatiquement. Elite Intel lit l'entrée `StartPreset` active et se rabat au
-besoin sur le fichier `.binds` le plus récent.
+**Dossier** (des raccourcis) — facultatif. Laissé vide, l'emplacement standard d'Elite Dangerous
+est utilisé ; utilisez le sélecteur **⋮** si votre installation est ailleurs. Un dossier
+inutilisable est refusé et le réglage précédent est conservé.
+
+**Profil** — détecté automatiquement. Elite Intel lit l'entrée `StartPreset` active et se rabat,
+si besoin, sur le fichier `.binds` le plus récent.
 
 **Fichier** — le fichier `.binds` actuellement utilisé pour le diagnostic et l'assignation.
 
-**Dossier** — facultatif. Laissez-le vide et l'emplacement standard d'Elite Dangerous est utilisé ;
-renseignez-le si votre installation se trouve à un endroit inhabituel.
+Profil et Fichier portent chacun un **ⓘ** qui explique précisément comment la valeur a été choisie.
 
-Les deux champs disposent d'un bouton ⓘ expliquant exactement comment la valeur a été choisie.
+> **« Raccourcis introuvables » avec le bon dossier ?** Elite Dangerous n'écrit un fichier
+> `.binds` qu'après une personnalisation. Ouvrez *Options → Commandes* dans le jeu, modifiez
+> n'importe quel raccourci, et Elite Intel trouvera le fichier.
 
-### Les tableaux d'assignations
+### Cadence des saisies clavier
 
-Deux tableaux : **Assignations utilisées** et **Assignations manquantes**, chacun avec son décompte.
-Les assignations sont regroupées par catégorie :
+Un curseur **Rapide ↔ Lent** pour la pause qu'Elite Intel observe après chaque frappe envoyée au
+jeu. Rapide est la valeur par défaut. Si sur une machine plus lente le jeu perd des frappes dans une
+séquence — une macro qui ne s'exécute qu'à moitié, un panneau qui s'ouvre sur le mauvais onglet —,
+poussez-le vers **Lent**.
 
-Vaisseau / vol · Combat · Panneaux d'interface · Cartes · Exploration · Caméra · SRV · À pied ·
-Divers
+### Les tableaux de raccourcis
+
+Deux onglets : **Commandes utilisées** et **Commandes manquantes**, chacun avec son nombre. Les
+lignes sont groupées sous les intitulés du jeu — **Commandes générales**, **Commandes du
+vaisseau**, **Commandes du SRV**, **Commandes à pied**, **Autres commandes** — dans le même ordre
+que l'écran Commandes du jeu, pour lire les deux côte à côte.
+
+**Rechercher** filtre les deux tableaux pendant la saisie. Elle porte sur la section, le groupe, le
+nom de la commande et la balise `.binds` brute. **Afficher uniquement les conflits** filtre sur les
+problèmes.
 
 | Colonne | Signification |
 |--------|---------|
-| **Commande** | Le contrôle |
-| **Primaire** / **Secondaire** | Les deux emplacements qu'Elite Dangerous donne à chaque contrôle |
-| **Statut** | `Manquante` · `Pas de clavier` (assignée, mais uniquement à une manette) · `Non définie` |
-| **Correction rapide** | Assigne une touche libre et sûre à ce seul contrôle |
-| **Effacer** | Retire l'assignation clavier, en laissant intactes celles de manette et de HOTAS |
+| **Commande** | La commande |
+| **Primaire** / **Secondaire** | Les deux emplacements qu'Elite Dangerous donne à chaque commande |
+| **Statut** | `Manquante` · `Pas de clavier` (assignée, mais seulement à une manette) · `Non définie` |
+| **Correction rapide** | Onglet *manquantes* : assigne une touche clavier libre et sûre à cette commande |
+| **Effacer** | Onglet *utilisées* : retire le raccourci clavier (primaire, secondaire ou les deux), sans toucher aux raccourcis manette et HOTAS |
 
-> **Les HOTAS et manettes sont affichés mais non modifiables.** Elite Intel exécute via les
-> assignations clavier ; les autres périphériques n'apparaissent qu'à titre de diagnostic.
-
-**Afficher uniquement les conflits** filtre les tableaux sur les problèmes.
+> **HOTAS et manettes sont affichés mais pas modifiables.** Elite Intel exécute via les raccourcis
+> clavier ; les autres périphériques n'apparaissent qu'à titre de diagnostic.
 
 ### Conflits
 
-Elite Dangerous ne considère un accord comme conflictuel que s'il s'agit *exactement* du même
-accord — `G` et `Shift+G` cohabitent sans souci. Elite Intel applique la même règle, et signale donc
-ce que le jeu signale réellement.
+Elite Dangerous ne considère une combinaison en conflit que si elle est *exactement* identique —
+`G` et `Maj+G` cohabitent sans problème. Elite Intel applique la même règle et signale donc ce que
+le jeu signale vraiment.
 
-Les lignes en conflit sont colorées, et le survol affiche **Partage *touche* avec :** suivi de la
-liste.
+Les lignes en conflit sont colorées en rouge, et le survol affiche **Partage *touche* avec :** et
+la liste — pour chaque emplacement en conflit, pas seulement le premier.
 
-Vous pouvez aussi voir **Jumeau vaisseau/SRV — beaucoup l'assignent comme :** — non pas un conflit,
-mais une suggestion. Certains contrôles de vaisseau et de SRV sont par convention assignés à la même
-touche.
+Vous verrez peut-être aussi **Équivalent vaisseau/SRV - beaucoup l'assignent à la même touche
+que :** sur une ligne cyan. Ce n'est pas un conflit, c'est une suggestion : certaines commandes du
+vaisseau et du SRV sont habituellement sur la même touche.
 
-### Modifier une assignation
+Vega **parle** aussi des raccourcis qui cassent vraiment quelque chose, et nomme les touches dans
+le journal de diagnostics :
 
-Cliquez sur un emplacement pour ouvrir la boîte de dialogue d'assignation.
+- **Déplacement sur la carte galactique et navigation dans l'interface sur la même touche.** Le
+  tracé de route ne fonctionnera pas tant que la carte et l'interface n'ont pas des touches
+  distinctes.
+- **Une commande sur votre touche de menu du jeu.** Elite ouvre le menu du jeu avec toute
+  combinaison se terminant par cette touche, donc la commande ne peut jamais être déclenchée. La
+  solution : effacer le raccourci du menu du jeu dans le jeu — Échap ouvre ce menu de toute façon.
+- **Une commande sur une combinaison que le système d'exploitation intercepte d'abord** (comme
+  Alt+F4). L'utiliser ferme le jeu ou vous fait quitter la session.
+
+### Modifier un raccourci
+
+Cliquez sur un emplacement pour ouvrir la fenêtre d'assignation.
 
 ![Assigner une touche](images/ui-bindings-assign.png)
 
-Elle affiche l'assignation sélectionnée, l'emplacement et la valeur actuelle. Ensuite **cliquez dans
-le champ et appuyez sur les touches voulues** — modificateurs et touche ensemble. Échap annule. Les
-accords à plusieurs modificateurs sont pris en charge.
+Elle affiche le raccourci choisi, l'emplacement et la valeur actuelle. Ensuite, **cliquez dans le
+champ et appuyez sur les touches voulues** — modificateurs et touche ensemble. Échap annule. Les
+combinaisons jusqu'à trois modificateurs sont prises en charge.
 
-Une carte clavier en direct montre ce qui est disponible : **maintenez Ctrl/Maj/Alt pour voir les
-touches libres pour cette combinaison — vert : libre, rouge : déjà utilisée.** Les touches réservées
-par le système d'exploitation sont signalées et ne peuvent pas être assignées.
+Une carte du clavier en direct montre ce qui est libre : **maintenez Ctrl/Maj/Alt pour voir les
+touches libres pour cette combinaison — vert est libre, rouge est déjà utilisé.** Les touches
+réservées (celle du menu du jeu, Alt+F4, Ctrl+Alt+F sous Linux) sont marquées et ne peuvent pas
+être assignées.
 
-**Effacer l'assignation** supprime l'attribution.
+**Effacer le raccourci** retire l'assignation.
 
-### Corriger les manquantes
+### Attribuer automatiquement les raccourcis manquants
 
-Un bouton qui attribue des touches clavier sûres et adaptées à votre disposition à **tous** les
-contrôles dépourvus d'assignation clavier.
+Un bouton qui assigne des touches clavier sûres et adaptées à votre disposition à **toutes** les
+commandes sans raccourci clavier.
 
-- Les assignations existantes ne sont jamais modifiées.
-- Aucune touche n'est jamais réutilisée.
-- Les changements ne vont **que dans votre brouillon**.
+- Les raccourcis existants ne sont jamais modifiés.
+- Aucune touche n'est réutilisée.
+- Les changements vont **dans le brouillon uniquement** — vérifiez-les, puis Appliquer.
 
-Il rapporte ce qu'il a fait, ainsi que ce qu'il a ignoré et pourquoi : les deux emplacements déjà sur
-une manette, plus aucune touche sûre disponible, ou aucun emplacement modifiable en toute sécurité.
+Il indique ce qu'il a fait, et ce qu'il a ignoré et pourquoi : les deux emplacements déjà sur une
+manette, plus de touche sûre libre, ou aucun emplacement modifiable sans risque. Deux commandes
+sont **laissées sans raccourci exprès** : le menu du jeu (Échap l'ouvre déjà) et *larguer toute la
+cargaison* (cela vide la soute dans l'espace et aucune commande d'Elite Intel ne l'utilise —
+assignez-la à la main si vous la voulez).
 
-### Brouillon, Appliquer, Réinitialiser
+### Brouillon, Appliquer, Restaurer
 
-Les modifications ne partent **pas** directement vers Elite Dangerous. Elles s'accumulent dans un
-brouillon, et le badge d'état affiche **Brouillon — non appliqué au jeu** ou **Synchronisé**. Le même
-état apparaît sur l'indicateur *Touches* de l'onglet Vega.
+Les modifications ne vont **pas** directement dans Elite Dangerous. Elles s'accumulent dans un
+brouillon, et le badge indique **Brouillon** ou **Synchronisé**. Le même état apparaît dans
+l'indicateur *Mappage* de l'onglet Vega.
 
 | Bouton | Ce qu'il fait |
 |--------|--------------|
-| **Appliquer au jeu** | Écrit le brouillon dans votre fichier `.binds`, après avoir pris une sauvegarde |
-| **Réinitialiser depuis le jeu** | Jette le brouillon et recharge depuis le fichier du jeu |
+| **Appliquer** | Écrit le brouillon dans votre fichier `.binds`, en sauvegardant d'abord une copie de l'ancien |
+| **Restaurer** | Abandonne le brouillon et recharge depuis le fichier du jeu |
 
-> **Après application, ouvrez puis refermez l'écran Contrôles dans Elite Dangerous.** Le jeu ne
-> relit ses assignations qu'à l'ouverture de cet écran. Elite Intel le dit aussi à voix haute.
+> **Après avoir appliqué, ouvrez puis fermez l'écran Commandes dans Elite Dangerous.** Le jeu ne
+> relit ses raccourcis qu'à l'ouverture de cet écran. Vega le dit aussi à voix haute.
 
-Si le fichier d'assignations du jeu a changé après la création de votre brouillon, Appliquer refuse
-et vous demande de recharger ou d'abandonner d'abord, plutôt que d'écraser silencieusement la
+Si le fichier de raccourcis du jeu a changé après la création de votre brouillon, Appliquer refuse
+et vous demande de recharger ou d'abandonner d'abord, plutôt que d'écraser en silence la
 modification de quelqu'un d'autre.
 
-Si vous fermez l'application avec un brouillon non appliqué, il vous est demandé si vous voulez
-**Appliquer au jeu**, **Conserver le brouillon** ou **Annuler**.
+Si vous fermez l'application avec un brouillon non appliqué, on vous propose **Appliquer au jeu**,
+**Conserver le brouillon** ou **Annuler**.
 
 ---
 
@@ -117,17 +143,21 @@ Si vous fermez l'application avec un brouillon non appliqué, il vous est demand
 
 ![Gestion des raccourcis](images/ui-tab-bindings-management.png)
 
-Vos sauvegardes d'assignations, listées par date de **Créée** et par les **Fichiers** que chacune
-contient. Elite Intel en prend une automatiquement avant chaque application ; **Sauvegarder
-maintenant** en prend une à la demande.
+**Sauvegardes du joueur** — des instantanés que vous prenez vous-même avec **Sauvegarder
+maintenant**, listés par date (**Créée**) et par les **Fichiers** qu'ils contiennent. Faites-en un
+avant d'expérimenter.
+
+(Par ailleurs, chaque **Appliquer** enregistre d'abord discrètement une copie du fichier du jeu
+dans `elite-intel/bindings/backups/`. C'est un filet de sécurité, non listé ici.)
 
 | Bouton | Ce qu'il fait |
 |--------|--------------|
-| **Restaurer dans le brouillon** | Charge la sauvegarde dans votre brouillon, pour que vous puissiez la relire avant qu'elle ne touche le jeu |
-| **Restaurer en direct** | La charge et l'applique directement au jeu. Les contrôles habituels d'application sûre s'exécutent toujours |
+| **Restaurer dans le brouillon** | Charge la sauvegarde dans votre brouillon pour la vérifier avant qu'elle ne touche le jeu |
+| **Restaurer en direct** | La charge et l'applique directement au jeu. Les vérifications de sécurité habituelles s'exécutent quand même |
+| **Supprimer la sauvegarde** | Supprime la sauvegarde définitivement |
 
-L'une comme l'autre remplace les modifications non enregistrées du brouillon en cours, et toutes deux
-demandent confirmation.
+Chacune de ces actions demande confirmation. Les deux restaurations remplacent les modifications
+non enregistrées du brouillon actuel.
 
 ---
 

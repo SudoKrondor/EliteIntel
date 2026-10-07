@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Commander Tab  EliteIntel</title>
-    <meta name="description" content="your ship does for you automatically, what Vega tells you about without being asked, and which">
+    <meta name="description" content="voice each hull in your fleet speaks with, what your ship does for you automatically, what Vega">
     <link rel="canonical" href="https://www.elite-intel.org/UI-Commander-Tab.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Commander-Tab.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Commander-Tab.html">
@@ -13,7 +13,7 @@
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Commander-Tab.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Commander-Tab.html">
     <meta property="og:title" content="Commander Tab  EliteIntel">
-    <meta property="og:description" content="your ship does for you automatically, what Vega tells you about without being asked, and which">
+    <meta property="og:description" content="voice each hull in your fleet speaks with, what your ship does for you automatically, what Vega">
     <meta property="og:url" content="https://www.elite-intel.org/UI-Commander-Tab.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Actions Tab</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Bindings Tab</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="images/settings.png" class="inline" height="20" alt=""> Settings Tab</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="images/speaker.png" class="inline" height="20" alt=""> Jukebox Tab</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="images/stats.png" class="inline" height="20" alt=""> Stats Tab</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> HUD Overlay</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">How Do I…?</div>
             <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Make Your Own Commands</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Search the Galaxy</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery &amp; ExoBiology</a>
@@ -88,134 +90,27 @@
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
 <h1>Commander Tab</h1>
-<p><img src="images/controller.png" class="inline" height="20" alt="Commander"> Who you are, what
-your ship does for you automatically, what Vega tells you about without being asked, and which
-voice each hull in your fleet speaks with.</p>
+<p><img src="images/controller.png" class="inline" height="20" alt="Commander"> Who you are, which
+voice each hull in your fleet speaks with, what your ship does for you automatically, what Vega
+tells you about without being asked, and the Exo-Mastery catalogue.</p>
 <p><img src="images/ui-tab-commander.png" alt="Commander tab"></p>
+<p>The <strong>Commander Profile</strong> strip sits at the top; below it are four sub-tabs: <strong>Fleet
+Management</strong>, <strong>Global Ship Settings</strong>, <strong>Announcements</strong> and <strong>Exo-Mastery</strong>.</p>
 <hr>
 <h2>Commander Profile</h2>
-<p><strong>Commander Name</strong> — overrides your in-game name for speech. Use it if Vega mangles your
-handle, or if you simply want to be called something else. Saved when you press Enter or click
-away.</p>
+<p><strong>Commander Name</strong> — the name Vega uses for you once in a while. Use it if Vega mangles your
+in-game handle, or if you simply want to be called something else. Saved when you press Enter or
+click away.</p>
+<p><strong>Address Me</strong> — when off, Vega never addresses you at all: no name, no rank, no title.</p>
 <blockquote>
-<p>The <strong>journal folder</strong> moved to <a href="UI-Settings-Tab.html">Settings → Common</a> in V1.1, and the
-<strong>bindings folder</strong> moved to the <a href="UI-Bindings-Tab.html">Bindings tab</a>.</p>
+<p>The <strong>journal folder</strong> lives in <a href="UI-Settings-Tab.html">Settings → Common</a>, and the <strong>bindings
+folder</strong> in the <a href="UI-Bindings-Tab.html">Bindings tab</a>.</p>
 </blockquote>
 <hr>
-<h2>Ship Options</h2>
-<p>Automations Vega performs on your behalf. Each one is a plain toggle that writes through
-immediately. Useful for everyone, and genuinely enabling for commanders with disabilities.</p>
-<table>
-<thead>
-<tr>
-<th>Toggle</th>
-<th>What it does</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><strong>Auto speed up for FTL</strong></td>
-<td>Throttles up before a jump</td>
-</tr>
-<tr>
-<td><strong>Auto lights off for FTL</strong></td>
-<td>Kills ship lights before a jump</td>
-</tr>
-<tr>
-<td><strong>Auto night vision off for FTL</strong></td>
-<td>Drops night vision before a jump</td>
-</tr>
-<tr>
-<td><strong>Auto hardpoints retract for FTL</strong></td>
-<td>Retracts hardpoints before a jump</td>
-</tr>
-<tr>
-<td><strong>Auto landing gear up for FTL</strong></td>
-<td>Raises gear before a jump</td>
-</tr>
-<tr>
-<td><strong>Auto cargo scoop retract for FTL</strong></td>
-<td>Retracts the scoop before a jump</td>
-</tr>
-<tr>
-<td><strong>Auto gear up on take off</strong></td>
-<td>Raises gear after lifting off</td>
-</tr>
-<tr>
-<td><strong>Auto exit UI before opening another panel</strong></td>
-<td>Closes the open panel before opening the next one, so panel commands do not collide</td>
-</tr>
-<tr>
-<td><strong>Auto lights off for SRV deployment</strong></td>
-<td>Kills lights when you deploy the SRV</td>
-</tr>
-<tr>
-<td><strong>Request fighter dock on FTL / cancel if out</strong></td>
-<td><em>Currently disabled</em> — waiting on a Frontier fix for a Nomad-related bug</td>
-</tr>
-</tbody></table>
-<hr>
-<h2>Announcements</h2>
-<p>Everything Vega volunteers without being asked. All eleven toggles now live in one place, so
-there is a single screen to check when something is talking too much — or not enough.</p>
-<p><img src="images/ui-commander-announcements.png" alt="Announcements"></p>
-<table>
-<thead>
-<tr>
-<th>Toggle</th>
-<th>What you hear</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><strong>Announce discoveries</strong></td>
-<td>Notable bodies, first discoveries, biological signals</td>
-</tr>
-<tr>
-<td><strong>Announce route progress</strong></td>
-<td>Where you are along a plotted route</td>
-</tr>
-<tr>
-<td><strong>Announce radar contacts</strong></td>
-<td>Ships appearing on the scanner</td>
-</tr>
-<tr>
-<td><strong>Announce mining</strong></td>
-<td>Mining events and yields</td>
-</tr>
-<tr>
-<td><strong>Announce navigation</strong></td>
-<td>Navigation events and arrivals</td>
-</tr>
-<tr>
-<td><strong>Radio transmissions</strong></td>
-<td>In-character radio chatter, spoken in a distinct radio voice</td>
-</tr>
-<tr>
-<td><strong>Announce jump destination</strong></td>
-<td>What the next system is</td>
-</tr>
-<tr>
-<td><strong>Announce destination traffic</strong></td>
-<td>Traffic reports for where you are heading</td>
-</tr>
-<tr>
-<td><strong>Announce destination fatalities</strong></td>
-<td>Recent deaths in the destination system</td>
-</tr>
-<tr>
-<td><strong>Announce remaining jumps</strong></td>
-<td>Jumps left on the route</td>
-</tr>
-<tr>
-<td><strong>Announce fuel star availability</strong></td>
-<td>Whether the destination has a scoopable star</td>
-</tr>
-</tbody></table>
-<p>The first six can also be flipped by voice, so this screen re-reads them whenever you open the
-tab — a spoken <code>toggle all announcements</code> will be reflected here.</p>
-<hr>
-<h2>Fleet Voice Configuration</h2>
-<p>One row per ship you own. Elite Intel discovers your fleet from the game journal; you do not
-add ships by hand.</p>
+<h2>Fleet Management</h2>
+<p>One row per ship you own, followed by your <strong>fleet carrier</strong> and <strong>squadron carrier</strong> if you have
+them. Elite Intel discovers your fleet from the game journal; you never add ships by hand. If you
+fly several commanders on one PC, the list follows whichever commander is loaded in the game.</p>
 <table>
 <thead>
 <tr>
@@ -225,50 +120,61 @@ add ships by hand.</p>
 </thead>
 <tbody><tr>
 <td><strong>Ship</strong></td>
-<td>Your ship&#39;s given name</td>
+<td>Your ship&#39;s given name (for a carrier, its name and call sign)</td>
 </tr>
 <tr>
 <td><strong>Ship Make</strong></td>
-<td>The hull type</td>
+<td>The hull type, or <em>Fleet Carrier</em> / <em>Squadron Carrier</em></td>
 </tr>
 <tr>
 <td><strong>Voice</strong></td>
-<td>Click to pick. Changing it immediately plays a demo line in that voice so you can audition it</td>
+<td>Click to pick. Changing it immediately plays a line in that voice so you can audition it</td>
 </tr>
 <tr>
 <td><strong>Personality</strong></td>
-<td><code>PROFESSIONAL</code> · <code>CASUAL</code> · <code>FRIENDLY</code> · <code>UNHINGED</code> · <code>ROGUE</code></td>
+<td><code>Professional</code> · <code>Casual</code> · <code>Friendly</code> · <code>Unhinged</code> · <code>Seven of Nine</code> · <code>Mouthy Merc</code> · <code>Your Ex-Boyfriend</code> · <code>Your Ex-Girlfriend</code> · <code>Rogue</code></td>
 </tr>
 <tr>
 <td><strong>⚙</strong></td>
-<td>Opens that ship&#39;s settings</td>
+<td>Opens that ship&#39;s settings (see below)</td>
 </tr>
 </tbody></table>
-<p><strong>About the voice list.</strong> Ship voices are female. Which voices appear depends on the speech
-engine selected in <a href="UI-Settings-Tab.html">Settings → AI Services</a>:</p>
+<p><strong>About the voice list.</strong> Every voice of the speech engine selected in
+<a href="UI-Settings-Tab.html">Settings → AI Services</a> is offered, male and female alike — the voice you pick
+also decides whether Vega speaks of itself as <em>he</em> or <em>she</em> on that ship.</p>
 <ul>
-<li><strong>Local (Kokoro)</strong> — 53 voices, labelled <code>Name - accent</code>. No key, no download, no setup.</li>
-<li><strong>Cloud (Google)</strong> — labelled <code>Name - accent · HD</code> or <code>· Standard</code>. In English the accent
-tells the voices apart. In every other language each voice is synthesized in that language,
-so the label shows gender and the quality tier instead of a misleading English accent.</li>
+<li><strong>Kokoro</strong> and <strong>Supertonic 3</strong> (local) — labelled <code>Name - accent</code>.</li>
+<li><strong>Google</strong> (cloud) — labelled <code>Name - accent · HD</code> or <code>· Standard</code>. In English the accent tells
+the voices apart. In every other language each voice is synthesised in that language, so the
+label shows gender and the quality tier instead of a misleading English accent.</li>
+<li><strong>Microsoft Edge</strong> (cloud) — labelled <code>Name - accent</code>.</li>
 </ul>
 <blockquote>
 <p>Switching the speech engine resets every ship&#39;s voice to the new engine&#39;s default. Your ship
-<strong>personalities are kept</strong>. The app warns you before doing it.</p>
+<strong>personalities are kept</strong>. The app asks before doing it.</p>
 </blockquote>
+<p><strong>Carrier rows</strong> have a voice and nothing else — a carrier is not crewed by Vega, so it has no
+personality and no settings. The voice is the one its <strong>traffic control</strong> answers on over the
+radio. Leave it on <strong>Random</strong> and a different controller answers each time; pick one and the
+audition plays as a radio transmission, because that is the only way you will ever hear it.</p>
 <hr>
 <h2>Ship Settings (the ⚙ button)</h2>
 <p>Per-ship settings, because a mining Python and a combat Corvette do not want the same
-behaviour.</p>
+behaviour. Changes are saved when you close the dialog with <strong>Back</strong>.</p>
 <p><img src="images/ui-ship-settings.png" alt="Ship settings"></p>
 <p><strong>Honk system on entry</strong> — performs a discovery scan when you arrive in a system. Pick the
 <strong>Fire Group</strong> (A–H) and <strong>Trigger</strong> (1 or 2) your discovery scanner is mounted on. If your HUD
 is in Combat mode, Elite Intel swaps to Analysis, scans, and swaps back.</p>
+<p><strong>Vehicle bays</strong> — what you keep in each planetary vehicle hangar bay (<strong>Bay 1–4</strong>: <em>Empty</em>,
+<em>Scarab</em>, <em>Scorpion</em> or <em>Rhino</em>). The game&#39;s journal names the hangar but never what is inside
+it, so this is how <em>&quot;deploy SRV&quot;</em> opens the right bay — and knows whether the ship has to be
+landed (Scarab, Scorpion) or can hover (Rhino) first. All four bays are always shown, whatever
+hangar is fitted, so your choices survive a refit.</p>
 <p><strong>High grade emissions material alert</strong> — tells you when a High Grade Emissions signal in the
 system carries materials worth stopping for.</p>
 <p><strong>Trade Profile</strong> — the constraints Elite Intel obeys when it plots a trade route for this
 ship. Every one of these can also be set by voice:
-<em>&quot;alter trade profile, set max stops to four&quot;</em>.</p>
+<em>&quot;change trade profile max stops four&quot;</em>.</p>
 <table>
 <thead>
 <tr>
@@ -310,6 +216,142 @@ ship. Every one of these can also be set by voice:
 </tr>
 </tbody></table>
 <p>See <a href="TradeRoutePlotting.html">Trade &amp; Profit</a> for how routes are flown.</p>
+<hr>
+<h2>Global Ship Settings</h2>
+<p>Automations Vega performs on your behalf, for every ship. Each one is a plain toggle that saves
+immediately. Useful for everyone, and genuinely enabling for commanders with disabilities.</p>
+<table>
+<thead>
+<tr>
+<th>Toggle</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Auto speed up for FTL</strong></td>
+<td>Throttles up before a jump</td>
+</tr>
+<tr>
+<td><strong>Auto lights off for FTL</strong></td>
+<td>Kills ship lights before a jump</td>
+</tr>
+<tr>
+<td><strong>Auto night vision off for FTL</strong></td>
+<td>Drops night vision before a jump</td>
+</tr>
+<tr>
+<td><strong>Auto hardpoints retract for FTL</strong></td>
+<td>Retracts hardpoints before a jump</td>
+</tr>
+<tr>
+<td><strong>Auto landing gear up for FTL</strong></td>
+<td>Raises gear before a jump</td>
+</tr>
+<tr>
+<td><strong>Auto cargo scoop retract for FTL</strong></td>
+<td>Retracts the scoop before a jump</td>
+</tr>
+<tr>
+<td><strong>Auto gear up on take off</strong></td>
+<td>Raises gear after lifting off</td>
+</tr>
+<tr>
+<td><strong>Auto lights off for SRV deployment</strong></td>
+<td>Kills lights when you deploy the SRV</td>
+</tr>
+<tr>
+<td><strong>Auto plot next neutron jump on cone boost</strong></td>
+<td>On a <a href="AllCommands.html">neutron route</a>, plots the next neutron waypoint as soon as you have boosted through the cone</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Announcements</h2>
+<p>Everything Vega volunteers without being asked, in one place — a single screen to check when
+something is talking too much, or not enough.</p>
+<p><img src="images/ui-commander-announcements.png" alt="Announcements"></p>
+<table>
+<thead>
+<tr>
+<th>Toggle</th>
+<th>What you hear</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Announce discoveries</strong></td>
+<td>Notable bodies, first discoveries, biological signals. Also drives the Exobiology card on the <a href="UI-HUD-Overlay.html">HUD overlay</a></td>
+</tr>
+<tr>
+<td><strong>Announce planetary approach</strong></td>
+<td>Facts about the body as you approach it</td>
+</tr>
+<tr>
+<td><strong>Announce radar contacts</strong></td>
+<td>Ships appearing on the scanner</td>
+</tr>
+<tr>
+<td><strong>Announce mining</strong></td>
+<td>Prospector hits and material finds for your mining targets</td>
+</tr>
+<tr>
+<td><strong>Announce cargo scoop pickups</strong></td>
+<td>What you just scooped</td>
+</tr>
+<tr>
+<td><strong>Announce navigation</strong></td>
+<td>Navigation events and arrivals</td>
+</tr>
+<tr>
+<td><strong>Radio transmissions</strong></td>
+<td>In-character radio chatter, spoken in distinct radio voices</td>
+</tr>
+<tr>
+<td><strong>Route announcements</strong></td>
+<td>Master switch for everything said around a jump. The toggles under it only work while it is on</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;↳ <strong>Announce jump destination</strong></td>
+<td>What the next system is</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;↳ <strong>Announce destination traffic</strong></td>
+<td>Traffic reports for where you are heading</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;↳ <strong>Announce destination fatalities</strong></td>
+<td>Recent deaths in the destination system</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;↳ <strong>Announce arrival</strong></td>
+<td>A line when you arrive</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;↳ <strong>Announce remaining jumps</strong></td>
+<td>Jumps left on the route</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;&nbsp;&nbsp;↳ <strong>Announce fuel star availability</strong></td>
+<td>Whether the destination has a scoopable star — spoken as part of the remaining-jumps line</td>
+</tr>
+</tbody></table>
+<p>Most of these can also be flipped by voice (<em>&quot;turn off radar announcements&quot;</em>, <em>&quot;all
+announcements off&quot;</em>), so the page re-reads them whenever you open the tab.</p>
+<hr>
+<h2>Exo-Mastery</h2>
+<p>A catalogue of star systems near the bubble whose planets carry high-value exobiology,
+crowd-sourced from Spansh.</p>
+<ol>
+<li>Press <strong>Enable Exo-Mastery</strong>. The catalogue downloads and imports, each half with its own
+progress bar.</li>
+<li>Once loaded, the page shows <strong>Star systems</strong>, <strong>Planets and moons</strong>, the <strong>Projected value</strong>
+of the whole catalogue, and how much of it you have <strong>Harvested</strong>.</li>
+<li>In flight, say <em>&quot;take me to the next exobiology site&quot;</em> and Vega plots a course to the richest
+system you have not sampled out yet.</li>
+</ol>
+<p>Planets you finish are ticked off as you scan. Anything you sampled before installing Elite Intel
+can be written off by voice — <em>&quot;we have already sampled this body&quot;</em>, or for a whole system,
+<em>&quot;flag this system as harvested&quot;</em>.</p>
+<p><strong>Disable Exo-Mastery</strong> removes the catalogue from your computer, after asking. Planets you have
+already sampled stay recorded, so enabling it again later will not send you back to them.</p>
 <hr>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

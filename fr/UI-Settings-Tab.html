@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Onglet Paramètres  EliteIntel</title>
-    <meta name="description" content="Général qui s&#39;applique partout, puis trois sous-onglets : Services IA, Audio et **Push To">
+    <meta name="description" content="Général valable partout, puis trois sous-onglets : Services IA, Audio et **Push To">
     <link rel="canonical" href="https://www.elite-intel.org/fr/UI-Settings-Tab.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Settings-Tab.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Settings-Tab.html">
@@ -13,7 +13,7 @@
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Settings-Tab.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Settings-Tab.html">
     <meta property="og:title" content="Onglet Paramètres  EliteIntel">
-    <meta property="og:description" content="Général qui s&#39;applique partout, puis trois sous-onglets : Services IA, Audio et **Push To">
+    <meta property="og:description" content="Général valable partout, puis trois sous-onglets : Services IA, Audio et **Push To">
     <meta property="og:url" content="https://www.elite-intel.org/fr/UI-Settings-Tab.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Actions</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Bindings</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub active"><img src="../images/settings.png" class="inline" height="20" alt=""> Onglet Paramètres</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Onglet Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Onglet Statistiques</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">Comment faire ?</div>
             <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Opération générale</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Créer vos propres commandes</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Commerce et profit</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Explorer la galaxie</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Exploration &amp; Exobiologie</a>
@@ -89,31 +91,32 @@
         <div class="content-inner markdown-body" id="content-inner">
 <h1>Onglet Paramètres</h1>
 <p><img src="../images/settings.png" class="inline" height="20" alt="Paramètres"> La tuyauterie. Une bande
-<strong>Général</strong> qui s&#39;applique partout, puis trois sous-onglets : <strong>Services IA</strong>, <strong>Audio</strong> et <strong>Push To
-Talk</strong>.</p>
+<strong>Général</strong> valable partout, puis trois sous-onglets : <strong>Services IA</strong>, <strong>Audio</strong> et <strong>Push To
+Talk</strong>. Le bouton de mise à jour est en pied de page — <em>L&#39;application est à jour</em> ou <em>Mise à jour
+disponible</em>.</p>
 <hr>
 <h2>Général</h2>
-<p>Affichée au-dessus des sous-onglets, parce qu&#39;elle s&#39;applique à tous.</p>
-<p><strong>Langue</strong> — la langue de vos commandes vocales comme de l&#39;interface de l&#39;application. En choisir une
-réaffiche toute la fenêtre immédiatement, et Vega annonce le changement à voix haute.</p>
-<p>Prises en charge : anglais, espagnol, français, allemand, italien, portugais, portugais brésilien,
-ukrainien, russe.</p>
+<p>Affiché au-dessus des sous-onglets, parce qu&#39;il s&#39;applique à tous.</p>
+<p><strong>Langue</strong> — la langue de vos commandes vocales et de l&#39;interface de l&#39;application. La changer
+redessine toute la fenêtre immédiatement, et Vega annonce le changement à voix haute.</p>
+<p>Prises en charge : anglais, russe, ukrainien, allemand, français, espagnol, italien, portugais,
+portugais du Brésil.</p>
 <p><strong>Dossier du journal</strong> — l&#39;endroit où Elite Dangerous écrit ses fichiers de journal. Facultatif :
-laissez vide et l&#39;emplacement standard de votre plateforme est utilisé. C&#39;est par là qu&#39;Elite Intel
-sait ce qui se passe autour de votre vaisseau : s&#39;il est incorrect, l&#39;application est effectivement
-aveugle, et elle le dira au démarrage.</p>
+laissé vide, l&#39;emplacement standard de votre plateforme est utilisé. C&#39;est ainsi qu&#39;Elite Intel
+sait ce qui se passe autour de votre vaisseau ; s&#39;il est faux, l&#39;application est pratiquement
+aveugle et le dit au démarrage. Un dossier inutilisable est refusé et le réglage précédent est
+conservé.</p>
 <hr>
 <h2>Services IA</h2>
 <p><img src="../images/ui-tab-settings-ai.png" alt="Services IA"></p>
-<p><strong>Réécrit en V1.1.</strong> Les anciennes cases « Utiliser » éparpillées ont disparu. Il y a désormais deux
-commutateurs — un pour le modèle de langage, un pour la voix — et le côté inutilisé de chacun est
-grisé, si bien qu&#39;on voit immédiatement lequel est actif.</p>
-<p>C&#39;est aussi le seul onglet de l&#39;application à travailler sur un <strong>brouillon</strong>. Rien n&#39;est écrit tant
-que vous n&#39;appuyez pas sur <strong>Enregistrer</strong>, et tenter de partir avec des modifications non
-enregistrées vous propose <em>Enregistrer</em>, <em>Annuler</em> ou <em>Continuer à modifier</em>.</p>
+<p>Deux sélecteurs — un pour le modèle de langage, un pour la voix — et le côté inutilisé de chacun
+est grisé pour qu&#39;on voie clairement lequel est actif.</p>
+<p>C&#39;est le seul onglet de l&#39;application qui fonctionne avec un <strong>brouillon</strong>. Rien n&#39;est écrit tant
+que vous n&#39;avez pas cliqué sur <strong>Enregistrer</strong>, et quitter l&#39;onglet avec des modifications en
+attente vous propose <em>Enregistrer</em>, <em>Abandonner</em> ou <em>Continuer l&#39;édition</em>.</p>
 <h3>Modèle de langage (LLM)</h3>
-<p>Basculez entre <strong>Configuration locale</strong> et <strong>Configuration cloud</strong>.</p>
-<p><strong>Configuration locale</strong></p>
+<p>Basculez entre <strong>LMStudio</strong> (local) et <strong>Configuration cloud</strong>.</p>
+<p><strong>LMStudio</strong></p>
 <table>
 <thead>
 <tr>
@@ -123,59 +126,100 @@ enregistrées vous propose <em>Enregistrer</em>, <em>Annuler</em> ou <em>Continu
 </thead>
 <tbody><tr>
 <td><strong>Adresse</strong></td>
-<td>Par défaut, l&#39;URL habituelle de LM Studio. Pointez-la sur l&#39;IP d&#39;une autre machine si l&#39;inférence tourne ailleurs sur votre réseau</td>
+<td>Par défaut l&#39;URL de LM Studio, <code>http://localhost:1234/v1/chat/completions</code>. Indiquez l&#39;IP d&#39;une autre machine si l&#39;inférence tourne ailleurs sur votre réseau local</td>
 </tr>
 <tr>
 <td><strong>Modèle</strong></td>
-<td>Le nom du modèle. <strong>Un seul champ</strong> — la V1.1 utilise un modèle unique pour les commandes et les requêtes</td>
+<td>Le nom du modèle. Un seul modèle sert les commandes comme les requêtes</td>
 </tr>
 </tbody></table>
-<p>Le modèle local par défaut et recommandé est <strong><code>google/gemma-4-e4b</code></strong>. Elite Intel vous avertit au
-démarrage si votre modèle local est un autre ; d&#39;autres modèles peuvent mal fonctionner, voire pas du
-tout.</p>
-<p>Guides d&#39;installation : <a href="Install-LM-Studio-Linux.html">LM Studio sous Linux</a> ·
+<p>Le modèle local pris en charge est <strong><code>google/gemma-4-e4b</code></strong>. Elite Intel vous prévient au démarrage
+si votre modèle local est différent ; d&#39;autres modèles peuvent mal fonctionner, voire pas du tout.</p>
+<p>Guides : <a href="Install-LM-Studio-Linux.html">LM Studio sous Linux</a> ·
 <a href="Install-LM-Studio-Windows.html">LM Studio sous Windows</a> ·
 <a href="AMD-RX-7800XT-LLM-Setup.html">Série AMD RX</a></p>
 <p><strong>Configuration cloud</strong></p>
-<p>Un champ : votre <strong>Clé API</strong>, avec une case <strong>Verrouillé</strong> à côté pour qu&#39;une clé enregistrée ne soit
-pas modifiée par accident. Décochez Verrouillé pour la changer.</p>
-<p>Fournisseurs pris en charge : <strong>Gemini, Grok, OpenAI, Claude, Deepseek, Mistral.</strong></p>
-<blockquote>
-<p>Vous ne choisissez plus de modèle. Elite Intel reconnaît le fournisseur à la forme de votre clé et
-sélectionne lui-même le bon modèle.</p>
-</blockquote>
-<p>Mistral propose un palier gratuit et constitue le moyen le plus simple de démarrer.
-Voir <a href="cloud-llm-options.html">Options de LLM cloud</a> pour savoir comment obtenir une clé chez chaque
-fournisseur.</p>
+<table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Remarques</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Fournisseur</strong></td>
+<td>Choisissez-en un : <strong>Anthropic (Claude)</strong>, <strong>OpenAI</strong>, <strong>Google (Gemini)</strong>, <strong>xAI (Grok)</strong>, <strong>DeepSeek</strong>, <strong>Mistral</strong></td>
+</tr>
+<tr>
+<td><strong>Clé API</strong></td>
+<td>Votre clé pour ce fournisseur, avec une case <strong>Verrouillé</strong> à côté pour qu&#39;une clé enregistrée ne soit pas modifiée par accident. Décochez-la pour la changer</td>
+</tr>
+</tbody></table>
+<p>Vous ne choisissez pas de modèle — le bon est sélectionné automatiquement pour votre fournisseur.</p>
+<p>Une clé appartient à un fournisseur : choisir un autre fournisseur vide le champ de la clé pour
+coller celle de ce fournisseur, et rechoisir votre fournisseur enregistré fait revenir sa clé ; un
+clic accidentel ne coûte donc rien. <strong>Enregistrer</strong> reste grisé tant que fournisseur et clé ne
+sont pas renseignés.</p>
+<p>Mistral propose une offre gratuite et c&#39;est le moyen le plus simple de commencer.
+Comment obtenir une clé chez chaque fournisseur : <a href="cloud-llm-options.html">Options LLM cloud</a>.</p>
 <h3>Voix (TTS)</h3>
-<p>Basculez entre <strong>Local · Kokoro</strong> et <strong>Cloud · Google</strong>.</p>
-<ul>
-<li><strong>Local · Kokoro</strong> n&#39;a aucune configuration. 53 voix, intégrées, sans clé ni téléchargement.</li>
-<li><strong>Cloud · Google</strong> nécessite une <strong>Clé Google TTS</strong>, avec la même case Verrouillé.</li>
-</ul>
+<p>Basculez entre <strong>Local · Kokoro / Supertonic</strong> et <strong>Cloud · Google / Edge</strong>. Chaque côté a un
+second sélecteur pour choisir le moteur.</p>
+<table>
+<thead>
+<tr>
+<th>Moteur</th>
+<th>Où il tourne</th>
+<th>Remarques</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Kokoro</strong></td>
+<td>Sur votre PC</td>
+<td>Le moteur par défaut. Pas de clé, rien ne quitte votre PC. Ne sait pas prononcer le cyrillique — voir plus bas</td>
+</tr>
+<tr>
+<td><strong>Supertonic 3</strong></td>
+<td>Sur votre PC</td>
+<td>Dix voix, toutes les langues y compris le russe et l&#39;ukrainien. Pas de clé. Un curseur <strong>Amplification Supertonic 3 (0–100 %)</strong> relève son niveau</td>
+</tr>
+<tr>
+<td><strong>Google</strong></td>
+<td>Serveurs de Google</td>
+<td>Google Cloud Text-to-Speech. Nécessite une <strong>Clé Google TTS</strong> (avec la même case Verrouillé). Un curseur <strong>Hauteur Google WaveNet</strong> pour les voix WaveNet</td>
+</tr>
+<tr>
+<td><strong>Microsoft Edge</strong></td>
+<td>Serveurs de Microsoft</td>
+<td>Les voix de lecture à voix haute en ligne de Microsoft. Pas de clé</td>
+</tr>
+</tbody></table>
+<p><strong>Kokoro et le cyrillique.</strong> Quand la langue de l&#39;application est le russe ou l&#39;ukrainien — ou
+quand votre <em>client de jeu</em> écrit les échanges radio en russe —, le segment Kokoro est grisé, un
+bandeau explique pourquoi, et Supertonic 3 parle à sa place.</p>
 <blockquote>
-<p>Changer de moteur réinitialise la voix de chaque vaisseau à la voix par défaut du nouveau moteur.
-Les personnalités des vaisseaux sont conservées. Une confirmation vous est demandée au préalable.</p>
+<p>Changer de moteur remet la voix de chaque vaisseau à la voix par défaut du nouveau moteur. Les
+personnalités des vaisseaux sont conservées. Une confirmation vous est demandée avant.</p>
 </blockquote>
 <h3>Pied de page</h3>
-<p><strong>Restaurer les valeurs par défaut</strong> ramène la configuration du modèle de langage à LM Studio local
-avec le modèle par défaut, et enregistre immédiatement. <strong>Enregistrer</strong> valide tout le reste ; le
-bouton est grisé tant que rien ne change réellement, et l&#39;indication <strong>Modifications non
-enregistrées</strong> apparaît à côté dès que c&#39;est le cas.</p>
-<p>L&#39;enregistrement ne redémarre que le nécessaire : changer le modèle redémarre le cerveau, changer la
-clé vocale redémarre la bouche.</p>
+<p><strong>Restaurer les valeurs par défaut</strong> remet le modèle de langage sur LM Studio local avec l&#39;adresse
+et le modèle par défaut, et enregistre aussitôt. <strong>Enregistrer</strong> valide tout le reste ; il reste
+grisé tant que rien ne change vraiment, et la mention <strong>Modifications non enregistrées</strong> apparaît
+à côté dès que c&#39;est le cas.</p>
+<p>L&#39;enregistrement ne redémarre que le nécessaire — changer le modèle ou la clé redémarre le
+cerveau, changer le moteur de voix ou sa clé redémarre la voix. Les curseurs de hauteur et
+d&#39;amplification s&#39;appliquent sans redémarrage.</p>
 <hr>
 <h2>Audio</h2>
 <p><img src="../images/ui-tab-settings-audio.png" alt="Paramètres audio"></p>
 <h3>Périphériques audio</h3>
-<p>Listes déroulantes <strong>Micro</strong> et <strong>Haut-parl.</strong>, ou <em>(Défaut système)</em>. Les mêmes sélecteurs sont
-accessibles depuis le bouton <strong>Périphériques audio</strong> de l&#39;onglet Vega.</p>
-<blockquote>
-<p>Les changements de périphérique prennent effet au <strong>prochain démarrage des services</strong>.</p>
-</blockquote>
-<p><strong>Activer la réduction du bruit</strong> avec une intensité <strong>Faible / Moyenne / Élevée</strong>. Commencez à
-Moyenne. Élevée est réservée aux pièces vraiment bruyantes — elle est agressive, et un filtrage
-excessif peut vous coûter en précision de transcription.</p>
+<p>Listes <strong>Micro</strong> et <strong>Haut-parl.</strong>, ou <em>(Par défaut du système)</em>. Les mêmes sélecteurs sont
+accessibles via le bouton <strong>Périphériques audio</strong> de l&#39;onglet Vega. Un changement s&#39;applique tout
+de suite — seul le service qui utilise le périphérique redémarre.</p>
+<p><strong>Activer la réduction du bruit</strong> avec une intensité <strong>Faible / Moyenne / Élevée</strong>. Commencez par
+Moyenne. Élevée est pour les pièces vraiment bruyantes — elle est agressive, et trop filtrer peut
+coûter de la précision de transcription.</p>
+<p>Sous les périphériques se trouvent deux onglets.</p>
 <h3>Niveaux audio</h3>
 <table>
 <thead>
@@ -186,7 +230,11 @@ excessif peut vous coûter en précision de transcription.</p>
 </thead>
 <tbody><tr>
 <td><strong>Volume de la voix</strong></td>
-<td>Le volume auquel Vega parle</td>
+<td>Le volume de Vega</td>
+</tr>
+<tr>
+<td><strong>Volume de la radio</strong></td>
+<td>Le volume des transmissions radio. Grisé tant que les transmissions radio sont désactivées</td>
 </tr>
 <tr>
 <td><strong>Vitesse TTS</strong></td>
@@ -194,67 +242,100 @@ excessif peut vous coûter en précision de transcription.</p>
 </tr>
 <tr>
 <td><strong>Volume des bips</strong></td>
-<td>Le bip de confirmation — il se déclenche quand la reconnaissance vocale a terminé et que le modèle de langage a votre entrée</td>
+<td>Le bip de confirmation — il retentit quand la reconnaissance vocale a fini et que le modèle de langage a votre demande</td>
 </tr>
 <tr>
 <td><strong>Threads STT</strong></td>
-<td>Threads CPU pour la transcription (4–11). Une demande minimale, pas une réservation : l&#39;application en demande autant, utilise ce que le processeur lui donne, et les libère une fois le travail fait</td>
+<td>Threads CPU pour la transcription (4–11). Un minimum demandé, pas une réservation : l&#39;application en demande autant, utilise ce que le processeur lui donne et les libère une fois le travail fini</td>
 </tr>
 </tbody></table>
-<h3>Moniteur du microphone</h3>
-<p>Un vumètre en direct le long du bord droit. Trois choses à y lire :</p>
-<ul>
-<li><strong>FLOOR</strong> — votre niveau de bruit quand vous ne parlez <em>pas</em>.</li>
-<li><strong>GATE</strong> — le seuil. L&#39;audio au-dessus de la porte est transmis pour transcription ; quand il
-redescend en dessous, ce qui a été capturé est transcrit et envoyé au modèle de langage.</li>
-<li><strong>CLIP</strong> — vous saturez le microphone. Tout ce qui dépasse cette ligne se transcrit mal.</li>
-</ul>
-<p>Vous voulez un écart net entre FLOOR et votre niveau de parole, et rien qui touche CLIP. Si ce n&#39;est
-pas ce que vous voyez, lancez <strong>CALIBRER L&#39;AUDIO</strong> dans l&#39;onglet Vega — il règle la porte pour vous
-et vous prévient si l&#39;écart entre la voix et le bruit est trop faible pour travailler.</p>
-<hr>
-<h2>Push To Talk</h2>
-<p><img src="../images/ui-tab-settings-push-to-talk.png" alt="Push to talk"></p>
-<p>Le push-to-talk fonctionne avec un <strong>bouton de manette ou de HOTAS</strong>, pas du clavier. Vous cédez un
-bouton et vous gagnez un microphone fermé, sauf quand vous voulez l&#39;ouvrir.</p>
+<p>Le volume de la musique n&#39;est pas ici — il est dans l&#39;<a href="UI-Jukebox-Tab.html">onglet Jukebox</a>, pour ne
+jamais baisser le mauvais.</p>
+<h3>Audio des transmissions</h3>
+<p>Le son des messages radio.</p>
 <table>
 <thead>
 <tr>
-<th>Réglage</th>
+<th>Contrôle</th>
+<th>Ce qu&#39;il fait</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Bip radio au début et à la fin de chaque message</strong></td>
+<td>Des tonalités autour de chaque transmission, avec leur propre curseur de volume</td>
+</tr>
+<tr>
+<td><strong>Effet radio</strong></td>
+<td>Un son radio plus marqué, dégradé</td>
+</tr>
+<tr>
+<td><strong>Appliquer les effets sélectionnés au chat radio et aux messages des PNJ</strong></td>
+<td>Les tonalités et l&#39;effet radio ci-dessus s&#39;appliquent au trafic radio. Désactivé, la voix radio garde son filtre standard</td>
+</tr>
+<tr>
+<td><strong>Appliquer les effets sélectionnés à VEGA à pied ou en SRV</strong></td>
+<td>Vega sonne comme à la radio quand vous n&#39;êtes pas dans le vaisseau</td>
+</tr>
+</tbody></table>
+<h3>Moniteur microphone</h3>
+<p>Un vumètre en direct sur le côté droit. Il se lit ainsi :</p>
+<ul>
+<li><strong>FLOOR</strong> — votre niveau de bruit quand vous ne parlez <em>pas</em>.</li>
+<li><strong>GATE</strong> — le seuil. L&#39;audio au-dessus du seuil est capté pour la transcription ; quand il
+repasse dessous, ce qui a été capté est transcrit et envoyé au modèle de langage.</li>
+<li><strong>CLIP</strong> — vous saturez le micro. Tout ce qui monte là-haut est mal transcrit.</li>
+</ul>
+<p>L&#39;état affiche <strong>OPEN</strong>, <strong>MARGINAL</strong>, <strong>CLOSED</strong> ou <strong>HOT</strong> (saturation). Sous le vumètre, un
+message en clair apparaît quand quelque chose ne va pas : <em>Microphone non calibré</em>, ou <em>Microphone
+trop faible pour la pièce</em> — augmentez le niveau d&#39;entrée dans les paramètres audio du système,
+puis recalibrez. Quand le micro va bien, aucun message n&#39;est affiché.</p>
+<p>Si le vumètre ne montre pas un écart net entre FLOOR et votre niveau de parole, lancez <strong>CALIBRER
+L&#39;AUDIO</strong> dans l&#39;onglet Vega — il règle le seuil pour vous, et vous prévient si l&#39;écart est trop
+faible pour travailler.</p>
+<hr>
+<h2>Push To Talk</h2>
+<p><img src="../images/ui-tab-settings-push-to-talk.png" alt="Push to Talk"></p>
+<p>Avec le Push to Talk activé, le micro est fermé tant que vous ne maintenez pas un bouton. Ce qu&#39;il
+capte sans le bouton enfoncé est jeté comme bruit ambiant.</p>
+<table>
+<thead>
+<tr>
+<th>Contrôle</th>
 <th>Remarques</th>
 </tr>
 </thead>
 <tbody><tr>
 <td><strong>Activer Push to Talk</strong></td>
-<td>L&#39;interrupteur principal. Tout le reste est désactivé tant qu&#39;il n&#39;est pas activé</td>
+<td>L&#39;interrupteur principal</td>
 </tr>
 <tr>
 <td><strong>Contrôleur</strong></td>
-<td>N&#39;importe quelle manette connectée qu&#39;Elite Intel détecte. Il resélectionne automatiquement votre manette enregistrée lorsqu&#39;elle se reconnecte</td>
+<td>Toute manette ou HOTAS connecté. Votre contrôleur enregistré est resélectionné automatiquement à la reconnexion</td>
 </tr>
 <tr>
 <td><strong>Bouton</strong></td>
 <td>Quel bouton dessus</td>
 </tr>
+<tr>
+<td><strong>Bouton de souris</strong></td>
+<td>Un second déclencheur : <em>Bouton du milieu</em>, <em>Bouton 4 (précédent)</em> ou <em>Bouton 5 (suivant)</em>. Pratique à pied ou en SRV, quand le HOTAS est hors de portée. Les boutons gauche et droit ne sont pas proposés — ils tirent avec vos armes</td>
+</tr>
 </tbody></table>
-<p>Deux modes :</p>
-<ul>
-<li><strong>Basculer veille / réveil</strong> — le bouton fait passer Vega de l&#39;endormissement à l&#39;écoute. Endormie,
-Vega ignore tout sauf <code>Wake up!</code>, et le mot de contournement <code>listen</code> / <code>listen up</code> laisse toujours
-passer une commande unique : <em>« Listen up — lower the landing gear. »</em></li>
-<li><strong>Push To Talk</strong> — Vega ignore tout par défaut. Maintenez le bouton, écoutez le bip, parlez,
-relâchez. Un second bip confirme que votre entrée est en cours de traitement.</li>
-</ul>
-<p>Tant que le push-to-talk est actif, le bouton <strong>Sommeil / Réveil</strong> de l&#39;onglet Vega est désactivé :
-c&#39;est le bouton de la manette qui fait office de porte.</p>
-<p>Le bouton fonctionne que vous ouvriez cet onglet ou non.</p>
+<p>Maintenez le bouton, parlez, relâchez. Appuyer <strong>coupe aussi Vega en pleine phrase</strong>, vous n&#39;avez
+donc jamais à attendre qu&#39;elle ait fini.</p>
+<p>Tant que le Push to Talk est actif, le bouton <strong>DORMIR / SE RÉVEILLER</strong> de l&#39;onglet Vega est
+désactivé — le bouton est la porte. Un changement ici s&#39;applique dès l&#39;appui suivant, et le bouton
+fonctionne que vous ouvriez cet onglet ou non.</p>
 <hr>
-<h2>Où vivent les paramètres</h2>
-<p>Tous les paramètres et données sont stockés dans une base SQLite :</p>
+<h2>Où sont stockés les réglages</h2>
+<p>Tous les réglages et données sont stockés sur votre PC :</p>
 <ul>
-<li><strong>Linux :</strong> <code>~/.local/share/elite-intel/elite-intel/db/</code></li>
-<li><strong>Windows :</strong> <code>%APPDATA%\elite-intel\db\</code></li>
+<li><strong>Linux :</strong> <code>~/.local/share/elite-intel/</code> (ou <code>$XDG_DATA_HOME/elite-intel/</code>)</li>
+<li><strong>Windows :</strong> <code>%LOCALAPPDATA%\elite-intel\</code></li>
 </ul>
+<p>La base de données est dans <code>db</code>, les commandes perso dans <code>custom-commands</code> (avec son propre
+<code>backups</code>), vos instantanés manuels de raccourcis dans <code>playerbackups</code>, et les copies automatiques
+faites avant Appliquer dans <code>bindings/backups</code>.</p>
 <hr>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

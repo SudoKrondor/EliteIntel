@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Elite Intel User Interface  EliteIntel</title>
-    <meta name="description" content="Elite Intel V1.1 is organised into six tabs across the top of the window. Each one owns a">
+    <meta name="description" content="Elite Intel is organised into seven tabs across the top of the window. Each one owns a different">
     <link rel="canonical" href="https://www.elite-intel.org/UI.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI.html">
@@ -13,7 +13,7 @@
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI.html">
     <meta property="og:title" content="The Elite Intel User Interface  EliteIntel">
-    <meta property="og:description" content="Elite Intel V1.1 is organised into six tabs across the top of the window. Each one owns a">
+    <meta property="og:description" content="Elite Intel is organised into seven tabs across the top of the window. Each one owns a different">
     <meta property="og:url" content="https://www.elite-intel.org/UI.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Actions Tab</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Bindings Tab</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="images/settings.png" class="inline" height="20" alt=""> Settings Tab</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="images/speaker.png" class="inline" height="20" alt=""> Jukebox Tab</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="images/stats.png" class="inline" height="20" alt=""> Stats Tab</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> HUD Overlay</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">How Do I…?</div>
             <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Make Your Own Commands</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Search the Galaxy</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery &amp; ExoBiology</a>
@@ -88,11 +90,11 @@
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
 <h1>The Elite Intel User Interface</h1>
-<p>Elite Intel V1.1 is organised into six tabs across the top of the window. Each one owns a
-different part of the system, and most of them hold sub-tabs of their own.</p>
+<p>Elite Intel is organised into seven tabs across the top of the window. Each one owns a different
+part of the system, and most of them hold sub-tabs of their own.</p>
 <p>This section walks through every tab, every control, and what it actually does.</p>
 <hr>
-<h2>The six tabs</h2>
+<h2>The seven tabs</h2>
 <table>
 <thead>
 <tr>
@@ -106,7 +108,7 @@ different part of the system, and most of them hold sub-tabs of their own.</p>
 </tr>
 <tr>
 <td><img src="images/controller.png" class="inline" height="20" alt="Commander"> <strong><a href="UI-Commander-Tab.html">Commander</a></strong></td>
-<td>Who you are and how your ships behave. Automations, spoken announcements, and a voice and personality per ship.</td>
+<td>Who you are and how your ships behave. Fleet voices and personalities, automations, spoken announcements, and the Exo-Mastery catalogue.</td>
 </tr>
 <tr>
 <td><img src="images/keys-binding.png" class="inline" height="20" alt="Actions"> <strong><a href="UI-Actions-Tab.html">Actions</a></strong></td>
@@ -121,6 +123,10 @@ different part of the system, and most of them hold sub-tabs of their own.</p>
 <td>The plumbing. Language, journal folder, language model, speech engine, audio, and push-to-talk.</td>
 </tr>
 <tr>
+<td><img src="images/speaker.png" class="inline" height="20" alt="Jukebox"> <strong><a href="UI-Jukebox-Tab.html">Jukebox</a></strong></td>
+<td>Your own music, played underneath Vega and ducked automatically when she speaks.</td>
+</tr>
+<tr>
 <td><img src="images/stats.png" class="inline" height="20" alt="Stats"> <strong><a href="UI-Stats-Tab.html">Stats</a></strong></td>
 <td>Token usage and LLM telemetry for the current session.</td>
 </tr>
@@ -133,28 +139,37 @@ optional VR surface) driven from the Vega tab.</p>
 hunt for what is missing. In order of importance:</p>
 <ol>
 <li><strong>A language model.</strong> Nothing works without one. Go to
-<a href="UI-Settings-Tab.html">Settings → AI Services</a> and either paste a cloud API key or point the app
-at a local model. See <a href="installing-local-llms.html">Choose your LLM</a>.</li>
+<a href="UI-Settings-Tab.html">Settings → AI Services</a> and either pick a cloud provider and paste its API
+key, or point the app at a local model. See <a href="installing-local-llms.html">Choose your LLM</a>.</li>
 <li><strong>The journal folder.</strong> Without it Elite Intel is blind to everything happening around your
 ship. <a href="UI-Settings-Tab.html">Settings → Common</a>.</li>
 <li><strong>The bindings folder.</strong> Without it Elite Intel cannot operate your ship.
-<a href="UI-Bindings-Tab.html">Bindings → Binding Profile</a>.</li>
+<a href="UI-Bindings-Tab.html">Bindings → Binding Profile</a>. If the folder is right but Vega still says she
+cannot find your bindings, open <em>Options → Controls</em> in the game and change any binding — the
+game only writes a bindings file once you have customised something.</li>
 <li><strong>Calibrate audio.</strong> Strongly recommended before your first flight.
 <a href="UI-Vega-Tab.html">Vega tab</a> → <strong>CALIBRATE AUDIO</strong>.</li>
 </ol>
+<blockquote>
+<p>Elite Intel is built for <strong>Elite Dangerous Odyssey</strong>. On Horizons, Vega warns you at startup
+that much of it will not work.</p>
+</blockquote>
 <hr>
 <h2>Conventions used everywhere</h2>
 <ul>
-<li><strong>The window remembers nothing you have not saved.</strong> Only the <em>Settings → AI Services</em> tab
-works on a draft: it shows an <strong>Unsaved changes</strong> hint and will stop you leaving the tab
-without deciding. Every other toggle and slider in the app writes through the moment you
-change it.</li>
-<li><strong>A separate draft model applies to bindings.</strong> Edits go into a draft first and are written
-to Elite Dangerous only when you press <strong>Apply to Game</strong>.</li>
+<li><strong>Most controls save the moment you change them.</strong> Toggles, sliders and dropdowns write
+through immediately; there is no Save button to forget.</li>
+<li><strong>Two exceptions work on a draft.</strong> <em>Settings → AI Services</em> holds your edits until you press
+<strong>Save</strong>, and asks you to <em>Save</em>, <em>Discard</em> or <em>Keep editing</em> if you try to leave with unsaved
+changes. Key bindings collect in a draft that is written to Elite Dangerous only when you
+press <strong>Apply</strong>.</li>
 <li><strong>Language changes rebuild the window.</strong> Selecting a new language in <em>Settings → Common</em>
 re-renders every tab in that language immediately, and Vega announces the change.</li>
 <li><strong>Nine languages are supported:</strong> English, Spanish, French, German, Italian, Portuguese,
 Brazilian Portuguese, Ukrainian and Russian.</li>
+<li><strong>Several commanders on one PC.</strong> Elite Intel keeps each commander&#39;s data separately and
+switches automatically when a different commander loads into the game — the fleet list and
+per-commander settings follow.</li>
 </ul>
 <hr>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>

@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Actions Tab</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Bindings Tab</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub active"><img src="images/settings.png" class="inline" height="20" alt=""> Settings Tab</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="images/speaker.png" class="inline" height="20" alt=""> Jukebox Tab</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="images/stats.png" class="inline" height="20" alt=""> Stats Tab</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> HUD Overlay</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">How Do I…?</div>
             <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Make Your Own Commands</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Search the Galaxy</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery &amp; ExoBiology</a>
@@ -90,30 +92,30 @@
 <h1>Settings Tab</h1>
 <p><img src="images/settings.png" class="inline" height="20" alt="Settings"> The plumbing. A
 <strong>Common</strong> strip that applies everywhere, then three sub-tabs: <strong>AI Services</strong>, <strong>Audio</strong>, and
-<strong>Push To Talk</strong>.</p>
+<strong>Push To Talk</strong>. The update button sits in the footer — <em>App is Up to Date</em> or <em>Update
+Available</em>.</p>
 <hr>
 <h2>Common</h2>
 <p>Shown above the sub-tabs, because it applies to all of them.</p>
 <p><strong>Language</strong> — the language of both your voice commands and the app&#39;s own interface. Choosing
 one re-renders the whole window immediately and Vega announces the change out loud.</p>
-<p>Supported: English, Spanish, French, German, Italian, Portuguese, Brazilian Portuguese,
-Ukrainian, Russian.</p>
+<p>Supported: English, Russian, Ukrainian, German, French, Spanish, Italian, Portuguese, Brazilian
+Portuguese.</p>
 <p><strong>Journal Directory</strong> — where Elite Dangerous writes its journal files. Optional: leave it
 blank and the standard location for your platform is used. This is how Elite Intel knows what
 is happening around your ship, so if it is wrong the app is effectively blind, and it will say
-so at startup.</p>
+so at startup. A folder that cannot be used is refused and the previous setting is kept.</p>
 <hr>
 <h2>AI Services</h2>
 <p><img src="images/ui-tab-settings-ai.png" alt="AI services"></p>
-<p><strong>Rewritten in V1.1.</strong> The old scattered &quot;Use&quot; checkboxes are gone. There are now two switches
-— one for the language model, one for speech — and the unused side of each is dimmed so it is
-obvious which one is live.</p>
-<p>This is also the one tab in the app that works on a <strong>draft</strong>. Nothing is written until you
-press <strong>Save</strong>, and trying to leave with unsaved edits asks you to <em>Save</em>, <em>Discard</em>, or
+<p>Two switches — one for the language model, one for speech — and the unused side of each is
+dimmed so it is obvious which one is live.</p>
+<p>This is the one tab in the app that works on a <strong>draft</strong>. Nothing is written until you press
+<strong>Save</strong>, and trying to leave with unsaved edits asks you to <em>Save</em>, <em>Discard</em>, or
 <em>Keep editing</em>.</p>
 <h3>Language Model (LLM)</h3>
-<p>Switch between <strong>Local Setup</strong> and <strong>Cloud Setup</strong>.</p>
-<p><strong>Local Setup</strong></p>
+<p>Switch between <strong>LMStudio Setup</strong> (local) and <strong>Cloud Setup</strong>.</p>
+<p><strong>LMStudio Setup</strong></p>
 <table>
 <thead>
 <tr>
@@ -123,56 +125,99 @@ press <strong>Save</strong>, and trying to leave with unsaved edits asks you to 
 </thead>
 <tbody><tr>
 <td><strong>Address</strong></td>
-<td>Defaults to LM Studio&#39;s usual URL. Point it at another machine&#39;s IP if inference runs elsewhere on your LAN</td>
+<td>Defaults to LM Studio&#39;s own URL, <code>http://localhost:1234/v1/chat/completions</code>. Point it at another machine&#39;s IP if inference runs elsewhere on your LAN</td>
 </tr>
 <tr>
 <td><strong>Model</strong></td>
-<td>The model name. <strong>One field</strong> — V1.1 uses a single model for both commands and queries</td>
+<td>The model name. One model serves both commands and queries</td>
 </tr>
 </tbody></table>
-<p>The default and recommended local model is <strong><code>google/gemma-4-e4b</code></strong>. Elite Intel warns you at
-startup if your local model is something else; other models may work poorly or not at all.</p>
+<p>The supported local model is <strong><code>google/gemma-4-e4b</code></strong>. Elite Intel warns you at startup if your
+local model is something else; other models may work poorly or not at all.</p>
 <p>Setup guides: <a href="Install-LM-Studio-Linux.html">LM Studio on Linux</a> ·
 <a href="Install-LM-Studio-Windows.html">LM Studio on Windows</a> ·
 <a href="AMD-RX-7800XT-LLM-Setup.html">AMD RX series</a></p>
 <p><strong>Cloud Setup</strong></p>
-<p>One field: your <strong>API Key</strong>, with a <strong>Locked</strong> checkbox beside it so a saved key cannot be
-edited by accident. Uncheck Locked to change it.</p>
-<p>Supported providers: <strong>Gemini, Grok, OpenAI, Claude, DeepSeek, Mistral.</strong></p>
-<blockquote>
-<p>You no longer pick a model. Elite Intel recognises the provider from the shape of your key
-and selects the right model itself.</p>
-</blockquote>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Provider</strong></td>
+<td>Pick one: <strong>Anthropic (Claude)</strong>, <strong>OpenAI</strong>, <strong>Google (Gemini)</strong>, <strong>xAI (Grok)</strong>, <strong>DeepSeek</strong>, <strong>Mistral</strong></td>
+</tr>
+<tr>
+<td><strong>API Key</strong></td>
+<td>Your key for that provider, with a <strong>Locked</strong> checkbox beside it so a saved key cannot be edited by accident. Uncheck Locked to change it</td>
+</tr>
+</tbody></table>
+<p>You do not pick a model — the right one is selected automatically for your provider.</p>
+<p>A key belongs to one provider: picking a different provider empties the key field so you can
+paste that provider&#39;s key, and picking your saved provider again brings its key back, so an
+accidental click costs nothing. <strong>Save</strong> stays greyed out until both a provider and a key are
+filled in.</p>
 <p>Mistral has a free tier and is the easiest way to start.
 See <a href="cloud-llm-options.html">Cloud LLM options</a> for how to obtain a key from each provider.</p>
 <h3>Speech (TTS)</h3>
-<p>Switch between <strong>Local · Kokoro</strong> and <strong>Cloud · Google</strong>.</p>
-<ul>
-<li><strong>Local · Kokoro</strong> has no configuration at all. 53 voices, built in, no key, no download.</li>
-<li><strong>Cloud · Google</strong> needs a <strong>Google TTS Key</strong>, with the same Locked checkbox.</li>
-</ul>
+<p>Switch between <strong>Local · Kokoro / Supertonic</strong> and <strong>Cloud · Google / Edge</strong>. Each side has a
+second switch to pick its engine.</p>
+<table>
+<thead>
+<tr>
+<th>Engine</th>
+<th>Where it runs</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Kokoro</strong></td>
+<td>On your PC</td>
+<td>The default. No key, nothing leaves your PC. Cannot pronounce Cyrillic — see below</td>
+</tr>
+<tr>
+<td><strong>Supertonic 3</strong></td>
+<td>On your PC</td>
+<td>Ten voices, every language including Russian and Ukrainian. No key. Has a <strong>Supertonic 3 boost (0–100%)</strong> slider to raise its output level</td>
+</tr>
+<tr>
+<td><strong>Google</strong></td>
+<td>Google&#39;s servers</td>
+<td>Google Cloud Text-to-Speech. Needs a <strong>Google TTS Key</strong> (with the same Locked checkbox). Has a <strong>Google WaveNet Pitch</strong> slider, used by the WaveNet voices</td>
+</tr>
+<tr>
+<td><strong>Microsoft Edge</strong></td>
+<td>Microsoft&#39;s servers</td>
+<td>Microsoft&#39;s online Read Aloud voices. No key needed</td>
+</tr>
+</tbody></table>
+<p><strong>Kokoro and Cyrillic.</strong> When the app language is Russian or Ukrainian — or when your <em>game
+client</em> writes its radio chatter in Russian — the Kokoro segment is greyed out, a banner explains
+why, and Supertonic 3 speaks instead.</p>
 <blockquote>
 <p>Switching engines resets every ship&#39;s voice to the new engine&#39;s default voice. Ship
 personalities are kept. You are asked to confirm before it happens.</p>
 </blockquote>
 <h3>Footer</h3>
-<p><strong>Restore Defaults</strong> resets the language-model configuration to local LM Studio with the
-default model, and saves immediately. <strong>Save</strong> commits everything else; it is greyed out until
-something actually changes, and an <strong>Unsaved changes</strong> hint appears next to it when it does.</p>
-<p>Saving restarts only what it has to — changing the model restarts the brain, changing the
-speech key restarts the mouth.</p>
+<p><strong>Restore Defaults</strong> resets the language model to local LM Studio with the default address and
+model, and saves immediately. <strong>Save</strong> commits everything else; it is greyed out until something
+actually changes, and an <strong>Unsaved changes</strong> hint appears next to it when it does.</p>
+<p>Saving restarts only what it has to — changing the model or key restarts the brain, changing
+the speech engine or its key restarts the voice. The pitch and boost sliders apply without a
+restart.</p>
 <hr>
 <h2>Audio</h2>
 <p><img src="images/ui-tab-settings-audio.png" alt="Audio settings"></p>
 <h3>Audio Devices</h3>
 <p><strong>Mic</strong> and <strong>Speaker</strong> dropdowns, or <em>(System Default)</em>. The same pickers are available from
-the <strong>Audio Devices</strong> button on the Vega tab.</p>
-<blockquote>
-<p>Device changes take effect on the <strong>next service start</strong>.</p>
-</blockquote>
+the <strong>Audio Devices</strong> button on the Vega tab. A change applies straight away — only the service
+that uses the device restarts.</p>
 <p><strong>Enable Noise Reduction</strong> with a <strong>Low / Medium / High</strong> strength. Start at Medium. High is
 for genuinely noisy rooms — it is aggressive, and over-filtering can cost you transcription
 accuracy.</p>
+<p>Below the devices are two tabs.</p>
 <h3>Audio Levels</h3>
 <table>
 <thead>
@@ -184,6 +229,10 @@ accuracy.</p>
 <tbody><tr>
 <td><strong>Speech Volume</strong></td>
 <td>How loud Vega speaks</td>
+</tr>
+<tr>
+<td><strong>Radio Volume</strong></td>
+<td>How loud radio transmissions are. Greyed out while radio transmissions are off</td>
 </tr>
 <tr>
 <td><strong>TTS Voice Speed</strong></td>
@@ -198,22 +247,54 @@ accuracy.</p>
 <td>CPU threads for transcription (4–11). A minimum request, not a reservation: the app asks for this many, uses what the processor gives it, and releases them when the work is done</td>
 </tr>
 </tbody></table>
+<p>Music volume is not here — it lives on the <a href="UI-Jukebox-Tab.html">Jukebox tab</a>, so you never turn the
+wrong one down.</p>
+<h3>Transmission Audio</h3>
+<p>How radio messages sound.</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Radio beep at the start and end of each message</strong></td>
+<td>Squelch tones around each transmission, with their own volume slider</td>
+</tr>
+<tr>
+<td><strong>Radio effect</strong></td>
+<td>A stronger, degraded radio sound</td>
+</tr>
+<tr>
+<td><strong>Apply selected effects to radio chat and NPC messages</strong></td>
+<td>The tones and radio effect above apply to radio traffic. When off, radio speech keeps its standard filter</td>
+</tr>
+<tr>
+<td><strong>Apply selected effects to VEGA on foot or in an SRV</strong></td>
+<td>Vega sounds like she is on comms when you are away from the ship</td>
+</tr>
+</tbody></table>
 <h3>Microphone Monitor</h3>
-<p>A live meter down the right side. Three things to read on it:</p>
+<p>A live meter down the right side. Read it like this:</p>
 <ul>
 <li><strong>FLOOR</strong> — your noise level when you are <em>not</em> speaking.</li>
-<li><strong>GATE</strong> — the threshold. Audio above the gate is streamed for transcription; when it drops
+<li><strong>GATE</strong> — the threshold. Audio above the gate is captured for transcription; when it drops
 below, what was captured is transcribed and sent to the language model.</li>
-<li><strong>CLIP</strong> — you are overdriving the microphone. Anything above this line transcribes badly.</li>
+<li><strong>CLIP</strong> — you are overdriving the microphone. Anything up there transcribes badly.</li>
 </ul>
-<p>You want a clear gap between FLOOR and your speaking level, and nothing touching CLIP. If that
-is not what you see, run <strong>CALIBRATE AUDIO</strong> on the Vega tab — it sets the gate for you, and
-warns you if the speech-to-noise gap is too small to work with.</p>
+<p>The status reads <strong>OPEN</strong>, <strong>MARGINAL</strong>, <strong>CLOSED</strong> or <strong>HOT</strong> (clipping). Under the meter, a
+plain-language hint appears when something is wrong: <em>Microphone not calibrated</em>, or
+<em>Microphone too quiet for the room</em> — raise the input level in your operating system&#39;s sound
+settings, then recalibrate. When the microphone is healthy, no hint is shown.</p>
+<p>If the meter does not show a clear gap between FLOOR and your speaking level, run <strong>CALIBRATE
+AUDIO</strong> on the Vega tab — it sets the gate for you, and warns you if the gap is too small to
+work with.</p>
 <hr>
 <h2>Push To Talk</h2>
 <p><img src="images/ui-tab-settings-push-to-talk.png" alt="Push to talk"></p>
-<p>Push-to-talk works with a <strong>game controller or HOTAS button</strong>, not a keyboard. You give up one
-button and you gain a microphone that is closed except when you want it open.</p>
+<p>With push-to-talk on, the microphone is closed until you hold a button. Anything it picks up
+without the button held is thrown away as room noise.</p>
 <table>
 <thead>
 <tr>
@@ -223,35 +304,36 @@ button and you gain a microphone that is closed except when you want it open.</p
 </thead>
 <tbody><tr>
 <td><strong>Enable Push to Talk</strong></td>
-<td>The master switch. Everything else is disabled until this is on</td>
+<td>The master switch</td>
 </tr>
 <tr>
 <td><strong>Controller</strong></td>
-<td>Any connected controller Elite Intel can see. It re-selects your saved controller automatically when it reconnects</td>
+<td>Any connected game controller or HOTAS. Your saved controller is re-selected automatically when it reconnects</td>
 </tr>
 <tr>
 <td><strong>Button</strong></td>
 <td>Which button on it</td>
 </tr>
+<tr>
+<td><strong>Mouse button</strong></td>
+<td>A second trigger: <em>Middle button</em>, <em>Button 4 (back)</em> or <em>Button 5 (forward)</em>. Handy on foot or in the SRV, when your HOTAS is out of reach. Left and right are not offered — they fire your weapons</td>
+</tr>
 </tbody></table>
-<p>Two modes:</p>
-<ul>
-<li><strong>Toggle to sleep / wake</strong> — the button flips Vega between sleeping and listening. While
-asleep, Vega ignores everything except <code>Wake up!</code>, and the <code>listen</code> / <code>listen up</code> bypass word
-still gets a single command through: <em>&quot;Listen up — lower the landing gear.&quot;</em></li>
-<li><strong>Push to Talk</strong> — Vega ignores everything by default. Hold the button, hear a beep, speak,
-release. A second beep confirms your input is being processed.</li>
-</ul>
-<p>While push-to-talk is active, the <strong>SLEEP / WAKE UP</strong> button on the Vega tab is disabled — the
-controller button is the gate.</p>
-<p>The button works whether or not you ever open this tab.</p>
+<p>Hold the button, speak, release. Pressing it also <strong>cuts Vega off mid-sentence</strong>, so you never
+have to wait for her to finish.</p>
+<p>While push-to-talk is on, the <strong>SLEEP / WAKE UP</strong> button on the Vega tab is disabled — the
+button is the gate. A change here takes effect on the very next press, and the button works
+whether or not you ever open this tab.</p>
 <hr>
 <h2>Where the settings live</h2>
-<p>All settings and data are stored in a SQLite database:</p>
+<p>All settings and data are stored on your PC:</p>
 <ul>
-<li><strong>Linux:</strong> <code>~/.local/share/elite-intel/elite-intel/db/</code></li>
-<li><strong>Windows:</strong> <code>%APPDATA%\elite-intel\db\</code></li>
+<li><strong>Linux:</strong> <code>~/.local/share/elite-intel/</code> (or <code>$XDG_DATA_HOME/elite-intel/</code>)</li>
+<li><strong>Windows:</strong> <code>%LOCALAPPDATA%\elite-intel\</code></li>
 </ul>
+<p>The database is in <code>db</code>, custom commands in <code>custom-commands</code> (with its own <code>backups</code>), your
+on-demand binding snapshots in <code>playerbackups</code>, and the automatic pre-Apply binding copies in
+<code>bindings/backups</code>.</p>
 <hr>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

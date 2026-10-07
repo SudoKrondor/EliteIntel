@@ -1,81 +1,149 @@
-# Obscure System Commands
+# System Commands — the Details
 
-EliteIntel uses a minimal interface with no menus or complex settings panels. A full set of features is available via voice commands. All settings and functions are accessible through natural speech.
+[All Commands](AllCommands) lists what you can say. This page covers the commands that need a
+bit more explanation: what to do *before* you say them, what they actually do, and the gotchas.
 
-## Toggleable Settings
+Everything here works spoken, typed in the game chat as `@Vega …`, or clicked on the
+[Actions tab](UI-Actions-Tab).
 
-Toggle these settings using voice commands:
+---
 
-- **Route Announcements [On/Off]**: "Turn Route Announcements On." EliteIntel announces details about your next jump, including whether the star is scoopable, system security, and other relevant information. When disabled, announcements stop. Manual queries remain available. *Default: On*
-- **Discovery Announcements [On/Off]**: "Turn Discovery Announcements On." EliteIntel announces first-mapped systems, high-value planets, bio signals, and similar discoveries. *Default: On*
-- **Mining and Material Announcements [On/Off]**: "Turn Mining Announcements On." EliteIntel flags prospector limpet hits and material finds. *Default: Off*
-- **Add Mining Target [Material Name]**: "Add Mining Target Painite." EliteIntel flags hits for that specific material. No effect if no target is set. *Default: Off*
-- **Radio Chatter [On/Off]**: "Turn On the Radio." EliteIntel announces relevant radio transmissions such as pirate threats, while filtering routine traffic like commercial broadcasts. Useful for cargo runs. *Default: Off*
-- **Streaming Mode [On/Off]**: "Set Streaming Mode On." EliteIntel only responds to commands prefixed with "Computer." Useful for streaming or when in a wing. Say "Computer, turn streaming mode off" to disable.
-- **Night Vision [On/Off]**: "Night vision on." Toggles night vision in the ship or SRV.
-- **Headlights [On/Off]**: "Headlights on."
-- **Drive Assist [On/Off]**: "Drive assist off."
+## Settings You Can Flip by Voice
+
+Every spoken announcement has a voice toggle, and each one mirrors a switch on the
+[Commander tab → Announcements](UI-Commander-Tab), so you can check what is on at a glance.
+
+- **Route announcements**: *"Route announcements off."* Silences everything said around a jump —
+  next system, traffic, fatalities, arrival, jumps left, scoopable star. Manual queries still work.
+- **Discovery announcements**: *"Discovery announcements on."* First discoveries, valuable
+  bodies, biological signals. Also controls the Exobiology card on the [HUD overlay](UI-HUD-Overlay).
+- **Planetary approach announcements**: *"Planetary approach announcements on."*
+- **Mining announcements**: *"Mining announcements on."* Prospector hits for your mining targets.
+  Add targets first: *"Add mining target painite."* Without targets there is nothing to announce.
+- **Cargo scoop pickups**: *"Announce cargo scoop pickups."*
+- **Radar contacts**: *"Radar announcements off."*
+- **Radio**: *"Radio on."* In-character radio traffic — pirate threats, traffic control — in its
+  own radio voices. Its volume and effects are in [Settings → Audio](UI-Settings-Tab).
+- **Everything at once**: *"All announcements off."*
+- **Night vision / lights / drive assist**: *"Night vision on."* *"Lights off."* *"Drive assist
+  off."*
+
+> **Streaming or flying in a wing?** There is no special "streaming mode". To stop Vega reacting
+> to other voices, put her to sleep (*"Sleep"*) and prefix the occasional order with *"Listen
+> up, …"* — or use [push-to-talk](UI-Settings-Tab), which ignores everything unless the button is
+> held.
+
+---
 
 ## Navigation & Finding Things
 
-Beyond basic route plotting, EliteIntel supports targeted navigation:
+Vega plots routes to the result of a search, to places she already knows, or to surface
+coordinates. She does not plot to a system you name aloud — see
+[a custom command for places you visit often](UI-Actions-Tab).
 
-- **Navigate to Coordinates**: "Navigate to latitude 41.4325 longitude -75.2309." EliteIntel guides you from orbit to within 50 meters. Dark side navigation requires instrument flight.
-- **Navigate to Bio Sample / Codex Entry**: "Navigate to next bio sample" or "Navigate to nearest codex entry." EliteIntel navigates to the nearest tagged biological. It prioritizes the active genus if one is being tracked.
-- **Navigate to Landing Zone**: "Navigate to landing zone." Navigates to your last known ground landing coordinates.
-- **Navigate to Fleet Carrier**: "Navigate to carrier" or "Return to base." Plots a route to the carrier's last known system.
-- **Take Me Home**: "Take me home." Plots a route to your configured home system.
-- **Set Home System**: "Set as home system." Marks your current system as the home system.
-- **Plot Fleet Carrier Route**: Open the galaxy map and select a star. Copy its name using the last button on the right in the Galaxy Map UI. Say "Calculate Fleet Carrier Route." EliteIntel builds the route if the system is in Spansh.
-- **Enter Next Fleet Carrier Destination**: Open the Fleet Carrier galaxy map and click the top text field. Say "Enter next Fleet Carrier destination." EliteIntel pastes the next system name into the field.
-- **Find Nearest Human/Guardian Tech Broker**: "Find nearest Human tech broker." EliteIntel plots a route. After arriving, say "Remind me where we need to go" for a station reminder.
-- **Find Nearest Material Trader**: "Find nearest raw material trader" / "encoded" / "manufactured." EliteIntel finds and plots a route.
-- **Find Brain Trees**: "Find brain trees within 500 light years." EliteIntel scouts Guardian biology locations.
-- **Find Mining Location**: "Find where we can mine some Osmium within 200 light years." EliteIntel finds a system with suitable rings and plots the route.
-- **Find Carrier Fuel (Tritium)**: "Find where we can mine some carrier fuel within 300 light years." EliteIntel searches for ring systems containing Tritium.
-- **Find Commodity**: "Find where we can buy Bromellite within 150 light years." EliteIntel queries EDSM and plots a route to the best market.
-- **Find Nearest Vista Genomics**: "Find nearest Vista Genomics." Plots a route to the nearest Vista Genomics for bio sample redemption.
-- **Find Nearest Fleet Carrier**: "Find nearest Fleet Carrier." Useful when a Fleet Carrier is needed nearby.
+- **Navigate to coordinates**: *"Navigate to coordinates latitude 41.43 longitude -75.23."*
+  Guidance from orbit to the spot on the current or approached body. On the dark side you will be
+  flying on instruments.
+- **Next bio sample / codex entry**: *"Navigate to next bio sample."* Guides you to the nearest
+  saved organism location on this planet. *"Delete this codex entry"* drops the one you are
+  tracking.
+- **Landing zone**: *"Navigate to landing zone."* Back to where your ship last landed.
+- **Your carrier**: *"Navigate to fleet carrier"* / *"navigate to squadron carrier."* Plots to the
+  carrier's last known location — or to your home system if no carrier is known.
+- **Home**: *"Set home system"* marks where you are now (it asks you to confirm); *"take me home"*
+  plots back to it.
+- **Navigate from memory**: copy a system name to the clipboard (Ctrl+C) from INARA, Spansh or a
+  chat message, then say *"navigate from memory."* Vega opens the galaxy map and plots to it.
+- **Carrier route**: open the galaxy map, select the destination and copy its name, then say
+  *"calculate fleet carrier route."* The route comes from Spansh, so the system must be known
+  there.
+- **Enter next carrier destination**: open the *carrier's* galaxy map and say *"enter carrier
+  destination."* Vega types the next leg of the stored route and confirms it — repeat after each
+  jump.
+- **Neutron route**: copy the destination name from the galaxy map and say *"calculate neutron
+  route"* (optionally *"…efficiency 60"*, *"…with supercharge"*). Then *"next neutron star"* after
+  each boost — or turn on *Auto plot next neutron jump on cone boost* on the
+  [Commander tab](UI-Commander-Tab).
+- **Traders and brokers**: *"Find raw / encoded / manufactured material trader."* *"Find human /
+  guardian tech broker."* *"Find nearest Vista Genomics."* *"Find nearest interstellar factor."*
+  Vega plots the route and leaves a reminder naming the station; ask *"what was the reminder?"*
+  when you arrive.
+- **Brain trees**: *"Find brain trees for [material] within 500 light years."* Finds a Guardian
+  brain-tree site that yields that raw material.
+- **Mining sites**: *"Where can I mine osmium within 200 light years?"* Works for tritium too.
+- **Buying and selling**: *"Where can I buy bromellite within 150 light years?"* — add *nearest*
+  or *best price*; it works for ship modules as well. *"Where can I sell gold?"*
+- **Fuel**: *"Find a fuel station"* / *"I need fuel."*
+- **Bad search results**: if a search keeps sending you somewhere that does not work, say
+  *"exclude this system from searches"* (or *"exclude that system"* for your destination). Undo
+  it from inside the system: *"allow this system in searches again."*
 
-## Combat & Mission Commands
+---
 
-- **Find Hunting Grounds**: "Find hunting grounds." EliteIntel scouts nearby Hazardous Resource Extraction Sites or combat zones matching mission parameters.
-- **Plot Reconnaissance Route**: "Navigate / plot recon route to hunting ground." EliteIntel plots a scouting path to the target system.
-- **Navigate to Mission Provider**: "Navigate to system with matching mission provider" or "Navigate to a confirmed pirate massacre mission provider." EliteIntel plots a route to the mission provider.
-- **Navigate to Active Mission**: "Navigate to active mission." Navigates to the current mission objective.
-- **Confirm / Ignore Hunting Ground**: "Confirm hunting ground" or "Ignore hunting ground." Tells EliteIntel whether to use or skip that location.
+## Combat & Missions
+
+- **Learn from your history first**: *"Scan journals for hunting grounds."* Reads your saved game
+  journals and learns every system with resource extraction sites and every pirate massacre
+  mission provider you have ever seen. Run it once after installing.
+- **Hunting grounds**: *"Find hunting grounds within 100 light years."* A system with resource
+  extraction sites, picked from systems you have flown through. *"Forget this hunting ground"*
+  removes one.
+- **Massacre stacking**: *"Find pirate massacre missions"*, *"navigate to pirate mission
+  provider"*, *"navigate to pirate mission target"*, *"how many kills left?"*
+- **Conflict zones**: *"Find a conflict zone."*
+- **Missions**: *"Navigate to active mission."* *"Find mission cargo"* finds where to buy what an
+  active mission still needs — the one expiring soonest whose cargo you do not already carry.
+- **Subsystems**: *"Target power plant"* (also drive, FSD, power distributor, life support,
+  shield).
+
+---
 
 ## Ship Control Shortcuts
 
-- **Power Distribution**: "All power to shields," "engines," "weapons," or "Equalize power." One command rebalances all power pips. This is especially useful in VR, where cloud processing delays increase response time.
-- **Exit to HUD**: "Exit to HUD." Exits nested menus in a single command.
-- **FSS Scan / Honk**: "Open FSS and scan" or "Honk." Triggers the discovery scan.
-- **Set Optimal Speed**: "Set optimal speed." Sets throttle to 75% for supercruise. Issue this command approximately 20 seconds from the target to avoid orbital looping.
-- **Target Next System in Route**: "Target next system in route." EliteIntel selects the next waypoint on the plotted route.
-- **Wing Nav Lock**: "Wing nav lock." Locks onto a wingman's navigation.
-- **Target Subsystem**: "Target power plant." Locks subsystem targeting.
-- **Dismiss Ship / Get Extracted**: "Dismiss ship" / "Go to orbit" / "Return to surface, requesting extraction."
+- **Power distribution**: *"Power to shields"*, *"max engines"*, *"equalize power."* One command
+  sets all the pips.
+- **Close / exit**: *"Close"* or *"exit"* backs out of the open panel or map.
+- **Honk**: *"Honk"* fires the discovery scanner on the fire group you set per ship (Commander tab
+  → ⚙). *"Open FSS"* opens the full spectrum scanner.
+- **Optimal speed**: *"Set optimal speed."* Sets the throttle to 75% — the supercruise sweet spot.
+  Say it about 20 seconds out from the target to avoid looping round it.
+- **Target next system in route**: *"Target destination."*
+- **Wing nav lock**: *"Wing nav lock."*
+- **Fire groups**: *"Fire group bravo"* — NATO letters or numbers.
+- **Dismiss / recall**: *"Dismiss ship"* sends it to orbit; *"pick me up"* brings it back.
+
+---
 
 ## Utility & Session Commands
 
-- **Set a Reminder**: "Set reminder, pick up Painite from Hutton Orbital." EliteIntel stores the reminder for the session. Say "Remind me" to retrieve it.
-- **Clear Reminders**: "Clear reminders." Clears the reminder queue.
-- **Clear Codex Entries**: "Clear codex entries." Clears all scanned bio entries. Use with caution.
-- **Delete Codex Entry**: "Delete codex entry." Removes the most recent entry.
-- **Clear Cache**: "Clear cache." Clears the entire session cache. Use only when the session is in an unrecoverable state.
-- **Monetize Route**: "Monetize route." EliteIntel analyzes the plotted route for trade or exploration profit opportunities.
-- **Verify LLM Connection**: "Verify LLM connection." Confirms that the AI backend is reachable and responding.
-- **Interrupt / Silence**: "Interrupt," "Silence," or "Cancel." Stops active text-to-speech output.
-- **Biome Analysis**: "Run biome analysis on [star system / planet name]." EliteIntel reports probable species at that location before landing.
-- **Fleet Carrier Financials**: "Open fleet carrier data and tell me how long we can operate." EliteIntel calculates the number of weeks of operation from the current balance.
-- **Fleet Carrier Range**: "What is the range of our fleet carrier?" EliteIntel calculates the worst-case range from tritium in the depot and carrier storage.
-- **How Long Can the Carrier Operate?**: "Use reserve balance, how long can we run the carrier with 31 million credits per week?" Specify which balance to use. EliteIntel performs the calculation.
+- **Reminders**: *"Set reminder, pick up painite at Hutton Orbital."* Saved until you clear it;
+  *"what was the reminder?"* reads it back. *"Clear reminders"* asks you to confirm first.
+- **Timers**: *"Remind me in 20 minutes to check the carrier."*
+- **Monetize route**: *"Monetize route."* Finds one profitable buy/sell pair along the route you
+  have plotted and saves it as a reminder — trade, not exploration. It shows on the
+  [HUD overlay](UI-HUD-Overlay) as a *Cargo opportunity*.
+- **Self diagnostic**: *"Run a diagnostic"* / *"are you working properly?"* Tests the connection to
+  the language model and reports whether it answers and how quickly.
+- **Interrupt**: *"Interrupt."* Stops Vega mid-sentence. With push-to-talk, pressing the button
+  does the same.
+- **Biome analysis**: *"Analyze biome"* (or name a planet). Reports what is likely to grow there
+  before you land.
+- **Carrier finances and range**: *"Carrier status"* / *"how long can we operate the carrier?"* /
+  *"how far can the carrier jump?"* Fuel, reserve, jump range, balance and running time.
+- **Construction sites**: *"Construction site progress"*, *"find construction cargo"*, *"take me
+  back to the construction site"*, *"dismiss the construction site."*
+
+---
 
 ## Usage Notes
 
-- **Natural Language**: Formal command syntax is not required. Natural speech is supported.
-- **VR Users**: Power distribution and Exit to HUD commands reduce the impact of cloud processing delays in VR.
-- **Dark Side Navigation**: Navigating to coordinates on a planet's dark side requires instrument flight.
+- **Natural language**: no formal syntax. Say what you mean.
+- **Names go in the chat**: system, station and commodity names are where speech recognition
+  struggles most. Type those orders: `@Vega where can I buy tritium`.
+- **Destructive commands ask first**: clearing reminders, mining targets, missions or a route,
+  deleting a codex entry, forgetting a hunting ground, excluding a system or setting a new home.
+  Answer *yes*; anything else cancels.
+- **VR**: power distribution and close/exit save you from hunting through menus in the headset.
 
 ----
 Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈

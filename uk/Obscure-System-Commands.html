@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Маловідомі системні команди  EliteIntel</title>
-    <meta name="description" content="EliteIntel має мінімалістичний інтерфейс без меню або складних панелей налаштувань. Повний набір функцій доступний через голосові команди. Усі налаштування та ф">
+    <title>Системні команди докладно  EliteIntel</title>
+    <meta name="description" content="Усі команди перелічують, що можна сказати. Ця сторінка — про команди, яким потрібно">
     <link rel="canonical" href="https://www.elite-intel.org/uk/Obscure-System-Commands.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Obscure-System-Commands.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Obscure-System-Commands.html">
@@ -12,8 +12,8 @@
     <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Obscure-System-Commands.html">
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Obscure-System-Commands.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Obscure-System-Commands.html">
-    <meta property="og:title" content="Маловідомі системні команди  EliteIntel">
-    <meta property="og:description" content="EliteIntel має мінімалістичний інтерфейс без меню або складних панелей налаштувань. Повний набір функцій доступний через голосові команди. Усі налаштування та ф">
+    <meta property="og:title" content="Системні команди докладно  EliteIntel">
+    <meta property="og:description" content="Усі команди перелічують, що можна сказати. Ця сторінка — про команди, яким потрібно">
     <meta property="og:url" content="https://www.elite-intel.org/uk/Obscure-System-Commands.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Дії»</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Бінди»</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Вкладка «Налаштування»</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Вкладка «Музика»</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-накладка</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">Як це зробити?</div>
             <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Загальне використання</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Власні команди</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Торгівля та прибуток</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Пошук по галактиці</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Дослідження</a>
@@ -87,80 +89,143 @@
     </aside>
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
-<h1>Маловідомі системні команди</h1>
-<p>EliteIntel має мінімалістичний інтерфейс без меню або складних панелей налаштувань. Повний набір функцій доступний через голосові команди. Усі налаштування та функції доступні через природне мовлення.</p>
-<h2>Перемикані налаштування</h2>
-<p>Перемикайте ці налаштування за допомогою голосових команд:</p>
+<h1>Системні команди докладно</h1>
+<p><a href="AllCommands.html">Усі команди</a> перелічують, що можна сказати. Ця сторінка — про команди, яким потрібно
+трохи більше пояснень: що зробити <em>до</em> того, як їх сказати, що вони насправді роблять і де
+підводні камені.</p>
+<p>Усе тут працює голосом, текстом в ігровому чаті як <code>@Вега …</code> або клацанням на
+<a href="UI-Actions-Tab.html">вкладці «Дії»</a>.</p>
+<hr>
+<h2>Налаштування, які перемикаються голосом</h2>
+<p>Кожне голосове оголошення має голосовий перемикач, і кожен відповідає перемикачу на
+<a href="UI-Commander-Tab.html">вкладці «Командир» → Оголошення</a>, де з одного погляду видно, що ввімкнено.</p>
 <ul>
-<li><strong>Route Announcements [On/Off]</strong>: «Turn Route Announcements On.» EliteIntel оголошує деталі про ваш наступний стрибок, зокрема чи придатна зірка для заправки, безпека системи та іншу відповідну інформацію. При вимкненні оголошення зупиняються. Ручні запити залишаються доступними. <em>За замовчуванням: увімк.</em></li>
-<li><strong>Discovery Announcements [On/Off]</strong>: «Turn Discovery Announcements On.» EliteIntel оголошує системи першовідкривача, цінні планети, біологічні сигнали та подібні відкриття. <em>За замовчуванням: увімк.</em></li>
-<li><strong>Mining and Material Announcements [On/Off]</strong>: «Turn Mining Announcements On.» EliteIntel позначає удари проспекторних лімпетів та знахідки матеріалів. <em>За замовчуванням: вимк.</em></li>
-<li><strong>Add Mining Target [Material Name]</strong>: «Add Mining Target Painite.» EliteIntel позначає удари для цього конкретного матеріалу. Немає ефекту, якщо ціль не встановлена. <em>За замовчуванням: вимк.</em></li>
-<li><strong>Radio Chatter [On/Off]</strong>: «Turn On the Radio.» EliteIntel оголошує відповідні радіопередачі, наприклад піратські погрози, відфільтровуючи рутинний трафік, як комерційні трансляції. Корисно для вантажних рейсів. <em>За замовчуванням: вимк.</em></li>
-<li><strong>Streaming Mode [On/Off]</strong>: «Set Streaming Mode On.» EliteIntel відповідає лише на команди з префіксом «Computer.» Корисно для стрімінгу або при грі у крилі. Скажіть «Computer, turn streaming mode off» для вимкнення.</li>
-<li><strong>Night Vision [On/Off]</strong>: «Night vision on.» Вмикає/вимикає нічний зір у кораблі або SRV.</li>
-<li><strong>Headlights [On/Off]</strong>: «Headlights on.»</li>
-<li><strong>Drive Assist [On/Off]</strong>: «Drive assist off.»</li>
+<li><strong>Оголошення маршруту</strong>: <em>«Вимкни оголошення маршруту.»</em> Глушить усе, що кажуть навколо
+стрибка, — наступна система, трафік, втрати, прибуття, залишок стрибків, зоря для заправки.
+Ручні запити далі працюють.</li>
+<li><strong>Оголошення відкриттів</strong>: <em>«Увімкни оголошення відкриттів.»</em> Перші відкриття, цінні тіла,
+біологічні сигнали. Також керує карткою «Екзобіологія» на <a href="UI-HUD-Overlay.html">HUD-накладці</a>.</li>
+<li><strong>Підліт до планети</strong>: <em>«Увімкни оголошення підльоту до планети.»</em></li>
+<li><strong>Оголошення видобутку</strong>: <em>«Увімкни оголошення видобутку.»</em> Влучання розвідника за вашими
+цілями. Спершу задайте цілі: <em>«Додай ціль видобутку пейніт.»</em> Без цілей оголошувати нічого.</li>
+<li><strong>Підбір вантажозабірником</strong>: <em>«Увімкни оголошення про підбір.»</em></li>
+<li><strong>Радарні контакти</strong>: <em>«Вимкни оголошення радара.»</em></li>
+<li><strong>Радіо</strong>: <em>«Перемкни радіо.»</em> Радіоефір ігрового світу — погрози піратів, диспетчерська —
+власними радіоголосами. Гучність і ефекти — у <a href="UI-Settings-Tab.html">Налаштування → Аудіо</a>.</li>
+<li><strong>Усе одразу</strong>: <em>«Вимкни всі оголошення.»</em></li>
+<li><strong>Нічне бачення / світло / допомога керування</strong>: <em>«Увімкни нічне бачення.»</em> <em>«Фари.»</em> <em>«Допомога
+керування.»</em></li>
 </ul>
-<h2>Навігація та пошук</h2>
-<p>Крім базового прокладання маршрутів, EliteIntel підтримує цільову навігацію:</p>
+<blockquote>
+<p><strong>Стримите чи літаєте в крилі?</strong> Окремого «режиму стриму» немає. Щоб «Вега» не реагувала на чужі
+голоси, відправте її спати (<em>«Спи»</em>) і починайте рідкісні накази зі <em>«Слухай, …»</em> — або
+ввімкніть <a href="UI-Settings-Tab.html">Push to Talk</a>, що ігнорує все, поки кнопку не затиснуто.</p>
+</blockquote>
+<hr>
+<h2>Навігація й пошук місць</h2>
+<p>«Вега» прокладає маршрути до результату пошуку, до знайомих їй місць або до координат на
+поверхні. До системи, названої вголос, вона маршрут не прокладає — див.
+<a href="UI-Actions-Tab.html">власну команду для частих місць</a>.</p>
 <ul>
-<li><strong>Navigate to Coordinates</strong>: «Navigate to latitude 41.4325 longitude -75.2309.» EliteIntel проведе вас з орбіти до 50 метрів. Навігація на темному боці потребує приладового польоту.</li>
-<li><strong>Navigate to Bio Sample / Codex Entry</strong>: «Navigate to next bio sample» або «Navigate to nearest codex entry.» EliteIntel переходить до найближчого позначеного біологічного об&#39;єкта. Пріоритизує активний рід, якщо він відстежується.</li>
-<li><strong>Navigate to Landing Zone</strong>: «Navigate to landing zone.» Переходить до останніх відомих координат посадки на землі.</li>
-<li><strong>Navigate to Fleet Carrier</strong>: «Navigate to carrier» або «Return to base.» Прокладає маршрут до останньої відомої системи носія.</li>
-<li><strong>Take Me Home</strong>: «Take me home.» Прокладає маршрут до вашої налаштованої домашньої системи.</li>
-<li><strong>Set Home System</strong>: «Set as home system.» Позначає вашу поточну систему як домашню.</li>
-<li><strong>Plot Fleet Carrier Route</strong>: Відкрийте карту галактики та виберіть зірку. Скопіюйте її назву за допомогою останньої кнопки праворуч в інтерфейсі карти галактики. Скажіть «Calculate Fleet Carrier Route.» EliteIntel будує маршрут, якщо система є в Spansh.</li>
-<li><strong>Enter Next Fleet Carrier Destination</strong>: Відкрийте карту галактики флотського носія та натисніть верхнє текстове поле. Скажіть «Enter next Fleet Carrier destination.» EliteIntel вставляє назву наступної системи у поле.</li>
-<li><strong>Find Nearest Human/Guardian Tech Broker</strong>: «Find nearest Human tech broker.» EliteIntel прокладає маршрут. Після прибуття скажіть «Remind me where we need to go» для нагадування про станцію.</li>
-<li><strong>Find Nearest Material Trader</strong>: «Find nearest raw material trader» / «encoded» / «manufactured.» EliteIntel знаходить і прокладає маршрут.</li>
-<li><strong>Find Brain Trees</strong>: «Find brain trees within 500 light years.» EliteIntel розвідує місця розташування захисної біології Стражів.</li>
-<li><strong>Find Mining Location</strong>: «Find where we can mine some Osmium within 200 light years.» EliteIntel знаходить систему з відповідними кільцями та прокладає маршрут.</li>
-<li><strong>Find Carrier Fuel (Tritium)</strong>: «Find where we can mine some carrier fuel within 300 light years.» EliteIntel шукає кільцеві системи, що містять тритій.</li>
-<li><strong>Find Commodity</strong>: «Find where we can buy Bromellite within 150 light years.» EliteIntel запитує EDSM та прокладає маршрут до найкращого ринку.</li>
-<li><strong>Find Nearest Vista Genomics</strong>: «Find nearest Vista Genomics.» Прокладає маршрут до найближчого Vista Genomics для здачі біологічних зразків.</li>
-<li><strong>Find Nearest Fleet Carrier</strong>: «Find nearest Fleet Carrier.» Корисно, коли поблизу потрібен флотський носій.</li>
+<li><strong>Навігація до координат</strong>: <em>«Лети до координат широта 41,43 довгота -75,23.»</em> Наведення від
+орбіти до точки на поточному чи наближеному тілі. На нічному боці летите за приладами.</li>
+<li><strong>Наступний біозразок / запис кодексу</strong>: <em>«Навігація до наступного біозразка.»</em> Веде до
+найближчого збереженого організму на цій планеті. <em>«Видали запис кодексу»</em> скидає той, за яким ви
+стежите.</li>
+<li><strong>Зона посадки</strong>: <em>«Навігація до зони посадки.»</em> Туди, де корабель сідав востаннє.</li>
+<li><strong>Ваш авіаносець</strong>: <em>«Лети до авіаносця»</em> / <em>«лети до авіаносця ескадрильї.»</em> Прокладає до
+останнього відомого місця — або до домашньої системи, якщо авіаносець невідомий.</li>
+<li><strong>Дім</strong>: <em>«Встанови домашню систему»</em> позначає, де ви зараз (із підтвердженням); <em>«веди додому»</em>
+прокладає назад.</li>
+<li><strong>Навігація з пам&#39;яті</strong>: скопіюйте назву системи (Ctrl+C) з INARA, Spansh чи з повідомлення в
+чаті й скажіть <em>«навігація з пам&#39;яті.»</em> «Вега» відкриє карту галактики й прокладе маршрут.</li>
+<li><strong>Маршрут авіаносця</strong>: відкрийте карту галактики, виберіть ціль, скопіюйте її назву й скажіть
+<em>«розрахуй маршрут авіаносця.»</em> Маршрут береться зі Spansh, тож система має там бути.</li>
+<li><strong>Наступний пункт призначення авіаносця</strong>: відкрийте карту галактики <em>авіаносця</em> й скажіть
+<em>«введи пункт призначення авіаносця.»</em> «Вега» вдрукує наступний етап збереженого маршруту й
+підтвердить — повторюйте після кожного стрибка.</li>
+<li><strong>Нейтронний маршрут</strong>: скопіюйте назву цілі з карти галактики й скажіть <em>«розрахувати нейтронний
+маршрут»</em> (можна <em>«…ефективність 60»</em>, <em>«…з форсажем»</em>). Після кожного бусту — <em>«наступна
+нейтронна зірка»</em>, або ввімкніть <em>Прокладати наступний нейтронний стрибок після бусту в конусі</em>
+на <a href="UI-Commander-Tab.html">вкладці «Командир»</a>.</li>
+<li><strong>Торговці й брокери</strong>: <em>«Знайди торговця сировиною / закодованими / виготовленими
+матеріалами»</em>, <em>«знайди людського техноброкера»</em>, <em>«знайди техноброкера Стражів»</em>, <em>«знайди
+найближчу Vista Genomics»</em>, <em>«знайди міжзоряного посередника.»</em> «Вега» прокладе маршрут і лишить
+нагадування зі станцією; після прибуття спитайте <em>«яке було нагадування?»</em></li>
+<li><strong>Мозкові дерева</strong>: <em>«Знайди мозкові дерева для [матеріал] в радіусі 500 світлових років.»</em>
+Знаходить мозкове дерево Стражів, що дає цей сировинний матеріал.</li>
+<li><strong>Місця видобутку</strong>: <em>«Знайди місце видобутку осмію в радіусі 200 світлових років.»</em> Працює й для
+тритію.</li>
+<li><strong>Купівля й продаж</strong>: <em>«Де купити бромеліт?»</em> — можна <em>найближчий</em> або <em>найкраща ціна</em>; працює
+й для модулів. <em>«Де можна продати золото?»</em></li>
+<li><strong>Пальне</strong>: <em>«Знайди заправну станцію.»</em></li>
+<li><strong>Погані результати пошуку</strong>: якщо пошук раз у раз відправляє вас туди, де нічого не працює,
+скажіть <em>«виключи поточну систему з пошуку»</em> (або <em>«виключи ту систему з пошуку»</em> для пункту
+призначення). Скасувати зсередини системи: <em>«розбань поточну систему.»</em></li>
 </ul>
-<h2>Команди бою та місій</h2>
+<hr>
+<h2>Бій і місії</h2>
 <ul>
-<li><strong>Find Hunting Grounds</strong>: «Find hunting grounds.» EliteIntel розвідує найближчі небезпечні зони видобутку ресурсів або зони бою, що відповідають параметрам місій.</li>
-<li><strong>Plot Reconnaissance Route</strong>: «Navigate / plot recon route to hunting ground.» EliteIntel прокладає розвідувальний шлях до цільової системи.</li>
-<li><strong>Navigate to Mission Provider</strong>: «Navigate to system with matching mission provider» або «Navigate to a confirmed pirate massacre mission provider.» EliteIntel прокладає маршрут до постачальника місій.</li>
-<li><strong>Navigate to Active Mission</strong>: «Navigate to active mission.» Навігація до поточної цілі місії.</li>
-<li><strong>Confirm / Ignore Hunting Ground</strong>: «Confirm hunting ground» або «Ignore hunting ground.» Повідомляє EliteIntel, чи використовувати або пропустити це місце.</li>
+<li><strong>Спершу вивчіть свою історію</strong>: <em>«Проскануй журнали на мисливські угіддя.»</em> Читає ваші збережені
+ігрові журнали й запам&#39;ятовує кожну систему із зонами видобутку ресурсів і кожного, хто видає
+піратські місії, кого ви зустрічали. Виконайте один раз після встановлення.</li>
+<li><strong>Мисливські угіддя</strong>: <em>«Знайди мисливські угіддя в радіусі 100 світлових років.»</em> Система із
+зонами видобутку ресурсів із тих, через які ви пролітали. <em>«Забудь ці мисливські угіддя»</em> прибирає
+одні.</li>
+<li><strong>Стеки на знищення</strong>: <em>«Знайди піратські місії на знищення»</em>, <em>«навігація до піратського
+провайдера місій»</em>, <em>«навігація до цілі піратської місії»</em>, <em>«скільки вбивств?»</em></li>
+<li><strong>Зони конфлікту</strong>: <em>«Знайди зону конфлікту.»</em></li>
+<li><strong>Місії</strong>: <em>«Навігація до активної місії.»</em> <em>«Знайди вантаж для місії»</em> шукає, де купити те, що
+ще потрібно активній місії, — тій, що спливає найраніше і чийого вантажу у вас ще немає.</li>
+<li><strong>Підсистеми</strong>: <em>«Ціль FSD»</em> (також двигуни, розподільник живлення, силова установка,
+життєзабезпечення, щит).</li>
 </ul>
-<h2>Скорочення управління кораблем</h2>
+<hr>
+<h2>Швидкі команди керування кораблем</h2>
 <ul>
-<li><strong>Power Distribution</strong>: «All power to shields,» «engines,» «weapons,» або «Equalize power.» Одна команда перебалансовує всі піпси живлення. Особливо корисно у VR, де затримки хмарної обробки збільшують час відповіді.</li>
-<li><strong>Exit to HUD</strong>: «Exit to HUD.» Виходить із вкладених меню однією командою.</li>
-<li><strong>FSS Scan / Honk</strong>: «Open FSS and scan» або «Honk.» Запускає сканування системи.</li>
-<li><strong>Set Optimal Speed</strong>: «Set optimal speed.» Встановлює газ на 75% для надсвітлового підходу. Видайте цю команду приблизно за 20 секунд до цілі, щоб уникнути орбітального зациклення.</li>
-<li><strong>Target Next System in Route</strong>: «Target next system in route.» EliteIntel вибирає наступну точку на прокладеному маршруті.</li>
-<li><strong>Wing Nav Lock</strong>: «Wing nav lock.» Блокує навігацію на ведомого у крилі.</li>
-<li><strong>Target Subsystem</strong>: «Target power plant.» Блокує прицілювання на підсистему.</li>
-<li><strong>Dismiss Ship / Get Extracted</strong>: «Dismiss ship» / «Go to orbit» / «Return to surface, requesting extraction.»</li>
+<li><strong>Розподіл енергії</strong>: <em>«Енергію на щити»</em>, <em>«максимум двигунів»</em>, <em>«збалансуй енергію.»</em> Одна
+команда виставляє всі піпси.</li>
+<li><strong>Закрити / вийти</strong>: <em>«Закрий»</em> або <em>«закрити панель»</em> — вихід із відкритої панелі чи карти.</li>
+<li><strong>Сканування</strong>: <em>«Скануй систему»</em> запускає сканер виявлення на вогневій групі, заданій для
+корабля (вкладка «Командир» → ⚙). <em>«Відкрий FSS»</em> відкриває FSS.</li>
+<li><strong>Оптимальна швидкість</strong>: <em>«Оптимальна швидкість.»</em> Ставить тягу на 75 % — «синю зону»
+суперкруїзу. Кажіть приблизно за 20 секунд до цілі, щоб не піти на коло навколо неї.</li>
+<li><strong>Вибрати наступну систему маршруту</strong>: <em>«Обери FSD пункт призначення.»</em></li>
+<li><strong>Прив&#39;язка до напарника</strong>: <em>«Слідувати за напарником.»</em></li>
+<li><strong>Вогневі групи</strong>: <em>«Вогнева група браво»</em> — літери НАТО або номери.</li>
+<li><strong>Відпустити / викликати</strong>: <em>«Відправ корабель на орбіту»</em>; <em>«забери мене»</em> поверне його.</li>
 </ul>
-<h2>Утилітарні команди та команди сесії</h2>
+<hr>
+<h2>Службові команди й сеанс</h2>
 <ul>
-<li><strong>Set a Reminder</strong>: «Set reminder, pick up Painite from Hutton Orbital.» EliteIntel зберігає нагадування для сесії. Скажіть «Remind me» для його отримання.</li>
-<li><strong>Clear Reminders</strong>: «Clear reminders.» Очищає чергу нагадувань.</li>
-<li><strong>Clear Codex Entries</strong>: «Clear codex entries.» Очищає всі відскановані біологічні записи. Використовуйте обережно.</li>
-<li><strong>Delete Codex Entry</strong>: «Delete codex entry.» Видаляє останній запис.</li>
-<li><strong>Clear Cache</strong>: «Clear cache.» Очищає весь кеш сесії. Використовуйте лише тоді, коли сесія перебуває у невідновлюваному стані.</li>
-<li><strong>Monetize Route</strong>: «Monetize route.» EliteIntel аналізує прокладений маршрут на предмет можливостей торгового або дослідницького прибутку.</li>
-<li><strong>Verify LLM Connection</strong>: «Verify LLM connection.» Підтверджує, що бекенд ШІ доступний і відповідає.</li>
-<li><strong>Interrupt / Silence</strong>: «Interrupt,» «Silence,» або «Cancel.» Зупиняє активний вивід синтезу мовлення.</li>
-<li><strong>Biome Analysis</strong>: «Run biome analysis on [star system / planet name].» EliteIntel повідомляє про ймовірні види в цьому місці перед посадкою.</li>
-<li><strong>Fleet Carrier Financials</strong>: «Open fleet carrier data and tell me how long we can operate.» EliteIntel розраховує кількість тижнів роботи від поточного балансу.</li>
-<li><strong>Fleet Carrier Range</strong>: «What is the range of our fleet carrier?» EliteIntel розраховує найгірший радіус дії з тритієм у депо та сховищі носія.</li>
-<li><strong>How Long Can the Carrier Operate?</strong>: «Use reserve balance, how long can we run the carrier with 31 million credits per week?» Вкажіть, який баланс використовувати. EliteIntel виконує розрахунок.</li>
+<li><strong>Нагадування</strong>: <em>«Встанови нагадування, забрати пейніт на Hutton Orbital.»</em> Зберігається, доки
+ви його не очистите; <em>«яке було нагадування?»</em> зачитає. <em>«Очисти нагадування»</em> спершу спитає
+підтвердження.</li>
+<li><strong>Таймери</strong>: <em>«Нагадай мені через 20 хвилин перевірити авіаносець.»</em></li>
+<li><strong>Монетизація маршруту</strong>: <em>«Монетизуй маршрут.»</em> Знаходить вигідну пару купити/продати вздовж
+прокладеного маршруту й зберігає її нагадуванням — торгівля, не дослідження. На
+<a href="UI-HUD-Overlay.html">HUD-накладці</a> вона видна як <em>Вигідний вантаж</em>.</li>
+<li><strong>Самодіагностика</strong>: <em>«Запусти діагностику.»</em> Перевіряє зв&#39;язок із мовною моделлю й повідомляє,
+чи відповідає вона і як швидко.</li>
+<li><strong>Перебити</strong>: <em>«Перерви.»</em> Обриває «Вегу» на півслові. З Push to Talk те саме робить натискання
+кнопки.</li>
+<li><strong>Аналіз біому</strong>: <em>«Аналіз біому»</em> (або назвіть планету). Каже, що там найімовірніше росте, ще
+до посадки.</li>
+<li><strong>Фінанси й дальність авіаносця</strong>: <em>«Статус авіаносця»</em> / <em>«фінанси авіаносця.»</em> Паливо, резерв,
+дальність стрибка, баланс і скільки ще можна утримувати.</li>
+<li><strong>Будмайданчики</strong>: <em>«Прогрес будмайданчика»</em>, <em>«знайди вантаж для будмайданчика»</em>, <em>«відвези
+мене назад на будмайданчик»</em>, <em>«забудь будмайданчик.»</em></li>
 </ul>
-<h2>Примітки щодо використання</h2>
+<hr>
+<h2>Нотатки</h2>
 <ul>
-<li><strong>Природна мова</strong>: Формальний синтаксис команд не потрібен. Підтримується природне мовлення.</li>
-<li><strong>Користувачі VR</strong>: Команди розподілу живлення та «Exit to HUD» зменшують вплив затримок хмарної обробки у VR.</li>
-<li><strong>Навігація на темному боці</strong>: Навігація до координат на темному боці планети потребує приладового польоту.</li>
+<li><strong>Природна мова</strong>: жодного суворого синтаксису. Кажіть, що маєте на увазі.</li>
+<li><strong>Назви — у чат</strong>: назви систем, станцій і товарів найважче даються розпізнаванню мовлення.
+Набирайте такі накази: <code>@Вега де купити тритій</code>.</li>
+<li><strong>Руйнівні команди перепитують</strong>: очищення нагадувань, цілей видобутку, місій чи маршруту,
+видалення запису кодексу, забути мисливські угіддя, виключити систему або призначити новий дім.
+Відповідайте <em>так</em>; усе інше скасовує.</li>
+<li><strong>VR</strong>: розподіл енергії й «закрий» позбавляють пошуку в меню у шоломі.</li>
 </ul>
 <hr>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>

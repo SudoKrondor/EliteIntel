@@ -212,6 +212,7 @@ const DEFAULT_NAV = {
     'UI-Actions-Tab':                  'Actions Tab',
     'UI-Bindings-Tab':                 'Bindings Tab',
     'UI-Settings-Tab':                 'Settings Tab',
+    'UI-Jukebox-Tab':                  'Jukebox Tab',
     'UI-Stats-Tab':                    'Stats Tab',
     'UI-HUD-Overlay':                  'HUD Overlay',
     'installing-local-llms':           'Choose your LLM',
@@ -220,6 +221,7 @@ const DEFAULT_NAV = {
     'Install-LM-Studio-Windows':       'LM Studio  Windows',
     'AMD-RX-7800XT-LLM-Setup':         'AMD RX Series',
     'General-Operation':               'General Operation',
+    'Custom-Commands':                 'Make Your Own Commands',
     TradeRoutePlotting:                'Trade & Profit',
     'Search-galaxy-with-EliteIntel':   'Search the Galaxy',
     'Discovery-Assistance':            'Discovery & ExoBiology',
@@ -296,6 +298,7 @@ function buildSidebar(activePage, assetBase, nav, titleMap, localePages) {
             ${lnk('UI-Actions-Tab',    'keys-binding.png',' nav-sub')}
             ${lnk('UI-Bindings-Tab',   'keys-binding.png',' nav-sub')}
             ${lnk('UI-Settings-Tab',   'settings.png',    ' nav-sub')}
+            ${lnk('UI-Jukebox-Tab',    'speaker.png',     ' nav-sub')}
             ${lnk('UI-Stats-Tab',      'stats.png',       ' nav-sub')}
             ${lnk('UI-HUD-Overlay',    'microchip-ai.png',' nav-sub')}
 
@@ -308,6 +311,7 @@ function buildSidebar(activePage, assetBase, nav, titleMap, localePages) {
 
             ${sec('section_howdoi')}
             ${lnk('General-Operation',                'manual.png')}
+            ${lnk('Custom-Commands',                  'manual.png')}
             ${lnk('TradeRoutePlotting',               'manual.png')}
             ${lnk('Search-galaxy-with-EliteIntel',    'manual.png')}
             ${lnk('Discovery-Assistance',             'manual.png')}

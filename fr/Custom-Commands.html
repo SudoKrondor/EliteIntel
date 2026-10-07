@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Créer vos propres commandes  EliteIntel</title>
+    <meta name="description" content="Une commande perso est une macro : une liste d&#39;étapes — appuis de touches, pauses, texte saisi,">
+    <link rel="canonical" href="https://www.elite-intel.org/fr/Custom-Commands.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Custom-Commands.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Custom-Commands.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/Custom-Commands.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Custom-Commands.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Custom-Commands.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Custom-Commands.html">
+    <meta property="og:title" content="Créer vos propres commandes  EliteIntel">
+    <meta property="og:description" content="Une commande perso est une macro : une liste d&#39;étapes — appuis de touches, pauses, texte saisi,">
+    <meta property="og:url" content="https://www.elite-intel.org/fr/Custom-Commands.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases/latest" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../Custom-Commands.html" class="locale-link">EN</a><span class="locale-current">FR</span><a href="../es/Custom-Commands.html" class="locale-link">ES</a><a href="../de/Custom-Commands.html" class="locale-link">DE</a><a href="../uk/Custom-Commands.html" class="locale-link">UK</a><a href="../ru/Custom-Commands.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Accueil</a>
+
+            <div class="nav-section">Application</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Interface</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Onglet Vega</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Onglet Commandant</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Actions</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Bindings</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Onglet Paramètres</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Onglet Jukebox</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Onglet Statistiques</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Choisir votre LLM</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 LLM cloud gratuit</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Comment faire ?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Opération générale</a>
+            <a href="Custom-Commands.html" class="nav-link active"><img src="../images/manual.png" class="inline" height="20" alt=""> Créer vos propres commandes</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Commerce et profit</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Explorer la galaxie</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Exploration &amp; Exobiologie</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Missions pirates</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Toutes les commandes</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Commandes système</a>
+
+            <div class="nav-section">Communauté</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Chat Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Politique de confidentialité</a>
+            <a href="Contact.html" class="nav-link">📧 Contacter le développeur</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Créer vos propres commandes</h1>
+<p>Une commande perso est une macro : une liste d&#39;étapes — appuis de touches, pauses, texte saisi,
+phrases prononcées — qui s&#39;exécute quand vous dites l&#39;une de vos phrases. Utilisez-en une quand les
+commandes intégrées ne font pas ce que vous voulez, ou quand vous répétez sans cesse la même suite
+de touches.</p>
+<p>Les commandes perso se trouvent dans <a href="UI-Actions-Tab.html">Actions → Commandes perso</a>. Cette page en
+construit deux de A à Z.</p>
+<hr>
+<h2>Avant de commencer</h2>
+<ul>
+<li><strong>Un modèle de langage doit tourner.</strong> Il génère la clé d&#39;action et associe vos phrases.
+Démarrez d&#39;abord les services dans l&#39;<a href="UI-Vega-Tab.html">onglet Vega</a>.</li>
+<li><strong>Chaque commande utilisée doit avoir un raccourci clavier.</strong> Elite Intel appuie sur des touches ;
+une commande assignée uniquement à votre HOTAS ne peut pas être déclenchée par une macro.
+L&#39;<a href="UI-Bindings-Tab.html">onglet Bindings</a> montre ce qui manque, et <strong>Attribuer automatiquement les
+raccourcis manquants</strong> le corrige d&#39;un coup.</li>
+</ul>
+<hr>
+<h2>Exemple 1 : contre-mesures en une phrase</h2>
+<p>Objectif : dire <em>« lance les contre-mesures »</em> et obtenir dissipateur thermique, paillettes et
+cellule de bouclier, avec confirmation de Vega.</p>
+<h3>1. Créer la commande</h3>
+<p>Ouvrez <strong>Actions → Commandes perso</strong> et cliquez sur <strong>Nouveau</strong>.</p>
+<h3>2. Nom et phrases</h3>
+<ul>
+<li><p><strong>Nom :</strong> <code>Contre-mesures</code></p>
+</li>
+<li><p><strong>Ce que vous direz :</strong> une phrase par ligne (les virgules marchent aussi) :</p>
+<pre><code>lance les contre-mesures
+toutes les contre-mesures
+paquet défensif
+</code></pre>
+</li>
+</ul>
+<p>Écrivez les phrases comme vous les diriez vraiment sous pression. Elles doivent être <strong>différentes
+des commandes intégrées</strong> — une phrase qui appartient déjà à une commande intégrée (<em>« chaff »</em>,
+<em>« lance un dissipateur thermique »</em>) est refusée, car Vega ne pourrait jamais les distinguer.</p>
+<h3>3. Générer la clé d&#39;action</h3>
+<p>Cliquez sur <strong>Générer</strong>. Le modèle de langage transforme vos phrases en clé <code>snake_case</code> anglaise,
+comme <code>deploy_all_countermeasures</code>. Impossible de la saisir à la main — elle devient le nom que voit
+le modèle et doit donc avoir une forme qu&#39;il peut toujours restituer. Elle est en anglais même si vos
+phrases ne le sont pas.</p>
+<h3>4. Ajouter les étapes</h3>
+<p>Cliquez sur <strong>Ajouter une étape</strong> pour chacune. Dans la fenêtre, choisissez le <strong>Type</strong> puis
+remplissez ce qu&#39;il demande. La liste <strong>Raccourci</strong> est libellée comme l&#39;écran Commandes du jeu —
+<em>Commandes du vaisseau / Cooling / Deploy Heatsink</em> — et vous pouvez y taper pour filtrer (essayez
+<code>heat</code>, <code>srv</code>, <code>chaff</code>). Les noms des commandes y apparaissent en anglais.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Type</th>
+<th>Valeur</th>
+<th>Durée ms</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Appui sur raccourci</td>
+<td>Deploy Heatsink</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Délai</td>
+<td></td>
+<td>150</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Appui sur raccourci</td>
+<td>Use Chaff Launcher</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Délai</td>
+<td></td>
+<td>150</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Appui sur raccourci</td>
+<td>Use Shield Cell</td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Parler</td>
+<td>Contre-mesures lancées.</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Utilisez <strong>Modifier l&#39;étape</strong>, <strong>Supprimer l&#39;étape</strong> et les boutons <strong>▲ ▼</strong> pour ajuster l&#39;ordre.</p>
+<h3>5. Enregistrer et tester</h3>
+<p>Cliquez sur <strong>Enregistrer</strong>. Si quelque chose cloche, un message de validation vous dit quoi — voir
+<em>Dépannage</em> en bas de cette page. La commande apparaît maintenant dans la liste.</p>
+<p>Cliquez sur sa ligne puis sur <strong>Exécuter</strong> pour la tester sans parler. Quand elle fonctionne,
+dites-la : <em>« Lance les contre-mesures. »</em> Vous pouvez aussi la taper dans le chat du jeu :
+<code>@Vega lance les contre-mesures</code>.</p>
+<hr>
+<h2>Exemple 2 : une route vers un lieu que vous visitez souvent</h2>
+<p>Vega ne trace pas de route vers un système nommé à voix haute — les noms sont ce que la
+reconnaissance vocale rate le plus. Pour un lieu fréquent, une macro pilote la carte galactique pour
+vous, toujours de la même façon.</p>
+<p><img src="../images/ui-custom-command-navigation.png" alt="Commande perso qui trace une route vers Jameson Memorial"></p>
+<p><strong>Ce que vous direz :</strong> <em>route vers jameson memorial</em>, <em>emmène-moi à jameson memorial</em>, <em>jameson
+memorial route</em>. Puis <strong>Générer</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Type</th>
+<th>Valeur</th>
+<th>Durée ms</th>
+<th>Ce qu&#39;elle fait</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Appui sur raccourci</td>
+<td>GALAXYMAPOPEN</td>
+<td></td>
+<td>Ouvrir la carte galactique</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Délai</td>
+<td></td>
+<td>1000</td>
+<td>Laisser la carte se charger</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Maintien de raccourci</td>
+<td>CAMZOOMIN</td>
+<td>500</td>
+<td>Zoomer la caméra de la carte</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Appui sur raccourci</td>
+<td>UI_LEFT</td>
+<td></td>
+<td>Aller au champ de recherche</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Appui sur raccourci</td>
+<td>UI_RIGHT</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Appui sur raccourci</td>
+<td>UI_SELECT</td>
+<td></td>
+<td>Ouvrir le champ de recherche</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Saisir du texte</td>
+<td>SHINRARTA DEZHRA</td>
+<td></td>
+<td>Taper le nom du système</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Pression de touche</td>
+<td>ENTER</td>
+<td>50</td>
+<td>Rechercher</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Délai</td>
+<td></td>
+<td>500</td>
+<td>Attendre le résultat</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Appui sur raccourci</td>
+<td>UI_RIGHT</td>
+<td></td>
+<td>Entrer dans le panneau de résultat</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Maintien de raccourci</td>
+<td>UI_UP</td>
+<td>500</td>
+<td>Remonter jusqu&#39;au bouton du haut</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Appui sur raccourci</td>
+<td>UI_SELECT</td>
+<td></td>
+<td>Tracer la route</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Délai</td>
+<td></td>
+<td>3000</td>
+<td>Attendre que la route soit tracée</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Appui sur raccourci</td>
+<td>CAMYAWLEFT</td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Pour un autre lieu, sélectionnez cette commande, cliquez sur <strong>Dupliquer</strong>, changez le nom, les
+phrases et le système de l&#39;étape 7, puis <strong>Générer</strong> une nouvelle clé. Dupliquer laisse exprès les
+phrases et la clé vides, pour que les deux commandes ne se ressemblent jamais.</p>
+<p>Lancez une telle macro <strong>en vol</strong>, carte galactique fermée — la première étape l&#39;ouvre, et sur une
+carte déjà ouverte elle la fermerait.</p>
+<hr>
+<h2>Les types d&#39;étape</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Champs</th>
+<th>Utile pour</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Appui sur raccourci</strong></td>
+<td>Raccourci</td>
+<td>Appuyer une fois sur une commande du jeu</td>
+</tr>
+<tr>
+<td><strong>Maintien de raccourci</strong></td>
+<td>Raccourci, Durée ms</td>
+<td>Maintenir une commande — poussée, caméra, défilement d&#39;un menu</td>
+</tr>
+<tr>
+<td><strong>Délai</strong></td>
+<td>Durée ms</td>
+<td>Laisser du temps au jeu : un panneau qui s&#39;ouvre, une carte qui charge, une recherche</td>
+</tr>
+<tr>
+<td><strong>Parler</strong></td>
+<td>Texte</td>
+<td>Faire dire quelque chose à Vega — une confirmation, ou ce que la macro vient de faire</td>
+</tr>
+<tr>
+<td><strong>Pression de touche</strong></td>
+<td>Touche brute, Modificateur, Durée ms</td>
+<td>Appuyer sur une touche qui n&#39;est pas un raccourci du jeu : Entrée, Échap, une lettre. La durée est le temps de maintien</td>
+</tr>
+<tr>
+<td><strong>Saisir du texte</strong></td>
+<td>Texte</td>
+<td>Taper des caractères dans le champ qui a le focus — une recherche, la ligne de chat</td>
+</tr>
+</tbody></table>
+<p><strong>Préférez les étapes de raccourci à Pression de touche.</strong> Un raccourci suit la touche que le jeu
+utilise vraiment, donc la macro continue de fonctionner si vous réassignez la commande. Réservez
+Pression de touche aux touches sans raccourci, comme Entrée dans un champ de texte.</p>
+<p><strong>Saisir du texte va là où se trouve le focus clavier.</strong> Ouvrez d&#39;abord le champ — avec une étape de
+raccourci qui ouvre une recherche, ou <strong>Pression de touche : Entrée</strong> pour le chat des
+communications. Sinon les lettres arrivent aux commandes du vaisseau comme des appuis de touches.</p>
+<hr>
+<h2>Conseils</h2>
+<ul>
+<li><strong>Les délais sont la solution habituelle.</strong> Si une étape semble sautée, le jeu n&#39;était pas prêt.
+Allongez le délai qui la précède, ou poussez <strong>Cadence des saisies clavier</strong> dans
+l&#39;<a href="UI-Bindings-Tab.html">onglet Bindings</a> vers Lent — cela ajoute une pause après chaque frappe envoyée.</li>
+<li><strong>Plusieurs phrases, un sens clair.</strong> Inutile de dire une phrase mot pour mot ; Vega associe par
+le sens. Plus vos phrases se distinguent des autres commandes, plus la vôtre sera choisie de façon
+fiable.</li>
+<li><strong>Les étapes Parler intègrent vos macros au vaisseau</strong>, et confirment qu&#39;elles ont bien tourné.</li>
+<li><strong>Partagez-les.</strong> <strong>Exporter</strong> écrit les commandes choisies dans un fichier ; <strong>Importer</strong> en lit
+un. L&#39;import remplace votre jeu actuel, mais il est sauvegardé d&#39;abord — <strong>Restaurer depuis une
+sauvegarde</strong> le récupère.</li>
+<li><strong>Écoutez le message de démarrage.</strong> Au démarrage des services, Vega indique combien de commandes
+perso ont été chargées et combien ont échoué à la validation.</li>
+</ul>
+<hr>
+<h2>Dépannage</h2>
+<p>Les messages de validation à l&#39;enregistrement s&#39;affichent en anglais.</p>
+<table>
+<thead>
+<tr>
+<th>Message ou symptôme</th>
+<th>Que faire</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><em>Ajoutez au moins une phrase ci-dessus avant de générer une clé.</em></td>
+<td>Écrivez d&#39;abord au moins une phrase</td>
+</tr>
+<tr>
+<td><em>Impossible de générer une clé d&#39;action.</em></td>
+<td>Le modèle de langage n&#39;a pas répondu. Vérifiez l&#39;indicateur IA de l&#39;onglet Vega et réessayez</td>
+</tr>
+<tr>
+<td><em>Phrase collides with a built-in action alias</em></td>
+<td>Cette phrase lance déjà une commande intégrée. Reformulez</td>
+</tr>
+<tr>
+<td><em>Phrase collides with another custom command</em> / <em>Duplicate phrase</em></td>
+<td>Deux commandes — ou la même deux fois — utilisent cette phrase. Changez-en une</td>
+</tr>
+<tr>
+<td><em>Action key collides with a built-in command</em> / <em>must be unique</em></td>
+<td>Reformulez vos phrases et <strong>Générer</strong> à nouveau</td>
+</tr>
+<tr>
+<td><em>At least one step is required</em> / <em>… is required</em> / <em>durationMs must be positive</em></td>
+<td>Il manque à une étape son raccourci, son texte, sa touche ou sa durée</td>
+</tr>
+<tr>
+<td>La macro tourne mais une étape est sautée</td>
+<td>Ajoutez ou allongez un Délai avant cette étape, ou ralentissez la cadence des saisies</td>
+</tr>
+<tr>
+<td>Vega répond autre chose</td>
+<td>Rendez vos phrases plus distinctives, ou lancez-la tapée : <code>@Vega &lt;phrase&gt;</code></td>
+</tr>
+<tr>
+<td>Une étape de raccourci ne fait rien</td>
+<td>Cette commande n&#39;a pas de raccourci clavier — voir l&#39;<a href="UI-Bindings-Tab.html">onglet Bindings</a></td>
+</tr>
+</tbody></table>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Onglet Commandant  EliteIntel</title>
-    <meta name="description" content="votre vaisseau fait pour vous automatiquement, ce dont Vega vous informe sans qu&#39;on le lui demande,">
+    <meta name="description" content="quelle voix parle chaque coque de votre flotte, ce que votre vaisseau fait automatiquement pour">
     <link rel="canonical" href="https://www.elite-intel.org/fr/UI-Commander-Tab.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Commander-Tab.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Commander-Tab.html">
@@ -13,7 +13,7 @@
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Commander-Tab.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Commander-Tab.html">
     <meta property="og:title" content="Onglet Commandant  EliteIntel">
-    <meta property="og:description" content="votre vaisseau fait pour vous automatiquement, ce dont Vega vous informe sans qu&#39;on le lui demande,">
+    <meta property="og:description" content="quelle voix parle chaque coque de votre flotte, ce que votre vaisseau fait automatiquement pour">
     <meta property="og:url" content="https://www.elite-intel.org/fr/UI-Commander-Tab.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Actions</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Bindings</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Onglet Paramètres</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Onglet Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Onglet Statistiques</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">Comment faire ?</div>
             <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Opération générale</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Créer vos propres commandes</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Commerce et profit</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Explorer la galaxie</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Exploration &amp; Exobiologie</a>
@@ -88,135 +90,28 @@
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
 <h1>Onglet Commandant</h1>
-<p><img src="../images/controller.png" class="inline" height="20" alt="Commandant"> Qui vous êtes, ce que
-votre vaisseau fait pour vous automatiquement, ce dont Vega vous informe sans qu&#39;on le lui demande,
-et avec quelle voix parle chaque coque de votre flotte.</p>
+<p><img src="../images/controller.png" class="inline" height="20" alt="Commandant"> Qui vous êtes, avec
+quelle voix parle chaque coque de votre flotte, ce que votre vaisseau fait automatiquement pour
+vous, ce que Vega vous dit sans qu&#39;on le lui demande, et le catalogue Exo-Maîtrise.</p>
 <p><img src="../images/ui-tab-commander.png" alt="Onglet Commandant"></p>
+<p>La bande <strong>Profil commandant</strong> est en haut ; en dessous se trouvent quatre sous-onglets :
+<strong>Gestion de la flotte</strong>, <strong>Réglages globaux du vaisseau</strong>, <strong>Annonces</strong> et <strong>Exo-Maîtrise</strong>.</p>
 <hr>
-<h2>Profil du commandant</h2>
-<p><strong>Nom du commandant</strong> — remplace votre nom en jeu pour la synthèse vocale. À utiliser si Vega
-écorche votre pseudo, ou si vous voulez simplement qu&#39;on vous appelle autrement. Enregistré quand
-vous appuyez sur Entrée ou cliquez ailleurs.</p>
+<h2>Profil commandant</h2>
+<p><strong>Nom du commandant</strong> — le nom que Vega utilise de temps en temps pour vous. Utilisez-le si Vega
+écorche votre nom en jeu, ou si vous préférez simplement qu&#39;on vous appelle autrement. Enregistré
+avec Entrée ou en cliquant ailleurs.</p>
+<p><strong>M&#39;interpeller</strong> — désactivé, Vega ne s&#39;adresse jamais à vous : ni nom, ni grade, ni titre.</p>
 <blockquote>
-<p>Le <strong>dossier du journal</strong> a été déplacé vers <a href="UI-Settings-Tab.html">Paramètres → Commun</a> en V1.1, et le
-<strong>dossier des assignations</strong> vers l&#39;<a href="UI-Bindings-Tab.html">onglet Bindings</a>.</p>
+<p>Le <strong>dossier du journal</strong> se trouve dans <a href="UI-Settings-Tab.html">Paramètres → Général</a>, et le
+<strong>dossier des raccourcis</strong> dans l&#39;<a href="UI-Bindings-Tab.html">onglet Bindings</a>.</p>
 </blockquote>
 <hr>
-<h2>Options de vaisseau</h2>
-<p>Des automatisations que Vega exécute à votre place. Chacune est un simple interrupteur écrit
-immédiatement. Utile pour tout le monde, et véritablement libérateur pour les commandants en
-situation de handicap.</p>
-<table>
-<thead>
-<tr>
-<th>Interrupteur</th>
-<th>Ce qu&#39;il fait</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><strong>Accélérer automatiquement pour le FTL</strong></td>
-<td>Met les gaz avant un saut</td>
-</tr>
-<tr>
-<td><strong>Éteindre les lumières pour le FTL</strong></td>
-<td>Coupe les feux du vaisseau avant un saut</td>
-</tr>
-<tr>
-<td><strong>Éteindre la vision nocturne pour le FTL</strong></td>
-<td>Désactive la vision nocturne avant un saut</td>
-</tr>
-<tr>
-<td><strong>Rentrer les points d&#39;emport pour le FTL</strong></td>
-<td>Rentre les points d&#39;emport avant un saut</td>
-</tr>
-<tr>
-<td><strong>Rentrer le train d&#39;atterrissage pour le FTL</strong></td>
-<td>Rentre le train avant un saut</td>
-</tr>
-<tr>
-<td><strong>Rentrer le cargo scoop pour le FTL</strong></td>
-<td>Rentre le collecteur avant un saut</td>
-</tr>
-<tr>
-<td><strong>Rentrer le train au décollage</strong></td>
-<td>Rentre le train après le décollage</td>
-</tr>
-<tr>
-<td><strong>Quitter l&#39;interface avant d&#39;ouvrir un autre panneau</strong></td>
-<td>Ferme le panneau ouvert avant d&#39;ouvrir le suivant, pour que les commandes de panneau n&#39;entrent pas en collision</td>
-</tr>
-<tr>
-<td><strong>Éteindre les lumières au déploiement du SRV</strong></td>
-<td>Coupe les feux quand vous déployez le SRV</td>
-</tr>
-<tr>
-<td><strong>Demander l&#39;amarrage du chasseur au FTL / annuler si hors portée</strong></td>
-<td><em>Actuellement désactivé</em> — en attente d&#39;un correctif Frontier pour un bug lié au Nomad</td>
-</tr>
-</tbody></table>
-<hr>
-<h2>Annonces</h2>
-<p>Tout ce que Vega dit spontanément. Les onze interrupteurs sont désormais au même endroit : il n&#39;y a
-donc qu&#39;un seul écran à vérifier quand quelque chose parle trop — ou pas assez.</p>
-<p><img src="../images/ui-commander-announcements.png" alt="Annonces"></p>
-<table>
-<thead>
-<tr>
-<th>Interrupteur</th>
-<th>Ce que vous entendez</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><strong>Annoncer les découvertes</strong></td>
-<td>Corps notables, premières découvertes, signaux biologiques</td>
-</tr>
-<tr>
-<td><strong>Annoncer la progression de la route</strong></td>
-<td>Où vous en êtes sur un itinéraire tracé</td>
-</tr>
-<tr>
-<td><strong>Annoncer les contacts radar</strong></td>
-<td>Vaisseaux apparaissant au scanner</td>
-</tr>
-<tr>
-<td><strong>Annoncer le minage</strong></td>
-<td>Événements de minage et rendements</td>
-</tr>
-<tr>
-<td><strong>Annoncer la navigation</strong></td>
-<td>Événements de navigation et arrivées</td>
-</tr>
-<tr>
-<td><strong>Transmissions radio</strong></td>
-<td>Échanges radio dans le personnage, énoncés avec une voix radio distincte</td>
-</tr>
-<tr>
-<td><strong>Annoncer la destination du saut</strong></td>
-<td>Quel est le système suivant</td>
-</tr>
-<tr>
-<td><strong>Annoncer le trafic de la destination</strong></td>
-<td>Rapports de trafic pour votre destination</td>
-</tr>
-<tr>
-<td><strong>Annoncer les pertes de la destination</strong></td>
-<td>Morts récentes dans le système de destination</td>
-</tr>
-<tr>
-<td><strong>Annoncer les sauts restants</strong></td>
-<td>Sauts restants sur la route</td>
-</tr>
-<tr>
-<td><strong>Annoncer la disponibilité d&#39;étoile à carburant</strong></td>
-<td>Si la destination possède une étoile récoltable</td>
-</tr>
-</tbody></table>
-<p>Les six premières peuvent aussi être basculées à la voix : cet écran les relit donc à chaque
-ouverture de l&#39;onglet — un <code>toggle all announcements</code> prononcé y sera reflété.</p>
-<hr>
-<h2>Configuration des voix de la flotte</h2>
-<p>Une ligne par vaisseau que vous possédez. Elite Intel découvre votre flotte à partir du journal du
-jeu ; vous n&#39;ajoutez pas de vaisseaux à la main.</p>
+<h2>Gestion de la flotte</h2>
+<p>Une ligne par vaisseau que vous possédez, suivie de votre <strong>vaisseau-mère</strong> et de votre
+<strong>vaisseau-mère d&#39;escadron</strong> si vous en avez. Elite Intel découvre votre flotte dans le journal du
+jeu ; vous n&#39;ajoutez jamais de vaisseau à la main. Si vous jouez plusieurs commandants sur un même
+PC, la liste suit le commandant chargé dans le jeu.</p>
 <table>
 <thead>
 <tr>
@@ -226,52 +121,64 @@ jeu ; vous n&#39;ajoutez pas de vaisseaux à la main.</p>
 </thead>
 <tbody><tr>
 <td><strong>Vaisseau</strong></td>
-<td>Le nom que vous avez donné à votre vaisseau</td>
+<td>Le nom de votre vaisseau (pour un vaisseau-mère, son nom et son indicatif)</td>
 </tr>
 <tr>
 <td><strong>Modèle de vaisseau</strong></td>
-<td>Le type de coque</td>
+<td>Le type de coque, ou <em>Vaisseau-mère</em> / <em>Vaisseau-mère d&#39;escadron</em></td>
 </tr>
 <tr>
 <td><strong>Voix</strong></td>
-<td>Cliquez pour choisir. La modifier joue aussitôt une réplique de démonstration avec cette voix, pour que vous puissiez l&#39;auditionner</td>
+<td>Cliquez pour choisir. Un changement joue aussitôt une phrase avec cette voix pour l&#39;écouter</td>
 </tr>
 <tr>
 <td><strong>Personnalité</strong></td>
-<td><code>Professionnel</code> · <code>Décontracté</code> · <code>Amical</code> · <code>Instable</code> · <code>Fripon</code></td>
+<td><code>Professionnel</code> · <code>Décontracté</code> · <code>Amical</code> · <code>Instable</code> · <code>Seven of Nine</code> · <code>Mercenaire grande gueule</code> · <code>Ton ex-copain</code> · <code>Ton ex-copine</code> · <code>Fripon</code></td>
 </tr>
 <tr>
 <td><strong>⚙</strong></td>
-<td>Ouvre les réglages de ce vaisseau</td>
+<td>Ouvre les réglages de ce vaisseau (voir plus bas)</td>
 </tr>
 </tbody></table>
-<p><strong>À propos de la liste des voix.</strong> Les voix de vaisseau sont féminines. Les voix proposées dépendent
-du moteur vocal sélectionné dans <a href="UI-Settings-Tab.html">Paramètres → Services IA</a> :</p>
+<p><strong>À propos de la liste des voix.</strong> Toutes les voix du moteur choisi dans
+<a href="UI-Settings-Tab.html">Paramètres → Services IA</a> sont proposées, masculines comme féminines — la voix
+choisie détermine aussi si Vega parle d&#39;elle-même au masculin ou au féminin sur ce vaisseau.</p>
 <ul>
-<li><strong>Local (Kokoro)</strong> — 53 voix, étiquetées <code>Nom - accent</code>. Pas de clé, pas de téléchargement, pas de
-configuration.</li>
-<li><strong>Cloud (Google)</strong> — étiquetées <code>Nom - accent · HD</code> ou <code>· Standard</code>. En anglais, l&#39;accent
-distingue les voix. Dans toutes les autres langues, chaque voix est synthétisée dans cette langue :
-l&#39;étiquette affiche donc le genre et le niveau de qualité plutôt qu&#39;un accent anglais trompeur.</li>
+<li><strong>Kokoro</strong> et <strong>Supertonic 3</strong> (locales) — libellées <code>Nom - accent</code>.</li>
+<li><strong>Google</strong> (cloud) — libellées <code>Nom - accent · HD</code> ou <code>· Standard</code>. En anglais, l&#39;accent
+distingue les voix. Dans toute autre langue, chaque voix est synthétisée dans cette langue, donc
+le libellé indique le genre et le niveau de qualité plutôt qu&#39;un accent anglais trompeur.</li>
+<li><strong>Microsoft Edge</strong> (cloud) — libellées <code>Nom - accent</code>.</li>
 </ul>
 <blockquote>
-<p>Changer de moteur vocal réinitialise la voix de chaque vaisseau à la valeur par défaut du nouveau
-moteur. Les <strong>personnalités de vos vaisseaux sont conservées</strong>. L&#39;application vous prévient avant.</p>
+<p>Changer de moteur de voix remet la voix de chaque vaisseau à celle par défaut du nouveau moteur.
+Les <strong>personnalités sont conservées</strong>. L&#39;application demande avant de le faire.</p>
 </blockquote>
+<p><strong>Les lignes de vaisseau-mère</strong> n&#39;ont qu&#39;une voix — un vaisseau-mère n&#39;est pas équipé de Vega, il
+n&#39;a donc ni personnalité ni réglages. La voix est celle avec laquelle son <strong>contrôle du trafic</strong>
+répond à la radio. Laissez-la sur <strong>Aléatoire</strong> et un contrôleur différent répond à chaque fois ;
+choisissez-en une et l&#39;écoute est jouée comme une transmission radio, car c&#39;est la seule façon
+dont vous l&#39;entendrez.</p>
 <hr>
-<h2>Réglages de vaisseau (le bouton ⚙)</h2>
-<p>Des réglages par vaisseau, parce qu&#39;un Python de minage et une Corvette de combat n&#39;attendent pas le
-même comportement.</p>
-<p><img src="../images/ui-ship-settings.png" alt="Réglages de vaisseau"></p>
-<p><strong>Scanner le système à l&#39;entrée</strong> — effectue un scan de découverte à votre arrivée dans un système.
-Choisissez le <strong>Groupe de tir</strong> (A–H) et le <strong>Déclencheur</strong> (1 ou 2) sur lequel votre scanner de
-découverte est monté. Si votre HUD est en mode Combat, Elite Intel bascule en Analyse, scanne, puis
-rebascule.</p>
-<p><strong>Alerte matériaux sur émissions haute qualité</strong> — vous signale lorsqu&#39;un signal d&#39;émissions haute
-qualité du système transporte des matériaux qui valent l&#39;arrêt.</p>
-<p><strong>Profil commercial</strong> — les contraintes qu&#39;Elite Intel respecte lorsqu&#39;il trace une route commerciale
-pour ce vaisseau. Chacune peut aussi être définie à la voix :
-<em>« alter trade profile, set max stops to four »</em>.</p>
+<h2>Réglages du vaisseau (le bouton ⚙)</h2>
+<p>Des réglages par vaisseau, car un Python de minage et une Corvette de combat ne veulent pas le
+même comportement. Les modifications sont enregistrées en fermant la fenêtre avec <strong>Retour</strong>.</p>
+<p><img src="../images/ui-ship-settings.png" alt="Réglages du vaisseau"></p>
+<p><strong>Scanner le système à l&#39;entrée</strong> — lance un scan de découverte à l&#39;arrivée dans un système.
+Choisissez le <strong>Groupe de tir</strong> (A–H) et le <strong>Déclencheur</strong> (1 ou 2) sur lesquels votre scanner de
+découverte est monté. Si votre HUD est en mode combat, Elite Intel passe en mode analyse, scanne et
+revient.</p>
+<p><strong>Baies de véhicules</strong> — ce que vous rangez dans chaque baie du hangar à véhicules (<strong>Baie 1–4</strong> :
+<em>Vide</em>, <em>Scarab</em>, <em>Scorpion</em> ou <em>Rhino</em>). Le journal du jeu nomme le hangar mais jamais son
+contenu ; c&#39;est ainsi que <em>« déploie le VRS »</em> ouvre la bonne baie — et sait si le vaisseau doit
+d&#39;abord se poser (Scarab, Scorpion) ou peut rester en vol stationnaire (Rhino). Les quatre baies
+sont toujours affichées, quel que soit le hangar monté, pour que vos choix survivent à un
+changement d&#39;équipement.</p>
+<p><strong>Alerte matériaux sur émissions haute qualité</strong> — vous prévient quand un signal d&#39;émissions de
+haute qualité dans le système contient des matériaux qui valent un arrêt.</p>
+<p><strong>Profil commercial</strong> — les contraintes qu&#39;Elite Intel respecte quand il trace une route
+commerciale pour ce vaisseau. Chacune peut aussi se régler à la voix :
+<em>« change le nombre maximum d&#39;arrêts du profil commercial à quatre »</em>.</p>
 <table>
 <thead>
 <tr>
@@ -289,15 +196,15 @@ pour ce vaisseau. Chacune peut aussi être définie à la voix :
 </tr>
 <tr>
 <td><strong>Autoriser les systèmes à permis</strong></td>
-<td>Inclure les systèmes nécessitant un permis</td>
+<td>Inclure les systèmes qui exigent un permis</td>
 </tr>
 <tr>
 <td><strong>Autoriser les transporteurs de flotte</strong></td>
-<td>Inclure les transporteurs de flotte de joueurs comme marchés</td>
+<td>Inclure les vaisseaux-mères des joueurs comme marchés</td>
 </tr>
 <tr>
 <td><strong>Autoriser les systèmes forteresse</strong></td>
-<td>Inclure les systèmes forteresse thargoïdes ou de puissance</td>
+<td>Inclure les systèmes bastions thargoïdes / de puissance</td>
 </tr>
 <tr>
 <td><strong>Dist. max à l&#39;arrivée (Ls)</strong></td>
@@ -309,10 +216,147 @@ pour ce vaisseau. Chacune peut aussi être définie à la voix :
 </tr>
 <tr>
 <td><strong>Capital de départ</strong></td>
-<td>Crédits que le planificateur de route peut dépenser</td>
+<td>Crédits que le planificateur peut dépenser</td>
 </tr>
 </tbody></table>
-<p>Voir <a href="TradeRoutePlotting.html">Commerce et profit</a> pour la manière dont les routes se volent.</p>
+<p>Comment les routes se volent : <a href="TradeRoutePlotting.html">Commerce et profit</a>.</p>
+<hr>
+<h2>Réglages globaux du vaisseau</h2>
+<p>Des automatisations que Vega effectue pour vous, sur tous les vaisseaux. Chacune est un simple
+interrupteur enregistré immédiatement. Utiles à tous, et une vraie aide pour les commandants en
+situation de handicap.</p>
+<table>
+<thead>
+<tr>
+<th>Interrupteur</th>
+<th>Ce qu&#39;il fait</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Accélérer automatiquement pour le FTL</strong></td>
+<td>Met les gaz avant un saut</td>
+</tr>
+<tr>
+<td><strong>Éteindre les lumières pour le FTL</strong></td>
+<td>Éteint les lumières du vaisseau avant un saut</td>
+</tr>
+<tr>
+<td><strong>Éteindre la vision nocturne pour le FTL</strong></td>
+<td>Coupe la vision nocturne avant un saut</td>
+</tr>
+<tr>
+<td><strong>Rentrer les points d&#39;emport pour le FTL</strong></td>
+<td>Rentre les armes avant un saut</td>
+</tr>
+<tr>
+<td><strong>Rentrer le train d&#39;atterrissage pour le FTL</strong></td>
+<td>Rentre le train avant un saut</td>
+</tr>
+<tr>
+<td><strong>Rentrer le cargo scoop pour le FTL</strong></td>
+<td>Rentre la trappe avant un saut</td>
+</tr>
+<tr>
+<td><strong>Rentrer le train au décollage</strong></td>
+<td>Rentre le train après le décollage</td>
+</tr>
+<tr>
+<td><strong>Éteindre les lumières au déploiement du SRV</strong></td>
+<td>Éteint les lumières quand vous déployez le SRV</td>
+</tr>
+<tr>
+<td><strong>Tracer le prochain saut neutronique lors du boost dans le cône</strong></td>
+<td>Sur une <a href="AllCommands.html">route neutronique</a>, trace le prochain point neutronique dès que vous avez traversé le cône en boost</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Annonces</h2>
+<p>Tout ce que Vega dit sans qu&#39;on le lui demande, au même endroit — un seul écran à vérifier quand
+quelque chose parle trop, ou pas assez.</p>
+<p><img src="../images/ui-commander-announcements.png" alt="Annonces"></p>
+<table>
+<thead>
+<tr>
+<th>Interrupteur</th>
+<th>Ce que vous entendez</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Annoncer les découvertes</strong></td>
+<td>Corps notables, premières découvertes, signaux biologiques. Pilote aussi la carte Exobiologie de l&#39;<a href="UI-HUD-Overlay.html">overlay HUD</a></td>
+</tr>
+<tr>
+<td><strong>Annoncer l&#39;approche planétaire</strong></td>
+<td>Des faits sur le corps dont vous vous approchez</td>
+</tr>
+<tr>
+<td><strong>Annoncer les contacts radar</strong></td>
+<td>Les vaisseaux qui apparaissent au scanner</td>
+</tr>
+<tr>
+<td><strong>Annoncer le minage</strong></td>
+<td>Les touches du prospecteur et les trouvailles pour vos cibles de minage</td>
+</tr>
+<tr>
+<td><strong>Annoncer les récupérations de la trappe</strong></td>
+<td>Ce que vous venez de ramasser</td>
+</tr>
+<tr>
+<td><strong>Annoncer la navigation</strong></td>
+<td>Événements de navigation et arrivées</td>
+</tr>
+<tr>
+<td><strong>Transmissions radio</strong></td>
+<td>Les échanges radio du jeu, avec des voix radio distinctes</td>
+</tr>
+<tr>
+<td><strong>Annonces de route</strong></td>
+<td>Interrupteur principal de tout ce qui est dit autour d&#39;un saut. Les interrupteurs en dessous ne fonctionnent que s&#39;il est activé</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;↳ <strong>Annoncer la destination du saut</strong></td>
+<td>Quel est le prochain système</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;↳ <strong>Annoncer le trafic de la destination</strong></td>
+<td>Rapports de trafic de votre destination</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;↳ <strong>Annoncer les pertes de la destination</strong></td>
+<td>Décès récents dans le système de destination</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;↳ <strong>Annoncer l&#39;arrivée</strong></td>
+<td>Une phrase à l&#39;arrivée</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;↳ <strong>Annoncer les sauts restants</strong></td>
+<td>Sauts restants sur la route</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;&nbsp;&nbsp;↳ <strong>Annoncer la disponibilité d&#39;étoile à carburant</strong></td>
+<td>Si la destination a une étoile récoltable — dit dans la phrase des sauts restants</td>
+</tr>
+</tbody></table>
+<p>La plupart se basculent aussi à la voix (<em>« désactive les annonces radar »</em>, <em>« désactive toutes
+les annonces »</em>), c&#39;est pourquoi la page les relit à chaque ouverture de l&#39;onglet.</p>
+<hr>
+<h2>Exo-Maîtrise</h2>
+<p>Un catalogue de systèmes stellaires proches de la Bulle dont les planètes abritent une exobiologie
+de grande valeur, constitué par la communauté via Spansh.</p>
+<ol>
+<li>Cliquez sur <strong>Activer Exo-Maîtrise</strong>. Le catalogue est téléchargé puis importé, chaque moitié
+avec sa barre de progression.</li>
+<li>Une fois chargé, la page affiche les <strong>Systèmes stellaires</strong>, les <strong>Planètes et lunes</strong>, la
+<strong>Valeur prévue</strong> de tout le catalogue et ce que vous avez <strong>Récolté</strong>.</li>
+<li>En vol, dites <em>« emmène-moi au prochain site d&#39;exobiologie »</em> et Vega trace une route vers le
+système le plus riche que vous n&#39;avez pas encore épuisé.</li>
+</ol>
+<p>Les planètes terminées sont cochées au fil des scans. Ce que vous avez prélevé avant d&#39;installer
+Elite Intel peut être déclaré à la voix — <em>« nous avons déjà prélevé ce corps »</em>, ou pour tout un
+système, <em>« marque ce système comme récolté »</em>.</p>
+<p><strong>Désactiver Exo-Maîtrise</strong> supprime le catalogue de votre ordinateur, après confirmation. Les
+planètes déjà prélevées restent enregistrées, donc le réactiver plus tard ne vous y renverra pas.</p>
 <hr>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

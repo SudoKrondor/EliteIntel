@@ -17,6 +17,7 @@ UI-Commander-Tab: Reiter Kommandant
 UI-Actions-Tab: Reiter Aktionen
 UI-Bindings-Tab: Reiter Bindings
 UI-Settings-Tab: Reiter Einstellungen
+UI-Jukebox-Tab: Reiter Jukebox
 UI-Stats-Tab: Reiter Statistik
 UI-HUD-Overlay: HUD-Overlay
 installing-local-llms: LLM auswählen
@@ -25,6 +26,7 @@ Install-LM-Studio-Linux: LM Studio  Linux
 Install-LM-Studio-Windows: LM Studio  Windows
 AMD-RX-7800XT-LLM-Setup: AMD RX Series
 General-Operation: Allgemeiner Betrieb
+Custom-Commands: Eigene Befehle erstellen
 TradeRoutePlotting: Handel & Profit
 Search-galaxy-with-EliteIntel: Galaxie erkunden
 Discovery-Assistance: Entdeckung & Exobiologie

@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Actions</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Bindings</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Onglet Paramètres</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Onglet Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Onglet Statistiques</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">Comment faire ?</div>
             <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Opération générale</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Créer vos propres commandes</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Commerce et profit</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Explorer la galaxie</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Exploration &amp; Exobiologie</a>
@@ -92,18 +94,20 @@
 laissez ouvert en vol. Il démarre et arrête la pile IA, montre ce que Vega a entendu et dit, signale
 l&#39;état de chaque sous-système et ouvre l&#39;overlay en jeu.</p>
 <p><img src="../images/ui-tab-vega.png" alt="Onglet Vega"></p>
-<p>L&#39;onglet se répartit en quatre zones : les journaux <strong>conversation</strong> et <strong>diagnostic</strong> sur la
-gauche, <strong>État rapide</strong> et <strong>Raccourcis</strong> dans la barre latérale droite, et la bande de télémétrie
+<p>L&#39;onglet est organisé en quatre zones : les journaux <strong>Conversation</strong> et <strong>Diagnostics</strong> à gauche,
+<strong>Statut rapide</strong> et <strong>Raccourcis</strong> dans la barre latérale droite, et la bande de télémétrie
 <strong>Résumé système</strong> en bas.</p>
 <hr>
 <h2>Conversation</h2>
-<p>Tout ce que vous avez dit et tout ce que Vega a répondu, en un seul flux. Vos lignes sont alignées
-à gauche, les réponses de Vega à droite, pour qu&#39;une longue session reste lisible d&#39;un coup d&#39;œil.</p>
-<h2>Diagnostic / Messages système</h2>
-<p>Le journal technique : démarrages de services, résultats de calibration, avertissements
-d&#39;assignations, opérations sur fichiers. Il n&#39;est jamais énoncé ; il existe pour que vous voyiez ce
-que fait l&#39;application.</p>
-<p>Quatre boutons se trouvent dans l&#39;en-tête de section :</p>
+<p>Tout ce que vous avez dit et tout ce que Vega a répondu, en un seul flux. Vos lignes sont à
+gauche, les réponses de Vega à droite, pour qu&#39;une longue session reste lisible d&#39;un coup d&#39;œil.
+Les commandes tapées dans le chat du jeu (voir <a href="AllCommands.html">Toutes les commandes</a>) apparaissent
+ici exactement comme les commandes parlées.</p>
+<h2>Diagnostics / messages système</h2>
+<p>Le journal technique — démarrages de services, résultats de calibration, avertissements de
+raccourcis, ce que la reconnaissance vocale a entendu (<code>STT: [...]</code>), opérations sur les fichiers.
+Il n&#39;est jamais lu à voix haute ; il sert à voir ce que fait l&#39;application.</p>
+<p>Quatre boutons se trouvent dans l&#39;en-tête de la section :</p>
 <table>
 <thead>
 <tr>
@@ -113,25 +117,25 @@ que fait l&#39;application.</p>
 </thead>
 <tbody><tr>
 <td><strong>Copier</strong></td>
-<td>Copie dans le presse-papiers le texte que vous avez sélectionné dans le journal. Actif uniquement s&#39;il y a une sélection.</td>
+<td>Copie dans le presse-papiers le texte sélectionné dans le journal.</td>
 </tr>
 <tr>
-<td><strong>Enregistrer le paquet de débogage</strong></td>
-<td>Écrit un <code>.zip</code> horodaté contenant le journal système, le journal applicatif, votre fichier de journal en cours et vos assignations. <strong>C&#39;est ce qu&#39;il faut joindre à un rapport de bug.</strong></td>
+<td><strong>Enregistrer le paquet d&#39;assistance</strong></td>
+<td>Écrit un <code>.zip</code> horodaté pour un rapport de bug : ce journal, le journal de l&#39;application, votre journal de jeu et les fichiers d&#39;état en direct du jeu, vos raccourcis, vos commandes personnalisées, un résumé du matériel et un résumé des <em>niveaux</em> du micro (jamais d&#39;audio). Ce qui n&#39;a pas pu être collecté est listé dans le paquet. <strong>C&#39;est ce qu&#39;il faut joindre à un rapport de bug.</strong></td>
 </tr>
 <tr>
 <td><strong>Vider la mémoire de Vega</strong></td>
-<td>Écrit un instantané JSON de la mémoire de travail de Vega pour la session en cours. Disponible uniquement pendant que les services tournent.</td>
+<td>Écrit un instantané JSON de la mémoire de travail de Vega pour la session en cours. Ne fonctionne que si les services tournent.</td>
 </tr>
 <tr>
 <td><strong>Effacer</strong></td>
-<td>Vide le journal de diagnostic et sa transcription d&#39;export.</td>
+<td>Vide le journal de diagnostics.</td>
 </tr>
 </tbody></table>
 <hr>
-<h2>État rapide</h2>
-<p>Six indicateurs en direct. Chacun affiche un état et une couleur, si bien qu&#39;un coup d&#39;œil suffit à
-savoir si la pile est en bonne santé.</p>
+<h2>Statut rapide</h2>
+<p>Six indicateurs en direct. Chacun affiche un état et une couleur, pour voir d&#39;un coup d&#39;œil si la
+pile est en bonne santé.</p>
 <table>
 <thead>
 <tr>
@@ -141,18 +145,18 @@ savoir si la pile est en bonne santé.</p>
 </thead>
 <tbody><tr>
 <td><strong>STT</strong></td>
-<td><code>Veille</code> (services arrêtés) · <code>Endormi</code> (vous ignore) · <code>Écoute</code></td>
+<td><code>Veille</code> (services arrêtés) · <code>Écoute</code> · <code>Endormi</code> (vous ignore) · <code>Push to Talk</code> (seul le bouton assigné ouvre le micro)</td>
 </tr>
 <tr>
 <td><strong>IA</strong></td>
-<td><code>Veille</code> · <code>Hors ligne</code> (connexion impossible) · ou le nom du fournisseur qui répond réellement</td>
+<td><code>Veille</code> · <code>Hors ligne</code> (connexion impossible) · le nom du fournisseur qui a réellement répondu, ou <code>Actif</code></td>
 </tr>
 <tr>
 <td><strong>TTS</strong></td>
-<td><code>Veille</code> · <code>Local</code> (Kokoro) · <code>Cloud</code> (Google)</td>
+<td><code>Veille</code> · <code>Local</code> (Kokoro / Supertonic) · <code>Cloud</code> (Google / Microsoft Edge)</td>
 </tr>
 <tr>
-<td><strong>Bindings</strong></td>
+<td><strong>Touches</strong></td>
 <td><code>OK</code>, ou <code>N manquant</code></td>
 </tr>
 <tr>
@@ -160,12 +164,12 @@ savoir si la pile est en bonne santé.</p>
 <td>Combien de commandes personnalisées sont chargées</td>
 </tr>
 <tr>
-<td><strong>Touches</strong></td>
-<td><code>Synchronisé</code> avec le jeu, ou <code>Modifié</code> — vous avez un brouillon d&#39;assignations non appliqué</td>
+<td><strong>Mappage</strong></td>
+<td><code>Synchronisé</code> avec le jeu, ou <code>Modifié</code> — vous avez un brouillon de raccourcis non appliqué</td>
 </tr>
 </tbody></table>
-<p>L&#39;indicateur <strong>IA</strong> mérite d&#39;être surveillé. Il ne signale pas ce que vous avez <em>configuré</em>, il
-signale quel fournisseur a réellement répondu à la dernière requête.</p>
+<p>L&#39;indicateur <strong>IA</strong> mérite qu&#39;on le surveille. Il n&#39;indique pas ce que vous avez <em>configuré</em>, mais
+quel fournisseur a réellement répondu.</p>
 <hr>
 <h2>Raccourcis</h2>
 <table>
@@ -176,36 +180,36 @@ signale quel fournisseur a réellement répondu à la dernière requête.</p>
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Démarrer / Arrêter les services</strong></td>
-<td>Bascule toute la pile IA. Le bouton se désactive de lui-même pendant le démarrage ou l&#39;arrêt, pour ne pas être déclenché deux fois.</td>
+<td><strong>DÉMARRER / ARRÊTER LES SERVICES</strong></td>
+<td>Active ou coupe toute la pile IA. Le bouton se désactive pendant le démarrage ou l&#39;arrêt pour ne pas être déclenché deux fois.</td>
 </tr>
 <tr>
-<td><strong>Sommeil / Réveil</strong></td>
-<td>En mode <em>réveil</em>, Vega écoute en continu. En mode <em>sommeil</em>, il vous ignore sauf si vous employez le mot de contournement <code>listen</code> ou dites <code>Wake up!</code>. Désactivé tant que le push-to-talk est actif : en mode PTT, le bouton <em>est</em> la porte.</td>
+<td><strong>DORMIR / SE RÉVEILLER</strong></td>
+<td>Éveillée, Vega écoute en continu. Endormie, elle ignore tout sauf une phrase de réveil (<code>réveille-toi</code>) ou un ordre précédé de <code>écoute-moi</code> — <em>« Écoute-moi, sors le train d&#39;atterrissage. »</em> Désactivé tant que le Push to Talk est actif : c&#39;est alors le bouton assigné qui sert de porte.</td>
 </tr>
 <tr>
-<td><strong>Afficher / Masquer overlay</strong></td>
-<td>Affiche l&#39;<a href="UI-HUD-Overlay.html">overlay HUD</a> toujours au premier plan. Si le binaire de l&#39;overlay est absent, le bouton reste honnête et signale l&#39;échec dans le journal au lieu de prétendre à un overlay inexistant.</td>
+<td><strong>AFFICHER / MASQUER OVERLAY</strong></td>
+<td>Affiche l&#39;<a href="UI-HUD-Overlay.html">overlay HUD</a> toujours au premier plan. L&#39;application se souvient de votre choix et le rétablit au lancement suivant. Si le binaire de l&#39;overlay manque, l&#39;interrupteur le signale dans le journal au lieu de prétendre afficher un overlay inexistant.</td>
 </tr>
 <tr>
-<td><strong>Réglages de l&#39;overlay</strong></td>
-<td>Ouvre les <a href="UI-HUD-Overlay.html">réglages de l&#39;overlay HUD</a> : transparence, taille du texte et emplacement de tracé (moniteur, casque VR, les deux).</td>
+<td><strong>RÉGLAGES DE L&#39;OVERLAY</strong></td>
+<td>Ouvre les <a href="UI-HUD-Overlay.html">réglages de l&#39;overlay HUD</a> — transparence, taille du texte, couleurs et lieu d&#39;affichage (écran, casque VR, les deux, ou une fenêtre de capture).</td>
 </tr>
 <tr>
 <td><strong>Périphériques audio</strong></td>
-<td>Ouvre la boîte de dialogue d&#39;interface audio pour choisir micro et haut-parleur. Les changements prennent effet au prochain démarrage des services.</td>
+<td>Choisir le micro et le haut-parleur. Le changement s&#39;applique tout de suite : seule la reconnaissance vocale (micro) ou la voix (haut-parleur) redémarre.</td>
 </tr>
 <tr>
-<td><strong>Calibrer l&#39;audio</strong></td>
-<td>Mesure votre bruit de fond et votre niveau de voix, et règle la porte audio. Disponible uniquement pendant que les services tournent. Lancez-le une fois avant votre premier vol, et de nouveau si vous changez de micro ou de pièce.</td>
+<td><strong>CALIBRER L&#39;AUDIO</strong></td>
+<td>Mesure le bruit de fond et votre niveau de parole et règle le seuil vocal. Disponible seulement quand les services tournent. À faire une fois avant le premier vol, puis à chaque changement de micro ou de pièce.</td>
 </tr>
 <tr>
-<td><strong>Mettre à jour</strong></td>
-<td>Apparaît lorsqu&#39;une nouvelle version est disponible.</td>
+<td><strong>Mise à jour</strong></td>
+<td>Apparaît quand une nouvelle version est disponible.</td>
 </tr>
 </tbody></table>
-<p>Entre les deux groupes de boutons se trouve le <strong>bloc commandant</strong> : votre nom, votre vaisseau,
-l&#39;horloge et votre solde de crédits en direct.</p>
+<p>Entre les deux groupes de boutons se trouve le <strong>bloc commandant</strong> — votre nom, votre vaisseau,
+l&#39;heure et votre solde de crédits en direct.</p>
 <hr>
 <h2>Résumé système</h2>
 <p>Une bande de télémétrie de six blocs en bas de l&#39;onglet :</p>
@@ -218,7 +222,7 @@ l&#39;horloge et votre solde de crédits en direct.</p>
 </thead>
 <tbody><tr>
 <td><strong>Modèle LLM</strong></td>
-<td>Le modèle qui a traité la requête la plus récente</td>
+<td>Le modèle qui a servi la requête la plus récente</td>
 </tr>
 <tr>
 <td><strong>Durée de session</strong></td>
@@ -230,15 +234,15 @@ l&#39;horloge et votre solde de crédits en direct.</p>
 </tr>
 <tr>
 <td><strong>Tokens / heure</strong></td>
-<td>Un taux projeté. Reste vide les 10 premières minutes, le temps de collecter des données</td>
+<td>Un rythme projeté. Reste vide pendant les 10 premières minutes, le temps de collecter des données</td>
 </tr>
 <tr>
 <td><strong>Économie cache</strong></td>
-<td>Tokens servis depuis le cache. Le <code>0</code> est affiché délibérément : c&#39;est une information, pas une donnée manquante</td>
+<td>Tokens servis depuis le cache. Le <code>0</code> est affiché exprès — c&#39;est une information, pas une donnée manquante</td>
 </tr>
 <tr>
 <td><strong>Dernière vitesse</strong></td>
-<td>Tokens par seconde sur la dernière réponse</td>
+<td>Tokens par seconde de la dernière réponse</td>
 </tr>
 </tbody></table>
 <p>Pour le détail complet, voir l&#39;<a href="UI-Stats-Tab.html">onglet Statistiques</a>.</p>

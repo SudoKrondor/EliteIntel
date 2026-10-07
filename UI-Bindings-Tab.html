@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bindings Tab  EliteIntel</title>
-    <meta name="description" content="Bindings were a corner of the Actions tab; they are now a tab of their own, with a full editor.">
+    <meta name="description" content="operates your ship by pressing the keys Elite Dangerous is bound to. If a control has no keyboard">
     <link rel="canonical" href="https://www.elite-intel.org/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Bindings-Tab.html">
@@ -13,7 +13,7 @@
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Bindings-Tab.html">
     <meta property="og:title" content="Bindings Tab  EliteIntel">
-    <meta property="og:description" content="Bindings were a corner of the Actions tab; they are now a tab of their own, with a full editor.">
+    <meta property="og:description" content="operates your ship by pressing the keys Elite Dangerous is bound to. If a control has no keyboard">
     <meta property="og:url" content="https://www.elite-intel.org/UI-Bindings-Tab.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Actions Tab</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub active"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Bindings Tab</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="images/settings.png" class="inline" height="20" alt=""> Settings Tab</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="images/speaker.png" class="inline" height="20" alt=""> Jukebox Tab</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="images/stats.png" class="inline" height="20" alt=""> Stats Tab</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> HUD Overlay</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">How Do I…?</div>
             <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Make Your Own Commands</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Search the Galaxy</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery &amp; ExoBiology</a>
@@ -88,26 +90,37 @@
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
 <h1>Bindings Tab</h1>
-<p><img src="images/keys-binding.png" class="inline" height="20" alt="Bindings"> <strong>New in V1.1.</strong>
-Bindings were a corner of the Actions tab; they are now a tab of their own, with a full editor.</p>
-<p>Elite Intel operates your ship by pressing the keys Elite Dangerous is bound to. If a control
-has no keyboard binding, Elite Intel cannot use it — this tab is where you find that out and
-fix it.</p>
+<p><img src="images/keys-binding.png" class="inline" height="20" alt="Bindings"> Elite Intel
+operates your ship by pressing the keys Elite Dangerous is bound to. If a control has no keyboard
+binding, Elite Intel cannot use it — this tab is where you find that out and fix it.</p>
 <p>Two sub-tabs: <strong>Binding Profile</strong> and <strong>Binding Management</strong>.</p>
 <hr>
 <h2>Binding Profile</h2>
 <p><img src="images/ui-tab-bindings-profile.png" alt="Binding profile"></p>
 <h3>Which file is in use</h3>
+<p><strong>Bindings Directory</strong> — optional. Leave it blank and the standard Elite Dangerous location is
+used; use the <strong>⋮</strong> picker if your install is somewhere unusual. A folder that cannot be used is
+refused and the previous setting is kept.</p>
 <p><strong>Profile</strong> — detected automatically. Elite Intel reads the active <code>StartPreset</code> entry, and
 falls back to the newest <code>.binds</code> file if it has to.</p>
 <p><strong>File</strong> — the <code>.binds</code> file currently being used for diagnostics and assignment.</p>
-<p><strong>Bindings directory</strong> — optional. Leave it blank and the standard Elite Dangerous location is
-used; set it if your install is somewhere unusual.</p>
-<p>Both fields have an ⓘ button explaining exactly how the value was chosen.</p>
+<p>Profile and File each carry an <strong>ⓘ</strong> that explains exactly how the value was chosen.</p>
+<blockquote>
+<p><strong>&quot;Cannot find bindings&quot; with the right folder?</strong> Elite Dangerous does not write a <code>.binds</code>
+file until you customise something. Open <em>Options → Controls</em> in the game, change any binding,
+and Elite Intel picks the file up.</p>
+</blockquote>
+<h3>Key Input Pacing</h3>
+<p>A <strong>Fast ↔ Slow</strong> slider for the pause Elite Intel holds after each keystroke it sends to the
+game. Fast is the default. If the game drops keystrokes out of a sequence on slower hardware —
+a macro that only half-runs, a panel that opens on the wrong tab — move it towards <strong>Slow</strong>.</p>
 <h3>The binding tables</h3>
-<p>Two tables: <strong>Used bindings</strong> and <strong>Missing bindings</strong>, with a count on each. Bindings are
-grouped by category:</p>
-<p>Ship / flight · Combat · UI panels · Maps · Exploration · Camera · SRV · On-foot · Miscellaneous</p>
+<p>Two tabs: <strong>Used bindings</strong> and <strong>Missing bindings</strong>, each with a count. Rows are grouped under
+the game&#39;s own headings — <strong>General controls</strong>, <strong>Ship controls</strong>, <strong>SRV controls</strong>, <strong>On-foot
+controls</strong>, <strong>Other controls</strong> — in the same order as the game&#39;s Controls screen, so you can read
+the two side by side.</p>
+<p><strong>Search</strong> narrows both tables as you type. It matches the section, group, control name and the
+raw <code>.binds</code> tag. <strong>Show conflicts only</strong> filters the tables to the problems.</p>
 <table>
 <thead>
 <tr>
@@ -129,49 +142,61 @@ grouped by category:</p>
 </tr>
 <tr>
 <td><strong>Quick fix</strong></td>
-<td>Assigns a safe free key to this one control</td>
+<td><em>Missing</em> tab: assigns a safe free keyboard key to this one control</td>
 </tr>
 <tr>
 <td><strong>Clear</strong></td>
-<td>Removes the keyboard binding, leaving controller and HOTAS bindings untouched</td>
+<td><em>Used</em> tab: removes the keyboard binding (Primary, Secondary or both), leaving controller and HOTAS bindings untouched</td>
 </tr>
 </tbody></table>
 <blockquote>
 <p><strong>HOTAS and controllers are shown but not editable.</strong> Elite Intel executes through keyboard
 bindings, so other devices appear for diagnostics only.</p>
 </blockquote>
-<p><strong>Show conflicts only</strong> filters the tables to the problems.</p>
 <h3>Conflicts</h3>
 <p>Elite Dangerous treats a chord as conflicting only when it is <em>exactly</em> the same chord — <code>G</code>
 and <code>Shift+G</code> coexist happily. Elite Intel uses the same rule, so it flags what the game
 actually flags.</p>
-<p>Conflicting rows are coloured, and hovering one shows <strong>Shares <em>key</em> with:</strong> and the list.</p>
-<p>You may also see <strong>Ship/SRV twin — many bind it the same as:</strong> — not a conflict, a suggestion.
-Some ship and SRV controls are conventionally bound to the same key.</p>
+<p>Conflicting rows are coloured red, and hovering one shows <strong>Shares <em>key</em> with:</strong> and the list —
+for every slot that is in conflict, not just the first.</p>
+<p>You may also see <strong>Ship/SRV twin — many bind it the same as:</strong> on a cyan row. That is not a
+conflict, it is a suggestion: some ship and SRV controls are conventionally bound to the same key.</p>
+<p>Vega also <strong>speaks</strong> about bindings that will actually break things, and names the keys in the
+diagnostics log:</p>
+<ul>
+<li><strong>Galaxy map movement and interface navigation on the same key.</strong> Route plotting cannot work
+until the map and the interface have separate keys.</li>
+<li><strong>A control on your game-menu key.</strong> Elite opens the game menu on any combination ending in
+that key, so the control can never be pressed. The fix is to clear the game-menu binding in the
+game — Escape opens that menu anyway.</li>
+<li><strong>A control on a combination the operating system takes first</strong> (such as Alt+F4). Pressing it
+closes the game or leaves your session.</li>
+</ul>
 <h3>Editing a binding</h3>
 <p>Click a slot to open the assignment dialog.</p>
 <p><img src="images/ui-bindings-assign.png" alt="Assign a key"></p>
 <p>It shows the selected binding, the slot, and the current value. Then <strong>click the field and
-press the keys you want</strong> — modifiers and key together. Esc cancels. Chords with multiple
+press the keys you want</strong> — modifiers and key together. Esc cancels. Chords with up to three
 modifiers are supported.</p>
 <p>A live keyboard map shows what is available: <strong>hold Ctrl/Shift/Alt to see the keys free for
-that combination — green is free, red is already used.</strong> Keys reserved by the operating system
-are marked and cannot be assigned.</p>
+that combination — green is free, red is already used.</strong> Reserved keys (the game-menu key,
+Alt+F4, Linux Ctrl+Alt+F-keys) are marked and cannot be assigned.</p>
 <p><strong>Clear binding</strong> removes the assignment.</p>
-<h3>Fix Missing</h3>
+<h3>Auto-Assign Missing Binds</h3>
 <p>One button that assigns safe, layout-friendly keyboard keys to <strong>every</strong> control that has no
 keyboard binding.</p>
 <ul>
 <li>Existing bindings are never changed.</li>
 <li>No key is ever reused.</li>
-<li>The changes go into your <strong>draft only</strong>.</li>
+<li>The changes go into your <strong>draft only</strong> — review them, then Apply.</li>
 </ul>
 <p>It reports what it did, and what it skipped and why: both slots already on a controller, no
-free safe key left, or no slot that could be edited safely.</p>
+free safe key left, or no slot that could be edited safely. Two controls are <strong>left unbound on
+purpose</strong>: the game menu (Escape already opens it), and <em>eject all cargo</em> (it empties the hold
+into space and no Elite Intel command presses it — bind it by hand if you want it).</p>
 <h3>Draft, Apply, Revert</h3>
-<p>Edits do <strong>not</strong> go straight to Elite Dangerous. They accumulate in a draft, and the status
-badge shows <strong>Draft — not applied to game</strong> or <strong>In sync with game</strong>. The same state appears on
-the Vega tab&#39;s <em>Keymap</em> readout.</p>
+<p>Edits do <strong>not</strong> go straight to Elite Dangerous. They accumulate in a draft, and the badge shows
+<strong>Draft</strong> or <strong>In sync</strong>. The same state appears on the Vega tab&#39;s <em>Keymap</em> readout.</p>
 <table>
 <thead>
 <tr>
@@ -180,17 +205,17 @@ the Vega tab&#39;s <em>Keymap</em> readout.</p>
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Apply to Game</strong></td>
-<td>Writes the draft to your <code>.binds</code> file, taking a backup first</td>
+<td><strong>Apply</strong></td>
+<td>Writes the draft to your <code>.binds</code> file, saving a copy of the old one first</td>
 </tr>
 <tr>
-<td><strong>Revert from Game</strong></td>
+<td><strong>Revert</strong></td>
 <td>Throws the draft away and reloads from the game file</td>
 </tr>
 </tbody></table>
 <blockquote>
 <p><strong>After applying, open and then close the Controls screen in Elite Dangerous.</strong> The game only
-re-reads its bindings when that screen is opened. Elite Intel says this out loud too.</p>
+re-reads its bindings when that screen is opened. Vega says this out loud too.</p>
 </blockquote>
 <p>If the game&#39;s binding file changed after your draft was created, Apply refuses and asks you to
 reload or discard first, rather than silently overwriting someone else&#39;s edit.</p>
@@ -199,8 +224,10 @@ Draft</strong>, or <strong>Discard</strong>.</p>
 <hr>
 <h2>Binding Management</h2>
 <p><img src="images/ui-tab-bindings-management.png" alt="Binding management"></p>
-<p>Your binding backups, listed by <strong>Created</strong> date and the <strong>Files</strong> each contains. Elite Intel
-takes one automatically before every Apply; <strong>Backup Now</strong> takes one on demand.</p>
+<p><strong>Player Backups</strong> — snapshots you take yourself with <strong>Backup Now</strong>, listed by <strong>Created</strong> date
+and the <strong>Files</strong> each contains. Take one before you start experimenting.</p>
+<p>(Separately, every <strong>Apply</strong> quietly saves a copy of the game file first, to
+<code>elite-intel/bindings/backups/</code>. Those are a safety net and are not listed here.)</p>
 <table>
 <thead>
 <tr>
@@ -216,8 +243,12 @@ takes one automatically before every Apply; <strong>Backup Now</strong> takes on
 <td><strong>Restore to Live</strong></td>
 <td>Loads it and applies it to the game directly. The usual safe-apply checks still run</td>
 </tr>
+<tr>
+<td><strong>Delete Backup</strong></td>
+<td>Deletes the backup permanently</td>
+</tr>
 </tbody></table>
-<p>Either one replaces unsaved changes in the current draft, and both ask first.</p>
+<p>Every one of these asks first. Both restores replace unsaved changes in the current draft.</p>
 <hr>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Власні команди  EliteIntel</title>
+    <meta name="description" content="Власна команда — це макрос: список кроків — натискання клавіш, паузи, набраний текст, вимовлені">
+    <link rel="canonical" href="https://www.elite-intel.org/uk/Custom-Commands.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Custom-Commands.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Custom-Commands.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/Custom-Commands.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Custom-Commands.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Custom-Commands.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Custom-Commands.html">
+    <meta property="og:title" content="Власні команди  EliteIntel">
+    <meta property="og:description" content="Власна команда — це макрос: список кроків — натискання клавіш, паузи, набраний текст, вимовлені">
+    <meta property="og:url" content="https://www.elite-intel.org/uk/Custom-Commands.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases/latest" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../Custom-Commands.html" class="locale-link">EN</a><a href="../fr/Custom-Commands.html" class="locale-link">FR</a><a href="../es/Custom-Commands.html" class="locale-link">ES</a><a href="../de/Custom-Commands.html" class="locale-link">DE</a><span class="locale-current">UK</span><a href="../ru/Custom-Commands.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Головна</a>
+
+            <div class="nav-section">Застосунок</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Встановлення</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Інтерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Дії»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Бінди»</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Вкладка «Налаштування»</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Вкладка «Музика»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-накладка</a>
+
+            <div class="nav-section">Вікі</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 Безкоштовний хмарний LLM</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Як це зробити?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Загальне використання</a>
+            <a href="Custom-Commands.html" class="nav-link active"><img src="../images/manual.png" class="inline" height="20" alt=""> Власні команди</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Торгівля та прибуток</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Пошук по галактиці</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Дослідження</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Навігація</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Піратські місії</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Всі команди</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Системні команди</a>
+
+            <div class="nav-section">Спільнота</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Політика конфіденційності</a>
+            <a href="Contact.html" class="nav-link">📧 Зв&#39;язатися з розробником</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Власні команди</h1>
+<p>Власна команда — це макрос: список кроків — натискання клавіш, паузи, набраний текст, вимовлені
+фрази, — що виконується, коли ви кажете одну зі своїх фраз. Робіть таку, коли вбудовані команди
+роблять не те, що треба, або коли ви раз у раз тиснете ту саму послідовність клавіш.</p>
+<p>Власні команди — у <a href="UI-Actions-Tab.html">Дії → Власні команди</a>. На цій сторінці дві з них збираються з
+нуля.</p>
+<hr>
+<h2>Перед початком</h2>
+<ul>
+<li><strong>Має працювати мовна модель.</strong> Вона створює ключ дії й зіставляє ваші фрази. Спершу запустіть
+служби на <a href="UI-Vega-Tab.html">вкладці «Вега»</a>.</li>
+<li><strong>Кожній використаній дії потрібна клавіатурна прив&#39;язка.</strong> Elite Intel натискає клавіші; дію,
+призначену лише на HOTAS, макрос натиснути не зможе. <a href="UI-Bindings-Tab.html">Вкладка «Бінди»</a> покаже,
+чого бракує, а <strong>Автопризначити відсутні прив&#39;язки</strong> виправить усе разом.</li>
+</ul>
+<hr>
+<h2>Приклад 1: контрзаходи однією фразою</h2>
+<p>Мета: сказати <em>«контрзаходи пішли»</em> й отримати тепловідвід, пастки та щитову комірку з
+підтвердженням від «Веги».</p>
+<h3>1. Створити команду</h3>
+<p>Відкрийте <strong>Дії → Власні команди</strong> й натисніть <strong>Новий</strong>.</p>
+<h3>2. Назва й фрази</h3>
+<ul>
+<li><p><strong>Назва:</strong> <code>Контрзаходи</code></p>
+</li>
+<li><p><strong>Що ви скажете:</strong> по одній фразі в рядку (можна й через кому):</p>
+<pre><code>контрзаходи пішли
+усі контрзаходи
+оборонний пакет
+</code></pre>
+</li>
+</ul>
+<p>Пишіть фрази так, як справді скажете їх у запалі бою. Вони мають <strong>відрізнятися від вбудованих
+команд</strong> — фраза, що вже належить вбудованій команді (<em>«тепловідвід»</em>, <em>«скинь пастки»</em>),
+відхиляється, бо «Вега» ніколи не зможе їх розрізнити.</p>
+<h3>3. Створити ключ дії</h3>
+<p>Натисніть <strong>Створити</strong>. Мовна модель перетворить ваші фрази на англійський ключ <code>snake_case</code>,
+наприклад <code>deploy_all_countermeasures</code>. Ввести його вручну не можна — він стає ім&#39;ям, яке бачить
+модель, тож мусить мати форму, яку модель завжди зможе повторити. Він англійський, навіть якщо фрази
+українські.</p>
+<h3>4. Додати кроки</h3>
+<p>Для кожного кроку натисніть <strong>Додати крок</strong>. У вікні виберіть <strong>Тип</strong> і заповніть те, чого він
+вимагає. Список <strong>Прив&#39;язка</strong> підписано як екран «Керування» в грі — <em>Керування кораблем / Cooling /
+Deploy Heatsink</em> — і в ньому можна друкувати для фільтрації (спробуйте <code>heat</code>, <code>srv</code>, <code>chaff</code>). Назви
+дій там англійською.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Тип</th>
+<th>Значення</th>
+<th>Тривалість, мс</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Натискання прив&#39;язки</td>
+<td>Deploy Heatsink</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Затримка</td>
+<td></td>
+<td>150</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Натискання прив&#39;язки</td>
+<td>Use Chaff Launcher</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Затримка</td>
+<td></td>
+<td>150</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Натискання прив&#39;язки</td>
+<td>Use Shield Cell</td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Промовити</td>
+<td>Контрзаходи випущено.</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Кнопками <strong>Змінити крок</strong>, <strong>Видалити крок</strong> і <strong>▲ ▼</strong> виправте порядок.</p>
+<h3>5. Зберегти й перевірити</h3>
+<p>Натисніть <strong>Зберегти</strong>. Якщо щось не так, повідомлення перевірки скаже, що саме, — див. <em>Розв&#39;язання
+проблем</em> унизу сторінки. Команда з&#39;явиться в списку.</p>
+<p>Натисніть її рядок, потім <strong>Запустити</strong>, щоб перевірити без голосу. Коли все працює, скажіть:
+<em>«Контрзаходи пішли.»</em> Можна й набрати в ігровому чаті: <code>@Вега контрзаходи пішли</code>.</p>
+<hr>
+<h2>Приклад 2: маршрут до місця, де ви часто буваєте</h2>
+<p>До системи, названої вголос, «Вега» маршрут не прокладає — назви найгірше даються розпізнаванню
+мовлення. Для місця, куди ви літаєте регулярно, макрос сам керує картою галактики, щоразу однаково.</p>
+<p><img src="../images/ui-custom-command-navigation.png" alt="Власна команда, що прокладає маршрут до Jameson Memorial"></p>
+<p><strong>Що ви скажете:</strong> <em>маршрут до jameson memorial</em>, <em>відвези мене до jameson memorial</em>, <em>jameson
+memorial маршрут</em>. Потім <strong>Створити</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Тип</th>
+<th>Значення</th>
+<th>Тривалість, мс</th>
+<th>Що робить</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Натискання прив&#39;язки</td>
+<td>GALAXYMAPOPEN</td>
+<td></td>
+<td>Відкрити карту галактики</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Затримка</td>
+<td></td>
+<td>1000</td>
+<td>Дати карті завантажитися</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Утримання прив&#39;язки</td>
+<td>CAMZOOMIN</td>
+<td>500</td>
+<td>Наблизити камеру карти</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Натискання прив&#39;язки</td>
+<td>UI_LEFT</td>
+<td></td>
+<td>Перейти до поля пошуку</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Натискання прив&#39;язки</td>
+<td>UI_RIGHT</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Натискання прив&#39;язки</td>
+<td>UI_SELECT</td>
+<td></td>
+<td>Відкрити поле пошуку</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Ввести текст</td>
+<td>SHINRARTA DEZHRA</td>
+<td></td>
+<td>Надрукувати назву системи</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Натискання клавіші</td>
+<td>ENTER</td>
+<td>50</td>
+<td>Шукати</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Затримка</td>
+<td></td>
+<td>500</td>
+<td>Дочекатися результату</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Натискання прив&#39;язки</td>
+<td>UI_RIGHT</td>
+<td></td>
+<td>Перейти в панель результату</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Утримання прив&#39;язки</td>
+<td>UI_UP</td>
+<td>500</td>
+<td>Піднятися до верхньої кнопки</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Натискання прив&#39;язки</td>
+<td>UI_SELECT</td>
+<td></td>
+<td>Прокласти маршрут</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Затримка</td>
+<td></td>
+<td>3000</td>
+<td>Дочекатися прокладання маршруту</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Натискання прив&#39;язки</td>
+<td>CAMYAWLEFT</td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Для іншого місця виберіть цю команду, натисніть <strong>Дублювати</strong>, змініть назву, фрази й систему в
+кроці 7 і <strong>Створіть</strong> новий ключ. «Дублювати» навмисно лишає фрази й ключ порожніми, щоб дві
+команди ніколи не звучали однаково.</p>
+<p>Запускайте такий макрос <strong>у польоті</strong>, із закритою картою галактики — перший крок відкриває її, а
+вже відкриту закрив би.</p>
+<hr>
+<h2>Типи кроків</h2>
+<table>
+<thead>
+<tr>
+<th>Тип</th>
+<th>Поля</th>
+<th>Для чого</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Натискання прив&#39;язки</strong></td>
+<td>Прив&#39;язка</td>
+<td>Один раз натиснути ігрову дію</td>
+</tr>
+<tr>
+<td><strong>Утримання прив&#39;язки</strong></td>
+<td>Прив&#39;язка, Тривалість, мс</td>
+<td>Утримувати дію — тяга, камера, прокручування меню</td>
+</tr>
+<tr>
+<td><strong>Затримка</strong></td>
+<td>Тривалість, мс</td>
+<td>Дати грі час: відкривається панель, вантажиться карта, триває пошук</td>
+</tr>
+<tr>
+<td><strong>Промовити</strong></td>
+<td>Текст</td>
+<td>«Вега» щось скаже — підтвердження або що макрос щойно зробив</td>
+</tr>
+<tr>
+<td><strong>Натискання клавіші</strong></td>
+<td>Довільна клавіша, Модифікатор, Тривалість, мс</td>
+<td>Натиснути клавішу, що не є ігровою прив&#39;язкою: Enter, Escape, літеру. Тривалість — час утримання</td>
+</tr>
+<tr>
+<td><strong>Ввести текст</strong></td>
+<td>Текст</td>
+<td>Надрукувати символи в поле з фокусом — пошук, рядок чату</td>
+</tr>
+</tbody></table>
+<p><strong>Кроки прив&#39;язки кращі за «Натискання клавіші».</strong> Прив&#39;язка слідує за клавішею, яку справді
+використовує гра, тож макрос далі працюватиме після перепризначення. «Натискання клавіші» — лише для
+клавіш без прив&#39;язки, наприклад Enter у текстовому полі.</p>
+<p><strong>«Ввести текст» потрапляє туди, де фокус клавіатури.</strong> Спершу відкрийте поле — кроком прив&#39;язки, що
+відкриває пошук, або <strong>Натискання клавіші: Enter</strong> для чату зв&#39;язку. Інакше літери прийдуть у
+керування кораблем як натискання клавіш.</p>
+<hr>
+<h2>Поради</h2>
+<ul>
+<li><strong>Затримки — звичайне рішення.</strong> Якщо крок ніби пропускається, гра не була готова. Подовжте
+затримку перед ним або посуньте <strong>Темп клавіатурного вводу</strong> на <a href="UI-Bindings-Tab.html">вкладці «Бінди»</a>
+до «Повільно» — це додає паузу після кожного надісланого натискання.</li>
+<li><strong>Кілька фраз, ясний зміст.</strong> Казати фразу дослівно не треба; «Вега» зіставляє за змістом. Що
+більше ваші фрази відрізняються від інших команд, то надійніше вибирається ваша.</li>
+<li><strong>Кроки «Промовити» роблять макроси частиною корабля</strong> й підтверджують, що макрос справді
+спрацював.</li>
+<li><strong>Діліться ними.</strong> <strong>Експорт</strong> записує вибрані команди у файл; <strong>Імпорт</strong> читає. Імпорт замінює
+поточний набір, але спершу робиться резервна копія — <strong>Відновити з резервної копії</strong> поверне його.</li>
+<li><strong>Слухайте повідомлення під час запуску.</strong> Коли служби стартують, «Вега» каже, скільки власних
+команд завантажено і скільки не пройшли перевірку.</li>
+</ul>
+<hr>
+<h2>Розв&#39;язання проблем</h2>
+<p>Повідомлення перевірки під час збереження виводяться англійською.</p>
+<table>
+<thead>
+<tr>
+<th>Повідомлення чи симптом</th>
+<th>Що робити</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><em>Додайте принаймні одну фразу вище, перш ніж створювати ключ.</em></td>
+<td>Спершу напишіть хоча б одну фразу</td>
+</tr>
+<tr>
+<td><em>Не вдалося створити ключ дії.</em></td>
+<td>Мовна модель не відповіла. Перевірте індикатор ШІ на вкладці «Вега» й повторіть</td>
+</tr>
+<tr>
+<td><em>Phrase collides with a built-in action alias</em></td>
+<td>Ця фраза вже запускає вбудовану команду. Переформулюйте</td>
+</tr>
+<tr>
+<td><em>Phrase collides with another custom command</em> / <em>Duplicate phrase</em></td>
+<td>Дві команди — або одна двічі — використовують цю фразу. Змініть одну</td>
+</tr>
+<tr>
+<td><em>Action key collides with a built-in command</em> / <em>must be unique</em></td>
+<td>Переформулюйте фрази й знову натисніть <strong>Створити</strong></td>
+</tr>
+<tr>
+<td><em>At least one step is required</em> / <em>… is required</em> / <em>durationMs must be positive</em></td>
+<td>Кроку бракує прив&#39;язки, тексту, клавіші чи тривалості</td>
+</tr>
+<tr>
+<td>Макрос працює, але щось пропускається</td>
+<td>Додайте чи подовжте затримку перед цим кроком або сповільніть темп вводу</td>
+</tr>
+<tr>
+<td>«Вега» відповідає чимось іншим</td>
+<td>Зробіть фрази відмітнішими або запустіть текстом: <code>@Вега &lt;фраза&gt;</code></td>
+</tr>
+<tr>
+<td>Крок прив&#39;язки нічого не робить</td>
+<td>Дія не має клавіатурної прив&#39;язки — див. <a href="UI-Bindings-Tab.html">вкладку «Бінди»</a></td>
+</tr>
+</tbody></table>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

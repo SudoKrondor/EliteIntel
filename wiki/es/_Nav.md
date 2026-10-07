@@ -17,6 +17,7 @@ UI-Commander-Tab: Pestaña Comandante
 UI-Actions-Tab: Pestaña Acciones
 UI-Bindings-Tab: Pestaña Bindings
 UI-Settings-Tab: Pestaña Ajustes
+UI-Jukebox-Tab: Pestaña Jukebox
 UI-Stats-Tab: Pestaña Estadísticas
 UI-HUD-Overlay: Overlay HUD
 installing-local-llms: Elegir tu LLM
@@ -25,6 +26,7 @@ Install-LM-Studio-Linux: LM Studio  Linux
 Install-LM-Studio-Windows: LM Studio  Windows
 AMD-RX-7800XT-LLM-Setup: AMD RX Series
 General-Operation: Operación general
+Custom-Commands: Crear tus propios comandos
 TradeRoutePlotting: Comercio y beneficio
 Search-galaxy-with-EliteIntel: Explorar la galaxia
 Discovery-Assistance: Exploración & Exobiología

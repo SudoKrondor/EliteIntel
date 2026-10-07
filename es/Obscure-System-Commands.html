@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comandos del sistema poco conocidos  EliteIntel</title>
-    <meta name="description" content="EliteIntel usa una interfaz mínima sin menús ni paneles de ajustes complejos. Un conjunto completo de funciones está disponible mediante comandos de voz. Todos ">
+    <title>Comandos del sistema en detalle  EliteIntel</title>
+    <meta name="description" content="Todos los comandos enumera lo que puedes decir. Esta página trata los comandos que">
     <link rel="canonical" href="https://www.elite-intel.org/es/Obscure-System-Commands.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Obscure-System-Commands.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Obscure-System-Commands.html">
@@ -12,8 +12,8 @@
     <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Obscure-System-Commands.html">
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Obscure-System-Commands.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Obscure-System-Commands.html">
-    <meta property="og:title" content="Comandos del sistema poco conocidos  EliteIntel">
-    <meta property="og:description" content="EliteIntel usa una interfaz mínima sin menús ni paneles de ajustes complejos. Un conjunto completo de funciones está disponible mediante comandos de voz. Todos ">
+    <meta property="og:title" content="Comandos del sistema en detalle  EliteIntel">
+    <meta property="og:description" content="Todos los comandos enumera lo que puedes decir. Esta página trata los comandos que">
     <meta property="og:url" content="https://www.elite-intel.org/es/Obscure-System-Commands.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Pestaña Acciones</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Pestaña Bindings</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Pestaña Ajustes</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Pestaña Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Pestaña Estadísticas</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">¿Cómo hago...?</div>
             <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Operación general</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Crear tus propios comandos</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Comercio y beneficio</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Explorar la galaxia</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Exploración &amp; Exobiología</a>
@@ -87,83 +89,148 @@
     </aside>
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
-<h1>Comandos del sistema poco conocidos</h1>
-<p>EliteIntel usa una interfaz mínima sin menús ni paneles de ajustes complejos. Un conjunto completo de funciones está disponible mediante comandos de voz. Todos los ajustes y funciones son accesibles mediante el habla natural.</p>
-<h2>Ajustes configurables</h2>
-<p>Activa o desactiva estos ajustes usando comandos de voz:</p>
+<h1>Comandos del sistema en detalle</h1>
+<p><a href="AllCommands.html">Todos los comandos</a> enumera lo que puedes decir. Esta página trata los comandos que
+necesitan algo más de explicación: qué hacer <em>antes</em> de decirlos, qué hacen de verdad y los
+detalles a tener en cuenta.</p>
+<p>Todo esto funciona hablado, escrito en el chat del juego como <code>@Vega …</code> o con un clic en la
+<a href="UI-Actions-Tab.html">pestaña Acciones</a>.</p>
+<hr>
+<h2>Ajustes que puedes cambiar por voz</h2>
+<p>Cada anuncio hablado tiene un interruptor por voz, y cada uno equivale a un interruptor de la
+<a href="UI-Commander-Tab.html">pestaña Comandante → Anuncios</a>, donde ves de un vistazo qué está activado.</p>
 <ul>
-<li><strong>Anuncios de ruta [Activado/Desactivado]</strong>: &quot;Turn Route Announcements On.&quot; EliteIntel anuncia detalles sobre tu próximo salto, incluyendo si la estrella es scoopable, la seguridad del sistema y otra información relevante. Cuando está desactivado, los anuncios se detienen. Las consultas manuales siguen disponibles. <em>Predeterminado: Activado</em></li>
-<li><strong>Anuncios de descubrimiento [Activado/Desactivado]</strong>: &quot;Turn Discovery Announcements On.&quot; EliteIntel anuncia sistemas cartografiados por primera vez, planetas de alto valor, señales bio y descubrimientos similares. <em>Predeterminado: Activado</em></li>
-<li><strong>Anuncios de minería y materiales [Activado/Desactivado]</strong>: &quot;Turn Mining Announcements On.&quot; EliteIntel marca los impactos de los limpets prospectores y los hallazgos de materiales. <em>Predeterminado: Desactivado</em></li>
-<li><strong>Añadir objetivo minero [Nombre del material]</strong>: &quot;Add Mining Target Painite.&quot; EliteIntel marca los impactos de ese material específico. Sin efecto si no hay ningún objetivo establecido. <em>Predeterminado: Desactivado</em></li>
-<li><strong>Chatter de radio [Activado/Desactivado]</strong>: &quot;Turn On the Radio.&quot; EliteIntel anuncia las transmisiones de radio relevantes como amenazas de piratas, mientras filtra el tráfico rutinario como los anuncios comerciales. Útil para transporte de carga. <em>Predeterminado: Desactivado</em></li>
-<li><strong>Modo streaming [Activado/Desactivado]</strong>: &quot;Set Streaming Mode On.&quot; EliteIntel solo responde a comandos con el prefijo &quot;Computer.&quot; Útil para hacer streaming o cuando se está en una escuadra. Di &quot;Computer, turn streaming mode off&quot; para desactivarlo.</li>
-<li><strong>Visión nocturna [Activado/Desactivado]</strong>: &quot;Night vision on.&quot; Activa la visión nocturna en la nave o el SRV.</li>
-<li><strong>Faros [Activado/Desactivado]</strong>: &quot;Headlights on.&quot;</li>
-<li><strong>Asistencia de conducción [Activado/Desactivado]</strong>: &quot;Drive assist off.&quot;</li>
+<li><strong>Anuncios de ruta</strong>: <em>«Desactiva los anuncios de ruta.»</em> Silencia todo lo que se dice alrededor
+de un salto — siguiente sistema, tráfico, bajas, llegada, saltos restantes, estrella
+recolectable. Las consultas manuales siguen funcionando.</li>
+<li><strong>Anuncios de descubrimiento</strong>: <em>«Activa los anuncios de descubrimiento.»</em> Primeros
+descubrimientos, cuerpos valiosos, señales biológicas. También controla la tarjeta de
+Exobiología del <a href="UI-HUD-Overlay.html">overlay HUD</a>.</li>
+<li><strong>Aproximación planetaria</strong>: <em>«Activa los anuncios de aproximación.»</em></li>
+<li><strong>Anuncios de minería</strong>: <em>«Activa los anuncios de minería.»</em> Impactos del prospector para tus
+objetivos. Primero fija objetivos: <em>«Agregar objetivo de minería painita.»</em> Sin objetivos no hay
+nada que anunciar.</li>
+<li><strong>Recogidas del cargo scoop</strong>: <em>«Activa los anuncios de recogida.»</em></li>
+<li><strong>Contactos de radar</strong>: <em>«Desactiva los anuncios de radar.»</em></li>
+<li><strong>Radio</strong>: <em>«Enciende la radio.»</em> Tráfico de radio del juego — amenazas piratas, control de
+tráfico — con sus propias voces de radio. Volumen y efectos en <a href="UI-Settings-Tab.html">Ajustes → Audio</a>.</li>
+<li><strong>Todo a la vez</strong>: <em>«Desactiva todos los anuncios.»</em></li>
+<li><strong>Visión nocturna / luces / asistente de conducción</strong>: <em>«Activar visión nocturna.»</em> <em>«Apagar
+luces.»</em> <em>«Asistente de conducción.»</em></li>
 </ul>
+<blockquote>
+<p><strong>¿Emitiendo o volando en ala?</strong> No existe un «modo streaming». Para que Vega no reaccione a
+otras voces, mándala a dormir (<em>«Duerme»</em>) y antepón a la orden ocasional <em>«Escúchame, …»</em> — o
+usa <a href="UI-Settings-Tab.html">push-to-talk</a>, que lo ignora todo mientras no mantengas el botón.</p>
+</blockquote>
+<hr>
 <h2>Navegación y búsqueda de lugares</h2>
-<p>Más allá del trazado de rutas básico, EliteIntel admite navegación específica:</p>
+<p>Vega traza rutas al resultado de una búsqueda, a lugares que ya conoce o a coordenadas de
+superficie. No traza rutas a un sistema que nombras en voz alta — ver
+<a href="UI-Actions-Tab.html">comando personalizado para lugares que visitas a menudo</a>.</p>
 <ul>
-<li><strong>Navegar a coordenadas</strong>: &quot;Navigate to latitude 41.4325 longitude -75.2309.&quot; EliteIntel te guía desde la órbita hasta 50 metros. La navegación en el lado oscuro requiere vuelo por instrumentos.</li>
-<li><strong>Navegar a muestra bio / entrada del Códex</strong>: &quot;Navigate to next bio sample&quot; o &quot;Navigate to nearest codex entry.&quot; EliteIntel navega al biológico etiquetado más cercano. Prioriza el género activo si hay uno siendo rastreado.</li>
-<li><strong>Navegar a la zona de aterrizaje</strong>: &quot;Navigate to landing zone.&quot; Navega a tus últimas coordenadas de aterrizaje conocidas en tierra.</li>
-<li><strong>Navegar al Portaflota</strong>: &quot;Navigate to carrier&quot; o &quot;Return to base.&quot; Traza una ruta al último sistema conocido del Portaflota.</li>
-<li><strong>Llévame a casa</strong>: &quot;Take me home.&quot; Traza una ruta a tu sistema natal configurado.</li>
-<li><strong>Establecer sistema natal</strong>: &quot;Set as home system.&quot; Marca tu sistema actual como el sistema natal.</li>
-<li><strong>Trazar ruta del Portaflota</strong>: Abre el mapa galáctico y selecciona una estrella. Copia su nombre usando el último botón a la derecha en la interfaz del Mapa Galáctico. Di &quot;Calculate Fleet Carrier Route.&quot; EliteIntel construye la ruta si el sistema está en Spansh.</li>
-<li><strong>Introducir el siguiente destino del Portaflota</strong>: Abre el mapa galáctico del Portaflota y haz clic en el campo de texto superior. Di &quot;Enter next Fleet Carrier destination.&quot; EliteIntel pegará el nombre del siguiente sistema en el campo.</li>
-<li><strong>Encontrar el intermediario tecnológico humano/guardian más cercano</strong>: &quot;Find nearest Human tech broker.&quot; EliteIntel traza una ruta. Al llegar, di &quot;Remind me where we need to go&quot; para un recordatorio de la estación.</li>
-<li><strong>Encontrar el comerciante de materiales más cercano</strong>: &quot;Find nearest raw material trader&quot; / &quot;encoded&quot; / &quot;manufactured.&quot; EliteIntel encuentra y traza una ruta.</li>
-<li><strong>Encontrar árboles cerebrales</strong>: &quot;Find brain trees within 500 light years.&quot; EliteIntel busca ubicaciones de biología Guardian.</li>
-<li><strong>Encontrar ubicación minera</strong>: &quot;Find where we can mine some Osmium within 200 light years.&quot; EliteIntel encuentra un sistema con anillos adecuados y traza la ruta.</li>
-<li><strong>Encontrar combustible para el Portaflota (Tritio)</strong>: &quot;Find where we can mine some carrier fuel within 300 light years.&quot; EliteIntel busca sistemas de anillos que contengan Tritio.</li>
-<li><strong>Encontrar mercancía</strong>: &quot;Find where we can buy Bromellite within 150 light years.&quot; EliteIntel consulta EDSM y traza una ruta al mejor mercado.</li>
-<li><strong>Encontrar Vista Genomics más cercana</strong>: &quot;Find nearest Vista Genomics.&quot; Traza una ruta a la Vista Genomics más cercana para el canje de muestras bio.</li>
-<li><strong>Encontrar el Portaflota más cercano</strong>: &quot;Find nearest Fleet Carrier.&quot; Útil cuando se necesita un Portaflota cercano.</li>
-</ul>
-<h2>Comandos de combate y misiones</h2>
-<ul>
-<li><strong>Encontrar zonas de caza</strong>: &quot;Find hunting grounds.&quot; EliteIntel busca Sitios de Extracción de Recursos Peligrosos cercanos o zonas de combate que coincidan con los parámetros de la misión.</li>
-<li><strong>Trazar ruta de reconocimiento</strong>: &quot;Navigate / plot recon route to hunting ground.&quot; EliteIntel traza un camino de exploración al sistema objetivo.</li>
-<li><strong>Navegar al proveedor de misiones</strong>: &quot;Navigate to system with matching mission provider&quot; o &quot;Navigate to a confirmed pirate massacre mission provider.&quot; EliteIntel traza una ruta al proveedor de misiones.</li>
-<li><strong>Navegar a la misión activa</strong>: &quot;Navigate to active mission.&quot; Navega al objetivo de la misión actual.</li>
-<li><strong>Confirmar / Ignorar zona de caza</strong>: &quot;Confirm hunting ground&quot; o &quot;Ignore hunting ground.&quot; Le indica a EliteIntel si usar o saltarse esa ubicación.</li>
-</ul>
-<h2>Atajos de control de la nave</h2>
-<ul>
-<li><strong>Distribución de energía</strong>: &quot;All power to shields,&quot; &quot;engines,&quot; &quot;weapons,&quot; o &quot;Equalize power.&quot; Un comando reequilibra todos los pips de energía. Especialmente útil en RV, donde los retrasos en el procesamiento en la nube aumentan el tiempo de respuesta.</li>
-<li><strong>Salir al HUD</strong>: &quot;Exit to HUD.&quot; Sale de los menús anidados con un solo comando.</li>
-<li><strong>Escaneo FSS / Honk</strong>: &quot;Open FSS and scan&quot; o &quot;Honk.&quot; Activa el escaneo de descubrimiento.</li>
-<li><strong>Establecer velocidad óptima</strong>: &quot;Set optimal speed.&quot; Establece el acelerador al 75% para el supercruise. Emite este comando aproximadamente 20 segundos antes del objetivo para evitar el bucle orbital.</li>
-<li><strong>Seleccionar siguiente sistema en la ruta</strong>: &quot;Target next system in route.&quot; EliteIntel selecciona el siguiente punto de referencia en la ruta trazada.</li>
-<li><strong>Bloqueo de navegación de escuadra</strong>: &quot;Wing nav lock.&quot; Se bloquea en la navegación de un compañero de escuadra.</li>
-<li><strong>Objetivo de subsistema</strong>: &quot;Target power plant.&quot; Bloquea el objetivo de subsistema.</li>
-<li><strong>Despedir nave / Ser extraído</strong>: &quot;Dismiss ship&quot; / &quot;Go to orbit&quot; / &quot;Return to surface, requesting extraction.&quot;</li>
-</ul>
-<h2>Comandos de utilidad y sesión</h2>
-<ul>
-<li><strong>Establecer un recordatorio</strong>: &quot;Set reminder, pick up Painite from Hutton Orbital.&quot; EliteIntel almacena el recordatorio para la sesión. Di &quot;Remind me&quot; para recuperarlo.</li>
-<li><strong>Borrar recordatorios</strong>: &quot;Clear reminders.&quot; Borra la cola de recordatorios.</li>
-<li><strong>Borrar entradas del Códex</strong>: &quot;Clear codex entries.&quot; Borra todas las entradas bio escaneadas. Úsalo con precaución.</li>
-<li><strong>Borrar entrada del Códex</strong>: &quot;Delete codex entry.&quot; Elimina la entrada más reciente.</li>
-<li><strong>Borrar caché</strong>: &quot;Clear cache.&quot; Borra toda la caché de la sesión. Úsalo solo cuando la sesión esté en un estado irrecuperable.</li>
-<li><strong>Rentabilizar ruta</strong>: &quot;Monetize route.&quot; EliteIntel analiza la ruta trazada en busca de oportunidades de beneficio comercial o de exploración.</li>
-<li><strong>Verificar conexión LLM</strong>: &quot;Verify LLM connection.&quot; Confirma que el backend de IA es accesible y está respondiendo.</li>
-<li><strong>Interrumpir / Silenciar</strong>: &quot;Interrupt,&quot; &quot;Silence,&quot; o &quot;Cancel.&quot; Detiene la salida activa de síntesis de voz.</li>
-<li><strong>Análisis de bioma</strong>: &quot;Run biome analysis on [nombre del sistema estelar / planeta].&quot; EliteIntel informa sobre las especies probables en esa ubicación antes de aterrizar.</li>
-<li><strong>Finanzas del Portaflota</strong>: &quot;Open fleet carrier data and tell me how long we can operate.&quot; EliteIntel calcula el número de semanas de operación con el saldo actual.</li>
-<li><strong>Alcance del Portaflota</strong>: &quot;What is the range of our fleet carrier?&quot; EliteIntel calcula el alcance en el peor caso a partir del tritio en el depósito y el almacén del Portaflota.</li>
-<li><strong>¿Cuánto tiempo puede operar el Portaflota?</strong>: &quot;Use reserve balance, how long can we run the carrier with 31 million credits per week?&quot; Especifica qué saldo usar. EliteIntel realiza el cálculo.</li>
-</ul>
-<h2>Notas de uso</h2>
-<ul>
-<li><strong>Lenguaje natural</strong>: No se requiere sintaxis de comando formal. Se admite el habla natural.</li>
-<li><strong>Usuarios de RV</strong>: Los comandos de distribución de energía y Salir al HUD reducen el impacto de los retrasos en el procesamiento en la nube en RV.</li>
-<li><strong>Navegación en el lado oscuro</strong>: Navegar a coordenadas en el lado oscuro de un planeta requiere vuelo por instrumentos.</li>
+<li><strong>Navegar a coordenadas</strong>: <em>«Navega a las coordenadas latitud 41,43 longitud -75,23.»</em> Guía
+desde la órbita hasta el punto en el cuerpo actual o al que te acercas. En el lado oscuro vuelas
+por instrumentos.</li>
+<li><strong>Siguiente muestra biológica / entrada del codex</strong>: <em>«Navegar a la siguiente muestra
+biológica.»</em> Te guía al organismo guardado más cercano en este planeta. <em>«Eliminar entrada del
+codex»</em> descarta la que sigues.</li>
+<li><strong>Zona de aterrizaje</strong>: <em>«Navega a la zona de aterrizaje.»</em> Vuelve a donde aterrizó tu nave.</li>
+<li><strong>Tu nave nodriza</strong>: <em>«Navega al fleet carrier»</em> / <em>«navega al carrier del escuadrón.»</em> Traza a
+su última ubicación conocida — o a tu sistema hogar si no se conoce ninguna.</li>
+<li><strong>Hogar</strong>: <em>«Establecer sistema hogar»</em> marca dónde estás (pide confirmación); <em>«llévame a
+casa»</em> traza la vuelta.</li>
+<li><strong>Navegar desde memoria</strong>: copia con Ctrl+C el nombre de un sistema desde INARA, Spansh o un
+mensaje de chat y di <em>«navega desde memoria.»</em> Vega abre el mapa galáctico y traza la ruta.</li>
+<li><strong>Ruta del carrier</strong>: abre el mapa galáctico, selecciona el destino, copia su nombre y di
+<em>«calcular ruta de fleet carrier.»</em> La ruta viene de Spansh, así que el sistema debe estar ahí.</li>
+<li><strong>Siguiente destino del carrier</strong>: abre el mapa galáctico <em>del carrier</em> y di <em>«ingresar destino
+del carrier.»</em> Vega escribe el siguiente tramo de la ruta guardada y lo confirma — repítelo tras
+cada salto.</li>
+<li><strong>Ruta de neutrones</strong>: copia el nombre del destino desde el mapa galáctico y di <em>«calcular ruta
+de neutrones»</em> (opcional <em>«…eficiencia 60»</em>, <em>«…con sobrecarga»</em>). Tras cada impulso, <em>«siguiente
+estrella de neutrones»</em> — o activa <em>Trazar la siguiente ruta de neutrones al impulsar en el
+cono</em> en la <a href="UI-Commander-Tab.html">pestaña Comandante</a>.</li>
+<li><strong>Comerciantes e intermediarios</strong>: <em>«Buscar comerciante de materiales sin procesar /
+codificados / fabricados»</em>, <em>«buscar intermediario tecnológico humano / guardian»</em>, <em>«buscar
+Vista Genomics más cercano»</em>, <em>«buscar factores interestelares más cercanos.»</em> Vega traza la ruta
+y deja un recordatorio con la estación; al llegar, pregunta <em>«¿cuál era el recordatorio?»</em></li>
+<li><strong>Brain trees</strong>: <em>«Buscar brain trees para [material] en un radio de 500 años luz.»</em> Encuentra un
+brain tree guardián que da ese material sin procesar.</li>
+<li><strong>Sitios de minería</strong>: <em>«¿Dónde puedo minar osmio en 200 años luz?»</em> También sirve para tritio.</li>
+<li><strong>Comprar y vender</strong>: <em>«¿Dónde puedo comprar bromellita?»</em> — añade <em>más cercano</em> o <em>mejor
+precio</em>; también vale para módulos. <em>«¿Dónde puedo vender oro?»</em></li>
+<li><strong>Combustible</strong>: <em>«Buscar estación de combustible»</em> / <em>«necesito combustible.»</em></li>
+<li><strong>Malos resultados de búsqueda</strong>: si una búsqueda te manda una y otra vez a un sitio que no
+sirve, di <em>«excluir este sistema de las búsquedas»</em> (o <em>«excluir ese sistema»</em> para tu
+destino). Se deshace desde dentro: <em>«desbloquear este sistema.»</em></li>
 </ul>
 <hr>
-<p>Comunidad 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+<h2>Combate y misiones</h2>
+<ul>
+<li><strong>Aprende primero de tu historial</strong>: <em>«Analizar diarios en busca de zonas de caza.»</em> Lee tus
+journals guardados y aprende cada sistema con sitios de extracción de recursos y cada proveedor
+de masacres piratas que hayas visto. Hazlo una vez tras instalar.</li>
+<li><strong>Zonas de caza</strong>: <em>«Buscar zona de caza en 100 años luz.»</em> Un sistema con sitios de extracción
+de recursos, de entre los que has recorrido. <em>«Olvida esta zona de caza»</em> quita una.</li>
+<li><strong>Apilar masacres</strong>: <em>«Buscar misiones de masacre de piratas»</em>, <em>«navegar al proveedor de misión
+pirata»</em>, <em>«navegar al objetivo de misión pirata»</em>, <em>«¿cuántas bajas?»</em></li>
+<li><strong>Zonas de conflicto</strong>: <em>«Buscar una zona de conflicto.»</em></li>
+<li><strong>Misiones</strong>: <em>«Navega a la misión activa.»</em> <em>«Buscar carga para la misión»</em> busca dónde comprar
+lo que aún necesita una misión activa — la que caduca antes y cuya carga no llevas ya.</li>
+<li><strong>Subsistemas</strong>: <em>«Apunta al FSD»</em> (también motores, distribuidor de energía, planta de energía,
+soporte vital, escudo).</li>
+</ul>
+<hr>
+<h2>Atajos de control de la nave</h2>
+<ul>
+<li><strong>Distribución de energía</strong>: <em>«Energía a escudos»</em>, <em>«máximo motores»</em>, <em>«igualar energía.»</em> Una
+orden ajusta todos los pips.</li>
+<li><strong>Cerrar / salir</strong>: <em>«Cerrar»</em> o <em>«salir»</em> abandona el panel o el mapa abierto.</li>
+<li><strong>Escaneo</strong>: <em>«Escanear el sistema»</em> dispara el escáner de descubrimiento en el grupo de fuego que
+fijaste por nave (pestaña Comandante → ⚙). <em>«Abrir FSS»</em> abre el escáner de espectro completo.</li>
+<li><strong>Velocidad óptima</strong>: <em>«Velocidad óptima.»</em> Pone el acelerador al 75 % — el punto dulce del
+supercrucero. Dila unos 20 segundos antes del objetivo para no dar vueltas a su alrededor.</li>
+<li><strong>Fijar el siguiente sistema de la ruta</strong>: <em>«Seleccionar destino FSD.»</em></li>
+<li><strong>Wing nav lock</strong>: <em>«Seguir al wingman.»</em></li>
+<li><strong>Grupos de fuego</strong>: <em>«Grupo de fuego bravo»</em> — letras OTAN o números.</li>
+<li><strong>Despedir / recoger</strong>: <em>«Despedir nave»</em> la envía a órbita; <em>«recógeme»</em> la trae de vuelta.</li>
+</ul>
+<hr>
+<h2>Utilidades y sesión</h2>
+<ul>
+<li><strong>Recordatorios</strong>: <em>«Establecer recordatorio, recoger painita en Hutton Orbital.»</em> Se guarda
+hasta que lo borres; <em>«¿cuál era el recordatorio?»</em> lo lee. <em>«Borrar recordatorios»</em> pide
+confirmación.</li>
+<li><strong>Temporizadores</strong>: <em>«Recuérdame en 20 minutos revisar el carrier.»</em></li>
+<li><strong>Monetizar ruta</strong>: <em>«Monetizar ruta.»</em> Encuentra un par compra/venta rentable a lo largo de la
+ruta trazada y lo guarda como recordatorio — comercio, no exploración. Aparece en el
+<a href="UI-HUD-Overlay.html">overlay HUD</a> como <em>Oportunidad de carga</em>.</li>
+<li><strong>Autodiagnóstico</strong>: <em>«Haz un diagnóstico»</em> / <em>«¿funcionas bien?»</em> Prueba la conexión con el
+modelo de lenguaje e informa de si responde y con qué rapidez.</li>
+<li><strong>Interrumpir</strong>: <em>«Interrumpe.»</em> Corta a Vega a media frase. Con push-to-talk, pulsar el botón
+hace lo mismo.</li>
+<li><strong>Análisis de bioma</strong>: <em>«Analizar bioma»</em> (o nombra un planeta). Dice qué es probable que crezca
+allí antes de aterrizar.</li>
+<li><strong>Finanzas y alcance del carrier</strong>: <em>«Estado del carrier»</em> / <em>«finanzas del carrier.»</em>
+Combustible, reserva, alcance de salto, saldo y autonomía.</li>
+<li><strong>Sitios de construcción</strong>: <em>«Progreso del sitio de construcción»</em>, <em>«buscar mercancía de
+construcción»</em>, <em>«llévame de vuelta al sitio de construcción»</em>, <em>«olvida el sitio de
+construcción.»</em></li>
+</ul>
+<hr>
+<h2>Notas de uso</h2>
+<ul>
+<li><strong>Lenguaje natural</strong>: sin sintaxis fija. Di lo que quieres decir.</li>
+<li><strong>Los nombres, al chat</strong>: los nombres de sistemas, estaciones y mercancías son lo que más le
+cuesta al reconocimiento de voz. Escribe esas órdenes: <code>@Vega dónde puedo comprar tritio</code>.</li>
+<li><strong>Las órdenes destructivas preguntan antes</strong>: borrar recordatorios, objetivos de minería,
+misiones o una ruta, eliminar una entrada del codex, olvidar una zona de caza, excluir un sistema
+o fijar un nuevo hogar. Responde <em>sí</em>; cualquier otra cosa cancela.</li>
+<li><strong>VR</strong>: la distribución de energía y cerrar/salir te ahorran buscar en menús con el visor.</li>
+</ul>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 
         </div>
     </main>

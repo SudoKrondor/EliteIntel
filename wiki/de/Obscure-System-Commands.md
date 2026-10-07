@@ -1,81 +1,154 @@
-# Weniger bekannte Systembefehle
+# Systembefehle im Detail
 
-EliteIntel verwendet eine minimalistische Oberfläche ohne Menüs oder komplexe Einstellungspanels. Der vollständige Funktionsumfang ist über Sprachbefehle zugänglich. Alle Einstellungen und Funktionen sind durch natürliche Sprache erreichbar.
+[Alle Befehle](AllCommands) listet, was du sagen kannst. Diese Seite behandelt die Befehle, die
+etwas mehr Erklärung brauchen: was du *vorher* tun musst, was sie tatsächlich tun und worauf du
+achten solltest.
 
-## Umschaltbare Einstellungen
+Alles hier funktioniert gesprochen, im Spielchat als `@Vega …` getippt oder per Klick im
+[Reiter Aktionen](UI-Actions-Tab).
 
-Diese Einstellungen lassen sich per Sprachbefehl umschalten:
+---
 
-- **Routen-Ansagen [An/Aus]**: „Routen-Ansagen einschalten." EliteIntel gibt Details zu deinem nächsten Sprung bekannt, darunter ob der Stern schöpfbar ist, die Systemsicherheit und weitere relevante Informationen. Wenn deaktiviert, hören die Ansagen auf. Manuelle Abfragen bleiben verfügbar. *Standard: An*
-- **Entdeckungsansagen [An/Aus]**: „Entdeckungsansagen einschalten." EliteIntel gibt erstmals kartierte Systeme, hochwertige Planeten, Bio-Signale und ähnliche Entdeckungen bekannt. *Standard: An*
-- **Abbau- und Material-Ansagen [An/Aus]**: „Abbau-Ansagen einschalten." EliteIntel meldet Prospektoren-Limpet-Treffer und Materialfunde. *Standard: Aus*
-- **Abbau-Ziel hinzufügen [Materialname]**: „Abbau-Ziel Painit hinzufügen." EliteIntel meldet Treffer für dieses spezifische Material. Ohne gesetztes Ziel keine Wirkung. *Standard: Aus*
-- **Funk-Gespräche [An/Aus]**: „Funk einschalten." EliteIntel gibt relevante Funkübertragungen bekannt, wie Piratenwarnungen, filtert aber routinemäßigen Verkehr wie Werbesendungen heraus. Nützlich für Frachtläufe. *Standard: Aus*
-- **Streaming-Modus [An/Aus]**: „Streaming-Modus einschalten." EliteIntel antwortet nur auf Befehle, die mit „Computer" beginnen. Nützlich beim Streamen oder in einer Gruppe. Zum Deaktivieren: „Computer, Streaming-Modus ausschalten."
-- **Nachtsicht [An/Aus]**: „Nachtsicht an." Schaltet die Nachtsicht im Schiff oder SRV um.
-- **Scheinwerfer [An/Aus]**: „Scheinwerfer an."
-- **Fahrhilfe [An/Aus]**: „Fahrhilfe aus."
+## Einstellungen, die du per Stimme umschaltest
 
-## Navigation & Dinge finden
+Jede gesprochene Ansage hat einen Sprachschalter, und jeder entspricht einem Schalter im
+[Reiter Kommandant → Ansagen](UI-Commander-Tab) — dort siehst du auf einen Blick, was an ist.
 
-Über die grundlegende Routenplanung hinaus unterstützt EliteIntel gezielte Navigation:
+- **Routenansagen**: *„Routenansagen aus.“* Stellt alles stumm, was rund um einen Sprung gesagt
+  wird — nächstes System, Verkehr, Verluste, Ankunft, verbleibende Sprünge, schöpfbarer Stern.
+  Manuelle Abfragen funktionieren weiter.
+- **Entdeckungsansagen**: *„Entdeckungsansagen an.“* Erstentdeckungen, wertvolle Körper,
+  biologische Signale. Steuert auch die Exobiologie-Karte im [HUD-Overlay](UI-HUD-Overlay).
+- **Planetenanflug**: *„Anflugansagen an.“*
+- **Bergbau-Ansagen**: *„Mining Ansagen an.“* Prospektortreffer für deine Abbauziele. Erst Ziele
+  setzen: *„Abbauziel hinzufügen Painit.“* Ohne Ziele gibt es nichts anzusagen.
+- **Frachtschaufel-Aufnahmen**: *„Frachtschaufel Ansagen an.“*
+- **Radarkontakte**: *„Radar Ansagen aus.“*
+- **Funk**: *„Funk an.“* Funkverkehr in der Spielwelt — Piratendrohungen, Flugkontrolle — mit
+  eigenen Funkstimmen. Lautstärke und Effekte liegen unter [Einstellungen → Audio](UI-Settings-Tab).
+- **Alles auf einmal**: *„Alle Ansagen ausschalten.“*
+- **Nachtsicht / Licht / Fahrassistenz**: *„Nachtsicht an.“* *„Licht.“* *„Fahrassistenz aus.“*
 
-- **Zu Koordinaten navigieren**: „Navigiere zu Breitengrad 41.4325 Längengrad -75.2309." EliteIntel führt dich von der Umlaufbahn bis auf 50 Meter heran. Navigation auf der Nachtseite erfordert Instrumentenflug.
-- **Zur Bio-Probe / Codex-Eintrag navigieren**: „Zur nächsten Bio-Probe navigieren" oder „Zum nächstgelegenen Codex-Eintrag navigieren." EliteIntel navigiert zur nächstgelegenen markierten Biologie. Es priorisiert die aktive Gattung, wenn eine verfolgt wird.
-- **Zur Landezone navigieren**: „Zur Landezone navigieren." Navigiert zu deinen zuletzt bekannten Landekoordinaten auf dem Boden.
-- **Zum Flottenträger navigieren**: „Zum Träger navigieren" oder „Zur Basis zurückkehren." Plant eine Route zum zuletzt bekannten System des Trägers.
-- **Bring mich nach Hause**: „Bring mich nach Hause." Plant eine Route zu deinem konfigurierten Heimatsystem.
-- **Heimatsystem festlegen**: „Als Heimatsystem festlegen." Markiert dein aktuelles System als Heimatsystem.
-- **Flottenträger-Route planen**: Galaxiekarte öffnen und einen Stern auswählen. Namen mit der letzten Schaltfläche rechts in der Galaxiekarten-UI kopieren. „Flottenträger-Route berechnen" sagen. EliteIntel erstellt die Route, wenn das System in Spansh enthalten ist.
-- **Nächstes Flottenträger-Ziel eingeben**: Flottenträger-Galaxiekarte öffnen und auf das obere Textfeld klicken. „Nächstes Flottenträger-Ziel eingeben" sagen. EliteIntel fügt den nächsten Systemnamen in das Feld ein.
-- **Nächsten menschlichen/Wächter-Technologiehändler finden**: „Nächsten menschlichen Technologiehändler finden." EliteIntel plant eine Route. Nach der Ankunft: „Erinnere mich, wohin wir müssen" für eine Stationserinnerung.
-- **Nächsten Materialhändler finden**: „Nächsten Rohstoffhändler finden" / „Datenmaterial" / „Verarbeitete Materialien." EliteIntel findet und plant eine Route.
-- **Gehirnbäume finden**: „Gehirnbäume innerhalb von 500 Lichtjahren finden." EliteIntel erkundet Guardian-Biologie-Standorte.
-- **Abbaustandort finden**: „Finde, wo wir Osmium innerhalb von 200 Lichtjahren abbauen können." EliteIntel findet ein System mit geeigneten Ringen und plant die Route.
-- **Träger-Treibstoff (Tritium) finden**: „Finde, wo wir Träger-Treibstoff innerhalb von 300 Lichtjahren abbauen können." EliteIntel sucht nach Ringsystemen mit Tritium.
-- **Ware finden**: „Finde, wo wir Bromellith innerhalb von 150 Lichtjahren kaufen können." EliteIntel fragt EDSM ab und plant eine Route zum besten Markt.
-- **Nächste Vista Genomics finden**: „Nächste Vista Genomics finden." Plant eine Route zur nächstgelegenen Vista Genomics für die Einlösung von Bio-Proben.
-- **Nächsten Flottenträger finden**: „Nächsten Flottenträger finden." Nützlich, wenn ein Flottenträger in der Nähe benötigt wird.
+> **Beim Streamen oder im Geschwader?** Einen eigenen „Streaming-Modus“ gibt es nicht. Damit Vega
+> nicht auf andere Stimmen reagiert, schick sie schlafen (*„Schlaf“*) und stell gelegentlichen
+> Befehlen *„Hör zu, …“* voran — oder nutze [Push-to-Talk](UI-Settings-Tab), das alles ignoriert,
+> solange die Taste nicht gehalten wird.
 
-## Kampf- & Missionsbefehle
+---
 
-- **Jagdgründe finden**: „Jagdgründe finden." EliteIntel erkundet nahegelegene gefährliche Ressourcenextraktionsstandorte oder Kampfzonen, die den Missionsparametern entsprechen.
-- **Erkundungsroute planen**: „Erkundungsroute zum Jagdgrund navigieren / planen." EliteIntel plant einen Erkundungsweg zum Zielsystem.
-- **Zum Missionsanbieter navigieren**: „Zum System mit passendem Missionsanbieter navigieren" oder „Zu einem bestätigten Piraten-Massaker-Missionsanbieter navigieren." EliteIntel plant eine Route zum Missionsanbieter.
-- **Zur aktiven Mission navigieren**: „Zur aktiven Mission navigieren." Navigiert zum aktuellen Missionsziel.
-- **Jagdgrund bestätigen / ignorieren**: „Jagdgrund bestätigen" oder „Jagdgrund ignorieren." Teilt EliteIntel mit, ob dieser Standort genutzt oder übersprungen werden soll.
+## Navigation & Orte finden
 
-## Schiffssteuerungs-Kurzbefehle
+Vega plottet Routen zum Ergebnis einer Suche, zu Orten, die sie kennt, oder zu
+Oberflächenkoordinaten. Zu einem laut genannten System plottet sie nicht — siehe
+[eigener Befehl für Orte, die du oft anfliegst](UI-Actions-Tab).
 
-- **Energieverteilung**: „Alle Energie auf Schilde", „Triebwerke", „Waffen" oder „Energie gleichmäßig verteilen." Ein Befehl verteilt alle Energie-Pips neu. Besonders nützlich in VR, wo Cloud-Verarbeitungsverzögerungen die Reaktionszeit erhöhen.
-- **Zurück zum HUD**: „Zurück zum HUD." Verlässt verschachtelte Menüs mit einem einzigen Befehl.
-- **FSS-Scan / Honk**: „FSS öffnen und scannen" oder „Honk." Löst den Entdeckungsscan aus.
-- **Optimale Geschwindigkeit einstellen**: „Optimale Geschwindigkeit einstellen." Setzt den Schub auf 75 % für den Supercruise. Diesen Befehl etwa 20 Sekunden vor dem Ziel geben, um orbitale Schleifen zu vermeiden.
-- **Nächstes System in der Route ansteuern**: „Nächstes System in der Route ansteuern." EliteIntel wählt den nächsten Wegpunkt auf der geplanten Route aus.
-- **Flügelmann-Nav-Lock**: „Flügelmann-Nav-Lock." Sperrt die Navigation auf einen Flügelmann.
-- **Teilsystem anvisieren**: „Kraftwerk anvisieren." Sperrt die Teilsystem-Zielerfassung.
-- **Schiff entlassen / Extraktion anfordern**: „Schiff entlassen" / „In die Umlaufbahn schicken" / „Zur Oberfläche zurückkehren, Extraktion anfordern."
+- **Navigation zu Koordinaten**: *„Navigiere zu Koordinaten Breite 41,43 Länge -75,23.“* Führung
+  vom Orbit bis zur Stelle auf dem aktuellen oder angeflogenen Körper. Auf der Nachtseite fliegst
+  du nach Instrumenten.
+- **Nächste Bio-Probe / Codex-Eintrag**: *„Zum nächsten Bio Sample navigieren.“* Führt dich zum
+  nächsten gespeicherten Organismus auf diesem Planeten. *„Codex Eintrag löschen“* verwirft den,
+  dem du gerade folgst.
+- **Landezone**: *„Navigiere zur Landezone.“* Zurück dorthin, wo dein Schiff zuletzt gelandet ist.
+- **Dein Träger**: *„Navigiere zum Fleet Carrier“* / *„navigiere zum Squadron Carrier.“* Plottet
+  zum letzten bekannten Standort — oder zum Heimatsystem, wenn kein Träger bekannt ist.
+- **Heimat**: *„Heimatsystem setzen“* markiert, wo du gerade bist (mit Rückfrage); *„bring mich
+  nach Hause“* plottet zurück.
+- **Navigation aus dem Speicher**: Systemnamen mit Strg+C aus INARA, Spansh oder einer
+  Chatnachricht kopieren, dann *„navigiere aus dem Speicher.“* Vega öffnet die Galaxiekarte und
+  plottet dorthin.
+- **Trägerroute**: Galaxiekarte öffnen, Ziel wählen, Namen kopieren, dann *„Fleet Carrier Route
+  berechnen.“* Die Route kommt von Spansh, das System muss dort bekannt sein.
+- **Nächstes Trägerziel eingeben**: die Galaxiekarte *des Trägers* öffnen und *„Carrier Ziel
+  eingeben“* sagen. Vega tippt die nächste Etappe der gespeicherten Route ein und bestätigt sie —
+  nach jedem Sprung wiederholen.
+- **Neutronenroute**: Zielnamen aus der Galaxiekarte kopieren und *„berechne die Neutronenroute“*
+  sagen (optional *„…Effizienz 60“*, *„…mit Supercharge“*). Nach jedem Boost *„nächster
+  Neutronenstern“* — oder *Nächsten Neutronensprung beim Kegel-Boost automatisch plotten* im
+  [Reiter Kommandant](UI-Commander-Tab) einschalten.
+- **Händler und Broker**: *„Rohmaterialhändler finden“*, *„Datenhändler finden“*, *„Human Tech
+  Broker finden“*, *„nächste Vista Genomics finden“*, *„nächsten Interstellar Factor finden.“* Vega
+  plottet die Route und hinterlässt eine Erinnerung mit der Station; frag bei Ankunft *„was war die
+  Erinnerung?“*
+- **Brain Trees**: *„Brain Trees für [Material] innerhalb von 500 Lichtjahren finden.“* Findet
+  einen Guardian-Brain-Tree, der dieses Rohmaterial liefert.
+- **Abbauorte**: *„Wo kann ich Osmium innerhalb von 200 Lichtjahren abbauen?“* Funktioniert auch
+  für Tritium.
+- **Kaufen und verkaufen**: *„Wo kann ich Bromellit kaufen?“* — mit *nächste* oder *bester
+  Preis*; geht auch für Schiffsmodule. *„Wo kann ich Gold verkaufen?“*
+- **Treibstoff**: *„Tankstelle finden“* / *„ich brauche Treibstoff.“*
+- **Schlechte Suchergebnisse**: Schickt dich eine Suche immer wieder an einen Ort, der nicht
+  funktioniert, sag *„dieses System aus Suchen ausschließen“* (oder *„Zielsystem aus Suchen
+  ausschließen“*). Rückgängig aus dem System heraus: *„dieses System wieder zulassen.“*
 
-## Hilfsprogramme & Sitzungsbefehle
+---
 
-- **Erinnerung setzen**: „Erinnerung setzen, Painit von Hutton Orbital abholen." EliteIntel speichert die Erinnerung für die Sitzung. „Erinnere mich" sagen, um sie abzurufen.
-- **Erinnerungen löschen**: „Erinnerungen löschen." Leert die Erinnerungswarteschlange.
-- **Codex-Einträge löschen**: „Codex-Einträge löschen." Löscht alle gescannten Bio-Einträge. Mit Vorsicht verwenden.
-- **Codex-Eintrag löschen**: „Codex-Eintrag löschen." Entfernt den neuesten Eintrag.
-- **Cache löschen**: „Cache löschen." Löscht den gesamten Sitzungs-Cache. Nur verwenden, wenn die Sitzung in einem nicht behebbaren Zustand ist.
-- **Route monetarisieren**: „Route monetarisieren." EliteIntel analysiert die geplante Route auf Handels- oder Erkundungsgewinnmöglichkeiten.
-- **LLM-Verbindung prüfen**: „LLM-Verbindung prüfen." Bestätigt, dass das KI-Backend erreichbar ist und antwortet.
-- **Unterbrechen / Stilllegen**: „Unterbrechen", „Stilllegen" oder „Abbrechen." Stoppt aktive Text-to-Speech-Ausgabe.
-- **Biomanalyse**: „Biomanalyse für [Sternensystem / Planetenname] durchführen." EliteIntel meldet wahrscheinliche Spezies an diesem Standort vor der Landung.
-- **Flottenträger-Finanzen**: „Flottenträgerdaten öffnen und sagen, wie lange wir operieren können." EliteIntel berechnet die Betriebswochen aus dem aktuellen Guthaben.
-- **Flottenträger-Reichweite**: „Was ist die Reichweite unseres Flottenträgers?" EliteIntel berechnet die ungünstigste Reichweite aus Tritium im Depot und im Trägerlager.
-- **Wie lange kann der Träger operieren?**: „Reserveguthaben verwenden, wie lange können wir den Träger mit 31 Millionen Credits pro Woche betreiben?" Angeben, welches Guthaben verwendet werden soll. EliteIntel führt die Berechnung durch.
+## Kampf & Missionen
 
-## Nutzungshinweise
+- **Zuerst aus der Vergangenheit lernen**: *„Journale nach Jagdgebieten durchsuchen.“* Liest
+  deine gespeicherten Spieljournale und lernt jedes System mit Ressourcenabbaustätten und jeden
+  Piraten-Massaker-Missionsgeber, den du je gesehen hast. Einmal nach der Installation ausführen.
+- **Jagdgebiete**: *„Jagdgebiet finden innerhalb von 100 Lichtjahren.“* Ein System mit
+  Ressourcenabbaustätten aus den Systemen, die du durchflogen hast. *„Dieses Jagdgebiet vergessen“*
+  entfernt eins.
+- **Massaker stapeln**: *„Finde Piraten Massaker Missionen“*, *„navigiere zum Piraten
+  Missionsgeber“*, *„navigiere zum Piraten Missionsziel“*, *„wie viele Kills?“*
+- **Konfliktzonen**: *„Finde eine Konfliktzone.“*
+- **Missionen**: *„Navigiere zur aktiven Mission.“* *„Missionsware finden“* sucht, wo du kaufst,
+  was eine aktive Mission noch braucht — die, die zuerst abläuft und deren Fracht du noch nicht an
+  Bord hast.
+- **Subsysteme**: *„Ziel Kraftwerk“* (auch Triebwerke, FSD, Energieverteiler, Lebenserhaltung,
+  Schild).
 
-- **Natürliche Sprache**: Formale Befehlssyntax ist nicht erforderlich. Natürliche Sprache wird unterstützt.
-- **VR-Nutzer**: Energieverteilungs- und Zurück-zum-HUD-Befehle verringern die Auswirkungen von Cloud-Verarbeitungsverzögerungen in VR.
-- **Navigation auf der Nachtseite**: Das Navigieren zu Koordinaten auf der Nachtseite eines Planeten erfordert Instrumentenflug.
+---
+
+## Abkürzungen für die Schiffssteuerung
+
+- **Energieverteilung**: *„Energie auf Schilde“*, *„maximale Triebwerke“*, *„Energie
+  ausgleichen.“* Ein Befehl setzt alle Pips.
+- **Schließen / verlassen**: *„Schließen“* oder *„raus“* verlässt das offene Panel oder die Karte.
+- **Scan**: *„Scanne das System“* löst den Entdeckungsscanner auf der Feuergruppe aus, die du pro
+  Schiff eingestellt hast (Reiter Kommandant → ⚙). *„FSS öffnen“* öffnet den FSS.
+- **Optimale Geschwindigkeit**: *„Optimale Geschwindigkeit.“* Setzt den Schub auf 75 % — den
+  Supercruise-Sweetspot. Etwa 20 Sekunden vor dem Ziel sagen, damit du nicht drumherum kreist.
+- **Nächstes System der Route anvisieren**: *„Sprungziel auswählen.“*
+- **Wing Nav Lock**: *„Wingman folgen.“*
+- **Feuergruppen**: *„Gruppe Bravo“* — NATO-Buchstaben oder Zahlen.
+- **Wegschicken / zurückrufen**: *„Schiff wegschicken“* schickt es in den Orbit; *„hol mich ab“*
+  holt es zurück.
+
+---
+
+## Hilfs- & Sitzungsbefehle
+
+- **Erinnerungen**: *„Erinnerung setzen, Painit bei Hutton Orbital abholen.“* Bleibt gespeichert,
+  bis du sie löschst; *„was war die Erinnerung?“* liest sie vor. *„Erinnerungen löschen“* fragt
+  vorher nach.
+- **Timer**: *„Erinnere mich in 20 Minuten den Träger zu prüfen.“*
+- **Route monetarisieren**: *„Route monetarisieren.“* Findet ein lohnendes Kauf-/Verkaufspaar
+  entlang deiner geplotteten Route und speichert es als Erinnerung — Handel, nicht Erkundung. Im
+  [HUD-Overlay](UI-HUD-Overlay) erscheint es als *Frachtchance*.
+- **Selbstdiagnose**: *„Selbstdiagnose“* / *„funktionierst du richtig?“* Testet die Verbindung zum
+  Sprachmodell und meldet, ob und wie schnell es antwortet.
+- **Unterbrechen**: *„Unterbrich.“* Stoppt Vega mitten im Satz. Mit Push-to-Talk tut das Drücken
+  der Taste dasselbe.
+- **Biom-Analyse**: *„Biom analysieren“* (oder einen Planeten nennen). Sagt, was dort
+  wahrscheinlich wächst, bevor du landest.
+- **Trägerfinanzen und Reichweite**: *„Carrier Status“* / *„Carrier Finanzen.“* Treibstoff,
+  Reserve, Sprungreichweite, Kontostand und Laufzeit.
+- **Baustellen**: *„Baufortschritt“*, *„Baustellenware finden“*, *„bring mich zurück zur
+  Baustelle“*, *„Baustelle vergessen.“*
+
+---
+
+## Hinweise
+
+- **Natürliche Sprache**: keine feste Syntax. Sag, was du meinst.
+- **Namen in den Chat**: System-, Stations- und Warennamen bereiten der Spracherkennung die meisten
+  Probleme. Tipp solche Befehle: `@Vega wo kann ich tritium kaufen`.
+- **Folgenreiche Befehle fragen nach**: Erinnerungen, Abbauziele, Missionen oder eine Route
+  löschen, einen Codex-Eintrag löschen, ein Jagdgebiet vergessen, ein System ausschließen oder ein
+  neues Heimatsystem setzen. Antworte mit *ja*; alles andere bricht ab.
+- **VR**: Energieverteilung und Schließen ersparen dir die Suche in Menüs im Headset.
 
 ----
 Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈

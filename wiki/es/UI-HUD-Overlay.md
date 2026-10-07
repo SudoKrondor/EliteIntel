@@ -1,47 +1,65 @@
 # Overlay HUD
 
-**Nuevo en V1.1.** Un overlay siempre visible que pone tus objetivos actuales en pantalla, en la
-ventana del juego o dentro de un visor VR.
+Un overlay siempre visible que pone en pantalla tu objetivo actual y tu conversación con Vega —
+en la ventana del juego o dentro de un visor VR.
 
 ![Overlay HUD en el juego](images/ui-overlay-ingame.png)
 
-Sustituye a la antigua ventana de overlay para OBS. El overlay corre fuera del proceso, así que no
-compite con el juego ni con la aplicación por el hilo de interfaz.
+El overlay se ejecuta en su propio proceso, así que no compite con el juego ni con la app por el
+hilo de la interfaz.
 
-La tarjeta se dibuja según la geometría de la cabina, no en ángulo recto con tu monitor, así que se
-inclina como se inclinan los propios paneles de la nave en ese punto de la pantalla: si la mueves,
-la inclinación cambia en consecuencia. Sus filas son líneas inclinadas, y por eso un valor puede
-quedar bastante más abajo que la etiqueta a la que pertenece: lee cada fila siguiendo la
-inclinación, igual que lees las lecturas del propio juego que tiene al lado. Cuánto parece caer un
-valor depende del **TAMAÑO DEL TEXTO** además de la colocación: la inclinación la fija la cabina,
-así que un texto más pequeño implica filas más cortas y la misma caída cruza más de ellas.
+La tarjeta se dibuja siguiendo la geometría de la cabina en lugar de en ángulo recto con el
+monitor, así que se inclina como los paneles de la propia nave en ese punto de la pantalla —
+muévela y la inclinación cambia con ella. Sus filas son líneas inclinadas, por eso un valor puede
+quedar bastante más bajo que su etiqueta: lee cada fila siguiendo la inclinación, como lees las
+lecturas del juego a su lado. Cuánto parece caer un valor depende también del **TAMAÑO DEL
+TEXTO** — la inclinación la fija la cabina, así que un texto más pequeño da filas más cortas y la
+misma caída cruza más de ellas.
 
 Actívalo con **MOSTRAR OVERLAY** en la [pestaña Vega](UI-Vega-Tab) y configúralo con **AJUSTES DE
-OVERLAY**, al lado.
+OVERLAY** al lado. La app recuerda si lo dejaste activado y lo restaura en el siguiente arranque.
 
-> Si falta el binario del overlay en la distribución, el interruptor se queda apagado y lo dice en
-> el registro de diagnóstico. No fingirá un overlay que no existe.
+> Si falta el binario del overlay en la distribución, el interruptor lo indica en el registro de
+> diagnósticos. No finge un overlay que no existe.
 
 ---
 
 ## Qué muestra
 
-El overlay dibuja **tarjetas**: una por objetivo activo, derivada de lo que estás haciendo
-realmente. Las tarjetas aparecen y desaparecen solas; no hay nada que configurar.
+### Una tarjeta de objetivo
 
-| Tarjeta | Aparece cuando |
-|------|--------------|
-| **EXOBIOLOGÍA** | Estás muestreando orgánicos: género y qué queda por encontrar |
-| **CONTRATO DE MASACRE** | Estás haciendo misiones de masacre: bajas necesarias, pila, recompensa |
-| **MINERÍA** | Estás minando: bodega, drones, mercancía objetivo |
-| **RUTA COMERCIAL** | Hay una ruta comercial trazada: mercancía, compra, venta, margen, tramo *n* de *m* |
-| **OPORTUNIDAD DE CARGA** | Se ha detectado una carga rentable para lo que llevas |
-| **MISIÓN** | Una misión destacada: objetivo, carga o pasajeros, caducidad, recompensa |
-| **RUTA TRAZADA** | Hay una ruta fijada: destino, siguiente sistema, saltos restantes |
-| **COMERCIANTE DE MATERIALES** · **CORREDOR TECNOLÓGICO** · **FACTORES INTERESTELARES** · **VISTA GENOMICS** | Has puesto un recordatorio de destino para visitar uno |
+Solo cabe una tarjeta, así que el overlay muestra **lo más importante que estás haciendo ahora**
+y cambia sola cuando eso cambia. No hay nada que configurar.
 
-La tarjeta de misión destacada elige su misión como lo harías tú: primero la que está en el destino
-de tu ruta, luego una de tu sistema actual, y después la aceptada más recientemente.
+El trabajo que aceptaste siempre gana al que la app propone, en este orden:
+
+| Rango | Tarjeta | Aparece cuando |
+|------|------|--------------|
+| 1 | **CONTRATO DE MASACRE** | Estás con misiones de masacre — bajas requeridas, pila, recompensa |
+| 1 | **MISIÓN** | Has aceptado misiones — objetivo, carga o pasajeros, caducidad y recompensa de la destacada, más lo que vale el resto de la pila |
+| 2 | **RUTA COMERCIAL** | Hay una ruta comercial trazada — mercancía, compra, venta, margen, tramo *n* de *m* |
+| 2 | **OPORTUNIDAD DE CARGA** | Vega encontró un par compra/venta rentable para el espacio libre de tu viaje |
+| 2 | **SITIO DE OBRA** | Transportas para una construcción de colonización — progreso, lo pendiente y qué cargar en el próximo viaje |
+| 2 | **MERCANCIA HALLADA** / **LISTA DE COMPRA** / **VENDER CARGA** | Una búsqueda de mercancía encontró un mercado y hay una ruta trazada hasta él — qué comprar (o vender), existencias y precio |
+| 3 | **MINERÍA** | Tienes objetivos de minería, una refinería instalada y no estás en supercrucero — bodega, drones, objetivos |
+| 3 | **EXOBIOLOGÍA** | Quedan géneros por muestrear en este sistema — solo mientras *Anunciar descubrimientos* está activado |
+| 3 | **CAZA RECOMPENSAS** | Estás en un sitio de extracción de recursos — tipo de sitio, recompensas en la bodega, bajas |
+| 3 | **ZONA DE CONFLICTO** | Estás en una zona de conflicto — intensidad, tu bando, bonos de combate en mano |
+| 3 | **RUTA TRAZADA** | Hay una ruta fijada — destino, siguiente sistema, saltos restantes |
+
+La tarjeta de **ruta trazada** toma un título más concreto cuando Vega calculó el destino por ti y
+la ruta sigue yendo allí: **COMERCIANTE DE MATERIALES**, **CORREDOR TECNOLÓGICO**, **FACTORES
+INTERESTELARES**, **VISTA GENOMICS**, **REPOSTAJE** o **EQUIPAMIENTO**, con la estación y el tipo
+añadidos. Trazar a otro sitio borra ese detalle, así que un encargo viejo nunca puede adueñarse de
+la tarjeta.
+
+La tarjeta de **misión** destaca la misión cuyo destino es el final de tu ruta trazada; si no, la
+que caduca antes.
+
+### La conversación
+
+Bajo la tarjeta, el overlay va escribiendo el intercambio según ocurre — lo que dijiste, la
+respuesta de Vega y el tráfico de radio —, cada uno con su color. Útil si juegas con la voz baja.
 
 ---
 
@@ -49,51 +67,60 @@ de tu ruta, luego una de tu sistema actual, y después la aceptada más reciente
 
 ![Ajustes del overlay](images/ui-overlay-settings.png)
 
-**TRANSPARENCIA DEL FONDO** (0–100 %) y **TAMAÑO DEL TEXTO** (75–200 %) son dos controles separados
-a propósito. Un único deslizador de «opacidad» atenuaría el texto junto con el fondo, que es
-justamente lo que vuelve ilegible un overlay atenuado sobre una superficie planetaria brillante.
-Atenúa el fondo; deja el texto en paz.
+**TRANSPARENCIA DEL FONDO** (0–100 %) y **TAMAÑO DEL TEXTO** (75–200 %) son dos controles
+separados a propósito. Un único deslizador de «opacidad» desvanecería el texto junto con el
+fondo, que es justo lo que hace ilegible un overlay atenuado sobre la superficie brillante de un
+planeta. Atenúa el fondo; deja el texto en paz.
+
+### Colores del texto
+
+Un selector de color por función, para ajustar el overlay a los colores de tu cabina o a tu
+vista:
+
+**Título del objetivo** · **Correcto** · **Advertencia** · **Crítico** · **Etiquetas** · **Tus
+palabras** · **IA de la nave** · **Tráfico de radio**
+
+**Restablecer colores** devuelve cada color al que trae el overlay de serie.
 
 ### MOSTRAR EN
 
 | Modo | Qué hace |
 |------|--------------|
-| **Monitor** | Una ventana de escritorio. Lo predeterminado, y lo que hacía toda versión anterior a V1.1. La tarjeta se inclina para acompañar a la cabina, y la inclinación cambia con la colocación: véase arriba |
-| **Visor VR** | Un overlay de SteamVR. Requiere SteamVR en marcha. Si la VR no está disponible, recae en una ventana de escritorio, así que nunca te quedas sin nada |
-| **Monitor y visor** | Ambos a la vez, alimentados con datos idénticos. Útil si vuelas en VR pero emites o grabas desde el monitor |
-| **Ventana de captura VR** | Una ventana lisa, plana y opaca para que una herramienta de captura la fije |
+| **Monitor** | Una ventana de escritorio. El valor por defecto. La tarjeta se inclina según la cabina, y la inclinación cambia según dónde la coloques |
+| **Visor VR** | Un overlay de SteamVR. Necesita SteamVR en marcha. Si no hay VR disponible, recurre a una ventana de escritorio, para que nunca te quedes sin nada |
+| **Monitor y visor** | Ambos a la vez, con los mismos datos. Útil si vuelas en VR pero emites o grabas desde el monitor |
+| **Ventana de captura VR** | Una ventana sencilla, plana y opaca para que la fije una herramienta de captura |
 
 ### Sobre la ventana de captura VR
 
-Este modo **no** habla con SteamVR. Arranca tu herramienta de captura —Desktop+, OVR Toolkit o
-Virtual Desktop— y elige la ventana llamada **«EliteIntel HUD (VR capture)»**.
+Este modo **no** habla con SteamVR. Arranca tu herramienta de captura — Desktop+, OVR Toolkit o
+Virtual Desktop — y elige la ventana llamada **«EliteIntel HUD (VR capture)»**.
 
 Por qué existe: el modo SteamVR entrega al compositor una textura completa por cada carácter
-escrito, y en un visor por streaming eso se ha reportado como un coste real de tasa de fotogramas.
-Una herramienta de captura toma la ventana en la GPU a su propio ritmo, y te da controles de
-colocación y curvatura que esta aplicación no tiene.
+escrito, y en un visor por streaming se ha reportado como un coste real de fotogramas. Una
+herramienta de captura toma la ventana en la GPU a su propio ritmo, y te da controles de
+colocación y curvatura que esta app no tiene.
 
-Es un modo aparte en lugar de «apunta tu herramienta de captura a la ventana de Monitor» porque esa
-ventana se inclina, es translúcida y es una ventana de herramienta, y los selectores de captura las
+Es un modo aparte en vez de «apunta tu herramienta a la ventana Monitor», porque esa ventana está
+inclinada, es transparente y es una ventana de herramienta — y los selectores de captura las
 filtran por completo.
 
 ### POSICIÓN EN EL VISOR
 
-Ocho colocaciones: **Arriba, Arriba a la derecha, A la derecha, Abajo a la derecha, Abajo, Abajo a
+Ocho posiciones: **Arriba, Arriba a la derecha, A la derecha, Abajo a la derecha, Abajo, Abajo a
 la izquierda, A la izquierda, Arriba a la izquierda.**
 
-> **El HUD está fijo delante de tu asiento y no sigue tu cabeza.** La dirección que elijas se mide
-> desde donde miras tras el *Restablecer posición sentada* de SteamVR, así que recentrar la vista
-> mueve el HUD junto con la cabina, que es lo que quieres. Si miras a otro lado, el HUD se queda
-> donde lo dejaste, exactamente como un panel físico.
+> **El HUD está fijo delante de tu asiento y no sigue tu cabeza.** La dirección que eliges se
+> mide desde donde miras tras el *Reset Seated Position* de SteamVR — así que al recentrar la
+> vista el HUD se mueve con la cabina, que es lo que quieres. Mira hacia otro lado y el HUD se
+> queda donde lo dejaste, igual que un panel físico.
 
 ---
 
 ## Leerlo en otro idioma
 
-Las etiquetas de las tarjetas siguen el idioma de la aplicación, y los números se agrupan como los
-agrupa ese idioma. Los nombres que proporciona el juego —sistemas, estaciones, mercancías— pasan sin
-tocarse.
+Las etiquetas de las tarjetas siguen el idioma de la app, y los números se agrupan como lo hace
+ese idioma. Los nombres que da el juego — sistemas, estaciones, mercancías — pasan sin cambios.
 
 ---
 

@@ -1,57 +1,69 @@
 # L'interface d'Elite Intel
 
-Elite Intel V1.1 s'organise en six onglets en haut de la fenêtre. Chacun prend en charge une
-partie distincte du système, et la plupart contiennent leurs propres sous-onglets.
+Elite Intel est organisé en sept onglets en haut de la fenêtre. Chacun gère une partie distincte
+du système, et la plupart contiennent leurs propres sous-onglets.
 
-Cette section parcourt chaque onglet, chaque commande, et ce qu'elle fait réellement.
+Cette section passe en revue chaque onglet, chaque contrôle, et ce qu'il fait réellement.
 
 ---
 
-## Les six onglets
+## Les sept onglets
 
 | Onglet | À quoi il sert |
 |-----|----------------|
-| <img src="images/ai.png" class="inline" height="20" alt="Vega"> **[Vega](UI-Vega-Tab)** | La passerelle. Démarrer et arrêter les services, suivre la conversation, lire l'état en direct, ouvrir l'overlay HUD en jeu. |
-| <img src="images/controller.png" class="inline" height="20" alt="Commandant"> **[Commandant](UI-Commander-Tab)** | Qui vous êtes et comment se comportent vos vaisseaux. Automatisations, annonces vocales, voix et personnalité par vaisseau. |
-| <img src="images/keys-binding.png" class="inline" height="20" alt="Actions"> **[Actions](UI-Actions-Tab)** | Tout ce qu'Elite Intel sait faire. Parcourir le catalogue des commandes intégrées et construire vos propres macros. |
-| <img src="images/keys-binding.png" class="inline" height="20" alt="Bindings"> **[Bindings](UI-Bindings-Tab)** | Vos assignations de touches Elite Dangerous. Repérer les manques et les conflits, les modifier et les réécrire dans le jeu. |
-| <img src="images/settings.png" class="inline" height="20" alt="Paramètres"> **[Paramètres](UI-Settings-Tab)** | La tuyauterie. Langue, dossier du journal, modèle de langage, moteur vocal, audio et push-to-talk. |
-| <img src="images/stats.png" class="inline" height="20" alt="Statistiques"> **[Statistiques](UI-Stats-Tab)** | Consommation de tokens et télémétrie du LLM pour la session en cours. |
+| <img src="images/ai.png" class="inline" height="20" alt="Vega"> **[Vega](UI-Vega-Tab)** | Le poste de pilotage. Démarrer et arrêter les services, suivre la conversation, lire l'état en direct, ouvrir l'overlay HUD en jeu. |
+| <img src="images/controller.png" class="inline" height="20" alt="Commandant"> **[Commandant](UI-Commander-Tab)** | Qui vous êtes et comment se comportent vos vaisseaux. Voix et personnalités de la flotte, automatisations, annonces vocales et catalogue Exo-Maîtrise. |
+| <img src="images/keys-binding.png" class="inline" height="20" alt="Actions"> **[Actions](UI-Actions-Tab)** | Tout ce qu'Elite Intel sait faire. Parcourir le catalogue des commandes intégrées et créer vos propres macros. |
+| <img src="images/keys-binding.png" class="inline" height="20" alt="Bindings"> **[Bindings](UI-Bindings-Tab)** | Vos raccourcis Elite Dangerous. Repérer les manques et les conflits, les modifier et les réécrire dans le jeu. |
+| <img src="images/settings.png" class="inline" height="20" alt="Paramètres"> **[Paramètres](UI-Settings-Tab)** | La tuyauterie. Langue, dossier du journal, modèle de langage, moteur de voix, audio et push-to-talk. |
+| <img src="images/speaker.png" class="inline" height="20" alt="Jukebox"> **[Jukebox](UI-Jukebox-Tab)** | Votre propre musique, jouée sous Vega et baissée automatiquement quand elle parle. |
+| <img src="images/stats.png" class="inline" height="20" alt="Statistiques"> **[Statistiques](UI-Stats-Tab)** | Consommation de tokens et télémétrie LLM de la session en cours. |
 
-Il y a aussi l'**[overlay HUD](UI-HUD-Overlay)** — une fenêtre distincte toujours au premier plan
-(et éventuellement une surface VR), pilotée depuis l'onglet Vega.
+S'y ajoute l'**[overlay HUD](UI-HUD-Overlay)** — une fenêtre séparée toujours au premier plan (et
+une surface VR optionnelle), pilotée depuis l'onglet Vega.
 
 ---
 
-## S'il s'agit de votre premier lancement
+## Premier lancement
 
 Elite Intel énonce à voix haute ses avertissements de configuration au démarrage des services,
-pour vous éviter de chercher ce qui manque. Par ordre d'importance :
+pour que vous n'ayez pas à chercher ce qui manque. Par ordre d'importance :
 
 1. **Un modèle de langage.** Rien ne fonctionne sans lui. Allez dans
-   [Paramètres → Services IA](UI-Settings-Tab) et collez une clé d'API cloud, ou pointez
-   l'application vers un modèle local. Voir [Choisir votre LLM](installing-local-llms).
-2. **Le dossier du journal.** Sans lui, Elite Intel est aveugle à tout ce qui se passe autour de
-   votre vaisseau. [Paramètres → Commun](UI-Settings-Tab).
-3. **Le dossier des assignations.** Sans lui, Elite Intel ne peut pas piloter votre vaisseau.
-   [Bindings → Profil d'assignations](UI-Bindings-Tab).
+   [Paramètres → Services IA](UI-Settings-Tab) et choisissez un fournisseur cloud puis collez sa
+   clé API, ou pointez l'application vers un modèle local. Voir
+   [Choisir votre LLM](installing-local-llms).
+2. **Le dossier du journal.** Sans lui, Elite Intel ne voit rien de ce qui se passe autour de
+   votre vaisseau. [Paramètres → Général](UI-Settings-Tab).
+3. **Le dossier des raccourcis.** Sans lui, Elite Intel ne peut pas piloter votre vaisseau.
+   [Bindings → Profil de raccourcis](UI-Bindings-Tab). Si le dossier est correct mais que Vega ne
+   trouve toujours pas vos raccourcis, ouvrez *Options → Commandes* dans le jeu et modifiez
+   n'importe quel raccourci — le jeu n'écrit un fichier de raccourcis qu'après une personnalisation.
 4. **Calibrer l'audio.** Fortement recommandé avant le premier vol.
    [Onglet Vega](UI-Vega-Tab) → **CALIBRER L'AUDIO**.
+
+> Elite Intel est conçu pour **Elite Dangerous Odyssey**. Sous Horizons, Vega vous prévient au
+> démarrage qu'une grande partie ne fonctionnera pas.
 
 ---
 
 ## Conventions valables partout
 
-- **La fenêtre ne retient rien que vous n'ayez enregistré.** Seul l'onglet *Paramètres → Services
-  IA* travaille sur un brouillon : il affiche l'indication **Modifications non enregistrées** et
-  vous empêche de quitter l'onglet sans trancher. Tout autre interrupteur ou curseur de
-  l'application est écrit dès que vous le modifiez.
-- **Un modèle de brouillon distinct s'applique aux bindings.** Les modifications vont d'abord dans
-  un brouillon et ne sont écrites dans Elite Dangerous qu'après **Appliquer au jeu**.
-- **Changer de langue reconstruit la fenêtre.** Sélectionner une nouvelle langue dans *Paramètres
-  → Commun* réaffiche immédiatement chaque onglet dans cette langue, et Vega annonce le changement.
+- **La plupart des contrôles enregistrent immédiatement.** Interrupteurs, curseurs et listes
+  s'appliquent dès que vous les changez ; aucun bouton Enregistrer à oublier.
+- **Deux exceptions fonctionnent avec un brouillon.** *Paramètres → Services IA* conserve vos
+  modifications jusqu'à ce que vous cliquiez sur **Enregistrer**, et vous demande *Enregistrer*,
+  *Abandonner* ou *Continuer l'édition* si vous quittez avec des modifications en attente. Les
+  raccourcis s'accumulent dans un brouillon qui n'est écrit dans Elite Dangerous qu'au clic sur
+  **Appliquer**.
+- **Changer de langue reconstruit la fenêtre.** Choisir une autre langue dans *Paramètres →
+  Général* redessine immédiatement tous les onglets dans cette langue, et Vega annonce le
+  changement.
 - **Neuf langues sont prises en charge :** anglais, espagnol, français, allemand, italien,
-  portugais, portugais brésilien, ukrainien et russe.
+  portugais, portugais du Brésil, ukrainien et russe.
+- **Plusieurs commandants sur un même PC.** Elite Intel garde les données de chaque commandant
+  séparément et bascule automatiquement quand un autre commandant est chargé dans le jeu — la
+  liste de la flotte et les réglages par commandant suivent.
 
 ---
 

@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub active"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Actions</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Onglet Bindings</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Onglet Paramètres</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Onglet Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Onglet Statistiques</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">Comment faire ?</div>
             <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Opération générale</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Créer vos propres commandes</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Commerce et profit</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Explorer la galaxie</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Exploration &amp; Exobiologie</a>
@@ -94,36 +96,37 @@ sait faire, et tout ce que vous lui avez appris. Deux sous-onglets : <strong>Com
 <hr>
 <h2>Commandes intégrées</h2>
 <p><img src="../images/ui-tab-actions-builtin.png" alt="Commandes intégrées"></p>
-<p>C&#39;est la réponse à <em>« que puis-je dire à cet instant ? »</em> — et pas seulement à <em>« que sait faire
-cette version ? »</em>.</p>
-<h3>Le sélecteur de situation</h3>
-<p>Le sélecteur en haut à gauche contient <strong>TOUTES</strong>, ainsi que chaque situation physique où vous
-pouvez vous trouver : en vaisseau, en SRV, en chasseur, en taxi, à pied ; amarré, posé, en vol
-plané, en supercroisière, à un anneau, en orbite, dans l&#39;espace profond.</p>
+<p>C&#39;est la réponse à <em>« que puis-je dire maintenant ? »</em> — pas seulement à <em>« que sait faire cette
+version ? »</em></p>
+<h3>Le sélecteur de portée</h3>
+<p>Le sélecteur en haut à gauche contient <strong>TOUTES</strong>, plus chaque situation physique possible : dans
+le vaisseau, dans le SRV, dans le chasseur, dans le taxi ; à pied (station, hangar, espace social,
+planète) ; amarré, posé, en vol plané, en supercroisière, à un anneau, en orbite, dans l&#39;espace
+profond.</p>
 <ul>
-<li>Il <strong>suit le jeu en direct</strong> — sortez de votre vaisseau et le sélecteur passe tout seul sur <em>À
-pied</em>, et la liste en dessous change avec lui.</li>
-<li>Dès que vous choisissez une situation à la main, il <strong>cesse de suivre</strong> et reste où vous l&#39;avez
-mis.</li>
-<li><strong>TOUTES</strong> liste toutes les actions de cette version, y compris celles que vous ne pouvez pas
-utiliser là où vous êtes. Une situation précise ne liste <strong>que ce qui y est utilisable</strong>.</li>
+<li>Il <strong>suit le jeu en direct</strong> — sortez du vaisseau et le sélecteur passe tout seul sur <em>À pied</em>,
+et la liste en dessous change avec lui.</li>
+<li>Dès que vous choisissez une portée à la main, il <strong>cesse de suivre</strong> et reste où vous l&#39;avez mis.</li>
+<li><strong>TOUTES</strong> liste chaque action de cette version, y compris celles inutilisables là où vous êtes.
+Une situation précise ne liste <strong>que ce qui y est utilisable</strong>.</li>
+<li>Si le jeu ne tourne pas, le sélecteur affiche <strong>TOUTES</strong>.</li>
 </ul>
-<p>À côté, un champ en lecture seule <strong>Lieu</strong> affiche l&#39;emplacement concret que rapporte le jeu :
+<p>À côté, un champ en lecture seule <strong>Lieu</strong> montre l&#39;emplacement concret signalé par le jeu —
 station, corps ou système.</p>
-<h3>Recherche</h3>
-<p>Un filtre textuel simple et littéral sur les actions listées : leurs noms, leurs clés d&#39;action et
-les phrases parlées qui les déclenchent. Ce que vous tapez est ce qui est cherché.</p>
+<h3>Rechercher</h3>
+<p>Un filtre texte simple et littéral sur les actions listées : leurs noms, leurs clés d&#39;action et les
+phrases parlées qui les déclenchent. On cherche exactement ce que vous tapez.</p>
 <blockquote>
-<p>Ce n&#39;est délibérément <strong>pas</strong> le routage du compagnon. Le dispatch de Vega classe par <em>sens</em> :
-taper « trouver » y ferait remonter des commandes ne partageant aucun mot avec vous, sans moyen de
-comprendre pourquoi. Quand on lit une liste, c&#39;est la recherche littérale qu&#39;on veut.</p>
+<p>Ce n&#39;est volontairement <strong>pas</strong> le routage de Vega. Vega associe par <em>sens</em>, donc taper
+« trouve » y ferait remonter des commandes sans aucun mot en commun, sans moyen de savoir
+pourquoi. Pour lire une liste, vous voulez une recherche littérale.</p>
 </blockquote>
 <h3>Commandes et requêtes disponibles</h3>
-<p>Une liste unique combinée, triée alphabétiquement sur trois colonnes, réunissant les actions
-intégrées, vos macros personnelles et les requêtes pour la situation choisie. Elle se met à jour en
-direct à partir des événements du jeu tant que l&#39;onglet est ouvert.</p>
-<p><strong>Double-cliquez sur une entrée</strong> pour ouvrir son détail.</p>
-<h3>Détail de la commande</h3>
+<p>Une liste unique, triée par ordre alphabétique sur trois colonnes, avec les actions intégrées, vos
+macros personnalisées et les requêtes de la portée choisie. Elle se met à jour en direct avec les
+événements du jeu tant que l&#39;onglet est ouvert — y compris une commande perso créée entre-temps.</p>
+<p><strong>Cliquez sur une entrée</strong> (ou sélectionnez-la et appuyez sur Entrée) pour ouvrir ses détails.</p>
+<h3>Détails d&#39;une commande</h3>
 <table>
 <thead>
 <tr>
@@ -133,7 +136,7 @@ direct à partir des événements du jeu tant que l&#39;onglet est ouvert.</p>
 </thead>
 <tbody><tr>
 <td><strong>Nom de la commande</strong></td>
-<td>Le nom lisible par un humain</td>
+<td>Le nom lisible</td>
 </tr>
 <tr>
 <td><strong>Clé d&#39;action</strong></td>
@@ -152,23 +155,30 @@ direct à partir des événements du jeu tant que l&#39;onglet est ouvert.</p>
 <td>Les phrases parlées qui y mènent, dans votre langue actuelle</td>
 </tr>
 </tbody></table>
-<p>Trois boutons :</p>
+<p>Boutons :</p>
 <ul>
-<li><strong>Exécuter</strong> — l&#39;exécute immédiatement depuis l&#39;application, sans parler. Si la commande prend des
-paramètres, un petit formulaire apparaît d&#39;abord.</li>
-<li><strong>Suggérer une meilleure traduction</strong> — ouvre un ticket GitHub prérempli avec l&#39;identifiant de la
-commande, votre langue et les phrases actuelles, pour que vous proposiez une meilleure formulation
-pour votre locale. C&#39;est ainsi que les jeux de phrases non anglais s&#39;améliorent ; utilisez-le.</li>
-<li><strong>Fermer</strong></li>
+<li><strong>Exécuter</strong> — l&#39;exécute tout de suite depuis l&#39;application, sans parler. Si la commande prend
+des paramètres, un petit formulaire apparaît d&#39;abord.</li>
+<li><strong>Suggérer une meilleure traduction</strong> — ouvre un ticket GitHub prérempli avec l&#39;id de la
+commande, votre langue, les phrases actuelles et vos suggestions, pour proposer une meilleure
+formulation dans votre langue. C&#39;est ainsi que les phrases non anglaises s&#39;améliorent ;
+utilisez-le, s&#39;il vous plaît.</li>
+<li><strong>Retour</strong> — ferme la fenêtre.</li>
 </ul>
-<p>Voir aussi : <a href="AllCommands.html">Toutes les commandes</a>.</p>
+<p>Voir aussi : <a href="AllCommands.html">Toutes les commandes et requêtes</a>.</p>
 <hr>
 <h2>Commandes perso</h2>
-<p><img src="../images/ui-tab-actions-custom.png" alt="Commandes personnalisées"></p>
-<p>Vos propres macros — une séquence d&#39;étapes nommée, déclenchée par ce que vous dites. Proche dans
-l&#39;esprit de VoiceAttack, mais appariée par le sens plutôt que par une phrase exacte.</p>
-<p>Le tableau liste le <strong>Nom</strong> de chaque commande et ses <strong>Phrases d&#39;entraînement</strong>, avec un champ de
-recherche au-dessus.</p>
+<p><img src="../images/ui-tab-actions-custom.png" alt="Commandes perso"></p>
+<blockquote>
+<p>Guide pas à pas : <a href="Custom-Commands.html">Créer vos propres commandes</a>.</p>
+</blockquote>
+<p>Vos propres macros — une suite d&#39;étapes nommée, déclenchée par ce que vous dites (ou tapez dans le
+chat du jeu). Dans l&#39;esprit de VoiceAttack, mais associée par le sens plutôt que par une phrase
+exacte.</p>
+<p>Le tableau affiche le <strong>Nom</strong> et les <strong>Phrases d&#39;entraînement</strong> de chaque commande, avec un champ
+de recherche au-dessus. <strong>Cliquez sur une ligne</strong> pour ouvrir ses détails, qui montrent la
+<strong>Séquence</strong> d&#39;étapes et proposent <strong>Exécuter</strong>, <strong>Modifier</strong>, <strong>Dupliquer</strong> et <strong>Supprimer</strong>.</p>
+<p>En haut :</p>
 <table>
 <thead>
 <tr>
@@ -181,36 +191,27 @@ recherche au-dessus.</p>
 <td>Créer une commande</td>
 </tr>
 <tr>
-<td><strong>Modifier</strong></td>
-<td>Modifier la commande sélectionnée</td>
-</tr>
-<tr>
-<td><strong>Supprimer</strong></td>
-<td>Supprimer la commande sélectionnée (avec confirmation)</td>
-</tr>
-<tr>
 <td><strong>Exporter</strong></td>
-<td>Écrire les commandes sélectionnées dans un fichier partageable</td>
+<td>Choisir des commandes et les écrire dans un fichier à partager</td>
 </tr>
 <tr>
 <td><strong>Importer</strong></td>
-<td>Lire des commandes depuis un fichier. Votre jeu actuel est sauvegardé au préalable</td>
+<td>Lire des commandes depuis un fichier. La fenêtre d&#39;import marque chaque entrée <em>Prête</em>, <em>Conflit</em> (sa clé d&#39;action existe déjà et sera écrasée) ou <em>Invalide</em>. L&#39;import <strong>remplace</strong> votre jeu actuel — il est sauvegardé d&#39;abord, et on vous propose ensuite <strong>Ouvrir le dossier des sauvegardes</strong></td>
 </tr>
 <tr>
 <td><strong>Restaurer depuis une sauvegarde</strong></td>
-<td>Récupérer le jeu qu&#39;un import a remplacé</td>
-</tr>
-<tr>
-<td><strong>Ouvrir le dossier des sauvegardes</strong></td>
-<td>Ouvre le dossier sur le disque</td>
+<td>Récupère le jeu de commandes remplacé par un import</td>
 </tr>
 </tbody></table>
+<p><strong>Dupliquer</strong> ouvre l&#39;éditeur avec le nom et les étapes d&#39;une copie, mais <strong>sans phrases ni clé
+d&#39;action</strong> — écrivez-lui de nouvelles phrases, pour que les deux commandes restent faciles à
+distinguer.</p>
 <blockquote>
-<p>Si le fichier des commandes personnalisées est un jour trouvé corrompu au démarrage, Elite Intel
-charge automatiquement depuis la sauvegarde et vous le signale.</p>
+<p>Si le fichier des commandes perso est trouvé corrompu au démarrage, Elite Intel charge
+automatiquement la sauvegarde et vous le signale.</p>
 </blockquote>
 <h3>L&#39;éditeur de commande</h3>
-<p><img src="../images/ui-custom-command-editor.png" alt="Éditeur de commande personnalisée"></p>
+<p><img src="../images/ui-custom-command-editor.png" alt="Éditeur de commande perso"></p>
 <p><strong>Identité de commande</strong></p>
 <table>
 <thead>
@@ -224,41 +225,36 @@ charge automatiquement depuis la sauvegarde et vous le signale.</p>
 <td>Comment vous l&#39;appelez</td>
 </tr>
 <tr>
-<td><strong>Description</strong></td>
-<td>Ce qu&#39;elle fait</td>
-</tr>
-<tr>
 <td><strong>Ce que vous direz</strong></td>
-<td>Les phrases que vous emploieriez pour la lancer — <strong>une par ligne</strong></td>
+<td>Les phrases que vous diriez pour la lancer — <strong>une par ligne</strong></td>
 </tr>
 <tr>
 <td><strong>Clé d&#39;action</strong></td>
-<td>L&#39;identifiant interne. Appuyez sur <strong>Générer</strong> et le modèle de langage en écrit un à partir de vos phrases. Il doit être en snake_case ASCII, car il devient un nom d&#39;outil que le modèle voit : laissez donc faire le bouton Générer. Ajoutez au moins une phrase avant de générer</td>
+<td>L&#39;identifiant interne. Cliquez sur <strong>Générer</strong> et le modèle de langage l&#39;écrit à partir de vos phrases. Elle est toujours en snake_case anglais, quelle que soit la langue de vos phrases, car elle devient un nom d&#39;outil vu par le modèle — elle ne peut donc pas être saisie à la main. Ajoutez au moins une phrase avant de générer</td>
 </tr>
 </tbody></table>
-<p><strong>Étapes</strong> — la séquence, dans l&#39;ordre. Ajoutez, modifiez, retirez et déplacez les étapes vers le
-haut ou le bas.</p>
+<p><strong>Étapes</strong> — la séquence, dans l&#39;ordre. Ajoutez, modifiez, retirez et déplacez des étapes.</p>
 <table>
 <thead>
 <tr>
 <th>Type d&#39;étape</th>
 <th>Champs</th>
-<th>À utiliser pour</th>
+<th>Utile pour</th>
 </tr>
 </thead>
 <tbody><tr>
 <td><strong>Appui sur raccourci</strong></td>
-<td>Commande</td>
-<td>Appuyer une fois sur un contrôle assigné</td>
+<td>Raccourci</td>
+<td>Appuyer une fois sur une commande assignée</td>
 </tr>
 <tr>
 <td><strong>Maintien de raccourci</strong></td>
-<td>Commande, durée en ms</td>
-<td>Maintenir un contrôle assigné</td>
+<td>Raccourci, Durée ms</td>
+<td>Maintenir une commande assignée</td>
 </tr>
 <tr>
 <td><strong>Délai</strong></td>
-<td>Durée en ms</td>
+<td>Durée ms</td>
 <td>Attendre entre deux étapes</td>
 </tr>
 <tr>
@@ -268,19 +264,159 @@ haut ou le bas.</p>
 </tr>
 <tr>
 <td><strong>Pression de touche</strong></td>
-<td>Pression de touche, modificateur</td>
-<td>Appuyer sur une touche qui n&#39;est assignée à rien dans le jeu</td>
+<td>Touche brute, Modificateur, Durée ms</td>
+<td>Appuyer sur une touche assignée à rien dans le jeu</td>
+</tr>
+<tr>
+<td><strong>Saisir du texte</strong></td>
+<td>Texte</td>
+<td>Taper du texte dans le champ qui a le focus</td>
 </tr>
 </tbody></table>
-<p>Préférez les étapes de type <strong>Commande</strong> à <strong>Pression de touche</strong> quand vous le pouvez : les
-assignations suivent les touches que le jeu utilise réellement, elles survivent donc à une
-réassignation.</p>
+<p><strong>Saisir du texte</strong> va là où se trouve le focus clavier. Ouvrez le champ de texte avec une étape
+précédente — par exemple <strong>Pression de touche : Entrée</strong> pour ouvrir le chat des communications —
+sinon le texte arrive aux commandes du vaisseau sous forme d&#39;appuis de touches.</p>
+<p>Préférez les étapes de <strong>raccourci</strong> à <strong>Pression de touche</strong> quand c&#39;est possible — les raccourcis
+suivent les touches que le jeu utilise vraiment, donc ils survivent à une réassignation.</p>
+<h3>Exemple : une route vers un lieu que vous visitez souvent</h3>
+<p>La navigation intégrée de Vega ne trace une route que vers le <strong>résultat d&#39;une recherche</strong> (un
+marchand, un marché, un terrain de chasse…), vers des lieux qu&#39;elle connaît déjà (base, votre
+vaisseau-mère, une mission) ou vers le système de votre presse-papiers. Elle ne trace pas de route
+vers un système que vous nommez simplement à voix haute — les noms sont justement ce que la
+reconnaissance vocale rate le plus. Pour un lieu où vous allez régulièrement, une commande perso le
+fait exactement, à chaque fois :</p>
+<p><img src="../images/ui-custom-command-navigation.png" alt="Commande perso qui trace une route vers Jameson Memorial"></p>
+<p><strong>Ce que vous direz :</strong> <em>route vers jameson memorial</em>, <em>emmène-moi à jameson memorial</em>, <em>jameson
+memorial route</em> — puis <strong>Générer</strong> la clé d&#39;action.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Étape</th>
+<th>Valeur</th>
+<th>Durée ms</th>
+<th>Ce qu&#39;elle fait</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Appui sur raccourci</td>
+<td>GALAXYMAPOPEN</td>
+<td></td>
+<td>Ouvrir la carte galactique</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Délai</td>
+<td></td>
+<td>1000</td>
+<td>Laisser la carte se charger</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Maintien de raccourci</td>
+<td>CAMZOOMIN</td>
+<td>500</td>
+<td>Zoomer la caméra de la carte</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Appui sur raccourci</td>
+<td>UI_LEFT</td>
+<td></td>
+<td>Aller au champ de recherche</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Appui sur raccourci</td>
+<td>UI_RIGHT</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Appui sur raccourci</td>
+<td>UI_SELECT</td>
+<td></td>
+<td>Ouvrir le champ de recherche</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Saisir du texte</td>
+<td>SHINRARTA DEZHRA</td>
+<td></td>
+<td>Taper le nom du système — sans reconnaissance vocale</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Pression de touche</td>
+<td>ENTER</td>
+<td>50</td>
+<td>Rechercher</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Délai</td>
+<td></td>
+<td>500</td>
+<td>Attendre le résultat</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Appui sur raccourci</td>
+<td>UI_RIGHT</td>
+<td></td>
+<td>Entrer dans le panneau de résultat</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Maintien de raccourci</td>
+<td>UI_UP</td>
+<td>500</td>
+<td>Remonter jusqu&#39;au bouton du haut</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Appui sur raccourci</td>
+<td>UI_SELECT</td>
+<td></td>
+<td>Tracer la route</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Délai</td>
+<td></td>
+<td>3000</td>
+<td>Attendre que la route soit tracée</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Appui sur raccourci</td>
+<td>CAMYAWLEFT</td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Pour créer la vôtre, copiez-la avec <strong>Dupliquer</strong>, changez le nom, les phrases et le système de
+l&#39;étape <strong>Saisir du texte</strong>, puis générez une nouvelle clé.</p>
+<p>Conseils :</p>
+<ul>
+<li><strong>Les phrases peuvent être séparées par des virgules</strong> aussi bien que par des retours à la ligne.</li>
+<li><strong>Les délais dépendent de votre PC.</strong> Si la carte n&#39;est pas prête quand l&#39;étape suivante arrive,
+augmentez les délais — ou poussez <strong>Cadence des saisies clavier</strong> de l&#39;<a href="UI-Bindings-Tab.html">onglet Bindings</a>
+vers Lent.</li>
+<li><strong>Chaque étape de raccourci exige une assignation clavier</strong> dans le jeu. Si une commande n&#39;est
+pas assignée, l&#39;<a href="UI-Bindings-Tab.html">onglet Bindings</a> l&#39;affiche sous <em>Commandes manquantes</em>.</li>
+<li>Vega ouvre et lit la carte galactique de la même façon pour ses propres commandes de route ; une
+commande qui part d&#39;une carte <strong>fraîchement ouverte</strong> est donc le modèle fiable — ne partez pas
+d&#39;une carte déjà ouverte.</li>
+</ul>
 <h3>Les utiliser</h3>
-<p>Parlez normalement. Vous n&#39;avez pas à reproduire une phrase d&#39;entraînement mot pour mot — vous devez
-en transmettre le sens. Plus vos phrases se distinguent de celles des autres commandes, plus la
-vôtre sera choisie de façon fiable.</p>
-<p>Vega vous indique au démarrage combien de commandes personnalisées ont été chargées, et combien ont
-échoué à la validation.</p>
+<p>Parlez normalement. Vous n&#39;avez pas à reproduire une phrase d&#39;entraînement mot pour mot — vous
+devez transmettre le même sens. Plus vos phrases se distinguent de celles des autres commandes,
+plus la vôtre sera choisie de façon fiable.</p>
+<p>Vega vous indique au démarrage combien de commandes perso ont été chargées, et combien ont échoué
+à la validation.</p>
 <hr>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

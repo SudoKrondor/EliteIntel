@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Die Elite-Intel-Benutzeroberfläche  EliteIntel</title>
-    <meta name="description" content="Elite Intel V1.1 ist in sechs Reiter am oberen Fensterrand gegliedert. Jeder davon verantwortet">
+    <meta name="description" content="Elite Intel ist in sieben Reiter am oberen Fensterrand gegliedert. Jeder davon verantwortet">
     <link rel="canonical" href="https://www.elite-intel.org/de/UI.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI.html">
@@ -13,7 +13,7 @@
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI.html">
     <meta property="og:title" content="Die Elite-Intel-Benutzeroberfläche  EliteIntel">
-    <meta property="og:description" content="Elite Intel V1.1 ist in sechs Reiter am oberen Fensterrand gegliedert. Jeder davon verantwortet">
+    <meta property="og:description" content="Elite Intel ist in sieben Reiter am oberen Fensterrand gegliedert. Jeder davon verantwortet">
     <meta property="og:url" content="https://www.elite-intel.org/de/UI.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -56,6 +56,7 @@
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Reiter Aktionen</a>
             <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Reiter Bindings</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Reiter Einstellungen</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Reiter Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Reiter Statistik</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-Overlay</a>
 
@@ -68,6 +69,7 @@
 
             <div class="nav-section">Wie mache ich...?</div>
             <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Allgemeiner Betrieb</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Eigene Befehle erstellen</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Handel &amp; Profit</a>
             <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Galaxie erkunden</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Entdeckung &amp; Exobiologie</a>
@@ -88,11 +90,11 @@
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
 <h1>Die Elite-Intel-Benutzeroberfläche</h1>
-<p>Elite Intel V1.1 ist in sechs Reiter am oberen Fensterrand gegliedert. Jeder davon verantwortet
+<p>Elite Intel ist in sieben Reiter am oberen Fensterrand gegliedert. Jeder davon verantwortet
 einen eigenen Teil des Systems, und die meisten enthalten wiederum eigene Unterreiter.</p>
 <p>Dieser Abschnitt führt durch jeden Reiter, jedes Bedienelement und dessen tatsächliche Funktion.</p>
 <hr>
-<h2>Die sechs Reiter</h2>
+<h2>Die sieben Reiter</h2>
 <table>
 <thead>
 <tr>
@@ -106,7 +108,7 @@ einen eigenen Teil des Systems, und die meisten enthalten wiederum eigene Unterr
 </tr>
 <tr>
 <td><img src="../images/controller.png" class="inline" height="20" alt="Kommandant"> <strong><a href="UI-Commander-Tab.html">Kommandant</a></strong></td>
-<td>Wer du bist und wie sich deine Schiffe verhalten. Automatisierungen, gesprochene Ansagen sowie Stimme und Persönlichkeit je Schiff.</td>
+<td>Wer du bist und wie sich deine Schiffe verhalten. Stimmen und Persönlichkeiten der Flotte, Automatisierungen, gesprochene Ansagen und der Exo-Meisterschaft-Katalog.</td>
 </tr>
 <tr>
 <td><img src="../images/keys-binding.png" class="inline" height="20" alt="Aktionen"> <strong><a href="UI-Actions-Tab.html">Aktionen</a></strong></td>
@@ -121,6 +123,10 @@ einen eigenen Teil des Systems, und die meisten enthalten wiederum eigene Unterr
 <td>Der Unterbau. Sprache, Journal-Ordner, Sprachmodell, Sprachausgabe, Audio und Push-to-Talk.</td>
 </tr>
 <tr>
+<td><img src="../images/speaker.png" class="inline" height="20" alt="Jukebox"> <strong><a href="UI-Jukebox-Tab.html">Jukebox</a></strong></td>
+<td>Deine eigene Musik — unter Vega abgespielt und automatisch leiser, sobald sie spricht.</td>
+</tr>
+<tr>
 <td><img src="../images/stats.png" class="inline" height="20" alt="Statistik"> <strong><a href="UI-Stats-Tab.html">Statistik</a></strong></td>
 <td>Token-Verbrauch und LLM-Telemetrie der aktuellen Sitzung.</td>
 </tr>
@@ -132,30 +138,40 @@ Fenster (und optional eine VR-Fläche), gesteuert vom Vega-Reiter.</p>
 <p>Elite Intel spricht seine Einrichtungswarnungen beim Start der Dienste laut aus, damit du nicht
 suchen musst, was fehlt. Nach Wichtigkeit geordnet:</p>
 <ol>
-<li><strong>Ein Sprachmodell.</strong> Ohne das funktioniert nichts. Gehe zu
-<a href="UI-Settings-Tab.html">Einstellungen → KI-Dienste</a> und füge entweder einen Cloud-API-Schlüssel ein
-oder verweise die App auf ein lokales Modell. Siehe <a href="installing-local-llms.html">LLM auswählen</a>.</li>
-<li><strong>Der Journal-Ordner.</strong> Ohne ihn ist Elite Intel blind für alles, was rund um dein Schiff
-geschieht. <a href="UI-Settings-Tab.html">Einstellungen → Allgemein</a>.</li>
+<li><strong>Ein Sprachmodell.</strong> Ohne geht nichts. Öffne
+<a href="UI-Settings-Tab.html">Einstellungen → KI-Dienste</a> und wähle entweder einen Cloud-Anbieter und füge
+seinen API-Schlüssel ein, oder richte die App auf ein lokales Modell. Siehe
+<a href="installing-local-llms.html">LLM auswählen</a>.</li>
+<li><strong>Der Journal-Ordner.</strong> Ohne ihn ist Elite Intel blind für alles, was um dein Schiff herum
+passiert. <a href="UI-Settings-Tab.html">Einstellungen → Allgemein</a>.</li>
 <li><strong>Der Belegungsordner.</strong> Ohne ihn kann Elite Intel dein Schiff nicht bedienen.
-<a href="UI-Bindings-Tab.html">Bindings → Bindungsprofil</a>.</li>
+<a href="UI-Bindings-Tab.html">Bindings → Bindungsprofil</a>. Stimmt der Ordner, und Vega findet trotzdem
+keine Belegungen, öffne im Spiel <em>Optionen → Steuerung</em> und ändere irgendeine Belegung — das
+Spiel schreibt eine Belegungsdatei erst, wenn du etwas angepasst hast.</li>
 <li><strong>Audio kalibrieren.</strong> Vor dem ersten Flug dringend empfohlen.
 <a href="UI-Vega-Tab.html">Vega-Reiter</a> → <strong>AUDIO KALIBRIEREN</strong>.</li>
 </ol>
+<blockquote>
+<p>Elite Intel ist für <strong>Elite Dangerous Odyssey</strong> gebaut. Unter Horizons warnt Vega beim Start,
+dass vieles nicht funktionieren wird.</p>
+</blockquote>
 <hr>
-<h2>Überall geltende Konventionen</h2>
+<h2>Konventionen, die überall gelten</h2>
 <ul>
-<li><strong>Das Fenster merkt sich nichts, was du nicht gespeichert hast.</strong> Nur der Reiter
-<em>Einstellungen → KI-Dienste</em> arbeitet mit einem Entwurf: Er zeigt den Hinweis <strong>Nicht
-gespeicherte Änderungen</strong> und hält dich davon ab, den Reiter ohne Entscheidung zu verlassen.
-Jeder andere Schalter und Regler in der App schreibt sofort bei der Änderung durch.</li>
-<li><strong>Für Bindings gilt ein eigenes Entwurfsmodell.</strong> Änderungen landen zuerst in einem Entwurf und
-werden erst nach <strong>Auf Spiel anwenden</strong> nach Elite Dangerous geschrieben.</li>
-<li><strong>Ein Sprachwechsel baut das Fenster neu auf.</strong> Die Auswahl einer neuen Sprache unter
-<em>Einstellungen → Allgemein</em> rendert sofort jeden Reiter in dieser Sprache neu, und Vega sagt die
-Änderung an.</li>
+<li><strong>Die meisten Bedienelemente speichern sofort.</strong> Schalter, Schieberegler und Auswahllisten
+werden direkt übernommen; es gibt keinen Speichern-Knopf, den man vergessen könnte.</li>
+<li><strong>Zwei Ausnahmen arbeiten mit einem Entwurf.</strong> <em>Einstellungen → KI-Dienste</em> hält deine
+Änderungen, bis du <strong>Speichern</strong> drückst, und fragt beim Verlassen mit offenen Änderungen nach
+<em>Speichern</em>, <em>Verwerfen</em> oder <em>Weiter bearbeiten</em>. Tastenbelegungen sammeln sich in einem
+Entwurf, der erst mit <strong>Anwenden</strong> in Elite Dangerous geschrieben wird.</li>
+<li><strong>Ein Sprachwechsel baut das Fenster neu auf.</strong> Wählst du in <em>Einstellungen → Allgemein</em> eine
+neue Sprache, wird jeder Reiter sofort in dieser Sprache dargestellt, und Vega sagt den Wechsel
+an.</li>
 <li><strong>Neun Sprachen werden unterstützt:</strong> Englisch, Spanisch, Französisch, Deutsch, Italienisch,
 Portugiesisch, brasilianisches Portugiesisch, Ukrainisch und Russisch.</li>
+<li><strong>Mehrere Kommandanten auf einem PC.</strong> Elite Intel hält die Daten jedes Kommandanten getrennt
+und wechselt automatisch, sobald ein anderer Kommandant im Spiel geladen wird — Flottenliste
+und kommandantenbezogene Einstellungen ziehen mit.</li>
 </ul>
 <hr>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>

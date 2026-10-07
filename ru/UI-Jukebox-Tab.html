@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вкладка «Музыка»  EliteIntel</title>
+    <meta name="description" content="ваших собственных файлов — играет под «Вегой», а не поверх неё. Когда «Вега» говорит, музыка">
+    <link rel="canonical" href="https://www.elite-intel.org/ru/UI-Jukebox-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Jukebox-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Jukebox-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Jukebox-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Jukebox-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Jukebox-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Jukebox-Tab.html">
+    <meta property="og:title" content="Вкладка «Музыка»  EliteIntel">
+    <meta property="og:description" content="ваших собственных файлов — играет под «Вегой», а не поверх неё. Когда «Вега» говорит, музыка">
+    <meta property="og:url" content="https://www.elite-intel.org/ru/UI-Jukebox-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases/latest" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI-Jukebox-Tab.html" class="locale-link">EN</a><a href="../fr/UI-Jukebox-Tab.html" class="locale-link">FR</a><a href="../es/UI-Jukebox-Tab.html" class="locale-link">ES</a><a href="../de/UI-Jukebox-Tab.html" class="locale-link">DE</a><a href="../uk/UI-Jukebox-Tab.html" class="locale-link">UK</a><span class="locale-current">RU</span></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Главная</a>
+
+            <div class="nav-section">Приложение</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Установка</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Интерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Действия»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Вкладка «Бинды»</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Вкладка «Настройки»</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub active"><img src="../images/speaker.png" class="inline" height="20" alt=""> Вкладка «Музыка»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-оверлей</a>
+
+            <div class="nav-section">Вики</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Выбрать LLM</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 Бесплатный облачный LLM</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Как это сделать?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Общее использование</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Свои команды</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Торговля и прибыль</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Поиск по галактике</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Исследование</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Навигация</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Пиратские миссии</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Все команды</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Системные команды</a>
+
+            <div class="nav-section">Сообщество</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Политика конфиденциальности</a>
+            <a href="Contact.html" class="nav-link">📧 Связаться с разработчиком</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Вкладка «Музыка»</h1>
+<p><img src="../images/speaker.png" class="inline" height="20" alt="Музыка"> Ваша собственная музыка из
+ваших собственных файлов — играет под «Вегой», а не поверх неё. Когда «Вега» говорит, музыка
+автоматически притихает и возвращается, когда она закончит, — вы не пропустите ни одного
+сообщения.</p>
+<p>Ничего не нужно устанавливать, нет учётной записи, нет стримингового сервиса. Вкладка идёт сверху
+вниз: <strong>Музыкальная библиотека</strong>, <strong>Плейлист</strong>, <strong>Воспроизведение</strong>.</p>
+<hr>
+<h2>Музыкальная библиотека</h2>
+<p>Откуда берётся музыка.</p>
+<ul>
+<li><strong>Обзор...</strong> — выберите папку с музыкой. Elite Intel обходит её вместе с подпапками и добавляет в
+плейлист каждый воспроизводимый файл. Файлы добавляются в порядке папок, так что главы
+аудиокниги идут по порядку.</li>
+<li><strong>Пересканировать</strong> — заново просмотреть папку в поисках добавленных позже файлов.</li>
+</ul>
+<p><strong>Поддерживаемые форматы:</strong> MP3, FLAC, M4A / M4B (AAC), OGG / OGA (Vorbis) и WAV. Файлы, которые
+музыкальный плеер воспроизвести не может (WMA, Apple Lossless, покупки с DRM, Opus), пропускаются.</p>
+<hr>
+<h2>Плейлист</h2>
+<p>Плейлист — это и есть очередь: что вы видите, то и играет в этом порядке.</p>
+<table>
+<thead>
+<tr>
+<th>Столбец</th>
+<th>Значение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>№</strong></td>
+<td>Позиция. Значок ▶ отмечает играющий трек</td>
+</tr>
+<tr>
+<td><strong>Название</strong> · <strong>Исполнитель</strong> · <strong>Альбом</strong></td>
+<td>Из тегов файлов. Большая библиотека заполняется за несколько секунд</td>
+</tr>
+<tr>
+<td><strong>Время</strong></td>
+<td>Длительность трека</td>
+</tr>
+</tbody></table>
+<ul>
+<li><strong>Двойной щелчок</strong> по треку запускает его.</li>
+<li><strong>Перетаскивайте</strong> строки, чтобы менять порядок. Порядок сохраняется.</li>
+<li>Щелчок по заголовку столбца <strong>не</strong> сортирует — это выбросило бы порядок, который вы составили
+вручную. Сортировка — в контекстном меню.</li>
+</ul>
+<p>Файл, исчезнувший с диска, помечается как <strong>нет файла</strong>.</p>
+<h3>Контекстное меню</h3>
+<table>
+<thead>
+<tr>
+<th>Пункт</th>
+<th>Что делает</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Играть сейчас</strong></td>
+<td>Запустить выбранный трек</td>
+</tr>
+<tr>
+<td><strong>Играть следующим</strong></td>
+<td>Поставить выбранные треки сразу после текущего</td>
+</tr>
+<tr>
+<td><strong>Убрать из плейлиста</strong></td>
+<td>Убрать из списка (файлы на диске не трогаются)</td>
+</tr>
+<tr>
+<td><strong>Показать в файловом менеджере</strong></td>
+<td>Открыть папку с файлом</td>
+</tr>
+<tr>
+<td><strong>Копировать исполнителя и название</strong></td>
+<td>В буфер обмена</td>
+</tr>
+<tr>
+<td><strong>Добавить папку...</strong></td>
+<td>Добавить музыку из ещё одной папки</td>
+</tr>
+<tr>
+<td><strong>Импортировать плейлист...</strong></td>
+<td>Добавить треки, перечисленные в плейлисте <code>.m3u</code> / <code>.m3u8</code></td>
+</tr>
+<tr>
+<td><strong>Убрать отсутствующие файлы</strong></td>
+<td>Удалить все записи, файлы которых пропали</td>
+</tr>
+<tr>
+<td><strong>Очистить плейлист</strong></td>
+<td>Убрать все треки (спросит подтверждение; файлы на диске не удаляются)</td>
+</tr>
+<tr>
+<td><strong>Сортировать по</strong> → Названию / Исполнителю / Папке</td>
+<td>Разовая сортировка, перезаписывающая порядок плейлиста</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Воспроизведение</h2>
+<ul>
+<li><strong>Ползунок позиции</strong> — сколько трека прошло. Перетащите для перемотки; переход происходит, когда
+отпускаете.</li>
+<li><strong>Назад · Играть/Пауза · Стоп · Вперёд</strong> — кнопки управления. <strong>Стоп</strong> перематывает текущий трек
+в начало; <strong>Пауза</strong> сохраняет место.</li>
+<li><strong>Порядок</strong> — <em>По порядку</em> или <em>Случайно</em>.</li>
+<li><strong>Громкость</strong> — собственный уровень музыки. Он здесь, а не в настройках аудио, чтобы вы никогда
+по ошибке не приглушили «Вегу».</li>
+</ul>
+<p>Место в треке запоминается между сессиями — удобно для аудиокниг, — но сам плеер никогда не
+начинает играть при запуске приложения.</p>
+<hr>
+<h2>Голосовые команды</h2>
+<p>Каждая музыкальная команда называет <em>музыку</em>, <em>трек</em> или <em>песню</em>, чтобы никогда не пересекаться с
+командами корабля.</p>
+<table>
+<thead>
+<tr>
+<th>Скажите</th>
+<th>Что происходит</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><em>«Включи музыку»</em> / <em>«играй музыку»</em></td>
+<td>Запустить или продолжить</td>
+</tr>
+<tr>
+<td><em>«Поставь музыку на паузу»</em> / <em>«останови музыку»</em></td>
+<td>Пауза — «включи музыку» продолжит с того же места</td>
+</tr>
+<tr>
+<td><em>«Следующий трек»</em> / <em>«пропусти этот трек»</em></td>
+<td>Следующий трек</td>
+</tr>
+<tr>
+<td><em>«Предыдущий трек»</em></td>
+<td>Предыдущий трек</td>
+</tr>
+<tr>
+<td><em>«Перезапусти плейлист»</em></td>
+<td>К первому треку</td>
+</tr>
+<tr>
+<td><em>«Перемешай музыку»</em> / <em>«играй музыку вперемешку»</em></td>
+<td>Случайный порядок</td>
+</tr>
+<tr>
+<td><em>«Включи песню Rocket Man»</em></td>
+<td>Найти трек по названию или исполнителю и включить. Если ничего толком не совпало, «Вега» так и скажет, а не включит не то</td>
+</tr>
+</tbody></table>
+<p>Эти команды работают и набранными в игровом чате — см. <a href="AllCommands.html">Все команды</a>.</p>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>
