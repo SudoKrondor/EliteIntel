@@ -22,6 +22,7 @@ data; most of what the spec describes is still ahead.
 | Device names | `bindforge.devices.DeviceNames` — the default-name rule, alias validation (`Verdict`, `Problem`), `sameName`, and `needingName` (who onboarding asks). Pure; the caller passes the names already taken |
 | Hardware VID/PID | `bindforge.devices.DeviceIdentities` — from SDL's GUID; confirmed on four controllers, real GUIDs in its test |
 | Frontier's shipped list | `bindforge.devicefiles.FrontierStockDevices`, resource `bindforge/FrontierStock-DeviceMappings.xml` |
+| First setup (A1) | `bindforge.devicefiles.FirstSetup` (read, then backup → master → push), `FirstSetupPlan` (the four cases and the answers, pure), `FirstSetupReader`, `DeviceFilesSnapshot` (the labelled backup), `FrontierStockButtonMaps` (resources `FrontierStock-VPC*.buttonMap.xml`); `BindForgeDeviceDraftManager.establish`; `ui.screen.bindings.FirstSetupDialog`, opened by **SET UP** on `AliasDesignerPanel` while the master is empty |
 | Startup `.buttonMap` (A8) | `bindforge.devicefiles.ButtonMapGeneration` (per installation, create-only), `ButtonMapLabels` (the generated labels); `bindforge.devices.ButtonMapStartup` runs it on every connect, started as `BUTTON_MAP_STARTUP` in `AppController` |
 | Divergence list | `DeviceDivergenceScanner`, `DeviceDivergence` (red if `.binds` names the device, yellow otherwise), `BindsDeviceReferences`, `ButtonMapAudit` |
 | What each installation holds | `InstallationDeviceScanner`, run on every refresh; rows in `bindforge_device_installs` |
@@ -48,7 +49,10 @@ That is A3.
 ## Known issues — fix when a slice passes them
 
 
-- **`AliasDesignerPanel`'s class javadoc says the panel is "not in the tab bar".** It is.
+- **The first-setup backup shows in the Player Backups list.** `DeviceFilesSnapshot` writes beside
+  `PlayerBackupService`'s folders, so `listBackups()` lists it, with installation subfolders as its "files". File
+  Manager's restore work should recognise it (or Krondor moves it) — `bindforge.io`.
+- **The first-setup backup ignores a chosen backup destination** — the resolver is private to `PlayerBackupService`.
 - **`ButtonInputMapper.axisToBindsToken` throws for axis index 6 and above.** A8 went around it (`ButtonMapLabels`
   labels all eight tokens); the class is shared with V1.1, so the fix — add U and V — is Krondor's, and the
   Bind Editor's capture needs it.
@@ -74,10 +78,10 @@ That is A3.
 
 | # | Slice | Needs | Status |
 |---|---|---|---|
-| A1 | **First setup** — turn what the installations hold into the master: per element, the four cases, a name conflict routed into the rename, a labelled backup and Edit History before writing | Core C1, C2 (both done) | **next** |
-| A2 | **`.buttonMap` label merge** — one row per input that disagrees, nothing else | A1 | waiting |
-| A3 | **Divergence against the master** — replace installation-against-installation | A1 | waiting |
-| A4 | **Installations markers** — `M`, *not added*, severity colour | A1 | waiting |
+| A1 | **First setup** — turn what the installations hold into the master: per element, the four cases, a name conflict routed into the rename, a labelled backup and Edit History before writing | Core C1, C2 (both done) | **done 2026-10-07** |
+| A2 | **`.buttonMap` label merge** — one row per input that disagrees, nothing else | A1 (done) | **next** |
+| A3 | **Divergence against the master** — replace installation-against-installation | A1 (done) | ready |
+| A4 | **Installations markers** — `M`, *not added*, severity colour | A1 (done) | ready |
 | A5 | **Built-in Devices tab** — Frontier's list, read-only | — | ready |
 | A6 | **Onboarding: the rule** — the default-name rule and alias validation | Core C1 (done) | **done 2026-10-06** |
 | A6b | **Onboarding: the dialog and its writes** — name the controllers `needingName` returns, then write the entry and a generated `.buttonMap` straight away. A controller `.binds` names by hex waits for Apply, with a `.binds` rewrite | A6, A8 | waiting — the hex case is `bindforge.io`, so it is blocked until the question in the README is answered |
@@ -96,6 +100,17 @@ while Core is in progress.
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
+
+- **2026-10-07 — A1 built** (Alan). Rulings in [First setup, settled while building it](../02-features/bindforge/alias-designer.md#settled-while-building-it--2026-10-07-alan):
+  a name conflict is answerable only when the losing name is not in `.binds` (the rename is A11, its `.binds`
+  rewrite blocked) — the loser stays on disk under the winner as a pending removal; colliding labels are answered
+  per device by an installation, the rest unioned; "use as master" never drops another installation's extras; the
+  backup is device files only, in the default folder; any draft is discarded as the master is filled. **Found:**
+  `app/build.gradle` packages resources by extension, so the Frontier maps ship as `.buttonMap.xml`. **A2 needs:**
+  replace `FirstSetupPlan`'s per-device `LABELS_DIFFER` answer with one row per colliding input (the spec's merge
+  table), keeping the whole-file route; the same view should serve a later re-merge. **A3/A4** now have a master
+  to compare against — call `DeviceFilesCheck.check()` (C3 note). **Still owed (C3 note):** generated A8 maps are
+  mastered by first setup as labels; whether those count as user content is undecided.
 
 - **2026-10-06 — A8 second review fixes** (`code-integrity-review.md`, Alan). `stop()` now interrupts and drops
   queued work, so nothing lands in a game folder after it returns and no temp file is left at exit; the name and

@@ -299,6 +299,35 @@ public class BindForgeDeviceDraftManager {
         });
     }
 
+    /**
+     * First setup: the master is filled for the first time, in one transaction (Alan, 2026-10-07).
+     * <p>
+     * Only into an empty master - first setup runs once, and a master that filled meanwhile is not overwritten.
+     * <strong>Any draft is thrown away</strong> in the same transaction: with the master empty it can hold no
+     * edits of the user's, and left started it would replace the new master with its empty copy on the next
+     * Apply.
+     *
+     * @param devices         the master as it is to be. Ids are ignored
+     * @param pendingRemovals names whose entries are in the installations but not the master
+     * @return {@code false}, writing nothing, when the master was not empty
+     */
+    public boolean establish(List<StoredDevice> devices, List<String> pendingRemovals) {
+        return inTransaction(daos -> {
+            BindForgeDeviceMasterDao master = daos.master();
+            if (!master.findAll().isEmpty()) return false;
+            daos.draft().deleteAll();
+            daos.draft().clearStarted();
+            for (StoredDevice device : devices) {
+                master.insert(device.deviceName(), device.vid(), device.pid(), device.aliasConfirmed());
+                long masterId = master.findByName(device.deviceName()).id();
+                device.labels().forEach((token, label) -> master.putLabel(masterId, token, label));
+                master.clearPendingRemoval(device.deviceName());
+            }
+            pendingRemovals.forEach(master::addPendingRemoval);
+            return true;
+        });
+    }
+
     private static List<StoredDevice> storedMaster(BindForgeDeviceMasterDao master) {
         List<StoredDevice> devices = new ArrayList<>();
         for (DeviceRow row : master.findAll()) {

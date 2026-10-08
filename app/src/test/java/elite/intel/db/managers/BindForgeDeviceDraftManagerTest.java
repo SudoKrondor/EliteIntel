@@ -355,6 +355,33 @@ class BindForgeDeviceDraftManagerTest {
         assertEquals(List.of("LVWAP", "RVWAP"), names(draft.findAll()));
     }
 
+    /** First setup runs once: a master that is no longer empty is never overwritten by it. */
+    @Test
+    void establishingRefusesAMasterThatIsNotEmpty() {
+        assertFalse(draft.establish(List.of(new StoredDevice(null, "STICK2", "1234", "0001", true, null, Map.of())),
+                List.of()));
+
+        assertNull(master.findByName("STICK2"));
+        assertEquals(2, master.findAll().size());
+    }
+
+    @Test
+    void establishingFillsAnEmptyMasterRecordsTheLosersAndEndsAnyDraft() {
+        master.findAll().forEach(row -> master.remove(row.id()));
+        draft.start();
+
+        assertTrue(draft.establish(List.of(
+                        new StoredDevice(null, "RVWAP", "3344", "03F5", true, null, labels("Joy_1", "TRIGGER")),
+                        new StoredDevice(null, "T-Rudder", "044F", "B679", true, null, labels("Joy_XAxis", "X Axis"))),
+                List.of("RightStick")));
+
+        assertEquals(List.of("RVWAP", "T-Rudder"), master.findAll().stream().map(DeviceRow::deviceName).toList());
+        assertEquals(labels("Joy_1", "TRIGGER"), master.labelsOf(master.findByName("RVWAP").id()));
+        assertTrue(master.findByName("RVWAP").aliasConfirmed());
+        assertEquals(List.of("RightStick"), master.pendingRemovals());
+        assertFalse(draft.isStarted(), "a draft left started would replace the new master with its empty copy");
+    }
+
     private static List<String> names(List<DraftRow> rows) {
         return rows.stream().map(DraftRow::deviceName).toList();
     }

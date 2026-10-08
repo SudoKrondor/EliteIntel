@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Root>
+	<Joy_38>B1-1</Joy_38>
+	<Joy_39>B2-1</Joy_39>
+	<Joy_40>B3-1</Joy_40>
+	<Joy_41>B4-1</Joy_41>
+	<Joy_42>B5-1</Joy_42>
+	<Joy_43>B6-1</Joy_43>	
+	<Joy_56>B1-2</Joy_56>
+	<Joy_57>B2-2</Joy_57>
+	<Joy_58>B3-2</Joy_58>
+	<Joy_59>B4-2</Joy_59>
+	<Joy_60>B5-2</Joy_60>
+	<Joy_61>B6-2</Joy_61>	
+	<Joy_62>B1-3</Joy_62>
+	<Joy_63>B2-3</Joy_63>
+	<Joy_64>B3-3</Joy_64>
+	<Joy_65>B4-3</Joy_65>
+	<Joy_66>B5-3</Joy_66>
+	<Joy_67>B6-3</Joy_67>	
+	<Joy_68>B1-4</Joy_68>
+	<Joy_69>B2-4</Joy_69>
+	<Joy_70>B3-4</Joy_70>
+	<Joy_71>B4-4</Joy_71>
+	<Joy_72>B5-4</Joy_72>
+	<Joy_73>B6-4</Joy_73>	
+	<Joy_74>B1-5</Joy_74>
+	<Joy_75>B2-5</Joy_75>
+	<Joy_76>B3-5</Joy_76>
+	<Joy_77>B4-5</Joy_77>
+	<Joy_78>B5-5</Joy_78>
+	<Joy_79>B6-5</Joy_79>
+	
+	<Joy_50>E1</Joy_50>
+	<Joy_51>E1 - Counter Clockwise</Joy_51>
+	<Joy_52>E1 - Clockwise</Joy_52>
+	<Joy_53>E2</Joy_53>
+	<Joy_54>E2 - Counter Clockwise</Joy_54>
+	<Joy_55>E2 - Clockwise</Joy_55>
+	
+	<Joy_34>T1</Joy_34>
+	<Joy_35>T2</Joy_35>
+	<Joy_36>T3</Joy_36>
+	<Joy_37>T4</Joy_37>
+	<Joy_44>T5 - Up</Joy_44>
+	<Joy_45>T5 - Down</Joy_45>
+	<Joy_46>T6 - Up</Joy_46>
+	<Joy_47>T6 - Down</Joy_47>
+	<Joy_48>T7 - Up</Joy_48>
+	<Joy_49>T7 - Down</Joy_49>
+	
+	<Joy_RXAxis>Throttle L</Joy_RXAxis>
+	<Joy_RYAxis>Throttle R</Joy_RYAxis>
+	<Joy_RZAxis>Flaps</Joy_RZAxis>
+	
+	<Joy_1>L Dial - Press</Joy_1>
+	<Joy_2>L Dial - Backward</Joy_2>
+	<Joy_3>L Dial - Forward</Joy_3>
+	
+	<Joy_4>L 1</Joy_4>
+	<Joy_5>L POV Press</Joy_5>
+	<Joy_6>L POV Forward</Joy_6>
+	<Joy_7>L POV Back</Joy_7>
+	
+	<Joy_8>R POV1 Press</Joy_8>
+	<Joy_9>R POV1 Forward</Joy_9>
+	<Joy_10>R POV1 Right</Joy_10>
+	<Joy_11>R POV1 Back</Joy_11>
+	<Joy_12>R POV1 Left</Joy_12>
+	
+	<Joy_13>R Stick Press</Joy_13>
+	
+	<Joy_14>R Dial - Forward</Joy_14>
+	<Joy_15>R Dial - Backward</Joy_15>
+	
+	<Joy_16>R POV2 - Press</Joy_16>
+	<Joy_17>R POV2 - Forward</Joy_17>
+	<Joy_18>R POV2 - Down</Joy_18>
+	<Joy_19>R POV2 - Back</Joy_19>
+	<Joy_20>R POV2 - Up</Joy_20>
+	
+	<Joy_21>R 1</Joy_21>
+	
+	<Joy_22>R POV3 - Press</Joy_22>
+	<Joy_23>R POV3 - Down</Joy_23>
+	<Joy_24>R POV3 - Back</Joy_24>
+	<Joy_25>R POV3 - Up</Joy_25>
+	<Joy_26>R POV3 - Forward</Joy_26>
+	
+	<Joy_27>R POV4 - Press</Joy_27>
+	<Joy_28>R POV4 - Down</Joy_28>
+	<Joy_29>R POV4 - Back</Joy_29>
+	<Joy_30>R POV4 - Up</Joy_30>
+	<Joy_31>R POV4 - Forward</Joy_31>
+	
+	<Joy_32>R 2</Joy_32>
+	<Joy_33>R 3</Joy_33>
+	
+</Root>

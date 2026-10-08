@@ -205,6 +205,45 @@ it exists in code yet.
 conflicts above require an answer. A device present in just one install, or an orphan `.buttonMap`, has one
 sensible outcome and is resolved without a question.
 
+### Settled while building it — 2026-10-07 (Alan)
+
+Built as `bindforge.devicefiles.FirstSetup` (the flow), `FirstSetupPlan` (the decision, pure), `FirstSetupReader`
+and `DeviceFilesSnapshot`, with `ui.screen.bindings.FirstSetupDialog` opened from **SET UP** on the Alias Designer
+screen, which is offered only while the master is empty.
+
+- **A name conflict is answered only where no binding is lost.** The [rename transaction](#renaming-a-device) and
+  its `.binds` rewrite are not built, so a name may be chosen only when the names it beats are not in `.binds`;
+  any other choice is shown but disabled, *needs Rename*. The winner is written at the top of every installation,
+  where [the first match wins](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12d-two-entries-for-one-vidpid-the-first-in-the-file-wins--measured-2026-10-03);
+  each loser's element and `.buttonMap` stay on disk beneath it as a **pending removal**, for CLEAR's cleanup. When
+  `.binds` uses both names, first setup cannot finish until the rename exists.
+- **Colliding labels are answered per device, by an installation** — the spec's *use Steam's labels for this
+  device*. That installation's label wins every collision; a label only another installation holds is still
+  taken. The per-input rows above are the [`.buttonMap` label merge](../../05-build-plan/alias-designer.md#slices).
+- **"Use one installation as the master"** answers every question in its favour and still takes the elements only
+  the others hold, because first setup never drops a custom entry. A question where that installation has no side,
+  or its side needs Rename, is left to answer.
+- **The labelled backup is the device files only**, every reachable installation's `DeviceMappings.xml` and
+  `DeviceButtonMaps\`, in the **default** player backups folder as `<time>_first-setup`. First setup writes no
+  `.binds`, and a backup destination the user chose is resolved only inside `PlayerBackupService`, which V1.1
+  shares. The opening line says the files *will be* backed up, since the launch backup it was meant to quote is
+  not built either.
+- **Edit History needs nothing new:** the push keeps each replaced file's content once per unique content, which
+  at first setup is one entry per installation.
+- **The master is filled in one transaction, only if it is still empty, and any draft is thrown away with it.**
+  An empty master can hold no saved edits, and a draft left started would replace the new master on the next
+  Apply.
+- **Frontier's elements are set aside by name**, as the provenance rule does. A `.buttonMap` beside one is
+  mastered as labels on a built-in unless it is Frontier's own: `VPCPanel` and `VPCThrottle` now travel in the jar
+  (`FrontierStockButtonMaps`) and are recognised by their labels. Generated maps from
+  [Elite-Intel startup](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller) are BindForge's,
+  so they are mastered like any other.
+- **An orphan `.buttonMap` is not read** — nothing resolves through it, so it gives the master nothing — and an
+  unreachable installation is named and skipped. An installation whose files cannot be read stops first setup:
+  an unread file could hold the one entry the master must not lose.
+- **Nothing of the user's means nothing to set up.** With no custom element and no labels, the master stays empty
+  and the dialog says so.
+
 ### An install that appears later
 
 It is backed up, then brought to the master. **Unless it already holds custom entries of its own** — then that

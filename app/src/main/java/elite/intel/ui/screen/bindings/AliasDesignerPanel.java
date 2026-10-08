@@ -4,6 +4,7 @@ import elite.intel.bindforge.devicefiles.DeviceDivergence;
 import elite.intel.bindforge.devicefiles.DeviceDivergenceScanner;
 import elite.intel.bindforge.devicefiles.DeviceEntry;
 import elite.intel.bindforge.devicefiles.DeviceMappingsParser;
+import elite.intel.bindforge.devicefiles.FirstSetup;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
 import elite.intel.bindforge.devicefiles.InstallationDeviceScanner;
 import elite.intel.bindforge.devices.MyDevice;
@@ -16,6 +17,7 @@ import elite.intel.db.managers.BindForgeDeviceMasterManager;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.model.Device;
 import elite.intel.session.PlayerSession;
+import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudFooter;
@@ -41,7 +43,8 @@ import static elite.intel.ui.theme.AppTheme.*;
 import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND;
 
 /**
- * Alias Designer, being built in stages. This is the first: the divergence list.
+ * Alias Designer, being built in stages: My Devices above the divergence list, and first setup opened from here
+ * while the master is empty.
  * <p>
  * Every installation is supposed to hold the same device files, so anywhere they disagree is something to
  * resolve. <strong>One list, not three</strong> - every kind of disagreement appears together, because
@@ -49,8 +52,7 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
  * severity, and severity is judged against the bindings: a missing entry only costs the user something when
  * a binding actually names that device.
  * <p>
- * Still to come: the device list, the one-record editor, and the repairs offered per row. Until it can edit,
- * this panel is not yet what "Alias Designer" promises and is deliberately not in the tab bar.
+ * Still to come: the one-record editor, and the repairs offered per row.
  */
 public class AliasDesignerPanel extends JPanel {
 
@@ -69,6 +71,8 @@ public class AliasDesignerPanel extends JPanel {
     private final AtomicBoolean refreshInProgress = new AtomicBoolean();
     private boolean deviceServiceRunning;
     private final InstallationDeviceScanner deviceScanner = new InstallationDeviceScanner();
+    private JButton setUpButton;
+    private boolean masterEmpty;
 
     public AliasDesignerPanel() {
         this(new InstallationRegistry(
@@ -118,6 +122,12 @@ public class AliasDesignerPanel extends JPanel {
         JButton rescanButton = makeButton(getText("bindings.aliasDesigner.button.recheck"));
         rescanButton.addActionListener(e -> initData());
 
+        // WHY: offered only while the master is empty - first setup runs once, and offered, never forced: the
+        // user opens it when they choose to.
+        setUpButton = makeButton(getText("bindings.aliasDesigner.firstSetup.button"));
+        setUpButton.setEnabled(false);
+        setUpButton.addActionListener(e -> openFirstSetup());
+
         // WHY: stacked rather than tabbed. The two answer different questions - what devices there are, and
         // where the installations disagree about them - and a user resolving a divergence wants the device it
         // names in sight. Equal halves because neither is the subordinate of the other.
@@ -127,7 +137,7 @@ public class AliasDesignerPanel extends JPanel {
         stacked.add(section);
 
         add(stacked, BorderLayout.CENTER);
-        add(HudFooter.build(false, null, null, List.of(rescanButton)), BorderLayout.SOUTH);
+        add(HudFooter.build(false, null, null, List.of(setUpButton, rescanButton)), BorderLayout.SOUTH);
     }
 
     /**
@@ -145,7 +155,9 @@ public class AliasDesignerPanel extends JPanel {
             Map<String, String> labels = Map.of();
             List<DeviceDivergence.Finding> findings = List.of();
             List<MyDevice> myDevices = List.of();
+            boolean empty = false;
             try {
+                empty = BindForgeDeviceMasterManager.getInstance().findAll().isEmpty();
                 List<InstallationRow> rows = registry.currentWithStartupScan();
                 labels = labelsFor(rows);
                 recordWhatEachInstallationHolds(rows);
@@ -160,13 +172,53 @@ public class AliasDesignerPanel extends JPanel {
             Map<String, String> loadedLabels = labels;
             List<DeviceDivergence.Finding> loadedFindings = findings;
             List<MyDevice> loadedMyDevices = myDevices;
+            boolean loadedEmpty = empty;
             SwingUtilities.invokeLater(() -> {
                 installLabels = loadedLabels;
+                masterEmpty = loadedEmpty;
+                setUpButton.setEnabled(masterEmpty);
                 showMyDevices(loadedMyDevices);
                 showFindings(loadedFindings);
                 refreshInProgress.set(false);
             });
         }, "BindForge-Divergence").start();
+    }
+
+    /**
+     * Reads every installation for first setup off the EDT, then opens it. Nothing is written until the user
+     * confirms the summary inside it.
+     */
+    private void openFirstSetup() {
+        setUpButton.setEnabled(false);
+        Map<String, String> names = installLabels;
+        new Thread(() -> {
+            FirstSetup setup = null;
+            FirstSetup.Reading reading = null;
+            String failure = null;
+            try {
+                setup = FirstSetup.stored();
+                reading = setup.read();
+            } catch (IOException | RuntimeException e) {
+                // WHY: broad on purpose - a thread boundary, and the user pressed a button and must be told.
+                log.warn("First setup could not read the installations", e);
+                failure = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+            }
+            FirstSetup loadedSetup = setup;
+            FirstSetup.Reading loadedReading = reading;
+            String loadedFailure = failure;
+            SwingUtilities.invokeLater(() -> {
+                setUpButton.setEnabled(masterEmpty);
+                // WHY: decided on the reading, not the message. An exception can carry no message, and keyed on
+                // that, a failed read would open the dialog with nothing to show.
+                if (loadedSetup == null || loadedReading == null) {
+                    HudConfirmDialog.info(this, getText("bindings.aliasDesigner.firstSetup.title"),
+                            getText("bindings.aliasDesigner.firstSetup.readFailed", loadedFailure),
+                            getText("bindings.aliasDesigner.firstSetup.close"));
+                    return;
+                }
+                new FirstSetupDialog(this, loadedSetup, loadedReading, names, this::initData).showDialog();
+            });
+        }, "BindForge-FirstSetupRead").start();
     }
 
     /**
