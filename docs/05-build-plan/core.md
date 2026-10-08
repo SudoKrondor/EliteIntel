@@ -66,6 +66,12 @@ Growing it touches `bindforge.io` — see C4.
   `V1.1-Release` — not fixed on this branch. Not settled: whether it goes, or becomes Keep Draft / Discard. Raise
   with Alan and Krondor; it does not wait on C6.
 
+- **Generated `.buttonMap`s will show in the startup check** once it runs at startup. An element an installation
+  added gets one from [A8](alias-designer.md#slices), and `DeviceFilesCheck.labelChanges` lists its 30–40 generic
+  labels as `ADDED`, which adopting would take into the master. Settle with the slice that wires the check:
+  whether a file byte-identical to a generated one counts as user content, and whether generation or the check
+  runs first.
+
 ## Boundaries
 
 - **New BindForge code** goes under `elite.intel.bindforge` — `devicefiles` (C1 writes device files), `devices`, `install`, or a new package if Apply

@@ -6,17 +6,12 @@ import elite.intel.bindforge.install.GameInstallation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -106,6 +101,9 @@ public final class ButtonMapGeneration {
 
     /** Creates the controller's {@code .buttonMap} in every installation that names it and has none. */
     public List<Result> generateFor(Controller controller) {
+        // WHY: compared ignoring case, as Windows compares filenames - LVWAP.buttonMap and Lvwap.buttonMap are one
+        // file there, so a master owning either owns it. Apply and the startup check resolve the master's own
+        // name exactly, which is the same file.
         Set<String> labelled = masterLabelled.get().stream()
                 .map(name -> name.toLowerCase(Locale.ROOT))
                 .collect(Collectors.toSet());
@@ -141,8 +139,10 @@ public final class ButtonMapGeneration {
         try {
             file = GameInstallation.buttonMapIn(target.controlSchemes(), deviceName);
         } catch (InvalidPathException e) {
-            // WHY: an XML tag may hold a colon, which no Windows filename can - the game cannot have a map for it either.
-            return new Result(target, deviceName, null, Outcome.FAILED, "\"" + deviceName + "\" cannot be a filename");
+            // WHY: an XML tag may hold a colon, and on Windows "C:x" is a path on another drive, not a filename -
+            // buttonMapIn refuses it rather than let a tag steer the write out of the game folder.
+            return new Result(target, deviceName, null, Outcome.FAILED,
+                    "\"" + deviceName + "\" cannot be a filename");
         }
         if (named.get().gameDrawsIt()) return new Result(target, deviceName, file, Outcome.GAME_DRAWS_IT, null);
         if (labelled.contains(deviceName.toLowerCase(Locale.ROOT))) {
@@ -153,110 +153,32 @@ public final class ButtonMapGeneration {
         Map<String, String> labels = ButtonMapLabels.generate(controller.buttonCount(), controller.axisCount());
         if (labels.isEmpty()) return new Result(target, deviceName, file, Outcome.NOTHING_TO_LABEL, null);
         try {
-            boolean created = createNew(file, ButtonMapWriter.write(labels));
+            boolean created = CreateOnlyFiles.createNew(file, ButtonMapWriter.write(labels));
             return new Result(target, deviceName, file, created ? Outcome.CREATED : Outcome.ALREADY_THERE, null);
         } catch (IOException e) {
             return new Result(target, deviceName, file, Outcome.FAILED, e.getMessage());
         }
     }
 
-    /** The first element claiming the controller's VID/PID, primary or {@code <Alternative>}. */
+    /**
+     * The first element claiming the controller's VID/PID, primary or {@code <Alternative>}, read in one pass so the
+     * name and the icon flag come from the same element - a hand-edited file may repeat a tag.
+     */
     private static Optional<Named> nameOf(Path deviceMappings, Controller controller) throws IOException {
         if (!Files.isRegularFile(deviceMappings)) return Optional.empty();
-        byte[] xml = Files.readAllBytes(deviceMappings);
+        Element root = DeviceFileXml.parse(Files.readAllBytes(deviceMappings)).getDocumentElement();
+        if (root == null) return Optional.empty();
         DeviceEntry.HardwareId hardware = new DeviceEntry.HardwareId(controller.vid(), controller.pid());
-        Optional<String> name = DeviceMappingsParser.parse(new ByteArrayInputStream(xml), deviceMappings.toString())
-                .stream()
-                .filter(entry -> entry.hardware().contains(hardware))
-                .map(DeviceEntry::name)
-                .findFirst();
-        if (name.isEmpty()) return Optional.empty();
-        return Optional.of(new Named(name.get(), GAME_PAD.equals(name.get()) || asksForIcons(xml, name.get())));
-    }
-
-    /**
-     * Whether the first element of that name carries {@code <SupportsIcons>} anywhere inside it - Frontier puts one
-     * inside an {@code <Alternative>} too, on {@code <SaitekX52>}.
-     */
-    private static boolean asksForIcons(byte[] xml, String name) throws IOException {
-        NodeList children = DeviceFileXml.parse(xml).getDocumentElement().getChildNodes();
+        NodeList children = root.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
-            Node child = children.item(i);
-            if (child instanceof Element element && element.getTagName().equals(name)) {
-                return element.getElementsByTagName(SUPPORTS_ICONS).getLength() > 0;
-            }
+            if (!(children.item(i) instanceof Element element)) continue;
+            DeviceEntry entry = DeviceMappingsParser.entryOf(element);
+            if (!entry.hardware().contains(hardware)) continue;
+            // WHY: Frontier puts <SupportsIcons> inside an <Alternative> too, on <SaitekX52>, so look at any depth.
+            boolean asksForIcons = element.getElementsByTagName(SUPPORTS_ICONS).getLength() > 0;
+            return Optional.of(new Named(entry.name(), GAME_PAD.equals(entry.name()) || asksForIcons));
         }
-        return false;
-    }
-
-    /**
-     * Writes a file that must not already exist: a flushed temp file beside it, then published under the target's
-     * name by a step that refuses to replace. A reader sees no file or the whole file, and a file that appeared in
-     * the meantime is kept.
-     * <p>
-     * Not {@code AtomicFiles.write}, which renames <em>over</em> the target - right for Apply, wrong for a write
-     * whose one promise is that it never overwrites.
-     *
-     * @return {@code false} when the target was already there, in which case nothing was written
-     */
-    static boolean createNew(Path target, byte[] content) throws IOException {
-        Path folder = target.getParent();
-        Files.createDirectories(folder);
-        Path temp = Files.createTempFile(folder, "." + target.getFileName(), ".tmp");
-        IOException failure = null;
-        try {
-            writeFlushed(temp, content);
-            return publish(temp, target);
-        } catch (IOException e) {
-            failure = e;
-            throw e;
-        } finally {
-            deleteTemp(temp, failure);
-        }
-    }
-
-    // WHY: a hard link is created by link(2) on Linux and CreateHardLink on Windows, and both fail atomically when
-    // the target exists - a plain move only does that on Windows, while the JDK's Linux move checks and then
-    // renames, which replaces. Some volumes (FAT, some shares) refuse hard links; there a plain move is used,
-    // which refuses to replace on Windows and narrows the window to a check-then-rename on Linux.
-    private static boolean publish(Path temp, Path target) throws IOException {
-        try {
-            Files.createLink(target, temp);
-            return true;
-        } catch (FileAlreadyExistsException e) {
-            return false;
-        } catch (IOException | UnsupportedOperationException linkRefused) {
-            log.debug("Hard link refused for {}, falling back to a plain move: {}", target, linkRefused.getMessage());
-        }
-        try {
-            Files.move(temp, target);
-            return true;
-        } catch (FileAlreadyExistsException e) {
-            return false;
-        }
-    }
-
-    private static void writeFlushed(Path file, byte[] content) throws IOException {
-        Files.write(file, content, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
-        try (FileChannel channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
-            channel.force(true);
-        }
-    }
-
-    /**
-     * Removes the temp file without letting its failure replace the outcome: attached to the real failure when
-     * there is one, logged otherwise - the file was published, or was already there, either way.
-     */
-    private static void deleteTemp(Path temp, IOException failure) {
-        try {
-            Files.deleteIfExists(temp);
-        } catch (IOException cleanupFailure) {
-            if (failure != null) {
-                failure.addSuppressed(cleanupFailure);
-            } else {
-                log.warn("Could not remove the temp file {}: {}", temp, cleanupFailure.getMessage());
-            }
-        }
+        return Optional.empty();
     }
 
     private static Set<String> storedLabelledNames() {

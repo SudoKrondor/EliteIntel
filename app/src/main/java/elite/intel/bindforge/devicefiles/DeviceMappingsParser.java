@@ -118,7 +118,8 @@ public final class DeviceMappingsParser {
         return entries;
     }
 
-    private static DeviceEntry entryOf(Element element) {
+    /** One element as an entry: its tag, and every pair it claims, primary and {@code <Alternative>}. */
+    static DeviceEntry entryOf(Element element) {
         Set<DeviceEntry.HardwareId> hardware = new LinkedHashSet<>();
         addHardwareOf(element, hardware);
 

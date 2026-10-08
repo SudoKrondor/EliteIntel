@@ -5,6 +5,8 @@ import elite.intel.bindforge.devicefiles.ButtonMapGeneration.Outcome;
 import elite.intel.bindforge.devicefiles.ButtonMapGeneration.Result;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush.Target;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
@@ -13,7 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -193,18 +194,29 @@ class ButtonMapGenerationTest {
         assertFalse(Files.exists(buttonMap(steam, "T-Rudder")));
     }
 
-    /** The write itself refuses to replace, so a file that appears while it runs is kept. */
+    /** An installation with no DeviceMappings.xml names nothing, so it gets nothing - and nothing fails. */
     @Test
-    void theCreateOnlyWriteNeverReplacesAndLeavesNoTempFile() throws IOException {
-        Path target = temp.resolve("DeviceButtonMaps").resolve("Mine.buttonMap");
+    void anInstallationWithNoDeviceMappingsNamesNothing() throws IOException {
+        Path controlSchemes = temp.resolve("EPIC").resolve("ControlSchemes");
+        Files.createDirectories(controlSchemes);
+        Target epic = new Target(1, "EPIC", controlSchemes, false);
 
-        assertTrue(ButtonMapGeneration.createNew(target, "first".getBytes(StandardCharsets.UTF_8)));
-        assertFalse(ButtonMapGeneration.createNew(target, "second".getBytes(StandardCharsets.UTF_8)));
+        List<Result> results = generate(List.of(epic), Set.of(), T_RUDDER);
 
-        assertEquals("first", read(target));
-        try (Stream<Path> files = Files.list(target.getParent())) {
-            assertEquals(List.of(target), files.toList());
-        }
+        assertEquals(Outcome.NOT_NAMED, results.getFirst().outcome());
+    }
+
+    /** An XML tag may hold a colon, which no Windows filename can, so that installation fails and says why. */
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    void aNameThatCannotBeAFilenameFails() throws IOException {
+        Target steam = installation(1, "STEAM", "<Root><a:b><PID>B679</PID><VID>044F</VID></a:b></Root>");
+
+        List<Result> results = generate(List.of(steam), Set.of(), T_RUDDER);
+
+        assertEquals(Outcome.FAILED, results.getFirst().outcome());
+        assertEquals("a:b", results.getFirst().deviceName());
+        assertTrue(results.getFirst().reason().contains("cannot be a filename"), results.getFirst().reason());
     }
 
     private static List<Result> generate(List<Target> targets, Set<String> masterLabelled, Controller controller) {

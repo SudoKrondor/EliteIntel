@@ -280,7 +280,8 @@ public final class DeviceFilesCheck {
             // WHY: a device with no labels gets no file from the push, so whatever sits under its name - often
             // Frontier's own map - is not the master's to compare.
             if (device.labels().isEmpty()) continue;
-            changes.addAll(compareLabels(device.name(), device.labels(), GameInstallation.buttonMapIn(target.controlSchemes(), device.name())));
+            Path buttonMap = GameInstallation.buttonMapIn(target.controlSchemes(), device.name());
+            changes.addAll(compareLabels(device.name(), device.labels(), buttonMap));
         }
         for (ElementChange element : elements) {
             if (element.kind() != ElementKind.ADDED) continue;

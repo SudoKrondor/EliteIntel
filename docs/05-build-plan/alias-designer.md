@@ -97,6 +97,16 @@ while Core is in progress.
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
 
+- **2026-10-06 — A8 second review fixes** (`code-integrity-review.md`, Alan). `stop()` now interrupts and drops
+  queued work, so nothing lands in a game folder after it returns and no temp file is left at exit; the name and
+  the icon flag come from one pass over one element; the create-only write moved to package-private
+  `CreateOnlyFiles` (temp names as `AtomicFiles` names them), for A6b to share; the case-insensitive master check
+  carries its `// WHY:`. **Found by the new test:** on Windows an element named `C:x` resolved to a path on drive
+  C, outside the game folder — `GameInstallation.buttonMapIn` now refuses any name that does not land directly in
+  `DeviceButtonMaps`, which also covers Apply and the startup check. **Owed by whoever wires the startup check (C3) at startup:** an element an installation
+  added gets a generated `.buttonMap`, which the check lists as 30–40 `ADDED` labels and adoption would take into
+  the master. Decide whether a file byte-identical to a generated one is user content, and which runs first.
+
 - **2026-10-06 — A8 review fixes** (`code-integrity-review.md`, Alan). All eight axis labels whenever a
   controller has any axis, instead of by position; devices the game draws itself are skipped — `<SupportsIcons>`
   and `<GamePad>` — after Frontier's readme confirmed icon tokens (`[x52b1]`); the create-only write publishes by
@@ -112,7 +122,8 @@ next slice needs.*
   every connect, not only startup; the name is per installation (first match); a device the master labels is
   skipped as C3's drift; axes by position X–V; no hats (they report as buttons). **Found:** SDL compacts axis
   indices — see Known issues. Started as `BUTTON_MAP_STARTUP` in `AppController.buildServices` after `DEVICE`
-  (Alan: no need to wait on Krondor for one line; diagnostics stubs it). **A6b reuses** `ButtonMapLabels` and `ButtonMapGeneration.createNew`. **A1 next** — first setup will
+  (Alan: no need to wait on Krondor for one line; diagnostics stubs it). **A6b reuses** `ButtonMapLabels` and
+  `CreateOnlyFiles.createNew`. **A1 next** — first setup will
   meet generated maps for built-ins in every installation; they are identical, so they merge without a question.
 
 - **2026-10-06 — A6 built: the rule, not the dialog** (Alan). `bindforge.devices.DeviceNames` is pure, and the

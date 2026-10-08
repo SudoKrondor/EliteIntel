@@ -98,7 +98,8 @@ public final class InstallationDeviceScanner {
      * none is the normal case rather than a fault - Frontier ships button maps for two of its 51 entries.
      */
     private static Set<String> buttonMapOwners(List<DeviceEntry> entries, Path controlSchemes) throws IOException {
-        ButtonMapAudit.Result audit = ButtonMapAudit.audit(entries, GameInstallation.deviceButtonMapsIn(controlSchemes));
+        ButtonMapAudit.Result audit =
+                ButtonMapAudit.audit(entries, GameInstallation.deviceButtonMapsIn(controlSchemes));
         Set<String> owners = new LinkedHashSet<>();
         audit.attached().forEach(attachment -> owners.add(attachment.deviceName()));
         return owners;

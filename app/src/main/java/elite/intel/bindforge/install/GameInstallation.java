@@ -1,6 +1,7 @@
 package elite.intel.bindforge.install;
 
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Objects;
 
@@ -86,10 +87,28 @@ public record GameInstallation(Storefront storefront, Path root, Path controlSch
     /**
      * A device's {@code .buttonMap} in a {@code ControlSchemes} folder: the filename stem is the device's element
      * name in {@code DeviceMappings.xml}.
+     * <p>
+     * <strong>The file must land directly in {@code DeviceButtonMaps}, or this refuses.</strong> An XML tag may
+     * hold a colon, and on Windows {@code C:x.buttonMap} is not refused as a filename - it is a path on drive C,
+     * relative to that drive's working folder, and {@code resolve} follows it there, or drops the {@code C:} when
+     * the folder is on drive C. A tag in a hand-edited {@code DeviceMappings.xml} must never steer a write out of
+     * the game folder, or under another name.
      *
-     * @throws java.nio.file.InvalidPathException when the name cannot be a filename - an XML tag may hold a colon
+     * @throws InvalidPathException when the name cannot be a filename, or would not be one inside
+     *                              {@code DeviceButtonMaps}
      */
     public static Path buttonMapIn(Path controlSchemes, String deviceName) {
-        return deviceButtonMapsIn(controlSchemes).resolve(deviceName + BUTTON_MAP_SUFFIX);
+        Path folder = deviceButtonMapsIn(controlSchemes);
+        String filename = deviceName + BUTTON_MAP_SUFFIX;
+        // WHY: checked before resolving as well as after. "C:x" on another drive leaves the folder, but on the
+        // folder's own drive resolve quietly drops the "C:" and lands inside it under the wrong name - so the name
+        // itself must have no root, and the result must carry exactly that name.
+        Path name = folder.getFileSystem().getPath(filename);
+        Path file = folder.resolve(name);
+        if (name.getRoot() != null || name.getNameCount() != 1
+                || !folder.equals(file.getParent()) || !filename.equals(file.getFileName().toString())) {
+            throw new InvalidPathException(deviceName, "a device name must be a filename inside " + folder);
+        }
+        return file;
     }
 }

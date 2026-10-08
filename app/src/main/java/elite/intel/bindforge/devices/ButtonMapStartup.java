@@ -14,6 +14,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -32,6 +33,9 @@ import java.util.function.Supplier;
 public final class ButtonMapStartup implements ManagedService {
 
     private static final Logger log = LogManager.getLogger(ButtonMapStartup.class);
+
+    /** Plenty for one small file to notice the interrupt and clean up. */
+    private static final long STOP_WAIT_SECONDS = 1;
 
     private final Consumer<Controller> generation;
     private final Supplier<List<Device>> alreadyConnected;
@@ -63,11 +67,23 @@ public final class ButtonMapStartup implements ManagedService {
         alreadyConnected.get().forEach(this::submit);
     }
 
+    /**
+     * Nothing runs once this returns: queued controllers are dropped, and one being written is interrupted, which
+     * removes its temp file. Left to finish, a write could land after stop - or, on this daemon thread, be killed at
+     * exit and leave a temp file in a game folder.
+     */
     @Override
     public synchronized void stop() {
         if (worker == null) return;
         DeviceBus.unregister(this);
-        worker.shutdown();
+        worker.shutdownNow();
+        try {
+            if (!worker.awaitTermination(STOP_WAIT_SECONDS, TimeUnit.SECONDS)) {
+                log.warn("The .buttonMap generation did not stop within {} s", STOP_WAIT_SECONDS);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         worker = null;
     }
 
