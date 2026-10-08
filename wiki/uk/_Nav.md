@@ -30,6 +30,7 @@ Custom-Commands: Власні команди
 TradeRoutePlotting: Торгівля та прибуток
 Search-galaxy-with-EliteIntel: Пошук по галактиці
 Discovery-Assistance: Дослідження
+Colonisation: Колонізація
 Navigation-Assistance: Навігація
 Pirate-Massacre-Mission-Tracking: Піратські місії
 AllCommands: Всі команди

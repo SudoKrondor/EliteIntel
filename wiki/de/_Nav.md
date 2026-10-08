@@ -30,6 +30,7 @@ Custom-Commands: Eigene Befehle erstellen
 TradeRoutePlotting: Handel & Profit
 Search-galaxy-with-EliteIntel: Galaxie erkunden
 Discovery-Assistance: Entdeckung & Exobiologie
+Colonisation: Kolonisierung
 Navigation-Assistance: Navigation
 Pirate-Massacre-Mission-Tracking: Piraten-Missionen
 AllCommands: Alle Befehle

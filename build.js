@@ -225,6 +225,7 @@ const DEFAULT_NAV = {
     TradeRoutePlotting:                'Trade & Profit',
     'Search-galaxy-with-EliteIntel':   'Search the Galaxy',
     'Discovery-Assistance':            'Discovery & ExoBiology',
+    Colonisation:                      'Colonisation',
     'Navigation-Assistance':           'Navigation',
     'Pirate-Massacre-Mission-Tracking':'Pirate Missions',
     AllCommands:                       'All Commands & Queries',
@@ -311,14 +312,15 @@ function buildSidebar(activePage, assetBase, nav, titleMap, localePages) {
 
             ${sec('section_howdoi')}
             ${lnk('General-Operation',                'manual.png')}
+            ${lnk('AllCommands',                      'manual.png')}
+            ${lnk('Obscure-System-Commands',          'manual.png')}
             ${lnk('Custom-Commands',                  'manual.png')}
             ${lnk('TradeRoutePlotting',               'manual.png')}
             ${lnk('Search-galaxy-with-EliteIntel',    'manual.png')}
             ${lnk('Discovery-Assistance',             'manual.png')}
+            ${lnk('Colonisation',                     'manual.png')}
             ${lnk('Navigation-Assistance',            'manual.png')}
             ${lnk('Pirate-Massacre-Mission-Tracking', 'manual.png')}
-            ${lnk('AllCommands',                      'manual.png')}
-            ${lnk('Obscure-System-Commands',          'manual.png')}
 
             ${sec('section_community')}
             <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener">${img('communications.png', '')} ${esc(nav['link_matrix'])}</a>

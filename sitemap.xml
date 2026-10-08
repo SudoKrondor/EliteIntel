@@ -20,6 +20,15 @@
     <xhtml:link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/AllCommands.html"/>
   </url>
   <url>
+    <loc>https://www.elite-intel.org/Colonisation.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Colonisation.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Colonisation.html"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/Colonisation.html"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Colonisation.html"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Colonisation.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Colonisation.html"/>
+  </url>
+  <url>
     <loc>https://www.elite-intel.org/Contact.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Contact.html"/>
     <xhtml:link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Contact.html"/>
