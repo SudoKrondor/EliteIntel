@@ -22,6 +22,10 @@
     --ed-green-bright: #2fd170;
     --ed-green-glow:   rgba(34, 179, 94, 0.45);
 
+    --ed-patreon:        #ff424d;
+    --ed-patreon-bright: #ff6b74;
+    --ed-patreon-glow:   rgba(255, 66, 77, 0.45);
+
   --ed-border:        rgba(255, 102, 0, 0.22);
   --header-h:         56px;
   --sidebar-w:        270px;
@@ -150,6 +154,27 @@ body {
 .btn-donate:hover {
     background: var(--ed-green-bright);
     box-shadow: 0 0 14px var(--ed-green-glow);
+    color: #000;
+}
+
+
+
+.btn-patreon {
+    background: var(--ed-patreon);
+    color: #000;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.85rem;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background 0.18s, box-shadow 0.18s;
+}
+.btn-patreon:hover {
+    background: var(--ed-patreon-bright);
+    box-shadow: 0 0 14px var(--ed-patreon-glow);
     color: #000;
 }
 
@@ -554,6 +579,7 @@ body {
 ══════════════════════════════════════════ */
 @media (max-width: 900px) {
   .hamburger { display: flex; }
+  .header-actions .btn-patreon { display: none; }
 
   .sidebar {
     transform: translateX(-100%);
