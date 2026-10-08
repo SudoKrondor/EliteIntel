@@ -570,7 +570,7 @@ body {
 
 @media (max-width: 480px) {
   .header-actions .btn-ghost,
-  .header-actions .btn-donate { display: none; }
+  .header-actions .btn-primary { display: none; }
   .content-inner { padding: 1.2rem 1rem 4rem; }
   .markdown-body h1 { font-size: 1.5rem; }
   .markdown-body h2 { font-size: 1.2rem; }
