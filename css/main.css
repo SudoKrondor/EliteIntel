@@ -18,6 +18,10 @@
     --ed-blue-bright: #307bfb;
     --ed-blue-dim: #173c7d;
 
+    --ed-green:        #22b35e;
+    --ed-green-bright: #2fd170;
+    --ed-green-glow:   rgba(34, 179, 94, 0.45);
+
   --ed-border:        rgba(255, 102, 0, 0.22);
   --header-h:         56px;
   --sidebar-w:        270px;
@@ -125,6 +129,27 @@ body {
 .btn-secondary:hover {
     background: var(--ed-blue-bright);
     box-shadow: 0 0 14px var(--ed-orange-glow);
+    color: #000;
+}
+
+
+
+.btn-donate {
+    background: var(--ed-green);
+    color: #000;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.85rem;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background 0.18s, box-shadow 0.18s;
+}
+.btn-donate:hover {
+    background: var(--ed-green-bright);
+    box-shadow: 0 0 14px var(--ed-green-glow);
     color: #000;
 }
 
@@ -544,7 +569,8 @@ body {
 }
 
 @media (max-width: 480px) {
-  .header-actions .btn-ghost { display: none; }
+  .header-actions .btn-ghost,
+  .header-actions .btn-donate { display: none; }
   .content-inner { padding: 1.2rem 1rem 4rem; }
   .markdown-body h1 { font-size: 1.5rem; }
   .markdown-body h2 { font-size: 1.2rem; }
