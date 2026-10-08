@@ -5,6 +5,7 @@ import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.db.managers.BindForgeDeviceDraftManager.StoredDevice;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -38,6 +39,15 @@ import java.util.TreeSet;
  *     <li><strong>"Use one installation as the master"</strong> answers every question in its favour, and still
  *     takes the elements only the others hold - first setup never drops a custom entry.</li>
  * </ul>
+ * After review - 2026-10-08 (Alan):
+ * <ul>
+ *     <li><strong>Two names for one VID/PID inside one installation are not a question.</strong> The game uses the
+ *     first in the file, so the later ones are dead entries: they are shown, and become pending removals. A name
+ *     conflict is asked only where different installations disagree.</li>
+ *     <li><strong>A name that wins any name conflict is kept</strong>, even where it loses another - a stale PID in
+ *     one installation must not cost the user the device. Answers that would leave two devices on one VID/PID are
+ *     unanswered until changed.</li>
+ * </ul>
  */
 public final class FirstSetupPlan {
 
@@ -45,16 +55,18 @@ public final class FirstSetupPlan {
      * One installation as first setup reads it.
      *
      * @param elements the user's elements - every element whose name Frontier does not ship - by name, with its
-     *                 primary VID/PID
+     *                 primary VID/PID, <strong>in file order</strong> - which of two elements on one VID/PID the
+     *                 game uses depends on it
      * @param builtIns Frontier-named elements this installation holds that carry labels of the user's or of
-     *                 BindForge's, with the primary pair the file gives them
+     *                 BindForge's, with the primary pair the file gives them. Only those with labels: a built-in
+     *                 with none has nothing to master
      * @param labels   labels by device name, for elements and built-ins alike. Frontier's own files are not here
      */
     public record Installation(long installId, String storefront, Map<String, HardwareId> elements,
                                Map<String, HardwareId> builtIns, Map<String, Map<String, String>> labels) {
         public Installation {
             Objects.requireNonNull(storefront, "storefront");
-            elements = Map.copyOf(elements);
+            elements = Collections.unmodifiableMap(new LinkedHashMap<>(elements));
             builtIns = Map.copyOf(builtIns);
             Map<String, Map<String, String>> copied = new LinkedHashMap<>();
             labels.forEach((device, map) -> copied.put(device, Map.copyOf(map)));
@@ -74,7 +86,12 @@ public final class FirstSetupPlan {
         /** Two installations label one input differently. A question. */
         LABELS_DIFFER,
         /** Labels on one of Frontier's devices, the same everywhere they appear. Taken. */
-        BUILT_IN_LABELS
+        BUILT_IN_LABELS,
+        /**
+         * An element below another on the same VID/PID in its installation, and the first nowhere. The game never
+         * uses it, so it is not taken, and it becomes a pending removal.
+         */
+        SHADOWED
     }
 
     /**
@@ -112,8 +129,8 @@ public final class FirstSetupPlan {
 
     /**
      * @param devices         the master as it is to be
-     * @param pendingRemovals names that lost a name conflict. Their entries stay in the installations, below the
-     *                        winner, until something removes them
+     * @param pendingRemovals names that lost a name conflict or were shadowed. Their entries stay in the
+     *                        installations, below the winner, until something removes them
      */
     public record Resolution(List<StoredDevice> devices, List<String> pendingRemovals) {
         public Resolution {
@@ -129,8 +146,13 @@ public final class FirstSetupPlan {
     private static final String HARDWARE_ROW = "hardware:";
     private static final String NAME_ROW = "name:";
     private static final String LABELS_ROW = "labels:";
+    private static final String SHADOWED_ROW = "shadowed:";
 
     private final List<Installation> installations;
+    /** Each installation as the game sees it: an element below another on its VID/PID left out. */
+    private final List<Installation> effective;
+    /** Names shadowed in every installation holding them, with those installations. */
+    private final Map<String, Set<Long>> shadowed;
     private final Set<String> referenced;
     private final List<Row> rows;
     /** Every name the installations hold for one VID/PID, where there is more than one. */
@@ -143,7 +165,9 @@ public final class FirstSetupPlan {
     public FirstSetupPlan(List<Installation> installations, Set<String> referenced) {
         this.installations = List.copyOf(installations);
         this.referenced = Set.copyOf(referenced);
-        this.namesByHardware = conflictingNames(this.installations);
+        this.effective = this.installations.stream().map(FirstSetupPlan::withoutShadowed).toList();
+        this.shadowed = shadowedEverywhere(this.installations, this.effective);
+        this.namesByHardware = conflictingNames(this.effective);
         this.rows = buildRows();
     }
 
@@ -174,6 +198,7 @@ public final class FirstSetupPlan {
             Option chosen = chosen(row, answers);
             if (chosen == null || !chosen.available()) missing.add(row.id());
         }
+        if (missing.isEmpty()) missing.addAll(clashing(answers, losers));
         return missing;
     }
 
@@ -217,7 +242,29 @@ public final class FirstSetupPlan {
             devices.add(new StoredDevice(null, name, hardware.vid(), hardware.pid(), true, null,
                     labelsFor(name, answers)));
         }
-        return new Resolution(devices, List.copyOf(new TreeSet<>(losers)));
+        Set<String> removals = new TreeSet<>(losers);
+        removals.addAll(shadowed.keySet());
+        return new Resolution(devices, List.copyOf(removals));
+    }
+
+    /**
+     * The hardware questions behind two kept devices ending on one VID/PID. Only answers can do that, when a name
+     * keeps the hardware another name won.
+     */
+    private List<String> clashing(Map<String, String> answers, Set<String> losers) {
+        Map<HardwareId, List<String>> namesOn = new LinkedHashMap<>();
+        for (String name : elementNames()) {
+            if (losers.contains(name)) continue;
+            namesOn.computeIfAbsent(hardwareFor(name, answers), h -> new ArrayList<>()).add(name);
+        }
+        Set<String> rowIds = new LinkedHashSet<>();
+        namesOn.forEach((hardware, names) -> {
+            if (names.size() < 2 || claimsNothing(hardware)) return;
+            for (String name : names) {
+                if (new LinkedHashSet<>(hardwareByInstall(name).values()).size() > 1) rowIds.add(HARDWARE_ROW + name);
+            }
+        });
+        return List.copyOf(rowIds);
     }
 
     private List<Row> buildRows() {
@@ -246,6 +293,8 @@ public final class FirstSetupPlan {
             built.add(labelsRow(name).orElse(new Row(LABELS_ROW + name, Kind.BUILT_IN_LABELS, Severity.GREEN, name,
                     labelHolders(name).keySet(), List.of())));
         }
+        shadowed.forEach((name, installs) -> built.add(new Row(SHADOWED_ROW + name, Kind.SHADOWED,
+                referenced.contains(name) ? Severity.RED : Severity.YELLOW, name, installs, List.of())));
         built.sort(Comparator.comparing((Row row) -> !row.isQuestion())
                 .thenComparing(Row::severity, Comparator.reverseOrder())
                 .thenComparing(Row::deviceName));
@@ -257,7 +306,7 @@ public final class FirstSetupPlan {
         Set<Long> present = new LinkedHashSet<>();
         for (String name : names) {
             Set<Long> holding = new LinkedHashSet<>();
-            installations.forEach(install -> {
+            effective.forEach(install -> {
                 if (hardware.equals(install.elements().get(name))) holding.add(install.installId());
             });
             present.addAll(holding);
@@ -312,14 +361,18 @@ public final class FirstSetupPlan {
         return merged;
     }
 
+    /** Names beaten in a name conflict and winning none. A name that wins anywhere is kept. */
     private Set<String> losers(Map<String, String> answers) {
         Set<String> losers = new LinkedHashSet<>();
+        Set<String> winners = new LinkedHashSet<>();
         for (Row row : rows) {
             if (row.kind() != Kind.NAME_DIFFERS) continue;
             Option chosen = chosen(row, answers);
             if (chosen == null || !chosen.available()) continue;
+            winners.add(chosen.key());
             row.options().stream().map(Option::key).filter(name -> !name.equals(chosen.key())).forEach(losers::add);
         }
+        losers.removeAll(winners);
         return losers;
     }
 
@@ -350,7 +403,7 @@ public final class FirstSetupPlan {
 
     private Map<Long, HardwareId> hardwareByInstall(String name) {
         Map<Long, HardwareId> byInstall = new LinkedHashMap<>();
-        installations.forEach(install -> {
+        effective.forEach(install -> {
             HardwareId hardware = install.elements().get(name);
             if (hardware != null) byInstall.put(install.installId(), hardware);
         });
@@ -380,24 +433,55 @@ public final class FirstSetupPlan {
 
     private Set<String> elementNames() {
         Set<String> names = new TreeSet<>();
-        installations.forEach(install -> names.addAll(install.elements().keySet()));
+        effective.forEach(install -> names.addAll(install.elements().keySet()));
         return names;
     }
 
-    /** Built-ins carrying labels in at least one installation. */
+    /** Built-ins carrying labels - every built-in an installation reports carries some. */
     private Set<String> builtInNames() {
         Set<String> names = new TreeSet<>();
-        installations.forEach(install -> install.builtIns().keySet().forEach(name -> {
-            if (!labelHolders(name).isEmpty()) names.add(name);
-        }));
+        installations.forEach(install -> names.addAll(install.builtIns().keySet()));
         return names;
     }
 
+    /**
+     * The installation with every element below another on the same VID/PID left out: the game uses the first in
+     * the file (domain doc section 1.2d), so the rest are not a choice the user made.
+     */
+    private static Installation withoutShadowed(Installation install) {
+        Map<String, HardwareId> kept = new LinkedHashMap<>();
+        Set<HardwareId> claimed = new LinkedHashSet<>();
+        install.elements().forEach((name, hardware) -> {
+            if (claimsNothing(hardware) || claimed.add(hardware)) kept.put(name, hardware);
+        });
+        return new Installation(install.installId(), install.storefront(), kept, install.builtIns(),
+                install.labels());
+    }
+
+    /** Names left out of every installation holding them. One kept anywhere is in play, not shadowed. */
+    private static Map<String, Set<Long>> shadowedEverywhere(List<Installation> installations,
+                                                            List<Installation> effective) {
+        Set<String> kept = new LinkedHashSet<>();
+        effective.forEach(install -> kept.addAll(install.elements().keySet()));
+        Map<String, Set<Long>> shadowed = new TreeMap<>();
+        installations.forEach(install -> install.elements().keySet().forEach(name -> {
+            if (!kept.contains(name)) {
+                shadowed.computeIfAbsent(name, n -> new LinkedHashSet<>()).add(install.installId());
+            }
+        }));
+        return shadowed;
+    }
+
+    /** An element with no VID/PID claims no hardware, so two of them are not one device under two names. */
+    private static boolean claimsNothing(HardwareId hardware) {
+        return hardware.vid().isEmpty() && hardware.pid().isEmpty();
+    }
+
+    /** Hardware held under different names - by different installations, as each is already unshadowed. */
     private static Map<HardwareId, Set<String>> conflictingNames(List<Installation> installations) {
         Map<HardwareId, Set<String>> byHardware = new LinkedHashMap<>();
-        // WHY: an element with no VID/PID claims no hardware, so two of them are not one device under two names.
         installations.forEach(install -> install.elements().forEach((name, hardware) -> {
-            if (hardware.vid().isEmpty() && hardware.pid().isEmpty()) return;
+            if (claimsNothing(hardware)) return;
             byHardware.computeIfAbsent(hardware, h -> new TreeSet<>()).add(name);
         }));
         byHardware.values().removeIf(names -> names.size() < 2);

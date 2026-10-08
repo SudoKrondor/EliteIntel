@@ -13,6 +13,7 @@ import java.nio.file.StandardCopyOption;
 import java.time.Clock;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -53,13 +54,25 @@ public final class DeviceFilesSnapshot {
      *
      * @param label names the snapshot - {@code first-setup}
      * @return the snapshot's folder
-     * @throws IOException if any copy fails. The operation it protects must not go ahead
+     * @throws IOException if any copy fails. The operation it protects must not go ahead, and the half-written
+     *                     folder is removed - a partial snapshot in the backups list would pass for a restore point
      */
     public Path take(String label, List<Target> targets) throws IOException {
         Path folder = uniqueFolder(ZonedDateTime.now(clock).format(FOLDER_TIMESTAMP) + "_" + label);
+        try {
+            copyInto(folder, targets);
+        } catch (IOException e) {
+            deleteQuietly(folder, e);
+            throw e;
+        }
+        log.info("Device files backed up before {} at {}", label, folder);
+        return folder;
+    }
+
+    private static void copyInto(Path folder, List<Target> targets) throws IOException {
         Files.createDirectories(folder);
         for (Target target : targets) {
-            if (target.missing() || !Files.isDirectory(target.controlSchemes())) continue;
+            if (!target.isReachable()) continue;
             Path into = folder.resolve(target.installId() + "-" + safe(target.storefront()));
             Files.createDirectories(into);
 
@@ -79,8 +92,18 @@ public final class DeviceFilesSnapshot {
                 }
             }
         }
-        log.info("Device files backed up before {} at {}", label, folder);
-        return folder;
+    }
+
+    /** Removes a failed snapshot. What cannot be removed is attached to the failure, not thrown over it. */
+    private static void deleteQuietly(Path folder, IOException failure) {
+        if (!Files.exists(folder)) return;
+        try (Stream<Path> paths = Files.walk(folder)) {
+            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+                Files.deleteIfExists(path);
+            }
+        } catch (IOException e) {
+            failure.addSuppressed(e);
+        }
     }
 
     private Path uniqueFolder(String name) {

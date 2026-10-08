@@ -200,6 +200,70 @@ class FirstSetupPlanTest {
                 plan.rows().stream().map(Row::deviceName).toList());
     }
 
+    /**
+     * The review's crossing layout: a stale PID under one name in each installation, each pair also held under a
+     * second name. Favouring Steam must keep Steam's own device.
+     */
+    @Test
+    void aNameThatWinsOneConflictIsKeptEvenWhereItLosesAnother() {
+        HardwareId h1 = new HardwareId("3344", "0001");
+        HardwareId h2 = new HardwareId("3344", "0002");
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, ordered("X", h1, "Z", h2)),
+                install(EPIC, ordered("X", h2, "Y", h1)));
+
+        Resolution resolution = plan.resolve(plan.answersFavouring(STEAM));
+
+        assertEquals(List.of(device("X", h1, Map.of()), device("Z", h2, Map.of())), resolution.devices());
+        assertEquals(List.of("Y"), resolution.pendingRemovals());
+    }
+
+    /** Answers that would leave two devices on one VID/PID are not accepted until changed. */
+    @Test
+    void answersPuttingTwoDevicesOnOneHardwareAreUnanswered() {
+        HardwareId h1 = new HardwareId("3344", "0001");
+        HardwareId h2 = new HardwareId("3344", "0002");
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, ordered("X", h1, "Z", h2)),
+                install(EPIC, ordered("X", h2, "Y", h1)));
+        Map<String, String> answers = new LinkedHashMap<>();
+        answers.put("name:3344:0001", "Y");
+        answers.put("name:3344:0002", "X");
+        answers.put("hardware:X", "3344:0001");
+
+        assertEquals(List.of("hardware:X"), plan.unanswered(answers), "X would sit on Y's hardware");
+
+        answers.put("hardware:X", "3344:0002");
+        assertEquals(List.of(device("X", h2, Map.of()), device("Y", h1, Map.of())), plan.resolve(answers).devices());
+    }
+
+    /** The game uses the first of two elements on one VID/PID, so the second is not the user's choice to make. */
+    @Test
+    void aSecondNameForOneHardwareInsideOneInstallationIsShadowedNotAsked() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, ordered("RightStick", RIGHT, "RVWAP", RIGHT)),
+                install(EPIC, Map.of("RightStick", RIGHT)));
+
+        assertTrue(plan.unanswered(Map.of()).isEmpty());
+        Map<String, Row> rows = byDevice(plan.rows());
+        assertEquals(Kind.IDENTICAL, rows.get("RightStick").kind(), "the first in the file is the device");
+        assertEquals(Kind.SHADOWED, rows.get("RVWAP").kind());
+        Resolution resolution = plan.resolve(Map.of());
+        assertEquals(List.of("RightStick"), names(resolution));
+        assertEquals(List.of("RVWAP"), resolution.pendingRemovals());
+    }
+
+    @Test
+    void aShadowedNameThatIsFirstElsewhereIsStillInPlay() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, ordered("RVWAP", RIGHT, "RightStick", RIGHT)),
+                install(EPIC, Map.of("RightStick", RIGHT)));
+
+        Row row = only(plan.rows());
+        assertEquals(Kind.NAME_DIFFERS, row.kind(), "Steam uses RVWAP, Epic uses RightStick - a real disagreement");
+        assertEquals(List.of("RVWAP"), plan.resolve(plan.answersFavouring(EPIC)).pendingRemovals());
+    }
+
     @Test
     void nothingOfTheUsersMeansNothingToSetUp() {
         assertTrue(plan(Set.of(), install(STEAM, Map.of()), install(EPIC, Map.of())).isEmpty());
@@ -216,6 +280,14 @@ class FirstSetupPlanTest {
     private static Installation install(long id, Map<String, HardwareId> elements,
                                         Map<String, Map<String, String>> labels) {
         return new Installation(id, id == STEAM ? "STEAM" : "EPIC", elements, Map.of(), labels);
+    }
+
+    /** Elements in file order, which decides which of two on one VID/PID the game uses. */
+    private static Map<String, HardwareId> ordered(String first, HardwareId firstId, String second, HardwareId secondId) {
+        Map<String, HardwareId> elements = new LinkedHashMap<>();
+        elements.put(first, firstId);
+        elements.put(second, secondId);
+        return elements;
     }
 
     private static StoredDevice device(String name, HardwareId hardware, Map<String, String> labels) {

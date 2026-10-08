@@ -16,6 +16,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -54,6 +55,22 @@ class DeviceFilesSnapshotTest {
 
         assertFalse(Files.exists(first.resolve("2-EPIC")));
         assertNotEquals(first, second);
+    }
+
+    /** A half-written snapshot would pass for a restore point in the backups list, so it is removed. */
+    @Test
+    void aCopyThatFailsLeavesNoSnapshotBehind() throws IOException {
+        Target steam = installation(1, "STEAM", "<Root/>");
+        // WHY: a second target with the same id copies to the same path, so its copy fails part way through.
+        Target clash = new Target(1, "STEAM", installation(2, "OTHER", "<Root/>").controlSchemes(), false);
+        Path backups = temp.resolve("backups");
+
+        assertThrows(IOException.class,
+                () -> new DeviceFilesSnapshot(backups, CLOCK).take("first-setup", List.of(steam, clash)));
+
+        try (var left = Files.list(backups)) {
+            assertEquals(0, left.count());
+        }
     }
 
     private Target installation(long id, String storefront, String deviceMappings) throws IOException {

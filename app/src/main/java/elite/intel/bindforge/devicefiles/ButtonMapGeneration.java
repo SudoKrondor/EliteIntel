@@ -122,7 +122,7 @@ public final class ButtonMapGeneration {
     }
 
     private static Result generateIn(Target target, Controller controller, Set<String> labelled) {
-        if (target.missing() || !Files.isDirectory(target.controlSchemes())) {
+        if (!target.isReachable()) {
             return new Result(target, null, null, Outcome.SKIPPED_MISSING, null);
         }
         Optional<Named> named;

@@ -244,6 +244,21 @@ screen, which is offered only while the master is empty.
 - **Nothing of the user's means nothing to set up.** With no custom element and no labels, the master stays empty
   and the dialog says so.
 
+*After review — 2026-10-08 (Alan):*
+
+- **Two names for one VID/PID inside one installation are not a question.** The game uses the first in the file,
+  so a later one is a dead entry: it is shown, not taken, and becomes a pending removal. A name conflict is asked
+  only where *different* installations disagree — which is what the four cases above describe. A name shadowed
+  in one installation but first in another is still in play.
+- **A name that wins any name conflict is kept**, even where it loses another. A device under one name on a stale
+  PID in one installation, with each PID also held under a second name, must not lose the user the device — and
+  "use one installation as the master" must never drop that installation's own element. Answers that would leave
+  two kept devices on one VID/PID are treated as unanswered until changed.
+- **A failure after the backup is named for what it is.** If the master cannot be saved, nothing was written and
+  first setup can run again; if the push fails after the master is saved, first setup is over and the
+  installations that missed it stop matching the master, for Apply to retry. A half-written backup is removed
+  rather than left to pass for a restore point.
+
 ### An install that appears later
 
 It is backed up, then brought to the master. **Unless it already holds custom entries of its own** — then that

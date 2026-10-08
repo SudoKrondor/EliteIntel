@@ -63,6 +63,16 @@ public final class DeviceFilesPush {
      * @param missing        whether the stored list already knows its folder is gone
      */
     public record Target(long installId, String storefront, Path controlSchemes, boolean missing) {
+
+        /**
+         * Whether the installation can be read and written now: not known to be gone, and its folder is there.
+         * <p>
+         * One definition for the push, the check, the backup, first setup and generation - if they disagreed, a
+         * backup and the write it protects could cover different installations.
+         */
+        public boolean isReachable() {
+            return !missing && Files.isDirectory(controlSchemes);
+        }
     }
 
     /**
@@ -188,7 +198,7 @@ public final class DeviceFilesPush {
     }
 
     private InstallationResult pushTo(Target target, List<MasterDevice> devices, int keep, Set<String> kept) {
-        if (target.missing() || !Files.isDirectory(target.controlSchemes())) {
+        if (!target.isReachable()) {
             return result(target, Outcome.SKIPPED_MISSING, "folder not found: " + target.controlSchemes(), false);
         }
         Plan plan;

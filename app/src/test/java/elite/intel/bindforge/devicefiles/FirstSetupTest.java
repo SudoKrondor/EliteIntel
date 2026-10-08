@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -74,6 +75,7 @@ class FirstSetupTest {
         FirstSetup.Result result = setup.apply(setup.read(), Map.of());
 
         assertEquals(FirstSetup.Outcome.ALREADY_SET_UP, result.outcome());
+        assertTrue(result.masterFilled(), "first setup is over, so the dialog closes");
         assertEquals(List.of("backup", "establish [LVWAP]"), order);
     }
 
@@ -85,7 +87,7 @@ class FirstSetupTest {
                 target -> new FirstSetupPlan.Installation(target.installId(), target.storefront(),
                         Map.of("LVWAP", target.installId() == 1 ? LEFT : new HardwareId("3344", "83F3")),
                         Map.of(), Map.of()),
-                Set::of, () -> true, targets -> { order.add("backup"); return temp; },
+                Set::of, targets -> { order.add("backup"); return temp; },
                 (devices, removals) -> { order.add("establish"); return true; },
                 () -> { order.add("push"); return new Report(List.of()); });
 
@@ -95,12 +97,42 @@ class FirstSetupTest {
         assertTrue(order.isEmpty());
     }
 
+    /** The master is saved in one transaction, so a failure there leaves first setup to run again. */
+    @Test
+    void aMasterThatCannotBeSavedIsAFailureNamedAsSuchAndNothingIsPushed() throws IOException {
+        FirstSetup setup = new FirstSetup(List::of, target -> null, Set::of,
+                taken -> { order.add("backup"); return temp; },
+                (devices, removals) -> { throw new IllegalStateException("database locked"); },
+                () -> { order.add("push"); return new Report(List.of()); });
+
+        FirstSetup.Result result = setup.apply(setup.read(), Map.of());
+
+        assertEquals(FirstSetup.Outcome.FAILED, result.outcome());
+        assertTrue(result.reason().contains("database locked"));
+        assertFalse(result.masterFilled());
+        assertEquals(List.of("backup"), order);
+    }
+
+    /** Not "the backup failed": the backup worked and the master is saved, so first setup is over. */
+    @Test
+    void aPushThatThrowsAfterTheMasterIsSavedEndsFirstSetup() throws IOException {
+        FirstSetup setup = new FirstSetup(List::of, target -> null, Set::of,
+                taken -> temp,
+                (devices, removals) -> true,
+                () -> { throw new IllegalStateException(); });
+
+        FirstSetup.Result result = setup.apply(setup.read(), Map.of());
+
+        assertEquals(FirstSetup.Outcome.FAILED, result.outcome());
+        assertTrue(result.masterFilled());
+        assertTrue(result.reason().contains("IllegalStateException"), "no message is shown by kind, not as null");
+    }
+
     private FirstSetup setup(List<Target> targets, boolean backupWorks, boolean masterEmpty) {
         return new FirstSetup(() -> targets,
                 target -> new FirstSetupPlan.Installation(target.installId(), target.storefront(),
                         Map.of("LVWAP", LEFT), Map.of(), Map.of()),
                 Set::of,
-                () -> masterEmpty,
                 taken -> {
                     order.add("backup");
                     if (!backupWorks) throw new IOException("disk full");

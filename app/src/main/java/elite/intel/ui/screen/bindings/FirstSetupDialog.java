@@ -249,7 +249,7 @@ final class FirstSetupDialog extends JDialog {
                 // WHY: broad on purpose - a thread boundary, and an escaping exception would leave the dialog
                 // waiting with nothing said.
                 log.error("First setup failed", e);
-                result = new FirstSetup.Result(FirstSetup.Outcome.BACKUP_FAILED, e.getMessage(), null, null, null);
+                result = FirstSetup.Result.failedBeforeWriting(e);
             }
             FirstSetup.Result finished = result;
             SwingUtilities.invokeLater(() -> showResult(finished));
@@ -260,12 +260,14 @@ final class FirstSetupDialog extends JDialog {
         String message = switch (result.outcome()) {
             case APPLIED -> appliedText(result);
             case ALREADY_SET_UP -> getText("bindings.aliasDesigner.firstSetup.result.alreadySetUp");
-            case BACKUP_FAILED -> getText("bindings.aliasDesigner.firstSetup.result.backupFailed",
-                    String.valueOf(result.reason()));
+            case BACKUP_FAILED -> getText("bindings.aliasDesigner.firstSetup.result.backupFailed", result.reason());
+            case FAILED -> getText("bindings.aliasDesigner.firstSetup.result.failed", result.reason());
         };
         HudConfirmDialog.info(this, getText("bindings.aliasDesigner.firstSetup.title"), message,
                 getText("bindings.aliasDesigner.firstSetup.close"));
-        if (result.outcome() == FirstSetup.Outcome.APPLIED) {
+        // WHY: closed whenever the master holds anything, whatever else failed. First setup is then over -
+        // continuing again could only say so - and the screen behind must stop offering it.
+        if (result.masterFilled()) {
             dispose();
             afterApply.run();
         } else {
@@ -301,6 +303,7 @@ final class FirstSetupDialog extends JDialog {
             case NAME_DIFFERS -> "bindings.aliasDesigner.firstSetup.kind.nameDiffers";
             case LABELS_DIFFER -> "bindings.aliasDesigner.firstSetup.kind.labelsDiffer";
             case BUILT_IN_LABELS -> "bindings.aliasDesigner.firstSetup.kind.builtInLabels";
+            case SHADOWED -> "bindings.aliasDesigner.firstSetup.kind.shadowed";
         };
     }
 

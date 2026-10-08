@@ -182,7 +182,7 @@ public final class DeviceFilesCheck {
     }
 
     private InstallationCheck checkOne(Target target, List<MasterDevice> devices, Set<String> leftovers) {
-        if (target.missing() || !Files.isDirectory(target.controlSchemes())) {
+        if (!target.isReachable()) {
             return nothingCompared(target, State.MISSING, "folder not found: " + target.controlSchemes());
         }
         Path deviceMappings = GameInstallation.deviceMappingsIn(target.controlSchemes());

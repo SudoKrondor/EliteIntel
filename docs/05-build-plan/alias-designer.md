@@ -101,6 +101,15 @@ while Core is in progress.
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
 
+- **2026-10-08 — A1 review fixes** (`code-integrity-review.md`, Alan). Recorded under *After review* in
+  [First setup](../02-features/bindforge/alias-designer.md#settled-while-building-it--2026-10-07-alan): two names
+  on one VID/PID inside one installation are not a question — the first in the file is the device, the rest are
+  `SHADOWED` rows and pending removals (Alan chose this over asking); a name winning any name conflict is kept, and
+  answers putting two devices on one VID/PID count as unanswered; `Outcome.FAILED` names the step, and the dialog
+  closes whenever the master is filled; a failed snapshot removes its folder. `Target.isReachable()` replaced the
+  same check in five classes. **A10 owes:** the pending-removal cleanup must not remove an entry `.binds` still
+  names — a shadowed or losing name can be one.
+
 - **2026-10-07 — A1 built** (Alan). Rulings in [First setup, settled while building it](../02-features/bindforge/alias-designer.md#settled-while-building-it--2026-10-07-alan):
   a name conflict is answerable only when the losing name is not in `.binds` (the rename is A11, its `.binds`
   rewrite blocked) — the loser stays on disk under the winner as a pending removal; colliding labels are answered
