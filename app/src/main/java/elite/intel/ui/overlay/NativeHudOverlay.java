@@ -663,6 +663,10 @@ public class NativeHudOverlay {
                 // the commander is flying there to buy, so it beats that one - but a build being hauled to
                 // says more than one leg of the shopping for it, and ties go to whoever is registered first.
                 new CommoditySearchObjectiveSource(),
+                // Ahead of exobiology, its equal in rank: in a system the commander discovered, the survey
+                // as a whole is the card in supercruise. It stands aside by itself when the ship is at a
+                // body with sampling to do, which is when the exobiology card says more.
+                new DiscoveryObjectiveSource(),
                 new ExobiologyObjectiveSource(),
                 // Ahead of the route card and behind everything else: a hunt is real work the commander
                 // is doing right now, but they never accepted it the way they accept a contract. The

@@ -1,6 +1,7 @@
 package elite.intel.gameapi.journal.events.dto;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.gameapi.JournalSymbol;
 import elite.intel.gameapi.MissionTargets;
 import elite.intel.gameapi.MissionType;
@@ -245,6 +246,13 @@ public class MissionDto extends BaseJsonDto {
 
     public long getReward() {
         return reward;
+    }
+
+    /**
+     * Read by the YAML mapper only, for the LLM. See {@link SpokenAmounts#nestedSibling}.
+     */
+    public String getRewardSpoken() {
+        return SpokenAmounts.nestedSibling(reward);
     }
 
     public String getDestinationSystem() {

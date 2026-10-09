@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.events;
 
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.util.TimestampFormatter;
 import elite.intel.util.json.GsonFactory;
 
@@ -126,7 +127,7 @@ public class SellOrganicDataEvent extends BaseEvent {
         long samples = bioData.size();
         long species = bioData.stream().map(SellOrganicDataEvent::speciesOf).distinct().count();
         return "sold exobiology data: " + samples + (samples == 1 ? " sample" : " samples")
-                + " across " + species + " species for " + getTotalCredits() + " credits";
+                + " across " + species + " species for " + SpokenAmounts.forLlm(getTotalCredits());
     }
 
     @Override

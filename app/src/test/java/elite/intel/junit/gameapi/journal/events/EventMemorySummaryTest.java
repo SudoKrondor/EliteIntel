@@ -144,7 +144,7 @@ class EventMemorySummaryTest {
 
     @Test
     void sellOrganicData() {
-        assertEquals("sold exobiology data: 3 samples across 2 species for 450 credits",
+        assertEquals("sold exobiology data: 3 samples across 2 species for four hundred fifty credits",
                 new SellOrganicDataEvent(ev("BioData", arr(
                         obj("Species_Localised", "Bacterium Aurasus", "Value", 100, "Bonus", 50),
                         obj("Species_Localised", "Bacterium Aurasus", "Value", 100, "Bonus", 0),
@@ -154,14 +154,14 @@ class EventMemorySummaryTest {
 
     @Test
     void statistics() {
-        assertEquals("net worth: 123456 credits",
+        assertEquals("net worth: about one hundred twenty-three thousand credits",
                 new StatisticsEvent(ev("Bank_Account", obj("Current_Wealth", 123456))).memorySummary());
         assertEquals("", new StatisticsEvent(ev()).memorySummary());
     }
 
     @Test
     void shipyardSell() {
-        assertEquals("sold the stored federation_corvette for 50000000 credits",
+        assertEquals("sold the stored federation_corvette for about fifty million credits",
                 new ShipyardSellEvent(ev("ShipType", "federation_corvette", "ShipPrice", 50000000)).memorySummary());
     }
 
@@ -182,19 +182,19 @@ class EventMemorySummaryTest {
 
     @Test
     void moduleBuy() {
-        assertEquals("bought the Power Plant for 100000 credits",
+        assertEquals("bought the Power Plant for about one hundred thousand credits",
                 new ModuleBuyEvent(ev("BuyItem", "int_powerplant", "BuyItem_Localised", "Power Plant", "BuyPrice", 100000)).memorySummary());
     }
 
     @Test
     void moduleSell() {
-        assertEquals("sold the Shield Generator for 5000 credits",
+        assertEquals("sold the Shield Generator for five thousand credits",
                 new ModuleSellEvent(ev("SellItem", "int_shield", "SellItem_Localised", "Shield Generator", "SellPrice", 5000)).memorySummary());
     }
 
     @Test
     void moduleSellRemote() {
-        assertEquals("sold the stored Shield Generator for 5000 credits",
+        assertEquals("sold the stored Shield Generator for five thousand credits",
                 new ModuleSellRemoteEvent(ev("SellItem", "int_shield", "SellItem_Localised", "Shield Generator", "SellPrice", 5000)).memorySummary());
     }
 

@@ -61,7 +61,7 @@ class SellOrganicDataEventTest {
 
     @Test
     void memorySummaryCountsSamplesAndSpeciesSeparately() {
-        assertEquals("sold exobiology data: 10 samples across 5 species for 221670000 credits",
+        assertEquals("sold exobiology data: 10 samples across 5 species for about two hundred twenty-one point seven million credits",
                 sale().memorySummary());
     }
 

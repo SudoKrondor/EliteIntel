@@ -110,7 +110,7 @@ public class ExobiologyObjectiveSource implements HudObjectiveSource {
      * reading every sample the commander has ever taken, which is a career-long
      * list and would be deserialised in full on each poll.
      */
-    private List<BioSampleDto> completedSamplesOn(LocationDto body) {
+    List<BioSampleDto> completedSamplesOn(LocationDto body) {
         String primaryStar = body.getStarName() == null || body.getStarName().isBlank()
                 ? playerSession.getPrimaryStarName()
                 : body.getStarName();
@@ -135,9 +135,7 @@ public class ExobiologyObjectiveSource implements HudObjectiveSource {
         List<GenusDto> detected = body.getGenus();
         if (detected == null || detected.isEmpty()) return Optional.empty();
 
-        List<ExoBio.DataDto> completed = ExoBio.completedScansForPlanet(
-                completedSamples == null ? List.of() : completedSamples, body.getPlanetName());
-        List<GenusDto> remaining = ExoBio.calculateGenusNotYetScanned(completed, detected);
+        List<GenusDto> remaining = remainingGenus(body, completedSamples);
         if (remaining.isEmpty()) return Optional.empty();
 
         Map<String, Integer> partials = partialsByGenus(body.getPartialBioSamples());
@@ -168,6 +166,25 @@ public class ExobiologyObjectiveSource implements HudObjectiveSource {
                 bodyLabel(body),
                 rows,
                 HudObjective.PRIORITY_AMBIENT));
+    }
+
+    /**
+     * Whether this card would be about this body: a surveyed body with a genus still to sample. The
+     * discovery card stands aside for it when the commander is at that body.
+     */
+    boolean hasWorkOn(LocationDto body) {
+        return card(body, completedSamplesOn(body), "").isPresent();
+    }
+
+    /**
+     * The genuses a DSS found on the body that no completed sample covers yet.
+     */
+    static List<GenusDto> remainingGenus(LocationDto body, List<BioSampleDto> completedSamples) {
+        List<GenusDto> detected = body.getGenus();
+        if (detected == null || detected.isEmpty()) return List.of();
+        List<ExoBio.DataDto> completed = ExoBio.completedScansForPlanet(
+                completedSamples == null ? List.of() : completedSamples, body.getPlanetName());
+        return ExoBio.calculateGenusNotYetScanned(completed, detected);
     }
 
     /**

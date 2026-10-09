@@ -20,7 +20,7 @@ public class VocalisationRouter {
 
     @Subscribe
     public void onMissionCriticalAnnouncementEvent(MissionCriticalAnnouncementEvent event) {
-        publishToMouth(new VocalisationRequestEvent(event.getText(), MissionCriticalAnnouncementEvent.class, false));
+        publishToMouth(VocalisationRequestEvent.missionCritical(event.getText()));
     }
 
     /**

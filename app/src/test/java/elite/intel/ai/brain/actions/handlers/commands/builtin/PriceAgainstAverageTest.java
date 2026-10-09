@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The sentence that turns a number into a judgement. "57,844 credits per unit" tells the commander nothing
- * they can act on; "13 percent above the galactic average of 51,294" tells them whether to sell or fly on.
+ * they can act on; "13 percent above the galactic average of about fifty-one thousand credits" tells them whether to sell or fly on.
  *
  * <p>Stated as a plain percentage rather than as praise, because above average is a good sale and a dear
  * purchase - and because whether the trade shows a PROFIT needs the cost basis, which the journal never
@@ -39,7 +39,7 @@ class PriceAgainstAverageTest {
         String verdict = CommodityTradeSearch.againstGalacticAverage("Tritium", 57844);
 
         assertTrue(verdict.contains("13 percent above"), verdict);
-        assertTrue(verdict.contains("51,294") || verdict.contains("51294"), verdict);
+        assertTrue(verdict.contains("about fifty-one thousand credits"), verdict);
     }
 
     @Test
@@ -55,7 +55,7 @@ class PriceAgainstAverageTest {
         // number does not carry.
         String verdict = CommodityTradeSearch.againstGalacticAverage("Tritium", 52000);
 
-        assertTrue(verdict.contains("about the galactic average"), verdict);
+        assertTrue(verdict.contains("close to the galactic average"), verdict);
         assertFalse(verdict.contains("percent"), verdict);
     }
 

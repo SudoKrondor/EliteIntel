@@ -93,6 +93,27 @@ class CardPrecedenceTest {
         assertEquals("massacre-stack", winnerOf("massacre-stack", "conflict-zone"));
     }
 
+    /**
+     * The explorer's card is volunteered, not accepted: a mission or a colonisation run keeps the card.
+     */
+    @Test
+    void missionsAndColonisationOutrankTheDiscoveryCard() {
+        assertEquals("mission", winnerOf("mission", "discovery"));
+        assertEquals("massacre-stack", winnerOf("massacre-stack", "discovery"));
+        assertEquals("construction-site", winnerOf("construction-site", "discovery"));
+        assertEquals("commodity-search", winnerOf("commodity-search", "discovery"));
+    }
+
+    /**
+     * Equal rank, so registration decides: in supercruise the survey of the whole system is the card. At a
+     * body with sampling to do the discovery source falls silent by itself and exobiology has the card.
+     */
+    @Test
+    void theDiscoveryCardOutranksExobiologyAndThePlottedRoute() {
+        assertEquals("discovery", winnerOf("discovery", "exobiology", "ship-route"));
+        assertEquals("exobiology", winnerOf("exobiology", "ship-route"));
+    }
+
     @Test
     void aQuietHudShowsNothing() {
         assertTrue(NativeHudOverlay.highestPriority(List.of()).isEmpty());
@@ -127,6 +148,7 @@ class CardPrecedenceTest {
             case "MiningObjectiveSource" -> "mining";
             case "ConstructionSiteObjectiveSource" -> "construction-site";
             case "CommoditySearchObjectiveSource" -> "commodity-search";
+            case "DiscoveryObjectiveSource" -> "discovery";
             case "ExobiologyObjectiveSource" -> "exobiology";
             case "BountyHuntObjectiveSource" -> "bounty-hunt";
             case "ConflictZoneObjectiveSource" -> "conflict-zone";

@@ -1,6 +1,7 @@
 package elite.intel.gameapi.search.edsm.dto.data;
 
 import com.google.gson.annotations.SerializedName;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 
 public class Commodity {
     @SerializedName("id")
@@ -36,6 +37,20 @@ public class Commodity {
 
     public int getSellPrice() {
         return sellPrice;
+    }
+
+    /**
+     * Read by the YAML mapper only, for the LLM. See {@link SpokenAmounts#nestedSibling}.
+     */
+    public String getBuyPriceSpoken() {
+        return SpokenAmounts.nestedSibling(buyPrice);
+    }
+
+    /**
+     * Read by the YAML mapper only, for the LLM. See {@link SpokenAmounts#nestedSibling}.
+     */
+    public String getSellPriceSpoken() {
+        return SpokenAmounts.nestedSibling(sellPrice);
     }
 
     public int getDemand() {

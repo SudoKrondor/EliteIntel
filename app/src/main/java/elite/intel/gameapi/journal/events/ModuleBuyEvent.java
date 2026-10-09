@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.events;
 
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.util.json.GsonFactory;
 
 import java.time.Duration;
@@ -58,7 +59,7 @@ public class ModuleBuyEvent extends BaseEvent {
     @Override
     public String memorySummary() {
         String item = buyItemLocalised != null && !buyItemLocalised.isBlank() ? buyItemLocalised : buyItem;
-        return item == null || item.isBlank() ? "" : "bought the " + item + " for " + buyPrice + " credits";
+        return item == null || item.isBlank() ? "" : "bought the " + item + " for " + SpokenAmounts.forLlm(buyPrice);
     }
 
     @Override

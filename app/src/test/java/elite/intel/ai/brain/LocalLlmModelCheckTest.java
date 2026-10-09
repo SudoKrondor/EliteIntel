@@ -20,6 +20,16 @@ class LocalLlmModelCheckTest {
         assertTrue(LocalLlmModelCheck.isSupported("  GOOGLE/Gemma-4-E4B  "));
     }
 
+    /**
+     * Reported to work by commanders with the hardware for it, so it is accepted without a nag.
+     */
+    @Test
+    void acceptsTheLargerGemmaReportedToWork() {
+        assertTrue(LocalLlmModelCheck.isSupported("google/gemma-4-26b-a4b"));
+        assertTrue(LocalLlmModelCheck.isSupported("gemma-4-26b-a4b"));
+        assertFalse(LocalLlmModelCheck.isSupported("google/gemma-4-31b"));
+    }
+
     @Test
     void rejectsOtherModelsAndBlanks() {
         assertFalse(LocalLlmModelCheck.isSupported("tulu3.1:8b-supernova"));

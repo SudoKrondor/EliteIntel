@@ -82,6 +82,7 @@ public class EventRegistry {
         registerEvent("FSDTarget", FSDTargetEvent.class);
         registerEvent("FSSSignalDiscovered", FSSSignalDiscoveredEvent.class);
         registerEvent("FSSDiscoveryScan", FSSDiscoveryScanEvent.class);
+        registerEvent("FSSAllBodiesFound", FSSAllBodiesFoundEvent.class);
         registerEvent("LaunchDrone", LaunchDroneEvent.class);
         registerEvent("LaunchFighter", LaunchFighterEvent.class);
         registerEvent("DockFighter", DockFighterEvent.class);

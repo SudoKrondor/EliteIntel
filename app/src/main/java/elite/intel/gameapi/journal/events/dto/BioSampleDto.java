@@ -1,5 +1,6 @@
 package elite.intel.gameapi.journal.events.dto;
 
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.gameapi.gamestate.dtos.BaseJsonDto;
 import elite.intel.util.Md5Utils;
 import elite.intel.util.json.ToJsonConvertible;
@@ -121,6 +122,13 @@ public class BioSampleDto extends BaseJsonDto implements ToJsonConvertible, ToYa
 
     public long getPayout() {
         return payout;
+    }
+
+    /**
+     * Read by the YAML mapper only, for the LLM. See {@link SpokenAmounts#nestedSibling}.
+     */
+    public String getPayoutSpoken() {
+        return SpokenAmounts.nestedSibling(payout);
     }
 
     public void setPayout(long payout) {

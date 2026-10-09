@@ -9,6 +9,8 @@ import elite.intel.setup.SetupCheck;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.util.StringUtls;
 
+import java.util.List;
+
 /**
  * Startup guard that warns (via TTS, in the user's language) when the app is configured to run against a
  * local LLM whose served model is not the one this version is built around.
@@ -17,6 +19,10 @@ import elite.intel.util.StringUtls;
  * VEGA pipeline needs tool calling. The served model can be namespaced (e.g. {@code google/gemma-4-e4b}),
  * so the match is a case-insensitive substring on the root name {@code gemma-4-e4b}. Cloud LLMs are not
  * checked - only a configured local model is. Runs on every startup and nags every time it fails, by design.
+ * <p>
+ * {@code gemma-4-26b-a4b} is accepted too, silently: commanders with the hardware for it report that it runs
+ * the pipeline fine, so it gets no nag - but it is not tested here, so the warning still names only
+ * {@code gemma-4-e4b} as the model to pick.
  */
 public class LocalLlmModelCheck {
 
@@ -24,6 +30,11 @@ public class LocalLlmModelCheck {
      * Root name of the supported local model; matched case-insensitively as a substring (see class doc).
      */
     static final String SUPPORTED_LOCAL_MODEL_ROOT = "gemma-4-e4b";
+
+    /**
+     * Larger models reported to work by commanders who can run them; accepted without being advertised.
+     */
+    private static final List<String> ALSO_ACCEPTED_ROOTS = List.of("gemma-4-26b-a4b");
 
     private static volatile LocalLlmModelCheck instance;
 
@@ -62,6 +73,8 @@ public class LocalLlmModelCheck {
     }
 
     public static boolean isSupported(String model) {
-        return model != null && model.trim().toLowerCase().contains(SUPPORTED_LOCAL_MODEL_ROOT);
+        if (model == null) return false;
+        String served = model.trim().toLowerCase();
+        return served.contains(SUPPORTED_LOCAL_MODEL_ROOT) || ALSO_ACCEPTED_ROOTS.stream().anyMatch(served::contains);
     }
 }

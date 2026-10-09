@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.handlers.queries;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.BioSampleDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -53,7 +54,7 @@ public class AnalyzeLastScanQuery extends BaseQueryAnalyzer implements IntelQuer
                 - If asked about the last scanned body: use lastScan fields relevant to the question.
                 - If asked about current bio scans in progress: use partialScans.
                 - Answer only what was asked.
-                """;
+                """ + SpokenAmounts.RULE;
         return process(new AiDataStruct(instructions, new DataDto(lastScan, partialScans)), originalUserInput);
     }
 

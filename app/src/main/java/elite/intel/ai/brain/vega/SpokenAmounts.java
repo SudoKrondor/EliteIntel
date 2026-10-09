@@ -44,6 +44,16 @@ public final class SpokenAmounts {
     }
 
     /**
+     * The {@code ...Spoken} sibling for an amount on a nested payload row (a market line, a mission, a sample),
+     * exposed as a getter so the YAML mapper writes it beside its numeric field. Null - which the mapper leaves
+     * out - when the amount is said exactly anyway: a market carries a hundred prices, and a sibling repeating
+     * "four hundred twelve credits" beside each would double the prompt for nothing.
+     */
+    public static String nestedSibling(long credits) {
+        return TTSFriendlyNumberConverter.isSpokenExactly(credits) ? null : forLlm(credits);
+    }
+
+    /**
      * A numeric line plus its spoken sibling, for a computed amount that is <em>not</em> a field of the
      * serialized payload (e.g. a purchase's net cost after trade-in). Emitting both keeps such a figure
      * uniform with real fields: it reads the spoken form and the exact number stays answerable on request.
