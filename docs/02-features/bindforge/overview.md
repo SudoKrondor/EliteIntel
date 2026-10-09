@@ -264,6 +264,8 @@ write takes, and lands an [Edit History](file-manager.md#edit-history) entry.
    [pending removal](alias-designer.md#actions-and-what-each-one-reaches); an entry it has that the master does
    not is added — unless it is already a pending removal or the old name of a rename, which are expected to
    linger. Adopting a **wiped** installation is refused: that would empty the master into Frontier's file.
+   *From a row of the divergence list, adopt takes **one device** and nothing else of that installation's*
+   (2026-10-08, [the ways out](alias-designer.md#the-ways-out--2026-10-08-alan)).
 5. **Adopt with a draft compares device by device, label by label**, against the master as it was before the
    adopt. What the draft left alone takes the adopted value; what only the draft changed keeps the draft's; what
    both changed differently keeps the draft's and is reported as a conflict. Master and draft change in one

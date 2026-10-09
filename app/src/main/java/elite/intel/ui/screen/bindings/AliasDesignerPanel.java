@@ -3,11 +3,16 @@ package elite.intel.ui.screen.bindings;
 import elite.intel.bindforge.devicefiles.DeviceDivergence;
 import elite.intel.bindforge.devicefiles.DeviceDivergenceScanner;
 import elite.intel.bindforge.devicefiles.DeviceEntry;
+import elite.intel.bindforge.devicefiles.DeviceFilesAdopt;
 import elite.intel.bindforge.devicefiles.DeviceFilesCheck;
+import elite.intel.bindforge.devicefiles.DeviceFilesPush;
 import elite.intel.bindforge.devicefiles.DeviceMappingsParser;
+import elite.intel.bindforge.devicefiles.DivergenceWaysOut;
+import elite.intel.bindforge.devicefiles.DivergenceWaysOut.WayOut;
 import elite.intel.bindforge.devicefiles.FirstSetup;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
 import elite.intel.bindforge.devicefiles.InstallationDeviceScanner;
+import elite.intel.bindforge.devicefiles.LabelReMerge;
 import elite.intel.bindforge.devices.MyDevice;
 import elite.intel.bindforge.devices.MyDeviceList;
 import elite.intel.bindforge.install.GameInstallation;
@@ -33,10 +38,16 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -54,7 +65,10 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
  * severity, and severity is judged against the bindings: a missing entry only costs the user something when
  * a binding actually names that device.
  * <p>
- * Still to come: the one-record editor, and the repairs offered per row.
+ * <strong>The ways out are offered per row</strong> once the master exists: select a row and its buttons appear
+ * beneath the list - revert, adopt, or the label re-merge - each confirmed before it runs (Alan, 2026-10-08).
+ * <p>
+ * Still to come: the one-record editor.
  */
 public class AliasDesignerPanel extends JPanel {
 
@@ -69,6 +83,9 @@ public class AliasDesignerPanel extends JPanel {
     private DefaultTableModel myDevicesModel;
     private JTable myDevicesTable;
     private List<DeviceDivergence.Finding> currentFindings = List.of();
+    /** The check the findings came from, or {@code null} before first setup, when there are no ways out. */
+    private DeviceFilesCheck.Report currentReport;
+    private JPanel waysOutPanel;
     private Map<String, String> installLabels = Map.of();
     private final AtomicBoolean refreshInProgress = new AtomicBoolean();
     private boolean deviceServiceRunning;
@@ -108,6 +125,13 @@ public class AliasDesignerPanel extends JPanel {
                 HudPanel.Variant.FLAT,
                 6);
         section.body().add(HudTable.dataPlaneScrollPane(table), BorderLayout.CENTER);
+        // WHY: beneath the list rather than in the footer, as first setup offers its choices - the buttons belong
+        // to the selected row, and change with it.
+        waysOutPanel = transparentPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        section.body().add(waysOutPanel, BorderLayout.SOUTH);
+        table.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) showWaysOut();
+        });
 
         myDevicesModel = new ReadOnlyTableModel(myDevicesColumnNames(), 0);
         myDevicesTable = new JTable(myDevicesModel);
@@ -155,7 +179,7 @@ public class AliasDesignerPanel extends JPanel {
         if (!refreshInProgress.compareAndSet(false, true)) return;
         new Thread(() -> {
             Map<String, String> labels = Map.of();
-            List<DeviceDivergence.Finding> findings = List.of();
+            Divergence divergence = new Divergence(null, List.of());
             List<MyDevice> myDevices = List.of();
             boolean empty = false;
             try {
@@ -163,7 +187,7 @@ public class AliasDesignerPanel extends JPanel {
                 List<InstallationRow> rows = registry.currentWithStartupScan();
                 labels = labelsFor(rows);
                 recordWhatEachInstallationHolds(rows);
-                findings = findingsFor(rows);
+                divergence = divergenceFor(rows);
                 myDevices = readMyDevices(rows);
             } catch (RuntimeException e) {
                 // WHY: broad on purpose. This is a thread boundary, and an exception escaping it would kill
@@ -171,7 +195,7 @@ public class AliasDesignerPanel extends JPanel {
                 log.warn("Could not refresh the divergence list", e);
             }
             Map<String, String> loadedLabels = labels;
-            List<DeviceDivergence.Finding> loadedFindings = findings;
+            Divergence loadedDivergence = divergence;
             List<MyDevice> loadedMyDevices = myDevices;
             boolean loadedEmpty = empty;
             SwingUtilities.invokeLater(() -> {
@@ -179,7 +203,8 @@ public class AliasDesignerPanel extends JPanel {
                 masterEmpty = loadedEmpty;
                 setUpButton.setEnabled(masterEmpty);
                 showMyDevices(loadedMyDevices);
-                showFindings(loadedFindings);
+                currentReport = loadedDivergence.report();
+                showFindings(loadedDivergence.findings());
                 refreshInProgress.set(false);
             });
         }, "BindForge-Divergence").start();
@@ -190,14 +215,217 @@ public class AliasDesignerPanel extends JPanel {
      * against, so the installations are compared with each other - which is what shows the user why SET UP is
      * worth pressing (Alan, 2026-10-08).
      */
-    private List<DeviceDivergence.Finding> findingsFor(List<InstallationRow> rows) {
+    private Divergence divergenceFor(List<InstallationRow> rows) {
         Path bindings = PlayerSession.getInstance().getBindingsDir();
         // WHY: decided by the check's own reading of the master, not a separate one, so the rows and the master
         // they are judged against are always the same master.
         DeviceFilesCheck.Report report = new DeviceFilesCheck().check();
         return report.setUp()
-                ? DeviceDivergenceScanner.scanAgainstMaster(report, bindings)
-                : DeviceDivergenceScanner.scan(controlSchemesByInstall(rows), bindings);
+                ? new Divergence(report, DeviceDivergenceScanner.scanAgainstMaster(report, bindings))
+                : new Divergence(null, DeviceDivergenceScanner.scan(controlSchemesByInstall(rows), bindings));
+    }
+
+    /** @param report the check the findings came from, or {@code null} when they compare installations */
+    private record Divergence(DeviceFilesCheck.Report report, List<DeviceDivergence.Finding> findings) {
+    }
+
+    /**
+     * The selected row's ways out, one button each - or, where there is none, why. Before first setup there is no
+     * master to revert to or adopt into, so SET UP is the way out.
+     */
+    private void showWaysOut() {
+        waysOutPanel.removeAll();
+        int index = table.getSelectedRow();
+        if (index >= 0 && index < currentFindings.size()) {
+            DeviceDivergence.Finding finding = currentFindings.get(index);
+            if (currentReport == null) {
+                waysOutPanel.add(note(getText("bindings.aliasDesigner.wayOut.beforeSetUp")));
+            } else {
+                List<WayOut> ways = DivergenceWaysOut.of(finding, currentReport);
+                if (ways.isEmpty()) waysOutPanel.add(note(getText(noWayOutKey(DivergenceWaysOut.whyNone(finding)))));
+                for (WayOut way : ways) waysOutPanel.add(wayOutButton(way, finding));
+            }
+        }
+        waysOutPanel.revalidate();
+        waysOutPanel.repaint();
+    }
+
+    private static JLabel note(String text) {
+        return AppTheme.hudReadoutValue(text, HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
+    }
+
+    private static String noWayOutKey(DivergenceWaysOut.NoWayOut why) {
+        return why == DivergenceWaysOut.NoWayOut.ORPHAN
+                ? "bindings.aliasDesigner.wayOut.none.orphan"
+                : "bindings.aliasDesigner.wayOut.none.unreadable";
+    }
+
+    private JButton wayOutButton(WayOut way, DeviceDivergence.Finding finding) {
+        JButton button = makeButtonSubtle(switch (way.kind()) {
+            case REVERT -> getText("bindings.aliasDesigner.wayOut.revert", namesOf(way.installIds()));
+            case ADOPT -> getText("bindings.aliasDesigner.wayOut.adopt", namesOf(way.installIds()),
+                    String.valueOf(way.hardware()));
+            case REMERGE -> getText("bindings.aliasDesigner.wayOut.remerge");
+        });
+        button.addActionListener(e -> {
+            switch (way.kind()) {
+                case REVERT -> revert(way);
+                case ADOPT -> adopt(way, finding);
+                case REMERGE -> reMerge(way, finding);
+            }
+        });
+        return button;
+    }
+
+    /**
+     * Pushes the master to each installation the row names. That is the whole installation, not the row, so the
+     * confirm says how many rows it reaches.
+     */
+    private void revert(WayOut way) {
+        Set<String> keys = new LinkedHashSet<>();
+        way.installIds().forEach(id -> keys.add(DeviceDivergence.installKey(id)));
+        long rows = currentFindings.stream()
+                .filter(finding -> finding.installs().stream().anyMatch(keys::contains))
+                .count();
+        if (!HudConfirmDialog.confirm(this, getText("bindings.aliasDesigner.wayOut.title"),
+                getText("bindings.aliasDesigner.wayOut.revert.confirm", namesOf(way.installIds()), rows),
+                getText("bindings.aliasDesigner.wayOut.revert.do"),
+                getText("bindings.aliasDesigner.firstSetup.cancel"))) {
+            return;
+        }
+        runWayOut(() -> {
+            DeviceFilesPush push = new DeviceFilesPush();
+            List<DeviceFilesPush.InstallationResult> results = new ArrayList<>();
+            for (long installId : way.installIds()) results.addAll(push.push(installId).installations());
+            return revertText(new DeviceFilesPush.Report(results));
+        });
+    }
+
+    private String revertText(DeviceFilesPush.Report report) {
+        StringBuilder text = new StringBuilder(getText("bindings.aliasDesigner.wayOut.revert.result",
+                report.matchingCount(), report.installations().size()));
+        for (DeviceFilesPush.InstallationResult result : report.installations()) {
+            if (result.reason() == null) continue;
+            text.append('\n').append(getText("bindings.aliasDesigner.firstSetup.result.installation",
+                    namesOf(List.of(result.target().installId())), result.reason()));
+        }
+        return text.toString();
+    }
+
+    /** Takes the row's device, as one installation holds it, into the master - and nothing else of that installation's. */
+    private void adopt(WayOut way, DeviceDivergence.Finding finding) {
+        long installId = way.installIds().getFirst();
+        String installName = namesOf(way.installIds());
+        if (!HudConfirmDialog.confirm(this, getText("bindings.aliasDesigner.wayOut.title"),
+                getText("bindings.aliasDesigner.wayOut.adopt.confirm", finding.deviceName(), installName,
+                        String.valueOf(way.hardware())),
+                getText("bindings.aliasDesigner.wayOut.adopt.do"),
+                getText("bindings.aliasDesigner.firstSetup.cancel"))) {
+            return;
+        }
+        runWayOut(() -> adoptText(new DeviceFilesAdopt().adopt(installId, finding.deviceName()),
+                getText("bindings.aliasDesigner.wayOut.adopt.done", finding.deviceName(), installName)));
+    }
+
+    /**
+     * The label merge with the master as one side. The labels are read off the EDT, the merge view asks about the
+     * inputs that collide - none, when the sides only add to each other - and the answer goes into the master.
+     */
+    private void reMerge(WayOut way, DeviceDivergence.Finding finding) {
+        String device = finding.deviceName();
+        offEdt(() -> LabelReMerge.stored(device, way.installIds()), merge -> {
+            Map<String, String> answers = Map.of();
+            if (!merge.collisions().isEmpty()) {
+                Map<String, String> sideNames = new LinkedHashMap<>(installLabels);
+                sideNames.put(LabelReMerge.MASTER, getText("bindings.aliasDesigner.wayOut.masterSide"));
+                Optional<Map<String, String>> chosen =
+                        new LabelMergeDialog(this, device, merge, sideNames, Map.of()).showDialog();
+                if (chosen.isEmpty()) return;
+                answers = chosen.get();
+            }
+            List<String> unanswered = merge.unanswered(answers);
+            if (!unanswered.isEmpty()) {
+                HudConfirmDialog.info(this, getText("bindings.aliasDesigner.wayOut.title"),
+                        getText("bindings.aliasDesigner.wayOut.remerge.unanswered", unanswered.size()),
+                        getText("bindings.aliasDesigner.firstSetup.close"));
+                return;
+            }
+            Map<String, String> merged = merge.merged(answers);
+            if (!HudConfirmDialog.confirm(this, getText("bindings.aliasDesigner.wayOut.title"),
+                    getText("bindings.aliasDesigner.wayOut.remerge.confirm", device),
+                    getText("bindings.aliasDesigner.wayOut.remerge.do"),
+                    getText("bindings.aliasDesigner.firstSetup.cancel"))) {
+                return;
+            }
+            runWayOut(() -> adoptText(new DeviceFilesAdopt().adoptLabels(device, merged),
+                    getText("bindings.aliasDesigner.wayOut.remerge.done", device)));
+        });
+    }
+
+    private String adoptText(DeviceFilesAdopt.Result result, String doneText) {
+        return switch (result.outcome()) {
+            case ADOPTED -> result.conflicts().isEmpty()
+                    ? doneText
+                    : doneText + "\n" + getText("bindings.aliasDesigner.wayOut.conflicts",
+                    result.conflicts().stream()
+                            .map(conflict -> conflict.inputToken() == null
+                                    ? conflict.deviceName()
+                                    : conflict.deviceName() + " " + conflict.inputToken())
+                            .distinct()
+                            .collect(Collectors.joining(", ")));
+            case NOTHING_TO_ADOPT -> getText("bindings.aliasDesigner.wayOut.nothing");
+            case REFUSED -> getText("bindings.aliasDesigner.wayOut.refused", result.reason());
+        };
+    }
+
+    /** Runs a way out off the EDT, says what happened, and reads everything again. */
+    private void runWayOut(Callable<String> work) {
+        offEdt(work, message -> {
+            HudConfirmDialog.info(this, getText("bindings.aliasDesigner.wayOut.title"), message,
+                    getText("bindings.aliasDesigner.firstSetup.close"));
+            initData();
+        });
+    }
+
+    /**
+     * Reads or writes game files and the master off the EDT, with the buttons disabled meanwhile, then hands the
+     * result back on it. A failure is shown, not only logged - the user pressed a button and must be told.
+     */
+    private <T> void offEdt(Callable<T> work, Consumer<T> onEdt) {
+        for (Component button : waysOutPanel.getComponents()) button.setEnabled(false);
+        new Thread(() -> {
+            T result = null;
+            String failure = null;
+            try {
+                result = work.call();
+            } catch (Exception e) {
+                // WHY: broad on purpose - a thread boundary, and anything escaping it would leave the buttons
+                // disabled with no word of why.
+                log.warn("A way out of the divergence list failed", e);
+                failure = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+            }
+            T loaded = result;
+            String loadedFailure = failure;
+            SwingUtilities.invokeLater(() -> {
+                showWaysOut();
+                if (loadedFailure != null) {
+                    HudConfirmDialog.info(this, getText("bindings.aliasDesigner.wayOut.title"),
+                            getText("bindings.aliasDesigner.wayOut.failed", loadedFailure),
+                            getText("bindings.aliasDesigner.firstSetup.close"));
+                    return;
+                }
+                onEdt.accept(loaded);
+            });
+        }, "BindForge-WayOut").start();
+    }
+
+    /** The installations' names as the list shows them, sorted. */
+    private String namesOf(List<Long> installIds) {
+        return installIds.stream()
+                .map(DeviceDivergence::installKey)
+                .map(key -> installLabels.getOrDefault(key, key))
+                .sorted()
+                .collect(Collectors.joining(", "));
     }
 
     /**

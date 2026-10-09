@@ -208,13 +208,130 @@ class DeviceFilesAdoptTest {
         assertEquals("43F4", kept.device().pid());
     }
 
+    /**
+     * From one row of the divergence list, only that device is taken. Adopting the whole installation here would
+     * drop RVWAP from the master, because Steam lacks it (Alan, 2026-10-08).
+     */
+    @Test
+    void adoptingOneDeviceTakesThatDeviceAndNothingElse() {
+        InstallationCheck edited = installation(State.EDITED,
+                List.of(new ElementChange("LVWAP", ElementKind.HARDWARE_DIFFERS,
+                                new HardwareId("3344", "83F4"), new HardwareId("3344", "83F5")),
+                        new ElementChange("RVWAP", ElementKind.MISSING, new HardwareId("3344", "43F4"), null),
+                        new ElementChange("STICK2", ElementKind.ADDED, null, new HardwareId("1234", "0001"))),
+                List.of(new LabelChange("LVWAP", LabelKind.CHANGED, "Joy_1", "LV TRIGGER", "TRIGGER"),
+                        new LabelChange("STICK2", LabelKind.ADDED, "Joy_1", null, "FIRE")));
+
+        Result result = adopter(edited).adopt(STEAM.installId(), "LVWAP");
+
+        assertEquals(Outcome.ADOPTED, result.outcome());
+        assertEquals(List.of(), result.removed());
+        assertEquals(List.of(), result.added());
+        AdoptionWrite write = written.getFirst();
+        assertEquals(List.of("LVWAP", "RVWAP"), write.master().stream().map(StoredDevice::deviceName).toList());
+        StoredDevice lvwap = device(write.master(), "LVWAP");
+        assertEquals("83F5", lvwap.pid());
+        assertEquals(Map.of("Joy_1", "TRIGGER", "Joy_2", "PINKY"), lvwap.labels());
+        assertEquals(RVWAP, device(write.master(), "RVWAP"));
+    }
+
+    @Test
+    void adoptingOneDeviceTheInstallationAddedTakesItWithItsLabels() {
+        InstallationCheck edited = installation(State.EDITED,
+                List.of(new ElementChange("RVWAP", ElementKind.MISSING, new HardwareId("3344", "43F4"), null),
+                        new ElementChange("STICK2", ElementKind.ADDED, null, new HardwareId("1234", "0001"))),
+                List.of(new LabelChange("STICK2", LabelKind.ADDED, "Joy_1", null, "FIRE")));
+
+        Result result = adopter(edited).adopt(STEAM.installId(), "STICK2");
+
+        assertEquals(List.of("STICK2"), result.added());
+        assertEquals(List.of(), result.removed(), "RVWAP is another row's");
+        assertEquals(Map.of("Joy_1", "FIRE"), device(written.getFirst().master(), "STICK2").labels());
+    }
+
+    /** A device whose own changes are only order or layout has nothing to take, whatever else differs. */
+    @Test
+    void adoptingADeviceWithNothingOfItsOwnToTakeWritesNothing() {
+        InstallationCheck edited = installation(State.EDITED,
+                List.of(new ElementChange("RVWAP", ElementKind.MISSING, new HardwareId("3344", "43F4"), null)),
+                List.of());
+
+        Result result = adopter(edited).adopt(STEAM.installId(), "LVWAP");
+
+        assertEquals(Outcome.NOTHING_TO_ADOPT, result.outcome());
+        assertTrue(written.isEmpty());
+    }
+
+    @Test
+    void anUnreadableButtonMapOfAnotherDeviceDoesNotStopAdoptingThisOne() {
+        InstallationCheck edited = installation(State.EDITED,
+                List.of(new ElementChange("LVWAP", ElementKind.HARDWARE_DIFFERS,
+                        new HardwareId("3344", "83F4"), new HardwareId("3344", "83F5"))),
+                List.of(new LabelChange("RVWAP", LabelKind.FILE_UNREADABLE, null, null, null)));
+
+        assertEquals(Outcome.ADOPTED, adopter(edited).adopt(STEAM.installId(), "LVWAP").outcome());
+    }
+
+    @Test
+    void reMergedLabelsReplaceTheDevicesLabelsInTheMaster() {
+        Result result = adopter(installation(State.UNCHANGED, List.of(), List.of()))
+                .adoptLabels("LVWAP", Map.of("Joy_1", "LV TRIGGER", "Joy_3", "HAT"));
+
+        assertEquals(Outcome.ADOPTED, result.outcome());
+        AdoptionWrite write = written.getFirst();
+        assertEquals(Map.of("Joy_1", "LV TRIGGER", "Joy_3", "HAT"), device(write.master(), "LVWAP").labels());
+        assertEquals("83F4", device(write.master(), "LVWAP").pid());
+        assertEquals(RVWAP, device(write.master(), "RVWAP"));
+        assertEquals(List.of(), write.removed());
+    }
+
+    @Test
+    void reMergedLabelsTheMasterAlreadyHoldsWriteNothing() {
+        Result result = adopter(installation(State.UNCHANGED, List.of(), List.of()))
+                .adoptLabels("LVWAP", LVWAP.labels());
+
+        assertEquals(Outcome.NOTHING_TO_ADOPT, result.outcome());
+        assertTrue(written.isEmpty());
+    }
+
+    @Test
+    void reMergingADeviceTheMasterDoesNotHoldIsRefused() {
+        Result result = adopter(installation(State.UNCHANGED, List.of(), List.of()))
+                .adoptLabels("STICK2", Map.of("Joy_1", "FIRE"));
+
+        assertEquals(Outcome.REFUSED, result.outcome());
+        assertTrue(result.reason().contains("STICK2"), result.reason());
+        assertTrue(written.isEmpty());
+    }
+
+    /** The re-merge moves the master under a draft exactly as adopt does: the draft's own edits win. */
+    @Test
+    void reMergedLabelsReachTheDraftWhereTheDraftLeftThemAlone() {
+        StoredDevice draftLvwap = new StoredDevice(10L, "LVWAP", "3344", "83F4", true, null,
+                Map.of("Joy_1", "MY TRIGGER", "Joy_2", "PINKY"));
+
+        Result result = adopter(installation(State.UNCHANGED, List.of(), List.of()), stored(List.of(draftLvwap, RVWAP)))
+                .adoptLabels("LVWAP", Map.of("Joy_1", "MERGED", "Joy_2", "PINKY", "Joy_3", "HAT"));
+
+        DraftWrite lvwap = draftNamed(written.getFirst().draft(), "LVWAP");
+        assertEquals(Map.of("Joy_1", "MY TRIGGER", "Joy_2", "PINKY", "Joy_3", "HAT"), lvwap.device().labels());
+        assertEquals(List.of(new Conflict("LVWAP", ConflictKind.LABEL, "Joy_1")), result.conflicts());
+    }
+
     private Result adopt(InstallationCheck installation, Stored stored) {
-        DeviceFilesAdopt adopt = new DeviceFilesAdopt(id -> Optional.of(installation), plan -> {
+        return adopter(installation, stored).adopt(STEAM.installId());
+    }
+
+    private DeviceFilesAdopt adopter(InstallationCheck installation) {
+        return adopter(installation, stored(null));
+    }
+
+    private DeviceFilesAdopt adopter(InstallationCheck installation, Stored stored) {
+        return new DeviceFilesAdopt(id -> Optional.of(installation), plan -> {
             storeCalls++;
             AdoptionWrite write = plan.apply(stored);
             if (write != null) written.add(write);
         });
-        return adopt.adopt(STEAM.installId());
     }
 
     private static Stored stored(List<StoredDevice> draft) {

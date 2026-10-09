@@ -27,6 +27,7 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongFunction;
+import java.util.function.Predicate;
 
 /**
  * <strong>Adopt</strong>, for the device files: what one installation holds becomes the master. The way out of the
@@ -45,6 +46,8 @@ import java.util.function.LongFunction;
  *     <li><strong>A wiped installation is refused</strong>: adopting it would empty the master into Frontier's
  *     file. Its repair is revert.</li>
  * </ul>
+ * From the divergence list it runs <strong>per device</strong>, {@link #adopt(long, String)}, and the label re-merge
+ * is {@link #adoptLabels} (Alan, 2026-10-08 - alias-designer.md, <em>The ways out</em>).
  */
 public final class DeviceFilesAdopt {
 
@@ -118,12 +121,27 @@ public final class DeviceFilesAdopt {
         this.store = store;
     }
 
+    /** Adopts everything the installation differs from the master on - the startup check's way out. */
     public Result adopt(long installId) {
+        return adopt(installId, name -> true);
+    }
+
+    /**
+     * Adopts one device as the installation holds it - its element and its labels - and nothing else the
+     * installation differs on. The way out of one row of the divergence list (Alan, 2026-10-08): adopting a whole
+     * installation to fix one stick's PID would also drop from the master every entry that installation lacks.
+     */
+    public Result adopt(long installId, String deviceName) {
+        Objects.requireNonNull(deviceName, "deviceName");
+        return adopt(installId, deviceName::equals);
+    }
+
+    private Result adopt(long installId, Predicate<String> devices) {
         // WHY: the files are read again rather than taken from the check the user was shown. Adopt acts on the
         // installation as it is now; one edited again since is what gets adopted, not a picture of it.
         Optional<InstallationCheck> found = check.apply(installId);
         if (found.isEmpty()) return Result.refused("no such installation, or no master to adopt into");
-        InstallationCheck installation = found.get();
+        InstallationCheck installation = narrowed(found.get(), devices);
 
         switch (installation.state()) {
             case UNCHANGED -> {
@@ -144,9 +162,48 @@ public final class DeviceFilesAdopt {
                 .findFirst();
         if (unreadable.isPresent()) return Result.refused(unreadable.get());
 
+        Result result = write(master -> adoptedMaster(master, installation), null);
+        log.info("Adopted installation {} into the master: {}", installId, result);
+        return result;
+    }
+
+    /**
+     * The label re-merge: one master device's labels become {@code labels}, the answer the user gave in the merge
+     * view with the master as one side. Like adopt it writes the master, and the draft three-way, and never a game
+     * file - the installations then differ from the master until they are reverted (Alan, 2026-10-08).
+     *
+     * @param labels input token to label, the whole set the device is to hold
+     */
+    public Result adoptLabels(String deviceName, Map<String, String> labels) {
+        Objects.requireNonNull(deviceName, "deviceName");
+        Map<String, String> wanted = Map.copyOf(labels);
+        Result result = write(master -> {
+            if (master.stream().noneMatch(device -> device.deviceName().equals(deviceName))) return null;
+            return master.stream()
+                    .map(device -> device.deviceName().equals(deviceName)
+                            ? new StoredDevice(device.masterId(), device.deviceName(), device.vid(), device.pid(),
+                            device.aliasConfirmed(), device.previousName(), new TreeMap<>(wanted))
+                            : device)
+                    .toList();
+        }, deviceName + " is not in the master");
+        log.info("Re-merged the labels of {} into the master: {}", deviceName, result);
+        return result;
+    }
+
+    /**
+     * Plans against the stored master and draft and writes the result, in one transaction.
+     *
+     * @param adopting    the master as it is to be, from the master as it is; {@code null} to refuse
+     * @param refusedWhen the reason given when {@code adopting} refuses
+     */
+    private Result write(Function<List<StoredDevice>, List<StoredDevice>> adopting, String refusedWhen) {
         Result[] result = {null};
         store.accept(stored -> {
-            List<StoredDevice> adopted = adoptedMaster(stored.master(), installation);
+            List<StoredDevice> adopted = adopting.apply(stored.master());
+            if (adopted == null) {
+                result[0] = Result.refused(refusedWhen);
+                return null;
+            }
             Set<String> before = names(stored.master());
             Set<String> after = names(adopted);
             List<String> removed = before.stream().filter(name -> !after.contains(name)).toList();
@@ -163,8 +220,18 @@ public final class DeviceFilesAdopt {
             result[0] = new Result(Outcome.ADOPTED, null, removed, added, conflicts);
             return new AdoptionWrite(adopted, removed, draft);
         });
-        log.info("Adopted installation {} into the master: {}", installId, result[0]);
         return result[0];
+    }
+
+    /** The check with only the changes to the devices {@code devices} accepts; an UNCHANGED check stays as it is. */
+    private static InstallationCheck narrowed(InstallationCheck installation, Predicate<String> devices) {
+        if (installation.state() != DeviceFilesCheck.State.EDITED) return installation;
+        List<ElementChange> elements = installation.elements().stream()
+                .filter(change -> devices.test(change.deviceName())).toList();
+        List<LabelChange> labels = installation.labels().stream()
+                .filter(change -> devices.test(change.deviceName())).toList();
+        return new InstallationCheck(installation.target(), installation.state(), installation.reason(), elements,
+                labels, installation.fileGone());
     }
 
     /**

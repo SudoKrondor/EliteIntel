@@ -360,8 +360,44 @@ Built as `DeviceDivergence.againstMaster` (pure), fed by [the startup check](ove
   orphan as well, and a reset installation's maps are not listed at all.
 - **Not listed:** an installation that matches, one whose folder is gone, and a `.buttonMap` that differs only in
   layout — nothing there for the user to judge.
-- **The list only reports.** The ways out — adopt, revert, and the label re-merge with the master as one side of
-  [the merge view](#the-buttonmap-label-merge--2026-10-08-alan) — are the next slice.
+- ~~**The list only reports.** The ways out — adopt, revert, and the label re-merge with the master as one side of
+  [the merge view](#the-buttonmap-label-merge--2026-10-08-alan) — are the next slice.~~ *Built — see
+  [the ways out](#the-ways-out--2026-10-08-alan) below.*
+
+### The ways out — 2026-10-08 (Alan)
+
+Built as `bindforge.devicefiles.DivergenceWaysOut` (which ways a row gets, pure), `DeviceFilesAdopt.adopt(installId,
+deviceName)` and `adoptLabels`, and `LabelReMerge`, shown beneath the list on the Alias Designer screen. Selecting a
+row shows its ways out as buttons, as first setup shows its choices; each asks before it runs.
+
+| Row | Ways out |
+|---|---|
+| Entry missing, out of place, `.buttonMap` missing or unreadable, reset to Frontier's or gone | **Revert** |
+| Same name, other hardware | **Revert**, or **adopt** from one installation — one button each, naming the VID/PID it holds (the firmware-update case) |
+| An entry the master does not hold | **Adopt** from one installation. Revert would leave it where it is: the push never removes |
+| Labels differ | **Compare labels** — the re-merge — or **revert** |
+| `DeviceMappings.xml` unreadable | **None.** The push cannot read it either; the row says to restore it or fix it by hand |
+| Orphan `.buttonMap` | **None.** Removing a file is [CLEAR](#actions-and-what-each-one-reaches)'s; the row says so |
+
+- **Adopt from a row takes that device and nothing else.** Adopting the whole installation, as the startup check's
+  adopt does, would also drop from the master every entry that installation lacks — fixing one stick's PID could
+  lose another stick. So a missing entry is never adopted from a row: removing a device is CLEAR's, and CLEAR
+  confirms it by name.
+- **Revert is the whole installation**, as [C3 settled](overview.md#for-the-device-files--settled-2026-10-05-alan):
+  the push brings everything there in line with the master. The confirm says how many rows of the list that reaches.
+  A row naming several installations reverts each, reported per installation — *"updated 1 of 2"*, and why.
+- **The backup before revert is Edit History.** The push keeps each replaced file before writing and stops if it
+  cannot; no labelled snapshot is taken, since those land in the Player Backups list (a known issue). Adopt and the
+  re-merge write no game file.
+- **Adopt and the re-merge write the master only** — and a draft three-way, as adopt does. The other installations
+  then differ from the master and appear as rows of their own, to be reverted; with no Apply button yet, that is how
+  they are brought in line.
+- **The re-merge's sides are the master and each installation the row names.** A label only one side holds is kept,
+  as in first setup — so a label the master holds and an installation's file lacks stays in the master. Where the
+  sides only add to each other there is nothing to ask, and the merge view is skipped. Every collision must be
+  answered before anything is written; a `.buttonMap` that cannot be read stops the re-merge.
+- **Before first setup the rows have no ways out** — there is no master to revert to or adopt into. The row says
+  SET UP resolves them.
 
 ## VID/PID Is Not a Stable Identity
 

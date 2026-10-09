@@ -49,7 +49,7 @@ it is the machinery every tab writes through, so it comes first and is built onl
 | # | Section | Brief | Spec | State |
 |---|---|---|---|---|
 | 1 | **Core** — master and draft, Apply, Edit History filling, startup check | [core.md](core.md) | [overview.md](../02-features/bindforge/overview.md) | C1–C3 done; C4, C5 blocked; C6 after Alias Designer A10 |
-| 2 | **Alias Designer** | [alias-designer.md](alias-designer.md) | [alias-designer.md](../02-features/bindforge/alias-designer.md) | device list, naming rule, startup `.buttonMap`, first setup, the label merge and divergence against the master built; A3b next |
+| 2 | **Alias Designer** | [alias-designer.md](alias-designer.md) | [alias-designer.md](../02-features/bindforge/alias-designer.md) | device list, naming rule, startup `.buttonMap`, first setup, the label merge, divergence against the master and its ways out built; A4 next |
 | 3 | **Preset Editor** | *not yet written* | [preset-editor.md](../02-features/bindforge/preset-editor.md) | nothing built |
 | 4 | **File Manager** — Edit History browsing, auto-backup and retention, restore scope | *not yet written* | [file-manager.md](../02-features/bindforge/file-manager.md) | Install Locations built; Player Backups manual only |
 | 5 | **Bind Editor: editing** — Game Mode, Settings, capture dialog, mouse inputs | *not yet written* | [bind-editor.md](../02-features/bindforge/bind-editor.md) | the grid exists in `BindingProfilePanel` |

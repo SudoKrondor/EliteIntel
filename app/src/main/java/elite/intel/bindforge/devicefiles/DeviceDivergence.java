@@ -211,6 +211,11 @@ public final class DeviceDivergence {
         return String.valueOf(installId);
     }
 
+    /** The installation id a finding against the master names - the inverse of {@link #installKey}. */
+    public static long installIdOf(String installKey) {
+        return Long.parseLong(installKey);
+    }
+
     /**
      * One row per device for its labels, however many inputs differ - the inputs themselves are the re-merge's to
      * show. A device the master does not hold is skipped: its own row already says so, and its labels are often
