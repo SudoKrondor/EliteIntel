@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -127,7 +128,10 @@ public final class DeviceMappingsParser {
         for (int i = 0; i < alternatives.getLength(); i++) {
             addHardwareOf((Element) alternatives.item(i), hardware);
         }
-        return new DeviceEntry(element.getTagName(), Set.copyOf(hardware));
+        // WHY: kept in file order, primary first, rather than through Set.copyOf - whose iteration order is
+        // hash-derived and salted per run. The primary pair is the one shown for an entry, and the one recorded
+        // for it; with Set.copyOf a multi-pair entry such as <GamePad> gave a different "first" pair every run.
+        return new DeviceEntry(element.getTagName(), Collections.unmodifiableSet(hardware));
     }
 
     /**

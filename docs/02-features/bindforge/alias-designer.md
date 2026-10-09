@@ -82,10 +82,36 @@ entry on it. A built-in controller that is actually attached also appears under 
 BUILT-IN**, where its button labels can be edited — see
 [Built-in controllers in My Devices](#built-in-controllers-in-my-devices--settled-2026-09-13).
 
-> **Open problem — this split is not derivable from the file.** `DeviceMappings.xml` is a flat list of device
+> ~~**Open problem — this split is not derivable from the file.** `DeviceMappings.xml` is a flat list of device
 > elements with nothing marking which are Frontier's and which the player added. Any list built by reading a
 > real install will mix them. Resolving this needs a shipped reference copy of Frontier's stock file plus a
-> provenance record — see [Device Provenance](../../03-data-models/device-provenance.md).
+> provenance record — see [Device Provenance](../../03-data-models/device-provenance.md).~~ *Resolved: the list
+> is the [shipped reference](reference-data/FrontierStock-README.md) itself, carried in the jar, so no
+> installation's file is read for it — see below.*
+
+#### Built as the stock reference — 2026-10-08 (Alan)
+
+Built as `bindforge.devices.BuiltInDeviceList` (pure) and `BuiltInDevice`, shown by `AliasDesignerPanel`.
+
+- **The two views are `COMPACT` tabs, My Devices and Built-in Devices**, in place of the My Devices heading. The
+  [divergence list](#against-the-master--2026-10-08-alan) stays beneath both: it is not a view of the device list.
+- **One row per Frontier element, in the order Frontier's file gives them**, read from the reference in the jar
+  (`FrontierStockDevices`) — never from an installation, whose file mixes Frontier's entries with the user's.
+- **Four columns: Device, VID / PID, Also covers, Status.** VID / PID is the element's own pair. *Also covers*
+  counts its `<Alternative>` pairs — `<GamePad>` reads *+79 more* — and lists every one as the cell's tooltip.
+  **Status reads *Attached*** where a controller plugged in now resolves to the entry, through the first entry
+  claiming its pair, as the game resolves it — so it agrees with My Devices marking the same controller BUILT-IN.
+  With the Device Service stopped, the list says so in a row, as My Devices does.
+- **The list says when it was captured** — *"Frontier's list as captured on 2026-09-06"* — because the reference
+  belongs to one game version, and a controller Frontier added since is not on it. The date is
+  `FrontierStockDevices.CAPTURED`, changed with every re-capture.
+- **Not shown:** whether Frontier ships a `.buttonMap` for the entry. Two of 51 do.
+- **Read-only:** nothing on the view acts. Renaming or shadowing a built-in starts from My Devices, where the
+  attached controller is.
+- **Found while building it:** the parser handed back an entry's pairs through `Set.copyOf`, whose order is
+  salted per run, so "the first pair" of `<GamePad>` or `<DualShock4>` was a different pair on every launch — and
+  `InstallationDeviceScanner` stored that pair as the element's VID/PID in `bindforge_device_installs`. The pairs
+  now keep file order, primary first.
 
 ### Built-in controllers in My Devices — settled 2026-09-13
 

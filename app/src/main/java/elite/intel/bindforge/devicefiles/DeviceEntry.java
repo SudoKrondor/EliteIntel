@@ -10,7 +10,8 @@ import java.util.Set;
  * one: {@code <GamePad>} alone carries a primary pair plus 79 {@code <Alternative>} pairs.
  *
  * @param name      the element tag, which is also the {@code .buttonMap} filename stem
- * @param hardware  every VID/PID pair this entry claims, primary and alternatives together
+ * @param hardware  every VID/PID pair this entry claims, primary and alternatives together - in file order,
+ *                  primary first, when {@link DeviceMappingsParser} read it
  */
 public record DeviceEntry(String name, Set<HardwareId> hardware) {
 

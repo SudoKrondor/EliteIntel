@@ -5,6 +5,7 @@ import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,13 @@ public final class FrontierStockDevices {
 
     /** Travels in the jar rather than on disk, so it cannot be edited by a game update or by the user. */
     static final String RESOURCE = "/bindforge/FrontierStock-DeviceMappings.xml";
+
+    /**
+     * When the resource was captured from a game installation ({@code reference-data/FrontierStock-README.md}).
+     * Shown beneath the Built-in Devices list, because the copy belongs to one game version: a controller Frontier
+     * added since is not on it. <strong>Change it with every re-capture.</strong>
+     */
+    public static final LocalDate CAPTURED = LocalDate.of(2026, 9, 6);
 
     private static final class Holder {
         private static final FrontierStockDevices INSTANCE = load();

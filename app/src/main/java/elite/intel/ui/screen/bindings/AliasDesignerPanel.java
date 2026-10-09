@@ -3,6 +3,7 @@ package elite.intel.ui.screen.bindings;
 import elite.intel.bindforge.devicefiles.DeviceDivergence;
 import elite.intel.bindforge.devicefiles.DeviceDivergenceScanner;
 import elite.intel.bindforge.devicefiles.DeviceEntry;
+import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.devicefiles.DeviceFilesAdopt;
 import elite.intel.bindforge.devicefiles.DeviceFilesCheck;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush;
@@ -13,6 +14,8 @@ import elite.intel.bindforge.devicefiles.FirstSetup;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
 import elite.intel.bindforge.devicefiles.InstallationDeviceScanner;
 import elite.intel.bindforge.devicefiles.LabelReMerge;
+import elite.intel.bindforge.devices.BuiltInDevice;
+import elite.intel.bindforge.devices.BuiltInDeviceList;
 import elite.intel.bindforge.devices.InstallationMarkers;
 import elite.intel.bindforge.devices.MyDevice;
 import elite.intel.bindforge.devices.MyDeviceList;
@@ -73,6 +76,9 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
  * says whether that installation matches the master for the device, in the divergence list's colour - a readout,
  * never a switch (Alan, 2026-10-08).
  * <p>
+ * <strong>Built-in Devices is the second view of the device list</strong>, a tab beside My Devices: Frontier's
+ * shipped entries from the reference in the jar, read-only, with the divergence list beneath both (Alan, 2026-10-08).
+ * <p>
  * Still to come: the one-record editor.
  */
 public class AliasDesignerPanel extends JPanel {
@@ -91,12 +97,21 @@ public class AliasDesignerPanel extends JPanel {
             "bindings.aliasDesigner.column.status",
             "bindings.aliasDesigner.column.alias");
 
+    /** The Built-in Devices column carrying the alternative pairs, whose cell lists them all as a tooltip. */
+    private static final int ALSO_COVERS_COLUMN = 2;
+
+    /** Pairs per line of that tooltip - GamePad's 79 on one line would run off the screen. */
+    private static final int PAIRS_PER_TOOLTIP_LINE = 6;
+
     private final InstallationRegistry registry;
 
     private DefaultTableModel tableModel;
     private JTable table;
     private DefaultTableModel myDevicesModel;
     private JTable myDevicesTable;
+    private DefaultTableModel builtInModel;
+    private JTable builtInTable;
+    private List<BuiltInDevice> currentBuiltIn = List.of();
     private List<DeviceDivergence.Finding> currentFindings = List.of();
     private Markers currentMarkers = Markers.NONE;
     /** The check the findings came from, or {@code null} before first setup, when there are no ways out. */
@@ -158,12 +173,28 @@ public class AliasDesignerPanel extends JPanel {
         myDevicesTable.setDefaultRenderer(Object.class, new MarkerRenderer());
         myDevicesTable.putClientProperty(AppTheme.HUD_TABLE_STYLE_LOCKED, Boolean.TRUE);
 
-        HudSection myDevices = new HudSection(
-                getText("bindings.aliasDesigner.section.myDevices"),
-                new BorderLayout(),
-                HudPanel.Variant.FLAT,
-                6);
-        myDevices.body().add(HudTable.dataPlaneScrollPane(myDevicesTable), BorderLayout.CENTER);
+        builtInModel = new ReadOnlyTableModel(builtInColumnNames(), 0);
+        builtInTable = new JTable(builtInModel);
+        builtInTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        HudTable.style(builtInTable);
+        // WHY: locked for the same reason - this renderer carries the alternative pairs' tooltip.
+        builtInTable.setDefaultRenderer(Object.class, new AlternativesRenderer());
+        builtInTable.putClientProperty(AppTheme.HUD_TABLE_STYLE_LOCKED, Boolean.TRUE);
+
+        JPanel builtIn = transparentPanel(new BorderLayout(0, 6));
+        builtIn.add(HudTable.dataPlaneScrollPane(builtInTable), BorderLayout.CENTER);
+        // WHY: the reference belongs to one game version, so the list says which - a controller Frontier added
+        // since is not on it, and its absence must not read as Frontier not supporting it.
+        builtIn.add(AppTheme.hudReadoutValue(getText("bindings.aliasDesigner.builtIn.captured",
+                        FrontierStockDevices.CAPTURED.toString()),
+                HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT), BorderLayout.SOUTH);
+
+        // WHY: the two views of the device list are a COMPACT tab pair, as the spec and the UI component map give
+        // them. The tabs name the views, so neither sits in a titled section of its own.
+        JTabbedPane myDevices = AppTheme.makeCompactTabs();
+        myDevices.addTab(getText("bindings.aliasDesigner.section.myDevices"),
+                HudTable.dataPlaneScrollPane(myDevicesTable));
+        myDevices.addTab(getText("bindings.aliasDesigner.section.builtIn"), builtIn);
 
         JButton rescanButton = makeButton(getText("bindings.aliasDesigner.button.recheck"));
         rescanButton.addActionListener(e -> initData());
@@ -176,7 +207,8 @@ public class AliasDesignerPanel extends JPanel {
 
         // WHY: stacked rather than tabbed. The two answer different questions - what devices there are, and
         // where the installations disagree about them - and a user resolving a divergence wants the device it
-        // names in sight. Equal halves because neither is the subordinate of the other.
+        // names in sight. Equal halves because neither is the subordinate of the other. The divergence list stays
+        // beneath both device views, since it is not a view of the device list.
         JPanel stacked = new JPanel(new GridLayout(2, 1, 0, 6));
         stacked.setOpaque(false);
         stacked.add(myDevices);
@@ -201,6 +233,7 @@ public class AliasDesignerPanel extends JPanel {
             Map<String, String> labels = Map.of();
             Divergence divergence = new Divergence(null, List.of());
             List<MyDevice> myDevices = List.of();
+            List<BuiltInDevice> builtIn = List.of();
             Markers markers = Markers.NONE;
             boolean empty = false;
             try {
@@ -210,7 +243,9 @@ public class AliasDesignerPanel extends JPanel {
                 recordWhatEachInstallationHolds(rows);
                 divergence = divergenceFor(rows);
                 Map<String, List<DeviceEntry>> entries = entriesByInstall(rows);
-                myDevices = readMyDevices(entries);
+                List<Device> attached = readAttached();
+                myDevices = readMyDevices(attached, entries);
+                builtIn = BuiltInDeviceList.build(FrontierStockDevices.getInstance(), attached);
                 // WHY: only against a master. Before first setup M, not added and the divergence colour mean
                 // nothing, and the column is left out rather than filled with an invented state.
                 if (divergence.report() != null) markers = markersFor(rows, entries, myDevices, divergence.findings());
@@ -222,6 +257,7 @@ public class AliasDesignerPanel extends JPanel {
             Map<String, String> loadedLabels = labels;
             Divergence loadedDivergence = divergence;
             List<MyDevice> loadedMyDevices = myDevices;
+            List<BuiltInDevice> loadedBuiltIn = builtIn;
             Markers loadedMarkers = markers;
             boolean loadedEmpty = empty;
             SwingUtilities.invokeLater(() -> {
@@ -229,6 +265,7 @@ public class AliasDesignerPanel extends JPanel {
                 masterEmpty = loadedEmpty;
                 setUpButton.setEnabled(masterEmpty);
                 showMyDevices(loadedMyDevices, loadedMarkers);
+                showBuiltIn(loadedBuiltIn);
                 currentReport = loadedDivergence.report();
                 showFindings(loadedDivergence.findings());
                 refreshInProgress.set(false);
@@ -538,23 +575,28 @@ public class AliasDesignerPanel extends JPanel {
     }
 
     /**
-     * Gathers the four things the device list is built from: the attached controllers, every installation's
-     * device entries, the master's records, and Frontier's shipped list.
+     * The controllers attached right now, read once per refresh for both device views.
      * <p>
      * {@code DeviceService} runs as one of the application's services, so with those stopped it reports no
-     * controllers at all. The list still builds - the file half needs no hardware - but it is then only half
-     * a list, and {@link #showMyDevices} says so on screen rather than leaving an absence to be mistaken for
-     * "nothing is plugged in".
+     * controllers at all. The lists still build - the file half needs no hardware - but My Devices is then only
+     * half a list and no built-in can read attached, and both views say so on screen rather than leaving an
+     * absence to be mistaken for "nothing is plugged in".
      */
-    private List<MyDevice> readMyDevices(Map<String, List<DeviceEntry>> entriesByInstall) {
+    private List<Device> readAttached() {
         DeviceService service = DeviceService.getInstance();
         deviceServiceRunning = service.isAvailable();
         if (!deviceServiceRunning) {
             log.info("Device service is not running, so no controllers can be read - the list will show only "
                     + "what the installations' files name");
         }
-        List<Device> attached = deviceServiceRunning ? service.getConnectedDevices() : List.of();
+        return deviceServiceRunning ? service.getConnectedDevices() : List.of();
+    }
 
+    /**
+     * Gathers the four things My Devices is built from: the attached controllers, every installation's device
+     * entries, the master's records, and Frontier's shipped list.
+     */
+    private List<MyDevice> readMyDevices(List<Device> attached, Map<String, List<DeviceEntry>> entriesByInstall) {
         return MyDeviceList.build(
                 attached,
                 MyDeviceList.entriesAcross(entriesByInstall.values()),
@@ -663,6 +705,44 @@ public class AliasDesignerPanel extends JPanel {
             myDevicesModel.addRow(new Object[]{getText("bindings.aliasDesigner.deviceService.stopped")});
         }
         HudTable.fitColumnsToContent(myDevicesTable, MAX_COLUMN_WIDTH);
+    }
+
+    /**
+     * Frontier's entries, one row each in file order: the element's own pair, how many more it covers, and whether a
+     * controller plugged in now resolves to it. Read-only - there is nothing on this view to act on.
+     */
+    private void showBuiltIn(List<BuiltInDevice> devices) {
+        currentBuiltIn = devices;
+        builtInModel.setRowCount(0);
+        for (BuiltInDevice device : devices) {
+            builtInModel.addRow(new Object[]{
+                    device.name(),
+                    device.primary() == null ? "" : pairText(device.primary()),
+                    device.alternatives().isEmpty()
+                            ? ""
+                            : getText("bindings.aliasDesigner.builtIn.alsoCovers",
+                            String.valueOf(device.alternatives().size())),
+                    device.attached() ? getText("bindings.aliasDesigner.status.attached") : ""
+            });
+        }
+        // WHY: as on My Devices - a list with nothing attached because nothing is looking must say so.
+        if (!deviceServiceRunning) {
+            builtInModel.addRow(new Object[]{getText("bindings.aliasDesigner.deviceService.stopped")});
+        }
+        HudTable.fitColumnsToContent(builtInTable, MAX_COLUMN_WIDTH);
+    }
+
+    private static String pairText(HardwareId pair) {
+        return pair.vid() + ":" + pair.pid();
+    }
+
+    private String[] builtInColumnNames() {
+        return new String[]{
+                getText("bindings.aliasDesigner.column.device"),
+                getText("bindings.aliasDesigner.column.vidPid"),
+                getText("bindings.aliasDesigner.column.alsoCovers"),
+                getText("bindings.aliasDesigner.column.status")
+        };
     }
 
     /**
@@ -784,6 +864,35 @@ public class AliasDesignerPanel extends JPanel {
                 if (found != null && found.severity() != null) cell.setForeground(colourOf(found.severity()));
             }
             return cell;
+        }
+    }
+
+    /**
+     * Lists every alternative pair as the <em>Also covers</em> cell's tooltip, a few to a line, and draws every cell
+     * as the HUD otherwise does. The row shows the count; the pairs are there for whoever asks.
+     */
+    private final class AlternativesRenderer extends HudTable.CellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean selected,
+                                                       boolean focused, int row, int column) {
+            Component cell =
+                    super.getTableCellRendererComponent(table, value, selected, focused, row, column);
+            String tooltip = null;
+            if (table.convertColumnIndexToModel(column) == ALSO_COVERS_COLUMN && row < currentBuiltIn.size()) {
+                tooltip = tooltipOf(currentBuiltIn.get(row).alternatives());
+            }
+            setToolTipText(tooltip);
+            return cell;
+        }
+
+        private static String tooltipOf(List<HardwareId> pairs) {
+            if (pairs.isEmpty()) return null;
+            StringBuilder html = new StringBuilder("<html>");
+            for (int i = 0; i < pairs.size(); i++) {
+                if (i > 0) html.append(i % PAIRS_PER_TOOLTIP_LINE == 0 ? "<br>" : ", ");
+                html.append(pairText(pairs.get(i)));
+            }
+            return html.append("</html>").toString();
         }
     }
 

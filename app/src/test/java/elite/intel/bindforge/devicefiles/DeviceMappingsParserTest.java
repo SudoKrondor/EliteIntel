@@ -61,6 +61,25 @@ class DeviceMappingsParserTest {
     }
 
     /**
+     * The pairs come back in file order, primary first. Through {@code Set.copyOf} they did not: its order is
+     * salted per run, so "the first pair" of a multi-pair entry was a different pair on every launch.
+     */
+    @Test
+    void anEntrysPairsKeepFileOrderWithThePrimaryFirst() throws IOException {
+        DeviceEntry gamePad = byName(DeviceMappingsParser.parse(STOCK)).get("GamePad");
+        List<DeviceEntry.HardwareId> pairs = List.copyOf(gamePad.hardware());
+
+        assertEquals(new DeviceEntry.HardwareId("045E", "028E"), pairs.getFirst(), "the primary pair first");
+
+        DeviceEntry dualShock = byName(DeviceMappingsParser.parse(STOCK)).get("DualShock4");
+        assertEquals(List.of(
+                        new DeviceEntry.HardwareId("054C", "0BA0"),
+                        new DeviceEntry.HardwareId("054C", "05C4"),
+                        new DeviceEntry.HardwareId("054C", "09CC")),
+                List.copyOf(dualShock.hardware()), "the adaptor, then the two controllers, as the file lists them");
+    }
+
+    /**
      * Frontier's own file spells hex in whatever case it likes - audited at 39 uppercase, 35 lowercase and 62
      * digits-only. Two entries naming the same hardware differently are the same hardware.
      */

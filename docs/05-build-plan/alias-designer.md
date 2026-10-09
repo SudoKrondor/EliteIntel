@@ -17,9 +17,10 @@ data; most of what the spec describes is still ahead.
 
 | What | Where |
 |---|---|
-| The tab | `ui.screen.bindings.AliasDesignerPanel` — My Devices above the divergence list, in `BindingsTabPanel` |
+| The tab | `ui.screen.bindings.AliasDesignerPanel` — the device list (My Devices and Built-in Devices tabs) above the divergence list, in `BindingsTabPanel` |
 | My Devices — all five columns | `bindforge.devices.MyDeviceList` (the union, a pure function), `MyDevice`. Built-ins show `BUILT-IN` in the Alias column |
 | Installations markers (A4) | `bindforge.devices.InstallationMarkers` (pure: one marker per installation, coloured from the divergence findings); one column per installation in `AliasDesignerPanel`, shown once the master exists |
+| Built-in Devices (A5) | `bindforge.devices.BuiltInDeviceList` (pure: Frontier's elements in file order, primary pair, alternatives, attached), `BuiltInDevice`; the second `COMPACT` tab of the device list in `AliasDesignerPanel`, with the capture date `FrontierStockDevices.CAPTURED` beneath it |
 | Device names | `bindforge.devices.DeviceNames` — the default-name rule, alias validation (`Verdict`, `Problem`), `sameName`, and `needingName` (who onboarding asks). Pure; the caller passes the names already taken |
 | Hardware VID/PID | `bindforge.devices.DeviceIdentities` — from SDL's GUID; confirmed on four controllers, real GUIDs in its test |
 | Frontier's shipped list | `bindforge.devicefiles.FrontierStockDevices`, resource `bindforge/FrontierStock-DeviceMappings.xml` |
@@ -91,24 +92,31 @@ installations with each other before then. Once the master exists, each row offe
 | A3 | **Divergence against the master** — replace installation-against-installation | A1 (done) | **done 2026-10-08** |
 | A3b | **The ways out, per row** — adopt (`DeviceFilesAdopt`), revert (`DeviceFilesPush.push(installId)`), and the label re-merge with the master as one side of `LabelMergeDialog`. Confirms first; backups before any game-file write | A3 (done) | **done 2026-10-08** |
 | A4 | **Installations markers** — `M`, *not added*, severity colour | A1 (done) | **done 2026-10-08** |
-| A5 | **Built-in Devices tab** — Frontier's list, read-only | — | **next** |
+| A5 | **Built-in Devices tab** — Frontier's list, read-only | — | **done 2026-10-08** |
 | A6 | **Onboarding: the rule** — the default-name rule and alias validation | Core C1 (done) | **done 2026-10-06** |
 | A6b | **Onboarding: the dialog and its writes** — name the controllers `needingName` returns, then write the entry and a generated `.buttonMap` straight away. A controller `.binds` names by hex waits for Apply, with a `.binds` rewrite | A6, A8 | waiting — the hex case is `bindforge.io`, so it is blocked until the question in the README is answered |
 | A7 | **Automatic registration and hot-plug** — `DeviceBus` connect and disconnect | A6b | waiting |
 | A8 | **`.buttonMap` generation at Elite-Intel startup** — connected, named, none on disk | Core C1 (done) | **done 2026-10-06** |
-| A9 | **Device Editor** — inline expansion, install strip, labels, live highlighting | C2 (done) | ready |
+| A9 | **Device Editor** — inline expansion, install strip, labels, live highlighting | C2 (done) | **next** |
 | A10 | **Actions** — SAVE, DISCARD, CLEAR, RESET LABELS, APPLY, reported per installation. Unlocks [Core C6](core.md#slices), the exit prompt, which needs an editor holding unsaved edits. **RESET LABELS must delete the `.buttonMap` in every installation**, or A8 never regenerates it | A9 | waiting |
 | A11 | **Rename** — every installation first, `.binds` last, all or nothing | A10 | waiting |
 | A12 | **When hardware changes** — a missing device, the identity question, retarget, one missing device at a time | A11 | waiting |
 | A13 | **The missing-controller warning**, once per run | — | ready |
 
-**A5 and A13 need nothing from Core** — either is a good slice for a session that wants something self-contained
-while Core is in progress.
+**A13 needs nothing from Core** — a good slice for a session that wants something self-contained while Core is in
+progress.
 
 ## Hand-off notes
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
+
+- **2026-10-08 — A5 built** (Alan chose all four recommendations). Recorded in [Built as the stock reference](../02-features/bindforge/alias-designer.md#built-as-the-stock-reference--2026-10-08-alan):
+  My Devices and Built-in Devices are `COMPACT` tabs with the divergence list beneath both; columns Device, VID / PID,
+  Also covers (count, pairs in the tooltip), Status; a capture-date note. **Found and fixed:** `DeviceMappingsParser`
+  returned an entry's pairs through `Set.copyOf`, salted per run, so `InstallationDeviceScanner` stored a random pair
+  for `<GamePad>`/`<DualShock4>`; pairs now keep file order, primary first. **A9** opens a row of My Devices — the
+  Built-in tab is read-only and acts on nothing; the device list is now a `JTabbedPane`, not a `HudSection`.
 
 - **2026-10-08 — A4 review fixes** (`code-integrity-review.md`, Alan). Recorded under [the Installations markers](../02-features/bindforge/alias-designer.md#the-installations-markers--2026-10-08-alan):
   a built-in reads M only where Frontier's entry is there, even when the master labels it — the check never compares
