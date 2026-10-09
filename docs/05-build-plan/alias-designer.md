@@ -18,7 +18,8 @@ data; most of what the spec describes is still ahead.
 | What | Where |
 |---|---|
 | The tab | `ui.screen.bindings.AliasDesignerPanel` — My Devices above the divergence list, in `BindingsTabPanel` |
-| My Devices — four of its five columns | `bindforge.devices.MyDeviceList` (the union, a pure function), `MyDevice`. Built-ins show `BUILT-IN` in the Alias column |
+| My Devices — all five columns | `bindforge.devices.MyDeviceList` (the union, a pure function), `MyDevice`. Built-ins show `BUILT-IN` in the Alias column |
+| Installations markers (A4) | `bindforge.devices.InstallationMarkers` (pure: one marker per installation, coloured from the divergence findings); one column per installation in `AliasDesignerPanel`, shown once the master exists |
 | Device names | `bindforge.devices.DeviceNames` — the default-name rule, alias validation (`Verdict`, `Problem`), `sameName`, and `needingName` (who onboarding asks). Pure; the caller passes the names already taken |
 | Hardware VID/PID | `bindforge.devices.DeviceIdentities` — from SDL's GUID; confirmed on four controllers, real GUIDs in its test |
 | Frontier's shipped list | `bindforge.devicefiles.FrontierStockDevices`, resource `bindforge/FrontierStock-DeviceMappings.xml` |
@@ -39,8 +40,7 @@ installations with each other before then. Once the master exists, each row offe
 - **The list is the union of live hardware and file entries.** `DeviceMappings.xml` supplies names, never
   existence. [Spec, My Devices](../02-features/bindforge/alias-designer.md#my-devices)
 - **The Installations markers wait for first setup.** `M`, *not added* and the divergence colour are all defined
-  against a master record. With the master empty, an installation holding `LVWAP` is in none of those states,
-  and the spec does not define one. Building markers first would mean inventing it.
+  against a master record, so before first setup there are no Installations columns. [Spec, the Installations markers](../02-features/bindforge/alias-designer.md#the-installations-markers--2026-10-08-alan)
 - **"Device service is not running" is a row in the table**, not just a log line — an empty list because nothing
   is plugged in and one because nothing is looking are different states.
 - **Duplicate-VID/PID handling is out of scope.** [Spec, Deferred](../02-features/bindforge/alias-designer.md#deferred)
@@ -51,6 +51,12 @@ installations with each other before then. Once the master exists, each row offe
 ## Known issues — fix when a slice passes them
 
 
+- **First setup has no undo in the app** (found 2026-10-08, Alan). Its labelled backup
+  (`playerbackups\<time>_first-setup\<id>-<storefront>\`) can only be copied back by hand: the Player Backups
+  restore handles `.binds` presets only, and Edit History has no browser until File Manager. Copying the files back
+  is not enough either — the master stays filled, so the installations then show as diverging, **SET UP** is not
+  offered, and nothing in the app empties the master. An undo needs both halves: the files restored and the master
+  (and any draft) emptied.
 - **The first-setup backup shows in the Player Backups list.** `DeviceFilesSnapshot` writes beside
   `PlayerBackupService`'s folders, so `listBackups()` lists it, with installation subfolders as its "files". File
   Manager's restore work should recognise it (or Krondor moves it) — `bindforge.io`.
@@ -84,8 +90,8 @@ installations with each other before then. Once the master exists, each row offe
 | A2 | **`.buttonMap` label merge** — one row per input that disagrees, nothing else | A1 (done) | **done 2026-10-08** |
 | A3 | **Divergence against the master** — replace installation-against-installation | A1 (done) | **done 2026-10-08** |
 | A3b | **The ways out, per row** — adopt (`DeviceFilesAdopt`), revert (`DeviceFilesPush.push(installId)`), and the label re-merge with the master as one side of `LabelMergeDialog`. Confirms first; backups before any game-file write | A3 (done) | **done 2026-10-08** |
-| A4 | **Installations markers** — `M`, *not added*, severity colour | A1 (done) | **next** |
-| A5 | **Built-in Devices tab** — Frontier's list, read-only | — | ready |
+| A4 | **Installations markers** — `M`, *not added*, severity colour | A1 (done) | **done 2026-10-08** |
+| A5 | **Built-in Devices tab** — Frontier's list, read-only | — | **next** |
 | A6 | **Onboarding: the rule** — the default-name rule and alias validation | Core C1 (done) | **done 2026-10-06** |
 | A6b | **Onboarding: the dialog and its writes** — name the controllers `needingName` returns, then write the entry and a generated `.buttonMap` straight away. A controller `.binds` names by hex waits for Apply, with a `.binds` rewrite | A6, A8 | waiting — the hex case is `bindforge.io`, so it is blocked until the question in the README is answered |
 | A7 | **Automatic registration and hot-plug** — `DeviceBus` connect and disconnect | A6b | waiting |
@@ -103,6 +109,19 @@ while Core is in progress.
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
+
+- **2026-10-08 — A4 review fixes** (`code-integrity-review.md`, Alan). Recorded under [the Installations markers](../02-features/bindforge/alias-designer.md#the-installations-markers--2026-10-08-alan):
+  a built-in reads M only where Frontier's entry is there, even when the master labels it — the check never compares
+  Frontier's elements, so a gone one raised no finding. `Severity`'s declaration order is now documented as
+  load-bearing; the device columns are stated once (`DEVICE_COLUMN_KEYS`); the marker has its own *not added* key;
+  GAP 5 is marked avoided in the component map. Two tests added.
+
+- **2026-10-08 — A4 built** (Alan chose all six recommendations). Recorded in [the Installations markers](../02-features/bindforge/alias-designer.md#the-installations-markers--2026-10-08-alan):
+  one column per installation; colour read from the divergence findings; *not added* in the finding's colour for an
+  entry the master holds and the installation lacks; a reset file marks every master device in its row's colour; a
+  gone folder reads *not found*; no columns before first setup. The markers read the check, not
+  `bindforge_device_installs` (noted in device-provenance.md). **Found:** first setup has no undo in the app — now a
+  known issue. **A9's install strip** can reuse `InstallationMarkers.of` for the open device; the spec draws it with `•`.
 
 - **2026-10-08 — A3b built** (Alan chose all five recommendations). Recorded in [the ways out](../02-features/bindforge/alias-designer.md#the-ways-out--2026-10-08-alan):
   adopt from a row takes **one device** (`adopt(installId, deviceName)`), never a missing entry; revert stays the

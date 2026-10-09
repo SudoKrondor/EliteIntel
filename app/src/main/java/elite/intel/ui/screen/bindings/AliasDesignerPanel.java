@@ -13,6 +13,7 @@ import elite.intel.bindforge.devicefiles.FirstSetup;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
 import elite.intel.bindforge.devicefiles.InstallationDeviceScanner;
 import elite.intel.bindforge.devicefiles.LabelReMerge;
+import elite.intel.bindforge.devices.InstallationMarkers;
 import elite.intel.bindforge.devices.MyDevice;
 import elite.intel.bindforge.devices.MyDeviceList;
 import elite.intel.bindforge.install.GameInstallation;
@@ -68,6 +69,10 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
  * <strong>The ways out are offered per row</strong> once the master exists: select a row and its buttons appear
  * beneath the list - revert, adopt, or the label re-merge - each confirmed before it runs (Alan, 2026-10-08).
  * <p>
+ * <strong>My Devices carries one Installations column per installation</strong> once the master exists: each cell
+ * says whether that installation matches the master for the device, in the divergence list's colour - a readout,
+ * never a switch (Alan, 2026-10-08).
+ * <p>
  * Still to come: the one-record editor.
  */
 public class AliasDesignerPanel extends JPanel {
@@ -76,6 +81,16 @@ public class AliasDesignerPanel extends JPanel {
 
     private static final int MAX_COLUMN_WIDTH = 420;
 
+    /**
+     * The My Devices columns describing the device, in order. The Installations columns follow them, so their count
+     * is where the markers start - stated once here, for the column names and the renderer alike.
+     */
+    private static final List<String> DEVICE_COLUMN_KEYS = List.of(
+            "bindings.aliasDesigner.column.device",
+            "bindings.aliasDesigner.column.vidPid",
+            "bindings.aliasDesigner.column.status",
+            "bindings.aliasDesigner.column.alias");
+
     private final InstallationRegistry registry;
 
     private DefaultTableModel tableModel;
@@ -83,6 +98,7 @@ public class AliasDesignerPanel extends JPanel {
     private DefaultTableModel myDevicesModel;
     private JTable myDevicesTable;
     private List<DeviceDivergence.Finding> currentFindings = List.of();
+    private Markers currentMarkers = Markers.NONE;
     /** The check the findings came from, or {@code null} before first setup, when there are no ways out. */
     private DeviceFilesCheck.Report currentReport;
     private JPanel waysOutPanel;
@@ -133,10 +149,14 @@ public class AliasDesignerPanel extends JPanel {
             if (!e.getValueIsAdjusting()) showWaysOut();
         });
 
-        myDevicesModel = new ReadOnlyTableModel(myDevicesColumnNames(), 0);
+        myDevicesModel = new ReadOnlyTableModel(myDevicesColumnNames(List.of()), 0);
         myDevicesTable = new JTable(myDevicesModel);
         myDevicesTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         HudTable.style(myDevicesTable);
+        // WHY: each Installations marker is coloured by its own state, the canon's text colour - and locked, as the
+        // divergence table is, so the palette pass does not put the plain renderer back.
+        myDevicesTable.setDefaultRenderer(Object.class, new MarkerRenderer());
+        myDevicesTable.putClientProperty(AppTheme.HUD_TABLE_STYLE_LOCKED, Boolean.TRUE);
 
         HudSection myDevices = new HudSection(
                 getText("bindings.aliasDesigner.section.myDevices"),
@@ -181,6 +201,7 @@ public class AliasDesignerPanel extends JPanel {
             Map<String, String> labels = Map.of();
             Divergence divergence = new Divergence(null, List.of());
             List<MyDevice> myDevices = List.of();
+            Markers markers = Markers.NONE;
             boolean empty = false;
             try {
                 empty = BindForgeDeviceMasterManager.getInstance().findAll().isEmpty();
@@ -188,7 +209,11 @@ public class AliasDesignerPanel extends JPanel {
                 labels = labelsFor(rows);
                 recordWhatEachInstallationHolds(rows);
                 divergence = divergenceFor(rows);
-                myDevices = readMyDevices(rows);
+                Map<String, List<DeviceEntry>> entries = entriesByInstall(rows);
+                myDevices = readMyDevices(entries);
+                // WHY: only against a master. Before first setup M, not added and the divergence colour mean
+                // nothing, and the column is left out rather than filled with an invented state.
+                if (divergence.report() != null) markers = markersFor(rows, entries, myDevices, divergence.findings());
             } catch (RuntimeException e) {
                 // WHY: broad on purpose. This is a thread boundary, and an exception escaping it would kill
                 // the thread silently and leave the table showing whatever it showed before, with no clue why.
@@ -197,12 +222,13 @@ public class AliasDesignerPanel extends JPanel {
             Map<String, String> loadedLabels = labels;
             Divergence loadedDivergence = divergence;
             List<MyDevice> loadedMyDevices = myDevices;
+            Markers loadedMarkers = markers;
             boolean loadedEmpty = empty;
             SwingUtilities.invokeLater(() -> {
                 installLabels = loadedLabels;
                 masterEmpty = loadedEmpty;
                 setUpButton.setEnabled(masterEmpty);
-                showMyDevices(loadedMyDevices);
+                showMyDevices(loadedMyDevices, loadedMarkers);
                 currentReport = loadedDivergence.report();
                 showFindings(loadedDivergence.findings());
                 refreshInProgress.set(false);
@@ -227,6 +253,30 @@ public class AliasDesignerPanel extends JPanel {
 
     /** @param report the check the findings came from, or {@code null} when they compare installations */
     private record Divergence(DeviceFilesCheck.Report report, List<DeviceDivergence.Finding> findings) {
+    }
+
+    /**
+     * The Installations columns: one per installation, keyed as findings key them, and each device's markers in the
+     * order My Devices lists the devices. Empty before first setup.
+     */
+    private record Markers(List<String> installs, List<Map<String, InstallationMarkers.Marker>> perDevice) {
+        static final Markers NONE = new Markers(List.of(), List.of());
+    }
+
+    /**
+     * Every installation gets a column, its folder there or not - one that is gone says <em>not found</em> rather
+     * than vanishing, since the user still has it (Alan, 2026-10-08).
+     */
+    private static Markers markersFor(List<InstallationRow> rows, Map<String, List<DeviceEntry>> entries,
+                                      List<MyDevice> devices, List<DeviceDivergence.Finding> findings) {
+        List<String> installs = rows.stream().map(AliasDesignerPanel::keyOf).toList();
+        Set<String> notFound = rows.stream().filter(InstallationRow::missing)
+                .map(AliasDesignerPanel::keyOf)
+                .collect(Collectors.toSet());
+        List<Map<String, InstallationMarkers.Marker>> perDevice = devices.stream()
+                .map(device -> InstallationMarkers.of(device, installs, notFound, entries, findings))
+                .toList();
+        return new Markers(installs, perDevice);
     }
 
     /**
@@ -472,8 +522,10 @@ public class AliasDesignerPanel extends JPanel {
      * on disk, and they are worth nothing if they are older than the disk. The installation list is already
      * refreshed the same way, on the same trigger.
      * <p>
-     * Nothing on screen reads these rows yet - they are what the per-installation markers will compare
-     * against - but they have to be recorded before anything can notice a file changing underneath them.
+     * The Installations markers do not read these rows: they need labels and a severity. Their colour and the
+     * differences come from the check against the master; which names an installation gives the hardware comes from
+     * this refresh's own read of its file (Alan, 2026-10-08). The rows stay the stored record of reality, for
+     * whatever must notice a change between refreshes.
      */
     private void recordWhatEachInstallationHolds(List<InstallationRow> rows) {
         for (InstallationRow row : rows) {
@@ -494,7 +546,7 @@ public class AliasDesignerPanel extends JPanel {
      * a list, and {@link #showMyDevices} says so on screen rather than leaving an absence to be mistaken for
      * "nothing is plugged in".
      */
-    private List<MyDevice> readMyDevices(List<InstallationRow> rows) {
+    private List<MyDevice> readMyDevices(Map<String, List<DeviceEntry>> entriesByInstall) {
         DeviceService service = DeviceService.getInstance();
         deviceServiceRunning = service.isAvailable();
         if (!deviceServiceRunning) {
@@ -505,7 +557,7 @@ public class AliasDesignerPanel extends JPanel {
 
         return MyDeviceList.build(
                 attached,
-                MyDeviceList.entriesAcross(entriesByInstall(rows).values()),
+                MyDeviceList.entriesAcross(entriesByInstall.values()),
                 BindForgeDeviceMasterManager.getInstance().findAll(),
                 FrontierStockDevices.getInstance());
     }
@@ -576,35 +628,57 @@ public class AliasDesignerPanel extends JPanel {
         return labels;
     }
 
-    private String[] myDevicesColumnNames() {
-        return new String[]{
-                getText("bindings.aliasDesigner.column.device"),
-                getText("bindings.aliasDesigner.column.vidPid"),
-                getText("bindings.aliasDesigner.column.status"),
-                getText("bindings.aliasDesigner.column.alias")
-        };
+    /** The columns describing the device, then one per installation once the master exists. */
+    private String[] myDevicesColumnNames(List<String> markerInstalls) {
+        List<String> names = new ArrayList<>();
+        DEVICE_COLUMN_KEYS.forEach(key -> names.add(getText(key)));
+        markerInstalls.forEach(install -> names.add(installLabels.getOrDefault(install, install)));
+        return names.toArray(String[]::new);
     }
 
-    private void showMyDevices(List<MyDevice> devices) {
+    private void showMyDevices(List<MyDevice> devices, Markers markers) {
+        currentMarkers = markers;
         myDevicesModel.setRowCount(0);
-        for (MyDevice device : devices) {
-            myDevicesModel.addRow(new Object[]{
+        // WHY: the column set follows the installations, which can be added or removed between refreshes.
+        myDevicesModel.setColumnIdentifiers(myDevicesColumnNames(markers.installs()));
+        for (int i = 0; i < devices.size(); i++) {
+            MyDevice device = devices.get(i);
+            List<Object> cells = new ArrayList<>(List.of(
                     device.label(),
                     device.vid() + ":" + device.pid(),
                     getText(device.attached()
                             ? "bindings.aliasDesigner.status.attached"
                             : "bindings.aliasDesigner.status.missing"),
-                    aliasCell(device)
-            });
+                    aliasCell(device)));
+            if (i < markers.perDevice().size()) {
+                Map<String, InstallationMarkers.Marker> deviceMarkers = markers.perDevice().get(i);
+                markers.installs().forEach(install -> cells.add(markerText(deviceMarkers.get(install))));
+            }
+            myDevicesModel.addRow(cells.toArray());
         }
         // WHY: said in the table rather than only in the log. An empty list because nothing is plugged in and
         // an empty list because nothing is looking are different states, and the second is the one a user
         // cannot diagnose.
         if (!deviceServiceRunning) {
-            myDevicesModel.addRow(new Object[]{
-                    getText("bindings.aliasDesigner.deviceService.stopped"), "", "", ""});
+            myDevicesModel.addRow(new Object[]{getText("bindings.aliasDesigner.deviceService.stopped")});
         }
         HudTable.fitColumnsToContent(myDevicesTable, MAX_COLUMN_WIDTH);
+    }
+
+    /**
+     * What a marker says. A difference is a word as well as a colour, so the state never rests on colour alone
+     * (Alan, 2026-10-08).
+     */
+    private static String markerText(InstallationMarkers.Marker marker) {
+        if (marker == null) return "";
+        return getText(switch (marker.state()) {
+            case MATCHES -> "bindings.aliasDesigner.marker.matches";
+            // WHY: its own key, not the Alias column's. That one means the master has no record; this one means the
+            // installation holds no entry. The same words today, but not the same fact.
+            case NOT_ADDED -> "bindings.aliasDesigner.marker.notAdded";
+            case DIFFERS -> "bindings.aliasDesigner.marker.differs";
+            case NOT_FOUND -> "bindings.aliasDesigner.marker.notFound";
+        });
     }
 
     /**
@@ -686,14 +760,39 @@ public class AliasDesignerPanel extends JPanel {
             }
             return cell;
         }
+    }
 
-        private Color colourOf(DeviceDivergence.Severity severity) {
-            return switch (severity) {
-                case RED -> HudPalette.HUD_COLOR_ROLE_DANGER;
-                case YELLOW -> HudPalette.HUD_COLOR_ROLE_WARNING;
-                case GREEN -> HudPalette.HUD_COLOR_ROLE_SUCCESS;
-            };
+    /**
+     * Colours each Installations cell by its marker, and leaves the four device columns as the HUD draws them. A
+     * marker with nothing to judge keeps the plain text colour. A selected row keeps the selection colour, as in
+     * the divergence list.
+     */
+    private final class MarkerRenderer extends HudTable.CellRenderer {
+        private static final int FIRST_MARKER_COLUMN = DEVICE_COLUMN_KEYS.size();
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean selected,
+                                                       boolean focused, int row, int column) {
+            Component cell =
+                    super.getTableCellRendererComponent(table, value, selected, focused, row, column);
+            int modelColumn = table.convertColumnIndexToModel(column);
+            int marker = modelColumn - FIRST_MARKER_COLUMN;
+            if (!selected && marker >= 0 && marker < currentMarkers.installs().size()
+                    && row < currentMarkers.perDevice().size()) {
+                InstallationMarkers.Marker found =
+                        currentMarkers.perDevice().get(row).get(currentMarkers.installs().get(marker));
+                if (found != null && found.severity() != null) cell.setForeground(colourOf(found.severity()));
+            }
+            return cell;
         }
+    }
+
+    private static Color colourOf(DeviceDivergence.Severity severity) {
+        return switch (severity) {
+            case RED -> HudPalette.HUD_COLOR_ROLE_DANGER;
+            case YELLOW -> HudPalette.HUD_COLOR_ROLE_WARNING;
+            case GREEN -> HudPalette.HUD_COLOR_ROLE_SUCCESS;
+        };
     }
 
     private static final class ReadOnlyTableModel extends DefaultTableModel {

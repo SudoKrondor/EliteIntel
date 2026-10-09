@@ -68,6 +68,10 @@ So: **the master records intent, these rows record reality, and drift is the dif
 Collapsing the rows would remove the only copy of reality. *Do not "simplify" this to one row per device on
 the grounds that installations now match — knowing they match is exactly what the rows are for.*
 
+*Built 2026-10-08 (Alan): the **M** markers on screen read the startup check against the master, not these rows.*
+The check reads the files and judges labels and severity, which these rows do not carry. The rows remain the stored record of reality — see
+[the Installations markers](../02-features/bindforge/alias-designer.md#the-installations-markers--2026-10-08-alan).
+
 | Field | Purpose |
 |---|---|
 | `install_id` | which installation this row describes |

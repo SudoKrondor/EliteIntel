@@ -36,6 +36,9 @@ public final class DeviceDivergence {
      * <p>
      * Judged against the bindings, not against the device files alone: that is what separates red from
      * yellow. A missing entry only matters when a binding names that device.
+     * <p>
+     * <strong>Declared mildest to worst, and the order is load-bearing:</strong> {@code compareTo} ranks them, and
+     * the Installations markers take the worst finding by it.
      */
     public enum Severity {
         /** Consistent - every installation says the same thing. Never produced as a finding. */

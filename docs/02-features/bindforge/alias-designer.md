@@ -45,6 +45,36 @@ the [divergence colour](#divergence-between-installs--one-list-ranked-by-consequ
 markers are a readout — clicking one does not open a per-installation editor, because there is no such thing;
 opening the row opens [the one record](#one-record-and-where-it-lands--reworked-2026-09-26).
 
+#### The Installations markers — 2026-10-08 (Alan)
+
+Built as `bindforge.devices.InstallationMarkers` (pure), shown by `AliasDesignerPanel`.
+
+- **One column per installation**, headed with its name, one marker per cell — not every marker in one cell,
+  which would need a painter of its own ([GAP 5](ui-component-map.md#alias-designer)).
+- **The colour is the [divergence list](#against-the-master--2026-10-08-alan)'s**, read from its findings, so a
+  marker and the row explaining it cannot disagree. **M** is green. A difference reads **differs** — a word as well as
+  a colour.
+- **The text says what the installation holds; the colour says what it costs.** An entry the master holds and an
+  installation lacks reads *not added* in the finding's colour — red when a binding names it. Plain *not added*
+  means neither the master nor that installation holds the device. An entry only the installation holds — the master
+  lacks it — is never **M**.
+- **A built-in is M** where Frontier's entry is there, and *not added* where it is not: the master expects exactly
+  Frontier's entry.
+- **A reset `DeviceMappings.xml`** marks every device the master holds, in that one row's colour — so after a reset
+  even a built-in the master labels shows the reset's colour. **An unreadable one** marks every device: nothing is
+  known about any of them.
+- **An installation whose folder is gone** keeps its column and reads **not found**, uncoloured.
+- **Before first setup there are no Installations columns.** M, *not added* and the divergence colour are all
+  defined against the master.
+- **They do not read `bindforge_device_installs`**: those rows carry no labels and no severity. The colour and the
+  differences come from the check against the master; which names an installation gives the hardware comes from the
+  same refresh's read of its file. A file changed between the two reads can give one stale marker, which the next
+  refresh corrects. The rows stay the stored record of what each installation holds — see
+  [Device Provenance](../../03-data-models/device-provenance.md#what-the-record-carries).
+- *After review:* **a built-in reads M only where Frontier's entry is there**, whether or not the master labels it.
+  The check compares only the user's elements, so a Frontier entry gone from an installation raises no finding and
+  would otherwise read as a match.
+
 ### Built-in Devices
 
 Frontier's shipped default entries. **The reference list is read-only**, and BindForge never changes an

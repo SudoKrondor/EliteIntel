@@ -31,7 +31,7 @@ section, the chord capture field, the live keyboard map, the conflict callout an
 | 2 | **Editable table cells beyond boolean and combo** — free text, and numbers | Alias Designer's button and axis labels; the 21 free-number settings | **Blocks** in-cell editing; editing in a form beside the table is the fallback |
 | 3 | **A HUD context menu** | Game Mode's right-click Expand All / Collapse All | Degrades — two buttons do the same job |
 | 4 | **A badge on a tab** | the Anomalies count, the destructive-change Error signal | Degrades — the count goes in the tab title, the app's existing pattern |
-| 5 | **Tabs inside a table row** | Alias Designer — one tab per detected installation | Blocks that one layout only |
+| 5 | ~~**Tabs inside a table row**~~ | ~~Alias Designer — one tab per detected installation~~ | **Avoided 2026-10-08** — the markers are one column per installation |
 | 6 | **Esc clears a search field** | the Bind Editor shell | Degrades — the × already clears |
 
 **Two tensions with the canon**, which are design questions rather than missing code — see
@@ -172,14 +172,17 @@ first.
 |---|---|
 | The two views, toggled | `HudTabbedPane` `COMPACT` ✓ |
 | The device list | `HudTable` ✓ |
-| One tab per detected installation, **inside the row**, marked **M** or *not added* | **GAP 5** |
+| One marker per detected installation, **M**, *not added* or the divergence colour | One `HudTable` column per installation ✓ — GAP 5 avoided (A4, 2026-10-08) |
 | The editor, **expanding inline beneath the open device** | **GAP 1** — the same disclosure family as a collapsible group |
 | Alias, VID and PID | `HudTextField` ✓ |
 | Button and axis labels | **GAP 2** if edited in cells; `HudTextField` rows in the editor if not |
 | MIRROR, CLEAR, RESET LABELS, APPLY | `HudButton` ✓ |
 | Rename and onboarding dialogs | `hudModalScaffold` ✓ |
 
-**GAP 5 has one user**, so the canon lets it stay local to Alias Designer. It is also the most unusual thing
+**GAP 5 was avoided, 2026-10-08 (Alan).** The Installations markers became one column per installation — see
+[the Installations markers](alias-designer.md#the-installations-markers--2026-10-08-alan) — so nothing paints
+several markers in one cell. The Device Editor's install strip sits inside the expansion, not in a row, and is the
+`COMPACT` row suggested below. *What was written before:* **GAP 5 has one user**, so the canon lets it stay local to Alias Designer. It is also the most unusual thing
 BindForge asks of the kit — a JTable row does not host components, so tabs inside one means painting them in a
 renderer and hit-testing clicks. **Worth weighing against a plainer layout** before building it: the
 installations could be a `COMPACT` tab row inside the inline editor, which the kit already does.
