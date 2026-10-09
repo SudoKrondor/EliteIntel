@@ -1,6 +1,7 @@
 package elite.intel.ui.overlay;
 
 import elite.intel.db.managers.BioSamplesManager;
+import elite.intel.db.managers.CartographicDataManager;
 import elite.intel.db.managers.FssSurveyManager;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.BioSampleDto;
@@ -28,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DiscoveryObjectiveLifecycleTest {
 
     private static final long STAR_BODY = 0L;
+    private static final CartographicDataManager.Worth NO_DATA = new CartographicDataManager.Worth(0, 0);
     private static final long LIFE_BODY = 12L;
     /**
      * One shared test database with no delete-by-key, so each test gets its own system and names.
@@ -40,7 +42,7 @@ class DiscoveryObjectiveLifecycleTest {
     private final BioSamplesManager bioSamples = BioSamplesManager.getInstance();
     private final AtomicBoolean inOrbit = new AtomicBoolean(false);
     private final DiscoveryObjectiveSource source = new DiscoveryObjectiveSource(session, locations, surveys,
-            new ExobiologyObjectiveSource(), inOrbit::get);
+            new ExobiologyObjectiveSource(), address -> NO_DATA, inOrbit::get);
 
     private long system;
     private String star;
@@ -116,7 +118,7 @@ class DiscoveryObjectiveLifecycleTest {
 
         HudObjective card = source.currentObjective().orElseThrow();
 
-        assertEquals(List.of("FSS", "ICY BODIES", "HIGH METAL", "GAS GIANTS", "GEO SIGNALS", "LIFE 1 B"),
+        assertEquals(List.of("FSS", "STARS", "ICY BODIES", "HIGH METAL", "GAS GIANTS", "GEO SIGNALS", "LIFE 1 B"),
                 card.rows().stream().map(HudRow::label).toList());
         HudRow fss = card.rows().getFirst();
         assertEquals(6, fss.current());
@@ -124,6 +126,35 @@ class DiscoveryObjectiveLifecycleTest {
         assertEquals(0, life.current());
         assertEquals(4, life.max(), "before a DSS the FSS signal count is the total");
         assertEquals(HudRow.State.GOOD, life.state());
+    }
+
+    @Test
+    void theStarsLineCountsTheArrivalStarAndItsCompanions() {
+        surveys.recordBodyCount(system, 15);
+        LocationDto companion = new LocationDto(1L, system);
+        companion.setStarName(star);
+        companion.setPlanetName(star + " B");
+        companion.setLocationType(LocationDto.LocationType.STAR);
+        locations.save(companion);
+
+        HudRow stars = source.currentObjective().orElseThrow().rows().get(1);
+        assertEquals("STARS", stars.label());
+        assertEquals("2", stars.value());
+    }
+
+    @Test
+    void afterTheHonkTheCardPricesTheSystemAndEverythingUnsold() {
+        surveys.recordBodyCount(system, 15);
+        DiscoveryObjectiveSource priced = new DiscoveryObjectiveSource(session, locations, surveys,
+                new ExobiologyObjectiveSource(), address -> new CartographicDataManager.Worth(12_103, 1_500_000),
+                inOrbit::get);
+
+        List<HudRow> rows = priced.currentObjective().orElseThrow().rows();
+
+        assertEquals("VALUE (EST)", rows.get(1).label());
+        assertEquals("12103", rows.get(1).value().replaceAll("\\D", ""), "grouped for the app language, so digits only");
+        assertEquals("UNSOLD DATA", rows.get(2).label());
+        assertEquals("1500000", rows.get(2).value().replaceAll("\\D", ""));
     }
 
     @Test
@@ -191,7 +222,7 @@ class DiscoveryObjectiveLifecycleTest {
         saveBody(LIFE_BODY, "1 b", "Rocky body", 4);
 
         DiscoveryObjectiveSource afterRestart = new DiscoveryObjectiveSource(session, locations, surveys,
-                new ExobiologyObjectiveSource(), inOrbit::get);
+                new ExobiologyObjectiveSource(), address -> NO_DATA, inOrbit::get);
 
         assertEquals(source.currentObjective(), afterRestart.currentObjective());
     }

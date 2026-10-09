@@ -55,6 +55,13 @@ class AiActionMapGeneratorTest {
      */
     private static final List<String> SNAPSHOT_BUILTIN_IDS = List.of(
             // Jukebox: the commander's own music. Always offered - with an empty playlist these answer
+            "bookmark_current_location",
+            "close_location_bookmarks",
+            "delete_location_bookmark",
+            "navigate_to_location_bookmark",
+            "next_location_bookmarks_page",
+            "previous_location_bookmarks_page",
+            "show_location_bookmarks",
             // "there is no music yet" rather than being withdrawn, which would have VEGA claim it
             // has no such function.
             "play_music",

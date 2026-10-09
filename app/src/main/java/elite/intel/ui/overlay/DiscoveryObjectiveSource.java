@@ -1,7 +1,9 @@
 package elite.intel.ui.overlay;
 
+import elite.intel.db.managers.CartographicDataManager;
 import elite.intel.db.managers.FssSurveyManager;
 import elite.intel.db.managers.LocationManager;
+import elite.intel.gameapi.journal.ScanBodyClassifier;
 import elite.intel.gameapi.journal.events.dto.BioSampleDto;
 import elite.intel.gameapi.journal.events.dto.GenusDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -11,6 +13,7 @@ import elite.intel.session.Status;
 
 import java.util.*;
 import java.util.function.BooleanSupplier;
+import java.util.function.LongFunction;
 
 /**
  * The explorer's card for a system nobody had discovered before the commander arrived.
@@ -19,8 +22,11 @@ import java.util.function.BooleanSupplier;
  * <ol>
  *   <li>on arrival, before the honk, only the system name under a NEW DISCOVERY banner - nothing has
  *       been counted yet, so there is nothing else to say;</li>
- *   <li>after the honk, the FSS progress: bodies found out of the bodies the honk counted;</li>
- *   <li>as the FSS resolves them, a line per kind of find worth a detour (icy bodies, high metal content
+ *   <li>after the honk, the FSS progress: bodies found out of the bodies the honk counted, then what the
+ *       system's data is estimated to sell for and what all the data in the ship is (see
+ *       {@link elite.intel.gameapi.cartography.CartographicValue} for how far to trust the figures);</li>
+ *   <li>as the FSS resolves them, a line counting the stars - the arrival star among them, which is why the
+ *       FSS bar starts at one - then a line per kind of find worth a detour (icy bodies, high metal content
  *       worlds, gas giants, bodies with geological signals), and a green line per body with life showing
  *       how many of its genuses have been sampled.</li>
  * </ol>
@@ -45,30 +51,36 @@ public class DiscoveryObjectiveSource implements HudObjectiveSource {
     private static final String ICY_BODY = "icy body";
     private static final String HIGH_METAL_CONTENT = "high metal content body";
     private static final String GAS_GIANT = "gas giant";
+    private static final Set<LocationDto.LocationType> STARS = EnumSet.of(
+            LocationDto.LocationType.PRIMARY_STAR, LocationDto.LocationType.STAR, LocationDto.LocationType.BLACK_HOLE);
 
     private final PlayerSession playerSession;
     private final LocationManager locationManager;
     private final FssSurveyManager fssSurveys;
     private final ExobiologyObjectiveSource exobiology;
+    private final LongFunction<CartographicDataManager.Worth> worth;
     private final BooleanSupplier atBody;
 
     public DiscoveryObjectiveSource() {
         this(PlayerSession.getInstance(), LocationManager.getInstance(), FssSurveyManager.getInstance(),
-                new ExobiologyObjectiveSource(), () -> Status.getInstance().hasLatLong());
+                new ExobiologyObjectiveSource(), CartographicDataManager.getInstance()::worth,
+                () -> Status.getInstance().hasLatLong());
     }
 
     /**
      * Seam for tests.
      *
+     * @param worth  what the ship's exploration data is worth, given the system the card is for
      * @param atBody whether the ship is near enough a body to have a latitude and longitude on it
      */
     DiscoveryObjectiveSource(PlayerSession playerSession, LocationManager locationManager,
                              FssSurveyManager fssSurveys, ExobiologyObjectiveSource exobiology,
-                             BooleanSupplier atBody) {
+                             LongFunction<CartographicDataManager.Worth> worth, BooleanSupplier atBody) {
         this.playerSession = playerSession;
         this.locationManager = locationManager;
         this.fssSurveys = fssSurveys;
         this.exobiology = exobiology;
+        this.worth = worth;
         this.atBody = atBody;
     }
 
@@ -99,7 +111,8 @@ public class DiscoveryObjectiveSource implements HudObjectiveSource {
                 ? playerSession.getPrimaryStarName()
                 : primaryStar.getStarName();
         return Optional.of(card("discovery:" + systemAddress, systemName,
-                fssSurveys.find(systemAddress).orElse(null), bodies, samplesByBody));
+                fssSurveys.find(systemAddress).orElse(null), bodies, samplesByBody,
+                worth.apply(systemAddress)));
     }
 
     /**
@@ -118,13 +131,21 @@ public class DiscoveryObjectiveSource implements HudObjectiveSource {
      * @param survey        the honk's count, or null before the honk
      * @param bodies        the system's stars and planets on record, in body order
      * @param samplesByBody completed samples per BodyID, for the bodies a DSS has surveyed
+     * @param worth         what the exploration data in the ship is estimated to sell for
      */
     static HudObjective card(String id, String systemName, FssSurveyManager.Survey survey,
-                             List<LocationDto> bodies, Map<Long, List<BioSampleDto>> samplesByBody) {
+                             List<LocationDto> bodies, Map<Long, List<BioSampleDto>> samplesByBody,
+                             CartographicDataManager.Worth worth) {
         String subtitle = systemName == null ? null : systemName.toUpperCase(Locale.ROOT);
         List<HudRow> rows = new ArrayList<>();
         if (survey != null) {
             rows.add(fssProgress(survey, bodies.size()));
+            if (worth.system() > 0) {
+                rows.add(HudRow.of(HudText.get("overlay.card.row.systemValue"), HudText.credits(worth.system())));
+            }
+            if (worth.unsold() > 0) {
+                rows.add(HudRow.of(HudText.get("overlay.card.row.unsoldData"), HudText.credits(worth.unsold())));
+            }
 
             List<HudRow> life = new ArrayList<>();
             for (LocationDto body : bodies) {
@@ -162,8 +183,9 @@ public class DiscoveryObjectiveSource implements HudObjectiveSource {
     }
 
     private static List<HudRow> findRows(List<LocationDto> bodies) {
-        int icy = 0, highMetal = 0, gasGiants = 0, geological = 0;
+        int stars = 0, icy = 0, highMetal = 0, gasGiants = 0, geological = 0;
         for (LocationDto body : bodies) {
+            if (STARS.contains(ScanBodyClassifier.resolve(body))) stars++;
             String planetClass = body.getPlanetClass() == null ? "" : body.getPlanetClass().toLowerCase(Locale.ROOT);
             if (planetClass.equals(ICY_BODY)) icy++;
             if (planetClass.equals(HIGH_METAL_CONTENT)) highMetal++;
@@ -171,6 +193,7 @@ public class DiscoveryObjectiveSource implements HudObjectiveSource {
             if (body.getGeoSignals() > 0) geological++;
         }
         List<HudRow> rows = new ArrayList<>();
+        addCount(rows, "overlay.card.row.stars", stars);
         addCount(rows, "overlay.card.row.icyBodies", icy);
         addCount(rows, "overlay.card.row.highMetal", highMetal);
         addCount(rows, "overlay.card.row.gasGiants", gasGiants);
