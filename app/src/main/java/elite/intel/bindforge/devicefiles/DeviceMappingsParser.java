@@ -122,28 +122,32 @@ public final class DeviceMappingsParser {
     /** One element as an entry: its tag, and every pair it claims, primary and {@code <Alternative>}. */
     static DeviceEntry entryOf(Element element) {
         Set<DeviceEntry.HardwareId> hardware = new LinkedHashSet<>();
-        addHardwareOf(element, hardware);
+        // WHY: the primary is taken from the element itself, never as "the first pair" - an element with no pair
+        // of its own would otherwise give its first alternative as its primary (review, 2026-10-08).
+        DeviceEntry.HardwareId primary = hardwareOf(element);
+        if (primary != null) hardware.add(primary);
 
         NodeList alternatives = element.getElementsByTagName(ALTERNATIVE);
         for (int i = 0; i < alternatives.getLength(); i++) {
-            addHardwareOf((Element) alternatives.item(i), hardware);
+            DeviceEntry.HardwareId alternative = hardwareOf((Element) alternatives.item(i));
+            if (alternative != null) hardware.add(alternative);
         }
-        // WHY: kept in file order, primary first, rather than through Set.copyOf - whose iteration order is
-        // hash-derived and salted per run. The primary pair is the one shown for an entry, and the one recorded
-        // for it; with Set.copyOf a multi-pair entry such as <GamePad> gave a different "first" pair every run.
-        return new DeviceEntry(element.getTagName(), Collections.unmodifiableSet(hardware));
+        // WHY: kept in file order rather than through Set.copyOf, whose order is salted per run - so the
+        // alternatives list the same way on every launch, as the file gives them.
+        return new DeviceEntry(element.getTagName(), Collections.unmodifiableSet(hardware), primary);
     }
 
     /**
-     * Takes the VID and PID belonging to {@code element} itself, ignoring any nested in an
-     * {@code <Alternative>} - those are collected separately, so reading them here would attribute an
-     * alternative's ids to the primary pair as well.
+     * The VID and PID belonging to {@code element} itself, ignoring any nested in an {@code <Alternative>} - those
+     * are read separately, so reading them here would attribute an alternative's ids to the primary pair as well.
+     *
+     * @return the pair, or {@code null} when the element carries neither id
      */
-    private static void addHardwareOf(Element element, Set<DeviceEntry.HardwareId> hardware) {
+    private static DeviceEntry.HardwareId hardwareOf(Element element) {
         String vid = directChildText(element, VID);
         String pid = directChildText(element, PID);
-        if (vid == null && pid == null) return;
-        hardware.add(new DeviceEntry.HardwareId(vid == null ? "" : vid, pid == null ? "" : pid));
+        if (vid == null && pid == null) return null;
+        return new DeviceEntry.HardwareId(vid == null ? "" : vid, pid == null ? "" : pid);
     }
 
     private static String directChildText(Element element, String tagName) {

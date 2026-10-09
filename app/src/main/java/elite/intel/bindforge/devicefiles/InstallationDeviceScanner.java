@@ -78,9 +78,10 @@ public final class InstallationDeviceScanner {
         List<FoundDevice> found = new ArrayList<>();
         for (DeviceEntry entry : entries) {
             // WHY: one row per entry, keyed by its element tag - the identity the file itself uses. An entry
-            // owns a set of VID/PID pairs rather than one, so the first is recorded and the rest are not:
-            // GamePad alone carries eighty, and they describe one entry rather than eighty devices.
-            DeviceEntry.HardwareId hardware = entry.hardware().stream().findFirst().orElse(null);
+            // owns a set of VID/PID pairs rather than one, so its own pair is recorded and the alternatives are
+            // not: GamePad alone carries eighty, and they describe one entry rather than eighty devices. An element
+            // with no pair of its own records none, rather than an alternative standing in for it.
+            DeviceEntry.HardwareId hardware = entry.primary();
             found.add(new FoundDevice(
                     entry.name(),
                     hardware == null ? null : hardware.vid(),

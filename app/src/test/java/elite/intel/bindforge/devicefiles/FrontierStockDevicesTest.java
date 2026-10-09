@@ -54,6 +54,19 @@ class FrontierStockDevicesTest {
                 "the docs copy and the shipped copy have diverged - they are the same evidence");
     }
 
+    /**
+     * The date shown beneath the Built-in Devices list is kept in Java, while the capture it dates is recorded in the
+     * README - which is rewritten with every re-capture. A re-capture that forgot the constant would show the old date
+     * with nothing failing (review, 2026-10-08).
+     */
+    @Test
+    void theCaptureDateShownIsTheOneTheReadmeRecords() throws IOException {
+        Path readme = projectRoot().resolve("docs/02-features/bindforge/reference-data/FrontierStock-README.md");
+
+        assertTrue(Files.readString(readme).contains("**Captured " + FrontierStockDevices.CAPTURED + ".**"),
+                "FrontierStockDevices.CAPTURED no longer matches the capture date in " + readme);
+    }
+
     @Test
     void theCaptureHoldsEveryEntryTheReadmeCounts() {
         assertEquals(51, stock.entries().size(), "51 device elements");

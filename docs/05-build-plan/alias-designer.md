@@ -111,6 +111,14 @@ progress.
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
 
+- **2026-10-08 — A5 review fixes** (`code-integrity-review.md`, Alan). Recorded under *After review* in
+  [Built as the stock reference](../02-features/bindforge/alias-designer.md#built-as-the-stock-reference--2026-10-08-alan):
+  `DeviceEntry` now carries `primary` — the element's own pair, `null` when it has only `<Alternative>`s — read by
+  `BuiltInDeviceList` and `InstallationDeviceScanner` instead of "the first pair"; the Built-in columns are stated
+  once (`BUILT_IN_COLUMN_KEYS`); a test ties `FrontierStockDevices.CAPTURED` to the stock README. Dates stay ISO in
+  every language (Alan). Tests added for the shared `044F:FFFF` pair and an element with no pair of its own.
+  **Anything reading an entry's VID/PID should use `primary()`**, never the set's order.
+
 - **2026-10-08 — A5 built** (Alan chose all four recommendations). Recorded in [Built as the stock reference](../02-features/bindforge/alias-designer.md#built-as-the-stock-reference--2026-10-08-alan):
   My Devices and Built-in Devices are `COMPACT` tabs with the divergence list beneath both; columns Device, VID / PID,
   Also covers (count, pairs in the tooltip), Status; a capture-date note. **Found and fixed:** `DeviceMappingsParser`

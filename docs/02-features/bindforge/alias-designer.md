@@ -113,6 +113,16 @@ Built as `bindforge.devices.BuiltInDeviceList` (pure) and `BuiltInDevice`, shown
   `InstallationDeviceScanner` stored that pair as the element's VID/PID in `bindforge_device_installs`. The pairs
   now keep file order, primary first.
 
+*After review — 2026-10-08 (Alan):*
+
+- **The primary is the element's own pair, held on the entry** (`DeviceEntry.primary()`), not read as "the first
+  pair". An element carrying only `<Alternative>` pairs has no primary: VID / PID is blank and every pair is counted
+  under *Also covers*, and the installation scan records no pair for it rather than an alternative. No shipped
+  element has that shape; a re-capture or a user's file could.
+- **Dates are ISO in every language** — *2026-09-06*, not a localised form (Alan).
+- **The capture date is checked against the stock README** by a test, so a re-capture that forgets
+  `FrontierStockDevices.CAPTURED` fails rather than showing the old date.
+
 ### Built-in controllers in My Devices — settled 2026-09-13
 
 **A controller that matches one of Frontier's entries on VID/PID is shown as BUILT-IN**, in every

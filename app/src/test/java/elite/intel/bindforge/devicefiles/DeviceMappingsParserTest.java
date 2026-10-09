@@ -13,6 +13,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -70,6 +71,7 @@ class DeviceMappingsParserTest {
         List<DeviceEntry.HardwareId> pairs = List.copyOf(gamePad.hardware());
 
         assertEquals(new DeviceEntry.HardwareId("045E", "028E"), pairs.getFirst(), "the primary pair first");
+        assertEquals(new DeviceEntry.HardwareId("045E", "028E"), gamePad.primary());
 
         DeviceEntry dualShock = byName(DeviceMappingsParser.parse(STOCK)).get("DualShock4");
         assertEquals(List.of(
@@ -77,6 +79,28 @@ class DeviceMappingsParserTest {
                         new DeviceEntry.HardwareId("054C", "05C4"),
                         new DeviceEntry.HardwareId("054C", "09CC")),
                 List.copyOf(dualShock.hardware()), "the adaptor, then the two controllers, as the file lists them");
+    }
+
+    /**
+     * The primary is the element's own pair, read from the element - not the first pair it claims. An element with
+     * only alternatives has none, rather than its first alternative standing in (review, 2026-10-08).
+     */
+    @Test
+    void anElementWithOnlyAlternativesHasNoPrimary() throws IOException {
+        Path file = folder.resolve("DeviceMappings.xml");
+        Files.writeString(file, """
+                <Root>
+                	<OnlyAlternatives>
+                		<Alternative><PID>05C4</PID><VID>054C</VID></Alternative>
+                		<Alternative><PID>09CC</PID><VID>054C</VID></Alternative>
+                	</OnlyAlternatives>
+                </Root>
+                """);
+
+        DeviceEntry entry = DeviceMappingsParser.parse(file).getFirst();
+
+        assertNull(entry.primary());
+        assertEquals(2, entry.hardware().size(), "both alternatives are still claimed");
     }
 
     /**

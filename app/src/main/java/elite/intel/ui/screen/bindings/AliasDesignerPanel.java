@@ -97,8 +97,16 @@ public class AliasDesignerPanel extends JPanel {
             "bindings.aliasDesigner.column.status",
             "bindings.aliasDesigner.column.alias");
 
+    /** The Built-in Devices columns, in order - stated once, for the column names and the tooltip's column alike. */
+    private static final List<String> BUILT_IN_COLUMN_KEYS = List.of(
+            "bindings.aliasDesigner.column.device",
+            "bindings.aliasDesigner.column.vidPid",
+            "bindings.aliasDesigner.column.alsoCovers",
+            "bindings.aliasDesigner.column.status");
+
     /** The Built-in Devices column carrying the alternative pairs, whose cell lists them all as a tooltip. */
-    private static final int ALSO_COVERS_COLUMN = 2;
+    private static final int ALSO_COVERS_COLUMN =
+            BUILT_IN_COLUMN_KEYS.indexOf("bindings.aliasDesigner.column.alsoCovers");
 
     /** Pairs per line of that tooltip - GamePad's 79 on one line would run off the screen. */
     private static final int PAIRS_PER_TOOLTIP_LINE = 6;
@@ -736,13 +744,8 @@ public class AliasDesignerPanel extends JPanel {
         return pair.vid() + ":" + pair.pid();
     }
 
-    private String[] builtInColumnNames() {
-        return new String[]{
-                getText("bindings.aliasDesigner.column.device"),
-                getText("bindings.aliasDesigner.column.vidPid"),
-                getText("bindings.aliasDesigner.column.alsoCovers"),
-                getText("bindings.aliasDesigner.column.status")
-        };
+    private static String[] builtInColumnNames() {
+        return BUILT_IN_COLUMN_KEYS.stream().map(key -> getText(key)).toArray(String[]::new);
     }
 
     /**
