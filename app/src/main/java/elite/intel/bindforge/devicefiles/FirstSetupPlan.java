@@ -34,8 +34,8 @@ import java.util.TreeSet;
  *     <li><strong>A name conflict is answered only where no binding is lost.</strong> The rename transaction and
  *     its {@code .binds} rewrite are not built, so a name whose loser {@code .binds} references cannot be chosen.
  *     The loser's element and {@code .buttonMap} stay on disk, below the winner, as a pending removal.</li>
- *     <li><strong>Colliding labels are answered per device</strong>, by an installation: that installation's label
- *     wins every collision, and labels the others hold alone are still taken. The per-input merge view is A2.</li>
+ *     <li><strong>Colliding labels can be answered per device</strong>, by an installation: that installation's
+ *     label wins every collision it holds one for, and labels the others hold alone are still taken.</li>
  *     <li><strong>"Use one installation as the master"</strong> answers every question in its favour, and still
  *     takes the elements only the others hold - first setup never drops a custom entry.</li>
  * </ul>
@@ -47,6 +47,11 @@ import java.util.TreeSet;
  *     <li><strong>A name that wins any name conflict is kept</strong>, even where it loses another - a stale PID in
  *     one installation must not cost the user the device. Answers that would leave two devices on one VID/PID are
  *     unanswered until changed.</li>
+ * </ul>
+ * The {@code .buttonMap} label merge - 2026-10-08 (Alan):
+ * <ul>
+ *     <li><strong>Colliding labels are answered per input</strong>, in the merge view ({@link LabelMerge}). The
+ *     device keeps one row here; its options are the whole-file route, which answers every input at once.</li>
  * </ul>
  */
 public final class FirstSetupPlan {
@@ -83,7 +88,10 @@ public final class FirstSetupPlan {
         HARDWARE_DIFFERS,
         /** One VID/PID under different names. A question - and a rename, see the class comment. */
         NAME_DIFFERS,
-        /** Two installations label one input differently. A question. */
+        /**
+         * Installations label one or more of the device's inputs differently. A question, answered per input
+         * ({@link #labelMerge(String)}); the row's options answer every input in one installation's favour.
+         */
         LABELS_DIFFER,
         /** Labels on one of Frontier's devices, the same everywhere they appear. Taken. */
         BUILT_IN_LABELS,
@@ -188,6 +196,7 @@ public final class FirstSetupPlan {
     /**
      * The questions still needing an answer: unanswered, answered with something not on offer, or answered with
      * an option that is not available. A question about a name that has just lost a name conflict needs none.
+     * Colliding labels are counted per input, by {@link #labelAnswerKey(String, String)}.
      */
     public List<String> unanswered(Map<String, String> answers) {
         Set<String> losers = losers(answers);
@@ -195,6 +204,12 @@ public final class FirstSetupPlan {
         for (Row row : rows) {
             if (!row.isQuestion()) continue;
             if (row.kind() != Kind.NAME_DIFFERS && losers.contains(row.deviceName())) continue;
+            if (row.kind() == Kind.LABELS_DIFFER) {
+                String device = row.deviceName();
+                labelMerge(device).unanswered(labelAnswers(device, answers))
+                        .forEach(input -> missing.add(labelAnswerKey(device, input)));
+                continue;
+            }
             Option chosen = chosen(row, answers);
             if (chosen == null || !chosen.available()) missing.add(row.id());
         }
@@ -209,6 +224,10 @@ public final class FirstSetupPlan {
     public Map<String, String> answersFavouring(long installId) {
         Map<String, String> answers = new LinkedHashMap<>();
         for (Row row : rows) {
+            if (row.kind() == Kind.LABELS_DIFFER) {
+                answers.putAll(labelAnswersFavouring(row.deviceName(), installId));
+                continue;
+            }
             for (Option option : row.options()) {
                 if (option.available() && option.installs().contains(installId)) {
                     answers.put(row.id(), option.key());
@@ -216,6 +235,42 @@ public final class FirstSetupPlan {
                 }
             }
         }
+        return answers;
+    }
+
+    /**
+     * One device's labels across the installations, keyed by installation id as text - the merge view's rows.
+     * A device no installation labels gives a merge with nothing in it.
+     */
+    public LabelMerge labelMerge(String device) {
+        Map<String, Map<String, String>> sides = new LinkedHashMap<>();
+        labelHolders(device).forEach((install, labels) -> sides.put(String.valueOf(install), labels));
+        return new LabelMerge(sides);
+    }
+
+    /** Where the answer for one of a device's colliding inputs is kept in the answers. */
+    public static String labelAnswerKey(String device, String input) {
+        return LABELS_ROW + device + ":" + input;
+    }
+
+    /** The answers given for a device's colliding inputs, input to label. */
+    public Map<String, String> labelAnswers(String device, Map<String, String> answers) {
+        Map<String, String> chosen = new LinkedHashMap<>();
+        for (LabelMerge.Collision collision : labelMerge(device).collisions()) {
+            String label = answers.get(labelAnswerKey(device, collision.input()));
+            if (label != null) chosen.put(collision.input(), label);
+        }
+        return chosen;
+    }
+
+    /**
+     * The whole-file route for one device - <em>use Steam's labels for this device</em> - as answers. An input the
+     * installation holds no label for is left unanswered.
+     */
+    public Map<String, String> labelAnswersFavouring(String device, long installId) {
+        Map<String, String> answers = new LinkedHashMap<>();
+        labelMerge(device).answersFavouring(String.valueOf(installId))
+                .forEach((input, label) -> answers.put(labelAnswerKey(device, input), label));
         return answers;
     }
 
@@ -334,7 +389,7 @@ public final class FirstSetupPlan {
 
     private Optional<Row> labelsRow(String name) {
         Map<Long, Map<String, String>> holders = labelHolders(name);
-        if (collisions(holders.values()).isEmpty()) return Optional.empty();
+        if (labelMerge(name).collisions().isEmpty()) return Optional.empty();
         List<Option> options = new ArrayList<>();
         for (Installation install : installations) {
             if (!holders.containsKey(install.installId())) continue;
@@ -345,20 +400,9 @@ public final class FirstSetupPlan {
                 holders.keySet(), options));
     }
 
-    /**
-     * The union of every installation's labels for the device. Where they collide, the answered installation's
-     * label wins.
-     */
+    /** The union of every installation's labels for the device, each colliding input taking its answer. */
     private Map<String, String> labelsFor(String name, Map<String, String> answers) {
-        Map<Long, Map<String, String>> holders = labelHolders(name);
-        Map<String, String> merged = new TreeMap<>();
-        holders.values().forEach(labels -> labels.forEach(merged::putIfAbsent));
-        String answer = answers.get(LABELS_ROW + name);
-        if (answer != null) {
-            Map<String, String> winner = holders.get(Long.valueOf(answer));
-            if (winner != null) merged.putAll(winner);
-        }
-        return merged;
+        return labelMerge(name).merged(labelAnswers(name, answers));
     }
 
     /** Names beaten in a name conflict and winning none. A name that wins anywhere is kept. */
@@ -417,18 +461,6 @@ public final class FirstSetupPlan {
             if (labels != null && !labels.isEmpty()) holders.put(install.installId(), labels);
         });
         return holders;
-    }
-
-    private static Set<String> collisions(Iterable<Map<String, String>> labelSets) {
-        Map<String, String> seen = new LinkedHashMap<>();
-        Set<String> colliding = new TreeSet<>();
-        for (Map<String, String> labels : labelSets) {
-            labels.forEach((token, label) -> {
-                String earlier = seen.putIfAbsent(token, label);
-                if (earlier != null && !earlier.equals(label)) colliding.add(token);
-            });
-        }
-        return colliding;
     }
 
     private Set<String> elementNames() {

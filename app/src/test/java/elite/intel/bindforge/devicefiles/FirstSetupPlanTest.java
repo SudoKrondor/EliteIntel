@@ -145,20 +145,54 @@ class FirstSetupPlanTest {
                 plan.resolve(Map.of()).devices().getFirst().labels());
     }
 
-    /** A2 brings the per-input merge view. Until then the whole device is answered by one installation. */
     @Test
-    void collidingLabelsAreAnsweredByAnInstallationAndTheRestAreStillTaken() {
+    void collidingLabelsAreAnsweredPerInputAndTheRestAreStillTaken() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("LVWAP", LEFT),
+                        Map.of("LVWAP", Map.of("Joy_1", "LV MAIN TRIGGER", "Joy_2", "A"))),
+                install(EPIC, Map.of("LVWAP", LEFT), Map.of("LVWAP", Map.of("Joy_1", "TRIGGER 1", "Joy_2", "B",
+                        "Joy_4", "PINKY"))));
+
+        Row labels = plan.rows().getFirst();
+        assertEquals(Kind.LABELS_DIFFER, labels.kind(), "a question sorts first");
+        assertEquals(List.of(FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_1"),
+                        FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_2")), plan.unanswered(Map.of()),
+                "one question per input that disagrees, Joy_4 not among them");
+
+        Resolution resolution = plan.resolve(Map.of(
+                FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_1"), "LV MAIN TRIGGER",
+                FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_2"), "B"));
+
+        assertEquals(Map.of("Joy_1", "LV MAIN TRIGGER", "Joy_2", "B", "Joy_4", "PINKY"),
+                resolution.devices().getFirst().labels(), "each input its own answer");
+        assertEquals(1, resolution.buttonMapCount());
+    }
+
+    @Test
+    void halfAnsweredLabelsAreNotFinished() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("LVWAP", LEFT), Map.of("LVWAP", Map.of("Joy_1", "A", "Joy_2", "A"))),
+                install(EPIC, Map.of("LVWAP", LEFT), Map.of("LVWAP", Map.of("Joy_1", "B", "Joy_2", "B"))));
+        Map<String, String> answers = Map.of(FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_1"), "A");
+
+        assertEquals(List.of(FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_2")), plan.unanswered(answers));
+        assertThrows(IllegalStateException.class, () -> plan.resolve(answers));
+        assertEquals(List.of(FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_1")),
+                plan.unanswered(Map.of(FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_1"), "NOT OFFERED",
+                        FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_2"), "B")), "a label no installation holds");
+    }
+
+    @Test
+    void theWholeFileRouteAnswersEveryInputForOneDevice() {
         FirstSetupPlan plan = plan(Set.of(),
                 install(STEAM, Map.of("LVWAP", LEFT), Map.of("LVWAP", Map.of("Joy_1", "LV MAIN TRIGGER"))),
                 install(EPIC, Map.of("LVWAP", LEFT), Map.of("LVWAP", Map.of("Joy_1", "TRIGGER 1", "Joy_4", "PINKY"))));
 
-        Row labels = plan.rows().getFirst();
-        assertEquals(Kind.LABELS_DIFFER, labels.kind(), "a question sorts first");
-        Resolution resolution = plan.resolve(Map.of(labels.id(), String.valueOf(STEAM)));
+        Map<String, String> answers = plan.labelAnswersFavouring("LVWAP", STEAM);
 
         assertEquals(Map.of("Joy_1", "LV MAIN TRIGGER", "Joy_4", "PINKY"),
-                resolution.devices().getFirst().labels());
-        assertEquals(1, resolution.buttonMapCount());
+                plan.resolve(answers).devices().getFirst().labels(), "use Steam's labels for this device");
+        assertEquals(answers, plan.answersFavouring(STEAM), "using Steam as the master answers the same way");
     }
 
     @Test

@@ -217,9 +217,10 @@ screen, which is offered only while the master is empty.
   where [the first match wins](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12d-two-entries-for-one-vidpid-the-first-in-the-file-wins--measured-2026-10-03);
   each loser's element and `.buttonMap` stay on disk beneath it as a **pending removal**, for CLEAR's cleanup. When
   `.binds` uses both names, first setup cannot finish until the rename exists.
-- **Colliding labels are answered per device, by an installation** — the spec's *use Steam's labels for this
+- ~~**Colliding labels are answered per device, by an installation** — the spec's *use Steam's labels for this
   device*. That installation's label wins every collision; a label only another installation holds is still
-  taken. The per-input rows above are the [`.buttonMap` label merge](../../05-build-plan/alias-designer.md#slices).
+  taken.~~ *Kept as the whole-file route; the per-input rows came on 2026-10-08 — see
+  [the label merge](#the-buttonmap-label-merge--2026-10-08-alan) below.*
 - **"Use one installation as the master"** answers every question in its favour and still takes the elements only
   the others hold, because first setup never drops a custom entry. A question where that installation has no side,
   or its side needs Rename, is left to answer.
@@ -258,6 +259,27 @@ screen, which is offered only while the master is empty.
   first setup can run again; if the push fails after the master is saved, first setup is over and the
   installations that missed it stop matching the master, for Apply to retry. A half-written backup is removed
   rather than left to pass for a restore point.
+
+### The `.buttonMap` label merge — 2026-10-08 (Alan)
+
+Built as `bindforge.devicefiles.LabelMerge` (pure) and `ui.screen.bindings.LabelMergeDialog`, opened from first
+setup.
+
+- **The device keeps one row in first setup**, *Button labels disagree*, whose answer reads *"2 of 5 chosen"*.
+  Selecting it offers **Compare N inputs**, which opens the merge view, and *use Steam's labels* for each
+  installation — the whole-file route — beside it, so a user who would rather not walk the list never opens it.
+  The inputs were not put in the first-setup list itself: its columns are not the merge table's, and a thirty-button
+  stick would bury the device questions.
+- **The merge view is the table above**: Input, one column per installation holding labels, and what is kept.
+  Clicking an installation's label keeps it; an installation with no label for that input shows **-** and is not a
+  choice. The whole-file buttons are repeated beneath it. Cancelling changes nothing; DONE keeps a partial answer.
+- **An answer is the label, not the installation.** Two installations holding the same label are one choice, and a
+  third that disagrees is the other.
+- **Every disagreeing input is its own question.** First setup cannot finish until each is answered, and the count
+  it gives counts inputs. *Use one installation as the master* answers every input it holds a label for and leaves
+  the rest — as it already did for every other question where it has no side.
+- **The re-merge is not built.** `LabelMerge` takes its sides by name, not by installation, so A3's re-merge can
+  pass the master as one side and reuse the dialog.
 
 ### An install that appears later
 

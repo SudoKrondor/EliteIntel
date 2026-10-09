@@ -23,6 +23,7 @@ data; most of what the spec describes is still ahead.
 | Hardware VID/PID | `bindforge.devices.DeviceIdentities` — from SDL's GUID; confirmed on four controllers, real GUIDs in its test |
 | Frontier's shipped list | `bindforge.devicefiles.FrontierStockDevices`, resource `bindforge/FrontierStock-DeviceMappings.xml` |
 | First setup (A1) | `bindforge.devicefiles.FirstSetup` (read, then backup → master → push), `FirstSetupPlan` (the four cases and the answers, pure), `FirstSetupReader`, `DeviceFilesSnapshot` (the labelled backup), `FrontierStockButtonMaps` (resources `FrontierStock-VPC*.buttonMap.xml`); `BindForgeDeviceDraftManager.establish`; `ui.screen.bindings.FirstSetupDialog`, opened by **SET UP** on `AliasDesignerPanel` while the master is empty |
+| `.buttonMap` label merge (A2) | `bindforge.devicefiles.LabelMerge` (pure: the disagreeing inputs, answers per input, the whole-file route, the merged labels; sides keyed by name); `ui.screen.bindings.LabelMergeDialog`, opened by **Compare N inputs** on a *Button labels disagree* row in `FirstSetupDialog` |
 | Startup `.buttonMap` (A8) | `bindforge.devicefiles.ButtonMapGeneration` (per installation, create-only), `ButtonMapLabels` (the generated labels); `bindforge.devices.ButtonMapStartup` runs it on every connect, started as `BUTTON_MAP_STARTUP` in `AppController` |
 | Divergence list | `DeviceDivergenceScanner`, `DeviceDivergence` (red if `.binds` names the device, yellow otherwise), `BindsDeviceReferences`, `ButtonMapAudit` |
 | What each installation holds | `InstallationDeviceScanner`, run on every refresh; rows in `bindforge_device_installs` |
@@ -79,8 +80,8 @@ That is A3.
 | # | Slice | Needs | Status |
 |---|---|---|---|
 | A1 | **First setup** — turn what the installations hold into the master: per element, the four cases, a name conflict routed into the rename, a labelled backup and Edit History before writing | Core C1, C2 (both done) | **done 2026-10-07** |
-| A2 | **`.buttonMap` label merge** — one row per input that disagrees, nothing else | A1 (done) | **next** |
-| A3 | **Divergence against the master** — replace installation-against-installation | A1 (done) | ready |
+| A2 | **`.buttonMap` label merge** — one row per input that disagrees, nothing else | A1 (done) | **done 2026-10-08** |
+| A3 | **Divergence against the master** — replace installation-against-installation | A1 (done) | **next** |
 | A4 | **Installations markers** — `M`, *not added*, severity colour | A1 (done) | ready |
 | A5 | **Built-in Devices tab** — Frontier's list, read-only | — | ready |
 | A6 | **Onboarding: the rule** — the default-name rule and alias validation | Core C1 (done) | **done 2026-10-06** |
@@ -100,6 +101,13 @@ while Core is in progress.
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
+
+- **2026-10-08 — A2 built** (Alan chose option A). Recorded in [the label merge](../02-features/bindforge/alias-designer.md#the-buttonmap-label-merge--2026-10-08-alan):
+  the device keeps one row in first setup and opens the merge view; an answer is the label, keyed
+  `labels:<device>:<input>`; every disagreeing input is its own question; *use X as the master* answers only inputs X
+  labels. **Found:** `List.copyOf(...).contains(null)` throws — `LabelMerge.unanswered` checks null first. **A3 needs:**
+  the re-merge is not built; `LabelMerge` takes sides by name, so pass the master as one side and reuse
+  `LabelMergeDialog` (its `sideNames` map names the master).
 
 - **2026-10-08 — A1 review fixes** (`code-integrity-review.md`, Alan). Recorded under *After review* in
   [First setup](../02-features/bindforge/alias-designer.md#settled-while-building-it--2026-10-07-alan): two names

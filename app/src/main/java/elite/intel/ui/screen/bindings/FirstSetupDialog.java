@@ -5,6 +5,7 @@ import elite.intel.bindforge.devicefiles.DeviceFilesPush;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush.Target;
 import elite.intel.bindforge.devicefiles.FirstSetup;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan;
+import elite.intel.bindforge.devicefiles.LabelMerge;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan.Option;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan.Row;
 import elite.intel.ui.dialog.HudConfirmDialog;
@@ -35,7 +36,8 @@ import static elite.intel.ui.theme.AppTheme.transparentPanel;
  * (alias-designer.md, <em>The flow</em>).
  * <p>
  * Nothing is written until the summary is confirmed, so the dialog can be opened and abandoned. Two routes
- * through: answer the questions one by one, or use one installation as the master.
+ * through: answer the questions one by one, or use one installation as the master. Colliding labels are answered
+ * per input in {@link LabelMergeDialog}, or for the whole device by one installation.
  */
 final class FirstSetupDialog extends JDialog {
 
@@ -160,6 +162,7 @@ final class FirstSetupDialog extends JDialog {
 
     private String answerText(Row row) {
         if (!row.isQuestion()) return "";
+        if (row.kind() == FirstSetupPlan.Kind.LABELS_DIFFER) return labelsAnswerText(row.deviceName());
         if (!reading.plan().unanswered(answers).contains(row.id())) {
             String key = answers.get(row.id());
             if (key == null) return getText("bindings.aliasDesigner.firstSetup.answer.notNeeded");
@@ -167,6 +170,19 @@ final class FirstSetupDialog extends JDialog {
                     .map(this::optionText).findFirst().orElse(key);
         }
         return getText("bindings.aliasDesigner.firstSetup.answer.choose");
+    }
+
+    /** How many of the device's colliding inputs are answered - or not needed, when the device lost its name. */
+    private String labelsAnswerText(String device) {
+        FirstSetupPlan plan = reading.plan();
+        LabelMerge merge = plan.labelMerge(device);
+        int total = merge.collisions().size();
+        int left = merge.unanswered(plan.labelAnswers(device, answers)).size();
+        boolean asked = merge.collisions().stream()
+                .anyMatch(collision -> plan.unanswered(answers)
+                        .contains(FirstSetupPlan.labelAnswerKey(device, collision.input())));
+        if (left > 0 && !asked) return getText("bindings.aliasDesigner.firstSetup.answer.notNeeded");
+        return getText("bindings.aliasDesigner.labelMerge.chosen", total - left, total);
     }
 
     /** The answers for the selected row, one button each. */
@@ -179,20 +195,54 @@ final class FirstSetupDialog extends JDialog {
             choicePanel.add(AppTheme.hudReadoutValue(
                     getText("bindings.aliasDesigner.firstSetup.chooseFor", row.deviceName()),
                     HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT));
-            for (Option option : row.options()) {
-                JButton button = makeButtonSubtle(option.available()
-                        ? optionText(option)
-                        : getText("bindings.aliasDesigner.firstSetup.option.needsRename", optionText(option)));
-                button.setEnabled(option.available());
-                button.addActionListener(e -> {
-                    answers.put(row.id(), option.key());
-                    refreshRows();
-                });
-                choicePanel.add(button);
+            if (row.kind() == FirstSetupPlan.Kind.LABELS_DIFFER) {
+                addLabelChoices(row);
+            } else {
+                addOptionChoices(row);
             }
         }
         choicePanel.revalidate();
         choicePanel.repaint();
+    }
+
+    private void addOptionChoices(Row row) {
+        for (Option option : row.options()) {
+            JButton button = makeButtonSubtle(option.available()
+                    ? optionText(option)
+                    : getText("bindings.aliasDesigner.firstSetup.option.needsRename", optionText(option)));
+            button.setEnabled(option.available());
+            button.addActionListener(e -> {
+                answers.put(row.id(), option.key());
+                refreshRows();
+            });
+            choicePanel.add(button);
+        }
+    }
+
+    /**
+     * The merge view for the device, and the whole-file route beside it - <em>use Steam's labels for this
+     * device</em> - for a user who would rather not walk the list.
+     */
+    private void addLabelChoices(Row row) {
+        String device = row.deviceName();
+        FirstSetupPlan plan = reading.plan();
+        JButton compare = makeButtonSubtle(getText("bindings.aliasDesigner.labelMerge.compare",
+                plan.labelMerge(device).collisions().size()));
+        compare.addActionListener(e -> new LabelMergeDialog(this, device, plan.labelMerge(device), installNames,
+                plan.labelAnswers(device, answers)).showDialog().ifPresent(chosen -> {
+                    chosen.forEach((input, label) -> answers.put(FirstSetupPlan.labelAnswerKey(device, input), label));
+                    refreshRows();
+                }));
+        choicePanel.add(compare);
+        for (Option option : row.options()) {
+            JButton button = makeButtonSubtle(getText("bindings.aliasDesigner.labelMerge.useLabels",
+                    optionText(option)));
+            button.addActionListener(e -> {
+                answers.putAll(plan.labelAnswersFavouring(device, Long.parseLong(option.key())));
+                refreshRows();
+            });
+            choicePanel.add(button);
+        }
     }
 
     private String optionText(Option option) {
