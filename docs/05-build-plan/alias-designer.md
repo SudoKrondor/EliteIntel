@@ -25,13 +25,13 @@ data; most of what the spec describes is still ahead.
 | First setup (A1) | `bindforge.devicefiles.FirstSetup` (read, then backup → master → push), `FirstSetupPlan` (the four cases and the answers, pure), `FirstSetupReader`, `DeviceFilesSnapshot` (the labelled backup), `FrontierStockButtonMaps` (resources `FrontierStock-VPC*.buttonMap.xml`); `BindForgeDeviceDraftManager.establish`; `ui.screen.bindings.FirstSetupDialog`, opened by **SET UP** on `AliasDesignerPanel` while the master is empty |
 | `.buttonMap` label merge (A2) | `bindforge.devicefiles.LabelMerge` (pure: the disagreeing inputs, answers per input, the whole-file route, the merged labels; sides keyed by name); `ui.screen.bindings.LabelMergeDialog`, opened by **Compare N inputs** on a *Button labels disagree* row in `FirstSetupDialog` |
 | Startup `.buttonMap` (A8) | `bindforge.devicefiles.ButtonMapGeneration` (per installation, create-only), `ButtonMapLabels` (the generated labels); `bindforge.devices.ButtonMapStartup` runs it on every connect, started as `BUTTON_MAP_STARTUP` in `AppController` |
-| Divergence list | `DeviceDivergenceScanner`, `DeviceDivergence` (red if `.binds` names the device, yellow otherwise), `BindsDeviceReferences`, `ButtonMapAudit` |
+| Divergence list (A3) | `DeviceDivergence.againstMaster` (pure; each installation against the master, from `DeviceFilesCheck`), `DeviceDivergenceScanner.scanAgainstMaster` (adds orphans and `.binds`), `BindsDeviceReferences`, `ButtonMapAudit`. Before first setup, `DeviceDivergence.rank` still compares installations with each other. Reports only — no ways out yet |
 | What each installation holds | `InstallationDeviceScanner`, run on every refresh; rows in `bindforge_device_installs` |
 | Game Install Locations screen | `ui.screen.bindings.GameInstallLocationsPanel` — in Binding Management, where the spec puts it in File Manager |
 | Master store | see [core.md](core.md) |
 
-**The divergence list compares installations with each other.** The spec compares each one **with the master**.
-That is A3.
+**The divergence list compares each installation with the master** once first setup has filled it, and the
+installations with each other before then. It reports; the ways out are A3b.
 
 ## Settled — and where it is recorded
 
@@ -81,7 +81,8 @@ That is A3.
 |---|---|---|---|
 | A1 | **First setup** — turn what the installations hold into the master: per element, the four cases, a name conflict routed into the rename, a labelled backup and Edit History before writing | Core C1, C2 (both done) | **done 2026-10-07** |
 | A2 | **`.buttonMap` label merge** — one row per input that disagrees, nothing else | A1 (done) | **done 2026-10-08** |
-| A3 | **Divergence against the master** — replace installation-against-installation | A1 (done) | **next** |
+| A3 | **Divergence against the master** — replace installation-against-installation | A1 (done) | **done 2026-10-08** |
+| A3b | **The ways out, per row** — adopt (`DeviceFilesAdopt`), revert (`DeviceFilesPush.push(installId)`), and the label re-merge with the master as one side of `LabelMergeDialog`. Confirms first; backups before any game-file write | A3 (done) | **next** |
 | A4 | **Installations markers** — `M`, *not added*, severity colour | A1 (done) | ready |
 | A5 | **Built-in Devices tab** — Frontier's list, read-only | — | ready |
 | A6 | **Onboarding: the rule** — the default-name rule and alias validation | Core C1 (done) | **done 2026-10-06** |
@@ -101,6 +102,22 @@ while Core is in progress.
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
+
+- **2026-10-08 — A3 review fixes** (`code-integrity-review.md`, Alan). Recorded in [against the master](../02-features/bindforge/alias-designer.md#against-the-master--2026-10-08-alan):
+  reset to Frontier's file is red only when `.binds` names one of the user's own devices, and no file at all is
+  always red (`InstallationCheck.fileGone`); one cause is one row — no label rows beside a reset, no orphan row for
+  a missing entry's map. `DeviceFilesCheck.Report` now carries `masterNames` and `userNames`, so the screen reads
+  the master once; `againstMaster` refuses a report with no master; `installKey(long)` is shared by the panel;
+  `ENTRY_MISSING_FROM_SOME` became `ENTRY_MISSING`; an unchanged installation logs at DEBUG. **A4** can read the
+  same `Report`.
+
+- **2026-10-08 — A3 built** (Alan chose all three recommendations). Recorded in [against the master](../02-features/bindforge/alias-designer.md#against-the-master--2026-10-08-alan):
+  before first setup the list still compares installations with each other; a reset or unreadable
+  `DeviceMappings.xml` is one row; an entry the master lacks, and one out of place, are red when `.binds` names
+  them; labels are one yellow row per device. **Split:** the ways out became **A3b** — they are writes, and the
+  re-merge needs a new write of one device's labels into the master *and* the draft (three-way, like adopt).
+  **A3b needs:** findings carry installation ids (`DeviceDivergence.installKey(long)`), which is what adopt and revert take;
+  `LabelMerge` takes the master as a side by name. A4's `M` markers can read the same `DeviceFilesCheck.Report`.
 
 - **2026-10-08 — A2 built** (Alan chose option A). Recorded in [the label merge](../02-features/bindforge/alias-designer.md#the-buttonmap-label-merge--2026-10-08-alan):
   the device keeps one row in first setup and opens the merge view; an answer is the label, keyed

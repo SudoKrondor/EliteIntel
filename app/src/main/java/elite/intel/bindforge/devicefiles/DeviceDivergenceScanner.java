@@ -1,5 +1,8 @@
 package elite.intel.bindforge.devicefiles;
 
+import elite.intel.bindforge.devicefiles.DeviceFilesCheck.InstallationCheck;
+import elite.intel.bindforge.devicefiles.DeviceFilesCheck.Report;
+import elite.intel.bindforge.devicefiles.DeviceFilesCheck.State;
 import elite.intel.bindforge.install.GameInstallation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,7 +16,8 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Reads the device files of every installation and reports what disagrees, ranked.
+ * Reads the device files of every installation and reports what disagrees, ranked - with the master once there
+ * is one, and with each other before.
  * <p>
  * Assembles the three readings the ranking needs - each installation's entries, each installation's orphaned
  * button maps, and the entry names the bindings use - so that callers have one thing to ask.
@@ -26,6 +30,8 @@ public final class DeviceDivergenceScanner {
     }
 
     /**
+     * Before first setup: the installations compared with each other, since there is no master to compare with.
+     *
      * @param controlSchemesByInstall each installation's {@code ControlSchemes} folder, keyed by whatever the
      *                                caller calls that installation - that key is what appears in the findings
      * @param bindingsFolder          the one shared folder holding the {@code .binds} files
@@ -51,6 +57,28 @@ public final class DeviceDivergenceScanner {
                 DeviceMappingsComparison.compare(entriesByInstall),
                 orphansByInstall,
                 referencedNames(bindingsFolder));
+    }
+
+    /**
+     * Once the master exists: each installation against it, ranked.
+     *
+     * @param report {@link DeviceFilesCheck#check()}, which must have found a master - {@link Report#setUp()}
+     * @return the findings, worst first, keyed by {@link DeviceDivergence#installKey}, or empty when every
+     *         installation matches the master
+     */
+    public static List<DeviceDivergence.Finding> scanAgainstMaster(Report report, Path bindingsFolder) {
+        Map<String, List<Path>> orphansByInstall = new LinkedHashMap<>();
+        for (InstallationCheck installation : report.installations()) {
+            // WHY: only where the file was read and is the user's. A reset installation's maps are all orphans of
+            // the entries it lost - its one row already says so - and a missing or unreadable one has no entries
+            // to match them against.
+            if (installation.state() != State.UNCHANGED && installation.state() != State.EDITED) continue;
+            String install = DeviceDivergence.installKey(installation.target().installId());
+            Path controlSchemes = installation.target().controlSchemes();
+            entriesOf(install, controlSchemes).ifPresent(entries ->
+                    orphansByInstall.put(install, orphansOf(install, entries, controlSchemes)));
+        }
+        return DeviceDivergence.againstMaster(report, orphansByInstall, referencedNames(bindingsFolder));
     }
 
     /**

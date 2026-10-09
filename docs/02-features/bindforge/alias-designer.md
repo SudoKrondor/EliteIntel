@@ -331,6 +331,38 @@ decision taken for the sync badge. See
 one install as the master. Which of these is offered depends on the row's kind, and none of them runs until
 the user picks one.
 
+### Against the master — 2026-10-08 (Alan)
+
+Built as `DeviceDivergence.againstMaster` (pure), fed by [the startup check](overview.md#for-the-device-files--settled-2026-10-05-alan)
+(`DeviceFilesCheck`) through `DeviceDivergenceScanner.scanAgainstMaster`, and shown on the Alias Designer screen.
+
+- **Before first setup the installations are still compared with each other.** With the master empty there is
+  nothing to compare against, and that comparison is what shows the user why first setup is worth running. Once the
+  master is filled, every row is an installation against the master.
+- **One row per device and issue**, naming every installation it concerns.
+- **Red when a binding names the device, yellow otherwise**, for an entry the installation lacks, one on other
+  hardware than the master's, one **out of place** — below Frontier's entry for the same hardware, which
+  [the game uses instead](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12d-two-entries-for-one-vidpid-the-first-in-the-file-wins--measured-2026-10-03)
+  (inferred from that measurement, not measured with bindings) — and one **the master does not hold**, which is red
+  when named because Apply will never put it in the installations that lack it. That entry's own labels are not
+  listed: its row says it already, and they are often a generated map's thirty-odd.
+- **A reset `DeviceMappings.xml` is one row** — not one per entry it lost, and not one per `.buttonMap` beside it,
+  since the repair is one revert that rewrites both. *After review:* **reset to Frontier's file** it is red only
+  when a binding names one of the user's own devices — the entries it lost; a binding naming a Frontier device
+  the master labels still resolves. **No file at all** is always red, because the game then
+  [loads no bindings](overview.md#why-devicemappingsxml-is-not-cosmetic--reclassified-2026-09-08). The check says
+  which it found (`InstallationCheck.fileGone`).
+- **An unreadable `DeviceMappings.xml` is one row**, red when a binding names any master device —
+  [the whole preset is rejected](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
+- **Labels are one yellow row per device**, however many inputs differ; a missing or unreadable `.buttonMap` is
+  yellow too. A wrong label breaks no binding.
+- **One cause, one row** *(after review)*: the `.buttonMap` of an entry an installation lacks is not listed as an
+  orphan as well, and a reset installation's maps are not listed at all.
+- **Not listed:** an installation that matches, one whose folder is gone, and a `.buttonMap` that differs only in
+  layout — nothing there for the user to judge.
+- **The list only reports.** The ways out — adopt, revert, and the label re-merge with the master as one side of
+  [the merge view](#the-buttonmap-label-merge--2026-10-08-alan) — are the next slice.
+
 ## VID/PID Is Not a Stable Identity
 
 **Confirmed 2026-09-08 from five `.binds` specimens spanning 2024-08 to 2026-09.** This document and

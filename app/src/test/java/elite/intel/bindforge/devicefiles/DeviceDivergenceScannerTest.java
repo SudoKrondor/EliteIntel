@@ -3,6 +3,13 @@ package elite.intel.bindforge.devicefiles;
 import elite.intel.bindforge.devicefiles.DeviceDivergence.Finding;
 import elite.intel.bindforge.devicefiles.DeviceDivergence.Issue;
 import elite.intel.bindforge.devicefiles.DeviceDivergence.Severity;
+import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
+import elite.intel.bindforge.devicefiles.DeviceFilesCheck.ElementChange;
+import elite.intel.bindforge.devicefiles.DeviceFilesCheck.ElementKind;
+import elite.intel.bindforge.devicefiles.DeviceFilesCheck.InstallationCheck;
+import elite.intel.bindforge.devicefiles.DeviceFilesCheck.Report;
+import elite.intel.bindforge.devicefiles.DeviceFilesCheck.State;
+import elite.intel.bindforge.devicefiles.DeviceFilesPush.Target;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -12,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -117,6 +125,47 @@ class DeviceDivergenceScannerTest {
         List<Finding> findings = DeviceDivergenceScanner.scan(Map.of("steam", steam, "epic", epic), bindings);
 
         assertEquals(Severity.YELLOW, findings.get(0).severity());
+    }
+
+    /** Against the master, the check's findings are joined by the orphans read from disk and judged by the bindings. */
+    @Test
+    void againstTheMasterAnOrphanBesideAnEditedInstallationIsFoundAndAMissingNamedEntryIsRed() throws IOException {
+        Path steam = install("steam", "<Root><LVWAP><PID>83F4</PID><VID>3344</VID></LVWAP></Root>");
+        Files.writeString(Files.createDirectories(steam.resolve("DeviceButtonMaps"))
+                .resolve("Old.buttonMap"), "<Root></Root>");
+        binds("<Root><A><Primary Device=\"RVWAP\" Key=\"Joy_1\" /></A></Root>");
+        Report report = new Report(true, Set.of("RVWAP", "LVWAP"), Set.of("RVWAP", "LVWAP"),
+                List.of(new InstallationCheck(target(1, steam), State.EDITED, null,
+                        List.of(new ElementChange("RVWAP", ElementKind.MISSING, new HardwareId("3344", "03F5"), null)),
+                        List.of())));
+
+        List<Finding> findings = DeviceDivergenceScanner.scanAgainstMaster(report, bindings);
+
+        assertEquals(List.of(Issue.ENTRY_MISSING, Issue.ORPHANED_BUTTON_MAP),
+                findings.stream().map(Finding::issue).toList());
+        assertEquals(Severity.RED, findings.get(0).severity());
+        assertEquals(Set.of("1"), findings.get(1).installs());
+    }
+
+    /**
+     * A reset installation's maps are orphans of the entries it lost; its one row says so, and listing each map
+     * again would bury it.
+     */
+    @Test
+    void againstTheMasterAResetInstallationsMapsAreNotListedAsOrphans() throws IOException {
+        Path epic = install("epic", "<Root><GamePad><PID>028E</PID><VID>045E</VID></GamePad></Root>");
+        Files.writeString(Files.createDirectories(epic.resolve("DeviceButtonMaps"))
+                .resolve("RVWAP.buttonMap"), "<Root></Root>");
+        Report report = new Report(true, Set.of("RVWAP"), Set.of("RVWAP"), List.of(
+                new InstallationCheck(target(2, epic), State.WIPED, null, List.of(), List.of())));
+
+        List<Finding> findings = DeviceDivergenceScanner.scanAgainstMaster(report, bindings);
+
+        assertEquals(List.of(Issue.FILE_RESET), findings.stream().map(Finding::issue).toList());
+    }
+
+    private static Target target(long id, Path controlSchemes) {
+        return new Target(id, "STEAM", controlSchemes, false);
     }
 
     /** Creates an installation's ControlSchemes folder holding the given DeviceMappings.xml. */

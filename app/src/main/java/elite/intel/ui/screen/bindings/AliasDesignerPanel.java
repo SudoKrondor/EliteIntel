@@ -3,6 +3,7 @@ package elite.intel.ui.screen.bindings;
 import elite.intel.bindforge.devicefiles.DeviceDivergence;
 import elite.intel.bindforge.devicefiles.DeviceDivergenceScanner;
 import elite.intel.bindforge.devicefiles.DeviceEntry;
+import elite.intel.bindforge.devicefiles.DeviceFilesCheck;
 import elite.intel.bindforge.devicefiles.DeviceMappingsParser;
 import elite.intel.bindforge.devicefiles.FirstSetup;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
@@ -44,7 +45,8 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
 
 /**
  * Alias Designer, being built in stages: My Devices above the divergence list, and first setup opened from here
- * while the master is empty.
+ * while the master is empty. The list compares each installation with the master, or before first setup, the
+ * installations with each other.
  * <p>
  * Every installation is supposed to hold the same device files, so anywhere they disagree is something to
  * resolve. <strong>One list, not three</strong> - every kind of disagreement appears together, because
@@ -161,8 +163,7 @@ public class AliasDesignerPanel extends JPanel {
                 List<InstallationRow> rows = registry.currentWithStartupScan();
                 labels = labelsFor(rows);
                 recordWhatEachInstallationHolds(rows);
-                findings = DeviceDivergenceScanner.scan(
-                        controlSchemesByInstall(rows), PlayerSession.getInstance().getBindingsDir());
+                findings = findingsFor(rows);
                 myDevices = readMyDevices(rows);
             } catch (RuntimeException e) {
                 // WHY: broad on purpose. This is a thread boundary, and an exception escaping it would kill
@@ -182,6 +183,21 @@ public class AliasDesignerPanel extends JPanel {
                 refreshInProgress.set(false);
             });
         }, "BindForge-Divergence").start();
+    }
+
+    /**
+     * Each installation against the master, once first setup has filled it. Before then there is nothing to compare
+     * against, so the installations are compared with each other - which is what shows the user why SET UP is
+     * worth pressing (Alan, 2026-10-08).
+     */
+    private List<DeviceDivergence.Finding> findingsFor(List<InstallationRow> rows) {
+        Path bindings = PlayerSession.getInstance().getBindingsDir();
+        // WHY: decided by the check's own reading of the master, not a separate one, so the rows and the master
+        // they are judged against are always the same master.
+        DeviceFilesCheck.Report report = new DeviceFilesCheck().check();
+        return report.setUp()
+                ? DeviceDivergenceScanner.scanAgainstMaster(report, bindings)
+                : DeviceDivergenceScanner.scan(controlSchemesByInstall(rows), bindings);
     }
 
     /**
@@ -303,9 +319,12 @@ public class AliasDesignerPanel extends JPanel {
         return byInstall;
     }
 
-    /** The identity a finding carries. Unique by construction, and never shown to the user. */
+    /**
+     * The identity a finding carries. Unique by construction, and never shown to the user. The same key findings
+     * against the master carry, so they find their names too.
+     */
     static String keyOf(InstallationRow row) {
-        return String.valueOf(row.id());
+        return DeviceDivergence.installKey(row.id());
     }
 
     /**
@@ -399,9 +418,16 @@ public class AliasDesignerPanel extends JPanel {
 
     private String issueKey(DeviceDivergence.Issue issue) {
         return switch (issue) {
-            case ENTRY_MISSING_FROM_SOME -> "bindings.aliasDesigner.issue.entryMissing";
+            case ENTRY_MISSING -> "bindings.aliasDesigner.issue.entryMissing";
             case ENTRY_HARDWARE_DIFFERS -> "bindings.aliasDesigner.issue.hardwareDiffers";
             case ORPHANED_BUTTON_MAP -> "bindings.aliasDesigner.issue.orphanedButtonMap";
+            case ENTRY_OUT_OF_PLACE -> "bindings.aliasDesigner.issue.outOfPlace";
+            case ENTRY_NOT_IN_MASTER -> "bindings.aliasDesigner.issue.notInMaster";
+            case LABELS_DIFFER -> "bindings.aliasDesigner.issue.labelsDiffer";
+            case BUTTON_MAP_MISSING -> "bindings.aliasDesigner.issue.buttonMapMissing";
+            case BUTTON_MAP_UNREADABLE -> "bindings.aliasDesigner.issue.buttonMapUnreadable";
+            case FILE_RESET -> "bindings.aliasDesigner.issue.fileReset";
+            case FILE_UNREADABLE -> "bindings.aliasDesigner.issue.fileUnreadable";
         };
     }
 

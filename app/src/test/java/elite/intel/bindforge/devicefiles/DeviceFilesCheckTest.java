@@ -91,6 +91,7 @@ class DeviceFilesCheckTest {
         InstallationCheck result = only(check(List.of(steam), List.of(RVWAP)));
 
         assertEquals(State.WIPED, result.state());
+        assertTrue(result.fileGone(), "no file at all, which the divergence list colours apart from a stock one");
         assertTrue(result.elements().contains(new ElementChange("RVWAP", ElementKind.MISSING,
                 new HardwareId("3344", "43F4"), null)));
     }
@@ -101,7 +102,22 @@ class DeviceFilesCheckTest {
         Target steam = pushed(installation(1, "STEAM"), List.of(RVWAP));
         Files.write(deviceMappings(steam), DeviceFilesPush.stockFile());
 
-        assertEquals(State.WIPED, only(check(List.of(steam), List.of(RVWAP))).state());
+        InstallationCheck result = only(check(List.of(steam), List.of(RVWAP)));
+
+        assertEquals(State.WIPED, result.state());
+        assertFalse(result.fileGone(), "Frontier's file is there");
+    }
+
+    /** The report says which master it compared against, and which of its names Frontier does not ship. */
+    @Test
+    void theReportCarriesTheMastersNamesAndTheUsersOwn() throws IOException {
+        MasterDevice rudderLabels = new MasterDevice("T-Rudder", "044F", "B679", Map.of("Joy_1", "Brake"));
+        Target steam = pushed(installation(1, "STEAM"), List.of(RVWAP, rudderLabels));
+
+        Report report = check(List.of(steam), List.of(RVWAP, rudderLabels));
+
+        assertEquals(Set.of("RVWAP", "T-Rudder"), report.masterNames());
+        assertEquals(Set.of("RVWAP"), report.userNames());
     }
 
     /**

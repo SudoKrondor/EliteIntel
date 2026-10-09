@@ -6,6 +6,7 @@ import elite.intel.bindforge.devicefiles.DeviceFilesPush.Target;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
 import elite.intel.db.managers.BindForgeDeviceMasterManager;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -102,24 +103,38 @@ public final class DeviceFilesCheck {
     }
 
     /**
-     * @param reason why nothing could be compared, for {@link State#MISSING} and {@link State#UNREADABLE};
-     *               {@code null} otherwise
+     * @param reason    why nothing could be compared, for {@link State#MISSING} and {@link State#UNREADABLE};
+     *                  {@code null} otherwise
+     * @param fileGone  for {@link State#WIPED}: the installation has no {@code DeviceMappings.xml} at all, rather
+     *                  than Frontier's. The game then loads no bindings, where with Frontier's file it loses only
+     *                  the user's entries - so the divergence list colours the two differently (Alan, 2026-10-08)
      */
     public record InstallationCheck(Target target, State state, String reason, List<ElementChange> elements,
-                                    List<LabelChange> labels) {
+                                    List<LabelChange> labels, boolean fileGone) {
         public InstallationCheck {
             elements = List.copyOf(elements);
             labels = List.copyOf(labels);
         }
+
+        /** Any check but a wipe that found no file. */
+        public InstallationCheck(Target target, State state, String reason, List<ElementChange> elements,
+                                 List<LabelChange> labels) {
+            this(target, state, reason, elements, labels, false);
+        }
     }
 
     /**
-     * @param setUp whether there is a master to compare against. Without one, first setup has not run, and
-     *              nothing is compared - every custom entry would read as an edit, and nothing is forced on a
-     *              user who has not asked (Alan, 2026-10-05)
+     * @param setUp       whether there is a master to compare against. Without one, first setup has not run, and
+     *                    nothing is compared - every custom entry would read as an edit, and nothing is forced on a
+     *                    user who has not asked (Alan, 2026-10-05)
+     * @param masterNames every device name in the master the installations were compared against
+     * @param userNames   those of them Frontier does not ship - what a reset to Frontier's file loses
      */
-    public record Report(boolean setUp, List<InstallationCheck> installations) {
+    public record Report(boolean setUp, Set<String> masterNames, Set<String> userNames,
+                         List<InstallationCheck> installations) {
         public Report {
+            masterNames = Set.copyOf(masterNames);
+            userNames = Set.copyOf(userNames);
             installations = List.copyOf(installations);
         }
     }
@@ -153,17 +168,24 @@ public final class DeviceFilesCheck {
     /** Every installation against the master. */
     public Report check() {
         List<MasterDevice> devices = master.get();
-        if (devices.isEmpty()) return new Report(false, List.of());
+        if (devices.isEmpty()) return new Report(false, Set.of(), Set.of(), List.of());
 
         Set<String> leftovers = expectedLeftovers.get();
         List<InstallationCheck> results = new ArrayList<>();
         for (Target target : targets.get()) {
             InstallationCheck result = checkOne(target, devices, leftovers);
-            log.info("Device files for {} ({}) against the master: {}{}", target.storefront(),
+            // WHY: DEBUG when nothing changed. The Alias Designer screen runs this check on every refresh, which
+            // includes every ship-profile change, and a line per matching installation each time says nothing.
+            Level level = result.state() == State.UNCHANGED ? Level.DEBUG : Level.INFO;
+            log.log(level, "Device files for {} ({}) against the master: {}{}", target.storefront(),
                     target.controlSchemes(), result.state(), result.reason() == null ? "" : " - " + result.reason());
             results.add(result);
         }
-        return new Report(true, results);
+        Set<String> masterNames = new LinkedHashSet<>();
+        devices.forEach(device -> masterNames.add(device.name()));
+        Set<String> userNames = new LinkedHashSet<>();
+        masterNames.stream().filter(name -> !stock.ships(name)).forEach(userNames::add);
+        return new Report(true, masterNames, userNames, results);
     }
 
     /**
@@ -206,7 +228,7 @@ public final class DeviceFilesCheck {
             return new InstallationCheck(target, State.UNCHANGED, null, List.of(), List.of());
         }
         List<LabelChange> labels = labelChanges(target, devices, elements);
-        return new InstallationCheck(target, stateOf(current, userNames), null, elements, labels);
+        return new InstallationCheck(target, stateOf(current, userNames), null, elements, labels, current == null);
     }
 
     /**
