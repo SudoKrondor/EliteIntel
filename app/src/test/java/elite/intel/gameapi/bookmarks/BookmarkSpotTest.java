@@ -44,18 +44,34 @@ class BookmarkSpotTest {
     }
 
     @Test
-    void aPortWithASurfaceUnderItIsAPlanetaryPortNamedByTheShortBody() {
+    void aPortWithASurfaceUnderItIsAPlanetaryPort() {
         LocationBookmark bookmark = resolve(here(PlayerSituation.IN_SHIP_DOCKED, "Hutton Outpost", false, PLANET, true));
 
         assertEquals(LocationBookmark.planetaryPort(SYSTEM, PLANET, "Hutton Outpost"), bookmark);
-        assertEquals("A 2 Hutton Outpost", bookmark.placeName());
+        assertEquals("Hutton Outpost", bookmark.placeName());
+    }
+
+    /**
+     * The field case: docked at an engineer's crater outpost, Status.json carried no surface position, and the
+     * bookmark came out as an orbital station with no planet to fly to.
+     */
+    @Test
+    void aPortOnTheGroundNamesItsPlanetEvenWithNoSurfacePositionOnThePad() {
+        for (PlayerSituation situation : new PlayerSituation[]{
+                PlayerSituation.IN_SHIP_DOCKED, PlayerSituation.ON_FOOT_STATION}) {
+            LocationBookmark bookmark = resolve(new Here(situation, "Beta-3 Tucani", "The Beach", false,
+                    "Beta-3 Tucani 2 b a", null, false, 0, 0));
+
+            assertEquals(LocationBookmark.planetaryPort("Beta-3 Tucani", "Beta-3 Tucani 2 b a", "The Beach"), bookmark,
+                    situation.name());
+        }
     }
 
     @Test
     void onTheGroundTheExactSpotIsKept() {
         for (PlayerSituation situation : new PlayerSituation[]{
                 PlayerSituation.IN_SHIP_LANDED, PlayerSituation.IN_SRV, PlayerSituation.ON_FOOT_PLANET}) {
-            LocationBookmark bookmark = resolve(new Here(situation, SYSTEM, null, false, PLANET, true, 12.5, -45.25));
+            LocationBookmark bookmark = resolve(new Here(situation, SYSTEM, null, false, null, PLANET, true, 12.5, -45.25));
 
             assertEquals(LocationBookmark.surface(SYSTEM, PLANET, 12.5, -45.25), bookmark, situation.name());
             assertEquals(PLANET, bookmark.placeName(), "the full body name, so the coordinates have a world");
@@ -66,7 +82,7 @@ class BookmarkSpotTest {
     void flyingOverAPlanetKeepsThePlanetButNotThePositionThatIsStillMoving() {
         for (PlayerSituation situation : new PlayerSituation[]{
                 PlayerSituation.IN_SHIP_ORBIT, PlayerSituation.IN_SHIP_GLIDE, PlayerSituation.IN_SHIP_SUPERCRUISE}) {
-            LocationBookmark bookmark = resolve(new Here(situation, SYSTEM, null, false, PLANET, true, 12.5, -45.25));
+            LocationBookmark bookmark = resolve(new Here(situation, SYSTEM, null, false, null, PLANET, true, 12.5, -45.25));
 
             assertEquals(LocationBookmark.planet(SYSTEM, PLANET), bookmark, situation.name());
             assertFalse(bookmark.hasCoordinates(), situation.name());
@@ -75,12 +91,12 @@ class BookmarkSpotTest {
 
     @Test
     void noSystemYetMeansNothingToBookmark() {
-        assertTrue(BookmarkSpot.resolve(new Here(PlayerSituation.IN_SHIP_SUPERCRUISE, " ", null, false, null, false, 0, 0))
+        assertTrue(BookmarkSpot.resolve(new Here(PlayerSituation.IN_SHIP_SUPERCRUISE, " ", null, false, null, null, false, 0, 0))
                 .isEmpty());
     }
 
     private static Here here(PlayerSituation situation, String station, boolean carrier, String body, boolean latLong) {
-        return new Here(situation, SYSTEM, station, carrier, body, latLong, 0, 0);
+        return new Here(situation, SYSTEM, station, carrier, null, body, latLong, 0, 0);
     }
 
     private static LocationBookmark resolve(Here here) {

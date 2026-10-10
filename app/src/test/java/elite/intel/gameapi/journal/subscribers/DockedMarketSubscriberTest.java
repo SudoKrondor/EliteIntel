@@ -1,7 +1,9 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.gson.JsonParser;
+import elite.intel.gameapi.journal.events.ApproachBodyEvent;
 import elite.intel.gameapi.journal.events.DockedEvent;
+import elite.intel.gameapi.journal.events.LocationEvent;
 import elite.intel.gameapi.journal.events.UndockedEvent;
 import elite.intel.session.DockedMarket;
 import org.junit.jupiter.api.AfterEach;
@@ -9,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Which port the ship is standing on, taken from the journal rather than inferred from the location tables.
@@ -104,5 +107,70 @@ class DockedMarketSubscriberTest {
         subscriber.onDocked(new DockedEvent(JsonParser.parseString(json).getAsJsonObject()));
 
         assertEquals(4224953347L, DockedMarket.getInstance().marketId());
+    }
+
+    // --- the planet a port on the ground stands on (lines from the commander's 2026-10-09 journal) ---
+
+    private static ApproachBodyEvent approach(String body, long systemAddress) {
+        String json = """
+                { "timestamp":"2026-10-09T18:34:53Z", "event":"ApproachBody", "StarSystem":"Beta-3 Tucani",
+                  "SystemAddress":%d, "Body":"%s", "BodyID":16 }
+                """.formatted(systemAddress, body);
+        return new ApproachBodyEvent(JsonParser.parseString(json).getAsJsonObject());
+    }
+
+    private static DockedEvent dockedAtTheBeach(String stationType) {
+        String json = """
+                { "timestamp":"2026-10-09T18:37:12Z", "event":"Docked", "StationName":"The Beach",
+                  "StationType":"%s", "Taxi":false, "Multicrew":false, "StarSystem":"Beta-3 Tucani",
+                  "SystemAddress":2827992680811, "MarketID":128674951, "StationFaction":{ "Name":"The Sarge" } }
+                """.formatted(stationType);
+        return new DockedEvent(JsonParser.parseString(json).getAsJsonObject());
+    }
+
+    @Test
+    void aCraterOutpostStandsOnThePlanetTheShipLastApproached() {
+        subscriber.onApproachBody(approach("Beta-3 Tucani 2 b a", 2827992680811L));
+        subscriber.onDocked(dockedAtTheBeach("CraterOutpost"));
+
+        assertEquals("Beta-3 Tucani 2 b a", DockedMarket.getInstance().surfaceBody());
+    }
+
+    @Test
+    void aStationInSpaceStandsOnNothingWhateverWasApproachedBefore() {
+        subscriber.onApproachBody(approach("Beta-3 Tucani 2 b a", 2827992680811L));
+        subscriber.onDocked(dockedAtTheBeach("Coriolis"));
+
+        assertNull(DockedMarket.getInstance().surfaceBody());
+    }
+
+    @Test
+    void aPlanetApproachedInAnotherSystemIsNotThePortsPlanet() {
+        subscriber.onApproachBody(approach("Achenar 4a", 164098653L));
+        subscriber.onDocked(dockedAtTheBeach("CraterOutpost"));
+
+        assertNull(DockedMarket.getInstance().surfaceBody());
+    }
+
+    @Test
+    void undockingForgetsThePlanet() {
+        subscriber.onApproachBody(approach("Beta-3 Tucani 2 b a", 2827992680811L));
+        subscriber.onDocked(dockedAtTheBeach("CraterOutpost"));
+        subscriber.onUndocked(undocked(128674951L));
+
+        assertNull(DockedMarket.getInstance().surfaceBody());
+    }
+
+    @Test
+    void aRestartOnASurfacePadTakesThePlanetFromLocation() {
+        String json = """
+                { "timestamp":"2026-10-09T19:10:00Z", "event":"Location", "Docked":true, "StationName":"The Beach",
+                  "StationType":"CraterOutpost", "MarketID":128674951, "Taxi":false, "Multicrew":false,
+                  "StarSystem":"Beta-3 Tucani", "SystemAddress":2827992680811,
+                  "Body":"Beta-3 Tucani 2 b a", "BodyID":16, "BodyType":"Planet" }
+                """;
+        subscriber.onLocation(new LocationEvent(JsonParser.parseString(json).getAsJsonObject()));
+
+        assertEquals("Beta-3 Tucani 2 b a", DockedMarket.getInstance().surfaceBody());
     }
 }

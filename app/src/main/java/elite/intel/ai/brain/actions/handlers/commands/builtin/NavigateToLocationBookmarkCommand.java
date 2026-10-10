@@ -81,9 +81,14 @@ public final class NavigateToLocationBookmarkCommand implements IntelCommand {
             case SYSTEM -> inSystem
                     ? StringUtls.localizedResponse("handler.bookmark.hereSystem", system)
                     : plot(StringUtls.localizedResponse("handler.bookmark.routeToSystem", system), system);
-            case STATION, PLANETARY_PORT -> inSystem
-                    ? StringUtls.localizedResponse("handler.bookmark.herePort", bookmark.placeName())
-                    : plot(StringUtls.localizedResponse("handler.bookmark.routeToPort", system, bookmark.placeName()), system);
+            case PLANETARY_PORT -> inSystem
+                    ? StringUtls.localizedResponse("handler.bookmark.herePlanetaryPort", bookmark.spokenName(),
+                    bookmark.planetName())
+                    : plot(StringUtls.localizedResponse("handler.bookmark.routeToPlanetaryPort", system,
+                    bookmark.spokenName(), bookmark.planetName()), system);
+            case STATION -> inSystem
+                    ? StringUtls.localizedResponse("handler.bookmark.herePort", bookmark.spokenName())
+                    : plot(StringUtls.localizedResponse("handler.bookmark.routeToPort", system, bookmark.spokenName()), system);
             case PLANET, SURFACE -> inSystem
                     ? StringUtls.localizedResponse("handler.bookmark.herePlanet", bookmark.planetName())
                     : plot(StringUtls.localizedResponse("handler.bookmark.routeToPlanet", system, bookmark.planetName()), system);

@@ -15,7 +15,7 @@ import java.util.function.Supplier;
  * <p>
  * Shown only on request ("show bookmarks") and never ranked: a list of places is reference material, not
  * something the commander is doing, so it has no business competing with a mission card. Each row is the
- * bookmark's number - the one "navigate to bookmark N" takes - and its name.
+ * bookmark's number - the one "navigate to bookmark N" takes - and its {@link #label}.
  * <p>
  * Never read aloud. Star system names are long strings of catalogue letters and digits, and a list of them
  * spoken one after another is noise. With no overlay on screen the commands say so instead.
@@ -26,10 +26,10 @@ public final class LocationBookmarkCard implements HudObjectiveSource {
      * One bookmark per row and a row per slot the renderer has - {@code MAX_ROWS} in {@code overlay/src/hud.h}.
      * The page number goes in the subtitle so it costs no row.
      */
-    static final int PAGE_SIZE = 8;
+    public static final int PAGE_SIZE = 8;
 
     private static final LocationBookmarkCard INSTANCE =
-            new LocationBookmarkCard(LocationBookmarkManager.getInstance()::newestFirst, TemporaryHudCard.getInstance());
+            new LocationBookmarkCard(LocationBookmarkManager.getInstance()::inOrder, TemporaryHudCard.getInstance());
 
     /**
      * What a page turn did, so the command can say "that's the last page" rather than nothing.
@@ -56,7 +56,7 @@ public final class LocationBookmarkCard implements HudObjectiveSource {
     }
 
     /**
-     * Shows the first page - the newest bookmarks.
+     * Shows the first page - the top of the list.
      */
     public void open() {
         page = 0;
@@ -104,7 +104,7 @@ public final class LocationBookmarkCard implements HudObjectiveSource {
         int from = shown * PAGE_SIZE;
         List<HudRow> rows = new ArrayList<>();
         for (int i = from; i < Math.min(from + PAGE_SIZE, all.size()); i++) {
-            rows.add(HudRow.of(HudText.count(i + 1), displayName(all.get(i))));
+            rows.add(HudRow.of(HudText.count(i + 1), label(all.get(i))));
         }
         String subtitle = HudText.get("overlay.card.subtitle.bookmarkPage",
                 String.valueOf(shown + 1), String.valueOf(pages));
@@ -113,17 +113,29 @@ public final class LocationBookmarkCard implements HudObjectiveSource {
     }
 
     /**
-     * The place, and for a spot on the ground the coordinates too - two bookmarks on one moon are only told
-     * apart by where on it they are.
+     * What the card calls a bookmark: the commander's own name for it, or else the place - with the planet for a
+     * port on the ground, which is where the commander has to fly, and for a spot on the ground the coordinates
+     * too, since two bookmarks on one moon are only told apart by where on it they are. The Bookmarks page shows the same text, so the commander renames exactly what they see here.
      */
-    static String displayName(LocationBookmark bookmark) {
-        if (!bookmark.hasCoordinates()) return bookmark.placeName();
-        NumberFormat degrees = NumberFormat.getNumberInstance(LocalizedNumbers.locale());
-        degrees.setMinimumFractionDigits(4);
-        degrees.setMaximumFractionDigits(4);
-        degrees.setGroupingUsed(false);
-        return bookmark.placeName() + "  " + degrees.format(bookmark.latitude()) + " / "
-                + degrees.format(bookmark.longitude());
+    public static String label(LocationBookmark bookmark) {
+        if (bookmark.isRenamed()) return bookmark.displayName();
+        return switch (bookmark.kind()) {
+            case PLANETARY_PORT -> bookmark.stationName() + " (" + bookmark.planetName() + ")";
+            case SURFACE -> !bookmark.hasCoordinates() ? bookmark.planetName()
+                    : bookmark.planetName() + " - " + degrees(bookmark.latitude()) + " / " + degrees(bookmark.longitude());
+            case SYSTEM, STATION, PLANET -> bookmark.placeName();
+        };
+    }
+
+    /**
+     * A latitude or longitude the way bookmarks show one: four places, in the app language's digits.
+     */
+    public static String degrees(double value) {
+        NumberFormat format = NumberFormat.getNumberInstance(LocalizedNumbers.locale());
+        format.setMinimumFractionDigits(4);
+        format.setMaximumFractionDigits(4);
+        format.setGroupingUsed(false);
+        return format.format(value);
     }
 
     private static int pageCount(int bookmarkCount) {

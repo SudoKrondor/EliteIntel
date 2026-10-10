@@ -24,7 +24,7 @@ final class BookmarkNumber {
                 PARAM_KEY,
                 "number",
                 true,
-                "The bookmark's number as shown on the bookmark list (1 is the newest).",
+                "The bookmark's number as shown on the bookmark list (1 is the top of the list).",
                 List.of("1", "3"),
                 "Extract the bookmark number the commander said, as digits."
         );

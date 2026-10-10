@@ -16,7 +16,8 @@ import java.util.Optional;
  * The rule is: as precise as the situation allows, and no more.
  * <ul>
  *   <li>On a pad, the port - unless it is a carrier, which will not be there next week, so only the system.
- *       A port with a surface position under it is a planetary port and names its body too.</li>
+ *       A port on a planet's surface is a planetary port and names its planet too, which is where the
+ *       commander will have to fly to get back to it.</li>
  *   <li>On the ground (landed, SRV, on foot) the exact spot, so surface guidance can bring them back.</li>
  *   <li>Flying near a planet - orbital cruise, glide, or normal space over it - the planet only. The game does
  *       report a position there, but the ship is moving, so it marks nothing anyone would come back to.</li>
@@ -30,11 +31,12 @@ public final class BookmarkSpot {
      *
      * @param stationName      the port the ship is on, or null when it is not on one
      * @param stationIsCarrier whether that port is a fleet or squadron carrier
+     * @param portBody         the planet the port stands on, from the journal; null for a port in space
      * @param bodyName         the body Status.json reports position against, or null
      * @param hasLatLong       whether Status.json reports a surface position
      */
     public record Here(PlayerSituation situation, String starSystem, String stationName, boolean stationIsCarrier,
-                       String bodyName, boolean hasLatLong, double latitude, double longitude) {
+                       String portBody, String bodyName, boolean hasLatLong, double latitude, double longitude) {
     }
 
     private BookmarkSpot() {
@@ -55,8 +57,10 @@ public final class BookmarkSpot {
         return Optional.of(switch (here.situation()) {
             case IN_SHIP_DOCKED, ON_FOOT_STATION, ON_FOOT_HANGAR, ON_FOOT_SOCIAL -> {
                 if (blank(here.stationName()) || here.stationIsCarrier()) yield LocationBookmark.system(system);
-                yield onBody
-                        ? LocationBookmark.planetaryPort(system, here.bodyName(), here.stationName())
+                // The journal's word first: Status.json reports no surface position on a pad.
+                String planet = !blank(here.portBody()) ? here.portBody() : onBody ? here.bodyName() : null;
+                yield planet != null
+                        ? LocationBookmark.planetaryPort(system, planet, here.stationName())
                         : LocationBookmark.station(system, here.stationName());
             }
             case IN_SHIP_LANDED, IN_SRV, ON_FOOT_PLANET, ON_FOOT -> onBody
@@ -75,10 +79,12 @@ public final class BookmarkSpot {
         DockedMarket docked = DockedMarket.getInstance();
 
         String stationName = null;
+        String portBody = null;
         boolean carrier = false;
         if (docked.marketId() != 0) {
             LocationDto station = LocationManager.getInstance().findCurrentStation();
             stationName = blank(docked.stationName()) ? station.getStationName() : docked.stationName();
+            portBody = docked.surfaceBody();
             // The callsign check is a backstop: a squadron carrier docks under the fleet carrier station type as
             // far as anyone has logged, but our own squadron's carrier we can name for certain.
             String squadronCallSign = PlayerSession.getInstance().getSquadronCarrierData().getCallSign();
@@ -86,7 +92,7 @@ public final class BookmarkSpot {
                     || (!blank(squadronCallSign) && squadronCallSign.equalsIgnoreCase(stationName));
         }
         return new Here(status.getSituation(null), PlayerSession.getInstance().getPrimaryStarName(),
-                stationName, carrier, snapshot.getBodyName(), status.hasLatLong(),
+                stationName, carrier, portBody, snapshot.getBodyName(), status.hasLatLong(),
                 snapshot.getLatitude(), snapshot.getLongitude());
     }
 

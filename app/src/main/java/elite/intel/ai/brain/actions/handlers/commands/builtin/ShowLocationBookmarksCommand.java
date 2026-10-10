@@ -21,7 +21,7 @@ public final class ShowLocationBookmarksCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Show the commander's saved location bookmarks on the HUD overlay, numbered newest first.";
+        return "Show the commander's saved location bookmarks on the HUD overlay, numbered in list order.";
     }
 
     @Override

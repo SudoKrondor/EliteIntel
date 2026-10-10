@@ -16,9 +16,9 @@ public interface StatusDao {
 
     @SqlUpdate("""
                     INSERT OR REPLACE INTO player_status (id, timestamp, event, flags, flags2, fireGroup, guiFocus, cargo, latituge, longitude, heading, altitude, balance, planetRadius,
-                        pips, legalState, destination, oxygen, health, temperature, selectedWeapon, gravity)
+                                pips, legalState, destination, oxygen, health, temperature, selectedWeapon, gravity, bodyName)
                     VALUES (1, :timestamp, :event, :flags, :flags2, :fireGroup, :guiFocus, :cargo, :latituge, :longitude, :heading, :altitude, :balance, :planetRadius,
-                        :pips, :legalState, :destination, :oxygen, :health, :temperature, :selectedWeapon, :gravity)
+                                :pips, :legalState, :destination, :oxygen, :health, :temperature, :selectedWeapon, :gravity, :bodyName)
     """)
     void save(@BindBean StatusDao.Status status);
 
@@ -53,6 +53,7 @@ public interface StatusDao {
             status.setTemperature(rs.getDouble("temperature"));
             status.setSelectedWeapon(rs.getString("selectedWeapon"));
             status.setGravity(rs.getDouble("gravity"));
+            status.setBodyName(rs.getString("bodyName"));
             return status;
         }
     }
@@ -83,6 +84,7 @@ public interface StatusDao {
         private Double temperature = null;
         private String selectedWeapon = null;
         private Double gravity = null;
+        private String bodyName = null;     // the body the latitude and longitude are on
 
 
         public String getTimestamp() {
@@ -251,6 +253,14 @@ public interface StatusDao {
 
         public void setGravity(Double gravity) {
             this.gravity = gravity;
+        }
+
+        public String getBodyName() {
+            return bodyName;
+        }
+
+        public void setBodyName(String bodyName) {
+            this.bodyName = bodyName;
         }
     }
 

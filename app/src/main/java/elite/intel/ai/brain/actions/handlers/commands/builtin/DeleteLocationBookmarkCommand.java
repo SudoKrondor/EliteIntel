@@ -5,8 +5,10 @@ import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
 import elite.intel.db.managers.LocationBookmarkManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.bookmarks.LocationBookmark;
 import elite.intel.session.Status;
+import elite.intel.ui.event.LocationBookmarksChangedEvent;
 import elite.intel.ui.overlay.LocationBookmarkCard;
 import elite.intel.util.StringUtls;
 
@@ -47,7 +49,7 @@ public final class DeleteLocationBookmarkCommand implements IntelCommand {
         if (number == null) return null;
         return LocationBookmarkManager.getInstance().byNumber(number)
                 .map(bookmark -> StringUtls.localizedResponse("handler.bookmark.confirmDelete",
-                        String.valueOf(number), bookmark.placeName()))
+                        String.valueOf(number), bookmark.spokenName()))
                 .orElse(null);
     }
 
@@ -71,6 +73,7 @@ public final class DeleteLocationBookmarkCommand implements IntelCommand {
         Optional<LocationBookmark> deleted = LocationBookmarkManager.getInstance().delete(number);
         if (deleted.isEmpty()) return StringUtls.localizedResponse("handler.bookmark.notFound", String.valueOf(number));
         LocationBookmarkCard.getInstance().close();
-        return StringUtls.localizedResponse("handler.bookmark.deleted", String.valueOf(number), deleted.get().placeName());
+        UiBus.publish(new LocationBookmarksChangedEvent());
+        return StringUtls.localizedResponse("handler.bookmark.deleted", String.valueOf(number), deleted.get().spokenName());
     }
 }

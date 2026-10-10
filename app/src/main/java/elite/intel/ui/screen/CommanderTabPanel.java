@@ -284,6 +284,8 @@ public class CommanderTabPanel extends JPanel {
         tabs.addTab(getText("player.tab.announcements"), HudScrollingPage.scrollPane(buildAnnouncementsPanel()));
         exoMasteryPanel = new ExoMasteryTabPanel();
         tabs.addTab(getText("player.tab.exoMastery"), HudScrollingPage.scrollPane(exoMasteryPanel));
+        // Like the fleet grid, a table that grows with the window: no scrolling page around it.
+        tabs.addTab(getText("player.tab.bookmarks"), new LocationBookmarksTabPanel());
 
         JPanel tabsHolder = transparentPanel(new BorderLayout());
         tabsHolder.setBorder(new EmptyBorder(HUD_GAP, 0, 0, 0));

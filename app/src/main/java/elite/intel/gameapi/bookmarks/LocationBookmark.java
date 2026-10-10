@@ -1,7 +1,5 @@
 package elite.intel.gameapi.bookmarks;
 
-import elite.intel.util.StringUtls;
-
 import java.util.Locale;
 
 /**
@@ -16,9 +14,10 @@ import java.util.Locale;
  * @param planetName  the body's full name, for the planetary kinds; else null
  * @param latitude    degrees, for {@link Kind#SURFACE}; else null
  * @param longitude   degrees, for {@link Kind#SURFACE}; else null
+ * @param displayName what the commander renamed it to; null until they do, and the card shows the place
  */
 public record LocationBookmark(long id, Kind kind, String starSystem, String stationName, String planetName,
-                               Double latitude, Double longitude) {
+                               Double latitude, Double longitude, String displayName) {
 
     /**
      * Two surface spots closer than this, in degrees on both axes, are the same spot. About a hundred metres on
@@ -50,27 +49,54 @@ public record LocationBookmark(long id, Kind kind, String starSystem, String sta
     }
 
     public static LocationBookmark system(String starSystem) {
-        return new LocationBookmark(0, Kind.SYSTEM, starSystem, null, null, null, null);
+        return new LocationBookmark(0, Kind.SYSTEM, starSystem, null, null, null, null, null);
     }
 
     public static LocationBookmark station(String starSystem, String stationName) {
-        return new LocationBookmark(0, Kind.STATION, starSystem, stationName, null, null, null);
+        return new LocationBookmark(0, Kind.STATION, starSystem, stationName, null, null, null, null);
     }
 
     public static LocationBookmark planetaryPort(String starSystem, String planetName, String stationName) {
-        return new LocationBookmark(0, Kind.PLANETARY_PORT, starSystem, stationName, planetName, null, null);
+        return new LocationBookmark(0, Kind.PLANETARY_PORT, starSystem, stationName, planetName, null, null, null);
     }
 
     public static LocationBookmark planet(String starSystem, String planetName) {
-        return new LocationBookmark(0, Kind.PLANET, starSystem, null, planetName, null, null);
+        return new LocationBookmark(0, Kind.PLANET, starSystem, null, planetName, null, null, null);
     }
 
     public static LocationBookmark surface(String starSystem, String planetName, double latitude, double longitude) {
-        return new LocationBookmark(0, Kind.SURFACE, starSystem, null, planetName, latitude, longitude);
+        return new LocationBookmark(0, Kind.SURFACE, starSystem, null, planetName, latitude, longitude, null);
     }
 
     public LocationBookmark withId(long id) {
-        return new LocationBookmark(id, kind, starSystem, stationName, planetName, latitude, longitude);
+        return new LocationBookmark(id, kind, starSystem, stationName, planetName, latitude, longitude, displayName);
+    }
+
+    /**
+     * The same place under the commander's own name. A blank name takes the rename back.
+     */
+    public LocationBookmark withDisplayName(String name) {
+        return new LocationBookmark(id, kind, starSystem, stationName, planetName, latitude, longitude,
+                storedName(name));
+    }
+
+    /**
+     * A name as it is kept: trimmed, and null when there is nothing left, which means "not renamed".
+     */
+    public static String storedName(String name) {
+        return name == null || name.isBlank() ? null : name.strip();
+    }
+
+    public boolean isRenamed() {
+        return displayName != null;
+    }
+
+    /**
+     * What VEGA calls it: the commander's name for it when they gave one, else the place. Never the
+     * coordinates, which the card shows but nobody wants read aloud.
+     */
+    public String spokenName() {
+        return isRenamed() ? displayName : placeName();
     }
 
     public boolean hasCoordinates() {
@@ -78,26 +104,16 @@ public record LocationBookmark(long id, Kind kind, String starSystem, String sta
     }
 
     /**
-     * The place in words, without coordinates: what the card leads with and what VEGA says aloud. A planetary
-     * port is named by its short body designation ("A 2") because the system name in front of it adds nothing
-     * the station name does not.
+     * The place in words, as VEGA says it: the port, the planet or the system. A planetary port is named by its
+     * station alone - VEGA names the planet where it matters, when plotting the way there - and the card adds
+     * the planet for reading (see {@code LocationBookmarkCard.label}).
      */
     public String placeName() {
         return switch (kind) {
             case SYSTEM -> starSystem;
-            case STATION -> stationName;
-            case PLANETARY_PORT -> shortPlanetName() + " " + stationName;
+            case STATION, PLANETARY_PORT -> stationName;
             case PLANET, SURFACE -> planetName;
         };
-    }
-
-    /**
-     * The body's name with the system's taken off the front, or the full name when the body is not named after
-     * its system (Earth in Sol, say).
-     */
-    public String shortPlanetName() {
-        String shortName = StringUtls.subtractString(planetName, starSystem);
-        return shortName.isBlank() ? planetName : shortName;
     }
 
     /**

@@ -78,7 +78,21 @@ class LocationBookmarkCardTest {
     void aSpotOnTheGroundShowsWhereOnTheBody() {
         LocationBookmark camp = LocationBookmark.surface("Sol", "Moon", 12.5, -45.25);
 
-        assertEquals("Moon  12.5000 / -45.2500", LocationBookmarkCard.displayName(camp));
+        assertEquals("Moon - 12.5000 / -45.2500", LocationBookmarkCard.label(camp));
+    }
+
+    @Test
+    void aPortOnTheGroundShowsThePlanetToFlyTo() {
+        LocationBookmark engineer = LocationBookmark.planetaryPort("Beta-3 Tucani", "Beta-3 Tucani 2 b a", "The Beach");
+
+        assertEquals("The Beach (Beta-3 Tucani 2 b a)", LocationBookmarkCard.label(engineer));
+    }
+
+    @Test
+    void aRenamedBookmarkShowsOnlyItsNewName() {
+        LocationBookmark camp = LocationBookmark.surface("Sol", "Moon", 12.5, -45.25).withDisplayName("Brain trees");
+
+        assertEquals("Brain trees", LocationBookmarkCard.label(camp));
     }
 
     @Test
