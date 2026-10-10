@@ -86,7 +86,7 @@ class RadioVoiceDrawTest {
     static Stream<Cast> casts() {
         return Stream.of(
                 new Cast("Kokoro",
-                        Arrays.stream(KokoroVoices.values()).map(Enum::name).toList(),
+                        Arrays.stream(KokoroVoices.radioCast()).map(Enum::name).toList(),
                         KokoroVoices.DEFAULT_VOICE.name(),
                         (own, reserved) -> KokoroVoices.randomRadioVoice(own, reserved).name(),
                         (speaker, own, reserved) -> KokoroVoices.radioVoiceFor(speaker, own, reserved).name()),
