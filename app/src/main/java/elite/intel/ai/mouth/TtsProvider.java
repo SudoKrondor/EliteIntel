@@ -96,6 +96,17 @@ public enum TtsProvider {
     }
 
     /**
+     * The voices this engine may speak a radio transmission in, by enum name, in cast order: the
+     * {@link #voiceRoster()} less any ship-only voice. This is what a carrier's traffic control is offered.
+     */
+    public Stream<String> radioVoiceRoster() {
+        return switch (this) {
+            case KOKORO -> Arrays.stream(KokoroVoices.radioCast()).map(Enum::name);
+            case SUPERTONIC, EDGE, GOOGLE -> voiceRoster();
+        };
+    }
+
+    /**
      * Whether the engine synthesises on this machine, with no network call and no account.
      */
     public boolean isLocal() {

@@ -10,10 +10,11 @@
     </sourceRoots>
   </component>
   <component name="EntryPointsManager">
-    <list size="3">
+    <list size="4">
       <item index="0" class="java.lang.String" itemvalue="com.google.common.eventbus.Subscribe" />
-      <item index="1" class="java.lang.String" itemvalue="elite.intel.ai.brain.actions.handlers.query.RegisterQuery" />
-      <item index="2" class="java.lang.String" itemvalue="elite.intel.ai.brain.actions.command.RegisterCommand" />
+      <item index="1" class="java.lang.String" itemvalue="elite.intel.ai.brain.actions.command.RegisterCommand" />
+      <item index="2" class="java.lang.String" itemvalue="elite.intel.ai.brain.actions.handlers.commands.RegisterCommand" />
+      <item index="3" class="java.lang.String" itemvalue="elite.intel.ai.brain.actions.handlers.query.RegisterQuery" />
     </list>
   </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />

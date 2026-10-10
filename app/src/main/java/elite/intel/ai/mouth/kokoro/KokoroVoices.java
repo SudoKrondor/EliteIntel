@@ -2,12 +2,14 @@ package elite.intel.ai.mouth.kokoro;
 
 import elite.intel.ai.mouth.sherpa.RadioVoiceDraw;
 
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Set;
 
 /**
  * Speaker IDs for the kokoro-multi-lang-v1_0 model, which carries 53 of them.
  * <p>
- * <b>The cast is curated, and smaller than the model.</b> A voice that breaks immersion - a whisper, a Santa,
+ * <b>The cast is curated, and smaller than the model.</b> A voice that breaks immersion - a Santa,
  * an accent that has no business on a comms link - is commented out below rather than deleted, so its speaker
  * ID stays visible and is never handed to another voice. Nothing may assume a contiguous range, a count, or
  * the presence of any particular voice: derive from {@link #values()}. A name that has left the cast is still
@@ -25,6 +27,10 @@ import java.util.Set;
  * <p>
  * The model also ships Japanese (jf_ / jm_) and Chinese (zf_ / zm_) speakers; both groups are held out.
  * <p>
+ * A voice can also be <b>ship-only</b> ({@link #SHIP_ONLY}): offered to the commander as a ship voice, never
+ * drawn for a transmission or offered to a carrier's traffic control. Every radio path reads {@link #radioCast()}
+ * rather than {@link #values()}.
+ * <p>
  * The fleet grid renders each voice by its raw enum name; voices are not localized.
  * <p>
  * Source: https://k2-fsa.github.io/sherpa/onnx/tts/pretrained_models/kokoro.html
@@ -38,7 +44,7 @@ public enum KokoroVoices {
     HEART(3, false, "Heart", "American female"),
     JESSICA(4, false, "Jessica", "American female"),
     KORE(5, false, "Kore", "American female"),
-    //NICOLE(6, false, "Nicole", "American female - whispering"),
+    NICOLE(6, false, "Nicole", "American female - whispering"),
     NOVA(7, false, "Nova", "American female"),
     RIVER(8, false, "River", "American female"),
     SARAH(9, false, "Sarah", "American female"),
@@ -114,7 +120,20 @@ public enum KokoroVoices {
     public static final KokoroVoices DEFAULT_VOICE = ISABELLA;
 
     /**
-     * A voice for the next radio transmission: any speaker in the cast other than the commander's own. The
+     * Voices a commander may give their ship but that never speak over the radio. Nicole whispers: intimate in
+     * the cockpit, wrong for a stranger on a comms link.
+     */
+    private static final Set<KokoroVoices> SHIP_ONLY = EnumSet.of(NICOLE);
+
+    /**
+     * The voices radio draws from: the cast less {@link #SHIP_ONLY}, in cast order.
+     */
+    public static KokoroVoices[] radioCast() {
+        return Arrays.stream(values()).filter(voice -> !SHIP_ONLY.contains(voice)).toArray(KokoroVoices[]::new);
+    }
+
+    /**
+     * A voice for the next radio transmission: any speaker in the {@link #radioCast()} other than the commander's own. The
      * rules are {@link RadioVoiceDraw}'s; this only supplies the cast.
      *
      * @param ownVoiceName the commander's ship voice (an enum name), or {@code null} when none is resolvable
@@ -127,14 +146,14 @@ public enum KokoroVoices {
      * The same draw, also skipping voices reserved for a named speaker (see {@link RadioVoiceDraw#random}).
      */
     public static KokoroVoices randomRadioVoice(String ownVoiceName, Set<String> reserved) {
-        return RadioVoiceDraw.random(values(), DEFAULT_VOICE, ownVoiceName, reserved);
+        return RadioVoiceDraw.random(radioCast(), DEFAULT_VOICE, ownVoiceName, reserved);
     }
 
     /**
      * One voice per named speaker, for as long as the cast holds it (see {@link RadioVoiceDraw#forSpeaker}).
      */
     public static KokoroVoices radioVoiceFor(String speaker, String ownVoiceName, Set<String> reserved) {
-        return RadioVoiceDraw.forSpeaker(values(), DEFAULT_VOICE, speaker, ownVoiceName, reserved);
+        return RadioVoiceDraw.forSpeaker(radioCast(), DEFAULT_VOICE, speaker, ownVoiceName, reserved);
     }
 
     /**
@@ -143,7 +162,7 @@ public enum KokoroVoices {
      * commander's choice, and that choice also decides how VEGA refers to herself or himself (see
      * {@code SystemSession.getVoiceGender()}). An unknown name (a voice belonging to another engine) or
      * {@code null} collapses to the default. This is the ship-voice seam only; radio picks from
-     * {@link #values()} directly and must not route through here.
+     * {@link #radioCast()} directly and must not route through here.
      */
     public static KokoroVoices voiceOrDefault(String name) {
         if (name == null) return DEFAULT_VOICE;

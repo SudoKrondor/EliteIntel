@@ -447,10 +447,10 @@ public class CommanderTabPanel extends JPanel {
     }
 
     /**
-     * Every voice the engine that speaks radio currently carries, by enum name.
+     * Every voice the engine that speaks radio may transmit in, by enum name - its ship-only voices left out.
      */
     private static Stream<String> radioVoiceRoster() {
-        return RadioVoicing.engine().voiceRoster();
+        return RadioVoicing.engine().radioVoiceRoster();
     }
 
     /**
