@@ -16,6 +16,7 @@ import elite.intel.gameapi.search.spansh.traderoute.TradeRouteSearchCriteria;
 import elite.intel.session.DockedMarket;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
+import elite.intel.util.TTSFriendlyNumberConverter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -134,7 +135,7 @@ final class CommodityTradeSearch {
         // commander is told, in the spoken line AND in the reminder he will read again on arrival.
         String reminder = StringUtls.localizedResponse(
                 result.isFleetCarrier() ? "handler.commodity.headToCarrier" : "handler.commodity.headTo",
-                result.getStarSystem(), result.getStationName(), result.getStationType(), result.getPrice());
+                result.getStarSystem(), result.getStationName(), result.getStationType(), spokenPrice(result.getPrice()));
         // The search doubles the radius rather than call a good nonexistent, so when the answer lies outside
         // what the commander asked for he is told - being sent 340 ly after asking for 100 is worth a
         // sentence, and silently substituting a different question for his is not.
@@ -155,7 +156,7 @@ final class CommodityTradeSearch {
         // the galaxy are all behind the commander by then; the port, the good, the unit price and a short
         // load are what is still to act on.
         String errand = StringUtls.localizedResponse("handler.commodity.buyReminder",
-                FuzzySearch.localizedCommodityName(commodity), result.getStationName(), result.getStationType(), result.getPrice());
+                FuzzySearch.localizedCommodityName(commodity), result.getStationName(), result.getStationType(), spokenPrice(result.getPrice()));
         if (result.getSupply() > 0 && result.getSupply() < wanted) {
             errand += " " + StringUtls.localizedResponse("handler.commodity.partLoad", result.getSupply());
         }
@@ -226,7 +227,7 @@ final class CommodityTradeSearch {
 
         String reminder = StringUtls.localizedResponse(
                 result.isFleetCarrier() ? "handler.commodity.sellAtCarrier" : "handler.commodity.sellAt",
-                result.getStarSystem(), result.getStationName(), result.getStationType(), result.getPrice());
+                result.getStarSystem(), result.getStationName(), result.getStationType(), spokenPrice(result.getPrice()));
         if (result.getDistanceFromPlayer() > distance) {
             reminder += " " + StringUtls.localizedResponse("handler.commodity.beyondRange",
                     distance, Math.round(result.getDistanceFromPlayer()));
@@ -239,7 +240,7 @@ final class CommodityTradeSearch {
         reminder += againstGalacticAverage(commodity, result.getPrice());
         VegaRuntime.narrator().filler(reminder, false);
         String errand = StringUtls.localizedResponse("handler.commodity.sellReminder",
-                FuzzySearch.localizedCommodityName(commodity), result.getStationName(), result.getStationType(), result.getPrice());
+                FuzzySearch.localizedCommodityName(commodity), result.getStationName(), result.getStationType(), spokenPrice(result.getPrice()));
         if (toSell > 0 && result.getSupply() > 0 && result.getSupply() < toSell) {
             errand += " " + StringUtls.localizedResponse("handler.commodity.partSale", result.getSupply());
         }
@@ -292,11 +293,19 @@ final class CommodityTradeSearch {
         int mean = average.getAsInt();
         long percent = Math.round(Math.abs(price - mean) * 100.0 / mean);
         if (percent < AVERAGE_ENOUGH_PERCENT) {
-            return " " + StringUtls.localizedResponse("handler.commodity.priceAtAverage", mean);
+            return " " + StringUtls.localizedResponse("handler.commodity.priceAtAverage", spokenPrice(mean));
         }
         return " " + StringUtls.localizedResponse(
                 price > mean ? "handler.commodity.priceAboveAverage" : "handler.commodity.priceBelowAverage",
-                percent, mean);
+                percent, spokenPrice(mean));
+    }
+
+    /**
+     * A unit price as it is said: rounded and spelled out like every other credit amount, "credits" included.
+     * A raw number reached the sentence through MessageFormat and was read out to the last credit.
+     */
+    private static String spokenPrice(double price) {
+        return TTSFriendlyNumberConverter.formatCreditsForSpeech(Math.round(price));
     }
 
     /**

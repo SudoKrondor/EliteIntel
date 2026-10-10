@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.handlers.queries;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.search.edsm.dto.MarketDto;
@@ -43,7 +44,7 @@ public class AnalyzeLocalMarketsHandler extends BaseQueryAnalyzer implements Int
                 - If asked what is available to buy: list commodities where stock is greater than zero.
                 - If asked what the station is buying: list commodities where demand is greater than zero.
                 - Answer only what was asked.
-                """;
+                """ + SpokenAmounts.RULE;
         return process(new AiDataStruct(instructions, new DataDto(market)), originalUserInput);
     }
 

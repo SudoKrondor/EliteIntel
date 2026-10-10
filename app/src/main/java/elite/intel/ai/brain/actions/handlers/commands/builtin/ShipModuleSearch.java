@@ -14,6 +14,7 @@ import elite.intel.gameapi.search.spansh.station.outfitting.StockedModule;
 import elite.intel.gameapi.search.spansh.station.outfitting.WantedModule;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
+import elite.intel.util.TTSFriendlyNumberConverter;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -80,16 +81,16 @@ final class ShipModuleSearch {
     }
 
     /**
-     * "6D at 449,430 credits, 6E at 107,860 credits" - every listing that fits, cheapest first, so a
-     * commander who named a size but no class hears which classes are on the shelf. A broad request names
-     * the module on each listing - "Beam Laser 3E at 74,650 credits" - since the station may stock any of
-     * the family.
+     * "6D at about four hundred forty-nine thousand credits, 6E at about one hundred eight thousand credits" -
+     * every listing that fits, cheapest first, so a commander who named a size but no class hears which classes
+     * are on the shelf. A broad request names the module on each listing - "Beam Laser 3E at about seventy-five
+     * thousand credits" - since the station may stock any of the family.
      */
     private static String stockedList(WantedModule wanted, List<StockedModule> modules) {
         return modules.stream()
                 .map(module -> StringUtls.localizedResponse("handler.module.stocked",
                         wanted.isFamily() ? module.name() + " " + module.designation() : module.designation(),
-                        module.price()))
+                        TTSFriendlyNumberConverter.formatCreditsForSpeech(module.price())))
                 .collect(Collectors.joining(", "));
     }
 

@@ -3,6 +3,7 @@ package elite.intel.ai.brain.actions.handlers.commands.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
+import elite.intel.gameapi.bookmarks.PendingSurfaceTarget;
 import elite.intel.gameapi.journal.events.dto.TargetLocation;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
@@ -37,6 +38,8 @@ public final class CancelNavigationCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         playerSession.setTracking(new TargetLocation(false));
+        // A bookmarked spot still waiting for its planet is navigation too, and would switch guidance back on.
+        PendingSurfaceTarget.getInstance().clear();
         return StringUtls.localizedResponse("handler.navigate.navigationOff");
     }
 }

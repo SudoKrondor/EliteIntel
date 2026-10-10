@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.events;
 
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.util.json.GsonFactory;
 
 import java.time.Duration;
@@ -94,7 +95,7 @@ public class StatisticsEvent extends BaseEvent {
 
     @Override
     public String memorySummary() {
-        return bankAccount == null ? "" : "net worth: " + bankAccount.currentWealth + " credits";
+        return bankAccount == null ? "" : "net worth: " + SpokenAmounts.forLlm(bankAccount.currentWealth);
     }
 
     @Override

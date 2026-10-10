@@ -4,6 +4,7 @@ import elite.intel.db.dao.LocationDao;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.gamestate.status_events.BioSurveyCompletedEvent;
+import elite.intel.gameapi.journal.ScanBodyClassifier;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.DockedMarket;
 import elite.intel.session.LocationData;
@@ -256,6 +257,30 @@ public class LocationManager {
             return result.values();
         });
     }
+
+    /**
+     * The stars and planets on record in one system, one per BodyID, in body order - what the FSS counts.
+     * <p>
+     * WHY not {@link #findAllBySystemAddress}: that keys rows by BodyID alone, and a station is filed under
+     * the BodyID of the body it orbits, so it can stand in for that body. Stations, carriers, rings and belt
+     * clusters are not bodies to the discovery scanner and are left out before the rows are keyed.
+     */
+    public List<LocationDto> findBodies(long systemAddress) {
+        return Database.withDao(LocationDao.class, dao -> {
+            Map<Long, LocationDto> byBodyId = new TreeMap<>();
+            for (LocationDao.Location entity : dao.findAllBySystemAddress(systemAddress)) {
+                LocationDto location = GsonFactory.getGson().fromJson(entity.getJson(), LocationDto.class);
+                if (CELESTIAL_BODIES.contains(ScanBodyClassifier.resolve(location))) {
+                    byBodyId.putIfAbsent(location.getBodyId(), location);
+                }
+            }
+            return new ArrayList<>(byBodyId.values());
+        });
+    }
+
+    private static final Set<LocationDto.LocationType> CELESTIAL_BODIES = EnumSet.of(
+            LocationDto.LocationType.PRIMARY_STAR, LocationDto.LocationType.STAR, LocationDto.LocationType.BLACK_HOLE,
+            LocationDto.LocationType.PLANET, LocationDto.LocationType.MOON);
 
     /**
      * Bodies in one system that a surface scan found biological genuses on, in body order.

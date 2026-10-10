@@ -55,7 +55,7 @@ The events below extend the base vox event and are normalised by `VocalisationRo
 | Event | Always routed? | canBeInterrupted | isRadio | Notes |
 |---|---|---|---|---|
 | `AiVoxResponseEvent` | Yes | true unless it carries a completion future | false | LLM spoken answer; optional `CompletableFuture<Void>` for SPEAK commands |
-| `MissionCriticalAnnouncementEvent` | Yes | false | false | High-priority; not gated by settings |
+| `MissionCriticalAnnouncementEvent` | Yes | false | false | High-priority; not gated by settings. VEGA's voice, so marked VEGA speech (away-from-ship effect applies) |
 | `AiVoxDemoEvent` | Yes | true | false for ship, true for carrier | Fleet/carrier voice audition; carrier uses the radio engine even when radio is off |
 | `RadioTransmissionEvent` | Only while radio is on | true | **true** | Local engine draws a voice unless the transmission names one |
 
@@ -339,8 +339,7 @@ The biquad coefficients are precomputed constants (see class header for derivati
 `TransmissionAudio` supplies gentle pre-filter saturation to give darker voices upper harmonics,
 an independent 1200–7000 Hz voice band, 4 kHz presence lift, compression and 25% more
 post-compression drive behind a soft ceiling, plus software-generated opening/closing tones. It replaces the baseline filter when
-enhanced processing is selected; neither path generates static. Radio traffic keeps the baseline filter
-when enhanced processing is off. The VEGA speech gateway marks its own requests explicitly; only those requests can gain
+enhanced processing is selected; neither path generates static. Radio traffic keeps the baseline filter when enhanced processing is off. The VEGA speech gateway marks its own requests explicitly, and mission-critical callouts (also VEGA's voice) carry the same mark; only those requests can gain
 the optional treatment while on foot or in an SRV. The first and last sentence of each request carry the
 tones, so a multi-sentence transmission has one pair and cancellation uses the existing playback queue.
 Supertonic 3 alone can apply 0–100% gain with a soft peak ceiling after the normal volume control.

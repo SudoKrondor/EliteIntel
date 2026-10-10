@@ -40,6 +40,12 @@ public final class DockedMarket {
      */
     private final AtomicReference<String> stationName = new AtomicReference<>();
 
+    /**
+     * The planet or moon the port stands on, or null for a port in space - or one on the ground whose body
+     * we were not told, which callers must treat the same way.
+     */
+    private final AtomicReference<String> surfaceBody = new AtomicReference<>();
+
     private DockedMarket() {
     }
 
@@ -57,11 +63,21 @@ public final class DockedMarket {
     public void arrived(long marketId, String stationName) {
         if (marketId == 0) return;
         long previous = this.marketId.getAndSet(marketId);
+        if (previous != marketId) surfaceBody.set(null);
         if (stationName != null && !stationName.isBlank()) {
             this.stationName.set(stationName);
         } else if (previous != marketId) {
             this.stationName.set(null);
         }
+    }
+
+    /**
+     * The port the ship is on stands on this body - a crater outpost, a settlement, a surface port. Ignored
+     * when not on a pad: there is no port for the body to belong to.
+     */
+    public void standsOn(String bodyName) {
+        if (marketId.get() == 0 || bodyName == null || bodyName.isBlank()) return;
+        surfaceBody.set(bodyName);
     }
 
     public void arrived(long marketId) {
@@ -71,6 +87,7 @@ public final class DockedMarket {
     public void departed() {
         marketId.set(0);
         stationName.set(null);
+        surfaceBody.set(null);
     }
 
     /**
@@ -86,6 +103,13 @@ public final class DockedMarket {
      */
     public String stationName() {
         return stationName.get();
+    }
+
+    /**
+     * The body the port stands on, or null for a port in space or when it is not known.
+     */
+    public String surfaceBody() {
+        return surfaceBody.get();
     }
 
     /**

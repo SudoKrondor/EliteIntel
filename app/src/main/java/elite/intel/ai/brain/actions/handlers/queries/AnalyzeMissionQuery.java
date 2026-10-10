@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.handlers.queries;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.MissionType;
@@ -73,7 +74,7 @@ public class AnalyzeMissionQuery extends BaseQueryAnalyzer implements IntelQuery
                 - If the user refers to the current system ("here", "this system", "current location"): show only missions where destinationSystem or origin matches currentStarSystem.
                 - If the user names a specific system: show only missions relevant to that system.
                 - Do not filter by current system unless the user explicitly asks about it.
-                """;
+                """ + SpokenAmounts.RULE;
         return process(new AiDataStruct(instructions, new DataDto(missions, playerLocation.getStarName())), originalUserInput);
     }
 

@@ -1,7 +1,9 @@
 package elite.intel.ai.brain.actions.handlers.queries;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.dao.ConstructionSiteDao.Site;
 import elite.intel.db.managers.ConstructionSiteManager;
@@ -123,7 +125,7 @@ public class AnalyzeConstructionSiteQuery extends BaseQueryAnalyzer implements I
                 not buying.
                 A field that is absent has nothing to say: it is never a negative to report. Do not read out
                 any figure that is not in the data.
-                """;
+                """ + SpokenAmounts.RULE;
 
         long totalOutstanding = manifest.stream().mapToLong(ConstructionCargo.Outstanding::outstanding).sum();
         return process(new AiDataStruct(instructions, new DataDto(
@@ -220,6 +222,14 @@ public class AnalyzeConstructionSiteQuery extends BaseQueryAnalyzer implements I
      */
     record LineDto(String commodity, int outstandingTonnes, int ownedTonnes, int stillToBuyTonnes,
                    boolean soldHere, long paymentPerTonne) implements ToYamlConvertable {
+        /**
+         * See {@link SpokenAmounts#nestedSibling}.
+         */
+        @JsonProperty("paymentPerTonneSpoken")
+        String paymentPerTonneSpoken() {
+            return SpokenAmounts.nestedSibling(paymentPerTonne);
+        }
+
         @Override
         public String toYaml() {
             return YamlFactory.toYaml(this);

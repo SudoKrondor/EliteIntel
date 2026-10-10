@@ -31,7 +31,7 @@ class ScanEventTest {
     private static final String FULLY_POPULATED_SCAN = """
             {"timestamp":"2026-07-20T01:46:27Z","event":"Scan","ScanType":"Detailed",
              "StarPos":[12.5,-34.25,56.75],"BodyName":"Stuelou AF-P d6-996 A 2","BodyID":4,
-             "Parents":[{"Star":1},{"Null":0}],"StarSystem":"Stuelou AF-P d6-996","StarType":"A",
+             "Parents":[{"Star":1},{"Null":0}],"StarSystem":"Stuelou AF-P d6-996","StarType":"A","StellarMass":2.15,
              "SystemAddress":34231400926907,"DistanceFromArrivalLS":419.356817,"TidalLock":true,
              "TerraformState":"Terraformable","PlanetClass":"High metal content body",
              "Atmosphere":"thin sulphur dioxide atmosphere","AtmosphereType":"SulphurDioxide",

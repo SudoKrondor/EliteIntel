@@ -83,6 +83,16 @@ final class CommanderSplit {
             "location_visit"
     );
 
+    /**
+     * Tables born in the commander tree after the split, with no shared ancestor. There is nothing to move, so
+     * the split never reads this list - it is here so the layout test can account for every commander table.
+     */
+    static final List<String> COMMANDER_NATIVE = List.of(
+            "location_bookmark",
+            "cartographic_body",
+            "cartographic_system"
+    );
+
     private CommanderSplit() {
     }
 

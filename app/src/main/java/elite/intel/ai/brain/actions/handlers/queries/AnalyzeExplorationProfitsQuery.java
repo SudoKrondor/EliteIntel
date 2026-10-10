@@ -39,15 +39,16 @@ public class AnalyzeExplorationProfitsQuery extends BaseQueryAnalyzer implements
         String instructions = """
                 Report exobiology exploration profits for this session.
                 
-                Data fields:
+                Data fields (a field is absent when its amount is zero):
                 - potentialProfit: total credits available if all known genus in the current system are fully scanned
                 - acquiredProfit: total credits already earned from completed bio samples and codex entries this session
                 - unconfirmedFirstDiscoveryBonus: extra credits possible on bodies someone else charted, IF nobody has
                   sampled their organics before us. Unknowable, so it is NOT part of potentialProfit.
                 
-                State potentialProfit and acquiredProfit in credits, combined into a single response.
-                Mention unconfirmedFirstDiscoveryBonus only when it is above zero, and only as a possible
-                extra that depends on nobody having sampled those bodies first. Never add it to a total.
+                State each of potentialProfit and acquiredProfit that is present, in credits, combined into a single
+                response. Never mention a figure that is absent. Mention unconfirmedFirstDiscoveryBonus only as a
+                possible extra that depends on nobody having sampled those bodies first. Never add it to a total.
+                If no field is present, say that no exobiology earnings are recorded yet.
                 """ + SpokenAmounts.RULE;
         return process(
                 new AiDataStruct(
@@ -111,16 +112,39 @@ public class AnalyzeExplorationProfitsQuery extends BaseQueryAnalyzer implements
     }
 
     record DataDto(
-            long potentialProfit,
-            long acquiredProfit,
-            long unconfirmedFirstDiscoveryBonus
+            Long potentialProfit,
+            Long acquiredProfit,
+            Long unconfirmedFirstDiscoveryBonus
     ) implements ToYamlConvertable {
+        /**
+         * A zero amount is left out of the payload rather than left to the prompt: a small model handed
+         * {@code potentialProfit: 0} reads out "our potential profit is zero credits" whatever the instructions say.
+         */
+        DataDto {
+            potentialProfit = nonZero(potentialProfit);
+            acquiredProfit = nonZero(acquiredProfit);
+            unconfirmedFirstDiscoveryBonus = nonZero(unconfirmedFirstDiscoveryBonus);
+        }
+
+        DataDto(long potentialProfit, long acquiredProfit, long unconfirmedFirstDiscoveryBonus) {
+            this((Long) potentialProfit, (Long) acquiredProfit, (Long) unconfirmedFirstDiscoveryBonus);
+        }
+
+        private static Long nonZero(Long credits) {
+            return credits == null || credits == 0 ? null : credits;
+        }
+
         @Override public String toYaml() {
             // Spoken siblings appended the same way as the finance announcements. See SpokenAmounts.RULE.
+            // An absent amount is absent from the YAML too, so it gets no spoken sibling either.
             return YamlFactory.toYaml(this)
-                    + SpokenAmounts.yamlLine("potentialProfit", potentialProfit)
-                    + SpokenAmounts.yamlLine("acquiredProfit", acquiredProfit)
-                    + SpokenAmounts.yamlLine("unconfirmedFirstDiscoveryBonus", unconfirmedFirstDiscoveryBonus);
+                    + spoken("potentialProfit", potentialProfit)
+                    + spoken("acquiredProfit", acquiredProfit)
+                    + spoken("unconfirmedFirstDiscoveryBonus", unconfirmedFirstDiscoveryBonus);
+        }
+
+        private static String spoken(String field, Long credits) {
+            return credits == null ? "" : SpokenAmounts.yamlLine(field, credits);
         }
     }
 }

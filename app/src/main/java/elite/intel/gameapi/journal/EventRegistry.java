@@ -82,6 +82,7 @@ public class EventRegistry {
         registerEvent("FSDTarget", FSDTargetEvent.class);
         registerEvent("FSSSignalDiscovered", FSSSignalDiscoveredEvent.class);
         registerEvent("FSSDiscoveryScan", FSSDiscoveryScanEvent.class);
+        registerEvent("FSSAllBodiesFound", FSSAllBodiesFoundEvent.class);
         registerEvent("LaunchDrone", LaunchDroneEvent.class);
         registerEvent("LaunchFighter", LaunchFighterEvent.class);
         registerEvent("DockFighter", DockFighterEvent.class);
@@ -123,6 +124,7 @@ public class EventRegistry {
         registerEvent("Touchdown", TouchdownEvent.class);
         registerEvent("Shutdown", ShutdownEvent.class);
         registerEvent("SquadronStartup", SquadronStartupEvent.class);
+        registerEvent("Died", DiedEvent.class);
 
         // Finance: realized credit movements (see FinanceSubscriber)
         registerEvent("Resurrect", ResurrectEvent.class);

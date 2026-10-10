@@ -12,6 +12,7 @@ import elite.intel.gameapi.search.spansh.traderoute.TradeRouteTransaction;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
+import elite.intel.util.TTSFriendlyNumberConverter;
 
 /**
  * Owns its own execution: body migrated 1:1 from the legacy CalculateTradeRouteHandler,
@@ -93,7 +94,8 @@ public final class CalculateTradeRouteCommand implements IntelCommand {
             long totalProfit = route.getResult().stream()
                     .mapToLong(TradeRouteTransaction::getTotalProfit)
                     .sum();
-            outcome = StringUtls.localizedResponse("handler.tradeRoute.found", totalProfit);
+            outcome = StringUtls.localizedResponse("handler.tradeRoute.found",
+                    TTSFriendlyNumberConverter.formatCreditsForSpeech(totalProfit));
         }
 
         VegaRuntime.narrator().announce(outcome, false);

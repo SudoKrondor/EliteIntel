@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 /**
@@ -47,6 +48,12 @@ public class NativeHudOverlay {
 
     private static final Logger log = LogManager.getLogger(NativeHudOverlay.class);
     private static final int OBJECTIVE_POLL_MS = 1000;
+
+    /**
+     * The overlay that is feeding a window right now, for {@link #isShowing()}. One per app in practice - the AI
+     * tab owns it - but tests build their own, so it is set on start rather than on construction.
+     */
+    private static final AtomicReference<NativeHudOverlay> live = new AtomicReference<>();
 
     private final List<HudObjectiveSource> sources = new ArrayList<>();
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -136,6 +143,15 @@ public class NativeHudOverlay {
         sources.add(source);
     }
 
+    /**
+     * Whether an overlay is on screen, desktop or VR. A voice feature that answers on the card and nowhere else
+     * asks this first, so it can say the overlay is off instead of answering into nothing.
+     */
+    public static boolean isShowing() {
+        NativeHudOverlay overlay = live.get();
+        return overlay != null && overlay.isRunning();
+    }
+
     public synchronized boolean isRunning() {
         return children.stream().anyMatch(child -> child.process().isAlive());
     }
@@ -221,6 +237,7 @@ public class NativeHudOverlay {
         GameEventBus.register(this);
         UiBus.register(this);
         startObjectivePolling();
+        live.set(this);
         log.info("HUD overlay started: {} ({})", binary, displayMode);
         return true;
     }
@@ -297,6 +314,7 @@ public class NativeHudOverlay {
             children.clear();
         }
         lastObjective = null;
+        live.compareAndSet(this, null);
     }
 
     /**
@@ -635,8 +653,11 @@ public class NativeHudOverlay {
         }
     }
 
+    /**
+     * A card the commander called up by voice, else the winner of the ranking. See {@link TemporaryHudCard}.
+     */
     private Optional<HudObjective> pollObjective() {
-        return highestPriority(sources);
+        return TemporaryHudCard.getInstance().current().or(() -> highestPriority(sources));
     }
 
     /**
@@ -663,6 +684,10 @@ public class NativeHudOverlay {
                 // the commander is flying there to buy, so it beats that one - but a build being hauled to
                 // says more than one leg of the shopping for it, and ties go to whoever is registered first.
                 new CommoditySearchObjectiveSource(),
+                // Ahead of exobiology, its equal in rank: in a system the commander discovered, the survey
+                // as a whole is the card in supercruise. It stands aside by itself when the ship is at a
+                // body with sampling to do, which is when the exobiology card says more.
+                new DiscoveryObjectiveSource(),
                 new ExobiologyObjectiveSource(),
                 // Ahead of the route card and behind everything else: a hunt is real work the commander
                 // is doing right now, but they never accepted it the way they accept a contract. The
@@ -723,5 +748,6 @@ public class NativeHudOverlay {
         // itself mid-teardown.
         if (objectivePoll != null) objectivePoll.shutdown();
         unregisterBuses();
+        live.compareAndSet(this, null);
     }
 }

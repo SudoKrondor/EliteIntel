@@ -56,6 +56,7 @@ public class Status extends StatusFlags {
             result.setTemperature(status.getTemperature());
             result.setSelectedWeapon(status.getSelectedWeapon());
             result.setGravity(status.getGravity());
+            result.setBodyName(status.getBodyName());
             return result;
         });
     }
@@ -84,6 +85,7 @@ public class Status extends StatusFlags {
             status.setTemperature(event.getTemperature());
             status.setSelectedWeapon(event.getSelectedWeapon());
             status.setGravity(event.getGravity());
+            status.setBodyName(event.getBodyName());
             dao.save(status);
             return null;
         });

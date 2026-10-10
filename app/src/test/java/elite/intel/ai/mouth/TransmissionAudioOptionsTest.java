@@ -31,6 +31,7 @@ class TransmissionAudioOptionsTest {
             "ordinary", AiVoxResponseEvent.class, true);
     private final VocalisationRequestEvent vega = VocalisationRequestEvent.trackedVega(
             "vega", "vega", AiVoxResponseEvent.class, true, new CompletableFuture<>());
+    private final VocalisationRequestEvent critical = VocalisationRequestEvent.missionCritical("touchdown");
 
     @BeforeEach
     void everyEffectOn() {
@@ -71,6 +72,23 @@ class TransmissionAudioOptionsTest {
         inSrv.setFlags(1L << 26);
         status.setStatus(inSrv);
         assertEquals(ALL, TransmissionAudio.forRequest(vega));
+    }
+
+    /**
+     * The Nomad reports as an SRV, and its "touchdown" is a mission-critical callout in VEGA's voice.
+     */
+    @Test
+    void missionCriticalCalloutsAreVegaSpeechAwayFromTheShip() {
+        status.setStatus(new GameEvents.StatusEvent());
+        assertEquals(TransmissionAudio.Options.NONE, TransmissionAudio.forRequest(critical));
+
+        GameEvents.StatusEvent inSrv = new GameEvents.StatusEvent();
+        inSrv.setFlags(1L << 26);
+        status.setStatus(inSrv);
+        assertEquals(ALL, TransmissionAudio.forRequest(critical));
+
+        settings.setEffectsOnVegaAway(false);
+        assertEquals(TransmissionAudio.Options.NONE, TransmissionAudio.forRequest(critical));
     }
 
     @Test

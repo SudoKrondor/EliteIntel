@@ -66,6 +66,16 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
                 requestId, textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of(), null, true);
     }
 
+    /**
+     * A mission-critical callout ({@code EventNarrator.critical}). It is VEGA's voice like the gateway's own
+     * speech, so it reaches a commander on foot or in an SRV over the same link and carries the same marker -
+     * otherwise a bare "touchdown" from the Nomad plays dry between transmissions that do not.
+     */
+    public static VocalisationRequestEvent missionCritical(String textToVoice) {
+        return new VocalisationRequestEvent(UUID.randomUUID().toString(), textToVoice, null,
+                MissionCriticalAnnouncementEvent.class, false, false, null, null, Set.of(), null, true);
+    }
+
     private VocalisationRequestEvent(
             String requestId,
             String textToVoice,
@@ -111,7 +121,10 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
         return isRadio;
     }
 
-    /** True only for requests sent by VEGA's speech gateway, never for system callouts. */
+    /**
+     * True for speech in VEGA's voice - the speech gateway's requests and mission-critical callouts - never for
+     * system responses (errors, greetings, voice auditions).
+     */
     public boolean isVegaSpeech() {
         return vegaSpeech;
     }

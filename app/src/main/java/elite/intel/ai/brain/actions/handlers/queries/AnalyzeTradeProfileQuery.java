@@ -1,7 +1,9 @@
 package elite.intel.ai.brain.actions.handlers.queries;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.db.managers.TradeProfileManager;
 import elite.intel.gameapi.search.spansh.traderoute.TradeRouteSearchCriteria;
 import elite.intel.util.yaml.ToYamlConvertable;
@@ -28,7 +30,7 @@ public class AnalyzeTradeProfileQuery extends BaseQueryAnalyzer implements Intel
                 Answer the user's question about the current trade profile configuration.
                 
                 Field notes:
-                - startingBudget: if zero, the profile is not configured yet
+                - startingCapital: the trade budget in credits. If zero, the profile is not configured yet
                 - maxStationDistanceLs: maximum station distance in light seconds from the arrival star (in-system only, never light years)
                 - priceAge: given in seconds, convert to hours and minutes when reporting
                 - hops: measured in light years (distance between star systems)
@@ -37,20 +39,21 @@ public class AnalyzeTradeProfileQuery extends BaseQueryAnalyzer implements Intel
                 Rules:
                 - Answer only what the user asked.
                 - Do not include system name or station name in the response.
-                - If startingBudget is zero, state the profile is not configured.
-                """;
+                - If startingCapital is zero, state the profile is not configured.
+                """ + SpokenAmounts.RULE;
         return process(
                 new AiDataStruct(
                         instructions,
-                        new DataDto(criteria.toJsonForAnalysis())
+                        new DataDto(criteria.toJsonForAnalysis(), criteria.getStartingCapital())
                 ),
                 originalUserInput
         );
     }
 
-    record DataDto(String criteria) implements ToYamlConvertable {
+    record DataDto(String criteria, @JsonIgnore long startingCapital) implements ToYamlConvertable {
         @Override public String toYaml() {
-            return YamlFactory.toYaml(this);
+            // The budget sits inside the criteria JSON, so its spoken form rides alongside it.
+            return YamlFactory.toYaml(this) + SpokenAmounts.yamlLine("startingCapital", startingCapital);
         }
     }
 }

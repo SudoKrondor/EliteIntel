@@ -31,6 +31,9 @@ public class ScanEvent extends BaseEvent {
     @SerializedName("StarType")
     private String starType;
 
+    @SerializedName("StellarMass")
+    private double stellarMass;
+
     @SerializedName("SystemAddress")
     private long systemAddress;
 
@@ -209,6 +212,7 @@ public class ScanEvent extends BaseEvent {
         this.parents = event.parents;
         this.starSystem = event.starSystem;
         this.starType = event.starType;
+        this.stellarMass = event.stellarMass;
         this.systemAddress = event.systemAddress;
         this.distanceFromArrivalLS = event.distanceFromArrivalLS;
         this.tidalLock = event.tidalLock;
@@ -396,6 +400,13 @@ public class ScanEvent extends BaseEvent {
 
     public String getStarType() {
         return starType;
+    }
+
+    /**
+     * A star's mass in solar masses; 0 on a planet, which reports {@link #getMassEM()} instead.
+     */
+    public double getStellarMass() {
+        return stellarMass;
     }
 
     @Override

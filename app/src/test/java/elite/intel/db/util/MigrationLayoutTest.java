@@ -94,8 +94,9 @@ class MigrationLayoutTest {
             commander.remove("schema_migration");
             Set<String> expected = new TreeSet<>(CommanderSplit.COMMANDER_TABLES);
             expected.addAll(CommanderSplit.COMMANDER_HALVES);
+            expected.addAll(CommanderSplit.COMMANDER_NATIVE);
             assertEquals(expected, commander,
-                    "CommanderSplit.COMMANDER_TABLES + COMMANDER_HALVES and the commander tree disagree");
+                    "CommanderSplit.COMMANDER_TABLES + COMMANDER_HALVES + COMMANDER_NATIVE and the commander tree disagree");
         }
     }
 

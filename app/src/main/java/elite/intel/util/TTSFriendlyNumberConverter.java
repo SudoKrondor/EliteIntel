@@ -27,6 +27,13 @@ public class TTSFriendlyNumberConverter {
     private static final long EXACT_LIMIT = 10_000L;
 
     /**
+     * Whether an amount is small enough to be said to the last credit, so a rounded form adds nothing to it.
+     */
+    public static boolean isSpokenExactly(long credits) {
+        return Math.abs(credits) <= EXACT_LIMIT;
+    }
+
+    /**
      * A scanned ship's bounty, spoken in the active UI language. Zero means the ship is clean, which reads as
      * "No bounty" rather than "zero credits"; any positive bounty is spoken with the same rounding as every
      * other credit amount (see {@link #formatCreditsForSpeech(long)}), so the whole app hedges money one way.

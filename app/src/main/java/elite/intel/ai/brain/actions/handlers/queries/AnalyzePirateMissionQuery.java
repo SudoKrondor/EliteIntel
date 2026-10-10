@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.handlers.queries;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.journal.events.dto.BountyDto;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
@@ -36,7 +37,7 @@ public class AnalyzePirateMissionQuery extends BaseQueryAnalyzer implements Inte
         );
         Set<BountyDto> bounties = session.getBounties();
         String remainingKills = computeKillsRemaining(missions, bounties);
-        String missionProfit = computeMissionProfit(missions, bounties);
+        long missionProfit = computeMissionProfit(missions, bounties);
         String instructions = """
                 Answer the user's question about active pirate kill missions.
                 
@@ -49,7 +50,7 @@ public class AnalyzePirateMissionQuery extends BaseQueryAnalyzer implements Inte
                 - If asked about kills remaining: report totalMissionKillsLeft directly.
                 - If asked about profit or reward: report totalMissionProfit directly.
                 - Otherwise: report both fields as a brief summary.
-                """;
+                """ + SpokenAmounts.RULE;
         return process(new AiDataStruct(instructions, new DataDto(remainingKills, missionProfit)), originalUserInput);
     }
 
@@ -102,7 +103,7 @@ public class AnalyzePirateMissionQuery extends BaseQueryAnalyzer implements Inte
         return ts != null ? Instant.parse(ts) : Instant.MAX;
     }
 
-    private String computeMissionProfit(Map<Long, MissionDto> missionsMap, Set<BountyDto> bounties) {
+    private long computeMissionProfit(Map<Long, MissionDto> missionsMap, Set<BountyDto> bounties) {
 
         Collection<MissionDto> missions = missionsMap.values();
         long missionReward = 0;
@@ -114,12 +115,12 @@ public class AnalyzePirateMissionQuery extends BaseQueryAnalyzer implements Inte
         for (BountyDto bounty : bounties) {
             bountyReward += bounty.getRewards().stream().mapToLong(BountyDto.Reward::getReward).sum();
         }
-        return "Total mission profit:" + (missionReward + bountyReward);
+        return missionReward + bountyReward;
     }
 
-    record DataDto(String totalMissionKillsLeft, String totalMissionProfit) implements ToYamlConvertable {
+    record DataDto(String totalMissionKillsLeft, long totalMissionProfit) implements ToYamlConvertable {
         @Override public String toYaml() {
-            return YamlFactory.toYaml(this);
+            return YamlFactory.toYaml(this) + SpokenAmounts.yamlLine("totalMissionProfit", totalMissionProfit);
         }
     }
 }

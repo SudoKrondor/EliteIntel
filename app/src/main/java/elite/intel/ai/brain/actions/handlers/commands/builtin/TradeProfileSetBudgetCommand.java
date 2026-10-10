@@ -7,6 +7,7 @@ import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
 import elite.intel.db.managers.TradeProfileManager;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
+import elite.intel.util.TTSFriendlyNumberConverter;
 
 import java.util.List;
 
@@ -66,7 +67,8 @@ public final class TradeProfileSetBudgetCommand implements IntelCommand {
 
         TradeProfileManager manager = TradeProfileManager.getInstance();
         if(manager.setStartingCapitol(budget)) {
-            return StringUtls.localizedResponse("handler.tradeProfile.startingBudget", budget);
+            return StringUtls.localizedResponse("handler.tradeProfile.startingBudget",
+                    TTSFriendlyNumberConverter.formatCreditsForSpeech(budget));
         }
         return null;
     }

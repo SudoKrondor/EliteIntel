@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.events;
 
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.util.json.GsonFactory;
 
 import java.time.Duration;
@@ -47,7 +48,7 @@ public class ShipyardSellEvent extends BaseEvent {
 
     @Override
     public String memorySummary() {
-        return shipType == null || shipType.isBlank() ? "" : "sold the stored " + shipType + " for " + shipPrice + " credits";
+        return shipType == null || shipType.isBlank() ? "" : "sold the stored " + shipType + " for " + SpokenAmounts.forLlm(shipPrice);
     }
 
     @Override

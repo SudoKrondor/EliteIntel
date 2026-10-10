@@ -3,10 +3,7 @@ package elite.intel.gameapi.journal.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.db.dao.ShipDao;
-import elite.intel.db.managers.CarrierRouteLegs;
-import elite.intel.db.managers.FleetCarrierRouteManager;
-import elite.intel.db.managers.LocationManager;
-import elite.intel.db.managers.ShipManager;
+import elite.intel.db.managers.*;
 import elite.intel.gameapi.PreScanOnly;
 import elite.intel.gameapi.SignalName;
 import elite.intel.gameapi.journal.ScanBodyClassifier;
@@ -44,6 +41,7 @@ public class SilentPersistenceSubscriber {
     private final LocationManager locationManager = LocationManager.getInstance();
     private final ShipManager shipManager = ShipManager.getInstance();
     private final PlayerSession playerSession = PlayerSession.getInstance();
+    private final FssSurveyManager fssSurveys = FssSurveyManager.getInstance();
 
     // Tracked across events so Loadout can record the commander that owns this ship.
     private String lastCommanderName = null;
@@ -334,6 +332,17 @@ public class SilentPersistenceSubscriber {
 
         locationManager.save(location);
         log.debug("PreScan: saved scan {}", event.getBodyName());
+    }
+
+    @Subscribe
+    public void onFSSDiscoveryScan(FSSDiscoveryScanEvent event) {
+        // Mirrors FssSurveySubscriber: a honk made before the app started still gives the explorer card its count.
+        fssSurveys.recordBodyCount(event.getSystemAddress(), event.getBodyCount());
+    }
+
+    @Subscribe
+    public void onFSSAllBodiesFound(FSSAllBodiesFoundEvent event) {
+        fssSurveys.markAllBodiesFound(event.getSystemAddress(), event.getCount());
     }
 
     /**

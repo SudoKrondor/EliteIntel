@@ -73,6 +73,9 @@ public class JournalPreScanner {
         // And for the vehicle the commander is sitting in: the Nomad reports as an SRV, and a commander who
         // starts the app already flying one would otherwise get wheeled-SRV keys until they stowed it.
         privateBus.register(new DeployedVehicleSubscriber());
+        // And for the exploration data on board, which the app may not have seen gathered at all: a commander
+        // who scanned with it closed would otherwise be shown none of it until the next sale cleared the slate.
+        privateBus.register(new CartographicDataSubscriber());
 
         for (Path file : toScan) {
             processFile(file, privateBus);
