@@ -72,8 +72,8 @@ public class AppView extends JFrame implements AppViewInterface {
                 System.exit(0);
             }
         });
-        setMinimumSize(new Dimension(600, 500));
-        setSize(new Dimension(1200, 980));
+        setMinimumSize(new Dimension(1280, 720));
+        setSize(new Dimension(1400, 980));
         setLocationRelativeTo(null);
 
         buildUi();
