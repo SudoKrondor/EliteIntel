@@ -39,8 +39,8 @@ class AliasRepairSafetyTest {
     }
 
     /**
-     * The damage substitutes a letter taken from the word itself rather than a fixed one, so a Cyrillic word
-     * stays Cyrillic. A cross-script letter would still exercise the alignment, but it would not resemble
+     * The damage substitutes a letter taken from the word itself rather than a fixed one, so a word keeps
+     * its own alphabet, accents included. A foreign letter would still exercise the alignment, but it would not resemble
      * anything a transcript actually produces, and the locales most in need of this scan are the inflected ones.
      */
     private static char substituteFor(String word, int index) {

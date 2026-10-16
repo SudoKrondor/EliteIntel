@@ -76,9 +76,9 @@ class DatabaseMigratorTest {
     void aCommentMentioningADropDoesNotExcuseTheStatementBelowIt() {
         // The guard must key off the statement, not off prose that happens to describe a drop.
         String statement = """
-                -- ALTER TABLE commodities DROP COLUMN commodity_uk was considered here.
+                -- ALTER TABLE commodities DROP COLUMN commodity_it was considered here.
                 UPDATE commodities
-                SET commodity_uk = 'Золото'
+                SET commodity_it = 'Oro'
                 WHERE LOWER(symbol) = LOWER('Gold')""";
         assertFalse(DatabaseMigrator.isDropColumn(statement));
     }

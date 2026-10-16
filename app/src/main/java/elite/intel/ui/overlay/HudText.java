@@ -58,8 +58,7 @@ final class HudText {
     }
 
     /**
-     * A counted string, taking the plural form the count calls for - which is three-way in Russian
-     * and Ukrainian, so "2 missions" and "5 missions" are not the same word.
+     * A counted string, taking the plural form the count calls for.
      *
      * @param keyBase key without its category suffix, e.g. {@code overlay.card.value.missionCount}
      */
@@ -68,15 +67,6 @@ final class HudText {
         // The count is pre-rendered: MessageFormat would group it by its own locale rules, and these
         // are small counts that no language groups anyway.
         String rendered = String.valueOf(count);
-        String key = keyBase + StringUtls.pluralSuffix(language, count);
-        String text = MultiLingualTextProvider.getText(language, key, rendered);
-        if (!text.equals(key)) return text;
-
-        // WHY this fallback: a category a language declares nowhere resolves to the key itself, and
-        // English cannot cover for it because English has no word for ".few" and never declares one. The
-        // card would then read "overlay.card.value.missionCount.few" mid-row. A plural in the wrong case
-        // is worse text but still text, so degrade to it. HudCardLocalizationTest is what keeps this
-        // path unreached: it checks every category each language's own rule can select.
-        return MultiLingualTextProvider.getText(language, keyBase + ".many", rendered);
+        return MultiLingualTextProvider.getText(language, keyBase + StringUtls.pluralSuffix(count), rendered);
     }
 }

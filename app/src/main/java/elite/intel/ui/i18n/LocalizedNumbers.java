@@ -67,8 +67,6 @@ public final class LocalizedNumbers {
     static Locale locale(Language language) {
         return switch (language) {
             case EN -> Locale.ENGLISH;
-            case RU -> Locale.forLanguageTag("ru");
-            case UK -> Locale.forLanguageTag("uk");
             case DE -> Locale.GERMAN;
             case FR -> Locale.FRENCH;
             case ES -> Locale.forLanguageTag("es");

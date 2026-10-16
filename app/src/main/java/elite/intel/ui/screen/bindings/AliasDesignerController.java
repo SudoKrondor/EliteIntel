@@ -2,7 +2,11 @@ package elite.intel.ui.screen.bindings;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.bindforge.devicefiles.*;
+import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.devicefiles.DivergenceWaysOut.WayOut;
+import elite.intel.bindforge.devices.DeviceIdentities;
+import elite.intel.bindforge.devices.HotPlugOffers;
+import elite.intel.bindforge.devices.IdentityQuestions;
 import elite.intel.bindforge.devices.MissingControllerWarning;
 import elite.intel.bindforge.devices.MyDevice;
 import elite.intel.bindforge.devices.Onboarding;
@@ -10,16 +14,24 @@ import elite.intel.bindforge.install.InstallationRegistry;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.db.managers.BindForgeActivationManager;
 import elite.intel.db.managers.BindForgeDeviceDraftManager;
+import elite.intel.db.managers.BindForgeIdentityAnswerManager;
+import elite.intel.db.managers.BindForgeInstallationsManager;
+import elite.intel.devices.events.DeviceConnectedEvent;
+import elite.intel.devices.events.DeviceDisconnectedEvent;
+import elite.intel.eventbus.DeviceBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.DeviceFilesChangedEvent;
 import elite.intel.ui.screen.bindings.AliasDesignerReader.OnboardingReading;
 import elite.intel.ui.screen.bindings.AliasDesignerReader.Snapshot;
+import elite.intel.util.OsDetector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
+import java.awt.Dialog;
+import java.awt.Window;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -30,9 +42,9 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.util.StringUtls.messageOf;
 
 /**
- * The Alias Designer screen's flows: the refresh, activation, first setup, APPLY and DISCARD, the ways out, onboarding,
- * and opening the Device Editor. It decides when each runs, runs the disk work off the EDT, asks and tells the user,
- * and hands what it read to {@link AliasDesignerPanel}, which only draws.
+ * The Alias Designer screen's flows: the refresh, activation, first setup, APPLY and DISCARD, the ways out, catch-up,
+ * the identity question (A12), onboarding, controllers plugged in or out (A7), and opening the Device Editor. It decides when each runs, runs the disk work off the EDT, asks and tells
+ * the user, and hands what it read to {@link AliasDesignerPanel}, which only draws.
  * <p>
  * State is kept on the EDT, but for the three flags background threads touch, which are atomic.
  */
@@ -44,7 +56,8 @@ final class AliasDesignerController {
      * What the screen shows before its first refresh has finished.
      */
     private static final Snapshot NOTHING_YET = new Snapshot(Map.of(), Map.of(), null, List.of(), List.of(),
-            List.of(), AliasDesignerReader.Markers.NONE, false, List.of(), false, false);
+            List.of(), AliasDesignerReader.Markers.NONE, false, List.of(), false, false, false, List.of(),
+            IdentityQuestions.Reading.NONE);
 
     private final AliasDesignerPanel view;
     private final AliasDesignerReader reader;
@@ -66,6 +79,33 @@ final class AliasDesignerController {
      * activated and the hardware listed: onboarding opens then, for the controllers attached (Alan, 2026-10-14, A6b).
      */
     private final AtomicBoolean onboardingWanted = new AtomicBoolean();
+    /**
+     * The installations catch-up has asked about in this run, answered either way - No is asked again next run, not
+     * again this one (Alan, 2026-10-15, A14). EDT only.
+     */
+    private final Set<Long> catchUpAsked = new HashSet<>();
+    /**
+     * The controllers plugged in that onboarding still owes an offer, each once per run (Alan, 2026-10-15, A7).
+     */
+    private final HotPlugOffers hotPlug = new HotPlugOffers();
+    /**
+     * Set when a controller connects or disconnects while the screen is hidden, and cleared by the next refresh: the
+     * screen reads the hardware again when it is next shown, rather than on every plug while nobody is looking.
+     */
+    private final AtomicBoolean hardwareStale = new AtomicBoolean();
+    /**
+     * Set by CHECK AGAIN and taken by the next identity offer: the questions answered Not now are asked again too
+     * (Alan, 2026-10-15, A12).
+     */
+    private final AtomicBoolean identityDeferredWanted = new AtomicBoolean();
+    /**
+     * The missing controllers the identity question has been put about in this run. Every answer is stored, so this
+     * only stops a write that failed from putting the same question straight back; CHECK AGAIN clears it. EDT only.
+     */
+    private final Set<String> identityAsked = new HashSet<>();
+    /** What Review in Bind Editor does - set by the BindForge tab. EDT only. */
+    private Runnable reviewBindings = () -> {
+    };
 
     /**
      * The last refresh, with its unread answers filled from the one before. EDT only.
@@ -86,10 +126,12 @@ final class AliasDesignerController {
         this.registry = registry;
         this.reader = new AliasDesignerReader(registry);
         UiBus.register(this);
+        DeviceBus.register(this);
     }
 
     void dispose() {
         UiBus.unregister(this);
+        DeviceBus.unregister(this);
     }
 
     /**
@@ -116,13 +158,51 @@ final class AliasDesignerController {
     }
 
     /**
+     * A controller was plugged in (A7). It waits for onboarding's offer - which leaves it out if it already has a name -
+     * and the screen reads the hardware again, so it appears ATTACHED. On the device bus's thread, which also carries
+     * push-to-talk: nothing here reads a file or the database.
+     * <p>
+     * A connect published before this registered - the controllers present at startup - is never seen here. Those
+     * are the automatic offer's after activation, which asks about every attached controller.
+     */
+    @Subscribe
+    public void onDeviceConnected(DeviceConnectedEvent event) {
+        DeviceIdentities.of(event.device()).ifPresent(identity ->
+                hotPlug.connected(event.device().id(), new HardwareId(identity.vid(), identity.pid())));
+        SwingUtilities.invokeLater(this::hardwareChanged);
+    }
+
+    /**
+     * A controller was unplugged (A7): it stops waiting for an offer, and the screen reads the hardware again, so it
+     * shows MISSING.
+     */
+    @Subscribe
+    public void onDeviceDisconnected(DeviceDisconnectedEvent event) {
+        hotPlug.disconnected(event.deviceId());
+        SwingUtilities.invokeLater(this::hardwareChanged);
+    }
+
+    /**
+     * Reads everything again while the user is looking; otherwise the next showing does. EDT.
+     */
+    private void hardwareChanged() {
+        if (view.isShowing()) {
+            refresh();
+        } else {
+            hardwareStale.set(true);
+        }
+    }
+
+    /**
      * The screen became visible. The first time in a run, not at startup (Alan, 2026-10-11, A13): the refresh at
      * startup runs before the Device Service has looked at any hardware, so this asks for one of its own and the
-     * missing-controller warning judges that one. Onboarding's offer, still waiting, asks the same.
+     * missing-controller warning judges that one. Onboarding's offer, still waiting, asks the same - and so does
+     * catch-up, for an installation found again that it has not asked about in this run.
      */
     void onShown() {
         boolean warning = MissingControllerWarning.getInstance().pending();
-        if (!warning && !onboardingWanted.get()) return;
+        if (!warning && !onboardingWanted.get() && !catchUpMayBeWanted() && !hardwareStale.get()
+                && !hotPlug.anyWaiting()) return;
         if (warning) missingWarningWanted.set(true);
         refresh();
     }
@@ -133,8 +213,17 @@ final class AliasDesignerController {
      * controllers to name (Krondor, 2026-10-14). It says nothing when nobody needs a name.
      */
     void checkAgain() {
+        // WHY: the identity question first, deferred ones included - the user pressed CHECK AGAIN to deal with the
+        // unnamed controllers, and naming one first would end its question unasked (Alan, 2026-10-15, A12).
+        identityAsked.clear();
+        identityDeferredWanted.set(true);
         onboardingWanted.set(true);
         refresh();
+    }
+
+    /** What Review in Bind Editor does, after a retarget. EDT only. */
+    void setReviewBindings(Runnable showBindings) {
+        reviewBindings = Objects.requireNonNull(showBindings, "showBindings");
     }
 
     // ------------------------------------------------------------------ the refresh
@@ -150,6 +239,7 @@ final class AliasDesignerController {
      * ship-profile change mid-refresh therefore costs one extra refresh; nothing here depends on the ship.
      */
     void refresh() {
+        hardwareStale.set(false);
         if (!refreshes.tryStart()) return;
         new Thread(() -> {
             Snapshot read = reader.read(missingWarningWanted.getAndSet(false));
@@ -157,11 +247,25 @@ final class AliasDesignerController {
                 shown = keepingLastAnswers(read);
                 refreshButtons();
                 view.render(shown);
+                // WHY: catch-up first - it finishes writes the user already made - and onboarding waits for the next
+                // refresh, so the two never write the same installation at once (Alan, 2026-10-15, A14).
+                boolean catchUpOffered = offerCatchUp();
+                // WHY: the identity question before onboarding - naming a candidate would end it unasked, and a
+                // retarget is what saves the bindings (Alan, 2026-10-15, A12).
+                boolean identityOffered = !catchUpOffered && offerIdentity(read);
+                Set<HardwareId> heldBack = read.identity().withheld();
                 // WHY: only once the hardware is listed, and only while the user is looking. Before the listing every
                 // controller reads absent, so nobody would need a name and the offer would be spent on nothing; a
                 // refresh the user did not start would put the dialog over another screen.
-                if (activated() && read.listed() && view.isShowing() && onboardingWanted.compareAndSet(true, false)) {
-                    openOnboarding(null);
+                // WHY: not over another dialog either - a refresh can land while the identity questions are showing.
+                if (!catchUpOffered && !identityOffered && activated() && read.listed() && view.isShowing()
+                        && !dialogOpen() && onboardingWanted.compareAndSet(true, false)) {
+                    // WHY: the automatic offer asks about every attached controller, those plugged in meanwhile too -
+                    // but a candidate an identity question still holds keeps waiting.
+                    hotPlug.take(heldBack);
+                    openOnboarding(null, false, heldBack);
+                } else if (!catchUpOffered && !identityOffered && hotPlugOfferMayOpen(read)) {
+                    openOnboarding(hotPlug.take(heldBack), false, heldBack);
                 }
                 // WHY: something asked for a refresh while this one ran - the screen shown, a device file changed, an
                 // action finished - and this one may have read what it changed too early.
@@ -179,7 +283,10 @@ final class AliasDesignerController {
                 read.activated() != null ? read.activated() : shown.activated(),
                 read.changes(),
                 read.running() != null ? read.running() : shown.running(),
-                read.listed());
+                read.listed(),
+                read.applyWork(),
+                read.foundAgain(),
+                read.identity());
     }
 
     private boolean activated() {
@@ -188,11 +295,16 @@ final class AliasDesignerController {
 
     /**
      * SET UP until BindForge is activated, and not while activation runs, which may open first setup itself. APPLY
-     * once activated, DISCARD while the draft changes something - and neither while a write runs.
+     * once activated and only when it has work ({@link ApplyWork}), DISCARD while the draft changes something - and
+     * neither while a write runs.
      */
     private void refreshButtons() {
-        view.refreshButtons(!activated() && !activationRunning, activated() && !actionRunning,
+        view.refreshButtons(!activated() && !activationRunning, canApply(),
                 !shown.changes().isEmpty() && !actionRunning, shown.changes());
+    }
+
+    private boolean canApply() {
+        return activated() && shown.applyWork() && !actionRunning;
     }
 
     // ------------------------------------------------------------------ activation and first setup
@@ -257,8 +369,7 @@ final class AliasDesignerController {
     void openFirstSetup() {
         // WHY: activation may open first setup itself any moment now - one dialog, not two (review, 2026-10-13).
         if (activationRunning) return;
-        view.refreshButtons(false, activated() && !actionRunning, !shown.changes().isEmpty() && !actionRunning,
-                shown.changes());
+        view.refreshButtons(false, canApply(), !shown.changes().isEmpty() && !actionRunning, shown.changes());
         Map<String, String> names = shown.labels();
         new Thread(() -> {
             FirstSetup setup = null;
@@ -328,10 +439,16 @@ final class AliasDesignerController {
                     getText("bindings.aliasDesigner.firstSetup.close"));
             return;
         }
-        if (!HudConfirmDialog.confirm(view, title,
-                installations == 1
-                        ? getText("bindings.aliasDesigner.apply.confirm.one")
-                        : getText("bindings.aliasDesigner.apply.confirm", installations),
+        String question = installations == 1
+                ? getText("bindings.aliasDesigner.apply.confirm.one")
+                : getText("bindings.aliasDesigner.apply.confirm", installations);
+        // WHY: told, not fixed (Alan, 2026-10-14, A11). On Linux each installation has its own bindings folder, and
+        // BindForge moves bindings in the one Elite-Intel uses - so a rename, or onboarding's hex move, can leave
+        // another installation's preset naming a device by a name it no longer has.
+        if (installations > 1 && OsDetector.getOs() == OsDetector.OS.LINUX) {
+            question += "\n\n" + getText("bindings.aliasDesigner.apply.linuxNote");
+        }
+        if (!HudConfirmDialog.confirm(view, title, question,
                 getText("bindings.aliasDesigner.apply.do"),
                 getText("bindings.aliasDesigner.firstSetup.cancel"))) {
             return;
@@ -356,6 +473,67 @@ final class AliasDesignerController {
             BindForgeDeviceDraftManager.getInstance().discard();
             return null;
         });
+    }
+
+    // ------------------------------------------------------------------ catch-up
+
+    /**
+     * The installations found again - each missed a write and can be reached now - that catch-up has not asked about in
+     * this run. EDT only.
+     */
+    private List<Long> catchUpToAsk() {
+        return shown.foundAgain().stream().filter(id -> !catchUpAsked.contains(id)).toList();
+    }
+
+    /**
+     * Whether some installation missed a write and has not been asked about in this run - from the stored flag, not
+     * the last refresh, which may have run before the folder came back (review, 2026-10-15). A held list, so no disk
+     * is read here; the refresh this asks for decides whether the installation can be reached.
+     */
+    private boolean catchUpMayBeWanted() {
+        return BindForgeInstallationsManager.getInstance().findAll().stream()
+                .anyMatch(row -> row.missedWrite() && !catchUpAsked.contains(row.id()));
+    }
+
+    /**
+     * Asks about the installations found again, once per run each, while the user is on the screen (Alan, 2026-10-15,
+     * A14) - whether the startup announcement said so or the check has just found one. Asked after this refresh has
+     * finished drawing, so the dialog never holds a refresh open.
+     *
+     * @return whether it is asking - onboarding's offer then waits for the refresh after the answer
+     */
+    private boolean offerCatchUp() {
+        if (!activated() || actionRunning || !view.isShowing()) return false;
+        List<Long> ids = catchUpToAsk();
+        if (ids.isEmpty()) return false;
+        catchUpAsked.addAll(ids);
+        SwingUtilities.invokeLater(() -> askCatchUp(ids));
+        return true;
+    }
+
+    private void askCatchUp(List<Long> ids) {
+        // WHY: a click queued before this - APPLY, a revert - may have started a write since the offer. Two writes to
+        // one installation at once would each keep an Edit History copy of a file the other is replacing, so the
+        // question goes back, and the refresh that ends that write offers it again (review, 2026-10-15).
+        if (actionRunning) {
+            ids.forEach(catchUpAsked::remove);
+            return;
+        }
+        String title = getText("bindings.aliasDesigner.catchUp.title");
+        AliasDesignerReports reports = reports();
+        String names = reports.namesOf(ids);
+        String question = ids.size() == 1
+                ? getText("bindings.aliasDesigner.catchUp.confirm.one", names)
+                : getText("bindings.aliasDesigner.catchUp.confirm.many", names);
+        if (!HudConfirmDialog.confirm(view, title, question,
+                getText("bindings.aliasDesigner.catchUp.do"),
+                getText("bindings.aliasDesigner.catchUp.notNow"))) {
+            log.info("Catch-up declined for {} - asked again next run", names);
+            // WHY: a refresh, so onboarding's offer - held back for this question - is made now.
+            refresh();
+            return;
+        }
+        runAndReport(title, () -> reports.applyText(new DeviceApply().catchUp(ids)));
     }
 
     // ------------------------------------------------------------------ the ways out
@@ -445,26 +623,180 @@ final class AliasDesignerController {
         runAndReport(getText("bindings.aliasDesigner.wayOut.title"), work);
     }
 
+    // ------------------------------------------------------------------ the identity question
+
+    /**
+     * Puts the identity questions this refresh found, one missing controller at a time (Alan, 2026-10-15, A12): after
+     * catch-up, before onboarding, and under onboarding's conditions - activated, the hardware listed, the user on the
+     * screen, no write running and no other dialog open. Asked after this refresh has finished drawing.
+     *
+     * @return whether it is asking - onboarding's offer then waits for the refresh after the answers
+     */
+    private boolean offerIdentity(Snapshot read) {
+        if (!activated() || !read.listed() || !view.isShowing() || actionRunning || dialogOpen()) return false;
+        List<IdentityQuestions.Question> questions = (identityDeferredWanted.getAndSet(false)
+                ? read.identity().askingDeferred()
+                : read.identity().toAsk()).stream()
+                .filter(question -> !identityAsked.contains(question.deviceName()))
+                .toList();
+        if (questions.isEmpty()) return false;
+        questions.forEach(question -> identityAsked.add(question.deviceName()));
+        SwingUtilities.invokeLater(() -> askIdentity(questions));
+        return true;
+    }
+
+    /**
+     * One dialog per missing controller. A controller picked for one is left out of the next, since one controller
+     * cannot be two; a question left with no candidate is not put. Every answer is written together once the last is
+     * given: a pick retargets the device in the draft, Not now and None of these are remembered.
+     */
+    private void askIdentity(List<IdentityQuestions.Question> questions) {
+        // WHY: a click queued before this may have started a write since the offer - the question goes back, for the
+        // refresh that ends the write to put again, as catch-up's does.
+        if (actionRunning) {
+            questions.forEach(question -> identityAsked.remove(question.deviceName()));
+            return;
+        }
+        List<IdentityDecision> decisions = new ArrayList<>();
+        Set<HardwareId> picked = new HashSet<>();
+        for (IdentityQuestions.Question asked : questions) {
+            IdentityQuestions.Question question = asked;
+            for (HardwareId taken : picked) question = question.without(taken);
+            if (question.candidates().isEmpty()) continue;
+            IdentityDialog.Choice choice = new IdentityDialog(view, question).ask();
+            if (choice.picked() != null) picked.add(choice.picked().hardware());
+            decisions.add(new IdentityDecision(question, choice));
+        }
+        if (decisions.isEmpty()) return;
+        // WHY: None of these routes to create - the controller is a new one, which onboarding names.
+        if (decisions.stream().anyMatch(d -> d.choice().answer() == IdentityQuestions.Answer.NONE_OF_THESE)) {
+            onboardingWanted.set(true);
+        }
+        String title = getText("bindings.aliasDesigner.identity.title");
+        offEdt(title, () -> writeIdentity(decisions), result -> {
+            showIdentityResult(title, result);
+            refresh();
+        });
+    }
+
+    private record IdentityDecision(IdentityQuestions.Question question, IdentityDialog.Choice choice) {
+    }
+
+    /**
+     * What the identity answers wrote.
+     *
+     * @param moved controllers retargeted, each with what it now points at
+     * @param stale controllers that changed between the question and the answer - nothing was written for them
+     */
+    private record IdentityResult(List<IdentityDecision> moved, List<String> stale) {
+    }
+
+    private static IdentityResult writeIdentity(List<IdentityDecision> decisions) {
+        BindForgeDeviceDraftManager draft = BindForgeDeviceDraftManager.getInstance();
+        BindForgeIdentityAnswerManager answers = BindForgeIdentityAnswerManager.getInstance();
+        List<IdentityDecision> moved = new ArrayList<>();
+        List<String> stale = new ArrayList<>();
+        for (IdentityDecision decision : decisions) {
+            IdentityQuestions.Question question = decision.question();
+            MyDevice picked = decision.choice().picked();
+            if (picked == null) {
+                answers.put(question.deviceName(), question.candidatesKey(), decision.choice().answer().name());
+                log.info("Identity question for {} answered {}", question.deviceName(), decision.choice().answer());
+            } else if (draft.retargetByName(question.deviceName(), question.was().vid(), question.was().pid(),
+                    picked.vid(), picked.pid())) {
+                answers.forget(Set.of(question.deviceName()));
+                log.info("{} retargeted in the draft from {} to {} ({})", question.deviceName(), question.was(),
+                        picked.hardware(), picked.label());
+                moved.add(decision);
+            } else {
+                stale.add(question.deviceName());
+            }
+        }
+        return new IdentityResult(moved, stale);
+    }
+
+    /**
+     * After a retarget: what moves, and what it cannot promise - bindings keep their button numbers, and on another
+     * model some buttons are elsewhere. Review in Bind Editor shows the bindings.
+     */
+    private void showIdentityResult(String title, IdentityResult result) {
+        List<String> lines = new ArrayList<>();
+        for (IdentityDecision decision : result.moved()) {
+            MyDevice picked = decision.choice().picked();
+            lines.add(getText("bindings.aliasDesigner.identity.moved", decision.question().deviceName(),
+                    picked.label(), picked.vid(), picked.pid(), decision.question().bindings()));
+        }
+        for (String name : result.stale()) lines.add(getText("bindings.aliasDesigner.identity.stale", name));
+        if (lines.isEmpty()) return;
+        if (result.moved().isEmpty()) {
+            HudConfirmDialog.info(view, title, String.join("\n\n", lines),
+                    getText("bindings.aliasDesigner.firstSetup.close"));
+            return;
+        }
+        lines.add(getText("bindings.aliasDesigner.identity.layoutWarning"));
+        if (HudConfirmDialog.confirm(view, title, String.join("\n\n", lines),
+                getText("bindings.aliasDesigner.identity.review"),
+                getText("bindings.aliasDesigner.identity.dismiss"))) {
+            reviewBindings.run();
+        }
+    }
+
     // ------------------------------------------------------------------ onboarding and the Device Editor
+
+    /**
+     * Whether onboarding may be offered now for the controllers plugged in later (Alan, 2026-10-15, A7): as for the
+     * automatic offer, once activated, the hardware listed and the user on the screen - and not while a write runs, nor
+     * over another dialog such as the Device Editor. Held back, the controllers keep waiting for a later refresh.
+     */
+    private boolean hotPlugOfferMayOpen(Snapshot read) {
+        return hotPlug.anyWaitingBesides(read.identity().withheld()) && activated() && read.listed() && view.isShowing() && !actionRunning
+                && !dialogOpen();
+    }
+
+    /**
+     * Whether a modal dialog of this window is showing. The screen still counts as showing beneath one, and a second
+     * dialog would open over it.
+     */
+    private boolean dialogOpen() {
+        Window window = SwingUtilities.getWindowAncestor(view);
+        if (window == null) return false;
+        return Arrays.stream(window.getOwnedWindows())
+                .anyMatch(owned -> owned.isShowing() && owned instanceof Dialog dialog && dialog.isModal());
+    }
+
+    /**
+     * NAME, from the Device Editor of an attached controller that has none: onboarding for that one controller, which
+     * says so when it turns out to need no name.
+     */
+    void openOnboarding(MyDevice only) {
+        // WHY: nothing held back - choosing to name a candidate is the user's answer, and naming it takes it out of
+        // every identity question's candidates (Alan, 2026-10-15, A12).
+        openOnboarding(Set.of(only.hardware()), true, Set.of());
+    }
 
     /**
      * Onboarding: reads who needs a name off the EDT, opens the dialog, and writes what the user chose when they
      * finish (Alan, 2026-10-14, A6b).
+     * <p>
+     * Every controller it asks about counts as offered in this run, so plugging it in again does not ask a second time
+     * (A7).
      *
-     * @param only the controller to name, from the gear - or {@code null} for every controller that needs one, which
-     *             says nothing when nobody does
+     * @param only      the controllers to ask about, or {@code null} for every controller that needs a name
+     * @param sayNobody whether to say so when none of them needs a name - only when the user asked, from NAME
+     * @param heldBack  controllers left out: candidates of an identity question still open
      */
-    void openOnboarding(MyDevice only) {
+    private void openOnboarding(Set<HardwareId> only, boolean sayNobody, Set<HardwareId> heldBack) {
         String title = getText("bindings.aliasDesigner.onboarding.title");
         AliasDesignerReports reports = reports();
-        offEdt(title, () -> reader.readOnboarding(only), (OnboardingReading reading) -> {
+        offEdt(title, () -> reader.readOnboarding(only, heldBack), (OnboardingReading reading) -> {
+            hotPlug.offered(reading.pages().stream().map(page -> page.device().hardware()).toList());
             if (reading.problem() != null) {
                 HudConfirmDialog.info(view, title, reading.problem(),
                         getText("bindings.aliasDesigner.firstSetup.close"));
                 return;
             }
             if (reading.pages().isEmpty()) {
-                if (only != null) {
+                if (sayNobody) {
                     HudConfirmDialog.info(view, title, getText("bindings.aliasDesigner.onboarding.nobody"),
                             getText("bindings.aliasDesigner.firstSetup.close"));
                 }

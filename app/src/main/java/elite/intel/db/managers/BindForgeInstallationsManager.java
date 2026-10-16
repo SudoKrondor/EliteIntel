@@ -98,6 +98,17 @@ public class BindForgeInstallationsManager {
     }
 
     /**
+     * Records whether an installation missed a write the others took - what catch-up asks about (A14).
+     * <p>
+     * Written only when it changes, so the list held in memory - read every two seconds by the device-file monitor -
+     * is dropped only then: every push reports every installation, and most reports change nothing here.
+     */
+    public synchronized void setMissedWrite(long id, boolean missed) {
+        int changed = Database.withDao(BindForgeInstallationsDao.class, dao -> dao.setMissedWrite(id, missed));
+        if (changed > 0) cached = null;
+    }
+
+    /**
      * Repoints an installation at a new folder, keeping its id and everything keyed to it - the
      * reinstalled-to-another-drive case.
      */

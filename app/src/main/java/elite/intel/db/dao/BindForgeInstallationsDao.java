@@ -36,6 +36,9 @@ public interface BindForgeInstallationsDao {
     @SqlUpdate("UPDATE bindforge_installations SET is_missing = :missing WHERE id = :id")
     void setMissing(@Bind("id") long id, @Bind("missing") boolean missing);
 
+    @SqlUpdate("UPDATE bindforge_installations SET missed_write = :missed WHERE id = :id AND missed_write <> :missed")
+    int setMissedWrite(@Bind("id") long id, @Bind("missed") boolean missed);
+
     /** Repoints a row at a new folder, keeping the row - and everything keyed to it - intact. */
     @SqlUpdate("UPDATE bindforge_installations SET root_path = :rootPath, is_missing = 0 WHERE id = :id")
     void relocate(@Bind("id") long id, @Bind("rootPath") String rootPath);
@@ -52,7 +55,8 @@ public interface BindForgeInstallationsDao {
                     rs.getString("storefront"),
                     rs.getString("root_path"),
                     rs.getBoolean("added_by_hand"),
-                    rs.getBoolean("is_missing"));
+                    rs.getBoolean("is_missing"),
+                    rs.getBoolean("missed_write"));
         }
     }
 
@@ -60,7 +64,15 @@ public interface BindForgeInstallationsDao {
      * @param id          what device records are keyed by, so it outlives a relocate
      * @param addedByHand true when the user added this rather than detection finding it
      * @param missing     true when the folder is not there right now - a state, never a reason to delete
+     * @param missedWrite true when a write the other installations took did not land here, and catch-up has not
+     *                    brought it in line yet (A14)
      */
-    record InstallationRow(long id, String storefront, String rootPath, boolean addedByHand, boolean missing) {
+    record InstallationRow(long id, String storefront, String rootPath, boolean addedByHand, boolean missing,
+                           boolean missedWrite) {
+
+        /** A row that has missed no write. */
+        public InstallationRow(long id, String storefront, String rootPath, boolean addedByHand, boolean missing) {
+            this(id, storefront, rootPath, addedByHand, missing, false);
+        }
     }
 }

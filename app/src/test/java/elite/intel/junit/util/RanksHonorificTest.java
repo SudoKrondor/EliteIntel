@@ -101,10 +101,6 @@ class RanksHonorificTest {
      */
     @Test
     void honorific_isTranslatedNotDropped() {
-        SystemSession.getInstance().setLanguage(Language.RU);
-        assertEquals("Милорд", Ranks.getHonorific(9, 0));
-        assertEquals("Старпом", Ranks.getHonorific(0, 9));
-
         SystemSession.getInstance().setLanguage(Language.DE);
         assertEquals("Mein Herr", Ranks.getHonorific(9, 0));
     }
@@ -168,10 +164,10 @@ class RanksHonorificTest {
 
         SystemSession.getInstance().setLanguage(Language.EN);
         String english = dto.getHonorific();
-        SystemSession.getInstance().setLanguage(Language.UK);
-        String ukrainian = dto.getHonorific();
+        SystemSession.getInstance().setLanguage(Language.DE);
+        String german = dto.getHonorific();
 
         assertEquals("My Lord", english);
-        assertNotEquals(english, ukrainian, "honorific should follow the active language");
+        assertNotEquals(english, german, "honorific should follow the active language");
     }
 }

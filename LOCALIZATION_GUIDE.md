@@ -32,8 +32,7 @@ They all follow the same naming pattern (using `de` as an example for German):
 | `…/de/GermanInputNormalizerRules.java` | Synonym and paraphrase normalization |
 | `…/de/GermanAiActionAliases.java` | Wake-up word and "listen" prefix in your language |
 
-Language codes: `de` German · `fr` French · `es` Spanish · `it` Italian · `pt` Portuguese · `ru` Russian ·
-`uk` Ukrainian
+Language codes: `de` German · `fr` French · `es` Spanish · `it` Italian · `pt` Portuguese · `ptbz` Brazilian Portuguese
 
 ---
 
@@ -112,7 +111,7 @@ This file gives the AI four short hints about how your language works. You only 
 ### `languageName()`
 
 The full English name of the language.  
-Example: `"German"`, `"French"`, `"Russian"`  
+Example: `"German"`, `"French"`, `"Italian"`  
 Do not translate this - it stays in English.
 
 ### `queryStarterExamples()`
@@ -181,7 +180,7 @@ If you put `"jump"` before
 `"how many jumps"`, the word "jump" inside "how many jumps" will be replaced first, corrupting the longer phrase.  
 Always add more specific (longer) entries above more general (shorter) ones.
 
-**For morphologically rich languages (Russian, Ukrainian, German):**  
+**For morphologically rich languages (German, for example):**  
 Simple left-to-right replacement does not know about word endings or inflections.  
 Only add standalone phrases you are certain cannot appear as part of another word.  
 When in doubt, add the synonym to the aliases file instead.
@@ -198,7 +197,7 @@ This small file defines two things, and both exist only for sleep mode - the sta
 
 The exact words a player says to wake the assistant from sleep mode. These must be an exact, complete match - nothing added before or after.
 
-Example (Russian): `"проснись"`, `"слушай"`, `"слушай меня"`, `"активируйся"`
+Example (German): `"wach auf"`, `"hör zu"`, `"hör mir zu"`, `"aktiviere dich"`
 
 Keep the list short - 2-4 phrases is plenty.
 
@@ -207,7 +206,7 @@ Keep the list short - 2-4 phrases is plenty.
 These are words the player can put at the start of a command to signal that what follows is a live instruction - not small talk.
 
 Example (English): `"listen up"`, `"listen"`
-Example (Russian): `"слушай меня"`, `"слушай"`
+Example (German): `"hör mir zu"`, `"hör zu"`
 
 If the player says `"listen, open the galaxy map"`, the word `"listen"` is stripped and
 `"open the galaxy map"` is sent to the AI.
@@ -220,7 +219,7 @@ Put longer phrases in both sets - the code sorts by length and tries the longest
 ## 6 - Integration test
 
 **File:** `app/src/test/java/elite/intel/junit/prompt/NaturalSpeechIntegrationTestXX.java`
-(where `XX` is your language code - e.g. `FR`, `DE`, `RU`)
+(where `XX` is your language code - e.g. `FR`, `DE`, `IT`)
 
 This test is the final quality check. It sends each voice phrase to the AI and verifies that it triggers the correct game action.
 **If a test group passes, that group of phrases is production-ready.**

@@ -115,18 +115,15 @@ class MaterialCatalogueTest {
 
     @Test
     void officiallyLocalizedLanguagesAreFullyTranslated() {
-        // Frontier ships DE, ES, FR, RU and PT-BR clients. Where a cell is blank in Frontier's own
-        // export, that client displays English, and we mirror it — so the check is that Spanish and
-        // Russian, which Frontier translated completely, are complete here too.
-        for (String col : List.of("name_es", "name_ru")) {
-            assertEquals(0, blankCount(col), col + " should have no gaps");
-        }
+        // Frontier ships DE, ES, FR and PT-BR clients. Where a cell is blank in Frontier's own
+        // export, that client displays English, and we mirror it — so the check is that Spanish,
+        // which Frontier translated completely, is complete here too.
+        assertEquals(0, blankCount("name_es"), "name_es should have no gaps");
     }
 
     @Test
-    void ukrainianAndItalianAreFullyTranslated() {
-        // Not Frontier languages, so every string is ours and none may be missing.
-        assertEquals(0, blankCount("name_uk"));
+    void italianIsFullyTranslated() {
+        // Not a Frontier language, so every string is ours and none may be missing.
         assertEquals(0, blankCount("name_it"));
     }
 

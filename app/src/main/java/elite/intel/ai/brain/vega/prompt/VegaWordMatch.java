@@ -4,7 +4,7 @@ import java.util.Locale;
 
 /**
  * Decides whether two single words are "the same word" for VEGA's command word-overlap, tolerant of
- * inflected endings (Russian declensions and the like). Two words match when they are equal, share a long
+ * inflected endings (plurals, verb endings and the like). Two words match when they are equal, share a long
  * enough common start (the same stem with a different ending), or differ by only a few letters (a typo). The
  * letter-difference allowance grows with word length: longer words may differ in more letters.
  * <p>
@@ -52,7 +52,7 @@ public final class VegaWordMatch {
             return false; // short words: only exact (already handled above)
         }
         // One word is the whole start of the other: an ending was appended (plurals, verb endings) -
-        // ruta/rutas, ship/ships, щит/щиты, contact/contacts. Cheap and language-agnostic.
+        // ruta/rutas, ship/ships, Schild/Schilde, contact/contacts. Cheap and language-agnostic.
         String shorter = x.length() <= y.length() ? x : y;
         String longer = x.length() <= y.length() ? y : x;
         if (longer.startsWith(shorter)) {

@@ -13,7 +13,8 @@ import java.util.List;
  * {@code modifiers} carries the full captured chord in press order (e.g.
  * Left&nbsp;Ctrl + Left&nbsp;Shift); an empty list means an unmodified key.
  */
-public record AssignKeyboardBindingSelection(BindingSlotType slotType, String key, List<BindingModifier> modifiers) {
+public record AssignKeyboardBindingSelection(BindingSlotType slotType, String key, List<BindingModifier> modifiers)
+        implements AssignSelection {
     public AssignKeyboardBindingSelection {
         modifiers = modifiers == null ? List.of() : List.copyOf(modifiers);
     }

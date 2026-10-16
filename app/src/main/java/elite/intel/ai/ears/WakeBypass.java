@@ -11,7 +11,7 @@ import java.util.*;
  * <p>
  * Two shapes get past a closed Sleep/Wake gate, and nothing else does:
  * <ul>
- *   <li>a <b>pure wake phrase</b> — "wake up", "слушай" — passed through whole, so the model routes it to
+ *   <li>a <b>pure wake phrase</b> — "wake up", "écoute" — passed through whole, so the model routes it to
  *       WAKEUP and the gate reopens;</li>
  *   <li>a <b>listen-prefixed order</b> — "listen, open the galaxy map" — passed through with the prefix
  *       removed, because that is an order to open the map, not an order to listen.</li>

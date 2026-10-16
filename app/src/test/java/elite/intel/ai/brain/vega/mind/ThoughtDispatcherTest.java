@@ -288,50 +288,6 @@ class ThoughtDispatcherTest {
     }
 
     @Test
-    void aLeadingTransliteratedVegaNameIsAlsoStrippedForTheReflexGate() {
-        // Russian STT returns the name in Cyrillic ("Вега"), not the canonical Latin "Vega". The Cyrillic form
-        // is the localized spoken form for the RU session language, so it is recognized as a leading vocative
-        // and a name-addressed short command still reflexes (no LLM).
-        Language previousLanguage = SystemSession.getInstance().getLanguage();
-        SystemSession.getInstance().setLanguage(Language.RU);
-        try {
-            LlmGateway failIfCalled = new LlmGateway() {
-                @Override
-                public CompletableFuture<LlmResult> submit(LlmRequest request) {
-                    throw new AssertionError("a reflex must not engage the LLM");
-                }
-
-                @Override
-                public CompletableFuture<String> completePlainText(LlmRequest request) {
-                    return CompletableFuture.completedFuture(null);
-                }
-            };
-            List<String> executed = new CopyOnWriteArrayList<>();
-            ExecutionGateway tracking = request -> {
-                executed.add(request.toolName());
-                return CompletableFuture.completedFuture(new JsonObject());
-            };
-            ThoughtDependencies dependencies = new ThoughtDependencies(
-                    failIfCalled, new FakeSpeech(), tracking, memory,
-                    new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                    (categories, currentInput) -> List.of(), new VegaState(),
-                    invocation -> false, new ConfirmationCoordinator(),
-                    new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
-            ReflexResolver reflex = new ReflexResolver(
-                    () -> List.of(new ReflexResolver.CommandPhrase("stop_ship", "all stop", true)));
-            ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, reflex, s -> s); // identity normalizer
-            dispatcher.start();
-            dispatcher.submitCommanderInput("Вега, all stop"); // Cyrillic vocative + the reflex phrase
-            dispatcher.stop();
-
-            assertEquals(List.of("stop_ship"), executed, "the Cyrillic name-addressed short command still reflexes");
-            assertTrue(memory.writes.isEmpty(), "a silent reflex command (blank outcome) files nothing to memory");
-        } finally {
-            SystemSession.getInstance().setLanguage(previousLanguage);
-        }
-    }
-
-    @Test
     void nonReflexInputFallsThroughToTheCommanderLlmPath() {
         // The resolver matches nothing, so the input takes the normal CommanderThought path - the LLM is engaged.
         CapturingLlm llm = new CapturingLlm();

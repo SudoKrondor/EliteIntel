@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.vega.memory;
 
-import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.vega.model.llm.LlmMessage;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
@@ -16,7 +15,7 @@ class CompressionPromptComposerTest {
     private final CompressionPromptComposer composer = new CompressionPromptComposer();
 
     private static String resolvedLanguageName() {
-        Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
+        Language language = SystemSession.getInstance().getLanguage();
         return language.displayName();
     }
 

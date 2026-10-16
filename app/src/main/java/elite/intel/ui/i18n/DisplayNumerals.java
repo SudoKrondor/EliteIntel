@@ -2,7 +2,6 @@ package elite.intel.ui.i18n;
 
 import com.ibm.icu.text.RuleBasedNumberFormat;
 import com.ibm.icu.util.ULocale;
-import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
@@ -87,14 +86,10 @@ public final class DisplayNumerals {
     }
 
     /**
-     * The line as the commander should read it, in the language it was composed in.
-     * <p>
-     * Not simply the session language: a Russian commander on the local voice, which cannot pronounce
-     * Cyrillic, is answered in English, so the words to read back are English ones. The same policy decides
-     * the language the figures were spelled in, which is what keeps the two halves in step.
+     * The line as the commander should read it, in the language it was composed in: the session's.
      */
     public static String digits(String text) {
-        return digits(text, AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance()));
+        return digits(text, SystemSession.getInstance().getLanguage());
     }
 
     static String digits(String text, Language language) {

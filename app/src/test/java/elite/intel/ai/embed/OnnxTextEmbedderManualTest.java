@@ -22,16 +22,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class OnnxTextEmbedderManualTest {
 
     /**
-     * Russian declensions of "авианосец" (carrier) — the exact case where exact word-overlap fails.
+     * German inflections of "Flottenträger" (fleet carrier).
      */
     private static final List<String> CARRIER_FORMS = List.of(
-            "авианосец",   // nominative
-            "авианосца",   // genitive
-            "авианосцу",   // dative
-            "авианосцем"); // instrumental
+            "Flottenträger",    // nominative
+            "Flottenträgers",   // genitive
+            "Flottenträgern");  // dative plural
 
-    private static final String SYNONYM_PHRASE = "курс на авианосец"; // "set course to the carrier"
-    private static final String UNRELATED = "выбросить помехи";       // "deploy chaff" — different intent
+    private static final String SYNONYM_PHRASE = "Kurs auf den Flottenträger"; // "set course to the carrier"
+    private static final String UNRELATED = "Düppel abwerfen";                 // "deploy chaff" — different intent
 
     @Test
     void inflectedFormsClusterByMeaning() {
@@ -63,7 +62,7 @@ class OnnxTextEmbedderManualTest {
             double synonymSim = VectorMath.cosine(vectors[0], vectors[synonymIdx]);
 
             System.out.printf(Locale.ROOT,
-                    "%navg(inflected forms)=%.3f   синоним('%s')=%.3f   unrelated('%s')=%.3f%n",
+                    "%navg(inflected forms)=%.3f   synonym('%s')=%.3f   unrelated('%s')=%.3f%n",
                     inflectionAvg, SYNONYM_PHRASE, synonymSim, UNRELATED, unrelatedSim);
 
             // The whole point: inflections of the same word, and a synonym phrase, are both meaningfully

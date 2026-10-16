@@ -8,31 +8,27 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Plain unit test for {@link VegaWordMatch}: Russian word forms taken from the action training phrases
- * must count as the same word across declension endings, while genuinely different words must not.
+ * Plain unit test for {@link VegaWordMatch}: word forms from the action training phrases must count as the
+ * same word across inflected endings, while genuinely different words must not.
  */
 class VegaWordMatchTest {
 
     /**
-     * Same word, different Russian ending - must match (these break exact word-overlap).
+     * Same word, different ending - must match (these break exact word-overlap).
      */
     @ParameterizedTest(name = "{0} ~ {1}")
     @CsvSource({
-            "навигация,навигации",
-            "навигация,навигацию",
-            "ведомый,ведомого",
-            "двигатели,двигатель",
-            "двигатели,двигателя",
-            "контакты,контакт",
-            "контакты,контактов",
-            "объявления,объявлений",
-            "инвентарь,инвентаря",
-            "авианосцем,авианосец",
-            "управление,управления",
-            "выпусти,выпустить",
-            "распределитель,распределителя",
-            "жизнеобеспечение,жизнеобеспечения",
-            "грузозаборник,грузозаборника",
+            "ruta,rutas",
+            "navegación,navegaciones",
+            "triebwerk,triebwerke",
+            "kontakte,kontakten",
+            "frachtraum,frachtraums",
+            "anfluggeschwindigkeit,anfluggeschwindigkeiten",
+            "bersaglio,bersagli",
+            "scudo,scudi",
+            "motore,motori",
+            "missione,missioni",
+            "lancer,lance",
     })
     void matchesInflectedForms(String a, String b) {
         assertTrue(VegaWordMatch.similar(a, b), a + " should match " + b);
@@ -44,13 +40,13 @@ class VegaWordMatchTest {
      */
     @ParameterizedTest(name = "{0} !~ {1}")
     @CsvSource({
-            "стоп,стол",
-            "цель,щель",
-            "торт,порт",
-            "двигатели,движение",
-            "ракета,работа",
-            "навигация,навигатор",
-            "контакты,контейнер",
+            "stopp,stoff",
+            "ziel,zahl",
+            "ruta,ruda",
+            "torre,terre",
+            "motore,mostra",
+            "contacts,container",
+            "triebwerk,treibstoff",
     })
     void rejectsDifferentWords(String a, String b) {
         assertFalse(VegaWordMatch.similar(a, b), a + " should NOT match " + b);
@@ -58,7 +54,7 @@ class VegaWordMatchTest {
 
     @Test
     void shortWordsRequireExactMatch() {
-        assertTrue(VegaWordMatch.similar("стоп", "стоп"));
-        assertFalse(VegaWordMatch.similar("бой", "бои")); // 3 letters: only exact
+        assertTrue(VegaWordMatch.similar("uno", "uno"));
+        assertFalse(VegaWordMatch.similar("uno", "una")); // 3 letters: only exact
     }
 }

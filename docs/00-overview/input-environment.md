@@ -265,6 +265,21 @@ each Linux installation reports a different folder; under the inverted one they 
 exactly as Windows does now. BindForge needs no change for the flip, because it never asked the question
 "is this Windows?" in the first place.
 
+### What BindForge does with several Linux installations - 2026-10-14 (Alan)
+
+**For now, BindForge treats the bindings folder as one, as on Windows:** every `.binds` read and write uses the folder
+Elite-Intel is set to - on Linux, the prefix the launcher's `ed-bindings` link points at - even when detection finds
+several installations, each with its own folder. Device files still go to every installation.
+
+- **Which installations should share controls is the user's to say.** Reading each prefix's journals can name the
+  commanders who played there, which helps label an installation, but it cannot decide: a commander owns no input
+  file (section 1), so "same commander" and "same controls" are separate questions.
+- **The inversion above would make "one folder" literally true** and close the question. Whether it lands is open.
+  If it does not, a later BindForge slice asks the user whether the installations share controls and moves every
+  `.binds` consumer to per-installation folders together.
+- **Until then,** a Linux user with several installations has `.binds` changes made in one installation only, and
+  Apply's confirm says so. See [Alias Designer, renaming](../02-features/bindforge/alias-designer.md#settled-before-building-it--2026-10-14-alan-a11).
+
 ### How sure we are
 
 **The paths are confirmed**, read from `Installer.install4j`, which ships and runs on every Linux start.

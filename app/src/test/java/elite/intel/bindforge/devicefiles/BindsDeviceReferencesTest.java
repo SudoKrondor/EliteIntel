@@ -6,6 +6,8 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -178,5 +180,15 @@ class BindsDeviceReferencesTest {
 
     private void binds(String name, String content) throws IOException {
         Files.writeString(bindings.resolve(name), content);
+    }
+
+    /** A hand-edited .binds can spell a name otherwise; several names of one device count each binding once. */
+    @Test
+    void bindingsNamingCountsEveryNameIgnoringCase() {
+        Map<String, Integer> counts = Map.of("LVWAP", 3, "lvwap", 2, "LeftStick", 4, "RVWAP", 7);
+
+        assertEquals(5, BindsDeviceReferences.bindingsNaming(Set.of("LVWAP"), counts));
+        assertEquals(9, BindsDeviceReferences.bindingsNaming(List.of("LeftStick", "LVWAP", "Lvwap"), counts));
+        assertEquals(0, BindsDeviceReferences.bindingsNaming(Collections.singletonList(null), counts));
     }
 }

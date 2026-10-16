@@ -1,7 +1,5 @@
 package elite.intel.bindforge.devices;
 
-import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalInt;
 
@@ -48,7 +46,9 @@ public record DeviceEditorMiddle(Kind kind, boolean enabled, Why why, int bindin
          * {@code .binds} could not be read - the folder is not there, or no preset in it parses - so whether it names
          * the device is unknown, and CLEAR is refused rather than guessed (review, 2026-10-11).
          */
-        BINDS_UNREAD
+        BINDS_UNREAD,
+        /** Its last rename has not reached every installation and {@code .binds} yet (A11). */
+        RENAME_PENDING
     }
 
     public DeviceEditorMiddle {
@@ -95,16 +95,12 @@ public record DeviceEditorMiddle(Kind kind, boolean enabled, Why why, int bindin
     }
 
     /**
-     * How many bindings name {@code deviceName}, ignoring case - a hand-edited {@code .binds} can spell it otherwise,
-     * and missing one would let CLEAR strand it.
+     * CLEAR refused while the device's rename is still under way (review, 2026-10-15, A11): its old name may still be
+     * in {@code .binds} or in an installation that missed the rename, and clearing would drop the old name the next
+     * Apply needs to finish it - leaving bindings on a device with no entry, or an element nothing cleans up. An undo,
+     * and RESET LABELS, are left as they are.
      */
-    public static int bindingsNaming(String deviceName, Map<String, Integer> referenceCounts) {
-        if (deviceName == null) return 0;
-        String folded = deviceName.toLowerCase(Locale.ROOT);
-        int count = 0;
-        for (Map.Entry<String, Integer> entry : referenceCounts.entrySet()) {
-            if (entry.getKey().toLowerCase(Locale.ROOT).equals(folded)) count += entry.getValue();
-        }
-        return count;
+    public DeviceEditorMiddle whileRenamePending() {
+        return kind == Kind.CLEAR ? new DeviceEditorMiddle(kind, false, Why.RENAME_PENDING, 0) : this;
     }
 }

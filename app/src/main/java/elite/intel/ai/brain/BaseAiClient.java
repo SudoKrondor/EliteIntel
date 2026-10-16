@@ -2,7 +2,6 @@ package elite.intel.ai.brain;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.health.AiServiceHealth;
 import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.session.SystemSession;
@@ -144,7 +143,7 @@ public class BaseAiClient {
 
     private static String servicePhrase(String key) {
         return ResponseTextProvider.getText(
-                AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance()), key);
+                SystemSession.getInstance().getLanguage(), key);
     }
 
     private static AiTransportResult.FailureKind httpFailureKind(int statusCode) {

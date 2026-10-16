@@ -1,7 +1,6 @@
 package elite.intel.ai.brain;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.Test;
@@ -128,7 +127,7 @@ class BaseAiClientTest {
 
     private static String localized(String key) {
         return ResponseTextProvider.getText(
-                AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance()), key);
+                SystemSession.getInstance().getLanguage(), key);
     }
 
     private static void assertHttpFailureKind(

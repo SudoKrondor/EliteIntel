@@ -17,7 +17,6 @@ import java.util.List;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.currentLanguageTag;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
-import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * Scrollable, read-only Markdown viewer panel.
@@ -134,7 +133,7 @@ public class MarkdownViewPanel extends JPanel {
 
     /**
      * Inserts a {@code -<tag>} language suffix before the file extension, e.g.
-     * {@code ("credits.md", "ru")} -> {@code "credits-ru.md"}. The English base tag and a
+     * {@code ("credits.md", "de")} -> {@code "credits-de.md"}. The English base tag and a
      * blank tag return the base name unchanged.
      */
     private static String localizedName(String base, String tag) {

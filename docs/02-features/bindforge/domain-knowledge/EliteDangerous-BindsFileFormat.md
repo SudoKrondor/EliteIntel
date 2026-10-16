@@ -340,6 +340,40 @@ the resulting `.binds` device ID is `33440259`.
 - A conceptual lookup chain from a live device to a `.binds` reference: enumerate the device's hardware GUID → extract VID+PID → concatenate as an 8-char hex string → match against `Device=` attributes in the `.binds` file → optionally look up a human name via `DeviceMappings.xml` for display.
 - **Exact formatting details are not fully verified from documentation alone:** byte order (VID-first vs. PID-first), hex case (upper vs. lower), zero-padding behaviour, and whether interface/collection info is ever appended are not independently confirmed — the derivation formula above is drawn from a single matching example (VID `3344` + PID `0259` → `33440259`) rather than an exhaustive verification pass. Treat this as reliable for the common case, but re-verify byte order against a live device pairing before depending on it for device-identity correlation.
 
+### 4.3 Case: only `.binds` cares, and it cares about one spelling per device — measured 2026-10-14
+
+**The question:** a rename that changes only case (`Lvwap` to `LVWAP`) — which files have to change with it?
+Tested by Alan on his own install with `LVWAP`, using the galaxy map's `CamTranslateYAxis` binding as the odd one
+out.
+
+| `DeviceMappings.xml` element | `.buttonMap` | `Device=` in `.binds` | Result |
+|---|---|---|---|
+| `<lvwap>` | `lvwap.buttonMap` | `LVWAP` everywhere, except one `lvwap` | **rejected** — falls back to keyboard and mouse |
+| `<lvwap>` | `lvwap.buttonMap` | `LVWAP` everywhere | **loads** |
+
+**What it shows:**
+
+1. **A `Device=` name finds its `DeviceMappings.xml` element ignoring case.** `LVWAP` in `.binds` resolved to
+   `<lvwap>`.
+2. **The `.buttonMap` filename's case does not matter** — expected on Windows, whose file system ignores case.
+   Under Proton the file system does not, and Wine usually looks files up ignoring case; unmeasured for a
+   `.buttonMap`.
+3. **A preset that spells one device two ways is rejected**, the same fallback as
+   [a name with no entry](EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
+   One `lvwap` among the `LVWAP`s was enough.
+
+**Not yet separated:** whether the rule is *one spelling per device within `.binds`*, or something stricter about
+case in `.binds` itself. The deciding test is every `Device=` lowercase with the element uppercase —
+[testing item 24](../../../00-overview/testing-required.md#bindforge).
+
+**For BindForge:**
+
+- **A case-only rename needs no `.binds` rewrite** — row two is exactly that rename, finished — and BindForge
+  never writes a second spelling of a device into `.binds`. A rewrite matches every spelling ignoring case and
+  writes the new name one way, so it leaves one spelling behind it.
+- **A `.binds` holding two spellings of one device is a preset the game will reject**, worth reporting as an
+  anomaly. It is not something BindForge's own writes produce.
+
 ---
 
 ## 5. Input Key / Token Vocabulary

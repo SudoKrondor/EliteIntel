@@ -77,6 +77,33 @@ class BindForgeDeviceDraftManagerTest {
         assertEquals("83F4", master.findByName("LVWAP").pid());
     }
 
+    /** The identity question's yes (A12): the name and labels stay, the hardware moves - in the draft only. */
+    @Test
+    void retargetingByNameKeepsTheNameAndLabelsAndStartsTheDraft() {
+        assertTrue(draft.retargetByName("LVWAP", "3344", "83f4", "3344", "83F5"));
+
+        assertTrue(draft.isStarted());
+        DraftRow row = draft.findByName("LVWAP");
+        assertEquals("83F5", row.pid());
+        assertEquals(labels("Joy_1", "LV MAIN TRIGGER", "Joy_2", "PINKY"), draft.labelsOf(row.id()));
+        assertEquals("83F4", master.findByName("LVWAP").pid(), "Apply moves the master, not the answer");
+    }
+
+    @Test
+    void aRetargetFromHardwareTheDeviceNoLongerHasWritesNothing() {
+        assertFalse(draft.retargetByName("LVWAP", "3344", "0001", "3344", "83F5"));
+        assertFalse(draft.retargetByName("Gone", "3344", "83F4", "3344", "83F5"));
+
+        assertEquals("83F4", draft.findByName("LVWAP").pid());
+    }
+
+    @Test
+    void aRetargetOntoHardwareAnotherDeviceHasWritesNothing() {
+        assertFalse(draft.retargetByName("LVWAP", "3344", "83F4", "3344", "03f5"));
+
+        assertEquals("83F4", draft.findByName("LVWAP").pid());
+    }
+
     /** The Device Editor's SAVE: the whole set replaces the device's labels in the draft, never the master's. */
     @Test
     void savingLabelsReplacesTheDraftDevicesSetAndLeavesTheMasterAlone() {
@@ -99,6 +126,41 @@ class BindForgeDeviceDraftManagerTest {
         assertTrue(saved.aliasConfirmed());
         assertEquals(labels("Joy_RZAxis", "RUDDER"), draft.labelsOf(saved.id()));
         assertNull(master.findByName("T-Rudder"));
+    }
+
+    /** SAVE with the name changed (A11): one write, the old name kept for Apply, and no removal once applied. */
+    @Test
+    void savingWithANewNameRenamesAndKeepsTheOldNameForApply() {
+        DraftRow saved = draft.saveDevice("LVWAP", "LeftStick", labels("Joy_1", "TRIGGER"));
+
+        assertEquals("LeftStick", saved.deviceName());
+        assertEquals("LVWAP", saved.previousName());
+        assertEquals(lvwap, saved.masterId());
+        assertEquals(labels("Joy_1", "TRIGGER"), draft.labelsOf(saved.id()));
+        assertNotNull(master.findByName("LVWAP"), "the master waits for Apply");
+
+        assertTrue(draft.promote().isEmpty(), "a renamed device is not a removed one");
+        assertEquals("LVWAP", master.findByName("LeftStick").previousName());
+        assertTrue(master.pendingRemovals().isEmpty());
+    }
+
+    /** Renamed back before Apply: nothing is left to rename, so no old name is kept. */
+    @Test
+    void renamingBackToTheAppliedNameKeepsNoOldName() {
+        draft.saveDevice("LVWAP", "LeftStick", labels("Joy_1", "TRIGGER"));
+
+        DraftRow back = draft.saveDevice("LeftStick", "LVWAP", labels("Joy_1", "TRIGGER"));
+
+        assertNull(back.previousName());
+    }
+
+    /** A name another draft device holds, or a device that is gone, writes nothing - the editor read a stale list. */
+    @Test
+    void savingUnderATakenNameOrAGoneDeviceWritesNothing() {
+        assertNull(draft.saveDevice("LVWAP", "RVWAP", labels("Joy_1", "TRIGGER")));
+        assertNull(draft.saveDevice("Nobody", "LeftStick", labels("Joy_1", "TRIGGER")));
+        assertEquals(labels("Joy_1", "LV MAIN TRIGGER", "Joy_2", "PINKY"),
+                draft.labelsOf(draft.findByName("LVWAP").id()), "the transaction wrote nothing");
     }
 
     @Test
@@ -147,8 +209,7 @@ class BindForgeDeviceDraftManagerTest {
 
     @Test
     void aRenameIsNotReportedAsARemoval() {
-        draft.start();
-        draft.rename(draft.findByName("LVWAP").id(), "LeftStick");
+        rename("LVWAP", "LeftStick");
 
         assertTrue(draft.promote().isEmpty());
         DeviceRow renamed = master.findByName("LeftStick");
@@ -159,20 +220,17 @@ class BindForgeDeviceDraftManagerTest {
     /** The name kept is the one on disk, however many times the device was renamed before an Apply. */
     @Test
     void renamingTwiceKeepsTheNameTheInstallationsHold() {
-        draft.start();
-        long row = draft.findByName("LVWAP").id();
-
-        draft.rename(row, "LeftStick");
-        draft.rename(row, "Left");
+        rename("LVWAP", "LeftStick");
+        rename("LeftStick", "Left");
 
         assertEquals("LVWAP", draft.findByName("Left").previousName());
     }
 
     @Test
     void aDeviceAddedInTheDraftKeepsNoPreviousNameWhenRenamed() {
-        long row = draft.record("TRudder2", "044F", "B679", false).id();
+        draft.record("TRudder2", "044F", "B679", false);
 
-        draft.rename(row, "Pedals");
+        rename("TRudder2", "Pedals");
 
         assertNull(draft.findByName("Pedals").previousName(), "nothing was ever written under the first name");
     }
@@ -180,12 +238,9 @@ class BindForgeDeviceDraftManagerTest {
     /** Emptied and refilled rather than updated in place, so a name swap cannot trip the unique alias. */
     @Test
     void twoDevicesCanSwapNames() {
-        draft.start();
-        long left = draft.findByName("LVWAP").id();
-        long right = draft.findByName("RVWAP").id();
-        draft.rename(left, "Swapping");
-        draft.rename(right, "LVWAP");
-        draft.rename(left, "RVWAP");
+        rename("LVWAP", "Swapping");
+        rename("RVWAP", "LVWAP");
+        rename("Swapping", "RVWAP");
 
         assertTrue(draft.promote().isEmpty());
 
@@ -260,11 +315,8 @@ class BindForgeDeviceDraftManagerTest {
 
     @Test
     void renamingBackToTheOriginalNameLeavesNoRenamePending() {
-        draft.start();
-        long row = draft.findByName("LVWAP").id();
-
-        draft.rename(row, "Left");
-        draft.rename(row, "LVWAP");
+        rename("LVWAP", "Left");
+        rename("Left", "LVWAP");
 
         assertNull(draft.findByName("LVWAP").previousName(), "the installations already hold this name");
     }
@@ -283,8 +335,7 @@ class BindForgeDeviceDraftManagerTest {
 
     @Test
     void revertingIsRefusedWhenAnotherDraftDeviceHasTakenTheName() {
-        draft.start();
-        draft.rename(draft.findByName("LVWAP").id(), "Left");
+        rename("LVWAP", "Left");
         long taker = draft.record("LVWAP", "044F", "B679", false).id();
 
         IllegalStateException refused = assertThrows(IllegalStateException.class, () -> draft.revert(lvwap));
@@ -577,5 +628,13 @@ class BindForgeDeviceDraftManagerTest {
         try (Handle handle = Database.init()) {
             handle.execute("UPDATE bindforge_activation SET activated_at = CURRENT_TIMESTAMP WHERE id = 1");
         }
+    }
+
+    /** A rename as the Device Editor makes it: SAVE with the name changed and the labels as they are. */
+    private void rename(String from, String to) {
+        Map<String, String> labels = draft.isStarted() && draft.findByName(from) != null
+                ? draft.labelsOf(draft.findByName(from).id())
+                : master.labelsOf(master.findByName(from).id());
+        assertNotNull(draft.saveDevice(from, to, labels), from + " -> " + to);
     }
 }

@@ -43,17 +43,6 @@ class StringUtlsSanitizeTtsTest {
     }
 
     @Test
-    void preservesCyrillicLettersForRussianAndUkrainian() {
-        // й (Russian U+0439) and ї/і (Ukrainian) are precomposed letters.
-        String input = "Привет Київ"; // Привет Київ
-
-        String result = StringUtls.sanitizeTts(input);
-
-        assertTrue(result.contains("Привет"), "Russian letters should survive");
-        assertTrue(result.contains("Київ"), "Ukrainian letters should survive");
-    }
-
-    @Test
     void espeakPathFlattensIntonationPunctuation() {
         // The no-arg overload hardens for espeak-ng: "!" and ":" are flattened, "..." collapses to a space.
         String result = StringUtls.sanitizeTts("Warning! Ready: set... go");

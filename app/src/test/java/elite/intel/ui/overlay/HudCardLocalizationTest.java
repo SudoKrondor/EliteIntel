@@ -4,7 +4,6 @@ import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.i18n.MultiLingualTextProvider;
 import elite.intel.ui.overlay.MiningObjectiveSource.TargetYield;
-import elite.intel.util.StringUtls;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -68,25 +67,17 @@ class HudCardLocalizationTest {
     }
 
     /**
-     * A counted key is not one key but one per plural category, and which categories exist is the
-     * language's business: English declares {@code .one} and {@code .many}, Russian and Ukrainian also
-     * declare {@code .few} for 2 to 4. The base bundle therefore cannot list what a Slavic bundle owes,
-     * so {@link #everyCardKeyResolvesInEveryLanguage}, which reads the English base, is blind to exactly
-     * those keys.
-     * <p>
-     * Read from the bundle files rather than through {@link HudText}, deliberately: the lookup degrades a
-     * missing category to the {@code .many} form so the card never shows a raw key, and going through it
-     * would let this test pass on the very gap it exists to catch.
+     * A counted key is not one key but one per plural category, {@code .one} and {@code .many}. The English
+     * base bundle covers a language that leaves one out, so {@link #everyCardKeyResolvesInEveryLanguage} cannot
+     * see the gap - the card would just read in English. Read from the bundle files, so it can.
      */
     @Test
-    void everyLanguageDeclaresEveryPluralCategoryItsOwnRuleCanSelect() {
+    void everyLanguageDeclaresBothPluralForms() {
         for (String base : pluralKeyBases()) {
             for (Language language : Language.values()) {
                 Set<String> declared = bundleKeys(language);
-                for (String suffix : categoriesUsedBy(language)) {
-                    assertTrue(declared.contains(base + suffix),
-                            language + " never declares " + base + suffix
-                                    + ", which its own plural rule selects");
+                for (String suffix : List.of(".one", ".many")) {
+                    assertTrue(declared.contains(base + suffix), language + " never declares " + base + suffix);
                 }
             }
         }
@@ -120,10 +111,10 @@ class HudCardLocalizationTest {
 
     @Test
     void theExpiryCountdownTakesItsUnitsFromTheCommandersLanguage() {
-        SystemSession.getInstance().setLanguage(Language.RU);
+        SystemSession.getInstance().setLanguage(Language.DE);
 
-        assertEquals("2д 04ч", MissionObjectiveSource.humanDuration(Duration.ofHours(52)));
-        assertEquals("45м", MissionObjectiveSource.humanDuration(Duration.ofMinutes(45)));
+        assertEquals("2T 04Std", MissionObjectiveSource.humanDuration(Duration.ofHours(52)));
+        assertEquals("45Min", MissionObjectiveSource.humanDuration(Duration.ofMinutes(45)));
     }
 
     /**
@@ -175,21 +166,8 @@ class HudCardLocalizationTest {
         assertEquals("89 T", valueOf(card, "PLATINUM"));
     }
 
-    /**
-     * Russian counts in three: two missions and five missions are not the same word. English has no
-     * such category, so the shape of the key set differs per language and only the count decides.
-     */
     @Test
-    void aCountedRowTakesThePluralFormItsLanguageCallsFor() {
-        SystemSession.getInstance().setLanguage(Language.RU);
-
-        assertEquals("1 МИССИЯ", HudText.plural("overlay.card.value.missionCount", 1));
-        assertEquals("3 МИССИИ", HudText.plural("overlay.card.value.missionCount", 3));
-        assertEquals("8 МИССИЙ", HudText.plural("overlay.card.value.missionCount", 8));
-    }
-
-    @Test
-    void anEnglishCountFallsBackToTheTwoFormsEnglishHas() {
+    void aCountedRowTakesThePluralFormItsCountCallsFor() {
         SystemSession.getInstance().setLanguage(Language.EN);
 
         assertEquals("1 MISSION", HudText.plural("overlay.card.value.missionCount", 1));
@@ -245,18 +223,6 @@ class HudCardLocalizationTest {
                 .toList());
         assertFalse(bases.isEmpty(), "no counted overlay.card.* keys found to check");
         return bases;
-    }
-
-    /**
-     * The categories a language's plural rule can actually select, taken from the rule itself so a
-     * language added later is covered without editing this test.
-     */
-    private static Set<String> categoriesUsedBy(Language language) {
-        Set<String> categories = new TreeSet<>();
-        for (int count = 0; count <= 120; count++) {
-            categories.add(StringUtls.pluralSuffix(language, count));
-        }
-        return categories;
     }
 
     private static Set<String> bundleKeys(Language language) {

@@ -16,11 +16,11 @@ public class GoogleVoiceProvider implements VoiceProvider<VoiceSelectionParams> 
     private static final GoogleVoiceProvider INSTANCE = new GoogleVoiceProvider();
     /** Languages with Chirp3-HD coverage: the selected voice's character is kept, only the locale prefix changes. */
     private static final EnumSet<Language> CHIRP3_HD_LANGUAGES =
-            EnumSet.of(Language.RU, Language.UK, Language.DE, Language.FR, Language.ES, Language.IT,
+            EnumSet.of(Language.DE, Language.FR, Language.ES, Language.IT,
                     Language.PTBZ);
     private final Map<String, VoiceSelectionParams> voiceMap;
     /**
-     * Reports the voices Google offers for a BCP-47 language code (e.g. "ru-RU"), injected by the TTS engine
+     * Reports the voices Google offers for a BCP-47 language code (e.g. "de-DE"), injected by the TTS engine
      * that owns the API client. Null until wired (unit tests, or before the engine starts): the desired voice
      * name is then used as-is. The Chirp3-HD character roster differs per locale, so this both guards against
      * requesting a voice that does not exist there (a hard API error) and lets an unavailable character fall
@@ -147,8 +147,6 @@ public class GoogleVoiceProvider implements VoiceProvider<VoiceSelectionParams> 
     private static String googleLanguageCode(Language language) {
         return switch (language) {
             case EN -> null;
-            case RU -> "ru-RU";
-            case UK -> "uk-UA";
             case DE -> "de-DE";
             case FR -> "fr-FR";
             case ES -> "es-ES";
@@ -227,8 +225,6 @@ public class GoogleVoiceProvider implements VoiceProvider<VoiceSelectionParams> 
     private static String safeVoiceName(Language language, boolean male) {
         return switch (language) {
             case EN -> "";
-            case RU -> male ? "ru-RU-Standard-B" : "ru-RU-Standard-A";
-            case UK -> "uk-UA-Standard-B";
             case DE -> male ? "de-DE-Standard-H" : "de-DE-Standard-G";
             case FR -> male ? "fr-FR-Standard-G" : "fr-FR-Standard-E";
             case ES -> male ? "es-ES-Standard-B" : "es-ES-Standard-E";

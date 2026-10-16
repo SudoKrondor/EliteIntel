@@ -94,7 +94,7 @@ final class CommanderPrompt {
     static String render() {
         return TEXT
                 .replace("{identity}", VegaSystemPrompt.identityClause())
-                .replace("{inputLanguage}", VegaSystemPrompt.inputLanguageName())
+                .replace("{inputLanguage}", VegaSystemPrompt.languageName())
                 .replace("{language}", VegaSystemPrompt.languageName())
                 .replace("{personalityClause}", VegaSystemPrompt.personalityClause())
                 .replace("{selfGender}", VegaSystemPrompt.selfGender());

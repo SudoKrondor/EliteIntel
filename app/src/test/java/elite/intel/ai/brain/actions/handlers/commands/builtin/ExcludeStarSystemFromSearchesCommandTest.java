@@ -80,7 +80,7 @@ class ExcludeStarSystemFromSearchesCommandTest {
 
     @Test
     void theConfirmationNamesTheSystemAndWhichOneItIs() {
-        // "that" is worked out at run time, and a misheard this/that (Russian "эту"/"ту") must come back as an
+        // "that" is worked out at run time, and a misheard this/that must come back as an
         // audibly different question - not merely a different system name the commander has to catch.
         playerSession.moveTo(new Position(TEST_ADDRESS, "Exclusion Test Prompt Here", null));
         reminders.setReminder("Buy gold", "Exclusion Test Prompt There", null, null);

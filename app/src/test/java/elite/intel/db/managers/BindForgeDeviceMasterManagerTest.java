@@ -50,22 +50,6 @@ class BindForgeDeviceMasterManagerTest {
         assertNull(master.findByHardware("3344", "0000"), "a genuinely different device is still not a match");
     }
 
-    @Test
-    void renamingRemembersTheOldNameUntilTheRenameIsClosed() {
-        long id = master.record("RVWAP", "3344", "03F5", true).id();
-
-        master.rename(id, "RightStick");
-        DeviceRow renamed = master.findByName("RightStick");
-
-        assertNotNull(renamed, "the new name is the one in the master now");
-        assertEquals("RVWAP", renamed.previousName(),
-                "kept so every installation's old .buttonMap can be found and renamed with it");
-        assertNull(master.findByName("RVWAP"), "and the old name is gone");
-
-        master.clearPreviousName(id);
-        assertNull(master.findByName("RightStick").previousName(), "the rename is finished");
-    }
-
     /**
      * The firmware-update repair: the entry keeps its name, so every binding naming it follows without being
      * touched.

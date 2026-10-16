@@ -2,12 +2,14 @@ package elite.intel.ai.brain.vega.memory;
 
 /**
  * Default {@link TokenEstimator}: a character-length heuristic. Uses a deliberately small
- * characters-per-token divisor so the estimate leans high for Cyrillic-heavy content, keeping memory
+ * characters-per-token divisor so the estimate leans high for accented and non-English content, keeping memory
  * eviction conservative (it evicts slightly early rather than overrunning the budget).
  */
 public final class HeuristicTokenEstimator implements TokenEstimator {
 
-    /** Conservative characters-per-token ratio (English ~4, Cyrillic ~2-3; 3 over-estimates safely). */
+    /**
+     * Conservative characters-per-token ratio (English ~4, accented languages lower; 3 over-estimates safely).
+     */
     private static final int CHARS_PER_TOKEN = 3;
 
     @Override

@@ -47,7 +47,7 @@ class SpokenTextSymbolsTest {
                 SpokenTextSymbols.strip("Route set for \"Shinrarta Dezhra\"."));
         assertEquals("Route set for Shinrarta Dezhra.",
                 SpokenTextSymbols.strip("Route set for “Shinrarta Dezhra”."));
-        // Guillemets, which the French and Russian commander languages use for quotation.
+        // Guillemets, which the French commander language uses for quotation.
         assertEquals("Route set for Shinrarta Dezhra.",
                 SpokenTextSymbols.strip("Route set for «Shinrarta Dezhra»."));
     }

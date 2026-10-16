@@ -24,7 +24,7 @@ public final class CustomCommandValidator {
 
     /**
      * Routing-safe key: lowercase letters and decimal digits of <em>any</em> script, plus underscore.
-     * {@code \p{Ll}} keeps cased lowercase letters (Latin {@code a-z}, Cyrillic {@code а-я}, ...),
+     * {@code \p{Ll}} keeps cased lowercase letters (Latin {@code a-z}, Greek, ...),
      * {@code \p{Lo}} keeps caseless scripts (CJK, Arabic, ...), {@code \p{Nd}} keeps decimal digits.
      * Uppercase letters, whitespace, colons, dots and hyphens are all excluded, so a key can never
      * break the {@code "  <key>:\n"} prompt block or carry a script the routing LLM can't echo.

@@ -2,11 +2,11 @@ package elite.intel.ai.brain.vega.trainingphrases;
 
 import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
-import elite.intel.ai.embed.SemanticPhraseMatcher;
-import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
 import elite.intel.ai.brain.vega.prompt.AliasEmbeddingText;
 import elite.intel.ai.brain.vega.prompt.GameToolCandidates;
+import elite.intel.ai.embed.SemanticPhraseMatcher;
+import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.db.util.Database;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSituation;
@@ -89,26 +89,6 @@ class ThrottleNudgeRoutingTest {
         assertOffered(Language.EN, utterance, "decrease_speed");
     }
 
-    @ParameterizedTest(name = "RU \"{0}\" offers increase_speed")
-    @ValueSource(strings = {
-            "подними скорость на десять", "прибавь газу на двадцать", "ускорься на пятнадцать",
-            "накинь двадцать процентов тяги", "скорость плюс пять", "поддай ходу на десять",
-            "быстрее на двадцать", "плюс десять к тяге",
-    })
-    void aRussianIncreaseUtteranceOffersIncreaseSpeed(String utterance) {
-        assertOffered(Language.RU, utterance, "increase_speed");
-    }
-
-    @ParameterizedTest(name = "RU \"{0}\" offers decrease_speed")
-    @ValueSource(strings = {
-            "притормози на десять", "сбрось скорость на двадцать", "сбавь газу на десять",
-            "скорость минус пять", "медленнее на двадцать", "убери десять процентов скорости",
-            "тормози на пятнадцать", "минус двадцать к тяге",
-    })
-    void aRussianDecreaseUtteranceOffersDecreaseSpeed(String utterance) {
-        assertOffered(Language.RU, utterance, "decrease_speed");
-    }
-
     @ParameterizedTest(name = "DE \"{0}\" offers increase_speed")
     @ValueSource(strings = {
             "erhöhe den schub um zehn", "gib mir zwanzig prozent mehr schub", "schub plus fünf",
@@ -189,26 +169,6 @@ class ThrottleNudgeRoutingTest {
         assertOffered(Language.IT, utterance, "decrease_speed");
     }
 
-    @ParameterizedTest(name = "UK \"{0}\" offers increase_speed")
-    @ValueSource(strings = {
-            "підніми тягу на десять", "додай ходу на двадцять", "прискорся на п'ятнадцять",
-            "швидкість плюс п'ять", "тяга плюс п'ять", "піддай газу на десять",
-            "швидше на двадцять", "плюс десять до тяги",
-    })
-    void aUkrainianIncreaseUtteranceOffersIncreaseSpeed(String utterance) {
-        assertOffered(Language.UK, utterance, "increase_speed");
-    }
-
-    @ParameterizedTest(name = "UK \"{0}\" offers decrease_speed")
-    @ValueSource(strings = {
-            "пригальмуй на десять", "скинь швидкість на двадцять", "зменш тягу на десять",
-            "швидкість мінус п'ять", "тяга мінус п'ять", "повільніше на двадцять",
-            "прибери десять відсотків швидкості", "мінус двадцять до тяги",
-    })
-    void aUkrainianDecreaseUtteranceOffersDecreaseSpeed(String utterance) {
-        assertOffered(Language.UK, utterance, "decrease_speed");
-    }
-
     /**
      * The nudge aliases must not turn into a semantic hub that swallows the fixed-speed commands. Rank 1 is
      * asserted here (not merely offered) because these utterances name one exact throttle setting.
@@ -223,10 +183,6 @@ class ThrottleNudgeRoutingTest {
             "EN, stop the ship,                  set_speed_to_zero_0_stop_ship",
             "EN, all stop,                       set_speed_to_zero_0_stop_ship",
             "EN, optimal approach speed,         set_optimal_speed",
-            "RU, дай полную тягу,                set_speed_100",
-            "RU, полная остановка,               set_speed_to_zero_0_stop_ship",
-            "RU, четверть хода,                  set_speed_25",
-            "RU, оптимальная скорость подхода,   set_optimal_speed",
             "DE, voller schub,                   set_speed_100",
             "DE, schiff anhalten,                set_speed_to_zero_0_stop_ship",
             "DE, halbe fahrt,                    set_speed_50",
@@ -246,11 +202,6 @@ class ThrottleNudgeRoutingTest {
             "IT, velocità a metà,                set_speed_50",
             "IT, velocità a un quarto,           set_speed_25",
             "IT, velocità di avvicinamento ottimale, set_optimal_speed",
-            "UK, повна тяга,                     set_speed_100",
-            "UK, зупини корабель,                set_speed_to_zero_0_stop_ship",
-            "UK, половина тяги,                  set_speed_50",
-            "UK, чверть тяги,                    set_speed_25",
-            "UK, оптимальна швидкість підходу,   set_optimal_speed",
     })
     void aFixedSpeedUtteranceStillWinsItsOwnCommand(Language language, String utterance, String expectedId) {
         Ranked ranked = rank(language, utterance);

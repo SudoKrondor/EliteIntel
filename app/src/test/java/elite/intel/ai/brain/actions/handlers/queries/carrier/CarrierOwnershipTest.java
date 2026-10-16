@@ -43,12 +43,12 @@ class CarrierOwnershipTest {
      */
     @ParameterizedTest
     @ValueSource(strings = {
-            "статус авианосца эскадрильи",
-            "куда летит авианосец эскадрильи",
-            "данные об авианосце эскадрона",
+            "estado del carrier del escuadrón",
+            "rumbo de los carriers de escuadrones",
+            "fondos del carrier de la escuadrilla",
     })
     void oneStemCoversEveryInflection(String utterance) {
-        assertEquals(SQUADRON, CarrierOwnership.resolve(utterance, List.of("эскадр")));
+        assertEquals(SQUADRON, CarrierOwnership.resolve(utterance, List.of("escuadr")));
     }
 
     @ParameterizedTest(name = "[{index}] {0}: \"{1}\" -> {2}")
@@ -96,19 +96,7 @@ class CarrierOwnershipTest {
                 Arguments.of(Language.PTBZ, "status do carrier", FLEET),
                 Arguments.of(Language.PTBZ, "rumo do carrier", FLEET),
                 Arguments.of(Language.PTBZ, "status do carrier do esquadrão", SQUADRON),
-                Arguments.of(Language.PTBZ, "rota do carrier do esquadrão", SQUADRON),
-
-                Arguments.of(Language.RU, "статус авианосца", FLEET),
-                Arguments.of(Language.RU, "куда летит авианосец", FLEET),
-                Arguments.of(Language.RU, "дальность прыжка авианосца", FLEET),
-                Arguments.of(Language.RU, "статус авианосца эскадрильи", SQUADRON),
-                Arguments.of(Language.RU, "куда направляется авианосец эскадрильи", SQUADRON),
-
-                Arguments.of(Language.UK, "статус авіаносця", FLEET),
-                Arguments.of(Language.UK, "куди летить авіаносець", FLEET),
-                Arguments.of(Language.UK, "дальність стрибка авіаносця", FLEET),
-                Arguments.of(Language.UK, "статус авіаносця ескадрильї", SQUADRON),
-                Arguments.of(Language.UK, "курс авіаносця ескадрильї", SQUADRON)
+                Arguments.of(Language.PTBZ, "rota do carrier do esquadrão", SQUADRON)
         );
     }
 }

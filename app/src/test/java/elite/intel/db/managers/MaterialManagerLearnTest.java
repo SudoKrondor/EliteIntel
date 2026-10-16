@@ -68,9 +68,9 @@ class MaterialManagerLearnTest {
                     "with no English name, the word the client shows beats 'unknown material'");
             assertEquals(NEW_SYMBOL, FuzzySearch.fuzzyMaterialSymbol("Rhodiumstaub", 8));
         });
-        withLanguage(Language.UK, () ->
+        withLanguage(Language.IT, () ->
                 assertEquals("Rhodiumstaub", FuzzySearch.localizedMaterialName(NEW_SYMBOL),
-                        "a Ukrainian speaker on a German client hears the German word, as their HUD shows it"));
+                        "an Italian speaker on a German client hears the German word, as their HUD shows it"));
     }
 
     @Test

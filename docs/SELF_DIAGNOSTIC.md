@@ -165,7 +165,7 @@ Phase 1 has:
 
 - `AiServiceHealthTest`: failure runs, reset on an answer, median reply time.
 - `AiServiceCheckTest`: every verdict, from a fake gateway that records outcomes the way the transport does.
-- `AiServiceReportTest`: the English sentences and Russian plurals.
+- `AiServiceReportTest`: the English sentences.
 - `LMStudioModelListTest`: the models address, parsing, and model-name matching.
 - `ReflexAliasFormsTest`: pins the phrases.
 

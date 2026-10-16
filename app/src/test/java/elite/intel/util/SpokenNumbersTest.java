@@ -42,8 +42,6 @@ class SpokenNumbersTest {
         assertEquals(200, SpokenNumbers.parse("doscientos"));
         assertEquals(200, SpokenNumbers.parse("duzentos"));
         assertEquals(200, SpokenNumbers.parse("duecento"));
-        assertEquals(200, SpokenNumbers.parse("двести"));
-        assertEquals(200, SpokenNumbers.parse("двісті"));
     }
 
     @Test

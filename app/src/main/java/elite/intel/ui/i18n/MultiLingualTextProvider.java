@@ -104,7 +104,7 @@ public final class MultiLingualTextProvider {
     }
 
     /**
-     * Lowercase language tag of the active UI language (e.g. {@code "en"}, {@code "ru"}).
+     * Lowercase language tag of the active UI language (e.g. {@code "en"}, {@code "de"}).
      * Intended for selecting localized resource files (manuals, credits) by language suffix.
      */
     public static String currentLanguageTag() {
@@ -118,8 +118,6 @@ public final class MultiLingualTextProvider {
 
     private static Locale locale(Language language) {
         return switch (language) {
-            case RU -> Locale.forLanguageTag("ru");
-            case UK -> Locale.forLanguageTag("uk");
             case DE -> Locale.GERMAN;
             case FR -> Locale.FRENCH;
             case EN -> Locale.ENGLISH;

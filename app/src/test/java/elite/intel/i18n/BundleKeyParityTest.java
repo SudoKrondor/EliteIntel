@@ -10,7 +10,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,8 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * never looked up, so the translator's work has no effect. Writing this test surfaced three such cases,
  * all since fixed: the Nomad command's ID was misspelled {@code lauch_deploy_nomad} in the code while the
  * Italian bundle spelled it correctly, the Italian bundle keyed the central panel by its synonym
- * {@code show_commander_panel}, and {@code transfer_power_to_ship_systems} had Russian and Ukrainian
- * aliases but none in the English base.
+ * {@code show_commander_panel}, and {@code transfer_power_to_ship_systems} had translated aliases but none
+ * in the English base.
  * <p>
  * {@link PortugueseVariantsIndependenceTest} already guards PT against PTBZ in both directions. This test
  * covers what that one does not: every language against the English base.
@@ -38,14 +37,6 @@ class BundleKeyParityTest {
     private static final List<String> FAMILIES = List.of("gui", "responses", "ed_events", "ai_action_aliases");
 
     private static final String BASELINE = "/i18n-parity-baseline.txt";
-
-    /**
-     * Plural category suffixes. Russian and Ukrainian need a {@code .few} form that English has no word
-     * for, so those keys legitimately exist only in the Slavic bundles and must not read as dead entries.
-     * A key is judged against its stem: {@code event.time.hours.few} is fine because the base defines
-     * {@code event.time.hours.one}.
-     */
-    private static final Pattern PLURAL_CATEGORY = Pattern.compile("\\.(zero|one|two|few|many|other)$");
 
     private record Gap(String family, String language, String kind, String key) {
         static final String MISSING = "MISSING";
@@ -82,8 +73,6 @@ class BundleKeyParityTest {
 
     private static List<Gap> gapsIn(String family) {
         Set<String> base = keysOf(family, "");
-        Set<String> baseStems = new HashSet<>();
-        base.forEach(key -> baseStems.add(PLURAL_CATEGORY.matcher(key).replaceAll("")));
 
         List<Gap> gaps = new ArrayList<>();
         for (String suffix : translatedSuffixes()) {
@@ -94,7 +83,6 @@ class BundleKeyParityTest {
 
             translated.stream()
                     .filter(key -> !base.contains(key))
-                    .filter(key -> !baseStems.contains(PLURAL_CATEGORY.matcher(key).replaceAll("")))
                     .sorted()
                     .forEach(key -> gaps.add(new Gap(family, suffix, Gap.ORPHAN, key)));
         }

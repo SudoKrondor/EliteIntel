@@ -47,6 +47,10 @@ import static elite.intel.ui.theme.AppTheme.*;
  * controller has that kind of input ({@link DeviceEditorInputs}). A device with no name yet keeps its input tabs
  * disabled - a {@code .buttonMap} is named after the device, so there is nothing to label until it has a name.
  * <p>
+ * <strong>The name can be changed</strong> on one of the user's own named devices (A11) - checked as it is typed, by
+ * the rule onboarding uses, against every name and old name in use ({@link DeviceRename}). SAVE puts the new name in the
+ * draft; APPLY renames the element and the {@code .buttonMap} in each installation and moves the bindings.
+ * <p>
  * <strong>SAVE writes the draft and nothing else</strong> - never the master, never a game installation. APPLY is
  * the screen's button. Leaving with unsaved edits asks Save, Discard or Keep editing.
  * <p>
@@ -87,10 +91,16 @@ final class DeviceEditorDialog extends JDialog {
      * @param saved       the labels saved before the dialog opened: the draft's, or the master's with no draft
      * @param gameDrawsIt whether the game draws this device's inputs itself, so untouched defaults are not written
      * @param middle      what the middle button is, and whether it can be pressed
+     * @param rename      whether the name can be changed, and why not
+     * @param taken       the names a new name must not clash with - empty unless {@code rename} allows it
      */
     record Opening(MyDevice device, String deviceName, Integer liveId, DeviceDescription description,
                    DeviceEditorInputs inputs, Map<String, String> saved, boolean gameDrawsIt,
-                   List<StripLine> strip, DeviceEditorMiddle middle) {
+                   List<StripLine> strip, DeviceEditorMiddle middle, DeviceRename.Allowed rename,
+                   Set<String> taken) {
+        Opening {
+            taken = Set.copyOf(taken);
+        }
     }
 
     private final Opening opening;
@@ -103,6 +113,9 @@ final class DeviceEditorDialog extends JDialog {
     private final HudUnsavedHint unsavedHint = new HudUnsavedHint();
     private JButton save;
     private JButton middle;
+    /** The name box, editable only when the device can be renamed. */
+    private HudTextField nameBox;
+    private JLabel nameProblem;
     /** A write to the draft is under way - SAVE, CLEAR, RESET LABELS or an undo - so nothing else may start. */
     private boolean busy;
 
@@ -145,6 +158,26 @@ final class DeviceEditorDialog extends JDialog {
      */
     private boolean offersName() {
         return !named() && !DeviceNames.needingName(List.of(opening.device())).isEmpty();
+    }
+
+    private boolean renamable() {
+        return opening.rename() == DeviceRename.Allowed.YES;
+    }
+
+    /** The name as typed, trimmed - or the name it opened with when it cannot be changed. */
+    private String typedName() {
+        return renamable() ? nameBox.getText().trim() : opening.deviceName();
+    }
+
+    private boolean nameChanged() {
+        return renamable() && !typedName().equals(opening.deviceName());
+    }
+
+    /** {@code null} when the typed name may be saved, else why not. */
+    private DeviceNames.Verdict nameVerdict() {
+        if (!nameChanged()) return null;
+        DeviceNames.Verdict verdict = DeviceNames.validate(typedName(), opening.taken());
+        return verdict.valid() ? null : verdict;
     }
 
     /** Labels can be edited once the device has a name - and not while it is cleared or reset, waiting for APPLY. */
@@ -219,12 +252,22 @@ final class DeviceEditorDialog extends JDialog {
         MyDevice device = opening.device();
         JPanel panel = transparentPanel(new GridBagLayout());
         int row = 0;
-        row = field(panel, row, "bindings.aliasDesigner.editor.field.name", titleName());
-        row = line(panel, row, getText(!named()
-                ? "bindings.aliasDesigner.editor.noName"
-                : device.builtIn() && device.alias() == null
-                ? "bindings.aliasDesigner.editor.builtIn"
-                : "bindings.aliasDesigner.editor.name.readOnly"), HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
+        row = nameField(panel, row);
+        String nameNote = switch (opening.rename()) {
+            case YES -> "bindings.aliasDesigner.editor.name.rename";
+            case NO_NAME -> "bindings.aliasDesigner.editor.noName";
+            case BUILT_IN -> "bindings.aliasDesigner.editor.builtIn";
+            case PENDING -> "bindings.aliasDesigner.editor.name.pending";
+            case CLEARED -> null;
+        };
+        if (nameNote != null) {
+            row = line(panel, row, getText(nameNote), HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
+        }
+        nameProblem = note(" ", HudPalette.HUD_COLOR_ROLE_WARNING);
+        nameProblem.setVisible(false);
+        GridBagConstraints problem = cell(0, row++);
+        problem.gridwidth = 3;
+        panel.add(nameProblem, problem);
         DeviceEditorMiddle rule = opening.middle();
         if (rule.undoing()) {
             row = line(panel, row, getText(rule.kind() == DeviceEditorMiddle.Kind.UNDO_RESET
@@ -246,8 +289,8 @@ final class DeviceEditorDialog extends JDialog {
         }
         row = field(panel, row, "bindings.aliasDesigner.editor.field.vid", device.vid());
         row = field(panel, row, "bindings.aliasDesigner.editor.field.pid", device.pid());
-        row = readout(panel, row, "bindings.aliasDesigner.editor.field.windowsName",
-                device.windowsName() == null ? "-" : device.windowsName());
+        row = readout(panel, row, "bindings.aliasDesigner.editor.field.hardwareName",
+                device.hardwareName() == null ? "-" : device.hardwareName());
         row = readout(panel, row, "bindings.aliasDesigner.editor.field.status", getText(device.attached()
                 ? "bindings.aliasDesigner.status.attached"
                 : "bindings.aliasDesigner.status.missing"));
@@ -287,7 +330,25 @@ final class DeviceEditorDialog extends JDialog {
                 opening.strip().size()), HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
     }
 
-    /** A read-only field: the name until Rename is built, and VID/PID always - the game attaches a device by them. */
+    /**
+     * The name: a box the user can type in when the device can be renamed, read-only otherwise. Checked as it is
+     * typed; SAVE stays dimmed while the typed name is refused.
+     */
+    private int nameField(JPanel panel, int row) {
+        panel.add(AppTheme.hudReadoutLabel(getText("bindings.aliasDesigner.editor.field.name")), cell(0, row));
+        nameBox = new HudTextField();
+        nameBox.setText(titleName());
+        nameBox.setEditable(renamable());
+        sized(nameBox, FIELD_COLUMNS * 2);
+        refreshOnEdit(nameBox);
+        GridBagConstraints c = cell(1, row);
+        c.gridwidth = 2;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(nameBox, c);
+        return row + 1;
+    }
+
+    /** A read-only field: VID and PID - the game attaches a device by them. */
     private int field(JPanel panel, int row, String labelKey, String value) {
         panel.add(AppTheme.hudReadoutLabel(getText(labelKey)), cell(0, row));
         HudTextField field = new HudTextField();
@@ -383,11 +444,7 @@ final class DeviceEditorDialog extends JDialog {
         ((AbstractDocument) box.getDocument()).setDocumentFilter(new LengthLimit());
         box.setText(starting.get(token));
         box.setEditable(editable());
-        box.getDocument().addDocumentListener(new DocumentListener() {
-            @Override public void insertUpdate(DocumentEvent e) { refreshDirty(); }
-            @Override public void removeUpdate(DocumentEvent e) { refreshDirty(); }
-            @Override public void changedUpdate(DocumentEvent e) { refreshDirty(); }
-        });
+        refreshOnEdit(box);
         box.addFocusListener(new FocusAdapter() {
             @Override
             public void focusLost(FocusEvent e) {
@@ -404,6 +461,26 @@ final class DeviceEditorDialog extends JDialog {
         restingColours.put(token, new Color[]{box.getBackground(), box.getForeground()});
     }
 
+    /** Every edit to {@code field} - the name or a label - re-reads whether there is anything to SAVE. */
+    private void refreshOnEdit(HudTextField field) {
+        field.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                refreshDirty();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                refreshDirty();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                refreshDirty();
+            }
+        });
+    }
+
     private Map<String, String> boxValues() {
         Map<String, String> values = new LinkedHashMap<>();
         boxes.forEach((token, box) -> values.put(token, box.getText()));
@@ -411,13 +488,18 @@ final class DeviceEditorDialog extends JDialog {
     }
 
     private boolean dirty() {
-        return editable() && DeviceEditorInputs.changed(starting, boxValues());
+        return editable() && (nameChanged() || DeviceEditorInputs.changed(starting, boxValues()));
     }
 
     private void refreshDirty() {
+        // WHY: the boxes are filled in before SAVE exists, and each fill lands here.
+        if (save == null) return;
         boolean dirty = dirty();
+        DeviceNames.Verdict refused = nameVerdict();
+        nameProblem.setText(refused == null ? " " : OnboardingDialog.problemText(refused));
+        nameProblem.setVisible(refused != null);
         unsavedHint.setVisible(dirty);
-        save.setEnabled(dirty && !busy);
+        save.setEnabled(dirty && refused == null && !busy);
     }
 
     // ------------------------------------------------------------------ leaving
@@ -444,15 +526,31 @@ final class DeviceEditorDialog extends JDialog {
         }
     }
 
-    /** Writes the device's whole label set into the draft, off the EDT, and closes once it is there. */
+    /**
+     * Writes the device's whole label set into the draft - and its new name, when it has one - off the EDT, and closes
+     * once it is there. A refused name is never saved: SAVE stays dimmed, and the leave question's Save says why
+     * rather than closing.
+     */
     private void save() {
         if (!dirty() || busy) return;
+        DeviceNames.Verdict refused = nameVerdict();
+        if (refused != null) {
+            HudConfirmDialog.info(this, getText("bindings.aliasDesigner.editor.heading"),
+                    OnboardingDialog.problemText(refused), getText("bindings.aliasDesigner.firstSetup.close"));
+            return;
+        }
         Map<String, String> labels =
                 DeviceEditorInputs.toSave(opening.saved(), boxValues(), opening.gameDrawsIt());
         MyDevice device = opening.device();
+        BindForgeDeviceDraftManager draft = BindForgeDeviceDraftManager.getInstance();
+        if (nameChanged()) {
+            String newName = typedName();
+            runAndClose(() -> draft.saveDevice(opening.deviceName(), newName, labels) != null,
+                    "bindings.aliasDesigner.editor.saveFailed");
+            return;
+        }
         runAndClose(() -> {
-            BindForgeDeviceDraftManager.getInstance()
-                    .saveLabels(opening.deviceName(), device.vid(), device.pid(), labels);
+            draft.saveLabels(opening.deviceName(), device.vid(), device.pid(), labels);
             return true;
         }, "bindings.aliasDesigner.editor.saveFailed");
     }
@@ -469,6 +567,7 @@ final class DeviceEditorDialog extends JDialog {
             case NAMED_IN_BINDS -> getText("bindings.aliasDesigner.editor.namedInBinds", rule.bindings(),
                     opening.deviceName());
             case BINDS_UNREAD -> getText("bindings.aliasDesigner.editor.why.bindsUnread");
+            case RENAME_PENDING -> getText("bindings.aliasDesigner.editor.why.renamePending");
         };
     }
 
@@ -578,15 +677,18 @@ final class DeviceEditorDialog extends JDialog {
     }
 
     /**
-     * A lit box takes the selection fill - the canon allows a fill for activity - and goes back to its own colours
-     * the moment its input is released.
+     * A lit box takes a solid orange fill with dark text - the canon allows a fill for activity - and goes back to
+     * its own colours the moment its input is released.
+     * <p>
+     * WHY orange, not the selection blue (Alan, 2026-10-15): the half-transparent blue barely showed against the
+     * box, so a button pressed on the stick could be missed on screen.
      */
     private void paintLights() {
         Set<String> lit = lights.lit();
         boxes.forEach((token, box) -> {
             Color[] resting = restingColours.get(token);
             boolean on = lit.contains(token);
-            box.setBackground(on ? HudPalette.HUD_COLOR_ROLE_SELECTION_BACKGROUND : resting[0]);
+            box.setBackground(on ? HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION : resting[0]);
             box.setForeground(on ? HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT : resting[1]);
         });
     }

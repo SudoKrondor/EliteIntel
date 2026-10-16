@@ -7,9 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CustomCommandValidatorTest {
 
@@ -132,15 +130,6 @@ class CustomCommandValidatorTest {
         List<String> errors = CustomCommandValidator.validate(customCommand, List.of(), null);
         assertFalse(errors.isEmpty());
         assertTrue(errors.stream().anyMatch(e -> e.contains("must not exceed")));
-    }
-
-    @Test
-    void acceptsCyrillicActionKey() {
-        // The key is derived from Cyrillic phrases and stays in-script for routing overlap; it must validate.
-        CustomCommandDefinition customCommand = customCommand("лететь_к_миссии", "Mission", "лететь к миссии",
-                List.of(new CustomCommandStep(CustomCommandStep.Type.SPEAK, null, 0, "hello")));
-
-        assertTrue(CustomCommandValidator.validate(customCommand, List.of(), null).isEmpty());
     }
 
     @Test

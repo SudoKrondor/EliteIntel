@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 public final class AliasVocabulary {
 
     /**
-     * Words, in any script: the alias bundles hold Latin and Cyrillic, and French elides with apostrophes.
+     * Words, in any script: the alias bundles hold accented letters, and French elides with apostrophes.
      */
     private static final Pattern WORD = Pattern.compile("[\\p{L}\\p{N}]+");
 

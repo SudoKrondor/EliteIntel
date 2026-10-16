@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.RadioVoicing;
+import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.GameLanguage;
 import elite.intel.gameapi.journal.events.FileheaderEvent;
@@ -30,12 +31,22 @@ public class FileheaderEventSubscriber {
     public void onEvent(FileheaderEvent event) {
         GameEditionCheck.getInstance().onGameSessionStarted(event.isOdyssey());
 
-        Language before = RadioVoicing.transmissionLanguage();
+        RadioReading before = RadioReading.now();
         GameLanguage.getInstance().onGameSessionStarted(event.getLanguage());
-        Language after = RadioVoicing.transmissionLanguage();
-        if (after != before) {
-            log.info("Radio transmissions now read in {} (was {}); restarting the mouth", after, before);
+        RadioReading after = RadioReading.now();
+        if (!after.equals(before)) {
+            log.info("Radio transmissions now read as {} (was {}); restarting the mouth", after, before);
             UiBus.publish(new RestartMouthEvent());
+        }
+    }
+
+    /**
+     * What the radio engine is started with: the engine, and the language it reads in. Both are needed - a
+     * Russian client changes the engine but has no {@link Language} of its own.
+     */
+    private record RadioReading(TtsProvider engine, Language language) {
+        static RadioReading now() {
+            return new RadioReading(RadioVoicing.engine(), RadioVoicing.transmissionLanguage());
         }
     }
 }

@@ -313,6 +313,14 @@ DirectInput's order on Windows, which is presumably the game's `POV1`, `POV2`. O
 hats, bind each in the game and check that `.binds` names the one A8b's generated labels call `Hat 1`.
 → [Which axes and hats a controller has](../02-features/bindforge/alias-designer.md#which-axes-and-hats-a-controller-has--2026-10-10-alan)
 
+**24. Is it one spelling per device in `.binds`, or case itself?** *Added 2026-10-14, A11 — Alan can run this
+one.* Measured: a `Device=` name finds its `DeviceMappings.xml` element ignoring case, and a preset that spells one
+device two ways is rejected. Still open: whether a single spelling that differs from the element is fine whatever
+its case. Give `DeviceMappings.xml` `<LVWAP>` and write every `Device=` naming it as `lvwap`; it loads if the rule is
+one spelling per device. Then repeat on Proton, with `lvwap.buttonMap` beside `<LVWAP>`, to see whether the
+labels still show.
+→ [`.binds` format §4.3](../02-features/bindforge/domain-knowledge/EliteDangerous-BindsFileFormat.md#43-case-only-binds-cares-and-it-cares-about-one-spelling-per-device--measured-2026-10-14)
+
 ## Core Platform
 
 **8. Linux/Proton path resolution — Krondor's, not a BindForge testing item.** *Reassigned 2026-09-06.* Not a one-time check but ongoing, given how much Linux path resolution varies by distro and by how an individual user has their Steam library configured — which is exactly why it is owned by the person running it. BindForge builds and tests Windows storefront detection; Krondor makes the edits his platform needs. Listed here so the dependency stays visible, not as work waiting on Alan. The journal path is confirmed against independent precedent (EDMarketConnector); the bindings-folder path is inferred from the same structure but not independently confirmed.

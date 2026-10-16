@@ -1,14 +1,9 @@
 package elite.intel.ai.brain.vega;
 
 import elite.intel.ai.brain.VegaIdentity;
-import elite.intel.ai.brain.i18n.ResponseTextProvider;
-import elite.intel.i18n.Language;
-import elite.intel.session.SystemSession;
 
 import java.time.Duration;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * The single place for VEGA's settings. VEGA is the application's only command mode.
@@ -17,10 +12,6 @@ public final class VegaConfig {
 
     // The name itself lives with the identity clause it appears in - see VegaIdentity.
     private static final String VEGA_NAME = VegaIdentity.name();
-
-    // Localization key (i18n.responses bundle) for the name's spoken/STT form per language: Latin "Vega" for
-    // Latin-script languages, "Вега" for Cyrillic (ru/uk). Input matching only - never used in the prompt.
-    private static final String NAME_SPOKEN_KEY = "vega.name.spoken";
 
     // --- runtime tuning (provisional; TODO: back by GUI/DB settings) ---
     /**
@@ -61,21 +52,13 @@ public final class VegaConfig {
     }
 
     /**
-     * The name forms recognized as a leading vocative on commander INPUT (the reflex vocative strip): the
-     * canonical name plus its localized spoken/STT form for the current session language (e.g. Cyrillic "Вега"
-     * for ru/uk, from the i18n.responses bundle). Input matching only - the prompt always uses {@link #vegaName()}.
+     * The name forms recognized as a leading vocative on commander INPUT (the reflex vocative strip). Every
+     * language we ship writes the name the same way, so this is the canonical name alone.
      * <p>
      * TODO: when the name becomes GUI/DB-configurable, its spoken variants must follow the configured value.
      */
     public static List<String> vegaNameForms() {
-        Language language = SystemSession.getInstance().getLanguage();
-        Set<String> forms = new LinkedHashSet<>();
-        forms.add(VEGA_NAME);
-        String spoken = ResponseTextProvider.getText(language, NAME_SPOKEN_KEY);
-        if (spoken != null && !spoken.isBlank()) {
-            forms.add(spoken.trim());
-        }
-        return List.copyOf(forms);
+        return List.of(VEGA_NAME);
     }
 
     /**

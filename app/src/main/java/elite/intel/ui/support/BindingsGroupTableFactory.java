@@ -27,6 +27,10 @@ public class BindingsGroupTableFactory {
     public static final int TABLE_ROW_HEIGHT = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
     public static final String HOVER_ROW_PROPERTY = "elite.intel.bindings.hoverRow";
     private static final String ROW_ACTION_PROPERTY = "elite.intel.bindings.rowAction";
+    /**
+     * The AI ACCESS column, between Secondary and the row action.
+     */
+    public static final int AI_ACCESS_COLUMN = 3;
     private static final Border TABLE_SECTION_BORDER = BorderFactory.createEmptyBorder(1, 0, 0, 0);
 
     /**
@@ -295,8 +299,8 @@ public class BindingsGroupTableFactory {
         table.getColumnModel().getColumn(0).setPreferredWidth(320);
         table.getColumnModel().getColumn(1).setPreferredWidth(270);
         table.getColumnModel().getColumn(2).setPreferredWidth(270);
-        if (table.getColumnCount() > 3) {
-            table.getColumnModel().getColumn(3).setPreferredWidth(180);
+        for (int column = 3; column < table.getColumnCount(); column++) {
+            table.getColumnModel().getColumn(column).setPreferredWidth(column == AI_ACCESS_COLUMN ? 170 : 110);
         }
     }
 

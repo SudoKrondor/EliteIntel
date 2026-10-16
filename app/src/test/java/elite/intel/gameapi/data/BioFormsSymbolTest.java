@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * BioForms is keyed by Frontier's language-independent organic symbols, so every lookup must resolve
  * from a raw journal symbol regardless of the game client language. These tests pin the symbol
  * normalization (including the colour-variant codex form) and the fact that a symbol lookup never
- * returns null for a known genus - the root cause of the RU-only ScanOrganic NPE.
+ * returns null for a known genus - the root cause of the localized-client ScanOrganic NPE.
  */
 class BioFormsSymbolTest {
 
@@ -45,7 +45,7 @@ class BioFormsSymbolTest {
 
     @Test
     void getDistanceFromSymbolNeverNullForKnownGenus() {
-        // The RU NPE root cause: localized genus missed the English-keyed table and unboxed null.
+        // The NPE root cause: localized genus missed the English-keyed table and unboxed null.
         // With symbol keys this is language-independent and always an int.
         assertEquals(200, BioForms.getDistance("$Codex_Ent_Tussocks_Genus_Name;"));
         assertEquals(500, BioForms.getDistance("$Codex_Ent_Bacterial_Genus_Name;"));

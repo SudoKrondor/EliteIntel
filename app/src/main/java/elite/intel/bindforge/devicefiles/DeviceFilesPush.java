@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
@@ -43,7 +44,7 @@ import java.util.function.Supplier;
  * names loses only the {@code .buttonMap}, and where Frontier shipped that file it is put back instead. Revert
  * removes nothing.
  */
-public final class DeviceFilesPush {
+public final class DeviceFilesPush implements DeviceApply.Pushes {
 
     private static final Logger log = LogManager.getLogger(DeviceFilesPush.class);
 
@@ -54,8 +55,15 @@ public final class DeviceFilesPush {
      * @param storefront     names the installation in a report
      * @param controlSchemes the folder holding its {@code DeviceMappings.xml}
      * @param missing        whether the stored list already knows its folder is gone
+     * @param missedWrite    whether it missed a write the other installations took, and has not caught up (A14)
      */
-    public record Target(long installId, String storefront, Path controlSchemes, boolean missing) {
+    public record Target(long installId, String storefront, Path controlSchemes, boolean missing,
+                         boolean missedWrite) {
+
+        /** An installation that has missed no write. */
+        public Target(long installId, String storefront, Path controlSchemes, boolean missing) {
+            this(installId, storefront, controlSchemes, missing, false);
+        }
 
         /**
          * Whether the installation can be read and written now: not known to be gone, and its folder is there.
@@ -72,13 +80,25 @@ public final class DeviceFilesPush {
      * One device from the master.
      *
      * @param name   the element tag, and the {@code .buttonMap} filename stem
-     * @param labels label by input token; empty when the device has none, in which case no {@code .buttonMap}
-     *               is written for it
+     * @param labels       label by input token; empty when the device has none, in which case no {@code .buttonMap}
+     *                     is written for it
+     * @param previousName what the device was called before a rename still being carried out - the name some
+     *                     installation may still hold - or {@code null}
      */
-    public record MasterDevice(String name, String vid, String pid, Map<String, String> labels) {
+    public record MasterDevice(String name, String vid, String pid, Map<String, String> labels, String previousName) {
         public MasterDevice {
             Objects.requireNonNull(name, "name");
             labels = Map.copyOf(labels);
+        }
+
+        /** A device with no rename under way. */
+        public MasterDevice(String name, String vid, String pid, Map<String, String> labels) {
+            this(name, vid, pid, labels, null);
+        }
+
+        /** Whether a rename of this device is still being carried out - its old name may be in some installation. */
+        boolean isRenamed() {
+            return previousName != null && !previousName.equals(name);
         }
     }
 
@@ -90,7 +110,15 @@ public final class DeviceFilesPush {
         /** Its folder is not there. Nothing was written. */
         SKIPPED_MISSING,
         /** A file could not be read, kept or written. The installation is as it was before the push. */
-        FAILED
+        FAILED;
+
+        /**
+         * Whether the installation now holds what was pushed. Asked rather than spelled out at each caller, so an
+         * outcome added later is counted the same way everywhere - as a miss, until it says otherwise.
+         */
+        public boolean landed() {
+            return this == WRITTEN || this == UNCHANGED;
+        }
     }
 
     /**
@@ -113,7 +141,7 @@ public final class DeviceFilesPush {
         /** How many installations match the master after the push - the "2" in "updated 2 of 3". */
         public long matchingCount() {
             return installations.stream()
-                    .filter(result -> result.outcome() == Outcome.WRITTEN || result.outcome() == Outcome.UNCHANGED)
+                    .filter(result -> result.outcome().landed())
                     .count();
         }
     }
@@ -123,6 +151,7 @@ public final class DeviceFilesPush {
     private final FrontierStockDevices stock;
     private final EditHistory history;
     private final Consumer<Target> afterWrite;
+    private final MissedWrites missedWrites;
 
     /**
      * Pushes the stored master to the stored installations, keeping Edit History under Elite-Intel's own data
@@ -133,22 +162,30 @@ public final class DeviceFilesPush {
      */
     public DeviceFilesPush() throws IOException {
         this(DeviceFilesPush::storedInstallations, DeviceFilesPush::storedMaster, FrontierStockDevices.getInstance(),
-                EditHistory.stored(), rescanWith(new InstallationDeviceScanner()));
+                EditHistory.stored(), rescanWith(new InstallationDeviceScanner()), MissedWrites.stored());
     }
 
     DeviceFilesPush(Supplier<List<Target>> targets, Supplier<List<MasterDevice>> master,
                     FrontierStockDevices stock, TimestampedBackups backups, Path historyRoot,
                     IntSupplier retention, Consumer<Target> afterWrite) {
-        this(targets, master, stock, new EditHistory(backups, historyRoot, retention), afterWrite);
+        this(targets, master, stock, backups, historyRoot, retention, afterWrite, MissedWrites.NONE);
+    }
+
+    DeviceFilesPush(Supplier<List<Target>> targets, Supplier<List<MasterDevice>> master,
+                    FrontierStockDevices stock, TimestampedBackups backups, Path historyRoot,
+                    IntSupplier retention, Consumer<Target> afterWrite, MissedWrites missedWrites) {
+        this(targets, master, stock, new EditHistory(backups, historyRoot, retention), afterWrite, missedWrites);
     }
 
     private DeviceFilesPush(Supplier<List<Target>> targets, Supplier<List<MasterDevice>> master,
-                            FrontierStockDevices stock, EditHistory history, Consumer<Target> afterWrite) {
+                            FrontierStockDevices stock, EditHistory history, Consumer<Target> afterWrite,
+                            MissedWrites missedWrites) {
         this.targets = targets;
         this.master = master;
         this.stock = stock;
         this.history = history;
         this.afterWrite = afterWrite;
+        this.missedWrites = missedWrites;
     }
 
     /** Pushes the master to every installation, removing nothing, and reports what happened to each. */
@@ -163,18 +200,22 @@ public final class DeviceFilesPush {
      * @param removals devices to take out of every installation. The caller makes sure none is in the master and
      *                 none is still named by {@code .binds}
      */
+    @Override
     public Report push(Set<String> removals) {
-        List<MasterDevice> devices = master.get();
-        int keep = history.retention();
-        Set<String> keptThisPush = new HashSet<>();
-        List<InstallationResult> results = new ArrayList<>();
-        for (Target target : targets.get()) {
-            InstallationResult result = pushTo(target, devices, removals, keep, keptThisPush);
-            log.info("Device files for {} ({}): {}{}", target.storefront(), target.controlSchemes(),
-                    result.outcome(), result.reason() == null ? "" : " - " + result.reason());
-            results.add(result);
-        }
-        return new Report(results);
+        return pushWhere(target -> true, removals, "", true);
+    }
+
+    /**
+     * <strong>Catch-up</strong>: Apply's push, to the installations named only (Alan, 2026-10-15, A14) - the master,
+     * the renames and the removals, for an installation that missed them and is found again. The others are left
+     * alone: one edited in the game meanwhile is not this question's to revert.
+     *
+     * @param removals as {@link #push(Set)}: none in the master, none still named by {@code .binds}
+     */
+    @Override
+    public Report push(Collection<Long> installIds, Set<String> removals) {
+        return pushWhere(target -> installIds.contains(target.installId()), removals, ", caught up with the master",
+                true);
     }
 
     /**
@@ -185,16 +226,34 @@ public final class DeviceFilesPush {
      * @return the report, holding that installation alone - or nothing, when no stored installation has that id
      */
     public Report push(long installId) {
+        // WHY: not carrying everything - a miss marks the installation, but landing does not clear it. Revert removes
+        // nothing, so it can land on an installation that still holds a device the others lost to a CLEAR.
+        return pushWhere(target -> target.installId() == installId, Set.of(), ", reverted to the master", false);
+    }
+
+    /**
+     * The one push every kind runs through - Apply, catch-up and revert - so a rule for every push is written once.
+     *
+     * @param logTag            what the log line says this push was, after the installation
+     * @param carriesEverything whether it carries all Apply does, so landing means the installation has caught up
+     *                          ({@link MissedWrites})
+     */
+    private Report pushWhere(Predicate<Target> which, Set<String> removals, String logTag,
+                             boolean carriesEverything) {
         List<MasterDevice> devices = master.get();
+        int keep = history.retention();
+        Set<String> keptThisPush = new HashSet<>();
         List<InstallationResult> results = new ArrayList<>();
         for (Target target : targets.get()) {
-            if (target.installId() != installId) continue;
-            InstallationResult result = pushTo(target, devices, Set.of(), history.retention(), new HashSet<>());
-            log.info("Device files for {} ({}), reverted to the master: {}{}", target.storefront(),
-                    target.controlSchemes(), result.outcome(), result.reason() == null ? "" : " - " + result.reason());
+            if (!which.test(target)) continue;
+            InstallationResult result = pushTo(target, devices, removals, keep, keptThisPush);
+            log.info("Device files for {} ({}){}: {}{}", target.storefront(), target.controlSchemes(), logTag,
+                    result.outcome(), result.reason() == null ? "" : " - " + result.reason());
             results.add(result);
         }
-        return new Report(results);
+        Report report = new Report(results);
+        missedWrites.afterPush(report, carriesEverything);
+        return report;
     }
 
     private InstallationResult pushTo(Target target, List<MasterDevice> devices, Set<String> removals, int keep,
@@ -244,10 +303,19 @@ public final class DeviceFilesPush {
         Path deviceMappings = GameInstallation.deviceMappingsIn(target.controlSchemes());
         byte[] current = readIfPresent(deviceMappings);
         boolean seeded = current == null;
-        DeviceMappingsMerge.Result merged =
-                DeviceMappingsMerge.merge(seeded ? stockFile() : current, userEntries(devices, stock));
-        byte[] mappings = merged.content();
-        boolean changed = merged.changed();
+        byte[] mappings = seeded ? stockFile() : current;
+        boolean changed = false;
+        // WHY: renamed in place before the merge, so the element keeps every child it has. The merge alone would add
+        // a bare element under the new name and leave the old one, and its <Alternative> pairs, behind it.
+        for (MasterDevice device : renamedUserDevices(devices, stock)) {
+            DeviceMappingsMerge.Result renamed = DeviceMappingsMerge.rename(mappings, device.previousName(),
+                    device.name());
+            mappings = renamed.content();
+            changed |= renamed.changed();
+        }
+        DeviceMappingsMerge.Result merged = DeviceMappingsMerge.merge(mappings, userEntries(devices, stock));
+        mappings = merged.content();
+        changed |= merged.changed();
         // WHY: one of Frontier's names keeps its element. On a built-in the element is Frontier's definition - RESET
         // LABELS took the labels away, never the entry.
         Set<String> userRemovals = new TreeSet<>();
@@ -267,6 +335,9 @@ public final class DeviceFilesPush {
             byte[] content = ButtonMapWriter.write(device.labels());
             byte[] previous = readIfPresent(buttonMap);
             if (!Arrays.equals(previous, content)) writes.add(new FileWrite(buttonMap, previous, content));
+        }
+        for (MasterDevice device : renamedUserDevices(devices, stock)) {
+            writes.addAll(renameButtonMap(target, device));
         }
         for (String name : new TreeSet<>(removals)) {
             FileWrite write = removeButtonMap(target, name, stockMaps);
@@ -288,6 +359,49 @@ public final class DeviceFilesPush {
         } catch (InvalidPathException e) {
             throw new IOException("\"" + name + "\" cannot be a filename for its .buttonMap", e);
         }
+    }
+
+    /**
+     * A rename's {@code .buttonMap}: the file under the old name goes, so none is left where nothing would ever clean it
+     * up (Alan, 2026-10-14, A11). The master's labels are written under the new name above; a device the master holds
+     * no labels for takes the old file's own content to the new name instead - renamed, never copied.
+     * <p>
+     * <strong>A rename that changes only case</strong> on a file system that ignores it - Windows - finds the old and
+     * the new name to be one file. Then nothing is deleted: the file is the device's, under either spelling, and the
+     * game finds it so (format §4.3, measured 2026-10-14).
+     *
+     * @return the writes - none when the installation holds no file under the old name
+     */
+    private static List<FileWrite> renameButtonMap(Target target, MasterDevice device) throws IOException {
+        Path oldMap;
+        try {
+            oldMap = GameInstallation.buttonMapIn(target.controlSchemes(), device.previousName());
+        } catch (InvalidPathException e) {
+            // WHY: an old name that cannot be a filename has no file to rename.
+            return List.of();
+        }
+        byte[] oldContent = readIfPresent(oldMap);
+        if (oldContent == null) return List.of();
+        Path newMap = buttonMapOf(target, device.name());
+        if (Files.exists(newMap) && Files.isSameFile(oldMap, newMap)) return List.of();
+
+        List<FileWrite> writes = new ArrayList<>();
+        if (device.labels().isEmpty() && !Files.exists(newMap)) {
+            writes.add(new FileWrite(newMap, null, oldContent));
+        }
+        writes.add(new FileWrite(oldMap, oldContent, null));
+        return writes;
+    }
+
+    /**
+     * The master's devices of the user's whose rename is still being carried out. A built-in is never among them:
+     * renaming one of Frontier's elements is slice A15's, and its {@code .buttonMap} is not renamed here either.
+     */
+    private static List<MasterDevice> renamedUserDevices(List<MasterDevice> devices, FrontierStockDevices stock) {
+        return devices.stream()
+                .filter(MasterDevice::isRenamed)
+                .filter(device -> !stock.ships(device.name()) && !stock.ships(device.previousName()))
+                .toList();
     }
 
     /**
@@ -409,7 +523,8 @@ public final class DeviceFilesPush {
     static List<Target> storedInstallations() {
         return BindForgeInstallationsManager.getInstance().findAll().stream()
                 .map(row -> new Target(row.id(), row.storefront(),
-                        GameInstallation.controlSchemesUnder(Path.of(row.rootPath())), row.missing()))
+                        GameInstallation.controlSchemesUnder(Path.of(row.rootPath())), row.missing(),
+                        row.missedWrite()))
                 .toList();
     }
 
@@ -417,7 +532,8 @@ public final class DeviceFilesPush {
         BindForgeDeviceMasterManager masterStore = BindForgeDeviceMasterManager.getInstance();
         List<MasterDevice> devices = new ArrayList<>();
         for (DeviceRow row : masterStore.findAll()) {
-            devices.add(new MasterDevice(row.deviceName(), row.vid(), row.pid(), masterStore.labelsOf(row.id())));
+            devices.add(new MasterDevice(row.deviceName(), row.vid(), row.pid(), masterStore.labelsOf(row.id()),
+                    row.previousName()));
         }
         return devices;
     }

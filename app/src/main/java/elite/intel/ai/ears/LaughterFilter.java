@@ -17,10 +17,9 @@ import java.util.stream.Collectors;
  * Kept separate from {@code trashPhrases()} because laughter is not a fixed
  * phrase - it is a syllable repeated an arbitrary number of times, spelled
  * apart ("ha ha ha") or together ("hahaha"), so a word list can never cover it.
- * The syllable itself is language-specific, though only just: across the nine
- * locales this app ships, an engine writes laughter with {@code h} ("hahaha"),
- * with {@code j} in Spanish ("jajaja"), or with {@code х} in Cyrillic
- * ("хаха"), and those three cover it.
+ * The syllable itself is language-specific, though only just: across the
+ * locales this app ships, an engine writes laughter with {@code h} ("hahaha")
+ * or with {@code j} in Spanish ("jajaja"), and those two cover it.
  */
 public final class LaughterFilter {
 
@@ -29,7 +28,7 @@ public final class LaughterFilter {
      * closed ("hah"). The vowel set deliberately excludes {@code i} and
      * {@code o} so real short words ("hi", "ho") cannot combine into a match.
      */
-    private static final List<String> SYLLABLES = List.of("h[aeu]h?", "j[aeu]h?", "х[аеу]х?");
+    private static final List<String> SYLLABLES = List.of("h[aeu]h?", "j[aeu]h?");
 
     /**
      * Two syllables minimum, and both from the same spelling. A single "ha" is

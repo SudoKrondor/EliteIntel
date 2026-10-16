@@ -8,8 +8,6 @@ import elite.intel.ai.brain.i18n.fr.FrenchAiActionAliases;
 import elite.intel.ai.brain.i18n.it.ItalianAiActionAliases;
 import elite.intel.ai.brain.i18n.pt.PortugueseAiActionAliases;
 import elite.intel.ai.brain.i18n.ptbz.BrazilianPortugueseAiActionAliases;
-import elite.intel.ai.brain.i18n.ru.RussianAiActionAliases;
-import elite.intel.ai.brain.i18n.uk.UkrainianAiActionAliases;
 import elite.intel.session.SystemSession;
 
 import java.util.ArrayList;
@@ -25,8 +23,6 @@ public final class AiActionLocalizations {
     private static AiActionAliasProvider provider() {
         return switch (SystemSession.getInstance().getLanguage()) {
             case EN -> new EnglishAiActionAliases();
-            case RU -> new RussianAiActionAliases();
-            case UK -> new UkrainianAiActionAliases();
             case DE -> new GermanAiActionAliases();
             case FR -> new FrenchAiActionAliases();
             case ES -> new SpanishAiActionAliases();

@@ -30,7 +30,7 @@ Columns, and why only these:
 
 | Column | Source |
 |---|---|
-| **Windows name** | what the hardware reports through the Device Service |
+| **Hardware name** | what the hardware reports through the Device Service, on any OS — *renamed from "Windows name" 2026-10-15 (Alan): it is the controller's own USB name on Linux too* |
 | **VID / PID** | the hardware |
 | **Status** | `ATTACHED` or `MISSING` — whether the hardware is present right now |
 | **Alias** | the name in the master, or *not added* |
@@ -773,6 +773,50 @@ back. Starting unbound destroys work that no later step can recover.
 whenever a retarget crosses to a device the user picked from the candidate list, and a firmware
 update that keeps the same layout costs them one dismissed dialog.
 
+### Built — 2026-10-15 (Alan, A12)
+
+Built as `bindforge.devices.IdentityQuestions` (who is asked, about what - pure), `ui.screen.bindings.IdentityDialog`,
+`BindForgeDeviceDraftManager.retargetByName`, and the remembered answers in `bindforge_identity_answer` (migration
+`12007`, `BindForgeIdentityAnswerManager`), run by `AliasDesignerController`. Alan answered four questions, one at a time:
+
+- **Named controllers only.** A12 asks about a controller the master names. One the bindings know only by its hardware
+  id - the spec's first sketch, *"Your .binds references 334483F3"* - is **slice A17**: a yes there must name the new
+  controller *and* move bindings from the **old** hex to the name, which Apply's hex move cannot find (it looks for a
+  device's current VID/PID), so it needs a stored "old id → name" record of its own.
+- **Asked only when bindings use the missing controller**, by its current, master or old name - the
+  [missing-controller warning's](#built--2026-10-11-alan-a13) rule. The question exists to save bindings; an entry for a
+  stick sold years ago is not worth one whenever a new controller is plugged in. Frontier's names are never asked about.
+- **Not now and None of these are remembered across restarts**, keyed on the missing controller and the set of
+  candidates the question listed. *"Until the hardware situation changes"* is that set changing - a controller plugged
+  in or taken away - or the missing controller being attached again, which forgets the answer.
+- **While a question is deferred, onboarding leaves its candidates alone.** Naming a candidate would end the question
+  unasked. The automatic offer and the hot-plug offer skip them (a hot-plugged one keeps waiting); **CHECK AGAIN** asks
+  the deferred questions first, then onboards whatever is left; **NAME** from the Device Editor names the controller,
+  since that is the user choosing - and naming it takes it out of every question's candidates, which is None of these
+  without a stored row.
+
+*Also settled while building it (Alan approved them with the sources):*
+
+- **The list form, not Yes / No / Not now.** One dialog per missing controller, a row per candidate marked *same vendor,
+  different product ID* where it is, and a last row **None of these**. **OK** takes the selected row; **Not now**, the
+  close glyph and Esc defer.
+- **A candidate** is an attached controller onboarding would ask about (not Frontier's, no entry, not in the master)
+  that the draft does not already hold - a controller named for Apply, or one a retarget points at, is spoken for. A
+  controller picked for one question drops out of the next; a question left with no candidate is not put.
+- **Yes retargets in the draft** (`retargetByName`: name and labels kept, the VID/PID changed, in one transaction with
+  starting the draft). Apply writes the new `<VID>`/`<PID>` to every installation, as it brings any element into line
+  with the master; `.binds` is not touched, since the name does not change. A device whose hardware changed between the
+  question and the answer writes nothing and says so.
+- **The notice says the bindings follow when you apply**, not that they moved - nothing reaches the game until then -
+  and names the risk: bindings and labels keep their button numbers. **Review in Bind Editor** opens the Binding
+  Profile tab.
+- **Where it runs:** in the refresh, after catch-up and before onboarding, under onboarding's conditions - activated,
+  the hardware listed, the user on the screen, no write running, no other dialog open. None of these asks for
+  onboarding's offer on the next refresh. A question put once in a run is not put again in that run unless CHECK AGAIN
+  asks, so a write that fails cannot bring the dialog straight back.
+- **The automatic onboarding offer no longer opens over another dialog**, as the hot-plug offer already did - a refresh
+  can land while the identity questions are showing.
+
 ## Automatic Device Registration
 
 Any controller connected to the system — whether already connected when BindForge starts, or plugged in later during a session (hot-plug) — is automatically added to the My Devices working copy with no user action required. This applies the same "detect and inform, don't ask" principle already used for [First Run](#first-run-and-hot-plug) below, extended to individual devices as they're seen.
@@ -780,8 +824,34 @@ Any controller connected to the system — whether already connected when BindFo
 - **Default alias:** the name the Device Service reports, **cleaned into a valid name** by the [default-name rule](#the-default-name-rule) — `Virpil Controls 20220720` becomes `VirpilControls20220720`. [Onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13) shows it to the user before anything is written.
 - **VID/PID:** filled in immediately from the connected hardware, same as any other device entry.
 - **A `.buttonMap` is created once the device has a name** — at [onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13) for a controller with no entry, or at [Elite-Intel startup](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller) for a connected controller that already has one. *Changed 2026-09-13: this used to say no `.buttonMap` stub is created until the user labels something — see [why the rule moved](#it-is-the-alias-confirm-gate-moved-earlier).*
-- **Registration itself touches only the working copy.** Detecting a controller writes nothing. The writes that follow it — a confirmed name, a generated `.buttonMap` — are among the few that reach a game installation outside Apply, and each is justified in [What onboarding writes, and when](#what-onboarding-writes-and-when) and in [Overview — writes outside Apply](overview.md#writes-outside-apply--the-complete-list).
+- **Registration is the row appearing, and writes nothing** — ~~touches only the working copy~~ *(reworded
+  2026-10-15, A7: since [the list became the union](#my-devices) of live hardware and file entries, a detected
+  controller is listed without being stored anywhere, draft included).* Detecting a controller writes nothing. The writes that follow it — a confirmed name, a generated `.buttonMap` — are among the few that reach a game installation outside Apply, and each is justified in [What onboarding writes, and when](#what-onboarding-writes-and-when) and in [Overview — writes outside Apply](overview.md#writes-outside-apply--the-complete-list).
 - **Hot-plugging into BindForge is safe; hot-plugging into a running game is not — those are different things.** BindForge can register a newly-connected controller into its own working copy at any time without risk. Physically connecting or disconnecting a controller while Elite Dangerous itself is running is a separate, game-level risk (it can crash the game) that exists independently of BindForge and is outside BindForge's control — automatic registration does not cause or worsen this; it just means BindForge's own device list stays current regardless of when the user plugs something in.
+
+### Built — 2026-10-15 (Alan, A7)
+
+Built as `bindforge.devices.HotPlugOffers` (who is still owed an offer — in memory, tested) and the Device Bus
+subscription in `AliasDesignerController`. Alan approved these as the sources' defaults and answered one question:
+
+- **Once per run per controller** (Alan). A controller offered once — by the automatic offer after activation, by
+  hot-plug, or from NAME — is not offered again when it is plugged back in, whatever the answer: a loose cable or a
+  hub resetting would otherwise put the dialog up again and again. **CHECK AGAIN**, NAME and the next run still ask,
+  as [A6b](#settled-before-building-it--2026-10-14-alan-a6b) set out.
+- **Plugging in or out reads the screen again while the user is looking**, so the row appears or turns `MISSING`
+  straight away. While the screen is hidden it is marked stale and read again when next shown — nothing reads the
+  disk for a plug nobody sees.
+- **The offer follows the automatic offer's rules:** only once activated, once the hardware is listed, while the
+  user is on the screen; never while catch-up is asking or a write is running. **It never opens over another dialog**
+  — the Device Editor included — and waits for a later refresh instead.
+- **Several plugged in together are one dialog**; one unplugged before its offer stops waiting.
+- **Every connect waits; onboarding's own rule decides who needs a name.** A named controller, or a built-in, is
+  offered silently and to no one; its `.buttonMap` is [startup generation's](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller),
+  which already acts on every connect.
+- **The controllers present at startup are the automatic offer's.** The screen registers on the Device Bus when it is
+  built, and the offer after activation asks about every attached controller, those plugged in meanwhile included.
+- **Nothing is done on the Device Bus's thread** but recording the plug — no file or database read — since it also
+  carries push-to-talk.
 
 ### Rules automatic registration still needs
 
@@ -795,8 +865,9 @@ Three gaps were found while working the design through. **Two were settled by on
   has Frontier's entry, matched on VID/PID, so it is never onboarded and [never renamed](#built-in-controllers-in-my-devices--settled-2026-09-13). A *different*
   controller reporting a clashing name gets a number — `T-Rudder` from an unrelated device becomes
   `TRudder2`. See [the default-name rule](#the-default-name-rule).
-- **What reaches the game's file.** Registration only touches the draft, so nothing lands in a real install
-  until **Apply** runs. **Settled 2026-09-06: applying pushes only what changed**, never the
+- **What reaches the game's file.** Registration ~~only touches the draft~~ writes nothing *(2026-10-15, A7)*; the
+  name onboarding then gives is written [as onboarding writes it](#what-onboarding-writes-and-when), and anything else
+  lands in a real install only when **Apply** runs. **Settled 2026-09-06: applying pushes only what changed**, never the
   whole set. Pushing everything accumulates entries for hardware plugged in once, years ago, and rewrites
   rows no one touched, and an entry for a device the player never named carries no benefit — no binding
   depends on it. *(This used to say "since both files are purely cosmetic"; the decision stands, but that
@@ -939,7 +1010,7 @@ Onboarding says so rather than leaving a surprise: *"131 bindings will move to L
 Built as `bindforge.devices.Onboarding` (the pages, pure), `ui.screen.bindings.OnboardingDialog`,
 `bindforge.devicefiles.DeviceOnboarding` (the writes), `BindForgeDeviceDraftManager.onboard` (one transaction),
 `DeviceMappingsMerge.insert`, `BindsDeviceReferences.hardwareIdCounts` and `hardwareIdsFor`, and Apply's move in
-`DeviceApply` through `BindsHardwareIdRewrite`. Edit History for the device files is now one class, `EditHistory`,
+`DeviceApply` through `BindsDeviceRewrite`. Edit History for the device files is now one class, `EditHistory`,
 shared by the push and onboarding.
 
 - **Apply moves bindings for any master device of the user's that `.binds` still names by hardware id**, not only
@@ -1129,7 +1200,7 @@ still to come.*
   [read as it connects](#which-axes-and-hats-a-controller-has--2026-10-10-alan) (A8b); SDL alone gives only an
   axis count, and two VIRPIL sticks put their twist on Z and on RZ. ~~Where the axes cannot be read, the AXES tab
   needs A9 to decide what to show.~~ *Decided in A9 — [below](#built-as-a-dialog--2026-10-10-alan-a9).*
-- **DEVICE** holds the name, VID and PID, the Windows name, whether it is attached, and the
+- **DEVICE** holds the name, VID and PID, the hardware name, whether it is attached, and the
   [install strip](#the-install-strip--a-readout-not-a-switch).
 - **AXES** has one label box per axis the controller reports, named by the axis it is (`Joy_XAxis`,
   `Joy_RZAxis`), six to a column and a second column when there are more.
@@ -1294,6 +1365,8 @@ with the master, that is drift to be resolved, not a configuration to be preserv
     so jitter never shows.
   - **The dialog never changes tab for an input.** Most buttons are momentary, and a light on another tab shows
     nothing; a box lights only where the user is looking.
+  - **A lit box is solid orange with dark
+    text** (Alan, 2026-10-15). The half-transparent selection blue it used first was too faint to notice.
   - Axes are lit by which axis they are, so axis highlighting needs [A8b](../../05-build-plan/alias-designer.md#slices)
     — SDL numbers a controller's axes without gaps, and its axis 2 may be Z or RZ.
 
@@ -1357,8 +1430,9 @@ missing, locked or unavailable installation is rare, and it never holds back wha
 installation that can be written is, the report names the one that could not and why, and nothing is rolled back
 to wait for it. **When that installation is found again** — at Elite-Intel startup, or whenever the check next
 reaches it — BindForge asks: *"Found the Epic installation that was missing. Write your recent control
-configuration changes to it?"* Yes is the same push as **Revert**. This is a slice of its own (A14), not built
-with onboarding; until it is, the divergence list's **Revert** on that installation's row does the same.
+configuration changes to it?"* ~~Yes is the same push as **Revert**.~~ Yes is Apply's push to that installation
+alone, removals and renames included — *changed 2026-10-15 (Alan), since Revert removes nothing.* Built in slice
+A14 — see [Catch-up](#catch-up--2026-10-15-alan-a14).
 *Alan: "when a user edits and applies, those should be the priority, and the rare, weird and highly unlikely
 things get a message to the user."*
 
@@ -1463,8 +1537,10 @@ Alan answered five questions, one at a time:
 - **A device cleared or reset in the draft, not yet applied, says so** — *"Cleared. Apply removes it from every
   installation."* — its input tabs are disabled, and the middle button becomes **UNDO CLEAR** (or **UNDO RESET**),
   which puts it back as the master holds it. The undo asks nothing: it changes no game file.
-- **APPLY and DISCARD are in the screen's footer.** APPLY is the primary, on the right, and is offered whenever the
-  master exists — with nothing saved it still pushes the master, which is the retry after a partial Apply. It asks
+- **APPLY and DISCARD are in the screen's footer.** APPLY is the primary, on the right. **It is offered only when it has
+  work** (Alan, 2026-10-15, reversing *"whenever the master
+  exists"*). Work means the draft changes something, a removal or rename is still on its way, or an installation differs from the master in a way the push repairs:
+  the rows that offer Revert (`ApplyWork`). The last case is still the retry after a partial Apply, since the installation it failed on still differs. Dimmed, its tooltip says there is nothing to apply. A button that answers every press, with nothing to do, had users pressing it again and again. It asks
   first, naming the installation count, and reports per installation: *"Updated 2 of 3"*, each failure's reason,
   what was removed, what was held back and why. **DISCARD throws the whole draft away** — the second DISCARD
   [above](#one-record-and-where-it-lands--reworked-2026-09-26), now settled; the dialog's BACK is the first. It is
@@ -1513,6 +1589,63 @@ Alan answered five questions, one at a time:
   Applies remove nothing, so the read was wasted — and when the folder was missing, its warning described a hold-back
   that never happened.
 - **A stale CLEAR or undo shows its own message**, not wrapped in *"This could not be done"*.
+
+#### Catch-up — 2026-10-15 (Alan, A14)
+
+Built as `bindforge.devicefiles.MissedWrites` (the flag, and who is found again), `DeviceFilesPush.push(installIds,
+removals)`, `DeviceApply.catchUp`, `InstallationHoldings` (what settles), `CatchUpAnnouncement` (the startup line)
+and the question in `AliasDesignerController`. Alan answered four questions, one at a time:
+
+- **A missed write is a stored fact** — `missed_write` on `bindforge_installations`, migration `12006`. The check
+  alone cannot tell an installation that missed an Apply from one edited in the game: both differ from the master,
+  and they need different questions. **Any write that misses an installation marks it** — Apply, first setup,
+  Revert, onboarding, catch-up itself. **Only a push carrying everything Apply carries clears it** — Apply, first
+  setup and catch-up. Revert removes nothing and onboarding writes one element, so either can land on an installation
+  that still holds a device the others lost to a CLEAR.
+- **Yes writes what Apply would, to that installation alone** (option 3 of three). The master, the pending removals
+  `.binds` does not hold back, and the renames; the bindings follow a rename or a hardware id as Apply's would, so a
+  catch-up that is the first to take a rename moves them. **The draft is never promoted** — what the user saved and
+  has not applied stays theirs to apply — and **no other installation is written**: one edited in the game meanwhile
+  is not this question's to revert. ~~Revert's push only~~ would have left a CLEAR undone, and ~~Apply again without
+  the draft~~ would have reverted the other installations unasked.
+- **Settled from the files.** A removal stops being pending, and a rename's old name is forgotten, once no
+  installation may still hold the name, read as the push would find it. Catch-up's own report covers one
+  installation, and cannot say whether the others took the removal earlier. An installation that cannot be read
+  counts as holding it — **unless it has missed no write**: it took every write that carried everything. *The one
+  case this misjudges is a removal held back for `.binds` when that installation was last written and released since;
+  it lingers there as a leftover the check already expects.*
+- **No asks again next run** (option 1 of three). Nothing is written, the flag stays, and the question is not
+  repeated in this run. The divergence list's Revert row and APPLY stay available meanwhile.
+- **Spoken at startup, asked on the screen** (option 2 of three). At startup the user is often already in the game
+  with Elite-Intel's window behind it, so a dialog would block the window unseen. `CatchUpAnnouncement` — after
+  activation and the run's one detection — says once and logs: *"The Epic installation is back, and it missed your
+  last control changes. Open BindForge to update it."* The question opens the first time the Alias Designer screen is
+  shown in the run, and whenever a refresh there finds one later — the "whenever the check next reaches it" above.
+
+*Also settled while building it (Alan approved them as defaults with the sources):*
+
+- **Several at once are one question**, naming them all; Yes writes each and reports per installation.
+- **Catch-up before onboarding.** It finishes writes the user already made; onboarding's offer waits for the refresh
+  after the answer, so the two never write one installation at once.
+- **The report is Apply's** — updated N of M, what was removed, held back, moved, renamed.
+- **A write missed before this slice is not asked about**: existing rows start unflagged. APPLY stays lit for such an
+  installation ([`ApplyWork`](#built--2026-10-11-alan-a10)), which repairs it all the same.
+
+*After review — 2026-10-15 (`code-integrity-review.md`, Alan: all but the record constructors of #6, and P2):*
+
+- **The run's one detection is waited for.** A second reader arriving while it ran got the list straight away, with a
+  folder that came back still marked missing — so the startup line could go silent, and a screen's first refresh
+  could draw a stale marker. `InstallationRegistry.currentWithStartupScan()` now holds every caller until it ends.
+- **The first showing asks from the stored flag**, not from the last refresh, which may have run before the folder
+  came back. The refresh it starts still decides whether the installation can be reached.
+- **A write that starts between the offer and the dialog gives the question back**, for the refresh that ends the
+  write to offer again — two writes to one installation at once would each keep an Edit History copy of a file the
+  other replaces.
+- **One push loop for every kind** (Apply, catch-up, revert), so the missed-write rule is written once; and **one
+  meaning of "landed"** (`Outcome.landed()` on the push's and onboarding's outcomes), so a new outcome counts as a
+  miss on every path.
+- *Left as built (Alan):* the short `Target` and `InstallationRow` constructors the existing tests use; and a Revert
+  that lands leaves the flag, so catch-up still asks about that installation (review P2) — as ruled above.
 
 ## Renaming a Device
 
@@ -1572,6 +1705,87 @@ Partial success is acceptable for the first and not for the second.
 completed renames are undone before reporting the failure — the files were named for a backup-covered write,
 so the previous names are recoverable. Leaving them renamed while `.binds` still says the old name is the
 same breakage in the other direction.
+
+#### Settled before building it — 2026-10-14 (Alan, A11)
+
+- **~~All or nothing~~ — a rename follows onboarding's partial rule** (Alan, option 3 of three). The user's Apply
+  comes first, as for [onboarding's hex move](#settled-before-building-it--2026-10-14-alan-a6b): every installation
+  that can be written is renamed, and `.binds` moves to the new name once **at least one** took it. One that missed
+  it is named in the report and caught up later — by the next Apply, by **Revert**, or by
+  [A14's catch-up](#actions-and-what-each-one-reaches) — since the push renames wherever the old name is still
+  found. Only when **no** installation took it does `.binds` stay on the old name, and the rename is reported as not
+  applied yet. *This knowingly accepts the cost measured above: until it is caught up, an installation that missed
+  the rename rejects the preset.* The four paragraphs above are kept for that reasoning.
+- **The `.binds` move is derived, not recorded**, as A6b's is: at each Apply, a master device that still carries a
+  `previous_name` which `.binds` uses has its bindings moved. A move that failed is retried by the next Apply.
+  `previous_name` is cleared once every installation has lost the old name and `.binds` no longer uses it.
+- **A rename that changes only case touches no `.binds`** — measured: a `Device=` name finds its element ignoring
+  case ([`.binds` format §4.3](domain-knowledge/EliteDangerous-BindsFileFormat.md#43-case-only-binds-cares-and-it-cares-about-one-spelling-per-device--measured-2026-10-14)),
+  and a preset spelling one device two ways is rejected, so rewriting only some references would be worse than
+  none. The element and the `.buttonMap` are renamed.
+- **One bindings folder, on Linux too — for now** (Alan, 2026-10-14). On Linux each Proton installation has its own
+  `.binds` folder ([input environment §7](../../00-overview/input-environment.md#7-linux-the-bindings-folder-is-not-shared)),
+  but the rename, like every other `.binds` read and write in BindForge, uses the one folder Elite-Intel is set to
+  (`PlayerSession.getBindingsDir()`, which on Linux is the prefix the launcher's `ed-bindings` link points at). That is
+  Elite-Intel's behaviour already, and correct on Windows and on a Linux machine with one installation. *Why not per
+  installation:* which installations should share controls is the user's to say, not BindForge's to infer — a
+  commander owns no input file, so "same commander" does not answer it — and asking belongs to a later slice that <!-- terminology-ok: the in-game commander, contrasted with the user -->
+  moves every `.binds` consumer together, not the rename alone.
+- **Several renames per Apply, no chains** (Alan, 2026-10-14). Each device's `.binds` move is its own rewrite, run one
+  after another as onboarding's hex moves are, and one that stops (the bindings monitor reloading under it) is
+  retried by the next Apply. **A name still waiting as some device's old name** — a `previous_name` in the master or
+  the draft — **is taken** until every installation has lost it, so it cannot be a new name. That rules out chains
+  (`LVWAP` → `LeftStick`, then another device → `LVWAP`), so no two moves depend on their order.
+- **First setup's *needs Rename* choices stay disabled in A11** (Alan, 2026-10-14). A11 renames from the Device
+  Editor only. Opening those choices — recording the losing name as the winner's `previous_name` so the first Apply
+  moves its bindings — is slice A16, which also designs the two cases one `previous_name` cannot cover: two losing
+  names that `.binds` uses, and first setup that cannot finish because `.binds` uses both names.
+- **A11 renames the user's own devices only** (Alan, 2026-10-14). On a built-in still under Frontier's name the
+  name field stays read-only, as today. Renaming or shadowing an attached built-in
+  ([above](#built-in-controllers-in-my-devices--settled-2026-09-13)) needs its presentation designed first, and is
+  slice A15.
+- **Linux with several installations is told, not fixed.** Apply's confirm says, when BindForge has found more than
+  one Linux installation, that controls are updated only for the installation Elite-Intel uses. Until the later slice,
+  a rename can leave another installation's preset naming the old device, and that installation falls back to
+  keyboard and mouse.
+
+#### Decided while building it — 2026-10-15 (A11)
+
+- **One rename at a time per device.** The master keeps one old name per device, so a device whose last rename has
+  not reached every installation and `.binds` yet keeps its name field read-only, saying so, until an Apply finishes
+  it. A second rename would overwrite the first old name, and the installations still holding it would never be
+  renamed.
+- **A device's own names are never "taken" for itself.** The clash check leaves out its current name, its master
+  name and its old name, matched exactly — so changing only case is a rename, and so is going back to the name the
+  installations still hold (which the draft then records as no rename at all).
+- **The element is renamed in place**, keeping its place in the file and every child it has (`<Alternative>`,
+  `<SupportsIcons>`). A second copy under the old name is removed, as CLEAR removes one; when the new name is already
+  in the file the old copies are removed and that element is kept.
+- **The `.buttonMap` is renamed, never copied.** The master's labels are written under the new name and the old file
+  deleted; a device with no labels in the master takes the old file's own content to the new name. **On a file system
+  that ignores case** (Windows) a case-only rename finds the old and new name to be one file, and nothing is deleted —
+  the game finds the file under either spelling ([format §2.2](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md)).
+- **Renaming is in the Device Editor's name box**, checked as it is typed by onboarding's rule and words. SAVE writes
+  the name and the labels in one transaction; a name another device took meanwhile writes nothing and says the device
+  changed. A device renamed in the draft opens under its new name, and CLEAR counts the bindings on every name it
+  has — draft, master and old.
+
+#### After review — 2026-10-15 (Alan, A11)
+
+- **CLEAR is refused while a rename is still under way.** Its old name may still be in `.binds` or in an
+  installation that missed the rename, and clearing would drop the old name the next Apply needs to finish it —
+  leaving bindings on a device with no entry, which the game rejects. The tooltip says so; Apply finishes the
+  rename, and CLEAR is offered again.
+- **A device that leaves the master mid-rename keeps its old name pending**, by any route. The old name is then
+  removed from the installations that still hold it — or held back while `.binds` names it — like any other
+  pending removal, rather than forgotten with the row.
+- **The editor's CLEAR count and Apply's rename move use one count**
+  (`BindsDeviceReferences.bindingsNaming`), so they cannot disagree about how many bindings name a device.
+- **The rename finds the old element ignoring case**, as the game does: an installation holding `<lvwap>` is still
+  the device whose old name is `LVWAP`. The element already spelled exactly as the new name is never taken for an
+  old copy.
+- **The Linux note on Apply's confirm speaks of every bindings move**, onboarding's hex move as well as a rename,
+  since both are made in the one bindings folder Elite-Intel uses.
 
 **Why the alias-confirm gate matters more than it looks.** Requiring the alias to be settled before button and
 axis naming unlocks means a `.buttonMap` is only ever created under a name the player has already looked at.

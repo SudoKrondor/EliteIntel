@@ -51,7 +51,7 @@ public enum CarrierOwnership {
      * Test seam: resolve against explicit stems rather than the live language bundles.
      * <p>
      * Stems are matched as plain substrings, not whole words, so one entry covers a language's whole inflectional
-     * family ("эскадрил" covers эскадрилья/эскадрильи/эскадрильей). That makes the match deliberately generous:
+     * family ("escuadr" covers escuadrón/escuadrones/escuadrilla). That makes the match deliberately generous:
      * these stems occur in no other Elite vocabulary, so a false positive costs nothing a false negative doesn't
      * cost more.
      */

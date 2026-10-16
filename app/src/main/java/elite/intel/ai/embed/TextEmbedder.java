@@ -5,7 +5,7 @@ package elite.intel.ai.embed;
  * mean similar things produce vectors that point in similar directions, so closeness ({@link VectorMath#cosine})
  * measures semantic similarity rather than spelling overlap. This is the seam VEGA's command
  * selection and memory recall can sit on instead of the word-overlap reducers, so that inflected forms
- * ({@code авианосец / авианосцу / авианосцем}) and synonyms ({@code курс на авианосец / лети к авианосцу})
+ * ({@code Träger / Trägers / Trägern}) and synonyms ({@code Kurs auf den Träger / flieg zum Träger})
  * match without per-language declension or synonym tables.
  * <p>
  * Implementations are expected to L2-normalise their output (unit length), so {@link VectorMath#cosine}

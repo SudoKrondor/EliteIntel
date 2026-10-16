@@ -2,7 +2,6 @@ package elite.intel.ai.brain.vega.prompt;
 
 import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.ai.brain.VegaIdentity;
-import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
@@ -69,7 +68,7 @@ class VegaSystemPromptTest {
     }
 
     private static String resolvedLanguageName() {
-        Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
+        Language language = SystemSession.getInstance().getLanguage();
         return language.displayName();
     }
 

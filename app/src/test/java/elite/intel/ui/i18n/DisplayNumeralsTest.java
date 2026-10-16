@@ -105,10 +105,6 @@ class DisplayNumeralsTest {
     void everyLanguageReadsItsOwnSpelling() {
         assertEquals(expected(Language.DE, "Tonnen"),
                 DisplayNumerals.digits("eintausendzweihundertvierundzwanzig Tonnen", Language.DE));
-        assertEquals(expected(Language.RU, "тонны"),
-                DisplayNumerals.digits("одна тысяча двести двадцать четыре тонны", Language.RU));
-        assertEquals(expected(Language.UK, "тонни"),
-                DisplayNumerals.digits("одна тисяча двісті двадцять чотири тонни", Language.UK));
         assertEquals(expected(Language.FR, "tonnes"),
                 DisplayNumerals.digits("mille deux cent vingt-quatre tonnes", Language.FR));
         assertEquals(expected(Language.IT, "tonnellate"),

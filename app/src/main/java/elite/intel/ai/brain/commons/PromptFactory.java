@@ -181,7 +181,7 @@ public class PromptFactory implements AiPromptFactory {
     }
 
     private String responseLanguageRule() {
-        Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(systemSession);
+        Language language = systemSession.getLanguage();
         String name = languageDisplayName(language);
         return "MANDATORY LANGUAGE RULE: text_to_speech_response MUST be written in " + name + " ONLY. " +
                 "Responding in any other language is a critical failure that violates the user's settings. " +
@@ -189,7 +189,7 @@ public class PromptFactory implements AiPromptFactory {
     }
 
     private String closingLanguageReinforcement() {
-        Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(systemSession);
+        Language language = systemSession.getLanguage();
         String name = languageDisplayName(language);
         return "FINAL RULE: Your text_to_speech_response MUST be in " + name + ". No exceptions.\n";
     }

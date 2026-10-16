@@ -69,9 +69,9 @@ class ActionCueGateTest {
      */
     @Test
     void stemsMatchInflectedWords() {
-        List<String> stems = AiActionCues.stems(Language.RU, CLEAR);
-        assertTrue(AiActionCues.admits(stems, "сбрось маршрут авианосца"));
-        assertTrue(AiActionCues.admits(stems, "отменить маршрут авианосца"));
+        List<String> stems = AiActionCues.stems(Language.DE, CLEAR);
+        assertTrue(AiActionCues.admits(stems, "lösche die Carrier-Route"));
+        assertTrue(AiActionCues.admits(stems, "Carrier-Route stornieren"));
         assertTrue(AiActionCues.admits(stems, "cancel carrier route"), "English stems apply in every language");
     }
 

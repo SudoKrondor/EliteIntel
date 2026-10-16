@@ -7,9 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Onboarding's pages: one per attached controller with no name, each offered a default no other page shares, and a
@@ -97,7 +95,7 @@ class OnboardingTest {
         return Onboarding.pages(devices, held, List.of("T-Rudder", "LVWAP"), hardwareIds, device -> LABELS);
     }
 
-    private static MyDevice attached(String windowsName, String vid, String pid) {
-        return new MyDevice(windowsName, null, vid, pid, true, null, false);
+    private static MyDevice attached(String hardwareName, String vid, String pid) {
+        return new MyDevice(hardwareName, null, vid, pid, true, null, false);
     }
 }

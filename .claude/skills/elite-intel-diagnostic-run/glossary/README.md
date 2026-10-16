@@ -1,7 +1,7 @@
 # Terminology glossaries
 
 Per-language Elite Dangerous terminology caches for the `elite-intel-diagnostic-run` skill. One file per language:
-`EN.md`, `RU.md`, `UK.md`, `DE.md`, `ES.md`, `FR.md`, `IT.md`, `PT.md`.
+`EN.md`, `DE.md`, `ES.md`, `FR.md`, `IT.md`, `PT.md`.
 
 ## Why these files exist
 
@@ -20,7 +20,7 @@ the terms read well in a sentence.
 ```markdown
 # Elite Dangerous terminology — <Language> (<LANG>)
 
-built: <YYYY-MM-DD>   |   game locale: <e.g. ru-RU>
+built: <YYYY-MM-DD>   |   game locale: <e.g. de-DE>
 sources:
 - <official / wiki URL 1>
 - <localized wiki URL 2>
@@ -28,17 +28,12 @@ sources:
 ## Terms
 | concept (EN)        | localized term(s)                    | notes / source | confidence |
 |---------------------|--------------------------------------|----------------|------------|
-| landing gear        | шасси                                | wiki           | confirmed  |
-| supercruise         | суперкруиз                           | game UI        | confirmed  |
-| hardpoints          | орудийные пилоны, жёсткие точки       | wiki           | confirmed  |
-| heat sink           | теплоотвод                           | wiki           | uncertain  |
-| chaff               | дипольные отражатели                 | wiki           | confirmed  |
-| fleet carrier       | флотский авианосец                   | game UI        | confirmed  |
-| alexandrite         | александрит                          | wiki (commodities) | confirmed |
+| landing gear        | <term on the localized HUD>          | wiki           | confirmed  |
+| heat sink           | <term on the localized HUD>          | wiki           | uncertain  |
 | ...                 | ...                                  | ...            | ...        |
 
 ## Example phrasings (reference only — do NOT replay verbatim)
-- supercruise on: «уходим в суперкруиз», «разгоняй до сверхсвета»
+- supercruise on: <two natural ways a pilot would say it>
 - ...
 ```
 

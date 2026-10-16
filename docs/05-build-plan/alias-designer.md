@@ -28,8 +28,12 @@ data; most of what the spec describes is still ahead.
 | `.buttonMap` label merge (A2) | `bindforge.devicefiles.LabelMerge` (pure: the disagreeing inputs, answers per input, the whole-file route, the merged labels; sides keyed by name); `ui.screen.bindings.LabelMergeDialog`, opened by **Compare N inputs** on a *Button labels disagree* row in `FirstSetupDialog` |
 | Startup `.buttonMap` (A8) | `bindforge.devicefiles.ButtonMapGeneration` (per installation, create-only), `ButtonMapLabels` (the generated labels: buttons, the axes the controller has — all eight when unknown — and four per hat); `bindforge.devices.ButtonMapStartup` runs it on every connect, started as `BUTTON_MAP_STARTUP` in `AppController` |
 | Device Editor (A9) | `ui.screen.bindings.DeviceEditorDialog`, opened by the gear column on My Devices in `AliasDesignerPanel` (`GearCell`, copied from `CommanderTabPanel`); `bindforge.devices.DeviceEditorInputs` (boxes, defaults, what SAVE writes) and `DeviceEditorLights` (highlighting), both pure; `BindForgeDeviceDraftManager.saveLabels`; `FrontierStockDevices.gameDrawsIt`; `devices.events.DeviceHatEvent`, polled in `DeviceService`; the footer's middle place and unsaved hint in `HudModalSpec` |
-| Actions (A10) | `bindforge.devices.DeviceEditorMiddle` (CLEAR / RESET LABELS / their undo, and when refused — pure), wired in `DeviceEditorDialog`; `BindForgeDeviceDraftManager.removeByName`, `restoreFromMaster`, `stored`; APPLY and DISCARD in `AliasDesignerPanel`'s footer, calling `DeviceApply` (removals held back while `.binds` names them; cleared once every installation took them); `DeviceFilesPush.push(Set)` and `DeviceMappingsMerge.remove`; `FrontierStockButtonMaps.shippedContent`; `BindsDeviceReferences.referenceCounts`; `bindforge.devicefiles.DraftChanges` (does the draft change anything — pure) |
-| Onboarding (A6b) | `bindforge.devices.Onboarding` (the pages and the name check, pure); `ui.screen.bindings.OnboardingDialog`, opened once per run after activation once the hardware is listed, again by **CHECK AGAIN** (Krondor, 2026-10-14), and by **NAME** in `DeviceEditorDialog` for an attached, unnamed controller; `bindforge.devicefiles.DeviceOnboarding` (store first, then each installation all or nothing: `DeviceMappingsMerge.insert`, Edit History, create-only `.buttonMap`); `EditHistory` (shared with `DeviceFilesPush`); `BindForgeDeviceDraftManager.onboard` (master and a started draft, or the draft only for Apply); the hex move at Apply in `DeviceApply.moveHardwareIds` through `BindsHardwareIdRewrite`; `BindsDeviceReferences.hardwareIdCounts` / `hardwareIdsFor`; `bindings.aliasDesigner.onboarding.*` in the nine bundles |
+| Actions (A10) | `bindforge.devices.DeviceEditorMiddle` (CLEAR / RESET LABELS / their undo, and when refused — pure), wired in `DeviceEditorDialog`; `BindForgeDeviceDraftManager.removeByName`, `restoreFromMaster`, `stored`; APPLY (lit only when `ApplyWork` finds work — Krondor, 2026-10-15) and DISCARD in `AliasDesignerPanel`'s footer, calling `DeviceApply` (removals held back while `.binds` names them; cleared once every installation took them); `DeviceFilesPush.push(Set)` and `DeviceMappingsMerge.remove`; `FrontierStockButtonMaps.shippedContent`; `BindsDeviceReferences.referenceCounts`; `bindforge.devicefiles.DraftChanges` (does the draft change anything — pure) |
+| Catch-up (A14) | Migration `12006__bindforge_missed_write.sql` (`missed_write` on `bindforge_installations`; `InstallationRow.missedWrite`, `BindForgeInstallationsManager.setMissedWrite`); `bindforge.devicefiles.MissedWrites` (marked by any push or onboarding that misses an installation, cleared only by Apply, first setup or catch-up landing; `foundAgain`), recorded inside `DeviceFilesPush` and `DeviceOnboarding`; `DeviceFilesPush.Target.missedWrite`; `DeviceFilesPush.push(installIds, removals)`; `DeviceApply.catchUp` (no promote; removals, hold-back and moves shared with `apply`); `InstallationHoldings` (settles a removal or rename from the files); `CatchUpAnnouncement` (spoken and logged once at startup, `CATCH_UP_ANNOUNCEMENT` in `AppController`); the question in `AliasDesignerController.offerCatchUp`, before onboarding, once per run per installation; `speech.catchUpFound*`, `bindings.aliasDesigner.catchUp.*` in the seven bundles |
+| Rename (A11) | The name box in `DeviceEditorDialog`, its rule in `bindforge.devices.DeviceRename` (who may rename, which names are taken - pure), read by `AliasDesignerReader.openingFor`; `BindForgeDeviceDraftManager.saveDevice` (name and labels, one transaction); at Apply, `DeviceFilesPush` renames the element (`DeviceMappingsMerge.rename`) and the `.buttonMap` wherever the old name is found, and `DeviceApply.moveRenamedReferences` moves `.binds` through `BindsDeviceRewrite` (renamed from `BindsHardwareIdRewrite`) and clears `previous_name` once done everywhere; the Linux note in Apply's confirm; `apply.rename*`, `apply.linuxNote`, `editor.name.*` in the nine bundles |
+| When hardware changes (A12) | `bindforge.devices.IdentityQuestions` (who is asked, the candidates, which answers still hold, what onboarding holds back - pure); `ui.screen.bindings.IdentityDialog`; migration `12007__bindforge_identity_answer.sql`, `BindForgeIdentityAnswerDao`, `BindForgeIdentityAnswerManager`; `BindForgeDeviceDraftManager.retargetByName`; `AliasDesignerReader.readIdentity` (in the `Snapshot`), `readOnboarding(only, heldBack)`; `HotPlugOffers.take(heldBack)` / `anyWaitingBesides`; the questions, writes and notice in `AliasDesignerController` (`offerIdentity`, `askIdentity`); Review in Bind Editor through `AliasDesignerPanel.setReviewBindings`, set by `BindingsTabPanel`; `bindings.aliasDesigner.identity.*` in the seven bundles |
+| Hot-plug (A7) | `bindforge.devices.HotPlugOffers` (who is still owed onboarding's offer, once per run per controller - in memory); `AliasDesignerController` on `DeviceBus` (`onDeviceConnected`, `onDeviceDisconnected`): refresh while showing, otherwise `hardwareStale` for the next showing; the offer in the refresh after the automatic one (`hotPlugOfferMayOpen`, never over a modal dialog); `AliasDesignerReader.readOnboarding(Set<HardwareId>)` |
+| Onboarding (A6b) | `bindforge.devices.Onboarding` (the pages and the name check, pure); `ui.screen.bindings.OnboardingDialog`, opened once per run after activation once the hardware is listed, again by **CHECK AGAIN** (Krondor, 2026-10-14), and by **NAME** in `DeviceEditorDialog` for an attached, unnamed controller; `bindforge.devicefiles.DeviceOnboarding` (store first, then each installation all or nothing: `DeviceMappingsMerge.insert`, Edit History, create-only `.buttonMap`); `EditHistory` (shared with `DeviceFilesPush`); `BindForgeDeviceDraftManager.onboard` (master and a started draft, or the draft only for Apply); the hex move at Apply in `DeviceApply.moveHardwareIds` through `BindsDeviceRewrite`; `BindsDeviceReferences.hardwareIdCounts` / `hardwareIdsFor`; `bindings.aliasDesigner.onboarding.*` in the nine bundles |
 | Activation (A1b) | `bindforge.devicefiles.Activation` (backup once, then identical → master filled with no prompt, otherwise first setup; `identical` is the push's own test); `DeviceFilesSnapshot.take(label, targets, bindingsFolders)`; migration `12005__bindforge_activation.sql`, `BindForgeActivationDao`, `BindForgeActivationManager`; `establish` activates in its transaction; `BeforeBindForgeBackup` (taken once, by activation or SET UP); `AliasDesignerPanel.activateOnFirstShowing()`, called by `BindingsTabPanel`'s first showing; `speech.bindforgeBackedUp` in the nine bundles |
 | Missing-controller warning (A13) | `bindforge.devices.MissingControllers` (who is named, pure), `MissingControllerWarning` (once per process, spoken and logged); triggered by the panel's first showing (`AliasDesignerController.onShown`), which starts its own refresh (`missingWarningWanted`); `speech.missingController(s)` in the nine `gui*.properties` |
 | Which axes and hats (A8b) | `elite.intel.devices.model.DeviceDescription` (axes by game slot, `axesWithoutSlot`, SDL's numbering via `axisAt`, hat count) and `GameAxis`; `devices.hid.DeviceDescriber` reads it at connect — `WindowsHidUsages` (`hid.dll`), `LinuxHidUsages` + `HidReportDescriptor` (`/sys`), `AxisSlots` (pure rules); `DeviceService.description(deviceId)` |
@@ -78,6 +82,17 @@ installations with each other before then. Once the master exists, each row offe
   for a stick reporting X, Y and RZ. *Answered by A8b (2026-10-10):* use `DeviceService.description(id).axisAt(i)`,
   which is empty when the numbering could not be matched — never `ButtonInputMapper.axisToBindsToken`. The
   capture dialog must do the same. [Spec](../02-features/bindforge/alias-designer.md#which-axes-and-hats-a-controller-has--2026-10-10-alan)
+- **On Linux, each installation's own bindings folder is found but not used** (found 2026-10-14). Linux detection
+  gives every `GameInstallation` its `bindingsFolder` inside its Proton prefix, but nothing reads that field, and
+  it is not stored: every `.binds` read and write in BindForge — Apply's hold-back and hex move
+  (`DeviceApply`, `BindsDeviceRewrite`), first setup, the "before BindForge" backup, `AliasDesignerReader` —
+  still uses the one configured folder (`PlayerSession.getBindingsDir()`). On Windows that is right, as every
+  installation shares the folder. On Linux with several Proton installations, only one installation's `.binds` is
+  read or rewritten. **Ruled 2026-10-14 (Alan): keep it so for now** — one folder, as on Windows; A11 adds a line to
+  Apply's confirm when more than one Linux installation is found. A later slice, not yet in the table, asks the user
+  whether the installations share controls and moves every `.binds` consumer at once — unless the symlink inversion
+  ([input environment §7](../00-overview/input-environment.md#this-arrangement-may-invert---flagged-2026-09-26)) lands
+  and makes the folder one. [Recorded](../02-features/bindforge/alias-designer.md#settled-before-building-it--2026-10-14-alan-a11).
 - **Still open from the first code review:**
   - **#7 — paths are stored as typed**, so `E:\SteamLibrary\…` and `e:\steamlibrary\…\` become two rows for one
     installation. Discussed 2026-09-30 and leaning towards deleting **relocate** altogether, since Remove then
@@ -88,8 +103,7 @@ installations with each other before then. Once the master exists, each row offe
 
 ## Boundaries
 
--
-**Owns** `bindforge.devices`, `bindforge.devicefiles`, `bindforge.install` and the screen in `ui.screen.bindings`: `AliasDesignerPanel`, `AliasDesignerController`, `AliasDesignerReader`, `AliasDesignerReports`.
+- **Owns** `bindforge.devices`, `bindforge.devicefiles`, `bindforge.install` and the screen in `ui.screen.bindings`: `AliasDesignerPanel`, `AliasDesignerController`, `AliasDesignerReader`, `AliasDesignerReports`.
 - **Writes through Core, never around it.** No slice here writes a game file itself.
 - **The Game Install Locations screen belongs to File Manager** — fix bugs in it here if a slice needs to, but its
   move into File Manager is that section's work.
@@ -107,17 +121,20 @@ installations with each other before then. Once the master exists, each row offe
 | A5 | **Built-in Devices tab** — Frontier's list, read-only | — | **done 2026-10-08** |
 | A6 | **Onboarding: the rule** — the default-name rule and alias validation | Core C1 (done) | **done 2026-10-06** |
 | A6b | **Onboarding: the dialog and its writes** — name the controllers `needingName` returns, then write the entry and a generated `.buttonMap` straight away. A controller `.binds` names by hex waits for Apply, with a `.binds` rewrite | A6, A8, A1b (done) | **done 2026-10-14** |
-| A7 | **Automatic registration and hot-plug** — `DeviceBus` connect and disconnect | A6b (done) | ready |
+| A7 | **Automatic registration and hot-plug** — `DeviceBus` connect and disconnect | A6b (done) | **done 2026-10-15** |
 | A8 | **`.buttonMap` generation at Elite-Intel startup** — connected, named, none on disk | Core C1 (done) | **done 2026-10-06** |
 | A8b | **Which axes and hats a controller has** — read each axis's identity (X, Y, Z, Rx, Ry, Rz, Slider, Dial) from the controller's HID description, on Windows and Linux, and the number of hats it reports, in the shared `elite.intel.devices`, built on this branch (Alan, 2026-10-10). SDL gives only an axis count, two Virpil sticks put the twist on Z and RZ, and the Device Service reads no hats today. The Device Editor is built from what this reports: a tab only for a kind of input the controller has. **A8's generated `.buttonMap` gains hat labels** in the form `Hat 1 Up`, `Hat 1 Right`, `Hat 1 Down`, `Hat 1 Left` (the spec's order), beside its existing `Button N` and `X Axis` (Alan, 2026-10-10). [Spec](../02-features/bindforge/alias-designer.md#which-axes-and-hats-a-controller-has--2026-10-10-alan) | — | **done 2026-10-10** |
 | A9 | **Device Editor** — a dialog opened from a gear on every My Devices row: DEVICE (name, VID/PID, install strip), AXES, BUTTONS (groups of 32), HATS, each only where the controller has them; default labels; live highlighting; **SAVE** to the draft and BACK's Save / Discard / Keep editing; the footer's middle place (GAP 7), with CLEAR's button laid out for A10. [Spec](../02-features/bindforge/alias-designer.md#a-dialog-opened-from-the-row--2026-10-10-alan) | C2 (done), A8b (done) | **done 2026-10-11** |
 | A10 | **Actions** — DISCARD of the whole draft (if any), CLEAR, RESET LABELS, APPLY, reported per installation. *SAVE moved to A9 (2026-10-10).* Unlocks [Core C6](core.md#slices), the exit prompt, which needs an editor holding unsaved edits. **RESET LABELS must delete the `.buttonMap` in every installation**, or A8 never regenerates it | A9 (done) | **done 2026-10-11** |
-| A11 | **Rename** — every installation first, `.binds` last, all or nothing | A10 (done) | **next** — unblocked 2026-10-13, the `.binds` rewrite has merged up |
-| A12 | **When hardware changes** — a missing device, the identity question, retarget, one missing device at a time | A11 | waiting |
+| A11 | **Rename** — every installation it can reach, `.binds` last once at least one took it, a missed one caught up later (~~all or nothing~~ — Alan, 2026-10-14, option 3); a case-only rename touches no `.binds`. [Spec](../02-features/bindforge/alias-designer.md#settled-before-building-it--2026-10-14-alan-a11) | A10 (done) | **done 2026-10-15** |
+| A12 | **When hardware changes** — a missing device, the identity question, retarget, one missing device at a time. Named controllers only (Alan, 2026-10-15). [Spec](../02-features/bindforge/alias-designer.md#built--2026-10-15-alan-a12) | A11 (done) | **done 2026-10-15** |
 | A13 | **The missing-controller warning**, once per run | — | **done 2026-10-11** |
-| A14 | **Catch-up** — an installation that missed an Apply (missing, locked, unavailable) is found again, at Elite-Intel startup or by the check: ask *"write your recent changes to it?"*, Yes being `DeviceFilesPush.push(installId)`. [Spec](../02-features/bindforge/alias-designer.md#actions-and-what-each-one-reaches) | A10 (done) | ready — added 2026-10-14 (Alan); after A11 |
+| A15 | **Rename or shadow a built-in** — for an attached controller under one of Frontier's names: rename Frontier's element in place, or shadow it with a user element at the top carrying only that controller's VID/PID. Start by designing how the Device Editor offers the two ("not designed yet" in the spec). [Spec](../02-features/bindforge/alias-designer.md#built-in-controllers-in-my-devices--settled-2026-09-13) | A11 (done) | **next** — split out of A11 2026-10-14 (Alan) |
+| A16 | **First setup's name choices that need Rename** — a name conflict whose losing name `.binds` uses: keep the winner with the loser as its `previous_name`, so the first Apply moves the bindings (A11's machinery). Design first: two losing names `.binds` uses (one `previous_name` per device), and first setup stuck because `.binds` uses both names. [Spec](../02-features/bindforge/alias-designer.md#settled-while-building-it--2026-10-07-alan) | A11 (done) | ready — split out of A11 2026-10-14 (Alan) |
+| A17 | **When hardware changes, for a controller with no name** — `.binds` names a missing controller by hardware id only and an unnamed one is attached: a yes names the new controller *and* moves the bindings from the **old** id to the name. Needs a stored "old id → name" record, since Apply's hex move only finds a device's current VID/PID. Reuse A12's question, answers and hold-back. [Spec](../02-features/bindforge/alias-designer.md#built--2026-10-15-alan-a12) | A12 (done) | ready — split out of A12 2026-10-15 (Alan) |
+| A14 | **Catch-up** — an installation that missed an Apply (missing, locked, unavailable) is found again, at Elite-Intel startup or by the check: ask *"write your recent changes to it?"*, Yes being ~~`DeviceFilesPush.push(installId)`~~ Apply's push to that installation alone, removals and renames included (Alan, 2026-10-15). [Spec](../02-features/bindforge/alias-designer.md#catch-up--2026-10-15-alan-a14) | A10 (done) | **done 2026-10-15** |
 
-**A11 is next**; A14 and A7 are ready, A12 waits on A11. A6b was done 2026-10-14. Core C6, the exit
+**A15 is next**; A16 and A17 are ready. A7, A11, A12 and A14 were done 2026-10-15. Core C6, the exit
 prompt A10 unblocked, was settled 2026-10-12 as a ruling with no code — the Device Editor's own prompt is it.
 
 **One `.binds` rewrite unblocks three slices:** A6b's hex case, A11's rename, and CLEAR on a device `.binds` names
@@ -132,13 +149,79 @@ game's `.binds` **last**; a hex reference rewritten **from the value `BindsDevic
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
 
-- **2026-10-14 — branch review
-  fixes** (Krondor, `code-integrity-review.md` against `master`). CHECK AGAIN offers onboarding again (spec A6b, now three ways in). APPLY with no installation says so, and with one asks about "your installation". A device name that cannot be a filename fails one installation instead of the push or the check. Startup `.buttonMap` generation waits for activation (`BindForgeActivatedEvent`; spec,
-  *At Elite-Intel startup*). **Linux detection
-  built** (`LinuxGameInstallationProvider`, `SteamLibraries`; file-manager.md). The installation list is cached in its manager.
-  **`AliasDesignerPanel`
-  split** into view, controller, reader and reports — the pre-existing "wants a per-flow controller" note is done. **A7
-  needs:** `openOnboarding(device)` is now on
+- **2026-10-15 — A12 built** (Alan answered four questions, after asking for them again in plain terms; all tests
+  pass). Recorded in the spec, [Built — A12](../02-features/bindforge/alias-designer.md#built--2026-10-15-alan-a12):
+  named controllers only (the hex-only case is **A17**); asked only when bindings use the missing controller; Not now and
+  None of these stored across restarts (`12007`), keyed on the missing controller and its candidate set; a deferred
+  question holds its candidates back from onboarding's automatic and hot-plug offers, CHECK AGAIN asks it first, NAME
+  still names. **Also:** the automatic onboarding offer no longer opens over another dialog. **Found:** a migration
+  comment may hold no semicolon (`MigrationLayoutTest`). **A17 needs:** a record of the old hex per name, and Apply's
+  move from it. Swing parts untested by the suite — unplug a bound stick, plug in an unnamed one, open BindForge.
+  *Alan prefers design questions in plain terms, with what the slice is for explained first.*
+
+- **2026-10-15 — A7 built** (Alan approved the sources and their defaults; all tests pass). Recorded in the spec,
+  [Automatic Device Registration → Built](../02-features/bindforge/alias-designer.md#built--2026-10-15-alan-a7):
+  **once per run per controller** (Alan) — re-plugging does not ask again, CHECK AGAIN, NAME and the next run do;
+  a plug refreshes while the screen shows, otherwise on the next showing; the offer never opens over a modal dialog,
+  nor while catch-up asks or a write runs. **Reconciled:** the spec's "registration touches only the working copy" now
+  says registration writes nothing — the row is the registration. **A12 needs:** `HotPlugOffers` sees every connect and
+  disconnect, the place to notice *a device missing and something unrecognised present*; the identity question is not
+  onboarding, so it wants its own once-per-run rule. Swing parts untested by the suite — plug an unnamed stick in with
+  BindForge open, then pull it and plug it back.
+
+- **2026-10-15 — A14 review fixes** (`code-integrity-review.md`, Alan: 1–5, 7–9 and `DeviceApply`'s half of 6; the
+  record constructors and P2 left). Recorded under *After review* in [Catch-up](../02-features/bindforge/alias-designer.md#catch-up--2026-10-15-alan-a14):
+  `currentWithStartupScan()` makes later callers wait for the run's detection (it fed a stale "missing" to the startup
+  line and to every screen's first refresh); the first showing asks from the stored flag; a write started meanwhile
+  gives the question back; one push loop (`pushWhere`); `Outcome.landed()`; `DeviceApply` takes one `Pushes` seam,
+  which `DeviceFilesPush` implements.
+
+- **2026-10-15 — A14 built** (Alan answered four questions, one at a time; all tests pass). Recorded in the spec,
+  [Catch-up](../02-features/bindforge/alias-designer.md#catch-up--2026-10-15-alan-a14): a stored `missed_write` flag
+  (migration `12006`); Yes is Apply's push to that installation alone, removals and renames included, never the draft,
+  settled by reading every installation (`InstallationHoldings`); No asks again next run; spoken at startup, asked on
+  the screen. **Found:** Revert's push carries no removals, so the brief's "Yes is `push(installId)`" would have left a
+  CLEAR undone — the spec's "same push as Revert" is struck through. Krondor's `ApplyWork` (same day) already lights
+  APPLY for a missed installation; catch-up adds the question. **Also today (Krondor):** RU and UK were dropped, so
+  strings go in **seven** bundles; `BindingsMonitor` and `KeyBindingsParser` (`bindforge.io`) gained public members on
+  this branch. **A7 needs:** a controller plugged in later reaches onboarding through `openOnboarding(device)`; catch-up
+  goes first in a refresh, so onboarding's offer must keep waiting while `offerCatchUp` is asking. Swing parts untested
+  by the suite — take an installation's folder away, APPLY, put it back, restart, hear the line, open BindForge.
+
+- **2026-10-15 — A11 built** (Alan approved the sources; all tests pass). Rename from the Device Editor's name box;
+  Apply renames the element and the `.buttonMap` in every installation it reaches and moves `.binds` once one took
+  it; `previous_name` clears when every installation and `.binds` are done. **Decided while building** (spec,
+  *Renaming a Device → Decided while building it — 2026-10-15*): one rename at a time per device; a device's own names
+  are never taken for itself; the element is renamed in place; a case-only `.buttonMap` rename on Windows deletes
+  nothing. Onboarding's taken names now include old names still waiting. **A14 needs:** a rename an installation
+  missed is caught up by any push to it - `DeviceFilesPush` renames wherever `previous_name` is still found.
+  **Review fixes** (`code-integrity-review.md`, Alan: all but #8 and the triple `.binds` read): CLEAR refused while a
+  rename is under way, and a device leaving the master mid-rename keeps its old name pending; one shared count,
+  `BindsDeviceReferences.bindingsNaming`; the old element matched ignoring case; the dead `rename` methods on the
+  draft manager, master manager and master DAO removed. Recorded in the spec, *Renaming a Device → After review*.
+
+- **2026-10-14 — A11 planning, part 1** (Alan; no code). **Option 3 ruled:** a rename follows onboarding's
+  partial rule, not all or nothing — `.binds` moves once at least one installation took it, a missed one is caught
+  up later; the move is derived from `previous_name` and retried each Apply. **Measured (Alan):** a `Device=` name
+  finds its element ignoring case, and a `.binds` spelling one device two ways is rejected — so a case-only rename
+  touches no `.binds`. Recorded in the spec, *Renaming a Device → Settled before building it*, and
+  [`.binds` format §4.3](../02-features/bindforge/domain-knowledge/EliteDangerous-BindsFileFormat.md#43-case-only-binds-cares-and-it-cares-about-one-spelling-per-device--measured-2026-10-14);
+  testing item 24 separates "one spelling" from a stricter rule. **Sources approved**, to revise for Krondor's
+  split: Apply's report now lives in `AliasDesignerController` and `AliasDesignerReports`. **Linux bindings
+  folders answered:** one folder for now, Apply's confirm says so when several Linux installations are found (spec,
+  input environment §7, Known issues). **Built-ins answered:** left out of A11, now slice A15. **Renames per Apply
+  answered:** several, no chains — a pending old name is taken. **First setup's *needs
+  Rename*:** stays disabled, now slice A16. **All A11 design questions answered**; the revised sources table is next. **Found:** Krondor's two new tests failed
+  on Windows (a `/`-only path check; a worker-thread race counting two generations) — he fixed both tests, no
+  production change.
+
+- **2026-10-14 — branch review fixes** (Krondor, `code-integrity-review.md` against `master`). CHECK AGAIN offers
+  onboarding again (spec A6b, now three ways in). APPLY with no installation says so, and with one asks about "your
+  installation". A device name that cannot be a filename fails one installation instead of the push or the check.
+  Startup `.buttonMap` generation waits for activation (`BindForgeActivatedEvent`; spec, *At Elite-Intel startup*).
+  **Linux detection built** (`LinuxGameInstallationProvider`, `SteamLibraries`; file-manager.md). The installation
+  list is cached in its manager. **`AliasDesignerPanel` split** into view, controller, reader and reports — the
+  pre-existing "wants a per-flow controller" note is done. **A7 needs:** `openOnboarding(device)` is now on
   `AliasDesignerController`.
 
 - **2026-10-14 — A6b review fixes** (`code-integrity-review.md`; Alan: findings 2–8, 10, 11, 13 and the docs
@@ -157,7 +240,7 @@ next slice needs.*
   an existing `.buttonMap` is kept and reported; an unreadable `.binds` stops onboarding. **Found:** onboarding must
   write a started draft in the same transaction as the master, or `promote()` drops the name as a pending removal.
   **A11 needs:** the rename stays all or nothing for now (A11's own question); `EditHistory` and
-  `BindsHardwareIdRewrite` are there to reuse. **A14 needs:** the per-installation `Outcome` the push and onboarding
+  `BindsDeviceRewrite` are there to reuse. **A14 needs:** the per-installation `Outcome` the push and onboarding
   already report. **A7 needs:** `openOnboarding(device)` on `AliasDesignerPanel` to call on connect. Swing parts
   untested by the suite.
 

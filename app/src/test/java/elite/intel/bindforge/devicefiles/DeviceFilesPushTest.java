@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -217,6 +218,48 @@ class DeviceFilesPushTest {
         assertEquals(List.of(epic), rescanned);
     }
 
+    /**
+     * Catch-up: Apply's push - removals included - to the installations named, and no other installation touched
+     * (Alan, 2026-10-15, A14).
+     */
+    @Test
+    void catchUpPushesWithRemovalsToTheNamedInstallationAlone() throws IOException {
+        Target steam = installation(1, "STEAM");
+        Target epic = installation(2, "EPIC");
+        push(List.of(steam, epic), List.of(RVWAP));
+        String steamBefore = read(steam.controlSchemes().resolve("DeviceMappings.xml"));
+        rescanned.clear();
+
+        Report report = pusher(List.of(steam, epic), List.of()).push(List.of(2L), Set.of("RVWAP"));
+
+        assertEquals(1, report.installations().size());
+        assertEquals(Outcome.WRITTEN, resultFor(report, epic).outcome());
+        assertFalse(read(epic.controlSchemes().resolve("DeviceMappings.xml")).contains("RVWAP"));
+        assertEquals(steamBefore, read(steam.controlSchemes().resolve("DeviceMappings.xml")));
+        assertEquals(List.of(epic), rescanned);
+    }
+
+    /** A missed installation is marked by any push; only Apply's push and catch-up clear it, never revert. */
+    @Test
+    void missedWritesAreRecordedByTheKindOfPush() throws IOException {
+        Target steam = new Target(1, "STEAM", installation(1, "STEAM").controlSchemes(), false, true);
+        Target away = new Target(2, "EPIC", temp.resolve("gone"), false);
+        Map<Long, Boolean> stored = new HashMap<>();
+        DeviceFilesPush push = new DeviceFilesPush(() -> List.of(steam, away), () -> List.of(RVWAP),
+                FrontierStockDevices.getInstance(), new TimestampedBackups(), history, () -> 10, rescanned::add,
+                new MissedWrites(stored::put));
+
+        push.push(1);
+        assertEquals(Map.of(), stored, "revert landing clears nothing");
+
+        push.push(Set.of());
+        assertEquals(Map.of(1L, false, 2L, true), stored, "Apply landing clears, a skip marks");
+
+        stored.clear();
+        push.push(List.of(1L), Set.of());
+        assertEquals(Map.of(1L, false), stored, "catch-up landing clears");
+    }
+
     @Test
     void revertingAnInstallationThatIsNotStoredReportsNothing() throws IOException {
         Target steam = installation(1, "STEAM");
@@ -312,6 +355,97 @@ class DeviceFilesPushTest {
             assertTrue(result.reason().contains("cannot be a filename"), result.reason());
             assertEquals(DEVICE_MAPPINGS, read(target.controlSchemes().resolve("DeviceMappings.xml")));
         }
+    }
+
+    // ------------------------------------------------------------------ rename (A11)
+
+    /** The element is renamed in place and the .buttonMap is renamed - never a second file beside the first. */
+    @Test
+    void aRenameRenamesTheElementAndTheButtonMapInEveryInstallation() throws IOException {
+        Target steam = installation(1, "STEAM");
+        Target epic = installation(2, "EPIC");
+        push(List.of(steam, epic), List.of(RVWAP));
+
+        Report report = push(List.of(steam, epic), List.of(renamed("RightStick", RVWAP.labels())));
+
+        assertEquals(2, report.matchingCount());
+        for (Target target : List.of(steam, epic)) {
+            String mappings = read(target.controlSchemes().resolve("DeviceMappings.xml"));
+            assertTrue(mappings.contains("<RightStick>"), mappings);
+            assertFalse(mappings.contains("RVWAP"), mappings);
+            assertTrue(read(buttonMap(target, "RightStick")).contains("<Joy_1>RV Main Trigger</Joy_1>"));
+            assertFalse(Files.exists(buttonMap(target, "RVWAP")), "no orphan left under the old name");
+        }
+    }
+
+    /** With no labels in the master the old file's own content goes to the new name - renamed, not dropped. */
+    @Test
+    void aRenameOfADeviceWithNoLabelsMovesItsButtonMap() throws IOException {
+        Target steam = installation(1, "STEAM");
+        push(List.of(steam), List.of(RVWAP));
+        String before = read(buttonMap(steam, "RVWAP"));
+
+        push(List.of(steam), List.of(renamed("RightStick", Map.of())));
+
+        assertEquals(before, read(buttonMap(steam, "RightStick")));
+        assertFalse(Files.exists(buttonMap(steam, "RVWAP")));
+    }
+
+    /** The push renames wherever the old name is still found, so an installation that already took it is unchanged. */
+    @Test
+    void aRenameAnInstallationAlreadyTookWritesNothing() throws IOException {
+        Target steam = installation(1, "STEAM");
+        push(List.of(steam), List.of(RVWAP));
+        push(List.of(steam), List.of(renamed("RightStick", RVWAP.labels())));
+
+        Report again = push(List.of(steam), List.of(renamed("RightStick", RVWAP.labels())));
+
+        assertEquals(Outcome.UNCHANGED, resultFor(again, steam).outcome());
+    }
+
+    /** On Windows, LVWAP.buttonMap and Lvwap.buttonMap are one file: a case-only rename must not delete it. */
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    void aCaseOnlyRenameKeepsTheButtonMapOnWindows() throws IOException {
+        Target steam = installation(1, "STEAM");
+        push(List.of(steam), List.of(RVWAP));
+
+        Report report = push(List.of(steam), List.of(renamed("Rvwap", RVWAP.labels())));
+
+        assertEquals(1, report.matchingCount());
+        assertTrue(read(steam.controlSchemes().resolve("DeviceMappings.xml")).contains("<Rvwap>"));
+        assertTrue(read(buttonMap(steam, "Rvwap")).contains("<Joy_1>RV Main Trigger</Joy_1>"));
+    }
+
+    /** On a file system that keeps case apart, a case-only rename is a real rename: old file gone, new one written. */
+    @Test
+    @EnabledOnOs({OS.LINUX, OS.MAC})
+    void aCaseOnlyRenameRenamesTheButtonMapWhereCaseMatters() throws IOException {
+        Target steam = installation(1, "STEAM");
+        push(List.of(steam), List.of(RVWAP));
+
+        push(List.of(steam), List.of(renamed("Rvwap", RVWAP.labels())));
+
+        assertTrue(read(buttonMap(steam, "Rvwap")).contains("<Joy_1>RV Main Trigger</Joy_1>"));
+        assertFalse(Files.exists(buttonMap(steam, "RVWAP")));
+    }
+
+    /** An installation with no DeviceMappings.xml is seeded from Frontier's: nothing to rename, the new name added. */
+    @Test
+    void aRenameInAnInstallationWithNoDeviceMappingsAddsTheNewName() throws IOException {
+        Target steam = installation(1, "STEAM");
+        Files.delete(steam.controlSchemes().resolve("DeviceMappings.xml"));
+
+        Report report = push(List.of(steam), List.of(renamed("RightStick", RVWAP.labels())));
+
+        assertEquals(Outcome.WRITTEN, resultFor(report, steam).outcome());
+        String mappings = read(steam.controlSchemes().resolve("DeviceMappings.xml"));
+        assertTrue(mappings.contains("<RightStick>"), mappings);
+        assertFalse(mappings.contains("<RVWAP>"), mappings);
+    }
+
+    private static MasterDevice renamed(String name, Map<String, String> labels) {
+        return new MasterDevice(name, RVWAP.vid(), RVWAP.pid(), labels, RVWAP.name());
     }
 
     private Report push(List<Target> targets, List<MasterDevice> master) {

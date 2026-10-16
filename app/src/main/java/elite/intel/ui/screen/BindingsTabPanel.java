@@ -44,6 +44,9 @@ public class BindingsTabPanel extends JPanel {
         tabs.addTab(getText("bindings.tab.bindingProfile"), bindingProfilePanel);
         tabs.addTab(getText("bindings.tab.bindingManagement"), bindingManagementPanel);
         tabs.addTab(getText("bindings.tab.aliasDesigner"), aliasDesignerPanel);
+        // WHY: a retarget keeps bindings by button number, so on another model some land on other buttons - the
+        // notice after it offers the bindings for review (A12).
+        aliasDesignerPanel.setReviewBindings(() -> tabs.setSelectedComponent(bindingProfilePanel));
 
         add(tabs, BorderLayout.CENTER);
     }

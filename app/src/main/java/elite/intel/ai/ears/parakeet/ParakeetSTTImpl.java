@@ -752,8 +752,6 @@ public class ParakeetSTTImpl implements EarsInterface {
             case FR -> "fr";
             case DE -> "de";
             case ES -> "es";
-            case RU -> "ru";
-            case UK -> "uk";
             case IT -> "it";
             // Parakeet takes ISO 639-1 only: both Portuguese variants transcribe as "pt".
             case PT, PTBZ -> "pt";

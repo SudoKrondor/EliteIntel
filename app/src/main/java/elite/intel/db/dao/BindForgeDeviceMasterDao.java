@@ -72,17 +72,7 @@ public interface BindForgeDeviceMasterDao {
     @SqlUpdate("UPDATE bindforge_device_master SET alias_confirmed = :confirmed WHERE id = :id")
     void setAliasConfirmed(@Bind("id") long id, @Bind("confirmed") boolean confirmed);
 
-    /**
-     * Renames a device, keeping the name it had so the old {@code .buttonMap} can be found and removed in
-     * every installation afterwards.
-     */
-    @SqlUpdate("""
-            UPDATE bindforge_device_master
-            SET previous_name = device_name, device_name = :deviceName
-            WHERE id = :id
-            """)
-    void rename(@Bind("id") long id, @Bind("deviceName") String deviceName);
-
+    /** Marks a rename finished - every installation and {@code .binds} have lost the old name. */
     @SqlUpdate("UPDATE bindforge_device_master SET previous_name = NULL WHERE id = :id")
     void clearPreviousName(@Bind("id") long id);
 

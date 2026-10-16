@@ -2,7 +2,6 @@ package elite.intel.ai.brain.vega.memory.facts.sources;
 
 import elite.intel.ai.brain.vega.memory.facts.MemoryFactContext;
 import elite.intel.ai.brain.vega.memory.facts.RegisterMemoryFactSource;
-import elite.intel.ai.brain.vega.memory.facts.sources.CurrentSituationFactSource;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
 import elite.intel.ai.brain.vega.model.Urgency;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
@@ -17,10 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CurrentSituationFactSourceTest {
 
@@ -62,7 +58,7 @@ class CurrentSituationFactSourceTest {
 
     @Test
     void usesEnglishFactRegardlessOfCommanderLanguage() {
-        SystemSession.getInstance().setLanguage(Language.RU);
+        SystemSession.getInstance().setLanguage(Language.DE);
         long[] flags = StatusFlags.flagsForSituation(PlayerSituation.IN_SHIP_SUPERCRUISE);
         setStatus(flags[0], flags[1]);
 

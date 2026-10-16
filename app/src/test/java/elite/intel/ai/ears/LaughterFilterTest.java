@@ -15,7 +15,7 @@ class LaughterFilterTest {
     @ParameterizedTest
     @ValueSource(strings = {
             "ha ha ha", "haha", "hahaha", "ha-ha-ha", "Ha Ha Ha!", "ha ha", "heh heh", "hehe",
-            "huh huh", "hah hah", "ха-ха-ха", "хаха", "хе хе",
+            "huh huh", "hah hah",
             "jajaja", "ja ja ja", "jeje"                       // Spanish
     })
     void discardsPureLaughter(String transcript) {
@@ -39,7 +39,7 @@ class LaughterFilterTest {
     @ParameterizedTest
     @ValueSource(strings = {
             "ha ha fire lasers", "deploy hardpoints", "what a hassle", "hallelujah", "hand me the map",
-            "ha", "he", "plot a course to sol", "проложи курс"
+            "ha", "he", "plot a course to sol"
     })
     void keepsRealSpeech(String transcript) {
         assertFalse(LaughterFilter.isLaughter(transcript), transcript);

@@ -1,11 +1,9 @@
 package elite.intel.ai.brain.vega.prompt;
 
 import elite.intel.ai.brain.VegaIdentity;
-import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.commons.PromptFactory;
 import elite.intel.ai.brain.vega.VegaConfig;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
-import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
 /**
@@ -33,10 +31,6 @@ public final class VegaSystemPrompt implements SystemPromptText {
     }
 
     static String languageName() {
-        return effectiveLanguage().displayName();
-    }
-
-    static String inputLanguageName() {
         return SystemSession.getInstance().getLanguage().displayName();
     }
 
@@ -60,9 +54,5 @@ public final class VegaSystemPrompt implements SystemPromptText {
         StringBuilder rule = new StringBuilder();
         PromptFactory.appendContext(rule, "the commander");
         return rule.toString();
-    }
-
-    private static Language effectiveLanguage() {
-        return AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
     }
 }

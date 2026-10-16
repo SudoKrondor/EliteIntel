@@ -81,8 +81,6 @@ class HardpointsReflexTest {
             "PT, hardpoints",
             "PTBZ, hardpoints",
             "FR, points d'emport",
-            "RU, хардпойнты",
-            "UK, хардпойнти",
     })
     void everyLocaleDeploysOnItsOwnBareNoun(Language language, String utterance) {
         SystemSession.getInstance().setLanguage(language);

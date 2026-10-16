@@ -17,7 +17,7 @@ Everything lives in `%LOCALAPPDATA%\elite-intel\diagnostics\`
 | File | Role |
 |---|---|
 | `input.txt` | **The mode gate** plus the input channel. The file's mere presence at startup switches diagnostics on. The application only **reads** it and never creates it — its lifecycle is yours. |
-| `language.txt` | The boot language (code: `RU`, `EN`, …). Read at startup, before VEGA/the reducer are assembled. This is **data**, not a gate. |
+| `language.txt` | The boot language (code: `DE`, `EN`, …). Read at startup, before VEGA/the reducer are assembled. This is **data**, not a gate. |
 | `session.log` | A mirror of the SYSTEM LOG plus the `DIAG` turn markers. |
 
 ## Enabling the mode (short version)

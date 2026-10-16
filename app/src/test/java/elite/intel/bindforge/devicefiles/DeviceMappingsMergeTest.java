@@ -230,6 +230,76 @@ class DeviceMappingsMergeTest {
         assertArrayEquals(file, result.content(), "untouched, not re-laid-out");
     }
 
+    // ------------------------------------------------------------------ rename (A11)
+
+    /** The element keeps its place and every child it has; only its tag changes. */
+    @Test
+    void aRenameKeepsTheElementsPlaceAndChildren() throws IOException {
+        Result result = DeviceMappingsMerge.rename(bytes(SPECIMEN), "SaitekX52", "MyX52");
+
+        assertTrue(result.changed());
+        assertEquals(List.of("GamePad", "MyX52", "T-Rudder"), names(result));
+        assertTrue(text(result).contains("<SupportsIcons>SaitekX52</SupportsIcons>"), text(result));
+        assertEquals(1, supportsIconsIn(text(result)), "nothing was copied");
+    }
+
+    /** A second copy under the old tag goes, as CLEAR takes one: two elements under the new name would leave one dead. */
+    @Test
+    void aRenameRemovesASecondCopyOfTheOldName() throws IOException {
+        String twice = SPECIMEN.replace("</Root>",
+                "\t<T-Rudder><PID>0001</PID><VID>1234</VID></T-Rudder>\n</Root>");
+
+        Result result = DeviceMappingsMerge.rename(bytes(twice), "T-Rudder", "MyRudder");
+
+        assertEquals(List.of("GamePad", "SaitekX52", "MyRudder"), names(result));
+        assertTrue(entry(result, "MyRudder").hardware().stream().anyMatch(id -> id.pid().equals("B679")),
+                "the first copy is the one kept");
+    }
+
+    /** Already under the new name - renamed by hand, or half-taken before: the old copies go, the new one stays. */
+    @Test
+    void aRenameWhoseNewNameIsAlreadyThereRemovesTheOldOne() throws IOException {
+        String both = SPECIMEN.replace("<Root>", "<Root>\n\t<MyRudder><PID>B679</PID><VID>044F</VID></MyRudder>");
+
+        Result result = DeviceMappingsMerge.rename(bytes(both), "T-Rudder", "MyRudder");
+
+        assertEquals(List.of("MyRudder", "GamePad", "SaitekX52"), names(result));
+    }
+
+    /**
+     * Review, 2026-10-15: the game finds an element ignoring case, so an installation holding {@code <t-rudder>} still
+     * holds the device renamed from {@code T-Rudder} - left alone, it would keep leading the file for that VID/PID.
+     */
+    @Test
+    void aRenameFindsTheOldNameInAnyCase() throws IOException {
+        String lower = SPECIMEN.replace("<T-Rudder>", "<t-rudder>").replace("</T-Rudder>", "</t-rudder>");
+
+        Result result = DeviceMappingsMerge.rename(bytes(lower), "T-Rudder", "MyRudder");
+
+        assertEquals(List.of("GamePad", "SaitekX52", "MyRudder"), names(result));
+    }
+
+    /** A case-only rename already taken: the element spelled as the new name is never an old copy of itself. */
+    @Test
+    void aCaseOnlyRenameAlreadyTakenChangesNothing() throws IOException {
+        byte[] file = bytes(SPECIMEN);
+
+        Result result = DeviceMappingsMerge.rename(file, "T-RUDDER", "T-Rudder");
+
+        assertFalse(result.changed());
+        assertArrayEquals(file, result.content());
+    }
+
+    @Test
+    void aRenameOfANameTheFileDoesNotHoldChangesNothing() throws IOException {
+        byte[] file = bytes(SPECIMEN);
+
+        Result result = DeviceMappingsMerge.rename(file, "LVWAP", "LeftStick");
+
+        assertFalse(result.changed());
+        assertArrayEquals(file, result.content());
+    }
+
     private static byte[] stockFile() throws IOException {
         try (InputStream xml = DeviceMappingsMergeTest.class.getResourceAsStream(FrontierStockDevices.RESOURCE)) {
             return Objects.requireNonNull(xml, FrontierStockDevices.RESOURCE + " is missing").readAllBytes();

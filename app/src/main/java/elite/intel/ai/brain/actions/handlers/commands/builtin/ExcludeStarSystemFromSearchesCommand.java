@@ -30,10 +30,9 @@ import java.util.List;
  * one the last search sent them to, which is what the destination reminder holds - every route search writes it.
  * <p>
  * Dangerous, so VEGA asks first, and the question names the system AND which one it is - "the current system" or
- * "the destination system". "That" is worked out at run time, and in Russian "ту" and "эту" (that, this) are one
- * syllable apart, so a misheard word must come back as an audibly different question and not just a system name
- * the commander has to catch. For the same reason the Russian and Ukrainian aliases say "текущую"/"поточну"
- * (current) for this one.
+ * "the destination system". "That" is worked out at run time, and "this" and "that" are one sound apart, so a
+ * misheard word must come back as an audibly different question and not just a system name the commander has
+ * to catch.
  * <p>
  * Undone by {@link AllowStarSystemInSearchesAgainCommand}, from inside the system only.
  */

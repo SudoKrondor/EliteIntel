@@ -58,12 +58,4 @@ class AiServiceReportTest {
         assertEquals("OpenAI did not answer within 10 seconds.",
                 AiServiceReport.spoken(new AiServiceVerdict.NoAnswer("OpenAI", Duration.ofSeconds(10))));
     }
-
-    @Test
-    void secondsFollowTheLanguagePluralRules() {
-        SystemSession.getInstance().setLanguage(Language.RU);
-
-        assertEquals("LM Studio отвечает. Время ответа примерно 3 секунды.", AiServiceReport.spoken(
-                new AiServiceVerdict.Connected("LM Studio", Optional.of(Duration.ofSeconds(3)), false)));
-    }
 }

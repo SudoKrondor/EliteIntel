@@ -48,7 +48,7 @@ public class AiActionMapGenerator {
             // Include only if the alias bundle for the current language actually DEFINES a key
             // for this id. This is distinct from "phrase != id": a present-but-equal-to-id phrase
             // (interrupt=interrupt, disembark=disembark) counts as defined and stays in; an id with
-            // no key (no localized phrase, e.g. EN-side dead RU-only entries) is excluded.
+            // no key (no localized phrase) is excluded.
             if (!AiActionAliasTextProvider.hasKey(SystemSession.getInstance().getLanguage(), id)) {
                 continue;
             }

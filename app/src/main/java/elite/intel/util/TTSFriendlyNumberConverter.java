@@ -1,6 +1,5 @@
 package elite.intel.util;
 
-import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
@@ -56,20 +55,7 @@ public class TTSFriendlyNumberConverter {
      * {@link #formatCreditsForLlm(long)} instead, so the model receives it in the language it composes from.
      */
     public static String formatCreditsForSpeech(long credits) {
-        return formatCredits(credits, spokenLanguage());
-    }
-
-    /**
-     * The language the sentence this amount is embedded in will be spoken in.
-     * <p>
-     * Not simply the session language: the local Kokoro voice cannot read Cyrillic, so a Russian or
-     * Ukrainian commander on it is answered in English, and {@code StringUtls.localizedEvent} resolves the
-     * surrounding sentence that way. Reading the session language here instead put Russian numerals inside
-     * an English sentence - "Sold один тысяч три сотен двадцать units of Steel". One policy for both halves
-     * is what keeps a sentence in one language.
-     */
-    private static Language spokenLanguage() {
-        return AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
+        return formatCredits(credits, SystemSession.getInstance().getLanguage());
     }
 
     /**
@@ -94,7 +80,7 @@ public class TTSFriendlyNumberConverter {
      * be wrong about cargo the commander can count.
      */
     public static String formatCountForSpeech(long count) {
-        return NumberWords.of(count, spokenLanguage());
+        return NumberWords.of(count, SystemSession.getInstance().getLanguage());
     }
 
     private static String formatCredits(long credits, Language language) {
@@ -108,7 +94,7 @@ public class TTSFriendlyNumberConverter {
         // Nearest thousand, up to a million. Rounding 999,600 up lands on a million, so let it fall through.
         // The rounded figure is spelled whole - 343,000, not 343 with a "thousand" pasted after it - because
         // German and Italian join the scale onto the number ("dreihundertdreiundvierzigtausend",
-        // "trecentoquarantatremila") and Russian inflects it with the count. The template only hedges the
+        // "trecentoquarantatremila"). The template only hedges the
         // figure and names the currency; the language decides how the thousand itself is said.
         long thousands = divideRounded(credits, 1_000L);
         if (thousands < 1_000L) {

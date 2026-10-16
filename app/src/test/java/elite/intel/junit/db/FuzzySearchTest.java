@@ -304,13 +304,6 @@ class FuzzySearchTest {
     }
 
     @Test
-    void ukrainianCommoditiesStillResolveViaTheEnglishFallback() {
-        // commodity_uk has no data at all — the upstream file carries no Ukrainian column.
-        withLanguage(Language.UK, () ->
-                assertEquals("Gold", FuzzySearch.fuzzyCommodityMatch("gold", 3)));
-    }
-
-    @Test
     void commodityMatchStillAcceptsEnglishWhileAnotherLanguageIsActive() {
         // Same guard as the subsystem case: commodity_ptbz for Gold is "Ouro", so "gold" is absent
         // from the Portuguese candidate list and COALESCE does not rescue it. Adding the PT/PTBZ
@@ -339,12 +332,6 @@ class FuzzySearchTest {
         // "Núcleo de Energía" is the label_es value seeded for Power Plant.
         withLanguage(Language.ES, () ->
                 assertEquals("Power Plant", FuzzySearch.fuzzySubSystemSearch("núcleo de energía", 4)));
-    }
-
-    @Test
-    void subSystemSearchResolvesARussianNameToTheEnglishCanonicalName() {
-        withLanguage(Language.RU, () ->
-                assertEquals("Power Plant", FuzzySearch.fuzzySubSystemSearch("силовая установка", 4)));
     }
 
     @Test

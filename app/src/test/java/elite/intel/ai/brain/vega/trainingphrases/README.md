@@ -6,6 +6,8 @@ Studio** — only the embedding model (`distribution/embed`).
 
 Example phrases below are quoted verbatim in the language they belong to, because they are the data under test; an English gloss follows where the argument depends on the meaning.
 
+Russian and Ukrainian were removed as app languages on 2026-10-15. The Cyrillic examples below are kept as the record of what was measured; the rules they illustrate apply to every language, and there is no RU probe set any more.
+
 ---
 
 ## 1. What this measures, and why
@@ -174,7 +176,7 @@ For these cases the target is **offered@K** (on the list), not hit@1. Measure wi
   clean**, because there `тягу`/`ходу` were already in the nudge aliases: the same sibling language, a different result, and the only difference was the aliases. IT: every speed command says `velocità`, while `spinta`/`manetta` appeared nowhere →
   `più manetta di dieci` rank 16. The fix was `spinta`/`manetta` and `тяга`/`хід` forms → 0/16 misses in both, with the fixed commands unmoved. The result across all languages:
   **EN, DE, FR, UK, IT had the defect; RU was clean; ES was formally clean but fragile.**
-  The regression is locked down in `ThrottleNudgeRoutingTest` (EN/RU/DE/FR/ES/IT/UK, 119 phrasings plus 36 checks that the fixed-speed commands stayed first).
+  The regression is locked down in `ThrottleNudgeRoutingTest` (EN/DE/FR/ES/IT, plus checks that the fixed-speed commands stayed first).
 
 ---
 

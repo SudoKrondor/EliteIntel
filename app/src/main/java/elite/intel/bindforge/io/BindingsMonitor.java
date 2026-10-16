@@ -102,6 +102,13 @@ public class BindingsMonitor {
      */
     private static final Set<String> APP_DRIVEN_ACTIONS = appDrivenActions();
 
+    /**
+     * The controls a built-in command presses - see {@link #APP_DRIVEN_ACTIONS}.
+     */
+    public static Set<String> appDrivenControls() {
+        return Collections.unmodifiableSet(APP_DRIVEN_ACTIONS);
+    }
+
     private static Set<String> appDrivenActions() {
         Set<String> actions = new LinkedHashSet<>();
         for (Bindings.GameCommand cmd : Bindings.GameCommand.values()) {

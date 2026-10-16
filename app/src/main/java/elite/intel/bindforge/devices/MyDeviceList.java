@@ -7,12 +7,7 @@ import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
 import elite.intel.devices.model.Device;
 import elite.intel.devices.model.DeviceIdentity;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Builds the My Devices list: <strong>the union of live hardware and file entries</strong>, correlated by
@@ -77,10 +72,10 @@ public final class MyDeviceList {
         return List.copyOf(rows.values());
     }
 
-    private static MyDevice row(String windowsName, String entryName, HardwareId hardware, boolean attached,
+    private static MyDevice row(String hardwareName, String entryName, HardwareId hardware, boolean attached,
                                 DeviceRow masterRow, FrontierStockDevices stock) {
         return new MyDevice(
-                windowsName,
+                hardwareName,
                 entryName,
                 hardware.vid(),
                 hardware.pid(),

@@ -2,7 +2,6 @@ package elite.intel.ai.brain.vega.mind;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
-import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.ai.brain.vega.confirm.ConfirmationCoordinator;
 import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
@@ -551,7 +550,7 @@ public abstract class Thought {
     }
 
     private static String servicePhrase(String key) {
-        Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
+        Language language = SystemSession.getInstance().getLanguage();
         return ResponseTextProvider.getText(language, key);
     }
 
@@ -704,7 +703,7 @@ public abstract class Thought {
      * A fixed, code-generated confirmation line in the commander's language (no LLM).
      */
     private static String responsePhrase(String key) {
-        Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
+        Language language = SystemSession.getInstance().getLanguage();
         return ResponseTextProvider.getText(language, key);
     }
 }

@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-zip:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
@@ -99,7 +99,7 @@ jobs:
   # a bare `make` on a Windows runner: the .exe and the DLLs beside it have to
   # come from the same sysroot.
   build-windows:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build-zip
 
     steps:
@@ -153,7 +153,7 @@ jobs:
           if-no-files-found: error
 
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build-zip
 
     steps:
@@ -205,7 +205,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [ build-zip, build-windows, build-linux ]
 
     steps:

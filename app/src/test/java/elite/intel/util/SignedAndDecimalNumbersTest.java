@@ -22,7 +22,7 @@ class SignedAndDecimalNumbersTest {
 
     @Test
     void saysTheSignInTheTargetLanguage() {
-        assertTrue(SignedAndDecimalNumbers.inWords("-5", Language.RU).startsWith("минус"));
+        assertTrue(SignedAndDecimalNumbers.inWords("-5", Language.FR).startsWith("moins"));
         assertTrue(SignedAndDecimalNumbers.inWords("-5", Language.DE).startsWith("minus"));
     }
 

@@ -99,17 +99,37 @@ public class BindForgeDeviceDraftManager {
         update(daos -> daos.draft().setAliasConfirmed(id, confirmed));
     }
 
-    /**
-     * Renames a draft device. The name the installations still hold is kept, so that whatever applies the rename
-     * can find the old {@code .buttonMap} in each of them.
-     */
-    public void rename(long id, String deviceName) {
-        update(daos -> daos.draft().rename(id, deviceName));
-    }
-
     /** Points a draft device at different hardware, keeping its name - the repair for a firmware update. */
     public void retarget(long id, String vid, String pid) {
         update(daos -> daos.draft().retarget(id, vid, pid));
+    }
+
+    /**
+     * The identity question's answer, <em>this is the same controller</em>: the device keeps its name and labels and
+     * takes the attached controller's VID/PID, in one transaction with starting the draft (Alan, 2026-10-15, A12).
+     * Bindings name the device, so they follow it; Apply writes the new VID/PID to every installation.
+     *
+     * @return {@code false}, writing nothing, when the device is gone, no longer has the hardware the question showed,
+     *         or another draft device already has the new hardware - the caller read a list that has changed since
+     */
+    public boolean retargetByName(String deviceName, String wasVid, String wasPid, String vid, String pid) {
+        return inTransaction(daos -> {
+            startIfNone(daos);
+            BindForgeDeviceDraftDao draft = daos.draft();
+            DraftRow row = draft.findByName(deviceName);
+            if (row == null || !sameHardware(row, wasVid, wasPid)) return false;
+            if (draft.findAll().stream().anyMatch(other -> other.id() != row.id() && sameHardware(other, vid, pid))) {
+                return false;
+            }
+            draft.retarget(row.id(), vid, pid);
+            return true;
+        });
+    }
+
+    // WHY: VID/PID hex has no case convention, even inside Frontier's own file.
+    private static boolean sameHardware(DraftRow row, String vid, String pid) {
+        return row.vid() != null && row.pid() != null && row.vid().equalsIgnoreCase(vid)
+                && row.pid().equalsIgnoreCase(pid);
     }
 
     /**
@@ -157,6 +177,36 @@ public class BindForgeDeviceDraftManager {
             draft.deleteLabels(id);
             labels.forEach((token, label) -> draft.putLabel(id, token, label));
             return row;
+        });
+    }
+
+    /**
+     * The Device Editor's SAVE with the name changed: the rename and the whole label set, in one transaction with
+     * starting the draft (Alan, 2026-10-14, A11). A device under its old name keeps that name as its previous name,
+     * so Apply can find its element and {@code .buttonMap} in each installation; see the DAO's rename for when it
+     * keeps none.
+     * <p>
+     * Only a device the draft already holds can be renamed - a built-in the master has no labels for is not one of
+     * the user's to rename (A15).
+     *
+     * @return the draft row saved on, under its new name - or {@code null}, writing nothing, when the device is gone
+     *         or the new name is already a draft device's: the caller read a list that has changed since
+     */
+    public DraftRow saveDevice(String currentName, String newName, Map<String, String> labels) {
+        return inTransaction(daos -> {
+            startIfNone(daos);
+            BindForgeDeviceDraftDao draft = daos.draft();
+            DraftRow row = draft.findByName(currentName);
+            if (row == null) return null;
+            if (!currentName.equals(newName)) {
+                DraftRow holder = draft.findByName(newName);
+                if (holder != null && holder.id() != row.id()) return null;
+                draft.rename(row.id(), newName);
+            }
+            long id = row.id();
+            draft.deleteLabels(id);
+            labels.forEach((token, label) -> draft.putLabel(id, token, label));
+            return draft.findByName(newName);
         });
     }
 
@@ -318,6 +368,14 @@ public class BindForgeDeviceDraftManager {
             List<String> removed = draft.masterNamesNotInDraft().stream()
                     .filter(name -> !draftNames.contains(name))
                     .toList();
+            // WHY: a device that leaves the master mid-rename leaves its old name in the installations that missed the
+            // rename, and perhaps in .binds. Kept pending, that name is removed - or held back while .binds names it -
+            // like any other, rather than forgotten with the row (review, 2026-10-15, A11).
+            List<String> oldNames = master.findAll().stream()
+                    .filter(row -> removed.contains(row.deviceName()))
+                    .map(DeviceRow::previousName)
+                    .filter(old -> old != null && !removed.contains(old) && !draftNames.contains(old))
+                    .toList();
 
             // WHY: the draft is emptied before the master. Its rows point at master rows, and emptying the master
             // first would work only because master_id happens to be ON DELETE SET NULL.
@@ -333,6 +391,7 @@ public class BindForgeDeviceDraftManager {
                 master.clearPendingRemoval(row.deviceName());
             }
             removed.forEach(master::addPendingRemoval);
+            oldNames.forEach(master::addPendingRemoval);
             return removed;
         });
     }

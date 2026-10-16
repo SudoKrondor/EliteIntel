@@ -4,11 +4,11 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
-import elite.intel.ai.embed.SemanticPhraseMatcher;
-import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
 import elite.intel.ai.brain.vega.prompt.AliasEmbeddingText;
 import elite.intel.ai.brain.vega.prompt.GameToolCandidates;
+import elite.intel.ai.embed.SemanticPhraseMatcher;
+import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.db.util.Database;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
@@ -22,15 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.EnumSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Deterministic (no LLM) training-phrase quality probe. Reads authored probe phrases from
@@ -73,11 +65,6 @@ class TrainingPhraseQualityProbe {
     private record Row(int offered, int hit1, String id, String category, String verdict, String score,
                        String conflictGroup, String probe, String rank, String own, String competitor,
                        String existing, String suggestions) {
-    }
-
-    @Test
-    void scoresRussianTrainingPhraseQualityToCsv() throws Exception {
-        scoreLanguage(Language.RU, "ru", false);
     }
 
     @Test

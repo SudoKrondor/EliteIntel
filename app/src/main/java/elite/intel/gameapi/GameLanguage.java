@@ -16,17 +16,19 @@ import java.util.function.Supplier;
  * ({@code "language":"Russian/RU"}). This is not the commander's command language: one can play an English
  * client and speak German to us, or the other way round.
  * <p>
- * It matters for one thing only. Everything the game writes as prose - the NPC lines behind radio
- * transmissions - is written in the client's language, so a radio transmission has to be read in the client's
- * language whatever the commander set here, and by an engine that can read that script: Kokoro has no
- * Cyrillic phonemizer, so a Russian client's chatter goes to Supertonic (see
- * {@code elite.intel.ai.mouth.RadioVoicing}). The game ships no Ukrainian client, so Russian is the only
- * Cyrillic case there is.
+ * Everything the game writes as prose - the NPC lines behind radio transmissions, and the localized names of
+ * materials and commodities - is in the client's language, so a radio transmission has to be read in the
+ * client's language whatever the commander set here, and a learned name filed under it.
+ * <p>
+ * Russian is the one client language that is not also a language of this app. It has no {@link Language} and
+ * reads as unknown to {@link #language()}, but {@link #isRussian()} still names it, because its radio chatter
+ * is Cyrillic and Kokoro has no Cyrillic phonemizer: Supertonic voices it instead (see
+ * {@code elite.intel.ai.mouth.RadioVoicing}). That is the only place a Russian client is treated differently.
  * <p>
  * Read lazily and cached: the header is the first line of the newest journal, it does not change while a game
  * session runs, and a live {@code Fileheader} replaces it when the commander starts a new one (see
  * {@link elite.intel.gameapi.journal.subscribers.FileheaderEventSubscriber}). Unknown - no journal yet, an
- * unreadable header, a language this app does not ship - is {@link Optional#empty()}, and the caller decides
+ * unreadable header, a language this app does not speak - is {@link Optional#empty()}, and the caller decides
  * what to fall back on.
  */
 public class GameLanguage {
@@ -37,15 +39,16 @@ public class GameLanguage {
     /**
      * The header spells the client language {@code "<Name>/<REGION>"} - {@code "Russian/RU"},
      * {@code "English/UK"}, {@code "Portuguese/BR"} - and the name is what identifies it. Frontier ships the
-     * client in exactly these six; Portuguese is the Brazilian edition only.
+     * client in these, and Russian; Portuguese is the Brazilian edition only.
      */
     private static final Map<String, Language> CLIENT_LANGUAGES = Map.of(
             "english", Language.EN,
             "french", Language.FR,
             "german", Language.DE,
             "spanish", Language.ES,
-            "russian", Language.RU,
             "portuguese", Language.PTBZ);
+
+    private static final String RUSSIAN = "russian";
 
     private static volatile GameLanguage instance;
 
@@ -70,10 +73,18 @@ public class GameLanguage {
     }
 
     /**
-     * The language the game client writes its prose in, or empty when it is not known.
+     * The language the game client writes its prose in, or empty when it is not known or is not one this app
+     * speaks (a Russian client - see {@link #isRussian()}).
      */
     public Optional<Language> language() {
-        return asLanguage(current());
+        return clientName(current()).map(CLIENT_LANGUAGES::get);
+    }
+
+    /**
+     * Whether the game client is the Russian edition, whose radio chatter only Supertonic can voice.
+     */
+    public boolean isRussian() {
+        return clientName(current()).filter(RUSSIAN::equals).isPresent();
     }
 
     /**
@@ -103,11 +114,14 @@ public class GameLanguage {
                 .flatMap(header -> JournalHeader.string(header, LANGUAGE_FIELD));
     }
 
-    private static Optional<Language> asLanguage(String headerLanguage) {
+    /**
+     * The client language's name, lower case and without its region: {@code "Russian/RU"} is {@code "russian"}.
+     */
+    private static Optional<String> clientName(String headerLanguage) {
         if (headerLanguage == null) return Optional.empty();
         String name = headerLanguage.toLowerCase(Locale.ROOT);
         int region = name.indexOf('/');
         if (region >= 0) name = name.substring(0, region);
-        return Optional.ofNullable(CLIENT_LANGUAGES.get(name.trim()));
+        return Optional.of(name.trim());
     }
 }

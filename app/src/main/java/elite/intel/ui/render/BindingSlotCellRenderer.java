@@ -1,7 +1,9 @@
 package elite.intel.ui.render;
 
 import elite.intel.bindforge.model.BindingDisplayNames;
+import elite.intel.ui.support.AiAccessCell;
 import elite.intel.ui.support.BindingsGroupTableFactory;
+import elite.intel.ui.support.TooltipCell;
 import elite.intel.ui.widget.HudTable;
 
 import javax.swing.*;
@@ -24,6 +26,9 @@ import static elite.intel.ui.theme.HudPalette.*;
  * Column 0 is also tinted by the binding's status: red when the binding is in a
  * conflict ({@code hasConflict}), cyan when it carries a soft ship/SRV-twin recommendation
  * ({@code hasRecommendation}), green otherwise. A real conflict outranks a recommendation.
+ * <p>
+ * An {@link AiAccessCell} is drawn in the warning colour when VEGA cannot operate the control, so the rows
+ * that take a control away from VEGA stand out in a grid that otherwise looks healthy.
  */
 public class BindingSlotCellRenderer extends HudTable.CellRenderer {
     private final Predicate<String> hasConflict;
@@ -51,10 +56,14 @@ public class BindingSlotCellRenderer extends HudTable.CellRenderer {
             String bindingId = String.valueOf(value);
             label.setText(BindingDisplayNames.label(bindingId));
             label.setToolTipText(bindingId);
+        } else if (value instanceof TooltipCell cell) {
+            label.setToolTipText(cell.tooltip());
+        } else {
+            label.setToolTipText(null);
         }
         boolean notDefined = elite.intel.ui.i18n.MultiLingualTextProvider
                 .getText("bindings.status.notDefined")
-                .equals(value);
+                .equals(String.valueOf(value));
         if (!isSelected) {
             Object hoveredObj = table.getClientProperty(BindingsGroupTableFactory.HOVER_ROW_PROPERTY);
             boolean hovered = hoveredObj instanceof Integer h && h == row;
@@ -62,11 +71,20 @@ public class BindingSlotCellRenderer extends HudTable.CellRenderer {
             if (column == 0) {
                 // Action name carries the conflict status for the whole row.
                 label.setForeground(statusColor(String.valueOf(value)));
+            } else if (value instanceof AiAccessCell cell) {
+                label.setForeground(aiAccessColor(cell));
             } else {
                 label.setForeground(notDefined ? HUD_COLOR_ROLE_DISABLED : HUD_COLOR_ROLE_PRIMARY_ACTION);
             }
         }
         return label;
+    }
+
+    private static Color aiAccessColor(AiAccessCell cell) {
+        return switch (cell.state()) {
+            case CANT_PRESS, NOT_BOUND -> HUD_COLOR_ROLE_WARNING;
+            case READY, NOT_USED -> HUD_COLOR_ROLE_SECONDARY_TEXT;
+        };
     }
 
     private Color statusColor(String bindingId) {

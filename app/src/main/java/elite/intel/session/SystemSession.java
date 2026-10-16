@@ -2,7 +2,6 @@ package elite.intel.session;
 
 import elite.intel.ai.ProviderEnum;
 import elite.intel.ai.brain.ShipPersonality;
-import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.VoiceGender;
 import elite.intel.ai.mouth.google.GoogleVoices;
@@ -377,22 +376,10 @@ public class SystemSession {
     }
 
     /**
-     * The engine that voices VEGA, corrected for the languages the session speaks - the commander's, and the
-     * game client's (see {@link RadioVoicing#transmissionLanguage()}). Never {@code null}.
-     * <p>
-     * WHY the correction lives on the read rather than the write: Kokoro cannot voice Cyrillic at all, so a
-     * Russian or Ukrainian commander with Kokoro stored has no voice - and that is exactly the state every
-     * database upgraded from a build that let them pick it is in, and the state every fresh install starts in,
-     * since Kokoro is the shipped default. Reading the stored value through {@link TtsProvider#forSession}
-     * makes the unusable combination unrepresentable for every caller at once (the mouth, the fleet grid's
-     * voice roster, the settings panel) without a migration - they get Supertonic - and hands Kokoro back
-     * untouched if the commander later switches to a Latin-script language, or relaunches the game in one:
-     * the client's language is the game's state, not a choice to be written over the commander's.
+     * The engine the commander picked to voice VEGA. Never {@code null}.
      */
     public TtsProvider getTtsProvider() {
-        TtsProvider stored = Database.withDao(GameSessionDao.class,
-                dao -> TtsProvider.fromStored(dao.get().getTtsProvider()));
-        return TtsProvider.forSession(stored, getLanguage(), RadioVoicing.transmissionLanguage());
+        return Database.withDao(GameSessionDao.class, dao -> TtsProvider.fromStored(dao.get().getTtsProvider()));
     }
 
     /**

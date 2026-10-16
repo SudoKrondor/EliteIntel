@@ -71,7 +71,7 @@ class CommodityCatalogueTest {
             assertEquals("Rhodiumerz", FuzzySearch.localizedCommodityName(CARGO_NAME),
                     "with no English name, the German word the client shows is the one to speak");
         });
-        withLanguage(Language.UK, () ->
+        withLanguage(Language.IT, () ->
                 assertEquals(CARGO_NAME, FuzzySearch.fuzzyCommodityMatch("Rhodiumerz", 3)));
     }
 

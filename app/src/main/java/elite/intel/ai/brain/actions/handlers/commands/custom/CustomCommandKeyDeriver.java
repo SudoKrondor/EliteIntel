@@ -15,7 +15,7 @@ import java.util.*;
  * <p>
  * The derivation is script-agnostic on purpose. Latin diacritics fold to ASCII (so French
  * {@code "étoile"} becomes {@code etoile}), but letters of scripts with no Latin decomposition are
- * preserved (so Russian {@code "лететь к миссии"} becomes {@code лететь_к_миссии}). A same-script key
+ * preserved rather than transliterated. A same-script key
  * keeps maximal overlap with same-script phrases; transliterating to Latin would throw that overlap
  * away. See {@link CustomCommandValidator#SAFE_ID} for the matching format rule.
  */

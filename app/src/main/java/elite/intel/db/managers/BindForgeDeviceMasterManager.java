@@ -98,21 +98,10 @@ public class BindForgeDeviceMasterManager {
     }
 
     /**
-     * Renames a device and remembers what it was called.
-     * <p>
-     * The old name is kept because a rename is not finished when this row changes: every installation still
-     * holds a {@code .buttonMap} under the old name, and that file has to be renamed rather than left beside
-     * the new one where nothing would ever clean it up. {@link #clearPreviousName(long)} closes the rename
-     * once those files have been dealt with.
+     * Marks a rename finished, once every installation has lost the old name and {@code .binds} no longer uses it
+     * (A11). A rename itself reaches the master only through the draft: {@link BindForgeDeviceDraftManager#promote()}
+     * carries the draft's {@code previous_name} across.
      */
-    public void rename(long id, String deviceName) {
-        Database.withDao(BindForgeDeviceMasterDao.class, dao -> {
-            dao.rename(id, deviceName);
-            return Void.TYPE;
-        });
-    }
-
-    /** Marks a rename finished, once every installation's {@code .buttonMap} has been renamed with it. */
     public void clearPreviousName(long id) {
         Database.withDao(BindForgeDeviceMasterDao.class, dao -> {
             dao.clearPreviousName(id);

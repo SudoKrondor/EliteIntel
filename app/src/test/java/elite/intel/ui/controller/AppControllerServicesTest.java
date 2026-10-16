@@ -31,7 +31,7 @@ class AppControllerServicesTest {
         // Cloud main mouth, Latin-script language: radio is voiced by a dedicated always-on Kokoro engine.
         assertTrue(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO)
                 .containsKey(ServiceType.RADIO_MOUTH));
-        // Kokoro main mouth, Cyrillic client: Kokoro cannot pronounce it, so Supertonic runs alongside for radio.
+        // Kokoro main mouth, Russian client: Kokoro cannot pronounce Cyrillic, so Supertonic runs alongside for radio.
         assertTrue(AppController.buildServices(TtsProvider.KOKORO, TtsProvider.SUPERTONIC)
                 .containsKey(ServiceType.RADIO_MOUTH));
         // The main mouth IS the radio engine: it voices radio through its own queue, no extra engine. A second
@@ -79,6 +79,15 @@ class AppControllerServicesTest {
     void deviceFilesWatchIsRegistered() {
         assertTrue(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO)
                 .containsKey(ServiceType.DEVICE_FILES_MONITOR));
+    }
+
+    /** The catch-up line is spoken, so it comes up after the voice that speaks it (A14). */
+    @Test
+    void catchUpAnnouncementComesUpAfterTheMouth() {
+        List<ServiceType> order =
+                List.copyOf(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO).keySet());
+        assertTrue(order.contains(ServiceType.CATCH_UP_ANNOUNCEMENT));
+        assertTrue(order.indexOf(ServiceType.MOUTH) < order.indexOf(ServiceType.CATCH_UP_ANNOUNCEMENT));
     }
 
     @Test

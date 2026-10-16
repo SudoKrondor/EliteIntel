@@ -34,7 +34,7 @@ class CustomCommandKeyGeneratorTest {
     void mapsModelOutputToSanitizedSnakeCaseKey() throws Exception {
         LlmGateway gateway = gatewayReturning(request -> "select_suit_specific_tool");
         String key = CustomCommandKeyGenerator.generate(gateway,
-                "выбрать специальный инструмент скафандра, выбрать инструмент", List.of());
+                "anzugspezifisches Werkzeug auswählen, Werkzeug auswählen", List.of());
         assertEquals("select_suit_specific_tool", key);
     }
 
@@ -42,7 +42,7 @@ class CustomCommandKeyGeneratorTest {
     void sanitizesNoisyModelOutput() throws Exception {
         // The model wrapped the key in quotes / a sentence despite instructions; sanitize folds it clean.
         LlmGateway gateway = gatewayReturning(request -> "\"Navigate To Mission\".");
-        String key = CustomCommandKeyGenerator.generate(gateway, "лететь к миссии", List.of());
+        String key = CustomCommandKeyGenerator.generate(gateway, "aller à la mission", List.of());
         assertEquals("navigate_to_mission", key);
     }
 
@@ -66,8 +66,8 @@ class CustomCommandKeyGeneratorTest {
             seen[0] = request.messages().get(request.messages().size() - 1).content();
             return "test_key";
         });
-        CustomCommandKeyGenerator.generate(gateway, "жечь топливо, форсаж", List.of());
-        assertEquals("жечь топливо, форсаж", seen[0]);
+        CustomCommandKeyGenerator.generate(gateway, "Treibstoff verbrennen, Nachbrenner", List.of());
+        assertEquals("Treibstoff verbrennen, Nachbrenner", seen[0]);
     }
 
     @Test

@@ -26,8 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * command twice running.
  *
  * <p>That mis-pick is worse than answering the wrong question: the command reads its destination from the system
- * clipboard, so it plotted a route to whatever text the commander happened to have copied. RU and UK already led
- * their phrase group with "анализ маршрута авианосца"; English simply never got the vocabulary.
+ * clipboard, so it plotted a route to whatever text the commander happened to have copied. English simply never
+ * got the "analyse the carrier route" vocabulary.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CarrierRouteAnalysisReflexTest {

@@ -2,11 +2,11 @@ package elite.intel.ai.brain.vega.trainingphrases;
 
 import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
+import elite.intel.ai.brain.vega.model.IntelActionCategory;
+import elite.intel.ai.brain.vega.prompt.GameToolCandidates;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.ai.embed.VectorMath;
-import elite.intel.ai.brain.vega.model.IntelActionCategory;
-import elite.intel.ai.brain.vega.prompt.GameToolCandidates;
 import elite.intel.db.util.Database;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
@@ -30,7 +30,7 @@ import java.util.Set;
  * registries and the embedding model (no LM Studio) and dumps three things used to author and audit training
  * phrases and probes:
  * <ul>
- *   <li>{@link #dumpsCatalog} - the whole RU catalog (id, category, aliases, English purpose);</li>
+ *   <li>{@link #dumpsCatalog} - the whole EN catalog (id, category, aliases, English purpose);</li>
  *   <li>{@link #dumpsParams} - each command's parameter schema, so probes can be audited for required values;</li>
  *   <li>{@link #dumpsAntonymCosines} - cosines for antonym/near pairs, illustrating that embeddings capture
  *       topic but blur polarity.</li>
@@ -49,18 +49,18 @@ class SemanticReducerProbe {
     void boot() throws Exception {
         Cypher.initializeKey();
         Database.init().close();
-        SystemSession.getInstance().setLanguage(Language.RU);
+        SystemSession.getInstance().setLanguage(Language.EN);
         CommandRegistry.getInstance().load();
         QueryRegistry.getInstance().load();
         matcher = SemanticSearchProvider.matcher();
     }
 
     /**
-     * Dumps the whole RU catalog (id, category, aliases, English purpose) so probe phrases can be authored.
+     * Dumps the whole EN catalog (id, category, aliases, English purpose) so probe phrases can be authored.
      */
     @Test
     void dumpsCatalog() throws Exception {
-        SystemSession.getInstance().setLanguage(Language.RU);
+        SystemSession.getInstance().setLanguage(Language.EN);
         List<GameToolCandidates.Candidate> all = new GameToolCandidates().collect(ALL);
         Set<String> commandIds = CommandRegistry.getInstance().byId().keySet();
         Set<String> queryIds = QueryRegistry.getInstance().byId().keySet();
@@ -71,7 +71,7 @@ class SemanticReducerProbe {
                     .append(c.localizedAliasGroup().replace('\n', ' ')).append('\t')
                     .append(c.tool().description().replace('\n', ' ')).append('\n');
         }
-        write("catalog-ru.txt", b.toString());
+        write("catalog-en.txt", b.toString());
     }
 
     /**
@@ -79,7 +79,7 @@ class SemanticReducerProbe {
      */
     @Test
     void dumpsParams() throws Exception {
-        SystemSession.getInstance().setLanguage(Language.RU);
+        SystemSession.getInstance().setLanguage(Language.EN);
         List<GameToolCandidates.Candidate> all = new GameToolCandidates().collect(ALL);
         StringBuilder b = new StringBuilder();
         for (GameToolCandidates.Candidate c : all) {
@@ -94,7 +94,7 @@ class SemanticReducerProbe {
             }
             b.append(c.id()).append('\t').append(String.join(", ", specs)).append('\n');
         }
-        write("params-ru.txt", b.toString());
+        write("params-en.txt", b.toString());
     }
 
     /**
@@ -106,12 +106,12 @@ class SemanticReducerProbe {
             return;
         }
         String[][] pairs = {
-                {"уменьши скорость на", "увеличь скорость на"},
-                {"медленнее", "быстрее"},
-                {"включи свет", "выключи свет"},
-                {"открой грузовой люк", "закрой грузовой люк"},
-                {"добавь цель добычи", "удали цель добычи"},
-                {"уменьши скорость на", "открой карту галактики"}, // unrelated baseline
+                {"decrease speed by", "increase speed by"},
+                {"slower", "faster"},
+                {"lights on", "lights off"},
+                {"open cargo scoop", "close cargo scoop"},
+                {"add mining target", "remove mining target"},
+                {"decrease speed by", "open galaxy map"}, // unrelated baseline
         };
         StringBuilder b = new StringBuilder("==== ANTONYM / POLARITY COSINES ====\n");
         for (String[] p : pairs) {

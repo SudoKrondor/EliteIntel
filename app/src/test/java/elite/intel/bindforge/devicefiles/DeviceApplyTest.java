@@ -4,6 +4,7 @@ import elite.intel.bindforge.devicefiles.DeviceFilesPush.MasterDevice;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush.Outcome;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush.Report;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush.Target;
+import elite.intel.bindforge.io.DeviceReferenceRewrite;
 import elite.intel.bindforge.io.DeviceRewriteResult;
 import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
 import elite.intel.db.managers.BindForgeDeviceDraftManager;
@@ -25,6 +26,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -334,14 +336,352 @@ class DeviceApplyTest {
         assertEquals(DeviceApply.MoveOutcome.NOT_FOUND, result.moves().getFirst().outcome());
     }
 
-    private DeviceApply.Result applyWith(List<Target> targets, DeviceApply.HardwareIdRewrite rewrite) {
+    // ------------------------------------------------------------------ renames (A11)
+
+    /**
+     * A rename applied: the element and the .buttonMap take the new name, the bindings follow, and with every
+     * installation and .binds done the old name is forgotten (Alan, 2026-10-14, A11).
+     */
+    @Test
+    void aRenamedDeviceTakesItsBindingsAlong() throws IOException {
+        Target steam = steamInstallation();
+        lvwapAppliedTo(steam);
+        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        FakeRewrite rewrite = new FakeRewrite(Map.of());
+        rewrite.names.put("LVWAP", 4);
+
+        DeviceApply.Result result = applyWith(List.of(steam), rewrite);
+
+        assertEquals(List.of("LeftStick <- [LVWAP]"), rewrite.calls);
+        assertEquals(List.of(new DeviceApply.RenameMove("LVWAP", "LeftStick", 4, DeviceApply.MoveOutcome.MOVED,
+                DeviceRewriteResult.Status.REWRITTEN)), result.renameMoves());
+        String mappings = Files.readString(steam.controlSchemes().resolve("DeviceMappings.xml"));
+        assertTrue(mappings.contains("<LeftStick>"), mappings);
+        assertFalse(mappings.contains("LVWAP"), mappings);
+        assertTrue(Files.exists(buttonMap(steam, "LeftStick")));
+        assertFalse(Files.exists(buttonMap(steam, "LVWAP")), "renamed, never copied");
+        assertEquals(List.of("LeftStick"), result.renamesFinished());
+        assertNull(master.findByName("LeftStick").previousName(), "the rename is finished");
+        assertTrue(master.pendingRemovals().isEmpty(), "a renamed device is not a removed one");
+    }
+
+    /** The partial rule: one installation took it, so .binds moves - and the old name stays for the one that missed. */
+    @Test
+    void aRenameAnInstallationMissedMovesTheBindingsAndKeepsTheOldName() throws IOException {
+        Target steam = steamInstallation();
+        lvwapAppliedTo(steam);
+        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        FakeRewrite rewrite = new FakeRewrite(Map.of());
+        rewrite.names.put("LVWAP", 4);
+
+        DeviceApply.Result result = applyWith(List.of(steam, unplugged()), rewrite);
+
+        assertEquals(DeviceApply.MoveOutcome.MOVED, result.renameMoves().getFirst().outcome());
+        assertTrue(result.renamesFinished().isEmpty());
+        assertEquals("LVWAP", master.findByName("LeftStick").previousName(),
+                "the push still renames wherever the old name is found");
+    }
+
+    @Test
+    void noInstallationTookTheRenameSoTheBindingsWait() {
+        master.record("LVWAP", "3344", "83F4", true);
+        draft.saveDevice("LVWAP", "LeftStick", Map.of());
+        FakeRewrite rewrite = new FakeRewrite(Map.of());
+        rewrite.names.put("lvwap", 4);
+
+        DeviceApply.Result result = applyWith(List.of(unplugged()), rewrite);
+
+        assertTrue(rewrite.calls.isEmpty());
+        assertEquals(List.of(new DeviceApply.RenameMove("LVWAP", "LeftStick", 4,
+                DeviceApply.MoveOutcome.NOT_APPLIED, null)), result.renameMoves(),
+                "counted ignoring case, as the game matches it");
+        assertEquals("LVWAP", master.findByName("LeftStick").previousName());
+    }
+
+    /** Measured 2026-10-14: .binds finds an element ignoring case, so a case-only rename moves no binding. */
+    @Test
+    void aCaseOnlyRenameMovesNoBinding() throws IOException {
+        Target steam = steamInstallation();
+        lvwapAppliedTo(steam);
+        draft.saveDevice("LVWAP", "Lvwap", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        FakeRewrite rewrite = new FakeRewrite(Map.of());
+        rewrite.names.put("LVWAP", 4);
+
+        DeviceApply.Result result = applyWith(List.of(steam), rewrite);
+
+        assertTrue(rewrite.calls.isEmpty());
+        assertTrue(result.renameMoves().isEmpty());
+        assertTrue(Files.readString(steam.controlSchemes().resolve("DeviceMappings.xml")).contains("<Lvwap>"));
+        assertTrue(Files.exists(buttonMap(steam, "Lvwap")));
+        assertNull(master.findByName("Lvwap").previousName());
+    }
+
+    /** A move that stops keeps the old name, so the next Apply moves what is left. */
+    @Test
+    void aRenameMoveThatStopsKeepsTheOldNameForTheNextApply() throws IOException {
+        Target steam = steamInstallation();
+        lvwapAppliedTo(steam);
+        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        FakeRewrite rewrite = new FakeRewrite(Map.of());
+        rewrite.names.put("LVWAP", 4);
+        rewrite.answers.put("LeftStick", DeviceRewriteResult.Status.STALE_FILE);
+
+        DeviceApply.Result result = applyWith(List.of(steam), rewrite);
+
+        assertEquals(DeviceApply.MoveOutcome.FAILED, result.renameMoves().getFirst().outcome());
+        assertTrue(result.renamesFinished().isEmpty());
+        assertEquals("LVWAP", master.findByName("LeftStick").previousName());
+    }
+
+    @Test
+    void bindingsThatCannotBeReadMoveNoRenameAndSaySo() throws IOException {
+        Target steam = steamInstallation();
+        lvwapAppliedTo(steam);
+        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        FakeRewrite rewrite = new FakeRewrite(Map.of());
+        rewrite.names = null;
+
+        DeviceApply.Result result = applyWith(List.of(steam), rewrite);
+
+        assertTrue(result.movesUnread());
+        assertTrue(rewrite.calls.isEmpty());
+        assertEquals("LVWAP", master.findByName("LeftStick").previousName());
+    }
+
+    /** Several renames per Apply, one rewrite each (Alan, 2026-10-14): both are moved and both reported. */
+    @Test
+    void twoRenamesInOneApplyAreEachMovedAndReported() throws IOException {
+        Target steam = steamInstallation();
+        lvwapAppliedTo(steam);
+        master.record("RVWAP", "3344", "03F5", true);
+        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        draft.saveDevice("RVWAP", "RightStick", Map.of());
+        FakeRewrite rewrite = new FakeRewrite(Map.of());
+        rewrite.names.put("LVWAP", 4);
+        rewrite.names.put("RVWAP", 6);
+
+        DeviceApply.Result result = applyWith(List.of(steam), rewrite);
+
+        assertEquals(Set.of("LeftStick <- [LVWAP]", "RightStick <- [RVWAP]"), Set.copyOf(rewrite.calls));
+        assertEquals(Set.of("LeftStick", "RightStick"), Set.copyOf(result.renamesFinished()));
+        assertEquals(2, result.renameMoves().size());
+    }
+
+    /**
+     * Review, 2026-10-15 (A11): a device that leaves the master while its rename is still under way keeps its old name
+     * pending - and held back while .binds names it - rather than losing it with the row, which would leave those
+     * bindings on a device with no entry.
+     */
+    @Test
+    void aDeviceClearedMidRenameHoldsItsOldNameBack() throws IOException {
+        Target steam = steamInstallation();
+        lvwapAppliedTo(steam);
+        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        FakeRewrite stalled = new FakeRewrite(Map.of());
+        stalled.names.put("LVWAP", 4);
+        stalled.answers.put("LeftStick", DeviceRewriteResult.Status.STALE_FILE);
+        applyWith(List.of(steam), stalled);
+        assertEquals("LVWAP", master.findByName("LeftStick").previousName(), "the move stopped");
+        draft.removeByName("LeftStick");
+
+        DeviceApply.Result result = apply(List.of(steam), Set.of("LVWAP"));
+
+        assertEquals(List.of("LeftStick"), result.cleanedUp());
+        assertEquals(List.of("LVWAP"), result.heldBack(), "the bindings still name it");
+        assertEquals(List.of("LVWAP"), master.pendingRemovals(), "kept for the Apply that can move them");
+    }
+
+    // ------------------------------------------------------------------ catch-up (A14)
+
+    /**
+     * Catch-up writes the installation that missed an Apply, as Apply would - and never the draft: what the user saved
+     * and has not applied stays theirs to apply (Alan, 2026-10-15, A14).
+     */
+    @Test
+    void catchUpWritesTheMasterToTheInstallationAndLeavesTheDraftAlone() throws IOException {
+        Target steam = steamInstallation();
+        lvwapAppliedTo(steam);
+        Target epic = epicInstallation();
+        draft.record("RVWAP", "3344", "03F5", true);
+
+        DeviceApply.Result result = catchUp(List.of(steam, epic), List.of(epic), new FakeRewrite(Map.of()));
+
+        assertEquals(Outcome.WRITTEN, result.report().installations().getFirst().outcome());
+        assertEquals(1, result.report().installations().size(), "only the installation found again");
+        String mappings = Files.readString(epic.controlSchemes().resolve("DeviceMappings.xml"));
+        assertTrue(mappings.contains("<LVWAP>"), mappings);
+        assertFalse(mappings.contains("RVWAP"), "the draft is not applied by catch-up");
+        assertTrue(Files.exists(buttonMap(epic, "LVWAP")));
+        assertTrue(draft.isStarted(), "the draft is still the user's to apply");
+        assertTrue(result.removed().isEmpty());
+    }
+
+    /** An installation edited in the game meanwhile is not the question's to revert - catch-up leaves it alone. */
+    @Test
+    void catchUpTouchesNoOtherInstallation() throws IOException {
+        Target steam = steamInstallation();
+        lvwapAppliedTo(steam);
+        Path steamMappings = steam.controlSchemes().resolve("DeviceMappings.xml");
+        Files.writeString(steamMappings, DEVICE_MAPPINGS);
+        Target epic = epicInstallation();
+
+        catchUp(List.of(steam, epic), List.of(epic), new FakeRewrite(Map.of()));
+
+        assertEquals(DEVICE_MAPPINGS, Files.readString(steamMappings));
+    }
+
+    /**
+     * CLEAR, then an Apply that missed one installation: catch-up carries the removal to it, and with no installation
+     * holding the device any more, it stops being pending.
+     */
+    @Test
+    void catchUpCarriesAClearAndSettlesIt() throws IOException {
+        Target steam = steamInstallation();
+        Target epic = epicInstallation();
+        long id = master.record("LVWAP", "3344", "83F4", true).id();
+        master.replaceLabels(id, Map.of("Joy_1", "LV MAIN TRIGGER"));
+        apply(List.of(steam, epic), Set.of());
+        draft.removeByName("LVWAP");
+        apply(List.of(steam, epicAway()), Set.of());
+        assertEquals(List.of("LVWAP"), master.pendingRemovals(), "the missed installation still holds it");
+
+        DeviceApply.Result result = catchUp(List.of(steam, epic), List.of(epic), new FakeRewrite(Map.of()));
+
+        assertEquals(List.of("LVWAP"), result.cleanedUp());
+        assertFalse(Files.readString(epic.controlSchemes().resolve("DeviceMappings.xml")).contains("LVWAP"));
+        assertFalse(Files.exists(buttonMap(epic, "LVWAP")));
+        assertTrue(master.pendingRemovals().isEmpty());
+    }
+
+    /**
+     * An installation still out of reach that missed a write may hold the device - so the removal stays pending, for
+     * whatever reaches that installation next.
+     */
+    @Test
+    void catchUpKeepsARemovalPendingWhileAMissedInstallationIsStillAway() throws IOException {
+        Target steam = steamInstallation();
+        Target epic = epicInstallation();
+        long id = master.record("LVWAP", "3344", "83F4", true).id();
+        master.replaceLabels(id, Map.of("Joy_1", "LV MAIN TRIGGER"));
+        apply(List.of(steam, epic), Set.of());
+        draft.removeByName("LVWAP");
+        apply(List.of(steam, epicAway()), Set.of());
+        Target frontierAway = new Target(3, "FRONTIER", temp.resolve("gone").resolve("ControlSchemes"), true, true);
+
+        DeviceApply.Result result = catchUp(List.of(steam, epic, frontierAway), List.of(epic),
+                new FakeRewrite(Map.of()));
+
+        assertEquals(List.of("LVWAP"), result.notEverywhere());
+        assertFalse(Files.readString(epic.controlSchemes().resolve("DeviceMappings.xml")).contains("LVWAP"),
+                "the installation found again lost it all the same");
+        assertEquals(List.of("LVWAP"), master.pendingRemovals());
+    }
+
+    /** A removal the bindings still name is held back by catch-up, as Apply holds it back. */
+    @Test
+    void catchUpHoldsBackARemovalTheBindingsName() throws IOException {
+        Target steam = steamInstallation();
+        Target epic = epicInstallation();
+        long id = master.record("LVWAP", "3344", "83F4", true).id();
+        master.replaceLabels(id, Map.of("Joy_1", "LV MAIN TRIGGER"));
+        apply(List.of(steam, epic), Set.of());
+        draft.removeByName("LVWAP");
+        apply(List.of(steam, epicAway()), Set.of());
+
+        DeviceApply.Result result = new DeviceApply(draft::promote, pusher(List.of(steam, epic)),
+                () -> Set.of("LVWAP"), FrontierStockDevices.getInstance(), master, new FakeRewrite(Map.of()),
+                holdings(List.of(steam, epic))).catchUp(List.of(epic.installId()));
+
+        assertEquals(List.of("LVWAP"), result.heldBack());
+        assertTrue(Files.readString(epic.controlSchemes().resolve("DeviceMappings.xml")).contains("<LVWAP>"));
+        assertEquals(List.of("LVWAP"), master.pendingRemovals());
+    }
+
+    /** A rename one installation missed: catch-up renames it there, and the rename is finished. */
+    @Test
+    void catchUpFinishesARename() throws IOException {
+        Target steam = steamInstallation();
+        Target epic = epicInstallation();
+        long id = master.record("LVWAP", "3344", "83F4", true).id();
+        master.replaceLabels(id, Map.of("Joy_1", "LV MAIN TRIGGER"));
+        apply(List.of(steam, epic), Set.of());
+        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        FakeRewrite moved = new FakeRewrite(Map.of());
+        moved.names.put("LVWAP", 4);
+        new DeviceApply(draft::promote, pusher(List.of(steam, epicAway()))::push, Set::of,
+                FrontierStockDevices.getInstance(), master, moved).apply();
+        assertEquals("LVWAP", master.findByName("LeftStick").previousName(), "the missed installation holds it");
+
+        DeviceApply.Result result = catchUp(List.of(steam, epic), List.of(epic), new FakeRewrite(Map.of()));
+
+        String mappings = Files.readString(epic.controlSchemes().resolve("DeviceMappings.xml"));
+        assertTrue(mappings.contains("<LeftStick>"), mappings);
+        assertFalse(mappings.contains("LVWAP"), mappings);
+        assertFalse(Files.exists(buttonMap(epic, "LVWAP")), "renamed, never copied");
+        assertEquals(List.of("LeftStick"), result.renamesFinished());
+        assertNull(master.findByName("LeftStick").previousName());
+    }
+
+    /**
+     * No installation had taken a rename - the bindings stayed on the old name. Catch-up is then the first to take it,
+     * and the bindings follow, as Apply would have moved them.
+     */
+    @Test
+    void catchUpThatIsTheFirstToTakeARenameMovesTheBindings() throws IOException {
+        Target epic = epicInstallation();
+        long id = master.record("LVWAP", "3344", "83F4", true).id();
+        master.replaceLabels(id, Map.of("Joy_1", "LV MAIN TRIGGER"));
+        apply(List.of(epic), Set.of());
+        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        FakeRewrite waiting = new FakeRewrite(Map.of());
+        waiting.names.put("LVWAP", 4);
+        new DeviceApply(draft::promote, pusher(List.of(epicAway()))::push, Set::of,
+                FrontierStockDevices.getInstance(), master, waiting).apply();
+        assertTrue(waiting.calls.isEmpty(), "nothing was applied for the bindings to follow");
+
+        DeviceApply.Result result = catchUp(List.of(epic), List.of(epic), waiting);
+
+        assertEquals(List.of("LeftStick <- [LVWAP]"), waiting.calls);
+        assertEquals(DeviceApply.MoveOutcome.MOVED, result.renameMoves().getFirst().outcome());
+    }
+
+    private DeviceApply.Result catchUp(List<Target> targets, List<Target> foundAgain, FakeRewrite rewrite) {
+        return new DeviceApply(draft::promote, pusher(targets), Set::of, FrontierStockDevices.getInstance(),
+                master, rewrite, holdings(targets))
+                .catchUp(foundAgain.stream().map(Target::installId).toList());
+    }
+
+    private static InstallationHoldings holdings(List<Target> targets) {
+        return new InstallationHoldings(() -> targets, FrontierStockDevices.getInstance(),
+                FrontierStockButtonMaps.getInstance());
+    }
+
+    /** Epic, at its folder, with Frontier's file. */
+    private Target epicInstallation() throws IOException {
+        Path controlSchemes = temp.resolve("EPIC").resolve("ControlSchemes");
+        Files.createDirectories(controlSchemes);
+        Files.writeString(controlSchemes.resolve("DeviceMappings.xml"), DEVICE_MAPPINGS);
+        return new Target(2, "EPIC", controlSchemes, false);
+    }
+
+    /** The same Epic installation, out of reach - an unplugged drive. */
+    private Target epicAway() {
+        return new Target(2, "EPIC", temp.resolve("EPIC").resolve("ControlSchemes"), true);
+    }
+
+    private DeviceApply.Result applyWith(List<Target> targets, DeviceApply.BindsRewrite rewrite) {
         return new DeviceApply(draft::promote, pusher(targets)::push, Set::of, FrontierStockDevices.getInstance(),
                 master, rewrite).apply();
     }
 
-    /** Hardware-id counts as given, and the rewrites asked for - each succeeding unless told otherwise. */
-    private static final class FakeRewrite implements DeviceApply.HardwareIdRewrite {
+    /**
+     * Hardware-id and name counts as given, and the rewrites asked for - each succeeding unless told otherwise.
+     * Answers are keyed by the name a rewrite moves to.
+     */
+    private static final class FakeRewrite implements DeviceApply.BindsRewrite {
         private final Map<String, Integer> counts;
+        /** {@code null} to fail the read. */
+        Map<String, Integer> names = new HashMap<>();
         final Map<String, DeviceRewriteResult.Status> answers = new HashMap<>();
         final List<String> calls = new ArrayList<>();
 
@@ -357,11 +697,19 @@ class DeviceApplyTest {
         }
 
         @Override
-        public DeviceApply.Rewritten rewrite(String name, Set<String> found) {
-            calls.add(name + " <- " + found.stream().sorted().toList());
-            DeviceRewriteResult.Status status = answers.getOrDefault(name, DeviceRewriteResult.Status.REWRITTEN);
+        public Map<String, Integer> nameCounts() throws IOException {
+            if (names == null) throw new IOException("bindings folder not there");
+            return names;
+        }
+
+        @Override
+        public DeviceApply.Rewritten rewrite(DeviceReferenceRewrite rewrite) {
+            calls.add(rewrite.to() + " <- " + rewrite.from().stream().sorted().toList());
+            DeviceRewriteResult.Status status =
+                    answers.getOrDefault(rewrite.to(), DeviceRewriteResult.Status.REWRITTEN);
             int moved = status == DeviceRewriteResult.Status.REWRITTEN
-                    ? found.stream().mapToInt(counts::get).sum()
+                    ? rewrite.from().stream()
+                    .mapToInt(from -> counts.getOrDefault(from, names.getOrDefault(from, 0))).sum()
                     : 0;
             return new DeviceApply.Rewritten(status, moved);
         }
@@ -388,7 +736,8 @@ class DeviceApplyTest {
     private List<MasterDevice> storedMaster() {
         List<MasterDevice> devices = new ArrayList<>();
         for (DeviceRow row : master.findAll()) {
-            devices.add(new MasterDevice(row.deviceName(), row.vid(), row.pid(), master.labelsOf(row.id())));
+            devices.add(new MasterDevice(row.deviceName(), row.vid(), row.pid(), master.labelsOf(row.id()),
+                    row.previousName()));
         }
         return devices;
     }

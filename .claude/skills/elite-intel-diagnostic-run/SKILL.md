@@ -8,7 +8,7 @@ description: >-
   under test) — feeds them at conversation speed, reads the diagnostics log, scores routed vs.
   expected, and recommends concrete fixes (llmDescription / ai_action_aliases) for each miss. So
   the run measures generalization, not memorization. Use when asked to run the routing diagnostic,
-  e.g. "/elite-intel-diagnostic-run EN" or "прогони диагностику RU". Requires the app built from
+  e.g. "/elite-intel-diagnostic-run EN" or "/elite-intel-diagnostic-run DE". Requires the app built from
   this repo (diagnostics mode is a dev harness). Runs the REAL companion LLM (billable, live
   network); game commands and queries are recorded, never executed (no keystrokes, no EDSM/Spansh
   calls).
@@ -29,11 +29,11 @@ group; the words are yours.
 
 ## Arguments and preconditions
 
-- **Language (required, no default)** — one of `EN`, `RU`, `UK`, `DE`, `ES`, `FR`, `IT`, `PT`. It
+- **Language (required, no default)** — one of `EN`, `DE`, `ES`, `FR`, `IT`, `PT`. It
   selects the reference test `app/src/test/java/elite/intel/junit/prompt/NaturalSpeechIntegrationTest<LANG>.java`
   and the cached glossary `glossary/<LANG>.md`.
 - **Count (optional, default `3`)** — generated utterances per command, e.g.
-  `/elite-intel-diagnostic-run RU 4`.
+  `/elite-intel-diagnostic-run DE 4`.
 - **`--refresh-glossary` (optional)** — rebuild the cached terminology from the web.
 - **`--only <id1,id2,...>` (optional)** — restrict the run to those expected action ids (targeted
   mode); everything else is skipped. Turns drop from ~270 to `len(ids) × count`.
@@ -57,7 +57,7 @@ group; the words are yours.
 
 **Validate the language first.** If it is missing or not one of the eight codes, do nothing else —
 no files, no app launch, no web — print an error and stop, e.g.
-`elite-intel-diagnostic-run: language argument is required — one of EN, RU, UK, DE, ES, FR, IT, PT (e.g. /elite-intel-diagnostic-run EN)`.
+`elite-intel-diagnostic-run: language argument is required — one of EN, DE, ES, FR, IT, PT (e.g. /elite-intel-diagnostic-run EN)`.
 
 **Run exactly ONE language per invocation.** Turns ≈ (command groups, ~90) × count; at the default
 that is ~270 live companion LLM turns — the whole cost of the run. Never loop over several
@@ -341,9 +341,7 @@ cross-platform)*. Those single-operation file commands are not an orchestrator; 
 
 ## Terminology sourcing (authority is EXTERNAL, not the app)
 
-Utterances must use the actual in-game Elite Dangerous terminology for the target language (e.g. RU
-«суперкруиз», «шасси», «дипольные отражатели», «авианосец»; the localized commodity/ship/module/
-system nouns), not a literal translation.
+Utterances must use the actual in-game Elite Dangerous terminology for the target language (the localized names of the game's controls, commodities, ships, modules and systems), not a literal translation.
 
 **Do not source terminology from the app's own files.** `ai_action_aliases_<lang>.properties`,
 `ed_events`, the normalizer rules and the test phrases are exactly what is under test — drawing
@@ -403,9 +401,7 @@ You author the utterances; a badly written one causes a false failure, so treat 
   casually talking to their ship's AI, not a translated manual or a keyword string. Use natural word
   order, everyday imperative phrasing, and contractions the way a real commander speaks aloud. Weave
   ED terminology in naturally — don't stuff terms in or calque English structure. Read each line back
-  in your head; if it sounds stiff, textbook, or translated, rewrite it. Vary verb, word order and
-  register across the `count` utterances; never just reorder the alias words. (RU specifically:
-  prefer how a Russian-speaking pilot would actually say it, not a wooden literal rendering.)
+  in your head; if it sounds stiff, textbook, or translated, rewrite it. Vary verb, word order and register across the `count` utterances; never just reorder the alias words. Prefer how a native-speaking pilot would actually say it, not a wooden literal rendering.
 - **Unambiguous.** If a phrasing could reasonably be two different commands, pick a clearer one.
   Ambiguity you introduced is not an app bug.
 - **Do not paraphrase attention-control** (`startListening`/`ignoreMe`) unless asked; those are

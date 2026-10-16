@@ -42,7 +42,7 @@ public class ClearKeyboardBindingDialog extends JDialog {
     public record ClearOutcome(boolean success, KeyBindingsParser.ReadOnlyBindingSlots slots) {
     }
 
-    private final BindingSlotDisplayFormatter slotFormatter = new BindingSlotDisplayFormatter();
+    private final BindingSlotDisplayFormatter slotFormatter = BindingSlotDisplayFormatter.withSavedLabels();
     private final String bindingId;
     private final SlotClearer clearer;
 

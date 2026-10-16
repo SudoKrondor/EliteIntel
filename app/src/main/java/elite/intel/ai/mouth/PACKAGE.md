@@ -83,7 +83,7 @@ radio transmissions to `VocalisationRequestEvent` on the main EventBus. VEGA spe
 **`RadioTransmissionEvent` special handling**: The router sets `isRadio=true` on the resulting
 `VocalisationRequestEvent`; the local engine selected by `RadioVoicing` draws a voice from its own cast when the request does not name one. Cloud mouths ignore it; that local engine is picked by the
 **game
-client's** language (`GameLanguage`, off the journal header), because the words are the client's own prose: Kokoro for every client but the Russian one, Supertonic for that. When it is not the main mouth it runs as a dedicated `RADIO_MOUTH` service - Kokoro beside a Supertonic main under a Latin-script client; the reverse never arises, because a Russian client withdraws Kokoro as the main mouth too (`TtsProvider.forSession`: Kokoro must voice BOTH the commander's language and the client's, else Supertonic is the local engine). A radio task also carries the client's language into `generate(...)` (`SherpaOnnxTTS.languageOf`), and a RADIO-role engine is built for it; a client relaunched in another language restarts the mouth (`FileheaderEventSubscriber`).
+client's** language (`GameLanguage`, off the journal header), because the words are the client's own prose: Kokoro for every client but the Russian one, Supertonic for that (Russian is not an app language, so `GameLanguage.isRussian()` names it, and a Russian transmission reaches `generate(...)` with `russian=true`). When it is not the main mouth it runs as a dedicated `RADIO_MOUTH` service - Kokoro beside a Supertonic main, or Supertonic beside a Kokoro main under a Russian client. A radio task also carries the client's language into `generate(...)` (`SherpaOnnxTTS.languageOf`), and a RADIO-role engine is built for it; a client relaunched in another language restarts the mouth (`FileheaderEventSubscriber`).
 
 ---
 
@@ -183,8 +183,6 @@ kokoroLangCode(Language):
 
 When the langCode is null, the model synthesises in English regardless of session language. This is a deliberate fallback - Kokoro Multi-Lang v1.0 only has native accent support for these three languages.
 
-Cyrillic has no entry at all: Kokoro's phonemizer cannot read it, so `TtsProvider.forLanguage` never lets Kokoro be the engine for a Russian or Ukrainian commander - Supertonic stands in (next section).
-
 ### Interruption
 
 `interruptAndClear()`:
@@ -207,10 +205,9 @@ What differs:
 
 - **One multilingual model.** The language is not baked into the model config; each
   `generateWithConfigAndCallback` call passes it as `GenerationConfig.extra("lang", supertonicLangCode(language))`
-  (`en`, `de`, `fr`, `es`, `it`, `pt` for both `PT` and `PTBZ`, `ru`, `uk`). The engine is built once and never rebuilt on a language switch.
-- **Cyrillic.** Supertonic reads Russian and Ukrainian natively. That is why it exists here: `TtsProvider.forLanguage`
-  substitutes it for Kokoro in the Cyrillic locales (the settings panel greys the Kokoro segment out there), and
-  `RadioVoicing` hands it the radio channel whenever the game client is Russian, whatever the main mouth.
+  (`en`, `de`, `fr`, `es`, `it`, `pt` for both `PT` and `PTBZ`), or `ru` for a Russian client's radio chatter. The engine is built once and never rebuilt on a language switch.
+-
+**Russian.** Supertonic reads Cyrillic, Kokoro does not, so `RadioVoicing` hands Supertonic the radio channel whenever the game client is Russian, whatever the main mouth.
 - **Ten
   voices** (`SupertonicVoices`, `M1`-`M5`, `F1`-`F5`, by `sid`), all offered; the fleet grid shows them by enum name. `DEFAULT_VOICE` is the ship default and the collapse target for a stored name the cast does not carry.
 - **44.1 kHz native
@@ -277,8 +274,6 @@ entirely and substitutes a language-specific Google Standard voice:
 | DE | `de-DE-Standard-H` | `de-DE-Standard-G` |
 | IT | `it-IT-Standard-C` | `it-IT-Standard-A` |
 | PT | `pt-PT-Standard-B` | `pt-PT-Standard-A` |
-| RU | `ru-RU-Standard-B` | `ru-RU-Standard-E` |
-| UK | `uk-UA-Standard-B` | `uk-UA-Standard-B` |
 
 Gender is resolved from
 `GoogleVoices.isMale()` on the current session voice. This means non-English users keep their chosen voice's gender but get a locale- appropriate model.
@@ -448,10 +443,10 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | `sherpa/RadioVoiceDraw` | The radio voice draw, generic over a cast enum |
 | `kokoro/KokoroTTS` | Offline backend; sherpa-onnx kokoro-multi-lang-v1_0 |
 | `kokoro/KokoroVoices` | 53 Kokoro voice enum with sid values |
-| `supertonic/SupertonicTTS` | Alternative offline backend; sherpa-onnx Supertonic 3 (int8), the Cyrillic-capable one |
+| `supertonic/SupertonicTTS` | Alternative offline backend; sherpa-onnx Supertonic 3 (int8); also voices a Russian client's radio |
 | `supertonic/SupertonicVoices` | 10 Supertonic voice enum with sid values |
 | `RadioVoicing` | Which engine voices radio, by the game client's language: Kokoro, or Supertonic for a Russian client |
-| `TtsProvider` | The stored engine choice; `forSession` swaps Kokoro for Supertonic when the commander OR the game client is Cyrillic |
+| `TtsProvider` | The stored engine choice |
 | `google/GoogleTTSImpl` | Cloud backend; Google Cloud TTS API |
 | `google/GoogleVoices` | 11 Google voice enum with gender and Chirp3-HD character |
 | `google/GoogleVoiceProvider` | Voice selection + non-EN language override |

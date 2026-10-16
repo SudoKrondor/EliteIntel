@@ -83,6 +83,10 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_PRIMARY_BUTTON_HOVER_BACKGROUND = HUD_COLOR_B85A14;
     public static final Color HUD_COLOR_ROLE_PRIMARY_BUTTON_PRESSED_BACKGROUND = HUD_COLOR_FF7100;
     public static final Color HUD_COLOR_ROLE_INFORMATION = HUD_COLOR_33D7E8;
+    /**
+     * Background of an input a binding holds right now, in the bindings capture dialog: the HUD frame blue.
+     */
+    public static final Color HUD_COLOR_ROLE_ASSIGNED_INPUT_BACKGROUND = HUD_COLOR_2D5C66;
     public static final Color HUD_COLOR_ROLE_SUCCESS = HUD_COLOR_4FC56B;
     public static final Color HUD_COLOR_ROLE_WARNING = HUD_COLOR_FFB000;
     public static final Color HUD_COLOR_ROLE_DANGER = HUD_COLOR_D94F4F;

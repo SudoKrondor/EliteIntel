@@ -9,10 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The union rule the whole screen rests on: live hardware and file entries, correlated by VID/PID.
@@ -40,7 +37,7 @@ class MyDeviceListTest {
 
         assertEquals(1, rows.size());
         MyDevice row = rows.getFirst();
-        assertEquals("VIRPIL Controls L-VP-WBD-CAP", row.windowsName());
+        assertEquals("VIRPIL Controls L-VP-WBD-CAP", row.hardwareName());
         assertEquals("3344", row.vid());
         assertEquals("83F4", row.pid());
         assertTrue(row.attached());
@@ -60,7 +57,7 @@ class MyDeviceListTest {
         assertEquals(1, rows.size());
         MyDevice row = rows.getFirst();
         assertFalse(row.attached(), "missing is a status, never a reason to drop the row");
-        assertNull(row.windowsName(), "nothing is there to report one");
+        assertNull(row.hardwareName(), "nothing is there to report one");
         assertEquals("LVWAP", row.entryName());
         assertEquals("LVWAP", row.label(), "and the entry name is what keeps the row readable");
     }
@@ -72,7 +69,7 @@ class MyDeviceListTest {
                 List.of(entry("LVWAP", "3344", "83F4")), List.of(), stock);
 
         assertEquals(1, rows.size(), "correlated by VID/PID, which is what the two halves share");
-        assertEquals("VIRPIL Controls L-VP-WBD-CAP", rows.getFirst().windowsName());
+        assertEquals("VIRPIL Controls L-VP-WBD-CAP", rows.getFirst().hardwareName());
         assertEquals("LVWAP", rows.getFirst().entryName());
         assertTrue(rows.getFirst().attached());
     }
@@ -159,7 +156,7 @@ class MyDeviceListTest {
                 List.of(device("Nameless", ""), device("Left", VIRPIL_LEFT_GUID)), List.of(), List.of(), stock);
 
         assertEquals(1, rows.size());
-        assertEquals("Left", rows.getFirst().windowsName());
+        assertEquals("Left", rows.getFirst().hardwareName());
     }
 
     private static Device device(String name, String guid) {

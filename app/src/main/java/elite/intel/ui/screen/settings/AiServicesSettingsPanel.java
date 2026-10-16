@@ -1,11 +1,9 @@
 package elite.intel.ui.screen.settings;
 
 import elite.intel.ai.ProviderEnum;
-import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.eventbus.UiBus;
-import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.event.AppLogEvent;
@@ -19,7 +17,6 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.JTextComponent;
 import java.awt.*;
-import java.awt.event.HierarchyEvent;
 import java.util.Objects;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -32,10 +29,7 @@ import static elite.intel.ui.theme.HudPalette.*;
  * LOCAL and a CLOUD source via {@link HudSegmentedControl} switches, with the active source's
  * configuration highlighted and the unused one dimmed (section 0.6). Speech has three engines for
  * those two slots: LOCAL is Kokoro or Supertonic, chosen with a switch of its own, and CLOUD is Google
- * (API key). Under a Cyrillic command
- * language the Kokoro segment is withdrawn - it has no Cyrillic phonemizer, so it would be silent -
- * and {@link SystemSession#getTtsProvider()} has already moved the selection off it by the time this
- * panel reads it.
+ * (API key).
  * <p>
  * Persistence is transactional: no control writes to {@link SystemSession} on its own. All edits
  * live in an in-memory working copy and are committed atomically by {@link #save()} (the only point
@@ -85,25 +79,10 @@ public class AiServicesSettingsPanel extends JPanel {
     private JLabel supertonicBoostLabel;
     private HudSlider supertonicBoostSlider;
 
-    /**
-     * Whether Kokoro is on offer. It cannot pronounce Cyrillic, so for a Russian or Ukrainian commander - or a
-     * game client writing its radio chatter in Russian - its segment is greyed out and Supertonic is the local
-     * engine; see {@link TtsProvider#canVoiceSession}. Re-read whenever the panel is shown: the client half
-     * can change while this long-lived panel exists (the game relaunched in another language), the
-     * commander half rebuilds the whole UI.
-     */
-    private boolean kokoroOffered;
-
     private JPanel localCol;
     private JPanel rightCol;
     private HudBanner ttsKokoroHint;
     private HudBanner ttsSupertonicHint;
-    /**
-     * Why the Kokoro segment is dead, when it is - a segment that is simply dead reads as a bug. Rebuilt with
-     * the reason on every {@link #applyKokoroAvailability()}, {@code null} while Kokoro is offered.
-     */
-    private HudBanner ttsKokoroUnavailable;
-    private JPanel ttsLocalHints;
     /**
      * Supertonic's boost row and banner together: shown while Supertonic is the local engine, hidden for Kokoro.
      */
@@ -135,12 +114,6 @@ public class AiServicesSettingsPanel extends JPanel {
     public AiServicesSettingsPanel() {
         buildUi();
         wireListeners();
-        applyKokoroAvailability();
-        addHierarchyListener(e -> {
-            if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) {
-                applyKokoroAvailability();
-            }
-        });
     }
 
     // -------------------------------------------------------------------------
@@ -219,9 +192,7 @@ public class AiServicesSettingsPanel extends JPanel {
         tts.add(ttsSourceControl, BorderLayout.NORTH);
 
         // Left column - LOCAL: two engines that speak on this machine and have nothing to configure, chosen
-        // with a switch of their own. Kokoro is the default; where it cannot pronounce the commander's
-        // language, or the game client's, its segment is greyed out and a banner says why (see
-        // applyKokoroAvailability). Right column - CLOUD: Google, the one cloud engine, so no switch - just its
+        // with a switch of their own. Kokoro is the default. Right column - CLOUD: Google, the one cloud engine, so no switch - just its
         // key row and WaveNet pitch above its banner.
         JPanel ttsLeftCol = transparentPanel(new BorderLayout(0, HUD_GAP));
         ttsLocalEngineControl = new HudSegmentedControl(
@@ -245,7 +216,7 @@ public class AiServicesSettingsPanel extends JPanel {
         ttsSupertonicConfig = transparentPanel(new BorderLayout(0, HUD_GAP));
         ttsSupertonicConfig.add(supertonicForm, BorderLayout.NORTH);
         ttsSupertonicConfig.add(ttsSupertonicHint, BorderLayout.CENTER);
-        ttsLocalHints = transparentPanel(new BorderLayout());
+        JPanel ttsLocalHints = transparentPanel(new BorderLayout());
         ttsLocalHints.add(ttsKokoroHint, BorderLayout.NORTH);
         ttsLocalHints.add(ttsSupertonicConfig, BorderLayout.CENTER);
         ttsLeftCol.add(ttsLocalHints, BorderLayout.CENTER);
@@ -431,12 +402,8 @@ public class AiServicesSettingsPanel extends JPanel {
         boolean ttsCloud = ttsSourceControl.getSelectedIndex() == SRC_CLOUD;
         boolean supertonic = ttsLocalEngineControl.getSelectedIndex() == ENGINE_SUPERTONIC;
         ttsLocalEngineControl.setEnabled(!ttsCloud);
-        // The "cannot pronounce this language" banner replaces both engine hints and is the reason the Kokoro
-        // segment is dead, so it stays legible while cloud is selected.
-        // The boost row belongs to Supertonic whether or not Kokoro is offered; only its banner gives way.
-        ttsKokoroHint.setVisible(kokoroOffered && !supertonic);
+        ttsKokoroHint.setVisible(!supertonic);
         ttsSupertonicConfig.setVisible(supertonic);
-        ttsSupertonicHint.setVisible(kokoroOffered);
         ttsKokoroHint.setEnabled(!ttsCloud);
         ttsSupertonicHint.setEnabled(!ttsCloud);
         supertonicBoostLabel.setEnabled(!ttsCloud);
@@ -608,41 +575,9 @@ public class AiServicesSettingsPanel extends JPanel {
      * and CLOUD is Google.
      */
     private TtsProvider selectedTtsProvider() {
-        TtsProvider selected = ttsSourceControl.getSelectedIndex() == SRC_LOCAL
+        return ttsSourceControl.getSelectedIndex() == SRC_LOCAL
                 ? (ttsLocalEngineControl.getSelectedIndex() == ENGINE_SUPERTONIC ? TtsProvider.SUPERTONIC : TtsProvider.KOKORO)
                 : TtsProvider.GOOGLE;
-        // Belt and braces: the Kokoro segment is already unselectable when it cannot voice the session, so
-        // this only guarantees that no path through this panel can commit an engine that would be silent.
-        return TtsProvider.forSession(selected, systemSession.getLanguage(), RadioVoicing.transmissionLanguage());
-    }
-
-    /**
-     * Greys the Kokoro segment out wherever Kokoro cannot voice the session, moves the switch off it, and
-     * puts up the banner that says which side is Cyrillic: the commander's own language, or the game client's,
-     * whose radio chatter Kokoro would otherwise be asked to read. Two texts because the fix differs - one is a
-     * setting on this panel, the other is the game's.
-     */
-    private void applyKokoroAvailability() {
-        Language commander = systemSession.getLanguage();
-        Language transmissions = RadioVoicing.transmissionLanguage();
-        kokoroOffered = TtsProvider.KOKORO.canVoiceSession(commander, transmissions);
-        ttsLocalEngineControl.setSegmentEnabled(ENGINE_KOKORO, kokoroOffered);
-        if (!kokoroOffered && ttsLocalEngineControl.getSelectedIndex() == ENGINE_KOKORO) {
-            ttsLocalEngineControl.setSelectedIndex(ENGINE_SUPERTONIC);
-        }
-
-        if (ttsKokoroUnavailable != null) ttsLocalHints.remove(ttsKokoroUnavailable);
-        ttsKokoroUnavailable = null;
-        if (!kokoroOffered) {
-            String reason = TtsProvider.KOKORO.canVoice(commander)
-                    ? "settings.ai.voice.local.unavailable.game"
-                    : "settings.ai.voice.local.unavailable";
-            ttsKokoroUnavailable = HudBanner.multiline(getText(reason), StatusBadge.State.STANDBY);
-            ttsLocalHints.add(ttsKokoroUnavailable, BorderLayout.SOUTH);
-        }
-        ttsLocalHints.revalidate();
-        ttsLocalHints.repaint();
-        updateEnablement();
     }
 
     /**

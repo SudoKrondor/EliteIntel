@@ -14,18 +14,13 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class TypedCommandSubscriberTest {
 
-    private static final List<String> NAMES = List.of("Vega", "Вега");
+    private static final List<String> NAMES = List.of("Vega");
 
     @Test
     void theWordsAfterTheAddressAreTheCommand() {
         assertEquals("do my taxes", TypedCommandSubscriber.commandFor("@Vega do my taxes", NAMES));
         assertEquals("find Tritium", TypedCommandSubscriber.commandFor("  @vega, find Tritium ", NAMES));
         assertEquals("find Tritium", TypedCommandSubscriber.commandFor("@VEGA: find Tritium", NAMES));
-    }
-
-    @Test
-    void theNameAsTheAppLanguageSpellsItWorksToo() {
-        assertEquals("найди тритий", TypedCommandSubscriber.commandFor("@вега найди тритий", NAMES));
     }
 
     @Test

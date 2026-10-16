@@ -190,7 +190,7 @@ public final class OverlayProtocol {
      * Trims text to a byte budget without splitting a character.
      * <p>
      * Byte-counted rather than character-counted because both limits downstream
-     * are byte limits, and a Cyrillic or accented reply is roughly twice the
+     * are byte limits, and an accented reply is roughly twice the
      * bytes per character of an English one - counting characters would let
      * exactly those languages overrun. Cutting mid-sequence is not an option
      * either: the renderer would be handed an invalid UTF-8 tail and draw a

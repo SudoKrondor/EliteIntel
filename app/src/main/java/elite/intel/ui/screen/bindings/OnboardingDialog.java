@@ -192,7 +192,8 @@ final class OnboardingDialog extends JDialog {
         if (wanted > getHeight()) setSize(getWidth(), wanted);
     }
 
-    private static String problemText(DeviceNames.Verdict verdict) {
+    /** Why a typed name was refused - onboarding's words, which the Device Editor's rename shares. */
+    static String problemText(DeviceNames.Verdict verdict) {
         return switch (verdict.problem()) {
             case TOO_SHORT -> getText("bindings.aliasDesigner.onboarding.problem.tooShort", DeviceNames.MIN_LENGTH);
             case TOO_LONG -> getText("bindings.aliasDesigner.onboarding.problem.tooLong", DeviceNames.MAX_LENGTH);

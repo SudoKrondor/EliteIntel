@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.vega.memory;
 
-import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.vega.model.llm.LlmMessage;
 import elite.intel.ai.brain.vega.model.llm.LlmMessageRole;
 import elite.intel.i18n.Language;
@@ -29,7 +28,7 @@ public final class CompressionPromptComposer {
     }
 
     private static String languageRule() {
-        Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
+        Language language = SystemSession.getInstance().getLanguage();
         return "The memory content is in " + language.displayName()
                 + "; write the summary in " + language.displayName() + ".";
     }

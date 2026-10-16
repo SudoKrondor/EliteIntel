@@ -116,8 +116,6 @@ class TradeStopReflexTest {
             case FR -> new String[]{"prochain"};
             case IT -> new String[]{"prossim", "prossimo"};
             case PT, PTBZ -> new String[]{"próxim"};
-            case RU -> new String[]{"следующ"};
-            case UK -> new String[]{"наступн"};
             default -> new String[]{"next"};
         };
     }

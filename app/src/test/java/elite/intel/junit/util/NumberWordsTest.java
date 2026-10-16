@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  * The cases the hand-rolled composition could not express, one per language family.
  *
  * <p>These are what the old templates got wrong: German heard "vierzig fünf" where it wanted the inverted
- * compound, Russian heard "три сотен двадцать" where the hundreds are a word of their own, and Spanish,
+ * compound, and Spanish,
  * Portuguese and Italian each contract or join in ways a "{0} {1}" pattern cannot reach.
  */
 class NumberWordsTest {
@@ -49,12 +49,6 @@ class NumberWordsTest {
     void portugueseVariantsSpellTheirOwnTeens() {
         assertEquals("mil trezentos e dezasseis", NumberWords.of(1316, Language.PT));
         assertEquals("mil trezentos e dezesseis", NumberWords.of(1316, Language.PTBZ));
-    }
-
-    @Test
-    void slavicHundredsAreWordsOfTheirOwn() {
-        assertEquals("триста сорок пять", NumberWords.of(345, Language.RU));
-        assertEquals("триста сорок три", NumberWords.of(343, Language.UK));
     }
 
     @Test

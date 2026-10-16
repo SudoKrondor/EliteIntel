@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
  * Supertonic drops the minus sign ("-233" is heard as "two hundred thirty-three"), and the sherpa pipeline
  * flattens every dot before synthesis, so "62.123" reached both local engines as "62 123". In words, the sign
  * and the point are part of the number and nothing downstream can lose them. The language decides how they
- * are said ("minus", "moins", "минус").
+ * are said ("minus", "moins", "meno").
  * <p>
  * Plain runs of digits are never touched: the engines read them correctly, and Elite's system names are full
  * of them ("Col 285 Sector XY-Z c12-34"). A number glued to a letter, or one piece of a longer dotted run

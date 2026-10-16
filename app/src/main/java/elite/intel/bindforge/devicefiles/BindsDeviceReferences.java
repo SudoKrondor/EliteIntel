@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -108,6 +110,26 @@ public final class BindsDeviceReferences {
             if (upper.equals(forward) || upper.equals(reversed)) found.put(id, count);
         });
         return found;
+    }
+
+    /**
+     * How many bindings name a device by any of {@code names}, ignoring case - the one count the Device Editor's CLEAR
+     * and Apply's rename move both use, so they cannot disagree (review, 2026-10-15, A11). A hand-edited
+     * {@code .binds} can spell a name otherwise, and missing one would let CLEAR strand it. Each binding is counted
+     * once, however many of the names match it; {@code null} names are ignored.
+     *
+     * @param counts as {@link #referenceCounts(Path)} returns them, keyed as written
+     */
+    public static int bindingsNaming(Collection<String> names, Map<String, Integer> counts) {
+        Set<String> folded = new HashSet<>();
+        for (String name : names) {
+            if (name != null) folded.add(name.toLowerCase(Locale.ROOT));
+        }
+        int count = 0;
+        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+            if (folded.contains(entry.getKey().toLowerCase(Locale.ROOT))) count += entry.getValue();
+        }
+        return count;
     }
 
     private static Reading readStrictly(Path bindingsFolder) throws IOException {

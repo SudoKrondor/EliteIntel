@@ -16,8 +16,8 @@ import java.util.Set;
  * pipeline.
  * <p>
  * The shipped default engine and the one with the wider cast (53 voices). Its espeak-ng phonemizer has no
- * Cyrillic front end, so a Russian or Ukrainian commander never reaches it - Supertonic stands in (see
- * {@link TtsProvider#forLanguage}).
+ * Cyrillic front end, so a Russian game client's radio chatter goes to Supertonic instead (see
+ * {@link elite.intel.ai.mouth.RadioVoicing}).
  */
 public class KokoroTTS extends SherpaOnnxTTS {
 
@@ -49,7 +49,8 @@ public class KokoroTTS extends SherpaOnnxTTS {
     }
 
     @Override
-    protected GeneratedAudio generate(OfflineTts tts, String text, int sid, float speed, Language language) {
+    protected GeneratedAudio generate(OfflineTts tts, String text, int sid, float speed, Language language,
+                                      boolean russian) {
         return tts.generate(text, sid, speed);
     }
 
@@ -89,9 +90,6 @@ public class KokoroTTS extends SherpaOnnxTTS {
      * it is separate from the voice: a language with no native Kokoro voice (German) is still phonemized
      * correctly here and merely spoken with the accent of whatever voice is selected. Getting this wrong is
      * worse than an accent — German text read with "en-us" rules is mangled, not accented.
-     * <p>
-     * Cyrillic (RU/UK) has no entry on purpose: it cannot be phonemized at all, so those sessions never
-     * reach this engine - Supertonic stands in for it (see {@code TtsProvider#forLanguage}).
      */
     private static String kokoroLangCode(Language language) {
         return switch (language) {

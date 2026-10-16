@@ -6,9 +6,9 @@ import elite.intel.bindforge.devicefiles.DeviceEntry;
  * One row of the My Devices list: a controller, whether BindForge learned of it from the hardware or from a
  * file.
  *
- * @param windowsName what the hardware reports through the Device Service, or {@code null} when it is not
- *                    attached - a row built from a file entry alone has no Windows name, because nothing is
- *                    there to report one
+ * @param hardwareName what the hardware reports through the Device Service, or {@code null} when it is not
+ *                     attached - a row built from a file entry alone has no hardware name, because nothing is
+ *                     there to report one
  * @param entryName   the element tag naming this device in an installation's {@code DeviceMappings.xml}, or
  *                    {@code null} when no installation has an entry for it. Distinct from {@code alias}: this
  *                    is what is on disk now, while the alias is what the user chose
@@ -23,7 +23,7 @@ import elite.intel.bindforge.devicefiles.DeviceEntry;
  *                    game already names it and there is nothing for BindForge to create
  */
 public record MyDevice(
-        String windowsName,
+        String hardwareName,
         String entryName,
         String vid,
         String pid,
@@ -39,12 +39,12 @@ public record MyDevice(
     /**
      * The best human label available, falling back through what is known.
      * <p>
-     * A row built from a file entry for hardware that is not plugged in has no Windows name at all, and
+     * A row built from a file entry for hardware that is not plugged in has no hardware name at all, and
      * before first setup it has no alias either - so without this it would be a line of hex. The entry name
      * is the only thing naming it, and it is a real name a human chose.
      */
     public String label() {
-        if (windowsName != null) return windowsName;
+        if (hardwareName != null) return hardwareName;
         if (entryName != null) return entryName;
         return vid + ":" + pid;
     }

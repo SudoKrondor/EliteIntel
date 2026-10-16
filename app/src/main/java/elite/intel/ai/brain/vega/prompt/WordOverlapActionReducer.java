@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 /**
  * Picks which game commands are shown to the model for a given commander phrase. A command is kept when the
  * phrase shares a meaningful word with one of the command's training phrases - matched with
- * {@link VegaWordMatch}, which treats inflected forms of a word as the same word, so Russian (and other)
+ * {@link VegaWordMatch}, which treats inflected forms of a word as the same word, so inflected
  * word endings no longer hide a command. A blank input offers all commands (no narrowing).
  * <p>
  * This is VEGA's own word-overlap, replacing the legacy {@code Reducer} on this path: the legacy one
@@ -144,8 +144,8 @@ public final class WordOverlapActionReducer implements VegaActionReducer {
             return List.of();
         }
 
-        // A word shared by many commands carries little signal (inverse document frequency): "авианосцем" in
-        // 18 carrier commands weighs far less than "управление" in a few, so a command that matched the rarer
+        // A word shared by many commands carries little signal (inverse document frequency): "carrier" in
+        // 18 carrier commands weighs far less than "management" in a few, so a command that matched the rarer
         // word ranks above ones that only matched the common word.
         double[] weight = new double[inputWords.size()];
         for (int i = 0; i < inputWords.size(); i++) {

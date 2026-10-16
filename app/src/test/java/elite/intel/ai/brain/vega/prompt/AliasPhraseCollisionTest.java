@@ -26,9 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * phrase silently condemns that utterance to the local model forever, which is the exact failure that made
  * "hardpoints" answer with the ship's loadout (see {@link HardpointsReflexTest}).
  *
- * <p>Found this way and fixed: RU "питание на системы" sat on {@code transfer_power_to_shields} as well as
- * {@code transfer_power_to_ship_systems}; RU/UK "торговый маршрут" on the calculate command as well as the
- * query; FR/RU/UK "station services" on the query as well as the panel command; IT "destinazione fleet
+ * <p>Found this way and fixed: FR "station services" on the query as well as the panel command; IT "destinazione fleet
  * carrier" on the destination-typing command as well as the voyage query; EN "outfitting" on both the
  * station query and the ship-loadout query.
  *

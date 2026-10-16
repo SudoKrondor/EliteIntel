@@ -143,6 +143,67 @@ public final class DeviceMappingsMerge {
     }
 
     /**
+     * Renames a device's element in place - a rename, applied (Alan, 2026-10-14, A11). The element keeps its place and
+     * every child it has ({@code <Alternative>}, {@code <SupportsIcons>}, anything undocumented); only its tag changes.
+     * A second copy under the old tag further down is removed, as CLEAR removes one: the old name has left the user's
+     * set, and two elements under the new name would leave the second dead.
+     * <p>
+     * When the new tag is already in the file - a rename carried out by hand, or one this installation half-took
+     * before - every old copy is removed instead, and the element already under the new name is kept.
+     * <p>
+     * <strong>The old tag is matched ignoring case</strong>, as the game finds an element (format §4.3, measured
+     * 2026-10-14): an installation adopted or hand-edited as {@code <lvwap>} is still the device whose old name is
+     * {@code LVWAP}, and left alone it would keep leading the file for that VID/PID (review, 2026-10-15). The element
+     * already spelled exactly as the new name is never an old copy - that is a case-only rename already taken.
+     *
+     * @param existing the installation's current file
+     * @param oldName  the tag to rename, matched ignoring case
+     * @param newName  the tag it becomes, matched exactly
+     * @throws IOException if {@code existing} is not a {@code DeviceMappings.xml}, or {@code newName} cannot be an
+     *                     element tag
+     */
+    public static Result rename(byte[] existing, String oldName, String newName) throws IOException {
+        Document document = DeviceFileXml.parse(existing);
+        Element root = rootOf(document);
+        if (oldName.equals(newName)) return new Result(existing, false);
+        List<Element> old = childrenNamedIgnoringCase(root, oldName).stream()
+                .filter(element -> !element.getNodeName().equals(newName))
+                .toList();
+        if (old.isEmpty()) return new Result(existing, false);
+
+        boolean newAlreadyThere = firstChildNamed(root, newName) != null;
+        for (Element element : old) {
+            if (newAlreadyThere) {
+                root.removeChild(element);
+                continue;
+            }
+            newAlreadyThere = true;
+            Element renamed = DeviceFileXml.element(document, newName);
+            while (element.getFirstChild() != null) {
+                renamed.appendChild(element.getFirstChild());
+            }
+            for (int i = element.getAttributes().getLength() - 1; i >= 0; i--) {
+                Node attribute = element.getAttributes().item(i);
+                renamed.setAttribute(attribute.getNodeName(), attribute.getNodeValue());
+            }
+            root.replaceChild(renamed, element);
+        }
+        return new Result(DeviceFileXml.write(document), true);
+    }
+
+    private static List<Element> childrenNamedIgnoringCase(Element parent, String tag) {
+        List<Element> found = new ArrayList<>();
+        NodeList children = parent.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            if (child.getNodeType() == Node.ELEMENT_NODE && tag.equalsIgnoreCase(child.getNodeName())) {
+                found.add((Element) child);
+            }
+        }
+        return found;
+    }
+
+    /**
      * Takes the named elements out of the file - CLEAR, applied (Alan, 2026-10-11, A10). Every element with one of
      * those tags goes, a second copy further down included: the name has left the user's set, so no copy of it is
      * the master's to keep.

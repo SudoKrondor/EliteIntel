@@ -173,6 +173,14 @@ public class AliasDesignerPanel extends JPanel {
         controller.activateOnFirstShowing();
     }
 
+    /**
+     * What <strong>Review in Bind Editor</strong> does, after a retarget (A12): the BindForge tab shows the bindings.
+     * Set by the tab that holds both screens; until then the button only closes the notice.
+     */
+    public void setReviewBindings(Runnable showBindings) {
+        controller.setReviewBindings(showBindings);
+    }
+
     private void buildUi() {
         setLayout(new BorderLayout());
         setBorder(hudSubtabContentBorder());
@@ -291,6 +299,9 @@ public class AliasDesignerPanel extends JPanel {
     void refreshButtons(boolean setUp, boolean apply, boolean discard, List<String> changes) {
         setUpButton.setEnabled(setUp);
         applyButton.setEnabled(apply);
+        // WHY a tooltip on the dimmed button: a user pressing APPLY to be sure is told there is nothing to send,
+        // rather than left wondering why it does not answer. Before activation SET UP is the way in instead.
+        applyButton.setToolTipText(apply || setUp ? null : getText("bindings.aliasDesigner.apply.nothing"));
         discardButton.setEnabled(discard);
         pendingLine.setText(changes.isEmpty()
                 ? ""

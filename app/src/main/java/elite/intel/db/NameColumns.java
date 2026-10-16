@@ -33,8 +33,6 @@ public final class NameColumns {
             case DE -> "name_de";
             case FR -> "name_fr";
             case ES -> "name_es";
-            case RU -> "name_ru";
-            case UK -> "name_uk";
             case IT -> "name_it";
             case PT -> "name_pt";
             case PTBZ -> "name_ptbz";
@@ -50,8 +48,6 @@ public final class NameColumns {
             case DE -> "commodity_de";
             case FR -> "commodity_fr";
             case ES -> "commodity_es";
-            case RU -> "commodity_ru";
-            case UK -> "commodity_uk";
             case IT -> "commodity_it";
             case PT -> "commodity_pt";
             case PTBZ -> "commodity_ptbz";

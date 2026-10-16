@@ -451,9 +451,48 @@ this dialog, and Control Types will too if it is picked back up.
 
 #### Capture is the only way in
 
-The dialog opens from a slot's **Capture** button, never from clicking the row. Browsing the grid is always
-safe: **a stray click cannot start a rebind** (Alan, 2026-09-13). Krondor's editor currently opens its dialog
-from a click on the slot, so this is a change to the existing behaviour, not a carry-over of it.
+**Reversed 2026-10-15 (Alan, Bind Editor E1): clicking a slot opens the dialog, as it always
+has.** Users already know to click a row to edit its key; controllers are a new tab in the same dialog, not a new way in.
+*The heading is kept for the links into it.* What it said before:
+
+> The dialog opens from a slot's **Capture** button, never from clicking the row. Browsing the grid is always
+> safe: **a stray click cannot start a rebind** (Alan, 2026-09-13).
+
+**A click starts nothing irreversible:** nothing is kept until SAVE, and BACK or Esc leaves with nothing changed.
+
+#### The dialog edits the row, both slots — settled 2026-10-15 (Alan, E1)
+
+**Users read a grid row as one
+control**, so a dialog that edits one cell left Alan himself unsure whether he was changing Primary, Secondary or both. The dialog now shows
+**both slots as
+cards** across the top — each with what it holds now, an arrow line with what it will hold, its own CLEAR, and in red whatever stops it being saved.
+**The orange card is the one being
+filled**; a click on the other card switches to it, and the cell clicked in the grid decides which card starts orange. Below the cards is
+**one picker that belongs to the orange
+card**: KEYBOARD and a tab per connected controller, opening on the device that card's slot holds — the controller's tab for a stick binding, KEYBOARD for a key or an empty slot.
+*Revised the same
+day:* the keyboard and the controllers first sat side by side, which read as wired to the two cards above them, and was wrong as soon as Primary held the stick and Secondary the key; the game puts any device in either slot.
+**One SAVE writes every changed slot**, and is dimmed while any changed slot is blocked. **Colours in the
+picker:** what the control holds right now, in either slot and its modifiers included, sits on
+**blue**, and the orange card's input is also outlined in orange. Everything else is green when free and red when another control holds it.
+
+**A pick that cannot be saved is turned away at
+once** (Alan, 2026-10-15). The slot keeps what it had, and its card says in red what was pressed and why it was refused. A refused pick left in the card read as assigned, and the user's next pick then landed in the other slot beside it. So a card only ever holds a choice that SAVE can write, and blue only ever means
+*assigned to this control*. **Each changed card has
+UNDO**, which returns that slot to what it held without leaving the dialog.
+
+**A control can always go back to what it
+had** (Alan, 2026-10-15). A chord either slot held when the dialog opened is green for this control and is never refused, even when another control shares it. That chord is what the file says today, so putting it back adds no clash. Without this rule, clearing a slot painted its own key red and SAVE refused to restore it: `UpArrow` on UI Panel Up is shared with FreeCamZoomIn and others in a real file. This replaces the single SLOT / CURRENT VALUE / NEW INPUT rows in [What the dialog shows](#what-the-dialog-shows).
+
+#### Which name a controller's tab writes — settled 2026-10-15 (Alan, E1)
+
+**The
+master's** — the name the installations hold now — and Frontier's for a built-in the master does not hold (`CaptureControllers`). A device renamed in the draft and not yet applied is still under its old name in every installation and in `.binds`, so a binding written under that name moves with all the others at APPLY.
+**A controller with no name gets a greyed
+tab** saying to name it in the Alias Designer first: `.binds` would have to name it by hardware id.
+
+**An unplugged controller keeps its
+tab** (Alan, 2026-10-15): every controller the master or the bindings name gets one, not only those connected right now. A stick binding must not lose its tab because the stick is asleep or unplugged. Its inputs are clicked, not pressed, and run up to the highest button and hat that its saved names or its bindings mention (`CaptureControllers.all`).
 
 #### Tabs are input sources; sub-tabs are input kinds
 
@@ -491,6 +530,14 @@ rather than the hardware.
 **The page has a fixed height and scrolls.** Splitting by kind does not shorten the largest page much — 79
 of the throttle's 82 inputs are buttons — so the dialog keeps a constant size that fits the app window, and
 the input list scrolls inside it.
+
+**Revised 2026-10-15 (Alan, E1): the page is eight rows of four, and a larger page is split into numbered
+groups of 32 instead of scrolling.** With six rows, a 32-button stick had to be scrolled through a small window
+to find a button. Eight rows show it whole. A page with more than 32 inputs gets a row of group tabs —
+`1–32`, `33–64`, `65–79` — the same groups the [Device Editor](alias-designer.md#device-editor) uses, and pressing an input
+on the hardware brings its group forward. The page still scrolls if the screen caps the dialog's height.
+**This replaces the `.buttonMap` headings above**, which were never built: number ranges work for every
+controller, labelled or not.
 
 #### What the dialog shows
 
@@ -591,7 +638,13 @@ has one: a skip option would defeat the purpose of warning at all.
 [deliberate edits](overview.md#two-narrow-boundaries--one-stays-one-widens) only; the keyboard path stays for
 everything automatic, unchanged.
 
-- **A chord another slot uses is not refused.** The dialog warns — *"Conflicts with {0}; may not work"* — and the
+- **The dialog refuses an input another control holds — on every tab (Alan, 2026-10-15, Bind Editor
+  E1).** It names that control and SAVE stays dimmed until the user has freed the input there. *"Users do not read popup
+  boxes, they just click
+  OK"*: a warning that can be clicked past is not read, so the flow itself makes them stop. The keyboard tab already worked this way; controllers follow it, by the game's exact-chord model and the same context rule (`SlotInputConflicts`, `BindingConflictRules.isSafeOverlap`).
+  **The writer stays permissive** — what follows is what it accepts, not what the dialog offers.
+- **A chord another slot uses is not refused** by the writer. The dialog was to warn — *"Conflicts with {0}; may not
+  work"* — and the
   user decides, as the game's own "Are you sure?" does; [Anomalies](#four-kinds-one-question) shows it afterwards.
   The keyboard path keeps refusing with `KEY_OCCUPIED`.
 - **The edit carries Hold**, since it is the slot's inline toggle, written as a `<Hold Value="1" />` child
@@ -620,11 +673,11 @@ still holds one name, and making it a list is what remains.*
 
 | Gap | Where | Closes when |
 |---|---|---|
-| **A HOTAS slot never opens the dialog.** It shows *"This slot uses an advanced or unsupported binding. The basic editor will not modify it."* | `BindingProfilePanel.openAssignKeyboardBindingDialog` via `isBasicEditableSlot` | [`BindingsWriter` widens](overview.md#two-narrow-boundaries--one-stays-one-widens) |
-| **The dialog says keyboard throughout** — *Assign keyboard key*, *Keyboard Assignment*, *New key* | `bindings.assign.*` in the nine `gui*.properties` bundles | the source tabs arrive; the text changes, the class name does not |
-| **Hats cannot be captured.** The device layer has no hat handling at all | `elite.intel.devices` | hat events are read and mapped to `Joy_POV` tokens |
+| ~~**A HOTAS slot never opens the dialog.**~~ **Closed 2026-10-15 (E1):** the gate is gone; a slot the writer cannot parse is refused at SAVE | `BindingProfilePanel.openAssignKeyboardBindingDialog` | — |
+| ~~**The dialog says keyboard throughout**~~ **Closed 2026-10-15 (E1):** *Assign control*, *New input*; the KEYBOARD tab keeps *New key*. The class name is unchanged | `bindings.assign.*` in the seven `gui*.properties` bundles | — |
+| ~~**Hats cannot be captured.**~~ **Closed 2026-10-15 (E1):** `DeviceHatEvent` (polled since A9) through `ControllerCapture` to `Joy_POVnUp`…`Left` | `elite.intel.devices`, `bindforge.devices.ControllerCapture` | — |
 | **U and V axes cannot be captured.** `AXIS_TOKENS` is exactly X, Y, Z, RX, RY, RZ, so a panel's A1/A2 dials make `axisToBindsToken` throw | ~~`ButtonInputMapper`~~ the capture dialog | ~~the token list grows to `Joy_UAxis` and `Joy_VAxis`~~ the dialog maps SDL's axis through `devices.hid.AxisSlots` to `GameAxis`, which names all eight. **Corrected 2026-10-12 (Alan, Foundation F5 withdrawn):** `axisToBindsToken` has no caller on either line, and taking SDL's axis number as the slot is wrong whenever a controller skips a slot — `AxisSlots` matches them by DirectInput slot. No V1.1 file changes |
-| **SELECTED BINDING shows the raw tag** | `AssignKeyboardBindingDialog.buildUi` | the title and CONTROL row land |
+| ~~**SELECTED BINDING shows the raw tag**~~ **Closed 2026-10-15 (E1):** the title is the in-game name, with CONTROL and XML BINDING beneath | `AssignKeyboardBindingDialog.buildUi` | — |
 
 ### Open items — capture dialog
 
@@ -903,6 +956,12 @@ Move Right             Joy_4       —           CAN'T PRESS
 Roll Left              —           —           NOT BOUND
 Toggle HUD             —           —           ON PURPOSE
 ```
+
+**Built 2026-10-15 as AI ACCESS, in plain words for users who read nothing else.** The header is *AI
+access*. The states read *Vega can't use* (CAN'T PRESS) and *Vega needs a
+key* (NOT BOUND), both in the warning colour, with hover text saying which slot to use and that the controller binding stays.
+**A control Vega can press reads *Vega uses this*, dimmed, rather than
+blank**, so the column explains itself before anything goes wrong. The controls judged are the built-in commands' and every binding a custom command taps. ON PURPOSE is not built yet.
 
 | State | Meaning |
 |---|---|

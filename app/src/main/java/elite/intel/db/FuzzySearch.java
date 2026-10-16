@@ -170,7 +170,7 @@ public class FuzzySearch {
     /**
      * The material name to speak, given its journal symbol.
      * <p>
-     * Frontier localizes only English, German, Spanish, French, Russian and Brazilian Portuguese. A
+     * Of the languages we speak, Frontier localizes only English, German, Spanish, French and Brazilian Portuguese. A
      * commander on any other language is necessarily running an English client, so naming the material
      * in their spoken language would name something their HUD does not show — they get English instead.
      * See {@link Language#isGameLocalized()}. A material learned from a non-English client has no
@@ -230,8 +230,6 @@ public class FuzzySearch {
             case IT -> "label_it";
             case PT -> "label_pt";
             case PTBZ -> "label_ptbz";
-            case RU -> "label_ru";
-            case UK -> "label_uk";
             default -> "subsystem";
         };
     }
@@ -319,11 +317,11 @@ public class FuzzySearch {
         ///NOTE
         // Pass 2: Levenshtein fallback for typos/near-matches.
         // Threshold is fully dynamic so it scales correctly for both short single words
-        // ("бор" = 3 chars -> tight budget) and long multi-word names
-        // ("Специальные микропрограммы..." = 47 chars -> generous budget).
+        // ("Iron" = 4 chars -> tight budget) and long multi-word names
+        // ("Specialised Legacy Firmware" = 27 chars -> generous budget).
         // Lower bound: max(caller's similarity, len/3) – ensures long names get enough room.
         // Upper bound: max(2, len/2) – prevents short words from accepting unrelated matches
-        // e.g. "хрома"(5) gets cap=2, so dist=4 to "бор" is rejected.
+        // e.g. "Boron"(5) gets cap=2, so dist=4 to "Iron" is rejected.
         int effectiveSimilarity = Math.min(
                 Math.max(similarity, lowerInput.length() / 3),
                 Math.max(2, lowerInput.length() / 2)

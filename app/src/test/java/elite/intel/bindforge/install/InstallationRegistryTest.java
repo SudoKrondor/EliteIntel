@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -63,6 +64,47 @@ class InstallationRegistryTest {
         List<InstallationRow> rows = registry.currentWithStartupScan();
 
         assertEquals(1, rows.size(), "the second storefront waits for a rescan rather than appearing by itself");
+    }
+
+    /**
+     * Review, 2026-10-15 (A14): a second reader arriving while the run's detection is still going waits for it - or it
+     * reads a folder that came back as still missing, and catch-up's startup line never speaks.
+     */
+    @Test
+    void aReaderArrivingDuringDetectionWaitsForIt() throws Exception {
+        Path steam = gameAt("steam");
+        long id = installations.record("STEAM", steam, false).id();
+        installations.setMissing(id, true);
+        CountDownLatch detecting = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        InstallationRegistry registry = new InstallationRegistry(() -> {
+            detecting.countDown();
+            try {
+                release.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return List.of();
+        }, installations);
+
+        Thread first = new Thread(registry::currentWithStartupScan);
+        first.start();
+        detecting.await();
+        List<List<InstallationRow>> seen = new ArrayList<>();
+        Thread second = new Thread(() -> seen.add(registry.currentWithStartupScan()));
+        second.start();
+        long deadline = System.currentTimeMillis() + 5_000;
+        while (second.getState() != Thread.State.BLOCKED && second.isAlive()
+                && System.currentTimeMillis() < deadline) {
+            Thread.onSpinWait();
+        }
+        assertEquals(Thread.State.BLOCKED, second.getState(), "it waits rather than reading the old list");
+
+        release.countDown();
+        first.join();
+        second.join();
+
+        assertFalse(seen.getFirst().getFirst().missing(), "the detection has marked the folder present");
     }
 
     @Test

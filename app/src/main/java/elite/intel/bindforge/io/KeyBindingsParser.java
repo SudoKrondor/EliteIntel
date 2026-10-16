@@ -254,7 +254,7 @@ public class KeyBindingsParser {
     /**
      * True when the commander has assigned this action somewhere, but nothing EliteIntel can press.
      */
-    static boolean isBoundToNonKeyboardDeviceOnly(ReadOnlyBindingSlot primary, ReadOnlyBindingSlot secondary) {
+    public static boolean isBoundToNonKeyboardDeviceOnly(ReadOnlyBindingSlot primary, ReadOnlyBindingSlot secondary) {
         if (isKeyboardUsable(primary) || isKeyboardUsable(secondary)) {
             return false;
         }
@@ -265,7 +265,10 @@ public class KeyBindingsParser {
         return slot != null && slot.keyboardUsable();
     }
 
-    private static boolean isAssigned(ReadOnlyBindingSlot slot) {
+    /**
+     * True when the slot holds an input on some device - keyboard, mouse or controller.
+     */
+    public static boolean isAssigned(ReadOnlyBindingSlot slot) {
         return slot != null
                 && slot.device() != null && !slot.device().isBlank() && !"{NoDevice}".equals(slot.device())
                 && slot.key() != null && !slot.key().isBlank();

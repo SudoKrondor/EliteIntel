@@ -72,8 +72,8 @@ public class AppView extends JFrame implements AppViewInterface {
                 System.exit(0);
             }
         });
-        setMinimumSize(new Dimension(600, 500));
-        setSize(new Dimension(1200, 980));
+        setMinimumSize(new Dimension(1280, 720));
+        setSize(new Dimension(1400, 980));
         setLocationRelativeTo(null);
 
         buildUi();
@@ -211,7 +211,7 @@ public class AppView extends JFrame implements AppViewInterface {
 
     private Font loadCustomFont() {
         Font mono = new Font(Font.MONOSPACED, Font.PLAIN, (int) HudPalette.HUD_FONT_MONO_BASE);
-        // Use platform sans-serif for UI labels because the previous custom font did not cover Cyrillic glyphs reliably.
+        // Use platform sans-serif for UI labels because the previous custom font did not cover every glyph reliably.
         UIManager.put("defaultFont", new FontUIResource(new Font(UI_FONT_FAMILY, Font.PLAIN, (int) HudPalette.HUD_FONT_UI_DEFAULT)));
         try {
             mono = Font.createFont(Font.TRUETYPE_FONT,

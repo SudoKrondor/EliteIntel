@@ -102,6 +102,19 @@ class BindForgeInstallationsManagerTest {
         assertFalse(moved.missing(), "it is where the user says it is");
     }
 
+    /** Migration 12006 (A14): a new row has missed nothing; the flag is kept until a write clears it. */
+    @Test
+    void aMissedWriteIsKeptUntilCleared() {
+        InstallationRow row = installations.record("EPIC", Path.of("C:\\EpicLibrary\\Elite"), false);
+        assertFalse(row.missedWrite());
+
+        installations.setMissedWrite(row.id(), true);
+        assertTrue(installations.findAll().getFirst().missedWrite());
+
+        installations.setMissedWrite(row.id(), false);
+        assertFalse(installations.findAll().getFirst().missedWrite());
+    }
+
     @Test
     void twoStorefrontsAreTwoInstallations() {
         installations.record("STEAM", Path.of("E:\\SteamLibrary\\Elite Dangerous"), false);

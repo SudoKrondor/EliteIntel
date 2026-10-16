@@ -4,7 +4,6 @@ import elite.intel.bindforge.devices.DeviceEditorMiddle.Kind;
 import elite.intel.bindforge.devices.DeviceEditorMiddle.Why;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
 import java.util.OptionalInt;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -101,10 +100,15 @@ class DeviceEditorMiddleTest {
         assertTrue(reset.enabled());
     }
 
-    /** A hand-edited .binds can spell the name otherwise, and missing it would let CLEAR strand those bindings. */
+    /** Review, 2026-10-15 (A11): clearing mid-rename would drop the old name the next Apply needs to finish it. */
     @Test
-    void bindingsAreCountedIgnoringCase() {
-        assertEquals(5, DeviceEditorMiddle.bindingsNaming("LVWAP", Map.of("LVWAP", 3, "lvwap", 2, "RVWAP", 7)));
-        assertEquals(0, DeviceEditorMiddle.bindingsNaming(null, Map.of("LVWAP", 3)));
+    void clearIsRefusedWhileARenameIsPendingButAnUndoIsNot() {
+        DeviceEditorMiddle clear = DeviceEditorMiddle.of("LeftStick", false, true, false, false, 0).whileRenamePending();
+        DeviceEditorMiddle undo = DeviceEditorMiddle.of("LeftStick", false, true, true, false, 0).whileRenamePending();
+
+        assertFalse(clear.enabled());
+        assertEquals(Why.RENAME_PENDING, clear.why());
+        assertTrue(undo.enabled());
+        assertEquals(Kind.UNDO_CLEAR, undo.kind());
     }
 }

@@ -1,0 +1,15 @@
+-- Whether an installation missed a write the others took. Added 2026-10-15 (Alan, A14 - catch-up).
+--
+-- Apply gives way to an installation it cannot reach - a missing folder, a locked file - and writes the others: the
+-- user's Apply comes first. When that installation is found again, BindForge asks whether to write the recent
+-- changes to it. Asking needs this fact, because the check alone cannot tell an installation that missed an Apply
+-- from one edited in the game: both differ from the master, and they need different questions - catch-up for the
+-- first, adopt or revert for the second.
+--
+-- Set when a push or onboarding reports the installation skipped or failed. Cleared only by a push that carries
+-- everything Apply does - Apply itself, first setup, and catch-up - landing there. Revert pushes the master without
+-- the pending removals, and onboarding writes one new element, so neither clears it.
+--
+-- Existing rows start at 0: a write missed before this column existed is not asked about. APPLY stays lit for such
+-- an installation (ApplyWork), which repairs it all the same.
+ALTER TABLE bindforge_installations ADD COLUMN missed_write BOOLEAN NOT NULL DEFAULT 0;

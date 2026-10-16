@@ -30,25 +30,25 @@ class GoogleVoiceProviderTest {
     }
 
     @Test
-    void russianKeepsTheVoiceCharacterAtItsLocale() {
-        SystemSession.getInstance().setLanguage(Language.RU);
+    void frenchKeepsTheVoiceCharacterAtItsLocale() {
+        SystemSession.getInstance().setLanguage(Language.FR);
 
         VoiceSelectionParams params = GoogleVoiceProvider.getInstance().getVoiceParams("MARY");
 
-        assertEquals("ru-RU", params.getLanguageCode());
-        assertEquals("ru-RU-Chirp3-HD-Zephyr", params.getName(), "the Zephyr character is rendered in Russian");
+        assertEquals("fr-FR", params.getLanguageCode());
+        assertEquals("fr-FR-Chirp3-HD-Zephyr", params.getName(), "the Zephyr character is rendered in French");
     }
 
     @Test
     void withoutAWiredLookupEachCharacterIsUsedAsIs() {
         // No availability lookup wired (as before the TTS engine starts): resolution is optimistic and maps
-        // each voice to its own character. The wired path validates these against the real ru-RU roster - one
-        // of those names (Despina) does not actually exist in ru-RU, which is exactly why the lookup exists.
-        SystemSession.getInstance().setLanguage(Language.RU);
+        // each voice to its own character. The wired path validates these against the locale's real roster,
+        // which may not carry every character - which is exactly why the lookup exists.
+        SystemSession.getInstance().setLanguage(Language.FR);
         GoogleVoiceProvider provider = GoogleVoiceProvider.getInstance();
 
-        assertEquals("ru-RU-Chirp3-HD-Charon", provider.getVoiceParams("MICHAEL").getName());
-        assertEquals("ru-RU-Chirp3-HD-Despina", provider.getVoiceParams("EMMA").getName());
+        assertEquals("fr-FR-Chirp3-HD-Charon", provider.getVoiceParams("MICHAEL").getName());
+        assertEquals("fr-FR-Chirp3-HD-Despina", provider.getVoiceParams("EMMA").getName());
     }
 
     @Test
@@ -132,49 +132,49 @@ class GoogleVoiceProviderTest {
 
     @Test
     void anAvailableCharacterIsKeptWhenTheLookupOffersIt() {
-        SystemSession.getInstance().setLanguage(Language.RU);
+        SystemSession.getInstance().setLanguage(Language.FR);
         GoogleVoiceProvider.getInstance().setAvailableVoices(code -> List.of(
-                new GoogleVoiceProvider.AvailableVoice("ru-RU-Chirp3-HD-Zephyr", false)));
+                new GoogleVoiceProvider.AvailableVoice("fr-FR-Chirp3-HD-Zephyr", false)));
 
         VoiceSelectionParams mary = GoogleVoiceProvider.getInstance().getVoiceParams("MARY");
 
-        assertEquals("ru-RU-Chirp3-HD-Zephyr", mary.getName(), "the character is used when the locale offers it");
+        assertEquals("fr-FR-Chirp3-HD-Zephyr", mary.getName(), "the character is used when the locale offers it");
     }
 
     @Test
     void anUnavailableCharacterFallsBackToAnAvailableHdVoiceOfTheSameGender() {
-        SystemSession.getInstance().setLanguage(Language.RU);
-        // ru-RU offers these female HD voices but not Despina (EMMA's character), so EMMA must map to an offered
+        SystemSession.getInstance().setLanguage(Language.FR);
+        // fr-FR is offered these female HD voices but not Despina (EMMA's character), so EMMA must map to an offered
         // HD voice rather than drop to a lower-quality Standard voice.
         GoogleVoiceProvider.getInstance().setAvailableVoices(code -> List.of(
-                new GoogleVoiceProvider.AvailableVoice("ru-RU-Chirp3-HD-Aoede", false),
-                new GoogleVoiceProvider.AvailableVoice("ru-RU-Chirp3-HD-Leda", false)));
+                new GoogleVoiceProvider.AvailableVoice("fr-FR-Chirp3-HD-Aoede", false),
+                new GoogleVoiceProvider.AvailableVoice("fr-FR-Chirp3-HD-Leda", false)));
 
         String emma = GoogleVoiceProvider.getInstance().getVoiceParams("EMMA").getName();
 
-        assertTrue(emma.equals("ru-RU-Chirp3-HD-Aoede") || emma.equals("ru-RU-Chirp3-HD-Leda"),
+        assertTrue(emma.equals("fr-FR-Chirp3-HD-Aoede") || emma.equals("fr-FR-Chirp3-HD-Leda"),
                 "an unavailable female character maps to an offered HD voice, keeping HD quality: " + emma);
     }
 
     @Test
     void withoutAnHdVoiceOfThatGenderItFallsBackToStandard() {
-        SystemSession.getInstance().setLanguage(Language.RU);
+        SystemSession.getInstance().setLanguage(Language.FR);
         // Only a female HD voice is offered, so a male voice has no HD option and drops to the known-good Standard.
         GoogleVoiceProvider.getInstance().setAvailableVoices(code -> List.of(
-                new GoogleVoiceProvider.AvailableVoice("ru-RU-Chirp3-HD-Leda", false)));
+                new GoogleVoiceProvider.AvailableVoice("fr-FR-Chirp3-HD-Leda", false)));
 
-        assertEquals("ru-RU-Standard-B", GoogleVoiceProvider.getInstance().getVoiceParams("MICHAEL").getName(),
+        assertEquals("fr-FR-Standard-G", GoogleVoiceProvider.getInstance().getVoiceParams("MICHAEL").getName(),
                 "no male HD voice offered -> known-good Standard male voice");
     }
 
     @Test
     void aFailedVoiceLookupFallsBackToAKnownGoodVoice() {
-        SystemSession.getInstance().setLanguage(Language.RU);
+        SystemSession.getInstance().setLanguage(Language.FR);
         // An empty list models a listVoices failure: fall back to a guaranteed Standard voice rather than risk
         // requesting an invalid voice name.
         GoogleVoiceProvider.getInstance().setAvailableVoices(code -> List.of());
 
-        assertEquals("ru-RU-Standard-A", GoogleVoiceProvider.getInstance().getVoiceParams("MARY").getName());
+        assertEquals("fr-FR-Standard-E", GoogleVoiceProvider.getInstance().getVoiceParams("MARY").getName());
     }
 
     private static void assertVoice(VoiceSelectionParams voice, String languageCode, String name) {

@@ -149,7 +149,7 @@ public final class ThoughtDispatcher implements ManagedService {
         GameStateSnapshot gameStateSnapshot = GameStateSnapshot.capture();
         Urgency urgency = urgencyPolicy.forCommander(input);
         // Strip a leading vocative address by VEGA's own name ("Vega, all stop", or - as STT usually
-        // returns it, with no comma - "Vega all stop" / "Вега все стоп") before normalizing, for BOTH paths: the
+        // returns it, with no comma - "Vega all stop") before normalizing, for BOTH paths: the
         // reflex fast-path and the LLM path (the reducer, prompt current-input, and eligible memory). The name carries no
         // routing signal and can distract the model from the command. Raw STT stays only in intake diagnostics
         // and the execution request; a completed dialogue/query remembers the normalized match text.

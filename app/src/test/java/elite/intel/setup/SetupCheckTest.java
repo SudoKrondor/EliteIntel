@@ -303,10 +303,6 @@ class SetupCheckTest {
     /**
      * The onboarding line has to name the two ways out and where to read about them, in every language -
      * a commander who cannot act on it is no better off than one who heard nothing.
-     * <p>
-     * The site is spoken, never shown, so Cyrillic locales say it phonetically ("элит интел точка орг"): a
-     * Russian voice handed a Latin domain either spells it out or mangles it. Hence the expected token is
-     * per-language rather than the Latin name everywhere.
      */
     @Test
     void theOnboardingLineNamesBothOptionsAndTheSite() {
@@ -315,20 +311,9 @@ class SetupCheckTest {
 
             assertTrue(text.contains("Mistral"), language + " does not name Mistral");
             assertTrue(text.contains("Gemma 4 E4B"), language + " does not name the local model");
-            assertTrue(text.toLowerCase().contains(spokenSiteToken(language)),
+            assertTrue(text.toLowerCase().contains("intel"),
                     language + " does not point at the site");
         }
-    }
-
-    /**
-     * How this language says the "intel" of the site name aloud.
-     */
-    private static String spokenSiteToken(Language language) {
-        return switch (language) {
-            case RU -> "интел";
-            case UK -> "інтел";
-            default -> "intel";
-        };
     }
 
     @Test

@@ -436,7 +436,7 @@ public class GoogleTTSImpl implements MouthInterface {
     }
 
     /**
-     * Voices Google offers for a BCP-47 language code (e.g. "ru-RU"), fetched once via listVoices and cached.
+     * Voices Google offers for a BCP-47 language code (e.g. "de-DE"), fetched once via listVoices and cached.
      * Returns an empty list on lookup failure (the provider then falls back to a known-good voice) and does not
      * cache the failure, so a transient error is retried next time.
      */

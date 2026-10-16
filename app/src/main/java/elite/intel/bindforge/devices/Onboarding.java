@@ -3,16 +3,7 @@ package elite.intel.bindforge.devices;
 import elite.intel.bindforge.devicefiles.BindsDeviceReferences;
 import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -81,7 +72,7 @@ public final class Onboarding {
         List<Page> pages = new ArrayList<>();
         for (MyDevice device : DeviceNames.needingName(devices)) {
             if (held.contains(device.hardware())) continue;
-            String name = DeviceNames.defaultName(device.windowsName(), used);
+            String name = DeviceNames.defaultName(device.hardwareName(), used);
             used.add(name);
             Map<String, Integer> found =
                     new LinkedHashMap<>(BindsDeviceReferences.hardwareIdsFor(device.vid(), device.pid(), hardwareIds));

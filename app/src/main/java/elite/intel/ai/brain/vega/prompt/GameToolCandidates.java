@@ -68,7 +68,9 @@ public final class GameToolCandidates {
     private final List<CustomCommandDefinition> macros;
     private final Status status;
     private final Language language;
-    /** English exonym of {@link #language} (e.g. "English", "Russian"), naming the example-phrase language. */
+    /**
+     * English exonym of {@link #language} (e.g. "English", "German"), naming the example-phrase language.
+     */
     private final String languageName;
 
     /** Production: pulls the self-describing registries, the live game status, and the configured language. */

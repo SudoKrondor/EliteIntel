@@ -67,7 +67,12 @@ public final class DeviceOnboarding {
         /** Its folder is not there. Nothing was written. */
         SKIPPED_MISSING,
         /** A file could not be read, kept or written. The installation is as it was. */
-        FAILED
+        FAILED;
+
+        /** Whether the installation now holds every name given - as {@link DeviceFilesPush.Outcome#landed()}. */
+        public boolean landed() {
+            return this == WRITTEN || this == UNCHANGED;
+        }
     }
 
     /**
@@ -95,7 +100,7 @@ public final class DeviceOnboarding {
         /** How many installations hold every name given now - the "2" in "updated 2 of 3". */
         public long matchingCount() {
             return installations.stream()
-                    .filter(result -> result.outcome() == Outcome.WRITTEN || result.outcome() == Outcome.UNCHANGED)
+                    .filter(result -> result.outcome().landed())
                     .count();
         }
     }
@@ -113,6 +118,7 @@ public final class DeviceOnboarding {
     private final Store store;
     private final EditHistory history;
     private final Consumer<Target> afterWrite;
+    private final MissedWrites missedWrites;
 
     /**
      * Stores in the master and draft, writes to the stored installations, keeps Edit History where the push does,
@@ -135,14 +141,20 @@ public final class DeviceOnboarding {
         InstallationDeviceScanner scanner = new InstallationDeviceScanner();
         return new DeviceOnboarding(DeviceFilesPush::storedInstallations, store,
                 EditHistory.stored(),
-                target -> scanner.scan(target.installId(), target.controlSchemes()));
+                target -> scanner.scan(target.installId(), target.controlSchemes()), MissedWrites.stored());
     }
 
     DeviceOnboarding(Supplier<List<Target>> targets, Store store, EditHistory history, Consumer<Target> afterWrite) {
+        this(targets, store, history, afterWrite, MissedWrites.NONE);
+    }
+
+    DeviceOnboarding(Supplier<List<Target>> targets, Store store, EditHistory history, Consumer<Target> afterWrite,
+                     MissedWrites missedWrites) {
         this.targets = targets;
         this.store = store;
         this.history = history;
         this.afterWrite = afterWrite;
+        this.missedWrites = missedWrites;
     }
 
     /** Stores every name, then writes the ones named now to every installation. */
@@ -168,6 +180,7 @@ public final class DeviceOnboarding {
                     result.reason() == null ? "" : " - " + result.reason());
             results.add(result);
         }
+        missedWrites.afterOnboarding(results);
         return new Result(true, results, atApply);
     }
 

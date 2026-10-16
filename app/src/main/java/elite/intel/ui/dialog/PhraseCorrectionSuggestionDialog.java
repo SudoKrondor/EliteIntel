@@ -175,8 +175,6 @@ public final class PhraseCorrectionSuggestionDialog extends JDialog {
     private static String languageDisplayName(Language language) {
         return switch (language) {
             case EN -> getText("language.english");
-            case RU -> getText("language.russian");
-            case UK -> getText("language.ukrainian");
             case DE -> getText("language.german");
             case FR -> getText("language.french");
             case ES -> getText("language.spanish");

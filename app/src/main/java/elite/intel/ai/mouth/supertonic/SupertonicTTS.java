@@ -16,8 +16,8 @@ import java.util.function.Consumer;
 /**
  * Offline TTS using Supertonic 3 via sherpa-onnx JNI, on the shared {@link SherpaOnnxTTS} pipeline.
  * <p>
- * The alternative local engine, beside Kokoro: the one the Cyrillic locales get, because Kokoro cannot read
- * them, and a choice for everyone else (see {@link TtsProvider}). Unlike Kokoro, Supertonic is a single
+ * The alternative local engine, beside Kokoro (see {@link TtsProvider}), and the radio engine for a Russian
+ * game client, whose Cyrillic chatter Kokoro cannot read. Unlike Kokoro, Supertonic is a single
  * multilingual model: the language is not baked into the engine at build time, it is passed on every
  * {@code generate} call (see {@link #supertonicLangCode(Language)}). The engine is therefore built exactly
  * once and never rebuilt on a language switch. It generates at 44.1 kHz; the pipeline resamples.
@@ -63,14 +63,15 @@ public class SupertonicTTS extends SherpaOnnxTTS {
     private static final float MAX_MODEL_SPEED = SPEED_MULTIPLIER;
 
     @Override
-    protected GeneratedAudio generate(OfflineTts tts, String text, int sid, float speed, Language language) {
+    protected GeneratedAudio generate(OfflineTts tts, String text, int sid, float speed, Language language,
+                                      boolean russian) {
         float pace = speed * SPEED_MULTIPLIER;
         float modelPace = Math.min(pace, MAX_MODEL_SPEED);
         GenerationConfig genConfig = new GenerationConfig();
         genConfig.setSid(sid);
         genConfig.setSpeed(modelPace);
         genConfig.setNumSteps(NUM_STEPS);
-        genConfig.setExtra(Map.of("lang", supertonicLangCode(language)));
+        genConfig.setExtra(Map.of("lang", russian ? "ru" : supertonicLangCode(language)));
         Consumer<float[]> noStreaming = samples -> {
         };
         GeneratedAudio audio = tts.generateWithConfigAndCallback(text, genConfig, noStreaming);
@@ -118,14 +119,11 @@ public class SupertonicTTS extends SherpaOnnxTTS {
     /**
      * The language code Supertonic reads the text with, passed per-call via {@link GenerationConfig#setExtra}
      * rather than baked into the model at build time (see {@link #buildOfflineTts(Language)}). Supertonic
-     * ships one multilingual model covering all nine languages this app supports, Cyrillic included, so unlike
-     * Kokoro there is no language this falls back to English for - which is why it is the stand-in for Kokoro
-     * in the Cyrillic locales (see {@link TtsProvider#forLanguage}).
+     * ships one multilingual model covering every language this app supports, and Russian besides - which is
+     * why it voices a Russian game client's radio chatter (see {@link elite.intel.ai.mouth.RadioVoicing}).
      */
     private static String supertonicLangCode(Language language) {
         return switch (language) {
-            case RU -> "ru";
-            case UK -> "uk";
             case FR -> "fr";
             case ES -> "es";
             case IT -> "it";

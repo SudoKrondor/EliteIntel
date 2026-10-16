@@ -89,9 +89,10 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     /**
      * One sentence waiting for synthesis. {@code language} is the one the text is written in: the commander's
      * for everything we say ourselves, the game client's for a radio transmission (see
-     * {@link #languageOf(VocalisationRequestEvent)}).
+     * {@link #languageOf(VocalisationRequestEvent)}). {@code russian} marks a transmission from a Russian
+     * client, which is written in a language {@link Language} does not have (see {@link #isRussian}).
      */
-    private record SynthesisTask(String text, String voiceName, boolean isRadio, Language language,
+    private record SynthesisTask(String text, String voiceName, boolean isRadio, Language language, boolean russian,
                                  long generation, boolean firstSentence, boolean lastSentence,
                                  TransmissionAudio.Options effects, VocalisationHandle handle) {
     }
@@ -142,9 +143,13 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     /**
      * One sentence of speech from the model.
      *
-     * @param speed 1.0 is the model's own pace; {@code 1 + speechSpeed} as the commander set it
+     * @param speed   1.0 is the model's own pace; {@code 1 + speechSpeed} as the commander set it
+     * @param russian the text is a Russian client's radio chatter, to be read as Russian whatever
+     *                {@code language} says. Only the radio engine for a Russian client - Supertonic - ever gets
+     *                one (see {@link RadioVoicing#engine()}).
      */
-    protected abstract GeneratedAudio generate(OfflineTts tts, String text, int sid, float speed, Language language);
+    protected abstract GeneratedAudio generate(OfflineTts tts, String text, int sid, float speed, Language language,
+                                               boolean russian);
 
     /**
      * The regex a transmission is split on, one queue entry per piece.
@@ -354,6 +359,7 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
             // would change speaker mid-message.
             String voiceName = resolveVoiceName(event);
             Language language = languageOf(event);
+            boolean russian = isRussian(event);
             // WHY opt-in, and decided once per request: the ship voice used to be filtered whenever the commander
             // left the main ship, and the effect varied too much across voices and audio hardware - subtle on one,
             // unintelligible on another. Now it is the commander's choice, and one message never changes treatment
@@ -362,7 +368,7 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
             for (int i = 0; i < sentences.size(); i++) {
                 boolean isLast = (i == sentences.size() - 1);
                 if (!synthesisQueue.offer(new SynthesisTask(
-                        sentences.get(i), voiceName, event.isRadio(), language, generation,
+                        sentences.get(i), voiceName, event.isRadio(), language, russian, generation,
                         i == 0, isLast, effects, handle))) {
                     handle.fail(new IllegalStateException(engineName + " synthesis queue rejected vocalisation"));
                     return;
@@ -515,9 +521,28 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
      * has it baked in at build time and reads every task with the language it was built for.
      */
     private Language languageOf(VocalisationRequestEvent event) {
-        return event.getOriginType() == RadioTransmissionEvent.class
-                ? RadioVoicing.transmissionLanguage()
-                : systemSession.getLanguage();
+        return isTransmission(event) ? RadioVoicing.transmissionLanguage() : systemSession.getLanguage();
+    }
+
+    /**
+     * Whether the request is a Russian client's own prose, which no {@link Language} describes.
+     */
+    private static boolean isRussian(VocalisationRequestEvent event) {
+        return isTransmission(event) && RadioVoicing.isRussianClient();
+    }
+
+    private static boolean isTransmission(VocalisationRequestEvent event) {
+        return event.getOriginType() == RadioTransmissionEvent.class;
+    }
+
+    /**
+     * The sentence as the model is handed it. Numbers the voice would misread go to words first, while their
+     * sign and point are still there - in the task's language, which is why Russian chatter keeps its digits:
+     * we have no Russian number words to give it. Then dots go, or the voice says "dot" all the time.
+     */
+    private static String spokenText(SynthesisTask task) {
+        String text = task.russian() ? task.text() : SignedAndDecimalNumbers.inWords(task.text(), task.language());
+        return text.replace(".", " ");
     }
 
     // -- Stage 1: Synthesis thread ---------------------------------------------
@@ -535,12 +560,11 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                 resetNumericLocale();
                 GeneratedAudio audio = generate(
                         tts,
-                        // Numbers the voice would misread go to words first, while their sign and point are
-                        // still there. Then remove dots, TTS say "dot" all the time.
-                        SignedAndDecimalNumbers.inWords(task.text(), task.language()).replace(".", " "),
+                        spokenText(task),
                         sidOf(task.voiceName()),
                         1f + systemSession.getSpeechSpeed(),
-                        task.language()
+                        task.language(),
+                        task.russian()
                 );
 
                 if (audio == null || audio.getSamples() == null || audio.getSamples().length == 0) {

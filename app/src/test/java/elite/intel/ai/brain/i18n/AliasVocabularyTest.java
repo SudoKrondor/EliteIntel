@@ -41,10 +41,10 @@ class AliasVocabularyTest {
      */
     @Test
     void aTranslatedLanguageKeepsItsOwnWordsAndTheEnglishItFallsBackTo() {
-        Set<String> russian = AliasVocabulary.forLanguage(Language.RU);
+        Set<String> german = AliasVocabulary.forLanguage(Language.DE);
 
-        assertTrue(russian.contains("стыковку"));
-        assertTrue(russian.stream().anyMatch(word -> word.chars().allMatch(c -> c < 128)),
+        assertTrue(german.contains("andocken"));
+        assertTrue(german.stream().anyMatch(word -> word.chars().allMatch(c -> c < 128)),
                 "the untranslated keys resolve to English, so English words are part of this vocabulary");
     }
 

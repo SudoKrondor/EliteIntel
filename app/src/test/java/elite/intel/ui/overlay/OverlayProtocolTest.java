@@ -142,10 +142,10 @@ class OverlayProtocolTest {
 
     @Test
     void trimmingNeverSplitsACharacter() {
-        // Cyrillic is two bytes per character, so a byte-counted cut lands mid
+        // An accented letter is two bytes, so a byte-counted cut lands mid
         // character unless it backs off - which would hand the renderer invalid
         // UTF-8 and draw a broken glyph.
-        String trimmed = OverlayProtocol.clamp("я".repeat(2000), 101);
+        String trimmed = OverlayProtocol.clamp("é".repeat(2000), 101);
 
         assertEquals(trimmed, new String(trimmed.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8));
         assertTrue(trimmed.getBytes(StandardCharsets.UTF_8).length <= 101);

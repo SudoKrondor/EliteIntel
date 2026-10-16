@@ -45,6 +45,19 @@ public class KeyboardAvailabilityView extends JPanel {
     private final Map<String, JLabel> modifierCells = new HashMap<>();
     private Set<String> heldModifiers = Set.of();
     private String currentKey;
+    /**
+     * Keys the binding holds right now, in either slot - drawn on the assigned blue.
+     */
+    private Set<String> assignedKeys = Set.of();
+    /**
+     * Modifier keys a chord of the binding uses - drawn on the assigned blue while not held.
+     */
+    private Set<String> assignedModifiers = Set.of();
+    /**
+     * The chords the binding held when the dialog opened, as key sets. Always free for it: a control can go back
+     * to what it had, whoever else shares that chord today.
+     */
+    private Set<Set<String>> ownChords = Set.of();
 
     private record Key(String token, String label, double width, boolean modifier) {
     }
@@ -90,6 +103,25 @@ public class KeyboardAvailabilityView extends JPanel {
      */
     public void setCurrentKey(String key) {
         this.currentKey = key;
+        refresh();
+    }
+
+    /**
+     * What the binding holds right now, in either slot: main keys and the modifiers its chords use. They are drawn
+     * on the assigned blue, so the commander sees at a glance what the control is bound to.
+     */
+    public void setAssigned(Collection<String> keys, Collection<String> modifiers) {
+        this.assignedKeys = keys == null ? Set.of() : Set.copyOf(keys);
+        this.assignedModifiers = modifiers == null ? Set.of() : Set.copyOf(modifiers);
+        refresh();
+    }
+
+    /**
+     * The chords the binding held when the dialog opened, each as its key set (main key plus modifiers). They are
+     * green for it whoever else shares them: clearing a slot must not paint its own key as taken.
+     */
+    public void setOwnChords(Collection<Set<String>> chords) {
+        this.ownChords = chords == null ? Set.of() : Set.copyOf(chords);
         refresh();
     }
 
@@ -297,19 +329,21 @@ public class KeyboardAvailabilityView extends JPanel {
         for (Map.Entry<String, JLabel> entry : mainKeyCells.entrySet()) {
             String token = entry.getKey();
             JLabel cell = entry.getValue();
-            if (token.equals(currentKey)) {
-                // The binding's existing key: highlight it as the current choice, not as "free".
-                cell.setForeground(HUD_COLOR_ROLE_PRIMARY_ACTION);
-                cell.setBorder(BorderFactory.createLineBorder(HUD_COLOR_ROLE_PRIMARY_ACTION, 2));
-            } else {
-                cell.setForeground(statusColor(token));
-                cell.setBorder(BorderFactory.createLineBorder(HUD_COLOR_ROLE_SECONDARY_BORDER));
-            }
+            boolean assigned = token.equals(currentKey) || assignedKeys.contains(token);
+            // Assigned keys sit on blue; the one in the slot being edited is also outlined in orange.
+            cell.setBackground(assigned ? HUD_COLOR_ROLE_ASSIGNED_INPUT_BACKGROUND : HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+            cell.setForeground(assigned ? HUD_COLOR_ROLE_PRIMARY_TEXT : statusColor(token));
+            cell.setBorder(token.equals(currentKey)
+                    ? BorderFactory.createLineBorder(HUD_COLOR_ROLE_PRIMARY_ACTION, 2)
+                    : BorderFactory.createLineBorder(HUD_COLOR_ROLE_SECONDARY_BORDER));
         }
         for (Map.Entry<String, JLabel> entry : modifierCells.entrySet()) {
             boolean held = heldModifiers.contains(entry.getKey());
-            entry.getValue().setBackground(held ? HUD_COLOR_ROLE_PRIMARY_ACTION : HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-            entry.getValue().setForeground(held ? HUD_COLOR_ROLE_APPLICATION_BACKGROUND : HUD_COLOR_ROLE_SECONDARY_TEXT);
+            boolean assigned = assignedModifiers.contains(entry.getKey());
+            entry.getValue().setBackground(held ? HUD_COLOR_ROLE_PRIMARY_ACTION
+                    : assigned ? HUD_COLOR_ROLE_ASSIGNED_INPUT_BACKGROUND : HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+            entry.getValue().setForeground(held ? HUD_COLOR_ROLE_APPLICATION_BACKGROUND
+                    : assigned ? HUD_COLOR_ROLE_PRIMARY_TEXT : HUD_COLOR_ROLE_SECONDARY_TEXT);
         }
         repaint();
     }
@@ -323,6 +357,11 @@ public class KeyboardAvailabilityView extends JPanel {
         // chords as soon as their modifiers are held.
         if (ReservedKeyChords.isReserved(token, heldModifiers, gameMenuKeys)) {
             return HUD_COLOR_ROLE_WARNING;
+        }
+        Set<String> chord = new HashSet<>(heldModifiers);
+        chord.add(token);
+        if (ownChords.contains(chord)) {
+            return HUD_COLOR_ROLE_SUCCESS;
         }
         boolean conflicts = BindingConflictScanner.candidateConflictInSlots(
                 bindingId, slotType, token, heldModifiers, existingSlots) != null;

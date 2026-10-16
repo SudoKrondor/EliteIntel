@@ -226,6 +226,10 @@ Each child element's tag is an input token drawn from the same vocabulary as `.b
 
 `<DeviceName>` matches the element tag name used for that device in `DeviceMappings.xml`. Examples: `VPCPanel.buttonMap` corresponds to `<VPCPanel>` in `DeviceMappings.xml`; `T-Rudder.buttonMap` corresponds to `<T-Rudder>`.
 
+**Case does not matter here, on Windows** (measured 2026-10-14): `lvwap.buttonMap` beside `<lvwap>` served a
+`.binds` naming `LVWAP`. Only `.binds` is particular about case — see
+[`.binds` format §4.3](EliteDangerous-BindsFileFormat.md#43-case-only-binds-cares-and-it-cares-about-one-spelling-per-device--measured-2026-10-14).
+
 **Where it lives: the installation's `ControlSchemes\DeviceButtonMaps\`** — Frontier's maps and the user's alike,
 one set per installation (Alan, 2026-10-06: *"no reason to doubt these fundamental file positions"*).
 [Frontier's readme for custom button names](../reference-data/Frontier-ButtonMap-Readme.txt) tells users to put

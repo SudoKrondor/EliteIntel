@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
  *       <em>only</em> when followed by a comma/period, so a legitimate sentence such as
  *       "So many contacts detected" survives while "So, plotting course" is trimmed.</li>
  * </ul>
- * Matching is case-insensitive (Unicode-aware, so it works for Cyrillic/accented scripts),
+ * Matching is case-insensitive (Unicode-aware, so it works for accented letters),
  * tolerant of stacked openers ("Ah, well, now, …"), re-capitalizes the surviving first
  * letter, and never strips a message down to empty.
  * <p>
@@ -101,8 +101,6 @@ public final class TtsFillerRules {
         return switch (lang) {
             case EN ->
                     List.of("oh", "ohh", "ah", "ahh", "uh", "uhh", "um", "umm", "hmm", "hm", "er", "erm", "eh", "huh");
-            case RU -> List.of("ох", "ах", "эх", "ой", "эй", "гм", "хм", "эм", "ну да");
-            case UK -> List.of("ох", "ах", "ех", "ой", "гм", "хм", "ну да");
             case DE -> List.of("oh", "ach", "äh", "ähm", "hm", "hmm", "tja", "na ja", "naja");
             case FR -> List.of("oh", "ah", "euh", "heu", "hein", "ben", "bah", "hmm");
             case ES -> List.of("oh", "ah", "eh", "ehm", "mmm", "ay");
@@ -119,10 +117,6 @@ public final class TtsFillerRules {
         return switch (lang) {
             case EN -> List.of("well", "so", "now", "look", "look at us", "right", "okay", "ok",
                     "alright", "alrighty", "listen", "you know", "i mean", "basically", "actually", "anyway");
-            case RU -> List.of("ну", "так", "вот", "итак", "значит", "короче", "в общем",
-                    "слушай", "знаешь", "понимаешь");
-            case UK -> List.of("ну", "так", "от", "отож", "отже", "значить", "коротше",
-                    "слухай", "знаєш", "розумієш");
             case DE -> List.of("also", "nun", "na", "tja", "schau", "hör mal", "weißt du",
                     "eigentlich", "sozusagen", "gut");
             case FR -> List.of("eh bien", "bon", "bah", "alors", "donc", "écoute", "tu sais",

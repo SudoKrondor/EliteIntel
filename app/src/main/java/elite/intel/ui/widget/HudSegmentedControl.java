@@ -9,7 +9,6 @@ import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.Arrays;
 
 /**
  * HUD-styled segmented selector for a mutually-exclusive choice (radio-group semantics)
@@ -28,10 +27,6 @@ import java.util.Arrays;
 public class HudSegmentedControl extends JComponent {
 
     private final String[] labels;
-    /**
-     * Per-segment availability; a false entry cannot be selected or hovered, and paints as disabled.
-     */
-    private final boolean[] segmentEnabled;
     private int selectedIndex;
     /** Segment under the pointer, or -1 when the pointer is outside any segment. */
     private int hoverIndex = -1;
@@ -50,8 +45,6 @@ public class HudSegmentedControl extends JComponent {
         for (int i = 0; i < labels.length; i++) {
             this.labels[i] = labels[i] != null ? labels[i].toUpperCase() : "";
         }
-        this.segmentEnabled = new boolean[labels.length];
-        Arrays.fill(this.segmentEnabled, true);
         this.selectedIndex = clamp(selectedIndex);
         setOpaque(false);
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -78,21 +71,6 @@ public class HudSegmentedControl extends JComponent {
             selectedIndex = next;
             repaint();
         }
-    }
-
-    /**
-     * Takes one segment out of play without disabling the whole control, for a choice that exists but is not
-     * open to this commander (the local voice under a Cyrillic language, which it cannot pronounce). The
-     * segment paints as disabled and ignores the pointer; the others keep working.
-     * <p>
-     * Callers are responsible for moving the selection off a segment they disable - this does not move it,
-     * because the control cannot know which of the remaining segments the caller means.
-     */
-    public void setSegmentEnabled(int index, boolean enabled) {
-        if (index < 0 || index >= segmentEnabled.length || segmentEnabled[index] == enabled) return;
-        segmentEnabled[index] = enabled;
-        if (!enabled && hoverIndex == index) hoverIndex = -1;
-        repaint();
     }
 
     /** Registers a listener fired when the user selects a different segment. */
@@ -163,7 +141,7 @@ public class HudSegmentedControl extends JComponent {
 
                 Color fill;
                 Color textColor;
-                if (!enabled || !segmentEnabled[i]) {
+                if (!enabled) {
                     fill = HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND;
                     textColor = HudPalette.HUD_COLOR_ROLE_DISABLED;
                 } else if (on) {
@@ -204,12 +182,14 @@ public class HudSegmentedControl extends JComponent {
         return (int) Math.round(i * (slot + HudPalette.HUD_SEP_W) + slot);
     }
 
-    /** Returns the selectable segment index containing {@code mouseX}, or -1 if within a gap or a disabled segment. */
+    /**
+     * Returns the segment index containing {@code mouseX}, or -1 if within a gap.
+     */
     private int segmentAt(int mouseX) {
         int w = getWidth();
         for (int i = 0; i < labels.length; i++) {
             if (mouseX >= segmentStart(i, w) && mouseX < segmentEnd(i, w)) {
-                return segmentEnabled[i] ? i : -1;
+                return i;
             }
         }
         return -1;

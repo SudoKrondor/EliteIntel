@@ -22,20 +22,13 @@ class CustomCommandKeyDeriverTest {
     }
 
     @Test
-    void sanitizePreservesCyrillicLetters() {
-        // Russian has no Latin decomposition, so letters are preserved (spaces become separators).
-        assertEquals("лететь_к_миссии", CustomCommandKeyDeriver.sanitize("лететь к миссии"));
-    }
-
-    @Test
     void sanitizeCollapsesPunctuationAndTrims() {
         assertEquals("go_now", CustomCommandKeyDeriver.sanitize("  go!!! now???  "));
         assertEquals("drop_cargo", CustomCommandKeyDeriver.sanitize("Drop-Cargo"));
     }
 
     @Test
-    void sanitizeOfNonLatinScriptStillMatchesSafeId() {
-        assertTrue(SAFE.matcher(CustomCommandKeyDeriver.sanitize("лететь к миссии")).matches());
+    void sanitizeOfAccentedPhraseStillMatchesSafeId() {
         assertTrue(SAFE.matcher(CustomCommandKeyDeriver.sanitize("Navegar a la estación")).matches());
     }
 
@@ -65,11 +58,6 @@ class CustomCommandKeyDeriverTest {
     @Test
     void deriveBaseKeyIgnoresTooShortPhrasesInFavorOfLonger() {
         assertEquals("navigate_to_mission", CustomCommandKeyDeriver.deriveBaseKey("go, navigate to mission"));
-    }
-
-    @Test
-    void deriveBaseKeyFromCyrillicPhrasesPicksLongest() {
-        assertEquals("навигация_к_миссии", CustomCommandKeyDeriver.deriveBaseKey("лететь к миссии, навигация к миссии"));
     }
 
     @Test

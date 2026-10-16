@@ -19,10 +19,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p><b>Why ICU and not our own rules.</b> Spelling is where the languages stop agreeing. German inverts and
  * runs together ("fünfundvierzig"), French counts in twenties ("quatre-vingt-dix-sept"), Italian elides
- * ("ventotto"), Spanish contracts the twenties ("veintidós") and the Iberian and Slavic hundreds are
- * irregular words rather than "three" plus "hundred" ("trescientos", "триста"). The composition templates
- * that used to do this could express none of it, so German heard "vierzig fünf" and Russian
- * "три сотен двадцать". The rules now come from CLDR.
+ * ("ventotto"), Spanish contracts the twenties ("veintidós") and the Iberian hundreds are
+ * irregular words rather than "three" plus "hundred" ("trescientos"). The composition templates
+ * that used to do this could express none of it, so German heard "vierzig fünf". The rules now come from CLDR.
  *
  * <p>The mirror of {@link SpokenNumbers}, which reads a number back out of what the commander said.
  */
@@ -119,8 +118,6 @@ public final class NumberWords {
             case IT -> "it";
             case PT -> "pt-PT";
             case PTBZ -> "pt-BR";
-            case RU -> "ru";
-            case UK -> "uk";
         };
     }
 

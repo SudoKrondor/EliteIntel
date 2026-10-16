@@ -141,9 +141,21 @@ public class InstallationRegistry {
      * <p>
      * Once per run, not per call: this is reached from a refresh that also fires on every ship-profile
      * change, and re-running the registry, VDF and manifest reads each time would be waste.
+     * <p>
+     * <strong>A caller that arrives while that detection runs waits for it</strong> (review, 2026-10-15, A14). It
+     * used to get the list straight away, before the detection had marked a folder that came back as present - so
+     * catch-up's startup line, and a screen's first refresh, read it as still missing.
      */
     public List<InstallationRow> currentWithStartupScan() {
-        return DETECTED_THIS_RUN.compareAndSet(false, true) ? rescan() : current();
+        if (DETECTED_THIS_RUN.get()) return current();
+        synchronized (DETECTING) {
+            // WHY: set only once detection has finished, so the second caller cannot slip past one still running. A
+            // detection that throws leaves it unset, and the next caller tries again.
+            if (DETECTED_THIS_RUN.get()) return current();
+            List<InstallationRow> rows = rescan();
+            DETECTED_THIS_RUN.set(true);
+            return rows;
+        }
     }
 
     /**
