@@ -2,6 +2,9 @@ package elite.intel.ui.screen.settings;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ears.PushToTalkService;
+import elite.intel.bindforge.devicefiles.ButtonMapLabels;
+import elite.intel.bindforge.devicefiles.SavedDeviceLabels;
+import elite.intel.bindforge.devices.CaptureControllers;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.events.DeviceConnectedEvent;
 import elite.intel.devices.events.DeviceDisconnectedEvent;
@@ -17,6 +20,7 @@ import elite.intel.ui.widget.HudTwoColumns;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Map;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.makeCheckBox;
@@ -272,11 +276,25 @@ public class InputSettingsPanel extends JPanel {
         buttonCombo.removeAllItems();
         buttonCombo.addItem(getText("settings.input.button.placeholder"));
         if (device != null) {
+            Map<String, String> labels = savedLabelsOf(device);
             for (int i = 1; i <= device.buttonCount(); i++) {
-                buttonCombo.addItem(getText("settings.input.button.label", i));
+                String label = labels.get(ButtonMapLabels.buttonToken(i));
+                buttonCombo.addItem(label == null || label.isBlank() ? getText("settings.input.button.label", i) : label);
             }
         }
         buttonCombo.setSelectedIndex(0);
+    }
+
+    /**
+     * The names the commander gave this controller's buttons in the Device Editor, by token - so the picker reads
+     * as the bind editor and the game do. Empty for a controller BindForge has no name for.
+     */
+    private static Map<String, String> savedLabelsOf(Device device) {
+        return CaptureControllers.connected().stream()
+                .filter(controller -> controller.liveId() == device.id() && controller.named())
+                .findFirst()
+                .map(controller -> SavedDeviceLabels.of(controller.name()))
+                .orElse(Map.of());
     }
 
     // -- SDL event subscriptions -------------------------------------------------
