@@ -102,7 +102,8 @@ records what BindForge knows about entries it might *touch*, and a player-added 
 
 ~~**Settled 2026-09-13 for Frontier's entries: BindForge never edits one.**~~ **Reversed 2026-10-04:** a
 user with the controller attached may rename a Frontier entry or shadow it with one of their own, and from then
-on it is the user's element like any other. Measured safe, and recoverable because BindForge carries Frontier's
+on it is the user's element like any other. *As built (2026-10-16, A15): the editor only shadows - Frontier's
+element is never renamed or removed.* Measured safe, and recoverable because BindForge carries Frontier's
 shipped list — see [Built-in controllers in My Devices](../02-features/bindforge/alias-designer.md#built-in-controllers-in-my-devices--settled-2026-09-13)
 and [the first match wins](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12d-two-entries-for-one-vidpid-the-first-in-the-file-wins--measured-2026-10-03).
 **Provenance still governs what BindForge does unasked:** an entry it has not been told is the user's stays

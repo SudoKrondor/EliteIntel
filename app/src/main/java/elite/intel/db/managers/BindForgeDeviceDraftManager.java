@@ -180,34 +180,69 @@ public class BindForgeDeviceDraftManager {
         });
     }
 
+    /** As {@link #saveDevice(String, String, Map, BuiltIn)}, for a device that is not a built-in. */
+    public DraftRow saveDevice(String currentName, String newName, Map<String, String> labels) {
+        return saveDevice(currentName, newName, labels, null);
+    }
+
+    /**
+     * The attached controller a built-in's SAVE is for: the Frontier name covering it, and its hardware.
+     *
+     * @param frontierName the name of Frontier's element covering the controller, which every installation holds
+     */
+    public record BuiltIn(String frontierName, String vid, String pid) {
+        public BuiltIn {
+            Objects.requireNonNull(frontierName, "frontierName");
+        }
+    }
+
     /**
      * The Device Editor's SAVE with the name changed: the rename and the whole label set, in one transaction with
-     * starting the draft (Alan, 2026-10-14, A11). A device under its old name keeps that name as its previous name,
-     * so Apply can find its element and {@code .buttonMap} in each installation; see the DAO's rename for when it
-     * keeps none.
+     * starting the draft (Alan, 2026-10-14, A11).
      * <p>
-     * Only a device the draft already holds can be renamed - a built-in the master has no labels for is not one of
-     * the user's to rename (A15).
+     * <strong>The old name kept is the one the installations hold</strong>, so Apply can find its element and
+     * {@code .buttonMap} in each: renaming twice before an Apply must still find the files under the first name. A
+     * device added in the draft has no files anywhere yet, so it keeps none, and nor does one renamed back to the name
+     * the installations already hold - there is nothing left to rename.
+     * <p>
+     * <strong>A built-in's Frontier name is always on disk</strong> (Alan, 2026-10-16, A15): Frontier's element is in
+     * every installation whether or not the master holds the controller, so renaming it - a shadow - keeps Frontier's
+     * name as the old one, and Apply moves the bindings from it. A built-in the draft does not hold yet is added under
+     * Frontier's name first.
      *
+     * @param builtIn the controller's Frontier name and hardware when it is a built-in, or {@code null}
      * @return the draft row saved on, under its new name - or {@code null}, writing nothing, when the device is gone
      *         or the new name is already a draft device's: the caller read a list that has changed since
      */
-    public DraftRow saveDevice(String currentName, String newName, Map<String, String> labels) {
+    public DraftRow saveDevice(String currentName, String newName, Map<String, String> labels, BuiltIn builtIn) {
+        String frontierName = builtIn == null ? null : builtIn.frontierName();
         return inTransaction(daos -> {
             startIfNone(daos);
             BindForgeDeviceDraftDao draft = daos.draft();
             DraftRow row = draft.findByName(currentName);
+            if (row == null && currentName.equals(frontierName)) {
+                draft.insert(null, frontierName, builtIn.vid(), builtIn.pid(), true, null);
+                row = draft.findByName(frontierName);
+            }
             if (row == null) return null;
             if (!currentName.equals(newName)) {
                 DraftRow holder = draft.findByName(newName);
                 if (holder != null && holder.id() != row.id()) return null;
-                draft.rename(row.id(), newName);
+                String onDisk = nameOnDisk(row, frontierName);
+                draft.rename(row.id(), newName, newName.equals(onDisk) ? null : onDisk);
             }
             long id = row.id();
             draft.deleteLabels(id);
             labels.forEach((token, label) -> draft.putLabel(id, token, label));
             return draft.findByName(newName);
         });
+    }
+
+    /** The name the installations hold for a draft device, or {@code null} when they hold none. */
+    private static String nameOnDisk(DraftRow row, String frontierName) {
+        if (row.previousName() != null) return row.previousName();
+        if (row.masterId() != null) return row.deviceName();
+        return row.deviceName().equals(frontierName) ? row.deviceName() : null;
     }
 
     /**

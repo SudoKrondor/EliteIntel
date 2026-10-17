@@ -30,6 +30,7 @@ import java.awt.*;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,9 @@ import static elite.intel.ui.theme.AppTheme.*;
  * <p>
  * <strong>The name can be changed</strong> on one of the user's own named devices (A11) - checked as it is typed, by
  * the rule onboarding uses, against every name and old name in use ({@link DeviceRename}). SAVE puts the new name in the
- * draft; APPLY renames the element and the {@code .buttonMap} in each installation and moves the bindings.
+ * draft; APPLY renames the element and the {@code .buttonMap} in each installation and moves the bindings. On an
+ * attached built-in the same box shadows Frontier's element (A15): the user's goes ahead of it, and typing Frontier's
+ * name again goes back.
  * <p>
  * <strong>SAVE writes the draft and nothing else</strong> - never the master, never a game installation. APPLY is
  * the screen's button. Leaving with unsaved edits asks Save, Discard or Keep editing.
@@ -93,14 +96,24 @@ final class DeviceEditorDialog extends JDialog {
      * @param middle      what the middle button is, and whether it can be pressed
      * @param rename      whether the name can be changed, and why not
      * @param taken       the names a new name must not clash with - empty unless {@code rename} allows it
+     * @param covering    Frontier's element covering the controller's hardware, or {@code null} when none does
      */
     record Opening(MyDevice device, String deviceName, Integer liveId, DeviceDescription description,
                    DeviceEditorInputs inputs, Map<String, String> saved, boolean gameDrawsIt,
                    List<StripLine> strip, DeviceEditorMiddle middle, DeviceRename.Allowed rename,
-                   Set<String> taken) {
+                   Set<String> taken, Covering covering) {
         Opening {
             taken = Set.copyOf(taken);
         }
+    }
+
+    /**
+     * The Frontier element covering a controller (A15).
+     *
+     * @param name   its element name - the name a shadow keeps as its old one, and the one the user may go back to
+     * @param shared whether it covers other hardware too, so bindings naming it are not this controller's alone
+     */
+    record Covering(String name, boolean shared) {
     }
 
     private final Opening opening;
@@ -176,6 +189,8 @@ final class DeviceEditorDialog extends JDialog {
     /** {@code null} when the typed name may be saved, else why not. */
     private DeviceNames.Verdict nameVerdict() {
         if (!nameChanged()) return null;
+        Covering covering = opening.covering();
+        if (DeviceRename.backToFrontier(typedName(), covering == null ? null : covering.name())) return null;
         DeviceNames.Verdict verdict = DeviceNames.validate(typedName(), opening.taken());
         return verdict.valid() ? null : verdict;
     }
@@ -253,15 +268,8 @@ final class DeviceEditorDialog extends JDialog {
         JPanel panel = transparentPanel(new GridBagLayout());
         int row = 0;
         row = nameField(panel, row);
-        String nameNote = switch (opening.rename()) {
-            case YES -> "bindings.aliasDesigner.editor.name.rename";
-            case NO_NAME -> "bindings.aliasDesigner.editor.noName";
-            case BUILT_IN -> "bindings.aliasDesigner.editor.builtIn";
-            case PENDING -> "bindings.aliasDesigner.editor.name.pending";
-            case CLEARED -> null;
-        };
-        if (nameNote != null) {
-            row = line(panel, row, getText(nameNote), HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
+        for (String nameNote : nameNotes()) {
+            row = line(panel, row, nameNote, HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
         }
         nameProblem = note(" ", HudPalette.HUD_COLOR_ROLE_WARNING);
         nameProblem.setVisible(false);
@@ -328,6 +336,33 @@ final class DeviceEditorDialog extends JDialog {
         }
         return line(panel, row, getText("bindings.aliasDesigner.editor.strip.summary", matching,
                 opening.strip().size()), HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
+    }
+
+    /**
+     * The lines beneath the name box. On an attached built-in they say what renaming it does - a shadow, with Frontier's
+     * element kept - and, where Frontier's covers other controllers, that every binding naming it moves to this one. On
+     * a shadowed one, how to go back (A15).
+     */
+    private List<String> nameNotes() {
+        Covering covering = opening.covering();
+        return switch (opening.rename()) {
+            case YES -> {
+                if (covering == null) yield List.of(getText("bindings.aliasDesigner.editor.name.rename"));
+                if (!covering.name().equals(opening.deviceName())) {
+                    yield List.of(getText("bindings.aliasDesigner.editor.name.backToFrontier", covering.name()));
+                }
+                List<String> notes = new ArrayList<>();
+                notes.add(getText("bindings.aliasDesigner.editor.name.shadow"));
+                if (covering.shared()) {
+                    notes.add(getText("bindings.aliasDesigner.editor.name.shadowShared", covering.name()));
+                }
+                yield notes;
+            }
+            case NO_NAME -> List.of(getText("bindings.aliasDesigner.editor.noName"));
+            case BUILT_IN -> List.of(getText("bindings.aliasDesigner.editor.builtIn"));
+            case PENDING -> List.of(getText("bindings.aliasDesigner.editor.name.pending"));
+            case CLEARED -> List.of();
+        };
     }
 
     /**
@@ -545,7 +580,10 @@ final class DeviceEditorDialog extends JDialog {
         BindForgeDeviceDraftManager draft = BindForgeDeviceDraftManager.getInstance();
         if (nameChanged()) {
             String newName = typedName();
-            runAndClose(() -> draft.saveDevice(opening.deviceName(), newName, labels) != null,
+            Covering covering = opening.covering();
+            BindForgeDeviceDraftManager.BuiltIn builtIn = covering == null ? null
+                    : new BindForgeDeviceDraftManager.BuiltIn(covering.name(), device.vid(), device.pid());
+            runAndClose(() -> draft.saveDevice(opening.deviceName(), newName, labels, builtIn) != null,
                     "bindings.aliasDesigner.editor.saveFailed");
             return;
         }

@@ -19,8 +19,8 @@ import java.util.Set;
  * hardware sold years ago would otherwise be announced on every run.
  * <p>
  * <strong>The user's names only.</strong> A row whose name is one of Frontier's is left out, by name rather than by
- * {@link MyDevice#builtIn()}: that flag is decided by VID/PID, so it would also hide a user's own element shadowing a
- * built-in.
+ * {@link MyDevice#builtIn()}: that flag is decided by VID/PID for anything the master does not hold, so it would also
+ * hide a user's own element shadowing a built-in from before first setup.
  * <p>
  * A pure function over its inputs, so the rule is testable without hardware, files or a voice.
  */

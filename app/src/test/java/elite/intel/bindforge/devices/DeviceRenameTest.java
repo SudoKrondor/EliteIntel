@@ -13,27 +13,27 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The Device Editor's rename rule (A11, 2026-10-14): the user's own named devices only, one rename at a time, and no
- * name still waiting as some device's old name.
+ * The Device Editor's rename rule (A11, 2026-10-14): named devices, an attached built-in by shadowing it (A15), one
+ * rename at a time, and no name still waiting as some device's old name.
  */
 class DeviceRenameTest {
 
     @Test
     void aNamedDeviceOfTheUsersCanBeRenamed() {
-        assertEquals(Allowed.YES, DeviceRename.allowed("LVWAP", false, false, "LVWAP", null));
+        assertEquals(Allowed.YES, DeviceRename.allowed("LVWAP", false, true, false, "LVWAP", null));
     }
 
     @Test
-    void anUnnamedDeviceABuiltInAndAClearedOneCannot() {
-        assertEquals(Allowed.NO_NAME, DeviceRename.allowed(null, false, false, null, null));
-        assertEquals(Allowed.BUILT_IN, DeviceRename.allowed("T-Rudder", true, false, "T-Rudder", null));
-        assertEquals(Allowed.CLEARED, DeviceRename.allowed("LVWAP", false, true, "LVWAP", null));
+    void anUnnamedDeviceAnUnpluggedBuiltInAndAClearedOneCannot() {
+        assertEquals(Allowed.NO_NAME, DeviceRename.allowed(null, false, true, false, null, null));
+        assertEquals(Allowed.BUILT_IN, DeviceRename.allowed("T-Rudder", true, false, false, "T-Rudder", null));
+        assertEquals(Allowed.CLEARED, DeviceRename.allowed("LVWAP", false, true, true, "LVWAP", null));
     }
 
     /** The master keeps one old name per device, so a rename still under way blocks a second one. */
     @Test
     void aRenameStillUnderWayBlocksAnother() {
-        assertEquals(Allowed.PENDING, DeviceRename.allowed("LeftStick", false, false, "LeftStick", "LVWAP"));
+        assertEquals(Allowed.PENDING, DeviceRename.allowed("LeftStick", false, true, false, "LeftStick", "LVWAP"));
     }
 
     /**
@@ -42,8 +42,8 @@ class DeviceRenameTest {
      */
     @Test
     void aDraftOnlyRenameMayBeRenamedAgainButAMasterPendingOneMayNot() {
-        assertEquals(Allowed.YES, DeviceRename.allowed("LeftStick", false, false, "LVWAP", null));
-        assertEquals(Allowed.PENDING, DeviceRename.allowed("LeftStick", false, false, "LeftStick", "LVWAP"));
+        assertEquals(Allowed.YES, DeviceRename.allowed("LeftStick", false, true, false, "LVWAP", null));
+        assertEquals(Allowed.PENDING, DeviceRename.allowed("LeftStick", false, true, false, "LeftStick", "LVWAP"));
     }
 
     /** No chains: an old name still waiting is taken, so no other device can move into it. */
@@ -69,6 +69,20 @@ class DeviceRenameTest {
 
         assertTrue(DeviceNames.validate("LVWAP", taken).valid());
         assertTrue(DeviceNames.validate("Leftstick", taken).valid());
+    }
+
+    /** A built-in is renamed by shadowing it, while it is attached - its VID/PID comes from the hardware (A15). */
+    @Test
+    void anAttachedBuiltInCanBeRenamed() {
+        assertEquals(Allowed.YES, DeviceRename.allowed("T-Rudder", true, true, false, null, null));
+    }
+
+    /** Going back is Frontier's name exactly as Frontier spells it - never another spelling the game would confuse. */
+    @Test
+    void goingBackToFrontierIsItsNameSpelledExactly() {
+        assertTrue(DeviceRename.backToFrontier("T-Rudder", "T-Rudder"));
+        assertFalse(DeviceRename.backToFrontier("t-rudder", "T-Rudder"));
+        assertFalse(DeviceRename.backToFrontier("TRudder", "T-Rudder"));
     }
 
     private static List<String> own(String... names) {

@@ -153,8 +153,9 @@ as it does for any device. Both are ordinary user elements from then on: mastere
 [at the top of `<Root>`](#what-the-master-actually-is), and a rename goes through the
 [rename transaction](#renaming-a-device), rewriting every `.binds` that names the old element — Frontier's
 name included. *The same test showed what skipping that costs: an inactive preset still naming `T-Rudder`
-logged six `Failed to find GUID` lines.* How the device editor presents rename versus shadow is not designed
-yet.
+logged six `Failed to find GUID` lines.* ~~How the device editor presents rename versus shadow is not designed
+yet.~~ *Designed and built 2026-10-16 (Alan, A15): the editor offers one name box, and it always shadows - see
+[below](#built--2026-10-16-alan-a15).*
 
 ~~**Its name and VID/PID are locked** (Alan, 2026-09-13). A built-in element is Frontier's **definition**, not a
 label on one stick: `<DualShock4>` matches both DualShock 4 revisions, and `<GamePad>` carries 80 VID/PID pairs,
@@ -174,12 +175,59 @@ a reset everywhere.
 
 | | The user's entry | Built-in |
 |---|---|---|
-| Name | editable, as the [rename transaction](#renaming-a-device) | ~~locked~~ renamed or shadowed, when the controller is attached — the entry then becomes the user's (2026-10-04, above) |
+| Name | editable, as the [rename transaction](#renaming-a-device) | ~~locked~~ ~~renamed or shadowed~~ shadowed, when the controller is attached — the entry then becomes the user's (2026-10-04, above; *shadow only, 2026-10-16, A15*) |
 | VID / PID | read-only | read-only |
 | Button and axis labels | editable once the device has a name — ~~once the name is confirmed~~ (2026-10-10, [no confirm step](#fields-and-rules)) | editable straight away |
 | Undo (reaches every install) | **CLEAR** — the entry and `.buttonMap` | **RESET LABELS** — only a `.buttonMap` BindForge or the user made |
 | [Onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13) | asked for a name | never asked |
 | What APPLY writes | the entry and its `.buttonMap` | the `.buttonMap` only |
+
+#### Built — 2026-10-16 (Alan, A15)
+
+Built in `bindforge.devices.DeviceRename` (who may rename, and `backToFrontier`), `AliasDesignerReader.openingFor`
+and the name box in `DeviceEditorDialog`, `BindForgeDeviceDraftManager.saveDevice(…, BuiltIn)`, and at Apply in
+`DeviceFilesPush` (no element rename for a shadow; the old `.buttonMap`), `DeviceApply.moveRenamedReferences` and
+`InstallationHoldings.mayHoldOldName`. Alan answered five questions, one at a time:
+
+- **One name box, and it always shadows** (option 1 of three). On an attached built-in the name box is editable,
+  and a new name puts the user's element ahead of Frontier's in every installation; Frontier's stays. Renaming
+  Frontier's element in place is not offered. *Why:* on an element covering several controllers - `<GamePad>` 80,
+  `<DualShock4>` 3 - Apply brings an element's own VID/PID into line with the master, so a pad matching one of its
+  `<Alternative>` pairs would overwrite Frontier's primary pair and unname the other controllers; and after an
+  in-place rename, CLEAR would leave the hardware with no entry at all, since Apply never puts Frontier's elements
+  back. For a single-pair element such as `<T-Rudder>` the two give the same result in the game - the first
+  element in the file wins - and a shadow leaves only Frontier's element unused beneath the user's.
+- **The bindings move, as a rename's do** (option 1 of three). Every `Device=` naming Frontier's element becomes the
+  new name at Apply, the game's `.binds` last, retried by the next Apply if it stops. Left on Frontier's name, a
+  preset could end up spelling the controller two ways once the game saves it, which it rejects. Where Frontier's
+  element covers other controllers the bindings name the element, not the pad, so they all move to this one - the
+  editor says so beneath the name box, where the choice is made, rather than in Apply's confirm.
+- **The rename is finished when the user's element wins everywhere** (option 1 of two): in every installation the
+  first element claiming the controller's VID/PID is the new name - as the game picks - no preset names Frontier's
+  name, and the old `.buttonMap` is gone or is Frontier's own as shipped. Frontier's element staying beneath does
+  not count against it. Until then the name box is read-only and CLEAR refused, as for any rename under way.
+- **Labels move with the name** (option 1 of three). They are written under the new name - from the master, or the
+  old file's own content when it holds none - and the old `.buttonMap` is deleted in every installation, **except a
+  file Frontier ships** (`VPCPanel`, `VPCThrottle`), which is put back as Frontier shipped it. Another controller
+  still on Frontier's element gets a fresh file from [startup generation](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller).
+- **Going back is typing Frontier's name** (option 1 of three) - the name of the element covering the controller,
+  spelled exactly as Frontier spells it. It is a rename like any other: at Apply the user's element is removed where
+  Frontier's is in the file, the bindings move back to Frontier's name, and the labels go to its `.buttonMap`. The
+  device is a built-in again, with RESET LABELS.
+
+*Also settled while building it:*
+
+- **A built-in's Frontier name is always on disk**, so a shadow keeps it as the old name whether or not the master
+  held the controller. The draft had kept no old name for a device the master did not hold - nothing on disk yet -
+  which would have left the bindings on Frontier's name.
+- **A shadow is the user's device on My Devices.** `MyDevice.builtIn` is now true only while the master holds the
+  controller under Frontier's name, or not at all; otherwise the Installations markers would read **M** wherever
+  Frontier's element is there, whether or not the user's is.
+- **Only Frontier's exact spelling goes back.** Every other spelling of it stays taken - `t-rudder` ahead of
+  `T-Rudder` would be two elements the game cannot tell apart, since it finds an element ignoring case - so a
+  shadow can never be a case-only rename of Frontier's name.
+- **The shadow's element is new**, written by the merge at the top of `<Root>` with only the controller's VID/PID;
+  Frontier's element keeps every child it has.
 
 ## First setup — reconciling the installs — settled 2026-09-23
 
@@ -1743,7 +1791,7 @@ same breakage in the other direction.
 - **A11 renames the user's own devices only** (Alan, 2026-10-14). On a built-in still under Frontier's name the
   name field stays read-only, as today. Renaming or shadowing an attached built-in
   ([above](#built-in-controllers-in-my-devices--settled-2026-09-13)) needs its presentation designed first, and is
-  slice A15.
+  slice A15. *Built 2026-10-16 as a shadow only - [A15](#built--2026-10-16-alan-a15).*
 - **Linux with several installations is told, not fixed.** Apply's confirm says, when BindForge has found more than
   one Linux installation, that controls are updated only for the installation Elite-Intel uses. Until the later slice,
   a rename can leave another installation's preset naming the old device, and that installation falls back to

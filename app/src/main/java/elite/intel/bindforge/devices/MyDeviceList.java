@@ -81,7 +81,18 @@ public final class MyDeviceList {
                 hardware.pid(),
                 attached,
                 masterRow == null ? null : masterRow.deviceName(),
-                stock.covering(hardware.vid(), hardware.pid()).isPresent());
+                builtIn(hardware, masterRow, stock));
+    }
+
+    /**
+     * Whether the row is a built-in: Frontier covers the hardware, and the master holds it under Frontier's name or not
+     * at all. <strong>A shadow is the user's</strong> (Alan, 2026-10-16, A15) - an element of theirs leading the file for
+     * the controller - so it is judged as their devices are, by the Installations markers among others: Frontier's
+     * element being there says nothing about whether theirs is.
+     */
+    private static boolean builtIn(HardwareId hardware, DeviceRow masterRow, FrontierStockDevices stock) {
+        if (stock.covering(hardware.vid(), hardware.pid()).isEmpty()) return false;
+        return masterRow == null || stock.ships(masterRow.deviceName());
     }
 
     /**

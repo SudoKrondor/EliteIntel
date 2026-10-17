@@ -154,6 +154,66 @@ class BindForgeDeviceDraftManagerTest {
         assertNull(back.previousName());
     }
 
+    // --- shadowing a built-in (A15): Frontier's name is on disk whether or not the master holds the controller
+
+    private static final BindForgeDeviceDraftManager.BuiltIn T_RUDDER =
+            new BindForgeDeviceDraftManager.BuiltIn("T-Rudder", "044F", "B679");
+
+    @Test
+    void shadowingABuiltInTheMasterDoesNotHoldKeepsFrontiersNameAsTheOldOne() {
+        DraftRow saved = draft.saveDevice("T-Rudder", "MyRudder", labels("Joy_XAxis", "RUDDER"), T_RUDDER);
+
+        assertEquals("MyRudder", saved.deviceName());
+        assertEquals("T-Rudder", saved.previousName(), "Apply moves the bindings from it");
+        assertNull(saved.masterId());
+        assertEquals("044F", saved.vid());
+        assertEquals("B679", saved.pid());
+        assertEquals(labels("Joy_XAxis", "RUDDER"), draft.labelsOf(saved.id()));
+    }
+
+    @Test
+    void shadowingABuiltInTheMasterLabelsKeepsFrontiersNameAsTheOldOne() {
+        long rudder = master.record("T-Rudder", "044F", "B679", true).id();
+        master.replaceLabels(rudder, labels("Joy_XAxis", "RUDDER"));
+
+        DraftRow saved = draft.saveDevice("T-Rudder", "MyRudder", labels("Joy_XAxis", "RUDDER"), T_RUDDER);
+
+        assertEquals("T-Rudder", saved.previousName());
+        assertTrue(draft.promote().isEmpty(), "a shadow is not a removal");
+        assertEquals("T-Rudder", master.findByName("MyRudder").previousName());
+    }
+
+    /** Renamed again before Apply: the old name is still Frontier's, which is what the installations hold. */
+    @Test
+    void aShadowRenamedAgainBeforeApplyStillHoldsFrontiersName() {
+        draft.saveDevice("T-Rudder", "MyRudder", labels("Joy_XAxis", "RUDDER"), T_RUDDER);
+
+        DraftRow again = draft.saveDevice("MyRudder", "Pedals", labels("Joy_XAxis", "RUDDER"), T_RUDDER);
+
+        assertEquals("T-Rudder", again.previousName());
+    }
+
+    /** Back to Frontier's name before Apply: nothing is left to rename. */
+    @Test
+    void aShadowTakenBackBeforeApplyKeepsNoOldName() {
+        draft.saveDevice("T-Rudder", "MyRudder", labels("Joy_XAxis", "RUDDER"), T_RUDDER);
+
+        DraftRow back = draft.saveDevice("MyRudder", "T-Rudder", labels("Joy_XAxis", "RUDDER"), T_RUDDER);
+
+        assertEquals("T-Rudder", back.deviceName());
+        assertNull(back.previousName());
+    }
+
+    /** Back to Frontier's name after Apply: a rename like any other, from the user's name. */
+    @Test
+    void goingBackToFrontiersNameAfterApplyKeepsTheUsersNameAsTheOldOne() {
+        master.record("MyRudder", "044F", "B679", true);
+
+        DraftRow back = draft.saveDevice("MyRudder", "T-Rudder", labels("Joy_XAxis", "RUDDER"), T_RUDDER);
+
+        assertEquals("MyRudder", back.previousName());
+    }
+
     /** A name another draft device holds, or a device that is gone, writes nothing - the editor read a stale list. */
     @Test
     void savingUnderATakenNameOrAGoneDeviceWritesNothing() {

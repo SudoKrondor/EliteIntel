@@ -321,6 +321,15 @@ one spelling per device. Then repeat on Proton, with `lvwap.buttonMap` beside `<
 labels still show.
 → [`.binds` format §4.3](../02-features/bindforge/domain-knowledge/EliteDangerous-BindsFileFormat.md#43-case-only-binds-cares-and-it-cares-about-one-spelling-per-device--measured-2026-10-14)
 
+**25. Does a shadowed built-in load, with every preset moved to its name?** *Added 2026-10-16, A15 — Alan can run
+this one.* Measured so far: a user element *after* Frontier's is ignored, and Frontier's element renamed in place
+loads. A15 builds the third shape - the user's element **ahead** of Frontier's, Frontier's left in place - and moves
+every `Device=` naming Frontier's element to the user's name. In the Device Editor, rename the T-Rudder pedals
+(`MyRudder`), APPLY, and start the game: the active preset loads, the pedals' labels show, and no
+`BindingLoadingErrors.log` is written for the inactive one. Not needed, since the bindings move, but worth a look
+while the game is open: a preset left naming `T-Rudder` with the shadow in place.
+→ [Built-in controllers in My Devices — A15](../02-features/bindforge/alias-designer.md#built--2026-10-16-alan-a15)
+
 ## Core Platform
 
 **8. Linux/Proton path resolution — Krondor's, not a BindForge testing item.** *Reassigned 2026-09-06.* Not a one-time check but ongoing, given how much Linux path resolution varies by distro and by how an individual user has their Steam library configured — which is exactly why it is owned by the person running it. BindForge builds and tests Windows storefront detection; Krondor makes the edits his platform needs. Listed here so the dependency stays visible, not as work waiting on Alan. The journal path is confirmed against independent precedent (EDMarketConnector); the bindings-folder path is inferred from the same structure but not independently confirmed.

@@ -56,21 +56,13 @@ public interface BindForgeDeviceDraftDao {
     void setAliasConfirmed(@Bind("id") long id, @Bind("confirmed") boolean confirmed);
 
     /**
-     * Renames a draft device. The name kept is the one the installations hold, which is the master's: renaming
-     * twice before an Apply must still find the {@code .buttonMap} under the first name. A device added in the
-     * draft has no files anywhere yet, so it keeps no previous name, and nor does one renamed back to the name the
-     * installations already hold - there is nothing left to rename.
+     * Renames a draft device, keeping the old name given. Which old name to keep is the manager's rule
+     * ({@link elite.intel.db.managers.BindForgeDeviceDraftManager#saveDevice}).
      */
     @SqlUpdate("""
-            UPDATE bindforge_device_draft
-            SET previous_name = CASE
-                                    WHEN master_id IS NULL THEN NULL
-                                    WHEN COALESCE(previous_name, device_name) = :deviceName THEN NULL
-                                    ELSE COALESCE(previous_name, device_name) END,
-                device_name   = :deviceName
-            WHERE id = :id
+            UPDATE bindforge_device_draft SET device_name = :deviceName, previous_name = :previousName WHERE id = :id
             """)
-    void rename(@Bind("id") long id, @Bind("deviceName") String deviceName);
+    void rename(@Bind("id") long id, @Bind("deviceName") String deviceName, @Bind("previousName") String previousName);
 
     @SqlUpdate("UPDATE bindforge_device_draft SET vid = :vid, pid = :pid WHERE id = :id")
     void retarget(@Bind("id") long id, @Bind("vid") String vid, @Bind("pid") String pid);

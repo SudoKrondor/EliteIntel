@@ -19,8 +19,10 @@ import elite.intel.bindforge.devicefiles.DeviceEntry;
  *                    again when it is plugged back in
  * @param alias       the name this device has in the master, or {@code null} when the master has no record of
  *                    it. Shown as <em>not added</em>
- * @param builtIn     whether one of Frontier's own entries already covers this hardware, in which case the
- *                    game already names it and there is nothing for BindForge to create
+ * @param builtIn     whether one of Frontier's own entries already covers this hardware and the device is still under
+ *                    Frontier's name, in which case the game already names it and there is nothing for BindForge to
+ *                    create. A built-in the master holds under a name of the user's - a shadow (A15) - is the user's
+ *                    device, and is not
  */
 public record MyDevice(
         String hardwareName,

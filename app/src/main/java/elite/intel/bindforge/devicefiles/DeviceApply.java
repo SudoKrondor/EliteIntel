@@ -52,8 +52,9 @@ import java.util.stream.Collectors;
  * - those naming it by hardware id (Alan, 2026-10-14, A6b), and those naming it by the old name of a rename (A11). The
  * user's Apply comes first: an installation that missed the name does not hold the move back, it is reported and caught
  * up later. When no installation took it, nothing was applied for the bindings to follow, and they stay as they are
- * for the next Apply. One of Frontier's names is never a target. Both moves are derived from the files each time, so a
- * move that stopped is retried by the next Apply with no record of its own.
+ * for the next Apply. One of Frontier's names is never a hardware id's target; a rename's may be one, either way - a
+ * shadow moves the bindings from Frontier's name, and going back moves them to it (Alan, 2026-10-16, A15). Both moves
+ * are derived from the files each time, so a move that stopped is retried by the next Apply with no record of its own.
  * <p>
  * <strong>Catch-up</strong> ({@link #catchUp(Collection)}, Alan, 2026-10-15, A14) is Apply for an installation that
  * missed one and is found again: the same push, removals and moves, to that installation alone, and never the draft -
@@ -113,8 +114,13 @@ public final class DeviceApply {
         /** As the push removes it. */
         boolean mayHoldRemoval(String name);
 
-        /** As the push renames it. */
-        boolean mayHoldOldName(String oldName, String newName);
+        /**
+         * As the push renames it.
+         *
+         * @param vid the device's hardware, which decides a shadow: its old name is Frontier's, whose element stays
+         * @param pid as {@code vid}
+         */
+        boolean mayHoldOldName(String oldName, String newName, String vid, String pid);
     }
 
     /** What became of the bindings a move was for. */
@@ -250,7 +256,7 @@ public final class DeviceApply {
         }
 
         @Override
-        public boolean mayHoldOldName(String oldName, String newName) {
+        public boolean mayHoldOldName(String oldName, String newName, String vid, String pid) {
             return true;
         }
     };
@@ -318,7 +324,7 @@ public final class DeviceApply {
             }
         }
         Renames renames = moveRenamedReferences(report,
-                row -> !holdings.mayHoldOldName(row.previousName(), row.deviceName()));
+                row -> !holdings.mayHoldOldName(row.previousName(), row.deviceName(), row.vid(), row.pid()));
         Moves moves = moveHardwareIds(report);
         return new Result(List.of(), report, cleanedUp, notEverywhere, split.heldBack(), split.bindsUnread(),
                 moves.moves(), renames.moves(), moves.unread() || renames.unread(), renames.finished());
@@ -354,9 +360,11 @@ public final class DeviceApply {
      *                    catch-up from the files
      */
     private Renames moveRenamedReferences(Report report, Predicate<DeviceRow> lostOldName) {
+        // WHY: a Frontier name on either side is a shadow or going back from one (A15), and its bindings move like any
+        // rename's. Bindings naming Frontier's element are this controller's: the user chose to rename it, and the
+        // editor said so where Frontier's element covers other controllers too.
         List<DeviceRow> renamedDevices = master.findAll().stream()
                 .filter(row -> row.previousName() != null && !row.previousName().equals(row.deviceName()))
-                .filter(row -> !stock.ships(row.deviceName()) && !stock.ships(row.previousName()))
                 .toList();
         if (renamedDevices.isEmpty()) return new Renames(List.of(), false, List.of());
 

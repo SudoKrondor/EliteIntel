@@ -491,6 +491,71 @@ class DeviceApplyTest {
         assertEquals(List.of("LVWAP"), master.pendingRemovals(), "kept for the Apply that can move them");
     }
 
+    // ------------------------------------------------------------------ shadowing a built-in (A15)
+
+    private static final BindForgeDeviceDraftManager.BuiltIn T_RUDDER =
+            new BindForgeDeviceDraftManager.BuiltIn("T-Rudder", "044F", "B679");
+
+    /**
+     * A shadow applied (Alan, 2026-10-16): the user's element leads the file, Frontier's stays, the bindings move from
+     * Frontier's name, and the rename finishes although Frontier's element never leaves.
+     */
+    @Test
+    void aShadowedBuiltInTakesItsBindingsFromFrontiersName() throws IOException {
+        Target steam = steamInstallation();
+        draft.saveDevice("T-Rudder", "MyRudder", Map.of("Joy_XAxis", "RUDDER"), T_RUDDER);
+        FakeRewrite rewrite = new FakeRewrite(Map.of());
+        rewrite.names.put("T-Rudder", 2);
+
+        DeviceApply.Result result = applyWith(List.of(steam), rewrite);
+
+        assertEquals(List.of("MyRudder <- [T-Rudder]"), rewrite.calls);
+        String mappings = Files.readString(steam.controlSchemes().resolve("DeviceMappings.xml"));
+        assertTrue(mappings.indexOf("<MyRudder>") < mappings.indexOf("<T-Rudder>"), mappings);
+        assertTrue(Files.exists(buttonMap(steam, "MyRudder")));
+        assertEquals(List.of("MyRudder"), result.renamesFinished());
+        assertNull(master.findByName("MyRudder").previousName());
+        assertTrue(master.pendingRemovals().isEmpty(), "Frontier's element is never a removal");
+    }
+
+    /** Going back: the user's element goes, and the bindings move back to Frontier's name. */
+    @Test
+    void goingBackFromAShadowMovesTheBindingsToFrontiersName() throws IOException {
+        Target steam = steamInstallation();
+        draft.saveDevice("T-Rudder", "MyRudder", Map.of("Joy_XAxis", "RUDDER"), T_RUDDER);
+        applyWith(List.of(steam), new FakeRewrite(Map.of()));
+        draft.saveDevice("MyRudder", "T-Rudder", Map.of("Joy_XAxis", "RUDDER"), T_RUDDER);
+        FakeRewrite rewrite = new FakeRewrite(Map.of());
+        rewrite.names.put("MyRudder", 2);
+
+        DeviceApply.Result result = applyWith(List.of(steam), rewrite);
+
+        assertEquals(List.of("T-Rudder <- [MyRudder]"), rewrite.calls);
+        assertFalse(Files.readString(steam.controlSchemes().resolve("DeviceMappings.xml")).contains("MyRudder"));
+        assertTrue(Files.exists(buttonMap(steam, "T-Rudder")));
+        assertFalse(Files.exists(buttonMap(steam, "MyRudder")));
+        assertEquals(List.of("T-Rudder"), result.renamesFinished());
+        assertNull(master.findByName("T-Rudder").previousName());
+    }
+
+    /** A shadow one installation missed: catch-up writes it there, and the files settle it. */
+    @Test
+    void catchUpFinishesAShadow() throws IOException {
+        Target steam = steamInstallation();
+        Target epic = epicInstallation();
+        draft.saveDevice("T-Rudder", "MyRudder", Map.of("Joy_XAxis", "RUDDER"), T_RUDDER);
+        new DeviceApply(draft::promote, pusher(List.of(steam, epicAway()))::push, Set::of,
+                FrontierStockDevices.getInstance(), master, new FakeRewrite(Map.of())).apply();
+        assertEquals("T-Rudder", master.findByName("MyRudder").previousName(), "the missed installation holds it");
+
+        DeviceApply.Result result = catchUp(List.of(steam, epic), List.of(epic), new FakeRewrite(Map.of()));
+
+        String mappings = Files.readString(epic.controlSchemes().resolve("DeviceMappings.xml"));
+        assertTrue(mappings.indexOf("<MyRudder>") < mappings.indexOf("<T-Rudder>"), mappings);
+        assertEquals(List.of("MyRudder"), result.renamesFinished());
+        assertNull(master.findByName("MyRudder").previousName());
+    }
+
     // ------------------------------------------------------------------ catch-up (A14)
 
     /**
