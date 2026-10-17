@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -52,8 +53,9 @@ import java.util.stream.Collectors;
  * - those naming it by hardware id (Alan, 2026-10-14, A6b), and those naming it by the old name of a rename (A11). The
  * user's Apply comes first: an installation that missed the name does not hold the move back, it is reported and caught
  * up later. When no installation took it, nothing was applied for the bindings to follow, and they stay as they are
- * for the next Apply. One of Frontier's names is never a target. Both moves are derived from the files each time, so a
- * move that stopped is retried by the next Apply with no record of its own.
+ * for the next Apply. One of Frontier's names is never a hardware id's target; a rename's may be one, either way - a
+ * shadow moves the bindings from Frontier's name, and going back moves them to it (Alan, 2026-10-16, A15). Both moves
+ * are derived from the files each time, so a move that stopped is retried by the next Apply with no record of its own.
  * <p>
  * <strong>Catch-up</strong> ({@link #catchUp(Collection)}, Alan, 2026-10-15, A14) is Apply for an installation that
  * missed one and is found again: the same push, removals and moves, to that installation alone, and never the draft -
@@ -113,8 +115,13 @@ public final class DeviceApply {
         /** As the push removes it. */
         boolean mayHoldRemoval(String name);
 
-        /** As the push renames it. */
-        boolean mayHoldOldName(String oldName, String newName);
+        /**
+         * As the push renames it.
+         *
+         * @param vid the device's hardware, which decides a shadow: its old name is Frontier's, whose element stays
+         * @param pid as {@code vid}
+         */
+        boolean mayHoldOldName(String oldName, String newName, String vid, String pid);
     }
 
     /** What became of the bindings a move was for. */
@@ -250,7 +257,7 @@ public final class DeviceApply {
         }
 
         @Override
-        public boolean mayHoldOldName(String oldName, String newName) {
+        public boolean mayHoldOldName(String oldName, String newName, String vid, String pid) {
             return true;
         }
     };
@@ -288,7 +295,7 @@ public final class DeviceApply {
             }
         }
         boolean everywhere = everyInstallationTookIt(report);
-        Renames renames = moveRenamedReferences(report, row -> everywhere);
+        Renames renames = moveRenamedReferences(report, row -> everywhere, Map.of());
         Moves moves = moveHardwareIds(report);
         return new Result(removed, report, cleanedUp, notEverywhere, split.heldBack(), split.bindsUnread(),
                 moves.moves(), renames.moves(), moves.unread() || renames.unread(), renames.finished());
@@ -318,10 +325,43 @@ public final class DeviceApply {
             }
         }
         Renames renames = moveRenamedReferences(report,
-                row -> !holdings.mayHoldOldName(row.previousName(), row.deviceName()));
+                row -> !holdings.mayHoldOldName(row.previousName(), row.deviceName(), row.vid(), row.pid()),
+                Map.of());
         Moves moves = moveHardwareIds(report);
         return new Result(List.of(), report, cleanedUp, notEverywhere, split.heldBack(), split.bindsUnread(),
                 moves.moves(), renames.moves(), moves.unread() || renames.unread(), renames.finished());
+    }
+
+    /**
+     * First setup's bindings move, straight after its push (Alan, 2026-10-17, A16): a losing name {@code .binds} uses
+     * hands its bindings to the name that beat it. Waiting for the next Apply would leave every installation without
+     * the losing name - the push renames it - while the presets still name it.
+     * <p>
+     * The losing name kept as a device's old name moves as a rename's does, and is retried by every later Apply until
+     * it is finished. A further loser to the same winner has no record, so it rides <strong>in the same rewrite</strong>
+     * as the old name (review, 2026-10-17): one write, all or nothing, so it is never the lone second rewrite that
+     * meets the bindings monitor mid-reload and is not retried. Its element stays as a pending removal, which Apply
+     * holds back while {@code .binds} still names it, so a rewrite that stops strands nothing that was working.
+     *
+     * @param report     first setup's push
+     * @param handedOver the losing names no device keeps as its old name, by the name their bindings move to
+     */
+    public SetupMoves afterFirstSetup(Report report, Map<String, String> handedOver) {
+        Map<String, Set<String>> byWinner = new TreeMap<>();
+        handedOver.forEach((from, to) -> byWinner.computeIfAbsent(to, name -> new TreeSet<>()).add(from));
+        boolean everywhere = everyInstallationTookIt(report);
+        Renames renames = moveRenamedReferences(report, row -> everywhere, byWinner);
+        return new SetupMoves(renames.moves(), renames.unread());
+    }
+
+    /**
+     * @param moves  the bindings each losing name handed over, and what became of them
+     * @param unread whether {@code .binds} could not be read, so none was moved
+     */
+    public record SetupMoves(List<RenameMove> moves, boolean unread) {
+        public SetupMoves {
+            moves = List.copyOf(moves);
+        }
     }
 
     /**
@@ -352,13 +392,18 @@ public final class DeviceApply {
      *
      * @param lostOldName whether every installation has lost a device's old name - from Apply's report, or for
      *                    catch-up from the files
+     * @param handedOver  first setup's further losing names, by the device they move to, carried in that device's
+     *                    rewrite (A16); empty for Apply and catch-up
      */
-    private Renames moveRenamedReferences(Report report, Predicate<DeviceRow> lostOldName) {
+    private Renames moveRenamedReferences(Report report, Predicate<DeviceRow> lostOldName,
+                                          Map<String, Set<String>> handedOver) {
+        // WHY: a Frontier name on either side is a shadow or going back from one (A15), and its bindings move like any
+        // rename's. Bindings naming Frontier's element are this controller's: the user chose to rename it, and the
+        // editor said so where Frontier's element covers other controllers too.
         List<DeviceRow> renamedDevices = master.findAll().stream()
                 .filter(row -> row.previousName() != null && !row.previousName().equals(row.deviceName()))
-                .filter(row -> !stock.ships(row.deviceName()) && !stock.ships(row.previousName()))
                 .toList();
-        if (renamedDevices.isEmpty()) return new Renames(List.of(), false, List.of());
+        if (renamedDevices.isEmpty() && handedOver.isEmpty()) return new Renames(List.of(), false, List.of());
 
         Map<String, Integer> counts;
         try {
@@ -370,31 +415,61 @@ public final class DeviceApply {
         }
 
         boolean applied = report.matchingCount() > 0;
+        Map<String, Set<String>> unmatched = new TreeMap<>(handedOver);
         List<RenameMove> moves = new ArrayList<>();
         List<String> finished = new ArrayList<>();
         for (DeviceRow row : renamedDevices) {
             String from = row.previousName();
             String to = row.deviceName();
-            boolean caseOnly = from.equalsIgnoreCase(to);
-            int bindings = caseOnly ? 0 : BindsDeviceReferences.bindingsNaming(List.of(from), counts);
-            boolean bindsSettled = bindings == 0;
-            if (bindings > 0) {
-                if (!applied) {
-                    moves.add(new RenameMove(from, to, bindings, MoveOutcome.NOT_APPLIED, null));
-                } else {
-                    Rewritten result = binds.rewrite(DeviceReferenceRewrite.rename(from, to));
-                    MoveOutcome outcome = outcomeOf(result, from + " to " + to);
-                    moves.add(new RenameMove(from, to, reported(result, bindings), outcome, result.status()));
-                    bindsSettled = outcome != MoveOutcome.FAILED;
-                }
-            }
+            List<String> names = new ArrayList<>(List.of(from));
+            names.addAll(Optional.ofNullable(unmatched.remove(to)).orElse(Set.of()));
+            List<RenameMove> moved = moveTo(to, names, counts, applied);
+            moves.addAll(moved);
+            boolean bindsSettled = moved.stream().noneMatch(move -> move.from().equals(from)
+                    && (move.outcome() == MoveOutcome.NOT_APPLIED || move.outcome() == MoveOutcome.FAILED));
             if (bindsSettled && lostOldName.test(row)) {
                 master.clearPreviousName(row.id());
                 finished.add(to);
                 log.info("Rename of {} to {} finished in every installation and in .binds", from, to);
             }
         }
+        // WHY: first setup records an old name for every winner it hands names to, so nothing should be left here; a
+        // name that is still moves rather than being dropped.
+        unmatched.forEach((to, names) -> moves.addAll(moveTo(to, List.copyOf(names), counts, applied)));
         return new Renames(moves, false, finished);
+    }
+
+    /**
+     * The bindings naming any of {@code names}, moved to {@code to} in <strong>one</strong> rewrite - all or nothing - or
+     * left, when no installation took {@code to}. A name no binding uses, or one differing from {@code to} only in
+     * case, is not moved.
+     *
+     * @return one move per name that bindings use, all with the rewrite's outcome
+     */
+    private List<RenameMove> moveTo(String to, List<String> names, Map<String, Integer> counts, boolean applied) {
+        Map<String, Integer> found = new LinkedHashMap<>();
+        for (String from : names) {
+            // WHY: a Device= name finds its element ignoring case, so a case-only move would only risk two spellings
+            // of one device in a preset, which the game rejects (format section 4.3).
+            if (from.equalsIgnoreCase(to)) continue;
+            int bindings = BindsDeviceReferences.bindingsNaming(List.of(from), counts);
+            if (bindings > 0) found.put(from, bindings);
+        }
+        if (found.isEmpty()) return List.of();
+        if (!applied) {
+            return found.entrySet().stream()
+                    .map(name -> new RenameMove(name.getKey(), to, name.getValue(), MoveOutcome.NOT_APPLIED, null))
+                    .toList();
+        }
+        Rewritten result = binds.rewrite(new DeviceReferenceRewrite(found.keySet(), to));
+        MoveOutcome outcome = outcomeOf(result, found.keySet() + " to " + to);
+        // WHY: the rewrite counts what it moved in the game's own file, all names together - so with one name that is
+        // its count, and with several each reports what was found for it before the rewrite.
+        return found.entrySet().stream()
+                .map(name -> new RenameMove(name.getKey(), to,
+                        found.size() == 1 ? reported(result, name.getValue()) : name.getValue(), outcome,
+                        result.status()))
+                .toList();
     }
 
     private record Renames(List<RenameMove> moves, boolean unread, List<String> finished) {

@@ -17,6 +17,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -54,7 +55,52 @@ class FirstSetupTest {
         FirstSetup.Result result = setup.apply(setup.read(), Map.of());
 
         assertEquals(FirstSetup.Outcome.APPLIED, result.outcome());
-        assertEquals(List.of("backup", "establish [LVWAP]", "push"), order);
+        assertEquals(List.of("backup", "establish [LVWAP]", "push", "moves {}"), order);
+    }
+
+    /**
+     * A16: a losing name .binds uses hands its bindings over straight after the push - the winner keeps it as its old
+     * name, and a second loser is handed over by name.
+     */
+    @Test
+    void theLosingNamesHandTheirBindingsOverAfterThePush() throws IOException {
+        HardwareId right = new HardwareId("3344", "03F5");
+        Map<Long, String> names = Map.of(1L, "RVWAP", 2L, "RightStick", 3L, "Stick");
+        List<StoredDevice> established = new ArrayList<>();
+        List<Target> targets = List.of(reachable(1), reachable(2), reachable(3));
+        FirstSetup setup = new FirstSetup(() -> targets,
+                target -> new FirstSetupPlan.Installation(target.installId(), target.storefront(),
+                        Map.of(names.get(target.installId()), right), Map.of(), Map.of()),
+                () -> Set.of("RightStick", "Stick"),
+                taken -> { order.add("backup"); return temp; },
+                (devices, removals) -> { established.addAll(devices); order.add("establish " + removals); return true; },
+                () -> { order.add("push"); return new Report(List.of()); },
+                this::moves);
+        FirstSetup.Reading reading = setup.read();
+
+        FirstSetup.Result result = setup.apply(reading, Map.of(reading.plan().rows().getFirst().id(), "RVWAP"));
+
+        assertEquals(FirstSetup.Outcome.APPLIED, result.outcome());
+        assertEquals(List.of("backup", "establish [Stick]", "push", "moves {Stick=RVWAP}"), order);
+        assertEquals("RightStick", established.getFirst().previousName());
+        assertNotNull(result.moves());
+    }
+
+    /** The installations are written, so first setup is over even when the bindings could not be moved. */
+    @Test
+    void aMoveThatThrowsAfterThePushEndsFirstSetup() throws IOException {
+        FirstSetup setup = new FirstSetup(List::of, target -> null, Set::of,
+                taken -> temp,
+                (devices, removals) -> true,
+                () -> new Report(List.of()),
+                (report, handedOver) -> { throw new IllegalStateException("bindings locked"); });
+
+        FirstSetup.Result result = setup.apply(setup.read(), Map.of());
+
+        assertEquals(FirstSetup.Outcome.FAILED, result.outcome());
+        assertTrue(result.masterFilled());
+        assertNotNull(result.report(), "the push landed");
+        assertTrue(result.reason().contains("bindings locked"));
     }
 
     @Test
@@ -89,7 +135,7 @@ class FirstSetupTest {
                         Map.of(), Map.of()),
                 Set::of, targets -> { order.add("backup"); return temp; },
                 (devices, removals) -> { order.add("establish"); return true; },
-                () -> { order.add("push"); return new Report(List.of()); });
+                () -> { order.add("push"); return new Report(List.of()); }, this::moves);
 
         FirstSetup.Reading reading = setup.read();
 
@@ -103,7 +149,7 @@ class FirstSetupTest {
         FirstSetup setup = new FirstSetup(List::of, target -> null, Set::of,
                 taken -> { order.add("backup"); return temp; },
                 (devices, removals) -> { throw new IllegalStateException("database locked"); },
-                () -> { order.add("push"); return new Report(List.of()); });
+                () -> { order.add("push"); return new Report(List.of()); }, this::moves);
 
         FirstSetup.Result result = setup.apply(setup.read(), Map.of());
 
@@ -119,7 +165,7 @@ class FirstSetupTest {
         FirstSetup setup = new FirstSetup(List::of, target -> null, Set::of,
                 taken -> temp,
                 (devices, removals) -> true,
-                () -> { throw new IllegalStateException(); });
+                () -> { throw new IllegalStateException(); }, this::moves);
 
         FirstSetup.Result result = setup.apply(setup.read(), Map.of());
 
@@ -145,11 +191,18 @@ class FirstSetupTest {
                 () -> {
                     order.add("push");
                     return new Report(List.of());
-                });
+                },
+                this::moves);
+    }
+
+    private DeviceApply.SetupMoves moves(Report report, Map<String, String> handedOver) {
+        order.add("moves " + handedOver);
+        return new DeviceApply.SetupMoves(List.of(), false);
     }
 
     private Target reachable(long id) throws IOException {
-        return new Target(id, id == 1 ? "STEAM" : "EPIC",
+        return new Target(id, id == 1 ? "STEAM" : id == 2 ? "EPIC" : "FRONTIER",
+
                 Files.createDirectories(temp.resolve(String.valueOf(id)).resolve("ControlSchemes")), false);
     }
 }

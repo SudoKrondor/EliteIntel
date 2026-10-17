@@ -131,7 +131,7 @@ class BindForgeDeviceDraftManagerTest {
     /** SAVE with the name changed (A11): one write, the old name kept for Apply, and no removal once applied. */
     @Test
     void savingWithANewNameRenamesAndKeepsTheOldNameForApply() {
-        DraftRow saved = draft.saveDevice("LVWAP", "LeftStick", labels("Joy_1", "TRIGGER"));
+        DraftRow saved = draft.saveDevice("LVWAP", "LeftStick", labels("Joy_1", "TRIGGER"), null);
 
         assertEquals("LeftStick", saved.deviceName());
         assertEquals("LVWAP", saved.previousName());
@@ -147,18 +147,96 @@ class BindForgeDeviceDraftManagerTest {
     /** Renamed back before Apply: nothing is left to rename, so no old name is kept. */
     @Test
     void renamingBackToTheAppliedNameKeepsNoOldName() {
-        draft.saveDevice("LVWAP", "LeftStick", labels("Joy_1", "TRIGGER"));
+        draft.saveDevice("LVWAP", "LeftStick", labels("Joy_1", "TRIGGER"), null);
 
-        DraftRow back = draft.saveDevice("LeftStick", "LVWAP", labels("Joy_1", "TRIGGER"));
+        DraftRow back = draft.saveDevice("LeftStick", "LVWAP", labels("Joy_1", "TRIGGER"), null);
 
         assertNull(back.previousName());
+    }
+
+    // --- shadowing a built-in (A15): Frontier's name is on disk whether or not the master holds the controller
+
+    private static final BindForgeDeviceDraftManager.FrontierCover T_RUDDER =
+            new BindForgeDeviceDraftManager.FrontierCover("T-Rudder", "044F", "B679");
+
+    @Test
+    void shadowingABuiltInTheMasterDoesNotHoldKeepsFrontiersNameAsTheOldOne() {
+        DraftRow saved = draft.saveDevice("T-Rudder", "MyRudder", labels("Joy_XAxis", "RUDDER"), T_RUDDER);
+
+        assertEquals("MyRudder", saved.deviceName());
+        assertEquals("T-Rudder", saved.previousName(), "Apply moves the bindings from it");
+        assertNull(saved.masterId());
+        assertEquals("044F", saved.vid());
+        assertEquals("B679", saved.pid());
+        assertEquals(labels("Joy_XAxis", "RUDDER"), draft.labelsOf(saved.id()));
+    }
+
+    @Test
+    void shadowingABuiltInTheMasterLabelsKeepsFrontiersNameAsTheOldOne() {
+        long rudder = master.record("T-Rudder", "044F", "B679", true).id();
+        master.replaceLabels(rudder, labels("Joy_XAxis", "RUDDER"));
+
+        DraftRow saved = draft.saveDevice("T-Rudder", "MyRudder", labels("Joy_XAxis", "RUDDER"), T_RUDDER);
+
+        assertEquals("T-Rudder", saved.previousName());
+        assertTrue(draft.promote().isEmpty(), "a shadow is not a removal");
+        assertEquals("T-Rudder", master.findByName("MyRudder").previousName());
+    }
+
+    /** Renamed again before Apply: the old name is still Frontier's, which is what the installations hold. */
+    @Test
+    void aShadowRenamedAgainBeforeApplyStillHoldsFrontiersName() {
+        draft.saveDevice("T-Rudder", "MyRudder", labels("Joy_XAxis", "RUDDER"), T_RUDDER);
+
+        DraftRow again = draft.saveDevice("MyRudder", "Pedals", labels("Joy_XAxis", "RUDDER"), T_RUDDER);
+
+        assertEquals("T-Rudder", again.previousName());
+    }
+
+    /** Back to Frontier's name before Apply: nothing is left to rename. */
+    @Test
+    void aShadowTakenBackBeforeApplyKeepsNoOldName() {
+        draft.saveDevice("T-Rudder", "MyRudder", labels("Joy_XAxis", "RUDDER"), T_RUDDER);
+
+        DraftRow back = draft.saveDevice("MyRudder", "T-Rudder", labels("Joy_XAxis", "RUDDER"), T_RUDDER);
+
+        assertEquals("T-Rudder", back.deviceName());
+        assertNull(back.previousName());
+    }
+
+    /** Back to Frontier's name after Apply: a rename like any other, from the user's name. */
+    @Test
+    void goingBackToFrontiersNameAfterApplyKeepsTheUsersNameAsTheOldOne() {
+        master.record("MyRudder", "044F", "B679", true);
+
+        DraftRow back = draft.saveDevice("MyRudder", "T-Rudder", labels("Joy_XAxis", "RUDDER"), T_RUDDER);
+
+        assertEquals("MyRudder", back.previousName());
+    }
+
+    /**
+     * Review, 2026-10-17 (A15): one Frontier element covers two pads, and pad A is labelled under its name. Shadowing pad
+     * B is a row of B's own - A keeps its row, its hardware and its labels.
+     */
+    @Test
+    void shadowingOnePadOfASharedEntryLeavesTheOtherPadsRowAlone() {
+        draft.saveLabels("DualShock4", "054C", "05C4", labels("Joy_1", "A CROSS"));
+
+        DraftRow padB = draft.saveDevice("DualShock4", "PadB", labels("Joy_1", "B CROSS"),
+                new BindForgeDeviceDraftManager.FrontierCover("DualShock4", "054C", "09CC"));
+
+        assertEquals("09CC", padB.pid());
+        assertEquals("DualShock4", padB.previousName());
+        DraftRow padA = draft.findByName("DualShock4");
+        assertEquals("05C4", padA.pid(), "pad A keeps its hardware");
+        assertEquals(labels("Joy_1", "A CROSS"), draft.labelsOf(padA.id()), "and its labels");
     }
 
     /** A name another draft device holds, or a device that is gone, writes nothing - the editor read a stale list. */
     @Test
     void savingUnderATakenNameOrAGoneDeviceWritesNothing() {
-        assertNull(draft.saveDevice("LVWAP", "RVWAP", labels("Joy_1", "TRIGGER")));
-        assertNull(draft.saveDevice("Nobody", "LeftStick", labels("Joy_1", "TRIGGER")));
+        assertNull(draft.saveDevice("LVWAP", "RVWAP", labels("Joy_1", "TRIGGER"), null));
+        assertNull(draft.saveDevice("Nobody", "LeftStick", labels("Joy_1", "TRIGGER"), null));
         assertEquals(labels("Joy_1", "LV MAIN TRIGGER", "Joy_2", "PINKY"),
                 draft.labelsOf(draft.findByName("LVWAP").id()), "the transaction wrote nothing");
     }
@@ -460,6 +538,18 @@ class BindForgeDeviceDraftManagerTest {
         assertFalse(draft.isStarted(), "a draft left started would replace the new master with its empty copy");
     }
 
+    /** First setup's losing name that .binds uses is kept as the winner's old name, for Apply's rename (A16). */
+    @Test
+    void establishingKeepsAnOldName() {
+        master.findAll().forEach(row -> master.remove(row.id()));
+
+        assertTrue(draft.establish(List.of(
+                new StoredDevice(null, "RVWAP", "3344", "03F5", true, "RightStick", Map.of())), List.of()));
+
+        assertEquals("RightStick", master.findByName("RVWAP").previousName());
+        assertTrue(master.pendingRemovals().isEmpty());
+    }
+
     @Test
     void establishingActivatesInTheSameTransaction() {
         master.findAll().forEach(row -> master.remove(row.id()));
@@ -635,6 +725,6 @@ class BindForgeDeviceDraftManagerTest {
         Map<String, String> labels = draft.isStarted() && draft.findByName(from) != null
                 ? draft.labelsOf(draft.findByName(from).id())
                 : master.labelsOf(master.findByName(from).id());
-        assertNotNull(draft.saveDevice(from, to, labels), from + " -> " + to);
+        assertNotNull(draft.saveDevice(from, to, labels, null), from + " -> " + to);
     }
 }

@@ -127,6 +127,7 @@ public class EventRegistry {
         registerEvent("Shutdown", ShutdownEvent.class);
         registerEvent("SquadronStartup", SquadronStartupEvent.class);
         registerEvent("Died", DiedEvent.class);
+        registerEvent("WingInvite", WingInviteEvent.class);
 
         // Finance: realized credit movements (see FinanceSubscriber)
         registerEvent("Resurrect", ResurrectEvent.class);

@@ -117,6 +117,28 @@ class MyDeviceListTest {
         assertTrue(rows.getFirst().attached());
     }
 
+    /** A built-in the master labels under Frontier's name is still a built-in. */
+    @Test
+    void aBuiltInTheMasterHoldsUnderFrontiersNameStaysMarked() {
+        List<MyDevice> rows = MyDeviceList.build(List.of(device("Thrustmaster T-Rudder", T_RUDDER_GUID)), List.of(),
+                List.of(masterRow("T-Rudder", "044F", "B679")), stock);
+
+        assertTrue(rows.getFirst().builtIn());
+    }
+
+    /**
+     * A shadow is the user's device (A15): under their name, it is judged as their devices are - Frontier's element
+     * being there says nothing about whether theirs is.
+     */
+    @Test
+    void aShadowedBuiltInIsTheUsersDevice() {
+        List<MyDevice> rows = MyDeviceList.build(List.of(device("Thrustmaster T-Rudder", T_RUDDER_GUID)), List.of(),
+                List.of(masterRow("MyRudder", "044F", "B679")), stock);
+
+        assertFalse(rows.getFirst().builtIn());
+        assertEquals("MyRudder", rows.getFirst().alias());
+    }
+
     @Test
     void aControllerFrontierDoesNotShipIsNotMarkedBuiltIn() {
         List<MyDevice> rows = MyDeviceList.build(

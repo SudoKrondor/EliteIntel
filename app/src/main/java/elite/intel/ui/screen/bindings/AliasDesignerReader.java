@@ -289,11 +289,30 @@ final class AliasDesignerReader {
                 ? DeviceEditorInputs.ofSavedLabels(saved)
                 : DeviceEditorInputs.ofController(live.buttonCount(), live.axisCount(), description);
         DeviceEditorMiddle middle = middleFor(device, name, masterRow, stock);
-        DeviceRename.Allowed rename = DeviceRename.allowed(name, name != null && stock.ships(name), middle.undoing(),
+        DeviceRename.Owner owner = name != null && stock.ships(name) ? DeviceRename.Owner.FRONTIER
+                : DeviceRename.Owner.USER;
+        DeviceRename.Presence presence = device.attached() ? DeviceRename.Presence.ATTACHED
+                : DeviceRename.Presence.UNPLUGGED;
+        DeviceRename.Allowed rename = DeviceRename.allowed(name, owner, presence, middle.undoing(),
                 masterRow == null ? null : masterRow.deviceName(), masterRow == null ? null : masterRow.previousName());
+        // WHY: the Frontier element covering the controller's hardware, whatever the device is called now - a built-in
+        // under Frontier's name, or one shadowed under the user's, which may go back to it (A15).
+        DeviceEntry covering = stock.covering(device.vid(), device.pid()).orElse(null);
         Set<String> taken = rename == DeviceRename.Allowed.YES ? takenNames(name, masterRow, draftRow, stock) : Set.of();
+        DeviceEditorDialog.Covering frontier = covering == null ? null
+                : new DeviceEditorDialog.Covering(covering.name(), covering.hardware().size() > 1,
+                DeviceRename.frontierNameHeld(covering.name(), storedNames(master)));
         return new DeviceEditorDialog.Opening(device, name, live == null ? null : live.id(), description, inputs,
-                saved, name != null && stock.gameDrawsIt(name), strip, middle, rename, taken);
+                saved, name != null && stock.gameDrawsIt(name), strip, middle, rename, taken, frontier);
+    }
+
+    /** Every name the master and the draft hold - SAVE's view of which names are in use. */
+    private static Set<String> storedNames(BindForgeDeviceMasterManager master) {
+        Set<String> names = new HashSet<>();
+        master.findAll().forEach(row -> names.add(row.deviceName()));
+        BindForgeDeviceDraftManager draft = BindForgeDeviceDraftManager.getInstance();
+        if (draft.isStarted()) draft.findAll().forEach(row -> names.add(row.deviceName()));
+        return names;
     }
 
     /**
@@ -315,7 +334,8 @@ final class AliasDesignerReader {
 
     /**
      * The names a rename must not clash with ({@link DeviceRename#taken}): Frontier's, every installation's entries,
-     * and every name and old name in the master and the draft - less this device's own.
+     * and every name and old name in the master and the draft - less this device's own. The Frontier name covering it
+     * stays taken: going back to it is {@link DeviceRename#backToFrontier}'s, spelled exactly as Frontier spells it.
      */
     private Set<String> takenNames(String name, DeviceRow masterRow, DraftRow draftRow, FrontierStockDevices stock) {
         List<String> entries = new ArrayList<>();

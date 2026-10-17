@@ -307,7 +307,7 @@ public final class DeviceFilesPush implements DeviceApply.Pushes {
         boolean changed = false;
         // WHY: renamed in place before the merge, so the element keeps every child it has. The merge alone would add
         // a bare element under the new name and leave the old one, and its <Alternative> pairs, behind it.
-        for (MasterDevice device : renamedUserDevices(devices, stock)) {
+        for (MasterDevice device : renamedElements(devices, stock)) {
             DeviceMappingsMerge.Result renamed = DeviceMappingsMerge.rename(mappings, device.previousName(),
                     device.name());
             mappings = renamed.content();
@@ -336,8 +336,10 @@ public final class DeviceFilesPush implements DeviceApply.Pushes {
             byte[] previous = readIfPresent(buttonMap);
             if (!Arrays.equals(previous, content)) writes.add(new FileWrite(buttonMap, previous, content));
         }
-        for (MasterDevice device : renamedUserDevices(devices, stock)) {
-            writes.addAll(renameButtonMap(target, device));
+        Set<String> masterNames = new HashSet<>();
+        devices.forEach(device -> masterNames.add(device.name()));
+        for (MasterDevice device : renamedDevices(devices)) {
+            writes.addAll(renameButtonMap(target, device, masterNames.contains(device.previousName()), stockMaps));
         }
         for (String name : new TreeSet<>(removals)) {
             FileWrite write = removeButtonMap(target, name, stockMaps);
@@ -369,10 +371,19 @@ public final class DeviceFilesPush implements DeviceApply.Pushes {
      * <strong>A rename that changes only case</strong> on a file system that ignores it - Windows - finds the old and
      * the new name to be one file. Then nothing is deleted: the file is the device's, under either spelling, and the
      * game finds it so (format §4.3, measured 2026-10-14).
+     * <p>
+     * <strong>An old name Frontier ships a file under</strong> - a shadowed {@code VPCPanel} or {@code VPCThrottle}
+     * (Alan, 2026-10-16, A15) - keeps its file as Frontier shipped it, since a file Frontier shipped is never removed.
+     * <strong>An old name another master device still has</strong> - a shadow of one controller on a shared Frontier
+     * element while another is labelled under it (review, 2026-10-17) - keeps its file too: it is that device's, and
+     * the push writes it from the master. Nor is it copied to the new name when this device has no labels: the labels
+     * are the other device's.
      *
+     * @param oldNameInUse whether another master device is called by the old name
      * @return the writes - none when the installation holds no file under the old name
      */
-    private static List<FileWrite> renameButtonMap(Target target, MasterDevice device) throws IOException {
+    private static List<FileWrite> renameButtonMap(Target target, MasterDevice device, boolean oldNameInUse,
+                                                   FrontierStockButtonMaps stockMaps) throws IOException {
         Path oldMap;
         try {
             oldMap = GameInstallation.buttonMapIn(target.controlSchemes(), device.previousName());
@@ -385,22 +396,36 @@ public final class DeviceFilesPush implements DeviceApply.Pushes {
         Path newMap = buttonMapOf(target, device.name());
         if (Files.exists(newMap) && Files.isSameFile(oldMap, newMap)) return List.of();
 
+        // WHY: before the copy below - the old file is the other device's, and its labels are not this one's to take
+        // (review, 2026-10-17).
+        if (oldNameInUse) return List.of();
         List<FileWrite> writes = new ArrayList<>();
         if (device.labels().isEmpty() && !Files.exists(newMap)) {
             writes.add(new FileWrite(newMap, null, oldContent));
         }
-        writes.add(new FileWrite(oldMap, oldContent, null));
+        Optional<byte[]> shipped = stockMaps.shippedContent(device.previousName());
+        if (shipped.isEmpty()) {
+            writes.add(new FileWrite(oldMap, oldContent, null));
+        } else if (!Arrays.equals(oldContent, shipped.get())) {
+            writes.add(new FileWrite(oldMap, oldContent, shipped.get()));
+        }
         return writes;
     }
 
+    /** The master's devices whose rename is still being carried out - a shadow, or going back from one, included. */
+    private static List<MasterDevice> renamedDevices(List<MasterDevice> devices) {
+        return devices.stream().filter(MasterDevice::isRenamed).toList();
+    }
+
     /**
-     * The master's devices of the user's whose rename is still being carried out. A built-in is never among them:
-     * renaming one of Frontier's elements is slice A15's, and its {@code .buttonMap} is not renamed here either.
+     * The renamed devices whose element is renamed in place. <strong>A shadow is not</strong> (Alan, 2026-10-16, A15):
+     * its old name is Frontier's, whose element stays for every other controller it covers, and the merge puts the
+     * user's element ahead of it. Going back to Frontier's name is: the user's element is renamed, which removes it
+     * where Frontier's is already in the file.
      */
-    private static List<MasterDevice> renamedUserDevices(List<MasterDevice> devices, FrontierStockDevices stock) {
-        return devices.stream()
-                .filter(MasterDevice::isRenamed)
-                .filter(device -> !stock.ships(device.name()) && !stock.ships(device.previousName()))
+    private static List<MasterDevice> renamedElements(List<MasterDevice> devices, FrontierStockDevices stock) {
+        return renamedDevices(devices).stream()
+                .filter(device -> !stock.ships(device.previousName()))
                 .toList();
     }
 

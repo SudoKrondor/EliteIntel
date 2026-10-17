@@ -1,15 +1,19 @@
 package elite.intel.bindforge.devicefiles;
 
+import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush.Target;
 import elite.intel.bindforge.install.GameInstallation;
+import elite.intel.db.managers.BindForgeDeviceMasterManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -35,17 +39,27 @@ public final class InstallationHoldings implements DeviceApply.Holdings {
     private final Supplier<List<Target>> targets;
     private final FrontierStockDevices stock;
     private final FrontierStockButtonMaps stockMaps;
+    private final Supplier<Set<String>> masterNames;
 
-    InstallationHoldings(Supplier<List<Target>> targets, FrontierStockDevices stock, FrontierStockButtonMaps stockMaps) {
+    /** @param masterNames every name the master holds, read as each question is answered */
+    InstallationHoldings(Supplier<List<Target>> targets, FrontierStockDevices stock, FrontierStockButtonMaps stockMaps,
+                         Supplier<Set<String>> masterNames) {
         this.targets = targets;
         this.stock = stock;
         this.stockMaps = stockMaps;
+        this.masterNames = masterNames;
     }
 
-    /** The stored installations, read as they are now. */
+    /** The stored installations and the stored master, read as they are now. */
     public static InstallationHoldings stored() {
         return new InstallationHoldings(DeviceFilesPush::storedInstallations, FrontierStockDevices.getInstance(),
-                FrontierStockButtonMaps.getInstance());
+                FrontierStockButtonMaps.getInstance(), InstallationHoldings::storedMasterNames);
+    }
+
+    private static Set<String> storedMasterNames() {
+        Set<String> names = new HashSet<>();
+        BindForgeDeviceMasterManager.getInstance().findAll().forEach(row -> names.add(row.deviceName()));
+        return names;
     }
 
     /**
@@ -61,10 +75,41 @@ public final class InstallationHoldings implements DeviceApply.Holdings {
      * Whether some installation may still hold a rename's old name - as the push finds it: an element named so,
      * ignoring case, other than one spelled exactly as the new name; or a {@code .buttonMap} under the old name that
      * is not the new name's own file.
+     * <p>
+     * <strong>A shadow's old name is Frontier's</strong> (Alan, 2026-10-16, A15), whose element never leaves the file.
+     * It is held until the user's element leads the file for the controller - the first element claiming its VID/PID,
+     * as the game picks - and the old {@code .buttonMap} is gone, or is Frontier's own as Frontier shipped it. <strong>A
+     * map another master device owns does not hold it</strong> (review, 2026-10-17): a second controller labelled under
+     * the same Frontier element keeps that file, and the push never removes it.
      */
     @Override
-    public boolean mayHoldOldName(String oldName, String newName) {
-        return any(target -> holdsOldName(target, oldName, newName), "rename of " + oldName + " to " + newName);
+    public boolean mayHoldOldName(String oldName, String newName, String vid, String pid) {
+        boolean oldMapOwned = stock.ships(oldName) && masterNames.get().contains(oldName);
+        return any(target -> stock.ships(oldName)
+                        ? holdsShadowedName(target, oldName, newName, new HardwareId(vid, pid), oldMapOwned)
+                        : holdsOldName(target, oldName, newName),
+                "rename of " + oldName + " to " + newName);
+    }
+
+    private boolean holdsShadowedName(Target target, String oldName, String newName, HardwareId hardware,
+                                      boolean oldMapOwned) throws IOException {
+        if (!newName.equals(firstClaiming(target, hardware))) return true;
+        if (oldMapOwned) return false;
+        byte[] map = buttonMapContent(target, oldName);
+        if (map == null) return false;
+        Optional<byte[]> shipped = stockMaps.shippedContent(oldName);
+        return shipped.isEmpty() || !Arrays.equals(map, shipped.get());
+    }
+
+    /** The first element in the installation's file claiming this hardware, primary or alternative, or {@code null}. */
+    private static String firstClaiming(Target target, HardwareId hardware) throws IOException {
+        Path file = GameInstallation.deviceMappingsIn(target.controlSchemes());
+        byte[] mappings = DeviceFilesPush.readIfPresent(file);
+        if (mappings == null) return null;
+        for (DeviceEntry entry : DeviceMappingsParser.parse(new ByteArrayInputStream(mappings), file.toString())) {
+            if (entry.hardware().contains(hardware)) return entry.name();
+        }
+        return null;
     }
 
     @FunctionalInterface

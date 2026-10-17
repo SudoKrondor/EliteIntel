@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -77,7 +78,7 @@ class InstallationHoldingsTest {
         Files.write(steam.controlSchemes().resolve("DeviceButtonMaps").resolve("VPCPanel.buttonMap"), shipped);
         FrontierStockButtonMaps stockMaps = new FrontierStockButtonMaps(Map.of(), Map.of("VPCPanel", shipped));
 
-        assertFalse(new InstallationHoldings(() -> List.of(steam), FrontierStockDevices.getInstance(), stockMaps)
+        assertFalse(new InstallationHoldings(() -> List.of(steam), FrontierStockDevices.getInstance(), stockMaps, Set::of)
                 .mayHoldRemoval("VPCPanel"));
     }
 
@@ -88,7 +89,7 @@ class InstallationHoldingsTest {
         Target away = new Target(2, "EPIC", temp.resolve("gone"), false, true);
 
         assertTrue(holdings(steam, away).mayHoldRemoval("LVWAP"));
-        assertTrue(holdings(steam, away).mayHoldOldName("LVWAP", "LeftStick"));
+        assertTrue(holdings(steam, away).mayHoldOldName("LVWAP", "LeftStick", "3344", "83F4"));
     }
 
     /** Out of reach but missed nothing: it took every write that carried everything, so it settles nothing either way. */
@@ -111,7 +112,7 @@ class InstallationHoldingsTest {
     void anOldNameIsHeldByItsElementIgnoringCase() throws IOException {
         Target steam = installation(1, WITH_LVWAP.replace("LVWAP", "lvwap"));
 
-        assertTrue(holdings(steam).mayHoldOldName("LVWAP", "LeftStick"));
+        assertTrue(holdings(steam).mayHoldOldName("LVWAP", "LeftStick", "3344", "83F4"));
     }
 
     @Test
@@ -119,7 +120,7 @@ class InstallationHoldingsTest {
         Target steam = installation(1, FRONTIERS_ONLY);
         buttonMap(steam, "LVWAP");
 
-        assertTrue(holdings(steam).mayHoldOldName("LVWAP", "LeftStick"));
+        assertTrue(holdings(steam).mayHoldOldName("LVWAP", "LeftStick", "3344", "83F4"));
     }
 
     /** A case-only rename: the element spelled exactly as the new name is the device itself, never an old copy. */
@@ -127,7 +128,7 @@ class InstallationHoldingsTest {
     void aCaseOnlyRenameIsNotHeldByItsNewSpelling() throws IOException {
         Target steam = installation(1, WITH_LVWAP.replace("LVWAP", "Lvwap"));
 
-        assertFalse(holdings(steam).mayHoldOldName("LVWAP", "Lvwap"));
+        assertFalse(holdings(steam).mayHoldOldName("LVWAP", "Lvwap", "3344", "83F4"));
     }
 
     @Test
@@ -135,12 +136,76 @@ class InstallationHoldingsTest {
         Target steam = installation(1, WITH_LVWAP.replace("LVWAP", "LeftStick"));
         buttonMap(steam, "LeftStick");
 
-        assertFalse(holdings(steam).mayHoldOldName("LVWAP", "LeftStick"));
+        assertFalse(holdings(steam).mayHoldOldName("LVWAP", "LeftStick", "3344", "83F4"));
+    }
+
+    // --- a shadow's old name is Frontier's, whose element stays (A15)
+
+    private static final String SHADOWED = """
+            <?xml version="1.0" encoding="UTF-8" ?>
+            <Root>
+            \t<MyRudder><PID>B679</PID><VID>044F</VID></MyRudder>
+            \t<T-Rudder><PID>B679</PID><VID>044F</VID></T-Rudder>
+            </Root>
+            """;
+
+    @Test
+    void aShadowLeadingTheFileWithNoOldMapIsSettled() throws IOException {
+        Target steam = installation(1, SHADOWED);
+
+        assertFalse(holdings(steam).mayHoldOldName("T-Rudder", "MyRudder", "044f", "b679"),
+                "Frontier's element staying below the user's does not hold the old name");
+    }
+
+    @Test
+    void aShadowIsHeldWhileFrontiersElementStillLeads() throws IOException {
+        Target steam = installation(1, FRONTIERS_ONLY);
+
+        assertTrue(holdings(steam).mayHoldOldName("T-Rudder", "MyRudder", "044F", "B679"));
+    }
+
+    @Test
+    void aShadowIsHeldWhileTheOldMapIsStillThere() throws IOException {
+        Target steam = installation(1, SHADOWED);
+        buttonMap(steam, "T-Rudder");
+
+        assertTrue(holdings(steam).mayHoldOldName("T-Rudder", "MyRudder", "044F", "B679"));
+    }
+
+    @Test
+    void aShadowedFrontierMapPutBackAsShippedIsSettled() throws IOException {
+        Target steam = installation(1, SHADOWED.replace("T-Rudder", "VPCPanel"));
+        byte[] shipped = "<Root>Frontier</Root>".getBytes();
+        Files.createDirectories(steam.controlSchemes().resolve("DeviceButtonMaps"));
+        Files.write(steam.controlSchemes().resolve("DeviceButtonMaps").resolve("VPCPanel.buttonMap"), shipped);
+        FrontierStockButtonMaps stockMaps = new FrontierStockButtonMaps(Map.of(), Map.of("VPCPanel", shipped));
+
+        assertFalse(new InstallationHoldings(() -> List.of(steam), FrontierStockDevices.getInstance(), stockMaps, Set::of)
+                .mayHoldOldName("VPCPanel", "MyRudder", "044F", "B679"));
+    }
+
+    /** Review, 2026-10-17: the old map is another master device's - a second pad labelled under Frontier's name. */
+    @Test
+    void aShadowIsNotHeldByAMapAnotherMasterDeviceOwns() throws IOException {
+        Target steam = installation(1, SHADOWED);
+        buttonMap(steam, "T-Rudder");
+
+        assertFalse(new InstallationHoldings(() -> List.of(steam), FrontierStockDevices.getInstance(),
+                FrontierStockButtonMaps.getInstance(), () -> Set.of("T-Rudder", "MyRudder"))
+                .mayHoldOldName("T-Rudder", "MyRudder", "044F", "B679"));
+    }
+
+    @Test
+    void aShadowIsHeldWhereTheFileIsGone() throws IOException {
+        Path controlSchemes = Files.createDirectories(temp.resolve("bare").resolve("ControlSchemes"));
+        Target steam = new Target(1, "STEAM1", controlSchemes, false);
+
+        assertTrue(holdings(steam).mayHoldOldName("T-Rudder", "MyRudder", "044F", "B679"));
     }
 
     private InstallationHoldings holdings(Target... targets) {
         return new InstallationHoldings(() -> List.of(targets), FrontierStockDevices.getInstance(),
-                FrontierStockButtonMaps.getInstance());
+                FrontierStockButtonMaps.getInstance(), Set::of);
     }
 
     private Target installation(long id, String deviceMappings) throws IOException {

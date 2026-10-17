@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 /**
  * The controllers the capture dialog offers a tab for, under the name {@code .binds} calls each.
  * <p>
- * <strong>Every controller the commander has, connected or not</strong> (Alan, 2026-10-15): the connected ones,
+ * <strong>Every controller the user has, connected or not</strong> (Alan, 2026-10-15): the connected ones,
  * every one the master names, and every one the bindings name. A stick binding must not lose its tab because the
  * stick is asleep or unplugged - an unplugged controller's inputs are clicked, not pressed, and come from its saved
  * names and the inputs the bindings already use.
@@ -114,6 +114,17 @@ public final class CaptureControllers {
         controllers.sort(Comparator.comparing((Controller c) -> !c.named())
                 .thenComparing(Controller::tabTitle, String.CASE_INSENSITIVE_ORDER));
         return List.copyOf(controllers);
+    }
+
+    /**
+     * The {@code .binds} name of one connected controller, as {@link #connected()} names it - for a caller that needs
+     * one controller, not all of them (review, 2026-10-17). Reads the master, so call it off the EDT.
+     *
+     * @return empty when the controller has no name yet, or its GUID could not be read
+     */
+    public static Optional<String> nameOf(Device device) {
+        return DeviceIdentities.of(device)
+                .map(id -> nameOf(id, BindForgeDeviceMasterManager.getInstance(), FrontierStockDevices.getInstance()));
     }
 
     /**

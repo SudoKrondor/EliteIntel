@@ -95,10 +95,6 @@ public class BindForgeDeviceDraftManager {
         });
     }
 
-    public void setAliasConfirmed(long id, boolean confirmed) {
-        update(daos -> daos.draft().setAliasConfirmed(id, confirmed));
-    }
-
     /** Points a draft device at different hardware, keeping its name - the repair for a firmware update. */
     public void retarget(long id, String vid, String pid) {
         update(daos -> daos.draft().retarget(id, vid, pid));
@@ -181,33 +177,77 @@ public class BindForgeDeviceDraftManager {
     }
 
     /**
-     * The Device Editor's SAVE with the name changed: the rename and the whole label set, in one transaction with
-     * starting the draft (Alan, 2026-10-14, A11). A device under its old name keeps that name as its previous name,
-     * so Apply can find its element and {@code .buttonMap} in each installation; see the DAO's rename for when it
-     * keeps none.
-     * <p>
-     * Only a device the draft already holds can be renamed - a built-in the master has no labels for is not one of
-     * the user's to rename (A15).
+     * The Frontier element covering the controller SAVE is for, and the controller's hardware - for any controller
+     * Frontier covers: a built-in under Frontier's name, a shadow renamed again, or one going back.
      *
+     * @param frontierName the name of Frontier's element covering the controller, which every installation holds
+     */
+    public record FrontierCover(String frontierName, String vid, String pid) {
+        public FrontierCover {
+            Objects.requireNonNull(frontierName, "frontierName");
+            Objects.requireNonNull(vid, "vid");
+            Objects.requireNonNull(pid, "pid");
+        }
+    }
+
+    /**
+     * The Device Editor's SAVE with the name changed: the rename and the whole label set, in one transaction with
+     * starting the draft (Alan, 2026-10-14, A11).
+     * <p>
+     * <strong>The old name kept is the one the installations hold</strong>, so Apply can find its element and
+     * {@code .buttonMap} in each: renaming twice before an Apply must still find the files under the first name. A
+     * device added in the draft has no files anywhere yet, so it keeps none, and nor does one renamed back to the name
+     * the installations already hold - there is nothing left to rename.
+     * <p>
+     * <strong>A built-in's Frontier name is always on disk</strong> (Alan, 2026-10-16, A15): Frontier's element is in
+     * every installation whether or not the master holds the controller, so renaming it - a shadow - keeps Frontier's
+     * name as the old one, and Apply moves the bindings from it.
+     * <p>
+     * <strong>A shadow is this controller's own row</strong> (review, 2026-10-17, A15). One Frontier element covers
+     * several controllers - {@code <DualShock4>} three - and the row under its name may be another controller's, labelled
+     * there earlier. Renaming that row would shadow the wrong hardware and take the other controller's labels with it,
+     * so when the row under Frontier's name has other hardware, or there is none, the shadow is a new row with this
+     * controller's VID/PID.
+     *
+     * @param cover the Frontier element covering the controller and its hardware, when Frontier covers it; else
+     *              {@code null}
      * @return the draft row saved on, under its new name - or {@code null}, writing nothing, when the device is gone
      *         or the new name is already a draft device's: the caller read a list that has changed since
      */
-    public DraftRow saveDevice(String currentName, String newName, Map<String, String> labels) {
+    public DraftRow saveDevice(String currentName, String newName, Map<String, String> labels, FrontierCover cover) {
+        String frontierName = cover == null ? null : cover.frontierName();
         return inTransaction(daos -> {
             startIfNone(daos);
             BindForgeDeviceDraftDao draft = daos.draft();
             DraftRow row = draft.findByName(currentName);
+            if (currentName.equals(frontierName)
+                    && (row == null || !sameHardware(row, cover.vid(), cover.pid()))) {
+                if (draft.findByName(newName) != null) return null;
+                // WHY: a new name - the editor saves through here only when the name changed - so Frontier's is the old.
+                draft.insert(null, newName, cover.vid(), cover.pid(), true, frontierName);
+                DraftRow added = draft.findByName(newName);
+                labels.forEach((token, label) -> draft.putLabel(added.id(), token, label));
+                return added;
+            }
             if (row == null) return null;
             if (!currentName.equals(newName)) {
                 DraftRow holder = draft.findByName(newName);
                 if (holder != null && holder.id() != row.id()) return null;
-                draft.rename(row.id(), newName);
+                String onDisk = nameOnDisk(row, frontierName);
+                draft.rename(row.id(), newName, newName.equals(onDisk) ? null : onDisk);
             }
             long id = row.id();
             draft.deleteLabels(id);
             labels.forEach((token, label) -> draft.putLabel(id, token, label));
             return draft.findByName(newName);
         });
+    }
+
+    /** The name the installations hold for a draft device, or {@code null} when they hold none. */
+    private static String nameOnDisk(DraftRow row, String frontierName) {
+        if (row.previousName() != null) return row.previousName();
+        if (row.masterId() != null) return row.deviceName();
+        return row.deviceName().equals(frontierName) ? row.deviceName() : null;
     }
 
     /**
@@ -494,7 +534,9 @@ public class BindForgeDeviceDraftManager {
      * edits of the user's, and left started it would replace the new master with its empty copy on the next
      * Apply.
      *
-     * @param devices         the master as it is to be, possibly none. Ids are ignored
+     * @param devices         the master as it is to be, possibly none. Ids are ignored. A device's
+     *                        {@code previousName} is kept - first setup's losing name that {@code .binds} uses (A16),
+     *                        a rename the push carries out and Apply finishes
      * @param pendingRemovals names whose entries are in the installations but not the master
      * @return {@code false}, writing nothing, when BindForge was already activated or the master was not empty
      */
@@ -505,7 +547,8 @@ public class BindForgeDeviceDraftManager {
             daos.draft().deleteAll();
             daos.draft().clearStarted();
             for (StoredDevice device : devices) {
-                master.insert(device.deviceName(), device.vid(), device.pid(), device.aliasConfirmed());
+                master.insertWithPreviousName(device.deviceName(), device.vid(), device.pid(), device.aliasConfirmed(),
+                        device.previousName());
                 long masterId = master.findByName(device.deviceName()).id();
                 device.labels().forEach((token, label) -> master.putLabel(masterId, token, label));
                 master.clearPendingRemoval(device.deviceName());
