@@ -1,9 +1,11 @@
 package elite.intel.bindforge.install;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -59,7 +61,14 @@ class LinuxGameInstallationProviderTest {
         gameIn(steam);
         writeLibraryIndex(steam, steam);
         Files.createDirectories(home.resolve(".steam"));
-        Files.createSymbolicLink(home.resolve(".steam/steam"), steam);
+        try {
+            Files.createSymbolicLink(home.resolve(".steam/steam"), steam);
+        } catch (FileSystemException e) {
+            if (System.getProperty("os.name").startsWith("Windows")) {
+                Assumptions.assumeTrue(false, "Windows does not allow creating symbolic links: " + e.getMessage());
+            }
+            throw e;
+        }
 
         assertEquals(1, provider().findInstallations().size());
     }
