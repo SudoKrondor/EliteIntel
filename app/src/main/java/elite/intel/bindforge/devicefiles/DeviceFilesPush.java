@@ -376,7 +376,8 @@ public final class DeviceFilesPush implements DeviceApply.Pushes {
      * (Alan, 2026-10-16, A15) - keeps its file as Frontier shipped it, since a file Frontier shipped is never removed.
      * <strong>An old name another master device still has</strong> - a shadow of one controller on a shared Frontier
      * element while another is labelled under it (review, 2026-10-17) - keeps its file too: it is that device's, and
-     * the push writes it from the master.
+     * the push writes it from the master. Nor is it copied to the new name when this device has no labels: the labels
+     * are the other device's.
      *
      * @param oldNameInUse whether another master device is called by the old name
      * @return the writes - none when the installation holds no file under the old name
@@ -395,11 +396,13 @@ public final class DeviceFilesPush implements DeviceApply.Pushes {
         Path newMap = buttonMapOf(target, device.name());
         if (Files.exists(newMap) && Files.isSameFile(oldMap, newMap)) return List.of();
 
+        // WHY: before the copy below - the old file is the other device's, and its labels are not this one's to take
+        // (review, 2026-10-17).
+        if (oldNameInUse) return List.of();
         List<FileWrite> writes = new ArrayList<>();
         if (device.labels().isEmpty() && !Files.exists(newMap)) {
             writes.add(new FileWrite(newMap, null, oldContent));
         }
-        if (oldNameInUse) return writes;
         Optional<byte[]> shipped = stockMaps.shippedContent(device.previousName());
         if (shipped.isEmpty()) {
             writes.add(new FileWrite(oldMap, oldContent, null));

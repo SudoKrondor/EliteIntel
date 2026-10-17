@@ -78,7 +78,7 @@ class InstallationHoldingsTest {
         Files.write(steam.controlSchemes().resolve("DeviceButtonMaps").resolve("VPCPanel.buttonMap"), shipped);
         FrontierStockButtonMaps stockMaps = new FrontierStockButtonMaps(Map.of(), Map.of("VPCPanel", shipped));
 
-        assertFalse(new InstallationHoldings(() -> List.of(steam), FrontierStockDevices.getInstance(), stockMaps)
+        assertFalse(new InstallationHoldings(() -> List.of(steam), FrontierStockDevices.getInstance(), stockMaps, Set::of)
                 .mayHoldRemoval("VPCPanel"));
     }
 
@@ -180,7 +180,7 @@ class InstallationHoldingsTest {
         Files.write(steam.controlSchemes().resolve("DeviceButtonMaps").resolve("VPCPanel.buttonMap"), shipped);
         FrontierStockButtonMaps stockMaps = new FrontierStockButtonMaps(Map.of(), Map.of("VPCPanel", shipped));
 
-        assertFalse(new InstallationHoldings(() -> List.of(steam), FrontierStockDevices.getInstance(), stockMaps)
+        assertFalse(new InstallationHoldings(() -> List.of(steam), FrontierStockDevices.getInstance(), stockMaps, Set::of)
                 .mayHoldOldName("VPCPanel", "MyRudder", "044F", "B679"));
     }
 
@@ -205,7 +205,7 @@ class InstallationHoldingsTest {
 
     private InstallationHoldings holdings(Target... targets) {
         return new InstallationHoldings(() -> List.of(targets), FrontierStockDevices.getInstance(),
-                FrontierStockButtonMaps.getInstance());
+                FrontierStockButtonMaps.getInstance(), Set::of);
     }
 
     private Target installation(long id, String deviceMappings) throws IOException {

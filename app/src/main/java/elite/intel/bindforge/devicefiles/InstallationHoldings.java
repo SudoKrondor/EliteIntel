@@ -41,11 +41,6 @@ public final class InstallationHoldings implements DeviceApply.Holdings {
     private final FrontierStockButtonMaps stockMaps;
     private final Supplier<Set<String>> masterNames;
 
-    /** With no master device's name in use - what most tests need. */
-    InstallationHoldings(Supplier<List<Target>> targets, FrontierStockDevices stock, FrontierStockButtonMaps stockMaps) {
-        this(targets, stock, stockMaps, Set::of);
-    }
-
     /** @param masterNames every name the master holds, read as each question is answered */
     InstallationHoldings(Supplier<List<Target>> targets, FrontierStockDevices stock, FrontierStockButtonMaps stockMaps,
                          Supplier<Set<String>> masterNames) {

@@ -116,4 +116,17 @@ public final class DeviceRename {
     public static boolean backToFrontier(String typed, String frontierName) {
         return frontierName != null && frontierName.equals(typed);
     }
+
+    /**
+     * Whether going back to Frontier's name is closed, because another controller holds it (review, 2026-10-17, A15):
+     * one Frontier element covers several controllers, and one labelled under it keeps a master or draft row by that
+     * name. Going back would need that row's name, so SAVE would find it taken - the editor refuses as the name is
+     * typed instead, and says why.
+     *
+     * @param names every name the master and the draft hold. The device going back is under its own name, so a row
+     *              under Frontier's name is another controller's
+     */
+    public static boolean frontierNameHeld(String frontierName, Collection<String> names) {
+        return frontierName != null && names.contains(frontierName);
+    }
 }

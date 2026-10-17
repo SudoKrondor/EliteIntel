@@ -346,7 +346,7 @@ class DeviceApplyTest {
     void aRenamedDeviceTakesItsBindingsAlong() throws IOException {
         Target steam = steamInstallation();
         lvwapAppliedTo(steam);
-        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"), null);
         FakeRewrite rewrite = new FakeRewrite(Map.of());
         rewrite.names.put("LVWAP", 4);
 
@@ -370,7 +370,7 @@ class DeviceApplyTest {
     void aRenameAnInstallationMissedMovesTheBindingsAndKeepsTheOldName() throws IOException {
         Target steam = steamInstallation();
         lvwapAppliedTo(steam);
-        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"), null);
         FakeRewrite rewrite = new FakeRewrite(Map.of());
         rewrite.names.put("LVWAP", 4);
 
@@ -385,7 +385,7 @@ class DeviceApplyTest {
     @Test
     void noInstallationTookTheRenameSoTheBindingsWait() {
         master.record("LVWAP", "3344", "83F4", true);
-        draft.saveDevice("LVWAP", "LeftStick", Map.of());
+        draft.saveDevice("LVWAP", "LeftStick", Map.of(), null);
         FakeRewrite rewrite = new FakeRewrite(Map.of());
         rewrite.names.put("lvwap", 4);
 
@@ -403,7 +403,7 @@ class DeviceApplyTest {
     void aCaseOnlyRenameMovesNoBinding() throws IOException {
         Target steam = steamInstallation();
         lvwapAppliedTo(steam);
-        draft.saveDevice("LVWAP", "Lvwap", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        draft.saveDevice("LVWAP", "Lvwap", Map.of("Joy_1", "LV MAIN TRIGGER"), null);
         FakeRewrite rewrite = new FakeRewrite(Map.of());
         rewrite.names.put("LVWAP", 4);
 
@@ -421,7 +421,7 @@ class DeviceApplyTest {
     void aRenameMoveThatStopsKeepsTheOldNameForTheNextApply() throws IOException {
         Target steam = steamInstallation();
         lvwapAppliedTo(steam);
-        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"), null);
         FakeRewrite rewrite = new FakeRewrite(Map.of());
         rewrite.names.put("LVWAP", 4);
         rewrite.answers.put("LeftStick", DeviceRewriteResult.Status.STALE_FILE);
@@ -437,7 +437,7 @@ class DeviceApplyTest {
     void bindingsThatCannotBeReadMoveNoRenameAndSaySo() throws IOException {
         Target steam = steamInstallation();
         lvwapAppliedTo(steam);
-        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"), null);
         FakeRewrite rewrite = new FakeRewrite(Map.of());
         rewrite.names = null;
 
@@ -454,8 +454,8 @@ class DeviceApplyTest {
         Target steam = steamInstallation();
         lvwapAppliedTo(steam);
         master.record("RVWAP", "3344", "03F5", true);
-        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"));
-        draft.saveDevice("RVWAP", "RightStick", Map.of());
+        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"), null);
+        draft.saveDevice("RVWAP", "RightStick", Map.of(), null);
         FakeRewrite rewrite = new FakeRewrite(Map.of());
         rewrite.names.put("LVWAP", 4);
         rewrite.names.put("RVWAP", 6);
@@ -482,7 +482,7 @@ class DeviceApplyTest {
         Report report = pusher(List.of(steam)).push();
         DeviceApply.SetupMoves moved = firstSetupMoves(List.of(steam), rewrite, report, Map.of("Stick", "RVWAP"));
 
-        assertEquals(List.of("RVWAP <- [RightStick]", "RVWAP <- [Stick]"), rewrite.calls);
+        assertEquals(List.of("RVWAP <- [RightStick, Stick]"), rewrite.calls, "one rewrite, all or nothing");
         assertEquals(List.of(
                 new DeviceApply.RenameMove("RightStick", "RVWAP", 4, DeviceApply.MoveOutcome.MOVED,
                         DeviceRewriteResult.Status.REWRITTEN),
@@ -493,6 +493,24 @@ class DeviceApplyTest {
         assertTrue(mappings.contains("<RVWAP>"), mappings);
         assertFalse(mappings.contains("<RightStick>"), "the old name is renamed in place");
         assertTrue(mappings.contains("<Stick>"), "a handed-over name's element stays, for Apply's cleanup");
+    }
+
+    /** Review, 2026-10-17: a combined rewrite that stops leaves both names, and the old name for the next Apply. */
+    @Test
+    void afterFirstSetupARewriteThatStopsMovesNeitherName() throws IOException {
+        Target steam = installationHolding("RightStick", "Stick");
+        renamedInTheMaster("RightStick", "RVWAP");
+        FakeRewrite rewrite = new FakeRewrite(Map.of());
+        rewrite.names.put("RightStick", 4);
+        rewrite.names.put("Stick", 2);
+        rewrite.answers.put("RVWAP", DeviceRewriteResult.Status.STALE_FILE);
+
+        Report report = pusher(List.of(steam)).push();
+        DeviceApply.SetupMoves moved = firstSetupMoves(List.of(steam), rewrite, report, Map.of("Stick", "RVWAP"));
+
+        assertEquals(List.of(DeviceApply.MoveOutcome.FAILED, DeviceApply.MoveOutcome.FAILED),
+                moved.moves().stream().map(DeviceApply.RenameMove::outcome).toList());
+        assertEquals("RightStick", master.findByName("RVWAP").previousName(), "the next Apply tries again");
     }
 
     @Test
@@ -550,7 +568,7 @@ class DeviceApplyTest {
     void aDeviceClearedMidRenameHoldsItsOldNameBack() throws IOException {
         Target steam = steamInstallation();
         lvwapAppliedTo(steam);
-        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"), null);
         FakeRewrite stalled = new FakeRewrite(Map.of());
         stalled.names.put("LVWAP", 4);
         stalled.answers.put("LeftStick", DeviceRewriteResult.Status.STALE_FILE);
@@ -567,8 +585,8 @@ class DeviceApplyTest {
 
     // ------------------------------------------------------------------ shadowing a built-in (A15)
 
-    private static final BindForgeDeviceDraftManager.BuiltIn T_RUDDER =
-            new BindForgeDeviceDraftManager.BuiltIn("T-Rudder", "044F", "B679");
+    private static final BindForgeDeviceDraftManager.FrontierCover T_RUDDER =
+            new BindForgeDeviceDraftManager.FrontierCover("T-Rudder", "044F", "B679");
 
     /**
      * A shadow applied (Alan, 2026-10-16): the user's element leads the file, Frontier's stays, the bindings move from
@@ -744,7 +762,7 @@ class DeviceApplyTest {
         long id = master.record("LVWAP", "3344", "83F4", true).id();
         master.replaceLabels(id, Map.of("Joy_1", "LV MAIN TRIGGER"));
         apply(List.of(steam, epic), Set.of());
-        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"), null);
         FakeRewrite moved = new FakeRewrite(Map.of());
         moved.names.put("LVWAP", 4);
         new DeviceApply(draft::promote, pusher(List.of(steam, epicAway()))::push, Set::of,
@@ -771,7 +789,7 @@ class DeviceApplyTest {
         long id = master.record("LVWAP", "3344", "83F4", true).id();
         master.replaceLabels(id, Map.of("Joy_1", "LV MAIN TRIGGER"));
         apply(List.of(epic), Set.of());
-        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"));
+        draft.saveDevice("LVWAP", "LeftStick", Map.of("Joy_1", "LV MAIN TRIGGER"), null);
         FakeRewrite waiting = new FakeRewrite(Map.of());
         waiting.names.put("LVWAP", 4);
         new DeviceApply(draft::promote, pusher(List.of(epicAway()))::push, Set::of,
@@ -792,7 +810,7 @@ class DeviceApplyTest {
 
     private static InstallationHoldings holdings(List<Target> targets) {
         return new InstallationHoldings(() -> targets, FrontierStockDevices.getInstance(),
-                FrontierStockButtonMaps.getInstance());
+                FrontierStockButtonMaps.getInstance(), Set::of);
     }
 
     /** Epic, at its folder, with Frontier's file. */
@@ -863,7 +881,7 @@ class DeviceApplyTest {
     /** The master as first setup leaves it when {@code winner} beat {@code oldName}, which .binds uses. */
     private void renamedInTheMaster(String oldName, String winner) {
         master.record(oldName, "3344", "03F5", true);
-        draft.saveDevice(oldName, winner, Map.of());
+        draft.saveDevice(oldName, winner, Map.of(), null);
         draft.promote();
         assertEquals(oldName, master.findByName(winner).previousName());
     }

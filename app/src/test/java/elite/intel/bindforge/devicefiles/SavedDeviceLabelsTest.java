@@ -44,7 +44,7 @@ class SavedDeviceLabelsTest {
 
     @Test
     void aRenamedDeviceIsStillFoundByTheNameTheBindsFileHoldsUntilApply() {
-        draft.saveDevice("VKB-Stick", "Right Stick", Map.of("Joy_6", "Gear"));
+        draft.saveDevice("VKB-Stick", "Right Stick", Map.of("Joy_6", "Gear"), null);
 
         SavedDeviceLabels labels = SavedDeviceLabels.load();
         assertEquals(Optional.of("Gear"), labels.label("VKB-Stick", "Joy_6"));

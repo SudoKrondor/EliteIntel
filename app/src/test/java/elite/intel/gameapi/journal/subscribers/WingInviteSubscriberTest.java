@@ -17,8 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * A wing invitation is narrated with the name labelled as a commander's, and nothing else to invent from - a bare name
- * reads to a small model like anything, and the Friends announcement once came back with a friend's name as a place.
+ * A wing invitation is announced as a fixed, localized line naming the commander - never phrased by the LLM, which once
+ * turned a bare friend's name into a place (review, 2026-10-17).
  */
 class WingInviteSubscriberTest {
 
@@ -36,14 +36,12 @@ class WingInviteSubscriberTest {
     }
 
     @Test
-    void theNameIsLabelledAsTheInvitingCommanders() {
+    void theInviteIsAFixedLineNamingTheCommander() {
         new WingInviteSubscriber().onWingInvite(invite("Perilous Range"));
 
-        assertEquals(1, narrator.data.size());
-        assertEquals("Wing invitation received from another player. Inviting commander's name: Perilous Range",
-                narrator.data.getFirst());
-        assertTrue(narrator.instructions.getFirst().contains("Commander Perilous Range"));
-        assertTrue(narrator.instructions.getFirst().contains("Say the name exactly as written"));
+        assertEquals(1, narrator.announced.size());
+        assertTrue(narrator.announced.getFirst().contains("Perilous Range"), narrator.announced.getFirst());
+        assertTrue(narrator.data.isEmpty(), "nothing is left for the LLM to phrase");
     }
 
     @Test
@@ -51,7 +49,7 @@ class WingInviteSubscriberTest {
         new WingInviteSubscriber().onWingInvite(invite(" "));
         new WingInviteSubscriber().onWingInvite(invite(null));
 
-        assertTrue(narrator.data.isEmpty());
+        assertTrue(narrator.announced.isEmpty());
     }
 
     private static WingInviteEvent invite(String name) {
@@ -64,7 +62,7 @@ class WingInviteSubscriberTest {
 
     private static final class CapturingNarrator implements VegaNarrator {
         private final List<String> data = new ArrayList<>();
-        private final List<String> instructions = new ArrayList<>();
+        private final List<String> announced = new ArrayList<>();
 
         @Override
         public void filler(String text, boolean urgent) {
@@ -73,11 +71,12 @@ class WingInviteSubscriberTest {
         @Override
         public void narrate(String data, String instructions) {
             this.data.add(data);
-            this.instructions.add(instructions);
         }
 
         @Override
         public void announce(String phrase, boolean urgent) {
+            announced.add(phrase);
         }
+
     }
 }

@@ -75,6 +75,26 @@ public final class FirstSetup {
         public static Result failedBeforeWriting(Exception e) {
             return new Result(Outcome.FAILED, StringUtls.messageOf(e), null, null, null, null, false);
         }
+
+        static Result applied(Path backup, FirstSetupPlan.Resolution resolution, Report report,
+                              DeviceApply.SetupMoves moves) {
+            return new Result(Outcome.APPLIED, null, backup, resolution, report, moves, true);
+        }
+
+        static Result alreadySetUp(Path backup, FirstSetupPlan.Resolution resolution) {
+            return new Result(Outcome.ALREADY_SET_UP, "BindForge is already activated", backup, resolution, null,
+                    null, true);
+        }
+
+        static Result backupFailed(String reason, FirstSetupPlan.Resolution resolution) {
+            return new Result(Outcome.BACKUP_FAILED, reason, null, resolution, null, null, false);
+        }
+
+        /** @param report the push's, when it ran before the failure; otherwise {@code null} */
+        static Result failed(String reason, Path backup, FirstSetupPlan.Resolution resolution, Report report,
+                             boolean masterFilled) {
+            return new Result(Outcome.FAILED, reason, backup, resolution, report, null, masterFilled);
+        }
     }
 
     /** Takes the labelled backup. */
@@ -195,19 +215,18 @@ public final class FirstSetup {
             taken = backup.take(reading.targets());
         } catch (IOException | RuntimeException e) {
             log.warn("First setup stopped: the backup could not be taken", e);
-            return new Result(Outcome.BACKUP_FAILED, StringUtls.messageOf(e), null, resolution, null, null, false);
+            return Result.backupFailed(StringUtls.messageOf(e), resolution);
         }
         try {
             if (!establish.intoEmptyMaster(resolution.devices(), resolution.pendingRemovals())) {
-                return new Result(Outcome.ALREADY_SET_UP, "BindForge is already activated", taken, resolution, null,
-                        null, true);
+                return Result.alreadySetUp(taken, resolution);
             }
         } catch (RuntimeException e) {
             // WHY: the master is written in one transaction, so a failure here leaves it empty and first setup can
             // simply run again.
             log.error("First setup stopped: the master could not be saved", e);
-            return new Result(Outcome.FAILED, "the master could not be saved: " + StringUtls.messageOf(e), taken, resolution,
-                    null, null, false);
+            return Result.failed("the master could not be saved: " + StringUtls.messageOf(e), taken, resolution,
+                    null, false);
         }
         Report report;
         try {
@@ -216,8 +235,8 @@ public final class FirstSetup {
             // WHY: the master already holds what the user chose, so first setup is over - the installations that
             // missed the push stop matching it, and Apply retries them, the bindings move with them.
             log.error("First setup saved the master, but the push failed", e);
-            return new Result(Outcome.FAILED, "the master is saved, but the installations could not be updated: "
-                    + StringUtls.messageOf(e), taken, resolution, null, null, true);
+            return Result.failed("the master is saved, but the installations could not be updated: "
+                    + StringUtls.messageOf(e), taken, resolution, null, true);
         }
         DeviceApply.SetupMoves moved;
         try {
@@ -226,14 +245,15 @@ public final class FirstSetup {
             // WHY: the installations are written, so first setup is over. An old name's move is retried by the next
             // Apply; a handed-over name's element stays, held back while .binds names it.
             log.error("First setup updated the installations, but the bindings could not be moved", e);
-            return new Result(Outcome.FAILED, "the installations are updated, but the bindings could not be moved: "
-                    + StringUtls.messageOf(e), taken, resolution, report, null, true);
+            return Result.failed("the installations are updated, but the bindings could not be moved: "
+                    + StringUtls.messageOf(e), taken, resolution, report, true);
         }
         log.info("First setup: {} devices, {} button maps, {} pending removals, {} bindings moves; installations "
                         + "matching {} of {}", resolution.devices().size(), resolution.buttonMapCount(),
                 resolution.pendingRemovals().size(), moved.moves().size(), report.matchingCount(),
                 report.installations().size());
-        return new Result(Outcome.APPLIED, null, taken, resolution, report, moved, true);
+        return Result.applied(taken, resolution, report, moved);
+
     }
 
 }

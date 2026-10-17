@@ -90,6 +90,14 @@ class DeviceRenameTest {
         assertFalse(DeviceRename.backToFrontier("TRudder", "T-Rudder"));
     }
 
+    /** Review, 2026-10-17: pad A labelled under DualShock4 closes going back to it for pad B's shadow. */
+    @Test
+    void goingBackIsClosedWhileAnotherControllerHoldsFrontiersName() {
+        assertTrue(DeviceRename.frontierNameHeld("DualShock4", Set.of("DualShock4", "PadB")));
+        assertFalse(DeviceRename.frontierNameHeld("DualShock4", Set.of("PadB")));
+        assertFalse(DeviceRename.frontierNameHeld(null, Set.of("PadB")));
+    }
+
     /**
      * Review, 2026-10-17 (A15): a built-in opens under Frontier's name, which is one of its own - yet it stays taken, so
      * another spelling of it is refused. Only {@link DeviceRename#backToFrontier} accepts Frontier's name.

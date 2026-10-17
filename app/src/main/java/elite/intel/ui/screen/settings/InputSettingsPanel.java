@@ -23,7 +23,6 @@ import org.apache.logging.log4j.Logger;
 import javax.swing.*;
 import java.awt.*;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.makeCheckBox;
@@ -285,8 +284,12 @@ public class InputSettingsPanel extends JPanel {
         fillButtonCombo(device, Map.of());
         buttonCombo.setSelectedIndex(0);
         if (device == null) return;
-        CompletableFuture.supplyAsync(() -> savedLabelsOf(device))
-                .thenAccept(labels -> SwingUtilities.invokeLater(() -> relabelButtonCombo(device, labels)));
+        Thread reader = new Thread(() -> {
+            Map<String, String> labels = savedLabelsOf(device);
+            SwingUtilities.invokeLater(() -> relabelButtonCombo(device, labels));
+        }, "PTT-ButtonLabels");
+        reader.setDaemon(true);
+        reader.start();
     }
 
     private void fillButtonCombo(Device device, Map<String, String> labels) {
@@ -324,6 +327,8 @@ public class InputSettingsPanel extends JPanel {
         try {
             return CaptureControllers.nameOf(device).map(SavedDeviceLabels::of).orElse(Map.of());
         } catch (RuntimeException e) {
+            // WHY: broad on purpose - a thread boundary, and a label read must never break the PTT picker; it falls
+            // back to Button N.
             log.warn("Could not read the saved button names for {}: {}", device.name(), e.getMessage());
             return Map.of();
         }

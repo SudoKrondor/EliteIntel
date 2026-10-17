@@ -533,6 +533,20 @@ class DeviceFilesPushTest {
         assertTrue(read(buttonMap(steam, "PadB")).contains("<Joy_1>B CROSS</Joy_1>"));
     }
 
+    /** Review, 2026-10-17: a shadow with no labels of its own does not take the other pad's file either. */
+    @Test
+    void aShadowWithNoLabelsDoesNotCopyAnotherDevicesMap() throws IOException {
+        Target steam = installation(1, "STEAM");
+        writeButtonMap(steam, "DualShock4", "<Root><Joy_1>A CROSS</Joy_1></Root>");
+        MasterDevice padA = new MasterDevice("DualShock4", "054C", "05C4", Map.of("Joy_1", "A CROSS"));
+        MasterDevice padB = shadow("PadB", "DualShock4", "054C", "09CC", Map.of());
+
+        push(List.of(steam), List.of(padA, padB));
+
+        assertFalse(Files.exists(buttonMap(steam, "PadB")), "pad A's labels are not pad B's");
+        assertTrue(read(buttonMap(steam, "DualShock4")).contains("A CROSS"));
+    }
+
     private static List<DeviceEntry> entries(Target target) throws IOException {
         return DeviceMappingsParser.parse(target.controlSchemes().resolve("DeviceMappings.xml"));
     }

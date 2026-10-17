@@ -176,19 +176,17 @@ public class BindForgeDeviceDraftManager {
         });
     }
 
-    /** As {@link #saveDevice(String, String, Map, BuiltIn)}, for a device that is not a built-in. */
-    public DraftRow saveDevice(String currentName, String newName, Map<String, String> labels) {
-        return saveDevice(currentName, newName, labels, null);
-    }
-
     /**
-     * The attached controller a built-in's SAVE is for: the Frontier name covering it, and its hardware.
+     * The Frontier element covering the controller SAVE is for, and the controller's hardware - for any controller
+     * Frontier covers: a built-in under Frontier's name, a shadow renamed again, or one going back.
      *
      * @param frontierName the name of Frontier's element covering the controller, which every installation holds
      */
-    public record BuiltIn(String frontierName, String vid, String pid) {
-        public BuiltIn {
+    public record FrontierCover(String frontierName, String vid, String pid) {
+        public FrontierCover {
             Objects.requireNonNull(frontierName, "frontierName");
+            Objects.requireNonNull(vid, "vid");
+            Objects.requireNonNull(pid, "pid");
         }
     }
 
@@ -211,21 +209,22 @@ public class BindForgeDeviceDraftManager {
      * so when the row under Frontier's name has other hardware, or there is none, the shadow is a new row with this
      * controller's VID/PID.
      *
-     * @param builtIn the controller's Frontier name and hardware when it is a built-in, or {@code null}
+     * @param cover the Frontier element covering the controller and its hardware, when Frontier covers it; else
+     *              {@code null}
      * @return the draft row saved on, under its new name - or {@code null}, writing nothing, when the device is gone
      *         or the new name is already a draft device's: the caller read a list that has changed since
      */
-    public DraftRow saveDevice(String currentName, String newName, Map<String, String> labels, BuiltIn builtIn) {
-        String frontierName = builtIn == null ? null : builtIn.frontierName();
+    public DraftRow saveDevice(String currentName, String newName, Map<String, String> labels, FrontierCover cover) {
+        String frontierName = cover == null ? null : cover.frontierName();
         return inTransaction(daos -> {
             startIfNone(daos);
             BindForgeDeviceDraftDao draft = daos.draft();
             DraftRow row = draft.findByName(currentName);
             if (currentName.equals(frontierName)
-                    && (row == null || !sameHardware(row, builtIn.vid(), builtIn.pid()))) {
+                    && (row == null || !sameHardware(row, cover.vid(), cover.pid()))) {
                 if (draft.findByName(newName) != null) return null;
-                draft.insert(null, newName, builtIn.vid(), builtIn.pid(), true,
-                        newName.equals(frontierName) ? null : frontierName);
+                // WHY: a new name - the editor saves through here only when the name changed - so Frontier's is the old.
+                draft.insert(null, newName, cover.vid(), cover.pid(), true, frontierName);
                 DraftRow added = draft.findByName(newName);
                 labels.forEach((token, label) -> draft.putLabel(added.id(), token, label));
                 return added;

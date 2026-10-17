@@ -112,8 +112,10 @@ final class DeviceEditorDialog extends JDialog {
      *
      * @param name   its element name - the name a shadow keeps as its old one, and the one the user may go back to
      * @param shared whether it covers other hardware too, so bindings naming it are not this controller's alone
+     * @param held   whether another controller holds its name in the master or the draft, so going back to it is
+     *               refused ({@link DeviceRename#frontierNameHeld})
      */
-    record Covering(String name, boolean shared) {
+    record Covering(String name, boolean shared, boolean held) {
     }
 
     private final Opening opening;
@@ -186,13 +188,17 @@ final class DeviceEditorDialog extends JDialog {
         return renamable() && !typedName().equals(opening.deviceName());
     }
 
-    /** {@code null} when the typed name may be saved, else why not. */
-    private DeviceNames.Verdict nameVerdict() {
+    /** {@code null} when the typed name may be saved, else why not, in the user's words. */
+    private String nameRefusal() {
         if (!nameChanged()) return null;
         Covering covering = opening.covering();
-        if (DeviceRename.backToFrontier(typedName(), covering == null ? null : covering.name())) return null;
+        if (DeviceRename.backToFrontier(typedName(), covering == null ? null : covering.name())) {
+            // WHY: refused here, where the reason is known - SAVE would find the name taken and could only say the
+            // device changed (review, 2026-10-17).
+            return covering.held() ? getText("bindings.aliasDesigner.editor.name.frontierHeld", covering.name()) : null;
+        }
         DeviceNames.Verdict verdict = DeviceNames.validate(typedName(), opening.taken());
-        return verdict.valid() ? null : verdict;
+        return verdict.valid() ? null : OnboardingDialog.problemText(verdict);
     }
 
     /** Labels can be edited once the device has a name - and not while it is cleared or reset, waiting for APPLY. */
@@ -530,8 +536,8 @@ final class DeviceEditorDialog extends JDialog {
         // WHY: the boxes are filled in before SAVE exists, and each fill lands here.
         if (save == null) return;
         boolean dirty = dirty();
-        DeviceNames.Verdict refused = nameVerdict();
-        nameProblem.setText(refused == null ? " " : OnboardingDialog.problemText(refused));
+        String refused = nameRefusal();
+        nameProblem.setText(refused == null ? " " : refused);
         nameProblem.setVisible(refused != null);
         unsavedHint.setVisible(dirty);
         save.setEnabled(dirty && refused == null && !busy);
@@ -568,10 +574,10 @@ final class DeviceEditorDialog extends JDialog {
      */
     private void save() {
         if (!dirty() || busy) return;
-        DeviceNames.Verdict refused = nameVerdict();
+        String refused = nameRefusal();
         if (refused != null) {
             HudConfirmDialog.info(this, getText("bindings.aliasDesigner.editor.heading"),
-                    OnboardingDialog.problemText(refused), getText("bindings.aliasDesigner.firstSetup.close"));
+                    refused, getText("bindings.aliasDesigner.firstSetup.close"));
             return;
         }
         Map<String, String> labels =
@@ -581,9 +587,9 @@ final class DeviceEditorDialog extends JDialog {
         if (nameChanged()) {
             String newName = typedName();
             Covering covering = opening.covering();
-            BindForgeDeviceDraftManager.BuiltIn builtIn = covering == null ? null
-                    : new BindForgeDeviceDraftManager.BuiltIn(covering.name(), device.vid(), device.pid());
-            runAndClose(() -> draft.saveDevice(opening.deviceName(), newName, labels, builtIn) != null,
+            BindForgeDeviceDraftManager.FrontierCover cover = covering == null ? null
+                    : new BindForgeDeviceDraftManager.FrontierCover(covering.name(), device.vid(), device.pid());
+            runAndClose(() -> draft.saveDevice(opening.deviceName(), newName, labels, cover) != null,
                     "bindings.aliasDesigner.editor.saveFailed");
             return;
         }

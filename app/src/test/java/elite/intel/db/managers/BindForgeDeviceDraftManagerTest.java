@@ -131,7 +131,7 @@ class BindForgeDeviceDraftManagerTest {
     /** SAVE with the name changed (A11): one write, the old name kept for Apply, and no removal once applied. */
     @Test
     void savingWithANewNameRenamesAndKeepsTheOldNameForApply() {
-        DraftRow saved = draft.saveDevice("LVWAP", "LeftStick", labels("Joy_1", "TRIGGER"));
+        DraftRow saved = draft.saveDevice("LVWAP", "LeftStick", labels("Joy_1", "TRIGGER"), null);
 
         assertEquals("LeftStick", saved.deviceName());
         assertEquals("LVWAP", saved.previousName());
@@ -147,17 +147,17 @@ class BindForgeDeviceDraftManagerTest {
     /** Renamed back before Apply: nothing is left to rename, so no old name is kept. */
     @Test
     void renamingBackToTheAppliedNameKeepsNoOldName() {
-        draft.saveDevice("LVWAP", "LeftStick", labels("Joy_1", "TRIGGER"));
+        draft.saveDevice("LVWAP", "LeftStick", labels("Joy_1", "TRIGGER"), null);
 
-        DraftRow back = draft.saveDevice("LeftStick", "LVWAP", labels("Joy_1", "TRIGGER"));
+        DraftRow back = draft.saveDevice("LeftStick", "LVWAP", labels("Joy_1", "TRIGGER"), null);
 
         assertNull(back.previousName());
     }
 
     // --- shadowing a built-in (A15): Frontier's name is on disk whether or not the master holds the controller
 
-    private static final BindForgeDeviceDraftManager.BuiltIn T_RUDDER =
-            new BindForgeDeviceDraftManager.BuiltIn("T-Rudder", "044F", "B679");
+    private static final BindForgeDeviceDraftManager.FrontierCover T_RUDDER =
+            new BindForgeDeviceDraftManager.FrontierCover("T-Rudder", "044F", "B679");
 
     @Test
     void shadowingABuiltInTheMasterDoesNotHoldKeepsFrontiersNameAsTheOldOne() {
@@ -223,7 +223,7 @@ class BindForgeDeviceDraftManagerTest {
         draft.saveLabels("DualShock4", "054C", "05C4", labels("Joy_1", "A CROSS"));
 
         DraftRow padB = draft.saveDevice("DualShock4", "PadB", labels("Joy_1", "B CROSS"),
-                new BindForgeDeviceDraftManager.BuiltIn("DualShock4", "054C", "09CC"));
+                new BindForgeDeviceDraftManager.FrontierCover("DualShock4", "054C", "09CC"));
 
         assertEquals("09CC", padB.pid());
         assertEquals("DualShock4", padB.previousName());
@@ -235,8 +235,8 @@ class BindForgeDeviceDraftManagerTest {
     /** A name another draft device holds, or a device that is gone, writes nothing - the editor read a stale list. */
     @Test
     void savingUnderATakenNameOrAGoneDeviceWritesNothing() {
-        assertNull(draft.saveDevice("LVWAP", "RVWAP", labels("Joy_1", "TRIGGER")));
-        assertNull(draft.saveDevice("Nobody", "LeftStick", labels("Joy_1", "TRIGGER")));
+        assertNull(draft.saveDevice("LVWAP", "RVWAP", labels("Joy_1", "TRIGGER"), null));
+        assertNull(draft.saveDevice("Nobody", "LeftStick", labels("Joy_1", "TRIGGER"), null));
         assertEquals(labels("Joy_1", "LV MAIN TRIGGER", "Joy_2", "PINKY"),
                 draft.labelsOf(draft.findByName("LVWAP").id()), "the transaction wrote nothing");
     }
@@ -725,6 +725,6 @@ class BindForgeDeviceDraftManagerTest {
         Map<String, String> labels = draft.isStarted() && draft.findByName(from) != null
                 ? draft.labelsOf(draft.findByName(from).id())
                 : master.labelsOf(master.findByName(from).id());
-        assertNotNull(draft.saveDevice(from, to, labels), from + " -> " + to);
+        assertNotNull(draft.saveDevice(from, to, labels, null), from + " -> " + to);
     }
 }

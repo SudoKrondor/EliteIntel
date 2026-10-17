@@ -31,7 +31,6 @@ import java.util.TreeSet;
  * </ul>
  * Settled while building it - 2026-10-07 (Alan):
  * <ul>
- *     <li><s>A name conflict is answered only where no binding is lost.</s> Replaced by A16, below.</li>
  *     <li><strong>Colliding labels can be answered per device</strong>, by an installation: that installation's
  *     label wins every collision it holds one for, and labels the others hold alone are still taken.</li>
  *     <li><strong>"Use one installation as the master"</strong> answers every question in its favour, and still
@@ -157,12 +156,17 @@ public final class FirstSetupPlan {
             handedOver = Collections.unmodifiableMap(new TreeMap<>(handedOver));
         }
 
-        /** Every losing name whose bindings move, old names and handed-over names alike, by the name they move to. */
+        /**
+         * Every losing name whose bindings move, old names and handed-over names alike, by the name they move to. A
+         * name differing from its winner only in case is left out: {@code .binds} finds an element ignoring case, so
+         * nothing is moved for it (review, 2026-10-17).
+         */
         public Map<String, String> bindingMoves() {
             Map<String, String> moves = new TreeMap<>(handedOver);
             devices.forEach(device -> {
                 if (device.previousName() != null) moves.put(device.previousName(), device.deviceName());
             });
+            moves.entrySet().removeIf(move -> move.getKey().equalsIgnoreCase(move.getValue()));
             return Collections.unmodifiableMap(moves);
         }
 

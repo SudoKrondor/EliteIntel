@@ -300,9 +300,19 @@ final class AliasDesignerReader {
         DeviceEntry covering = stock.covering(device.vid(), device.pid()).orElse(null);
         Set<String> taken = rename == DeviceRename.Allowed.YES ? takenNames(name, masterRow, draftRow, stock) : Set.of();
         DeviceEditorDialog.Covering frontier = covering == null ? null
-                : new DeviceEditorDialog.Covering(covering.name(), covering.hardware().size() > 1);
+                : new DeviceEditorDialog.Covering(covering.name(), covering.hardware().size() > 1,
+                DeviceRename.frontierNameHeld(covering.name(), storedNames(master)));
         return new DeviceEditorDialog.Opening(device, name, live == null ? null : live.id(), description, inputs,
                 saved, name != null && stock.gameDrawsIt(name), strip, middle, rename, taken, frontier);
+    }
+
+    /** Every name the master and the draft hold - SAVE's view of which names are in use. */
+    private static Set<String> storedNames(BindForgeDeviceMasterManager master) {
+        Set<String> names = new HashSet<>();
+        master.findAll().forEach(row -> names.add(row.deviceName()));
+        BindForgeDeviceDraftManager draft = BindForgeDeviceDraftManager.getInstance();
+        if (draft.isStarted()) draft.findAll().forEach(row -> names.add(row.deviceName()));
+        return names;
     }
 
     /**

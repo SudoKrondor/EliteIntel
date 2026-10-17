@@ -208,8 +208,10 @@ and the name box in `DeviceEditorDialog`, `BindForgeDeviceDraftManager.saveDevic
   not count against it. Until then the name box is read-only and CLEAR refused, as for any rename under way.
 - **Labels move with the name** (option 1 of three). They are written under the new name - from the master, or the
   old file's own content when it holds none - and the old `.buttonMap` is deleted in every installation, **except a
-  file Frontier ships** (`VPCPanel`, `VPCThrottle`), which is put back as Frontier shipped it. Another controller
-  still on Frontier's element gets a fresh file from [startup generation](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller).
+  file Frontier ships** (`VPCPanel`, `VPCThrottle`), which is put back as Frontier shipped it. ~~Another controller
+  still on Frontier's element gets a fresh file from [startup generation](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller).~~
+  *Overtaken by the review of 2026-10-17 (below): the old file stays while another device is still called by
+  Frontier's name, and is neither deleted nor copied.*
 - **Going back is typing Frontier's name** (option 1 of three) - the name of the element covering the controller,
   spelled exactly as Frontier spells it. It is a rename like any other: at Apply the user's element is removed where
   Frontier's is in the file, the bindings move back to Frontier's name, and the labels go to its `.buttonMap`. The
@@ -240,9 +242,20 @@ and the name box in `DeviceEditorDialog`, `BindForgeDeviceDraftManager.saveDevic
   with this controller's VID/PID, and the other controller keeps its own.
 - **The old `.buttonMap` stays while another device is still called by Frontier's name** - pad A, labelled under
   `DualShock4`. Apply writes it from the master and never deletes it for pad B's shadow, and the rename does not wait
-  for it to go. *Known limit:* going back to Frontier's name while that other device holds it is refused as a taken
-  name in the draft; the editor says the device changed.
+  for it to go. ~~*Known limit:* going back to Frontier's name while that other device holds it is refused as a taken
+  name in the draft; the editor says the device changed.~~ *Second review below: refused as it is typed, saying why.*
 - **Who may rename is told by enums**, `Owner` and `Presence`, not three booleans in a row.
+
+*Second review — 2026-10-17 (`code-integrity-review.md`, Alan: all eleven):*
+
+- **A shadow with no labels does not take the other controller's file.** The old `.buttonMap` was copied to the new
+  name before the push checked whether another device still held it, so pad B saved without labels got pad A's
+  `A CROSS`. The check now comes first: the file is the other device's, neither deleted nor copied.
+- **Going back to Frontier's name is refused as it is typed while another controller holds it**
+  (`DeviceRename.frontierNameHeld`, a row by that name in the master or the draft), with a line saying another controller
+  is called that. It had been accepted in the box and then refused on SAVE as *"the device changed"*.
+- **SAVE's Frontier argument is `FrontierCover`**, for every controller Frontier covers - a built-in, a shadow renamed
+  again or going back - and needs the hardware as well as the name.
 
 ## First setup — reconciling the installs — settled 2026-09-23
 
@@ -531,6 +544,14 @@ straight after the push. Alan answered two questions, one at a time:
 - **A move that throws after the push** ends first setup as *failed* with the installations written: first setup is
   over, and the dialog closes.
 - **A case-only loser moves nothing**, as a case-only rename does - `.binds` finds an element ignoring case.
+
+*After review — 2026-10-17 (`code-integrity-review.md`, Alan: all eleven):*
+
+- **A handed-over name rides in the old name's rewrite** - one `.binds` rewrite per winner, `{old name, handed-over
+  names} → winner`, all or nothing. As a second rewrite of its own it was the one most likely to meet the bindings
+  monitor mid-reload (as `DeviceApply.moveHardwareIds` records), and the one never retried. Now a rewrite that stops
+  leaves both names, and the next Apply retries the old name's; the handed-over one still has no record of its own.
+- **The confirm lists only moves that will be tried**: a case-only loser is left out of it, as the move leaves it out.
 
 ### The `.buttonMap` label merge — 2026-10-08 (Alan)
 

@@ -110,6 +110,19 @@ class FirstSetupPlanTest {
         assertEquals(Map.of("RVWAP", "RightStick"), resolution.bindingMoves());
     }
 
+    /** Review, 2026-10-17: a case-only loser is still the old name, but the confirm promises no move for it. */
+    @Test
+    void aCaseOnlyLoserIsNoBindingMove() {
+        FirstSetupPlan plan = plan(Set.of("lvwap"),
+                install(STEAM, Map.of("LVWAP", LEFT)),
+                install(EPIC, Map.of("lvwap", LEFT)));
+
+        Resolution resolution = plan.resolve(Map.of(only(plan.rows()).id(), "LVWAP"));
+
+        assertEquals(List.of(renamed("LVWAP", LEFT, "lvwap")), resolution.devices());
+        assertTrue(resolution.bindingMoves().isEmpty(), ".binds finds an element ignoring case");
+    }
+
     /** Was stuck until A16: with both names in .binds, either may now win. */
     @Test
     void whenBothNamesAreInTheBindsEitherCanBeChosen() {
@@ -350,8 +363,7 @@ class FirstSetupPlanTest {
         return new StoredDevice(null, name, hardware.vid(), hardware.pid(), true, null, labels);
     }
 
-    private static StoredDevice renamed(String name, HardwareId hardware, String oldName) {
-        return new StoredDevice(null, name, hardware.vid(), hardware.pid(), true, oldName, Map.of());
+    private static StoredDevice renamed(String name, HardwareId hardware, String oldName) {        return new StoredDevice(null, name, hardware.vid(), hardware.pid(), true, oldName, Map.of());
     }
 
     private static Row only(List<Row> rows) {
