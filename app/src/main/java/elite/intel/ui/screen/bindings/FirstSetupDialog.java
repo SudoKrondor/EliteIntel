@@ -1,5 +1,6 @@
 package elite.intel.ui.screen.bindings;
 
+import elite.intel.bindforge.devicefiles.DeviceApply;
 import elite.intel.bindforge.devicefiles.DeviceDivergence;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush.Target;
@@ -216,10 +217,7 @@ final class FirstSetupDialog extends JDialog {
 
     private void addOptionChoices(Row row) {
         for (Option option : row.options()) {
-            JButton button = makeButtonSubtle(option.available()
-                    ? optionText(option)
-                    : getText("bindings.aliasDesigner.firstSetup.option.needsRename", optionText(option)));
-            button.setEnabled(option.available());
+            JButton button = makeButtonSubtle(optionText(option));
             button.addActionListener(e -> {
                 answers.put(row.id(), option.key());
                 refreshRows();
@@ -291,9 +289,12 @@ final class FirstSetupDialog extends JDialog {
         }
         FirstSetupPlan.Resolution resolution = reading.plan().resolve(answers);
         long reachable = reading.targets().size() - reading.unreachable().size();
+        StringBuilder summary = new StringBuilder(getText("bindings.aliasDesigner.firstSetup.summary.text",
+                resolution.devices().size(), resolution.buttonMapCount(), reachable));
+        resolution.bindingMoves().forEach((from, to) -> summary.append('\n')
+                .append(getText("bindings.aliasDesigner.firstSetup.summary.moves", from, to)));
         boolean go = HudConfirmDialog.confirm(this, getText("bindings.aliasDesigner.firstSetup.summary.title"),
-                getText("bindings.aliasDesigner.firstSetup.summary.text",
-                        resolution.devices().size(), resolution.buttonMapCount(), reachable),
+                summary.toString(),
                 getText("bindings.aliasDesigner.firstSetup.summary.apply"),
                 getText("bindings.aliasDesigner.firstSetup.cancel"));
         if (!go) return;
@@ -343,11 +344,36 @@ final class FirstSetupDialog extends JDialog {
             text.append('\n').append(getText("bindings.aliasDesigner.firstSetup.result.installation",
                     nameOf(installation.target()), installation.reason()));
         }
+        appendMoves(text, result);
         if (!result.resolution().pendingRemovals().isEmpty()) {
             text.append('\n').append(getText("bindings.aliasDesigner.firstSetup.result.leftOnDisk",
                     String.join(", ", result.resolution().pendingRemovals())));
         }
         return text.toString();
+    }
+
+    /**
+     * What became of the bindings on each name the user gave up (A16). An old name's move the next Apply retries; a
+     * handed-over name's is not retried, and its entry stays while the bindings still name it.
+     */
+    private static void appendMoves(StringBuilder text, FirstSetup.Result result) {
+        if (result.moves().unread()) {
+            text.append('\n').append(getText("bindings.aliasDesigner.firstSetup.result.movesUnread"));
+        }
+        Map<String, String> handedOver = result.resolution().handedOver();
+        for (DeviceApply.RenameMove move : result.moves().moves()) {
+            String stillOn = handedOver.containsKey(move.from())
+                    ? "bindings.aliasDesigner.firstSetup.result.moveKept"
+                    : "bindings.aliasDesigner.firstSetup.result.moveRetried";
+            text.append('\n').append(switch (move.outcome()) {
+                case MOVED -> getText("bindings.aliasDesigner.firstSetup.result.moved", move.bindings(), move.from(),
+                        move.to());
+                case NOT_FOUND -> getText("bindings.aliasDesigner.firstSetup.result.moveNotFound", move.from());
+                case NOT_APPLIED -> getText(stillOn, move.from(), move.to(),
+                        getText("bindings.aliasDesigner.firstSetup.result.nothingUpdated"));
+                case FAILED -> getText(stillOn, move.from(), move.to(), AliasDesignerReports.moveReason(move.status()));
+            });
+        }
     }
 
     private String nameOf(Target target) {

@@ -538,6 +538,18 @@ class BindForgeDeviceDraftManagerTest {
         assertFalse(draft.isStarted(), "a draft left started would replace the new master with its empty copy");
     }
 
+    /** First setup's losing name that .binds uses is kept as the winner's old name, for Apply's rename (A16). */
+    @Test
+    void establishingKeepsAnOldName() {
+        master.findAll().forEach(row -> master.remove(row.id()));
+
+        assertTrue(draft.establish(List.of(
+                new StoredDevice(null, "RVWAP", "3344", "03F5", true, "RightStick", Map.of())), List.of()));
+
+        assertEquals("RightStick", master.findByName("RVWAP").previousName());
+        assertTrue(master.pendingRemovals().isEmpty());
+    }
+
     @Test
     void establishingActivatesInTheSameTransaction() {
         master.findAll().forEach(row -> master.remove(row.id()));

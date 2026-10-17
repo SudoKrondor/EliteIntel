@@ -331,6 +331,68 @@ public final class DeviceApply {
     }
 
     /**
+     * First setup's bindings move, straight after its push (Alan, 2026-10-17, A16): a losing name {@code .binds} uses
+     * hands its bindings to the name that beat it. Waiting for the next Apply would leave every installation without
+     * the losing name - the push renames it - while the presets still name it.
+     * <p>
+     * The losing name kept as a device's old name moves as a rename's does, and is retried by every later Apply until
+     * it is finished. A further loser to the same winner is moved here once, with no record: its element stays as a
+     * pending removal, which Apply holds back while {@code .binds} still names it, so a move that stops strands
+     * nothing that was working.
+     *
+     * @param report     first setup's push
+     * @param handedOver the losing names no device keeps as its old name, by the name their bindings move to
+     */
+    public SetupMoves afterFirstSetup(Report report, Map<String, String> handedOver) {
+        boolean everywhere = everyInstallationTookIt(report);
+        Renames recorded = moveRenamedReferences(report, row -> everywhere);
+        Renames others = moveHandedOver(report, handedOver);
+        List<RenameMove> moves = new ArrayList<>(recorded.moves());
+        moves.addAll(others.moves());
+        return new SetupMoves(moves, recorded.unread() || others.unread());
+    }
+
+    /**
+     * @param moves  the bindings each losing name handed over, and what became of them
+     * @param unread whether {@code .binds} could not be read, so none was moved
+     */
+    public record SetupMoves(List<RenameMove> moves, boolean unread) {
+        public SetupMoves {
+            moves = List.copyOf(moves);
+        }
+    }
+
+    /** The bindings naming each losing name, moved to its winner - once, as a rename's move but with no old name. */
+    private Renames moveHandedOver(Report report, Map<String, String> handedOver) {
+        if (handedOver.isEmpty()) return new Renames(List.of(), false, List.of());
+        Map<String, Integer> counts;
+        try {
+            counts = binds.nameCounts();
+        } catch (IOException e) {
+            log.warn("Could not read .binds, so no binding naming a name first setup gave up was moved: {}",
+                    e.getMessage());
+            return new Renames(List.of(), true, List.of());
+        }
+        boolean applied = report.matchingCount() > 0;
+        List<RenameMove> moves = new ArrayList<>();
+        handedOver.forEach((from, to) -> {
+            // WHY: a Device= name finds its element ignoring case, so a case-only move would only risk two spellings
+            // of one device in a preset, which the game rejects (format section 4.3).
+            if (from.equalsIgnoreCase(to)) return;
+            int bindings = BindsDeviceReferences.bindingsNaming(List.of(from), counts);
+            if (bindings == 0) return;
+            if (!applied) {
+                moves.add(new RenameMove(from, to, bindings, MoveOutcome.NOT_APPLIED, null));
+                return;
+            }
+            Rewritten result = binds.rewrite(DeviceReferenceRewrite.rename(from, to));
+            moves.add(new RenameMove(from, to, reported(result, bindings), outcomeOf(result, from + " to " + to),
+                    result.status()));
+        });
+        return new Renames(moves, false, List.of());
+    }
+
+    /**
      * The pending removals of devices no longer in the master, split into those this write carries out and those
      * {@code .binds} holds back.
      */

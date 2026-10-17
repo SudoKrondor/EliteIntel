@@ -10,7 +10,6 @@ import elite.intel.bindforge.devicefiles.FirstSetupPlan.Row;
 import elite.intel.db.managers.BindForgeDeviceDraftManager.StoredDevice;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,31 +93,54 @@ class FirstSetupPlanTest {
                 "its entry stays on disk below the winner until something removes it");
     }
 
-    /** The rename transaction is not built, so a choice that would orphan bindings cannot be made yet. */
+    /** A16: a losing name .binds uses becomes the winner's old name, so its bindings follow - not a removal. */
     @Test
-    void aNameTheBindsUseCannotBeGivenUp() {
+    void aLosingNameTheBindsUseBecomesTheWinnersOldName() {
         FirstSetupPlan plan = plan(Set.of("RVWAP"),
                 install(STEAM, Map.of("RVWAP", RIGHT)),
                 install(EPIC, Map.of("RightStick", RIGHT)));
 
         Row row = only(plan.rows());
         assertEquals(Severity.RED, row.severity());
-        Map<String, Option> options = new HashMap<>();
-        row.options().forEach(option -> options.put(option.key(), option));
-        assertTrue(options.get("RVWAP").available());
-        assertFalse(options.get("RightStick").available(), "choosing it would orphan every RVWAP binding");
-        assertEquals(List.of(row.id()), plan.unanswered(Map.of(row.id(), "RightStick")));
+        Resolution resolution = plan.resolve(Map.of(row.id(), "RightStick"));
+
+        assertEquals(List.of(renamed("RightStick", RIGHT, "RVWAP")), resolution.devices());
+        assertTrue(resolution.pendingRemovals().isEmpty(), "the push renames it, so nothing is left to remove");
+        assertTrue(resolution.handedOver().isEmpty());
+        assertEquals(Map.of("RVWAP", "RightStick"), resolution.bindingMoves());
     }
 
+    /** Was stuck until A16: with both names in .binds, either may now win. */
     @Test
-    void whenBothNamesAreInTheBindsNeitherCanBeChosen() {
+    void whenBothNamesAreInTheBindsEitherCanBeChosen() {
         FirstSetupPlan plan = plan(Set.of("RVWAP", "RightStick"),
                 install(STEAM, Map.of("RVWAP", RIGHT)),
                 install(EPIC, Map.of("RightStick", RIGHT)));
 
         Row row = only(plan.rows());
-        assertTrue(row.options().stream().noneMatch(Option::available));
-        assertEquals(Map.of(), plan.answersFavouring(STEAM));
+        assertEquals(Map.of(row.id(), "RVWAP"), plan.answersFavouring(STEAM));
+        assertEquals(List.of(renamed("RVWAP", RIGHT, "RightStick")),
+                plan.resolve(plan.answersFavouring(STEAM)).devices());
+    }
+
+    /**
+     * A16, two losing names .binds uses (Alan, option 1): the first by name is the old name; the other is handed over
+     * at first setup and stays a pending removal, which Apply holds back while .binds names it.
+     */
+    @Test
+    void aSecondLosingNameTheBindsUseIsHandedOverAndStaysPending() {
+        FirstSetupPlan plan = plan(Set.of("RightStick", "Stick"),
+                install(STEAM, Map.of("RVWAP", RIGHT)),
+                install(EPIC, Map.of("RightStick", RIGHT)),
+                new Installation(3, "FRONTIER", Map.of("Stick", RIGHT), Map.of(), Map.of()));
+
+        Row row = only(plan.rows());
+        Resolution resolution = plan.resolve(Map.of(row.id(), "RVWAP"));
+
+        assertEquals(List.of(renamed("RVWAP", RIGHT, "RightStick")), resolution.devices());
+        assertEquals(List.of("Stick"), resolution.pendingRemovals());
+        assertEquals(Map.of("Stick", "RVWAP"), resolution.handedOver());
+        assertEquals(Map.of("RightStick", "RVWAP", "Stick", "RVWAP"), resolution.bindingMoves());
     }
 
     @Test
@@ -326,6 +348,10 @@ class FirstSetupPlanTest {
 
     private static StoredDevice device(String name, HardwareId hardware, Map<String, String> labels) {
         return new StoredDevice(null, name, hardware.vid(), hardware.pid(), true, null, labels);
+    }
+
+    private static StoredDevice renamed(String name, HardwareId hardware, String oldName) {
+        return new StoredDevice(null, name, hardware.vid(), hardware.pid(), true, oldName, Map.of());
     }
 
     private static Row only(List<Row> rows) {

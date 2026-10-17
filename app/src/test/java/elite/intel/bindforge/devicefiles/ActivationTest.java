@@ -199,7 +199,7 @@ class ActivationTest {
 
     private static FirstSetup firstSetup(List<Target> targets, FirstSetup.Reader reader) {
         return new FirstSetup(() -> targets, reader, Set::of, taken -> null, (devices, removals) -> false,
-                () -> new Report(List.of()));
+                () -> new Report(List.of()), (report, handedOver) -> new DeviceApply.SetupMoves(List.of(), false));
     }
 
     private static FirstSetup.Reader sameEverywhere() {

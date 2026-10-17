@@ -31,9 +31,7 @@ import java.util.TreeSet;
  * </ul>
  * Settled while building it - 2026-10-07 (Alan):
  * <ul>
- *     <li><strong>A name conflict is answered only where no binding is lost.</strong> The rename transaction and
- *     its {@code .binds} rewrite are not built, so a name whose loser {@code .binds} references cannot be chosen.
- *     The loser's element and {@code .buttonMap} stay on disk, below the winner, as a pending removal.</li>
+ *     <li><s>A name conflict is answered only where no binding is lost.</s> Replaced by A16, below.</li>
  *     <li><strong>Colliding labels can be answered per device</strong>, by an installation: that installation's
  *     label wins every collision it holds one for, and labels the others hold alone are still taken.</li>
  *     <li><strong>"Use one installation as the master"</strong> answers every question in its favour, and still
@@ -47,6 +45,15 @@ import java.util.TreeSet;
  *     <li><strong>A name that wins any name conflict is kept</strong>, even where it loses another - a stale PID in
  *     one installation must not cost the user the device. Answers that would leave two devices on one VID/PID are
  *     unanswered until changed.</li>
+ * </ul>
+ * Names that need Rename - 2026-10-17 (Alan, A16):
+ * <ul>
+ *     <li><strong>Every name may win.</strong> A losing name {@code .binds} uses hands its bindings to the winner:
+ *     the first such loser, by name, becomes the winner's old name ({@code previous_name}), so the push renames its
+ *     element and {@code .buttonMap} and every later Apply retries the move until it is finished. Any further one is
+ *     moved by first setup alone and stays a pending removal, which Apply holds back while {@code .binds} names
+ *     it.</li>
+ *     <li>A losing name {@code .binds} does not use stays a pending removal, as before.</li>
  * </ul>
  * The {@code .buttonMap} label merge - 2026-10-08 (Alan):
  * <ul>
@@ -103,14 +110,13 @@ public final class FirstSetupPlan {
     }
 
     /**
-     * One possible answer.
+     * One possible answer. Every answer may be chosen - since A16 a losing name's bindings follow the winner.
      *
-     * @param key       what an answer names
-     * @param text      what the user is shown: a VID/PID, a name, or an installation's storefront
-     * @param installs  the installations holding this value
-     * @param available whether it may be chosen. Only a name whose choice would orphan bindings is not
+     * @param key      what an answer names
+     * @param text     what the user is shown: a VID/PID, a name, or an installation's storefront
+     * @param installs the installations holding this value
      */
-    public record Option(String key, String text, Set<Long> installs, boolean available) {
+    public record Option(String key, String text, Set<Long> installs) {
         public Option {
             installs = Set.copyOf(installs);
         }
@@ -136,14 +142,28 @@ public final class FirstSetupPlan {
     }
 
     /**
-     * @param devices         the master as it is to be
-     * @param pendingRemovals names that lost a name conflict or were shadowed. Their entries stay in the
-     *                        installations, below the winner, until something removes them
+     * @param devices         the master as it is to be. A device whose losing name {@code .binds} uses carries it
+     *                        as its {@code previousName}
+     * @param pendingRemovals names that lost a name conflict or were shadowed, other than an old name. Their entries
+     *                        stay in the installations, below the winner, until something removes them
+     * @param handedOver      losing names {@code .binds} uses that are no device's old name - a second loser to one
+     *                        winner - by the name their bindings move to. First setup moves them once, after its push
      */
-    public record Resolution(List<StoredDevice> devices, List<String> pendingRemovals) {
+    public record Resolution(List<StoredDevice> devices, List<String> pendingRemovals,
+                             Map<String, String> handedOver) {
         public Resolution {
             devices = List.copyOf(devices);
             pendingRemovals = List.copyOf(pendingRemovals);
+            handedOver = Collections.unmodifiableMap(new TreeMap<>(handedOver));
+        }
+
+        /** Every losing name whose bindings move, old names and handed-over names alike, by the name they move to. */
+        public Map<String, String> bindingMoves() {
+            Map<String, String> moves = new TreeMap<>(handedOver);
+            devices.forEach(device -> {
+                if (device.previousName() != null) moves.put(device.previousName(), device.deviceName());
+            });
+            return Collections.unmodifiableMap(moves);
         }
 
         public long buttonMapCount() {
@@ -194,12 +214,12 @@ public final class FirstSetupPlan {
     }
 
     /**
-     * The questions still needing an answer: unanswered, answered with something not on offer, or answered with
-     * an option that is not available. A question about a name that has just lost a name conflict needs none.
+     * The questions still needing an answer: unanswered, or answered with something not on offer. A question about a
+     * name that has just lost a name conflict needs none.
      * Colliding labels are counted per input, by {@link #labelAnswerKey(String, String)}.
      */
     public List<String> unanswered(Map<String, String> answers) {
-        Set<String> losers = losers(answers);
+        Set<String> losers = losers(answers).keySet();
         List<String> missing = new ArrayList<>();
         for (Row row : rows) {
             if (!row.isQuestion()) continue;
@@ -210,17 +230,13 @@ public final class FirstSetupPlan {
                         .forEach(input -> missing.add(labelAnswerKey(device, input)));
                 continue;
             }
-            Option chosen = chosen(row, answers);
-            if (chosen == null || !chosen.available()) missing.add(row.id());
+            if (chosen(row, answers) == null) missing.add(row.id());
         }
         if (missing.isEmpty()) missing.addAll(clashing(answers, losers));
         return missing;
     }
 
-    /**
-     * The answers that take one installation's side wherever it has one. A question where it has none, or where
-     * its side is not available, is left unanswered.
-     */
+    /** The answers that take one installation's side wherever it has one. A question where it has none is left. */
     public Map<String, String> answersFavouring(long installId) {
         Map<String, String> answers = new LinkedHashMap<>();
         for (Row row : rows) {
@@ -229,7 +245,7 @@ public final class FirstSetupPlan {
                 continue;
             }
             for (Option option : row.options()) {
-                if (option.available() && option.installs().contains(installId)) {
+                if (option.installs().contains(installId)) {
                     answers.put(row.id(), option.key());
                     break;
                 }
@@ -282,13 +298,23 @@ public final class FirstSetupPlan {
     public Resolution resolve(Map<String, String> answers) {
         List<String> missing = unanswered(answers);
         if (!missing.isEmpty()) throw new IllegalStateException("first setup is not answered: " + missing);
-        Set<String> losers = losers(answers);
+        Map<String, String> losers = losers(answers);
+
+        // WHY: a device keeps one old name (A11), so of two losing names .binds uses only the first, by name, is
+        // recorded; the other is handed over by first setup's own move and kept as a pending removal, which Apply
+        // holds back while .binds still names it (Alan, 2026-10-17, A16).
+        Map<String, String> oldNames = new LinkedHashMap<>();
+        Map<String, String> handedOver = new TreeMap<>();
+        new TreeMap<>(losers).forEach((loser, winner) -> {
+            if (!referenced.contains(loser)) return;
+            if (oldNames.putIfAbsent(winner, loser) != null) handedOver.put(loser, winner);
+        });
 
         List<StoredDevice> devices = new ArrayList<>();
         for (String name : elementNames()) {
-            if (losers.contains(name)) continue;
+            if (losers.containsKey(name)) continue;
             HardwareId hardware = hardwareFor(name, answers);
-            devices.add(new StoredDevice(null, name, hardware.vid(), hardware.pid(), true, null,
+            devices.add(new StoredDevice(null, name, hardware.vid(), hardware.pid(), true, oldNames.get(name),
                     labelsFor(name, answers)));
         }
         for (String name : builtInNames()) {
@@ -297,9 +323,10 @@ public final class FirstSetupPlan {
             devices.add(new StoredDevice(null, name, hardware.vid(), hardware.pid(), true, null,
                     labelsFor(name, answers)));
         }
-        Set<String> removals = new TreeSet<>(losers);
+        Set<String> removals = new TreeSet<>(losers.keySet());
+        removals.removeAll(oldNames.values());
         removals.addAll(shadowed.keySet());
-        return new Resolution(devices, List.copyOf(removals));
+        return new Resolution(devices, List.copyOf(removals), handedOver);
     }
 
     /**
@@ -365,12 +392,7 @@ public final class FirstSetupPlan {
                 if (hardware.equals(install.elements().get(name))) holding.add(install.installId());
             });
             present.addAll(holding);
-            // WHY: giving up a name that .binds uses would orphan those bindings until the rename transaction
-            // rewrites them, and that is not built - so the choice is shown but cannot be made.
-            boolean losesNothing = names.stream()
-                    .filter(other -> !other.equals(name))
-                    .noneMatch(referenced::contains);
-            options.add(new Option(name, name, holding, losesNothing));
+            options.add(new Option(name, name, holding));
         }
         boolean anyReferenced = names.stream().anyMatch(referenced::contains);
         return new Row(NAME_ROW + hardware.vid() + ":" + hardware.pid(), Kind.NAME_DIFFERS,
@@ -383,7 +405,7 @@ public final class FirstSetupPlan {
                 installsByHardware.computeIfAbsent(hardware, h -> new LinkedHashSet<>()).add(install));
         List<Option> options = new ArrayList<>();
         installsByHardware.forEach((hardware, installs) ->
-                options.add(new Option(key(hardware), hardware.toString(), installs, true)));
+                options.add(new Option(key(hardware), hardware.toString(), installs)));
         return new Row(HARDWARE_ROW + name, Kind.HARDWARE_DIFFERS, Severity.RED, name, byInstall.keySet(), options);
     }
 
@@ -394,7 +416,7 @@ public final class FirstSetupPlan {
         for (Installation install : installations) {
             if (!holders.containsKey(install.installId())) continue;
             options.add(new Option(String.valueOf(install.installId()), install.storefront(),
-                    Set.of(install.installId()), true));
+                    Set.of(install.installId())));
         }
         return Optional.of(new Row(LABELS_ROW + name, Kind.LABELS_DIFFER, Severity.YELLOW, name,
                 holders.keySet(), options));
@@ -405,18 +427,22 @@ public final class FirstSetupPlan {
         return labelMerge(name).merged(labelAnswers(name, answers));
     }
 
-    /** Names beaten in a name conflict and winning none. A name that wins anywhere is kept. */
-    private Set<String> losers(Map<String, String> answers) {
-        Set<String> losers = new LinkedHashSet<>();
+    /**
+     * Names beaten in a name conflict and winning none, each with the name that beat it - in the first conflict it
+     * lost, in the list's order, should it lose more than one. A name that wins anywhere is kept.
+     */
+    private Map<String, String> losers(Map<String, String> answers) {
+        Map<String, String> losers = new LinkedHashMap<>();
         Set<String> winners = new LinkedHashSet<>();
         for (Row row : rows) {
             if (row.kind() != Kind.NAME_DIFFERS) continue;
             Option chosen = chosen(row, answers);
-            if (chosen == null || !chosen.available()) continue;
+            if (chosen == null) continue;
             winners.add(chosen.key());
-            row.options().stream().map(Option::key).filter(name -> !name.equals(chosen.key())).forEach(losers::add);
+            row.options().stream().map(Option::key).filter(name -> !name.equals(chosen.key()))
+                    .forEach(name -> losers.putIfAbsent(name, chosen.key()));
         }
-        losers.removeAll(winners);
+        losers.keySet().removeAll(winners);
         return losers;
     }
 

@@ -113,7 +113,7 @@ final class AliasDesignerReports {
     /**
      * Why a move stopped, in the user's words - the status itself is in the log.
      */
-    private static String moveReason(DeviceRewriteResult.Status status) {
+    static String moveReason(DeviceRewriteResult.Status status) {
         return switch (status) {
             case STALE_FILE -> getText("bindings.aliasDesigner.apply.moveReason.stale");
             case READ_FAILED, UNSUPPORTED_XML -> getText("bindings.aliasDesigner.apply.moveReason.unread");

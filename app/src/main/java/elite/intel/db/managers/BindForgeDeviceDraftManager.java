@@ -535,7 +535,9 @@ public class BindForgeDeviceDraftManager {
      * edits of the user's, and left started it would replace the new master with its empty copy on the next
      * Apply.
      *
-     * @param devices         the master as it is to be, possibly none. Ids are ignored
+     * @param devices         the master as it is to be, possibly none. Ids are ignored. A device's
+     *                        {@code previousName} is kept - first setup's losing name that {@code .binds} uses (A16),
+     *                        a rename the push carries out and Apply finishes
      * @param pendingRemovals names whose entries are in the installations but not the master
      * @return {@code false}, writing nothing, when BindForge was already activated or the master was not empty
      */
@@ -546,7 +548,8 @@ public class BindForgeDeviceDraftManager {
             daos.draft().deleteAll();
             daos.draft().clearStarted();
             for (StoredDevice device : devices) {
-                master.insert(device.deviceName(), device.vid(), device.pid(), device.aliasConfirmed());
+                master.insertWithPreviousName(device.deviceName(), device.vid(), device.pid(), device.aliasConfirmed(),
+                        device.previousName());
                 long masterId = master.findByName(device.deviceName()).id();
                 device.labels().forEach((token, label) -> master.putLabel(masterId, token, label));
                 master.clearPendingRemoval(device.deviceName());

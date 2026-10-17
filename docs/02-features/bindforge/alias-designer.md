@@ -448,9 +448,10 @@ Built as `bindforge.devicefiles.FirstSetup` (the flow), `FirstSetupPlan` (the de
 and `DeviceFilesSnapshot`, with `ui.screen.bindings.FirstSetupDialog` opened from **SET UP** on the Alias Designer
 screen, which is offered only while the master is empty.
 
-- **A name conflict is answered only where no binding is lost.** The [rename transaction](#renaming-a-device) and
+- ~~**A name conflict is answered only where no binding is lost.** The [rename transaction](#renaming-a-device) and
   its `.binds` rewrite are not built, so a name may be chosen only when the names it beats are not in `.binds`;
-  any other choice is shown but disabled, *needs Rename*. The winner is written at the top of every installation,
+  any other choice is shown but disabled, *needs Rename*.~~ *Every name may win since A16 (2026-10-17) - see
+  [Names that needed Rename](#names-that-needed-rename--2026-10-17-alan-a16) below.* The winner is written at the top of every installation,
   where [the first match wins](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12d-two-entries-for-one-vidpid-the-first-in-the-file-wins--measured-2026-10-03);
   each loser's element and `.buttonMap` stay on disk beneath it as a **pending removal**, for CLEAR's cleanup. When
   `.binds` uses both names, first setup cannot finish until the rename exists.
@@ -496,6 +497,40 @@ screen, which is offered only while the master is empty.
   first setup can run again; if the push fails after the master is saved, first setup is over and the
   installations that missed it stop matching the master, for Apply to retry. A half-written backup is removed
   rather than left to pass for a restore point.
+
+### Names that needed Rename — 2026-10-17 (Alan, A16)
+
+Built in `FirstSetupPlan.resolve` (the losing names and where their bindings go), `BindForgeDeviceDraftManager.establish`
+(the old name stored with the master), `DeviceApply.afterFirstSetup` (the move) and `FirstSetup.apply`, which runs it
+straight after the push. Alan answered two questions, one at a time:
+
+- **Every name may win now**, so *needs Rename* is gone. A losing name `.binds` uses becomes the winner's **old name**
+  (`previous_name`), as a [rename](#renaming-a-device) records it. The push then renames the losing element and its
+  `.buttonMap` in every installation that holds them, and Apply finishes what an installation missed. A losing name
+  `.binds` does not use stays a pending removal, as before. *First setup stuck because `.binds` uses both names* is
+  gone with it: either name can win.
+- **First setup moves the bindings itself, straight after its push** (option 1 of two), with Apply's rename move -
+  moved once at least one installation took the winner, retried by every later Apply, and the old name forgotten
+  once every installation and `.binds` are done. *Why:* the push already renames the losing element wherever it finds
+  it, so waiting for the next Apply would leave every installation without the name while the presets still use
+  it - every installation rejecting the preset, where before first setup only those lacking the name did.
+- **Two losing names `.binds` uses, for one winner** (option 1 of two): a device keeps one old name, so the first by
+  name is recorded; the other's bindings are moved by first setup too, once, with no record. Its element stays in
+  the installations as a pending removal, which Apply
+  [holds back while `.binds` names it](#built--2026-10-11-alan-a10) and removes once nothing does. A move of it that
+  stops is reported and **not retried** - its entry stays, so nothing that worked before first setup stops working.
+  Keeping *needs Rename* for this case (option 2) would have left a user whose `.binds` uses all three names stuck.
+
+*Also settled while building it:*
+
+- **A name losing two conflicts** - a stale PID under one name, each pair also held under another - hands its
+  bindings to the winner of the first conflict in the list's order.
+- **The confirm lists each move** - *"Bindings naming RightStick move to RVWAP."* - and the report says what became
+  of each: moved with the count, still waiting for the next Apply (the old name), or left on the name whose entry
+  stays (a second loser).
+- **A move that throws after the push** ends first setup as *failed* with the installations written: first setup is
+  over, and the dialog closes.
+- **A case-only loser moves nothing**, as a case-only rename does - `.binds` finds an element ignoring case.
 
 ### The `.buttonMap` label merge — 2026-10-08 (Alan)
 
@@ -1802,7 +1837,8 @@ same breakage in the other direction.
 - **First setup's *needs Rename* choices stay disabled in A11** (Alan, 2026-10-14). A11 renames from the Device
   Editor only. Opening those choices — recording the losing name as the winner's `previous_name` so the first Apply
   moves its bindings — is slice A16, which also designs the two cases one `previous_name` cannot cover: two losing
-  names that `.binds` uses, and first setup that cannot finish because `.binds` uses both names.
+  names that `.binds` uses, and first setup that cannot finish because `.binds` uses both names. *Built 2026-10-17 -
+  [Names that needed Rename](#names-that-needed-rename--2026-10-17-alan-a16).*
 - **A11 renames the user's own devices only** (Alan, 2026-10-14). On a built-in still under Frontier's name the
   name field stays read-only, as today. Renaming or shadowing an attached built-in
   ([above](#built-in-controllers-in-my-devices--settled-2026-09-13)) needs its presentation designed first, and is
