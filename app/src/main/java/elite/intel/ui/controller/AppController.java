@@ -38,6 +38,7 @@ import elite.intel.setup.GameEditionCheck;
 import elite.intel.setup.SetupCheck;
 import elite.intel.tools.ws.WebSocketBroadcaster;
 import elite.intel.ui.event.*;
+import elite.intel.ui.i18n.MultiLingualTextProvider;
 import elite.intel.util.StringUtls;
 import elite.intel.util.Updater;
 import org.apache.logging.log4j.LogManager;
@@ -93,7 +94,8 @@ public class AppController {
             try {
                 Boolean updateAvailable = checkAsync.get();
                 if (updateAvailable) {
-                    GameEventBus.publish(new AiVoxResponseEvent("Newer version available"));
+                    GameEventBus.publish(new AiVoxResponseEvent(
+                            MultiLingualTextProvider.getText("app.updateAvailable.title")));
                     UiBus.publish(new UpdateAvailableEvent());
                 }
             } catch (Exception e) {
