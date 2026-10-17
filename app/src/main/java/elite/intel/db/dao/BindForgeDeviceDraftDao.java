@@ -52,9 +52,6 @@ public interface BindForgeDeviceDraftDao {
                 @Bind("aliasConfirmed") boolean aliasConfirmed,
                 @Bind("previousName") String previousName);
 
-    @SqlUpdate("UPDATE bindforge_device_draft SET alias_confirmed = :confirmed WHERE id = :id")
-    void setAliasConfirmed(@Bind("id") long id, @Bind("confirmed") boolean confirmed);
-
     /**
      * Renames a draft device, keeping the old name given. Which old name to keep is the manager's rule
      * ({@link elite.intel.db.managers.BindForgeDeviceDraftManager#saveDevice}).

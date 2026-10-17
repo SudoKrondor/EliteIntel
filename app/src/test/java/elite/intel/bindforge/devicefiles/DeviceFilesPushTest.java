@@ -516,6 +516,23 @@ class DeviceFilesPushTest {
         assertFalse(Files.exists(buttonMap(steam, "MyRudder")));
     }
 
+    /**
+     * Review, 2026-10-17: pad A is labelled under Frontier's DualShock4, pad B shadowed. DualShock4.buttonMap is still
+     * pad A's, so the push writes it from the master and never deletes it for B's rename.
+     */
+    @Test
+    void aShadowLeavesTheOldMapToAnotherDeviceStillUnderThatName() throws IOException {
+        Target steam = installation(1, "STEAM");
+        MasterDevice padA = new MasterDevice("DualShock4", "054C", "05C4", Map.of("Joy_1", "A CROSS"));
+        MasterDevice padB = shadow("PadB", "DualShock4", "054C", "09CC", Map.of("Joy_1", "B CROSS"));
+
+        Report report = push(List.of(steam), List.of(padA, padB));
+
+        assertEquals(Outcome.WRITTEN, resultFor(report, steam).outcome());
+        assertTrue(read(buttonMap(steam, "DualShock4")).contains("<Joy_1>A CROSS</Joy_1>"));
+        assertTrue(read(buttonMap(steam, "PadB")).contains("<Joy_1>B CROSS</Joy_1>"));
+    }
+
     private static List<DeviceEntry> entries(Target target) throws IOException {
         return DeviceMappingsParser.parse(target.controlSchemes().resolve("DeviceMappings.xml"));
     }

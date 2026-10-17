@@ -289,15 +289,16 @@ final class AliasDesignerReader {
                 ? DeviceEditorInputs.ofSavedLabels(saved)
                 : DeviceEditorInputs.ofController(live.buttonCount(), live.axisCount(), description);
         DeviceEditorMiddle middle = middleFor(device, name, masterRow, stock);
-        DeviceRename.Allowed rename = DeviceRename.allowed(name, name != null && stock.ships(name), device.attached(),
-                middle.undoing(), masterRow == null ? null : masterRow.deviceName(),
-                masterRow == null ? null : masterRow.previousName());
+        DeviceRename.Owner owner = name != null && stock.ships(name) ? DeviceRename.Owner.FRONTIER
+                : DeviceRename.Owner.USER;
+        DeviceRename.Presence presence = device.attached() ? DeviceRename.Presence.ATTACHED
+                : DeviceRename.Presence.UNPLUGGED;
+        DeviceRename.Allowed rename = DeviceRename.allowed(name, owner, presence, middle.undoing(),
+                masterRow == null ? null : masterRow.deviceName(), masterRow == null ? null : masterRow.previousName());
         // WHY: the Frontier element covering the controller's hardware, whatever the device is called now - a built-in
         // under Frontier's name, or one shadowed under the user's, which may go back to it (A15).
         DeviceEntry covering = stock.covering(device.vid(), device.pid()).orElse(null);
-        Set<String> taken = rename == DeviceRename.Allowed.YES
-                ? takenNames(name, masterRow, draftRow, stock)
-                : Set.of();
+        Set<String> taken = rename == DeviceRename.Allowed.YES ? takenNames(name, masterRow, draftRow, stock) : Set.of();
         DeviceEditorDialog.Covering frontier = covering == null ? null
                 : new DeviceEditorDialog.Covering(covering.name(), covering.hardware().size() > 1);
         return new DeviceEditorDialog.Opening(device, name, live == null ? null : live.id(), description, inputs,

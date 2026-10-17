@@ -17,10 +17,13 @@ import elite.intel.ui.event.RestartEarsEvent;
 import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudTwoColumns;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.makeCheckBox;
@@ -41,6 +44,8 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
  * and the microphone gate is not something anyone should have to find inside a settings screen.
  */
 public class InputSettingsPanel extends JPanel {
+
+    private static final Logger log = LogManager.getLogger(InputSettingsPanel.class);
 
     private JCheckBox enablePushToTalkCheck;
     private HudComboBox<Object> controllerCombo;
@@ -272,29 +277,56 @@ public class InputSettingsPanel extends JPanel {
         }
     }
 
+    /**
+     * Fills the button combo with {@code Button N} at once, then swaps in the controller's saved labels when they have
+     * been read. The read is the master and the draft, so it runs off the EDT (review, 2026-10-17).
+     */
     private void populateButtonCombo(Device device) {
+        fillButtonCombo(device, Map.of());
+        buttonCombo.setSelectedIndex(0);
+        if (device == null) return;
+        CompletableFuture.supplyAsync(() -> savedLabelsOf(device))
+                .thenAccept(labels -> SwingUtilities.invokeLater(() -> relabelButtonCombo(device, labels)));
+    }
+
+    private void fillButtonCombo(Device device, Map<String, String> labels) {
         buttonCombo.removeAllItems();
         buttonCombo.addItem(getText("settings.input.button.placeholder"));
-        if (device != null) {
-            Map<String, String> labels = savedLabelsOf(device);
-            for (int i = 1; i <= device.buttonCount(); i++) {
-                String label = labels.get(ButtonMapLabels.buttonToken(i));
-                buttonCombo.addItem(label == null || label.isBlank() ? getText("settings.input.button.label", i) : label);
-            }
+        if (device == null) return;
+        for (int i = 1; i <= device.buttonCount(); i++) {
+            String label = labels.get(ButtonMapLabels.buttonToken(i));
+            buttonCombo.addItem(label == null || label.isBlank() ? getText("settings.input.button.label", i) : label);
         }
-        buttonCombo.setSelectedIndex(0);
     }
 
     /**
-     * The names the commander gave this controller's buttons in the Device Editor, by token - so the picker reads
-     * as the bind editor and the game do. Empty for a controller BindForge has no name for.
+     * The saved labels, once read - only if the controller is still the one picked, keeping the button picked meanwhile.
+     */
+    private void relabelButtonCombo(Device device, Map<String, String> labels) {
+        if (labels.isEmpty() || selectedDevice == null || selectedDevice.id() != device.id()) return;
+        int picked = buttonCombo.getSelectedIndex();
+        boolean suppressed = suppressPersistence;
+        suppressPersistence = true;
+        try {
+            fillButtonCombo(device, labels);
+            buttonCombo.setSelectedIndex(Math.max(picked, 0));
+        } finally {
+            suppressPersistence = suppressed;
+        }
+    }
+
+    /**
+     * The names the user gave this controller's buttons, by token: BindForge's saved labels, the draft's before the
+     * master's, as the bind editor shows them - so a label saved and not yet applied shows here before the game has it.
+     * Empty for a controller BindForge has no name for, or when they cannot be read.
      */
     private static Map<String, String> savedLabelsOf(Device device) {
-        return CaptureControllers.connected().stream()
-                .filter(controller -> controller.liveId() == device.id() && controller.named())
-                .findFirst()
-                .map(controller -> SavedDeviceLabels.of(controller.name()))
-                .orElse(Map.of());
+        try {
+            return CaptureControllers.nameOf(device).map(SavedDeviceLabels::of).orElse(Map.of());
+        } catch (RuntimeException e) {
+            log.warn("Could not read the saved button names for {}: {}", device.name(), e.getMessage());
+            return Map.of();
+        }
     }
 
     // -- SDL event subscriptions -------------------------------------------------

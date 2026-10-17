@@ -11,7 +11,6 @@ import elite.intel.gameapi.journal.events.WingInviteEvent;
  * reads to a small model like anything - the Friends announcement once came back with a friend's name as a place.
  * Saying it is a commander's name, and asking for nothing the payload lacks, leaves it nothing to invent.
  */
-@SuppressWarnings("unused")
 public class WingInviteSubscriber {
 
     @Subscribe

@@ -150,6 +150,15 @@ game's `.binds` **last**; a hex reference rewritten **from the value `BindsDevic
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
 
+- **2026-10-17 — A15 review fixes** (`code-integrity-review.md`, Alan: all eight). Recorded under *After review* in
+  [Built — A15](../02-features/bindforge/alias-designer.md#built--2026-10-16-alan-a15): Frontier's names stay taken,
+  even a device's own (`t-rudder` had got through); a shadow on a shared Frontier element is its own controller's row,
+  and the old `.buttonMap` stays while another device is still under Frontier's name (`InstallationHoldings` reads the
+  master's names); `DeviceRename.allowed` takes `Owner` and `Presence` enums. Krondor's commits on the branch: the PTT
+  picker reads one controller's labels off the EDT (`CaptureControllers.nameOf(Device)`), its Javadoc says draft first
+  and "user"; `WingInviteSubscriberTest` added, its `@SuppressWarnings` dropped. **Known limit:** going back to
+  Frontier's name while another device holds it is refused.
+
 - **2026-10-16 — A15 built** (Alan answered five questions, one at a time; all tests pass). Recorded in the spec,
   [Built — A15](../02-features/bindforge/alias-designer.md#built--2026-10-16-alan-a15): **shadow only**, never an
   in-place rename (on `<GamePad>` Apply's VID/PID line-up would overwrite Frontier's primary pair, and CLEAR would

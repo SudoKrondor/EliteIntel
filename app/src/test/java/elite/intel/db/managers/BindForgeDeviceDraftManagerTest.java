@@ -214,6 +214,24 @@ class BindForgeDeviceDraftManagerTest {
         assertEquals("MyRudder", back.previousName());
     }
 
+    /**
+     * Review, 2026-10-17 (A15): one Frontier element covers two pads, and pad A is labelled under its name. Shadowing pad
+     * B is a row of B's own - A keeps its row, its hardware and its labels.
+     */
+    @Test
+    void shadowingOnePadOfASharedEntryLeavesTheOtherPadsRowAlone() {
+        draft.saveLabels("DualShock4", "054C", "05C4", labels("Joy_1", "A CROSS"));
+
+        DraftRow padB = draft.saveDevice("DualShock4", "PadB", labels("Joy_1", "B CROSS"),
+                new BindForgeDeviceDraftManager.BuiltIn("DualShock4", "054C", "09CC"));
+
+        assertEquals("09CC", padB.pid());
+        assertEquals("DualShock4", padB.previousName());
+        DraftRow padA = draft.findByName("DualShock4");
+        assertEquals("05C4", padA.pid(), "pad A keeps its hardware");
+        assertEquals(labels("Joy_1", "A CROSS"), draft.labelsOf(padA.id()), "and its labels");
+    }
+
     /** A name another draft device holds, or a device that is gone, writes nothing - the editor read a stale list. */
     @Test
     void savingUnderATakenNameOrAGoneDeviceWritesNothing() {

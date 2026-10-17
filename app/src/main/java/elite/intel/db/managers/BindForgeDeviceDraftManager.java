@@ -95,10 +95,6 @@ public class BindForgeDeviceDraftManager {
         });
     }
 
-    public void setAliasConfirmed(long id, boolean confirmed) {
-        update(daos -> daos.draft().setAliasConfirmed(id, confirmed));
-    }
-
     /** Points a draft device at different hardware, keeping its name - the repair for a firmware update. */
     public void retarget(long id, String vid, String pid) {
         update(daos -> daos.draft().retarget(id, vid, pid));
@@ -207,8 +203,13 @@ public class BindForgeDeviceDraftManager {
      * <p>
      * <strong>A built-in's Frontier name is always on disk</strong> (Alan, 2026-10-16, A15): Frontier's element is in
      * every installation whether or not the master holds the controller, so renaming it - a shadow - keeps Frontier's
-     * name as the old one, and Apply moves the bindings from it. A built-in the draft does not hold yet is added under
-     * Frontier's name first.
+     * name as the old one, and Apply moves the bindings from it.
+     * <p>
+     * <strong>A shadow is this controller's own row</strong> (review, 2026-10-17, A15). One Frontier element covers
+     * several controllers - {@code <DualShock4>} three - and the row under its name may be another controller's, labelled
+     * there earlier. Renaming that row would shadow the wrong hardware and take the other controller's labels with it,
+     * so when the row under Frontier's name has other hardware, or there is none, the shadow is a new row with this
+     * controller's VID/PID.
      *
      * @param builtIn the controller's Frontier name and hardware when it is a built-in, or {@code null}
      * @return the draft row saved on, under its new name - or {@code null}, writing nothing, when the device is gone
@@ -220,9 +221,14 @@ public class BindForgeDeviceDraftManager {
             startIfNone(daos);
             BindForgeDeviceDraftDao draft = daos.draft();
             DraftRow row = draft.findByName(currentName);
-            if (row == null && currentName.equals(frontierName)) {
-                draft.insert(null, frontierName, builtIn.vid(), builtIn.pid(), true, null);
-                row = draft.findByName(frontierName);
+            if (currentName.equals(frontierName)
+                    && (row == null || !sameHardware(row, builtIn.vid(), builtIn.pid()))) {
+                if (draft.findByName(newName) != null) return null;
+                draft.insert(null, newName, builtIn.vid(), builtIn.pid(), true,
+                        newName.equals(frontierName) ? null : frontierName);
+                DraftRow added = draft.findByName(newName);
+                labels.forEach((token, label) -> draft.putLabel(added.id(), token, label));
+                return added;
             }
             if (row == null) return null;
             if (!currentName.equals(newName)) {

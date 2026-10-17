@@ -40,18 +40,35 @@ public final class DeviceRename {
     public record Named(String name, String previousName) {
     }
 
+    /** Whose name the editor opens with. */
+    public enum Owner {
+        /** One of the user's - any name that is not Frontier's. */
+        USER,
+        /** One of Frontier's element names. */
+        FRONTIER
+    }
+
+    /** Whether the controller is plugged in now. */
+    public enum Presence {
+        ATTACHED,
+        UNPLUGGED
+    }
+
     /**
+     * Enums rather than booleans for whose name it is and whether it is plugged in (review, 2026-10-17): three
+     * booleans in a row would compile with any two swapped, and silently change who may rename.
+     *
      * @param name                the name the editor opens with, or {@code null}
-     * @param frontierName        whether that name is one of Frontier's
-     * @param attached            whether the controller is plugged in now
+     * @param owner               whether that name is one of Frontier's
+     * @param presence            whether the controller is plugged in now
      * @param cleared             whether the device is cleared or reset in the draft
      * @param masterName          the master's name for this device, or {@code null} when the master has none
      * @param masterPreviousName  the old name the master still carries for this device, or {@code null}
      */
-    public static Allowed allowed(String name, boolean frontierName, boolean attached, boolean cleared,
+    public static Allowed allowed(String name, Owner owner, Presence presence, boolean cleared,
                                   String masterName, String masterPreviousName) {
         if (name == null) return Allowed.NO_NAME;
-        if (frontierName && !attached) return Allowed.BUILT_IN;
+        if (owner == Owner.FRONTIER && presence == Presence.UNPLUGGED) return Allowed.BUILT_IN;
         if (cleared) return Allowed.CLEARED;
         if (masterPreviousName != null && !masterPreviousName.equals(masterName)) return Allowed.PENDING;
         return Allowed.YES;
@@ -61,8 +78,14 @@ public final class DeviceRename {
      * Every name a new name must not clash with: Frontier's, every installation's entries, and every name and old
      * name in the master and the draft - less the device's own, matched exactly. Its own names stay usable: changing
      * only case is a rename, and so is going back to the name the installations still hold.
+     * <p>
+     * <strong>Frontier's names stay taken, even a device's own</strong> (review, 2026-10-17, A15). A built-in opens
+     * under Frontier's name, and a shadow's old name is Frontier's: dropping either would let {@code t-rudder} through
+     * beside {@code T-Rudder}, two elements the game cannot tell apart. Going back to Frontier's name is
+     * {@link #backToFrontier}'s, spelled exactly.
      *
-     * @param own the device's names - its draft name, master name and old name; {@code null}s ignored
+     * @param own the device's names - its draft name, master name and old name; {@code null}s ignored, and
+     *            Frontier's names among them stay taken
      */
     public static Set<String> taken(Collection<String> frontier, Collection<String> entries, List<Named> master,
                                     List<Named> draft, Collection<String> own) {
@@ -75,7 +98,7 @@ public final class DeviceRename {
             }
         }
         own.forEach(name -> {
-            if (name != null) taken.remove(name);
+            if (name != null && !frontier.contains(name)) taken.remove(name);
         });
         return taken;
     }

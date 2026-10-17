@@ -336,8 +336,10 @@ public final class DeviceFilesPush implements DeviceApply.Pushes {
             byte[] previous = readIfPresent(buttonMap);
             if (!Arrays.equals(previous, content)) writes.add(new FileWrite(buttonMap, previous, content));
         }
+        Set<String> masterNames = new HashSet<>();
+        devices.forEach(device -> masterNames.add(device.name()));
         for (MasterDevice device : renamedDevices(devices)) {
-            writes.addAll(renameButtonMap(target, device, stockMaps));
+            writes.addAll(renameButtonMap(target, device, masterNames.contains(device.previousName()), stockMaps));
         }
         for (String name : new TreeSet<>(removals)) {
             FileWrite write = removeButtonMap(target, name, stockMaps);
@@ -372,10 +374,14 @@ public final class DeviceFilesPush implements DeviceApply.Pushes {
      * <p>
      * <strong>An old name Frontier ships a file under</strong> - a shadowed {@code VPCPanel} or {@code VPCThrottle}
      * (Alan, 2026-10-16, A15) - keeps its file as Frontier shipped it, since a file Frontier shipped is never removed.
+     * <strong>An old name another master device still has</strong> - a shadow of one controller on a shared Frontier
+     * element while another is labelled under it (review, 2026-10-17) - keeps its file too: it is that device's, and
+     * the push writes it from the master.
      *
+     * @param oldNameInUse whether another master device is called by the old name
      * @return the writes - none when the installation holds no file under the old name
      */
-    private static List<FileWrite> renameButtonMap(Target target, MasterDevice device,
+    private static List<FileWrite> renameButtonMap(Target target, MasterDevice device, boolean oldNameInUse,
                                                    FrontierStockButtonMaps stockMaps) throws IOException {
         Path oldMap;
         try {
@@ -393,6 +399,7 @@ public final class DeviceFilesPush implements DeviceApply.Pushes {
         if (device.labels().isEmpty() && !Files.exists(newMap)) {
             writes.add(new FileWrite(newMap, null, oldContent));
         }
+        if (oldNameInUse) return writes;
         Optional<byte[]> shipped = stockMaps.shippedContent(device.previousName());
         if (shipped.isEmpty()) {
             writes.add(new FileWrite(oldMap, oldContent, null));

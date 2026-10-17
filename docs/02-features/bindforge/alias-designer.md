@@ -229,6 +229,21 @@ and the name box in `DeviceEditorDialog`, `BindForgeDeviceDraftManager.saveDevic
 - **The shadow's element is new**, written by the merge at the top of `<Root>` with only the controller's VID/PID;
   Frontier's element keeps every child it has.
 
+*After review — 2026-10-17 (`code-integrity-review.md`, Alan: all eight):*
+
+- **Frontier's names stay taken, even a device's own.** A built-in opens under Frontier's name and a shadow's old name
+  is Frontier's; the clash check had dropped both as the device's own names, so `t-rudder` got through. Only going back
+  (`backToFrontier`, Frontier's exact spelling) accepts one now.
+- **A shadow is its own controller's row.** One Frontier element covers several controllers - `<DualShock4>` three -
+  and the draft row under its name may be another controller's, labelled there earlier. Shadowing pad B had renamed pad
+  A's row, with A's hardware and labels. When the row under Frontier's name has other hardware, the shadow is a new row
+  with this controller's VID/PID, and the other controller keeps its own.
+- **The old `.buttonMap` stays while another device is still called by Frontier's name** - pad A, labelled under
+  `DualShock4`. Apply writes it from the master and never deletes it for pad B's shadow, and the rename does not wait
+  for it to go. *Known limit:* going back to Frontier's name while that other device holds it is refused as a taken
+  name in the draft; the editor says the device changed.
+- **Who may rename is told by enums**, `Owner` and `Presence`, not three booleans in a row.
+
 ## First setup — reconciling the installs — settled 2026-09-23
 
 **The handover.** Until a user opens Alias Designer, BindForge only backs up and reports

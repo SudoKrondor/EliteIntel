@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -181,6 +182,17 @@ class InstallationHoldingsTest {
 
         assertFalse(new InstallationHoldings(() -> List.of(steam), FrontierStockDevices.getInstance(), stockMaps)
                 .mayHoldOldName("VPCPanel", "MyRudder", "044F", "B679"));
+    }
+
+    /** Review, 2026-10-17: the old map is another master device's - a second pad labelled under Frontier's name. */
+    @Test
+    void aShadowIsNotHeldByAMapAnotherMasterDeviceOwns() throws IOException {
+        Target steam = installation(1, SHADOWED);
+        buttonMap(steam, "T-Rudder");
+
+        assertFalse(new InstallationHoldings(() -> List.of(steam), FrontierStockDevices.getInstance(),
+                FrontierStockButtonMaps.getInstance(), () -> Set.of("T-Rudder", "MyRudder"))
+                .mayHoldOldName("T-Rudder", "MyRudder", "044F", "B679"));
     }
 
     @Test

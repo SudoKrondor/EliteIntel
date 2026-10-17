@@ -327,7 +327,8 @@ loads. A15 builds the third shape - the user's element **ahead** of Frontier's, 
 every `Device=` naming Frontier's element to the user's name. In the Device Editor, rename the T-Rudder pedals
 (`MyRudder`), APPLY, and start the game: the active preset loads, the pedals' labels show, and no
 `BindingLoadingErrors.log` is written for the inactive one. Not needed, since the bindings move, but worth a look
-while the game is open: a preset left naming `T-Rudder` with the shadow in place.
+while the game is open: a preset left naming `T-Rudder` with the shadow in place. *After review (2026-10-17):* in the
+Device Editor, type `t-rudder` or `TRudder` and see SAVE dimmed - only `T-Rudder`, spelled exactly, goes back.
 → [Built-in controllers in My Devices — A15](../02-features/bindforge/alias-designer.md#built--2026-10-16-alan-a15)
 
 ## Core Platform
