@@ -7,14 +7,18 @@ import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.managers.LocationManager;
+import elite.intel.db.managers.ShipRouteManager;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.gameapi.FuelScoop;
 import elite.intel.gameapi.data.FsdTarget;
+import elite.intel.gameapi.gamestate.dtos.NavRouteDto;
 import elite.intel.gameapi.inputs.PreFtlChecks;
 import elite.intel.gameapi.inputs.UiNavCommon;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
+
+import java.util.List;
 
 import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_JUMP_TO_HYPERSPACE;
 import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_TARGET_NEXT_ROUTE_SYSTEM;
@@ -54,18 +58,15 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
         UiNavCommon.close();
         GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.delay(150)));
 
-        FsdTarget fsdTarget = playerSession.getFsdTarget();
-        if (fsdTarget != null) {
-            String starName = fsdTarget.getName() == null ? "unknown" : fsdTarget.getName();
-            String starClass = fsdTarget.getStarClass() == null ? "unknown" : fsdTarget.getStarClass();
+        JumpTarget target = jumpTarget(ShipRouteManager.getInstance().getOrderedRoute(), playerSession.getFsdTarget());
+        if (target != null) {
             String message;
             // Both halves matter: the commander asked to hear about fuel, and this ship can actually
             // scoop it. Without a scoop "refuel possible" names a supply they cannot reach. See FuelScoop.
             if (FuelScoop.announceFuelStars()) {
-                String fuelStatus = fsdTarget.getFuelStarStatus() == null ? "unknown" : fsdTarget.getFuelStarStatus();
-                message = StringUtls.localizedResponse("handler.fsd.jumping", starName, starClass, fuelStatus);
+                message = StringUtls.localizedResponse("handler.fsd.jumping", target.name(), target.starClass(), target.fuelStatus());
             } else {
-                message = StringUtls.localizedResponse("handler.fsd.jumpingNoFuel", starName, starClass);
+                message = StringUtls.localizedResponse("handler.fsd.jumpingNoFuel", target.name(), target.starClass());
             }
             VegaRuntime.narrator().filler(message, false);
         }
@@ -85,5 +86,30 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
             return StringUtls.localizedResponse("handler.supercruise.notInShip");
         }
         return null;
+    }
+
+    /**
+     * What the jump is about to reach, as it is announced: the plotted route's next leg, or the stored FSD target
+     * when no route is plotted. Null when neither names anything.
+     * <p>
+     * WHY the route first: the key press above selects the next route system, so that leg is the jump. The stored
+     * target is only as fresh as the last {@code FSDTarget} the app heard, and the one the game wrote while the app
+     * was closed never reached it - after a restart mid-route the announcement named a star two jumps back. It is
+     * also saved on a background thread behind three EDSM lookups, so even live it can trail the key press.
+     */
+    static JumpTarget jumpTarget(List<NavRouteDto> route, FsdTarget stored) {
+        if (route != null && !route.isEmpty()) {
+            NavRouteDto next = route.getFirst();
+            return new JumpTarget(orUnknown(next.getName()), orUnknown(next.getStarClass()), FuelScoop.starStatus(next.getStarClass()));
+        }
+        if (stored == null) return null;
+        return new JumpTarget(orUnknown(stored.getName()), orUnknown(stored.getStarClass()), orUnknown(stored.getFuelStarStatus()));
+    }
+
+    private static String orUnknown(String value) {
+        return value == null ? "unknown" : value;
+    }
+
+    record JumpTarget(String name, String starClass, String fuelStatus) {
     }
 }

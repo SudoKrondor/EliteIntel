@@ -8,6 +8,8 @@ import elite.intel.session.PlayerSession;
 import java.util.List;
 import java.util.Locale;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+
 /**
  * Whether the ship the commander is flying can scoop fuel from a star, and therefore whether it is worth
  * being told that the next one is scoopable.
@@ -57,6 +59,17 @@ public final class FuelScoop {
      * failure is the old behaviour (say it) rather than silently withholding fuel information from a ship
      * that does have a scoop.
      */
+    /**
+     * The spoken clause saying whether a star of {@code starClass} can be scooped. One wording for every place
+     * that names a jump target - the live target, one restored at startup, the jump command - so they agree.
+     */
+    public static String starStatus(String starClass) {
+        if (starClass == null) return " unknown ";
+        boolean isFuelStar = "KGBFOAM".contains(starClass.toUpperCase(Locale.ROOT));
+        String commander = PlayerSession.getInstance().getVariablePlayerName();
+        return localizedEvent(isFuelStar ? "event.jump.refuelPossible" : "event.jump.noFuelAvailable", commander);
+    }
+
     static boolean isFittedTo(ShipLoadOutDto loadout) {
         if (loadout == null) return true;
         List<ModuleDto> modules = loadout.getModules();
