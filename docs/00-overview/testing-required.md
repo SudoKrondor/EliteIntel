@@ -331,6 +331,14 @@ while the game is open: a preset left naming `T-Rudder` with the shadow in place
 Device Editor, type `t-rudder` or `TRudder` and see SAVE dimmed - only `T-Rudder`, spelled exactly, goes back.
 → [Built-in controllers in My Devices — A15](../02-features/bindforge/alias-designer.md#built--2026-10-16-alan-a15)
 
+**26. Does a yes for a controller known only by id move its bindings?** *Added 2026-10-17, A17 — Alan can run this
+one.* The suite tests the question, the record and Apply's move, not the Swing flow between them. Take a stick with
+no entry and a copy of a `.binds` that binds it by hex, and change that hex to an id nothing has (keep the VID, change
+the PID). Open BindForge: the question lists the stick, saying the old id is not attached. Pick it, check the name
+page says how many bindings move from the old id, FINISH, then APPLY - `.binds` should name the stick, and the
+preset load in the game. Then repeat, but plug in a controller with the old id before APPLY: nothing should move.
+→ [Built — A17](../02-features/bindforge/alias-designer.md#built--2026-10-17-alan-a17)
+
 ## Core Platform
 
 **8. Linux/Proton path resolution — Krondor's, not a BindForge testing item.** *Reassigned 2026-09-06.* Not a one-time check but ongoing, given how much Linux path resolution varies by distro and by how an individual user has their Steam library configured — which is exactly why it is owned by the person running it. BindForge builds and tests Windows storefront detection; Krondor makes the edits his platform needs. Listed here so the dependency stays visible, not as work waiting on Alan. The journal path is confirmed against independent precedent (EDMarketConnector); the bindings-folder path is inferred from the same structure but not independently confirmed.

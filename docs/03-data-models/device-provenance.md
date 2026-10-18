@@ -219,6 +219,13 @@ draft exists. Saved edits live there until Apply copies them into the master. **
 installations, kept until whatever removes the files clears them. See
 [Alias Designer — where the draft lives](../02-features/bindforge/alias-designer.md#actions-and-what-each-one-reaches).
 
+**`12008` adds `bindforge_hardware_id_move`** (2026-10-17, A17): bindings `.binds` still names by a controller's
+**old** hardware id, waiting for Apply to move them to the name the user gave the controller that replaced it. It is
+the one link no file can hold - the old id is in `.binds`, the new hardware in `DeviceMappings.xml`, and nothing
+joins them but the user's answer. Keyed by the hardware the controller has now, so a rename does not lose it, and
+forgotten once the move is done. See
+[Alias Designer — Built, A17](../02-features/bindforge/alias-designer.md#built--2026-10-17-alan-a17).
+
 *Deliberately not a specific number.* Krondor's §4 named 12000 as the example; `12000__bindforge_settings.sql`
 took it on 2026-09-28, and `12001__bindforge_installations.sql` took the renumbered one the same day. A
 migration number is never reused or renamed, so whichever file lands first owns the number — which means a

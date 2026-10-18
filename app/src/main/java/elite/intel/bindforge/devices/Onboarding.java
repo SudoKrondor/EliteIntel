@@ -33,9 +33,12 @@ public final class Onboarding {
      *                     hardware id, in which case it is named straight away
      * @param bindings     how many bindings name it by hardware id - what moves to its name on Apply
      * @param labels       its generated labels, by input token
+     * @param replaces     the old hardware id the user said this controller is - the identity question's yes for a
+     *                     controller {@code .binds} knows only by its id (A17) - or {@code null}. Its bindings are among
+     *                     {@code hardwareIds} and {@code bindings}, and Apply finds them through a stored record
      */
     public record Page(MyDevice device, String defaultName, Set<String> hardwareIds, int bindings,
-                       Map<String, String> labels) {
+                       Map<String, String> labels, HardwareId replaces) {
         public Page {
             Objects.requireNonNull(device, "device");
             Objects.requireNonNull(defaultName, "defaultName");
@@ -66,6 +69,20 @@ public final class Onboarding {
     public static List<Page> pages(List<MyDevice> devices, Collection<HardwareId> heldByDraft,
                                    Collection<String> taken, Map<String, Integer> hardwareIds,
                                    Function<MyDevice, Map<String, String>> labels) {
+        return pages(devices, heldByDraft, taken, hardwareIds, labels, Map.of());
+    }
+
+    /**
+     * The pages, where some controllers are the identity question's answer for a controller {@code .binds} knows only
+     * by its hardware id (Alan, 2026-10-17, A17): such a page promises the bindings on the <strong>old</strong> id too,
+     * and says which id it replaces, so FINISH can store it for Apply.
+     *
+     * @param replacing the old id each picked controller is, by the picked controller's hardware
+     */
+    public static List<Page> pages(List<MyDevice> devices, Collection<HardwareId> heldByDraft,
+                                   Collection<String> taken, Map<String, Integer> hardwareIds,
+                                   Function<MyDevice, Map<String, String>> labels,
+                                   Map<HardwareId, HardwareId> replacing) {
         Set<HardwareId> held = Set.copyOf(heldByDraft);
         List<String> used = new ArrayList<>(taken);
         Set<String> claimed = new HashSet<>();
@@ -76,9 +93,14 @@ public final class Onboarding {
             used.add(name);
             Map<String, Integer> found =
                     new LinkedHashMap<>(BindsDeviceReferences.hardwareIdsFor(device.vid(), device.pid(), hardwareIds));
+            HardwareId replaces = replacing.get(device.hardware());
+            if (replaces != null) {
+                found.putAll(BindsDeviceReferences.hardwareIdsFor(replaces.vid(), replaces.pid(), hardwareIds));
+            }
             found.keySet().removeIf(id -> !claimed.add(id.toUpperCase(Locale.ROOT)));
             int bindings = found.values().stream().mapToInt(Integer::intValue).sum();
-            pages.add(new Page(device, name, new LinkedHashSet<>(found.keySet()), bindings, labels.apply(device)));
+            pages.add(new Page(device, name, new LinkedHashSet<>(found.keySet()), bindings, labels.apply(device),
+                    replaces));
         }
         return pages;
     }

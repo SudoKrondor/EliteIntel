@@ -1,11 +1,14 @@
 package elite.intel.bindforge.devicefiles;
 
+import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush.Report;
 import elite.intel.bindforge.io.DeviceReferenceRewrite;
 import elite.intel.bindforge.io.DeviceRewriteResult;
+import elite.intel.db.dao.BindForgeHardwareIdMoveDao.MoveRow;
 import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
 import elite.intel.db.managers.BindForgeDeviceDraftManager;
 import elite.intel.db.managers.BindForgeDeviceMasterManager;
+import elite.intel.db.managers.BindForgeHardwareIdMoveManager;
 import elite.intel.session.PlayerSession;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,6 +59,9 @@ import java.util.stream.Collectors;
  * for the next Apply. One of Frontier's names is never a hardware id's target; a rename's may be one, either way - a
  * shadow moves the bindings from Frontier's name, and going back moves them to it (Alan, 2026-10-16, A15). Both moves
  * are derived from the files each time, so a move that stopped is retried by the next Apply with no record of its own.
+ * <strong>Bindings on a controller's old id</strong> are the one move that needs a record ({@link OldIds}, Alan,
+ * 2026-10-17, A17): the user said an attached controller is the missing one {@code .binds} names by id, and nothing in
+ * the files links the two. They ride in that device's one rewrite, and the record is forgotten once they are moved.
  * <p>
  * <strong>Catch-up</strong> ({@link #catchUp(Collection)}, Alan, 2026-10-15, A14) is Apply for an installation that
  * missed one and is found again: the same push, removals and moves, to that installation alone, and never the draft -
@@ -124,6 +130,30 @@ public final class DeviceApply {
         boolean mayHoldOldName(String oldName, String newName, String vid, String pid);
     }
 
+    /**
+     * Bindings waiting to move from a controller's old hardware id to its name (A17) -
+     * {@link BindForgeHardwareIdMoveManager} in use.
+     */
+    interface OldIds {
+        /** Every record, keyed by the hardware the controller has now. */
+        List<MoveRow> waiting();
+
+        /** The bindings are moved, or none is left to move: the record is done. */
+        void forget(MoveRow row);
+    }
+
+    private static final OldIds NO_OLD_IDS = new OldIds() {
+        @Override
+        public List<MoveRow> waiting() {
+            return List.of();
+        }
+
+        @Override
+        public void forget(MoveRow row) {
+            throw new IllegalStateException("nothing is waiting");
+        }
+    };
+
     /** What became of the bindings a move was for. */
     public enum MoveOutcome {
         /** They name the device now. */
@@ -137,7 +167,8 @@ public final class DeviceApply {
     }
 
     /**
-     * The bindings that named a master device by hardware id.
+     * The bindings that named a master device by hardware id - the one it has, and an old one the user said it replaces
+     * (A17).
      *
      * @param bindings how many bindings moved, when they did; otherwise how many named the device by hardware id
      * @param status   the rewrite's status when it ran, else {@code null}
@@ -192,6 +223,7 @@ public final class DeviceApply {
     private final BindForgeDeviceMasterManager master;
     private final BindsRewrite binds;
     private final Holdings holdings;
+    private final OldIds oldIds;
 
     /**
      * Promotes the stored draft and pushes to the stored installations.
@@ -207,7 +239,22 @@ public final class DeviceApply {
                 () -> BindsDeviceReferences.referenceCounts(PlayerSession.getInstance().getBindingsDir()).keySet(),
                 FrontierStockDevices.getInstance(), BindForgeDeviceMasterManager.getInstance(),
                 BindsDeviceRewrite.stored(PlayerSession.getInstance().getBindingsDir()),
-                InstallationHoldings.stored());
+                InstallationHoldings.stored(), storedOldIds());
+    }
+
+    private static OldIds storedOldIds() {
+        BindForgeHardwareIdMoveManager moves = BindForgeHardwareIdMoveManager.getInstance();
+        return new OldIds() {
+            @Override
+            public List<MoveRow> waiting() {
+                return moves.findAll();
+            }
+
+            @Override
+            public void forget(MoveRow row) {
+                moves.forget(List.of(row));
+            }
+        };
     }
 
     /** With nothing for {@code .binds} to move - for the tests that are about removals. */
@@ -225,6 +272,12 @@ public final class DeviceApply {
     /** @param holdings what settles a removal or rename after catch-up */
     DeviceApply(Supplier<List<String>> promote, Pushes pushes, BindsNames bindsNames, FrontierStockDevices stock,
                 BindForgeDeviceMasterManager master, BindsRewrite binds, Holdings holdings) {
+        this(promote, pushes, bindsNames, stock, master, binds, holdings, NO_OLD_IDS);
+    }
+
+    /** @param oldIds bindings waiting to move from a controller's old hardware id (A17) */
+    DeviceApply(Supplier<List<String>> promote, Pushes pushes, BindsNames bindsNames, FrontierStockDevices stock,
+                BindForgeDeviceMasterManager master, BindsRewrite binds, Holdings holdings, OldIds oldIds) {
         this.promote = promote;
         this.pushes = pushes;
         this.bindsNames = bindsNames;
@@ -232,6 +285,7 @@ public final class DeviceApply {
         this.master = master;
         this.binds = binds;
         this.holdings = holdings;
+        this.oldIds = oldIds;
     }
 
     /** Apply's push alone, for the tests that are about Apply - catch-up is not theirs to call. */
@@ -502,6 +556,11 @@ public final class DeviceApply {
      * installation took the master. Where two master devices claim one VID/PID, the first in the master's order is
      * the one the push leads each file with, and so the one the game resolves.
      * <p>
+     * <strong>An old id the user said the device replaces</strong> (A17) is moved in the same rewrite as its current
+     * one: one write per device, all or nothing. Its record is forgotten once the bindings are moved, or none is left
+     * on it - the game saved {@code .binds} meanwhile, or the user rebound them - and kept while no installation took
+     * the name or the rewrite stopped, for the next Apply.
+     * <p>
      * One rewrite per device, back to back (Alan, 2026-10-14). Each ends on the game's {@code .binds}, which the
      * bindings monitor reloads, so a second device's rewrite can meet a working copy mid-reload and stop as
      * {@code STALE_FILE}. That device is reported as failed and, its bindings still on the hardware id, moved by the
@@ -517,17 +576,30 @@ public final class DeviceApply {
                     e.getMessage());
             return new Moves(List.of(), true);
         }
-        if (counts.isEmpty()) return new Moves(List.of(), false);
+        List<MoveRow> waiting = oldIds.waiting();
+        if (counts.isEmpty() && waiting.isEmpty()) return new Moves(List.of(), false);
 
         boolean applied = report.matchingCount() > 0;
         Set<String> claimed = new HashSet<>();
+        Set<MoveRow> taken = new HashSet<>();
         List<Move> moves = new ArrayList<>();
         for (DeviceRow row : master.findAll()) {
             if (stock.ships(row.deviceName()) || row.vid() == null || row.pid() == null) continue;
             Map<String, Integer> found =
                     new LinkedHashMap<>(BindsDeviceReferences.hardwareIdsFor(row.vid(), row.pid(), counts));
+            HardwareId hardware = new HardwareId(row.vid(), row.pid());
+            List<MoveRow> replaced = waiting.stream()
+                    .filter(old -> !taken.contains(old) && new HardwareId(old.vid(), old.pid()).equals(hardware))
+                    .toList();
+            taken.addAll(replaced);
+            replaced.forEach(old ->
+                    found.putAll(BindsDeviceReferences.hardwareIdsFor(old.oldVid(), old.oldPid(), counts)));
             found.keySet().removeIf(id -> !claimed.add(id.toUpperCase(Locale.ROOT)));
-            if (found.isEmpty()) continue;
+            if (found.isEmpty()) {
+                // WHY: nothing left on the old id to move, so its record has done its job.
+                replaced.forEach(this::forgetOldId);
+                continue;
+            }
             int bindings = found.values().stream().mapToInt(Integer::intValue).sum();
             if (!applied) {
                 moves.add(new Move(row.deviceName(), bindings, MoveOutcome.NOT_APPLIED, null));
@@ -536,8 +608,15 @@ public final class DeviceApply {
             Rewritten result = binds.rewrite(new DeviceReferenceRewrite(found.keySet(), row.deviceName()));
             MoveOutcome outcome = outcomeOf(result, "naming " + row.deviceName() + " by hardware id " + found.keySet());
             moves.add(new Move(row.deviceName(), reported(result, bindings), outcome, result.status()));
+            if (outcome == MoveOutcome.MOVED || outcome == MoveOutcome.NOT_FOUND) replaced.forEach(this::forgetOldId);
         }
         return new Moves(moves, false);
+    }
+
+    private void forgetOldId(MoveRow row) {
+        oldIds.forget(row);
+        log.info("Bindings on the old hardware id {}{} no longer wait to move to the controller at {}:{}", row.oldVid(),
+                row.oldPid(), row.vid(), row.pid());
     }
 
     private record Moves(List<Move> moves, boolean unread) {

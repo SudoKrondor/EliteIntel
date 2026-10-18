@@ -6,6 +6,8 @@ import elite.intel.db.dao.BindForgeDeviceDraftDao.DraftRow;
 import elite.intel.db.dao.BindForgeDeviceMasterDao;
 import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
 import elite.intel.db.dao.BindForgeDeviceMasterDao.LabelRow;
+import elite.intel.db.dao.BindForgeHardwareIdMoveDao;
+import elite.intel.db.dao.BindForgeHardwareIdMoveDao.MoveRow;
 import elite.intel.db.util.Database;
 import org.jdbi.v3.core.Handle;
 
@@ -267,6 +269,17 @@ public class BindForgeDeviceDraftManager {
      *         the draft - the caller read a list that has changed since
      */
     public boolean onboard(List<StoredDevice> now, List<StoredDevice> atApply) {
+        return onboard(now, atApply, List.of());
+    }
+
+    /**
+     * {@link #onboard(List, List)}, with the old hardware ids some of the controllers waiting for Apply replace - the
+     * identity question's yes for a controller {@code .binds} knows only by its id (Alan, 2026-10-17, A17). Each is
+     * stored in the same transaction as the name, so Apply finds the bindings to move, or neither is written.
+     *
+     * @param oldIds one row per controller in {@code atApply} whose bindings are still on an old id
+     */
+    public boolean onboard(List<StoredDevice> now, List<StoredDevice> atApply, List<MoveRow> oldIds) {
         return inTransaction(daos -> {
             BindForgeDeviceMasterDao master = daos.master();
             BindForgeDeviceDraftDao draft = daos.draft();
@@ -293,6 +306,8 @@ public class BindForgeDeviceDraftManager {
                     device.labels().forEach((token, label) -> draft.putLabel(draftId, token, label));
                 }
             }
+            oldIds.forEach(row ->
+                    BindForgeHardwareIdMoveManager.put(daos.moves(), row.vid(), row.pid(), row.oldVid(), row.oldPid()));
             return true;
         });
     }
@@ -615,12 +630,12 @@ public class BindForgeDeviceDraftManager {
         try (Handle handle = Database.init()) {
             return handle.inTransaction(h -> work.apply(
                     new Daos(h.attach(BindForgeDeviceDraftDao.class), h.attach(BindForgeDeviceMasterDao.class),
-                            h.attach(BindForgeActivationDao.class))));
+                            h.attach(BindForgeActivationDao.class), h.attach(BindForgeHardwareIdMoveDao.class))));
         }
     }
 
     private record Daos(BindForgeDeviceDraftDao draft, BindForgeDeviceMasterDao master,
-                        BindForgeActivationDao activation) {
+                        BindForgeActivationDao activation, BindForgeHardwareIdMoveDao moves) {
     }
 
     private record PromotedDevice(DraftRow row, Map<String, String> labels) {

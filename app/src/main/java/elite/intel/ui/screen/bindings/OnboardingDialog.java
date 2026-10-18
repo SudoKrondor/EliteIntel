@@ -1,6 +1,7 @@
 package elite.intel.ui.screen.bindings;
 
 import elite.intel.bindforge.devices.DeviceNames;
+import elite.intel.bindforge.devices.IdentityQuestions;
 import elite.intel.bindforge.devices.MyDevice;
 import elite.intel.bindforge.devices.Onboarding;
 import elite.intel.ui.theme.AppTheme;
@@ -177,7 +178,11 @@ final class OnboardingDialog extends JDialog {
         Onboarding.Page current = pages.get(page);
         if (current.waitsForApply()) {
             String shown = verdict.valid() ? name.getText().trim() : current.defaultName();
-            setParagraph(moves, getText("bindings.aliasDesigner.onboarding.movesAtApply", current.bindings(), shown));
+            // WHY: a controller the user said replaces an old id has its bindings on that id, not on its own (A17).
+            setParagraph(moves, current.replaces() == null
+                    ? getText("bindings.aliasDesigner.onboarding.movesAtApply", current.bindings(), shown)
+                    : getText("bindings.aliasDesigner.onboarding.movesFromOldId", current.bindings(), shown,
+                            IdentityQuestions.idKey(current.replaces())));
         }
         growToFit();
     }

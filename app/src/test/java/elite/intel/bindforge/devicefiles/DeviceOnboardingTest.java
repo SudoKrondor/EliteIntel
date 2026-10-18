@@ -1,9 +1,11 @@
 package elite.intel.bindforge.devicefiles;
 
+import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush.Target;
 import elite.intel.bindforge.devicefiles.DeviceOnboarding.InstallationResult;
 import elite.intel.bindforge.devicefiles.DeviceOnboarding.Naming;
 import elite.intel.bindforge.devicefiles.DeviceOnboarding.Outcome;
+import elite.intel.db.dao.BindForgeHardwareIdMoveDao.MoveRow;
 import elite.intel.db.managers.BindForgeDeviceDraftManager.StoredDevice;
 import elite.intel.io.TimestampedBackups;
 import org.junit.jupiter.api.Test;
@@ -114,6 +116,23 @@ class DeviceOnboardingTest {
         assertEquals(DEVICE_MAPPINGS, Files.readString(steam.controlSchemes().resolve("DeviceMappings.xml")));
     }
 
+    /**
+     * The identity question's yes for a controller known only by its old id (A17): the old id is stored with the name,
+     * for Apply to move the bindings from it.
+     */
+    @Test
+    void aControllerReplacingAnOldIdStoresItForApply() throws IOException {
+        Target steam = installation(1, "STEAM");
+        Naming replacing = new Naming("LeftStick", "3344", "83F4", Map.of("Joy_1", "Button 1"), 131,
+                new HardwareId("3344", "83F3"));
+
+        DeviceOnboarding.Result result = onboarding(List.of(steam)).name(List.of(replacing, STICK));
+
+        assertEquals(List.of(replacing), result.atApply());
+        assertEquals(List.of(new MoveRow("3344", "83F4", "3344", "83F3")), store.oldIds,
+                "only the controller replacing an id");
+    }
+
     @Test
     void nothingIsWrittenWhenTheNamesCannotBeStored() throws IOException {
         Target steam = installation(1, "STEAM");
@@ -184,12 +203,14 @@ class DeviceOnboardingTest {
         boolean accepts = true;
         final List<String> now = new ArrayList<>();
         final List<String> atApply = new ArrayList<>();
+        final List<MoveRow> oldIds = new ArrayList<>();
 
         @Override
-        public boolean onboard(List<StoredDevice> namedNow, List<StoredDevice> namedAtApply) {
+        public boolean onboard(List<StoredDevice> namedNow, List<StoredDevice> namedAtApply, List<MoveRow> moves) {
             if (!accepts) return false;
             namedNow.forEach(device -> now.add(device.deviceName()));
             namedAtApply.forEach(device -> atApply.add(device.deviceName()));
+            oldIds.addAll(moves);
             return true;
         }
 

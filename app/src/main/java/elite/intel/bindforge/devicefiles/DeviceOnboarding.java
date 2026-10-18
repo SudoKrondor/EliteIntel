@@ -1,9 +1,11 @@
 package elite.intel.bindforge.devicefiles;
 
+import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush.FileWrite;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush.Target;
 import elite.intel.bindforge.devicefiles.DeviceMappingsMerge.UserEntry;
 import elite.intel.bindforge.install.GameInstallation;
+import elite.intel.db.dao.BindForgeHardwareIdMoveDao.MoveRow;
 import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
 import elite.intel.db.managers.BindForgeDeviceDraftManager;
 import elite.intel.db.managers.BindForgeDeviceDraftManager.StoredDevice;
@@ -45,13 +47,21 @@ public final class DeviceOnboarding {
      *
      * @param labels   the generated labels, by input token
      * @param bindings how many bindings name it by hardware id - more than none means it waits for Apply
+     * @param replaces the old hardware id {@code .binds} still names it by, when the user said this controller is the
+     *                 missing one (A17) - stored with the name for Apply to move; else {@code null}
      */
-    public record Naming(String name, String vid, String pid, Map<String, String> labels, int bindings) {
+    public record Naming(String name, String vid, String pid, Map<String, String> labels, int bindings,
+                         HardwareId replaces) {
         public Naming {
             Objects.requireNonNull(name, "name");
             Objects.requireNonNull(vid, "vid");
             Objects.requireNonNull(pid, "pid");
             labels = Map.copyOf(labels);
+        }
+
+        /** A controller that replaces no old id. */
+        public Naming(String name, String vid, String pid, Map<String, String> labels, int bindings) {
+            this(name, vid, pid, labels, bindings, null);
         }
 
         public boolean waitsForApply() {
@@ -107,8 +117,8 @@ public final class DeviceOnboarding {
 
     /** Where the names are stored. */
     interface Store {
-        /** As {@link BindForgeDeviceDraftManager#onboard(List, List)}. */
-        boolean onboard(List<StoredDevice> now, List<StoredDevice> atApply);
+        /** As {@link BindForgeDeviceDraftManager#onboard(List, List, List)}. */
+        boolean onboard(List<StoredDevice> now, List<StoredDevice> atApply, List<MoveRow> oldIds);
 
         /** Every name in the master, in the order the push leads each file with. */
         List<String> masterOrder();
@@ -129,8 +139,8 @@ public final class DeviceOnboarding {
     public static DeviceOnboarding stored() throws IOException {
         Store store = new Store() {
             @Override
-            public boolean onboard(List<StoredDevice> now, List<StoredDevice> atApply) {
-                return BindForgeDeviceDraftManager.getInstance().onboard(now, atApply);
+            public boolean onboard(List<StoredDevice> now, List<StoredDevice> atApply, List<MoveRow> oldIds) {
+                return BindForgeDeviceDraftManager.getInstance().onboard(now, atApply, oldIds);
             }
 
             @Override
@@ -161,7 +171,13 @@ public final class DeviceOnboarding {
     public Result name(List<Naming> namings) {
         List<Naming> now = namings.stream().filter(naming -> !naming.waitsForApply()).toList();
         List<Naming> atApply = namings.stream().filter(Naming::waitsForApply).toList();
-        if (!store.onboard(stored(now), stored(atApply))) {
+        // WHY: only a controller that waits for Apply - the record is for Apply's move, and one named now has no
+        // bindings left on the old id to move.
+        List<MoveRow> oldIds = atApply.stream()
+                .filter(naming -> naming.replaces() != null)
+                .map(naming -> new MoveRow(naming.vid(), naming.pid(), naming.replaces().vid(), naming.replaces().pid()))
+                .toList();
+        if (!store.onboard(stored(now), stored(atApply), oldIds)) {
             log.warn("Onboarding wrote nothing: BindForge is not activated, or one of {} was named meanwhile",
                     namings.stream().map(Naming::name).toList());
             return new Result(false, List.of(), List.of());

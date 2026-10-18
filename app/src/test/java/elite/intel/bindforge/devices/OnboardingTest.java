@@ -73,6 +73,31 @@ class OnboardingTest {
         assertFalse(pages.get(1).waitsForApply(), "the second is named now, its bindings already promised");
     }
 
+    /**
+     * The identity question's yes for a controller known only by its old id (A17): the page promises the bindings on
+     * the old id, and says which id it replaces so FINISH stores it for Apply.
+     */
+    @Test
+    void aControllerReplacingAnOldIdPromisesItsBindings() {
+        MyDevice alpha = attached("VIRPIL Constellation ALPHA", "3344", "83F4");
+        HardwareId old = new HardwareId("3344", "83F3");
+
+        List<Onboarding.Page> pages = Onboarding.pages(List.of(alpha), List.of(), List.of(),
+                Map.of("334483F3", 131, "334483F4", 2), device -> LABELS, Map.of(alpha.hardware(), old));
+
+        Onboarding.Page page = pages.getFirst();
+        assertTrue(page.waitsForApply());
+        assertEquals(133, page.bindings(), "the old id's and its own");
+        assertEquals(Set.of("334483F3", "334483F4"), page.hardwareIds());
+        assertEquals(old, page.replaces());
+    }
+
+    @Test
+    void aControllerReplacingNothingSaysSo() {
+        assertNull(pages(List.of(attached("VIRPIL Controls 20220720", "3344", "0194")), List.of(), Map.of())
+                .getFirst().replaces());
+    }
+
     @Test
     void aTypedNameMayNotBeAnotherPagesName() {
         List<String> chosen = List.of("LeftStick", "RightStick");

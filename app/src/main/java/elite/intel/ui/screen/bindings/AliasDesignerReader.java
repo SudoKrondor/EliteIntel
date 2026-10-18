@@ -11,6 +11,7 @@ import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.db.managers.BindForgeActivationManager;
 import elite.intel.db.managers.BindForgeDeviceDraftManager;
 import elite.intel.db.managers.BindForgeDeviceMasterManager;
+import elite.intel.db.managers.BindForgeHardwareIdMoveManager;
 import elite.intel.db.managers.BindForgeIdentityAnswerManager;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.model.Device;
@@ -152,11 +153,17 @@ final class AliasDesignerReader {
      * Only once the hardware is listed - before then every controller reads absent, and the forgetting would be wrong
      * too. A {@code .binds} that cannot be read asks nothing: without the counts every missing controller would look
      * unbound.
+     * <p>
+     * A controller the bindings know only by its hardware id is asked about too (Alan, 2026-10-17, A17), and the
+     * bindings waiting to move from an old id are forgotten here when they no longer should move: the old controller
+     * is attached again, or no device has the hardware they were to move to.
      */
     private static IdentityQuestions.Reading readIdentity(List<MyDevice> devices, Path bindings) {
         Map<String, Integer> counts;
+        Map<String, Integer> hardwareIds;
         try {
             counts = BindsDeviceReferences.referenceCounts(bindings);
+            hardwareIds = BindsDeviceReferences.hardwareIdCounts(bindings);
         } catch (IOException e) {
             log.warn("Could not read which devices the bindings name, so no identity question is asked: {}",
                     e.getMessage());
@@ -185,10 +192,18 @@ final class AliasDesignerReader {
         }
         List<HardwareId> heldByDraft = draftRows.stream().map(row -> new HardwareId(row.vid(), row.pid())).toList();
         BindForgeIdentityAnswerManager answers = BindForgeIdentityAnswerManager.getInstance();
+        BindForgeHardwareIdMoveManager moves = BindForgeHardwareIdMoveManager.getInstance();
         FrontierStockDevices stock = FrontierStockDevices.getInstance();
+        List<HardwareId> heldByMaster = masterRows.stream().map(row -> new HardwareId(row.vid(), row.pid())).toList();
+        IdentityQuestions.ById byId = new IdentityQuestions.ById(hardwareIds, heldByMaster,
+                hardware -> stock.covering(hardware.vid(), hardware.pid()).isPresent(), moves.findAll());
         IdentityQuestions.Reading reading =
-                IdentityQuestions.read(known, devices, heldByDraft, counts, stock::ships, answers.findAll());
+                IdentityQuestions.read(known, devices, heldByDraft, counts, stock::ships, answers.findAll(), byId);
         answers.forget(reading.forget());
+        moves.forget(reading.forgetMoves());
+        reading.forgetMoves().forEach(row -> log.info("Bindings on the old hardware id {}:{} stay where they are - "
+                + "the old controller is attached again, or no device has {}:{} any more", row.oldVid(), row.oldPid(),
+                row.vid(), row.pid()));
         return reading;
     }
 
@@ -210,8 +225,12 @@ final class AliasDesignerReader {
      *                 {@code null} for every controller that needs a name
      * @param heldBack controllers left out - candidates of an identity question still open, which naming would end
      *                 unasked (Alan, 2026-10-15, A12). Empty from NAME: the user chose to name that one
+     * @param replacing the old hardware id each controller is, by the controller's hardware - the identity question's
+     *                  yes for a controller the bindings know only by its id (A17); its page promises the bindings on
+     *                  the old id. Empty otherwise
      */
-    OnboardingReading readOnboarding(Set<HardwareId> only, Set<HardwareId> heldBack) {
+    OnboardingReading readOnboarding(Set<HardwareId> only, Set<HardwareId> heldBack,
+                                     Map<HardwareId, HardwareId> replacing) {
         if (!BindForgeActivationManager.getInstance().isActivated()) {
             return new OnboardingReading(List.of(), List.of(), getText("bindings.aliasDesigner.onboarding.notActivated"));
         }
@@ -246,7 +265,7 @@ final class AliasDesignerReader {
                 .filter(device -> !heldBack.contains(device.hardware()))
                 .toList();
         List<Onboarding.Page> pages = Onboarding.pages(asked, heldByDraft, taken, hardwareIds,
-                AliasDesignerReader::generatedLabels);
+                AliasDesignerReader::generatedLabels, replacing);
         return new OnboardingReading(pages, List.copyOf(taken), null);
     }
 

@@ -13,6 +13,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.Objects;
+import java.util.TreeSet;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -21,7 +22,8 @@ import static elite.intel.ui.theme.AppTheme.*;
  * The identity question for one missing controller: which attached controller is it (spec, alias-designer.md, <em>Ask
  * about one missing device at a time</em>; Alan, 2026-10-15, A12).
  * <p>
- * It gives evidence, not a verdict: the name and VID/PID that are missing, how many bindings use it, and every unnamed
+ * It gives evidence, not a verdict: the name and VID/PID that are missing - or, for a controller the bindings know only
+ * by its hardware id, that id (A17) - how many bindings use it, and every unnamed
  * controller attached, marked where the vendor is the same. One row per candidate and a last row, <strong>None of
  * these</strong>. <strong>OK</strong> takes the selected row; <strong>Not now</strong>, the close glyph and Esc
  * defer - the question comes back when the hardware changes, or from CHECK AGAIN. Nothing is written here.
@@ -69,8 +71,14 @@ final class IdentityDialog extends JDialog {
     private void buildUi() {
         JPanel body = transparentPanel(new BorderLayout(0, HudPalette.HUD_GAP));
         JPanel lines = transparentPanel(new GridLayout(0, 1, 0, HudPalette.HUD_GAP / 2));
-        lines.add(paragraph(getText("bindings.aliasDesigner.identity.missing", question.deviceName(),
-                question.was().vid(), question.was().pid()), HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT));
+        // WHY: an id as .binds writes it, since that is what the user will find if they look - one id, or the same id
+        // in both orders.
+        String missing = question.named()
+                ? getText("bindings.aliasDesigner.identity.missing", question.deviceName(), question.was().vid(),
+                        question.was().pid())
+                : getText("bindings.aliasDesigner.identity.missingId", String.join(", ",
+                        new TreeSet<>(question.foundAs())));
+        lines.add(paragraph(missing, HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT));
         lines.add(paragraph(getText("bindings.aliasDesigner.identity.bindings", question.bindings()),
                 HudPalette.HUD_COLOR_ROLE_WARNING));
         lines.add(paragraph(getText("bindings.aliasDesigner.identity.which"), HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT));

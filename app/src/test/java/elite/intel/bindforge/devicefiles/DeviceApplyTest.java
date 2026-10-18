@@ -7,6 +7,7 @@ import elite.intel.bindforge.devicefiles.DeviceFilesPush.Target;
 import elite.intel.bindforge.io.DeviceReferenceRewrite;
 import elite.intel.bindforge.io.DeviceRewriteResult;
 import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
+import elite.intel.db.dao.BindForgeHardwareIdMoveDao.MoveRow;
 import elite.intel.db.managers.BindForgeDeviceDraftManager;
 import elite.intel.db.managers.BindForgeDeviceMasterManager;
 import elite.intel.io.TimestampedBackups;
@@ -334,6 +335,106 @@ class DeviceApplyTest {
         DeviceApply.Result result = applyWith(List.of(steamInstallation()), rewrite);
 
         assertEquals(DeviceApply.MoveOutcome.NOT_FOUND, result.moves().getFirst().outcome());
+    }
+
+    // ------------------------------------------------------------------ old hardware ids (A17)
+
+    /** LeftStick, at 3344:83F4, is the controller .binds still names by its old id 334483F3. */
+    private static final MoveRow LEFT_STICK_WAS = new MoveRow("3344", "83F4", "3344", "83F3");
+
+    /**
+     * The identity question's yes for a controller known only by id (Alan, 2026-10-17, A17): the bindings on the old id
+     * move to the name in the same rewrite as any on its current id, and the record is done.
+     */
+    @Test
+    void bindingsOnAnOldIdMoveWithTheDeviceInOneRewrite() throws IOException {
+        master.record("LeftStick", "3344", "83F4", true);
+        FakeRewrite rewrite = new FakeRewrite(Map.of("334483F3", 131, "334483F4", 2));
+        FakeOldIds oldIds = new FakeOldIds(LEFT_STICK_WAS);
+
+        DeviceApply.Result result = applyWith(List.of(steamInstallation()), rewrite, oldIds);
+
+        assertEquals(List.of("LeftStick <- [334483F3, 334483F4]"), rewrite.calls, "one write, all or nothing");
+        assertEquals(List.of(new DeviceApply.Move("LeftStick", 133, DeviceApply.MoveOutcome.MOVED,
+                DeviceRewriteResult.Status.REWRITTEN)), result.moves());
+        assertTrue(oldIds.waiting.isEmpty(), "moved, so the record is forgotten");
+    }
+
+    @Test
+    void noInstallationTookTheNameSoTheOldIdWaits() {
+        master.record("LeftStick", "3344", "83F4", true);
+        FakeRewrite rewrite = new FakeRewrite(Map.of("334483F3", 131));
+        FakeOldIds oldIds = new FakeOldIds(LEFT_STICK_WAS);
+
+        DeviceApply.Result result = applyWith(List.of(unplugged()), rewrite, oldIds);
+
+        assertTrue(rewrite.calls.isEmpty());
+        assertEquals(DeviceApply.MoveOutcome.NOT_APPLIED, result.moves().getFirst().outcome());
+        assertEquals(List.of(LEFT_STICK_WAS), oldIds.waiting, "kept for the next Apply");
+    }
+
+    @Test
+    void aRewriteThatStopsKeepsTheOldIdForTheNextApply() throws IOException {
+        master.record("LeftStick", "3344", "83F4", true);
+        FakeRewrite rewrite = new FakeRewrite(Map.of("334483F3", 131));
+        rewrite.answers.put("LeftStick", DeviceRewriteResult.Status.STALE_FILE);
+        FakeOldIds oldIds = new FakeOldIds(LEFT_STICK_WAS);
+
+        DeviceApply.Result result = applyWith(List.of(steamInstallation()), rewrite, oldIds);
+
+        assertEquals(DeviceApply.MoveOutcome.FAILED, result.moves().getFirst().outcome());
+        assertEquals(List.of(LEFT_STICK_WAS), oldIds.waiting);
+    }
+
+    /** The game saved .binds meanwhile, or the user rebound them in the game: nothing is left to move. */
+    @Test
+    void nothingLeftOnTheOldIdForgetsItsRecord() throws IOException {
+        master.record("LeftStick", "3344", "83F4", true);
+        FakeRewrite rewrite = new FakeRewrite(Map.of());
+        FakeOldIds oldIds = new FakeOldIds(LEFT_STICK_WAS);
+
+        DeviceApply.Result result = applyWith(List.of(steamInstallation()), rewrite, oldIds);
+
+        assertTrue(rewrite.calls.isEmpty());
+        assertTrue(result.moves().isEmpty());
+        assertTrue(oldIds.waiting.isEmpty());
+    }
+
+    /** Catch-up does not promote, so a controller named only in the draft is not in the master yet: it waits. */
+    @Test
+    void anOldIdWhoseDeviceIsNotInTheMasterWaits() throws IOException {
+        FakeRewrite rewrite = new FakeRewrite(Map.of("334483F3", 131));
+        FakeOldIds oldIds = new FakeOldIds(LEFT_STICK_WAS);
+
+        applyWith(List.of(steamInstallation()), rewrite, oldIds);
+
+        assertTrue(rewrite.calls.isEmpty());
+        assertEquals(List.of(LEFT_STICK_WAS), oldIds.waiting);
+    }
+
+    private DeviceApply.Result applyWith(List<Target> targets, DeviceApply.BindsRewrite rewrite,
+                                         DeviceApply.OldIds oldIds) {
+        return new DeviceApply(draft::promote, pusher(targets), Set::of, FrontierStockDevices.getInstance(),
+                master, rewrite, holdings(targets), oldIds).apply();
+    }
+
+    /** The waiting records, in memory. */
+    private static final class FakeOldIds implements DeviceApply.OldIds {
+        final List<MoveRow> waiting = new ArrayList<>();
+
+        FakeOldIds(MoveRow... rows) {
+            waiting.addAll(List.of(rows));
+        }
+
+        @Override
+        public List<MoveRow> waiting() {
+            return List.copyOf(waiting);
+        }
+
+        @Override
+        public void forget(MoveRow row) {
+            waiting.remove(row);
+        }
     }
 
     // ------------------------------------------------------------------ renames (A11)

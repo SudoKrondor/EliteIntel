@@ -637,10 +637,10 @@ final class AliasDesignerController {
         List<IdentityQuestions.Question> questions = (identityDeferredWanted.getAndSet(false)
                 ? read.identity().askingDeferred()
                 : read.identity().toAsk()).stream()
-                .filter(question -> !identityAsked.contains(question.deviceName()))
+                .filter(question -> !identityAsked.contains(question.key()))
                 .toList();
         if (questions.isEmpty()) return false;
-        questions.forEach(question -> identityAsked.add(question.deviceName()));
+        questions.forEach(question -> identityAsked.add(question.key()));
         SwingUtilities.invokeLater(() -> askIdentity(questions));
         return true;
     }
@@ -649,12 +649,16 @@ final class AliasDesignerController {
      * One dialog per missing controller. A controller picked for one is left out of the next, since one controller
      * cannot be two; a question left with no candidate is not put. Every answer is written together once the last is
      * given: a pick retargets the device in the draft, Not now and None of these are remembered.
+     * <p>
+     * <strong>A pick for a controller the bindings know only by its hardware id</strong> names the picked controller
+     * (Alan, 2026-10-17, A17): onboarding's page opens for it, saying how many bindings move from the old id when the
+     * user applies. Nothing is written for it until FINISH; BACK gives the yes up, and the question comes back next run.
      */
     private void askIdentity(List<IdentityQuestions.Question> questions) {
         // WHY: a click queued before this may have started a write since the offer - the question goes back, for the
         // refresh that ends the write to put again, as catch-up's does.
         if (actionRunning) {
-            questions.forEach(question -> identityAsked.remove(question.deviceName()));
+            questions.forEach(question -> identityAsked.remove(question.key()));
             return;
         }
         List<IdentityDecision> decisions = new ArrayList<>();
@@ -672,10 +676,19 @@ final class AliasDesignerController {
         if (decisions.stream().anyMatch(d -> d.choice().answer() == IdentityQuestions.Answer.NONE_OF_THESE)) {
             onboardingWanted.set(true);
         }
+        Map<HardwareId, HardwareId> replacing = new LinkedHashMap<>();
+        decisions.stream()
+                .filter(d -> !d.question().named() && d.choice().picked() != null)
+                .forEach(d -> replacing.put(d.choice().picked().hardware(), d.question().was()));
         String title = getText("bindings.aliasDesigner.identity.title");
         offEdt(title, () -> writeIdentity(decisions), result -> {
             showIdentityResult(title, result);
-            refresh();
+            if (replacing.isEmpty()) {
+                refresh();
+            } else {
+                // WHY: the user chose to name these, so nothing is held back - as NAME holds nothing back.
+                openOnboarding(replacing.keySet(), true, Set.of(), replacing);
+            }
         });
     }
 
@@ -700,8 +713,12 @@ final class AliasDesignerController {
             IdentityQuestions.Question question = decision.question();
             MyDevice picked = decision.choice().picked();
             if (picked == null) {
-                answers.put(question.deviceName(), question.candidatesKey(), decision.choice().answer().name());
-                log.info("Identity question for {} answered {}", question.deviceName(), decision.choice().answer());
+                answers.put(question.key(), question.candidatesKey(), decision.choice().answer().name());
+                log.info("Identity question for {} answered {}", question.key(), decision.choice().answer());
+            } else if (!question.named()) {
+                // WHY: named by onboarding's page, which opens next - nothing is written until its FINISH (A17).
+                log.info("Identity question for {} answered: {} ({}), to be named", question.key(), picked.label(),
+                        picked.hardware());
             } else if (draft.retargetByName(question.deviceName(), question.was().vid(), question.was().pid(),
                     picked.vid(), picked.pid())) {
                 answers.forget(Set.of(question.deviceName()));
@@ -786,9 +803,18 @@ final class AliasDesignerController {
      * @param heldBack  controllers left out: candidates of an identity question still open
      */
     private void openOnboarding(Set<HardwareId> only, boolean sayNobody, Set<HardwareId> heldBack) {
+        openOnboarding(only, sayNobody, heldBack, Map.of());
+    }
+
+    /**
+     * @param replacing the old hardware id each controller is, by the controller's hardware - the identity question's
+     *                  yes for a controller the bindings know only by its id (A17)
+     */
+    private void openOnboarding(Set<HardwareId> only, boolean sayNobody, Set<HardwareId> heldBack,
+                                Map<HardwareId, HardwareId> replacing) {
         String title = getText("bindings.aliasDesigner.onboarding.title");
         AliasDesignerReports reports = reports();
-        offEdt(title, () -> reader.readOnboarding(only, heldBack), (OnboardingReading reading) -> {
+        offEdt(title, () -> reader.readOnboarding(only, heldBack, replacing), (OnboardingReading reading) -> {
             hotPlug.offered(reading.pages().stream().map(page -> page.device().hardware()).toList());
             if (reading.problem() != null) {
                 HudConfirmDialog.info(view, title, reading.problem(),
@@ -813,7 +839,7 @@ final class AliasDesignerController {
         for (int i = 0; i < pages.size(); i++) {
             Onboarding.Page page = pages.get(i);
             namings.add(new DeviceOnboarding.Naming(names.get(i), page.device().vid(), page.device().pid(),
-                    page.labels(), page.bindings()));
+                    page.labels(), page.bindings(), page.replaces()));
         }
         return DeviceOnboarding.stored().name(namings);
     }

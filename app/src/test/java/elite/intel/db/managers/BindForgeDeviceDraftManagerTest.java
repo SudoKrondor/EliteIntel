@@ -2,6 +2,7 @@ package elite.intel.db.managers;
 
 import elite.intel.db.dao.BindForgeDeviceDraftDao.DraftRow;
 import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
+import elite.intel.db.dao.BindForgeHardwareIdMoveDao.MoveRow;
 import elite.intel.db.managers.BindForgeDeviceDraftManager.AdoptionWrite;
 import elite.intel.db.managers.BindForgeDeviceDraftManager.DraftWrite;
 import elite.intel.db.managers.BindForgeDeviceDraftManager.Stored;
@@ -677,6 +678,34 @@ class BindForgeDeviceDraftManagerTest {
                 List.of()));
 
         assertNull(master.findByName("STICK2"));
+    }
+
+    /**
+     * The identity question's yes for a controller known only by its old id (A17): the old id is stored in the same
+     * transaction as the name, so Apply finds the bindings to move.
+     */
+    @Test
+    void onboardingStoresTheOldIdAControllerReplaces() {
+        activated();
+        BindForgeHardwareIdMoveManagerTest.noMoves();
+        MoveRow replaced = new MoveRow("3344", "83F4", "3344", "83F3");
+
+        assertTrue(draft.onboard(List.of(), List.of(stick("LeftStick", "3344", "83F4")), List.of(replaced)));
+
+        assertNotNull(draft.findByName("LeftStick"));
+        assertEquals(List.of(replaced), BindForgeHardwareIdMoveManager.getInstance().findAll());
+        BindForgeHardwareIdMoveManagerTest.noMoves();
+    }
+
+    @Test
+    void onboardingThatWritesNothingStoresNoOldId() {
+        activated();
+        BindForgeHardwareIdMoveManagerTest.noMoves();
+
+        assertFalse(draft.onboard(List.of(), List.of(stick("RVWAP", "3344", "83F4")),
+                List.of(new MoveRow("3344", "83F4", "3344", "83F3"))));
+
+        assertTrue(BindForgeHardwareIdMoveManager.getInstance().findAll().isEmpty());
     }
 
     private static StoredDevice stick(String name, String vid, String pid) {

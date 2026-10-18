@@ -901,7 +901,8 @@ Built as `bindforge.devices.IdentityQuestions` (who is asked, about what - pure)
 - **Named controllers only.** A12 asks about a controller the master names. One the bindings know only by its hardware
   id - the spec's first sketch, *"Your .binds references 334483F3"* - is **slice A17**: a yes there must name the new
   controller *and* move bindings from the **old** hex to the name, which Apply's hex move cannot find (it looks for a
-  device's current VID/PID), so it needs a stored "old id → name" record of its own.
+  device's current VID/PID), so it needs a stored "old id → name" record of its own. *Built 2026-10-17 -
+  [below](#built--2026-10-17-alan-a17).*
 - **Asked only when bindings use the missing controller**, by its current, master or old name - the
   [missing-controller warning's](#built--2026-10-11-alan-a13) rule. The question exists to save bindings; an entry for a
   stick sold years ago is not worth one whenever a new controller is plugged in. Frontier's names are never asked about.
@@ -935,6 +936,53 @@ Built as `bindforge.devices.IdentityQuestions` (who is asked, about what - pure)
   asks, so a write that fails cannot bring the dialog straight back.
 - **The automatic onboarding offer no longer opens over another dialog**, as the hot-plug offer already did - a refresh
   can land while the identity questions are showing.
+
+### Built — 2026-10-17 (Alan, A17)
+
+**A controller the bindings know only by its hardware id.** A stick that never had an entry in `DeviceMappings.xml`
+is named in `.binds` by its id - `334483F3` - and a firmware update or a replacement gives it a new one, leaving every
+binding on an id nothing has. Built in `bindforge.devices.IdentityQuestions` (who is asked, and what is forgotten -
+pure), `IdentityDialog`, `Onboarding.pages` and `OnboardingDialog`, `DeviceOnboarding` and
+`BindForgeDeviceDraftManager.onboard` (the record stored with the name), `DeviceApply.moveHardwareIds` (the move), and
+the record itself: `bindforge_hardware_id_move` (migration `12008`, `BindForgeHardwareIdMoveManager`). Alan answered
+four questions, one at a time:
+
+- **A yes opens onboarding's name page for the picked controller** (option 1 of two), filled with the default name and
+  saying *"131 bindings name the hardware ID 3344:83F3, which you said is this controller. They move to <name> when
+  you apply."* Skip takes the default; BACK gives the yes up, and the question comes back next run. *Why:* naming it
+  with the default and no page would be the silent creation under a name nobody saw that
+  [onboarding rules out](#it-is-the-alias-confirm-gate-moved-earlier).
+- **The entry and the move both wait for Apply** (option 1 of two). FINISH puts the name in the draft only, as
+  onboarding does for a controller `.binds` names by id; Apply writes the entry, then moves the bindings, and reports
+  both together. DISCARD takes the whole yes back with nothing left in the game folders. *Why:* the bindings are dead
+  either way while the old stick is gone, so writing the entry early would only show the name in the game's controls
+  screen sooner, and onboarding's rule is that such writes
+  [land together, in one Apply](#what-onboarding-writes-and-when).
+- **When the record is forgotten** (option 1 of two for the one real choice): once Apply has moved the bindings or
+  found none left on the old id; once no device in the master or the draft has the hardware they were to move to -
+  DISCARD, or CLEAR before Apply; and **once the old controller is attached again**, before the move - its bindings
+  then work again and stay with it, while the new controller keeps its name and gets its entry at Apply with nothing
+  moved to it. That last is A12's rule that a controller attached again forgets the answer. Kept while no installation
+  took the name, or the rewrite stopped, for the next Apply. **A rename before Apply** does not lose it: the record is
+  keyed by the hardware the controller has now, not by its name.
+- **Not now and None of these are stored under the id** (option 1 of two), in the same `bindforge_identity_answer`
+  table, written `3344:83F3`. A device name can hold no colon, so the two kinds of key never meet; the id alone could -
+  `ABCDEF12` is a valid device name. No migration was needed for it, and every A12 rule about an answer holds as it is.
+
+*Also settled while building it (Alan approved them with the sources):*
+
+- **Who is asked:** an id in `.binds` that no controller My Devices lists has - attached, or named in an installation -
+  no device in the master or the draft has (those are Apply's own move), Frontier does not cover, and no earlier yes
+  already claims. The same id written in both orders is one controller. The candidates, the hold-back from onboarding,
+  CHECK AGAIN and the once-per-run rule are A12's.
+- **The question is A12's list form** with its first line changed: *"334483F3 is not attached. Your bindings know this
+  controller only by its hardware ID - it has no name."* The id is shown as `.binds` writes it. The spec's first
+  sketch above was a yes / no / not now question; A12 replaced it with the list, and A17 keeps the list.
+- **The old id rides in the device's one rewrite** with any bindings on its current id - all or nothing, as A16's
+  handed-over names ride in a rename's.
+- **Catch-up moves it too**, since catch-up runs the same move. A controller named only in the draft is not in the
+  master yet, so its record waits for the Apply that promotes it.
+- **One old id is one controller's**: recording it for a second controller takes it from the first.
 
 ## Automatic Device Registration
 
