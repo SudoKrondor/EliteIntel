@@ -38,7 +38,6 @@ import elite.intel.setup.GameEditionCheck;
 import elite.intel.setup.SetupCheck;
 import elite.intel.tools.ws.WebSocketBroadcaster;
 import elite.intel.ui.event.*;
-import elite.intel.ui.i18n.MultiLingualTextProvider;
 import elite.intel.util.StringUtls;
 import elite.intel.util.Updater;
 import org.apache.logging.log4j.LogManager;
@@ -48,7 +47,6 @@ import javax.sound.sampled.Mixer;
 import javax.swing.*;
 import javax.swing.Timer;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
@@ -89,17 +87,14 @@ public class AppController {
     }
 
     private void checkForUpdates() {
-        SwingUtilities.invokeLater(() -> {
-            CompletableFuture<Boolean> checkAsync = Updater.isUpdateAvailableAsync();
-            try {
-                Boolean updateAvailable = checkAsync.get();
-                if (updateAvailable) {
-                    GameEventBus.publish(new AiVoxResponseEvent(
-                            MultiLingualTextProvider.getText("app.updateAvailable.title")));
-                    UiBus.publish(new UpdateAvailableEvent());
-                }
-            } catch (Exception e) {
+        // WHY: the check is a network call; react on completion so the EDT never waits on it.
+        // Every UpdateAvailableEvent subscriber hops to the EDT itself.
+        Updater.isUpdateAvailableAsync().whenComplete((updateAvailable, e) -> {
+            if (e != null) {
                 log.warn("Update check failed", e);
+            } else if (updateAvailable) {
+                GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.updateAvailable")));
+                UiBus.publish(new UpdateAvailableEvent());
             }
         });
     }

@@ -1,11 +1,11 @@
 package elite.intel.bindforge.install;
 
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
-import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -56,19 +56,13 @@ class LinuxGameInstallationProviderTest {
      * {@code ~/.steam/steam} is normally a link to {@code ~/.local/share/Steam}: one client, one installation.
      */
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Windows refuses to create symbolic links for an ordinary user")
     void aSteamFolderReachedThroughALinkIsReadOnce() throws IOException {
         Path steam = home.resolve(".local/share/Steam");
         gameIn(steam);
         writeLibraryIndex(steam, steam);
         Files.createDirectories(home.resolve(".steam"));
-        try {
-            Files.createSymbolicLink(home.resolve(".steam/steam"), steam);
-        } catch (FileSystemException e) {
-            if (System.getProperty("os.name").startsWith("Windows")) {
-                Assumptions.assumeTrue(false, "Windows does not allow creating symbolic links: " + e.getMessage());
-            }
-            throw e;
-        }
+        Files.createSymbolicLink(home.resolve(".steam/steam"), steam);
 
         assertEquals(1, provider().findInstallations().size());
     }
