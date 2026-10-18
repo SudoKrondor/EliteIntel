@@ -400,6 +400,21 @@ class DeviceApplyTest {
         assertTrue(oldIds.waiting.isEmpty());
     }
 
+    /** Two master devices on the new hardware: the first in the master's order takes the old id, once. */
+    @Test
+    void anOldIdOnSharedHardwareGoesToTheFirstInMasterOrder() throws IOException {
+        master.record("LeftStick", "3344", "83F4", true);
+        master.record("AlphaStick", "3344", "83F4", true);
+        FakeRewrite rewrite = new FakeRewrite(Map.of("334483F3", 131));
+        FakeOldIds oldIds = new FakeOldIds(LEFT_STICK_WAS);
+
+        DeviceApply.Result result = applyWith(List.of(steamInstallation()), rewrite, oldIds);
+
+        assertEquals(List.of("AlphaStick <- [334483F3]"), rewrite.calls);
+        assertEquals(1, result.moves().size());
+        assertTrue(oldIds.waiting.isEmpty());
+    }
+
     /** Catch-up does not promote, so a controller named only in the draft is not in the master yet: it waits. */
     @Test
     void anOldIdWhoseDeviceIsNotInTheMasterWaits() throws IOException {

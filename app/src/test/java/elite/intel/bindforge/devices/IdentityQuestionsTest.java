@@ -176,7 +176,7 @@ class IdentityQuestionsTest {
 
     @Test
     void theKeyIsTheSameHoweverTheSetWasGathered() {
-        assertEquals("3344:03F5,3344:83F4", IdentityQuestions.key(List.of(
+        assertEquals("3344:03F5,3344:83F4", IdentityQuestions.hardwareSetKey(List.of(
                 new HardwareId("3344", "83f4"), new HardwareId("3344", "03F5"), new HardwareId("3344", "83F4"))));
     }
 
@@ -198,7 +198,8 @@ class IdentityQuestionsTest {
         Question question = reading.toAsk().getFirst();
         assertFalse(question.named());
         assertEquals(LVWAP_WAS, question.was());
-        assertEquals("3344:83F3", question.key(), "a colon, so it can never be a device name");
+        assertEquals("3344:83F3", question.answerKey(), "a colon, so no name BindForge accepts meets it");
+        assertEquals("334483F3", question.idAsWritten(), "as .binds writes it");
         assertEquals(Set.of("334483F3"), question.foundAs());
         assertEquals(131, question.bindings());
         assertEquals(List.of(ALPHA), question.candidates());
@@ -213,6 +214,7 @@ class IdentityQuestionsTest {
         assertEquals(1, reading.toAsk().size());
         assertEquals(131, reading.toAsk().getFirst().bindings());
         assertEquals(Set.of("334483F3", "83f33344"), reading.toAsk().getFirst().foundAs());
+        assertEquals("334483F3", reading.toAsk().getFirst().idAsWritten(), "one id, in the game's order");
     }
 
     /** An attached controller with the id is onboarding's ordinary hex case, not a missing one. */
@@ -236,9 +238,40 @@ class IdentityQuestionsTest {
     void anIdFrontierCoversIsNotAsked() {
         Reading reading = IdentityQuestions.read(List.of(), List.of(ALPHA), List.of(), Map.of(), name -> false,
                 List.of(), new ById(Map.of("044FB679", 4), List.of(), new HardwareId("044F", "B679")::equals,
-                        List.of()));
+                        List.of(), List.of()));
 
         assertTrue(reading.toAsk().isEmpty());
+    }
+
+    /**
+     * A device may be named {@code DEADBEEF}, eight hex characters, which .binds is read as giving an id. It is no
+     * missing controller - a yes would move a working controller's bindings away (review, 2026-10-17).
+     */
+    @Test
+    void aDeviceNamedLikeAnIdIsNotAsked() {
+        Map<String, Integer> named = Map.of("DEADBEEF", 40);
+        Known deadbeef = new Known("DEADBEEF", List.of("DEADBEEF"), new HardwareId("3344", "0194"));
+        MyDevice entry = new MyDevice(null, "deadbeef", "1234", "0001", false, null, false);
+
+        Reading inMaster = IdentityQuestions.read(List.of(), List.of(ALPHA), List.of(), Map.of(), name -> false,
+                List.of(), new ById(named, List.of(), hardware -> false, List.of(), List.of("DEADBEEF")));
+        Reading known = IdentityQuestions.read(List.of(deadbeef), List.of(ALPHA), List.of(), Map.of(),
+                name -> false, List.of(), new ById(named, List.of(), hardware -> false, List.of(), List.of()));
+        Reading inAnInstallation = readById(List.of(), List.of(entry, ALPHA), named, List.of(), List.of());
+
+        assertTrue(inMaster.toAsk().isEmpty(), "a name in the master");
+        assertTrue(known.toAsk().isEmpty(), "a name the draft or master gives a known device");
+        assertTrue(inAnInstallation.toAsk().isEmpty(), "an installation's entry name, ignoring case");
+    }
+
+    /** The question and the name page after it show the old id the same way, as .binds writes it. */
+    @Test
+    void anOldIdIsShownAsTheBindsWriteIt() {
+        HardwareId old = new HardwareId("3344", "83F3");
+
+        assertEquals("334483f3", IdentityQuestions.asWritten(old, List.of("334483f3", "334483F4")));
+        assertEquals("83F33344", IdentityQuestions.asWritten(old, List.of("83F33344")), "reversed, if that is all");
+        assertEquals("334483F3", IdentityQuestions.asWritten(old, List.of()), "the game's order when none is found");
     }
 
     /** Already answered yes: the bindings wait for Apply, and the question is not put again. */
@@ -257,7 +290,7 @@ class IdentityQuestionsTest {
                 List.of(new AnswerRow("3344:83F3", "3344:83F4", "NOT_NOW")));
 
         assertTrue(reading.toAsk().isEmpty());
-        assertEquals(List.of("3344:83F3"), reading.deferred().stream().map(Question::key).toList());
+        assertEquals(List.of("3344:83F3"), reading.deferred().stream().map(Question::answerKey).toList());
         assertTrue(reading.forget().isEmpty(), "the id is still missing, so the answer holds");
     }
 
@@ -278,7 +311,7 @@ class IdentityQuestionsTest {
         MoveRow waiting = new MoveRow("3344", "83F4", "3344", "83F3");
 
         Reading reading = IdentityQuestions.read(List.of(), List.of(old, ALPHA), List.of(ALPHA.hardware()), Map.of(),
-                name -> false, List.of(), new ById(BY_ID, List.of(), hardware -> false, List.of(waiting)));
+                name -> false, List.of(), new ById(BY_ID, List.of(), hardware -> false, List.of(waiting), List.of()));
 
         assertEquals(List.of(waiting), reading.forgetMoves());
     }
@@ -297,7 +330,7 @@ class IdentityQuestionsTest {
         MoveRow waiting = new MoveRow("3344", "83F4", "3344", "83F3");
 
         Reading inDraft = IdentityQuestions.read(List.of(), List.of(ALPHA), List.of(ALPHA.hardware()), Map.of(),
-                name -> false, List.of(), new ById(BY_ID, List.of(), hardware -> false, List.of(waiting)));
+                name -> false, List.of(), new ById(BY_ID, List.of(), hardware -> false, List.of(waiting), List.of()));
         Reading inMaster = readById(List.of(ALPHA.hardware()), List.of(ALPHA), BY_ID, List.of(waiting), List.of());
 
         assertTrue(inDraft.forgetMoves().isEmpty());
@@ -314,6 +347,6 @@ class IdentityQuestionsTest {
     private static Reading readById(List<HardwareId> heldByMaster, List<MyDevice> devices,
                                     Map<String, Integer> hardwareIds, List<MoveRow> waiting, List<AnswerRow> answers) {
         return IdentityQuestions.read(List.of(), devices, List.of(), Map.of(), name -> false, answers,
-                new ById(hardwareIds, heldByMaster, hardware -> false, waiting));
+                new ById(hardwareIds, heldByMaster, hardware -> false, waiting, List.of()));
     }
 }

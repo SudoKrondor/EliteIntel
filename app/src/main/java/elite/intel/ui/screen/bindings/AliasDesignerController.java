@@ -637,10 +637,10 @@ final class AliasDesignerController {
         List<IdentityQuestions.Question> questions = (identityDeferredWanted.getAndSet(false)
                 ? read.identity().askingDeferred()
                 : read.identity().toAsk()).stream()
-                .filter(question -> !identityAsked.contains(question.key()))
+                .filter(question -> !identityAsked.contains(question.answerKey()))
                 .toList();
         if (questions.isEmpty()) return false;
-        questions.forEach(question -> identityAsked.add(question.key()));
+        questions.forEach(question -> identityAsked.add(question.answerKey()));
         SwingUtilities.invokeLater(() -> askIdentity(questions));
         return true;
     }
@@ -658,7 +658,7 @@ final class AliasDesignerController {
         // WHY: a click queued before this may have started a write since the offer - the question goes back, for the
         // refresh that ends the write to put again, as catch-up's does.
         if (actionRunning) {
-            questions.forEach(question -> identityAsked.remove(question.key()));
+            questions.forEach(question -> identityAsked.remove(question.answerKey()));
             return;
         }
         List<IdentityDecision> decisions = new ArrayList<>();
@@ -686,8 +686,9 @@ final class AliasDesignerController {
             if (replacing.isEmpty()) {
                 refresh();
             } else {
-                // WHY: the user chose to name these, so nothing is held back - as NAME holds nothing back.
-                openOnboarding(replacing.keySet(), true, Set.of(), replacing);
+                // WHY: the user chose to name these, so nothing is held back - as NAME holds nothing back. Refreshed on
+                // every way out, since this batch may have written a retarget or a Not now (review, 2026-10-17).
+                openOnboarding(replacing.keySet(), true, Set.of(), replacing, true);
             }
         });
     }
@@ -713,11 +714,11 @@ final class AliasDesignerController {
             IdentityQuestions.Question question = decision.question();
             MyDevice picked = decision.choice().picked();
             if (picked == null) {
-                answers.put(question.key(), question.candidatesKey(), decision.choice().answer().name());
-                log.info("Identity question for {} answered {}", question.key(), decision.choice().answer());
+                answers.put(question.answerKey(), question.candidatesKey(), decision.choice().answer().name());
+                log.info("Identity question for {} answered {}", question.answerKey(), decision.choice().answer());
             } else if (!question.named()) {
                 // WHY: named by onboarding's page, which opens next - nothing is written until its FINISH (A17).
-                log.info("Identity question for {} answered: {} ({}), to be named", question.key(), picked.label(),
+                log.info("Identity question for {} answered: {} ({}), to be named", question.answerKey(), picked.label(),
                         picked.hardware());
             } else if (draft.retargetByName(question.deviceName(), question.was().vid(), question.was().pid(),
                     picked.vid(), picked.pid())) {
@@ -803,15 +804,17 @@ final class AliasDesignerController {
      * @param heldBack  controllers left out: candidates of an identity question still open
      */
     private void openOnboarding(Set<HardwareId> only, boolean sayNobody, Set<HardwareId> heldBack) {
-        openOnboarding(only, sayNobody, heldBack, Map.of());
+        openOnboarding(only, sayNobody, heldBack, Map.of(), false);
     }
 
     /**
-     * @param replacing the old hardware id each controller is, by the controller's hardware - the identity question's
-     *                  yes for a controller the bindings know only by its id (A17)
+     * @param replacing    the old hardware id each controller is, by the controller's hardware - the identity
+     *                     question's yes for a controller the bindings know only by its id (A17)
+     * @param refreshAfter whether to read the screen again however onboarding ends - BACK, a problem, nobody to name -
+     *                     not only after FINISH, which always does
      */
     private void openOnboarding(Set<HardwareId> only, boolean sayNobody, Set<HardwareId> heldBack,
-                                Map<HardwareId, HardwareId> replacing) {
+                                Map<HardwareId, HardwareId> replacing, boolean refreshAfter) {
         String title = getText("bindings.aliasDesigner.onboarding.title");
         AliasDesignerReports reports = reports();
         offEdt(title, () -> reader.readOnboarding(only, heldBack, replacing), (OnboardingReading reading) -> {
@@ -819,6 +822,7 @@ final class AliasDesignerController {
             if (reading.problem() != null) {
                 HudConfirmDialog.info(view, title, reading.problem(),
                         getText("bindings.aliasDesigner.firstSetup.close"));
+                if (refreshAfter) refresh();
                 return;
             }
             if (reading.pages().isEmpty()) {
@@ -826,11 +830,16 @@ final class AliasDesignerController {
                     HudConfirmDialog.info(view, title, getText("bindings.aliasDesigner.onboarding.nobody"),
                             getText("bindings.aliasDesigner.firstSetup.close"));
                 }
+                if (refreshAfter) refresh();
                 return;
             }
-            new OnboardingDialog(view, reading.pages(), reading.taken(),
-                    names -> runAndReport(title, () -> reports.onboardText(nameAll(reading.pages(), names))))
-                    .showDialog();
+            boolean[] finished = {false};
+            new OnboardingDialog(view, reading.pages(), reading.taken(), names -> {
+                finished[0] = true;
+                runAndReport(title, () -> reports.onboardText(nameAll(reading.pages(), names)));
+            }).showDialog();
+            // WHY: the dialog is modal, so this runs once it is closed - FINISH's write refreshes when it ends.
+            if (refreshAfter && !finished[0]) refresh();
         });
     }
 

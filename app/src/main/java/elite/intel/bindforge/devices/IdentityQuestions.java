@@ -23,7 +23,8 @@ import java.util.stream.Collectors;
  * new controller is plugged in.
  * <p>
  * <strong>A controller the bindings know only by its hardware id is asked about too</strong> (Alan, 2026-10-17, A17):
- * an id in {@code .binds} that no controller listed has, no device of the user's has and Frontier does not cover. A yes
+ * an id in {@code .binds} that no controller listed has, no device of the user's has or is named, and Frontier does not
+ * cover. A yes
  * there names the picked controller, and Apply moves the bindings from the old id to the name - which needs a record
  * ({@link ById#waiting}), since Apply's own move finds a device only by the hardware it has now.
  * <p>
@@ -93,12 +94,22 @@ public final class IdentityQuestions {
         }
 
         /**
-         * What the question is known by - an answer is stored under it, and a question is put once per run under it.
-         * The name, or the old id as {@code VID:PID}: a device name can hold no colon, so the two never meet (Alan,
-         * 2026-10-17, A17). Eight hex characters alone could be a device name - {@code ABCDEF12}.
+         * What an answer to the question is stored under, and what it is put once per run under. The name, or the old
+         * id as {@code VID:PID} (Alan, 2026-10-17, A17). No name BindForge accepts holds a colon. A name first setup or
+         * adopt took from an installation is not checked, and XML allows a colon in an element name - but it would have
+         * to be exactly {@code VID:PID} to meet one. Eight hex characters alone could be a device name -
+         * {@code ABCDEF12}.
          */
-        public String key() {
-            return named() ? deviceName : idKey(was);
+        public String answerKey() {
+            return named() ? deviceName : (was.vid() + ":" + was.pid()).toUpperCase(Locale.ROOT);
+        }
+
+        /**
+         * The old id as {@code .binds} writes it, for a controller known by id - what the user finds if they look. With
+         * the same id in both orders, the one in the game's order, VID then PID.
+         */
+        public String idAsWritten() {
+            return asWritten(was, foundAs);
         }
 
         /** Whether a candidate shares the missing controller's vendor - evidence, never a verdict. */
@@ -114,8 +125,7 @@ public final class IdentityQuestions {
 
         /** The candidates as an answer is stored against them. */
         public String candidatesKey() {
-            // WHY: qualified - inside the record, key(...) would be the record's own key().
-            return IdentityQuestions.key(candidates.stream().map(MyDevice::hardware).toList());
+            return hardwareSetKey(candidates.stream().map(MyDevice::hardware).toList());
         }
     }
 
@@ -127,16 +137,20 @@ public final class IdentityQuestions {
      * @param heldByMaster   hardware the master's devices have - an id one of them has is Apply's to move, not a question
      * @param frontierCovers whether Frontier's file covers some hardware - the game names it by Frontier's element
      * @param waiting        bindings already waiting to move from an old id, from an earlier yes
+     * @param namesInUse     every name a device has in the master, the draft or an installation, old names included. A
+     *                       name of eight hex characters - {@code DEADBEEF} - is read from {@code .binds} as an id, and
+     *                       is no missing controller: its bindings work (review, 2026-10-17)
      */
     public record ById(Map<String, Integer> hardwareIds, Collection<HardwareId> heldByMaster,
-                       Predicate<HardwareId> frontierCovers, List<MoveRow> waiting) {
-        public static final ById NONE = new ById(Map.of(), List.of(), hardware -> false, List.of());
+                       Predicate<HardwareId> frontierCovers, List<MoveRow> waiting, Collection<String> namesInUse) {
+        public static final ById NONE = new ById(Map.of(), List.of(), hardware -> false, List.of(), List.of());
 
         public ById {
             hardwareIds = Map.copyOf(hardwareIds);
             heldByMaster = List.copyOf(heldByMaster);
             Objects.requireNonNull(frontierCovers, "frontierCovers");
             waiting = List.copyOf(waiting);
+            namesInUse = namesInUse.stream().filter(Objects::nonNull).toList();
         }
     }
 
@@ -209,17 +223,22 @@ public final class IdentityQuestions {
             if (bindings == 0 || candidates.isEmpty()) continue;
             asked.add(new Question(device.name(), device.hardware(), bindings, candidates));
         }
-        for (Question byIdOnly : knownById(known, devices, held, byId)) {
-            missing.add(folded(byIdOnly.key()));
-            if (!candidates.isEmpty()) {
-                asked.add(new Question(null, byIdOnly.was(), byIdOnly.bindings(), candidates, byIdOnly.foundAs()));
+        for (IdOnly missingId : knownById(known, devices, held, byId)) {
+            if (candidates.isEmpty()) {
+                // WHY: still missing, so an answer stored for it holds - only nothing to ask about it now.
+                missing.add(folded((missingId.was().vid() + ":" + missingId.was().pid())));
+                continue;
             }
+            Question question = new Question(null, missingId.was(), missingId.bindings(), candidates,
+                    missingId.foundAs());
+            missing.add(folded(question.answerKey()));
+            asked.add(question);
         }
 
         List<Question> toAsk = new ArrayList<>();
         List<Question> deferred = new ArrayList<>();
         for (Question question : asked) {
-            AnswerRow answer = answered.get(folded(question.key()));
+            AnswerRow answer = answered.get(folded(question.answerKey()));
             if (answer == null || !answer.candidates().equals(question.candidatesKey())) {
                 toAsk.add(question);
             } else if (Answer.NOT_NOW.name().equals(answer.answer())) {
@@ -238,21 +257,40 @@ public final class IdentityQuestions {
     }
 
     /**
-     * The controllers {@code .binds} knows only by hardware id and that are missing (A17), as questions with no
-     * candidates yet: an id no controller My Devices lists has - attached, or named in an installation - no device of
-     * the user's has, Frontier does not cover and no earlier yes already claims. The same id written in both orders is
-     * one controller.
+     * A controller {@code .binds} knows only by hardware id that is missing (A17).
+     *
+     * @param foundAs the ids {@code .binds} names it by, exactly as found
      */
-    private static List<Question> knownById(List<Known> known, List<MyDevice> devices, Set<HardwareId> heldByDraft,
-                                            ById byId) {
+    private record IdOnly(HardwareId was, int bindings, Set<String> foundAs) {
+    }
+
+    /**
+     * The controllers {@code .binds} knows only by hardware id and that are missing (A17): an id no controller My
+     * Devices lists has - attached, or named in an installation - no device of the user's has <strong>or is
+     * named</strong>, Frontier does not cover and no earlier yes already claims. The same id written in both orders is
+     * one controller.
+     * <p>
+     * <strong>A name is checked as well as hardware</strong> (review, 2026-10-17): a device may be called
+     * {@code DEADBEEF}, eight hex characters, which {@code .binds} is read as giving an id. Asked about, a yes would move
+     * a working controller's bindings away.
+     */
+    private static List<IdOnly> knownById(List<Known> known, List<MyDevice> devices, Set<HardwareId> heldByDraft,
+                                          ById byId) {
         List<HardwareId> owned = new ArrayList<>();
         devices.forEach(device -> owned.add(device.hardware()));
         known.forEach(device -> owned.add(device.hardware()));
         owned.addAll(heldByDraft);
         owned.addAll(byId.heldByMaster());
         byId.waiting().forEach(row -> owned.add(new HardwareId(row.oldVid(), row.oldPid())));
+        Set<String> names = new HashSet<>();
+        byId.namesInUse().forEach(name -> names.add(folded(name)));
+        known.forEach(device -> device.names().forEach(name -> names.add(folded(name))));
+        devices.forEach(device -> {
+            if (device.entryName() != null) names.add(folded(device.entryName()));
+            if (device.alias() != null) names.add(folded(device.alias()));
+        });
 
-        List<Question> found = new ArrayList<>();
+        List<IdOnly> found = new ArrayList<>();
         Set<String> seen = new HashSet<>();
         for (String id : new TreeSet<>(byId.hardwareIds().keySet())) {
             if (!seen.add(id.toUpperCase(Locale.ROOT))) continue;
@@ -260,10 +298,11 @@ public final class IdentityQuestions {
             Map<String, Integer> group = BindsDeviceReferences.hardwareIdsFor(was.vid(), was.pid(), byId.hardwareIds());
             group.keySet().forEach(other -> seen.add(other.toUpperCase(Locale.ROOT)));
             if (owned.stream().anyMatch(hardware -> sameController(hardware, was))) continue;
+            if (group.keySet().stream().anyMatch(value -> names.contains(folded(value)))) continue;
             if (byId.frontierCovers().test(was) || byId.frontierCovers().test(reversed(was))) continue;
             int bindings = group.values().stream().mapToInt(Integer::intValue).sum();
             if (bindings == 0) continue;
-            found.add(new Question(null, was, bindings, List.of(), group.keySet()));
+            found.add(new IdOnly(was, bindings, group.keySet()));
         }
         return found;
     }
@@ -288,20 +327,27 @@ public final class IdentityQuestions {
     }
 
     /**
-     * The key an answer about a controller known only by id is stored under: {@code VID:PID}, upper case (Alan,
-     * 2026-10-17, A17).
+     * An old id as {@code .binds} writes it (review, 2026-10-17): the value found in the game's order, VID then PID,
+     * when the file holds one - else the first found, else the id itself. The same id is shown the same way by the
+     * question and by the name page after it.
+     *
+     * @param found the values {@code .binds} names the controller by, exactly as found; may include other ids
      */
-    public static String idKey(HardwareId hardware) {
-        return (hardware.vid() + ":" + hardware.pid()).toUpperCase(Locale.ROOT);
+    public static String asWritten(HardwareId id, Collection<String> found) {
+        String gameOrder = id.vid() + id.pid();
+        List<String> sorted = new ArrayList<>(new TreeSet<>(found));
+        return sorted.stream().filter(value -> value.equalsIgnoreCase(gameOrder)).findFirst()
+                .or(() -> sorted.stream().filter(value -> value.equalsIgnoreCase(id.pid() + id.vid())).findFirst())
+                .orElse(gameOrder);
     }
 
     /**
      * A set of controllers as one string: sorted upper-case {@code VID:PID} pairs joined by commas, so the same set
      * is the same key however it was gathered.
      */
-    public static String key(Collection<HardwareId> hardware) {
+    public static String hardwareSetKey(Collection<HardwareId> hardware) {
         return hardware.stream()
-                .map(IdentityQuestions::idKey)
+                .map(id -> (id.vid() + ":" + id.pid()).toUpperCase(Locale.ROOT))
                 .distinct()
                 .sorted()
                 .collect(Collectors.joining(","));

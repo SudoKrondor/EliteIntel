@@ -3,7 +3,6 @@ package elite.intel.db.managers;
 import elite.intel.db.dao.BindForgeHardwareIdMoveDao;
 import elite.intel.db.dao.BindForgeHardwareIdMoveDao.MoveRow;
 import elite.intel.db.util.Database;
-import org.jdbi.v3.core.Handle;
 
 import java.util.Collection;
 import java.util.List;
@@ -14,8 +13,8 @@ import java.util.Locale;
  * {@link BindForgeHardwareIdMoveDao} (alias-designer.md, <em>What Changes When Hardware Changes</em>; Alan, 2026-10-17,
  * A17).
  * <p>
- * A row is written with the controller's name, in the draft's transaction ({@link BindForgeDeviceDraftManager#onboard});
- * Apply reads it and forgets it once the bindings are moved; the screen's refresh forgets the rest, when the device
+ * A row is written with the controller's name, in the draft's transaction ({@link BindForgeDeviceDraftManager#onboard},
+ * through {@link #put}); Apply reads it and forgets it once the bindings are moved; the screen's refresh forgets the rest, when the device
  * has gone or the old controller is attached again. <strong>Keyed by the hardware the controller has now</strong>, so
  * a rename does not lose it.
  */
@@ -43,16 +42,10 @@ public class BindForgeHardwareIdMoveManager {
     }
 
     /**
-     * Records that the controller with this hardware is the one {@code .binds} still names by the old id. The old id
-     * leaves any other controller it was recorded for, in the same transaction.
+     * Records that the controller with this hardware is the one {@code .binds} still names by the old id, on a DAO in
+     * the caller's transaction - the draft's, so the name and the record land together. The old id leaves any other
+     * controller it was recorded for.
      */
-    public void put(String vid, String pid, String oldVid, String oldPid) {
-        try (Handle handle = Database.init()) {
-            handle.useTransaction(h -> put(h.attach(BindForgeHardwareIdMoveDao.class), vid, pid, oldVid, oldPid));
-        }
-    }
-
-    /** {@link #put}, on a DAO already in the caller's transaction. */
     static void put(BindForgeHardwareIdMoveDao dao, String vid, String pid, String oldVid, String oldPid) {
         dao.deleteByOldId(upper(oldVid), upper(oldPid));
         dao.put(upper(vid), upper(pid), upper(oldVid), upper(oldPid));

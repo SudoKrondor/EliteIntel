@@ -337,6 +337,8 @@ no entry and a copy of a `.binds` that binds it by hex, and change that hex to a
 the PID). Open BindForge: the question lists the stick, saying the old id is not attached. Pick it, check the name
 page says how many bindings move from the old id, FINISH, then APPLY - `.binds` should name the stick, and the
 preset load in the game. Then repeat, but plug in a controller with the old id before APPLY: nothing should move.
+*After review (2026-10-17):* pick the stick again and press BACK on the name page - the screen should read again,
+nothing be named, and the question come back next run.
 → [Built — A17](../02-features/bindforge/alias-designer.md#built--2026-10-17-alan-a17)
 
 ## Core Platform

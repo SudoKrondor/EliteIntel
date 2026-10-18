@@ -948,7 +948,7 @@ the record itself: `bindforge_hardware_id_move` (migration `12008`, `BindForgeHa
 four questions, one at a time:
 
 - **A yes opens onboarding's name page for the picked controller** (option 1 of two), filled with the default name and
-  saying *"131 bindings name the hardware ID 3344:83F3, which you said is this controller. They move to <name> when
+  saying *"131 bindings name the hardware ID 334483F3, which you said is this controller. They move to <name> when
   you apply."* Skip takes the default; BACK gives the yes up, and the question comes back next run. *Why:* naming it
   with the default and no page would be the silent creation under a name nobody saw that
   [onboarding rules out](#it-is-the-alias-confirm-gate-moved-earlier).
@@ -966,8 +966,9 @@ four questions, one at a time:
   took the name, or the rewrite stopped, for the next Apply. **A rename before Apply** does not lose it: the record is
   keyed by the hardware the controller has now, not by its name.
 - **Not now and None of these are stored under the id** (option 1 of two), in the same `bindforge_identity_answer`
-  table, written `3344:83F3`. A device name can hold no colon, so the two kinds of key never meet; the id alone could -
-  `ABCDEF12` is a valid device name. No migration was needed for it, and every A12 rule about an answer holds as it is.
+  table, written `3344:83F3`. No name BindForge accepts holds a colon; a name first setup or adopt took from an
+  installation is not checked, and XML allows a colon in an element name, but it would have to be exactly `VID:PID` to
+  meet one. The id alone would meet a name - `ABCDEF12` is a valid device name. No migration was needed for it, and every A12 rule about an answer holds as it is.
 
 *Also settled while building it (Alan approved them with the sources):*
 
@@ -983,6 +984,20 @@ four questions, one at a time:
 - **Catch-up moves it too**, since catch-up runs the same move. A controller named only in the draft is not in the
   master yet, so its record waits for the Apply that promotes it.
 - **One old id is one controller's**: recording it for a second controller takes it from the first.
+
+*After review — 2026-10-17 (`code-integrity-review.md`, Alan: 1–10 and P2; P1 left for its own question):*
+
+- **A device named like an id is not asked about.** A name may be eight hex characters - `DEADBEEF` - which `.binds`
+  is read as giving an id, so its bindings looked like a missing controller's, and a yes would have moved them off a
+  working one. An id is now skipped when any device in the master, the draft or an installation has it as a name,
+  old names included. *Left (P1):* whether the naming rule should refuse such names at all.
+- **Every way out of the name page reads the screen again** - BACK, a page that could not open, nobody left to name -
+  not only FINISH. The same batch of answers may have written a retarget or a Not now.
+- **The old id is shown as `.binds` writes it, once**, by the question and by the name page after it - not as the
+  `VID:PID` the answer is stored under. With the id in both orders, the one in the game's order, VID then PID.
+- **One read of `.binds` per refresh** for both counts the question needs (`BindsDeviceReferences.counts`).
+- *Also:* `Question.answerKey()` and `hardwareSetKey(…)`, so no accessor shadows a static; each question is built once;
+  the manager's write is only the draft's, in its transaction; one form for an id in the logs, `VID 3344 PID 83F3`.
 
 ## Automatic Device Registration
 

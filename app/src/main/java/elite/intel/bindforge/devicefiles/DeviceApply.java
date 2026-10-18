@@ -615,8 +615,8 @@ public final class DeviceApply {
 
     private void forgetOldId(MoveRow row) {
         oldIds.forget(row);
-        log.info("Bindings on the old hardware id {}{} no longer wait to move to the controller at {}:{}", row.oldVid(),
-                row.oldPid(), row.vid(), row.pid());
+        log.info("Bindings on the old hardware id {} no longer wait to move to the controller at {}",
+                new HardwareId(row.oldVid(), row.oldPid()), new HardwareId(row.vid(), row.pid()));
     }
 
     private record Moves(List<Move> moves, boolean unread) {

@@ -159,11 +159,10 @@ final class AliasDesignerReader {
      * is attached again, or no device has the hardware they were to move to.
      */
     private static IdentityQuestions.Reading readIdentity(List<MyDevice> devices, Path bindings) {
-        Map<String, Integer> counts;
-        Map<String, Integer> hardwareIds;
+        BindsDeviceReferences.Counts counts;
         try {
-            counts = BindsDeviceReferences.referenceCounts(bindings);
-            hardwareIds = BindsDeviceReferences.hardwareIdCounts(bindings);
+            // WHY: both counts from one read, since the identity question needs both on every refresh (review).
+            counts = BindsDeviceReferences.counts(bindings);
         } catch (IOException e) {
             log.warn("Could not read which devices the bindings name, so no identity question is asked: {}",
                     e.getMessage());
@@ -195,15 +194,18 @@ final class AliasDesignerReader {
         BindForgeHardwareIdMoveManager moves = BindForgeHardwareIdMoveManager.getInstance();
         FrontierStockDevices stock = FrontierStockDevices.getInstance();
         List<HardwareId> heldByMaster = masterRows.stream().map(row -> new HardwareId(row.vid(), row.pid())).toList();
-        IdentityQuestions.ById byId = new IdentityQuestions.ById(hardwareIds, heldByMaster,
-                hardware -> stock.covering(hardware.vid(), hardware.pid()).isPresent(), moves.findAll());
-        IdentityQuestions.Reading reading =
-                IdentityQuestions.read(known, devices, heldByDraft, counts, stock::ships, answers.findAll(), byId);
+        List<String> namesInUse = new ArrayList<>();
+        masterRows.forEach(row -> namesInUse.addAll(Arrays.asList(row.deviceName(), row.previousName())));
+        draftRows.forEach(row -> namesInUse.addAll(Arrays.asList(row.deviceName(), row.previousName())));
+        IdentityQuestions.ById byId = new IdentityQuestions.ById(counts.hardwareIds(), heldByMaster,
+                hardware -> stock.covering(hardware.vid(), hardware.pid()).isPresent(), moves.findAll(), namesInUse);
+        IdentityQuestions.Reading reading = IdentityQuestions.read(known, devices, heldByDraft, counts.names(),
+                stock::ships, answers.findAll(), byId);
         answers.forget(reading.forget());
         moves.forget(reading.forgetMoves());
-        reading.forgetMoves().forEach(row -> log.info("Bindings on the old hardware id {}:{} stay where they are - "
-                + "the old controller is attached again, or no device has {}:{} any more", row.oldVid(), row.oldPid(),
-                row.vid(), row.pid()));
+        reading.forgetMoves().forEach(row -> log.info("Bindings on the old hardware id {} stay where they are - the "
+                + "old controller is attached again, or no device has {} any more",
+                new HardwareId(row.oldVid(), row.oldPid()), new HardwareId(row.vid(), row.pid())));
         return reading;
     }
 

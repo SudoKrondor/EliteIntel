@@ -13,7 +13,6 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.Objects;
-import java.util.TreeSet;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -71,13 +70,12 @@ final class IdentityDialog extends JDialog {
     private void buildUi() {
         JPanel body = transparentPanel(new BorderLayout(0, HudPalette.HUD_GAP));
         JPanel lines = transparentPanel(new GridLayout(0, 1, 0, HudPalette.HUD_GAP / 2));
-        // WHY: an id as .binds writes it, since that is what the user will find if they look - one id, or the same id
-        // in both orders.
+        // WHY: an id as .binds writes it, since that is what the user will find if they look - and one of them, so the
+        // same id in both orders does not read as two controllers (review, 2026-10-17).
         String missing = question.named()
                 ? getText("bindings.aliasDesigner.identity.missing", question.deviceName(), question.was().vid(),
                         question.was().pid())
-                : getText("bindings.aliasDesigner.identity.missingId", String.join(", ",
-                        new TreeSet<>(question.foundAs())));
+                : getText("bindings.aliasDesigner.identity.missingId", question.idAsWritten());
         lines.add(paragraph(missing, HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT));
         lines.add(paragraph(getText("bindings.aliasDesigner.identity.bindings", question.bindings()),
                 HudPalette.HUD_COLOR_ROLE_WARNING));

@@ -98,6 +98,26 @@ public final class BindsDeviceReferences {
     }
 
     /**
+     * Both counts from one read of every {@code .binds} - for a caller that needs both, such as the identity question
+     * (review, 2026-10-17, A17), which would otherwise parse each file twice.
+     *
+     * @param names       as {@link #referenceCounts(Path)}
+     * @param hardwareIds as {@link #hardwareIdCounts(Path)}
+     */
+    public record Counts(Map<String, Integer> names, Map<String, Integer> hardwareIds) {
+    }
+
+    /**
+     * {@link #referenceCounts(Path)} and {@link #hardwareIdCounts(Path)} together, strict as both are.
+     *
+     * @throws IOException when the folder is missing or no {@code .binds} in it could be read
+     */
+    public static Counts counts(Path bindingsFolder) throws IOException {
+        Reading reading = readStrictly(bindingsFolder);
+        return new Counts(reading.counts(), reading.hardwareIds());
+    }
+
+    /**
      * The hardware ids among {@code counts} that name this VID and PID, with their counts. Read in either order - VID
      * then PID, as the game writes, or the reverse a hand-edited file may hold (format §4.2) - and ignoring case.
      */

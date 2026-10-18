@@ -178,11 +178,12 @@ final class OnboardingDialog extends JDialog {
         Onboarding.Page current = pages.get(page);
         if (current.waitsForApply()) {
             String shown = verdict.valid() ? name.getText().trim() : current.defaultName();
-            // WHY: a controller the user said replaces an old id has its bindings on that id, not on its own (A17).
+            // WHY: a controller the user said replaces an old id has its bindings on that id, not on its own (A17) - shown
+            // as .binds writes it, as the question before this page shows it (review, 2026-10-17).
             setParagraph(moves, current.replaces() == null
                     ? getText("bindings.aliasDesigner.onboarding.movesAtApply", current.bindings(), shown)
                     : getText("bindings.aliasDesigner.onboarding.movesFromOldId", current.bindings(), shown,
-                            IdentityQuestions.idKey(current.replaces())));
+                            IdentityQuestions.asWritten(current.replaces(), current.hardwareIds())));
         }
         growToFit();
     }
