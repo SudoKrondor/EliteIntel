@@ -84,7 +84,7 @@ public final class TagScanner {
     private void scanLoop() {
         try {
             while (awaitWork()) {
-                scanOneBatch();
+                scanUntilNothingIsLeft();
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -96,6 +96,11 @@ public final class TagScanner {
     }
 
     /**
+     * Waits for a request and takes it. The request is cleared here, before the library is looked at,
+     * so one arriving while a scan is under way is kept for the next pass. Clearing it only after finding
+     * the library empty would drop a request made between that look and the clearing, and its files
+     * would sit unread until something else asked.
+     *
      * @return false once the scanner is shutting down
      */
     private boolean awaitWork() throws InterruptedException {
@@ -103,24 +108,27 @@ public final class TagScanner {
             while (running && !workPending) {
                 lock.wait();
             }
+            workPending = false;
             return running;
         }
     }
 
-    private void scanOneBatch() {
-        List<JukeboxDao.Track> batch = library.awaitingTagScan();
-        if (batch.isEmpty()) {
-            synchronized (lock) {
-                workPending = false;
+    private void scanUntilNothingIsLeft() {
+        List<JukeboxDao.Track> batch;
+        while (isRunning() && !(batch = library.awaitingTagScan()).isEmpty()) {
+            for (JukeboxDao.Track track : batch) {
+                TrackTags tags = readOrGiveUp(track);
+                library.recordTags(track.getId(), tags.title(), tags.artist(), tags.album(),
+                        tags.trackNumber(), tags.durationMs());
             }
-            return;
+            UiBus.publish(new JukeboxPlaylistChangedEvent());
         }
-        for (JukeboxDao.Track track : batch) {
-            TrackTags tags = readOrGiveUp(track);
-            library.recordTags(track.getId(), tags.title(), tags.artist(), tags.album(),
-                    tags.trackNumber(), tags.durationMs());
+    }
+
+    private boolean isRunning() {
+        synchronized (lock) {
+            return running;
         }
-        UiBus.publish(new JukeboxPlaylistChangedEvent());
     }
 
     private TrackTags readOrGiveUp(JukeboxDao.Track track) {
