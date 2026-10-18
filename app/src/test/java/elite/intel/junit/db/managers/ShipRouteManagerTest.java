@@ -67,6 +67,36 @@ class ShipRouteManagerTest {
         assertNull(route.getDestination());
     }
 
+    /**
+     * The game writes NavRoute.json at plot time only, so after a reload the stored route still starts at the
+     * plot's origin. Arriving mid-route must drop every leg up to the arrival, not just the arrival's own.
+     * Seen in a support bundle: arriving in the second system still announced the first as "next", 5 jumps.
+     */
+    @Test
+    void arrivingConsumesTheArrivalLegAndEveryLegBeforeIt() {
+        plot(1, "Condovichs");
+        plot(2, "ICZ FW-V b2-1");
+        plot(3, "Vequess");
+        plot(4, "Coastakal");
+        plot(5, "Miphifa");
+
+        route.arrivedAt("icz fw-v b2-1");
+
+        assertEquals(List.of("Vequess", "Coastakal", "Miphifa"),
+                route.getOrderedRoute().stream().map(NavRouteDto::getName).toList());
+    }
+
+    @Test
+    void arrivingOffTheRouteLeavesItAlone() {
+        plot(1, "Sol");
+        plot(2, "Deciat");
+
+        route.arrivedAt("Shinrarta Dezhra");
+
+        assertEquals(List.of("Sol", "Deciat"),
+                route.getOrderedRoute().stream().map(NavRouteDto::getName).toList());
+    }
+
     @Test
     void noRouteMeansNoDestination() {
         assertNull(route.getDestination());

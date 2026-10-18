@@ -32,10 +32,11 @@ public class LoadGameEventSubscriber {
         });
     }
 
+    /**
+     * Drops the legs already flown: the current system's and every one before it, not just the current one -
+     * the stored route may come from a NavRoute.json the game has not rewritten since the route was plotted.
+     */
     private void cleanUpRoute(PlayerSession playerSession) {
-        if (shipRoute.getOrderedRoute().isEmpty()) return;
-        String currentSystem = playerSession.currentStarSystem();
-        if (currentSystem == null) return;
-        shipRoute.removeLeg(currentSystem);
+        shipRoute.arrivedAt(playerSession.currentStarSystem());
     }
 }

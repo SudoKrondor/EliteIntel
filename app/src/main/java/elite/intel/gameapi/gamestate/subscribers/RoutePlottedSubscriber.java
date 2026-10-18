@@ -44,6 +44,11 @@ public class RoutePlottedSubscriber {
 
                 playerSession.setFinalDestination(finalDestination.getName());
                 shipRoute.setNavRoute(routeMap);
+                // WHY: the game writes NavRoute.json when a route is plotted and never as it is flown, so the
+                // copy read at app start still lists every leg from the plot's origin, including those flown in
+                // an earlier session. Where the commander stands says which are behind them. A freshly plotted
+                // route starts at the current system, which the loop above already skipped, so this is a no-op.
+                shipRoute.arrivedAt(playerSession.currentStarSystem());
             } else {
                 shipRoute.clearRoute();
             }

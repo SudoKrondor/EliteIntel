@@ -132,6 +132,27 @@ class JumpCompletedSubscriberTest {
         }
     }
 
+    /**
+     * The stored route can still start behind the ship - a NavRoute.json reload lists the whole plot from its
+     * origin - so the arrival itself must consume every leg up to the system reached.
+     */
+    @Test
+    void waypointArrivalConsumesEveryLegUpToTheArrival() throws InterruptedException {
+        ShipRouteManager route = ShipRouteManager.getInstance();
+        try {
+            session.setFinalDestination("Sol");
+            route.setNavRoute(Map.of(1, leg(1, "Deciat"), 2, leg(2, "Alioth"), 3, leg(3, "Sol")));
+
+            subscriber.onFSDJumpEvent(fsdJumpEvent("Alioth", ALIOTH_ADDRESS, "Alioth A", 0L));
+
+            awaitTrue(() -> route.getOrderedRoute().size() == 1);
+            assertEquals(List.of("Sol"), route.getOrderedRoute().stream().map(NavRouteDto::getName).toList());
+        } finally {
+            route.clearRoute();
+            session.setFinalDestination(null);
+        }
+    }
+
     private static NavRouteDto leg(int number, String system) {
         NavRouteDto dto = new NavRouteDto();
         dto.setLeg(number);

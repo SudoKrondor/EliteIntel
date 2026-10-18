@@ -46,6 +46,16 @@ public interface ShipRouteDao {
     @SqlUpdate("DELETE FROM ship_route where systemName = :starSystem")
     void delete(@Bind("starSystem") String starSystem);
 
+    /**
+     * Deletes the leg to {@code starSystem} and every leg before it. Nothing when no leg names it: the
+     * subquery is then NULL, and no leg number compares true against NULL.
+     */
+    @SqlUpdate("""
+            DELETE FROM ship_route
+             WHERE leg <= (SELECT MIN(leg) FROM ship_route WHERE systemName = :starSystem COLLATE NOCASE)
+            """)
+    void deleteThrough(@Bind("starSystem") String starSystem);
+
     @SqlUpdate("DELETE FROM ship_route")
     void clear();
 

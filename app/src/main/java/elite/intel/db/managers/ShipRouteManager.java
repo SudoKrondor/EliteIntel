@@ -69,6 +69,23 @@ public class ShipRouteManager {
         return getOrderedRoute();
     }
 
+    /**
+     * Consumes the route up to a system the ship has just arrived in: its leg and every leg before it, so
+     * what is left is the road still ahead. A system the route does not name changes nothing.
+     * <p>
+     * WHY on arrival and not only when the next target is picked ({@code AdjustRouteSubscriber}): the game
+     * writes NavRoute.json when a route is plotted, not as it is flown, so a reload of that file puts back
+     * every leg from the plot's origin. The arrival is the one event that says for certain which legs are
+     * behind the ship, whatever was loaded before it.
+     */
+    public void arrivedAt(String starSystem) {
+        if (starSystem == null || starSystem.isBlank()) return;
+        Database.withDao(ShipRouteDao.class, dao -> {
+            dao.deleteThrough(starSystem);
+            return null;
+        });
+    }
+
     public List<NavRouteDto> getOrderedRoute() {
         return Database.withDao(ShipRouteDao.class, dao -> {
             List<NavRouteDto> result = new ArrayList<>();

@@ -42,6 +42,8 @@ public class JumpCompletedSubscriber {
     public void onFSDJumpEvent(FSDJumpEvent event) {
         Thread.ofVirtual().start(() -> {
             neutronStarRouteManager.removeLeg(event.getSystemAddress());
+            // First, before anything reads the route: the arrival line below speaks the road ahead.
+            shipRoute.arrivedAt(event.getStarSystem());
 
             EdsmSystemBodies.fetchAndRecord(event.getStarSystem(), event.getSystemAddress(), event.getStarPos());
 

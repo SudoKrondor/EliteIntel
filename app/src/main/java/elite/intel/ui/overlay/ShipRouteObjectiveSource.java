@@ -28,8 +28,8 @@ import java.util.function.Supplier;
  * <p>
  * The jump count is {@code getOrderedRoute().size()}, the same figure {@code JumpCompletedSubscriber} speaks as
  * "jumps left" on arrival. Taking it from anywhere else would let the card and the voice disagree about one
- * route. Legs are the systems still ahead: the game rewrites NavRoute.json as they are flown, and the system
- * the commander is standing in is not among them.
+ * route. Legs are the systems still ahead: each arrival consumes its own leg and every one before it
+ * ({@code ShipRouteManager#arrivedAt}), so the system the commander is standing in is not among them.
  * <p>
  * The jumps row also carries the next few stars as a track of dots, so a run of stars with no fuel shows up
  * before the commander is in it.

@@ -3,11 +3,13 @@ package elite.intel.gameapi;
 import com.google.common.eventbus.EventBus;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import elite.intel.db.managers.ShipRouteManager;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.LoggedSubscriberFailures;
 import elite.intel.gameapi.journal.EventRegistry;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.gameapi.journal.subscribers.*;
+import elite.intel.session.PlayerSession;
 import elite.intel.util.json.GsonFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,6 +60,8 @@ public class JournalPreScanner {
         privateBus.register(finance);
         MaterialsPreScanAccumulator materials = new MaterialsPreScanAccumulator();
         privateBus.register(materials);
+        MissionsPreScanAccumulator missions = new MissionsPreScanAccumulator();
+        privateBus.register(missions);
         // The pad under the ship is held in memory only, so a commander who quits on one and comes back
         // starts with no pad at all: the live bus never sees that session's Docked, and Location arrives
         // only here. Everything that asks "which market am I standing in" - the construction card's shelves,
@@ -84,6 +88,11 @@ public class JournalPreScanner {
         persistence.settleCarrierArrival();
         finance.persist();
         materials.persist();
+        missions.persist();
+        // The replay has just moved the commander to where the journal last left them. NavRoute.json may have
+        // been loaded before that, against the position the previous run stored, and the game never rewrites it
+        // as a route is flown - so trim again now that the position is final. See RoutePlottedSubscriber.
+        ShipRouteManager.getInstance().arrivedAt(PlayerSession.getInstance().currentStarSystem());
 
         log.info("JournalPreScanner: done");
     }

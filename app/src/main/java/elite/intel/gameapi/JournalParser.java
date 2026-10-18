@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static elite.intel.util.StringUtls.localizedSpeech;
 
@@ -54,6 +55,10 @@ public class JournalParser implements Runnable, ManagedService {
      * game that has just opened a new journal writes its first lines within seconds anyway.
      */
     private static final long NEWEST_CHECK_INTERVAL_NANOS = TimeUnit.SECONDS.toNanos(5);
+    /**
+     * Static because each service restart builds a new parser - see {@link JournalReadMark}.
+     */
+    private static final AtomicReference<JournalReadMark> lastRead = new AtomicReference<>();
     private Path journalDir;
     private Thread processingThread;
     private volatile boolean isRunning;
@@ -131,8 +136,8 @@ public class JournalParser implements Runnable, ManagedService {
                 }
             }
             if (!isRunning) return;
-            long lastPosition = 0;
-            log.info("Monitoring {}", currentFile.getFileName());
+            long lastPosition = JournalReadMark.startPosition(lastRead.get(), currentFile);
+            log.info("Monitoring {} from byte {}", currentFile.getFileName(), lastPosition);
             long lastNewestCheck = System.nanoTime();
 
             while (isRunning) {
@@ -194,6 +199,7 @@ public class JournalParser implements Runnable, ManagedService {
                     JournalLineReader reader = new JournalLineReader(currentFile, lastPosition);
                     List<String> lines = reader.readNewLines();
                     lastPosition = reader.getPosition();
+                    lastRead.set(new JournalReadMark(currentFile, lastPosition));
                     log.debug("poll: file={} pos={} lines={}", currentFile.getFileName(), lastPosition, lines.size());
 
                     for (String line : lines) {
