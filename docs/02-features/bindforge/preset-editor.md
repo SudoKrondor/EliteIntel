@@ -27,6 +27,34 @@ sides is a conflict.
 
 Four dropdowns — General, Ship, SRV, On Foot Controls — each populated with the **preset names** of the `.binds` files in the bindings folder, defaulting to whatever the Active Preset file currently specifies. **A file is included on the strength of its contents, not its extension** (added 2026-09-17): the folder demonstrably holds files with a `.binds` name that are not binds files at all — most often a `StartPreset` picked by mistake, since it sits right beside them — and offering one as a preset would point a section at something the game cannot load. See [what a `.binds` file might not be](file-manager.md#what-a-binds-file-might-not-be). A "Set All to Same" dropdown-plus-button bulk-sets all four at once; this is a shortcut, not a separate commit path — Save is still required afterward.
 
+**The dropdowns also offer the shipped presets** (settled 2026-10-17, Alan, P1) — see [the preset list](#the-preset-list--settled-2026-10-17-alan-p1).
+
+### The preset list — settled 2026-10-17 (Alan, P1)
+
+Built as `elite.intel.bindforge.presets.PresetCatalog`.
+
+- **Factory presets are listed beside the player's own.** A section can sit on a shipped preset — the specimen's
+  General line is `KeyboardMouseOnly` — and [switching back to one](#relationship-to-first-time-startup) is an
+  ordinary edit, so the list reads each installation's `ControlSchemes` as well as the bindings folder. Each
+  entry is marked as the player's or shipped. The same shipped preset in several installations is **one** entry,
+  holding a file from each; an installation whose folder is missing or cannot be listed is skipped, so an
+  unplugged drive does not empty the list.
+- **A player's preset with the name of a shipped one is offered as the player's**, and a warning is logged. No
+  shipped preset has a version suffix, so it is not expected.
+- **Two of the player's files for one name cannot happen** in a live folder (Alan: the game upgrades
+  `Custom.3.0.binds` to `Custom.4.2.binds` in place). If the list meets it anyway, it keeps both files under
+  the one name and logs a warning, rather than letting one silently replace the other.
+- **What is a binds file:** a `<Root>` element with at least one child holding a `<Primary>`, `<Secondary>` or
+  `<Binding>`. Settings alone (`<KeyboardLayout>`, `<MouseXMode>`) do not count. Every other file with a
+  `.binds` name comes back with a reason the screen turns into a sentence: a Start Preset list, another kind of
+  XML (named by its root element), a `<Root>` with no bindings, no `PresetName`, a name mismatch (below), not
+  XML, empty, or unreadable. A file whose name does not end `.binds` — the `.binds.backup` specimen — is not
+  looked at.
+- **A file whose `PresetName` does not match its file name is not offered.** `Custom.4.2 (2).binds` says
+  `PresetName="Custom"`: offered as `Custom` it would claim a name `Custom.4.2.binds` already answers to, and
+  offered as `Custom.4.2 (2)` it would write a line no file's `PresetName` matches. It is reported, never
+  offered.
+
 ## What a line actually holds — the preset name, not the file name
 
 **Added 2026-09-17.** Every other part of this document assumes the four lines are understood, and nothing
@@ -42,6 +70,12 @@ removed.** Verified against the live folder and the
 | `Custom.4.2.binds` | `Custom` |
 | `KeyboardMouseOnly.binds` (a shipped preset, no suffix) | `KeyboardMouseOnly` |
 
+**Refined 2026-10-17 (Alan, P1): the line holds the file's own `PresetName`**, the attribute on its `<Root>`
+element, and that must match the name the file name gives by the rule above. The shipped presets
+on Alan's installation all match (30 of 30, `KeyboardMouseOnly.binds` → `PresetName="KeyboardMouseOnly"`), as do
+the specimens, except `Custom.4.2 (2).binds`, whose `PresetName` is `Custom`. So the file name rule is the check,
+and `PresetName` is the value. A file where the two disagree is [not offered](#the-preset-list--settled-2026-10-17-alan-p1).
+
 **Get this wrong and the failure is silent.** A section repointed at a name no file answers to does not
 raise an error — the game simply loads something else, and the user discovers it in the cockpit. This
 is the one write in BindForge where a single mistyped string costs a flight.
@@ -56,7 +90,7 @@ in `StartPreset.#.start` identifies exactly one file. The dropdowns still offer 
 the file stores and what the game's own preset list shows.
 
 **And the suffix is not guaranteed.** `Custom.4.2 (2).binds` — a real file, from a download that de-duplicated
-by adding ` (2)` — does not fit `name.major.minor.binds`, so its whole basename is the name. A transform that
+by adding ` (2)` — does not fit `name.major.minor.binds`, so its whole basename is the name it gives — and since its `PresetName` is `Custom`, it is [not offered](#the-preset-list--settled-2026-10-17-alan-p1) (2026-10-17). A transform that
 assumes a version suffix would mangle it. Strip a suffix **only when one is there**.
 
 *The `(2)` file is in the shipped specimens rather than hypothetical, which is why it is written down here

@@ -29,7 +29,8 @@ below follow the rest of that order.
 |---|---|
 | The live `StartPreset` | `bindforge.io.BindingsLoader.findLiveStartPresetFile(Path)` — highest `StartPreset.N.start`, else `StartPreset.start` (F1) |
 | The four sections | `BindingsLoader.readStartPresetSections(Path)` → `bindforge.io.StartPresetSections` (`general`, `ship`, `srv`, `onFoot`, `singleLine`; `parse(String)`, `forSection(BindingSection)`). Empty `Optional` with no file, `IOException` on a failed read. Rules in [preset-editor.md](../02-features/bindforge/preset-editor.md#how-the-four-lines-are-read--settled-2026-10-12-alan-foundation-f1). Tests `StartPresetSectionsTest`, `BindingsLoaderStartPresetTest`; specimens in `app/src/test/resources/bindforge/startpreset/` |
-| Every `.binds` in the folder, by extension | `BindingsLoader.listAllBindsFiles(Path)` — **by name only**; the spec wants contents |
+| Every `.binds` in the folder, by extension | `BindingsLoader.listAllBindsFiles(Path)` — by name only; P1 judges what is in each |
+| **The preset list** (P1) | `bindforge.presets.PresetCatalog.list(bindingsDir, controlSchemesFolders)` → `PresetList` (`presets`, `notOffered`, `find(name)`). Entries `PresetEntry(name, origin USER/FACTORY, files)`; rejects `NotOfferedFile(file, origin, NotOfferedReason, detail)`. `PresetCatalog.controlSchemesOf(rows)` turns `InstallationRegistry.current()` into folders. Content check `BindsContent` (package-private), name check `PresetName.fromFileName`. Tests `PresetNameTest`, `BindsContentTest`, `PresetCatalogTest` read the specimens in `reference-data/` where they are |
 | The bindings folder | `PlayerSession.getBindingsDir()` — the one folder, on Linux too ([§7](../00-overview/input-environment.md#what-bindforge-does-with-several-linux-installations---2026-10-14-alan)) |
 | Safe replace, timestamped copies | `elite.intel.io.AtomicFiles`, `TimestampedBackups` — **never write a game file any other way** |
 | `.binds` Edit History folder | `AppPaths.getBindingsBackupDir()` (C4 split); device-file history is `getBindingsWorkingDir()/history/<installId>/` |
@@ -45,8 +46,11 @@ write are new V1.2 classes ([the split](../02-features/bindforge/overview.md#whe
 - **Draft and Apply, like everything else; no write-as-you-go.** [preset-editor.md](../02-features/bindforge/preset-editor.md#draft-model--same-as-every-other-section)
 - **The four lines are four independent entities** — a game change to one line and a draft change to another
   merge with nothing to ask. [Same section](../02-features/bindforge/preset-editor.md#the-four-lines-are-four-independent-entities)
-- **A line holds the preset name**: the filename less its version suffix and extension, the suffix stripped only
-  when there is one (`Custom.4.2 (2).binds` → `Custom.4.2 (2)`). [What a line holds](../02-features/bindforge/preset-editor.md#what-a-line-actually-holds--the-preset-name-not-the-file-name)
+- **A line holds the file's `PresetName`**, which must match the filename less its version suffix and extension,
+  the suffix stripped only when there is one; a file where they disagree (`Custom.4.2 (2).binds`) is not offered
+  (Alan, 2026-10-17). [What a line holds](../02-features/bindforge/preset-editor.md#what-a-line-actually-holds--the-preset-name-not-the-file-name)
+- **The list includes the shipped presets**, one entry per name across installations; a player's preset shadows a
+  shipped one of the same name. [The preset list](../02-features/bindforge/preset-editor.md#the-preset-list--settled-2026-10-17-alan-p1)
 - **A name identifies exactly one file** in a live folder. [A name does not identify a file](../02-features/bindforge/preset-editor.md#a-name-does-not-identify-a-file)
 - **A file is offered on its contents, not its extension.** [Layout](../02-features/bindforge/preset-editor.md#layout), and file-manager.md above.
 - **The state is coloured text, never a pill.** [Sync Badge](../02-features/bindforge/preset-editor.md#sync-badge)
@@ -58,10 +62,8 @@ write are new V1.2 classes ([the split](../02-features/bindforge/overview.md#whe
 
 ## Known doc conflicts — settle with Alan when a slice reaches them
 
-1. **Factory presets are not in the bindings folder.** The dropdowns list *"the `.binds` files in the bindings
-   folder"*, but a section can sit on a shipped preset — the specimen's General line is `KeyboardMouseOnly`,
-   which lives in an installation's `ControlSchemes` — and the spec says *"switching a section back to a factory
-   preset is an ordinary edit"*. As written, the dropdown could neither show that value nor offer it. **P1.**
+1. ~~**Factory presets are not in the bindings folder.**~~ **Settled 2026-10-17 (Alan, P1):** the list reads
+   each installation's `ControlSchemes` too. [The preset list](../02-features/bindforge/preset-editor.md#the-preset-list--settled-2026-10-17-alan-p1)
 2. **What "wiped" means for `StartPreset`.** preset-editor.md's example is *"all four lines reset to a single
    default preset name"*; overview.md's 2026-10-05 rewrite defines wiped as *matches Frontier's stock file, or is
    gone*, and no stock `StartPreset` reference exists. **P5.**
@@ -100,8 +102,8 @@ write are new V1.2 classes ([the split](../02-features/bindforge/overview.md#whe
 
 | # | Slice | Needs | Status |
 |---|---|---|---|
-| P1 | **The preset list** — the names the four dropdowns offer: every file in the bindings folder that *is* a `.binds` by its contents, each reduced to its preset name (suffix stripped only when present), plus a sentence for each file that is not one. Settles doc conflict 1 (factory presets). Read-only, no UI | F1 (done) | **next** |
-| P2 | **`StartPreset` master and draft** — where each lives (master under `elite-intel/bindings/master/`), what Save writes, Discard, "has the draft changed", and the per-line three-way compare the screen and P5 both need | P1 | pending |
+| P1 | **The preset list** — the names the four dropdowns offer: every file in the bindings folder that *is* a `.binds` by its contents, each reduced to its preset name (suffix stripped only when present), plus a sentence for each file that is not one. Settles doc conflict 1 (factory presets). Read-only, no UI | F1 (done) | **done 2026-10-17** |
+| P2 | **`StartPreset` master and draft** — where each lives (master under `elite-intel/bindings/master/`), what Save writes, Discard, "has the draft changed", and the per-line three-way compare the screen and P5 both need | P1 | **next** |
 | P3 | **Apply** — the draft to the live file through `AtomicFiles`, the replaced file kept in Edit History and pruned, the draft promoted to master; refuses a name no file answers to; the single-line form and line ending (doc conflict 4); the `BindingsMonitor` question above | P2 | pending |
 | P4 | **The screen** — a fourth sub-tab: four dropdowns, Set All to Same, the consistency warning (live, never blocking), the sync state as coloured text (doc conflict 3), SAVE / DISCARD / APPLY; strings in all seven bundles | P3 | pending |
 | P5 | **Change detection** — the game's `StartPreset` against the master: unchanged, edited (adopt / revert, merged per line with the draft), wiped (doc conflict 2); refreshed when the file changes | P4 | pending |
@@ -109,7 +111,7 @@ write are new V1.2 classes ([the split](../02-features/bindforge/overview.md#whe
 
 **Core C7 (First-Time Startup) waits on P3**: it repoints a section through this section's write.
 
-### P1 — what the session needs to know
+### P1 — what the session needed to know (done 2026-10-17)
 
 - **Content, not extension.** A `<Root>` element carrying binding children is a binds file; anything else gets a
   sentence saying what it looks like (*"a Start Preset list, not a bindings file"*), and is never offered. Check
@@ -119,16 +121,19 @@ write are new V1.2 classes ([the split](../02-features/bindforge/overview.md#whe
   `Custom.4.2 (2).binds`, the `.binds.backup` (not a `.binds` name at all), and `StartPreset.start` copied under a
   `.binds` name. No shipped preset is a specimen, so `KeyboardMouseOnly.binds` (no suffix) is a small file the test
   builds. `Custom.3.0.binds` beside `Custom.4.2.binds` is the two-files-one-name case below.
-- **Factory presets (doc conflict 1)** — the options: list the shipped presets from each installation's
-  `ControlSchemes` beside the user's files; show a section's current factory value without offering factory
-  presets; or leave factory presets to First-Time Startup. Bring them to the sources table; do not pick one in code.
-- **Two files reducing to one name** cannot happen in a live folder (testing item 15, withdrawn) — but say what
-  the list does if it meets one, rather than letting a map silently keep the last.
+- **Factory presets (doc conflict 1)** and **two files reducing to one name** — settled; see the hand-off note.
 
 ## Hand-off notes
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
+
+- **2026-10-17 — P1 done** (`bindforge.presets`). **Decided** (all in [the preset list](../02-features/bindforge/preset-editor.md#the-preset-list--settled-2026-10-17-alan-p1)):
+  the shipped presets are listed beside the player's own (option A); a line holds the file's `PresetName`, which
+  must match the filename rule, and a file where they disagree is not offered; two of the player's files for one
+  name cannot happen, but both are kept if it does. **Found:** all 30 shipped presets on Alan's Steam install
+  match the rule. **P2 needs:** P3 refuses a name `PresetList.find` cannot answer; the screen (P4) turns each
+  `NotOfferedReason` into a sentence and its strings, and reads installations through `PresetCatalog.controlSchemesOf`.
 
 - **2026-10-17 — brief written.** Nothing of the screen exists; F1's four-line read is merged up. **Found:**
   `BindingsMonitor` reacts only to `.binds` names, so a `StartPreset` change reloads nothing for the assistant
