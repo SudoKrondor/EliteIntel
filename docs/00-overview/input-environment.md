@@ -59,12 +59,32 @@ are two kinds, and the difference matters:
 So "the player has one bindings folder" is about **their own** binds. Frontier's templates sit somewhere else
 entirely, one copy per installation.
 
-**A preset name is a `.binds` filename with the version and extension stripped off.** `Custom.4.2.binds` has
-the preset name `Custom`. The game's Active Preset file deals in preset names, not filenames.
-
 **The player has one `StartPreset.4.start` file**, in that same bindings folder. It says which `.binds` file the
 game loads for each of the four input sections — **General, Ship, SRV, On Foot**, in that order, one per line.
 The `4` is a game version number, so the filename changes when Frontier bumps it.
+
+### Binds file, preset file, BindName — settled 2026-10-19 (Alan)
+
+Frontier uses "preset" for both files — the attribute inside a `.binds` is `PresetName`, and the file naming
+which one each section loads is `StartPreset` — so the word alone cannot tell them apart. Players call a
+`.binds` a *binds file*, and a tool that edits, organises and protects both has to keep them apart. Three terms:
+
+| Term | Means | Example |
+|---|---|---|
+| **binds file** | a `.binds` file — game actions mapped to inputs | `DualVirpilDawnTreader.4.2.binds` |
+| **preset file** | the file naming which BindName each of the four sections loads | `StartPreset.4.start` |
+| **BindName** | the name a binds file goes by: its `PresetName` attribute, the custom part of its filename (the filename with version and extension stripped off), and what each line of the preset file holds | `DualVirpilDawnTreader` |
+
+So the Ship line of `StartPreset.4.start` holds the BindName `DualVirpilDawnTreader`, which points at
+`DualVirpilDawnTreader.4.2.binds`.
+
+- **Never "preset" on its own.** Say *binds file* or *preset file*. *Preset Editor* is the screen that edits the
+  preset file, which is why it keeps the word.
+- **`PresetName`, in code format, means the XML attribute itself** and nothing else.
+- **Always the preset file's full name**, `StartPreset.4.start`. `StartPreset.start`, with no number, is a
+  different file — the pre-Odyssey single-line generation.
+- *Replaces* "preset name", which this page used for the BindName, and "the Active Preset file", for the preset
+  file. Older docs and code still use both; they are being brought in line.
 
 **The player has one journal folder:**
 
