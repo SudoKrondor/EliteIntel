@@ -96,6 +96,8 @@ Two STT backends are supported behind a common interface:
 - **Supertonic
   3** (local, offline) - the alternative local engine, same JNI path; speaks every language the app ships, and voices a Russian game client's radio chatter, which Kokoro cannot. Ten voices. Bundled with the installer.
 
+- **Piper** (local, offline) - one French-only engine offering Jessica and Pierre from the UPMC VITS model and Siwis from its own VITS model, through the same sherpa-onnx JNI path. Prepare both model packages with `scripts/prepare_piper_models.ps1` before building a distribution.
+
 - **Google Cloud TTS** (cloud) - 14 voices across British, American, and Australian accents,
   selected at runtime via voice command.
 

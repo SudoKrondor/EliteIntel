@@ -5,29 +5,34 @@ import com.google.cloud.texttospeech.v1.VoiceSelectionParams;
 
 /**
  * Chooses a Cloud TTS input format that is compatible with the resolved Google voice.
- * Legacy Chirp-HD voices reject SSML, whereas Chirp3-HD and Standard voices retain the SSML pause treatment.
+ * Chirp-HD and Chirp3-HD voices accept plain text only; Standard voices retain the SSML pause treatment.
  */
 final class GoogleSynthesisInputFactory {
     private static final String LEGACY_CHIRP_HD_MARKER = "-Chirp-HD-";
+    private static final String CHIRP3_HD_MARKER = "-Chirp3-HD-";
 
     private GoogleSynthesisInputFactory() {
     }
 
     /**
-     * Creates a synthesis input for one resolved voice without sending unsupported SSML to legacy Chirp-HD.
+     * Creates a synthesis input without sending unsupported SSML to Chirp voices.
      *
      * @param text sanitized, speakable text
      * @param voice resolved Google voice parameters
-     * @return plain text for legacy Chirp-HD; otherwise punctuation-aware SSML
+     * @return plain text for Chirp voices; otherwise punctuation-aware SSML
      */
     static SynthesisInput create(String text, VoiceSelectionParams voice) {
-        if (isLegacyChirpHd(voice)) {
+        if (requiresPlainText(voice)) {
             return SynthesisInput.newBuilder().setText(text).build();
         }
         return SynthesisInput.newBuilder().setSsml(GoogleSsml.wrap(text)).build();
     }
 
-    private static boolean isLegacyChirpHd(VoiceSelectionParams voice) {
-        return voice != null && voice.getName().contains(LEGACY_CHIRP_HD_MARKER);
+    private static boolean requiresPlainText(VoiceSelectionParams voice) {
+        if (voice == null) {
+            return false;
+        }
+        String name = voice.getName();
+        return name.contains(LEGACY_CHIRP_HD_MARKER) || name.contains(CHIRP3_HD_MARKER);
     }
 }

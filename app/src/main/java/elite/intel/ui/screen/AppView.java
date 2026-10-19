@@ -111,6 +111,7 @@ public class AppView extends JFrame implements AppViewInterface {
         actionsTabPanel = new ActionsTabPanel();
         bindingsTabPanel = new BindingsTabPanel();
         settingsTabPanel = new SettingsTabPanel();
+        settingsTabPanel.setServicesState(servicesState);
         jukeboxTabPanel = new JukeboxTabPanel();
         usageStatsTabPanel = new UsageStatsTabPanel();
         creditsPanel = new MarkdownViewPanel("credits.md");
@@ -162,6 +163,9 @@ public class AppView extends JFrame implements AppViewInterface {
         // Cache the latest lifecycle state so a later tab (re)build can seed AiTabPanel; AiTabPanel also
         // updates its own controls through its own ServicesStateEvent subscription.
         servicesState = event.state();
+        SwingUtilities.invokeLater(() -> {
+            if (settingsTabPanel != null) settingsTabPanel.setServicesState(event.state());
+        });
     }
 
     @Subscribe

@@ -16,6 +16,7 @@ import elite.intel.ai.mouth.MouthInterface;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.google.GoogleTTSImpl;
 import elite.intel.ai.mouth.kokoro.KokoroTTS;
+import elite.intel.ai.mouth.piper.PiperTTS;
 import elite.intel.ai.mouth.sherpa.SherpaOnnxTTS;
 import elite.intel.ai.mouth.supertonic.SupertonicTTS;
 import elite.intel.session.SystemSession;
@@ -91,6 +92,7 @@ public class ApiFactory {
             case GOOGLE -> GoogleTTSImpl.getInstance();
             case KOKORO -> mainLocal(KokoroTTS.getInstance());
             case SUPERTONIC -> mainLocal(SupertonicTTS.getInstance());
+            case PIPER -> mainLocal(PiperTTS.getInstance());
         };
     }
 

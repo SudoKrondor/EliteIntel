@@ -44,9 +44,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * playback queue, interrupts, the persistent audio line, the MAIN / RADIO roles and the ducking under
  * {@link MainVoicePlaybackGate}. Synthesis of sentence N+1 overlaps with playback of sentence N.
  * <p>
- * An engine ({@code KokoroTTS}, {@code SupertonicTTS}) supplies only what differs between models: how the
- * {@link OfflineTts} is built and whether it has to be rebuilt on a language switch, how one sentence is
- * generated, where a sentence ends, and its own voice cast. Everything about queues, threads, handles and
+ * An engine ({@code KokoroTTS}, {@code SupertonicTTS}, or {@code PiperTTS}) supplies only what differs between
+ * models: how the {@link OfflineTts} is built and whether it has to be rebuilt on a language switch, how one
+ * sentence is generated, where a sentence ends, and its own voice cast. Everything about queues, threads, handles and
  * the audio line lives here exactly once, so the two engines cannot drift apart on interrupt semantics -
  * they had, when each carried its own copy.
  * <p>
@@ -133,6 +133,11 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
      * {@link #rebuildsOnLanguageSwitch()}).
      */
     protected abstract OfflineTts buildOfflineTts(Language language);
+
+    /** Selects a model for a voice when one engine carries voices backed by multiple model files. */
+    protected OfflineTts ttsForVoice(OfflineTts defaultTts, String voiceName, Language language) {
+        return defaultTts;
+    }
 
     /**
      * Whether the language is fixed at build time, so a switch needs a new {@link OfflineTts}. A model that
@@ -559,7 +564,7 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
 
                 resetNumericLocale();
                 GeneratedAudio audio = generate(
-                        tts,
+                        ttsForVoice(tts, task.voiceName(), task.language()),
                         spokenText(task),
                         sidOf(task.voiceName()),
                         1f + systemSession.getSpeechSpeed(),

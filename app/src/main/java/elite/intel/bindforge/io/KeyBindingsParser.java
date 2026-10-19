@@ -211,14 +211,14 @@ public class KeyBindingsParser {
                 if (primaryList.getLength() > 0) {
                     Element primary = (Element) primaryList.item(0);
                     primaryBinding = readOnlySlot(primary, BindingSlotType.PRIMARY);
-                    log.debug("Parsed primary binding for {}: device={}, key={}, hold={}",
+                    log.trace("Parsed primary binding for {}: device={}, key={}, hold={}",
                             actionName, primaryBinding.device(), primaryBinding.key(), primaryBinding.hold());
                 }
 
                 if (secondaryList.getLength() > 0) {
                     Element secondary = (Element) secondaryList.item(0);
                     secondaryBinding = readOnlySlot(secondary, BindingSlotType.SECONDARY);
-                    log.debug("Parsed secondary binding for {}: device={}, key={}, hold={}",
+                    log.trace("Parsed secondary binding for {}: device={}, key={}, hold={}",
                             actionName, secondaryBinding.device(), secondaryBinding.key(), secondaryBinding.hold());
                 }
 

@@ -1,7 +1,7 @@
 # `elite.intel.ai.mouth` - Developer Reference
 
 The mouth package owns everything from a
-`VocalisationRequestEvent` to speaker output. It normalises the various vox event types produced by other packages, synthesises speech via offline Kokoro or Supertonic 3, or Google Cloud, and publishes an authoritative playback lifecycle while STT remains active for barge-in.
+`VocalisationRequestEvent` to speaker output. It normalises the various vox event types produced by other packages, synthesises speech via offline Kokoro, Supertonic 3, or the French Piper models, or Google Cloud, and publishes an authoritative playback lifecycle while STT remains active for barge-in.
 
 ---
 
@@ -64,7 +64,7 @@ does not touch it.
 | Field | Type | Meaning |
 |---|---|---|
 | `originType` | `Class<?>` | The original event class; used by Google to publish `VocalisationSuccessfulEvent` via reflection |
-| `voiceName` | `String` (nullable) | Override voice; null draws a cast voice for radio or uses the provider default for ordinary speech |
+| `voiceName` | `String` (nullable) | Override voice; null draws a cast voice for radio or uses the active ship's voice for ordinary speech, with the saved provider preference when no ship is known |
 | `canBeInterrupted` | `boolean` | Whether `TTSInterruptEvent` mid-playback should abort this utterance |
 | `isRadio` | `boolean` | Route through the local radio engine; use its enhanced or baseline radio processor |
 | `handle` | `VocalisationHandle` | Request id, interruptibility, ownership, and exactly-once completion |
@@ -216,13 +216,19 @@ What differs:
 
 Selecting it is a stored setting like any other engine (`game_session.ttsProvider = SUPERTONIC`), written by the LOCAL column's engine switch in the AI services settings. Kokoro remains the shipped default and the fallback for an unreadable stored value.
 
+## 4b. Piper TTS Backend (`piper/`)
+
+`PiperTTS` runs the French Piper VITS models through sherpa-onnx and the shared `SherpaOnnxTTS` pipeline. UPMC Medium and Siwis Medium are separate local provider choices because each model has its own ONNX handle. UPMC offers Jessica (`sid=0`) and Pierre (`sid=1`); Siwis offers its single speaker (`sid=0`).
+
+These models speak French only. Model assets are stored under `AppPaths.getTtsModelDir()` and prepared with `scripts/prepare_piper_models.ps1` before packaging. Radio transmissions continue to use Kokoro or Supertonic so game-client chatter retains the existing language coverage.
+
 ## 5. Google TTS Backend (`google/`)
 
 ### Overview
 
 `GoogleTTSImpl` is a singleton that calls the Google Cloud TTS API using an API key from
 `systemSession.getTtsApiKey()`. Audio is returned as 24kHz LINEAR16 PCM. The API key is never logged and must not be transmitted outside the Cloud TTS endpoint.
-Legacy `Chirp-HD` voices receive plain-text input because their API rejects SSML; Chirp3-HD and Standard voices
+`Chirp-HD` and `Chirp3-HD` voices receive plain-text input because their API rejects SSML; Standard voices
 retain punctuation-aware SSML pauses.
 
 ### Queue Pipeline

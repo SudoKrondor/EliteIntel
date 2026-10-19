@@ -2,13 +2,20 @@ package elite.intel.ui.screen.settings;
 
 import elite.intel.ai.ProviderEnum;
 import elite.intel.ai.mouth.TtsProvider;
+import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.ai.mouth.piper.PiperVoices;
+import elite.intel.ai.mouth.supertonic.SupertonicVoices;
+import elite.intel.ai.mouth.subscribers.events.AiVoxDemoEvent;
 import elite.intel.db.managers.ShipManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.RestartBrainEvent;
 import elite.intel.ui.event.RestartMouthEvent;
+import elite.intel.ui.event.ServicesStateEvent;
+import elite.intel.ui.event.ShipProfileChangedEvent;
 import elite.intel.ui.event.TTSProviderChangedEvent;
 import elite.intel.ui.widget.*;
 
@@ -17,7 +24,10 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.JTextComponent;
 import java.awt.*;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Locale;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -27,9 +37,8 @@ import static elite.intel.ui.theme.HudPalette.*;
 /**
  * Unified AI services tab: routes the language model (LLM) and speech (TTS) each between a
  * LOCAL and a CLOUD source via {@link HudSegmentedControl} switches, with the active source's
- * configuration highlighted and the unused one dimmed (section 0.6). Speech has three engines for
- * those two slots: LOCAL is Kokoro or Supertonic, chosen with a switch of its own, and CLOUD is Google
- * (API key).
+ * configuration highlighted and the unused one dimmed (section 0.6). Speech has four provider choices for
+ * those two slots: LOCAL offers Kokoro, Supertonic, or Piper, and CLOUD is Google (API key).
  * <p>
  * Persistence is transactional: no control writes to {@link SystemSession} on its own. All edits
  * live in an in-memory working copy and are committed atomically by {@link #save()} (the only point
@@ -48,6 +57,7 @@ public class AiServicesSettingsPanel extends JPanel {
     private static final int SRC_CLOUD = 1;
     private static final int ENGINE_KOKORO = 0;
     private static final int ENGINE_SUPERTONIC = 1;
+    private static final int ENGINE_PIPER = 2;
 
     private final SystemSession systemSession = SystemSession.getInstance();
 
@@ -83,6 +93,17 @@ public class AiServicesSettingsPanel extends JPanel {
     private JPanel rightCol;
     private HudBanner ttsKokoroHint;
     private HudBanner ttsSupertonicHint;
+    private HudBanner ttsPiperHint;
+    private HudComboBox<VoiceOption> localVoiceCombo;
+    private JButton localVoiceTestButton;
+    private JPanel localVoiceConfig;
+    private JLabel localVoiceLabel;
+    private JPanel localVoiceStatus;
+    private String localVoiceStatusKey;
+    private ServicesStateEvent.State servicesState = ServicesStateEvent.State.STOPPED;
+    private boolean ttsRestarting;
+    private boolean ttsRestartFailed;
+    private long ttsRestartRequest;
     /**
      * Supertonic's boost row and banner together: shown while Supertonic is the local engine, hidden for Kokoro.
      */
@@ -106,6 +127,8 @@ public class AiServicesSettingsPanel extends JPanel {
     private TtsProvider savedTtsProvider = TtsProvider.KOKORO;
     private int savedGoogleWaveNetPitch;
     private int savedSupertonicBoost;
+    private String savedLocalVoice = "";
+    private final Map<TtsProvider, String> localVoiceChoices = new EnumMap<>(TtsProvider.class);
 
     /** Suppresses dirty-marking while controls are populated programmatically. */
     private boolean loading = false;
@@ -191,17 +214,31 @@ public class AiServicesSettingsPanel extends JPanel {
                 new String[]{getText("settings.ai.voice.local"), getText("settings.ai.voice.cloud")}, SRC_CLOUD);
         tts.add(ttsSourceControl, BorderLayout.NORTH);
 
-        // Left column - LOCAL: two engines that speak on this machine and have nothing to configure, chosen
+        // Left column - LOCAL: engines that speak on this machine and have nothing to configure, chosen
         // with a switch of their own. Kokoro is the default. Right column - CLOUD: Google, the one cloud engine, so no switch - just its
         // key row and WaveNet pitch above its banner.
         JPanel ttsLeftCol = transparentPanel(new BorderLayout(0, HUD_GAP));
         ttsLocalEngineControl = new HudSegmentedControl(
-                new String[]{getText("settings.ai.voice.kokoro"), getText("settings.ai.voice.supertonic")},
+                new String[]{getText("settings.ai.voice.kokoro"), getText("settings.ai.voice.supertonic"),
+                        getText("settings.ai.voice.piper")},
                 ENGINE_KOKORO);
         ttsLeftCol.add(ttsLocalEngineControl, BorderLayout.NORTH);
         // One banner is shown at a time: the selected engine's, or the "why Kokoro is greyed out" one.
         ttsKokoroHint = HudBanner.multiline(getText("settings.ai.voice.local.hint"), StatusBadge.State.INFO);
         ttsSupertonicHint = HudBanner.multiline(getText("settings.ai.voice.supertonic.hint"), StatusBadge.State.INFO);
+        ttsPiperHint = HudBanner.multiline(getText("settings.ai.voice.piper.hint"), StatusBadge.State.INFO);
+        localVoiceCombo = new HudComboBox<>(new VoiceOption[0], VoiceOption::label);
+        localVoiceTestButton = makeButton(getText("settings.ai.voice.piper.test"));
+        JPanel localVoiceLabelPanel = transparentPanel(new GridBagLayout());
+        localVoiceLabel = addLabel(localVoiceLabelPanel, getText("settings.ai.voice.piper.voiceLabel"), baseGbc(), 0);
+        JPanel localVoiceRow = transparentPanel(new BorderLayout(HUD_GAP, 0));
+        localVoiceRow.add(localVoiceCombo, BorderLayout.CENTER);
+        localVoiceRow.add(localVoiceTestButton, BorderLayout.EAST);
+        localVoiceConfig = transparentPanel(new BorderLayout(0, HUD_GAP));
+        localVoiceConfig.add(localVoiceLabelPanel, BorderLayout.NORTH);
+        localVoiceConfig.add(localVoiceRow, BorderLayout.CENTER);
+        localVoiceStatus = transparentPanel(new BorderLayout());
+        localVoiceConfig.add(localVoiceStatus, BorderLayout.SOUTH);
         // Supertonic: its boost row above its banner, mirroring Google's pitch row on the cloud side.
         JPanel supertonicForm = transparentPanel(new GridBagLayout());
         GridBagConstraints sgc = baseGbc();
@@ -216,9 +253,12 @@ public class AiServicesSettingsPanel extends JPanel {
         ttsSupertonicConfig = transparentPanel(new BorderLayout(0, HUD_GAP));
         ttsSupertonicConfig.add(supertonicForm, BorderLayout.NORTH);
         ttsSupertonicConfig.add(ttsSupertonicHint, BorderLayout.CENTER);
-        JPanel ttsLocalHints = transparentPanel(new BorderLayout());
-        ttsLocalHints.add(ttsKokoroHint, BorderLayout.NORTH);
-        ttsLocalHints.add(ttsSupertonicConfig, BorderLayout.CENTER);
+        JPanel ttsLocalHints = transparentPanel(null);
+        ttsLocalHints.setLayout(new BoxLayout(ttsLocalHints, BoxLayout.PAGE_AXIS));
+        ttsLocalHints.add(ttsKokoroHint);
+        ttsLocalHints.add(ttsSupertonicConfig);
+        ttsLocalHints.add(ttsPiperHint);
+        ttsLocalHints.add(localVoiceConfig);
         ttsLeftCol.add(ttsLocalHints, BorderLayout.CENTER);
 
         JPanel ttsRightCol = transparentPanel(new BorderLayout(0, HUD_GAP));
@@ -285,12 +325,29 @@ public class AiServicesSettingsPanel extends JPanel {
             updateEnablement();
         });
         ttsSourceControl.addChangeListener(e -> {
+            updateLocalVoiceOptions();
             recomputeDirty();
             updateEnablement();
         });
         ttsLocalEngineControl.addChangeListener(e -> {
+            updateLocalVoiceOptions();
             recomputeDirty();
             updateEnablement();
+        });
+        localVoiceCombo.addActionListener(e -> {
+            VoiceOption voice = (VoiceOption) localVoiceCombo.getSelectedItem();
+            if (!loading && voice != null) localVoiceChoices.put(voice.provider(), voice.name());
+            recomputeDirty();
+            updateEnablement();
+        });
+        localVoiceTestButton.addActionListener(e -> {
+            VoiceOption voice = (VoiceOption) localVoiceCombo.getSelectedItem();
+            if (voice != null && localVoiceTestButton.isEnabled()
+                    && voice.provider() == systemSession.getTtsProvider()) {
+                String sampleKey = selectedTtsProvider() == TtsProvider.PIPER
+                        ? "settings.ai.voice.piper.testText" : "settings.ai.voice.testText";
+                GameEventBus.publish(new AiVoxDemoEvent(getText(sampleKey), voice.name()));
+            }
         });
         llmLockCheck.addItemListener(e -> updateEnablement());
         providerCombo.addActionListener(e -> onProviderPicked());
@@ -320,6 +377,7 @@ public class AiServicesSettingsPanel extends JPanel {
     public void initData() {
         loading = true;
         try {
+            localVoiceChoices.clear();
             boolean local = systemSession.useLocalCommandLlm() && systemSession.useLocalQueryLlm();
             llmSourceControl.setSelectedIndex(local ? SRC_LOCAL : SRC_CLOUD);
 
@@ -339,9 +397,17 @@ public class AiServicesSettingsPanel extends JPanel {
             TtsProvider ttsProvider = systemSession.getTtsProvider();
             ttsSourceControl.setSelectedIndex(ttsProvider.isLocal() ? SRC_LOCAL : SRC_CLOUD);
             if (ttsProvider.isLocal()) {
-                ttsLocalEngineControl.setSelectedIndex(
-                        ttsProvider == TtsProvider.SUPERTONIC ? ENGINE_SUPERTONIC : ENGINE_KOKORO);
+                ttsLocalEngineControl.setSelectedIndex(switch (ttsProvider) {
+                    case SUPERTONIC -> ENGINE_SUPERTONIC;
+                    case PIPER -> ENGINE_PIPER;
+                    default -> ENGINE_KOKORO;
+                });
             }
+            String activeShipVoice = systemSession.getVoiceName(ttsProvider);
+            localVoiceLabel.setText(getText(ShipManager.getInstance().getShip() == null
+                    ? "settings.ai.voice.defaultLabel" : "settings.ai.voice.piper.voiceLabel").toUpperCase(Locale.ROOT));
+            if (ttsProvider.isLocal()) localVoiceChoices.put(ttsProvider, activeShipVoice);
+            updateLocalVoiceOptions();
 
             savedLlmLocal = local;
             savedLmAddress = lmAddress;
@@ -351,6 +417,7 @@ public class AiServicesSettingsPanel extends JPanel {
             savedTtsProvider = ttsProvider;
             savedGoogleWaveNetPitch = storedPitch;
             savedSupertonicBoost = storedBoost;
+            savedLocalVoice = activeShipVoice;
 
             updateEnablement();
         } finally {
@@ -366,6 +433,13 @@ public class AiServicesSettingsPanel extends JPanel {
 
     public boolean isDirty() {
         return dirty;
+    }
+
+    /** Receives the lifecycle cached by AppView, including when this settings page is not visible. */
+    public void setServicesState(ServicesStateEvent.State state) {
+        servicesState = state;
+        if (state == ServicesStateEvent.State.RUNNING) ttsRestartFailed = false;
+        updateEnablement();
     }
 
     private void captureFields() {
@@ -400,12 +474,35 @@ public class AiServicesSettingsPanel extends JPanel {
         // Each TTS column lives or dies with the source switch. On the local side its engine switch picks
         // which engine's hint is shown; the other engine's is not dimmed but absent.
         boolean ttsCloud = ttsSourceControl.getSelectedIndex() == SRC_CLOUD;
-        boolean supertonic = ttsLocalEngineControl.getSelectedIndex() == ENGINE_SUPERTONIC;
+        int localEngine = ttsLocalEngineControl.getSelectedIndex();
         ttsLocalEngineControl.setEnabled(!ttsCloud);
-        ttsKokoroHint.setVisible(!supertonic);
-        ttsSupertonicConfig.setVisible(supertonic);
+        ttsKokoroHint.setVisible(localEngine == ENGINE_KOKORO);
+        ttsSupertonicConfig.setVisible(localEngine == ENGINE_SUPERTONIC);
+        ttsPiperHint.setVisible(localEngine == ENGINE_PIPER);
+        localVoiceConfig.setVisible(!ttsCloud);
         ttsKokoroHint.setEnabled(!ttsCloud);
         ttsSupertonicHint.setEnabled(!ttsCloud);
+        ttsPiperHint.setEnabled(!ttsCloud);
+        localVoiceConfig.setEnabled(!ttsCloud);
+        localVoiceCombo.setEnabled(!ttsCloud);
+        boolean activeEngine = selectedTtsProvider() == systemSession.getTtsProvider();
+        localVoiceTestButton.setEnabled(!ttsCloud && activeEngine && !ttsRestarting && !ttsRestartFailed
+                && servicesState == ServicesStateEvent.State.RUNNING);
+        String statusKey = !activeEngine ? "settings.ai.voice.status.save"
+                : ttsRestarting ? "settings.ai.voice.status.loading"
+                : ttsRestartFailed ? "settings.ai.voice.status.failed"
+                : !Objects.equals(selectedLocalVoiceName(), savedLocalVoice) ? "settings.ai.voice.status.unsaved"
+                : servicesState == ServicesStateEvent.State.RUNNING ? "settings.ai.voice.status.ready"
+                : "settings.ai.voice.status.stopped";
+        if (!statusKey.equals(localVoiceStatusKey)) {
+            localVoiceStatusKey = statusKey;
+            localVoiceStatus.removeAll();
+            localVoiceStatus.add(HudBanner.multiline(getText(statusKey),
+                    ttsRestartFailed ? StatusBadge.State.OFFLINE : StatusBadge.State.INFO));
+            localVoiceStatus.revalidate();
+            localVoiceStatus.repaint();
+        }
+        localVoiceLabel.setEnabled(!ttsCloud);
         supertonicBoostLabel.setEnabled(!ttsCloud);
         supertonicBoostSlider.setEnabled(!ttsCloud);
         ttsGoogleHint.setEnabled(ttsCloud);
@@ -434,6 +531,8 @@ public class AiServicesSettingsPanel extends JPanel {
                 || selectedTtsProvider() != savedTtsProvider
                 || googleWaveNetPitchSlider.getValue() != savedGoogleWaveNetPitch
                 || supertonicBoostSlider.getValue() != savedSupertonicBoost
+                || (selectedTtsProvider().isLocal()
+                    && !Objects.equals(selectedLocalVoiceName(), savedLocalVoice))
                 || !Objects.equals(newAiKey, savedAiKey)
                 || !Objects.equals(newTtsKey, savedTtsKey)
                 || !Objects.equals(lmAddress, savedLmAddress)
@@ -498,16 +597,17 @@ public class AiServicesSettingsPanel extends JPanel {
         // the fleet's stored voices.
         TtsProvider oldTtsProvider = systemSession.getTtsProvider();
         if (newTtsProvider != oldTtsProvider) {
-            boolean confirmed = HudConfirmDialog.confirm(
-                    this,
-                    getText("settings.audio.switchTts.title"),
-                    getText("settings.audio.switchTts.message"),
-                    getText("button.continue"),
-                    getText("button.cancel"));
-            if (!confirmed) {
+            if (!confirmTtsSwitch()) {
                 return false; // abort entire save, stay in editing state
             }
             ShipManager.getInstance().resetAllVoicesToDefault(newTtsProvider.defaultVoiceName());
+        }
+
+        String selectedLocalVoice = selectedLocalVoiceName();
+        boolean voiceChanged = newTtsProvider.isLocal() && selectedLocalVoice != null
+                && !selectedLocalVoice.equals(systemSession.getVoiceName(newTtsProvider));
+        if (newTtsProvider.isLocal() && selectedLocalVoice != null) {
+            systemSession.setVoiceName(newTtsProvider, selectedLocalVoice);
         }
 
         // Restart side-effects fire only when the relevant config actually changed.
@@ -538,7 +638,7 @@ public class AiServicesSettingsPanel extends JPanel {
         if (brainChanged) UiBus.publish(new RestartBrainEvent());
         if (mouthChanged) {
             UiBus.publish(new TTSProviderChangedEvent());
-            UiBus.publish(new RestartMouthEvent());
+            requestMouthRestart();
         }
 
         savedLlmLocal = newLocal;
@@ -550,9 +650,32 @@ public class AiServicesSettingsPanel extends JPanel {
         savedTtsProvider = newTtsProvider;
         savedGoogleWaveNetPitch = newPitch;
         savedSupertonicBoost = newBoost;
+        savedLocalVoice = selectedLocalVoice == null ? newTtsProvider.defaultVoiceName() : selectedLocalVoice;
 
         clearDirty();
+        updateEnablement();
+        if (voiceChanged) UiBus.publish(new ShipProfileChangedEvent());
         return true;
+    }
+
+    protected boolean confirmTtsSwitch() {
+        return HudConfirmDialog.confirm(this,
+                getText("settings.audio.switchTts.title"), getText("settings.audio.switchTts.message"),
+                getText("button.continue"), getText("button.cancel"));
+    }
+
+    private void requestMouthRestart() {
+        long request = ++ttsRestartRequest;
+        ttsRestarting = true;
+        ttsRestartFailed = false;
+        RestartMouthEvent event = new RestartMouthEvent();
+        event.completion().whenComplete((running, failure) -> SwingUtilities.invokeLater(() -> {
+            if (request != ttsRestartRequest) return;
+            ttsRestarting = false;
+            ttsRestartFailed = failure != null;
+            updateEnablement();
+        }));
+        UiBus.publish(event);
     }
 
     /** Resets the LLM configuration to defaults and commits immediately. */
@@ -571,13 +694,66 @@ public class AiServicesSettingsPanel extends JPanel {
     }
 
     /**
-     * The engine the controls currently describe: LOCAL is Kokoro unless its engine switch says Supertonic,
-     * and CLOUD is Google.
+     * The engine the controls currently describe: LOCAL follows its engine switch, and CLOUD is Google.
      */
     private TtsProvider selectedTtsProvider() {
         return ttsSourceControl.getSelectedIndex() == SRC_LOCAL
-                ? (ttsLocalEngineControl.getSelectedIndex() == ENGINE_SUPERTONIC ? TtsProvider.SUPERTONIC : TtsProvider.KOKORO)
+                ? switch (ttsLocalEngineControl.getSelectedIndex()) {
+                    case ENGINE_SUPERTONIC -> TtsProvider.SUPERTONIC;
+                    case ENGINE_PIPER -> TtsProvider.PIPER;
+                    default -> TtsProvider.KOKORO;
+                }
                 : TtsProvider.GOOGLE;
+    }
+
+    /** Refreshes the roster without reading another engine's names during Swing's model-change events. */
+    private void updateLocalVoiceOptions() {
+        if (localVoiceCombo == null) return;
+        TtsProvider provider = selectedTtsProvider();
+        if (!provider.isLocal()) return;
+        VoiceOption[] voices = provider.voiceRoster()
+                .map(name -> new VoiceOption(provider, name, localVoiceLabel(provider, name)))
+                .toArray(VoiceOption[]::new);
+        String selectedName = localVoiceChoices.getOrDefault(provider, systemSession.getDefaultVoiceName(provider));
+        DefaultComboBoxModel<VoiceOption> model = new DefaultComboBoxModel<>(voices);
+        for (VoiceOption voice : voices) {
+            if (voice.name().equals(selectedName)) model.setSelectedItem(voice);
+        }
+        boolean wasLoading = loading;
+        loading = true;
+        try {
+            localVoiceCombo.setModel(model);
+        } finally {
+            loading = wasLoading;
+        }
+    }
+
+    private String selectedLocalVoiceName() {
+        VoiceOption voice = (VoiceOption) localVoiceCombo.getSelectedItem();
+        return voice == null ? null : voice.name();
+    }
+
+    /** Each value owns its provider and label, so an old cell stays renderable while the roster changes. */
+    private record VoiceOption(TtsProvider provider, String name, String label) { }
+
+    /** Human-readable roster entry in the selected local engine. */
+    private static String localVoiceLabel(TtsProvider provider, String voiceName) {
+        if (voiceName == null) return "";
+        return switch (provider) {
+            case KOKORO -> {
+                KokoroVoices voice = KokoroVoices.valueOf(voiceName);
+                yield voice.getDisplayName() + " · " + voice.getDescription();
+            }
+            case SUPERTONIC -> {
+                SupertonicVoices voice = SupertonicVoices.valueOf(voiceName);
+                yield voice.getDisplayName() + " · " + voice.getDescription();
+            }
+            case PIPER -> {
+                PiperVoices voice = PiperVoices.valueOf(voiceName);
+                yield voice.getDisplayName() + " · " + voice.getDescription();
+            }
+            case GOOGLE -> voiceName;
+        };
     }
 
     /**

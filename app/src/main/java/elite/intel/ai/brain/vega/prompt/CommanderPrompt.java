@@ -35,6 +35,7 @@ final class CommanderPrompt {
                     The commander speaks {inputLanguage}. Match functions to the commander's wording and to the offered
                     {inputLanguage} triggers; never translate before selection.
             Write speak.text and request_input.question in {language}; never translate function or parameter names.
+            {frenchAddressRule}
             </language>
 
             <grounding>
@@ -97,6 +98,7 @@ final class CommanderPrompt {
                 .replace("{inputLanguage}", VegaSystemPrompt.languageName())
                 .replace("{language}", VegaSystemPrompt.languageName())
                 .replace("{personalityClause}", VegaSystemPrompt.personalityClause())
+                .replace("{frenchAddressRule}", VegaSystemPrompt.frenchAddressRule())
                 .replace("{selfGender}", VegaSystemPrompt.selfGender());
     }
 }

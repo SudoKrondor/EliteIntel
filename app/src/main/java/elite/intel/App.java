@@ -20,10 +20,8 @@ import elite.intel.ui.screen.AppView;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.util.AudioPlayer;
 import elite.intel.util.Cypher;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.config.Configurator;
 
 import javax.swing.*;
 
@@ -77,9 +75,6 @@ public class App {
             new DiagnosticsInputTailer().start();
             log.info("Diagnostics mode enabled");
         }
-
-        // change the debug log level when we have version 1.0
-        Configurator.setRootLevel(Level.ALL);
 
         // Seed DB from previous journal sessions so first-run queries have data.
         // Runs concurrently on its own thread; uses a private EventBus.

@@ -492,7 +492,7 @@ public class GoogleTTSImpl implements MouthInterface {
 
             log.debug("Calling Google TTS API");
             long apiStartTime = System.currentTimeMillis();
-            // Legacy Chirp-HD rejects SSML; compatible voices retain punctuation-aware SSML pauses.
+            // Chirp HD families reject SSML; compatible voices retain punctuation-aware SSML pauses.
             SynthesisInput input = GoogleSynthesisInputFactory.create(text, voice);
             AudioConfig config = createAudioConfig(
                     voice, request.speechRate(), systemSession.getGoogleWaveNetPitch());

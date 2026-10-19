@@ -46,7 +46,7 @@ public class LoadoutSubscriber {
             ShipDao.Ship ship = shipManager.getShipById(event.getShipId());
             if (ship == null) {
 
-                String shipDefaultVoice = systemSession.getTtsProvider().defaultVoiceName();
+                String shipDefaultVoice = systemSession.getDefaultVoiceName(systemSession.getTtsProvider());
                 shipManager.save(event.getShipId(), shipName, event.getCargoCapacity(), event.getShip(), shipDefaultVoice,
                         hasCommander ? commanderName : null);
                 UiBus.publish(new ShipProfileChangedEvent());

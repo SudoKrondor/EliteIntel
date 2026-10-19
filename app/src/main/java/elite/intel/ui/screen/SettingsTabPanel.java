@@ -1,6 +1,7 @@
 package elite.intel.ui.screen;
 
 import elite.intel.ui.dialog.HudConfirmDialog;
+import elite.intel.ui.event.ServicesStateEvent;
 import elite.intel.ui.screen.settings.AiServicesSettingsPanel;
 import elite.intel.ui.screen.settings.AudioSettingsPanel;
 import elite.intel.ui.screen.settings.CommonSettingsPanel;
@@ -70,6 +71,10 @@ public class SettingsTabPanel extends JPanel {
         aiServicesPanel.initData();
         audioPanel.initData();
         inputPanel.initData();
+    }
+
+    public void setServicesState(ServicesStateEvent.State state) {
+        aiServicesPanel.setServicesState(state);
     }
 
     /**

@@ -166,6 +166,7 @@ If you want to implement a new command or query follow the established patterns.
     `-Djava.library.path`. No API key required.
   - `elite.intel.ai.mouth.supertonic.SupertonicTTS` - **alternative,
     offline**. The same pipeline (both extend `elite.intel.ai.mouth.sherpa.SherpaOnnxTTS`) over the Supertonic 3 model (one multilingual model, language passed per call, ten voices). A choice for any commander (`TtsProvider.SUPERTONIC`), and the radio engine for a Russian game client, whose Cyrillic chatter Kokoro cannot read.
+  - `elite.intel.ai.mouth.piper.PiperTTS` - **French-only, offline**. One provider offers Jessica and Pierre from UPMC Medium and Siwis from Siwis Medium through sherpa-onnx VITS. Download both models before packaging with `scripts/prepare_piper_models.ps1`; the app uses Kokoro or Supertonic for radio transmissions.
   -
   `elite.intel.ai.mouth.google.GoogleTTSImpl` - cloud-based fallback via Google Cloud Text-to-Speech API. Requires a Google Cloud API key configured in the System settings tab.
   - `elite.intel.ai.mouth.edge.EdgeTTSImpl` - unofficial cloud integration with the consumer Edge Read Aloud

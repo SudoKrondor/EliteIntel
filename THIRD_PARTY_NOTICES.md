@@ -65,6 +65,21 @@ The dependency is unmodified and is included in `elite_intel.jar` by the Gradle 
 The model is unmodified and distributed as downloaded from the
 [k2-fsa/sherpa-onnx releases](https://github.com/k2-fsa/sherpa-onnx/releases).
 
+## Piper French UPMC and Siwis voice models
+
+`distribution/tts/vits-piper-fr_FR-upmc-medium/` and
+`distribution/tts/vits-piper-fr_FR-siwis-medium/` contain Sherpa-ONNX conversions of the French Piper voice
+models. The UPMC model has two speakers (Jessica, sid 0; Pierre, sid 1); Siwis has one speaker (sid 0).
+
+- Source models: [`fr_FR-upmc-medium`](https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0/fr/fr_FR/upmc/medium)
+  and [`fr_FR-siwis-medium`](https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0/fr/fr_FR/siwis/medium).
+- The Piper model repository is marked MIT; each model's `PIPER_MODEL_CARD` is downloaded into its model folder.
+  Those cards identify the source datasets and their respective CC BY-SA 4.0 (UPMC) and CC BY 4.0 (Siwis)
+  licenses. Keep the model cards with the voice files when redistributing them.
+- The converted ONNX packages are downloaded from the
+  [k2-fsa/sherpa-onnx `tts-models` release](https://github.com/k2-fsa/sherpa-onnx/releases/tag/tts-models)
+  by `scripts/prepare_piper_models.ps1`.
+
 ## Jukebox audio test fixtures
 
 `app/src/test/resources/jukebox/` holds short synthetic MP3, FLAC, M4A/M4B and Ogg Vorbis files - a few seconds at most of a plain sine tone, generated with FFmpeg for this repository. They carry no third-party audio and exist so the decoders, the resampler and the tag reader are tested against real files of each format rather than against mocks. Two of them hold a codec this build deliberately cannot decode, so that refusing such a file is tested too: `lossless-alac.m4a` is Apple Lossless rather than AAC, and `opus-in-ogg.ogg` is Opus rather than Vorbis.

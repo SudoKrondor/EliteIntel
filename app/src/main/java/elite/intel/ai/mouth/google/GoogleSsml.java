@@ -1,8 +1,8 @@
 package elite.intel.ai.mouth.google;
 
 /**
- * Turns sanitized plain text into Google TTS SSML for the Chirp3-HD (and Standard fallback) voices, which honor
- * SSML on the synchronous synthesis path. This is Google-only: the Kokoro/espeak-ng path keeps plain text.
+ * Turns sanitized plain text into Google TTS SSML for Standard voices, which honor SSML on the synchronous
+ * synthesis path. Chirp voices receive plain text. This is Google-only: the Kokoro/espeak-ng path keeps plain text.
  * <p>
  * The neural voices phrase flatly on bare punctuation, so this escapes the text for XML, normalizes "!" to "."
  * (its exclamatory intonation sounds unnatural), and inserts explicit {@code <break>} pauses after sentence ends
@@ -41,10 +41,8 @@ final class GoogleSsml {
     }
 
     /**
-     * Speaks "!" as a normal sentence end. Chirp3-HD reads an exclamation with an exaggerated, excited intonation
-     * that sounds unnatural for the calm crew persona, and SSML cannot tame that prosody, so a run of "!" is
-     * replaced with a single "." (the sentence pause is unaffected). "?" is left intact - question intonation
-     * reads fine.
+     * Speaks "!" as a normal sentence end for the calm crew persona, so a run of "!" is replaced with a single
+     * "." (the sentence pause is unaffected). "?" is left intact for question intonation.
      */
     private static String normalizeExclamations(String s) {
         return s.replaceAll("!+", ".");

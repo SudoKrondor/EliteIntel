@@ -2,6 +2,7 @@ package elite.intel.ai.mouth;
 
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.ai.mouth.piper.PiperVoices;
 import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 
 import java.util.Arrays;
@@ -11,10 +12,10 @@ import java.util.stream.Stream;
  * The engine that voices VEGA. Exactly one is active, and the choice is a stored setting in its own
  * right ({@code game_session.ttsProvider}) - it is never inferred from the shape of the cloud API key.
  * <p>
- * Two engines run locally and need nothing configured: {@link #KOKORO}, which is the shipped default and the
- * fallback for an unreadable stored value, so a commander with no cloud account still has a voice; and
- * {@link #SUPERTONIC}, the alternative local engine. {@link #GOOGLE} is the only engine that needs an API key
- * and the only one that is not local.
+ * Local engines need nothing configured: {@link #KOKORO}, which is the shipped default and fallback for an
+ * unreadable stored value; {@link #SUPERTONIC}; and {@link #PIPER}, which offers three French voices across
+ * its UPMC and Siwis models. {@link #GOOGLE}
+ * is the only engine that needs an API key and the only one that is not local.
  * <p>
  * A stored {@code EDGE} is an engine this build no longer has: Microsoft Edge Read Aloud was removed in
  * v1.1.0026, and migration {@code 11007} moved its commanders to Kokoro. {@link #fromStored} reads anything
@@ -23,6 +24,7 @@ import java.util.stream.Stream;
 public enum TtsProvider {
     KOKORO,
     SUPERTONIC,
+    PIPER,
     GOOGLE;
 
     /**
@@ -33,8 +35,12 @@ public enum TtsProvider {
         if (stored == null || stored.isBlank()) {
             return KOKORO;
         }
+        String normalized = stored.trim();
+        if (normalized.equalsIgnoreCase("PIPER_UPMC") || normalized.equalsIgnoreCase("PIPER_SIWIS")) {
+            return PIPER;
+        }
         for (TtsProvider provider : values()) {
-            if (provider.name().equalsIgnoreCase(stored.trim())) {
+            if (provider.name().equalsIgnoreCase(normalized)) {
                 return provider;
             }
         }
@@ -50,6 +56,7 @@ public enum TtsProvider {
         return switch (this) {
             case KOKORO -> KokoroVoices.DEFAULT_VOICE.name();
             case SUPERTONIC -> SupertonicVoices.DEFAULT_VOICE.name();
+            case PIPER -> PiperVoices.DEFAULT_VOICE.name();
             case GOOGLE -> GoogleVoices.DEFAULT_VOICE.name();
         };
     }
@@ -63,6 +70,7 @@ public enum TtsProvider {
         return switch (this) {
             case KOKORO -> KokoroVoices.voiceOrDefault(voiceName).name();
             case SUPERTONIC -> SupertonicVoices.voiceOrDefault(voiceName).name();
+            case PIPER -> PiperVoices.voiceOrDefault(voiceName).name();
             case GOOGLE -> GoogleVoices.voiceOrDefault(voiceName).name();
         };
     }
@@ -75,6 +83,7 @@ public enum TtsProvider {
         return switch (this) {
             case KOKORO -> VoiceGender.of(KokoroVoices.voiceOrDefault(voiceName).isMale());
             case SUPERTONIC -> VoiceGender.of(SupertonicVoices.voiceOrDefault(voiceName).isMale());
+            case PIPER -> VoiceGender.of(PiperVoices.voiceOrDefault(voiceName).isMale());
             case GOOGLE -> VoiceGender.of(GoogleVoices.voiceOrDefault(voiceName).isMale());
         };
     }
@@ -86,6 +95,7 @@ public enum TtsProvider {
         return switch (this) {
             case KOKORO -> Arrays.stream(KokoroVoices.values()).map(Enum::name);
             case SUPERTONIC -> Arrays.stream(SupertonicVoices.values()).map(Enum::name);
+            case PIPER -> PiperVoices.roster().map(Enum::name);
             case GOOGLE -> Arrays.stream(GoogleVoices.values()).map(Enum::name);
         };
     }
@@ -97,7 +107,8 @@ public enum TtsProvider {
     public Stream<String> radioVoiceRoster() {
         return switch (this) {
             case KOKORO -> Arrays.stream(KokoroVoices.radioCast()).map(Enum::name);
-            case SUPERTONIC, GOOGLE -> voiceRoster();
+            case SUPERTONIC -> voiceRoster();
+            case PIPER, GOOGLE -> Stream.empty();
         };
     }
 
@@ -105,6 +116,6 @@ public enum TtsProvider {
      * Whether the engine synthesises on this machine, with no network call and no account.
      */
     public boolean isLocal() {
-        return this == KOKORO || this == SUPERTONIC;
+        return this == KOKORO || this == SUPERTONIC || this == PIPER;
     }
 }

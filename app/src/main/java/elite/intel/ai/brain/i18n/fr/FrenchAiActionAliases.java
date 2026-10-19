@@ -8,11 +8,15 @@ public class FrenchAiActionAliases extends AiActionAliasProvider {
 
     @Override
     public Set<String> wakeBypassPhrases() {
-        return Set.of("réveille-toi", "réveille toi", "reveille-toi", "reveille toi", "écoute", "ecoute", "écoute commande vocale", "ecoute commande vocale", "écoute les commandes vocales", "ecoute les commandes vocales");
+        return Set.of(
+                "réveille-toi", "réveille toi", "reveille-toi", "reveille toi",
+                "écoute", "ecoute");
     }
 
     @Override
     public Set<String> listenBypassPrefixes() {
-        return Set.of("écoute-moi", "écoute moi", "ecoute-moi", "ecoute moi", "écoute", "ecoute");
+        return Set.of(
+                "écoute-moi", "écoute moi", "ecoute-moi", "ecoute moi",
+                "écoute", "ecoute");
     }
 }

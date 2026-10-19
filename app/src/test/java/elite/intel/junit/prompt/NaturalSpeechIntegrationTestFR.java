@@ -126,8 +126,8 @@ public class NaturalSpeechIntegrationTestFR {
 
     static Stream<String> lookAhead() {
         return Stream.of(
-                "réinitialise la vue tête",
-                "reset head look"
+                "recentre la vue",
+                "réinitialise la vue du cockpit"
         );
     }
 
@@ -1326,7 +1326,7 @@ public class NaturalSpeechIntegrationTestFR {
     static Stream<String> queryLastScan() {
         return Stream.of(
                 "quel a été le dernier scan",
-                "affiche le résultat du dernier analyse",
+                "affiche le résultat de la dernière analyse",
                 "qu'avons-nous scanné récemment"
         );
     }
@@ -1490,8 +1490,8 @@ public class NaturalSpeechIntegrationTestFR {
 
     static Stream<String> disembark() {
         return Stream.of(
-                "je débarquer",
-                "je quitter le vaisseau",
+                "je débarque",
+                "je quitte le vaisseau",
                 "je sors du vaisseau"
         );
     }
@@ -1520,9 +1520,9 @@ public class NaturalSpeechIntegrationTestFR {
 
     static Stream<String> openFighterPanel() {
         return Stream.of(
-                "montre le panneau des chasseur",
+                "montre le panneau des chasseurs",
                 "ouvre les commandes des chasseurs",
-                "affiche le panneau des chasseur"
+                "affiche le panneau des chasseurs"
         );
     }
 
@@ -1535,9 +1535,9 @@ public class NaturalSpeechIntegrationTestFR {
 
     static Stream<String> fighterOpenOrders() {
         return Stream.of(
-                "ordonne feu à volonté",
-                "chasseur feu à volonté",
-                "active le tire à volonté"
+                "ordonne au chasseur de tirer à volonté",
+                "chasseur, feu à volonté",
+                "active le tir à volonté"
         );
     }
 

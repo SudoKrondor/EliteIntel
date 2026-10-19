@@ -257,7 +257,14 @@ public class AppController {
 
     @Subscribe
     void onRestartMouthEvent(RestartMouthEvent event) {
-        new Thread(this::restartMouthService, "MouthRestart-Thread").start();
+        new Thread(() -> {
+            try {
+                event.completion().complete(restartMouthService());
+            } catch (RuntimeException | Error failure) {
+                log.error("Failed to restart TTS service", failure);
+                event.completion().completeExceptionally(failure);
+            }
+        }, "MouthRestart-Thread").start();
     }
 
     @Subscribe
@@ -282,11 +289,11 @@ public class AppController {
         }
     }
 
-    private void restartMouthService() {
+    private boolean restartMouthService() {
         synchronized (lifecycleLock) {
-            if (!isServiceRunning()) return;
+            if (!isServiceRunning()) return false;
             ServiceHolder mouth = services.get(ServiceType.MOUTH);
-            if (mouth == null) return;
+            if (mouth == null) return false;
             appendToLog("Restarting TTS service...");
 
             // A dedicated radio engine is needed only when the main mouth is not itself the radio engine.
@@ -312,6 +319,7 @@ public class AppController {
                 fresh.start();
             }
             appendToLog("TTS service restarted");
+            return true;
         }
     }
 
@@ -556,6 +564,8 @@ public class AppController {
         return switch (provider) {
             case KOKORO -> radioLocal(KokoroTTS.getInstance());
             case SUPERTONIC -> radioLocal(SupertonicTTS.getInstance());
+            case PIPER -> throw new IllegalArgumentException(
+                    provider + " is French-only and is not selected for the radio channel");
             case GOOGLE -> throw new IllegalArgumentException(provider + " never voices radio transmissions");
         };
     }

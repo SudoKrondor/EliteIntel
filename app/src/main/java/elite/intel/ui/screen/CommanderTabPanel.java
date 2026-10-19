@@ -7,6 +7,7 @@ import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.google.GoogleVoiceProvider;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.ai.mouth.piper.PiperVoices;
 import elite.intel.ai.mouth.subscribers.events.AiVoxDemoEvent;
 import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ShipDao;
@@ -23,6 +24,7 @@ import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.CommanderChangedEvent;
+import elite.intel.ui.event.ShipProfileChangedEvent;
 import elite.intel.ui.event.TTSProviderChangedEvent;
 import elite.intel.ui.screen.settings.SettingsPopup;
 import elite.intel.ui.screen.settings.ShipSettingsPopup;
@@ -414,11 +416,15 @@ public class CommanderTabPanel extends JPanel {
     }
 
     /**
-     * A local engine's voice as "DisplayName - description"; both local casts label themselves the same way.
+     * A local engine's voice as "DisplayName - description".
      */
     private static String localVoiceLabel(TtsProvider provider, String enumName) {
         if (provider == TtsProvider.SUPERTONIC) {
             SupertonicVoices v = SupertonicVoices.valueOf(enumName);
+            return v.getDisplayName() + " - " + v.getDescription();
+        }
+        if (provider == TtsProvider.PIPER) {
+            PiperVoices v = PiperVoices.valueOf(enumName);
             return v.getDisplayName() + " - " + v.getDescription();
         }
         KokoroVoices v = KokoroVoices.valueOf(enumName);
@@ -551,7 +557,14 @@ public class CommanderTabPanel extends JPanel {
         @Override
         public String applyVoice(String voiceName, String commanderName) {
             ship.setVoice(voiceName);
-            ShipManager.getInstance().saveShip(ship);
+            ShipDao.Ship activeShip = ShipManager.getInstance().getShip();
+            if (activeShip != null && Objects.equals(activeShip.getShipId(), ship.getShipId())) {
+                SystemSession session = SystemSession.getInstance();
+                session.setVoiceName(session.getTtsProvider(), voiceName);
+            } else {
+                ShipManager.getInstance().saveShip(ship);
+            }
+            UiBus.publish(new ShipProfileChangedEvent());
             String speakerName = trimToNull(name());
             return StringUtls.shipIntroduction(commanderName, speakerName == null ? voiceName : speakerName);
         }

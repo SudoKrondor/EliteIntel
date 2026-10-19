@@ -10,7 +10,7 @@ package elite.intel.ai.mouth;
  * voice each engine has, and this enum is the one seam that carries that choice into the prompt
  * (see {@code SystemSession.getVoiceGender()}).
  * <p>
- * {@link #FEMALE} is the value an unknown or unset voice resolves to, matching the default voice of all three
+ * {@link #FEMALE} is the value an unknown or unset voice resolves to, matching the default voice of each
  * engines, so nothing about an untouched install changes.
  */
 public enum VoiceGender {

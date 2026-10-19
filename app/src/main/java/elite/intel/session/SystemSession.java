@@ -6,6 +6,7 @@ import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.VoiceGender;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.ai.mouth.piper.PiperVoices;
 import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ChatHistoryDao;
 import elite.intel.db.dao.GameSessionDao;
@@ -64,24 +65,66 @@ public class SystemSession {
     // VEGA and the legacy brain both read getAIPersonality(), so they follow the active ship's personality.
 
     // A ship voice is whatever the commander picked, male or female: voiceOrDefault() resolves the stored name
-    // against the active provider's own voices and falls back to that provider's default only when the name is
-    // not one of them (typically after a provider switch, since each engine names its voices differently).
+    // against the active provider's own voices and falls back to that provider's default when the name is
+    // not one of them. Without an active ship, the saved provider preference is used.
     // Radio transmissions are a separate channel and draw from the full voice set (see VocalisationRouter).
 
     public GoogleVoices getGoogleVoice() {
-        ShipDao.Ship ship = shipManager.getShip();
-        return GoogleVoices.voiceOrDefault(ship == null ? null : ship.getVoice());
+        return GoogleVoices.valueOf(getVoiceName(TtsProvider.GOOGLE));
     }
 
 
     public KokoroVoices getKokoroVoice() {
-        ShipDao.Ship ship = shipManager.getShip();
-        return KokoroVoices.voiceOrDefault(ship == null ? null : ship.getVoice());
+        return KokoroVoices.valueOf(getVoiceName(TtsProvider.KOKORO));
     }
 
     public SupertonicVoices getSupertonicVoice() {
+        return SupertonicVoices.valueOf(getVoiceName(TtsProvider.SUPERTONIC));
+    }
+
+    public PiperVoices getPiperVoice() {
+        return PiperVoices.valueOf(getVoiceName(TtsProvider.PIPER));
+    }
+
+    /** The active ship's voice, or the saved preference when no ship is known yet. */
+    public String getVoiceName(TtsProvider provider) {
         ShipDao.Ship ship = shipManager.getShip();
-        return SupertonicVoices.voiceOrDefault(ship == null ? null : ship.getVoice());
+        return ship == null ? getDefaultVoiceName(provider) : provider.voiceOrDefault(ship.getVoice());
+    }
+
+    /** The saved voice used before a Loadout and when a new ship is first discovered. */
+    public String getDefaultVoiceName(TtsProvider provider) {
+        return Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            String voice = switch (provider) {
+                case KOKORO -> session.getKokoroVoice();
+                case SUPERTONIC -> session.getSupertonicVoice();
+                case PIPER -> session.getPiperVoice();
+                case GOOGLE -> session.getGoogleVoice();
+            };
+            return provider.voiceOrDefault(voice);
+        });
+    }
+
+    /** Saves the preference even without a ship, and updates the active ship when one is known. */
+    public void setVoiceName(TtsProvider provider, String voiceName) {
+        String voice = provider.voiceOrDefault(voiceName);
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            switch (provider) {
+                case KOKORO -> session.setKokoroVoice(voice);
+                case SUPERTONIC -> session.setSupertonicVoice(voice);
+                case PIPER -> session.setPiperVoice(voice);
+                case GOOGLE -> session.setGoogleVoice(voice);
+            }
+            dao.save(session);
+            return Void.TYPE;
+        });
+        ShipDao.Ship ship = shipManager.getShip();
+        if (ship != null && !voice.equals(ship.getVoice())) {
+            ship.setVoice(voice);
+            shipManager.saveShip(ship);
+        }
     }
 
 
@@ -98,9 +141,8 @@ public class SystemSession {
      * voice, which is female. For a voice belonging to another engine that is also the voice actually spoken.
      */
     public VoiceGender getVoiceGender() {
-        ShipDao.Ship ship = shipManager.getShip();
-        String voice = ship == null ? null : ship.getVoice();
-        return getTtsProvider().voiceGender(voice);
+        TtsProvider provider = getTtsProvider();
+        return provider.voiceGender(getVoiceName(provider));
     }
 
 

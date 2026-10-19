@@ -19,12 +19,12 @@ class GoogleSynthesisInputFactoryTest {
     }
 
     @Test
-    void chirp3HdRetainsPunctuationAwareSsml() {
+    void chirp3HdReceivesPlainText() {
         SynthesisInput input = GoogleSynthesisInputFactory.create(
                 "Status ready.", voice("en-US-Chirp3-HD-Sulafat"));
 
-        assertEquals(SynthesisInput.InputSourceCase.SSML, input.getInputSourceCase());
-        assertEquals("<speak>Status ready.<break time=\"300ms\"/></speak>", input.getSsml());
+        assertEquals(SynthesisInput.InputSourceCase.TEXT, input.getInputSourceCase());
+        assertEquals("Status ready.", input.getText());
     }
 
     @Test

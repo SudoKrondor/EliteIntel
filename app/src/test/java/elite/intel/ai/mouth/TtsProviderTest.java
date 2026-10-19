@@ -10,13 +10,15 @@ import static org.junit.jupiter.api.Assertions.*;
 class TtsProviderTest {
 
     /**
-     * Both local engines are local, and only they are: the settings panel's LOCAL segment and the radio rule
-     * ({@code RadioVoicing}) both read this.
+     * All offline providers are local; Google is the only cloud engine.
      */
     @Test
-    void exactlyTheTwoOnnxEnginesAreLocal() {
+    void localAndCloudProvidersAreClassifiedCorrectly() {
         assertTrue(TtsProvider.KOKORO.isLocal());
         assertTrue(TtsProvider.SUPERTONIC.isLocal());
+        assertTrue(TtsProvider.PIPER.isLocal());
+        assertEquals(TtsProvider.PIPER, TtsProvider.fromStored("PIPER_UPMC"));
+        assertEquals(TtsProvider.PIPER, TtsProvider.fromStored("PIPER_SIWIS"));
         assertFalse(TtsProvider.GOOGLE.isLocal());
     }
 

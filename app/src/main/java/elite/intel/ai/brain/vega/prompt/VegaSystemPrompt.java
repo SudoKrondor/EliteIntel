@@ -4,6 +4,7 @@ import elite.intel.ai.brain.VegaIdentity;
 import elite.intel.ai.brain.commons.PromptFactory;
 import elite.intel.ai.brain.vega.VegaConfig;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
+import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
 /**
@@ -53,6 +54,13 @@ public final class VegaSystemPrompt implements SystemPromptText {
     static String addressRule() {
         StringBuilder rule = new StringBuilder();
         PromptFactory.appendContext(rule, "the commander");
+        rule.append(frenchAddressRule());
         return rule.toString();
+    }
+
+    static String frenchAddressRule() {
+        return SystemSession.getInstance().getLanguage() == Language.FR
+                ? "In French, address the commander with formal vous, never informal tu.\n"
+                : "";
     }
 }
