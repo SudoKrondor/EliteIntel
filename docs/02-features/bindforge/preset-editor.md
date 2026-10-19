@@ -110,6 +110,26 @@ Quick Status panel shows KEYMAP — IN SYNC. See [the UI component map](ui-compo
 
 Preset Editor participates in [Live File Synchronization](overview.md#live-file-synchronization)'s [Destructive Change Detection](overview.md#destructive-change-detection): if the live Active Preset file changes externally to something that looks like data loss (for example, all four lines reset to a single default preset name that doesn't match what the user had configured), Preset Editor does not just quietly update its dropdowns to match. It flags the change as a suspected destructive reset rather than legitimate truth, and offers to restore the prior configuration, the same as every other managed domain.
 
+### The master and the draft — settled 2026-10-18 (Alan, P2)
+
+Built as `elite.intel.bindforge.presets.StartPresetStore` and `StartPresetComparison`.
+
+- **The master** is `elite-intel/bindings/master/StartPreset.start`, a byte copy of the game's live file. **It is
+  made from the game's file the first time it is asked for and none exists** — without one, the draft and the
+  game's file have nothing to compare against, and only Elite-Intel's own folder is written. A file already wiped
+  then becomes the master; there is no earlier state to know it by.
+- **The draft** is `elite-intel/bindings/draft/StartPreset.start`, always four lines. **Save of values the same as
+  the master's leaves no draft at all**, so a draft that exists always holds a change — "has the draft changed" is
+  *the draft exists*, which is saved-but-not-applied and [not unsaved work](overview.md#built-as-a-ruling-not-code--2026-10-12-alan-core-c6).
+  The form the game's file gets is Apply's decision, not the draft's.
+- **Values are compared, never bytes.** The game rewrites its files with nothing changed
+  ([Freshness Checks](overview.md#freshness-checks)), so the single-line form equals four identical lines, and a
+  line ending or byte-order mark changes nothing.
+- **The three-way compare** is per line — master, draft (the master when there is none), game: unchanged, draft
+  only, game only, both to the same value, or both to different values. Only the last is a conflict.
+- **Discard below is the screen's** — the dropdowns back to the draft. The store's only counterpart is dropping the
+  draft, so it is the master again, which Apply's promote needs.
+
 ## Discard
 
 Throws away unsaved dropdown changes, returning all four to the draft. *Named "Revert" in an earlier
