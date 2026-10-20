@@ -70,7 +70,7 @@ installations with each other before then. Once the master exists, each row offe
 
 - **First setup has no undo in the app** (found 2026-10-08, Alan). Its labelled backup
   (`playerbackups\<time>_first-setup\<id>-<storefront>\`) can only be copied back by hand: the Player Backups
-  restore handles `.binds` presets only, and Edit History has no browser until File Manager. Copying the files back
+  restore handles binds files only, and Edit History has no browser until File Manager. Copying the files back
   is not enough either — the master stays filled, so the installations then show as diverging, **SET UP** is not
   offered, and nothing in the app empties the master. An undo needs both halves: the files restored and the master
   (and any draft) emptied.
@@ -116,7 +116,7 @@ installations with each other before then. Once the master exists, each row offe
 | # | Slice | Needs | Status |
 |---|---|---|---|
 | A1 | **First setup** — turn what the installations hold into the master: per element, the four cases, a name conflict routed into the rename, a labelled backup and Edit History before writing | Core C1, C2 (both done) | **done 2026-10-07** |
-| A1b | **Activation** — the first opening of the BindForge tab: a never-pruned "before BindForge" backup of every installation's device files and every `.binds`/`StartPreset` in the bindings folder; the master filled with no prompt when the installations are identical (possibly empty), first setup opened when they differ; a stored "activated" fact (migration `12005`) replacing every "empty master means not set up" test — gear, APPLY, **SET UP**, `DeviceFilesCheck`; told once, spoken and logged. [Spec](../02-features/bindforge/alias-designer.md#activation--2026-10-13-alan) | A1 (done) | **done 2026-10-13** |
+| A1b | **Activation** — the first opening of the BindForge tab: a never-pruned "before BindForge" backup of every installation's device files and every `.binds`/`StartPreset.4.start` in the bindings folder; the master filled with no prompt when the installations are identical (possibly empty), first setup opened when they differ; a stored "activated" fact (migration `12005`) replacing every "empty master means not set up" test — gear, APPLY, **SET UP**, `DeviceFilesCheck`; told once, spoken and logged. [Spec](../02-features/bindforge/alias-designer.md#activation--2026-10-13-alan) | A1 (done) | **done 2026-10-13** |
 | A2 | **`.buttonMap` label merge** — one row per input that disagrees, nothing else | A1 (done) | **done 2026-10-08** |
 | A3 | **Divergence against the master** — replace installation-against-installation | A1 (done) | **done 2026-10-08** |
 | A3b | **The ways out, per row** — adopt (`DeviceFilesAdopt`), revert (`DeviceFilesPush.push(installId)`), and the label re-merge with the master as one side of `LabelMergeDialog`. Confirms first; backups before any game-file write | A3 (done) | **done 2026-10-08** |

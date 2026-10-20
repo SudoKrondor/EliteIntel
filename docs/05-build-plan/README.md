@@ -51,10 +51,10 @@ it is the machinery every tab writes through, so it comes first and is built onl
 
 | # | Section | Brief | Spec | State |
 |---|---|---|---|---|
-| 0 | **Foundation** — the additions to shared V1.1 files that later slices need, on `V1.1-Release-bf-foundation`; built off `V1.1-Release`, merged by Krondor | [foundation.md](foundation.md) | the specs of the slices it unblocks | **done 2026-10-13**, merged by Krondor — F1 (four-line `StartPreset` read), F2 (`.binds` device rewrite), F3b (`applyFrom`), F4 (writer user-edit path); F3 settled, F5 withdrawn. Reopened only when a slice needs another change to a V1.1 file |
+| 0 | **Foundation** — the additions to shared V1.1 files that later slices need, on `V1.1-Release-bf-foundation`; built off `V1.1-Release`, merged by Krondor | [foundation.md](foundation.md) | the specs of the slices it unblocks | **done 2026-10-13**, merged by Krondor — F1 (four-line `StartPreset.4.start` read), F2 (`.binds` device rewrite), F3b (`applyFrom`), F4 (writer user-edit path); F3 settled, F5 withdrawn. Reopened only when a slice needs another change to a V1.1 file |
 | 1 | **Core** — master and draft, Apply, Edit History filling, startup check | [core.md](core.md) | [overview.md](../02-features/bindforge/overview.md) | C1–C3, C5 and C6 done; C4 unblocked 2026-10-13; C7 waits on Preset Editor |
 | 2 | **Alias Designer** | [alias-designer.md](alias-designer.md) | [alias-designer.md](../02-features/bindforge/alias-designer.md) | device list, naming rule, startup `.buttonMap`, first setup, the label merge, divergence against the master and its ways out, the Installations markers, the Built-in Devices tab, which axes and hats a controller has, the Device Editor, the actions (CLEAR, RESET LABELS, APPLY, DISCARD), the missing-controller warning, activation (A1b), onboarding (A6b), rename (A11), catch-up (A14), hot-plug (A7), when hardware changes (A12, and A17 for a controller known only by id), shadowing a built-in (A15), first setup's names that needed Rename (A16) built; **every slice in the table is done** |
-| 3 | **Preset Editor** | [preset-editor.md](preset-editor.md) | [preset-editor.md](../02-features/bindforge/preset-editor.md) | P1 (the preset list, shipped presets included) done 2026-10-17; P2 (`StartPreset` master and draft) done 2026-10-18; **P3 (Apply) next** |
+| 3 | **Preset Editor** | [preset-editor.md](preset-editor.md) | [preset-editor.md](../02-features/bindforge/preset-editor.md) | P1 (the BindName list, factory binds files included) done 2026-10-17; P2 (`StartPreset.4.start` master and draft) done 2026-10-18; **P3 (Apply) next** |
 | 4 | **File Manager** — Edit History browsing, auto-backup and retention, restore scope | *not yet written* | [file-manager.md](../02-features/bindforge/file-manager.md) | Install Locations built; Player Backups manual only |
 | 5 | **Bind Editor: editing** — Game Mode, Settings, capture dialog, mouse inputs | [bind-editor-editing.md](bind-editor-editing.md) | [bind-editor.md](../02-features/bindforge/bind-editor.md) | E1 (controller buttons and hats in the capture dialog) built 2026-10-15; **E2 next** |
 | 6 | **Bind Editor: Anomalies** and shared conflict detection | *not yet written* | [bind-editor.md](../02-features/bindforge/bind-editor.md#anomalies) | scanner exists; three known defects |
@@ -67,7 +67,7 @@ first slice. Written the week its section starts, it is accurate; written months
 
 ## The foundation branch — how a V1.2 feature changes a file V1.1 ships (Krondor, 2026-10-12)
 
-**The question was:** Preset Editor's first job is reading all four lines of `StartPreset` —
+**The question was:** Preset Editor's first job is reading all four lines of `StartPreset.4.start` —
 `BindingsLoader.getActivePresetName()` reads only the first — and the Bind Editor widens `BindingsWriter` and
 consolidates the conflict scanner. All of that is `bindforge.io` and `bindforge.rules`, which V1.1 also ships.
 These are V1.2 features, not V1.1 fixes, so the shared-code rule did not cover them.
@@ -86,7 +86,7 @@ proposed on):
   exist there.
 - **Tested on its own**, and V1.1's own tests still pass.
 
-**What it unblocks**, each once its change has merged up to `V1.2-BindForge`: the four-line `StartPreset` read
+**What it unblocks**, each once its change has merged up to `V1.2-BindForge`: the four-line `StartPreset.4.start` read
 (Preset Editor, Core C7); the `.binds` device rewrite (Alias Designer A6b, A11, and CLEAR on a device `.binds`
 names); the writer's user-edit path (Bind Editor); the file-level part of the whole-file `.binds` master (Core C4),
 scoped first. Its work is planned in its own brief — **section 0 below**.

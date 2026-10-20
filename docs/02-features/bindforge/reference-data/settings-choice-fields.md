@@ -7,7 +7,7 @@ element's name, and **four independent sources agree on it**:
 |---|---|
 | **47,898 player-shared `.binds` files** (after the [456 that were not binds files](../bind-editor.md#a-binds-name-does-not-make-it-a-binds-file--2026-09-17) were set aside) | every token in use, at a scale where a real option cannot hide and a hand edit stands out as one file in forty-eight thousand |
 | **Frontier's own `ControlSchemes\Help.txt`**, shipped with the game | the documented vocabularies for yaw-into-roll, throttle range, UI focus, headlook and gunsights |
-| **The 90 preset files Elite ships**, in all three installs | tokens no user file happened to hold |
+| **The 90 factory binds files Elite ships**, in all three installs | tokens no user file happened to hold |
 | **The game itself**, on 2026-09-17 | labels read off the options screen, and values watched being written while one field was changed and its siblings held as controls |
 
 **Why that is enough to build against.** The corpus establishes what the game writes; Frontier's own

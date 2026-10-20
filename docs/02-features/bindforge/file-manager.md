@@ -18,7 +18,7 @@ Three sub-tabs: **Game Install Locations**, **Player Backups**, and **Edit Histo
 
 ### Backup Scope Selection
 
-A checklist: "Everything" (checked by default, forcing all four domain checkboxes checked and disabled) or individually toggled `.binds` / `StartPreset.#.start` / `DeviceMappings.xml` / `.buttonMap` files.
+A checklist: "Everything" (checked by default, forcing all four domain checkboxes checked and disabled) or individually toggled `.binds` / `StartPreset.4.start` / `DeviceMappings.xml` / `.buttonMap` files.
 
 ### Auto-Backup on App Launch
 
@@ -77,8 +77,8 @@ The backup's own contents still bound what is possible, but the player chooses w
 
 | Domain | Granularity | Why |
 |---|---|---|
-| `.binds` | **per file** | The only domain where the choice means anything. A player keeps several presets, and *"restore my Ship preset from June, leave the rest"* is a real thing to want. |
-| `StartPreset.#.start` | whole domain | One file. Nothing to choose between. |
+| `.binds` | **per file** | The only domain where the choice means anything. A player keeps several binds files, and *"restore my Ship binds file from June, leave the rest"* is a real thing to want. |
+| `StartPreset.4.start` | whole domain | One file. Nothing to choose between. |
 | `DeviceMappings.xml` | whole domain, **restored to every installation** | *Reworked 2026-09-26.* This row used to read "per installation", with a selector asking *which installation*. [Every install now holds the same files](overview.md#every-install-gets-the-same-files--settled-2026-09-23), so restoring into one and not the others would **create** the divergence BindForge exists to remove. |
 | `.buttonMap` | whole domain, **restored to every installation** | Travels with `DeviceMappings.xml`. Offering these individually is a trap rather than a feature — see below. |
 
@@ -87,8 +87,8 @@ of the domains.
 
 **Files in a backup are not independent of each other, and partial restore is where that bites.**
 
-- A `StartPreset.#.start` names a `.binds` file. Restore the preset without the file it points at — or the
-  file without the preset — and the set is internally inconsistent.
+- A `StartPreset.4.start` names a binds file, by its BindName. Restore the preset file without the binds file it
+  points at — or the binds file without the preset file — and the set is internally inconsistent.
 - A `.buttonMap` is named for its device's element in `DeviceMappings.xml` (see
   [Device Provenance](../../03-data-models/device-provenance.md)). Restored without that element it is an
   orphan; restored alongside a *renamed* element it no longer matches.
@@ -99,7 +99,7 @@ lands in a draft, an inconsistent set is a thing to be shown, not a thing to be 
 
 ### Restore never asks *which installation* — reworked 2026-09-26
 
-**It used to, for the device domains.** `.binds` and `StartPreset.#.start` live in one shared folder, so they
+**It used to, for the device domains.** `.binds` and `StartPreset.4.start` live in one shared folder, so they
 never had an installation to choose; `DeviceMappings.xml` and `.buttonMap` are duplicated per installation, so
 restoring them asked which one.
 
@@ -327,7 +327,7 @@ Two sections, not one list, matching the split in
 [Managed File Domains](overview.md#managed-file-domains):
 
 **User configuration folder — one, shared by every installation.** Holds the `.binds` files and
-`StartPreset.#.start`. It exists once no matter how many storefronts the player owns, and it is the folder
+`StartPreset.4.start`. It exists once no matter how many storefronts the player owns, and it is the folder
 that decides what the controls actually do. Shown as a single read-only path with a found/missing state.
 
 **Game installations — one per storefront.** Each holds its own `DeviceMappings.xml` and `.buttonMap` files,
@@ -462,14 +462,14 @@ The rule falls out the same way without a special case for first setup:
 | Every later Apply | nothing; they all hold the master's last output | one entry |
 | An installation edited outside BindForge, or wiped by a patch | that one installation | its unique content, before it is overwritten |
 
-**Note what is *not* kept for device identity: the master.** For `.binds` and `StartPreset` the master is a
+**Note what is *not* kept for device identity: the master.** For `.binds` and `StartPreset.4.start` the master is a
 whole file and can be copied. For device identity [the master is the user's element set](alias-designer.md#what-the-master-actually-is)
 — rows, not a file — so there is nothing to copy, and the file being overwritten is the only file in the
 transaction. That is why the rule is phrased around what is written rather than around the master.
 
 **Browsing and restoring:** the Edit History sub-tab lists entries per managed file domain, each with a timestamp. Selecting an entry shows what it contains and offers a Restore action, which goes through the same confirmation-and-Controlled-Replace path as a Player Backup restore (see [Restore](#restore) above) — the current live version is itself backed up before the historical version is written over it, so restoring never destroys the ability to undo the restore itself.
 
-**Scope:** applies to all four managed file domains uniformly — Bind, Device Identity, Button Map, and Active Preset — since every one of them goes through a write path that can now feed Edit History.
+**Scope:** applies to all four managed file domains uniformly — Bind, Device Identity, Button Map, and Preset File — since every one of them goes through a write path that can now feed Edit History.
 
 ## Settings
 
@@ -511,7 +511,7 @@ here, and what is not:
 | [Retention](#retention) | **does not exist.** Nothing prunes anything; backups accumulate until deleted by hand |
 | [Backup status values](#backup-status-values) | **not reachable yet** — Full / Partial / Custom needs the installation list that [detection](#open) would supply |
 | [Game Install Locations](#game-install-locations) | **not built** — see the section's own [Open](#open) note |
-| [Edit History](#edit-history) | **writing built for device files** (2026-10-04, `bindforge.devicefiles.DeviceFilesPush` — see [the path](#edit-history)); `.binds` and `StartPreset` not yet, and no browsing or restore |
+| [Edit History](#edit-history) | **writing built for device files** (2026-10-04, `bindforge.devicefiles.DeviceFilesPush` — see [the path](#edit-history)); `.binds` and `StartPreset.4.start` not yet, and no browsing or restore |
 
 **Auto-backup and retention are one change, not two.** Today nothing prunes, and that is harmless because
 every backup is a deliberate button press. Add the launch trigger on its own and the folder grows every
@@ -532,6 +532,6 @@ The range held one file when this was written and now holds five — `12000__bin
 
 A dedicated Export/Import feature for device configuration was considered and explicitly cut. Its main justified use case — remapping an alias configuration for a recipient's different hardware — doesn't hold up, because VID/PID is read-only and hardware-derived by design; an imported alias would still require the same manual re-association that Alias Designer's normal setup already requires. "Browse for backup file" already supports restoring a backup onto another machine, which is what a genuine transfer between a player's own machines actually needs. Nothing a dedicated Export/Import feature would add beyond that was judged worth its own feature.
 
-## Community Sharing of `.binds` Presets — Not a Feature
+## Community Sharing of Binds Files — Not a Feature
 
-Unlike StarVizion's Vizlets (see [StarVizion — HoloFrames and Persistence, Export and Import](../starvizion/holoframes-and-persistence.md#export-and-import)), BindForge does not have a community-sharing story for `.binds` presets, and this is a deliberate decision rather than a gap. A `.binds` file is tightly coupled to the exact physical hardware it was authored on — specific device VID/PIDs, exact axis/button counts, and often a specific keyboard-layout preference (e.g. ESDF instead of WASD). Handing a `.binds` file to another player is technically trivial (it's a plain file), but practically nearly useless unless the recipient happens to own an unusually similar setup — a mismatch made worse, not better, by anything BindForge could automate, since the device identifiers in the file are hardware-derived and cannot be usefully remapped without the recipient already owning matching hardware. File Manager's backup/restore is the only file-movement feature BindForge needs — it exists to protect one player's own configuration, not to distribute it.
+Unlike StarVizion's Vizlets (see [StarVizion — HoloFrames and Persistence, Export and Import](../starvizion/holoframes-and-persistence.md#export-and-import)), BindForge does not have a community-sharing story for binds files, and this is a deliberate decision rather than a gap. A `.binds` file is tightly coupled to the exact physical hardware it was authored on — specific device VID/PIDs, exact axis/button counts, and often a specific keyboard-layout preference (e.g. ESDF instead of WASD). Handing a `.binds` file to another player is technically trivial (it's a plain file), but practically nearly useless unless the recipient happens to own an unusually similar setup — a mismatch made worse, not better, by anything BindForge could automate, since the device identifiers in the file are hardware-derived and cannot be usefully remapped without the recipient already owning matching hardware. File Manager's backup/restore is the only file-movement feature BindForge needs — it exists to protect one player's own configuration, not to distribute it.

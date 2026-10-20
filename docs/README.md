@@ -6,7 +6,7 @@ Elite Dangerous: Odyssey.
 
 - **BindForge** — safe external editor and backup tool for control bindings across keyboard, mouse and
   controllers (`.binds`,
-  `DeviceMappings.xml`, `.buttonMap`, `StartPreset.#.start`), with live device-input monitoring and
+  `DeviceMappings.xml`, `.buttonMap`, `StartPreset.4.start`), with live device-input monitoring and
   controller-layout views.
 - **StarVizion** — live controller-input visualization overlays for desktop and VR.
 
@@ -53,7 +53,7 @@ loss matters more than editing it.
 - [Overview](02-features/bindforge/overview.md) — managed file domains, live file sync, data integrity
 - [Alias Designer](02-features/bindforge/alias-designer.md) — device naming and button/axis labels, kept identical across every install
 - [Bind Editor](02-features/bindforge/bind-editor.md) — Game Mode, Anomalies, Settings and shared conflict detection in V1.2; Action Groups, Input Mode, Control Types and Controller Mode [deferred](00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16)
-- [Preset Editor](02-features/bindforge/preset-editor.md) — which `.binds` file loads per binding section
+- [Preset Editor](02-features/bindforge/preset-editor.md) — which binds file loads per binding section
 - [File Manager](02-features/bindforge/file-manager.md) — backup and restore of all four file domains
 - [UI Component Map](02-features/bindforge/ui-component-map.md) — each screen mapped onto the HUD kit, and what the kit lacks
 - [Roadmap](02-features/bindforge/roadmap.md)

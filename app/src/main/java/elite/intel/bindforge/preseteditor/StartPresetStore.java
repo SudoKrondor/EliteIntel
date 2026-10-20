@@ -1,4 +1,4 @@
-package elite.intel.bindforge.presets;
+package elite.intel.bindforge.preseteditor;
 
 import elite.intel.bindforge.io.BindingsLoader;
 import elite.intel.bindforge.io.StartPresetSections;
@@ -15,12 +15,12 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * The {@code StartPreset} master and draft, in Elite-Intel's own folder (Alan, 2026-10-18, P2).
+ * The {@code StartPreset.4.start} master and draft, in Elite-Intel's own folder (Alan, 2026-10-18, P2).
  * <ul>
- *   <li><strong>The master</strong> is {@code elite-intel/bindings/master/StartPreset.start}: a byte copy of the
+ *   <li><strong>The master</strong> is {@code elite-intel/bindings/master/StartPreset.4.start}: a byte copy of the
  *       game's live file as it was last known good. It is created from the game's file the first time it is
  *       asked for and none exists, and after that only Apply, adopt or revert change it.</li>
- *   <li><strong>The draft</strong> is {@code elite-intel/bindings/draft/StartPreset.start}: what Save wrote,
+ *   <li><strong>The draft</strong> is {@code elite-intel/bindings/draft/StartPreset.4.start}: what Save wrote,
  *       always four lines, one per section. No file means no draft - the draft is the master.</li>
  * </ul>
  * Nothing here touches the game's folder; writing the game's file is Apply's job.
@@ -29,7 +29,7 @@ public class StartPresetStore {
 
     private static final Logger log = LogManager.getLogger(StartPresetStore.class);
 
-    static final String FILE_NAME = "StartPreset.start";
+    static final String FILE_NAME = "StartPreset.4.start";
 
     private final Path masterFile;
     private final Path draftFile;
@@ -63,7 +63,7 @@ public class StartPresetStore {
      * know it by.
      *
      * @param bindingsDir the player's bindings folder
-     * @return the master, empty only when there is none and the game has no {@code StartPreset} either
+     * @return the master, empty only when there is none and the game has no preset file either
      */
     public Optional<StartPresetSections> masterOrSeedFrom(Path bindingsDir) throws IOException {
         Optional<StartPresetSections> existing = master();
@@ -72,12 +72,12 @@ public class StartPresetStore {
         }
         Optional<Path> live = bindingsLoader.findLiveStartPresetFile(bindingsDir);
         if (live.isEmpty()) {
-            log.info("No StartPreset master, and none in {} to make one from", bindingsDir);
+            log.info("No StartPreset.4.start master, and no preset file in {} to make one from", bindingsDir);
             return Optional.empty();
         }
         Files.createDirectories(masterFile.getParent());
         AtomicFiles.copy(live.get(), masterFile);
-        log.info("StartPreset master made from {}", live.get());
+        log.info("StartPreset.4.start master made from {}", live.get());
         return master();
     }
 
@@ -108,18 +108,18 @@ public class StartPresetStore {
         Objects.requireNonNull(sections, "sections");
         for (String value : StartPresetLines.values(sections)) {
             if (!value.equals(value.trim()) || value.contains("\n") || value.contains("\r")) {
-                throw new IllegalArgumentException("Not a StartPreset line: '" + value + "'");
+                throw new IllegalArgumentException("Not a StartPreset.4.start line: '" + value + "'");
             }
         }
         StartPresetSections master = master().orElseThrow(
-                () -> new IllegalStateException("No StartPreset master to save a draft against"));
+                () -> new IllegalStateException("No StartPreset.4.start master to save a draft against"));
         if (StartPresetLines.same(sections, master)) {
             dropDraft();
             return;
         }
         Files.createDirectories(draftFile.getParent());
         AtomicFiles.write(draftFile, fourLines(sections).getBytes(StandardCharsets.UTF_8));
-        log.info("StartPreset draft saved: {}", sections);
+        log.info("StartPreset.4.start draft saved: {}", sections);
     }
 
     /**
@@ -127,7 +127,7 @@ public class StartPresetStore {
      */
     public void dropDraft() throws IOException {
         if (Files.deleteIfExists(draftFile)) {
-            log.info("StartPreset draft dropped");
+            log.info("StartPreset.4.start draft dropped");
         }
     }
 

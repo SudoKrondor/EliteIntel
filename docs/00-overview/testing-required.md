@@ -38,7 +38,7 @@ extra comparison — and never writes hex at all. What remains is the numbering 
 **6. Consolidated bind data table — done, but still carries unresolved spot-checks.** [`BindForge_ConsolidatedActionTable.xlsx`](../02-features/bindforge/reference-data/BindForge_ConsolidatedActionTable.xlsx) now merges all three sources with no data discarded; the reconciliation itself is complete. What's still testing-required: 62 rows where `ActionCatalog.json` disagreed with the other two sources on an action's name — spot-check any still-uncertain ones against real screenshots the same way "UI Panel Select" was confirmed, per the table's own Row Notes.
 → [BindForge Roadmap](../02-features/bindforge/roadmap.md#formerly-needed-before-v1-can-be-built--now-resolved)
 
-**7. First-Time Startup's file copy** — confirm whether a `ControlSchemes` factory preset file can be copied byte-for-byte into the player's bindings folder as a valid starting `.binds` file, or whether the game's own first-customization save does something to the file beyond a plain copy (e.g. a header/version rewrite) that a plain copy would miss.
+**7. First-Time Startup's file copy** — confirm whether a factory binds file from `ControlSchemes` can be copied byte-for-byte into the player's bindings folder as a valid starting `.binds` file, or whether the game's own first-customization save does something to the file beyond a plain copy (e.g. a header/version rewrite) that a plain copy would miss.
 → [BindForge Overview — First-Time Startup](../02-features/bindforge/overview.md#first-time-startup)
 
 **9. ~~Does `.binds` reference a `DeviceMappings.xml` device by name or by hex?~~ ANSWERED 2026-09-08 —
@@ -82,7 +82,7 @@ baseline captured beforehand. Specifically:
 - Does the patcher replace `DeviceMappings.xml` wholesale, and do player-added entries survive? *(This is the
   incident that motivated BindForge, and it also settles the built-in-vs-user provenance question empirically —
   see [Device Provenance](../03-data-models/device-provenance.md).)*
-- **Does a new vehicle add a fifth binding section?** `StartPreset.#.start` has exactly four lines — General,
+- **Does a new vehicle add a fifth binding section?** `StartPreset.4.start` has exactly four lines — General,
   Ship, SRV, On Foot — and that four-ness is load-bearing across Preset Editor's UI, the four conflict
   matrices, and First-Time Startup's per-section checks. **Lower risk than it first appears:** binding sections
   are *control contexts, not vehicles*. A Ship Launched Vessel such as the Nomad, like a Ship Launched Fighter,
@@ -114,7 +114,7 @@ rather than treat as corruption.
 **Reframed 2026-09-23, and the original question answered itself.** They *do* differ — but differing is
 never legitimate. A shared `.binds` names devices by entries that live in these per-install files, so an
 install missing one
-[rejects the whole preset](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
+[rejects the whole binds file](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
 Difference is a latent outage, not a configuration, so
 [every install now gets the same files](../02-features/bindforge/overview.md#every-install-gets-the-same-files--settled-2026-09-23)
 and there is no per-install choice left to test.
@@ -161,7 +161,7 @@ the same walk — recording which number each label writes.
 **Most of this was answered on 2026-09-16 without touching the game** — `ControlSchemes\Help.txt` ships with
 Elite and lists the legal values for `YawToRollMode` (None, Time, LowRoll), `ThrottleRange` (`""` and
 `Bindings_ThrottleForewardOnly`), `UIFocusMode` (Hold, Toggle), `HeadlookMode` (Direct, Accumulate) and
-`GunsightSystem`, and the 90 shipped preset files supply `FocusOption_Show` on top. See
+`GunsightSystem`, and the 90 factory binds files supply `FocusOption_Show` on top. See
 [Frontier documents most of them](../02-features/bindforge/bind-editor.md#frontier-documents-most-of-them-in-the-game-folder--found-2026-09-16).
 **What is left is the short list below**, and the mouse family is closed entirely.
 
@@ -182,7 +182,7 @@ recorded under
 [an in-game apply re-emits the whole file](../02-features/bindforge/bind-editor.md#an-in-game-apply-re-emits-the-whole-file--observed-2026-09-17).
 
 Everything else closed on 2026-09-16 from sources that cost nothing: Frontier's `Help.txt`, the 90
-presets Elite ships, and the 152 `.binds` files in [EDRefCard's repository](https://github.com/richardbuckle/EDRefCard).
+factory binds files Elite ships, and the 152 `.binds` files in [EDRefCard's repository](https://github.com/richardbuckle/EDRefCard).
 **The increments are the fraction the label names** — `ThrottleIncrement` = `0.10000000` for 10%,
 `HeadlookIncrement` = `0.25000000` for 25% — and `ThrottleRangeFreeCam` turned out to carry its own token,
 `Bindings_ThrottleForewardOnlyFreeCam`, rather than sharing its family's. **That last one is the argument for
@@ -192,7 +192,7 @@ this whole testing item:** the obvious guess was wrong, in the one place nobody 
 `robots.txt` allows `/list` and disallows everything else, `/configs/` included.
 
 **Second pass, 2026-09-16, ended early — the game crashed.** Nothing was lost: every value captured matched
-the preset file exactly, so the pairs already recorded stand. Worth confirming the `.binds` file survived the
+the binds file exactly, so the pairs already recorded stand. Worth confirming the `.binds` file survived the
 crash intact before the next pass, since a crash during an options change is precisely the case
 [Player Backups](../02-features/bindforge/file-manager.md) exist for.
 **If it does not happen before release, enums ship read-only** — booleans and floats do not depend on it.
@@ -245,18 +245,18 @@ and shows a single entry, but that is an assumption, and
 [Preset Editor](../02-features/bindforge/preset-editor.md#a-name-does-not-identify-a-file) is built on it. Put
 two versions of one name in the folder, open the game's Controls screen, and see what the preset list shows and
 which file a save writes back to.
-→ [Preset Editor — what a line actually holds](../02-features/bindforge/preset-editor.md#what-a-line-actually-holds--the-preset-name-not-the-file-name)
+→ [Preset Editor — what a line actually holds](../02-features/bindforge/preset-editor.md#what-a-line-actually-holds--the-bindname-not-the-file-name)
 
 **16. ~~What does the game do with a `Device=` name its `DeviceMappings.xml` does not define?~~ ANSWERED
 2026-09-22 by direct test.** It logs one `Failed to find GUID for device: <name>` per reference into
-`BindingLoadingErrors.log` and **rejects the entire preset**, falling back to `KEYBOARD & MOUSE` in all four
+`BindingLoadingErrors.log` and **rejects the entire binds file**, falling back to `KEYBOARD & MOUSE` in all four
 sections — keyboard and mouse bindings included. Loading writes nothing: both `.binds` files and
-`StartPreset.#.start` kept their timestamps, and every `Device="..."` reference survived. The game also
-validates *every* `.binds` in the folder, not just the active preset. Two installs sharing one bindings folder
+`StartPreset.4.start` kept their timestamps, and every `Device="..."` reference survived. The game also
+validates *every* `.binds` in the folder, not just the active one. Two installs sharing one bindings folder
 gave opposite results from this one difference. Full method:
 [§1.2b of the device-files reference](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
 **Still open:** the save path — whether committing a change on the Controls screen in that state writes the
-fallback into the shared `StartPreset.#.start`, which would carry the loss to every install on the machine.
+fallback into the shared `StartPreset.4.start`, which would carry the loss to every install on the machine.
 
 **17. Which game axis is a slider?** *Added 2026-10-10, for [A8b](../05-build-plan/alias-designer.md#slices).*
 A controller describes each axis as X, Y, Z, Rx, Ry, Rz, Slider or Dial. The first six match the game's
@@ -314,20 +314,20 @@ hats, bind each in the game and check that `.binds` names the one A8b's generate
 → [Which axes and hats a controller has](../02-features/bindforge/alias-designer.md#which-axes-and-hats-a-controller-has--2026-10-10-alan)
 
 **24. Is it one spelling per device in `.binds`, or case itself?** *Added 2026-10-14, A11 — Alan can run this
-one.* Measured: a `Device=` name finds its `DeviceMappings.xml` element ignoring case, and a preset that spells one
+one.* Measured: a `Device=` name finds its `DeviceMappings.xml` element ignoring case, and a binds file that spells one
 device two ways is rejected. Still open: whether a single spelling that differs from the element is fine whatever
 its case. Give `DeviceMappings.xml` `<LVWAP>` and write every `Device=` naming it as `lvwap`; it loads if the rule is
 one spelling per device. Then repeat on Proton, with `lvwap.buttonMap` beside `<LVWAP>`, to see whether the
 labels still show.
 → [`.binds` format §4.3](../02-features/bindforge/domain-knowledge/EliteDangerous-BindsFileFormat.md#43-case-only-binds-cares-and-it-cares-about-one-spelling-per-device--measured-2026-10-14)
 
-**25. Does a shadowed built-in load, with every preset moved to its name?** *Added 2026-10-16, A15 — Alan can run
+**25. Does a shadowed built-in load, with every binds file moved to its name?** *Added 2026-10-16, A15 — Alan can run
 this one.* Measured so far: a user element *after* Frontier's is ignored, and Frontier's element renamed in place
 loads. A15 builds the third shape - the user's element **ahead** of Frontier's, Frontier's left in place - and moves
 every `Device=` naming Frontier's element to the user's name. In the Device Editor, rename the T-Rudder pedals
-(`MyRudder`), APPLY, and start the game: the active preset loads, the pedals' labels show, and no
+(`MyRudder`), APPLY, and start the game: the active binds file loads, the pedals' labels show, and no
 `BindingLoadingErrors.log` is written for the inactive one. Not needed, since the bindings move, but worth a look
-while the game is open: a preset left naming `T-Rudder` with the shadow in place. *After review (2026-10-17):* in the
+while the game is open: a binds file left naming `T-Rudder` with the shadow in place. *After review (2026-10-17):* in the
 Device Editor, type `t-rudder` or `TRudder` and see SAVE dimmed - only `T-Rudder`, spelled exactly, goes back.
 → [Built-in controllers in My Devices — A15](../02-features/bindforge/alias-designer.md#built--2026-10-16-alan-a15)
 
@@ -336,7 +336,7 @@ one.* The suite tests the question, the record and Apply's move, not the Swing f
 no entry and a copy of a `.binds` that binds it by hex, and change that hex to an id nothing has (keep the VID, change
 the PID). Open BindForge: the question lists the stick, saying the old id is not attached. Pick it, check the name
 page says how many bindings move from the old id, FINISH, then APPLY - `.binds` should name the stick, and the
-preset load in the game. Then repeat, but plug in a controller with the old id before APPLY: nothing should move.
+binds file load in the game. Then repeat, but plug in a controller with the old id before APPLY: nothing should move.
 *After review (2026-10-17):* pick the stick again and press BACK on the name page - the screen should read again,
 nothing be named, and the question come back next run.
 → [Built — A17](../02-features/bindforge/alias-designer.md#built--2026-10-17-alan-a17)

@@ -330,7 +330,7 @@ one loop either way, and Windows becomes the special case internally rather than
 
 So an installation should be able to answer, at minimum: where its `DeviceMappings.xml` is, where its
 `DeviceButtonMaps` folder is, where its bindings folder is, and which storefront it came from. **No `primary`
-flag**, for the reason above. Whether `StartPreset` hangs off the installation or the provider follows the
+flag**, for the reason above. Whether `StartPreset.4.start` hangs off the installation or the provider follows the
 same rule as `.binds`, because they live together.
 
 **Where it goes:** `elite.intel.bindforge.install`, per the package decision, beside the `.binds` code in
@@ -345,7 +345,7 @@ not assume. *"As long as windows vs linux coupling is isolated we will not have 
 when/if that change comes."*
 
 **One side-effect worth weighing before inverting them.** The game validates **every** `.binds` in the
-bindings folder, not only the active preset, and rejects the whole preset when one names a device the
+bindings folder, not only the active one, and rejects the whole binds file when one names a device the
 install's `DeviceMappings.xml` does not define -
 [measured 2026-09-22](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
 On Windows, where the folder is already shared, that is exactly how one install ended up falling back to

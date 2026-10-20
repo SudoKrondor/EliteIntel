@@ -22,7 +22,7 @@ They do not get the same answer: the parser stays exactly as narrow as it is, an
 2. View and edit bindings — see [Bind Editor](bind-editor.md).
 3. Manage device mappings and button names — see [Alias Designer](alias-designer.md).
 
-BindForge does not interact with the running game process. It only touches files the game itself reads at its own startup or preset-load time — see [Writing While the Game Is Running](#writing-while-the-game-is-running).
+BindForge does not interact with the running game process. It only touches files the game itself reads at its own startup or when it loads a binds file — see [Writing While the Game Is Running](#writing-while-the-game-is-running).
 
 BindForge runs on both of Elite-Intel's target platforms. On Linux, there is effectively one installation (via Steam/Proton); on Windows, a player may have several storefront installations simultaneously.
 
@@ -35,7 +35,7 @@ BindForge manages four related but distinct file domains, described fully (with 
 | Bind Domain | `.binds` | User configuration folder — one single shared location regardless of storefront | High — a lost or corrupted `.binds` file affects actual gameplay controls |
 | Device Identity Domain | `DeviceMappings.xml` | Inside the game **installation** folder — genuinely duplicated per storefront install | **High — reclassified 2026-09-08, see below.** Previously read: cosmetic only — affects button-label display, not gameplay |
 | Button Map Domain | `.buttonMap` (one per named device) | Inside the game installation folder, alongside `DeviceMappings.xml` | Labels only — **but protected like the others**, see below |
-| Active Preset Domain | `StartPreset.#.start` | Same user configuration folder as `.binds` | Governs which `.binds` file is loaded per binding section — **protected like the others**, see below |
+| Preset File Domain | `StartPreset.4.start` | Same user configuration folder as `.binds` | Governs which `.binds` file is loaded per binding section — **protected like the others**, see below |
 
 ### Protection is uniform — settled 2026-09-21
 
@@ -56,7 +56,7 @@ ranks one as safer to lose.
 
 ### Every install gets the same files — settled 2026-09-23
 
-**BindForge keeps one configuration and applies it everywhere.** `.binds` and `StartPreset.#.start` are
+**BindForge keeps one configuration and applies it everywhere.** `.binds` and `StartPreset.4.start` are
 already shared by every install. `DeviceMappings.xml` and the `.buttonMap` files are duplicated per install,
 and BindForge keeps those copies **identical** — the same aliases and the same button and axis labels in every
 installation it knows about. There is no per-install configuration, no per-device switch, and no separate
@@ -67,7 +67,7 @@ installations shared a definition; it now means every install matches the master
 
 **Why, and it is measured rather than argued.** The shared `.binds` names devices by entries that live in a
 per-install file, so an install whose `DeviceMappings.xml` lacks them
-[rejects the whole preset and falls back to a factory one](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
+[rejects the whole binds file and falls back to a factory one](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
 Divergence between installs is not a configuration a user chose. It is a latent outage waiting for
 whichever install they launch next, and the only symptom is a log file nobody opens.
 
@@ -114,10 +114,10 @@ bites when that install is launched. Forcing a choice on a user who has not aske
 turns into an obstacle, and the answer to *"what if they never edit anything in BindForge?"* has to be
 *"then it quietly protects them anyway."*
 
-*(This matches [First-Time Startup](#first-time-startup), which offers to fix a stock preset, accepts "no",
+*(This matches [First-Time Startup](#first-time-startup), which offers to fix a factory binds file, accepts "no",
 and re-offers later.)*
 
-The Active Preset file has four lines, one per binding section, in a fixed order: General, Ship, SRV, On Foot. All four normally point at the same `.binds` filename (the common "single preset" case), but each line is independently settable — a valid, if unusual, "split preset" configuration. See [Preset Editor](preset-editor.md).
+The preset file has four lines, one per binding section, in a fixed order: General, Ship, SRV, On Foot. All four normally name the same BindName (the common case), but each line is independently settable — a valid, if unusual, split preset file. See [Preset Editor](preset-editor.md).
 
 ### Why `DeviceMappings.xml` is not cosmetic — reclassified 2026-09-08
 
@@ -135,7 +135,7 @@ It was filed as cosmetic because its visible effect is button labels. That is wh
 
 So the loss impact is **high, not cosmetic**: a `DeviceMappings.xml` lost to a game update takes the indirection with it, and the bindings that depended on it revert to depending on an ID the vendor can change. `.buttonMap` holds only labels — but under the [uniform protection rule](#protection-is-uniform--settled-2026-09-21) it is guarded exactly as carefully, because once a user has written labels, losing them is losing their work.
 
-**Measured 2026-09-22, and it is worse than "those bindings stop working."** On a machine with two installs sharing one bindings folder, launching the install whose `DeviceMappings.xml` lacked the user's two entries produced 141 `Failed to find GUID for device` lines and **the game fell back to the stock KEYBOARD & MOUSE preset in all four sections** — losing the keyboard and mouse bindings too, which referenced no device entry at all. The other install, reading the same `StartPreset` and the same `.binds`, loaded correctly. Nothing was rewritten on disk. Full method and numbers: [what happens when a `Device=` name has no entry](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
+**Measured 2026-09-22, and it is worse than "those bindings stop working."** On a machine with two installs sharing one bindings folder, launching the install whose `DeviceMappings.xml` lacked the user's two entries produced 141 `Failed to find GUID for device` lines and **the game fell back to the factory KEYBOARD & MOUSE binds file in all four sections** — losing the keyboard and mouse bindings too, which referenced no device entry at all. The other install, reading the same `StartPreset.4.start` and the same `.binds`, loaded correctly. Nothing was rewritten on disk. Full method and numbers: [what happens when a `Device=` name has no entry](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
 
 A confirmed real-world incident — a game update that overwrote a user's `DeviceMappings.xml` — is the direct reason Alias Designer and File Manager were prioritised ahead of the rest of the BindForge suite. Game updates can overwrite or erase these files, but this is confirmed **not** universal or guaranteed — it happens on some updates for some users, not reliably reproducibly — so BindForge must always validate presence/correctness rather than assume either outcome.
 
@@ -143,14 +143,14 @@ A confirmed real-world incident — a game update that overwrote a user's `Devic
 
 ## Live File Synchronization
 
-~~Every managed file domain follows the same synchronization model: the live file inside the game's own folders is the source of truth, and BindForge keeps a local working copy in its own user-data folder that mirrors it for editing.~~ **Inverted 2026-09-24.** The master copy in Elite-Intel's own folder is the source of truth, and the live file in the game's folders is what gets compared against it and pushed to — see [The master and the draft](#the-master-and-the-draft--settled-2026-09-24) below, and [multi-install-proposal.md](../../multi-install-proposal.md) §2. The live file cannot be authoritative: a patch can wipe it, and a wipe looks exactly like the newest edit. This applies uniformly across all four domains - Bind, Device Identity, Button Map, and Active Preset.
+~~Every managed file domain follows the same synchronization model: the live file inside the game's own folders is the source of truth, and BindForge keeps a local working copy in its own user-data folder that mirrors it for editing.~~ **Inverted 2026-09-24.** The master copy in Elite-Intel's own folder is the source of truth, and the live file in the game's folders is what gets compared against it and pushed to — see [The master and the draft](#the-master-and-the-draft--settled-2026-09-24) below, and [multi-install-proposal.md](../../multi-install-proposal.md) §2. The live file cannot be authoritative: a patch can wipe it, and a wipe looks exactly like the newest edit. This applies uniformly across all four domains - Bind, Device Identity, Button Map, and Preset File.
 
 ### The master and the draft — settled 2026-09-24
 
 **Two files, two jobs.**
 
 - **The master** is the last known good state: what BindForge pushed, and what every comparison is made
-  against. It lives in Elite-Intel's folder. For `.binds` and `StartPreset` it is a whole file; for device
+  against. It lives in Elite-Intel's folder. For `.binds` and `StartPreset.4.start` it is a whole file; for device
   identity it is [the user's element set](alias-designer.md#what-the-master-actually-is).
 - **The draft** is what the user is editing. **Apply promotes the draft to master** and pushes it out.
 
@@ -169,29 +169,29 @@ in this realm of input configurations."*
 
 | Location | Backed up | Why |
 |---|---|---|
-| The user bindings folder | **all of it** — every `.binds`, `StartPreset.#.start`, whatever else the user keeps there | it is entirely the user's, and a backup that skipped something for looking uninteresting is how a tool loses their work |
+| The user bindings folder | **all of it** — every `.binds`, `StartPreset.4.start`, whatever else the user keeps there | it is entirely the user's, and a backup that skipped something for looking uninteresting is how a tool loses their work |
 | Each install's `ControlSchemes\DeviceMappings.xml` | **yes** | holds the user's device entries |
 | Each install's `ControlSchemes\DeviceButtonMaps\` | **yes, the folder** | holds their labels; Frontier's own maps ride along, which is harmless and simpler than filtering |
-| The shipped `.binds` presets in `ControlSchemes` | **no** | not the user's, and not editable in place |
+| The factory binds files in `ControlSchemes` | **no** | not the user's, and not editable in place |
 
-**Why the shipped presets are excluded** (Alan, 2026-09-24): the game never edits them. Changing one in the
-Controls screen writes a `Custom.#.#.binds` into the *user* folder instead, and a preset hand-edited outside
+**Why the factory binds files are excluded** (Alan, 2026-09-24): the game never edits them. Changing one in the
+Controls screen writes a `Custom.#.#.binds` into the *user* folder instead, and a factory binds file hand-edited outside
 the game is overwritten by the next update anyway. Backing them up would archive Frontier's files, which
 Frontier already ships.
 
-**They are still read**, as the source First-Time Startup copies a stock preset from. Read-only reference, not
+**They are still read**, as the source First-Time Startup copies a factory binds file from. Read-only reference, not
 protected data.
 
 **They are templates, and that is their real use to BindForge** (Alan, 2026-09-24). A user starting
-fresh, or wanting a clean base for one section, picks a shipped preset and BindForge copies it into the user
+fresh, or wanting a clean base for one section, picks a factory binds file and BindForge copies it into the user
 folder as a custom `.binds` — where it survives updates and can be edited. That is already what
-[First-Time Startup](#first-time-startup) does for a section still sitting on a factory preset; offering the
+[First-Time Startup](#first-time-startup) does for a section still sitting on a factory binds file; offering the
 same copy on demand generalises it rather than adding a mechanism.
 
-*One related case, later rather than now: a user who hand-edited a shipped preset in place can have it
+*One related case, later rather than now: a user who hand-edited a factory binds file in place can have it
 imported the same way, and saved where the next update will not overwrite it.*
 
-**The copy itself is still unproven** — whether a `ControlSchemes` preset can be used byte-for-byte as a
+**The copy itself is still unproven** — whether a factory binds file can be used byte-for-byte as a
 valid starting `.binds`, or whether the game's own first save does something to it, is
 [testing item 7](../../00-overview/testing-required.md).
 
@@ -199,19 +199,19 @@ valid starting `.binds`, or whether the game's own first save does something to 
 
 | | Master granularity |
 |---|---|
-| `.binds` | **one master per file** — every preset in the folder, not only the active one |
-| `StartPreset.#.start` | one master, one file |
+| `.binds` | **one master per file** — every binds file in the folder, not only the active one |
+| `StartPreset.4.start` | one master, one file |
 | `DeviceMappings.xml` | [the user's element set](alias-designer.md#what-the-master-actually-is), written at the top of `<Root>`; Frontier's stock entries are never mastered, never pushed — **unless the user renames or shadows one, which makes it theirs** ([2026-10-04](alias-designer.md#built-in-controllers-in-my-devices--settled-2026-09-13)) |
 | `.buttonMap` | one master per file the user or BindForge made; Frontier's shipped maps are left alone |
 
-**Every preset is a first-class file, not just the active one.** A user editing a preset they are not
+**Every binds file is a first-class file, not just the active one.** A user editing a binds file they are not
 currently playing — *"edit the testing binds and use that for testing in game"* — gets the same master,
-the same comparison, the same conflict checks and the same history as the one `StartPreset` points at. The
+the same comparison, the same conflict checks and the same history as the one `StartPreset.4.start` points at. The
 game validates every `.binds` in the folder at startup
 ([measured](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22)),
 so BindForge has no reason to be narrower.
 
-**Per-file masters, plus one set-level fact.** Because the master knows which files it has seen, a preset that
+**Per-file masters, plus one set-level fact.** Because the master knows which files it has seen, a binds file that
 **disappears** is noticed — which a per-file comparison alone could never report, since there is nothing left
 to compare.
 
@@ -352,39 +352,39 @@ This is a general behaviour, not specific to Alias Designer — see also [Bind E
 
 ### First-Time Startup
 
-Live File Synchronization assumes a live custom `.binds` file already exists for BindForge to mirror. That assumption doesn't hold for a player who has never customized a binding in-game — Elite Dangerous runs perfectly well on one of its own bundled factory presets (from the game install's `ControlSchemes` folder) indefinitely, and never writes anything to the player's own bindings folder until the player changes a binding in-game for the first time. Left unhandled, BindForge would show an empty or broken state for exactly the players who'd benefit from it most: newcomers who haven't touched their bindings yet.
+Live File Synchronization assumes a live custom `.binds` file already exists for BindForge to mirror. That assumption doesn't hold for a player who has never customized a binding in-game — Elite Dangerous runs perfectly well on one of its own factory binds files (from the game install's `ControlSchemes` folder) indefinitely, and never writes anything to the player's own bindings folder until the player changes a binding in-game for the first time. Left unhandled, BindForge would show an empty or broken state for exactly the players who'd benefit from it most: newcomers who haven't touched their bindings yet.
 
-**Detection:** the Active Preset file (`StartPreset.#.start` — see [Preset Editor](preset-editor.md)) records, independently per section (General/Ship/SRV/On Foot, the same four sections Preset Editor's own dropdowns manage), which preset is currently active for that section — stock or custom, always known, never guessed. BindForge checks this per section on startup.
+**Detection:** the preset file (`StartPreset.4.start` — see [Preset Editor](preset-editor.md)) records, independently per section (General/Ship/SRV/On Foot, the same four sections Preset Editor's own dropdowns manage), the BindName currently active for that section — factory or custom, always known, never guessed. BindForge checks this per section on startup.
 
 **The only reader that exists today cannot do that** (checked 2026-09-18). `BindingsLoader.getActivePresetName()`
 takes the **first non-empty line** of the file, on the stated assumption that the name simply repeats — which
-holds for the common case and fails for exactly the split preset this screen is built to handle. Against the
+holds for the common case and fails for exactly the split preset file this screen is built to handle. Against the
 shipped specimen `KeyboardMouseOnly / Custom / Custom / Custom`, it reports *KeyboardMouseOnly* and never sees
 the other three. **First-Time Startup is the first screen a new user meets**, so a mis-detection there
 offers to fix a section that is fine and stays silent about three that are not. Reading all four lines is a
 prerequisite for this feature, not a refinement of it — see [Preset Editor — what exists in code
 today](preset-editor.md#what-exists-in-code-today--checked-2026-09-17).
 
-**If a section is still pointing at a stock, factory preset:** BindForge asks the player whether to create a real custom `.binds` file for that section, seeded from a copy of the *exact* stock preset currently active for it (read from the Active Preset file, not assumed). If the player agrees:
-1. BindForge copies that stock preset's content into a new file in the player's own bindings folder.
-2. BindForge repoints that section's entry in the Active Preset file to the new custom file, through Preset Editor's own existing write path (Save, backed by the standard timestamped-backup-before-write) — the same mechanism the player would use to manually switch presets themselves.
+**If a section is still pointing at a factory binds file:** BindForge asks the player whether to create a real custom `.binds` file for that section, seeded from a copy of the *exact* factory binds file currently active for it (read from the preset file, not assumed). If the player agrees:
+1. BindForge copies that factory binds file's content into a new file in the player's own bindings folder.
+2. BindForge repoints that section's entry in the preset file to the new custom file, through Preset Editor's own existing write path (Save, backed by the standard timestamped-backup-before-write) — the same mechanism the player would use to manually switch binds files themselves.
 
 From that point on, the section behaves exactly like any other managed domain — normal Live File Synchronization takes over.
 
-**If the player declines**, that section is simply left alone. BindForge doesn't force the issue, and re-offers the next time that section is found still on a stock preset.
+**If the player declines**, that section is simply left alone. BindForge doesn't force the issue, and re-offers the next time that section is found still on a factory binds file.
 
-**Per-section, not all-or-nothing:** because the Active Preset file tracks each of the four sections independently — the same "split preset" configuration Preset Editor already supports — a player can be partway customized (some sections on a real custom file, others still on factory defaults), and this flow only prompts for the sections that actually need it.
+**Per-section, not all-or-nothing:** because the preset file tracks each of the four sections independently — the same split preset file Preset Editor already supports — a player can be partway customized (some sections on a real custom file, others still on factory defaults), and this flow only prompts for the sections that actually need it.
 
 #### When it fires — settled 2026-09-12
 
-**When the player first opens BindForge, not when Elite-Intel launches.** The check is cheap and could run at startup, but a newcomer who launched the application to do something else has not asked about bindings, and a prompt about factory presets at that moment is an interruption rather than an offer. Opening the Bindings section is the moment the question is *in context*, and it is also the first moment the answer matters — the section cannot show a real state until it exists.
+**When the player first opens BindForge, not when Elite-Intel launches.** The check is cheap and could run at startup, but a newcomer who launched the application to do something else has not asked about bindings, and a prompt about factory binds files at that moment is an interruption rather than an offer. Opening the Bindings section is the moment the question is *in context*, and it is also the first moment the answer matters — the section cannot show a real state until it exists.
 
 The four sections are gathered into one prompt rather than asked about one at a time:
 
 ```
-2 of 4 sections are on factory presets.
+2 of 4 sections are on factory binds files.
 Ship and SRV cannot be edited until they
-have a custom preset of their own.
+have a custom binds file of their own.
 
   [ Create both ]  [ Choose ]  [ Not now ]
 ```
@@ -400,8 +400,8 @@ have a custom preset of their own.
 | The write | Why it cannot lose anything |
 |---|---|
 | Create the new `.binds` | **Additive.** The file did not exist; nothing is overwritten. |
-| Repoint `StartPreset.#.start` | **One line, reversible.** [Preset Editor](preset-editor.md) switches it back at any time. |
-| The factory preset | **Never touched.** `ControlSchemes` is read-only to BindForge; the original remains exactly as shipped. |
+| Repoint `StartPreset.4.start` | **One line, reversible.** [Preset Editor](preset-editor.md) switches it back at any time. |
+| The factory binds file | **Never touched.** `ControlSchemes` is read-only to BindForge; the original remains exactly as shipped. |
 
 So the player is told what happened and how to undo it, rather than being asked to authorize it twice:
 
@@ -409,11 +409,11 @@ So the player is told what happened and how to undo it, rather than being asked 
 Created Custom.binds for Ship and SRV,
 and set both sections to use them.
 
-Your factory presets are unchanged.
+Your factory binds files are unchanged.
 You can switch back any time in Preset Editor.
 ```
 
-**The exception does not generalize, and its boundary is the point.** It covers *creating* a preset where none existed, at first open, with explicit consent. Every subsequent write to that section — every binding the player then edits — goes through the draft and Apply like everything else. A write that modifies existing player data is never an exception, whatever the flow.
+**The exception does not generalize, and its boundary is the point.** It covers *creating* a binds file where none existed, at first open, with explicit consent. Every subsequent write to that section — every binding the player then edits — goes through the draft and Apply like everything else. A write that modifies existing player data is never an exception, whatever the flow.
 
 #### Writes outside Apply — the complete list
 
@@ -422,14 +422,14 @@ not exist; none changes an existing binding, entry or file.
 
 | Write | When | Why it cannot lose anything |
 |---|---|---|
-| A custom preset from a factory one | [First-Time Startup](#it-applies-immediately--settled-2026-09-12), on **Create** | a new `.binds`; one reversible `StartPreset` line; the factory preset untouched |
+| A custom binds file from a factory one | [First-Time Startup](#it-applies-immediately--settled-2026-09-12), on **Create** | a new `.binds`; one reversible `StartPreset.4.start` line; the factory binds file untouched |
 | A controller's name | [onboarding](alias-designer.md#what-onboarding-writes-and-when), when the name is confirmed or the default taken — **only for a controller `.binds` does not reference by hex** | adds a new `DeviceMappings.xml` entry beside the existing ones; creates a `.buttonMap` that did not exist |
 | A generated `.buttonMap` | [Elite-Intel startup](alias-designer.md#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller), for a connected, named controller without one — and when such a controller connects later (2026-10-06) | creates a file that did not exist; never overwrites |
 
 **What is never on this list:** anything that rewrites existing player data. Naming a controller that `.binds`
 already references by hex rewrites its bindings, so it waits for Apply — entry and rewrite together.
 
-**Testing-required, and now load-bearing:** whether a `ControlSchemes` preset file can be copied byte-for-byte into the player's bindings folder as a valid starting `.binds` file, or whether the game's own first-customization save does something to the file beyond a plain copy, hasn't been confirmed against a real install — see [testing-required.md](../../00-overview/testing-required.md). **Applying immediately raises the stakes on that test:** a bad copy reaches the live bindings folder with no review step in front of it. The timestamped backup still runs, so it is recoverable rather than dangerous — but this should be confirmed before the flow ships, not after.
+**Testing-required, and now load-bearing:** whether a factory binds file can be copied byte-for-byte into the player's bindings folder as a valid starting `.binds` file, or whether the game's own first-customization save does something to the file beyond a plain copy, hasn't been confirmed against a real install — see [testing-required.md](../../00-overview/testing-required.md). **Applying immediately raises the stakes on that test:** a bad copy reaches the live bindings folder with no review step in front of it. The timestamped backup still runs, so it is recoverable rather than dangerous — but this should be confirmed before the flow ships, not after.
 
 ## Top-Level Structure
 
@@ -451,7 +451,7 @@ BindForge inherits and applies Elite-Intel's project-wide [Data Integrity Princi
 Three SHA-256 fingerprints are compared:
 
 - **baseline** - the game file as it stood when the draft was taken, stored beside the draft as
-  `<preset>.elite-intel.base.sha256`
+  `<BindName>.elite-intel.base.sha256`
 - **draft** - the player's copy, carrying BindForge's edits
 - **live** - the game's file as it stands right now
 
@@ -640,12 +640,12 @@ Scoping [Core C4](../../05-build-plan/core.md#slices) against the rule above, an
 
 | Piece | Where | Why |
 |---|---|---|
-| Whole-file `.binds` master, one per preset | a **new V1.2 class**, files under `elite-intel/bindings/master/` | it is never edited, so it is not a second working copy; it edits no V1.1 file |
-| Which presets the master has seen | the master folder's listing | the folder is the record, as for [Edit History](file-manager.md#edit-history) — no table |
+| Whole-file `.binds` master, one per binds file | a **new V1.2 class**, files under `elite-intel/bindings/master/` | it is never edited, so it is not a second working copy; it edits no V1.1 file |
+| Which binds files the master has seen | the master folder's listing | the folder is the record, as for [Edit History](file-manager.md#edit-history) — no table |
 | The `.binds` startup check, and the version-bump merge | **new V1.2 classes** | they read; the merge is pure |
 | `.binds` Edit History | the existing `AppPaths.getBindingsBackupDir()`, pruned by V1.2 to the retention setting | `BindingsApplyService.apply` already keeps the replaced file there under a timestamped name |
 | **Revert — the master pushed over the game's file** | **one new `BindingsApplyService` method**: the same validate, back up, atomic write, from a given source file | `apply` pushes only the working copy, so pushing the master through it would destroy the draft; writing it any other way would be a second writer |
-| `StartPreset` master, and writing `StartPreset` | **new V1.2 classes** | nothing writes `StartPreset` today, so there is no existing writer to grow |
+| `StartPreset.4.start` master, and writing `StartPreset.4.start` | **new V1.2 classes** | nothing writes `StartPreset.4.start` today, so there is no existing writer to grow |
 
 A master store that fails after an Apply succeeded fails safe: the next check reads the game's file as edited
 and asks, rather than adopting it.
@@ -694,7 +694,7 @@ Two consequences worth building for:
 **Rewritten 2026-10-11 (Alan, Core C5).** Two watchers, one per kind of file, because the two kinds are written
 by different hands:
 
-- **The bindings folder** (`.binds`, `StartPreset`) stays with `bindforge.io.BindingsMonitor` and its
+- **The bindings folder** (`.binds`, `StartPreset.4.start`) stays with `bindforge.io.BindingsMonitor` and its
   `WatchService`, unchanged.
 - **Each installation's `DeviceMappings.xml` and `.buttonMap` files are polled**, by
   `bindforge.devicefiles.DeviceFilesMonitor` through `elite.intel.io.FilePoller`, every two seconds. The game writes

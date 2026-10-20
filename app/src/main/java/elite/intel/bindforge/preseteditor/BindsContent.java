@@ -1,4 +1,4 @@
-package elite.intel.bindforge.presets;
+package elite.intel.bindforge.preseteditor;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -19,15 +19,15 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Whether a file with a {@code .binds} name is a preset the game can load, judged by what is in it.
+ * Whether a file with a {@code .binds} name is a binds file the game can load, judged by what is in it.
  * <p>
  * <strong>A {@code .binds} name does not make it a binds file</strong> (bind-editor.md, 2026-09-17): 445 of 48,354
- * shared files were something else, 363 of them a {@code StartPreset} picked by mistake. A binds file is a
+ * shared files were something else, 363 of them a {@code StartPreset.start} picked by mistake. A binds file is a
  * {@code <Root>} element with at least one binding in it - a child holding a {@code <Primary>},
  * {@code <Secondary>} or {@code <Binding>}. Settings alone, such as {@code <KeyboardLayout>}, do not count.
  * <p>
- * <strong>The name is the file's {@code PresetName}</strong>, which is what {@code StartPreset} stores, and it
- * must match the name the file name gives (Alan, 2026-10-17). A file where the two disagree is not offered: the
+ * <strong>The BindName is the file's {@code PresetName}</strong>, which is what {@code StartPreset.4.start} stores,
+ * and it must match the BindName the file name gives (Alan, 2026-10-17). A file where the two disagree is not offered: the
  * dropdown would show one name for a file called another.
  * <p>
  * This is not {@code KeyBindingsParser}, which stays keyboard-only and must not be widened to answer this.
@@ -37,7 +37,7 @@ final class BindsContent {
     private static final String ROOT = "Root";
     private static final String PRESET_NAME = "PresetName";
     private static final Set<String> BINDING_SLOTS = Set.of("Primary", "Secondary", "Binding");
-    private static final int MAX_START_PRESET_LINES = 4;
+    private static final int MAX_PRESET_FILE_LINES = 4;
 
     private BindsContent() {
     }
@@ -46,8 +46,8 @@ final class BindsContent {
     sealed interface Judgement permits Offered, NotOffered {
     }
 
-    /** A binds file, offered under {@code presetName}. */
-    record Offered(String presetName) implements Judgement {
+    /** A binds file, offered under {@code bindName}. */
+    record Offered(String bindName) implements Judgement {
     }
 
     /** Not offered, and why. {@code detail} is what the file holds instead, for the sentence; never null. */
@@ -93,26 +93,26 @@ final class BindsContent {
         if (!holdsABinding(root)) {
             return new NotOffered(NotOfferedReason.ROOT_WITHOUT_BINDINGS, "");
         }
-        String presetName = root.getAttribute(PRESET_NAME).strip();
-        if (presetName.isEmpty()) {
+        String bindName = root.getAttribute(PRESET_NAME).strip();
+        if (bindName.isEmpty()) {
             return new NotOffered(NotOfferedReason.NO_PRESET_NAME, "");
         }
-        if (!presetName.equals(PresetName.fromFileName(fileName))) {
-            return new NotOffered(NotOfferedReason.NAME_MISMATCH, presetName);
+        if (!bindName.equals(BindName.fromFileName(fileName))) {
+            return new NotOffered(NotOfferedReason.NAME_MISMATCH, bindName);
         }
-        return new Offered(presetName);
+        return new Offered(bindName);
     }
 
     /**
-     * Text that is not XML: a preset list when it is what {@code StartPreset} holds - one to four lines, none of
-     * them markup - and otherwise just not XML. The detail of a preset list is its names, one per line.
+     * Text that is not XML: a preset file when it is what {@code StartPreset.4.start} holds - one to four lines,
+     * none of them markup - and otherwise just not XML. The detail of a preset file is its BindNames, one per line.
      */
     private static Judgement judgeText(String text) {
         List<String> lines = text.lines().map(String::strip).filter(line -> !line.isEmpty()).toList();
-        boolean presetList = lines.size() <= MAX_START_PRESET_LINES
+        boolean presetFile = lines.size() <= MAX_PRESET_FILE_LINES
                 && lines.stream().noneMatch(line -> line.contains("<") || line.contains(">"));
-        if (presetList) {
-            return new NotOffered(NotOfferedReason.START_PRESET_LIST, String.join("\n", lines));
+        if (presetFile) {
+            return new NotOffered(NotOfferedReason.PRESET_FILE, String.join("\n", lines));
         }
         return new NotOffered(NotOfferedReason.NOT_XML, "");
     }

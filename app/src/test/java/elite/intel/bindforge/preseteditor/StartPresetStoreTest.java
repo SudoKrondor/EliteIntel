@@ -1,4 +1,4 @@
-package elite.intel.bindforge.presets;
+package elite.intel.bindforge.preseteditor;
 
 import elite.intel.bindforge.io.BindingsLoader;
 import elite.intel.bindforge.io.StartPresetSections;
@@ -15,7 +15,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * The {@code StartPreset} master and draft: where they live, when the master is made, what Save writes, and that a
+ * The {@code StartPreset.4.start} master and draft: where they live, when the master is made, what Save writes, and that a
  * draft which exists always holds a change.
  */
 class StartPresetStoreTest {
@@ -48,7 +48,7 @@ class StartPresetStoreTest {
 
         assertEquals(Optional.of(SPECIMEN), store().masterOrSeedFrom(bindingsDir));
 
-        Path master = workingDir.resolve("master").resolve("StartPreset.start");
+        Path master = workingDir.resolve("master").resolve("StartPreset.4.start");
         assertArrayEquals(Files.readAllBytes(bindingsDir.resolve("StartPreset.4.start")), Files.readAllBytes(master));
     }
 
@@ -87,7 +87,7 @@ class StartPresetStoreTest {
         assertEquals(Optional.of(edited), store.draft());
         assertEquals(Optional.of(edited), store.draftOrMaster());
         assertEquals("Custom\nCustom\nCustom\nCustom\n",
-                Files.readString(workingDir.resolve("draft").resolve("StartPreset.start"), StandardCharsets.UTF_8));
+                Files.readString(workingDir.resolve("draft").resolve("StartPreset.4.start"), StandardCharsets.UTF_8));
         assertTrue(store.hasDraftChanges());
         assertEquals(Optional.of(SPECIMEN), store.master(), "Save never touches the master");
     }

@@ -1,4 +1,4 @@
-package elite.intel.bindforge.presets;
+package elite.intel.bindforge.preseteditor;
 
 import elite.intel.bindforge.io.StartPresetSections;
 import elite.intel.bindforge.model.BindingSection;
@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * The game's {@code StartPreset} and the draft, each against the master, line by line.
+ * The game's {@code StartPreset.4.start} and the draft, each against the master, line by line.
  * <p>
  * The four lines are four independent entities (preset-editor.md): a game change to one line and a draft change to
  * another merge with nothing to ask, and only the same line changed differently on both sides is a conflict.
@@ -67,7 +67,7 @@ public record StartPresetComparison(List<Line> lines) {
      */
     public Line line(BindingSection section) {
         return lines.stream().filter(line -> line.section() == section).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("StartPreset has no line for section " + section));
+                .orElseThrow(() -> new IllegalArgumentException("StartPreset.4.start has no line for section " + section));
     }
 
     /**

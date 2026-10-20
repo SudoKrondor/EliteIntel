@@ -220,7 +220,7 @@ angle, and it is the reason BindForge's own
 
 #### Frontier documents most of them, in the game folder — found 2026-09-16
 
-**`ControlSchemes\Help.txt` ships with the game**, beside the preset files, and its *Options* section lists legal values.
+**`ControlSchemes\Help.txt` ships with the game**, beside the factory binds files, and its *Options* section lists legal values.
 An identical 6,230-byte copy sits in every install on Alan's machine — Steam Horizons, Steam Odyssey and
 Epic Odyssey — so it is not a stray file or a mod. This is the answer to *“is this written down anywhere”*:
 **it was in the game folder the whole time.**
@@ -236,7 +236,7 @@ Epic Odyssey — so it is not a stray file or a mod. This is the answer to *“i
 | `MouseDeadzone` | any number between 0.0 and 1.0 |
 | `ThrottleIncrement` | **any number between 0.0 and 1.0** |
 
-**A second source, in the same folders: 90 shipped preset files.** Scanning every `.binds` Frontier ships
+**A second source, in the same folders: 90 factory binds files.** Scanning every `.binds` Frontier ships
 (`SaitekX52.binds`, `KeyboardMouseOnly.binds`, `DualShock4Controller.binds` and the rest) yields tokens no
 player file held — `FocusOption_Show`, `Bindings_YawIntoRollTime`, `Bindings_ThrottleForewardOnly` and
 `Bindings_TraditionalGunsights`. **Frontier's own files are the cheapest evidence there is**, and BindForge's
@@ -288,7 +288,7 @@ Both are one selection each in the game, and until they are observed BindForge o
 write and says why — `FocusOption_Focus` and `mute_pushToMute` are the obvious guesses, and
 `Bindings_ThrottleForewardOnlyFreeCam` is why obvious guesses are not written to a user's file.
 
-**Where these came from matters.** All three sources so far — the game folder, Frontier's 90 shipped presets,
+**Where these came from matters.** All three sources so far — the game folder, Frontier's 90 factory binds files,
 and a public source repository — were free to read. [edrefcard.info](https://edrefcard.info/list) lists 3,888
 player-shared configs and would be a far richer sample, but **its `robots.txt` allows `/list` and disallows
 everything else, including `/configs/`**, so those files are not ours to crawl. Recorded here so the question
@@ -302,7 +302,7 @@ every value the earlier sources held.
 **The version attributes name the writer, not the game — corrected 2026-09-17.** An earlier draft of this
 section read a *4.5* in the corpus as a game version newer than any specimen. Alan challenged it, and he was
 right: **116 of the 117 files reading `MajorVersion="4" MinorVersion="5"` are `PresetName="GameGlass"`**, a
-third-party touchscreen controller app that writes its own preset and stamps its own number. Every version
+third-party touchscreen controller app that writes its own binds file and stamps its own number. Every version
 above 4.2 is the same story — `4.4` is one file named `EliteDangerousBinds`, `6.1` is two named `Virpil`,
 `3.1` and `3.2` are `HCS ...` files from a voice-pack vendor, and `5.0` is a handful of hand-named customs.
 **So the version attribute identifies whatever tool last wrote the file, and BindForge must not gate any
@@ -337,7 +337,7 @@ optional rather than assumed.
 | `HeadlookIncrement` | `0`, `0.25000000`, `0.33333334`, `0.50000000` | CONTINUOUS, SMALL, MEDIUM, LARGE — exactly four |
 
 **Two things written on 2026-09-16 were wrong, and are corrected above.** *Empty does not mean DOES NOTHING*
-on a panel-focus entry: the preset in the screenshots holds `FocusOption_Nothing`, which is what the screen
+on a panel-focus entry: the binds file in the screenshots holds `FocusOption_Nothing`, which is what the screen
 was reading, and no `FocusOption_Focus` exists anywhere in 48,354 files — so empty is most likely **Focuses
 the panel**, and is the one thing still worth one selection to confirm. *And the mouse family was not closed*:
 On Foot has tokens of its own, found in six files out of forty-eight thousand.
@@ -353,11 +353,11 @@ The corpus is the first evidence of what BindForge will actually be handed, and 
   button where a choice belongs.
 - **Eight files carry the game's *other* settings** — `Language`, `PilotIsFemale`, market filters, route
   plotting, HUD marker toggles — under a `.binds` extension.
-- **437 files have no `<Root>` element at all.** Measured: **363 are plain-text lists of preset names**, the
-  shape of a `StartPreset` file rather than a binds file, saved with the wrong extension; 47 are some other
+- **437 files have no `<Root>` element at all.** Measured: **363 are plain-text lists of BindNames**, the
+  shape of a preset file rather than a binds file, saved with the wrong extension; 47 are some other
   XML; and 27 are HTML pages, which are artifacts of however the corpus was collected rather than anything a
   user's game produced. **A bind editor will be handed files that are not bind files** — by far the most
-  likely being the `StartPreset` that sits beside them in the same folder.
+  likely being the preset file that sits beside them in the same folder.
 - **Structurally wrong files**: `Deadzone`, `Inverted`, `ToggleOn`, `Hold` and `Modifier1` appearing as top-level
   elements, where they belong inside a binding.
 - **Decimal formatting varies**: `0.00`, `0.0000`, `0.10000` alongside the usual eight places.
@@ -374,7 +374,7 @@ quite happily.
 
 | What is inside | Files | What it really is |
 |---|---|---|
-| Plain text, a few preset names per line | **363** | a **`StartPreset.start`** — the same shape as the specimen in `reference-data/` |
+| Plain text, a few BindNames per line | **363** | a **`StartPreset.start`** — the same shape as the specimen in `reference-data/` |
 | `<ActionMaps>` | 10 | **another game's** keybindings (Star Citizen's format) |
 | `<Bindings>`, `<FastEventsMapping>`, `<inputmap>`, `<profile>` | 16 | other tools' input configs and device profiles |
 | `<KeyboardLayout>` | 2 | a real binds file whose `<Root>` element has been truncated away |
@@ -387,12 +387,12 @@ grab. A player sharing their bindings picks it by accident — 363 times out of 
 
 **So BindForge identifies a file by its content, not its name.** On load it checks for a `<Root>` element
 carrying binding children, and when that is absent it **says what the file looks like instead** — *“this is a
-Start Preset list, not a bindings file”* beats *“could not parse file”, and beats an editor that opens empty. The two
+preset file, not a binds file”* beats *“could not parse file”, and beats an editor that opens empty. The two
 truncated binds files argue the same point from the other side: a file can be *nearly* right and still not be
 loadable.
 
 **And it never writes over one.** A file BindForge cannot identify is left exactly as it is: not repaired, not
-normalised, not replaced with a binds file wearing the same name. Someone's `StartPreset`, or another
+normalised, not replaced with a binds file wearing the same name. Someone's preset file, or another
 game's configuration, is not BindForge's to rewrite.
 
 *Open, and Alan's call: whether an unrecognised settings value earns a row in [Anomalies](#anomalies).* It fits

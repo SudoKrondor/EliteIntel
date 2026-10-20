@@ -1,8 +1,8 @@
-package elite.intel.bindforge.presets;
+package elite.intel.bindforge.preseteditor;
 
 import elite.intel.bindforge.io.StartPresetSections;
 import elite.intel.bindforge.model.BindingSection;
-import elite.intel.bindforge.presets.StartPresetComparison.Change;
+import elite.intel.bindforge.preseteditor.StartPresetComparison.Change;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

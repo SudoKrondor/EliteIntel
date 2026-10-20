@@ -41,7 +41,7 @@ added in 4.1, 29 in 4.2. A parser written for the newest version reads every old
 
 ---
 
-## `StartPreset` specimens — two generations, and a split preset in the wild
+## Preset file specimens — two generations, and a split preset file in the wild
 
 **`StartPreset.start`** — no version number, and a **single line**:
 
@@ -49,7 +49,7 @@ added in 4.1, 29 in 4.2. A parser written for the newest version reads every old
 Custom
 ```
 
-The pre-Odyssey generation: one preset for everything, before the file grew to four sections.
+The pre-Odyssey generation: one BindName for everything, before the file grew to four sections.
 
 **`StartPreset.4.start`** — four lines, and **not all the same**:
 
@@ -60,9 +60,9 @@ Custom                ← SRV
 Custom                ← On Foot
 ```
 
-**This is a real split-preset configuration.** [Preset Editor](../preset-editor.md) describes the split
-preset as "unusual but valid" and supports it on that basis; this is a specimen of one, with General on a
-different preset from the other three. It also confirms the four lines are General / Ship / SRV / On Foot in
+**This is a real split preset file.** [Preset Editor](../preset-editor.md) describes the split
+preset file as "unusual but valid" and supports it on that basis; this is a specimen of one, with General on a
+different BindName from the other three. It also confirms the four lines are General / Ship / SRV / On Foot in
 that fixed order.
 
 ---
