@@ -119,9 +119,11 @@ Built as `elite.intel.bindforge.preseteditor.StartPresetStore` and `StartPresetC
   game's file have nothing to compare against, and only Elite-Intel's own folder is written. A file already wiped
   then becomes the master; there is no earlier state to know it by.
 - **The draft** is `elite-intel/bindings/draft/StartPreset.4.start`, always four lines. **Save of values the same as
-  the master's leaves no draft at all**, so a draft that exists always holds a change — "has the draft changed" is
-  *the draft exists*, which is saved-but-not-applied and [not unsaved work](overview.md#built-as-a-ruling-not-code--2026-10-12-alan-core-c6).
-  The form the game's file gets is Apply's decision, not the draft's.
+  the master's leaves no draft at all**, so a draft that exists holds a change when it is saved. "Has the draft
+  changed" is *a draft that differs from the master*, which is saved-but-not-applied and [not unsaved work](overview.md#built-as-a-ruling-not-code--2026-10-12-alan-core-c6):
+  compared rather than taken from the draft existing, because P3's promote or P5's adopt can move the master under
+  a draft. **A draft with no master counts as changed** (Alan, 2026-10-20) — only something outside BindForge can
+  cause it, and saved work is never hidden. The form the game's file gets is Apply's decision, not the draft's.
 - **Values are compared, never bytes.** The game rewrites its files with nothing changed
   ([Freshness Checks](overview.md#freshness-checks)), so the single-line form equals four identical lines, and a
   line ending or byte-order mark changes nothing.
@@ -158,9 +160,9 @@ by that point there is real configuration to protect.
 
 | Piece | State |
 |---|---|
-| `BindingsLoader.findStartPresetFile(Path)` | **exists** — finds `StartPreset.*.start` by prefix and extension, so it copes with the version suffix. Reusable as-is. |
+| `BindingsLoader.findStartPresetFile(Path)` | **exists** — finds `StartPreset.*.start` by prefix and extension, so it copes with the version suffix. ~~Reusable as-is.~~ **Not for this screen** (2026-10-20): it takes whichever file the listing yields first, so with both generations present it can name the old one. Use `findLiveStartPresetFile` — see [How the four lines are read](#how-the-four-lines-are-read--settled-2026-10-12-alan-foundation-f1). |
 | `BindingsLoader.getActivePresetName()` | **exists, and reads one line** — see below |
-| Writing the file | **does not exist.** Nothing in the codebase writes `StartPreset.*.start`. |
+| Writing the file | **does not exist.** Nothing in the codebase writes `StartPreset.*.start`. *(2026-10-20: still true of the game's file. P2's `StartPresetStore` writes only Elite-Intel's own master and draft; writing the game's file is P3.)* |
 | Backup coverage | `PlayerBackupService` already includes the file, and `SetupCheck` reads it. |
 
 **`getActivePresetName()` collapses the four sections into one.** It takes the first non-empty line, and its

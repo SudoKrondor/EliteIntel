@@ -98,6 +98,23 @@ class StartPresetComparisonTest {
         assertThrows(IllegalArgumentException.class, () -> comparison.line(BindingSection.OTHER));
     }
 
+    @Test
+    void onlyTheFourSectionsInFileOrderMakeAComparison() {
+        List<StartPresetComparison.Line> four = StartPresetComparison.of(MASTER, MASTER, MASTER).lines();
+
+        assertThrows(IllegalArgumentException.class, () -> new StartPresetComparison(four.subList(0, 3)));
+        assertThrows(IllegalArgumentException.class,
+                () -> new StartPresetComparison(List.of(four.get(1), four.getFirst(), four.get(2), four.get(3))));
+        assertThrows(IllegalArgumentException.class,
+                () -> new StartPresetComparison(List.of(four.getFirst(), four.get(1), four.get(1), four.get(3))));
+    }
+
+    @Test
+    void aLinesChangeComesFromItsValues() {
+        assertEquals(Change.CONFLICT, new StartPresetComparison.Line(BindingSection.SHIP, "A", "B", "C").change());
+        assertEquals(Change.BOTH_SAME, new StartPresetComparison.Line(BindingSection.SHIP, "A", "B", "B").change());
+    }
+
     private static StartPresetSections four(String general, String ship, String srv, String onFoot) {
         return new StartPresetSections(general, ship, srv, onFoot, false);
     }

@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -100,16 +101,19 @@ public class StartPresetStore {
      * Save: the four values become the draft. Values the same as the master's, line for line, leave no draft at
      * all, so a draft that exists always holds a change.
      *
-     * @throws IllegalArgumentException when a value has a line break or surrounding spaces, which would not read
-     *                                  back as written
+     * @throws IllegalArgumentException when the values would not read back as written - a line break, surrounding
+     *                                  spaces, a leading byte-order mark, anything the reader treats differently
      * @throws IllegalStateException    when there is no master to save against
      */
     public void save(StartPresetSections sections) throws IOException {
         Objects.requireNonNull(sections, "sections");
-        for (String value : StartPresetLines.values(sections)) {
-            if (!value.equals(value.trim()) || value.contains("\n") || value.contains("\r")) {
-                throw new IllegalArgumentException("Not a StartPreset.4.start line: '" + value + "'");
-            }
+        String text = fourLines(sections);
+        // WHY: checked by reading the text back rather than by listing the reader's rules here, so the check
+        // cannot drift from StartPresetSections.parse when that changes.
+        List<String> readBack = StartPresetLines.values(StartPresetSections.parse(text));
+        if (!readBack.equals(StartPresetLines.values(sections))) {
+            throw new IllegalArgumentException("Not StartPreset.4.start lines: " + StartPresetLines.values(sections)
+                    + " would read back as " + readBack);
         }
         StartPresetSections master = master().orElseThrow(
                 () -> new IllegalStateException("No StartPreset.4.start master to save a draft against"));
@@ -118,7 +122,7 @@ public class StartPresetStore {
             return;
         }
         Files.createDirectories(draftFile.getParent());
-        AtomicFiles.write(draftFile, fourLines(sections).getBytes(StandardCharsets.UTF_8));
+        AtomicFiles.write(draftFile, text.getBytes(StandardCharsets.UTF_8));
         log.info("StartPreset.4.start draft saved: {}", sections);
     }
 
@@ -140,6 +144,9 @@ public class StartPresetStore {
         if (draft.isEmpty()) {
             return false;
         }
+        // WHY: compared, not just "a draft exists" - Save never leaves a draft equal to the master, but P3's promote
+        // or P5's adopt can move the master under an existing draft. A draft with no master, which only something
+        // outside BindForge can cause, counts as a change, so saved work is never hidden (Alan, 2026-10-20).
         Optional<StartPresetSections> master = master();
         return master.isEmpty() || !StartPresetLines.same(draft.get(), master.get());
     }

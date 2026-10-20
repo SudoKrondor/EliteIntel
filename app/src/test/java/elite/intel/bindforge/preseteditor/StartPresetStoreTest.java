@@ -156,7 +156,22 @@ class StartPresetStoreTest {
                 () -> store.save(new StartPresetSections("A\nB", "B", "C", "D", false)));
         assertThrows(IllegalArgumentException.class,
                 () -> store.save(new StartPresetSections(" A", "B", "C", "D", false)));
+        assertThrows(IllegalArgumentException.class,
+                () -> store.save(new StartPresetSections("A\rB", "B", "C", "D", false)));
+        assertThrows(IllegalArgumentException.class,
+                () -> store.save(new StartPresetSections("\uFEFFA", "B", "C", "D", false)));
         assertTrue(store.draft().isEmpty());
+    }
+
+    /** Only something outside BindForge leaves a draft with no master; the draft still counts, so it is not hidden. */
+    @Test
+    void aDraftWithNoMasterCountsAsAChange() throws IOException {
+        Path draft = workingDir.resolve("draft").resolve("StartPreset.4.start");
+        Files.createDirectories(draft.getParent());
+        Files.writeString(draft, "A\nB\nC\nD\n", StandardCharsets.UTF_8);
+
+        assertTrue(store().master().isEmpty());
+        assertTrue(store().hasDraftChanges());
     }
 
     @Test

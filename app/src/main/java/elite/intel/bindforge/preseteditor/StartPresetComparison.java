@@ -34,13 +34,46 @@ public record StartPresetComparison(List<Line> lines) {
     }
 
     /**
-     * One line's three values and what they add up to.
+     * One line's three values. What they add up to is worked out from them, never stored, so a line cannot claim
+     * a {@link Change} its values do not support.
      */
-    public record Line(BindingSection section, String master, String draft, String game, Change change) {
+    public record Line(BindingSection section, String master, String draft, String game) {
+
+        public Line {
+            Objects.requireNonNull(section, "section");
+            Objects.requireNonNull(master, "master");
+            Objects.requireNonNull(draft, "draft");
+            Objects.requireNonNull(game, "game");
+        }
+
+        /**
+         * What happened to this line since the master.
+         */
+        public Change change() {
+            boolean draftMoved = !draft.equals(master);
+            boolean gameMoved = !game.equals(master);
+            if (!draftMoved && !gameMoved) {
+                return Change.UNCHANGED;
+            }
+            if (!gameMoved) {
+                return Change.DRAFT_ONLY;
+            }
+            if (!draftMoved) {
+                return Change.GAME_ONLY;
+            }
+            return draft.equals(game) ? Change.BOTH_SAME : Change.CONFLICT;
+        }
     }
 
+    /**
+     * @throws IllegalArgumentException unless the lines are exactly General, Ship, SRV and On Foot, in that order
+     */
     public StartPresetComparison {
         lines = List.copyOf(lines);
+        List<BindingSection> sections = lines.stream().map(Line::section).toList();
+        if (!sections.equals(StartPresetLines.SECTIONS)) {
+            throw new IllegalArgumentException("A comparison needs one line per section, in file order, not " + sections);
+        }
     }
 
     /**
@@ -54,7 +87,7 @@ public record StartPresetComparison(List<Line> lines) {
         Objects.requireNonNull(draft, "draft");
         Objects.requireNonNull(game, "game");
         List<Line> lines = StartPresetLines.SECTIONS.stream()
-                .map(section -> line(section, master.forSection(section), draft.forSection(section),
+                .map(section -> new Line(section, master.forSection(section), draft.forSection(section),
                         game.forSection(section)))
                 .toList();
         return new StartPresetComparison(lines);
@@ -89,23 +122,5 @@ public record StartPresetComparison(List<Line> lines) {
      */
     public List<Line> conflicts() {
         return lines.stream().filter(line -> line.change() == Change.CONFLICT).toList();
-    }
-
-    private static Line line(BindingSection section, String master, String draft, String game) {
-        boolean draftMoved = !draft.equals(master);
-        boolean gameMoved = !game.equals(master);
-        Change change;
-        if (!draftMoved && !gameMoved) {
-            change = Change.UNCHANGED;
-        } else if (!gameMoved) {
-            change = Change.DRAFT_ONLY;
-        } else if (!draftMoved) {
-            change = Change.GAME_ONLY;
-        } else if (draft.equals(game)) {
-            change = Change.BOTH_SAME;
-        } else {
-            change = Change.CONFLICT;
-        }
-        return new Line(section, master, draft, game, change);
     }
 }

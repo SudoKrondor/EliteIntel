@@ -38,6 +38,7 @@ final class BindsContent {
     private static final String PRESET_NAME = "PresetName";
     private static final Set<String> BINDING_SLOTS = Set.of("Primary", "Secondary", "Binding");
     private static final int MAX_PRESET_FILE_LINES = 4;
+    private static final char BOM = '\uFEFF';
 
     private BindsContent() {
     }
@@ -130,7 +131,7 @@ final class BindsContent {
     }
 
     private static String withoutBom(String text) {
-        return text.startsWith("﻿") ? text.substring(1) : text;
+        return !text.isEmpty() && text.charAt(0) == BOM ? text.substring(1) : text;
     }
 
     // WHY: the same settings as DeviceFileXml - external entities and DOCTYPEs off. Every file in the folder is
