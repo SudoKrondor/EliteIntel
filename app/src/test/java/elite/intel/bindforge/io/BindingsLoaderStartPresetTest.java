@@ -62,8 +62,10 @@ class BindingsLoaderStartPresetTest {
     void preOdysseyFileAloneIsReadAsOnePresetForAllFour() throws IOException {
         copySpecimen("StartPreset.start");
 
-        assertEquals(Optional.of(new StartPresetSections("Custom", "Custom", "Custom", "Custom", true)),
-                loader.readStartPresetSections(bindingsDir));
+        Optional<StartPresetSections> sections = loader.readStartPresetSections(bindingsDir);
+
+        assertEquals(Optional.of(new StartPresetSections("Custom", "Custom", "Custom", "Custom", true)), sections);
+        assertTrue(sections.orElseThrow().singleLine());
     }
 
     @Test

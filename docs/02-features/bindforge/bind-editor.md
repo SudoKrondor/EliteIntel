@@ -374,14 +374,14 @@ quite happily.
 
 | What is inside | Files | What it really is |
 |---|---|---|
-| Plain text, a few BindNames per line | **363** | a **`StartPreset.start`** — the same shape as the specimen in `reference-data/` |
+| Plain text, a few BindNames per line | **363** | a **preset file** (`StartPreset.start` or `StartPreset.4.start`) — the same shape as the specimens in `reference-data/` |
 | `<ActionMaps>` | 10 | **another game's** keybindings (Star Citizen's format) |
 | `<Bindings>`, `<FastEventsMapping>`, `<inputmap>`, `<profile>` | 16 | other tools' input configs and device profiles |
 | `<KeyboardLayout>` | 2 | a real binds file whose `<Root>` element has been truncated away |
 | `<plist>`, `<FilesMatch>`, `<li>`, hand-made XML | ~14 | a macOS property list, an Apache config snippet, HTML fragments, one-offs |
 | `<!DOCTYPE html>` | 27 | artifacts of how the corpus was collected, not player files |
 
-**The 363 are the ones that matter, and they are not a mystery:** `StartPreset.start` lives in the **same
+**The 363 are the ones that matter, and they are not a mystery:** the preset file lives in the **same
 folder** as the `.binds` files, with a similar name and a similar job, so it is the obvious wrong file to
 grab. A player sharing their bindings picks it by accident — 363 times out of 48,354.
 

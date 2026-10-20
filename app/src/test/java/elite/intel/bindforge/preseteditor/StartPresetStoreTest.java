@@ -174,6 +174,22 @@ class StartPresetStoreTest {
         assertTrue(store().hasDraftChanges());
     }
 
+    /** Why hasDraftChanges compares rather than asking whether a draft exists: adopt can move the master to it. */
+    @Test
+    void aDraftTheMasterMovedToIsNoLongerAChange() throws IOException {
+        copySpecimen("StartPreset.4.start");
+        StartPresetStore store = store();
+        store.masterOrSeedFrom(bindingsDir);
+        store.save(new StartPresetSections("A", "B", "C", "D", false));
+        assertTrue(store.hasDraftChanges());
+
+        Files.writeString(workingDir.resolve("master").resolve("StartPreset.4.start"), "A\r\nB\r\nC\r\nD",
+                StandardCharsets.UTF_8);
+
+        assertTrue(store.draft().isPresent());
+        assertFalse(store.hasDraftChanges());
+    }
+
     @Test
     void droppingTheDraftReturnsToTheMaster() throws IOException {
         copySpecimen("StartPreset.4.start");
@@ -185,6 +201,23 @@ class StartPresetStoreTest {
 
         assertTrue(store.draft().isEmpty());
         assertEquals(Optional.of(SPECIMEN), store.draftOrMaster());
+        assertFalse(store.hasDraftChanges());
+    }
+
+    @Test
+    void promoteMakesTheGameFileTheMasterAndDropsTheDraft() throws IOException {
+        copySpecimen("StartPreset.4.start");
+        StartPresetStore store = store();
+        store.masterOrSeedFrom(bindingsDir);
+        store.save(new StartPresetSections("A", "B", "C", "D", false));
+        Path game = bindingsDir.resolve("StartPreset.4.start");
+        Files.writeString(game, "A\r\nB\r\nC\r\nD", StandardCharsets.UTF_8);
+
+        store.promote(game);
+
+        assertArrayEquals(Files.readAllBytes(game),
+                Files.readAllBytes(workingDir.resolve("master").resolve("StartPreset.4.start")));
+        assertTrue(store.draft().isEmpty());
         assertFalse(store.hasDraftChanges());
     }
 

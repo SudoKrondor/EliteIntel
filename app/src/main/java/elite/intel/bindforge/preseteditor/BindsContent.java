@@ -1,5 +1,6 @@
 package elite.intel.bindforge.preseteditor;
 
+import elite.intel.bindforge.io.StartPresetSections;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -22,7 +23,7 @@ import java.util.Set;
  * Whether a file with a {@code .binds} name is a binds file the game can load, judged by what is in it.
  * <p>
  * <strong>A {@code .binds} name does not make it a binds file</strong> (bind-editor.md, 2026-09-17): 445 of 48,354
- * shared files were something else, 363 of them a {@code StartPreset.start} picked by mistake. A binds file is a
+ * shared files were something else, 363 of them a preset file picked by mistake. A binds file is a
  * {@code <Root>} element with at least one binding in it - a child holding a {@code <Primary>},
  * {@code <Secondary>} or {@code <Binding>}. Settings alone, such as {@code <KeyboardLayout>}, do not count.
  * <p>
@@ -38,7 +39,6 @@ final class BindsContent {
     private static final String PRESET_NAME = "PresetName";
     private static final Set<String> BINDING_SLOTS = Set.of("Primary", "Secondary", "Binding");
     private static final int MAX_PRESET_FILE_LINES = 4;
-    private static final char BOM = '\uFEFF';
 
     private BindsContent() {
     }
@@ -70,7 +70,7 @@ final class BindsContent {
     }
 
     static Judgement judge(String fileName, byte[] content) {
-        String text = withoutBom(new String(content, StandardCharsets.UTF_8)).strip();
+        String text = StartPresetSections.withoutByteOrderMark(new String(content, StandardCharsets.UTF_8)).strip();
         if (text.isEmpty()) {
             return new NotOffered(NotOfferedReason.EMPTY, "");
         }
@@ -128,10 +128,6 @@ final class BindsContent {
             }
         }
         return false;
-    }
-
-    private static String withoutBom(String text) {
-        return !text.isEmpty() && text.charAt(0) == BOM ? text.substring(1) : text;
     }
 
     // WHY: the same settings as DeviceFileXml - external entities and DOCTYPEs off. Every file in the folder is

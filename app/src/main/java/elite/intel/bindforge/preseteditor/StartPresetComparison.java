@@ -50,18 +50,27 @@ public record StartPresetComparison(List<Line> lines) {
          * What happened to this line since the master.
          */
         public Change change() {
-            boolean draftMoved = !draft.equals(master);
-            boolean gameMoved = !game.equals(master);
-            if (!draftMoved && !gameMoved) {
-                return Change.UNCHANGED;
+            if (draftMoved() && gameMoved()) {
+                return draft.equals(game) ? Change.BOTH_SAME : Change.CONFLICT;
             }
-            if (!gameMoved) {
+            if (draftMoved()) {
                 return Change.DRAFT_ONLY;
             }
-            if (!draftMoved) {
+            if (gameMoved()) {
                 return Change.GAME_ONLY;
             }
-            return draft.equals(game) ? Change.BOTH_SAME : Change.CONFLICT;
+            return Change.UNCHANGED;
+        }
+
+        /**
+         * Whether the game's line differs from the master's.
+         */
+        public boolean gameMoved() {
+            return !game.equals(master);
+        }
+
+        private boolean draftMoved() {
+            return !draft.equals(master);
         }
     }
 
@@ -114,7 +123,7 @@ public record StartPresetComparison(List<Line> lines) {
      * Whether the game's file differs from the master on any line.
      */
     public boolean gameChanged() {
-        return lines.stream().anyMatch(line -> !line.game().equals(line.master()));
+        return lines.stream().anyMatch(Line::gameMoved);
     }
 
     /**

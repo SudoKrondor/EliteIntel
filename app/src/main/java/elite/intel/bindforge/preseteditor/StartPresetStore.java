@@ -30,6 +30,9 @@ public class StartPresetStore {
 
     private static final Logger log = LogManager.getLogger(StartPresetStore.class);
 
+    // WHY: Elite-Intel's own copies keep one fixed name, whatever generation the game's file is. They are never
+    // written back by name: Apply writes the file findLiveStartPresetFile names, so a version bump on the game's
+    // side changes nothing here.
     static final String FILE_NAME = "StartPreset.4.start";
 
     private final Path masterFile;
@@ -117,7 +120,7 @@ public class StartPresetStore {
         }
         StartPresetSections master = master().orElseThrow(
                 () -> new IllegalStateException("No StartPreset.4.start master to save a draft against"));
-        if (StartPresetLines.same(sections, master)) {
+        if (sections.equals(master)) {
             dropDraft();
             return;
         }
@@ -136,6 +139,24 @@ public class StartPresetStore {
     }
 
     /**
+     * Apply's last step: the game's file as it now stands becomes the master, as a byte copy, and the draft is
+     * dropped, so the draft is the master again.
+     * <p>
+     * WHY the master first: a draft dropped before the master moved would leave the old master showing as the
+     * screen's state. A failure between the two leaves the draft standing against the new master: still saved work,
+     * shown as such, and nothing lost.
+     *
+     * @param gameFile the game's {@code StartPreset} file, after Apply wrote it or found it already holding the
+     *                 values
+     */
+    void promote(Path gameFile) throws IOException {
+        Files.createDirectories(masterFile.getParent());
+        AtomicFiles.copy(gameFile, masterFile);
+        log.info("StartPreset.4.start master is now {}", gameFile);
+        dropDraft();
+    }
+
+    /**
      * Whether a saved draft differs from the master - saved, not yet applied. This is not unsaved work: the
      * screen's dropdowns hold that.
      */
@@ -148,7 +169,7 @@ public class StartPresetStore {
         // or P5's adopt can move the master under an existing draft. A draft with no master, which only something
         // outside BindForge can cause, counts as a change, so saved work is never hidden (Alan, 2026-10-20).
         Optional<StartPresetSections> master = master();
-        return master.isEmpty() || !StartPresetLines.same(draft.get(), master.get());
+        return master.isEmpty() || !draft.get().equals(master.get());
     }
 
     private static Optional<StartPresetSections> read(Path file) throws IOException {
@@ -159,7 +180,7 @@ public class StartPresetStore {
     }
 
     // WHY: four lines even when all four match, so a draft never reads back as the single-line form; the form the
-    // game's file gets is Apply's decision, not the draft's.
+    // game's file gets is Apply's decision, not the draft's (StartPresetApply#gameForm).
     private static String fourLines(StartPresetSections sections) {
         return sections.general() + "\n" + sections.ship() + "\n" + sections.srv() + "\n" + sections.onFoot() + "\n";
     }

@@ -395,7 +395,7 @@ Consequences of that limit, so they are chosen rather than discovered:
 ## What a `.binds` File Might Not Be
 
 **Added 2026-09-17, measured rather than imagined.** Across 48,354 player-shared files, **445 carry a
-`.binds` extension and are not bindings files** — 363 of them a `StartPreset.start` picked by mistake from the
+`.binds` extension and are not bindings files** — 363 of them a preset file picked by mistake from the
 same folder, the rest other games' configs, device profiles, truncated files and stray XML. Full breakdown in
 [Bind Editor](bind-editor.md#a-binds-name-does-not-make-it-a-binds-file--2026-09-17).
 

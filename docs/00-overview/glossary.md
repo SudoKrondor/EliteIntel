@@ -18,7 +18,7 @@ as unresolved.
 | StarVizion | (unchanged) |
 | ~~EDO StellarCore~~ | EDO NexusCore, NexusCore, Nexus Core, Stellar Core, CoreDock — **the former host, replaced by Elite-Intel** |
 | binds file | preset, `.binds` preset; shipped / stock / factory preset (now *factory binds file*) — **settled 2026-10-19**, see [The Input Environment §2](input-environment.md#binds-file-preset-file-bindname--settled-2026-10-19-alan) |
-| preset file | Active Preset file, `StartPreset`, `StartPreset.#.start` (now always `StartPreset.4.start`) |
+| preset file | Active Preset file, `StartPreset`, `StartPreset.#.start` (the number is the game's version — `StartPreset.4.start` today, and it changes when Frontier bumps it; see [The Input Environment §2](input-environment.md#binds-file-preset-file-bindname--settled-2026-10-19-alan)) |
 | BindName | preset name |
 
 ## Host Terms

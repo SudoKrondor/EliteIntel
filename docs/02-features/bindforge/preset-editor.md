@@ -25,7 +25,7 @@ sides is a conflict.
 
 ## Layout
 
-Four dropdowns — General, Ship, SRV, On Foot Controls — each populated with the **BindNames** of the binds files in the bindings folder, defaulting to whatever the preset file currently specifies. **A file is included on the strength of its contents, not its extension** (added 2026-09-17): the folder demonstrably holds files with a `.binds` name that are not binds files at all — most often a `StartPreset.start` picked by mistake, since it sits right beside them — and offering one as a binds file would point a section at something the game cannot load. See [what a `.binds` file might not be](file-manager.md#what-a-binds-file-might-not-be). A "Set All to Same" dropdown-plus-button bulk-sets all four at once; this is a shortcut, not a separate commit path — Save is still required afterward.
+Four dropdowns — General, Ship, SRV, On Foot Controls — each populated with the **BindNames** of the binds files in the bindings folder, defaulting to whatever the preset file currently specifies. **A file is included on the strength of its contents, not its extension** (added 2026-09-17): the folder demonstrably holds files with a `.binds` name that are not binds files at all — most often a preset file picked by mistake, since it sits right beside them — and offering one as a binds file would point a section at something the game cannot load. See [what a `.binds` file might not be](file-manager.md#what-a-binds-file-might-not-be). A "Set All to Same" dropdown-plus-button bulk-sets all four at once; this is a shortcut, not a separate commit path — Save is still required afterward.
 
 **The dropdowns also offer the factory binds files** (settled 2026-10-17, Alan, P1) — see [the BindName list](#the-bindname-list--settled-2026-10-17-alan-p1).
 
@@ -102,8 +102,14 @@ A live, informational banner (updates as the dropdowns change, not only on save)
 
 ## Sync Badge
 
-- **IN SYNC** (green) — the draft matches the live preset file.
-- **DRAFT** (amber) — the draft differs from the live file, whether or not those edits have been saved.
+- **IN SYNC** (green) — no saved draft differs from the master.
+- **DRAFT** (amber) — a saved draft differs from the master: saved, not yet applied
+  ([`hasDraftChanges()`](#the-master-and-the-draft--settled-2026-10-18-alan-p2)).
+
+**Settled 2026-10-20 (Alan): the badge compares the draft with the master, not with the game's file.** It says
+whether there is work for Apply to do. A change the game made to its own file is a separate signal — the three-way
+compare's *game only* lines, shown by [change detection](#sync-badge) (P5) — so a game rewrite never lights DRAFT
+on its own, and edits the user has not yet saved are the dropdowns' state, not the badge's.
 
 **Shown as coloured text, not a pill** (settled 2026-09-21) — the state word in its colour, the way the AI tab's
 Quick Status panel shows KEYMAP — IN SYNC. See [the UI component map](ui-component-map.md#2-statusbadge-draws-a-pill).
@@ -131,6 +137,33 @@ Built as `elite.intel.bindforge.preseteditor.StartPresetStore` and `StartPresetC
   only, game only, both to the same value, or both to different values. Only the last is a conflict.
 - **Discard below is the screen's** — the dropdowns back to the draft. The store's only counterpart is dropping the
   draft, so it is the master again, which Apply's promote needs.
+
+### Apply — settled 2026-10-20 (Alan, P3)
+
+Built as `elite.intel.bindforge.preseteditor.StartPresetApply`.
+
+- **Merged per line, as the four lines are independent.** A line the draft changed takes the draft's value; a line
+  only the game changed keeps the game's; a line both changed to the same value takes it. **A line both changed to
+  different values is a conflict, and Apply writes nothing** until it is settled ([change detection](#sync-badge),
+  P5). Refusing whenever the game's file moved at all, as `.binds` Apply does, was rejected: it would block Apply on a
+  change to a line the draft never touched.
+- **Every one of the four lines must name a binds file** that the [BindName list](#the-bindname-list--settled-2026-10-17-alan-p1)
+  offers — a line the draft did not change included, and **an empty line is refused too**. The failure is silent in
+  the game, so Apply refuses rather than writes it, and names the sections.
+- **The game's form: always four lines, CRLF between them, no newline after the last** — the specimen byte for byte.
+  A single-line file is written as four lines; the single-line form is pre-Odyssey and only the Live game is
+  supported. Written to the file `findLiveStartPresetFile` names, through `AtomicFiles`.
+- **Values the game's file already holds are not written.** Nothing goes to Edit History; the game's file becomes the
+  master as it is, and the draft is dropped.
+- **No draft, nothing applied** — even when the game's file has changed. Taking a game change into the master is
+  adopt (P5), never a side effect of Apply. A draft with no master, and no game preset file at all, are refused.
+- **Edit History:** the replaced file is copied to `AppPaths.getBindingsBackupDir()` — beside the `.binds` Apply
+  copies, as `StartPreset.4.start.<yyyyMMdd-HHmmss>.bak` — and pruned to the Edit History retention, before the write.
+  No copy, no write.
+- **Then the written file becomes the master** (a byte copy) and the draft is dropped.
+- **Not done by Apply: telling the assistant.** `BindingsMonitor` reacts only to `.binds` names, so the assistant does
+  not reload the newly active General binds file after Apply — nor after the game changes the preset file. That is a
+  V1.1 defect and is fixed on `V1.1-Release`, not here.
 
 ## Discard
 
@@ -162,7 +195,7 @@ by that point there is real configuration to protect.
 |---|---|
 | `BindingsLoader.findStartPresetFile(Path)` | **exists** — finds `StartPreset.*.start` by prefix and extension, so it copes with the version suffix. ~~Reusable as-is.~~ **Not for this screen** (2026-10-20): it takes whichever file the listing yields first, so with both generations present it can name the old one. Use `findLiveStartPresetFile` — see [How the four lines are read](#how-the-four-lines-are-read--settled-2026-10-12-alan-foundation-f1). |
 | `BindingsLoader.getActivePresetName()` | **exists, and reads one line** — see below |
-| Writing the file | **does not exist.** Nothing in the codebase writes `StartPreset.*.start`. *(2026-10-20: still true of the game's file. P2's `StartPresetStore` writes only Elite-Intel's own master and draft; writing the game's file is P3.)* |
+| Writing the file | ~~**does not exist.**~~ **Built 2026-10-20 (P3)** as `preseteditor.StartPresetApply` — see [Apply](#apply--settled-2026-10-20-alan-p3). The only writer of the game's `StartPreset.*.start`. |
 | Backup coverage | `PlayerBackupService` already includes the file, and `SetupCheck` reads it. |
 
 **`getActivePresetName()` collapses the four sections into one.** It takes the first non-empty line, and its

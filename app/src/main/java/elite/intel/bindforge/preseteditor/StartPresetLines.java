@@ -19,14 +19,6 @@ final class StartPresetLines {
     private StartPresetLines() {
     }
 
-    /**
-     * Whether two files name the same BindName on every line. The single-line form and four identical lines are the
-     * same (Alan, 2026-10-18, P2): the game rewrites its files with nothing changed, and only the values matter.
-     */
-    static boolean same(StartPresetSections a, StartPresetSections b) {
-        return values(a).equals(values(b));
-    }
-
     static List<String> values(StartPresetSections sections) {
         return SECTIONS.stream().map(sections::forSection).toList();
     }

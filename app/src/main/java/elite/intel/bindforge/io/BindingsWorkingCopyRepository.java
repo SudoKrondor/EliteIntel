@@ -10,7 +10,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -74,7 +73,7 @@ public class BindingsWorkingCopyRepository {
         log.info("No working copy for '{}', importing from game file {}", presetFileName, gameFile);
         Files.createDirectories(workingCopy.getParent());
         // Byte-perfect copy preserves BOM and any encoding details of the original.
-        Files.copy(gameFile, workingCopy);
+        AtomicFiles.copy(gameFile, workingCopy);
         writeBaselineHash(presetFileName, sha256(gameFile));
         log.info("Working copy created at {}", workingCopy);
         return workingCopy;
@@ -94,7 +93,7 @@ public class BindingsWorkingCopyRepository {
         if (Files.exists(workingCopy)) {
             Path bak = workingCopy.resolveSibling(workingCopy.getFileName() + ".bak");
             try {
-                Files.copy(workingCopy, bak, StandardCopyOption.REPLACE_EXISTING);
+                AtomicFiles.copy(workingCopy, bak);
             } catch (IOException e) {
                 log.warn("Could not create .bak for '{}'  proceeding: {}", workingCopy.getFileName(), e.getMessage());
             }

@@ -1,5 +1,8 @@
 # Foundation — V1.2's changes to files V1.1 ships
 
+> **Closed 2026-10-20.** Krondor repealed the foundation branch (*"we are now solid on 1.2"*): shared files are
+> now changed on `V1.2-BindForge`. This brief is the record of F1-F4; do not start a foundation session.
+
 **Not a tab, and not V1.2 code.** These are the additions to existing shared files that later BindForge slices
 cannot be built without, made on **`V1.1-Release-bf-foundation`**, a branch off `V1.1-Release`. Krondor checks
 each change and merges it into `V1.1-Release`, and it reaches `V1.2-BindForge` by the same merge-up as his own
@@ -83,7 +86,7 @@ slices it unblocks still wait; the merge-up reaching `V1.2-BindForge` is what re
 
 ## Settled — and where it is recorded
 
-- **V1.2 changes to existing shared files go on the foundation branch.** [README](README.md#the-foundation-branch--how-a-v12-feature-changes-a-file-v11-ships-krondor-2026-10-12), `CLAUDE.md`, the platform map.
+- ~~V1.2 changes to existing shared files go on the foundation branch.~~ Repealed 2026-10-20 (Krondor); they go on `V1.2-BindForge`. `CLAUDE.md`.
 - **The four-line read is a second method, not a change to `getActivePresetName()`** — it answers a different
   question for a different caller. [preset-editor.md](../02-features/bindforge/preset-editor.md#what-exists-in-code-today--checked-2026-09-17)
 - **A line holds the BindName; strip a version suffix only when one is there** (`Custom.4.2 (2).binds` has

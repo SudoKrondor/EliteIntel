@@ -29,11 +29,9 @@ Krondor's work is not reviewed as ours.
 ## Rules every section inherits
 
 - **`CLAUDE.md`**, and [WORKING-RULES.md](../../WORKING-RULES.md) — spec first, sources table, terminology.
-- **Shared code changes on `V1.1-Release`, via Krondor, and merges up.** That covers `bindforge.io`,
-  `bindforge.rules`, `elite.intel.io` and `AppPaths` — anything both release lines call. A V1.2 feature that
-  needs one of them is built on [the foundation branch](#the-foundation-branch--how-a-v12-feature-changes-a-file-v11-ships-krondor-2026-10-12),
-  never worked around, and the slice waits until it has merged up. **A new class only V1.2 calls is
-  not a change to shared code** and is built on `V1.2-BindForge` (Alan, 2026-10-11 — [the platform map](../01-host-integration/elite-intel-platform-map.md#the-shared-write-path-is-eliteintelio--built-2026-10-03)).
+- **Shared code is changed on `V1.2-BindForge`** (Krondor, 2026-10-20). `bindforge.io`, `bindforge.rules`,
+  `elite.intel.io` and `AppPaths` are edited here like any V1.2 code; the merge-up rule and the foundation branch
+  below are repealed ([CLAUDE.md](../../CLAUDE.md#branching-model)).
 - **`elite.intel.ai.hands` is keystroke execution only.** BindForge code never goes there.
 - **Migrations:** the next free number in BindForge's band, `12000–12499`. Never edit an applied one.
 -
@@ -66,6 +64,9 @@ first slice. Written the week its section starts, it is accurate; written months
 **The Bind Editor is two sections** because its spec is longer than the other three combined.
 
 ## The foundation branch — how a V1.2 feature changes a file V1.1 ships (Krondor, 2026-10-12)
+
+> **Repealed 2026-10-20 (Krondor: *"we are now solid on 1.2"*).** Shared files are changed on `V1.2-BindForge`.
+> What follows is the history of F1-F4, kept because the specs cite it.
 
 **The question was:** Preset Editor's first job is reading all four lines of `StartPreset.4.start` —
 `BindingsLoader.getActivePresetName()` reads only the first — and the Bind Editor widens `BindingsWriter` and
