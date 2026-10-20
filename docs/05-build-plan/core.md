@@ -41,7 +41,7 @@ Growing it touches `bindforge.io` — see C4.
   [file-manager.md](../02-features/bindforge/file-manager.md#edit-history)
 - **The game parses `DeviceMappings.xml` as XML and leaves the layout alone.** Formatting is ours to choose;
   content is not — preserve every child element. [Domain doc §1.2c and §1.3](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12c-the-game-parses-it-as-xml-and-does-not-reformat-it--measured-2026-10-03)
-- **Shared code changes on `V1.1-Release` and merges up.** [CLAUDE.md](../../CLAUDE.md), and the platform map above.
+- **Shared code is changed on `V1.2-BindForge`** (Krondor, 2026-10-20). [CLAUDE.md](../../CLAUDE.md#branching-model).
 - **A read never claims an entry is the user's.** `ProvenanceRule`'s javadoc;
   [device-provenance.md](../03-data-models/device-provenance.md)
 - **Never push a master over a game file of a higher version.** [overview.md](../02-features/bindforge/overview.md#new-slots-are-the-only-thing-an-update-brings--settled-2026-09-24)
@@ -76,9 +76,8 @@ Growing it touches `bindforge.io` — see C4.
 
 - **New BindForge code** goes under `elite.intel.bindforge` — `devicefiles` (C1 writes device files), `devices`, `install`, or a new package if Apply
   wants one. Decide in the sources table.
-- **`bindforge.io`, `bindforge.rules`, `elite.intel.io`, `AppPaths`** are shared with V1.1. Changes to them
-  go on [the foundation branch](README.md#the-foundation-branch--how-a-v12-feature-changes-a-file-v11-ships-krondor-2026-10-12)
-  (Krondor, 2026-10-12); a slice that needs one waits until that change has merged up.
+- **`bindforge.io`, `bindforge.rules`, `elite.intel.io`, `AppPaths`** are shared with V1.1 but changed here
+  (Krondor, 2026-10-20 - the foundation branch is repealed).
 - **`ai.hands`** — never.
 
 ## Slices
@@ -88,10 +87,10 @@ Growing it touches `bindforge.io` — see C4.
 | C1 | **Device-file write** — merge the master's elements into each installation's `DeviceMappings.xml` and `.buttonMap`; keep unique prior content; atomic replace; prune; per installation, reported | **done 2026-10-04** |
 | C2 | **Device draft** — where unapplied device edits live; SAVE writes the draft, APPLY promotes it | **done 2026-10-04** |
 | C3 | **Startup check for device files** — each installation against the master: unchanged, wiped (matches the stock reference), or edited; adopt or revert | **done 2026-10-05** |
-| C4 | **`.binds` and `StartPreset`** — whole-file master, Edit History on apply, the version-bump merge | ready — scoped 2026-10-12 ([the split](../02-features/bindforge/overview.md#where-the-binds-and-startpreset-master-lives--settled-2026-10-12-alan-foundation-f3)); its one V1.1 change, `BindingsApplyService.applyFrom`, merged up 2026-10-13. The rest is new V1.2 classes |
+| C4 | **`.binds` and `StartPreset.4.start`** — whole-file master, Edit History on apply, the version-bump merge | ready — scoped 2026-10-12 ([the split](../02-features/bindforge/overview.md#where-the-binds-and-startpreset-master-lives--settled-2026-10-12-alan-foundation-f3)); its one V1.1 change, `BindingsApplyService.applyFrom`, merged up 2026-10-13. The rest is new V1.2 classes. **The `StartPreset.4.start` master was built by Preset Editor P2** (2026-10-18, `bindforge.preseteditor.StartPresetStore`), so C4 is the `.binds` half only |
 | C5 | **Change detection for the install folders** | **done 2026-10-11** |
 | C6 | **Unsaved work on exit** — Save or Discard, never Apply | **done 2026-10-12** — a ruling, no code |
-| C7 | **First-time startup** | after Preset Editor can read all four `StartPreset` lines |
+| C7 | **First-time startup** | after Preset Editor can read all four `StartPreset.4.start` lines |
 
 **C4 is unblocked** (2026-10-13), but Alias Designer does not need it — a master is rewritten only once one
 exists — so it is built when Preset Editor or File Manager needs it. C7 waits on Preset Editor.

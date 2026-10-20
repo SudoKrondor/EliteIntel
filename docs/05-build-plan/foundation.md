@@ -1,5 +1,8 @@
 # Foundation — V1.2's changes to files V1.1 ships
 
+> **Closed 2026-10-20.** Krondor repealed the foundation branch (*"we are now solid on 1.2"*): shared files are
+> now changed on `V1.2-BindForge`. This brief is the record of F1-F4; do not start a foundation session.
+
 **Not a tab, and not V1.2 code.** These are the additions to existing shared files that later BindForge slices
 cannot be built without, made on **`V1.1-Release-bf-foundation`**, a branch off `V1.1-Release`. Krondor checks
 each change and merges it into `V1.1-Release`, and it reaches `V1.2-BindForge` by the same merge-up as his own
@@ -52,9 +55,9 @@ slices it unblocks still wait; the merge-up reaching `V1.2-BindForge` is what re
 ## Spec
 
 - [preset-editor.md](../02-features/bindforge/preset-editor.md), whole — F1. Especially
-  [what a line holds](../02-features/bindforge/preset-editor.md#what-a-line-actually-holds--the-preset-name-not-the-file-name)
+  [what a line holds](../02-features/bindforge/preset-editor.md#what-a-line-actually-holds--the-bindname-not-the-file-name)
   and [what exists in code today](../02-features/bindforge/preset-editor.md#what-exists-in-code-today--checked-2026-09-17).
-- [The `StartPreset` specimens](../02-features/bindforge/reference-data/SPECIMENS-README.md#startpreset-specimens--two-generations-and-a-split-preset-in-the-wild) — F1.
+- [The preset file specimens](../02-features/bindforge/reference-data/SPECIMENS-README.md#preset-file-specimens--two-generations-and-a-split-preset-file-in-the-wild) — F1.
 - [alias-designer.md](../02-features/bindforge/alias-designer.md): [what onboarding writes](../02-features/bindforge/alias-designer.md#what-onboarding-writes-and-when),
   [an edit `.binds` depends on updates `.binds`](../02-features/bindforge/alias-designer.md#an-edit-binds-depends-on-updates-binds--2026-10-11-alan),
   [Renaming a Device](../02-features/bindforge/alias-designer.md#renaming-a-device) through its end — F2.
@@ -68,25 +71,25 @@ slices it unblocks still wait; the merge-up reaching `V1.2-BindForge` is what re
 
 | What | Where | State |
 |---|---|---|
-| Finding `StartPreset` | `bindforge.io.BindingsLoader.findStartPresetFile(Path)` | public, by prefix and extension; `findFirst()` on an unordered listing. Unchanged; its Javadoc now says it can disagree with the live finder |
-| The live `StartPreset` | `BindingsLoader.findLiveStartPresetFile(Path)` — **F1, merged** | highest `StartPreset.N.start`, else `StartPreset.start`; non-numeric lookalikes passed over; ties broken by name |
+| Finding the preset file | `bindforge.io.BindingsLoader.findStartPresetFile(Path)` | public, by prefix and extension; `findFirst()` on an unordered listing. Unchanged; its Javadoc now says it can disagree with the live finder |
+| The live preset file | `BindingsLoader.findLiveStartPresetFile(Path)` — **F1, merged** | highest `StartPreset.N.start`, else `StartPreset.start`; non-numeric lookalikes passed over; ties broken by name |
 | The four sections | `BindingsLoader.readStartPresetSections(Path)` → `bindforge.io.StartPresetSections` — **F1, merged** | General, Ship, SRV, On Foot; pure `parse(String)`; empty `Optional` with no file, `IOException` on a read failure. Rules in [preset-editor.md](../02-features/bindforge/preset-editor.md#how-the-four-lines-are-read--settled-2026-10-12-alan-foundation-f1). Tests: `StartPresetSectionsTest`, `BindingsLoaderStartPresetTest`; specimens in `app/src/test/resources/bindforge/startpreset/`, `-text` |
-| The active preset | `BindingsLoader.getActivePresetName()` | **reads the first non-empty line only** — right for the assistant, wrong for a split preset. Callers: `BindingProfilePanel`, and `getLatestBindsFile` through the private `findActivePresetName` |
+| The active BindName | `BindingsLoader.getActivePresetName()` | **reads the first non-empty line only** — right for the assistant, wrong for a split preset file. Callers: `BindingProfilePanel`, and `getLatestBindsFile` through the private `findActivePresetName` |
 | Writing a binding | `bindforge.io.BindingsWriter` — one keyboard slot or `{NoDevice}`, by raw-text replacement, BOM kept, stale-file check by time and size | the keyboard path still **refuses any controller slot** (`isEditableMainSlot`), unchanged. Tests: `BindingsWriterTest` |
 | The user-edit path | `BindingsWriter.assignSlot(SlotAssignment)`, `assignAxis(AxisAssignment)` — **F4, merged** | any device, up to three modifiers on any device, Hold; an axis takes `Joy_XAxis`-`Joy_VAxis` with Inverted and Deadzone. No `KEY_OCCUPIED`. Inputs are `bindforge.model.BindingInput`. Rules in [bind-editor.md](../02-features/bindforge/bind-editor.md#what-the-writer-takes-from-the-dialog--settled-2026-10-12-alan-foundation-f4). Tests: `BindingsWriterUserEditTest` |
 | The device rewrite | `BindingsWriter.rewriteDeviceReferences(List<Path>, DeviceReferenceRewrite, Path)` → `DeviceRewriteResult`; pure text form → `RewrittenXml` — **F2, merged** | every `Device=` on `<Primary>`, `<Secondary>`, `<Binding>`, `<Modifier>`; all or nothing across the files given, each backed up, stale-checked, put back on failure unless the game saved it since. Builders `hardwareIdToName` (VID then PID only), `rename`, `nameToHardwareId`; a reversed id is rewritten from the value found, with the constructor. **The game's file goes last in the list.** **The caller re-records a rewritten draft's baseline** (`recordGameFileBaseline`). Tests: `BindingsWriterDeviceRewriteTest` |
-| `.binds` draft | `BindingsWorkingCopyRepository` — per-preset working copies in `elite-intel/bindings/`, a SHA-256 baseline per preset | **the master is only a hash** (core.md) |
-| `.binds` apply | `BindingsApplyService.apply` — refuses when draft and game both changed, validates XML, backs up to `AppPaths.getBindingsBackupDir()`, writes through `AtomicFiles` | one preset per call |
+| `.binds` draft | `BindingsWorkingCopyRepository` — per-binds-file working copies in `elite-intel/bindings/`, a SHA-256 baseline per binds file | **the master is only a hash** (core.md) |
+| `.binds` apply | `BindingsApplyService.apply` — refuses when draft and game both changed, validates XML, backs up to `AppPaths.getBindingsBackupDir()`, writes through `AtomicFiles` | one binds file per call |
 | Revert | `BindingsApplyService.applyFrom(Path source, Path gameFile)` — **F3b, merged** | the same validate, back up, atomic write, from a given file; working copy and baseline untouched; skips a game file already identical. Tests: `BindingsApplyServiceTest` |
 | Reading `Device=` | `bindforge.devicefiles.BindsDeviceReferences` (V1.2 only) — every `.binds` in the folder, names and hex, counts per entry | read only; F2's rewrite is the writer |
 | Axis tokens | `elite.intel.devices.model.ButtonInputMapper.axisToBindsToken` | throws at axis 6 and above (no U, V) — **and has no caller**, so F5 was withdrawn; the capture dialog maps through `devices.hid.AxisSlots` to `GameAxis` |
 
 ## Settled — and where it is recorded
 
-- **V1.2 changes to existing shared files go on the foundation branch.** [README](README.md#the-foundation-branch--how-a-v12-feature-changes-a-file-v11-ships-krondor-2026-10-12), `CLAUDE.md`, the platform map.
+- ~~V1.2 changes to existing shared files go on the foundation branch.~~ Repealed 2026-10-20 (Krondor); they go on `V1.2-BindForge`. `CLAUDE.md`.
 - **The four-line read is a second method, not a change to `getActivePresetName()`** — it answers a different
   question for a different caller. [preset-editor.md](../02-features/bindforge/preset-editor.md#what-exists-in-code-today--checked-2026-09-17)
-- **A line holds the preset name; strip a version suffix only when one is there** (`Custom.4.2 (2).binds` has
+- **A line holds the BindName; strip a version suffix only when one is there** (`Custom.4.2 (2).binds` has
   none). [preset-editor.md](../02-features/bindforge/preset-editor.md#a-name-does-not-identify-a-file)
 - **BindForge adds no writer, working copy or working folder; the existing class grows.**
   [overview.md](../02-features/bindforge/overview.md#there-is-one-writer-and-it-already-exists)
@@ -100,7 +103,7 @@ slices it unblocks still wait; the merge-up reaching `V1.2-BindForge` is what re
   accepted); CLEAR writes VID then PID, upper case.** [alias-designer.md](../02-features/bindforge/alias-designer.md#an-edit-binds-depends-on-updates-binds--2026-10-11-alan),
   [format §4.2](../02-features/bindforge/domain-knowledge/EliteDangerous-BindsFileFormat.md#42-vidpid-derived-hex-identifiers)
 - **F3: only revert changes a V1.1 file** — one new `BindingsApplyService` method (F3b); the master, startup check,
-  merge and `StartPreset` are new V1.2 classes; `.binds` Edit History is the existing backups folder.
+  merge and `StartPreset.4.start` are new V1.2 classes; `.binds` Edit History is the existing backups folder.
   [overview.md](../02-features/bindforge/overview.md#where-the-binds-and-startpreset-master-lives--settled-2026-10-12-alan-foundation-f3)
 - **F4: the user-edit path does not refuse a conflicting chord, and carries Hold**; a keyboard token is any `Key_`
   name. [bind-editor.md](../02-features/bindforge/bind-editor.md#what-the-writer-takes-from-the-dialog--settled-2026-10-12-alan-foundation-f4)
@@ -115,11 +118,11 @@ slices it unblocks still wait; the merge-up reaching `V1.2-BindForge` is what re
   to a file Krondor maintains, and it depends on V1.2-only code, so it could not go on the foundation branch as
   written. His next edit to that file will conflict. **Raise with Alan and Krondor** — not fixed by any slice
   here.
-- **Two `StartPreset` files in one folder.** F1's read is deterministic (the numbered one wins), but
+- **Two preset files in one folder** (`StartPreset.4.start` and `StartPreset.start`). F1's read is deterministic (the numbered one wins), but
   `findStartPresetFile` still takes whichever the listing yields first, so in that folder the assistant's
-  `getActivePresetName` / `getLatestBindsFile` can name a different General preset from BindForge. Fixing that
+  `getActivePresetName` / `getLatestBindsFile` can name a different General binds file from BindForge. Fixing that
   changes a V1.1 method's behaviour — a maintenance fix for Krondor, not foundation work. *(F1 review, P1.)*
-- **A player backup copies one `StartPreset` only** — `PlayerBackupService` goes through `findStartPresetFile`, so
+- **A player backup copies one preset file only** — `PlayerBackupService` goes through `findStartPresetFile`, so
   with both generations present a restore is incomplete, and which file is kept depends on listing order. Same
   owner as the item above. *(F1 review, P2.)*
 - **`findActivePresetName` catches `IOException` and returns `""`** — deliberate degradation (it falls back to the
@@ -150,9 +153,9 @@ slices it unblocks still wait; the merge-up reaching `V1.2-BindForge` is what re
 
 | # | Slice | Changes | Unblocks | Status |
 |---|---|---|---|---|
-| F1 | **Read all four `StartPreset` lines** — General, Ship, SRV, On Foot, in that order — as a new method beside `getActivePresetName()` | `BindingsLoader` | Preset Editor (first job), [Core C7](core.md#slices) | **done 2026-10-13** — `1fa8c1026`, review fixes `bbad46667`, `0718ba71b`; merged by Krondor (`1b61096c9`) |
+| F1 | **Read all four `StartPreset.4.start` lines** — General, Ship, SRV, On Foot, in that order — as a new method beside `getActivePresetName()` | `BindingsLoader` | Preset Editor (first job), [Core C7](core.md#slices) | **done 2026-10-13** — `1fa8c1026`, review fixes `bbad46667`, `0718ba71b`; merged by Krondor (`1b61096c9`) |
 | F2 | **The `.binds` device rewrite** — replace one `Device=` value with another across `.binds`: hex → name (onboarding), old name → new name (rename), name → hex (CLEAR) | `BindingsWriter` | [A6b, A11, CLEAR on a named device](alias-designer.md#slices) | **done 2026-10-13** — `1d3108a7c`, with F3b and F4; Krondor's fixes `8d670a28d`; merged `1b61096c9` |
-| F3 | **Scope the `.binds` and `StartPreset` master** — what of C4's whole-file master must change an existing file, and what can be a new V1.2 class. A scoping slice: its output is a ruling and F3b's definition, not code | — | [Core C4](core.md#slices) | **settled 2026-10-12** — [the split](../02-features/bindforge/overview.md#where-the-binds-and-startpreset-master-lives--settled-2026-10-12-alan-foundation-f3); its one V1.1 change is F3b |
+| F3 | **Scope the `.binds` and `StartPreset.4.start` master** — what of C4's whole-file master must change an existing file, and what can be a new V1.2 class. A scoping slice: its output is a ruling and F3b's definition, not code | — | [Core C4](core.md#slices) | **settled 2026-10-12** — [the split](../02-features/bindforge/overview.md#where-the-binds-and-startpreset-master-lives--settled-2026-10-12-alan-foundation-f3); its one V1.1 change is F3b |
 | F3b | **Revert** — push a given file over the game's `.binds` through the same validate, back up, atomic write as `apply`, leaving the draft alone | `BindingsApplyService` (`applyFrom`) | Core C4's revert | **done 2026-10-13** — `1d3108a7c`; merged `1b61096c9` |
 | F4 | **The writer's user-edit path** — a deliberate edit may write any device; the existing keyboard-only path stays for everything automatic | `BindingsWriter` | Bind Editor: editing | **done 2026-10-13** — `1d3108a7c`; merged `1b61096c9` |
 | F5 | **`Joy_UAxis` and `Joy_VAxis`** in `ButtonInputMapper`'s axis tokens, so axis 6 and above stop throwing | ~~`ButtonInputMapper`~~ | the capture dialog | **withdrawn 2026-10-12** — no caller; the dialog uses `AxisSlots` → `GameAxis`, a V1.2 change |
@@ -162,7 +165,7 @@ slices it unblocks still wait; the merge-up reaching `V1.2-BindForge` is what re
 - **What it returns:** four named values, one per section, in the file's order. The specimen
   `StartPreset.4.start` is `KeyboardMouseOnly / Custom / Custom / Custom`, **CRLF, no newline after the last line**;
   `StartPreset.start` is one line, `Custom`. Both are in `reference-data/` and are the test fixtures.
-- **To settle in the sources table:** what a one-line file means (the pre-Odyssey form — one preset for all
+- **To settle in the sources table:** what a one-line file means (the pre-Odyssey form — one BindName for all
   four?), a file with fewer than four lines, blank lines, and no file at all; which file wins when both forms
   exist (Known issues).
 - **Keep it pure where it can be** — a parse of the file's text, tested without a folder, plus the method that
@@ -181,7 +184,7 @@ Kept below as the questions were asked.*
    `elite-intel/bindings/` still names the old device, and `BindingsApplyService` would refuse it as changed on
    both sides. Rewrite the draft too, or refuse the rename while a draft exists.
 
-*Also for its sources table:* every `.binds` in the folder or the active ones only (every preset is
+*Also for its sources table:* every `.binds` in the folder or the active ones only (every binds file is
 [a first-class file](../02-features/bindforge/overview.md#what-the-master-covers-everything--settled-2026-09-24));
 `Device=` appears on `<Modifier>` elements as well as slots; and all-or-nothing across several `.binds` files.
 

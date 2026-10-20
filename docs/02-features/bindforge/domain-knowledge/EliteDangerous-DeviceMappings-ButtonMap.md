@@ -46,33 +46,33 @@ See `EliteDangerous-BindsFileFormat.md` §4.2 for the full discussion of this de
 
 ### 1.2b What happens when a `Device=` name has no entry — measured 2026-09-22
 
-**The whole preset is rejected, not just that device's bindings.** Established by direct test on a machine
+**The whole binds file is rejected, not just that device's bindings.** Established by direct test on a machine
 holding two installs that share one `Options\Bindings` folder, so the only variable was the per-install
 `DeviceMappings.xml`.
 
 | | Steam install | Epic install |
 |---|---|---|
 | Entries for the user's two sticks (`RVWAP`, `LVWAP`) | present | **absent** |
-| Shared `StartPreset.4.start` | names the user's active preset | the same file |
+| Shared `StartPreset.4.start` | names the user's active binds file | the same file |
 | Shared `.binds` (144 bindings naming those sticks) | the same file | the same file |
-| Result on the Controls screen | preset loads; all four sections correct | **all four sections fall back to `KEYBOARD & MOUSE`** |
+| Result on the Controls screen | binds file loads; all four sections correct | **all four sections fall back to `KEYBOARD & MOUSE`** |
 
 The failing install wrote `BindingLoadingErrors.log` beside the `.binds` files, holding one
 `Failed to find GUID for device: RVWAP` line per unresolvable binding — **141 across the user's two
-preset files**, roughly one per `Device=` reference, in file order.
+binds files**, roughly one per `Device=` reference, in file order.
 
 **Three facts worth separating:**
 
-1. **The loss is total, not partial.** The keyboard and mouse bindings in that preset — which reference no
-   device entry at all — went with it. A user sees a factory preset, not a preset with gaps.
-2. **Loading changes nothing on disk.** Both `.binds` files and `StartPreset.#.start` kept their previous
+1. **The loss is total, not partial.** The keyboard and mouse bindings in that binds file — which reference no
+   device entry at all — went with it. A user sees a factory binds file, not a binds file with gaps.
+2. **Loading changes nothing on disk.** Both `.binds` files and `StartPreset.4.start` kept their previous
    timestamps through the failing launch, and all 144 `Device="..."` references survived intact. The game
    degrades quietly rather than repairing or rewriting. *(The save path — opening Controls and committing a
    change — was not tested and is a separate question.)*
-3. **The game validates every `.binds` in the folder**, not just the active preset: the log carried a block
-   for each of the two preset files present.
+3. **The game validates every `.binds` in the folder**, not just the active one: the log carried a block
+   for each of the two binds files present.
 
-**Why this matters beyond the device files.** `StartPreset.#.start` and `.binds` are shared by every install
+**Why this matters beyond the device files.** `StartPreset.4.start` and `.binds` are shared by every install
 on the machine, and `DeviceMappings.xml` is not. So a file every install reads depends on a file each install
 owns privately — which is why a tool cannot treat "which install" as a detail. See
 [Protection is uniform](../overview.md#protection-is-uniform--settled-2026-09-21).
@@ -132,12 +132,12 @@ which left one entry for that hardware. The test recorded:
 
 | | Result |
 |---|---|
-| The active preset (`DualVirpilDawnTreader.4.2.binds`) | loads; it names the pedals `Device="MyRudder"` (2 bindings) |
+| The active binds file (`DualVirpilDawnTreader.4.2.binds`) | loads; it names the pedals `Device="MyRudder"` (2 bindings) |
 | A game save at 00:08:41 (`.binds` and `StartPreset.4.start` written together) | **keeps `MyRudder`** — the game writes the name it resolved |
 | `DeviceMappings.xml` | **not rewritten** by the game after the edit at 23:49 — the renamed entry stands |
-| The inactive preset (`DualVirpilTesting.4.2.binds`) | still names `T-Rudder` 6 times, and `BindingLoadingErrors.log` carries **6× `Failed to find GUID for device: T-Rudder`** |
+| The inactive binds file (`DualVirpilTesting.4.2.binds`) | still names `T-Rudder` 6 times, and `BindingLoadingErrors.log` carries **6× `Failed to find GUID for device: T-Rudder`** |
 
-The active preset's two `T-Rudder` references were changed to `MyRudder` **by hand** (Alan) — the game did not
+The active binds file's two `T-Rudder` references were changed to `MyRudder` **by hand** (Alan) — the game did not
 rename them. What the game did was keep the new name through its own save, re-emitting `MyRudder` rather than
 reverting to Frontier's.
 
@@ -152,9 +152,9 @@ reverting to Frontier's.
    [Frontier's shipped list](../reference-data/FrontierStock-README.md) itself, so any Frontier entry can be
    put back. *This reverses "BindForge never edits a Frontier entry" (2026-09-13) — see
    [Built-in controllers in My Devices](../alias-designer.md#built-in-controllers-in-my-devices--settled-2026-09-13).*
-3. **A rename still costs every preset that names the old element** — including presets that are not active,
+3. **A rename still costs every binds file that names the old element** — including binds files that are not active,
    because [the game validates every `.binds` in the folder](#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
-   Test 2's inactive preset is that failure, measured again. A Frontier name is no different from a user's
+   Test 2's inactive binds file is that failure, measured again. A Frontier name is no different from a user's
    name here: [the rename transaction](../alias-designer.md#renaming-a-device) rewrites every `.binds`.
 4. **Shadowing is the narrower tool for a multi-pair entry.** A user element at the top carrying only *their*
    controller's VID/PID wins for that controller, and leaves Frontier's element in place for everything else

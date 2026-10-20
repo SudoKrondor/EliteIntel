@@ -1,8 +1,8 @@
-package elite.intel.bindforge.presets;
+package elite.intel.bindforge.preseteditor;
 
-import elite.intel.bindforge.presets.BindsContent.Judgement;
-import elite.intel.bindforge.presets.BindsContent.NotOffered;
-import elite.intel.bindforge.presets.BindsContent.Offered;
+import elite.intel.bindforge.preseteditor.BindsContent.Judgement;
+import elite.intel.bindforge.preseteditor.BindsContent.NotOffered;
+import elite.intel.bindforge.preseteditor.BindsContent.Offered;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -15,7 +15,7 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * A file is a preset on its contents, not its name - against the specimens in {@code reference-data/}, and the
+ * A file is a binds file on its contents, not its name - against the specimens in {@code reference-data/}, and the
  * shapes bind-editor.md's corpus count found under a {@code .binds} name.
  */
 class BindsContentTest {
@@ -39,13 +39,13 @@ class BindsContentTest {
     }
 
     @Test
-    void aShippedPresetWithNoSuffixIsOffered() {
-        // The shipped files write SortOrder and no version, as the installations on Alan's machine do.
-        String shipped = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\r\n"
+    void aFactoryBindsFileWithNoSuffixIsOffered() {
+        // The factory files write SortOrder and no version, as the installations on Alan's machine do.
+        String factory = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\r\n"
                 + "<Root PresetName=\"KeyboardMouseOnly\" SortOrder=\"0\">"
                 + "<YawLeftButton><Primary Device=\"Keyboard\" Key=\"Key_A\" /></YawLeftButton></Root>";
 
-        assertEquals(new Offered("KeyboardMouseOnly"), judge("KeyboardMouseOnly.binds", shipped));
+        assertEquals(new Offered("KeyboardMouseOnly"), judge("KeyboardMouseOnly.binds", factory));
     }
 
     @Test
@@ -57,15 +57,15 @@ class BindsContentTest {
     }
 
     @Test
-    void aStartPresetSavedUnderABindsNameIsNamedAsOne() throws IOException {
-        assertEquals(new NotOffered(NotOfferedReason.START_PRESET_LIST, "KeyboardMouseOnly\nCustom\nCustom\nCustom"),
+    void aPresetFileSavedUnderABindsNameIsNamedAsOne() throws IOException {
+        assertEquals(new NotOffered(NotOfferedReason.PRESET_FILE, "KeyboardMouseOnly\nCustom\nCustom\nCustom"),
                 judge("StartPreset.binds", startPresetSpecimen("StartPreset.4.start")));
-        assertEquals(new NotOffered(NotOfferedReason.START_PRESET_LIST, "Custom"),
+        assertEquals(new NotOffered(NotOfferedReason.PRESET_FILE, "Custom"),
                 judge("StartPreset.binds", startPresetSpecimen("StartPreset.start")));
     }
 
     @Test
-    void textLongerThanAStartPresetIsNotXml() {
+    void textLongerThanAPresetFileIsNotXml() {
         assertEquals(NotOfferedReason.NOT_XML, reason(judge("Notes.binds", "one\ntwo\nthree\nfour\nfive")));
     }
 
@@ -83,7 +83,7 @@ class BindsContentTest {
     }
 
     @Test
-    void aRootWithOnlySettingsIsNotAPreset() {
+    void aRootWithOnlySettingsIsNotABindsFile() {
         assertEquals(NotOfferedReason.ROOT_WITHOUT_BINDINGS, reason(judge("Custom.4.2.binds", "<Root/>")));
         assertEquals(NotOfferedReason.ROOT_WITHOUT_BINDINGS, reason(judge("Custom.4.2.binds",
                 "<Root PresetName=\"Custom\"><KeyboardLayout>en-US</KeyboardLayout>"

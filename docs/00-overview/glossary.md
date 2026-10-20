@@ -1,7 +1,7 @@
 # Glossary
 
 > **For the player's own files, accounts and installations — what a *user*, *commander*, *installation*,
-> *alias* or *`.buttonMap`* actually is — see [The Input Environment](input-environment.md).** That page
+> *alias*, *`.buttonMap`*, *binds file*, *preset file* or *BindName* actually is — see [The Input Environment](input-environment.md).** That page
 > defines the real things on disk. This page defines **our** terms for what we build on top of them.
 
 Established project terminology. Where a term was named differently across design generations, the
@@ -17,6 +17,9 @@ as unresolved.
 | BindForge | Bind Forge, Bind Editor (as a plugin name) |
 | StarVizion | (unchanged) |
 | ~~EDO StellarCore~~ | EDO NexusCore, NexusCore, Nexus Core, Stellar Core, CoreDock — **the former host, replaced by Elite-Intel** |
+| binds file | preset, `.binds` preset; shipped / stock / factory preset (now *factory binds file*) — **settled 2026-10-19**, see [The Input Environment §2](input-environment.md#binds-file-preset-file-bindname--settled-2026-10-19-alan) |
+| preset file | Active Preset file, `StartPreset`, `StartPreset.#.start` (the number is the game's version — `StartPreset.4.start` today, and it changes when Frontier bumps it; see [The Input Environment §2](input-environment.md#binds-file-preset-file-bindname--settled-2026-10-19-alan)) |
+| BindName | preset name |
 
 ## Host Terms
 
@@ -60,7 +63,7 @@ listed so that older notes and mockups can be read correctly:
 - **Working copy** — the same thing as a draft. Retained only where it names the actual code
   (`BindingsWorkingCopyRepository`); prefer *draft* in prose.
 - **Master** — BindForge's own copy of the user's input files, held in Elite-Intel's folder, and **the source
-  of truth**. Apply pushes it outward: `.binds` and `StartPreset` to the one shared bindings folder,
+  of truth**. Apply pushes it outward: binds files and `StartPreset.4.start` to the one shared bindings folder,
   `DeviceMappings.xml` and `.buttonMap` to **every** installation. **Adopted 2026-09-24**, on Krondor's
   [proposal §2](../multi-install-proposal.md#2-installations-your-side-elite-intel-keeps-the-master-copy).
   **This reverses the 2026-09-06 decision**, which held that the live game file was the source of truth and
@@ -86,10 +89,10 @@ listed so that older notes and mockups can be read correctly:
   missing controls and contextually invalid bindings alongside conflicts. See
   [Bind Editor](../02-features/bindforge/bind-editor.md).
 - **Action Group** — an Action-Groups-mode grouping of bindings by player intent rather than game category.
-- **Binding section** — one of the four contexts a `.binds` preset is split into: General, Ship, SRV, On Foot.
+- **Binding section** — one of the four contexts a binds file is split into: General, Ship, SRV, On Foot.
   These are **control contexts, not vehicles.** A Ship Launched Fighter or Ship Launched Vessel (the Nomad) is
   flown with *Ship* bindings; only a genuinely new control mode would justify a fifth section. The four lines of
-  `StartPreset.#.start` correspond one-to-one with these, in that order.
+  `StartPreset.4.start` correspond one-to-one with these, in that order.
 
 ## StarVizion Terms
 

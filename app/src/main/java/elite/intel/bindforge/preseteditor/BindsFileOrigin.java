@@ -1,7 +1,7 @@
-package elite.intel.bindforge.presets;
+package elite.intel.bindforge.preseteditor;
 
-/** Where a preset's file lives. */
-public enum PresetOrigin {
+/** Where a binds file lives. */
+public enum BindsFileOrigin {
 
     /** The player's bindings folder. */
     USER,

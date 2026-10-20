@@ -23,6 +23,7 @@ class StartPresetSectionsTest {
         StartPresetSections sections = StartPresetSections.parse(specimen("StartPreset.start"));
 
         assertEquals(new StartPresetSections("Custom", "Custom", "Custom", "Custom", true), sections);
+        assertTrue(sections.singleLine());
     }
 
     @Test
@@ -39,8 +40,28 @@ class StartPresetSectionsTest {
 
     @Test
     void singleLineWithFinalNewlineIsStillTheSingleLineForm() {
-        assertEquals(new StartPresetSections("Custom", "Custom", "Custom", "Custom", true),
-                StartPresetSections.parse("Custom\r\n"));
+        StartPresetSections sections = StartPresetSections.parse("Custom\r\n");
+
+        assertEquals(new StartPresetSections("Custom", "Custom", "Custom", "Custom", true), sections);
+        assertTrue(sections.singleLine());
+    }
+
+    @Test
+    void theSingleLineFormEqualsFourIdenticalLines() {
+        StartPresetSections single = StartPresetSections.parse("Custom");
+        StartPresetSections four = StartPresetSections.parse("Custom\nCustom\nCustom\nCustom");
+
+        assertEquals(single, four);
+        assertEquals(single.hashCode(), four.hashCode());
+        assertNotEquals(single.singleLine(), four.singleLine());
+        assertNotEquals(four, StartPresetSections.parse("Custom\nCustom\nCustom\nOther"));
+    }
+
+    @Test
+    void onlyALeadingByteOrderMarkIsStripped() {
+        assertEquals("A", StartPresetSections.withoutByteOrderMark("﻿A"));
+        assertEquals("A﻿", StartPresetSections.withoutByteOrderMark("A﻿"));
+        assertEquals("", StartPresetSections.withoutByteOrderMark(""));
     }
 
     @Test

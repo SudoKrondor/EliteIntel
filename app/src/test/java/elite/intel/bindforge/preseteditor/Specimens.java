@@ -1,4 +1,4 @@
-package elite.intel.bindforge.presets;
+package elite.intel.bindforge.preseteditor;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

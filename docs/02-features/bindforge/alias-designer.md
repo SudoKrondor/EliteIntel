@@ -152,7 +152,7 @@ the lock below no longer hold:
 as it does for any device. Both are ordinary user elements from then on: mastered, written
 [at the top of `<Root>`](#what-the-master-actually-is), and a rename goes through the
 [rename transaction](#renaming-a-device), rewriting every `.binds` that names the old element — Frontier's
-name included. *The same test showed what skipping that costs: an inactive preset still naming `T-Rudder`
+name included. *The same test showed what skipping that costs: an inactive binds file still naming `T-Rudder`
 logged six `Failed to find GUID` lines.* ~~How the device editor presents rename versus shadow is not designed
 yet.~~ *Designed and built 2026-10-16 (Alan, A15): the editor offers one name box, and it always shadows - see
 [below](#built--2026-10-16-alan-a15).*
@@ -199,11 +199,11 @@ and the name box in `DeviceEditorDialog`, `BindForgeDeviceDraftManager.saveDevic
   element in the file wins - and a shadow leaves only Frontier's element unused beneath the user's.
 - **The bindings move, as a rename's do** (option 1 of three). Every `Device=` naming Frontier's element becomes the
   new name at Apply, the game's `.binds` last, retried by the next Apply if it stops. Left on Frontier's name, a
-  preset could end up spelling the controller two ways once the game saves it, which it rejects. Where Frontier's
+  binds file could end up spelling the controller two ways once the game saves it, which it rejects. Where Frontier's
   element covers other controllers the bindings name the element, not the pad, so they all move to this one - the
   editor says so beneath the name box, where the choice is made, rather than in Apply's confirm.
 - **The rename is finished when the user's element wins everywhere** (option 1 of two): in every installation the
-  first element claiming the controller's VID/PID is the new name - as the game picks - no preset names Frontier's
+  first element claiming the controller's VID/PID is the new name - as the game picks - no binds file names Frontier's
   name, and the old `.buttonMap` is gone or is Frontier's own as shipped. Frontier's element staying beneath does
   not count against it. Until then the name box is read-only and CLEAR refused, as for any rename under way.
 - **Labels move with the name** (option 1 of three). They are written under the new name - from the master, or the
@@ -306,7 +306,7 @@ fix is activation:
 **Every user gets a "before BindForge" backup**, whichever path activation takes:
 
 - **It covers all of the user's input data:** every reachable installation's `DeviceMappings.xml` and
-  `DeviceButtonMaps\`, and every `.binds` and `StartPreset.#.start` in the bindings folder. On Linux that is every
+  `DeviceButtonMaps\`, and every `.binds` and `StartPreset.4.start` in the bindings folder. On Linux that is every
   bindings folder BindForge knows of, since each Proton installation has its own
   ([input environment §7](../../00-overview/input-environment.md#7-linux-the-bindings-folder-is-not-shared)).
 - **It is taken before anything is written**: at silent activation, or when first setup opens. First setup still
@@ -315,7 +315,7 @@ fix is activation:
 - **It is never pruned.** Edit History keeps a limited number of copies per file, so after enough Applies the
   files as they were before BindForge would otherwise age out.
 - **It goes in the player backups folder**, as first setup's backup does, so it is listed under Player Backups.
-  The restore there handles `.binds` presets only; restoring device files is
+  The restore there handles binds files only; restoring device files is
   [File Manager's](file-manager.md) work.
 
 **The user is told once, when the backup is made** — on the first attempt to activate, which may open first setup
@@ -347,7 +347,7 @@ table (migration `12005`, `BindForgeActivationManager`).
   (`BindForgeDeviceDraftManager.establish`), which now refuses once activated as well as when the master has rows.
   The migration marks a master that already has rows as activated.
 - **The backup is taken once ever**, its folder recorded in `bindforge_activation.backup_folder`, as
-  `<time>_before-bindforge` in the default player backups folder: each installation's device files, and the bindings folder's `.binds` and `StartPreset` files under `bindings\`. Only the configured bindings folder is backed up today. Linux detection (2026-10-14) finds each installation's own Proton bindings folder, but the installation list does not store it, so the backup does not yet cover one per installation.
+  `<time>_before-bindforge` in the default player backups folder: each installation's device files, and the bindings folder's `.binds` and `StartPreset.4.start` files under `bindings\`. Only the configured bindings folder is backed up today. Linux detection (2026-10-14) finds each installation's own Proton bindings folder, but the installation list does not store it, so the backup does not yet cover one per installation.
 - **Told when the backup is taken** — that is the one time — spoken (`speech.bindforgeBackedUp`) and logged with
   the folder.
 - **Every "empty master means not set up" test reads the fact now:** the gear, APPLY and **SET UP** on the screen,
@@ -525,8 +525,8 @@ straight after the push. Alan answered two questions, one at a time:
 - **First setup moves the bindings itself, straight after its push** (option 1 of two), with Apply's rename move -
   moved once at least one installation took the winner, retried by every later Apply, and the old name forgotten
   once every installation and `.binds` are done. *Why:* the push already renames the losing element wherever it finds
-  it, so waiting for the next Apply would leave every installation without the name while the presets still use
-  it - every installation rejecting the preset, where before first setup only those lacking the name did.
+  it, so waiting for the next Apply would leave every installation without the name while the binds files still use
+  it - every installation rejecting the binds file, where before first setup only those lacking the name did.
 - **Two losing names `.binds` uses, for one winner** (option 1 of two): a device keeps one old name, so the first by
   name is recorded; the other's bindings are moved by first setup too, once, with no record. Its element stays in
   the installations as a pending removal, which Apply
@@ -583,7 +583,7 @@ install goes through first setup rather than being silently overwritten.
 
 **For device identity, the master is the user's element set — not a copy of a `DeviceMappings.xml`.**
 Holding a whole file as the master would mean pushing one install's stock section into another, which is never
-wanted even though the stock sets agree. `.binds` and `StartPreset` are different: they are shared, whole
+wanted even though the stock sets agree. `.binds` and `StartPreset.4.start` are different: they are shared, whole
 files, and a file master is exactly right for them.
 
 **The user's elements go at the top of `<Root>` — settled 2026-10-04.** When two elements claim one VID/PID,
@@ -613,7 +613,7 @@ as the row's colour**:
 **Severity is judged against the shared `.binds`, not against the device files alone.** That is what separates
 red from yellow: a missing entry only costs the user something when a binding actually names that device.
 The [measured case](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22)
-is red by that rule — 144 bindings naming two sticks one install had never heard of, and the whole preset
+is red by that rule — 144 bindings naming two sticks one install had never heard of, and the whole binds file
 rejected — while the orphan `LVWAP.buttonMap` sitting beside it is yellow, because nothing resolves through it.
 
 **Colour is the row's text colour, not a fill or a pill** — the HUD canon's rule for state, and the same
@@ -646,7 +646,7 @@ Built as `DeviceDivergence.againstMaster` (pure), fed by [the startup check](ove
   [loads no bindings](overview.md#why-devicemappingsxml-is-not-cosmetic--reclassified-2026-09-08). The check says
   which it found (`InstallationCheck.fileGone`).
 - **An unreadable `DeviceMappings.xml` is one row**, red when a binding names any master device —
-  [the whole preset is rejected](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
+  [the whole binds file is rejected](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
 - **Labels are one yellow row per device**, however many inputs differ; a missing or unreadable `.buttonMap` is
   yellow too. A wrong label breaks no binding.
 - **One cause, one row** *(after review)*: the `.buttonMap` of an entry an installation lacks is not listed as an
@@ -1685,7 +1685,7 @@ Alias Designer writes `.binds` itself or hands the change to the Bind Editor as 
 - **CLEAR writes hex** — VID then PID, upper case, as the game does. It is the one place BindForge writes a hex
   reference ([format §4.2](domain-knowledge/EliteDangerous-BindsFileFormat.md#42-vidpid-derived-hex-identifiers)).
 - Every `Device="…"` is rewritten — on `<Primary>`, `<Secondary>`, `<Binding>` and `<Modifier>` alike — and every
-  `.binds` in the folder, not only the active preset, since the game validates them all. Built as
+  `.binds` in the folder, not only the active one, since the game validates them all. Built as
   `BindingsWriter`'s device rewrite on the [foundation branch](../../05-build-plan/foundation.md); merged into
   `V1.1-Release` and up to `V1.2-BindForge` 2026-10-13.
 
@@ -1756,7 +1756,7 @@ Alan answered five questions, one at a time:
   CLEAR's refusal and Apply's hold-back (`BindsDeviceReferences.referenceCounts`). So is one whose `.binds` files
   all fail to parse. Otherwise a typo in settings, or an unmounted drive, would read as "nothing names this device"
   and let CLEAR strip an entry the game needs. The editor still opens, with CLEAR refused and saying why. An empty
-  folder is an answer: no custom preset names anything. Severity stays lenient — there it only turns findings
+  folder is an answer: no custom binds file names anything. Severity stays lenient — there it only turns findings
   yellow — and a skipped `.binds` is now logged by name.
 - **A CLEAR or undo that changed nothing says so** rather than closing as if it worked: the device changed since the
   dialog opened.
@@ -1865,7 +1865,7 @@ unchanged; what changed is how many times the first two run.*
 **The shared file is the one that decides whether a half-finished rename is survivable.** Rename the entry in
 two installations, rewrite `.binds` to the new name, then fail on the third, and that third installation is
 now reading a `.binds` that names a device it has never heard of. It
-[rejects the entire preset and falls back to KEYBOARD & MOUSE in all four sections](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22)
+[rejects the entire binds file and falls back to KEYBOARD & MOUSE in all four sections](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22)
 — measured, not predicted. The only symptom is a line in `BindingLoadingErrors.log`.
 
 So the order is fixed:
@@ -1897,13 +1897,13 @@ same breakage in the other direction.
   [A14's catch-up](#actions-and-what-each-one-reaches) — since the push renames wherever the old name is still
   found. Only when **no** installation took it does `.binds` stay on the old name, and the rename is reported as not
   applied yet. *This knowingly accepts the cost measured above: until it is caught up, an installation that missed
-  the rename rejects the preset.* The four paragraphs above are kept for that reasoning.
+  the rename rejects the binds file.* The four paragraphs above are kept for that reasoning.
 - **The `.binds` move is derived, not recorded**, as A6b's is: at each Apply, a master device that still carries a
   `previous_name` which `.binds` uses has its bindings moved. A move that failed is retried by the next Apply.
   `previous_name` is cleared once every installation has lost the old name and `.binds` no longer uses it.
 - **A rename that changes only case touches no `.binds`** — measured: a `Device=` name finds its element ignoring
   case ([`.binds` format §4.3](domain-knowledge/EliteDangerous-BindsFileFormat.md#43-case-only-binds-cares-and-it-cares-about-one-spelling-per-device--measured-2026-10-14)),
-  and a preset spelling one device two ways is rejected, so rewriting only some references would be worse than
+  and a binds file spelling one device two ways is rejected, so rewriting only some references would be worse than
   none. The element and the `.buttonMap` are renamed.
 - **One bindings folder, on Linux too — for now** (Alan, 2026-10-14). On Linux each Proton installation has its own
   `.binds` folder ([input environment §7](../../00-overview/input-environment.md#7-linux-the-bindings-folder-is-not-shared)),
@@ -1929,7 +1929,7 @@ same breakage in the other direction.
   slice A15. *Built 2026-10-16 as a shadow only - [A15](#built--2026-10-16-alan-a15).*
 - **Linux with several installations is told, not fixed.** Apply's confirm says, when BindForge has found more than
   one Linux installation, that controls are updated only for the installation Elite-Intel uses. Until the later slice,
-  a rename can leave another installation's preset naming the old device, and that installation falls back to
+  a rename can leave another installation's binds file naming the old device, and that installation falls back to
   keyboard and mouse.
 
 #### Decided while building it — 2026-10-15 (A11)

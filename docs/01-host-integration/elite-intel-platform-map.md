@@ -330,7 +330,7 @@ one loop either way, and Windows becomes the special case internally rather than
 
 So an installation should be able to answer, at minimum: where its `DeviceMappings.xml` is, where its
 `DeviceButtonMaps` folder is, where its bindings folder is, and which storefront it came from. **No `primary`
-flag**, for the reason above. Whether `StartPreset` hangs off the installation or the provider follows the
+flag**, for the reason above. Whether `StartPreset.4.start` hangs off the installation or the provider follows the
 same rule as `.binds`, because they live together.
 
 **Where it goes:** `elite.intel.bindforge.install`, per the package decision, beside the `.binds` code in
@@ -345,7 +345,7 @@ not assume. *"As long as windows vs linux coupling is isolated we will not have 
 when/if that change comes."*
 
 **One side-effect worth weighing before inverting them.** The game validates **every** `.binds` in the
-bindings folder, not only the active preset, and rejects the whole preset when one names a device the
+bindings folder, not only the active one, and rejects the whole binds file when one names a device the
 install's `DeviceMappings.xml` does not define -
 [measured 2026-09-22](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
 On Windows, where the folder is already shared, that is exactly how one install ended up falling back to
@@ -643,19 +643,9 @@ too. Under `bindforge` it would have to either depend on BindForge or copy it �
 versions of four lines came about. Deliberately not named `filemanager`, which would read as BindForge's
 [File Manager](../02-features/bindforge/file-manager.md) screen.
 
-**Changes to it go on `V1.1-Release` and merge up — never converted on a V1.2 branch (Krondor, 2026-10-03).**
-These classes are called from files he ships fixes to weekly. Converting a caller on `V1.2-BindForge` while he
-fixes the same file on `V1.1-Release` produces a conflict in the most sensitive code in the project, and the
-real risk is not a bad merge but silently dropping a rule already shipped to users. The whole conversion was
-therefore done as one change on `V1.1-Release` and merged up.
-
-**A new class here that only V1.2 calls is built on `V1.2-BindForge`** (Alan, 2026-10-11). It edits no file V1.1
-ships, so the conflict the rule above guards against cannot arise — the watcher below is the first.
-
-**A V1.2 feature that must change an existing file here, or in `bindforge.io` and `.rules`, goes on
-`V1.1-Release-bf-foundation`** (Krondor, 2026-10-12): a branch off `V1.1-Release` that he checks and merges, so it
-merges up like his fixes. What goes on it adds only and changes nothing V1.1 does —
-[the terms](../05-build-plan/README.md#the-foundation-branch--how-a-v12-feature-changes-a-file-v11-ships-krondor-2026-10-12).
+**Changes to it are made on `V1.2-BindForge` like any V1.2 code (Krondor, 2026-10-20).** His 2026-10-03 rule
+that it was changed only on `V1.1-Release` and merged up, and the 2026-10-12 foundation branch for V1.2's changes
+to it and to `bindforge.io` and `.rules`, are both repealed - [CLAUDE.md](../../CLAUDE.md#branching-model).
 
 **Watching: `io.FilePoller` — built 2026-10-11 (C5).** It says which of a set of files changed since the last look,
 by last-modified plus size, and holds no thread. It polls rather than using `WatchService`, as

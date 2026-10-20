@@ -32,7 +32,7 @@ commander; it does not add a second.
 
 > **Commanders own no input files. Not one.** Every file on this page belongs either to the player or to an
 > installation. Commanders appear only in the journals, which are Elite-Intel's concern and not BindForge's.
-> If a sentence anywhere describes a `.binds`, `DeviceMappings.xml`, `.buttonMap` or `StartPreset` as belonging
+> If a sentence anywhere describes a `.binds`, `DeviceMappings.xml`, `.buttonMap` or `StartPreset.4.start` as belonging
 > to a commander, that sentence is wrong.
 
 ---
@@ -54,17 +54,37 @@ are two kinds, and the difference matters:
 | Kind | Where it lives | Who writes it |
 |---|---|---|
 | **Custom `.binds`** | the player's bindings folder | the player — by rebinding in-game, or through BindForge. **This is the player's data.** |
-| **Shipped `.binds`** | inside **each installation's** `ControlSchemes` folder | Frontier. Read-only templates, never edited in place. BindForge copies *from* them; it does not manage them. |
+| **Factory `.binds`** | inside **each installation's** `ControlSchemes` folder | Frontier. Read-only templates, never edited in place. BindForge copies *from* them; it does not manage them. |
 
 So "the player has one bindings folder" is about **their own** binds. Frontier's templates sit somewhere else
 entirely, one copy per installation.
 
-**A preset name is a `.binds` filename with the version and extension stripped off.** `Custom.4.2.binds` has
-the preset name `Custom`. The game's Active Preset file deals in preset names, not filenames.
-
 **The player has one `StartPreset.4.start` file**, in that same bindings folder. It says which `.binds` file the
 game loads for each of the four input sections — **General, Ship, SRV, On Foot**, in that order, one per line.
 The `4` is a game version number, so the filename changes when Frontier bumps it.
+
+### Binds file, preset file, BindName — settled 2026-10-19 (Alan)
+
+Frontier uses "preset" for both files — the attribute inside a `.binds` is `PresetName`, and the file naming
+which one each section loads is `StartPreset` — so the word alone cannot tell them apart. Players call a
+`.binds` a *binds file*, and a tool that edits, organises and protects both has to keep them apart. Three terms:
+
+| Term | Means | Example |
+|---|---|---|
+| **binds file** | a `.binds` file — game actions mapped to inputs | `DualVirpilDawnTreader.4.2.binds` |
+| **preset file** | the file naming which BindName each of the four sections loads | `StartPreset.4.start` |
+| **BindName** | the name a binds file goes by: its `PresetName` attribute, the custom part of its filename (the filename with version and extension stripped off), and what each line of the preset file holds | `DualVirpilDawnTreader` |
+
+So the Ship line of `StartPreset.4.start` holds the BindName `DualVirpilDawnTreader`, which points at
+`DualVirpilDawnTreader.4.2.binds`.
+
+- **Never "preset" on its own.** Say *binds file* or *preset file*. *Preset Editor* is the screen that edits the
+  preset file, which is why it keeps the word.
+- **`PresetName`, in code format, means the XML attribute itself** and nothing else.
+- **Always the preset file's full name**, `StartPreset.4.start`. `StartPreset.start`, with no number, is a
+  different file — the pre-Odyssey single-line generation.
+- *Replaces* "preset name", which this page used for the BindName, and "the Active Preset file", for the preset
+  file. Older docs and code still use both; they are being brought in line.
 
 **The player has one journal folder:**
 
@@ -179,7 +199,7 @@ are right about their own population.)*
 - A `DeviceMappings.xml` or `.buttonMap` shared between installations.
 - **Any input file that belongs to a commander.**
 - A `.buttonMap` for a controller with no alias in `DeviceMappings.xml` — its filename would have nothing to be.
-- Legacy support. Only the **Live** game is supported, so a folder never holds two versions of one preset.
+- Legacy support. Only the **Live** game is supported, so a folder never holds two versions of one binds file.
 
 ---
 
@@ -190,7 +210,7 @@ Three of these change on Linux — see [section 7](#7-linux-the-bindings-folder-
 | This | to this | |
 |---|---|---|
 | player → bindings folder | 1 → 1 | **Windows.** On Linux, one per installation |
-| player → `StartPreset` | 1 → 1 | **Windows.** On Linux, one per installation |
+| player → `StartPreset.4.start` | 1 → 1 | **Windows.** On Linux, one per installation |
 | player → custom `.binds` files | 1 → many | all in the one folder |
 | player → journal folder | 1 → 1 | holds every commander. **Windows** — on Linux, one per installation |
 | player → accounts | 1 → many | |
@@ -221,13 +241,13 @@ accounts."*
 
 **So each Steam installation carries its own prefix, and therefore its own bindings folder and its own journal
 folder.** On Windows a single `%LOCALAPPDATA%` tree is shared by every storefront, which is the whole reason
-`.binds` and `StartPreset` are one set per player. Inside a Proton prefix there is no shared `AppData` at all.
+`.binds` and `StartPreset.4.start` are one set per player. Inside a Proton prefix there is no shared `AppData` at all.
 
 ### What changes
 
 | | Windows | Linux |
 |---|---|---|
-| `.binds`, `StartPreset` | **one set per player**, shared | **one set per installation** |
+| `.binds`, `StartPreset.4.start` | **one set per player**, shared | **one set per installation** |
 | journal folder | **one per player**, holds every commander | **one per installation** |
 | `DeviceMappings.xml`, `.buttonMap` | one set per installation | *unchanged* — one set per installation |
 

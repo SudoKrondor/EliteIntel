@@ -16,7 +16,7 @@ A `.binds` file is an XML document whose root looks like:
 </Root>
 ```
 
-- **PresetName** — human-readable profile name, shown in the game's own Controls UI.
+- **PresetName** — the file's BindName, shown in the game's own Controls UI.
 - **MajorVersion / MinorVersion** — bind format version (e.g. `4.2`). The `.binds` filename itself typically embeds this same version (e.g. `DualVirpilDawnTreader.4.2.binds`).
 - A parser/writer should preserve these attributes, any unrecognized attributes, and the root element name exactly — see §10.
 
@@ -269,9 +269,9 @@ convenience.
 
 `Keyboard` and `Mouse` are neither — they appear in no `DeviceMappings.xml` and are reserved literals.
 
-**Consequence: a name that does not resolve costs the whole preset.** Measured 2026-09-22 — an install whose
+**Consequence: a name that does not resolve costs the whole binds file.** Measured 2026-09-22 — an install whose
 `DeviceMappings.xml` holds no entry for a name used in `.binds` logs one `Failed to find GUID for device` per
-reference and falls back to a factory preset in all four sections, keyboard and mouse bindings included. See
+reference and falls back to a factory binds file in all four sections, keyboard and mouse bindings included. See
 [§1.2b of the device-files reference](EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
 
 **Consequence: renaming a device is a multi-file operation.** The element name in `DeviceMappings.xml`,
@@ -358,7 +358,7 @@ out.
 2. **The `.buttonMap` filename's case does not matter** — expected on Windows, whose file system ignores case.
    Under Proton the file system does not, and Wine usually looks files up ignoring case; unmeasured for a
    `.buttonMap`.
-3. **A preset that spells one device two ways is rejected**, the same fallback as
+3. **A binds file that spells one device two ways is rejected**, the same fallback as
    [a name with no entry](EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
    One `lvwap` among the `LVWAP`s was enough.
 
@@ -371,7 +371,7 @@ case in `.binds` itself. The deciding test is every `Device=` lowercase with the
 - **A case-only rename needs no `.binds` rewrite** — row two is exactly that rename, finished — and BindForge
   never writes a second spelling of a device into `.binds`. A rewrite matches every spelling ignoring case and
   writes the new name one way, so it leaves one spelling behind it.
-- **A `.binds` holding two spellings of one device is a preset the game will reject**, worth reporting as an
+- **A `.binds` holding two spellings of one device is a binds file the game will reject**, worth reporting as an
   anomaly. It is not something BindForge's own writes produce.
 
 ---
@@ -498,11 +498,11 @@ and unclassified rather than invalid.
 
 ## 7. File Location & Lifecycle
 
-- **`.binds` and `StartPreset.*.start` files live in exactly one canonical, storefront-agnostic location** on Windows: `%LOCALAPPDATA%\Frontier Developments\Elite Dangerous\Options\Bindings\` (note the space in "Frontier Developments") — shared across every storefront install (Steam, Epic, Frontier Direct, Oculus) under the same Windows user account. There is no per-storefront duplication of these two file types. See `EliteDangerous-InstallPaths.md` for the full cross-platform path picture, including Linux/Proton and how this contrasts with `DeviceMappings.xml`/`.buttonMap` multiplicity.
+- **`.binds` files and `StartPreset.4.start` live in exactly one canonical, storefront-agnostic location** on Windows: `%LOCALAPPDATA%\Frontier Developments\Elite Dangerous\Options\Bindings\` (note the space in "Frontier Developments") — shared across every storefront install (Steam, Epic, Frontier Direct, Oculus) under the same Windows user account. There is no per-storefront duplication of these two file types. See `EliteDangerous-InstallPaths.md` for the full cross-platform path picture, including Linux/Proton and how this contrasts with `DeviceMappings.xml`/`.buttonMap` multiplicity.
 - **The `.#.0`-style version suffix on a `.binds`/`StartPreset.#.start` filename is assigned by the game itself**, tied to the game's own version (e.g. an Odyssey on-foot-component version bump produced a `.4.0` suffix). No external tool mints or should mint this number — a tool only ever reacts to whatever suffix the game already wrote.
-- **A game update can overwrite or erase `.binds`, `StartPreset.*.start`, `DeviceMappings.xml`, and `.buttonMap` files — but this is not universal or guaranteed.** It doesn't happen on every update, or for every user, and no reliable trigger pattern is confirmed. Any tool managing these files should always validate presence/correctness after a game update rather than assuming either outcome.
+- **A game update can overwrite or erase `.binds`, `StartPreset.4.start`, `DeviceMappings.xml`, and `.buttonMap` files — but this is not universal or guaranteed.** It doesn't happen on every update, or for every user, and no reliable trigger pattern is confirmed. Any tool managing these files should always validate presence/correctness after a game update rather than assuming either outcome.
 - **Elite only re-reads `.binds` when its own in-game Controls screen is opened.** Editing the file externally — by hand or by any tool — has no effect on a running game session until that screen is opened. This is the single most important lifecycle gotcha for any external editor: a "no-op"-looking edit may just be a stale read, and conversely a stale read can be misdiagnosed as a real binding-logic bug (see §9.2 for a documented case of exactly this happening).
-- **`StartPreset.#.start` (the "Active Preset file") records, independently per top-level section (General/Ship/SRV/On Foot), which preset the game currently loads for that section — always, whether that preset is a factory default from the game install's `ControlSchemes` folder or a custom `.binds` file the player created by editing bindings in-game.** This is confirmed to always hold a value, even for a player who has never customized anything — it's how BindForge can know for certain which specific preset is active per section without guessing, rather than only being able to detect the presence of a custom file. See [BindForge Overview — First-Time Startup](../overview.md#first-time-startup) for the feature this enables, and [Preset Editor](../preset-editor.md) for how this file is otherwise managed.
+- **`StartPreset.4.start` (the preset file) records, independently per top-level section (General/Ship/SRV/On Foot), the BindName of the binds file the game currently loads for that section — always, whether that binds file is a factory binds file from the game install's `ControlSchemes` folder or a custom `.binds` file the player created by editing bindings in-game.** This is confirmed to always hold a value, even for a player who has never customized anything — it's how BindForge can know for certain which specific binds file is active per section without guessing, rather than only being able to detect the presence of a custom file. See [BindForge Overview — First-Time Startup](../overview.md#first-time-startup) for the feature this enables, and [Preset Editor](../preset-editor.md) for how this file is otherwise managed.
 
 ---
 
@@ -552,7 +552,7 @@ General good-practice rules for any tool that reads and rewrites `.binds` files,
 
 ### The game's own writer does not follow rule 1 — confirmed by live testing, 2026-09-01
 
-An XML comment was placed in a live `.binds` file, the file was confirmed to be the active preset, and a
+An XML comment was placed in a live `.binds` file, the file was confirmed to be the active binds file, and a
 binding was then changed in-game to force a rewrite. **The comment was gone afterwards.**
 
 This establishes that Elite Dangerous **reconstructs `.binds` from its own in-memory model rather than

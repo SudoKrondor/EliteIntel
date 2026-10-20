@@ -1,6 +1,6 @@
 # Elite Dangerous — Installation & File Path Discovery Reference
 
-**Scope:** How to locate an Elite Dangerous installation and its associated config files (`.binds`, `StartPreset.*.start`, `DeviceMappings.xml`, `.buttonMap`) across Steam, Epic, and Frontier-launcher installs on Windows, plus the Linux/Proton path pattern. See `EliteDangerous-BindsFileFormat.md` and `EliteDangerous-DeviceMappings-ButtonMap.md` for what these files contain once located.
+**Scope:** How to locate an Elite Dangerous installation and its associated config files (`.binds`, `StartPreset.4.start`, `DeviceMappings.xml`, `.buttonMap`) across Steam, Epic, and Frontier-launcher installs on Windows, plus the Linux/Proton path pattern. See `EliteDangerous-BindsFileFormat.md` and `EliteDangerous-DeviceMappings-ButtonMap.md` for what these files contain once located.
 
 **Confidence:** Windows path facts below are confirmed against real, verified machine paths (including a real multi-storefront Windows machine with Epic and Steam installed side by side). The Linux/Proton path is a strong, well-reasoned candidate derived from general Proton/compatdata conventions and Elite Dangerous's Steam AppID — it has **not** been verified against a real Linux installation. Treat it accordingly; see §5.
 
@@ -12,7 +12,7 @@ This is the single most important fact to internalize before designing any disco
 
 | File family | Location | Shared or per-storefront? |
 |---|---|---|
-| `.binds`, `StartPreset.*.start` | `%LOCALAPPDATA%\Frontier Developments\Elite Dangerous\Options\Bindings\` (note the space in "Frontier Developments") | **One single shared location**, regardless of storefront (Steam, Epic, Frontier Direct, Oculus), for a given Windows user account. Confirmed, not in dispute. |
+| `.binds`, `StartPreset.4.start` | `%LOCALAPPDATA%\Frontier Developments\Elite Dangerous\Options\Bindings\` (note the space in "Frontier Developments") | **One single shared location**, regardless of storefront (Steam, Epic, Frontier Direct, Oculus), for a given Windows user account. Confirmed, not in dispute. |
 | `DeviceMappings.xml`, `.buttonMap` | `[GameInstall]\Products\<product-name>\ControlSchemes\`, inside **each storefront's own install folder** | **Genuinely duplicated per storefront install.** Confirmed real on a machine with Epic and Steam installed side by side — each had its own independent copy. Example real paths: `[Epic install]\Products\elite-dangerous-64\ControlSchemes\DeviceMappings.xml`, `[Steam install]\Products\elite-dangerous-odyssey-64\ControlSchemes\DeviceMappings.xml`. |
 
 `DeviceMappings.xml`/`.buttonMap` only work from that install-folder `ControlSchemes` location — placing a copy in the shared `Options\Bindings\` folder alongside `.binds` does not work.
@@ -63,7 +63,7 @@ Discovery still has to walk into the right product folder rather than assuming t
 that assumed a single `ControlSchemes` per installation would silently read or write the wrong one.
 
 The shared `Options\Bindings\` folder is genuinely shared across products, but its files are versioned by
-preset number — `.4.x` files and `StartPreset.4.start` are Odyssey's, and an older product writes its own
+game version number — `.4.x` files and `StartPreset.4.start` are Odyssey's, and an older product writes its own
 generation into the same folder. So "shared location" does not mean "shared files".
 
 ---
@@ -275,7 +275,7 @@ Additional considerations if/when this is implemented:
 - **`compatdata` can live in any Steam library, not just the default one.** Since `compatdata` lives under `<library>/steamapps/compatdata/<appid>/`, constructing this path correctly requires parsing `libraryfolders.vdf` on the Linux side too (§2) — there is no registry to fall back on, so on Linux, Steam-library discovery is not optional the way it is on Windows.
 - The Wine prefix is tied to the Linux user who installed/ran the game; multi-user Linux machines complicate "find every install," though this is an unlikely edge case for a single-user desktop companion app.
 - Frontier-launcher-direct and Epic installs are not meaningfully supported on Linux outside of community Wine setups — Proton via Steam is the realistic Linux path to design for.
-- The same per-storefront-vs-shared multiplicity split from §1 presumably still applies once inside the Proton prefix (i.e. `.binds`/`StartPreset` shared, `DeviceMappings.xml`/`.buttonMap` per-install), but this has not been separately verified for the Linux/Proton case — it's an inference from the Windows behaviour, not an independent confirmation.
+- The same per-storefront-vs-shared multiplicity split from §1 presumably still applies once inside the Proton prefix (i.e. `.binds`/`StartPreset.4.start` shared, `DeviceMappings.xml`/`.buttonMap` per-install), but this has not been separately verified for the Linux/Proton case — it's an inference from the Windows behaviour, not an independent confirmation.
 
 ---
 
@@ -328,8 +328,8 @@ with `AppData/Local/Frontier Developments/Elite Dangerous/Options/Bindings` and
 three of each.
 
 **This is the one place Linux breaks the Windows model.** On Windows a single `%LOCALAPPDATA%` tree is shared
-by every storefront, which is why `.binds` and `StartPreset` are one set per player. Inside a Proton prefix
-there is no shared AppData at all. On Linux, **`.binds` and `StartPreset` are installation-scoped**, exactly
+by every storefront, which is why `.binds` and `StartPreset.4.start` are one set per player. Inside a Proton prefix
+there is no shared AppData at all. On Linux, **`.binds` and `StartPreset.4.start` are installation-scoped**, exactly
 as `DeviceMappings.xml` and `.buttonMap` already are everywhere. See
 [The Input Environment](../../00-overview/input-environment.md), whose counting rules describe Windows.
 

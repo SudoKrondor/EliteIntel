@@ -1,4 +1,4 @@
-package elite.intel.bindforge.presets;
+package elite.intel.bindforge.preseteditor;
 
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import org.junit.jupiter.api.Test;
@@ -13,16 +13,16 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The list the four dropdowns offer: the player's presets, the shipped ones, and the files that are neither. */
-class PresetCatalogTest {
+/** The list the four dropdowns offer: the player's binds files, the factory ones, and the files that are neither. */
+class BindNameCatalogTest {
 
     @TempDir
     Path root;
 
-    private final PresetCatalog catalog = new PresetCatalog();
+    private final BindNameCatalog catalog = new BindNameCatalog();
 
     @Test
-    void thePlayersPresetsAreOfferedAndTheRestAreNamed() throws IOException {
+    void thePlayersBindsFilesAreOfferedAndTheRestAreNamed() throws IOException {
         Path bindings = folder("Bindings");
         copySpecimen(bindings, "Custom.4.2.binds");
         copySpecimen(bindings, "DualVirpilDawnTreader.4.1.binds");
@@ -31,68 +31,68 @@ class PresetCatalogTest {
         write(bindings, "StartPreset.binds", "KeyboardMouseOnly\r\nCustom\r\nCustom\r\nCustom");
         write(bindings, "StartPreset.4.start", "Custom\r\nCustom\r\nCustom\r\nCustom");
 
-        PresetList list = catalog.list(bindings, List.of());
+        BindNameList list = catalog.list(bindings, List.of());
 
         assertEquals(List.of(
-                        new PresetEntry("Custom", PresetOrigin.USER, List.of(bindings.resolve("Custom.4.2.binds"))),
-                        new PresetEntry("DualVirpilDawnTreader", PresetOrigin.USER,
+                        new BindNameEntry("Custom", BindsFileOrigin.USER, List.of(bindings.resolve("Custom.4.2.binds"))),
+                        new BindNameEntry("DualVirpilDawnTreader", BindsFileOrigin.USER,
                                 List.of(bindings.resolve("DualVirpilDawnTreader.4.1.binds")))),
-                list.presets());
+                list.entries());
         // The backup is not a .binds name at all, so it is neither offered nor explained.
         assertEquals(List.of(
-                        new NotOfferedFile(bindings.resolve("Custom.4.2 (2).binds"), PresetOrigin.USER,
+                        new NotOfferedFile(bindings.resolve("Custom.4.2 (2).binds"), BindsFileOrigin.USER,
                                 NotOfferedReason.NAME_MISMATCH, "Custom"),
-                        new NotOfferedFile(bindings.resolve("StartPreset.binds"), PresetOrigin.USER,
-                                NotOfferedReason.START_PRESET_LIST, "KeyboardMouseOnly\nCustom\nCustom\nCustom")),
+                        new NotOfferedFile(bindings.resolve("StartPreset.binds"), BindsFileOrigin.USER,
+                                NotOfferedReason.PRESET_FILE, "KeyboardMouseOnly\nCustom\nCustom\nCustom")),
                 list.notOffered());
     }
 
     @Test
-    void theShippedPresetsAreOfferedOnceWithAFileFromEachInstallation() throws IOException {
+    void theFactoryBindsFilesAreOfferedOnceWithAFileFromEachInstallation() throws IOException {
         Path bindings = folder("Bindings");
         copySpecimen(bindings, "Custom.4.2.binds");
         Path steam = folder("Steam/ControlSchemes");
         Path epic = folder("Epic/ControlSchemes");
-        shipped(steam, "KeyboardMouseOnly");
-        shipped(epic, "KeyboardMouseOnly");
-        shipped(epic, "SaitekX56");
+        factory(steam, "KeyboardMouseOnly");
+        factory(epic, "KeyboardMouseOnly");
+        factory(epic, "SaitekX56");
 
-        PresetList list = catalog.list(bindings, List.of(steam, epic));
+        BindNameList list = catalog.list(bindings, List.of(steam, epic));
 
         assertEquals(List.of(
-                        new PresetEntry("Custom", PresetOrigin.USER, List.of(bindings.resolve("Custom.4.2.binds"))),
-                        new PresetEntry("KeyboardMouseOnly", PresetOrigin.FACTORY,
+                        new BindNameEntry("Custom", BindsFileOrigin.USER, List.of(bindings.resolve("Custom.4.2.binds"))),
+                        new BindNameEntry("KeyboardMouseOnly", BindsFileOrigin.FACTORY,
                                 List.of(steam.resolve("KeyboardMouseOnly.binds"), epic.resolve("KeyboardMouseOnly.binds"))),
-                        new PresetEntry("SaitekX56", PresetOrigin.FACTORY, List.of(epic.resolve("SaitekX56.binds")))),
-                list.presets());
+                        new BindNameEntry("SaitekX56", BindsFileOrigin.FACTORY, List.of(epic.resolve("SaitekX56.binds")))),
+                list.entries());
     }
 
-    /** The specimen StartPreset.4.start: General on a factory preset, the rest on the player's. */
+    /** The specimen StartPreset.4.start: General on a factory binds file, the rest on the player's. */
     @Test
-    void everyLineOfTheSplitSpecimenFindsItsPreset() throws IOException {
+    void everyLineOfTheSplitSpecimenFindsItsBindName() throws IOException {
         Path bindings = folder("Bindings");
         copySpecimen(bindings, "Custom.4.2.binds");
         Path controlSchemes = folder("Steam/ControlSchemes");
-        shipped(controlSchemes, "KeyboardMouseOnly");
+        factory(controlSchemes, "KeyboardMouseOnly");
 
-        PresetList list = catalog.list(bindings, List.of(controlSchemes));
+        BindNameList list = catalog.list(bindings, List.of(controlSchemes));
 
-        assertEquals(PresetOrigin.FACTORY, list.find("KeyboardMouseOnly").orElseThrow().origin());
-        assertEquals(PresetOrigin.USER, list.find("Custom").orElseThrow().origin());
+        assertEquals(BindsFileOrigin.FACTORY, list.find("KeyboardMouseOnly").orElseThrow().origin());
+        assertEquals(BindsFileOrigin.USER, list.find("Custom").orElseThrow().origin());
         assertEquals(Optional.empty(), list.find("custom"), "a near miss is not a match");
     }
 
     @Test
-    void aPlayersPresetShadowsAShippedOneOfTheSameName() throws IOException {
+    void aPlayersBindsFileShadowsAFactoryOneOfTheSameName() throws IOException {
         Path bindings = folder("Bindings");
         write(bindings, "KeyboardMouseOnly.4.2.binds", binds("KeyboardMouseOnly"));
         Path controlSchemes = folder("Steam/ControlSchemes");
-        shipped(controlSchemes, "KeyboardMouseOnly");
+        factory(controlSchemes, "KeyboardMouseOnly");
 
-        PresetList list = catalog.list(bindings, List.of(controlSchemes));
+        BindNameList list = catalog.list(bindings, List.of(controlSchemes));
 
-        assertEquals(List.of(new PresetEntry("KeyboardMouseOnly", PresetOrigin.USER,
-                List.of(bindings.resolve("KeyboardMouseOnly.4.2.binds")))), list.presets());
+        assertEquals(List.of(new BindNameEntry("KeyboardMouseOnly", BindsFileOrigin.USER,
+                List.of(bindings.resolve("KeyboardMouseOnly.4.2.binds")))), list.entries());
     }
 
     /** Cannot happen in a live folder - the game upgrades the old one in place - but is not silently halved if it does. */
@@ -102,11 +102,11 @@ class PresetCatalogTest {
         copySpecimen(bindings, "Custom.3.0.binds");
         copySpecimen(bindings, "Custom.4.2.binds");
 
-        PresetList list = catalog.list(bindings, List.of());
+        BindNameList list = catalog.list(bindings, List.of());
 
-        assertEquals(List.of(new PresetEntry("Custom", PresetOrigin.USER,
+        assertEquals(List.of(new BindNameEntry("Custom", BindsFileOrigin.USER,
                         List.of(bindings.resolve("Custom.3.0.binds"), bindings.resolve("Custom.4.2.binds")))),
-                list.presets());
+                list.entries());
     }
 
     @Test
@@ -115,21 +115,21 @@ class PresetCatalogTest {
         copySpecimen(bindings, "Custom.4.2.binds");
         Path unplugged = root.resolve("Unplugged/ControlSchemes");
 
-        PresetList list = catalog.list(bindings, List.of(unplugged));
+        BindNameList list = catalog.list(bindings, List.of(unplugged));
 
-        assertEquals(List.of("Custom"), list.presets().stream().map(PresetEntry::name).toList());
+        assertEquals(List.of("Custom"), list.entries().stream().map(BindNameEntry::bindName).toList());
         assertEquals(List.of(), list.notOffered());
     }
 
     @Test
-    void aShippedFileThatIsNotAPresetIsNamedAsFactory() throws IOException {
+    void aFactoryFileThatIsNotABindsFileIsNamedAsFactory() throws IOException {
         Path bindings = folder("Bindings");
         Path controlSchemes = folder("Steam/ControlSchemes");
         write(controlSchemes, "Broken.binds", "");
 
-        PresetList list = catalog.list(bindings, List.of(controlSchemes));
+        BindNameList list = catalog.list(bindings, List.of(controlSchemes));
 
-        assertEquals(List.of(new NotOfferedFile(controlSchemes.resolve("Broken.binds"), PresetOrigin.FACTORY,
+        assertEquals(List.of(new NotOfferedFile(controlSchemes.resolve("Broken.binds"), BindsFileOrigin.FACTORY,
                 NotOfferedReason.EMPTY, "")), list.notOffered());
     }
 
@@ -144,7 +144,7 @@ class PresetCatalogTest {
         InstallationRow missing = new InstallationRow(2, "EPIC", root.resolve("Epic").toString(), false, true);
 
         assertEquals(List.of(root.resolve("Steam/Products/elite-dangerous-odyssey-64/ControlSchemes")),
-                PresetCatalog.controlSchemesOf(List.of(present, missing)));
+                BindNameCatalog.controlSchemesOf(List.of(present, missing)));
     }
 
     private Path folder(String relative) throws IOException {
@@ -155,12 +155,12 @@ class PresetCatalogTest {
         Files.copy(Specimens.bindsSpecimen(name), folder.resolve(name));
     }
 
-    private static void shipped(Path controlSchemes, String name) throws IOException {
+    private static void factory(Path controlSchemes, String name) throws IOException {
         write(controlSchemes, name + ".binds", binds(name).replace(" MajorVersion=\"4\" MinorVersion=\"2\"", " SortOrder=\"0\""));
     }
 
-    private static String binds(String presetName) {
-        return "<Root PresetName=\"" + presetName + "\" MajorVersion=\"4\" MinorVersion=\"2\">"
+    private static String binds(String bindName) {
+        return "<Root PresetName=\"" + bindName + "\" MajorVersion=\"4\" MinorVersion=\"2\">"
                 + "<YawLeftButton><Primary Device=\"Keyboard\" Key=\"Key_A\" /></YawLeftButton></Root>";
     }
 
