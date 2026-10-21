@@ -24,8 +24,7 @@ details, check out `DEVELOPERS.md` in the root. It covers the architecture (deco
 reflection) and principles like DRY and SRP. All PRs go through review.
 
 ## License
-The project is released under [CC0 1.0 Universal](LICENSE). Third-party components retain their own
-licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The project is released under [CC0 1.0 Universal](LICENSE). Third-party components retain their own licenses; see [THIRD_PARTY_NOTICES.md](distribution/THIRD_PARTY_NOTICES.md).
 Feel free to check out the code and contribute. See [DEVELOPERS.md](DEVELOPERS.md) for details.
 
 ## Contact Developer / Join the Community
