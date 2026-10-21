@@ -38,7 +38,8 @@ public record DockedStationRecord(
         String government,
         String faction,
         String allegiance,
-        double distanceLs) {
+        double distanceLs,
+        String body) {
 
     /**
      * The journal's station type for a fleet carrier; the one type that is never part of a system.
@@ -57,7 +58,8 @@ public record DockedStationRecord(
                 event.getStationGovernmentLocalised(),
                 event.getStationFaction() == null ? null : event.getStationFaction().getName(),
                 null, // Docked carries no StationAllegiance; Location does, on about a third of them
-                event.getDistFromStarLS());
+                event.getDistFromStarLS(),
+                null);
     }
 
     public static DockedStationRecord of(LocationEvent event) {
@@ -72,13 +74,15 @@ public record DockedStationRecord(
                 event.getStationGovernmentLocalised(),
                 event.getStationFaction() == null ? null : event.getStationFaction().getName(),
                 event.getStationAllegiance(),
-                event.getDistFromStarLS());
+                event.getDistFromStarLS(),
+                null);
     }
 
     /**
      * A settlement seen from the air. It reports everything a docking does except the station type - which
      * arrives when the ship lands on its pad - and the star system, which the caller supplies because the
-     * event names only the body.
+     * event names only the body. That body is the one event that ties a settlement to the planet it stands on,
+     * so it is kept: the population estimate counts a planet's settlements by it.
      */
     public static DockedStationRecord of(ApproachSettlementEvent event, String starSystem) {
         return new DockedStationRecord(
@@ -92,7 +96,8 @@ public record DockedStationRecord(
                 event.getStationGovernmentLocalised(),
                 event.getStationFaction() == null ? null : event.getStationFaction().getName(),
                 event.getStationAllegiance(),
-                0);
+                0,
+                event.getBodyName());
     }
 
     /**
@@ -131,6 +136,7 @@ public record DockedStationRecord(
             if (hasText(faction)) station.setStationFaction(faction);
             if (hasText(allegiance)) station.setStationAllegiance(allegiance);
             if (distanceLs > 0) station.setDistance(distanceLs);
+            if (hasText(body)) station.setParentBodyName(body);
         });
     }
 

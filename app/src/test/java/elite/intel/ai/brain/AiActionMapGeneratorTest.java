@@ -188,6 +188,7 @@ class AiActionMapGeneratorTest {
             "query_pirate_mission",
             "query_planet_materials",
             "query_player_profile_rank_progress",
+            "query_population",
             "query_reminder",
             "query_ship_loadout",
             "query_ship_route_remaining_jumps",

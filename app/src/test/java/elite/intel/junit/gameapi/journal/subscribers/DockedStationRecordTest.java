@@ -52,6 +52,7 @@ class DockedStationRecordTest {
         assertEquals(LocationDto.LocationType.STATION, stored.getLocationType());
         assertEquals("Alliance", stored.getStationAllegiance());
         assertEquals(marketId, stored.getBodyId(), "a settlement has no BodyID of its own to be filed under");
+        assertEquals("body", stored.getParentBodyName(), "the body it stands on is what counts it towards a planet");
 
         LocationDto stillTheMoon = locations.findBySystemAddress(sysAddr, moon);
         assertEquals(LocationDto.LocationType.MOON, stillTheMoon.getLocationType());
