@@ -54,6 +54,9 @@ public class ParakeetSTTImpl implements EarsInterface {
     private static final Pattern SENTENCE_PUNCTUATION = Pattern.compile("[?!;:]|(?<!\\d)[.,]|[.,](?!\\d)");
     private static final int MIN_AUDIO_BYTES = SAMPLE_RATE * 2 * MIN_AUDIO_MS / 1000;
     private static final double LEADING_TRIM_THRESHOLD_FACTOR = 3.0; // trim leading frames below NOISE_FLOOR * this
+    // Room kept in front of the speech onset by the leading trim: Parakeet needs it to decode the first word.
+    static final int LEAD_IN_MS = 200;
+    private static final int LEAD_IN_BYTES = SAMPLE_RATE * 2 * LEAD_IN_MS / 1000;
     private static final int MAX_UTTERANCE_MS = 8000;
     private static final int MAX_UTTERANCE_BYTES = SAMPLE_RATE * 2 * MAX_UTTERANCE_MS / 1000;
     // How long recording continues past the button release. A commander lets go of the button while saying
@@ -468,7 +471,7 @@ public class ParakeetSTTImpl implements EarsInterface {
             // capture (a beep, a knock) sets the gain for the whole utterance and leaves the voice quiet.
             // The floor goes with it because the same peak decides whether there is a voice to normalize
             // at all - measured against the room, so a quiet microphone is still lifted.
-            byte[] conditioned = padAudio(trimLeadingLowEnergy(pcmBytes));
+            byte[] conditioned = padAudio(trimLeadingLowEnergy(pcmBytes, NOISE_FLOOR));
             byte[] forDecoder = Amplifier.amplify(conditioned, NOISE_FLOOR);
             // Peak alone cannot tell speech from silence: one button click in an otherwise empty buffer
             // reads the same as a spoken phrase. RMS is the sustained level, so the pair separates them -
@@ -693,17 +696,23 @@ public class ParakeetSTTImpl implements EarsInterface {
     }
 
     /**
-     * Strips leading 10ms frames whose RMS is below NOISE_FLOOR * LEADING_TRIM_THRESHOLD_FACTOR.
-     * Stops at the first frame that crosses the threshold, so speech onsets are preserved.
+     * Strips leading 10ms frames whose RMS is below noiseFloor * LEADING_TRIM_THRESHOLD_FACTOR, but keeps
+     * {@link #LEAD_IN_MS} of them in front of the first frame that crosses the threshold.
+     * <p>
+     * The lead-in is what makes this safe. Cut exactly at the onset, the waveform starts on the first syllable
+     * and Parakeet decodes it to nothing about a quarter of the time - the "half my push-to-talk orders vanish"
+     * report, where a clear capture came back empty and the same words worked when repeated. The threshold
+     * frame is also already inside the word, so the cut took the soft start of its first consonant with it.
      */
-    private byte[] trimLeadingLowEnergy(byte[] pcm) {
+    static byte[] trimLeadingLowEnergy(byte[] pcm, double noiseFloor) {
         final int FRAME_BYTES = 320; // 160 samples = 10ms at 16kHz, 16-bit mono
-        final double threshold = NOISE_FLOOR * LEADING_TRIM_THRESHOLD_FACTOR;
+        final double threshold = noiseFloor * LEADING_TRIM_THRESHOLD_FACTOR;
         int offset = 0;
         while (offset + FRAME_BYTES <= pcm.length) {
             if (calculateRMS(pcm, offset, FRAME_BYTES) >= threshold) break;
             offset += FRAME_BYTES;
         }
+        offset = Math.max(0, offset - LEAD_IN_BYTES);
         if (offset == 0) return pcm;
         byte[] trimmed = new byte[pcm.length - offset];
         System.arraycopy(pcm, offset, trimmed, 0, trimmed.length);
@@ -734,7 +743,7 @@ public class ParakeetSTTImpl implements EarsInterface {
         return calculateRMS(buffer, 0, length);
     }
 
-    private double calculateRMS(byte[] buffer, int offset, int length) {
+    private static double calculateRMS(byte[] buffer, int offset, int length) {
         if (length < 2) return 0.0;
         double sum = 0.0;
         int samples = length / 2;

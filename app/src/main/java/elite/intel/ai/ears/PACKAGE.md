@@ -30,7 +30,8 @@ Microphone (any format)
     │
 [SpectralNoiseReducer]      FFT spectral subtraction (if noise reduction enabled)
     │
-[trimLeadingLowEnergy]      strip pre-speech silence frames
+[trimLeadingLowEnergy]      strip pre-speech silence frames, keeping 200 ms before the onset (Parakeet drops the
+                            whole phrase ~25% of the time when the waveform starts on the first syllable)
     │
 [Amplifier]                 peak-normalize to -3 dBFS (only if the peak clears the floor by 15 dB)
     │
