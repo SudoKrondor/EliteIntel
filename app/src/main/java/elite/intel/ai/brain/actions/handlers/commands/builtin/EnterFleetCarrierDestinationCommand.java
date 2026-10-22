@@ -13,6 +13,7 @@ import elite.intel.gameapi.search.spansh.carrierroute.CarrierJump;
 import elite.intel.session.Status;
 import elite.intel.util.AudioPlayer;
 import elite.intel.util.PlayBeepEvent;
+import elite.intel.util.StringUtls;
 
 import java.util.Collections;
 import java.util.Map;
@@ -50,22 +51,27 @@ public final class EnterFleetCarrierDestinationCommand implements IntelCommand {
     public String execute(JsonObject params, String responseText) {
         Map<Integer, CarrierJump> fleetCarrierRoute = FleetCarrierRouteManager.getInstance().getFleetCarrierRoute();
 
-        if (!fleetCarrierRoute.isEmpty()) {
-            Integer nextLeg = Collections.min(fleetCarrierRoute.keySet());
-            CarrierJump carrierJump = fleetCarrierRoute.get(nextLeg);
-            if (carrierJump.getSystemName() != null) {
-                GameControllerBus.publish(GameInputSequenceEvent.of(
-                        GameInputStep.text(carrierJump.getSystemName()),
-                        GameInputStep.rawKey(KeyProcessor.KEY_ENTER, 0, 0),
-                        GameInputStep.delay(500), // Required minimum delay
-                        GameInputStep.bindingTap(BINDING_UI_UP.getGameBinding()),
-                        GameInputStep.delay(500), // Required minimum delay
-                        GameInputStep.bindingTap(BINDING_UI_RIGHT.getGameBinding()),
-                        GameInputStep.delay(500), // Required minimum delay
-                        GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding())
-                ));
-                GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
-            }
+        // WHY spoken rather than silent: an arrival consumes the leg it lands on, so a carrier at its final
+        // destination reads exactly like one that never had a route, and the commander heard only "aye-aye"
+        // and nothing typed. Either way there is no next leg - say so.
+        if (fleetCarrierRoute.isEmpty()) {
+            return StringUtls.localizedResponse("handler.fleetCarrierRoute.noLegsAhead");
+        }
+
+        Integer nextLeg = Collections.min(fleetCarrierRoute.keySet());
+        CarrierJump carrierJump = fleetCarrierRoute.get(nextLeg);
+        if (carrierJump.getSystemName() != null) {
+            GameControllerBus.publish(GameInputSequenceEvent.of(
+                    GameInputStep.text(carrierJump.getSystemName()),
+                    GameInputStep.rawKey(KeyProcessor.KEY_ENTER, 0, 0),
+                    GameInputStep.delay(500), // Required minimum delay
+                    GameInputStep.bindingTap(BINDING_UI_UP.getGameBinding()),
+                    GameInputStep.delay(500), // Required minimum delay
+                    GameInputStep.bindingTap(BINDING_UI_RIGHT.getGameBinding()),
+                    GameInputStep.delay(500), // Required minimum delay
+                    GameInputStep.bindingTap(BINDING_UI_SELECT.getGameBinding())
+            ));
+            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
         }
         return null;
     }
