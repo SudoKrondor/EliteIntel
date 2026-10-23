@@ -80,6 +80,13 @@ public class AuxiliaryFilesMonitor implements Runnable, ManagedService {
      */
     private final Map<String, String> parsed = new HashMap<>();
 
+    /**
+     * The last {@code Status.json} stamp seen. The game rewrites the file as the ship's state changes, so a stamp
+     * that has moved since the previous read (every 120 ms) was written just now - a fresh sample for
+     * {@link GameClock}. The one read at startup can be hours old and only sets this.
+     */
+    private String lastStatusStamp;
+
     public AuxiliaryFilesMonitor() {
     }
 
@@ -172,10 +179,18 @@ public class AuxiliaryFilesMonitor implements Runnable, ManagedService {
             if (Files.exists(statusPath)) {
                 Object statusEvent = readAndParseFile(statusPath, "Status.json");
                 if (statusEvent != null) {
+                    sampleGameClock((GameEvents.StatusEvent) statusEvent);
                     GameEventBus.publish(statusEvent);
                 }
             }
         }
+    }
+
+    private void sampleGameClock(GameEvents.StatusEvent status) {
+        String stamp = status.getTimestamp();
+        if (stamp == null || stamp.equals(lastStatusStamp)) return;
+        if (lastStatusStamp != null) GameClock.get().observe(stamp);
+        lastStatusStamp = stamp;
     }
 
     /**

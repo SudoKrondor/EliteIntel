@@ -1,6 +1,7 @@
 package elite.intel.gameapi.journal;
 
 import com.google.gson.JsonObject;
+import elite.intel.gameapi.GameClock;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.gameapi.journal.events.*;
 import elite.intel.session.ClearSessionCacheEvent;
@@ -169,7 +170,7 @@ public class EventRegistry {
             if (timestamp != null && !isRecent(timestamp, threshold)) {
                 long ageSec = -1;
                 try {
-                    ageSec = ChronoUnit.SECONDS.between(Instant.parse(timestamp), Instant.now());
+                    ageSec = ChronoUnit.SECONDS.between(GameClock.get().toPcTime(Instant.parse(timestamp)), Instant.now());
                 } catch (Exception ignored) {
                 }
                 log.debug("Skipping outdated event: {} timestamp={} age={}s threshold={}s",
@@ -207,7 +208,7 @@ public class EventRegistry {
 
     private static boolean isRecent(String timestamp, long millisThreshold) {
         try {
-            Instant eventTime = Instant.parse(timestamp);
+            Instant eventTime = GameClock.get().toPcTime(Instant.parse(timestamp));
             Instant now = Instant.now();
             return !eventTime.isBefore(now.minus(millisThreshold, ChronoUnit.MILLIS));
         } catch (Exception e) {

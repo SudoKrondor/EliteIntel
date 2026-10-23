@@ -1,6 +1,7 @@
 package elite.intel.ui.support;
 
 import elite.intel.bindforge.io.BindingsLoader;
+import elite.intel.gameapi.GameClock;
 import elite.intel.gameapi.JournalFiles;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -555,6 +556,7 @@ public final class SupportBundle {
                 .append("Java: ").append(System.getProperty("java.version")).append('\n')
                 .append("Locale: ").append(java.util.Locale.getDefault())
                 .append("  Timezone: ").append(java.time.ZoneId.systemDefault()).append('\n')
+                .append("Game clock: ").append(GameClock.get().describe()).append('\n')
                 .append(desktop())
                 .append(displays())
                 .append(HardwareReport.describe(installDir(sources), sources.journalDir()))
