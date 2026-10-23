@@ -1,10 +1,18 @@
 package elite.intel.gameapi;
 
+import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
+import elite.intel.ui.event.GameClockDisagreementEvent;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -74,6 +82,65 @@ class GameClockTest {
         clock.observe((String) null);
 
         assertTrue(clock.describe().startsWith("not measured yet (4 of 5"), clock.describe());
+    }
+
+    @Test
+    void theCommanderIsWarnedOncePerRun() {
+        List<GameClockDisagreementEvent> warnings = new ArrayList<>();
+        List<VocalisationRequestEvent> spoken = new ArrayList<>();
+        Object listener = new Object() {
+            @Subscribe
+            public void on(GameClockDisagreementEvent event) {
+                warnings.add(event);
+            }
+
+            @Subscribe
+            public void on(VocalisationRequestEvent event) {
+                spoken.add(event);
+            }
+        };
+        UiBus.register(listener);
+        GameEventBus.register(listener);
+        try {
+            observeAges(3601, 3602, 3601, 3603, 3601);
+            observeAges(0);
+            observeAges(7200, 7200, 7200, 7200, 7200, 7200);
+        } finally {
+            UiBus.unregister(listener);
+            GameEventBus.unregister(listener);
+        }
+
+        assertEquals(1, warnings.size());
+        assertEquals(1, spoken.size());
+        assertEquals(Duration.ofSeconds(3601), warnings.getFirst().offset());
+        assertEquals(1, warnings.getFirst().wholeHours());
+    }
+
+    @Test
+    void aHealthyClockIsNeverWarnedAbout() {
+        List<GameClockDisagreementEvent> warnings = new ArrayList<>();
+        Object listener = new Object() {
+            @Subscribe
+            public void on(GameClockDisagreementEvent event) {
+                warnings.add(event);
+            }
+        };
+        UiBus.register(listener);
+        try {
+            observeAges(0, 1, 3, 2, 1, 4, 0);
+        } finally {
+            UiBus.unregister(listener);
+        }
+
+        assertTrue(warnings.isEmpty());
+    }
+
+    @Test
+    void onlyAGapNearWholeHoursCountsAsHours() {
+        assertEquals(1, GameClock.wholeHours(Duration.ofSeconds(3650)));
+        assertEquals(2, GameClock.wholeHours(Duration.ofSeconds(-7180)));
+        assertEquals(0, GameClock.wholeHours(Duration.ofMinutes(10)));
+        assertEquals(0, GameClock.wholeHours(Duration.ofMinutes(90)));
     }
 
     private void observeAges(long... secondsOld) {
