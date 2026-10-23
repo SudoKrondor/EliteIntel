@@ -105,6 +105,10 @@
              sent a bundle that could not say whether the journal was being read at all, because
              the only lines that answer that were pinned to error along with the per-event noise. -->
         <Logger name="elite.intel.gameapi.JournalParser" level="info"/>
+        <!-- info, on purpose: one line when the game clock is first measured and one each time it moves. A game
+             stamping UTC an hour away from the PC clock (seen after a Windows Update) drops every live event as
+             outdated, and nothing else in a bundle says so. -->
+        <Logger name="elite.intel.gameapi.GameClock" level="info"/>
         <!-- warn, on purpose: a file caught mid-write is retried rather than dropped, and seeing how
              often that happens is the only way to tell a slow disk from a stuck market. -->
         <Logger name="elite.intel.gameapi.AuxiliaryFilesMonitor" level="warn"/>

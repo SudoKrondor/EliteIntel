@@ -56,6 +56,12 @@ public class JournalParser implements Runnable, ManagedService {
      */
     private static final long NEWEST_CHECK_INTERVAL_NANOS = TimeUnit.SECONDS.toNanos(5);
     /**
+     * A poll that brings no more lines than this was read as the game wrote them, so their stamps are fresh enough
+     * to measure the game clock with (see {@link GameClock}). A bigger batch is a backlog or a lag, and only ever
+     * reads older.
+     */
+    private static final int CLOCK_SAMPLE_MAX_LINES = 2;
+    /**
      * Static because each service restart builds a new parser - see {@link JournalReadMark}.
      */
     private static final AtomicReference<JournalReadMark> lastRead = new AtomicReference<>();
@@ -139,6 +145,8 @@ public class JournalParser implements Runnable, ManagedService {
             long lastPosition = JournalReadMark.startPosition(lastRead.get(), currentFile);
             log.info("Monitoring {} from byte {}", currentFile.getFileName(), lastPosition);
             long lastNewestCheck = System.nanoTime();
+            // WHY: the first read is whatever the journal already held, however old - never a clock sample.
+            boolean firstRead = true;
 
             while (isRunning) {
                 Thread.sleep(200);
@@ -201,6 +209,8 @@ public class JournalParser implements Runnable, ManagedService {
                     lastPosition = reader.getPosition();
                     lastRead.set(new JournalReadMark(currentFile, lastPosition));
                     log.debug("poll: file={} pos={} lines={}", currentFile.getFileName(), lastPosition, lines.size());
+                    boolean clockSamples = !firstRead && lines.size() <= CLOCK_SAMPLE_MAX_LINES;
+                    firstRead = false;
 
                     for (String line : lines) {
                         try {
@@ -211,6 +221,10 @@ public class JournalParser implements Runnable, ManagedService {
                             if (!element.isJsonObject()) continue;
 
                             JsonObject eventJson = element.getAsJsonObject();
+                            // Before the event is built: the outdated-event cut it passes through uses the offset.
+                            if (clockSamples && eventJson.has("timestamp")) {
+                                GameClock.get().observe(eventJson.get("timestamp").getAsString());
+                            }
                             if (eventJson.has("event")) {
                                 String eventType = eventJson.get("event").getAsString();
                                 BaseEvent event = EventRegistry.createEvent(eventType, eventJson);
