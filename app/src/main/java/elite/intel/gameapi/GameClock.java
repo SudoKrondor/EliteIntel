@@ -1,7 +1,12 @@
 package elite.intel.gameapi;
 
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.AppLogEvent;
+import elite.intel.ui.event.GameClockDisagreementEvent;
+import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -60,6 +65,11 @@ public final class GameClock {
     private final Deque<Duration> ages = new ArrayDeque<>();
     private Duration measured;
     private Duration reported;
+    /**
+     * The commander has been shown (and told) the disagreement this run. Once is enough: the correction keeps the app going,
+     * and a warning on every drift of the measurement would be nagging.
+     */
+    private boolean warned;
     private volatile Duration correction = Duration.ZERO;
 
     GameClock(Clock pcClock) {
@@ -93,20 +103,36 @@ public final class GameClock {
     }
 
     void observe(Instant gameStamp) {
-        String report;
+        String report = null;
+        GameClockDisagreementEvent warning = null;
+        boolean correcting;
         synchronized (this) {
             ages.addLast(Duration.between(gameStamp, pcClock.instant()));
             if (ages.size() > WINDOW) ages.removeFirst();
             if (ages.size() < MIN_SAMPLES) return;
             measured = ages.stream().min(Duration::compareTo).orElseThrow();
             correction = measured.abs().compareTo(CORRECTION_THRESHOLD) >= 0 ? measured : Duration.ZERO;
-            if (reported != null && measured.minus(reported).abs().compareTo(REPORT_STEP) < 0) return;
-            reported = measured;
-            report = describeLocked();
+            correcting = !correction.isZero();
+            if (correcting && !warned) {
+                warned = true;
+                warning = new GameClockDisagreementEvent(measured, wholeHours(measured));
+            }
+            if (reported == null || measured.minus(reported).abs().compareTo(REPORT_STEP) >= 0) {
+                reported = measured;
+                report = describeLocked();
+            }
         }
-        log.info("Game clock check: {}", report);
-        if (!correction.isZero()) {
-            UiBus.publish(new AppLogEvent("SYSTEM: Game clock check: " + report));
+        if (report != null) {
+            log.info("Game clock check: {}", report);
+            if (correcting) UiBus.publish(new AppLogEvent("SYSTEM: Game clock check: " + report));
+        }
+        if (warning != null) {
+            // WHY spoken too: the game is usually fullscreen, so the dialog waits unseen behind it while every
+            // command seems broken. One line sends the commander to it. Straight to TTS, like GameEditionCheck.
+            GameEventBus.publish(new VocalisationRequestEvent(
+                    StringUtls.localizedSpeech("speech.gameClockDisagreement"),
+                    MissionCriticalAnnouncementEvent.class, false));
+            UiBus.publish(warning);
         }
     }
 
@@ -129,11 +155,20 @@ public final class GameClock {
     }
 
     private String wholeHoursHint() {
-        long hours = Math.round(measured.abs().getSeconds() / 3600.0);
+        long hours = wholeHours(measured);
         if (hours == 0) return "";
-        Duration fromWholeHours = measured.abs().minus(Duration.ofHours(hours)).abs();
-        if (fromWholeHours.compareTo(WHOLE_HOUR_TOLERANCE) > 0) return "";
         return " - " + hours + " whole hour" + (hours == 1 ? "" : "s")
                 + ": the game and Windows disagree about the time zone";
+    }
+
+    /**
+     * The offset's size as a whole number of hours, give or take {@link #WHOLE_HOUR_TOLERANCE}, or 0 when it is not
+     * one. A whole-hour gap is a time-zone disagreement, anything else a clock that has drifted.
+     */
+    static long wholeHours(Duration offset) {
+        long hours = Math.round(offset.abs().getSeconds() / 3600.0);
+        if (hours == 0) return 0;
+        Duration fromWholeHours = offset.abs().minus(Duration.ofHours(hours)).abs();
+        return fromWholeHours.compareTo(WHOLE_HOUR_TOLERANCE) > 0 ? 0 : hours;
     }
 }
