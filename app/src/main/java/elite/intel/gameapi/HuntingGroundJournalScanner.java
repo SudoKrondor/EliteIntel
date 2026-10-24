@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import elite.intel.db.dao.LocationDao.Coordinates;
 import elite.intel.db.managers.HuntingGroundManager;
+import elite.intel.db.util.Database;
 import elite.intel.gameapi.journal.events.MissionAcceptedEvent;
 import elite.intel.gameapi.journal.events.MissionCompletedEvent;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
@@ -22,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * Reads the commander's journal archive and learns every hunting ground and every pirate massacre
@@ -36,6 +38,10 @@ import java.util.*;
  * Re-running it is safe and cheap. Contracts are keyed on the game's own {@code MissionID} so the
  * same one lands on the same row however many times it is read, resource site counts only ever rise,
  * and the scan remembers which journal it last finished so a second run reads only what is new.
+ * <p>
+ * It reads only the open commander's journals. Contracts land in the commander's own file, and a folder
+ * shared by several commanders would otherwise file one commander's contracts under another. The
+ * bookmark lives in the commander's file too, so each commander's first run reads their whole archive.
  */
 public class HuntingGroundJournalScanner {
 
@@ -47,16 +53,25 @@ public class HuntingGroundJournalScanner {
             "FSSSignalDiscovered", "MissionAccepted", "MissionCompleted");
 
     private final HuntingGroundManager huntingGrounds;
+    private final Supplier<Optional<String>> commander;
 
     public HuntingGroundJournalScanner() {
-        this(HuntingGroundManager.getInstance());
+        this(HuntingGroundManager.getInstance(), HuntingGroundJournalScanner::openCommander);
     }
 
     /**
      * Seam for tests.
+     *
+     * @param commander the FID whose journals to read, or empty to read every journal (no journal has
+     *                  named a commander yet, so there is no one to filter by)
      */
-    public HuntingGroundJournalScanner(HuntingGroundManager huntingGrounds) {
+    public HuntingGroundJournalScanner(HuntingGroundManager huntingGrounds, Supplier<Optional<String>> commander) {
         this.huntingGrounds = huntingGrounds;
+        this.commander = commander;
+    }
+
+    private static Optional<String> openCommander() {
+        return Database.isCommanderKnown() ? Optional.of(Database.currentCommander()) : Optional.empty();
     }
 
     /**
@@ -86,7 +101,7 @@ public class HuntingGroundJournalScanner {
     // ---------------------------------------------------------------- which files
 
     /**
-     * The journals still to read, oldest first.
+     * The open commander's journals still to read, oldest first.
      * <p>
      * The bookmarked file is read again rather than skipped: it may have been the one the game was
      * still writing when the scan ran, and re-reading it costs one file and cannot double anything.
@@ -100,17 +115,25 @@ public class HuntingGroundJournalScanner {
             return List.of();
         }
 
+        int from = bookmarkIndex(all);
+        return commander.get()
+                .map(fid -> JournalCommander.ownedBy(all, from, fid))
+                .orElseGet(() -> all.subList(from, all.size()));
+    }
+
+    /**
+     * Where the bookmarked journal sits in {@code all}, or 0 to read from the start.
+     */
+    private int bookmarkIndex(List<Path> all) {
         String bookmark = huntingGrounds.lastScannedJournal();
-        if (bookmark == null || bookmark.isBlank()) return all;
+        if (bookmark == null || bookmark.isBlank()) return 0;
 
         for (int i = 0; i < all.size(); i++) {
-            if (all.get(i).getFileName().toString().equals(bookmark)) {
-                return all.subList(i, all.size());
-            }
+            if (all.get(i).getFileName().toString().equals(bookmark)) return i;
         }
         // WHY: the bookmarked file is gone - archived or deleted - so there is no telling what was
         // read. Reading everything again is the only honest answer, and it costs nothing but time.
-        return all;
+        return 0;
     }
 
     private void rememberProgress(Path lastRead) {
