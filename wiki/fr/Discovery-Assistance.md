@@ -90,4 +90,4 @@ EliteIntel fournit un suivi et une analyse à l'échelle du système :
 
 
 ----
-Communauté 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Communauté 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

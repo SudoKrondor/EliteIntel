@@ -171,4 +171,4 @@ Los mensajes de validación al guardar aparecen en inglés.
 | Un paso de binding no hace nada | Ese control no tiene binding de teclado — ver la [pestaña Bindings](UI-Bindings-Tab) |
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

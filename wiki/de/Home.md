@@ -69,7 +69,7 @@ Wechsle den Anbieter jederzeit in den Einstellungen. Keine Neuinstallation erfor
 
 Elite Intel ist Open Source. Fehlermeldungen, Feature-Anfragen und Pull Requests sind willkommen.
 
-Tritt der Community auf Matrix bei: 👉 [**#krondor:matrix.org**](https://matrix.to/#/#krondor:matrix.org) 👈
+Tritt der Community auf Matrix bei: 👉 [**#krondor:matrix.org**](https://app.element.io/#/room/#krondor:matrix.org) 👈
 
 ---
 

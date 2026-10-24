@@ -48,4 +48,4 @@ Elite Intel calcula rutas comerciales y guía las operaciones de carga tramo por
    (Función planificada: liquidación automática de la carga al mejor postor.)
 
 ----
-Comunidad 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Comunidad 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

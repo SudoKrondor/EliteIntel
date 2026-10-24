@@ -69,7 +69,7 @@ Cambia de proveedor en cualquier momento desde los ajustes. No se requiere reins
 
 Elite Intel es de código abierto. Los informes de errores, solicitudes de funciones y pull requests son bienvenidos.
 
-Únete a la comunidad en Matrix: 👉 [**#krondor:matrix.org**](https://matrix.to/#/#krondor:matrix.org) 👈
+Únete a la comunidad en Matrix: 👉 [**#krondor:matrix.org**](https://app.element.io/#/room/#krondor:matrix.org) 👈
 
 ---
 

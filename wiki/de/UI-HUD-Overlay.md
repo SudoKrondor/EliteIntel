@@ -127,4 +127,4 @@ Sprache es tut. Namen aus dem Spiel — Systeme, Stationen, Waren — bleiben un
 
 ---
 
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

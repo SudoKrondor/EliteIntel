@@ -47,4 +47,4 @@ Une fois satisfait du terrain de chasse, demandez ``navigue vers le système fou
 Une fois vos missions cumulées, demandez ``trace une route vers la mission active`` et faites feu sur les pirates comme d'habitude. Lorsque vous aurez terminé les missions, la même demande ``trace une route vers la mission active`` vous mènera là où se trouve l'objectif, cette fois le port où vous avez pris la mission.
 
 ----
-Communauté 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Communauté 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

@@ -40,4 +40,4 @@ Was du fragen kannst, steht unter [Alle Befehle](AllCommands); zu einzelnen Them
 anderen Seiten und YouTube-Videos auf dieser Website.
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

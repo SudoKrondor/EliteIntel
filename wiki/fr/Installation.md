@@ -41,4 +41,4 @@ informé de tout ce qui manque — mais autant le faire d'emblée :
 ----
 Pour tout problème, signalez-le sur Matrix. Les rapports de bugs et les pull requests sont les bienvenus.
 
-Communauté 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Communauté 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

@@ -50,4 +50,4 @@ Elite Intel calculates trade routes and guides cargo operations leg by leg. Say 
    (Planned feature: automatic cargo liquidation to the highest bidder.)
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

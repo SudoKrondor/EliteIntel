@@ -47,4 +47,4 @@ Una vez satisfecho con el campo de caza, pregunta ``navega al sistema proveedor 
 Cuando tengas tus misiones apiladas, pregunta ``traza ruta a misión activa`` y dispara a los piratas como de costumbre. Cuando hayas terminado las misiones, la misma solicitud ``traza ruta a misión activa`` te llevará a donde está el objetivo, esta vez el puerto donde recogiste la misión.
 
 ----
-Comunidad 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Comunidad 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

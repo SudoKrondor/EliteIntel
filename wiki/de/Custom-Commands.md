@@ -176,4 +176,4 @@ Die Prüfmeldungen beim Speichern erscheinen auf Englisch.
 | Ein Binding-Schritt tut nichts | Diese Steuerung hat keine Tastaturbelegung — siehe [Reiter Bindings](UI-Bindings-Tab) |
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

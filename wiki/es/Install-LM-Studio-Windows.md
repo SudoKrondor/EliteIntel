@@ -146,4 +146,4 @@ Abre la **pestaña Ajustes** en Elite Intel:
 
 ---
 
-Comunidad 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Comunidad 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

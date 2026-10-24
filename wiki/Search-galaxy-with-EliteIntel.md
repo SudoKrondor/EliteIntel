@@ -41,4 +41,4 @@ if the result is a month ago, perhaps that system may not have the broker you ar
 
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

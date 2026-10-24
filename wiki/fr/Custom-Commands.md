@@ -173,4 +173,4 @@ Les messages de validation à l'enregistrement s'affichent en anglais.
 | Une étape de raccourci ne fait rien | Cette commande n'a pas de raccourci clavier — voir l'[onglet Bindings](UI-Bindings-Tab) |
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

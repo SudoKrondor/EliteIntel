@@ -181,4 +181,4 @@ Vega tells you at startup how many custom commands loaded, and how many failed v
 
 ---
 
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

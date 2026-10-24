@@ -252,4 +252,4 @@ Ouvrez l'**onglet Paramètres** dans Elite Intel :
 
 ---
 
-Communauté 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Communauté 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

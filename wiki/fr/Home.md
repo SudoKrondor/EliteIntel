@@ -69,7 +69,7 @@ Changez de fournisseur à tout moment dans les paramètres. Aucune réinstallati
 
 Elite Intel est open source. Les rapports de bugs, les demandes de fonctionnalités et les pull requests sont les bienvenus.
 
-Rejoignez la communauté sur Matrix : 👉 [**#krondor:matrix.org**](https://matrix.to/#/#krondor:matrix.org) 👈
+Rejoignez la communauté sur Matrix : 👉 [**#krondor:matrix.org**](https://app.element.io/#/room/#krondor:matrix.org) 👈
 
 ---
 

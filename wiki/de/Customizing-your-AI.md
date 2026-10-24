@@ -51,4 +51,4 @@ Der Offline-Modus bietet niedrige Latenz ohne API-Kosten, mit schlichten Antwort
 
 Probleme, unerwartetes Verhalten oder Vorschläge bitte auf Matrix melden.
 
-Community 👉 [**Matrix**](https://matrix.to/#/#krondor:matrix.org) 👈
+Community 👉 [**Matrix**](https://app.element.io/#/room/#krondor:matrix.org) 👈

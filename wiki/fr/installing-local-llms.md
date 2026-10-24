@@ -112,4 +112,4 @@ pouvez passer en local à tout moment sans réinstaller.
 
 ---
 
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

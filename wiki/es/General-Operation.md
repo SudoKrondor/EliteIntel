@@ -39,4 +39,4 @@ Consulta [Todos los comandos](AllCommands) para ver qué puedes pedir, y las dem
 de YouTube de este sitio para temas concretos.
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

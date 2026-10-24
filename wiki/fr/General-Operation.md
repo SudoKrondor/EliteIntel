@@ -41,4 +41,4 @@ Voir [Toutes les commandes](AllCommands) pour ce que vous pouvez demander, et le
 vidéos YouTube de ce site pour des sujets précis.
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

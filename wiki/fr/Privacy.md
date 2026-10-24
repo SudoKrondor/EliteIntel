@@ -56,4 +56,4 @@ Les mises à jour de la politique sont mentionnées dans le dépôt GitHub et pe
 Ouvrez un ticket sur GitHub ou contactez via Matrix.
 
 ----
-Communauté 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Communauté 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

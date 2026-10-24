@@ -41,4 +41,4 @@ wenn das Ergebnis einen Monat alt ist, hat dieses System möglicherweise nicht m
 
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

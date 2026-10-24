@@ -166,4 +166,4 @@ your ship controls as key presses.
 | A binding step does nothing | That control has no keyboard binding — see the [Bindings tab](UI-Bindings-Tab) |
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

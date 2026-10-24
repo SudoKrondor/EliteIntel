@@ -146,4 +146,4 @@ Als `start-lmstudio.bat` an einem dauerhaften Speicherort (z. B. `C:\Scripts\`) 
 
 ---
 
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

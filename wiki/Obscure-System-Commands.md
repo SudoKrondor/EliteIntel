@@ -146,4 +146,4 @@ coordinates. She does not plot to a system you name aloud — see
 - **VR**: power distribution and close/exit save you from hunting through menus in the headset.
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

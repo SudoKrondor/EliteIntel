@@ -56,4 +56,4 @@ Aktualisierungen der Richtlinie werden im GitHub-Repository vermerkt und können
 Bitte ein Issue auf GitHub eröffnen oder über Matrix Kontakt aufnehmen.
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

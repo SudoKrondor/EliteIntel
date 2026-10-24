@@ -37,4 +37,4 @@ EliteIntel proporciona navegación guiada por voz hacia coordenadas específicas
 - **Limitaciones de Spansh**: Si Spansh no reconoce tu sistema actual, prueba con una estrella adyacente para iniciar la ruta.
 
 ----
-Comunidad 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Comunidad 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

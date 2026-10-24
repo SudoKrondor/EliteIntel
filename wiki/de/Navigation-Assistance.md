@@ -37,4 +37,4 @@ EliteIntel bietet sprachgeführte Navigation zu bestimmten Koordinaten auf einem
 - **Spansh-Einschränkungen**: Wenn Spansh Ihr aktuelles System nicht erkennt, versuchen Sie einen benachbarten Stern, um die Route zu starten.
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

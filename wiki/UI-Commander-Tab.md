@@ -166,4 +166,4 @@ already sampled stay recorded, so enabling it again later will not send you back
 
 ---
 
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

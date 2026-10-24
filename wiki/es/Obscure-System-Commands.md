@@ -149,4 +149,4 @@ superficie. No traza rutas a un sistema que nombras en voz alta — ver
 - **VR**: la distribución de energía y cerrar/salir te ahorran buscar en menús con el visor.
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

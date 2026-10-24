@@ -77,7 +77,7 @@ Elite Intel is open source. Bug reports, feature requests, and pull requests are
 
 Get 👉 [ELEMENT client to connect to Matrix network here](https://element.io/en/download) 👈
 
-Join the community on Matrix: 👉 [**#krondor:matrix.org**](https://matrix.to/#/#krondor:matrix.org) 👈
+Join the community on Matrix: 👉 [**#krondor:matrix.org**](https://app.element.io/#/room/#krondor:matrix.org) 👈
 
 ---
 

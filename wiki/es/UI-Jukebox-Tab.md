@@ -91,4 +91,4 @@ También funcionan escritas en el chat del juego — ver [Todos los comandos](Al
 
 ---
 
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

@@ -63,4 +63,4 @@ Für eine Live-Kurzfassung derselben Daten trägt der [Vega-Reiter](UI-Vega-Tab)
 
 ---
 
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

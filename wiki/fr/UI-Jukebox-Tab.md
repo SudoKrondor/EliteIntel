@@ -91,4 +91,4 @@ Elles fonctionnent aussi tapées dans le chat du jeu — voir [Toutes les comman
 
 ---
 
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

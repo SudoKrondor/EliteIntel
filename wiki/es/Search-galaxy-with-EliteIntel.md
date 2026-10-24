@@ -41,4 +41,4 @@ si el resultado es de hace un mes, quizás ese sistema ya no tenga el intermedia
 
 
 ----
-Comunidad 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Comunidad 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

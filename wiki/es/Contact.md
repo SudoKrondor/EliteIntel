@@ -1,6 +1,6 @@
 ## Contactar al desarrollador.
 
-👉[**Comunidad en Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+👉[**Comunidad en Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈
 
 👉[YouTube](https://www.youtube.com/@SudoKrondor)
 

@@ -48,4 +48,4 @@ Elite Intel calcule les routes commerciales et guide les opérations de fret ét
    (Fonctionnalité prévue : liquidation automatique de la cargaison au plus offrant.)
 
 ----
-Communauté 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Communauté 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

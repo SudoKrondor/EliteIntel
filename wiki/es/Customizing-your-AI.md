@@ -51,4 +51,4 @@ El modo sin conexión ofrece baja latencia sin coste de API, con respuestas senc
 
 Reporta problemas, comportamientos inesperados o sugerencias en Matrix.
 
-Comunidad 👉 [**Matrix**](https://matrix.to/#/#krondor:matrix.org) 👈
+Comunidad 👉 [**Matrix**](https://app.element.io/#/room/#krondor:matrix.org) 👈

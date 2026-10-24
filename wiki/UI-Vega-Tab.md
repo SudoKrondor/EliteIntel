@@ -88,4 +88,4 @@ For the full breakdown, see the [Stats tab](UI-Stats-Tab).
 
 ---
 
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

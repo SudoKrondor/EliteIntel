@@ -56,4 +56,4 @@ Policy updates are noted in the GitHub repository and may appear in-app. Monitor
 Open an issue on GitHub or contact via Matrix.
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

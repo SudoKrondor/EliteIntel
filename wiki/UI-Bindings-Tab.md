@@ -150,4 +150,4 @@ Every one of these asks first. Both restores replace unsaved changes in the curr
 
 ---
 
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

@@ -151,4 +151,4 @@ Oberflächenkoordinaten. Zu einem laut genannten System plottet sie nicht — si
 - **VR**: Energieverteilung und Schließen ersparen dir die Suche in Menüs im Headset.
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

@@ -51,4 +51,4 @@ Le mode hors ligne offre une faible latence sans coût API, avec des réponses s
 
 Signalez les problèmes, comportements inattendus ou suggestions sur Matrix.
 
-Communauté 👉 [**Matrix**](https://matrix.to/#/#krondor:matrix.org) 👈
+Communauté 👉 [**Matrix**](https://app.element.io/#/room/#krondor:matrix.org) 👈

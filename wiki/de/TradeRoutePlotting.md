@@ -48,4 +48,4 @@ Elite Intel berechnet Handelsrouten und leitet Frachtoperationen Abschnitt für 
    (Geplante Funktion: automatische Frachtliquidation an den Meistbietenden.)
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

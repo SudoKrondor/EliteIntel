@@ -77,4 +77,4 @@ done with the missions same request ``plot route to active mission`` will take y
 time the port where you picked up the assignment. 
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

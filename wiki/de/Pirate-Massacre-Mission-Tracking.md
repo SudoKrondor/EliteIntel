@@ -47,4 +47,4 @@ Sobald du mit dem Jagdgebiet zufrieden bist, frage ``navigiere zum Piraten-Massa
 Wenn du deine Missionen gestapelt hast, frage ``plane Route zur aktiven Mission`` und schieße auf Piraten wie gewohnt. Wenn du die Missionen abgeschlossen hast, bringt dich dieselbe Anfrage ``plane Route zur aktiven Mission`` zu dem Ort, an dem sich das Ziel befindet  diesmal der Port, an dem du den Auftrag angenommen hast.
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

@@ -35,4 +35,4 @@ See [All Commands](AllCommands) for what you can ask, and the other pages and Yo
 specific topics.
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

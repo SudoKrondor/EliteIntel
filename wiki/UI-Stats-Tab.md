@@ -61,4 +61,4 @@ For a live at-a-glance version of the same data, the [Vega tab](UI-Vega-Tab) car
 
 ---
 
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈
