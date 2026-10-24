@@ -312,7 +312,7 @@ state colour, no fill. So:
 ## What this is not
 
 - **Not a list of every widget.** Forty-nine exist; this names the ones BindForge will reach for.
-- **Not behaviour.** Controller capture, install discovery, the ZIP archive and the settings namespacing are
+- **Not behaviour.** Controller capture, install discovery, the backup folders and the settings namespacing are
   real work, tracked in [v1.2-scope.md](../../00-overview/v1.2-scope.md) and the
   [porting notes](../../PORTING-NOTES.md#7-open-questions-this-port-creates). They need code, not components.
 - **Not a mockup review.** The mockups predate the port; where this document and a mockup disagree, this

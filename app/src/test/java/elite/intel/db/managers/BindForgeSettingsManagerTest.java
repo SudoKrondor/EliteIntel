@@ -4,10 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * BindForge's settings survive a save.
@@ -25,7 +23,6 @@ class BindForgeSettingsManagerTest {
     // depending on which sibling ran before it and what it left behind.
     @BeforeEach
     void resetToTheMigrationDefaults() {
-        settings.setAutoBackupOnLaunch(true);
         settings.setBackupDestination(null);
         settings.setBackupRetentionDays(30);
         settings.setEditHistoryRetention(10);
@@ -33,7 +30,6 @@ class BindForgeSettingsManagerTest {
 
     @Test
     void defaultsAreWhatTheMigrationDeclares() {
-        assertTrue(settings.isAutoBackupOnLaunch(), "auto-backup on launch defaults to enabled");
         assertEquals(30, settings.getBackupRetentionDays(), "Player backups are kept for 30 days by default");
         assertEquals(10, settings.getEditHistoryRetention(), "Edit History keeps 10 versions by default");
         assertNull(settings.getBackupDestination(), "no folder chosen means no stored destination");
@@ -45,19 +41,16 @@ class BindForgeSettingsManagerTest {
      */
     @Test
     void changingOneSettingLeavesTheOthersAlone() {
-        settings.setAutoBackupOnLaunch(false);
         settings.setBackupDestination("D:\\EliteBackups");
         settings.setBackupRetentionDays(7);
         settings.setEditHistoryRetention(25);
 
-        assertFalse(settings.isAutoBackupOnLaunch());
         assertEquals("D:\\EliteBackups", settings.getBackupDestination());
         assertEquals(7, settings.getBackupRetentionDays());
         assertEquals(25, settings.getEditHistoryRetention());
 
         settings.setEditHistoryRetention(3);
 
-        assertFalse(settings.isAutoBackupOnLaunch(), "still off after an unrelated save");
         assertEquals("D:\\EliteBackups", settings.getBackupDestination(), "still set after an unrelated save");
         assertEquals(7, settings.getBackupRetentionDays(), "still set after an unrelated save");
         assertEquals(3, settings.getEditHistoryRetention());
@@ -100,7 +93,7 @@ class BindForgeSettingsManagerTest {
 
     /**
      * A path the platform cannot represent is refused by the setter, so it never reaches the row. Stored, it
-     * would throw every time {@code PlayerBackupService} resolved the destination, launch backup included.
+     * would throw every time {@code BackupDestination} resolved the destination, launch backup included.
      */
     @Test
     void aDestinationThisPlatformCannotRepresentIsRejected() {

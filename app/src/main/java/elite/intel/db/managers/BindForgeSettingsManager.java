@@ -44,21 +44,12 @@ public class BindForgeSettingsManager {
         return instance;
     }
 
-    public boolean isAutoBackupOnLaunch() {
-        return Database.withDao(BindForgeSettingsDao.class, dao -> dao.get().isAutoBackupOnLaunch());
-    }
-
-    public void setAutoBackupOnLaunch(boolean autoBackupOnLaunch) {
-        update(settings -> settings.setAutoBackupOnLaunch(autoBackupOnLaunch));
-    }
-
     /**
-     * The folder the user chose for Player Backup archives, or {@code null} when they have not chosen one.
+     * The folder the user chose for backups, or {@code null} when they have not chosen one.
      * <p>
-     * Deliberately returns the stored value rather than resolving it. {@code PlayerBackupService} reads this
-     * and decides "chosen folder, else {@code AppPaths.getPlayerBackupsDir()}" in its own
-     * {@code resolvePlayerBackupsDir()}, and that is the one place the decision is made - a second resolver
-     * here would be a rival that can disagree with it.
+     * Deliberately returns the stored value rather than resolving it. {@code bindforge.storage.BackupDestination}
+     * reads this and decides "chosen folder, else {@code AppPaths.getPlayerBackupsDir()}", and that is the one
+     * place the decision is made - a second resolver here would be a rival that can disagree with it.
      */
     public String getBackupDestination() {
         return Database.withDao(BindForgeSettingsDao.class, dao -> dao.get().getBackupDestination());

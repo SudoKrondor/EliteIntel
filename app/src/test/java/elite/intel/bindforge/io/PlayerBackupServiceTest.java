@@ -1,131 +1,63 @@
 package elite.intel.bindforge.io;
 
-import elite.intel.db.managers.BindForgeSettingsManager;
-import org.junit.jupiter.api.Test;
 import elite.intel.io.TimestampedBackups;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Restore to Editing Slot and Restore to Live, until RESTORE replaces them (Storage S3). They read a backup taken
+ * since Storage S1, which keeps its {@code .binds} under {@code Bindings\}, and an old folder backup, which keeps them
+ * at its top. Taking backups is {@code BackupsTest}'s.
+ */
 class PlayerBackupServiceTest {
 
     @TempDir
     Path tempDir;
 
     @Test
-    void createBackupSweepsBindsFilesAndStartPresetIntoTimestampedFolder() throws Exception {
-        Path bindingsDir = tempDir.resolve("bindings");
-        Files.createDirectories(bindingsDir);
-        write(bindingsDir.resolve("Custom.3.0.binds"), "<Root/>");
-        write(bindingsDir.resolve("DawnTreader.4.0.binds"), "<Root/>");
-        write(bindingsDir.resolve("StartPreset.4.start"), "DawnTreader\nDawnTreader\n");
-        write(bindingsDir.resolve("DeviceMappings.xml"), "<ignored/>"); // out of scope - must not be swept
-
-        Path playerBackupsDir = tempDir.resolve("playerbackups");
-        PlayerBackupService service = service(playerBackupsDir, fixedClock("2026-06-24T18:30:00Z"));
-
-        Path backupFolder = service.createBackup(bindingsDir);
-
-        assertEquals(playerBackupsDir.resolve("2026-06-24_18-30-00"), backupFolder);
-        assertTrue(Files.exists(backupFolder.resolve("Custom.3.0.binds")));
-        assertTrue(Files.exists(backupFolder.resolve("DawnTreader.4.0.binds")));
-        assertTrue(Files.exists(backupFolder.resolve("StartPreset.4.start")));
-        assertEquals(3, countEntries(backupFolder));
-    }
-
-    @Test
-    void secondBackupInTheSameSecondGetsACollisionSafeFolderName() throws Exception {
-        Path bindingsDir = tempDir.resolve("bindings");
-        Files.createDirectories(bindingsDir);
-        write(bindingsDir.resolve("Custom.3.0.binds"), "<Root/>");
-
-        Path playerBackupsDir = tempDir.resolve("playerbackups");
-        PlayerBackupService service = service(playerBackupsDir, fixedClock("2026-06-24T18:30:00Z"));
-
-        Path first = service.createBackup(bindingsDir);
-        Path second = service.createBackup(bindingsDir);
-
-        assertEquals(playerBackupsDir.resolve("2026-06-24_18-30-00"), first);
-        assertEquals(playerBackupsDir.resolve("2026-06-24_18-30-00-1"), second);
-    }
-
-    @Test
-    void listBackupsReturnsNewestFirstWithFileNames() throws Exception {
-        Path bindingsDir = tempDir.resolve("bindings");
-        Files.createDirectories(bindingsDir);
-        write(bindingsDir.resolve("Custom.3.0.binds"), "<Root/>");
-
-        Path playerBackupsDir = tempDir.resolve("playerbackups");
-        service(playerBackupsDir, fixedClock("2026-06-24T18:00:00Z")).createBackup(bindingsDir);
-        PlayerBackupService later = service(playerBackupsDir, fixedClock("2026-06-24T19:00:00Z"));
-        later.createBackup(bindingsDir);
-
-        List<PlayerBackupService.PlayerBackup> backups = later.listBackups();
-
-        assertEquals(2, backups.size());
-        assertEquals("2026-06-24_19-00-00", backups.get(0).timestamp());
-        assertEquals("2026-06-24_18-00-00", backups.get(1).timestamp());
-        assertEquals(List.of("Custom.3.0.binds"), backups.get(0).fileNames());
-    }
-
-    @Test
-    void createBackupThrowsWhenBindingsDirHasNothingToBackUp() throws Exception {
-        Path bindingsDir = tempDir.resolve("bindings");
-        Files.createDirectories(bindingsDir);
-        write(bindingsDir.resolve("DeviceMappings.xml"), "<ignored/>"); // out of scope, doesn't count
-
-        PlayerBackupService service = service(tempDir.resolve("playerbackups"), fixedClock("2026-06-24T18:30:00Z"));
-
-        assertThrows(IOException.class, () -> service.createBackup(bindingsDir));
-    }
-
-    @Test
-    void listBackupsReturnsEmptyListWhenNoBackupsExistYet() throws Exception {
-        PlayerBackupService service = service(tempDir.resolve("playerbackups"), fixedClock("2026-06-24T18:30:00Z"));
-
-        assertTrue(service.listBackups().isEmpty());
-    }
-
-    @Test
-    void restoreToWorkingCopyLoadsTheBackupFileAsTheNewDraft() throws Exception {
-        Path bindingsDir = tempDir.resolve("bindings");
-        Files.createDirectories(bindingsDir);
-        String originalContent = binds("A");
-        write(bindingsDir.resolve("Custom.3.0.binds"), originalContent);
-
+    void restoreToWorkingCopyReadsANewBackupsBindingsFolder() throws Exception {
+        Path backupFolder = newBackup("Custom.3.0.binds", binds("A"));
         BindingsWorkingCopyRepository workingCopyRepo = workingCopyRepo();
-        PlayerBackupService service = service(tempDir.resolve("playerbackups"), fixedClock("2026-06-24T18:30:00Z"), workingCopyRepo);
-        Path backupFolder = service.createBackup(bindingsDir);
 
-        service.restoreToWorkingCopy(backupFolder, "Custom.3.0.binds");
+        service(workingCopyRepo).restoreToWorkingCopy(backupFolder, "Custom.3.0.binds");
 
-        Path workingCopy = workingCopyRepo.getWorkingCopyPath("Custom.3.0.binds");
-        assertEquals(originalContent, Files.readString(workingCopy, StandardCharsets.UTF_8));
+        assertEquals(binds("A"), Files.readString(workingCopyRepo.getWorkingCopyPath("Custom.3.0.binds"),
+                StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void restoreToWorkingCopyReadsAnOldFolderBackup() throws Exception {
+        Path backupFolder = oldBackup("Custom.3.0.binds", binds("V11"));
+        BindingsWorkingCopyRepository workingCopyRepo = workingCopyRepo();
+
+        service(workingCopyRepo).restoreToWorkingCopy(backupFolder, "Custom.3.0.binds");
+
+        assertEquals(binds("V11"), Files.readString(workingCopyRepo.getWorkingCopyPath("Custom.3.0.binds"),
+                StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void restoreToWorkingCopyThrowsWhenBackupHasNoFileForThatPreset() throws Exception {
+        Path backupFolder = newBackup("Custom.3.0.binds", binds("A"));
+
+        assertThrows(IOException.class,
+                () -> service(workingCopyRepo()).restoreToWorkingCopy(backupFolder, "DawnTreader.4.0.binds"));
     }
 
     @Test
     void restoreToLiveResultsInSyncedStateNotDraft() throws Exception {
-        Path bindingsDir = tempDir.resolve("bindings");
-        Files.createDirectories(bindingsDir);
-        write(bindingsDir.resolve("Custom.3.0.binds"), binds("A"));
-
+        Path backupFolder = newBackup("Custom.3.0.binds", binds("A"));
+        Path gameFile = liveFile("Custom.3.0.binds", binds("Z"));
         BindingsWorkingCopyRepository workingCopyRepo = workingCopyRepo();
-        PlayerBackupService service = service(tempDir.resolve("playerbackups"), fixedClock("2026-06-24T18:30:00Z"), workingCopyRepo);
-        Path backupFolder = service.createBackup(bindingsDir);
 
-        Path gameFile = bindingsDir.resolve("Custom.3.0.binds");
-        write(gameFile, binds("Z"));
-
-        service.restoreToLive(backupFolder, "Custom.3.0.binds", gameFile);
+        service(workingCopyRepo).restoreToLive(backupFolder, "Custom.3.0.binds", gameFile);
 
         assertFalse(workingCopyRepo.hasUnappliedDraft("Custom.3.0.binds", gameFile),
                 "Working copy should be in synced state after restore-to-live, not still showing as a draft");
@@ -133,173 +65,61 @@ class PlayerBackupServiceTest {
 
     @Test
     void restoreToLiveReturnsNullWithoutThrowingWhenGameFileDoesNotExist() throws Exception {
-        Path bindingsDir = tempDir.resolve("bindings");
-        Files.createDirectories(bindingsDir);
-        write(bindingsDir.resolve("Custom.3.0.binds"), binds("A"));
-
-        BindingsWorkingCopyRepository workingCopyRepo = workingCopyRepo();
-        PlayerBackupService service = service(tempDir.resolve("playerbackups"), fixedClock("2026-06-24T18:30:00Z"), workingCopyRepo);
-        Path backupFolder = service.createBackup(bindingsDir);
-
+        Path backupFolder = newBackup("Custom.3.0.binds", binds("A"));
         Path nonExistentGameFile = tempDir.resolve("nonexistent").resolve("Custom.3.0.binds");
 
-        Path result = service.restoreToLive(backupFolder, "Custom.3.0.binds", nonExistentGameFile);
+        Path result = service(workingCopyRepo()).restoreToLive(backupFolder, "Custom.3.0.binds", nonExistentGameFile);
 
         assertNull(result, "restoreToLive should return null (not throw) when the game file does not exist");
     }
 
     @Test
-    void restoreToWorkingCopyThrowsWhenBackupHasNoFileForThatPreset() throws Exception {
-        Path bindingsDir = tempDir.resolve("bindings");
-        Files.createDirectories(bindingsDir);
-        write(bindingsDir.resolve("Custom.3.0.binds"), binds("A"));
-
-        PlayerBackupService service = service(tempDir.resolve("playerbackups"), fixedClock("2026-06-24T18:30:00Z"));
-        Path backupFolder = service.createBackup(bindingsDir);
-
-        assertThrows(IOException.class, () -> service.restoreToWorkingCopy(backupFolder, "DawnTreader.4.0.binds"));
-    }
-
-    @Test
     void restoreToLiveAppliesTheRestoredDraftThroughTheSafeApplyPipeline() throws Exception {
-        Path bindingsDir = tempDir.resolve("bindings");
-        Files.createDirectories(bindingsDir);
-        String originalContent = binds("A");
-        write(bindingsDir.resolve("Custom.3.0.binds"), originalContent);
+        Path backupFolder = newBackup("Custom.3.0.binds", binds("A"));
+        Path gameFile = liveFile("Custom.3.0.binds", binds("Z")); // live file has since diverged from the backup
 
-        BindingsWorkingCopyRepository workingCopyRepo = workingCopyRepo();
-        PlayerBackupService service = service(tempDir.resolve("playerbackups"), fixedClock("2026-06-24T18:30:00Z"), workingCopyRepo);
-        Path backupFolder = service.createBackup(bindingsDir);
-
-        Path gameFile = bindingsDir.resolve("Custom.3.0.binds");
-        write(gameFile, binds("Z")); // live file has since diverged from the backup
-
-        Path applyBackup = service.restoreToLive(backupFolder, "Custom.3.0.binds", gameFile);
+        Path applyBackup = service(workingCopyRepo()).restoreToLive(backupFolder, "Custom.3.0.binds", gameFile);
 
         assertNotNull(applyBackup);
-        assertEquals(originalContent, Files.readString(gameFile, StandardCharsets.UTF_8));
+        assertEquals(binds("A"), Files.readString(gameFile, StandardCharsets.UTF_8));
         assertEquals(binds("Z"), Files.readString(applyBackup, StandardCharsets.UTF_8));
     }
 
-    @Test
-    void deleteBackupRemovesTheFolderAndItsContentsFromTheList() throws Exception {
-        Path bindingsDir = tempDir.resolve("bindings");
-        Files.createDirectories(bindingsDir);
-        write(bindingsDir.resolve("Custom.3.0.binds"), binds("A"));
-
-        Path playerBackupsDir = tempDir.resolve("playerbackups");
-        service(playerBackupsDir, fixedClock("2026-06-24T18:00:00Z")).createBackup(bindingsDir);
-        PlayerBackupService later = service(playerBackupsDir, fixedClock("2026-06-24T19:00:00Z"));
-        Path newest = later.createBackup(bindingsDir);
-
-        later.deleteBackup(newest);
-
-        assertFalse(Files.exists(newest));
-        assertEquals(List.of("2026-06-24_18-00-00"),
-                later.listBackups().stream().map(PlayerBackupService.PlayerBackup::timestamp).toList());
+    private Path newBackup(String name, String content) throws IOException {
+        Path folder = tempDir.resolve("backups").resolve("2026-10-24_18-30-00");
+        write(folder.resolve("Bindings").resolve(name), content);
+        write(folder.resolve("backup-info.txt"), "Status: Full");
+        return folder;
     }
 
-    @Test
-    void deleteBackupLeavesTheOriginalBindingsFilesAlone() throws Exception {
-        Path bindingsDir = tempDir.resolve("bindings");
-        Files.createDirectories(bindingsDir);
-        Path liveFile = bindingsDir.resolve("Custom.3.0.binds");
-        write(liveFile, binds("A"));
-
-        PlayerBackupService service = service(tempDir.resolve("playerbackups"), fixedClock("2026-06-24T18:30:00Z"));
-        Path backupFolder = service.createBackup(bindingsDir);
-
-        service.deleteBackup(backupFolder);
-
-        assertTrue(Files.exists(liveFile));
-        assertEquals(binds("A"), Files.readString(liveFile, StandardCharsets.UTF_8));
+    private Path oldBackup(String name, String content) throws IOException {
+        Path folder = tempDir.resolve("backups").resolve("2026-06-24_18-30-00");
+        write(folder.resolve(name), content);
+        return folder;
     }
 
-    @Test
-    void deleteBackupRejectsAFolderOutsideTheBackupRoot() throws Exception {
-        Path outsider = tempDir.resolve("bindings");
-        Files.createDirectories(outsider);
-        write(outsider.resolve("Custom.3.0.binds"), binds("A"));
-
-        PlayerBackupService service = service(tempDir.resolve("playerbackups"), fixedClock("2026-06-24T18:30:00Z"));
-
-        assertThrows(IOException.class, () -> service.deleteBackup(outsider));
-        assertTrue(Files.exists(outsider), "A folder outside playerbackups must never be deleted");
+    private Path liveFile(String name, String content) throws IOException {
+        Path file = tempDir.resolve("bindings").resolve(name);
+        write(file, content);
+        return file;
     }
 
-    @Test
-    void deleteBackupThrowsWhenTheFolderIsAlreadyGone() throws Exception {
-        Path bindingsDir = tempDir.resolve("bindings");
-        Files.createDirectories(bindingsDir);
-        write(bindingsDir.resolve("Custom.3.0.binds"), binds("A"));
-
-        PlayerBackupService service = service(tempDir.resolve("playerbackups"), fixedClock("2026-06-24T18:30:00Z"));
-        Path backupFolder = service.createBackup(bindingsDir);
-        service.deleteBackup(backupFolder);
-
-        assertThrows(IOException.class, () -> service.deleteBackup(backupFolder));
-    }
-
-    /**
-     * The chosen backup destination used to be stored and never read, so every backup went to the default
-     * folder however the setting was set. Built with no test override so the setting is the only thing
-     * deciding where the backup lands.
-     */
-    @Test
-    void createBackupHonoursTheChosenDestination() throws Exception {
-        Path bindingsDir = tempDir.resolve("bindings");
-        Files.createDirectories(bindingsDir);
-        write(bindingsDir.resolve("Custom.4.2.binds"), "<Root/>");
-        Path chosen = tempDir.resolve("my chosen backups");
-
-        BindForgeSettingsManager settings = BindForgeSettingsManager.getInstance();
-        String previous = settings.getBackupDestination();
-        try {
-            settings.setBackupDestination(chosen.toString());
-            Path backupFolder = serviceWithoutOverride(fixedClock("2026-06-24T18:30:00Z"))
-                    .createBackup(bindingsDir);
-
-            assertEquals(chosen.resolve("2026-06-24_18-30-00"), backupFolder);
-            assertTrue(Files.exists(backupFolder.resolve("Custom.4.2.binds")));
-        } finally {
-            settings.setBackupDestination(previous);
-        }
-    }
-
-    /** No {@code baseDirOverride}, so the destination comes from the setting or Elite-Intel's default. */
-    private PlayerBackupService serviceWithoutOverride(Clock clock) {
-        return service(null, clock, workingCopyRepo());
-    }
-
-    private PlayerBackupService service(Path playerBackupsDir, Clock clock) {
-        return service(playerBackupsDir, clock, workingCopyRepo());
-    }
-
-    private PlayerBackupService service(Path playerBackupsDir, Clock clock, BindingsWorkingCopyRepository workingCopyRepo) {
+    private PlayerBackupService service(BindingsWorkingCopyRepository workingCopyRepo) {
         BindingsApplyService applyService =
                 new BindingsApplyService(workingCopyRepo, new TimestampedBackups(), tempDir.resolve("applybackups"));
-        return new PlayerBackupService(new BindingsLoader(), workingCopyRepo, applyService, clock, playerBackupsDir);
+        return new PlayerBackupService(workingCopyRepo, applyService);
     }
 
     private BindingsWorkingCopyRepository workingCopyRepo() {
         return new BindingsWorkingCopyRepository(tempDir.resolve("working"));
     }
 
-    private String binds(String key) {
+    private static String binds(String key) {
         return "<Root Key=\"" + key + "\"/>";
     }
 
-    private Clock fixedClock(String instant) {
-        return Clock.fixed(Instant.parse(instant), ZoneOffset.UTC);
-    }
-
-    private long countEntries(Path dir) throws Exception {
-        try (var stream = Files.list(dir)) {
-            return stream.count();
-        }
-    }
-
-    private void write(Path file, String content) throws Exception {
+    private static void write(Path file, String content) throws IOException {
+        Files.createDirectories(file.getParent());
         Files.writeString(file, content, StandardCharsets.UTF_8);
     }
 }

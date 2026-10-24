@@ -26,12 +26,10 @@ public interface BindForgeSettingsDao {
     // global_settings, where two columns are missing. BindForgeSettingsRoundTripTest is what keeps this honest.
     @SqlUpdate("""
             INSERT OR REPLACE INTO bindforge_settings (id,
-                                                       auto_backup_on_launch,
                                                        backup_destination,
                                                        backup_retention_days,
                                                        edit_history_retention)
             VALUES (1,
-                    :autoBackupOnLaunch,
                     :backupDestination,
                     :backupRetentionDays,
                     :editHistoryRetention)
@@ -43,7 +41,6 @@ public interface BindForgeSettingsDao {
         @Override
         public BindForgeSettings map(ResultSet rs, StatementContext ctx) throws SQLException {
             BindForgeSettings entity = new BindForgeSettings();
-            entity.setAutoBackupOnLaunch(rs.getBoolean("auto_backup_on_launch"));
             entity.setBackupDestination(rs.getString("backup_destination"));
             entity.setBackupRetentionDays(rs.getInt("backup_retention_days"));
             entity.setEditHistoryRetention(rs.getInt("edit_history_retention"));
@@ -53,21 +50,12 @@ public interface BindForgeSettingsDao {
 
 
     class BindForgeSettings {
-        boolean autoBackupOnLaunch;
         String backupDestination;
         int backupRetentionDays;
         int editHistoryRetention;
 
-        public boolean isAutoBackupOnLaunch() {
-            return autoBackupOnLaunch;
-        }
-
-        public void setAutoBackupOnLaunch(boolean onOff) {
-            this.autoBackupOnLaunch = onOff;
-        }
-
         /**
-         * Where Player Backup archives are written, or {@code null} to use Elite-Intel's default backup path.
+         * Where backups are written, or {@code null} to use Elite-Intel's default backup path.
          */
         public String getBackupDestination() {
             return backupDestination;

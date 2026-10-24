@@ -84,7 +84,7 @@ installations with each other before then. Once the master exists, each row offe
   is not enough either — the master stays filled, so the installations then show as diverging, **SET UP** is not
   offered, and nothing in the app empties the master. An undo needs both halves: the files restored and the master
   (and any draft) emptied.
-- **The first-setup backup shows in the Player Backups list.** *Storage S1 replaces both backups with the one zip
+- **The first-setup backup shows in the Player Backups list.** *Storage S1 replaces both backups with the one backup
   system, and settles what its list shows of the old folders.* `DeviceFilesSnapshot` writes beside
   `PlayerBackupService`'s folders, so `listBackups()` lists it, with installation subfolders as its "files". File
   Manager's restore work should recognise it (or Krondor moves it) — `bindforge.io`.

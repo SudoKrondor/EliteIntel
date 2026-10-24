@@ -91,7 +91,8 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
 
 ## Backups
 
-12. A backup is a zip of the live copies, named with its date stamp, in Elite-Intel's BindForge backup folder. One is
+12. A backup is a folder holding a copy of the live copies, named with its date stamp, in Elite-Intel's BindForge
+    backup folder — a plain folder, not a zip, so the user can look through it, as in V1.1 (2026-10-24, Alan). One is
     made before every write to the live copies. **Before a live copy replaces the working copy, the working copy is
     backed up the same way** (2026-10-23, Alan).
 

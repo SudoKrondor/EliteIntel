@@ -3,6 +3,7 @@ package elite.intel.bindforge.devices;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.bindforge.devicefiles.ButtonMapGeneration;
 import elite.intel.bindforge.devicefiles.ButtonMapGeneration.Controller;
+import elite.intel.bindforge.storage.StartupBackup;
 import elite.intel.db.managers.BindForgeActivationManager;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.events.DeviceConnectedEvent;
@@ -34,6 +35,10 @@ import java.util.function.Supplier;
  * never opens BindForge has asked for nothing. When activation happens, the controllers connected then are handled
  * ({@link BindForgeActivatedEvent}).
  * <p>
+ * <strong>Only once the startup backup is taken</strong> (storage.md rule 12; Alan, 2026-10-24). It waits for
+ * {@link StartupBackup}, and writes nothing that run if the backup failed - nothing reaches a game file until a backup
+ * of everything exists.
+ * <p>
  * <strong>Every connect, not only the ones at startup</strong> (Alan, 2026-10-06). {@code DeviceService} says
  * nothing when its first enumeration is done, but it publishes a {@link DeviceConnectedEvent} for every
  * controller present then - so acting on each connect covers startup exactly, and a named controller plugged in
@@ -57,11 +62,13 @@ public final class ButtonMapStartup implements ManagedService {
 
     public ButtonMapStartup() {
         this(new ButtonMapGeneration()::generateFor, DeviceService.getInstance()::getConnectedDevices,
-                DeviceService.getInstance()::description, BindForgeActivationManager.getInstance()::isActivated);
+                DeviceService.getInstance()::description,
+                () -> StartupBackup.getInstance().awaitTaken() && BindForgeActivationManager.getInstance().isActivated());
     }
 
     /**
-     * @param activated whether BindForge is activated - asked on the worker thread, before each controller
+     * @param activated whether it may write: the startup backup was taken and BindForge is activated - asked on the
+     *                  worker thread, before each controller; it may block until the startup backup is done
      */
     ButtonMapStartup(Consumer<Controller> generation, Supplier<List<Device>> alreadyConnected,
                      IntFunction<Optional<DeviceDescription>> descriptions, BooleanSupplier activated) {
@@ -143,7 +150,8 @@ public final class ButtonMapStartup implements ManagedService {
             // WHY: asked here, on the worker, not on the device bus's thread, which also carries push-to-talk -
             // it is a database read.
             if (!activated.getAsBoolean()) {
-                log.debug("BindForge is not activated, so no .buttonMap is generated for '{}'", device.name());
+                log.debug("BindForge is not activated, or the startup backup was not taken, so no .buttonMap is "
+                        + "generated for '{}'", device.name());
                 return;
             }
             DeviceIdentities.of(device).ifPresent(identity -> generation.accept(new Controller(identity.vid(),

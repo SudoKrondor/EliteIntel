@@ -24,8 +24,9 @@ other documents disagree, the work stops and Alan decides.** How the files are h
 - **Live copy** — those files where the game reads them: the bindings folder for `.binds` and `StartPreset.N.start`,
   and each installation's `ControlSchemes` folder for `DeviceMappings.xml` and the `.buttonMap`s. Uncompressed, and
   the user can open them.
-- **Backup** — a zip of the live copies, named with its date stamp, in Elite-Intel's BindForge backup folder — **or a
-  zip of the working copy**, made the same way, before a live copy replaces it (2026-10-23, Alan).
+- **Backup** — a folder holding a copy of the live copies, named with its date stamp, in Elite-Intel's BindForge
+  backup folder — **or a copy of the working copy**, made the same way, before a live copy replaces it (2026-10-23,
+  Alan). Uncompressed, and the user can open it — a folder, not a zip (2026-10-24, Alan).
 - **Edits not applied** — changes on the editor screens that APPLY has not written yet. They live only on screen.
 - **"Master" and "draft" are retired.** Older documents use them: *draft* means the editor screens' edits not
   applied, and *master* means the working copy.

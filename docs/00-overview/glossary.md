@@ -59,7 +59,7 @@ listed so that older notes and mockups can be read correctly:
 - **Game input configuration files, working copy, live copy, backup, edits not applied** — defined in
   [BindForge — Principles](../02-features/bindforge/principles.md#words) (2026-10-22, Alan), which every BindForge
   document follows. In short: the **working copy** is in Elite-Intel's BindForge folder and is the source of truth;
-  the **live copy** is where the game reads the files; a **backup** is a date-stamped zip of the live copies.
+  the **live copy** is where the game reads the files; a **backup** is a date-stamped folder holding a copy of the live copies (a folder, not a zip, since 2026-10-24).
 - **Draft** — **retired 2026-10-22.** In older documents it means the editor screens' edits not applied.
   (Until then it named the editable copy in Elite-Intel's folder, beside a separate master.)
 - **Master** — **retired 2026-10-22.** In older documents read it as the working copy. (From 2026-09-24 it named a

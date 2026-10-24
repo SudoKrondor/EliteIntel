@@ -3,6 +3,9 @@ package elite.intel.ui.screen.bindings;
 import elite.intel.bindforge.io.BindingsApplyException;
 import elite.intel.bindforge.io.BindingsMonitor;
 import elite.intel.bindforge.io.PlayerBackupService;
+import elite.intel.bindforge.storage.Backup;
+import elite.intel.bindforge.storage.Backups;
+import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.support.BindingApplyResultPresenter;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.HudFooter;
@@ -18,6 +21,7 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -28,12 +32,11 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
  * The "Binding Management" sub-tab of BIND FORGE, which holds two tabs of its own.
  * <p>
  * <strong>Game Install Locations</strong> is where BindForge looks for the files it manages.
- * <strong>Player Backups</strong> is this panel's original content: a manual "Backup Now" action, a flat
- * list of existing {@code playerbackups} snapshots, and two restore actions plus a delete action on the
- * selected backup.
+ * <strong>Player Backups</strong> lists the backups in the backup folder ({@link Backups}, Storage S1), newest first,
+ * with Backup Now and the two restore actions on the selected backup.
  * <p>
- * It becomes File Manager once Edit History joins them - a tab is named when it becomes what the name says,
- * so the name waits until then.
+ * <strong>No Delete</strong> (Alan, 2026-10-24): retention at Elite-Intel start keeps the folder from growing, and a
+ * button could delete first setup's backup, the one kept forever.
  * <p>
  * Both restore actions share the same first step (loading the backup's file for the active
  * preset into the working copy as the new draft): "Restore to Editing Slot" stops there, the
@@ -41,24 +44,26 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
  * {@code BindingsUpdatedEvent}. "Restore to Live" continues into the existing safe-apply
  * pipeline ({@code BindingsApplyService.apply()}), so it gets that pipeline's own
  * conflict-check and pre-write backup rather than a separate, less-safe direct write.
+ * RESTORE replaces both (Storage S3).
  */
 public class BindingManagementPanel extends JPanel {
 
     private static final Logger log = LogManager.getLogger(BindingManagementPanel.class);
+    private static final DateTimeFormatter CREATED = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    private final PlayerBackupService backupService = PlayerBackupService.getInstance();
+    private final Backups backups = Backups.stored();
+    private final PlayerBackupService restoreService = PlayerBackupService.getInstance();
     private final BindingApplyResultPresenter applyResultPresenter = new BindingApplyResultPresenter(this);
 
     private final GameInstallLocationsPanel gameInstallLocationsPanel = new GameInstallLocationsPanel();
 
     private DefaultTableModel tableModel;
     private JTable table;
-    private List<PlayerBackupService.PlayerBackup> currentBackups = List.of();
+    private List<Backup> currentBackups = List.of();
 
     private JButton backupNowButton;
     private JButton restoreToEditingSlotButton;
     private JButton restoreToLiveButton;
-    private JButton deleteBackupButton;
     private boolean operationInProgress;
 
     public BindingManagementPanel() {
@@ -69,10 +74,6 @@ public class BindingManagementPanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
-        // WHY: this screen is growing into File Manager, which holds Game Install Locations, Player Backups
-        // and Edit History. The backup screen below becomes one of those tabs rather than the whole panel.
-        // The outer tab keeps its current name until it holds all three - a tab is named when it becomes
-        // what the name says.
         JTabbedPane tabs = AppTheme.makeSectionTabs();
         tabs.addTab(getText("bindings.tab.gameInstallLocations"), gameInstallLocationsPanel);
         tabs.addTab(getText("bindings.tab.playerBackups"), buildPlayerBackupsTab());
@@ -80,9 +81,9 @@ public class BindingManagementPanel extends JPanel {
     }
 
     private JPanel buildPlayerBackupsTab() {
-        JPanel backups = new JPanel(new BorderLayout());
-        backups.setBorder(hudSubtabContentBorder());
-        backups.setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(hudSubtabContentBorder());
+        panel.setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
         tableModel = new ReadOnlyTableModel(columnNames(), 0);
         table = new JTable(tableModel);
@@ -97,9 +98,9 @@ public class BindingManagementPanel extends JPanel {
                 6);
         section.body().add(HudTable.dataPlaneScrollPane(table), BorderLayout.CENTER);
 
-        backups.add(section, BorderLayout.CENTER);
-        backups.add(buildFooter(), BorderLayout.SOUTH);
-        return backups;
+        panel.add(section, BorderLayout.CENTER);
+        panel.add(buildFooter(), BorderLayout.SOUTH);
+        return panel;
     }
 
     private JPanel buildFooter() {
@@ -114,12 +115,8 @@ public class BindingManagementPanel extends JPanel {
         restoreToLiveButton.setEnabled(false);
         restoreToLiveButton.addActionListener(e -> performRestoreToLive());
 
-        deleteBackupButton = makeButtonSubtle(getText("bindings.bindingManagement.button.deleteBackup"));
-        deleteBackupButton.setEnabled(false);
-        deleteBackupButton.addActionListener(e -> performDeleteBackup());
-
         return HudFooter.build(false, null, null,
-                List.of(backupNowButton, restoreToEditingSlotButton, restoreToLiveButton, deleteBackupButton));
+                List.of(backupNowButton, restoreToEditingSlotButton, restoreToLiveButton));
     }
 
     public void initData() {
@@ -127,36 +124,41 @@ public class BindingManagementPanel extends JPanel {
         gameInstallLocationsPanel.initData();
     }
 
-    /**
-     * Runs the backup sweep off the EDT, same as {@code BindingProfilePanel}'s
-     * {@code applyPlanInBackground()} - a multi-file copy would otherwise freeze the UI.
-     */
+    /** Backs up everything off the EDT - it runs installation detection and copies every file. */
     private void performBackup() {
         if (operationInProgress) {
             return;
         }
         setOperationBusy(true);
         new Thread(() -> {
+            Backup taken = null;
             IOException failure = null;
             try {
-                backupService.createBackup();
+                taken = backups.backUpEverything();
             } catch (IOException e) {
+                log.warn("Backup Now failed", e);
                 failure = e;
             }
-            IOException result = failure;
+            Backup result = taken;
+            IOException resultFailure = failure;
             SwingUtilities.invokeLater(() -> {
                 setOperationBusy(false);
-                if (result != null) {
-                    showBackupError(result);
-                } else {
-                    refreshBackups();
+                if (resultFailure != null) {
+                    showError("bindings.bindingManagement.backup.dialogTitle", "bindings.bindingManagement.backup.error",
+                            resultFailure.getMessage());
+                } else if (!result.full()) {
+                    // WHY: Partial is named, with what could not be read, so the user knows the backup is incomplete.
+                    HudConfirmDialog.info(this, getText("bindings.bindingManagement.backup.partial.title"),
+                            getText("bindings.bindingManagement.backup.partial.text", String.join("\n", result.notRead())),
+                            getText("button.ok"));
                 }
+                refreshBackups();
             });
         }, "PlayerBackup-Thread").start();
     }
 
     private void performRestoreToEditingSlot() {
-        PlayerBackupService.PlayerBackup backup = selectedBackup();
+        Backup backup = selectedBackup();
         if (backup == null || operationInProgress) {
             return;
         }
@@ -173,7 +175,7 @@ public class BindingManagementPanel extends JPanel {
         new Thread(() -> {
             IOException failure = null;
             try {
-                backupService.restoreToWorkingCopy(backup.folder(), presetFileName);
+                restoreService.restoreToWorkingCopy(backup.folder(), presetFileName);
             } catch (IOException e) {
                 failure = e;
             }
@@ -190,7 +192,7 @@ public class BindingManagementPanel extends JPanel {
     }
 
     private void performRestoreToLive() {
-        PlayerBackupService.PlayerBackup backup = selectedBackup();
+        Backup backup = selectedBackup();
         if (backup == null || operationInProgress) {
             return;
         }
@@ -209,7 +211,7 @@ public class BindingManagementPanel extends JPanel {
             IOException ioFailure = null;
             BindingsApplyException applyFailure = null;
             try {
-                appliedBackup = backupService.restoreToLive(backup.folder(), presetFileName, gameFile.toPath());
+                appliedBackup = restoreService.restoreToLive(backup.folder(), presetFileName, gameFile.toPath());
             } catch (IOException e) {
                 ioFailure = e;
             } catch (BindingsApplyException e) {
@@ -232,53 +234,12 @@ public class BindingManagementPanel extends JPanel {
         }, "PlayerBackupRestoreLive-Thread").start();
     }
 
-    /**
-     * Deletes the selected backup folder so the list does not grow indefinitely. Guarded by a
-     * confirmation dialog because the snapshot it removes is not recoverable from anywhere else.
-     */
-    private void performDeleteBackup() {
-        PlayerBackupService.PlayerBackup backup = selectedBackup();
-        if (backup == null || operationInProgress) {
-            return;
-        }
-        if (!confirm("bindings.bindingManagement.delete.confirm.text",
-                "bindings.bindingManagement.delete.confirm.title",
-                backup.timestamp())) {
-            return;
-        }
-
-        setOperationBusy(true);
-        new Thread(() -> {
-            IOException failure = null;
-            try {
-                backupService.deleteBackup(backup.folder());
-            } catch (IOException e) {
-                failure = e;
-            }
-            IOException result = failure;
-            SwingUtilities.invokeLater(() -> {
-                setOperationBusy(false);
-                if (result != null) {
-                    showDeleteError(result.getMessage());
-                }
-                // Refresh either way: on failure the list re-reads what is actually on disk.
-                refreshBackups();
-            });
-        }, "PlayerBackupDelete-Thread").start();
-    }
-
     private boolean confirmRestore(String messageKey, String presetFileName) {
-        return confirm(messageKey, "bindings.bindingManagement.restore.confirm.title", presetFileName);
-    }
-
-    private boolean confirm(String messageKey, String titleKey, String argument) {
-        int choice = JOptionPane.showConfirmDialog(
-                this,
-                getText(messageKey, argument),
-                getText(titleKey),
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE);
-        return choice == JOptionPane.YES_OPTION;
+        return HudConfirmDialog.confirm(this,
+                getText("bindings.bindingManagement.restore.confirm.title"),
+                getText(messageKey, presetFileName),
+                getText("bindings.bindingManagement.restore.confirm.title"),
+                getText("button.cancel"));
     }
 
     /**
@@ -295,7 +256,7 @@ public class BindingManagementPanel extends JPanel {
         }
     }
 
-    private PlayerBackupService.PlayerBackup selectedBackup() {
+    private Backup selectedBackup() {
         int row = table.getSelectedRow();
         return row >= 0 && row < currentBackups.size() ? currentBackups.get(row) : null;
     }
@@ -311,46 +272,43 @@ public class BindingManagementPanel extends JPanel {
         boolean hasSelection = !operationInProgress && selectedBackup() != null;
         restoreToEditingSlotButton.setEnabled(hasSelection);
         restoreToLiveButton.setEnabled(hasSelection);
-        deleteBackupButton.setEnabled(hasSelection);
-    }
-
-    private void showBackupError(IOException e) {
-        JOptionPane.showMessageDialog(
-                this,
-                getText("bindings.bindingManagement.backup.error", e.getMessage()),
-                getText("bindings.bindingManagement.backup.dialogTitle"),
-                JOptionPane.ERROR_MESSAGE);
     }
 
     private void showRestoreError(String message) {
-        JOptionPane.showMessageDialog(
-                this,
-                getText("bindings.bindingManagement.restore.error", message),
-                getText("bindings.bindingManagement.restore.error.dialogTitle"),
-                JOptionPane.ERROR_MESSAGE);
+        showError("bindings.bindingManagement.restore.error.dialogTitle", "bindings.bindingManagement.restore.error",
+                message);
     }
 
-    private void showDeleteError(String message) {
-        JOptionPane.showMessageDialog(
-                this,
-                getText("bindings.bindingManagement.delete.error", message),
-                getText("bindings.bindingManagement.delete.error.dialogTitle"),
-                JOptionPane.ERROR_MESSAGE);
+    private void showError(String titleKey, String messageKey, String message) {
+        HudConfirmDialog.info(this, getText(titleKey), getText(messageKey, String.valueOf(message)),
+                getText("button.ok"));
     }
 
+    /** Lists the backup folder off the EDT - it reads the settings and the disk - then fills the table. */
     private void refreshBackups() {
+        new Thread(() -> {
+            List<Backup> listed;
+            try {
+                listed = backups.list();
+            } catch (IOException | RuntimeException e) {
+                // Leave the table empty; the user can still retry via Backup Now.
+                log.warn("Could not list backups", e);
+                listed = List.of();
+            }
+            List<Backup> result = listed;
+            SwingUtilities.invokeLater(() -> showBackups(result));
+        }, "PlayerBackupList-Thread").start();
+    }
+
+    private void showBackups(List<Backup> listed) {
+        currentBackups = listed;
         tableModel.setRowCount(0);
-        try {
-            currentBackups = backupService.listBackups();
-        } catch (IOException e) {
-            // Leave the table empty; the user can still retry via Backup Now.
-            log.warn("Could not list player backups: {}", e.getMessage());
-            currentBackups = List.of();
-        }
-        for (PlayerBackupService.PlayerBackup backup : currentBackups) {
+        for (Backup backup : listed) {
             tableModel.addRow(new Object[]{
-                    backup.timestamp(),
-                    String.join(", ", backup.fileNames())
+                    backup.taken().format(CREATED),
+                    getText(backup.full() ? "bindings.bindingManagement.status.full"
+                            : "bindings.bindingManagement.status.partial"),
+                    backup.firstSetup() ? getText("bindings.bindingManagement.kept.forever") : ""
             });
         }
         updateSelectionActionsEnabled();
@@ -359,7 +317,8 @@ public class BindingManagementPanel extends JPanel {
     private String[] columnNames() {
         return new String[]{
                 getText("bindings.bindingManagement.column.created"),
-                getText("bindings.bindingManagement.column.files")
+                getText("bindings.bindingManagement.column.status"),
+                getText("bindings.bindingManagement.column.kept")
         };
     }
 
