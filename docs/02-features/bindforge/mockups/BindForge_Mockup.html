@@ -20,7 +20,6 @@ body{margin:0;background:#151B22;padding:24px;font-family:'Segoe UI',system-ui,-
 .ei-field{background:#101721;border:1px solid #2D3A44;border-radius:3px;color:#C2C2C2;font-size:13px;padding:6px 8px;width:100%;box-sizing:border-box;font-family:inherit}
 .ei-field[readonly]{color:#8FA0AD;border-color:#24313A}
 .ei-label{font-size:11px;color:#8FA0AD;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;display:block}
-.ei-editactions{display:flex;gap:10px;justify-content:flex-end;padding-top:10px}
 .ei-note{font-size:11px;color:#6F7D89;margin-top:10px}
 .ei-subsubbar{display:flex;gap:22px;margin-bottom:14px}
 .ei-subsubtab{font-size:12px;font-weight:700;letter-spacing:.5px;color:#8FA0AD;cursor:pointer;padding-bottom:4px;border-bottom:2px solid transparent}
@@ -37,9 +36,6 @@ body{margin:0;background:#151B22;padding:24px;font-family:'Segoe UI',system-ui,-
 .ei-select{background:#101721;border:1px solid #2D3A44;border-radius:3px;color:#C2C2C2;font-size:13px;padding:6px 8px;font-family:inherit;min-width:270px}
 .ei-warningbanner{background:#1A1206;border-left:3px solid #D39207;color:#D39207;font-size:12px;padding:10px 14px;margin-top:16px;border-radius:2px;display:none}
 .ei-bottombar{display:flex;justify-content:space-between;align-items:center;margin-top:22px;padding-top:14px;border-top:1px solid #24313A}
-.ei-syncbadge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.5px;padding:5px 14px;border-radius:14px;border:1px solid}
-.ei-syncbadge.insync{color:#4FC56B;border-color:#4FC56B}
-.ei-syncbadge.draft{color:#D39207;border-color:#D39207}
 .ei-placeholder{color:#6F7D89;font-size:13px;padding:40px 0;text-align:center}
 .ei-fm-table{width:100%;border-collapse:collapse;font-size:13px}
 .ei-fm-table th{text-align:left;font-weight:700;color:#C2C2C2;padding:8px 6px;border-bottom:1px solid #B85A14;font-size:12px}
@@ -59,7 +55,6 @@ body{margin:0;background:#151B22;padding:24px;font-family:'Segoe UI',system-ui,-
 .ei-gi-sub{display:block;margin-top:3px;font-size:10.5px;color:#5C6B78;letter-spacing:.3px;font-weight:400}
 .ei-gi-actions{display:flex;gap:6px;justify-content:flex-end}
 .ei-gi-actions .ei-btn{padding:4px 9px;font-size:10.5px}
-.ei-gi-stub{margin-top:18px;padding:10px 12px;border:1px dashed #3A4855}
 .ei-gi-cfgrow{padding:10px 0 2px}
 .ei-rs{margin-top:16px;padding:12px 14px;background:#0C1117;border:1px solid #24313A}
 .ei-rs-group{margin-top:10px}
@@ -296,8 +291,6 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
 .ad-grid .ei-io-cell.live .ei-field-narrow{background:#FF7100;color:#090D12;border-color:#FF7100}
 .ad-fields{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}
 .ad-sub{color:#8FA0AD;font-size:11.5px;margin-top:7px}
-.ad-mkcell{min-width:64px}
-.ad-dialog .ei-instlbl{min-width:84px}
 .ad-mk{font-size:11.5px;font-weight:700;letter-spacing:.3px;white-space:nowrap}
 .ad-mk.ok{color:#4FC56B}.ad-mk.warn{color:#D39207}.ad-mk.bad{color:#D94F4F}.ad-mk.dim{color:#4A5560;font-style:italic;font-weight:400}
 .ad-danger{border-color:#D94F4F;color:#D94F4F}
@@ -317,7 +310,6 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
 .ei-rowtab-alias{font-weight:400;letter-spacing:0;font-size:10.5px;color:#C2C2C2}
 .ei-rowtab-alias.dim{color:#4A5560;font-style:italic}
 .ei-instline{display:flex;align-items:center;gap:12px;margin-bottom:5px}
-.ei-instlbl{font-size:11px;letter-spacing:1px;font-weight:700;color:#FF9330;flex:none}
 .ei-instpath{flex:1;background:#090D12;border:1px solid #24313A;color:#8FA0AD;
              font-family:Consolas,"Courier New",monospace;font-size:11.5px;padding:5px 9px;
              cursor:default}
@@ -333,11 +325,46 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
                  border-bottom:1px solid #B85A14;text-align:center}
 .ei-devgrid .hdr.l{text-align:left}
 .ei-devcell{padding:9px 4px;border-bottom:1px solid #151B22;font-size:13px;cursor:pointer}
+/* --- APPLY / DISCARD: one pair above BindForge's tabs, beneath Elite-Intel's (2026-10-24, Alan) --- */
+.ei-applybar{display:flex;align-items:center;gap:12px;padding:10px 14px;margin-bottom:12px;border:1px solid #24313A;border-radius:4px;background:#0D131A}
+.ei-applybar.dirty{border-color:#FF7100;background:#1A1206}
+.ei-applybar-text{flex:1;font-size:12px;color:#6F7D89}
+.ei-applybar.dirty .ei-applybar-text{color:#FF822E;font-weight:700}
+.ei-applybar .ei-btn{min-width:120px;padding:10px 22px;font-size:13px}
+.ei-applybar .ei-btn:disabled{opacity:.32;cursor:not-allowed}
+.ei-locked{opacity:.3;pointer-events:none;user-select:none}
+.ei-applybar .ei-create{min-width:120px}
+.ei-namebox{display:flex;align-items:center;gap:0;flex:1}
+.ei-namebox input{flex:1;min-width:120px}
+.ei-namebox .ei-suffix{color:#6F7D89;font-size:13px;padding:0 8px;white-space:nowrap}
+.ei-namebox input[readonly]{color:#6F7D89}
+.ei-nameerr{color:#D94F4F;font-size:11px;margin-top:4px;min-height:14px}
+.ft-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #151B22;font-size:13px}
+.ft-row .grow{flex:1;color:#C2C2C2}
+.ft-row small{color:#6F7D89}
+.ft-choice{display:block;padding:7px 0;color:#C2C2C2;font-size:13px;cursor:pointer}
+.ft-pick{border:1px solid #2D3A44;background:transparent;color:#8FA0AD;font-family:inherit;font-size:12px;padding:5px 10px;border-radius:3px;cursor:pointer}
+.ft-pick.on{border-color:#FF7100;color:#090D12;background:#FF7100;font-weight:700}
+.ft-warn{color:#D39207;font-size:12px;margin:8px 0}
+.ck-file{border:1px solid #24313A;border-radius:4px;padding:10px 12px;margin-bottom:10px}
+.ck-file h5{margin:0 0 6px;color:#EFD3A6;font-size:13px}
+.ck-file .ck-acts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.ei-mockhint{font-size:10px;color:#4E5B66;margin:-6px 0 10px}
 </style>
 <script>try{if(window.self!==window.top){document.documentElement.className+=" embedded";}}catch(e){document.documentElement.className+=" embedded";}</script>
 </head>
 <body>
 <div class="ei-frame">
+  <!-- WHY (2026-10-24, Alan): one APPLY and one DISCARD for all of BindForge, above its four tabs and
+       beneath Elite-Intel's, where the mouse goes to leave. No tab has its own. Lit only with edits not applied. -->
+  <div class="ei-applybar" id="ei-applybar">
+    <button type="button" class="ei-btn primary ei-create" id="ei-create" onclick="eiCreateOpen()" hidden>CREATE</button>
+    <span class="ei-applybar-text" id="ei-applybar-text">No edits to apply.</span>
+    <button type="button" class="ei-btn" id="ei-discard" onclick="eiDiscardAll()" disabled>DISCARD</button>
+    <button type="button" class="ei-btn primary" id="ei-apply" onclick="eiApplyAll()" disabled>APPLY</button>
+  </div>
+  <div class="ei-mockhint">Mockup: change a Preset Editor line, or SAVE a binding in the capture dialog or a device in Alias Designer, to light the bar. <a href="#" onclick="eiLeaveTo('Vega');return false" style="color:#6F7D89">Simulate leaving BindForge</a> to see the leave prompt. <a href="#" onclick="eiSimulateNewPlayer();return false" style="color:#6F7D89">Simulate a new player</a> (no custom binds file) to see CREATE. <a href="#" onclick="ftOpen();return false" style="color:#6F7D89">Simulate first-time startup</a>. <a href="#" onclick="ckOpen();return false" style="color:#6F7D89">Simulate a game update</a> to see the check.</div>
+
   <div class="ei-topbar">
     <div class="ei-toptab active" id="toptab-alias-btn" onclick="eiShowTopTab('alias')">ALIAS DESIGNER</div>
     <div class="ei-toptab" id="toptab-bindeditor-btn" onclick="eiShowTopTab('bindeditor')">BIND EDITOR</div>
@@ -367,12 +394,9 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
       </div>
       <div class="ei-devgrid" id="mydevice-grid"></div>
       <div class="ei-note" style="margin-top:10px">
-        Every device Windows reports is listed, attached or not &mdash; an entry can outlive the hardware. <b>The gear at the end of a row opens the device&rsquo;s editor.</b> There is one record per device &mdash; the master &mdash; and every installation gets the same one, so there is no per-installation editing and nothing to choose between. Each installation has a column, and its marker is a readout, not a switch: <b style="color:#4FC56B">M</b> means that installation already matches the master, <b style="color:#D39207">differs</b> means its labels have drifted but nothing is broken, and <b style="color:#D94F4F">not added</b> in red means a <code>.binds</code> naming this device would be rejected there &mdash; the whole preset, falling back to keyboard and mouse. <b>APPLY</b> is what repairs that: it carries the master to every installation and reports per installation. A built-in is Frontier&rsquo;s own entry: its labels can be edited, and in its editor <b>RESET LABELS</b> takes the place of CLEAR.
+        Every controller plugged in is listed, and every device named in the working copy&rsquo;s <code>DeviceMappings.xml</code> &mdash; an entry can outlive the hardware. <b>The gear at the end of a row opens the device&rsquo;s editor.</b> Installations are not shown here: APPLY gives every installation the same files, and <b>File Manager &rsaquo; Game Install Locations</b> shows whether each one matches. A built-in is Frontier&rsquo;s own entry: its labels can be edited, and in its editor <b>RESET LABELS</b> takes the place of CLEAR.
       </div>
-      <div class="ei-editactions" style="margin-top:16px">
-        <span class="ei-note" style="margin:0 auto 0 0;max-width:640px">SAVE keeps changes in BindForge's draft. Nothing reaches a game installation until you apply.</span>
-        <button class="ei-btn primary" id="alias-apply-installs" onclick="eiApplyToInstalls()">APPLY</button>
-      </div>
+
     </div>
 
     <!-- WHY (2026-10-10, Alan): the Device Editor is a dialog opened from the row's gear, not an inline
@@ -473,16 +497,28 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
   <div id="toptab-bindeditor" style="display:none">
     <div class="ei-section">
       <div class="ei-section-head">BINDINGS FILE</div>
-      <div style="display:flex;gap:10px;align-items:center">
-        <select class="ei-select" id="be-file-select" style="flex:1">
+      <!-- One row (2026-10-24, Alan): file and LOAD on the left half, the Name box on the right half. -->
+      <div style="display:flex;gap:24px;align-items:center">
+        <div style="flex:1;display:flex;gap:10px;align-items:center;min-width:0">
+          <select class="ei-select" id="be-file-select" style="flex:1;min-width:0">
           <option>DualVirpilDawnTreader.4.2.binds</option>
           <option>GeneralControls.binds</option>
           <option>ShipControls.binds</option>
           <option>SRVControls.binds</option>
           <option>OnFootControls.binds</option>
         </select>
-        <button class="ei-btn primary" onclick="beLoad()">LOAD</button>
+          <button class="ei-btn primary" onclick="beLoad()">LOAD</button>
+        </div>
+        <!-- Renaming a binds file (2026-10-24, Alan): the version and extension are fixed text. -->
+        <div style="flex:1;display:flex;gap:10px;align-items:center;min-width:0">
+          <span class="ei-label" style="margin:0">NAME</span>
+          <div class="ei-namebox">
+            <input class="ei-field" id="be-name" oninput="beNameChanged()" spellcheck="false">
+            <span class="ei-suffix" id="be-suffix">.4.2.binds</span>
+          </div>
+        </div>
       </div>
+      <div class="ei-nameerr" id="be-name-err"></div>
       <div class="ei-note" id="be-loaded-note">Loaded: DualVirpilDawnTreader.4.2.binds</div>
     </div>
 
@@ -644,7 +680,7 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
               </div>
               <div class="cd-footer">
                 <button type="button" class="ei-btn" onclick="cdClose()">BACK</button>
-                <span class="cd-footnote">SAVE writes to the draft &mdash; APPLY is what reaches the game.</span>
+                <span class="cd-footnote">SAVE keeps it as an edit not applied &mdash; APPLY is what reaches the game.</span>
                 <button type="button" class="ei-btn primary" id="cd-save" onclick="cdSave()" disabled>SAVE</button>
               </div>
             </div>
@@ -843,13 +879,6 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
 
       <div class="ei-warningbanner" id="preset-warning">&#9888; You have assigned different .binds files to different sections. This is supported by the game but is an advanced configuration. Make sure each file contains the bindings for its assigned section.</div>
 
-      <div class="ei-bottombar">
-        <span class="ei-syncbadge insync" id="preset-syncbadge">&#9679; IN SYNC</span>
-        <div class="ei-commitactions">
-          <button class="ei-btn" onclick="presetRevert()">REVERT</button>
-          <button class="ei-btn primary" onclick="presetSave()">SAVE</button>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -857,7 +886,6 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
     <div class="ei-subbar">
       <div class="ei-subtab active" id="tab-fm-installs" onclick="eiShowFM('installs')">GAME INSTALL LOCATIONS</div>
       <div class="ei-subtab" id="tab-fm-backups" onclick="eiShowFM('backups')">PLAYER BACKUPS</div>
-      <div class="ei-subtab" id="tab-fm-history" onclick="eiShowFM('history')">EDIT HISTORY</div>
     </div>
 
     <div id="view-fm-installs">
@@ -865,12 +893,9 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
         <div class="ei-fm-toprow">
           <div>
             <div class="ei-section-head" style="border-bottom:none;padding-bottom:0">GAME INSTALL LOCATIONS</div>
-            <div class="ei-note" style="margin-top:4px">Where BindForge looks for the files it manages. Detected automatically on first run &mdash; correct anything it got wrong here. Backup, Restore and Apply all work from this list.</div>
+            <div class="ei-note" style="margin-top:4px">The one place BindForge shows installations: where the files go. Built by first-time startup &mdash; put anything right here. Backup, Restore, APPLY and the check all work from this list.</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;margin-left:20px">
-            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8FA0AD;white-space:nowrap">
-              <input type="checkbox" checked style="accent-color:#FF7100">Re-check locations on app launch
-            </label>
           </div>
         </div>
 
@@ -885,27 +910,21 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
           <div class="ei-gi-holds">Holds 3 <span class="ei-gi-file">.binds</span> files and
             <span class="ei-gi-file">StartPreset.4.start</span></div>
         </div>
-        <div class="ei-note" style="margin-top:8px;margin-bottom:20px">Your bindings and active preset live here <em>once</em>, no matter how many storefronts you own. This is the folder that decides what your controls actually do &mdash; everything below it is cosmetic by comparison.</div>
+        <div class="ei-note" style="margin-top:8px;margin-bottom:20px">Your binds files and preset file live here <em>once</em> on Windows, no matter how many storefronts you own.</div>
 
         <div class="ei-scope-label">Game installations &mdash; one per storefront, each with its own device files</div>
         <table class="ei-fm-table ei-gi-table">
-          <thead><tr><th style="width:110px">Storefront</th><th style="width:40%">Location</th><th>Device files</th><th style="width:90px">Status</th><th style="width:150px"></th></tr></thead>
+          <thead><tr><th style="width:110px">Storefront</th><th style="width:40%">Location</th><th>Device files</th><th style="width:90px">Status</th><th style="width:140px">Working copy</th><th style="width:90px"></th></tr></thead>
           <tbody id="gi-rows"></tbody>
         </table>
         <div class="ei-note" style="margin-top:8px">
-          <span class="ei-gi-file">DeviceMappings.xml</span> and the <span class="ei-gi-file">.buttonMap</span> files are duplicated per installation and may legitimately differ &mdash; BindForge keeps one record per device <em>per installation</em> rather than deciding which one wins. A backup records which installation each of these files came from, so a restore can put it back where it belongs.
+          <span class="ei-gi-file">DeviceMappings.xml</span> and the <span class="ei-gi-file">.buttonMap</span> files exist once per installation, and APPLY writes the same set to every one. <b>Working copy</b> says whether each installation still matches it: <b style="color:#4FC56B">matches</b>, <b style="color:#D39207">differs</b> (the check offers to put the working copy back), or <b>not found</b>.
         </div>
 
         <div class="ei-fm-bottombar">
-          <button class="ei-btn" onclick="alert('Opens a folder chooser. BindForge validates that the folder contains an Elite Dangerous executable and a DeviceMappings.xml before accepting it.')">ADD INSTALLATION&hellip;</button>
-          <div class="ei-commitactions">
-            <button class="ei-btn" onclick="alert('Re-runs storefront detection. Existing rows keep their device records; a row whose path has disappeared is marked MISSING rather than deleted.')">RESCAN</button>
-          </div>
+          <button class="ei-btn" onclick="alert('Opens a folder chooser. BindForge checks the folder for EliteDangerous64.exe and the other files that confirm an installation before adding it. It gets the working copy at the next APPLY.')">ADD MISSING&hellip;</button>
         </div>
 
-        <div class="ei-note ei-gi-stub">
-          <strong>Not modelled yet.</strong> A row whose folder no longer exists shows <span class="ei-partialbadge">MISSING</span> and offers <em>Relocate</em> rather than <em>Remove</em>, so its device records survive the move &mdash; a game reinstalled to a new drive is the common case, and deleting the row would throw away work. Removing an installation that still exists on disk, and what that does to the records held against it, is also undesigned. See <span class="ei-gi-file">file-manager.md</span>.
-        </div>
       </div>
     </div>
 
@@ -914,116 +933,50 @@ html.embedded .ei-frame{border-radius:0;padding:14px}
         <div class="ei-fm-toprow">
           <div>
             <div class="ei-section-head" style="border-bottom:none;padding-bottom:0">PLAYER BACKUPS</div>
-            <div class="ei-note" style="margin-top:4px">Complete backups of your controller configuration &mdash; .binds file, DeviceMappings.xml, all .buttonMap files, and your active preset.</div>
+            <div class="ei-note" style="margin-top:4px">Every backup is a zip of all your game input configuration files from every installation &mdash; taken each time Elite-Intel starts, before every APPLY or RESTORE, and on BACKUP NOW. The one taken before BindForge first wrote anything is kept forever.</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;margin-left:20px">
-            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8FA0AD;white-space:nowrap">
-              <input type="checkbox" style="accent-color:#FF7100">Auto-backup on app launch
-            </label>
+            <label class="ei-retention" title="Never inside a game installation folder">Backups go to <input type="text" value="%LOCALAPPDATA%\elite-intel\playerbackups" style="width:230px"></label>
             <label class="ei-retention">Keep backups for <input type="number" min="1" value="30"> days</label>
           </div>
         </div>
 
-        <div class="ei-scope-label">Backup Now will include</div>
-        <div class="ei-scope-row">
-          <label><input type="checkbox" id="scope-all" checked onchange="scopeAllToggled()" style="accent-color:#FF7100">Everything</label>
-          <label><input type="checkbox" id="scope-binds" checked disabled style="accent-color:#FF7100">.binds</label>
-          <label><input type="checkbox" id="scope-start" checked disabled style="accent-color:#FF7100">StartPreset.#.start</label>
-          <label><input type="checkbox" id="scope-devicemappings" checked disabled style="accent-color:#FF7100">DeviceMappings.xml</label>
-          <label><input type="checkbox" id="scope-buttonmaps" checked disabled style="accent-color:#FF7100">.buttonMap files</label>
-        </div>
-
         <table class="ei-fm-table">
-          <thead><tr><th>Created</th><th>Files</th><th>Status</th></tr></thead>
+          <thead><tr><th>Created</th><th>Taken</th><th>Files</th><th>Status</th></tr></thead>
           <tbody id="fm-rows">
             <tr onclick="fmSelect(this)">
-              <td class="created">2026-07-02_00-24-08</td>
-              <td class="files">DualVirpilDawnTreader.4.2.binds, KeyboardFallback.4.2.binds, OnFootAlt.4.2.binds, StartPreset.4.start, DeviceMappings.xml, RHVCAP.buttonMap, Throttle.buttonMap</td>
+              <td class="created">2026-10-24_09-12-40</td><td>Elite-Intel start</td>
+              <td class="files">DualVirpilDawnTreader.4.2.binds, StartPreset.4.start &middot; Steam: DeviceMappings.xml, RHVCAP.buttonMap, Throttle.buttonMap &middot; Epic: DeviceMappings.xml</td>
               <td><span class="ei-fullbadge">FULL</span></td>
             </tr>
             <tr onclick="fmSelect(this)">
-              <td class="created">2026-06-28_09-15-30</td>
-              <td class="files">DualVirpilDawnTreader.4.2.binds, StartPreset.4.start, DeviceMappings.xml</td>
-              <td><span class="ei-custombadge">CUSTOM</span></td>
-            </tr>
-            <tr onclick="fmSelect(this)">
-              <td class="created">2026-06-25_20-14-25</td>
-              <td class="files">DualVirpilDawnTreader.4.2.binds, StartPreset.4.start, DeviceMappings.xml, RHVCAP.buttonMap, Throttle.buttonMap</td>
+              <td class="created">2026-10-23_21-40-02</td><td>before APPLY</td>
+              <td class="files">DualVirpilDawnTreader.4.2.binds, StartPreset.4.start &middot; Steam: DeviceMappings.xml, RHVCAP.buttonMap, Throttle.buttonMap &middot; Epic: DeviceMappings.xml, RHVCAP.buttonMap, Throttle.buttonMap</td>
               <td><span class="ei-fullbadge">FULL</span></td>
             </tr>
             <tr onclick="fmSelect(this)">
-              <td class="created">2026-06-24_20-21-43</td>
-              <td class="files">DualVirpilDawnTreader.4.2.binds, StartPreset.4.start</td>
+              <td class="created">2026-10-22_18-03-55</td><td>Elite-Intel start</td>
+              <td class="files">DualVirpilDawnTreader.4.2.binds, StartPreset.4.start &middot; Steam: DeviceMappings.xml, RHVCAP.buttonMap, Throttle.buttonMap &middot; Epic: <i>drive not found</i></td>
               <td><span class="ei-partialbadge">PARTIAL</span></td>
             </tr>
             <tr onclick="fmSelect(this)">
-              <td class="created">2026-06-24_18-40-14</td>
-              <td class="files">DualVirpilDawnTreader.4.2.binds, StartPreset.4.start</td>
-              <td><span class="ei-partialbadge">PARTIAL</span></td>
-            </tr>
-            <tr onclick="fmSelect(this)">
-              <td class="created">2026-06-24_18-39-56</td>
-              <td class="files">DualVirpilDawnTreader.4.2.binds, StartPreset.4.start</td>
-              <td><span class="ei-partialbadge">PARTIAL</span></td>
+              <td class="created">2026-10-13_20-11-08</td><td><b style="color:#D39207">before BindForge &mdash; kept forever</b></td>
+              <td class="files">DualVirpilDawnTreader.4.2.binds, StartPreset.4.start &middot; Steam: DeviceMappings.xml, RHVCAP.buttonMap &middot; Epic: DeviceMappings.xml</td>
+              <td><span class="ei-fullbadge">FULL</span></td>
             </tr>
           </tbody>
         </table>
-
-        <div class="ei-rs" id="fm-restore-scope" style="display:none">
-          <label class="ei-rs-all"><input type="checkbox" id="rs-all" checked onchange="rsAllToggled()"
-                 style="accent-color:#FF7100">Restore everything in this backup</label>
-          <div id="fm-restore-scope-body"></div>
-        </div>
-
         <div class="ei-fm-bottombar">
-          <button class="ei-btn" onclick="alert('Opens a file chooser filtered to .zip archives. Restores a backup that is not in this list - one copied off another machine, pulled out of a cloud folder, or sent by another commander. Same scope selection, same draft-only destination.\n\nYour own backup restores completely. Another commander\'s .binds restore too - a bindings layout is worth copying. But their DeviceMappings.xml and .buttonMap files describe THEIR hardware, so those are refused as not compatible rather than written into your device list.')">BROWSE FOR BACKUP FILE</button>
+          <button class="ei-btn" onclick="alert('Opens a file chooser for a backup zip that is not in this list - one copied off your old PC, or out of a cloud folder. It restores exactly like RESTORE: everything, no choices. Only restore your own backups: a backup from another player holds their controllers, not yours.')">RESTORE FROM A FILE&hellip;</button>
           <div class="ei-commitactions">
             <button class="ei-btn primary" id="fm-backup-now">BACKUP NOW</button>
             <button class="ei-btn" id="fm-restore" disabled onclick="fmRestore()">RESTORE</button>
           </div>
         </div>
-        <div class="ei-note">Select a backup above to choose what to restore. <strong>Restore always writes into the draft</strong>, never straight to your game &mdash; look it over, edit it further if you like, then press Apply when you want it live. There is no separate restore-to-live: Apply is the only thing in BindForge that writes a game file.</div>
+        <div class="ei-note">Select a backup, then RESTORE. It puts the <b>whole</b> backup back &mdash; every file, in every installation &mdash; after backing up what is there now. Backups older than the retention setting are deleted when Elite-Intel starts, except the one marked <i>kept forever</i>.</div>
       </div>
     </div>
 
-    <div id="view-fm-history" style="display:none">
-      <div class="ei-section">
-        <div class="ei-fm-toprow">
-          <div>
-            <div class="ei-section-head" style="border-bottom:none;padding-bottom:0">EDIT HISTORY</div>
-            <div class="ei-note" style="margin-top:4px">A bounded, per-file undo system &mdash; distinct from Player Backups. Every write to a managed file moves the version it replaces here first. Count-based retention, not age-based.</div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;margin-left:20px">
-            <label class="ei-retention">Keep last <input type="number" min="1" max="30" value="10"> versions per file</label>
-          </div>
-        </div>
-
-        <div class="ei-scope-label">File</div>
-        <div class="ei-subsubbar" style="margin-top:0;margin-bottom:14px">
-          <div class="ei-subsubtab active" onclick="fhShowFile(this,'binds')">DualVirpilDawnTreader.4.2.binds</div>
-          <div class="ei-subsubtab" onclick="fhShowFile(this,'devicemappings')">DeviceMappings.xml</div>
-          <div class="ei-subsubtab" onclick="fhShowFile(this,'start')">StartPreset.4.start</div>
-        </div>
-
-        <table class="ei-fm-table">
-          <thead><tr><th>Version</th><th>Timestamp</th><th></th></tr></thead>
-          <tbody id="fh-rows">
-            <tr onclick="fhSelect(this)"><td class="files">Current (live)</td><td class="created">2026-07-31_19-42-11</td><td></td></tr>
-            <tr onclick="fhSelect(this)"><td class="files">10 edits ago</td><td class="created">2026-07-31_18-05-40</td><td></td></tr>
-            <tr onclick="fhSelect(this)"><td class="files">9 edits ago</td><td class="created">2026-07-31_17-58-02</td><td></td></tr>
-            <tr onclick="fhSelect(this)"><td class="files">8 edits ago</td><td class="created">2026-07-30_22-14-19</td><td></td></tr>
-            <tr onclick="fhSelect(this)"><td class="files">7 edits ago</td><td class="created">2026-07-30_21-40-53</td><td></td></tr>
-          </tbody>
-        </table>
-        <div class="ei-note">Oldest entry beyond the retention count is dropped automatically as a new one is added. Restoring an entry backs up the current live version first, the same as any other write.</div>
-        <div class="ei-fm-bottombar">
-          <span></span>
-          <div class="ei-commitactions">
-            <button class="ei-btn" id="fh-restore" disabled onclick="alert('Restores the selected version over the live file, after the same confirmation dialog and Controlled Replace write used everywhere else in BindForge.')">RESTORE SELECTED VERSION</button>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 <script>
@@ -1119,9 +1072,8 @@ var EI_INSTALLS = [
 // any more - the variable and its accessor were deleted rather than left for someone to wire back up.
 function eiMaster(d){ return d.master; }
 
-// WHY: "does this installation match the master?" is COMPUTED, never stored. It was a stored
-// per-device switch (mirror) when installations were allowed to differ on purpose; it is now a
-// fact about what is on disk, and storing a fact you can derive is how the two drift apart.
+// WHY: "does this installation match the master?" is COMPUTED, never stored: it is a fact
+// about what is on disk, and storing a fact you can derive is how the two drift apart.
 // The three failing states carry the divergence list's severities rather than a second vocabulary:
 //   entry  - the installation's entry is missing or under another name. A shared .binds naming the
 //            master's name resolves to nothing there, so the whole preset is rejected. RED.
@@ -1303,7 +1255,7 @@ function obRefreshCard(){
   valid.classList.toggle('bad', !!err);
   valid.textContent = err ? '\u26a0 ' + err : (name === fallback ? '\u2713 Valid \u2014 this is the default' : '\u2713 Valid \u2014 Skip would use ' + fallback);
   var shown = err ? '\u2026' : name, installs = EI_INSTALLS.map(function(i){ return i.label; }).join(', ');
-  var when = d.hexBindings ? '<span class="ob-when apply">ON APPLY</span>' : '<span class="ob-when now">NOW</span>';
+  var when = '<span class="ob-when apply">ON APPLY</span>';
   document.getElementById('ob-writes').innerHTML =
     '<span class="ob-file">DeviceMappings.xml</span><span class="ob-what">adds &lt;' + cdHtml(shown) + '&gt; &middot; ' + installs + '</span>' + when +
     '<span class="ob-file">' + cdHtml(shown) + '.buttonMap</span><span class="ob-what">generated labels &middot; ' + installs + '</span>' + when +
@@ -1326,8 +1278,8 @@ function obRenderSummary(){
     '<h6>Named in this onboarding</h6>' + s.ids.map(function(id){
       var d = OB_NEW[id];
       return '<div class="ob-sumrow"><span>' + cdHtml(s.names[id]) + '<small>' + cdHtml(d.winName) + ' \u2014 ' +
-        (d.hexBindings ? d.hexBindings + ' bindings move to this name on Apply' : 'entry and .buttonMap written to ' + installs) + '</small></span>' +
-        (d.hexBindings ? '<span class="ob-when apply">ON APPLY</span>' : '<span class="ob-when now">NOW</span>') + '</div>';
+        (d.hexBindings ? d.hexBindings + ' bindings move to this name at APPLY' : 'entry and .buttonMap written to ' + installs + ' at APPLY') + '</small></span>' +
+        '<span class="ob-when apply">ON APPLY</span>' + '</div>';
     }).join('') + obNotAskedHtml() + '</div>';
   document.getElementById('ob-footer').innerHTML =
     '<button type="button" class="ei-btn" onclick="obBack()">BACK</button>' +
@@ -1421,7 +1373,7 @@ function eiRenderDeviceRows(){
   // in its state's text colour rather than a boxed chip - the HUD canon's rule for state. The gear is last,
   // on every row: the fleet list opens a ship's settings the same way.
   var cols = ['auto','auto','auto','auto'];
-  EI_INSTALLS.forEach(function(){ cols.push('auto'); });
+  // 2026-10-24 (Alan): no installation columns - only File Manager's Game Install Locations shows installations.
   cols.push('minmax(0,1fr)', '28px');
   grid.style.gridTemplateColumns = cols.join(' ');
 
@@ -1429,7 +1381,6 @@ function eiRenderDeviceRows(){
   // there is one name now: the master's. See Alias Designer, "One record, and where it lands".
   var html = '<div class="hdr l">WINDOWS NAME</div><div class="hdr l">VID&nbsp;&nbsp;PID</div>'
            + '<div class="hdr l">STATUS</div><div class="hdr l">ALIAS</div>';
-  EI_INSTALLS.forEach(function(i){ html += '<div class="hdr l">' + i.label + '</div>'; });
   html += '<div class="hdr"></div><div class="hdr"></div>';
 
   eiDeviceOrder.forEach(function(id){
@@ -1443,7 +1394,6 @@ function eiRenderDeviceRows(){
           + '<div class="ei-devcell">' + (d.master.added
               ? '<span class="ei-rowtab-alias">' + d.master.alias + '</span>'
               : '<span class="ei-rowtab-alias dim">not added</span>') + '</div>';
-    EI_INSTALLS.forEach(function(i){ html += '<div class="ei-devcell">' + eiMarker(d, i.id) + '</div>'; });
     html += '<div class="ei-devcell"></div>'
           + '<div class="ei-devcell"><button type="button" class="ad-gear" data-gear="' + id + '" title="Edit '
           + (d.master.alias || d.winName) + '">&#9881;</button></div>';
@@ -1592,20 +1542,10 @@ function adRender(){
 
 function adDeviceTab(d){
   var m = d.master;
-  var lines = EI_INSTALLS.map(function(i){
-    return '<div class="ei-instline"><span class="ei-instlbl">' + i.label + '</span>'
-         + '<span class="ad-mkcell">' + eiMarker(d, i.id) + '</span>'
-         + '<input class="ei-instpath" readonly value="' + i.path + '" title="' + i.path + '"></div>';
-  }).join('');
-  var matching = EI_INSTALLS.filter(function(i){ return eiMatchState(d, i.id) === 'match'; }).length;
-  var html = '<div class="cd-section">INSTALLATIONS</div>' + lines
-           + '<div class="ad-sub">' + (m.added
-               ? (matching === EI_INSTALLS.length
-                   ? '<b style="color:#4FC56B">All ' + EI_INSTALLS.length + ' installations match.</b>'
-                   : '<b style="color:#D39207">' + matching + ' of ' + EI_INSTALLS.length + ' installations match.</b> APPLY, beneath the list, is what carries the master out.')
-               : 'No installation holds an entry the master knows.') + '</div>';
-  html += '<div class="cd-section" style="margin-top:14px">DEVICE</div><div class="ad-fields">'
-        + '<label><span class="ei-label">Device name (alias)</span><input class="ei-field" readonly value="' + (m.added ? m.alias : '') + '"></label>'
+  // 2026-10-24 (Alan): the DEVICE tab shows no installations - that is File Manager's.
+  var html = '';
+  html += '<div class="cd-section">DEVICE</div><div class="ad-fields">'
+        + '<label><span class="ei-label">Device name (alias)</span><input class="ei-field" value="' + (m.added ? m.alias : '') + '"></label>'
         + '<label><span class="ei-label">VID</span><input class="ei-field" readonly value="' + d.vid + '"></label>'
         + '<label><span class="ei-label">PID</span><input class="ei-field" readonly value="' + d.pid + '"></label></div>'
         + '<div class="ad-sub">Windows name: ' + d.winName + ' &middot; ' + (d.connected ? 'attached' : 'not attached') + '</div>';
@@ -1614,7 +1554,7 @@ function adDeviceTab(d){
   } else if(m.builtin){
     html += '<div class="ad-sub">Frontier&rsquo;s built-in entry &mdash; its labels are saved to <code>' + m.alias + '.buttonMap</code>.</div>';
   } else {
-    html += '<div class="ad-sub">Renaming comes with the Rename slice: a name is in every installation and in <code>.binds</code>, so it changes all of them or none.</div>';
+    html += '<div class="ad-sub">Type a new name to rename it: the <code>DeviceMappings.xml</code> entry, its <code>.buttonMap</code> and every binds file change together at APPLY.</div>';
   }
   return html;
 }
@@ -1791,10 +1731,7 @@ function presetChanged(){
   var lines = getPresetLines();
   var allSame = lines.every(function(v){ return v===lines[0]; });
   document.getElementById('preset-warning').style.display = allSame ? 'none' : 'block';
-  var badge = document.getElementById('preset-syncbadge');
-  var dirty = presetSavedState===null || lines.some(function(v,i){ return v!==presetSavedState[i]; });
-  badge.className = 'ei-syncbadge ' + (dirty ? 'draft' : 'insync');
-  badge.innerHTML = dirty ? '&#9679; DRAFT' : '&#9679; IN SYNC';
+  // 2026-10-24 (Alan): no IN SYNC / DRAFT badge - the APPLY bar above the tabs says whether there is work.
 }
 function setAllSame(){
   var v = document.getElementById('setall-select').value;
@@ -1812,7 +1749,8 @@ function presetRevert(){
 presetSavedState = getPresetLines();
 presetChanged();
 
-function scopeAllToggled(){
+function scopeAllToggled(){ return; // 2026-10-24: every backup takes everything
+
   var all = document.getElementById('scope-all').checked;
   ['scope-binds','scope-start','scope-devicemappings','scope-buttonmaps'].forEach(function(id){
     var cb = document.getElementById(id);
@@ -1826,7 +1764,6 @@ function fmSelect(row){
   document.querySelectorAll('#fm-rows tr').forEach(function(r){ r.classList.remove('selected'); });
   row.classList.add('selected');
   document.getElementById('fm-restore').disabled = false;
-  fmBuildScope(row);
 }
 
 function fmBuildScope(row){
@@ -1893,9 +1830,11 @@ function rsAllToggled(){
 }
 
 function fmRestore(){
-  confirm('Restore into your drafts? This REPLACES whatever those drafts currently hold, including '
-        + 'edits you have not applied yet. Your live game files are not touched - press Apply when you '
-        + 'have looked the restored version over and want it to go live.');
+  var row = document.querySelector('#fm-rows tr.selected');
+  var when = row ? row.querySelector('.created').textContent : '';
+  confirm('Restore everything from ' + when + '?\n\nEvery binds file, the preset file and the device files in every installation '
+        + 'are replaced, and your working copy with them. What is there now is backed up first.'
+        + (eiEditTabs().length ? '\n\nYour edits not applied are thrown away.' : ''));
 }
 function beLoad(){
   var v = document.getElementById('be-file-select').value;
@@ -2767,7 +2706,7 @@ function imSimulate(){
   geToggleConflictsOnly();
 }
 function eiShowFM(v){
-  ['installs','backups','history'].forEach(function(k){
+  ['installs','backups'].forEach(function(k){
     document.getElementById('view-fm-' + k).style.display = (v === k) ? 'block' : 'none';
     document.getElementById('tab-fm-' + k).classList.toggle('active', v === k);
   });
@@ -2799,8 +2738,8 @@ function eiRenderGameInstalls(){
       + '<td><span class="ei-gi-path">' + inst.path + '</span></td>'
       + '<td><span class="ei-gi-file">' + files + '</span></td>'
       + '<td>' + badge + '</td>'
+      + '<td>' + giWorkingCopyState(inst.id, m.found) + '</td>'
       + '<td><div class="ei-gi-actions">'
-      +   '<button class="ei-btn" onclick="giRelocate(&quot;' + inst.id + '&quot;)">RELOCATE</button>'
       +   '<button class="ei-btn" onclick="giRemove(&quot;' + inst.id + '&quot;)">REMOVE</button>'
       + '</div></td>'
       + '</tr>';
@@ -2808,6 +2747,13 @@ function eiRenderGameInstalls(){
   tb.innerHTML = html;
 }
 
+// Whether this installation's live files still match the working copy, across every device.
+function giWorkingCopyState(id, found){
+  if(!found) return '<span style="color:#8FA0AD">not found</span>';
+  var differs = Object.keys(eiDevices).some(function(k){
+    var s = eiMatchState(eiDevices[k], id); return s === 'entry' || s === 'labels'; });
+  return differs ? '<b style="color:#D39207">differs</b>' : '<b style="color:#4FC56B">matches</b>';
+}
 function giRelocate(id){
   alert('Opens a folder chooser pointed at ' + eiLabelOf(id) + '. The device records held against this '
       + 'installation follow it to the new path - relocating is how a reinstall to another drive is '
@@ -2815,8 +2761,8 @@ function giRelocate(id){
 }
 
 function giRemove(id){
-  alert('Removes ' + eiLabelOf(id) + ' from the list. What happens to the device records held against '
-      + 'it is undesigned - see the note below the table.');
+  alert('Removes ' + eiLabelOf(id) + ' from the list. BindForge stops writing to it, backing it up and checking it. '
+      + 'Moving the game to another drive is REMOVE, then ADD MISSING.');
 }
 function fhShowFile(el){
   document.querySelectorAll('#view-fm-history .ei-subsubtab').forEach(function(t){t.classList.remove('active')});
@@ -2831,6 +2777,313 @@ function fhSelect(row){
   row.classList.add('selected');
   document.getElementById('fh-restore').disabled = false;
 }
+</script>
+<!-- Leaving BindForge with edits not applied: three choices, nothing selected, Enter chooses nothing,
+     Esc and the close glyph are Go back (2026-10-24, Alan). -->
+<div id="ei-leave" class="cd-scrim" hidden>
+  <div class="cd-dialog" style="width:520px" role="dialog" aria-modal="true" aria-labelledby="ei-leave-title">
+    <div class="cd-titlebar"><span id="ei-leave-title" class="cd-title">Edits not applied</span>
+      <span style="cursor:pointer;color:#8FA0AD" title="Go back" onclick="eiLeaveGoBack()">&#10005;</span></div>
+    <div class="cd-body" style="padding:14px 22px"><p id="ei-leave-text" style="margin:4px 0 12px;color:#C2C2C2"></p></div>
+    <div class="cd-footer">
+      <button type="button" class="ei-btn" onclick="eiLeaveGoBack()">GO BACK</button>
+      <button type="button" class="ei-btn" onclick="eiLeaveDiscard()">DISCARD</button>
+      <button type="button" class="ei-btn" onclick="eiLeaveApply()">APPLY</button>
+    </div>
+  </div>
+</div>
+<!-- APPLY's confirmation always carries rule 13's warning (2026-10-23, Alan). -->
+<div id="ei-applyconfirm" class="cd-scrim" hidden>
+  <div class="cd-dialog" style="width:560px" role="dialog" aria-modal="true" aria-labelledby="ei-ac-title">
+    <div class="cd-titlebar"><span id="ei-ac-title" class="cd-title">Apply to every installation?</span></div>
+    <div class="cd-body" style="padding:14px 22px">
+      <p style="margin:4px 0 10px;color:#C2C2C2" id="ei-ac-text"></p>
+      <p style="margin:0 0 10px;color:#D39207">Close the game's controls screen before applying. Changes made in BindForge and in the game at the same time can be lost.</p>
+      <p style="margin:0;color:#6F7D89;font-size:12px">Your current files are backed up first.</p>
+    </div>
+    <div class="cd-footer">
+      <button type="button" class="ei-btn" onclick="eiApplyCancel()">CANCEL</button>
+      <button type="button" class="ei-btn primary" onclick="eiApplyConfirm()">APPLY</button>
+    </div>
+  </div>
+</div>
+<!-- CREATE: a new player's first binds file (2026-10-24, Alan). -->
+<div id="ei-createdlg" class="cd-scrim" hidden>
+  <div class="cd-dialog" style="width:520px" role="dialog" aria-modal="true" aria-labelledby="ei-cr-title">
+    <div class="cd-titlebar"><span id="ei-cr-title" class="cd-title">Create your binds file</span>
+      <span style="cursor:pointer;color:#8FA0AD" title="Cancel" onclick="eiCreateCancel()">&#10005;</span></div>
+    <div class="cd-body" style="padding:14px 22px">
+      <p style="margin:4px 0 12px;color:#C2C2C2">Start from one of Frontier's ready-made layouts. Your controllers are listed in Alias Designer &mdash; pick the layout that matches the one you fly with.</p>
+      <label class="ei-label" for="ei-cr-factory">Start from</label>
+      <select class="ei-select" id="ei-cr-factory" style="width:100%;margin-bottom:12px"></select>
+      <label class="ei-label" for="ei-cr-name">Name</label>
+      <div class="ei-namebox"><input class="ei-field" id="ei-cr-name" value="Custom" oninput="eiCreateCheck()" spellcheck="false"><span class="ei-suffix">.4.2.binds</span></div>
+      <div class="ei-nameerr" id="ei-cr-err"></div>
+      <p style="margin:6px 0 0;color:#6F7D89;font-size:12px">Nothing is written until you APPLY. All four sections will use this file.</p>
+    </div>
+    <div class="cd-footer">
+      <button type="button" class="ei-btn" onclick="eiCreateCancel()">CANCEL</button>
+      <button type="button" class="ei-btn primary" id="ei-cr-ok" onclick="eiCreateOk()">CREATE</button>
+    </div>
+  </div>
+</div>
+<!-- First-time startup (storage.md rules 1-4; alias-designer First setup). -->
+<div id="ft-dlg" class="cd-scrim" hidden>
+  <div class="cd-dialog" style="width:640px" role="dialog" aria-modal="true" aria-labelledby="ft-title">
+    <div class="cd-titlebar"><span id="ft-title" class="cd-title">First-time startup</span><span class="ob-step" id="ft-step"></span></div>
+    <div class="cd-body" id="ft-body" style="padding:14px 22px"></div>
+    <div class="cd-footer" id="ft-footer"></div>
+  </div>
+</div>
+<!-- The check: a live copy changed outside BindForge (storage.md rule 14). -->
+<div id="ck-dlg" class="cd-scrim" hidden>
+  <div class="cd-dialog" style="width:680px" role="dialog" aria-modal="true" aria-labelledby="ck-title">
+    <div class="cd-titlebar"><span id="ck-title" class="cd-title">Your control files changed outside BindForge</span></div>
+    <div class="cd-body" id="ck-body" style="padding:14px 22px"></div>
+    <div class="cd-footer"><span class="cd-footnote">Nothing is written until you choose. What is there now is backed up first.</span>
+      <button type="button" class="ei-btn" onclick="ckClose()">LATER</button></div>
+  </div>
+</div>
+<!-- The merge dialog: one row per line item, nothing pre-selected. -->
+<div id="mg-dlg" class="cd-scrim" hidden>
+  <div class="cd-dialog" style="width:620px" role="dialog" aria-modal="true" aria-labelledby="mg-title">
+    <div class="cd-titlebar"><span id="mg-title" class="cd-title">Merge DualVirpilDawnTreader.4.2.binds</span></div>
+    <div class="cd-body" style="padding:14px 22px">
+      <div style="display:flex;gap:8px;margin-bottom:10px"><button type="button" class="ei-btn" onclick="mgAll(0)">KEEP ALL MINE</button><button type="button" class="ei-btn" onclick="mgAll(1)">KEEP ALL IN-GAME</button></div>
+      <div id="mg-rows"></div>
+      <div class="ft-warn" id="mg-left"></div>
+    </div>
+    <div class="cd-footer"><button type="button" class="ei-btn" onclick="mgClose()">CANCEL</button>
+      <button type="button" class="ei-btn primary" id="mg-ok" onclick="mgDone()" disabled>MERGE</button></div>
+  </div>
+</div>
+<script>
+// ---- First-time startup ----
+var ft = {page:0, choice:null, name:null, label:null};
+function ftOpen(){ ft = {page:0, choice:null, name:null, label:null}; document.getElementById('ft-dlg').hidden = false; ftDraw(); }
+function ftClose(){ document.getElementById('ft-dlg').hidden = true; }
+function ftDraw(){
+  var b = document.getElementById('ft-body'), f = document.getElementById('ft-footer');
+  document.getElementById('ft-step').textContent = (ft.page + 1) + ' of 3';
+  if(ft.page === 0){
+    document.getElementById('ft-title').textContent = 'Your installations';
+    b.innerHTML = '<p style="color:#C2C2C2;margin:4px 0 10px">BindForge found these installations of Elite Dangerous. Confirm them, or add one it missed.</p>'
+      + EI_INSTALLS.map(function(i){ return '<div class="ft-row"><b style="width:70px">' + i.label + '</b><span class="grow">' + i.path + '</span><small>found</small></div>'; }).join('')
+      + '<p style="color:#6F7D89;font-size:12px;margin-top:10px">Your files are backed up before anything else is done. That backup is kept forever.</p>';
+    f.innerHTML = '<button type="button" class="ei-btn" onclick="ftClose()">NOT NOW</button>'
+      + '<button type="button" class="ei-btn" onclick="alert(\'Browse to an installation\u2019s root folder. BindForge checks it for EliteDangerous64.exe before adding it.\')">ADD MISSING&hellip;</button>'
+      + '<button type="button" class="ei-btn primary" onclick="ft.page=1;ftDraw()">CONFIRM</button>';
+  } else if(ft.page === 1){
+    document.getElementById('ft-title').textContent = 'Your installations\u2019 device files differ';
+    var c = function(v, txt){ return '<label class="ft-choice"><input type="radio" name="ftc" ' + (ft.choice === v ? 'checked' : '') + ' onchange="ft.choice=\'' + v + '\';ftDraw()" style="accent-color:#FF7100"> ' + txt + '</label>'; };
+    var html = '<p style="color:#C2C2C2;margin:4px 0 8px">Steam and Epic hold different <code>DeviceMappings.xml</code> and <code>.buttonMap</code> files. Every installation must end up with the same set. How do you want to make it?</p>'
+      + c('steam', 'Use <b>Steam</b> for all installations') + c('epic', 'Use <b>Epic</b> for all installations') + c('merge', '<b>Merge</b> them, deciding each conflict');
+    if(ft.choice === 'steam') html += '<div class="ft-warn">\u26a0 Epic has an entry Steam does not &mdash; LVWAP. 131 bindings in DualVirpilDawnTreader.4.2.binds use it. Overwriting removes it, and those bindings will stop working. Choose Merge to keep it.</div>';
+    if(ft.choice === 'merge'){
+      var pk = function(key, val, txt){ return '<button type="button" class="ft-pick' + (ft[key] === val ? ' on' : '') + '" onclick="ft.' + key + '=\'' + val + '\';ftDraw()">' + txt + '</button>'; };
+      html += '<div class="ft-row"><span class="grow">Controller <code>3344 83F4</code> is named <b>LVWAP</b> in Steam and <b>VirpilLeft</b> in Epic</span>' + pk('name','LVWAP','LVWAP') + pk('name','VirpilLeft','VirpilLeft') + '</div>'
+        + '<div class="ft-row"><span class="grow">Throttle, <code>Joy_1</code>: <b>LV MAIN TRIGGER</b> in Steam, <b>TRIGGER 1</b> in Epic</span>' + pk('label','a','LV MAIN TRIGGER') + pk('label','b','TRIGGER 1') + '</div>'
+        + '<div class="ft-row"><span class="grow">RHVCAP &mdash; only in Steam</span><small>kept, nothing to ask</small></div>';
+      if(ft.name) html += '<div style="color:#8FA0AD;font-size:12px;margin-top:6px">Bindings naming ' + (ft.name === 'LVWAP' ? 'VirpilLeft' : 'LVWAP') + ' move to ' + ft.name + '.</div>';
+    }
+    b.innerHTML = html;
+    var ready = ft.choice === 'steam' || ft.choice === 'epic' || (ft.choice === 'merge' && ft.name && ft.label);
+    f.innerHTML = '<button type="button" class="ei-btn" onclick="ft.page=0;ftDraw()">BACK</button><span class="cd-footnote">' + (ft.choice === 'merge' && !ready ? 'Answer every conflict to continue.' : '') + '</span>'
+      + '<button type="button" class="ei-btn primary" ' + (ready ? '' : 'disabled') + ' onclick="ft.page=2;ftDraw()">NEXT</button>';
+  } else {
+    document.getElementById('ft-title').textContent = 'Ready to create your working copy';
+    b.innerHTML = '<p style="color:#C2C2C2;margin:4px 0 10px">Your files are backed up as of 2026-10-24 09:12 &mdash; that backup is kept forever.</p>'
+      + '<p style="color:#C2C2C2">Your working copy will hold <b>4 devices</b> and <b>3 button maps</b>, your binds files and your preset file, and be written to <b>2 installations</b>.</p>';
+    f.innerHTML = '<button type="button" class="ei-btn" onclick="ft.page=1;ftDraw()">BACK</button>'
+      + '<button type="button" class="ei-btn primary" onclick="ftClose();alert(\'First-time startup complete. Updated 2 of 2 installations.\')">FINISH</button>';
+  }
+}
+// ---- The check ----
+function ckOpen(){
+  document.getElementById('ck-body').innerHTML =
+    '<div class="ck-file"><h5>DualVirpilDawnTreader.4.2.binds</h5>'
+    + '<div style="color:#C2C2C2;font-size:13px">The game\u2019s file has 3 bindings yours does not: Ship &rsaquo; Landing Gear, Ship &rsaquo; Cargo Scoop, SRV &rsaquo; Handbrake.</div>'
+    + '<div class="ck-acts"><button type="button" class="ei-btn" onclick="alert(\'Your working copy is written over the game\u2019s file.\')">PUT MINE BACK</button>'
+    + '<button type="button" class="ei-btn" onclick="mgOpen()">MERGE&hellip;</button>'
+    + '<button type="button" class="ei-btn" onclick="alert(\'The game\u2019s file replaces your working copy. Your working copy is backed up first.\')">USE THE GAME\u2019S</button></div></div>'
+    + '<div class="ck-file"><h5>Epic &mdash; DeviceMappings.xml</h5>'
+    + '<div style="color:#D39207;font-size:13px">This file now matches Frontier\u2019s factory file. A game update probably reset it. 131 bindings use controllers it no longer has.</div>'
+    + '<div class="ck-acts"><button type="button" class="ei-btn primary" onclick="alert(\'Your working copy\u2019s device files are written to Epic.\')">PUT MINE BACK</button>'
+    + '<button type="button" class="ei-btn" onclick="confirm(\'Are you sure? The reset file would replace your working copy, and every installation would get it at the next APPLY.\')">USE THE GAME\u2019S</button></div></div>';
+  document.getElementById('ck-dlg').hidden = false;
+}
+function ckClose(){ document.getElementById('ck-dlg').hidden = true; }
+var MG_ROWS = [['Ship \u203a Landing Gear (Primary)','L','G'],['Ship \u203a Cargo Scoop (Primary)','Home','End'],['SRV \u203a Handbrake (Primary)','X','Space']], mgAns = [];
+function mgOpen(){ mgAns = MG_ROWS.map(function(){ return null; }); document.getElementById('mg-dlg').hidden = false; mgDraw(); }
+function mgClose(){ document.getElementById('mg-dlg').hidden = true; }
+function mgPick(i, v){ mgAns[i] = v; mgDraw(); }
+function mgAll(v){ mgAns = mgAns.map(function(){ return v; }); mgDraw(); }
+function mgDraw(){
+  document.getElementById('mg-rows').innerHTML = '<div class="ft-row"><span class="grow"><small>LINE</small></span><small style="width:90px">YOURS</small><small style="width:90px">IN-GAME</small></div>'
+    + MG_ROWS.map(function(r, i){ return '<div class="ft-row"><span class="grow">' + r[0] + '</span>'
+      + '<button type="button" class="ft-pick' + (mgAns[i] === 0 ? ' on' : '') + '" style="width:90px" onclick="mgPick(' + i + ',0)">' + r[1] + '</button>'
+      + '<button type="button" class="ft-pick' + (mgAns[i] === 1 ? ' on' : '') + '" style="width:90px" onclick="mgPick(' + i + ',1)">' + r[2] + '</button></div>'; }).join('');
+  var left = mgAns.filter(function(a){ return a === null; }).length;
+  document.getElementById('mg-left').textContent = left ? left + ' of ' + MG_ROWS.length + ' still to decide' : '';
+  document.getElementById('mg-ok').disabled = left > 0;
+}
+function mgDone(){ mgClose(); ckClose(); alert('Merged. The result becomes your working copy and is written to the game, backed up first.'); }
+</script>
+<script>
+// One set of edits not applied, from every tab (2026-10-24, Alan).
+var EI_EDITS = {};
+var eiPendingLeave = null, eiAfterApply = null;
+function eiMarkEdit(tab){ EI_EDITS[tab] = true; eiRefreshApplyBar(); }
+function eiEditTabs(){ return Object.keys(EI_EDITS); }
+function eiRefreshApplyBar(){
+  var tabs = eiEditTabs(), dirty = tabs.length > 0;
+  document.getElementById('ei-applybar').classList.toggle('dirty', dirty);
+  document.getElementById('ei-apply').disabled = !dirty;
+  document.getElementById('ei-discard').disabled = !dirty;
+  document.getElementById('ei-applybar-text').textContent = dirty
+    ? 'Edits not applied \u2014 ' + tabs.join(', ') + '. APPLY writes them to every installation.'
+    : 'No edits to apply.';
+}
+function eiDiscardAll(){
+  if(!eiEditTabs().length) return;
+  if(EI_EDITS['Preset Editor'] && typeof presetRevert === 'function') presetRevert();
+  EI_EDITS = {}; eiRefreshApplyBar();
+}
+function eiApplyAll(after){
+  if(!eiEditTabs().length) return;
+  eiAfterApply = after || null;
+  document.getElementById('ei-ac-text').textContent = 'Edits from ' + eiEditTabs().join(', ') +
+    ' go to the working copy and to every installation: Steam, Epic.';
+  document.getElementById('ei-applyconfirm').hidden = false;
+}
+function eiApplyCancel(){ eiAfterApply = null; document.getElementById('ei-applyconfirm').hidden = true; }
+function eiApplyConfirm(){
+  document.getElementById('ei-applyconfirm').hidden = true;
+  if(EI_EDITS['Preset Editor'] && typeof presetSave === 'function') presetSave();
+  EI_EDITS = {}; eiRefreshApplyBar();
+  document.getElementById('ei-applybar-text').textContent = 'Applied. Updated 2 of 2 installations.';
+  if(eiAfterApply){ var f = eiAfterApply; eiAfterApply = null; f(); }
+}
+function eiLeaveTo(name){
+  if(!eiEditTabs().length){ alert('Switches to Elite-Intel\u2019s ' + name + ' tab.'); return; }
+  eiPendingLeave = name;
+  document.getElementById('ei-leave-text').textContent = 'You have edits not applied in ' + eiEditTabs().join(', ') +
+    '. Go back to them, discard them, or apply them to every installation before going to ' + name + '.';
+  document.getElementById('ei-leave').hidden = false;
+}
+function eiLeaveGoBack(){ eiPendingLeave = null; document.getElementById('ei-leave').hidden = true; }
+function eiLeaveDiscard(){ var n = eiPendingLeave; eiLeaveGoBack(); eiDiscardAll(); alert('Switches to Elite-Intel\u2019s ' + n + ' tab.'); }
+function eiLeaveApply(){ var n = eiPendingLeave; eiLeaveGoBack(); eiApplyAll(function(){ alert('Switches to Elite-Intel\u2019s ' + n + ' tab.'); }); }
+// Esc is Go back; Enter chooses nothing.
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('ei-leave').hidden) return;
+  if(e.key === 'Escape'){ e.preventDefault(); eiLeaveGoBack(); }
+  if(e.key === 'Enter'){ e.preventDefault(); }
+}, true);
+// ---- CREATE (2026-10-24, Alan) ----
+var EI_FACTORY = ['KeyboardMouseOnly','KeyboardMouseOnlyYaw','ClassicKeyboardOnly','AdvancedControlPad','AdvancedControlPad2',
+  'AdvancedPS3Controller','BlackWidow','ConsoleX360','ConsoleX360Classic','ControlPad','ControlPadYaw','DualShock4Controller',
+  'DualShock4ControllerYaw','Empty','GenericJoystick','LogitechG940','OculusTouch','PS3Controller','PS3ControllerYaw',
+  'SaitekAV8R03','SaitekFLY5','SaitekX52','SaitekX52Pro','SaitekX55','SaitekX56','T16000MHOTAS','TFlightHotasOne',
+  'ThrustMasterHOTAS4','ThrustMasterHOTASWarthog','ThrustMasterTFlightHOTASX'];
+var eiNewPlayer = false, eiCreated = null;
+function eiLockEditors(lock){
+  ['alias','bindeditor','preset'].forEach(function(t){
+    document.getElementById('toptab-'+t+'-btn').classList.toggle('ei-locked', lock);
+    document.getElementById('toptab-'+t).classList.toggle('ei-locked', lock);
+  });
+}
+function eiSimulateNewPlayer(){
+  eiNewPlayer = true; eiCreated = null; EI_EDITS = {};
+  var c = document.getElementById('ei-create'); c.hidden = false; c.disabled = false;
+  eiLockEditors(true); eiShowTopTab('alias'); eiRefreshApplyBar();
+  document.getElementById('ei-applybar-text').textContent = 'You have no binds file of your own yet. CREATE one to start editing.';
+}
+function eiCreateOpen(){
+  var sel = document.getElementById('ei-cr-factory');
+  if(!sel.options.length) EI_FACTORY.forEach(function(n){ var o = document.createElement('option'); o.textContent = n; sel.appendChild(o); });
+  sel.selectedIndex = 0; document.getElementById('ei-cr-name').value = 'Custom'; eiCreateCheck();
+  document.getElementById('ei-createdlg').hidden = false;
+}
+function eiNameProblem(name, own){
+  if(!/^[A-Za-z][A-Za-z0-9_-]{2,49}$/.test(name)) return 'Letters, digits, - and _ only, starting with a letter, 3 to 50 characters.';
+  var low = name.toLowerCase();
+  if(EI_FACTORY.some(function(f){ return f.toLowerCase() === low; })) return 'That is the name of one of Frontier\u2019s factory binds files.';
+  var taken = Array.prototype.some.call(document.querySelectorAll('#be-file-select option'), function(o){
+    var bn = o.textContent.replace(/(\.\d+\.\d+)?\.binds$/, '');
+    return bn.toLowerCase() === low && bn !== own; });
+  return taken ? 'Another binds file already has that name.' : '';
+}
+function eiCreateCheck(){
+  var msg = eiNameProblem(document.getElementById('ei-cr-name').value.trim(), null);
+  document.getElementById('ei-cr-err').textContent = msg;
+  document.getElementById('ei-cr-ok').disabled = !!msg;
+}
+function eiCreateCancel(){ document.getElementById('ei-createdlg').hidden = true; }
+function eiCreateOk(){
+  var name = document.getElementById('ei-cr-name').value.trim();
+  eiCreated = { name: name, from: document.getElementById('ei-cr-factory').value };
+  document.getElementById('ei-createdlg').hidden = true;
+  var sel = document.getElementById('be-file-select'), o = document.createElement('option');
+  o.textContent = name + '.4.2.binds'; o.dataset.created = '1'; sel.insertBefore(o, sel.firstChild); sel.selectedIndex = 0; beNameSync();
+  eiLockEditors(false); document.getElementById('ei-create').disabled = true;
+  eiMarkEdit('Create (' + name + ', from ' + eiCreated.from + ')');
+}
+function eiCreateUndo(){
+  var o = document.querySelector('#be-file-select option[data-created]'); if(o) o.remove();
+  eiCreated = null; document.getElementById('ei-create').disabled = false; eiLockEditors(true); beNameSync();
+}
+function eiCreateDone(){
+  var o = document.querySelector('#be-file-select option[data-created]'); if(o) delete o.dataset.created;
+  eiCreated = null; eiNewPlayer = false; document.getElementById('ei-create').hidden = true;
+}
+// ---- Renaming a binds file in the Bind Editor (2026-10-24, Alan) ----
+var beOriginalName = null;
+function beNameSync(){
+  var file = document.getElementById('be-file-select').value, m = file.match(/^(.*?)((\.\d+\.\d+)?\.binds)$/);
+  var name = m ? m[1] : file, suffix = m ? m[2] : '', factory = !m || !m[3];
+  var box = document.getElementById('be-name');
+  box.value = name; box.readOnly = factory; box.title = factory ? 'A Frontier factory binds file cannot be renamed.' : '';
+  document.getElementById('be-suffix').textContent = suffix;
+  document.getElementById('be-name-err').textContent = factory ? 'Frontier\u2019s factory binds file \u2014 it cannot be renamed.' : '';
+  beOriginalName = name;
+}
+function beNameChanged(){
+  var box = document.getElementById('be-name'), name = box.value.trim();
+  if(box.readOnly) return;
+  var msg = name === beOriginalName ? '' : eiNameProblem(name, beOriginalName);
+  document.getElementById('be-name-err').textContent = msg;
+  var key = 'Bind Editor (rename)';
+  if(!msg && name !== beOriginalName) eiMarkEdit(key); else { delete EI_EDITS[key]; eiRefreshApplyBar(); }
+}
+document.getElementById('be-file-select').addEventListener('change', beNameSync);
+beNameSync();
+(function(){
+  var discard = window.eiDiscardAll, confirm = window.eiApplyConfirm;
+  window.eiDiscardAll = function(){
+    var hadCreate = !!eiCreated, hadRename = !!EI_EDITS['Bind Editor (rename)'];
+    discard();
+    if(hadRename) beNameSync();
+    if(hadCreate){ eiCreateUndo(); document.getElementById('ei-applybar-text').textContent = 'You have no binds file of your own yet. CREATE one to start editing.'; }
+  };
+  window.eiApplyConfirm = function(){
+    var created = !!eiCreated, renamed = !!EI_EDITS['Bind Editor (rename)'];
+    if(renamed){ var sel = document.getElementById('be-file-select'); var o = sel.options[sel.selectedIndex];
+      o.textContent = document.getElementById('be-name').value.trim() + document.getElementById('be-suffix').textContent; }
+    confirm();
+    if(created) eiCreateDone();
+    if(renamed) beNameSync();
+  };
+})();
+// The editors no longer have buttons of their own: what used to SAVE now marks an edit not applied.
+(function(){
+  var pc = window.presetChanged;
+  window.presetChanged = function(){ pc.apply(this, arguments);
+    var dirty = presetSavedState && getPresetLines().some(function(v,i){ return v !== presetSavedState[i]; });
+    if(dirty) eiMarkEdit('Preset Editor'); else { delete EI_EDITS['Preset Editor']; eiRefreshApplyBar(); } };
+  var cs = window.cdSave; if(cs) window.cdSave = function(){ var r = cs.apply(this, arguments); eiMarkEdit('Bind Editor'); return r; };
+  var as = window.adSave; if(as) window.adSave = function(){ var r = as.apply(this, arguments); eiMarkEdit('Alias Designer'); return r; };
+})();
 </script>
 </body>
 </html>

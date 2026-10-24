@@ -2,6 +2,11 @@
 
 ## Post-V1.2 / Back-Burner Ideas
 
+- **Different input setups per installation — not planned** (2026-10-24, Alan). It would need BindForge to switch
+  `StartPreset.4.start` depending on which installation is being played, since every installation reads the one file.
+  Recorded so the idea is not lost; nothing is to be built toward it. All installations stay the same
+  ([principle 8](principles.md)).
+
 **Action Groups** — designed in full, then **deferred out of V1.2 on 2026-09-16** so the release can publish
 before the end of September. Nothing about the design is in question; see [Bind Editor — Action Groups](bind-editor.md#action-groups)
 and [The V1.2 release is trimmed](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16).

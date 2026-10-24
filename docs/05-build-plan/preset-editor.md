@@ -42,11 +42,11 @@ below follow the rest of that order.
 | Backups | `PlayerBackupService` and the never-pruned "before BindForge" backup (`devicefiles.BeforeBindForgeBackup`) already include `StartPreset.4.start` |
 
 **`StartPresetApply` is the only writer of the game's preset file** (P3). The master, the draft and the
-write are new V1.2 classes ([the split](../02-features/bindforge/overview.md#where-the-binds-and-startpreset-master-lives--settled-2026-10-12-alan-foundation-f3)).
+write are new V1.2 classes ([the split](../02-features/bindforge/overview.md#where-the-working-copy-lives--2026-10-23)).
 
 ## Settled — and where it is recorded
 
-- **Draft and Apply, like everything else; no write-as-you-go.** [preset-editor.md](../02-features/bindforge/preset-editor.md#draft-model--same-as-every-other-section)
+- **Draft and Apply, like everything else; no write-as-you-go.** [preset-editor.md](../02-features/bindforge/preset-editor.md#edits-and-apply--same-as-every-other-section)
 - **The four lines are four independent entities** — a game change to one line and a draft change to another
   merge with nothing to ask. [Same section](../02-features/bindforge/preset-editor.md#the-four-lines-are-four-independent-entities)
 - **A line holds the file's `PresetName`** — its BindName — which must match the filename less its version suffix and extension,
@@ -56,14 +56,14 @@ write are new V1.2 classes ([the split](../02-features/bindforge/overview.md#whe
   shadows a factory one of the same BindName. [The BindName list](../02-features/bindforge/preset-editor.md#the-bindname-list--settled-2026-10-17-alan-p1)
 - **A BindName identifies exactly one file** in a live folder. [A name does not identify a file](../02-features/bindforge/preset-editor.md#a-name-does-not-identify-a-file)
 - **A file is offered on its contents, not its extension.** [Layout](../02-features/bindforge/preset-editor.md#layout), and file-manager.md above.
-- **The state is coloured text, never a pill.** [Sync Badge](../02-features/bindforge/preset-editor.md#sync-badge)
+- **The state is coloured text, never a pill.** [Sync Badge](../02-features/bindforge/preset-editor.md#is-there-anything-to-apply)
 - **The master and the write are new V1.2 classes**; the master lives under `elite-intel/bindings/master/`.
-  [overview.md](../02-features/bindforge/overview.md#where-the-binds-and-startpreset-master-lives--settled-2026-10-12-alan-foundation-f3)
+  [overview.md](../02-features/bindforge/overview.md#where-the-working-copy-lives--2026-10-23)
 - **The screen brings the unsaved-work prompt with it** — its dropdowns hold edits outside a modal dialog.
-  [C6 ruling](../02-features/bindforge/overview.md#built-as-a-ruling-not-code--2026-10-12-alan-core-c6)
+  [C6 ruling](../02-features/bindforge/overview.md#unsaved-work-on-exit)
 - **Master made from the game's file on first read; a draft exists only when it holds a change; values compared,
   never bytes; the screen's Discard is the dropdowns', the store only drops the draft** (Alan, 2026-10-18, P2).
-  [The master and the draft](../02-features/bindforge/preset-editor.md#the-master-and-the-draft--settled-2026-10-18-alan-p2)
+  [The master and the draft](../02-features/bindforge/preset-editor.md#what-apply-checks-and-writes-for-the-preset-file--2026-10-24)
 - **Binds File Rename and Duplicate are deferred.** [Deferred](../02-features/bindforge/preset-editor.md#deferred)
 
 ## Known doc conflicts — settle with Alan when a slice reaches them
@@ -74,9 +74,9 @@ write are new V1.2 classes ([the split](../02-features/bindforge/overview.md#whe
    default BindName"*; overview.md's 2026-10-05 rewrite defines wiped as *matches Frontier's stock file, or is
    gone*, and no stock `StartPreset.4.start` reference exists. **P5.**
 3. ~~**The badge compares against "the live file".**~~ **Settled 2026-10-20 (Alan):** DRAFT means a saved draft
-   differs from the master; a game change is a separate signal (P5). [Sync Badge](../02-features/bindforge/preset-editor.md#sync-badge)
+   differs from the master; a game change is a separate signal (P5). [Sync Badge](../02-features/bindforge/preset-editor.md#is-there-anything-to-apply)
 4. ~~**Writing the single-line form.**~~ **Settled 2026-10-20 (Alan, P3):** always four lines, CRLF between them, no
-   final newline. [Apply](../02-features/bindforge/preset-editor.md#apply--settled-2026-10-20-alan-p3)
+   final newline. [Apply](../02-features/bindforge/preset-editor.md#what-apply-checks-and-writes-for-the-preset-file--2026-10-24)
 
 ## Known issues
 
@@ -84,7 +84,7 @@ write are new V1.2 classes ([the split](../02-features/bindforge/overview.md#whe
   (`BindingsMonitor.java`, the `endsWith(".binds")` test), so a change to the preset file — in the game, or by
   this screen's Apply — does not make the assistant reload the newly active General binds file until some `.binds`
   changes. **Settled in P3 (Alan, 2026-10-20):** a V1.1 defect, fixed on `V1.1-Release`, not by Apply
-  ([Apply](../02-features/bindforge/preset-editor.md#apply--settled-2026-10-20-alan-p3)). Still unfixed.
+  ([Apply](../02-features/bindforge/preset-editor.md#what-apply-checks-and-writes-for-the-preset-file--2026-10-24)). Still unfixed.
 - **Two preset file generations in one folder** (`StartPreset.4.start` and `StartPreset.start`): `findStartPresetFile` (the assistant, player backups) and
   `findLiveStartPresetFile` (this screen) can name different files. See
   [foundation.md known issues](foundation.md#known-issues). This screen must use the live finder only.
@@ -137,8 +137,8 @@ write are new V1.2 classes ([the split](../02-features/bindforge/overview.md#whe
 next slice needs.*
 
 - **2026-10-20 — P3 done** (`StartPresetApply`), **with Krondor's second P2 review and his repeal of the
-  foundation branch.** **Decided** (in [Apply](../02-features/bindforge/preset-editor.md#apply--settled-2026-10-20-alan-p3)
-  and [Sync Badge](../02-features/bindforge/preset-editor.md#sync-badge)): merged per line, a conflict writes
+  foundation branch.** **Decided** (in [Apply](../02-features/bindforge/preset-editor.md#what-apply-checks-and-writes-for-the-preset-file--2026-10-24)
+  and [Sync Badge](../02-features/bindforge/preset-editor.md#is-there-anything-to-apply)): merged per line, a conflict writes
   nothing; every line must name a listed binds file, an empty one refused; the game's form is four lines, CRLF, no
   final newline, written to the file `findLiveStartPresetFile` names; values already in the game's file are not
   written; DRAFT means differs from the master. **Review fixes:** `StartPresetSections.equals` compares the four
@@ -151,7 +151,7 @@ next slice needs.*
 - **2026-10-20 — code-integrity review fixes** (P2 and the sweep). `StartPresetComparison.Line.change()` is now
   derived from the three values and the comparison refuses anything but the four sections in order; Save checks
   its text by reading it back; `hasDraftChanges()` keeps comparing against the master, and **a draft with no
-  master counts as changed** (Alan; in [the master and the draft](../02-features/bindforge/preset-editor.md#the-master-and-the-draft--settled-2026-10-18-alan-p2)).
+  master counts as changed** (Alan; in [the master and the draft](../02-features/bindforge/preset-editor.md#what-apply-checks-and-writes-for-the-preset-file--2026-10-24)).
   `preseteditor` added to `bindforge/PACKAGE.md`. ~~**Still open:** the `StartPresetSections` Javadoc says
   "preset name".~~ Fixed 2026-10-20.
 
@@ -164,7 +164,7 @@ next slice needs.*
   `StartPreset*` classes keep their names. The master and draft are now named `StartPreset.4.start`, not
   `StartPreset.start`, which is the pre-Odyssey file. Shared V1.1 code is unchanged.
 
-- **2026-10-18 — P2 done** (`StartPresetStore`, `StartPresetComparison`). **Decided** (in [the master and the draft](../02-features/bindforge/preset-editor.md#the-master-and-the-draft--settled-2026-10-18-alan-p2)):
+- **2026-10-18 — P2 done** (`StartPresetStore`, `StartPresetComparison`). **Decided** (in [the master and the draft](../02-features/bindforge/preset-editor.md#what-apply-checks-and-writes-for-the-preset-file--2026-10-24)):
   the master is made from the game's file on first read; Save of the master's values leaves no draft, so a draft
   that exists holds a change; lines compare by value, single-line equal to four matching lines. **Found:** Core C4
   also names the `StartPreset` master — P2 built it, so C4 is now `.binds` only. **P3 needs:** apply the draft

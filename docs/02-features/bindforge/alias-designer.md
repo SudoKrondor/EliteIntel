@@ -9,75 +9,33 @@ the end of each device's row. ~~A single flat section with no sub-tabs: a device
 inline beneath whichever device is open.~~ *Changed 2026-10-10 (Alan): Swing has no row that opens beneath
 itself, and a dialog has room for tabs — see [the Device Editor](#a-dialog-opened-from-the-row--2026-10-10-alan).*
 
-Earlier drafts moved per-installation control into a separate "Installation Mirroring" screen, first inside Alias Designer and later inside [File Manager](file-manager.md). **All of it is gone** — both screens, and the per-installation control itself, which [standardisation removed](overview.md#every-install-gets-the-same-files--settled-2026-09-23). What survives is the *reporting*: whether each installation matches the master for a device is a property of that device, so it sits on the device's own row rather than on a screen the user has to go and find. See [One record, and where it lands](#one-record-and-where-it-lands--reworked-2026-09-26).
-
 ## Device List
 
 Two views, toggled via a tab.
 
 ### My Devices
 
-**The list is the union of live hardware and file entries**, correlated by VID/PID:
+**The list is the union of live hardware and the working copy's `DeviceMappings.xml`**, correlated by VID/PID:
 
 - every controller the Device Service currently reports, whether or not the game has ever heard of it, **and**
-- every non-Frontier entry found in any installation's `DeviceMappings.xml`, whether or not that hardware is
-  currently plugged in.
+- every non-Frontier entry in the working copy's `DeviceMappings.xml`, whether or not that hardware is currently
+  plugged in.
 
 `DeviceMappings.xml` supplies *names*. It never supplies *existence*. A brand-new stick appears the moment it
 is plugged in, unnamed; an entry for a controller sold last year keeps appearing until it is cleared.
-
-Columns, and why only these:
 
 | Column | Source |
 |---|---|
 | **Hardware name** | what the hardware reports through the Device Service, on any OS — *renamed from "Windows name" 2026-10-15 (Alan): it is the controller's own USB name on Linux too* |
 | **VID / PID** | the hardware |
 | **Status** | `ATTACHED` or `MISSING` — whether the hardware is present right now |
-| **Alias** | the name in the master, or *not added* |
-| **Installations** | one read-only marker per *detected* installation |
-| *(gear)* | opens the [Device Editor](#device-editor) for this device — on every row, last, after the Installations columns *(added 2026-10-10)* |
+| **Alias** | the name in the working copy — or the new name, while it is an edit not applied — or *not added* |
+| *(gear)* | opens the [Device Editor](#device-editor) for this device — on every row *(added 2026-10-10)* |
 
-The first three describe the hardware and are true no matter how many installations exist. **The alias is now
-a column**, because there is one of them: the master's. *Under the original design there was no alias column,
-because each installation could hold a different name and a single cell would have been averaging them.
-[Standardisation](overview.md#every-install-gets-the-same-files--settled-2026-09-23) removed that, so the
-honest cell is the master's name.*
-
-**What stays per installation is whether each one has caught up.** Each marker names an installation and
-shows **M** when that installation matches the master for this device, *not added* when it holds no entry, or
-the [divergence colour](#divergence-between-installs--one-list-ranked-by-consequence) when it differs. The
-markers are a readout — clicking one does not open a per-installation editor, because there is no such thing;
-the row's gear opens [the one record](#one-record-and-where-it-lands--reworked-2026-09-26).
-
-#### The Installations markers — 2026-10-08 (Alan)
-
-Built as `bindforge.devices.InstallationMarkers` (pure), shown by `AliasDesignerPanel`.
-
-- **One column per installation**, headed with its name, one marker per cell — not every marker in one cell,
-  which would need a painter of its own ([GAP 5](ui-component-map.md#alias-designer)).
-- **The colour is the [divergence list](#against-the-master--2026-10-08-alan)'s**, read from its findings, so a
-  marker and the row explaining it cannot disagree. **M** is green. A difference reads **differs** — a word as well as
-  a colour.
-- **The text says what the installation holds; the colour says what it costs.** An entry the master holds and an
-  installation lacks reads *not added* in the finding's colour — red when a binding names it. Plain *not added*
-  means neither the master nor that installation holds the device. An entry only the installation holds — the master
-  lacks it — is never **M**.
-- **A built-in is M** where Frontier's entry is there, and *not added* where it is not: the master expects exactly
-  Frontier's entry.
-- **A reset `DeviceMappings.xml`** marks every device the master holds, in that one row's colour — so after a reset
-  even a built-in the master labels shows the reset's colour. **An unreadable one** marks every device: nothing is
-  known about any of them.
-- **An installation whose folder is gone** keeps its column and reads **not found**, uncoloured.
-- **Before first setup there are no Installations columns.** M, *not added* and the divergence colour are all
-  defined against the master.
-- **They do not read `bindforge_device_installs`**: those rows carry no labels and no severity. The colour and the
-  differences come from the check against the master; which names an installation gives the hardware comes from the
-  same refresh's read of its file. A file changed between the two reads can give one stale marker, which the next
-  refresh corrects. The rows stay the stored record of what each installation holds — see
-  [Device Provenance](../../03-data-models/device-provenance.md#what-the-record-carries).
-- *After review:* **a built-in reads M only where Frontier's entry is there**, whether or not the master labels it.
-  The check compares only the user's elements, so a Frontier entry gone from an installation raises no finding and
-  would otherwise read as a match.
+**No installations on this screen** (2026-10-24, Alan; [principle 12](principles.md)). *The Installations columns —
+one marker per installation, M / differs / not added / not found — were removed: the editors care what is being
+edited, and only File Manager's [Game Install Locations](file-manager.md#game-install-locations) cares where the
+files are, and shows whether each installation matches the working copy.*
 
 ### Built-in Devices
 
@@ -97,8 +55,7 @@ BUILT-IN**, where its button labels can be edited — see
 
 Built as `bindforge.devices.BuiltInDeviceList` (pure) and `BuiltInDevice`, shown by `AliasDesignerPanel`.
 
-- **The two views are `COMPACT` tabs, My Devices and Built-in Devices**, in place of the My Devices heading. The
-  [divergence list](#against-the-master--2026-10-08-alan) stays beneath both: it is not a view of the device list.
+- **The two views are `COMPACT` tabs, My Devices and Built-in Devices**, in place of the My Devices heading.
 - **One row per Frontier element, in the order Frontier's file gives them**, read from the reference in the jar
   (`FrontierStockDevices`) — never from an installation, whose file mixes Frontier's entries with the user's.
 - **Four columns: Device, VID / PID, Also covers, Status.** VID / PID is the element's own pair. *Also covers*
@@ -141,16 +98,16 @@ and renaming Frontier's `<T-Rudder>` in place loaded normally and survived a gam
 the lock below no longer hold:
 
 - *"A game update restores Frontier's file."* It can, and that is a wipe like any other: BindForge carries
-  Frontier's shipped list and the user's master, so [the startup check](overview.md#what-the-startup-check-actually-decides)
-  detects it and Apply puts the user's version back.
+  Frontier's shipped list and the user's working copy, so [the check](overview.md#what-the-check-tells-the-user--2026-10-23)
+  finds it and offers to put the working copy back.
 - *"Renaming one renames every controller it covers."* True for a rename, which is why **shadowing** is
   offered beside it: a user element at the top of the file, carrying only the attached controller's VID/PID,
   wins for that controller and leaves Frontier's element in place for the rest. For a single-pair entry like
   `<T-Rudder>` the two give the same result.
 
 **Either one is offered only for a controller the user has attached** — the VID/PID comes from the hardware,
-as it does for any device. Both are ordinary user elements from then on: mastered, written
-[at the top of `<Root>`](#what-the-master-actually-is), and a rename goes through the
+as it does for any device. Both are ordinary user elements from then on: kept in the working copy, written
+[at the top of `<Root>`](#the-users-entries-come-first-in-devicemappingsxml--settled-2026-10-04), and a rename goes through the
 [rename transaction](#renaming-a-device), rewriting every `.binds` that names the old element — Frontier's
 name included. *The same test showed what skipping that costs: an inactive binds file still naming `T-Rudder`
 logged six `Failed to find GUID` lines.* ~~How the device editor presents rename versus shadow is not designed
@@ -168,10 +125,10 @@ away, because there is no name to confirm.
 
 **RESET LABELS replaces CLEAR.** [CLEAR](#actions-and-what-each-one-reaches) removes an installation's entry,
 and on a built-in that entry is Frontier's. RESET LABELS removes only the `.buttonMap` the user or BindForge
-created, and the next [Elite-Intel startup](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller)
+created, and the next [Elite-Intel startup](#default-labels-for-every-connected-named-controller)
 generates a fresh one. A `.buttonMap` Frontier itself shipped — `VPCPanel`, `VPCThrottle` — is never removed.
-Like SAVE and CLEAR, it reaches **every installation** on the next Apply — there is one record, so a reset is
-a reset everywhere.
+Like SAVE and CLEAR, it reaches **every installation** on the next APPLY — there is one working copy, so a reset
+is a reset everywhere.
 
 | | The user's entry | Built-in |
 |---|---|---|
@@ -183,6 +140,8 @@ a reset everywhere.
 | What APPLY writes | the entry and its `.buttonMap` | the `.buttonMap` only |
 
 #### Built — 2026-10-16 (Alan, A15)
+
+*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
 
 Built in `bindforge.devices.DeviceRename` (who may rename, and `backToFrontier`), `AliasDesignerReader.openingFor`
 and the name box in `DeviceEditorDialog`, `BindForgeDeviceDraftManager.saveDevice(…, BuiltIn)`, and at Apply in
@@ -209,7 +168,7 @@ and the name box in `DeviceEditorDialog`, `BindForgeDeviceDraftManager.saveDevic
 - **Labels move with the name** (option 1 of three). They are written under the new name - from the master, or the
   old file's own content when it holds none - and the old `.buttonMap` is deleted in every installation, **except a
   file Frontier ships** (`VPCPanel`, `VPCThrottle`), which is put back as Frontier shipped it. ~~Another controller
-  still on Frontier's element gets a fresh file from [startup generation](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller).~~
+  still on Frontier's element gets a fresh file from [startup generation](#default-labels-for-every-connected-named-controller).~~
   *Overtaken by the review of 2026-10-17 (below): the old file stays while another device is still called by
   Frontier's name, and is neither deleted nor copied.*
 - **Going back is typing Frontier's name** (option 1 of three) - the name of the element covering the controller,
@@ -259,75 +218,32 @@ and the name box in `DeviceEditorDialog`, `BindForgeDeviceDraftManager.saveDevic
 
 ## First setup — reconciling the installs — settled 2026-09-23
 
-**The handover.** Until a user opens Alias Designer, BindForge only backs up and reports
-([offered, never forced](overview.md#offered-never-forced--settled-2026-09-23)). First setup is the one time
-it asks anything: it turns whatever the installs currently hold into a single master set, after which every
-install matches it. *"Adopt"* stays reserved for what happens later, when someone edits in the game.
-
-**It can be opened and abandoned.** Nothing is written until the user presses the button at the end.
-
-*How first setup is reached changed 2026-10-13 (Alan): it is no longer a step every user starts. BindForge
-**activates** itself the first time its tab is opened, and first setup opens only when the installations
-disagree — see [Activation](#activation--2026-10-13-alan).*
+**The user is asked nothing until they open BindForge**; until then BindForge only backs up, silently
+([storage.md](storage.md) rule 12). First setup — [storage.md](storage.md) rules 1–4 — is the one time it asks: it
+turns whatever the installations hold into one working copy. **It can be abandoned**: nothing is written until its
+last button, and the next opening of the tab offers it again.
 
 ### Activation — 2026-10-13 (Alan)
 
-**Found while planning A6b.** The 2026-09-06 ruling took the user's files with no prompt the first time BindForge
-was opened. The 2026-09-23 ruling replaced it for installations that **disagree**, but the case where they agree
-was never carried over, and A1 built first setup as a button every user had to press. With nothing of the user's
-to set up, the master stayed empty, and an empty master was read as *not set up*. So a new player (Frontier's
-files only) and a player with a custom `.binds` and stock device files could never get past **SET UP**: no APPLY,
-no Device Editor, no onboarding. The second is exactly the user whose `.binds` names their sticks by hex. The
-fix is activation:
+*Reworked 2026-10-24 (Alan).*
 
-- **Activation is automatic the first time the BindForge tab is opened**, with no prompt, **when the installations
-  agree**. The master is filled from what they hold, which may be nothing.
-- **"Agree" means identical: filling the master would write no game file.** Any difference at all opens
-  [first setup](#first-setup--reconciling-the-installs--settled-2026-09-23) instead, even one with nothing to ask.
-  An entry only one installation holds is shown as decided and confirmed by the dialog's final button, so no game
-  file is written until the user asks ([offered, never forced](overview.md#offered-never-forced--settled-2026-09-23)).
-- **When they disagree, first setup opens straight away** on that first opening. Opening BindForge is the user
-  asking. The dialog can still be abandoned, it writes nothing until its last button, and until it finishes
-  BindForge is not activated and **SET UP** reopens it.
-- **No installation detected:** activate with an empty master. One found later is handled as
-  [an install that appears later](#an-install-that-appears-later).
-- **An installation whose folder is gone** is left out of "identical" and activation goes ahead, as first setup
-  already skips it. When it comes back, it is judged against the master like any other installation.
-- **A file that is there but cannot be read** stops silent activation, and first setup opens and names it. An
-  unread file could hold the one entry the master must not lose. *As built (2026-10-13): when first setup's own read
-  fails there is no list to show, so the user gets first setup's "could not read your files" message naming the
-  file; when only the identical test fails to read one, first setup opens with the file named at the top.*
-- **Activation is its own stored fact**, not "the master has rows". A user who owns nothing is still activated.
-  Every test that read an empty master as *not set up* becomes *not activated*: the gear, APPLY, **SET UP**, and
-  [the startup check's](overview.md#for-the-device-files--settled-2026-10-05-alan) "an empty master means first
-  setup has not run". A master that already has rows counts as activated. One left empty by an earlier **SET UP**
-  that found nothing activates the next time the tab is opened.
-
-**Every user gets a "before BindForge" backup**, whichever path activation takes:
-
-- **It covers all of the user's input data:** every reachable installation's `DeviceMappings.xml` and
-  `DeviceButtonMaps\`, and every `.binds` and `StartPreset.4.start` in the bindings folder. On Linux that is every
-  bindings folder BindForge knows of, since each Proton installation has its own
-  ([input environment §7](../../00-overview/input-environment.md#7-linux-the-bindings-folder-is-not-shared)).
-- **It is taken before anything is written**: at silent activation, or when first setup opens. First setup still
-  takes its own labelled backup just before it writes, because the user may abandon the dialog and come back after
-  the files have changed.
-- **It is never pruned.** Edit History keeps a limited number of copies per file, so after enough Applies the
-  files as they were before BindForge would otherwise age out.
-- **It goes in the player backups folder**, as first setup's backup does, so it is listed under Player Backups.
-  The restore there handles binds files only; restoring device files is
-  [File Manager's](file-manager.md) work.
-
-**The user is told once, when the backup is made** — on the first attempt to activate, which may open first setup
-rather than finish: a spoken line (the AI says it) and a log line, as the [missing-controller warning](#a-missing-controller-is-worth-exactly-one-warning--settled-2026-09-24)
-does. Never again after that. *Was "on first activation only"; reconciled with the build after review
-(2026-10-13): the fact told is the backup, and the backup is taken once.*
-
-**What this changes for onboarding:** it always runs after activation, so a controller `.binds` names by hex can be
-named and wait for Apply from the first visit. A6b's planned "not before first setup" rule for the hex case is
-withdrawn.
+- **The installation list is always shown first** — Confirm / Add missing ([storage.md](storage.md) rule 1). *Until
+  2026-10-24 identical installations activated silently, with no prompt; the list now always comes first, so a
+  missed installation can be caught.*
+- **"Agree" means identical.** If every installation's `DeviceMappings.xml` and `.buttonMap`s are the same, there is
+  nothing to reconcile and nothing is asked. Any difference opens the reconcile (rule 2).
+- **A file that is there but cannot be read stops first setup, and is named** — it could hold the one entry the
+  working copy must not lose.
+- **An installation whose folder is gone** is left out, and checked like any other when it comes back.
+- **The "first-time startup complete" flag** is stored, and set in the same step that creates the working copy. A
+  user who owns nothing of their own is still complete.
+- **The backup before the working copy is created** covers every file in every installation, is **never deleted**,
+  is listed with the other backups, and the user is told once — spoken and logged (rule 3). *Until 2026-10-24 first
+  setup also took a second, labelled backup of its own; rule 3's is that backup.*
 
 #### Built — 2026-10-13 (Alan, A1b)
+
+*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
 
 Built as `bindforge.devicefiles.Activation`, run by `AliasDesignerController.activateOnFirstShowing()` (through the panel's), which the
 outer BindForge tab (`BindingsTabPanel`) calls the first time it is shown. The fact is the `bindforge_activation`
@@ -374,7 +290,8 @@ table (migration `12005`, `BindForgeActivationManager`).
 
 Every install's `DeviceMappings.xml` and `.buttonMap` files, plus two references that decide how rows are
 judged: **Frontier's stock list**, to tell the user's entries from the shipped ones, and the shared
-**`.binds`**, which decides [severity](#divergence-between-installs--one-list-ranked-by-consequence).
+**`.binds`** — every binds file in the folder — which decides severity: a device is red when bindings use it, so
+losing its entry would break them.
 
 **Stock entries are never compared, never written, never offered as a choice.** Every install runs the same
 game version — the live service forces an update before it will let anyone play — so their shipped entries are
@@ -393,9 +310,22 @@ Once stock is set aside, a custom element falls into one of four cases:
 | Case | Resolution |
 |---|---|
 | Same name, same VID/PID in every install | identical — nothing to do |
-| Present in one install only | the master takes it |
+| Present in one install only | the working copy takes it |
 | Same name, **different VID/PID** | a real conflict — pick one |
 | Same VID/PID, **different name** | a real conflict — and it is a rename, see below |
+
+**Rules the list follows** (from first setup's build, 2026-10-07/08; kept 2026-10-24, Alan):
+
+- Two names for one VID/PID inside one installation are not a question — the game uses the first in the file, so a
+  later one is dead: shown, not kept. A conflict is asked only where *different* installations disagree.
+- No answer may leave two devices on one VID/PID; such a combination stays unanswered until changed. A name that
+  wins any conflict is kept, even where it loses another.
+- An orphan `.buttonMap` — no device entry behind it — is ignored.
+- Nothing of the user's means nothing to set up: the dialog says so, and the working copy is created from what is
+  there.
+- A failure is named: if the working copy cannot be saved, nothing was written and first setup can run again; if an
+  installation cannot be written afterwards, first setup is finished and that installation is reported, for the next
+  APPLY or the check ([storage.md](storage.md) rule 8).
 
 **A name conflict is not a device-file edit.** The shared `.binds` names devices by their element name, and so
 does the `.buttonMap` filename. Choosing between `RVWAP` and `RightStick` therefore moves three things
@@ -405,7 +335,7 @@ choice.
 
 **`.buttonMap` files merge at the label, and that needs a merge view.** Unlike an entry, two label sets for
 one device combine: twenty labels in one install and five in another give twenty-five. But where both files
-name the *same* input differently, only the user can say which belongs in the master — so overwrite-or-merge
+name the *same* input differently, only the user can say which belongs in the working copy — so overwrite-or-merge
 is not a single answer for the file, it is an answer per input.
 
 **The merge view shows only the inputs that disagree**, one row each:
@@ -423,39 +353,44 @@ is not a single answer for the file, it is an answer per input.
 - **Overwrite stays available for the whole file**, for a user who would rather not walk a list: *use Steam's
   labels for this device*.
 
-The same view serves a later re-merge, when an install has drifted and its labels no longer match the master.
+The same view serves the later reconcile, when an installation's device files change after first setup — with the
+working copy as one side ([the check for device files](overview.md#the-check-for-device-files--2026-10-23)).
+
+**First setup offers two choices for the device files** (2026-10-24, Alan): **use one installation for all** — the
+user picks which; its `DeviceMappings.xml` and `.buttonMap`s become the working copy — or **merge** every
+installation, deciding each conflict by the four cases above and each label collision per input. If "use one
+installation" would remove a device entry that bindings use, its confirmation says so before anything is written,
+naming the binds files and the count — *"Epic has an entry Steam does not — LVWAP. 131 bindings in
+DualVirpilDawnTreader.4.2.binds use it. Overwriting removes it, and those bindings will stop working. Choose Merge to
+keep it."* An entry no bindings use is simply overwritten. Binds files and `StartPreset.4.start` are not part of this
+choice: binds files sit side by side in the one folder, and there is one preset file.
+
+**First setup never asks which binds file to use** (2026-10-24, Alan). `StartPreset.4.start` names the active one, for
+every installation; every binds file goes into the working copy; and the overwrite warning counts bindings across all
+of them, since any can be made active later and the game checks them all at startup.
 
 ### The flow
 
-1. **"Your files are backed up as of &lt;time&gt;"** — said first, because it is what makes the rest safe to touch.
-2. **The list**, every row coloured by severity, conflicts sorted to the top.
-3. **Two routes through:** resolve row by row, or **use one install as the master** — the blunt option, one
-   click, for a user who does not want to think about it. The backup makes it reversible.
-4. **A summary before any write:** *"The master will hold 6 devices and 5 buttonMaps. Apply to 2 installs?"*
-5. **Write, and report per install** — *"updated 2 of 2"*, or which one failed and why.
-
-**Two ways back, and both are taken — settled 2026-09-23.** First setup is the one operation that rewrites
-every install at once, so the launch backup alone is too blunt to undo it:
-
-- **A labelled backup immediately before the write**, so there is a restore point meaning *"just before I
-  standardised"* rather than *"whatever the last launch happened to catch."* It covers every install the
-  operation touches, because the operation spans them.
-- **An [Edit History](file-manager.md#edit-history) entry for every file whose content is unique**, so one
-  installation's `DeviceMappings.xml` or one `.buttonMap` can be walked back on its own without rolling back
-  everything else. At first setup the installations disagree — that is why it is running — so this is one
-  entry each, which is the state worth returning to. *Reworded 2026-10-03: this said "an entry per file
-  written", which after [standardisation](overview.md#every-install-gets-the-same-files--settled-2026-09-23)
-  would mean several byte-identical copies of one file on every later Apply. See
-  [what gets kept](file-manager.md#edit-history).*
-
-This makes Edit History a **dependency of first setup**, not a later nicety — worth knowing, since nothing of
-it exists in code yet.
+1. **"Your files are backed up as of &lt;time&gt;"** — said first, because it is what makes the rest safe to touch
+   ([storage.md](storage.md) rule 3's backup, kept forever).
+2. **The list** — every difference shown, conflicts sorted to the top, red where bindings use the device.
+3. **Two routes through:** **use one installation for all**, or **merge** and answer the conflicts (see above).
+4. **A summary before anything is written:** *"Your working copy will hold 6 devices and 5 button maps, and be
+   written to 2 installations."*
+5. **The last button works like an APPLY** (2026-10-24, Alan): the working copy is created and written to every
+   installation, and the report is per installation — *"updated 2 of 2"*, or which one failed and why. No separate
+   APPLY is needed after first setup.
 
 **Show everything, ask about little.** Every difference appears in the list, but only the two genuine
 conflicts above require an answer. A device present in just one install, or an orphan `.buttonMap`, has one
 sensible outcome and is resolved without a question.
 
+*Until 2026-10-24 first setup also took a second, labelled backup of its own and kept an Edit History entry per
+installation; rule 3's one backup replaces both.*
+
 ### Settled while building it — 2026-10-07 (Alan)
+
+*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
 
 Built as `bindforge.devicefiles.FirstSetup` (the flow), `FirstSetupPlan` (the decision, pure), `FirstSetupReader`
 and `DeviceFilesSnapshot`, with `ui.screen.bindings.FirstSetupDialog` opened from **SET UP** on the Alias Designer
@@ -474,7 +409,9 @@ screen, which is offered only while the master is empty.
   [the label merge](#the-buttonmap-label-merge--2026-10-08-alan) below.*
 - **"Use one installation as the master"** answers every question in its favour and still takes the elements only
   the others hold, because first setup never drops a custom entry. A question where that installation has no side,
-  or its side needs Rename, is left to answer.
+  or its side needs Rename, is left to answer. *Changed 2026-10-24 (Alan): "use one installation for all"
+  overwrites, with a warning when bindings use an entry it removes — see
+  [Reconciliation](#reconciliation-is-per-device-element-never-per-file).*
 - **The labelled backup is the device files only**, every reachable installation's `DeviceMappings.xml` and
   `DeviceButtonMaps\`, in the **default** player backups folder as `<time>_first-setup`. First setup writes no
   `.binds`, and a backup destination the user chose is resolved only inside `PlayerBackupService`, which V1.1
@@ -488,7 +425,7 @@ screen, which is offered only while the master is empty.
 - **Frontier's elements are set aside by name**, as the provenance rule does. A `.buttonMap` beside one is
   mastered as labels on a built-in unless it is Frontier's own: `VPCPanel` and `VPCThrottle` now travel in the jar
   (`FrontierStockButtonMaps`) and are recognised by their labels. Generated maps from
-  [Elite-Intel startup](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller) are BindForge's,
+  [Elite-Intel startup](#default-labels-for-every-connected-named-controller) are BindForge's,
   so they are mastered like any other.
 - **An orphan `.buttonMap` is not read** — nothing resolves through it, so it gives the master nothing — and an
   unreachable installation is named and skipped. An installation whose files cannot be read stops first setup:
@@ -513,45 +450,21 @@ screen, which is offered only while the master is empty.
 
 ### Names that needed Rename — 2026-10-17 (Alan, A16)
 
-Built in `FirstSetupPlan.resolve` (the losing names and where their bindings go), `BindForgeDeviceDraftManager.establish`
-(the old name stored with the master), `DeviceApply.afterFirstSetup` (the move) and `FirstSetup.apply`, which runs it
-straight after the push. Alan answered two questions, one at a time:
+**When a name conflict is settled, the bindings follow the winner** — otherwise they would name a device that no
+longer exists, and the game would reject the binds file. Reworked 2026-10-24 (Alan):
 
-- **Every name may win now**, so *needs Rename* is gone. A losing name `.binds` uses becomes the winner's **old name**
-  (`previous_name`), as a [rename](#renaming-a-device) records it. The push then renames the losing element and its
-  `.buttonMap` in every installation that holds them, and Apply finishes what an installation missed. A losing name
-  `.binds` does not use stays a pending removal, as before. *First setup stuck because `.binds` uses both names* is
-  gone with it: either name can win.
-- **First setup moves the bindings itself, straight after its push** (option 1 of two), with Apply's rename move -
-  moved once at least one installation took the winner, retried by every later Apply, and the old name forgotten
-  once every installation and `.binds` are done. *Why:* the push already renames the losing element wherever it finds
-  it, so waiting for the next Apply would leave every installation without the name while the binds files still use
-  it - every installation rejecting the binds file, where before first setup only those lacking the name did.
-- **Two losing names `.binds` uses, for one winner** (option 1 of two): a device keeps one old name, so the first by
-  name is recorded; the other's bindings are moved by first setup too, once, with no record. Its element stays in
-  the installations as a pending removal, which Apply
-  [holds back while `.binds` names it](#built--2026-10-11-alan-a10) and removes once nothing does. A move of it that
-  stops is reported and **not retried** - its entry stays, so nothing that worked before first setup stops working.
-  Keeping *needs Rename* for this case (option 2) would have left a user whose `.binds` uses all three names stuck.
+- **Either name can win.**
+- **Bindings using a losing name move to the winner, in every binds file** — a second losing name too, when three
+  installations disagree.
+- **The confirmation lists each move** — *"Bindings naming RightStick move to RVWAP."* — and the report says how many
+  bindings moved.
+- **When the names differ only in case, every binds file is rewritten to the winning spelling, exactly.** In
+  `.binds`, `LVWAP` and `lvwap` are not the same name, and a binds file holding two spellings of one device is
+  rejected ([format §4.3](domain-knowledge/EliteDangerous-BindsFileFormat.md#43-case-only-binds-cares-and-it-cares-about-one-spelling-per-device--measured-2026-10-14)).
+  So after first setup every binds file spells each device one way: the way the user picked.
 
-*Also settled while building it:*
-
-- **A name losing two conflicts** - a stale PID under one name, each pair also held under another - hands its
-  bindings to the winner of the first conflict in the list's order.
-- **The confirm lists each move** - *"Bindings naming RightStick move to RVWAP."* - and the report says what became
-  of each: moved with the count, still waiting for the next Apply (the old name), or left on the name whose entry
-  stays (a second loser).
-- **A move that throws after the push** ends first setup as *failed* with the installations written: first setup is
-  over, and the dialog closes.
-- **A case-only loser moves nothing**, as a case-only rename does - `.binds` finds an element ignoring case.
-
-*After review — 2026-10-17 (`code-integrity-review.md`, Alan: all eleven):*
-
-- **A handed-over name rides in the old name's rewrite** - one `.binds` rewrite per winner, `{old name, handed-over
-  names} → winner`, all or nothing. As a second rewrite of its own it was the one most likely to meet the bindings
-  monitor mid-reload (as `DeviceApply.moveHardwareIds` records), and the one never retried. Now a rewrite that stops
-  leaves both names, and the next Apply retries the old name's; the handed-over one still has no record of its own.
-- **The confirm lists only moves that will be tried**: a case-only loser is left out of it, as the move leaves it out.
+*Until 2026-10-24 this needed a stored old name (`previous_name`), held-back removals and moves retried by later
+Applies; with the binds files in the working copy, first setup rewrites them in its one write.*
 
 ### The `.buttonMap` label merge — 2026-10-08 (Alan)
 
@@ -569,128 +482,35 @@ setup.
 - **An answer is the label, not the installation.** Two installations holding the same label are one choice, and a
   third that disagrees is the other.
 - **Every disagreeing input is its own question.** First setup cannot finish until each is answered, and the count
-  it gives counts inputs. *Use one installation as the master* answers every input it holds a label for and leaves
-  the rest — as it already did for every other question where it has no side.
-- **The re-merge is not built.** `LabelMerge` takes its sides by name, not by installation, so A3's re-merge can
-  pass the master as one side and reuse the dialog.
+  it gives counts inputs. **"Use one installation for all" takes that installation's labels whole** (2026-10-24,
+  Alan); labels only another installation has are dropped — no warning, since labels never break bindings.
+- **The same view serves the later reconcile**, with the working copy as one side
+  ([the check for device files](overview.md#the-check-for-device-files--2026-10-23)).
 
 ### An install that appears later
 
-It is backed up, then brought to the master. **Unless it already holds custom entries of its own** — then that
-install goes through first setup rather than being silently overwritten.
+- **An installation added later** — Add missing, in File Manager's
+  [Game Install Locations](file-manager.md#game-install-locations) — gets the working copy at the next APPLY.
+- **If it already holds different device entries**, the check finds the difference and the user reconciles it, the
+  same as first setup ([storage.md](storage.md) rule 14). Nothing is overwritten silently.
 
-### What the master actually is
+### The user's entries come first in `DeviceMappings.xml` — settled 2026-10-04
 
-**For device identity, the master is the user's element set — not a copy of a `DeviceMappings.xml`.**
-Holding a whole file as the master would mean pushing one install's stock section into another, which is never
-wanted even though the stock sets agree. `.binds` and `StartPreset.4.start` are different: they are shared, whole
-files, and a file master is exactly right for them.
-
-**The user's elements go at the top of `<Root>` — settled 2026-10-04.** When two elements claim one VID/PID,
+When two elements claim one VID/PID,
 [the first in the file wins](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12d-two-entries-for-one-vidpid-the-first-in-the-file-wins--measured-2026-10-03),
-so a user's entry written after Frontier's is silently ignored. Writing the user's elements first means
-anything they set up on purpose is what the game uses. Frontier's elements keep their order beneath them. *(A refinement to
-[multi-install-proposal.md](../../multi-install-proposal.md) §2, which describes the master as a file for all
-four domains.)*
+so a user's entry written after Frontier's is silently ignored. The working copy's `DeviceMappings.xml` keeps the
+user's elements at the top of `<Root>`, Frontier's beneath them in their own order. *Until 2026-10-24 the device
+master was the user's element set rather than a whole file.*
 
-## Divergence between installs — one list, ranked by consequence
+## When an installation's device files differ
 
-**Added 2026-09-23.** Every install holds the same device files
-([Every install gets the same files](overview.md#every-install-gets-the-same-files--settled-2026-09-23)), so
-anywhere they disagree is something to resolve. Alias Designer is where that is shown and where the user
-decides — it is [offered, never forced](overview.md#offered-never-forced--settled-2026-09-23).
-
-**One list, not three.** Every kind of disagreement appears together, because splitting them would mean
-BindForge deciding which kinds deserve the user's attention. What ranks them instead is **a severity, shown
-as the row's colour**:
-
-| | Meaning | Examples |
-|---|---|---|
-| **Green** | consistent — every install says the same thing | the device matches the master everywhere |
-| **Yellow** | wrong, but nothing breaks | an orphan `.buttonMap` with no entry behind it; labels that differ between installs; an entry for a device no binding references |
-| **Red** | will stop bindings working | a device named in `.binds` has no entry in some install; the same name pointing at different hardware in two installs |
-
-**Severity is judged against the shared `.binds`, not against the device files alone.** That is what separates
-red from yellow: a missing entry only costs the user something when a binding actually names that device.
-The [measured case](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22)
-is red by that rule — 144 bindings naming two sticks one install had never heard of, and the whole binds file
-rejected — while the orphan `LVWAP.buttonMap` sitting beside it is yellow, because nothing resolves through it.
-
-**Colour is the row's text colour, not a fill or a pill** — the HUD canon's rule for state, and the same
-decision taken for the sync badge. See
-[the UI component map](ui-component-map.md#2-statusbadge-draws-a-pill).
-
-**The ways out**, offered per row: merge the installs' entries, overwrite one install from another, or take
-one install as the master. Which of these is offered depends on the row's kind, and none of them runs until
-the user picks one.
-
-### Against the master — 2026-10-08 (Alan)
-
-Built as `DeviceDivergence.againstMaster` (pure), fed by [the startup check](overview.md#for-the-device-files--settled-2026-10-05-alan)
-(`DeviceFilesCheck`) through `DeviceDivergenceScanner.scanAgainstMaster`, and shown on the Alias Designer screen.
-
-- **Before first setup the installations are still compared with each other.** With the master empty there is
-  nothing to compare against, and that comparison is what shows the user why first setup is worth running. Once the
-  master is filled, every row is an installation against the master.
-- **One row per device and issue**, naming every installation it concerns.
-- **Red when a binding names the device, yellow otherwise**, for an entry the installation lacks, one on other
-  hardware than the master's, one **out of place** — below Frontier's entry for the same hardware, which
-  [the game uses instead](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12d-two-entries-for-one-vidpid-the-first-in-the-file-wins--measured-2026-10-03)
-  (inferred from that measurement, not measured with bindings) — and one **the master does not hold**, which is red
-  when named because Apply will never put it in the installations that lack it. That entry's own labels are not
-  listed: its row says it already, and they are often a generated map's thirty-odd.
-- **A reset `DeviceMappings.xml` is one row** — not one per entry it lost, and not one per `.buttonMap` beside it,
-  since the repair is one revert that rewrites both. *After review:* **reset to Frontier's file** it is red only
-  when a binding names one of the user's own devices — the entries it lost; a binding naming a Frontier device
-  the master labels still resolves. **No file at all** is always red, because the game then
-  [loads no bindings](overview.md#why-devicemappingsxml-is-not-cosmetic--reclassified-2026-09-08). The check says
-  which it found (`InstallationCheck.fileGone`).
-- **An unreadable `DeviceMappings.xml` is one row**, red when a binding names any master device —
-  [the whole binds file is rejected](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
-- **Labels are one yellow row per device**, however many inputs differ; a missing or unreadable `.buttonMap` is
-  yellow too. A wrong label breaks no binding.
-- **One cause, one row** *(after review)*: the `.buttonMap` of an entry an installation lacks is not listed as an
-  orphan as well, and a reset installation's maps are not listed at all.
-- **Not listed:** an installation that matches, one whose folder is gone, and a `.buttonMap` that differs only in
-  layout — nothing there for the user to judge.
-- ~~**The list only reports.** The ways out — adopt, revert, and the label re-merge with the master as one side of
-  [the merge view](#the-buttonmap-label-merge--2026-10-08-alan) — are the next slice.~~ *Built — see
-  [the ways out](#the-ways-out--2026-10-08-alan) below.*
-
-### The ways out — 2026-10-08 (Alan)
-
-Built as `bindforge.devicefiles.DivergenceWaysOut` (which ways a row gets, pure), `DeviceFilesAdopt.adopt(installId,
-deviceName)` and `adoptLabels`, and `LabelReMerge`, shown beneath the list on the Alias Designer screen. Selecting a
-row shows its ways out as buttons, as first setup shows its choices; each asks before it runs.
-
-| Row | Ways out |
-|---|---|
-| Entry missing, out of place, `.buttonMap` missing or unreadable, reset to Frontier's or gone | **Revert** |
-| Same name, other hardware | **Revert**, or **adopt** from one installation — one button each, naming the VID/PID it holds (the firmware-update case) |
-| An entry the master does not hold | **Adopt** from one installation. Revert would leave it where it is: the push never removes |
-| Labels differ | **Compare labels** — the re-merge — or **revert** |
-| `DeviceMappings.xml` unreadable | **None.** The push cannot read it either; the row says to restore it or fix it by hand |
-| Orphan `.buttonMap` | **None.** CLEAR acts on a device, and an orphan has none: the row says to remove it by hand or restore it (2026-10-11, [A10](#built--2026-10-11-alan-a10)) |
-
-- **Adopt from a row takes that device and nothing else.** Adopting the whole installation, as the startup check's
-  adopt does, would also drop from the master every entry that installation lacks — fixing one stick's PID could
-  lose another stick. So a missing entry is never adopted from a row: removing a device is CLEAR's, and CLEAR
-  confirms it by name.
-- **Revert is the whole installation**, as [C3 settled](overview.md#for-the-device-files--settled-2026-10-05-alan):
-  the push brings everything there in line with the master. The confirm says how many rows of the list that reaches.
-  A row naming several installations reverts each, reported per installation — *"updated 1 of 2"*, and why.
-- **The backup before revert is Edit History.** The push keeps each replaced file before writing and stops if it
-  cannot; no labelled snapshot is taken, since those land in the Player Backups list (a known issue). Adopt and the
-  re-merge write no game file.
-- **Adopt and the re-merge write the master only** — and a draft three-way, as adopt does. The other installations
-  then differ from the master and appear as rows of their own, to be reverted; with no Apply button yet, that is how
-  they are brought in line.
-- **The re-merge's sides are the master and each installation the row names.** A label only one side holds is kept,
-  as in first setup — so a label the master holds and an installation's file lacks stays in the master. Where the
-  sides only add to each other there is nothing to ask, and the merge view is skipped. Every collision must be
-  answered before anything is written; a `.buttonMap` that cannot be read stops the re-merge.
-- **Before first setup the rows have no ways out** — there is no master to revert to or adopt into. The row says
-  SET UP resolves them.
+**The check finds it and the user reconciles it the same way as first setup**
+([the check for device files](overview.md#the-check-for-device-files--2026-10-23)); File Manager's
+[Game Install Locations](file-manager.md#game-install-locations) shows which installations match. A reset or missing
+`DeviceMappings.xml` is one problem, not one per device — a missing one is always serious, since the game then loads
+no bindings. **An unreadable one is named, and putting the working copy back is offered** — writing it replaces
+whatever could not be read (2026-10-24, Alan). *Until 2026-10-24 this was a per-device list ranked by colour, each
+row with its own ways out — revert, adopt one device, compare labels.*
 
 ## VID/PID Is Not a Stable Identity
 
@@ -782,11 +602,11 @@ what makes the question answerable — 131 is worth a moment's thought, 2 is not
 
 | Answer | What happens |
 |---|---|
-| **Yes** | the alias is created and pointed at the attached device, in the draft. Every binding follows, because they reference the name — the one-field fix [described above](#why-this-matters-more-than-a-renumbering). |
+| **Yes** | the alias is pointed at the attached device, as an edit not applied. Every binding follows, because they reference the name — the one-field fix [described above](#why-this-matters-more-than-a-renumbering). |
 | **No** | nothing is written. The bindings stay orphaned, and BindForge **says so plainly** rather than falling silent, since that is the state the user just confirmed. |
 | **Not now** | nothing is written and **the question is not asked again until the hardware situation changes.** Deferral is not a soft no, and re-asking on every launch turns a useful prompt into something to dismiss reflexively. |
 
-**This is the same shape as [Restore](file-manager.md#restoring-onto-a-machine-whose-installations-differ--reworked-2026-09-26)
+**This is the same shape as [Restore](file-manager.md#restoring-onto-a-machine-whose-installations-differ)
 and the [foreign-backup device list](file-manager.md#how-bindforge-tells-case-1-from-case-3--settled-2026-09-12):**
 where hardware identity is genuinely unknowable, BindForge asks a question the user can answer
 instead of computing an answer it cannot.
@@ -815,6 +635,18 @@ there is nothing for BindForge to create.
 **A missing device is not an error.** Hardware gets unplugged. The entry stays valid, the bindings stay
 intact, and the device works again when it comes back. BindForge says nothing — there is no question to
 ask and nothing to fix.
+
+**Rules the questions follow** (from A12 and A17, 2026-10-15/17; kept 2026-10-24, Alan):
+
+- Asked only when bindings use the missing controller, under any of its names; Frontier's names are never asked
+  about.
+- One question per missing controller, listing every candidate plugged in, and **None of these**.
+- **Not now** and **None of these** are remembered across restarts, until the set of plugged-in controllers changes or
+  the missing one comes back.
+- While a question waits, onboarding does not offer to name its candidates.
+- A controller the bindings know only by its hardware ID: **yes** opens the naming page; the name, and moving its
+  bindings from the old ID to the name, are one edit not applied, written at APPLY.
+- A device whose name looks like a hardware ID is never taken for a missing controller.
 
 ### Ask about one missing device at a time
 
@@ -884,8 +716,7 @@ so some may now be in unexpected places.
 
 **Why keep them rather than start clean.** A user replacing a broken stick with a similar one has a
 layout that mostly works, and rebuilding 131 bindings by hand to avoid a handful of misplaced ones is the
-worse trade. Keeping them is also **reversible** — it lands in the draft, and Discard puts everything
-back. Starting unbound destroys work that no later step can recover.
+worse trade. Keeping them is also **reversible** — it is an edit not applied, and DISCARD puts everything back. Starting unbound destroys work that no later step can recover.
 
 **BindForge does not try to detect whether the model differs.** It has no map of which physical button is
 `Joy_5` on arbitrary hardware, and guessing would produce a confident wrong answer. The warning is shown
@@ -893,6 +724,8 @@ whenever a retarget crosses to a device the user picked from the candidate list,
 update that keeps the same layout costs them one dismissed dialog.
 
 ### Built — 2026-10-15 (Alan, A12)
+
+*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
 
 Built as `bindforge.devices.IdentityQuestions` (who is asked, about what - pure), `ui.screen.bindings.IdentityDialog`,
 `BindForgeDeviceDraftManager.retargetByName`, and the remembered answers in `bindforge_identity_answer` (migration
@@ -938,6 +771,8 @@ Built as `bindforge.devices.IdentityQuestions` (who is asked, about what - pure)
   can land while the identity questions are showing.
 
 ### Built — 2026-10-17 (Alan, A17)
+
+*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
 
 **A controller the bindings know only by its hardware id.** A stick that never had an entry in `DeviceMappings.xml`
 is named in `.binds` by its id - `334483F3` - and a firmware update or a replacement gives it a new one, leaving every
@@ -1001,17 +836,24 @@ four questions, one at a time:
 
 ## Automatic Device Registration
 
-Any controller connected to the system — whether already connected when BindForge starts, or plugged in later during a session (hot-plug) — is automatically added to the My Devices working copy with no user action required. This applies the same "detect and inform, don't ask" principle already used for [First Run](#first-run-and-hot-plug) below, extended to individual devices as they're seen.
+Any controller connected to the system — whether already connected when BindForge starts, or plugged in later during a session (hot-plug) — is listed in My Devices with no user action required; nothing is stored until it is named. This applies the same "detect and inform, don't ask" principle already used for [First Run](#first-run-and-hot-plug) below, extended to individual devices as they're seen.
 
 - **Default alias:** the name the Device Service reports, **cleaned into a valid name** by the [default-name rule](#the-default-name-rule) — `Virpil Controls 20220720` becomes `VirpilControls20220720`. [Onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13) shows it to the user before anything is written.
 - **VID/PID:** filled in immediately from the connected hardware, same as any other device entry.
-- **A `.buttonMap` is created once the device has a name** — at [onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13) for a controller with no entry, or at [Elite-Intel startup](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller) for a connected controller that already has one. *Changed 2026-09-13: this used to say no `.buttonMap` stub is created until the user labels something — see [why the rule moved](#it-is-the-alias-confirm-gate-moved-earlier).*
+- **Its default labels are shown on screen once the device has a name, and its `.buttonMap` is written at APPLY**
+  ([writes outside Apply — none](overview.md#writes-outside-apply--none), 2026-10-23). *Until then a `.buttonMap` was
+  created straight away, at onboarding or at Elite-Intel startup.*
 - **Registration is the row appearing, and writes nothing** — ~~touches only the working copy~~ *(reworded
   2026-10-15, A7: since [the list became the union](#my-devices) of live hardware and file entries, a detected
-  controller is listed without being stored anywhere, draft included).* Detecting a controller writes nothing. The writes that follow it — a confirmed name, a generated `.buttonMap` — are among the few that reach a game installation outside Apply, and each is justified in [What onboarding writes, and when](#what-onboarding-writes-and-when) and in [Overview — writes outside Apply](overview.md#writes-outside-apply--the-complete-list).
-- **Hot-plugging into BindForge is safe; hot-plugging into a running game is not — those are different things.** BindForge can register a newly-connected controller into its own working copy at any time without risk. Physically connecting or disconnecting a controller while Elite Dangerous itself is running is a separate, game-level risk (it can crash the game) that exists independently of BindForge and is outside BindForge's control — automatic registration does not cause or worsen this; it just means BindForge's own device list stays current regardless of when the user plugs something in.
+  controller is listed without being stored anywhere, draft included).* Detecting a controller writes nothing. A name and its labels are edits not applied, written at APPLY; nothing reaches the game outside APPLY and RESTORE.
+- **Rules the offer follows** (from A7, 2026-10-15; kept 2026-10-24, Alan): a plugged-in controller is offered a name
+  once per run — CHECK AGAIN, the gear and the next run still ask; plugging in or out updates the list at once while
+  it is showing; the offer never opens over another dialog; several controllers plugged in together are one dialog.
+- **Hot-plugging into BindForge is safe; hot-plugging into a running game is not — those are different things.** BindForge can list a newly-connected controller at any time without risk. Physically connecting or disconnecting a controller while Elite Dangerous itself is running is a separate, game-level risk (it can crash the game) that exists independently of BindForge and is outside BindForge's control — automatic registration does not cause or worsen this; it just means BindForge's own device list stays current regardless of when the user plugs something in.
 
 ### Built — 2026-10-15 (Alan, A7)
+
+*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
 
 Built as `bindforge.devices.HotPlugOffers` (who is still owed an offer — in memory, tested) and the Device Bus
 subscription in `AliasDesignerController`. Alan approved these as the sources' defaults and answered one question:
@@ -1028,7 +870,7 @@ subscription in `AliasDesignerController`. Alan approved these as the sources' d
   — the Device Editor included — and waits for a later refresh instead.
 - **Several plugged in together are one dialog**; one unplugged before its offer stops waiting.
 - **Every connect waits; onboarding's own rule decides who needs a name.** A named controller, or a built-in, is
-  offered silently and to no one; its `.buttonMap` is [startup generation's](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller),
+  offered silently and to no one; its `.buttonMap` is [startup generation's](#default-labels-for-every-connected-named-controller),
   which already acts on every connect.
 - **The controllers present at startup are the automatic offer's.** The screen registers on the Device Bus when it is
   built, and the offer after activation asks about every attached controller, those plugged in meanwhile included.
@@ -1047,14 +889,10 @@ Three gaps were found while working the design through. **Two were settled by on
   has Frontier's entry, matched on VID/PID, so it is never onboarded and [never renamed](#built-in-controllers-in-my-devices--settled-2026-09-13). A *different*
   controller reporting a clashing name gets a number — `T-Rudder` from an unrelated device becomes
   `TRudder2`. See [the default-name rule](#the-default-name-rule).
-- **What reaches the game's file.** Registration ~~only touches the draft~~ writes nothing *(2026-10-15, A7)*; the
-  name onboarding then gives is written [as onboarding writes it](#what-onboarding-writes-and-when), and anything else
-  lands in a real install only when **Apply** runs. **Settled 2026-09-06: applying pushes only what changed**, never the
-  whole set. Pushing everything accumulates entries for hardware plugged in once, years ago, and rewrites
-  rows no one touched, and an entry for a device the player never named carries no benefit — no binding
-  depends on it. *(This used to say "since both files are purely cosmetic"; the decision stands, but that
-  reason did not — see [Protection is uniform](overview.md#protection-is-uniform--settled-2026-09-21).)* A narrow write is also a smaller thing to get wrong, and a smaller diff to show the
-  player when a merge has to be explained.
+- **What reaches the game's file.** Registration writes nothing *(2026-10-15, A7)*; a name and its labels are edits
+  not applied, written at APPLY. **Only devices the user has named are in the working copy** (2026-10-24, Alan), so
+  entries never pile up for hardware that was merely plugged in — the reason behind the 2026-09-06 rule that Apply
+  pushes only what changed, now met without it, since APPLY writes the whole working copy.
 
 ## Onboarding — every controller gets a name and a `.buttonMap` — settled 2026-09-13
 
@@ -1077,7 +915,7 @@ out.**
 
 | Moment | Controllers |
 |---|---|
-| The first time BindForge is opened, alongside [First-Time Startup](overview.md#first-time-startup) | every connected controller with **no `DeviceMappings.xml` entry** |
+| The first time BindForge is opened, alongside [First-Time Startup](overview.md#create--a-new-players-first-binds-file--2026-10-24) | every connected controller with **no `DeviceMappings.xml` entry** |
 | A controller detected later — [hot-plug](#first-run-and-hot-plug) | that controller, if it has no entry |
 
 **A controller that already has a name is never asked** — a Frontier built-in such as `SaitekX56Joystick`, or an
@@ -1146,24 +984,30 @@ A name the user **types** may also use `-` and `_` — see [alias validation](#f
 
 ### What onboarding writes, and when
 
-| The controller | Written | When |
-|---|---|---|
-| **Not referenced in `.binds`**, or referenced only by name | its `DeviceMappings.xml` entry and a generated `.buttonMap` | **straight away**, to every detected installation |
-| **Referenced in `.binds` by VID+PID hex** | the entry, the `.buttonMap`, **and** a rewrite of every `Device="<hex>"` to the new name | **together, in one Apply** |
+**A name given at onboarding is an edit not applied**: its `DeviceMappings.xml` entry and `.buttonMap` are written at
+APPLY (2026-10-23, Alan). **A controller the bindings name by hardware ID** — `Device="334483F3"` — has its bindings
+moved to the new name **in the same APPLY**, never one without the other: once an entry exists, `.binds` is expected
+to name the device ([format §4.0](domain-knowledge/EliteDangerous-BindsFileFormat.md#40-the-rule-confirmed-2026-09-08)),
+and there is no evidence the game honours the old hex references meanwhile, so an entry without the move, or the move
+without the entry, can leave those bindings dead ([testing item 13](../../00-overview/testing-required.md)).
+Onboarding says so: *"131 bindings will move to LVWAP when you apply."* That is the
+[before-the-fact offer](#detecting-it-and-getting-ahead-of-it), folded into naming. *Until 2026-10-23 a controller
+the bindings did not name by ID was written straight away.*
 
-**Why the two cases differ.** The first creates things that did not exist and changes no existing entry or
-binding — the same reasoning that lets
-[First-Time Startup apply immediately](overview.md#it-applies-immediately--settled-2026-09-12). The second rewrites
-existing bindings, which only Apply ever does.
+**Rules onboarding follows** (from A6b, 2026-10-14; kept 2026-10-24, Alan):
 
-**And the second case's writes have to land together.** Once an entry exists, `.binds` is expected to name the
-device ([format §4.0](domain-knowledge/EliteDangerous-BindsFileFormat.md#40-the-rule-confirmed-2026-09-08)), and
-there is no evidence the game honours the old hex references in the meantime — when this user added `RVWAP`
-and `LVWAP`, the hex was replaced by hand. Writing the entry on its own could leave those bindings dead until
-Apply. See [testing item 13](../../00-overview/testing-required.md).
-
-Onboarding says so rather than leaving a surprise: *"131 bindings will move to LVWAP when you apply."* That is the
-[before-the-fact offer](#detecting-it-and-getting-ahead-of-it), folded into naming.
+- **Three ways in:** automatically, once per run, after first setup; **NAME** in an unnamed device's editor; and
+  **CHECK AGAIN**, which offers every controller still unnamed — and says so when none is (Krondor, 2026-10-14: a
+  silent CHECK AGAIN produced support tickets).
+- **Nothing happens until FINISH.** Skip and Next only move between pages; BACK, the close glyph or Esc leave with
+  nothing changed.
+- **APPLY tidies up after itself:** any named device the bindings still name by hardware ID has those bindings moved
+  to its name — whoever named it, an entry added by hand outside BindForge included.
+- **Two unnamed controllers on one VID/PID:** only the first one's page promises the binding move.
+- **A binds file that cannot be read stops onboarding** — otherwise a controller the bindings name by ID could be
+  named while its bindings stayed on the ID.
+- **If an installation cannot be written** at that APPLY, the others still are and the binding move still happens
+  ([storage.md](storage.md) rule 8); the missed installation is reported, for the next APPLY or the check.
 
 #### Settled before building it — 2026-10-14 (Alan, A6b)
 
@@ -1184,10 +1028,12 @@ Onboarding says so rather than leaving a surprise: *"131 bindings will move to L
   `.binds` moves to the name; one that missed it is named in the report and
   [caught up when it comes back](#actions-and-what-each-one-reaches). Only when **no** installation took the entry is
   `.binds` left on the hex — nothing was applied for it to follow — and the controller is reported as not named
-  yet, for the next Apply. *The [rename](#binds-goes-last-and-only-if-every-installation-succeeded) keeps its own
+  yet, for the next Apply. *The [rename](#how-a-rename-is-done--2026-10-24) keeps its own
   all-or-nothing rule for now; whether it follows this one is A11's question.*
 
 #### Built — 2026-10-14 (Alan, A6b)
+
+*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
 
 Built as `bindforge.devices.Onboarding` (the pages, pure), `ui.screen.bindings.OnboardingDialog`,
 `bindforge.devicefiles.DeviceOnboarding` (the writes), `BindForgeDeviceDraftManager.onboard` (one transaction),
@@ -1235,22 +1081,27 @@ shared by the push and onboarding.
 - **NAME uses onboarding's own rule** (`DeviceNames.needingName`), and one onboarding keeps one Edit History copy per
   content across identical installations, as the push does.
 
-### At Elite-Intel startup: a `.buttonMap` for every connected, named controller
+### Default labels for every connected, named controller
 
-A controller that **already has a name** but no `.buttonMap` gets a generated one when Elite-Intel starts, with no
+A controller that **has a name** but no `.buttonMap` gets default labels — `Button 1`, `X Axis`, `Hat 1 Up` — with no
 prompt, because there is nothing to decide. That covers Frontier's built-ins, which almost never ship one.
 
+**The default labels are shown on BindForge's screens straight away, and written whenever the user next presses
+APPLY for any reason** (2026-10-24, Alan). They do not light the APPLY bar on their own: they are not the user's
+edits. A user who never applies anything is no worse off than without BindForge — the game shows `Joy_3`, as it
+always did. *Until 2026-10-24 a `.buttonMap` was written into every installation at Elite-Intel startup and on every
+connect, once BindForge was activated (Krondor, 2026-10-14).*
+
 - **Connected controllers only.** A device plugged in once, years ago, gets nothing.
-- **Every detected installation**, since `.buttonMap` files live inside each one.
-- **Never overwrites** a `.buttonMap` that exists, whether Frontier's or the user's.
-- **After RESET LABELS** on a built-in, the next startup generates its `.buttonMap` afresh.
+- **Never overwrites** a `.buttonMap` that already exists, whether Frontier's or the user's.
+- **A device the game draws itself is skipped** — one with Frontier's button icons (`<SupportsIcons>`: the X52, X52
+  Pro, T.Flight HOTAS 4, T.Flight Hotas One) and `<GamePad>`, where `Button 3` would replace an icon.
+- **Only the axes the controller has**, and **four labels per hat**; where the axes cannot be read, all eight.
+- **Labels are English and fixed** — file content the game displays, not Elite-Intel's interface text.
+- **Nothing is named here:** a controller with no name waits for onboarding.
+- **After RESET LABELS** on a built-in, the defaults come back the same way.
 
-It runs at Elite-Intel startup rather than when BindForge opens, so the labels are already there the first time
-the capture dialog is used. **Startup never names anything:** a controller with no name waits for onboarding.
-
-**Only once BindForge is activated — 2026-10-14 (
-Krondor).** Before activation it writes nothing into a game folder. Run on every start, it put generated files into every installation before the
-["before BindForge" backup](#activation--2026-10-13-alan) was taken, so that backup did not show the files as they were before BindForge — and it wrote into the game folders of users who had never opened BindForge. Activation is the first opening of the tab, before any capture dialog, so the labels are still there in time: when activation happens (`BindForgeActivatedEvent`, published by `Activation.establish` for silent activation and first setup alike), the controllers connected then are handled.
+*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
 
 **Settled while building it — 2026-10-06 (Alan).** Built as `bindforge.devicefiles.ButtonMapGeneration`
 (`ButtonMapLabels` for the labels), run by `bindforge.devices.ButtonMapStartup`.
@@ -1271,7 +1122,7 @@ Krondor).** Before activation it writes nothing into a game folder. Run on every
   by the game's own `GamePad_` tokens, so `Joy_` labels on it would never show. *`<DualShock4>` is generated
   as usual — unverified whether the game binds it by `Joy_` tokens.*
 - **A device the master holds labels for is skipped.** Apply writes its file from the master, so a missing one
-  is drift for [the startup check](overview.md#for-the-device-files--settled-2026-10-05-alan) to report and
+  is drift for [the startup check](overview.md#the-check-for-device-files--2026-10-23) to report and
   revert. The master is never written here.
 - **Create-only to the end:** the file is written beside the target and published under its name by a hard
   link, which refuses atomically when the file exists, on Windows and Linux alike; where a volume refuses hard
@@ -1433,8 +1284,8 @@ still to come.*
   [read as it connects](#which-axes-and-hats-a-controller-has--2026-10-10-alan) (A8b); SDL alone gives only an
   axis count, and two VIRPIL sticks put their twist on Z and on RZ. ~~Where the axes cannot be read, the AXES tab
   needs A9 to decide what to show.~~ *Decided in A9 — [below](#built-as-a-dialog--2026-10-10-alan-a9).*
-- **DEVICE** holds the name, VID and PID, the hardware name, whether it is attached, and the
-  [install strip](#the-install-strip--a-readout-not-a-switch).
+- **DEVICE** holds the name, VID and PID, the hardware name and whether it is attached. *Its installations block
+  was removed 2026-10-24 — [no installations in the Device Editor](#no-installations-in-the-device-editor--2026-10-24).*
 - **AXES** has one label box per axis the controller reports, named by the axis it is (`Joy_XAxis`,
   `Joy_RZAxis`), six to a column and a second column when there are more.
 - **BUTTONS** has one label box per button, in groups of **32** on sub-tabs numbered as the game numbers them —
@@ -1453,9 +1304,26 @@ still to come.*
   see the [UI component map](ui-component-map.md#alias-designer).
 - **BACK is DISCARD.** Leaving with unsaved edits — BACK, the close glyph or Esc — asks **Save**, **Discard** or
   **Keep editing**. *That is the [exit prompt](#exit-prompt) narrowed to one device, with a way back in.*
-- **APPLY is not in the dialog.** It is the screen's button, beneath the list, and reaches every installation.
+- **APPLY is not in the dialog.** It is the one
+  [APPLY above BindForge's tabs](overview.md#apply-and-discard--one-pair-above-bindforges-tabs-2026-10-24-alan), and
+  reaches every installation.
+- **SAVE keeps the changes as edits not applied** (2026-10-24, Alan): it closes the dialog and lights the APPLY bar;
+  nothing is written until APPLY. The word stays SAVE — what users expect of a dialog — since the lit bar and the
+  leave prompt show the work is not in the game yet.
+
+**Rules the dialog follows** (from A9, 2026-10-10; kept 2026-10-24, Alan):
+
+- **SAVE keeps every box, defaults included**, so a controller's labels are complete when written — except on a
+  device the game draws icons for (`<SupportsIcons>`, `<GamePad>`), where only boxes the user changed are kept, so a
+  `Button 3` never replaces an icon.
+- **SAVE is dimmed until a box differs** from what the dialog opened with.
+- **No default button** — Enter in a label box must not save and close mid-edit.
+- **Where the axes cannot be read, all eight are offered**, with a line saying so.
+- **An unplugged controller with no saved labels** shows DEVICE alone, with *"plug it in to see every input."*
 
 #### Built as a dialog — 2026-10-10 (Alan, A9)
+
+*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
 
 Built as `ui.screen.bindings.DeviceEditorDialog`, opened from the gear on `AliasDesignerPanel`'s My Devices rows,
 with `bindforge.devices.DeviceEditorInputs` (which boxes, their defaults, what SAVE writes — pure) and
@@ -1486,8 +1354,7 @@ Alan answered five questions, one at a time:
   with — compared as SAVE would keep it, so trimming spaces is not an edit. `HudUnsavedHint` sits beside it.
 - **A built-in the master holds no labels for is saved under Frontier's name**, added to the draft with the attached
   controller's VID/PID. Apply writes its `.buttonMap` only.
-- **The labels shown are the draft's** when the draft holds the device, and the master's otherwise. The install strip
-  is the device's Installations markers, against the saved master.
+- **The labels shown are the draft's** when the draft holds the device, and the master's otherwise.
 - **A box holds at most 18 characters** as it is typed; a longer saved label is cut to 18 on SAVE.
 - **No default button** — Enter in a label box would otherwise save and close mid-edit.
 - **Hat movement is polled by the Device Service** — `DeviceHatEvent`, SDL's direction bits, on change only.
@@ -1495,90 +1362,40 @@ Alan answered five questions, one at a time:
 
 ### One record, and where it lands — reworked 2026-09-26
 
-**There is one record per device, and the user edits the master.** `DeviceMappings.xml` and `.buttonMap` are
-duplicated per installation, but BindForge keeps those copies identical, so there is nothing to choose between
-— see [Every install gets the same files](overview.md#every-install-gets-the-same-files--settled-2026-09-23).
-One alias, one set of axis and button labels, applied everywhere on Apply.
+**One record per device, in the working copy.** One name, one set of labels; APPLY writes them to every
+installation ([principle 8](principles.md)). *Until 2026-10-24 the user edited a master, and before 2026-09-26 the
+editor had a tab per installation.*
 
-*This replaces the original design, where the expansion carried a **tab per installation** and a **MIRROR**
-button decided which installations shared a definition. Both existed to express deliberate per-install
-difference, which is no longer a state BindForge supports: divergence is not a configuration the user chose,
-it is a latent outage. Reconciling installs that already disagree is
-[a first-setup question asked once](#first-setup--reconciling-the-installs--settled-2026-09-23), not a
-per-device switch.*
+#### No installations in the Device Editor — 2026-10-24
 
-#### The install strip — a readout, not a switch
-
-The strip ~~along the top of the expansion~~ on the dialog's **DEVICE** tab *(2026-10-10)* stays, and it is
-**read-only**. It no longer selects which installation you are editing; it shows **which installations the user
-has, and whether each one matches the master for this device** — one line per installation, then one sentence:
-
-```
- STEAM     M         E:\SteamLibrary\steamapps\common\Elite Dangerous\
- EPIC      M         C:\Program Files\Epic\EliteDangerous\
- FRONTIER  differs   D:\Games\Frontier\EDLaunch\
- 2 of 3 installations match.
-```
-
-*The marker's words and colours are the [Installations column's](#the-installations-markers--2026-10-08-alan) —
-**M**, *differs*, *not added*, *not found* — so the strip and the row say the same thing. The sketch used `•`
-before that column was built (2026-10-10).*
-
-- **Each installation is named, with its folder path**, as before. The path is what makes a failed push
-  comprehensible: when Apply reports *"updated 2 of 3"*, the user can see which one and where it lives.
-- **The `M` indicator means "Matches"** — this installation's entry for this device is identical to the
-  master's. It is a **fact being reported, not a setting being toggled**, which is the whole difference from
-  the button it replaces.
-- **It carries the same severity colours as the
-  [divergence list](#divergence-between-installs--one-list-ranked-by-consequence)**, rather than inventing a
-  second vocabulary: green where the installation matches, yellow where it differs in a way that breaks
-  nothing, red where a binding names this device and the installation has no entry for it. Colour is the
-  text's colour, never a fill or a pill, per the HUD canon.
-
-**What the strip compares.** The installation against the **saved master** — never against the unsaved draft
-in front of the user. Otherwise every keystroke would flip three indicators to "differs", which is true and
-useless. Unsaved work is Edit Mode's job to report; the strip answers a different question: *what is actually
-on disk out there.*
-
-**Its scope is this device.** The whole-configuration view, ranked and with the ways out, remains the
-[divergence list](#divergence-between-installs--one-list-ranked-by-consequence). The strip is not a second
-home for drift reporting and offers no repairs — it is the same fact, narrowed to the device already open,
-at the moment the user is editing it.
-
-#### Two states, not three
-
-A device is either **configured** in the master or **not added**. The original design's third state — "entry
-edited independently of the other installations" — no longer exists. Where an installation's file disagrees
-with the master, that is drift to be resolved, not a configuration to be preserved.
+**The DEVICE tab shows no installations** (Alan; [principle 12](principles.md)): the editor is about the device being
+edited, and where its files go is File Manager's [Game Install Locations](file-manager.md#game-install-locations). The
+space is kept for whatever the editor needs later. *Until 2026-10-24 it carried an install strip — each installation,
+its folder and M / differs — and before that a tab per installation.*
 
 ### Fields and rules
 
 - **VID/PID are always read-only**, always derived from the physical hardware — the game attaches a device by
   VID/PID, so hand-editing this would break the association. They are device-level ~~, identical on every
   tab~~ — there are no per-installation tabs any more (2026-10-10).
-- **Edit Mode** activates the moment any field changes. A persistent label reminds the user this saves to the
-  working copy only.
+- **Edit Mode** activates the moment any field changes. A persistent label reminds the user that SAVE keeps the
+  changes until APPLY.
 - **Alias name validation — tightened 2026-09-13.** 3–50 characters; **must start with a letter**; then
   letters, digits, `-` and `_` only; **no spaces and no period**; must not collide with any existing entry,
   including Frontier's built-ins, compared [ignoring case, `-` and `_`](#the-default-name-rule). *The earlier
   rule allowed spaces and a wider set of punctuation. But the alias becomes an XML element tag and a
   filename stem, and a space is valid in neither — so that rule would have accepted a name the game
   cannot read.*
-- ~~**The alias must be confirmed or changed before button/axis naming unlocks.** [Onboarding](#onboarding--every-controller-gets-a-name-and-a-buttonmap--settled-2026-09-13)
-  is where that happens. Confirming the offered name, typing another, or skipping — which accepts the
-  default — all count, because in each case the user has been shown the name. A device is never fully
-  configured under a name nobody looked at. A later rename is the [multi-file transaction](#renaming-a-device).
-  **A built-in has no name to confirm:** its labels unlock straight away, and its name stays
-  [Frontier's](#built-in-controllers-in-my-devices--settled-2026-09-13).~~
 - **No confirm step — 2026-10-10 (Alan).** The confirm was the gate for a name nobody had looked at, from when
   registration named controllers silently. [Onboarding moved that gate earlier](#it-is-the-alias-confirm-gate-moved-earlier),
-  and every other way a device gets a name — first setup, adopting an installation's entry — shows the name
+  and every other way a device gets a name — first setup, the reconcile — shows the name
   too, so every named device has been seen. The editor has **no CONFIRM button and no lock**. Its labels are
   editable once the device has a name; a device with none has its input tabs disabled until onboarding names
-  it. A built-in's name is Frontier's, so its labels are editable straight away. *`alias_confirmed` stays on the
-  master and the draft; every path writes it `true`, and nothing reads it now.*
-- **The name field is read-only until [Rename](#renaming-a-device) is built** (slice A11), with a line saying
-  so. A changed name is a rename — every installation, then `.binds` — not a field edit.
+  it. A built-in's name is Frontier's, so its labels are editable straight away. *`alias_confirmed` is no longer read by
+  anything.*
+- **The name box renames the device** (built in A11). A rename is an edit not applied: the `DeviceMappings.xml`
+  element, its `.buttonMap` and every binds file naming it change together at APPLY (see
+  [Renaming a Device](#renaming-a-device)).
 - **Button and axis names** ~~are edited in Axis/Buttons sub-tabs~~ are edited on the dialog's input tabs
   *(2026-10-10)*. The UI sizes dynamically to the device's real inputs — never hardcoded; a device with three
   axes shows three, **and shows the three it has**: an X, Y and RZ stick shows `Joy_XAxis`, `Joy_YAxis` and
@@ -1586,7 +1403,7 @@ with the master, that is drift to be resolved, not a configuration to be preserv
   applies to every button/axis friendly name, confirmed by direct in-game testing. The alias field has its own
   rule (3–50 characters) and no in-game display slot, so truncation is not a concern there.
 - **Every input gets a label — 2026-10-10 (Alan).** A box is never empty: one with no saved label shows the
-  default, and clearing a box puts the default back. The defaults are [the generated ones](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller)
+  default, and clearing a box puts the default back. The defaults are [the generated ones](#default-labels-for-every-connected-named-controller)
   — `Button 14`, `X Axis` — so the dialog and the generated files agree, and hats get `Hat 1 Up`,
   `Hat 1 Right`, `Hat 1 Down`, `Hat 1 Left`. Spaces at either end of a label are trimmed.
 - **Live highlighting:** pressing a button or moving an axis on the open device highlights the corresponding
@@ -1605,153 +1422,88 @@ with the master, that is drift to be resolved, not a configuration to be preserv
 
 ### Actions, and what each one reaches
 
-| Action | Scope | Touches a game installation? |
+| Action | What it changes | Touches the game? |
 |---|---|---|
-| **SAVE** | the device's record in the draft — the dialog's right-hand button | **No** — draft only |
-| **DISCARD** | ~~the draft — whether one device or all of it is for the Actions slice to settle, see below~~ the dialog's unsaved edits — it is **BACK**, which asks first when there are any (2026-10-10) | No |
-| **CLEAR** | the device's entry and its `.buttonMap` — not offered on a built-in. The dialog's middle button | No — see below |
-| **RESET LABELS** | a built-in's `.buttonMap` labels. In CLEAR's place on a built-in | No — draft only; see [built-ins](#built-in-controllers-in-my-devices--settled-2026-09-13) |
-| **APPLY** ~~TO GAME INSTALLS~~ | **every installation**, and reports per installation. The screen's button, not the dialog's — renamed 2026-10-10 (Alan), since there is no choosing which installations | **Yes** |
-
-*Where each button is — 2026-10-10 (Alan).* SAVE, CLEAR (or RESET LABELS) and BACK are the
-[dialog's](#a-dialog-opened-from-the-row--2026-10-10-alan), because they act on one device: CLEAR on the main
-screen would sit beside the whole list. APPLY stays on the screen, because it carries everything saved to every
-installation at once. *Built:* SAVE comes with the dialog, in slice A9; CLEAR, RESET LABELS and APPLY in A10.
-
-*The **MIRROR** action is gone, along with the per-installation scoping that qualified CLEAR and RESET LABELS.
-There is one record, so every action reaches it and Apply carries it everywhere.*
-
-*The table said SAVE's scope was "the device's record in the master" while marking it "draft only". The draft
-is right; corrected 2026-10-04.*
-
-**Where the draft lives — settled 2026-10-04 (Alan).** In two database tables shaped like the master's
-(`12003__bindforge_device_draft.sql`, `BindForgeDeviceDraftManager`), not in a working folder of files: the
-master is already rows, so Apply is a plain copy. The first edit copies the **whole** master set into the
-draft; no draft means no saved edits. **Apply copies the draft into the master *before* pushing**
-(`bindforge.devicefiles.DeviceApply`), so a write that fails loses nothing — the edits sit in the master, the
-installation that missed them stops matching it, and the next Apply retries.
-
-**A device the draft removed is kept as a pending removal** (`12004__bindforge_device_pending_removal.sql`,
-added after review the same day). The push never removes an entry, so the device leaves the master while its
-entry and `.buttonMap` stay in every installation; the list is stored in the same transaction as the Apply, so
-a crash before the cleanup forgets nothing, and a name put back in the master stops being pending. Whatever
-removes the files (CLEAR) works from that list. **A rename does not:** its old `.buttonMap` is found through
-`previous_name`, which Apply carries into the master. **Master ids change on every Apply**, because the
-master is emptied and refilled, so a device is identified by name across one.
-
-*Settled 2026-10-11 ([A10](#built--2026-10-11-alan-a10)): the screen's DISCARD is the second, the whole draft.* *Half settled 2026-10-10: the dialog's DISCARD is the first of the two below — BACK throws away the edits made
-since the dialog opened. Whether anything puts the whole draft back to the master is still the Actions slice's.*
-**DISCARD is still two things in this spec**, and which the button does is the Actions slice's to settle:
-throwing away edits not yet saved ([Unsaved Work on Exit](overview.md#unsaved-work-on-exit)), or putting the
-draft back to the master (*"Discard puts everything back"* under
-[retargeting](#retargeting-keeps-the-bindings-and-says-what-it-cannot-promise)). The draft supports both a
-per-device revert and dropping the whole draft. **A started draft may hold no edits** — the editor starts one
-before reading the rows it changes — so "a draft exists" is not "the user changed something".
+| **SAVE** | the device's changes, kept as edits not applied — the dialog's right-hand button | No |
+| **BACK** | throws away the dialog's unsaved changes, asking first when there are any | No |
+| **CLEAR** | removes the device's entry and its `.buttonMap`, as an edit not applied — not offered on a built-in. The dialog's middle button | No, until APPLY |
+| **RESET LABELS** | a built-in's labels back to Frontier's, as an edit not applied. In CLEAR's place on a built-in; see [built-ins](#built-in-controllers-in-my-devices--settled-2026-09-13) | No, until APPLY |
+| **APPLY** | everything, to every installation — the one [APPLY above BindForge's tabs](overview.md#apply-and-discard--one-pair-above-bindforges-tabs-2026-10-24-alan) | **Yes** |
 
 **SAVE is deliberately the safe one.** It is the button people press by habit, so it must never be the button
-that writes into a live game installation. Applying is a separate, deliberate action at the bottom of the
-screen.
+that writes into a live game installation.
 
-**APPLY reports per installation, and says so when it cannot finish.** *"Updated 3 of 3"* on the good day,
-*"updated 2 of 3 — Frontier install not reachable"* on the bad one. Silent partial success is exactly the
-drift this model exists to remove, so a push that half-lands must be visible
-([what standardisation owes, #2](overview.md#every-install-gets-the-same-files--settled-2026-09-23)). After a
-partial apply the install strip shows it: the installation that missed the write stops matching the master.
+**CLEAR, not Delete.** A device cannot be removed from the list while its hardware is attached — it would simply
+reappear, because the list is driven by what is plugged in. What CLEAR removes is the device's `DeviceMappings.xml`
+entry and its matching `.buttonMap`, returning the device to the state it had before it was ever configured. The
+device stays listed, showing *not added*. This also replaces the old "delete and recreate to fix a wrong VID/PID"
+repair path, which never worked: automatic registration would re-add a connected device immediately.
 
-**The user's Apply comes first; an installation that missed it is caught up later — 2026-10-14 (Alan).** A
-missing, locked or unavailable installation is rare, and it never holds back what the user applied: every
-installation that can be written is, the report names the one that could not and why, and nothing is rolled back
-to wait for it. **When that installation is found again** — at Elite-Intel startup, or whenever the check next
-reaches it — BindForge asks: *"Found the Epic installation that was missing. Write your recent control
-configuration changes to it?"* ~~Yes is the same push as **Revert**.~~ Yes is Apply's push to that installation
-alone, removals and renames included — *changed 2026-10-15 (Alan), since Revert removes nothing.* Built in slice
-A14 — see [Catch-up](#catch-up--2026-10-15-alan-a14).
-*Alan: "when a user edits and applies, those should be the priority, and the rare, weird and highly unlikely
-things get a message to the user."*
+**CLEAR reaches every installation, so it asks first** and names the count — *"Clear RHVCAPDirection from all 3
+installations?"* — using [`HudConfirmDialog`](ui-component-map.md), never `JOptionPane`.
 
-**What Apply does per installation — settled 2026-10-04 (Alan), built in `bindforge.devicefiles.DeviceFilesPush`:**
+**What APPLY does to each installation's device files** (2026-10-24, Alan):
 
-- **Partial success for every cause, each one named.** A missing folder and a failed write are treated alike:
-  that installation is left as it was and reported with the reason — *"Epic: folder not found"*, *"Frontier:
-  DeviceMappings.xml is locked by another program"* — while the others are written. *A rename is the exception,
-  and needs all of them or none; see [below](#binds-goes-last-and-only-if-every-installation-succeeded).*
-- **Within one installation, all or nothing.** Its `DeviceMappings.xml` and its `.buttonMap` files change
-  together. If one write fails, the ones already written there are put back, so no installation holds a new
-  entry with old labels.
-- **No `DeviceMappings.xml` at all → rebuilt from Frontier's.** Without the file the game loads no bindings,
-  so it is seeded from the stock copy BindForge carries, the user's elements are added, and the report says so.
-- **A `.buttonMap` is written whole from the master.** Labels the master no longer holds — after RESET LABELS,
-  or an axis the device stopped reporting — leave the file too. The replaced file is kept in
-  [Edit History](file-manager.md#edit-history). A device with no labels gets no file.
-- **A built-in still under Frontier's name gets its `.buttonMap` only.** Its element is left exactly where and
-  as it is, per the table above.
-- **Apply adds and updates; it does not remove.** CLEAR, a rename and RESET LABELS each remove something, and
-  each brings its own list of what to remove — the master alone cannot tell a cleared device from an entry
-  BindForge never owned.
-- **A file already matching the master is not rewritten**, so a second Apply with nothing new writes nothing.
+- **They are written whole from the working copy**, so labels the working copy no longer has leave the file.
+- **A missing `DeviceMappings.xml` is simply written** from the working copy, and the report says so — without it
+  the game loads no bindings.
+- **A file that already matches is not rewritten**, so an APPLY with nothing new for an installation writes nothing
+  there.
+- **Each installation's device files are made to match the working copy:** a `.buttonMap` the working copy no
+  longer has — after CLEAR, or a rename — is removed from every installation, **except Frontier's own shipped ones**
+  (`VPCPanel`, `VPCThrottle`), which are never removed. A label file added by hand inside an installation is never
+  removed unasked: the check runs first at APPLY, shows it as a difference, and the user decides.
+- **An installation that cannot be written** is reported, and the others are still written ([storage.md](storage.md)
+  rule 8).
 
-**CLEAR, not Delete.** A device cannot be removed from the list while its hardware is attached — it would
-simply reappear, because the list is driven by what is plugged in. What CLEAR removes is the device's
-`DeviceMappings.xml` entry and its matching `.buttonMap`, returning the device to the state it had before it
-was ever configured. The device stays listed, showing *not added*.
-
-**CLEAR now reaches every installation, so it asks first.** Under the original design it was scoped to one
-installation and its mirrors, and a user could clear a single install by turning MIRROR off first. Neither is
-true any more: there is one record, and clearing it clears the device everywhere on the next Apply. That is a
-wider blast radius than the button used to have, so it takes a confirm that **names the count** — *"Clear
-RHVCAPDirection from all 3 installations?"* — using
-[`HudConfirmDialog`](ui-component-map.md), never `JOptionPane`.
-
-This also replaces the old "delete and recreate to fix a wrong VID/PID" repair path, which never worked as
-written: automatic registration would re-add a connected device immediately.
+*Until 2026-10-24 edits sat in a database draft beside a database master, Apply never removed anything — CLEAR and
+renames kept lists of what to remove — and one installation's files changed all or nothing; the working copy and
+whole-file APPLY replaced all of it.*
 
 #### An edit `.binds` depends on updates `.binds` — 2026-10-11 (Alan)
 
 **When the user changes a `DeviceMappings.xml` entry, or its `.buttonMap`, that the shared `.binds` depends on,
-Alias Designer must update `.binds` to match**, so that no edit of the user's leaves bindings pointing at a device
-the game no longer knows. Recorded while building A10; it had never been stated before. ~~**Undecided:** whether
-Alias Designer writes `.binds` itself or hands the change to the Bind Editor as a task.~~
+BindForge updates `.binds` to match**, so that no edit of the user's leaves bindings pointing at a device the game no
+longer knows. **The rewrite is part of the same edit not applied**, in the working copy's binds files, and APPLY
+writes everything together (2026-10-24, Alan).
 
-**Settled 2026-10-12 (Alan, Foundation F2):**
+- **Every binds file, every kind of line.** Every `Device="…"` is rewritten — on `<Primary>`, `<Secondary>`,
+  `<Binding>` and `<Modifier>` alike — in every `.binds` in the folder, not only the active one, since the game
+  validates them all.
+- **Matching finds every spelling; the rewrite writes exactly one** — the new name, as the user spelled it — so a
+  binds file ends up with one spelling per device ([format §4.3](domain-knowledge/EliteDangerous-BindsFileFormat.md#43-case-only-binds-cares-and-it-cares-about-one-spelling-per-device--measured-2026-10-14)).
+- **A hardware-ID reference is matched VID then PID only**, the order the game writes, so a second device whose
+  VID and PID are this one's swapped is never renamed by mistake; it is read in either order, as
+  [format §4.2](domain-knowledge/EliteDangerous-BindsFileFormat.md#42-vidpid-derived-hex-identifiers) asks.
 
-- **Alias Designer writes it, inside its own Apply.** A rename is all-or-nothing with `.binds` last, and only if
-  every installation succeeded ([below](#binds-goes-last-and-only-if-every-installation-succeeded)) — an
-  ordering only one operation can promise. A task handed to the Bind Editor could not.
-- **A `.binds` draft is rewritten too**, by the same substitution, and its baseline re-recorded
-  (`BindingsWorkingCopyRepository.recordGameFileBaseline`) — likewise the `.binds` master once it exists. The
-  substitution is mechanical and the same on every copy, so it cannot lose an edit; refusing the rename instead
-  would make the user apply or discard unrelated binding edits to rename a stick. So the rewrite takes a list of
-  files — drafts, masters, and the game's `.binds` — and is **all or nothing across all of them**.
-- **The game's `.binds` goes last in that list** (Krondor, 2026-10-13). Writing it makes the bindings monitor
-  reload, and the reload copies the game's file over a working copy holding no draft; a working copy still to
-  come would then read as changed, and the whole rewrite would be put back as `STALE_FILE`.
-- **Matching ignores case. A hex reference is rewritten from the value found** (Krondor, 2026-10-13, accepted
-  by Alan). `BindsDeviceReferences` still *reads* hex in either order, as
-  [format §4.2](domain-knowledge/EliteDangerous-BindsFileFormat.md#42-vidpid-derived-hex-identifiers) asks of a
-  reader, and reports the exact value it found; the rewrite is built from that value
-  (`new DeviceReferenceRewrite(Set.of(found), name)`), so CLEAR's refusal count and the rewrite still agree.
-  `DeviceReferenceRewrite.hardwareIdToName(vid, pid, name)` matches **VID then PID only**, the order the game
-  writes: a rewrite writes, and matching the reverse could rename a second device whose VID and PID are this
-  one's swapped. `DeviceMappings.xml` is unaffected — its `<VID>` and `<PID>` are read by tag, in any order.
-- **CLEAR writes hex** — VID then PID, upper case, as the game does. It is the one place BindForge writes a hex
-  reference ([format §4.2](domain-knowledge/EliteDangerous-BindsFileFormat.md#42-vidpid-derived-hex-identifiers)).
-- Every `Device="…"` is rewritten — on `<Primary>`, `<Secondary>`, `<Binding>` and `<Modifier>` alike — and every
-  `.binds` in the folder, not only the active one, since the game validates them all. Built as
-  `BindingsWriter`'s device rewrite on the [foundation branch](../../05-build-plan/foundation.md); merged into
-  `V1.1-Release` and up to `V1.2-BindForge` 2026-10-13.
+What it reaches:
 
-What it reaches today:
-
-- **CLEAR** on a device `.binds` names: without the entry, `.binds` must name the device by its hardware ID
-  instead, as the game itself writes a device with no entry ([format §4.0](domain-knowledge/EliteDangerous-BindsFileFormat.md#40-the-rule-confirmed-2026-09-08)).
-  That rewrite is `bindforge.io` and not built, so CLEAR is **refused** for such a device until it is, and says how
-  many bindings name it. When it exists, CLEAR does both, `.binds` last, as a [rename](#binds-goes-last-and-only-if-every-installation-succeeded) does.
+- **A rename** rewrites every binding naming the old name ([Renaming a Device](#renaming-a-device)).
+- **A retarget** keeps the name, so `.binds` does not change.
 - **RESET LABELS and every label edit** are not reached: `.binds` names a device by its element and its inputs by
   token (`Joy_5`), never by label.
-- **A rename** already carries its `.binds` rewrite ([below](#renaming-a-device)); **a retarget** keeps the name,
-  so `.binds` does not change.
+- **CLEAR on a device the bindings use moves those bindings to its hardware ID** — VID then PID, upper case, as the
+  game itself writes a device with no entry ([format §4.0](domain-knowledge/EliteDangerous-BindsFileFormat.md#40-the-rule-confirmed-2026-09-08))
+  — as part of the same edit (2026-10-24, Alan). Its confirmation says so: *"142 bindings name LVWAP. Clearing it
+  moves them to its hardware ID, 3344:83F4 — they keep working while the stick is plugged in, but lose its name."*
+  *Built today: the move to a hardware ID is not, so CLEAR is refused for such a device and says how many bindings
+  name it — a build state, for the build plan.*
+
+**Rules from A10** (2026-10-11; kept 2026-10-24, Alan):
+
+- **After CLEAR or RESET LABELS the dialog says so** — *"Cleared. APPLY removes it from every installation."* — its
+  input tabs are disabled, and the middle button becomes **UNDO CLEAR** (or **UNDO RESET**), which puts it back with
+  no question.
+- **A bindings folder that cannot be read counts as unreadable, not empty**, so a typo in settings or an unplugged
+  drive never reads as "nothing uses this device" and lets CLEAR strip an entry the game needs.
+
+*Until 2026-10-24 the rewrite was ordered across a draft, its baseline and the game's file — the game's `.binds` last,
+all or nothing — to protect a separate draft (F2, 2026-10-12); with the binds files in the working copy it is part of
+the edit.*
 
 #### Built — 2026-10-11 (Alan, A10)
+
+*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
 
 Built as the Device Editor's middle button (`bindforge.devices.DeviceEditorMiddle`, pure), APPLY and DISCARD on
 the Alias Designer screen, `bindforge.devicefiles.DeviceApply` (now with its first caller), removals in
@@ -1765,7 +1517,7 @@ Alan answered five questions, one at a time:
   be read, no entry of the user's is removed. *A built-in's reset is never held back* — see *After review* below.
 - **RESET LABELS on `VPCPanel` or `VPCThrottle` puts Frontier's map back**, byte for byte from the jar
   (`FrontierStockButtonMaps.shippedContent`), since a `.buttonMap` Frontier shipped is never removed. On any other
-  built-in it deletes the file in every installation, and [startup generation](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller)
+  built-in it deletes the file in every installation, and [startup generation](#default-labels-for-every-connected-named-controller)
   makes a fresh one the next time the controller connects. Frontier's element is never touched.
 - **A device cleared or reset in the draft, not yet applied, says so** — *"Cleared. Apply removes it from every
   installation."* — its input tabs are disabled, and the middle button becomes **UNDO CLEAR** (or **UNDO RESET**),
@@ -1824,6 +1576,8 @@ Alan answered five questions, one at a time:
 - **A stale CLEAR or undo shows its own message**, not wrapped in *"This could not be done"*.
 
 #### Catch-up — 2026-10-15 (Alan, A14)
+
+*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
 
 Built as `bindforge.devicefiles.MissedWrites` (the flag, and who is found again), `DeviceFilesPush.push(installIds,
 removals)`, `DeviceApply.catchUp`, `InstallationHoldings` (what settles), `CatchUpAnnouncement` (the startup line)
@@ -1888,58 +1642,37 @@ A rename is **not** a single-field edit. The alias is the primary key of a three
 alias → <element tag> in DeviceMappings.xml → <alias>.buttonMap filename → possibly Device= in .binds
 ```
 
-So renaming has to be handled as one all-or-nothing operation:
-
-1. Rename the element tag in `DeviceMappings.xml`.
-2. **Rename** the `.buttonMap` file — never create a second one. An orphaned `OldName.buttonMap` sits in the
-   game's install folder where nothing will ever clean it up.
-3. Scan `.binds` for `Device="<old name>"` and rewrite or refuse. This is the dangerous one: `.binds` can
-   reference a device *by name* as well as by VID/PID hex, so a rename can silently orphan bindings.
-
-### A rename spans every installation — added 2026-09-26
-
-**Steps 1 and 2 happen once per installation.** `DeviceMappings.xml` and the `.buttonMap` files are
-duplicated per install; only `.binds` is shared. So on a three-install machine a rename is not three file
-operations, it is **seven**: two in each installation, plus the one shared `.binds`.
-
-| File | Copies | Step |
-|---|---|---|
-| `DeviceMappings.xml` | one **per installation** | 1 |
-| `<alias>.buttonMap` | one **per installation** | 2 |
-| `.binds` | **one, shared by all of them** | 3 |
-
-*The original three-step list was written when a rename meant one installation's files. The steps are
-unchanged; what changed is how many times the first two run.*
-
-#### `.binds` goes last, and only if every installation succeeded
-
-**The shared file is the one that decides whether a half-finished rename is survivable.** Rename the entry in
-two installations, rewrite `.binds` to the new name, then fail on the third, and that third installation is
-now reading a `.binds` that names a device it has never heard of. It
+Rename one link without the others and the bindings break: an installation whose `DeviceMappings.xml` lacks a name
+the binds file uses
 [rejects the entire binds file and falls back to KEYBOARD & MOUSE in all four sections](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22)
 — measured, not predicted. The only symptom is a line in `BindingLoadingErrors.log`.
 
-So the order is fixed:
+### How a rename is done — 2026-10-24
 
-1. **Rename in every installation first.** All of them, or the rename does not proceed.
-2. **Only then rewrite `.binds`.**
+**A rename is one edit not applied** (Alan): the element, the `.buttonMap` and every binds file change together in
+the working copy, and APPLY writes them all at once. If an installation cannot be written, it is reported and the
+next APPLY or the check catches it ([storage.md](storage.md) rule 8) — the partial rule chosen for renames on
+2026-10-14.
 
-**If any installation cannot be written — a locked file, an unmounted drive, a permission refusal — nothing
-is written at all.** Not the installations that would have succeeded, and certainly not `.binds`. The user is
-told which installation blocked it and why, and the old name stays everywhere. A rename that never started
-costs a retry; a rename that half-landed costs a working controller until someone reads a log file.
+1. **The element is renamed in place**, keeping its position in the file and every child it has (`<Alternative>`,
+   `<SupportsIcons>`).
+2. **The `.buttonMap` is renamed, never copied.** The old-named file is removed from every installation at APPLY
+   ([what APPLY does](#actions-and-what-each-one-reaches)).
+3. **Every binds file is rewritten** to the new name ([An edit `.binds` depends on](#an-edit-binds-depends-on-updates-binds--2026-10-11-alan)).
+   **A rename that changes only case does this too**: in `.binds`, `LVWAP` and `lvwap` are not the same name.
+4. **A device's own names never count as taken by itself**, so `Lvwap` → `LVWAP` is allowed.
+5. **No chains:** a name one device gives up cannot be taken by another device until the next APPLY, so no two
+   rewrites depend on their order (`LVWAP` → `LeftStick`, then another device → `LVWAP`).
+6. **Linux with several installations:** APPLY's confirmation says controls are updated only for the installation
+   Elite-Intel uses (2026-10-14).
 
-**This is the one place Apply's "updated 2 of 3" reporting is not good enough.** A partial *push* leaves an
-installation stale, which the [install strip](#one-record-and-where-it-lands--reworked-2026-09-26) shows and
-the next Apply fixes. A partial *rename* leaves it broken, because the shared file moved underneath it.
-Partial success is acceptable for the first and not for the second.
-
-**Roll back what was already done.** If installation three fails after one and two were renamed, the two
-completed renames are undone before reporting the failure — the files were named for a backup-covered write,
-so the previous names are recoverable. Leaving them renamed while `.binds` still says the old name is the
-same breakage in the other direction.
+*Until 2026-10-24 a rename ran installation by installation against a draft: `.binds` last and only if every
+installation succeeded, rolled back on failure, then a stored old name (`previous_name`) and moves retried by later
+Applies, with CLEAR refused while a rename was under way. The working copy and whole-file APPLY replaced all of it.*
 
 #### Settled before building it — 2026-10-14 (Alan, A11)
+
+*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
 
 - **~~All or nothing~~ — a rename follows onboarding's partial rule** (Alan, option 3 of three). The user's Apply
   comes first, as for [onboarding's hex move](#settled-before-building-it--2026-10-14-alan-a6b): every installation
@@ -1956,6 +1689,8 @@ same breakage in the other direction.
   case ([`.binds` format §4.3](domain-knowledge/EliteDangerous-BindsFileFormat.md#43-case-only-binds-cares-and-it-cares-about-one-spelling-per-device--measured-2026-10-14)),
   and a binds file spelling one device two ways is rejected, so rewriting only some references would be worse than
   none. The element and the `.buttonMap` are renamed.
+  *Corrected 2026-10-24: a case-only rename rewrites every binds file to the new spelling — `LVWAP` and `lvwap`
+  are not the same name in `.binds` (Alan).*
 - **One bindings folder, on Linux too — for now** (Alan, 2026-10-14). On Linux each Proton installation has its own
   `.binds` folder ([input environment §7](../../00-overview/input-environment.md#7-linux-the-bindings-folder-is-not-shared)),
   but the rename, like every other `.binds` read and write in BindForge, uses the one folder Elite-Intel is set to
@@ -1985,6 +1720,8 @@ same breakage in the other direction.
 
 #### Decided while building it — 2026-10-15 (A11)
 
+*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+
 - **One rename at a time per device.** The master keeps one old name per device, so a device whose last rename has
   not reached every installation and `.binds` yet keeps its name field read-only, saying so, until an Apply finishes
   it. A second rename would overwrite the first old name, and the installations still holding it would never be
@@ -2005,6 +1742,8 @@ same breakage in the other direction.
   has — draft, master and old.
 
 #### After review — 2026-10-15 (Alan, A11)
+
+*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
 
 - **CLEAR is refused while a rename is still under way.** Its old name may still be in `.binds` or in an
   installation that missed the rename, and clearing would drop the old name the next Apply needs to finish it —
@@ -2034,12 +1773,7 @@ was blocked on testing.*
 
 ## First Run and Hot-Plug
 
-~~If no draft exists yet, BindForge auto-imports `DeviceMappings.xml` and all `.buttonMap` files from every
-detected installation, with no prompt — a status message informs the user this is happening. If no
-installation is detected, the draft starts empty and any connected devices are added via
-[Automatic Device Registration](#automatic-device-registration) above.~~ *Replaced 2026-10-13 (Alan) by
-[Activation](#activation--2026-10-13-alan): no prompt when the installations agree, first setup when they do not,
-and an empty master when none is detected.*
+The first opening of BindForge is first-time startup ([Activation](#activation--2026-10-13-alan), [storage.md](storage.md) rules 1–4).
 
 ### A missing controller is worth exactly one warning — settled 2026-09-24
 
@@ -2059,12 +1793,14 @@ once-per-run version.
 
 #### Built — 2026-10-11 (Alan, A13)
 
+*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+
 Built as `bindforge.devices.MissingControllers` (who is named — pure) and `MissingControllerWarning` (the one warning, spoken and logged), triggered by the Alias Designer screen (`AliasDesignerController.onShown`). Alan answered three questions, one at a time:
 
 - **Only controllers `.binds` names.** A named controller that is not attached is mentioned only when a binding
   names it (`BindsDeviceReferences.referenceCounts`, ignoring case) — the reason to warn at all is bindings that will
   not load, and an entry for hardware sold years ago would otherwise be announced on every run. "Named" is the
-  master's name, or before first setup the installation's entry name. A Frontier name is never mentioned; that is
+  working copy's name, or before first setup the installation's entry name. A Frontier name is never mentioned; that is
   judged by name, not by VID/PID, so a user's element shadowing a built-in still counts as the user's.
 - **Not at Elite-Intel startup — the first time the user opens Alias Designer** in the run. The Device Service has
   been listing controllers since launch; BindForge says nothing until the user comes to it. The screen's first showing
@@ -2093,36 +1829,18 @@ Built as `bindforge.devices.MissingControllers` (who is named — pure) and `Mis
   says nothing and is kept, as with the service stopped.
 
 *Not to be confused with a **control** disappearing from the game itself — a different case, in the
-[version-bump merge](overview.md#what-the-startup-check-actually-decides).*
-
-**~~Settled 2026-09-06 — first import takes the player's files exactly as they are.~~ Superseded 2026-09-23
-by [first setup](#first-setup--reconciling-the-installs--settled-2026-09-23).** That ruling said BindForge
-would preserve both entries where two installations disagreed, leave the device **unmirrored**, and let the
-user mirror it later.
-
-**What replaced it, and what survived it.** Standardisation removed the end state it aimed at — a device can
-no longer be left deliberately different per installation. What survived is its actual argument: *a first run
-cannot tell a deliberate difference from an accidental one, and the two mistakes do not cost the same.*
-First setup still never flattens silently. It reads every installation, shows what disagrees, and **asks**
-— once, per element, with the user choosing which value wins. So nothing is adopted without being seen, which
-is what the 2026-09-06 decision was protecting; it just gets resolved at setup instead of deferred
-indefinitely.
+[version-bump merge](overview.md#what-the-check-tells-the-user--2026-10-23).*
 
 ## Exit Prompt
 
-If the user navigates away from BindForge (or exits Elite-Intel) with unsaved Alias Designer changes, the
-same two-option dialog described in [Overview — Unsaved Work on Exit](overview.md#unsaved-work-on-exit)
-interrupts: **Save** or **Discard**. Neither touches a game installation.
+**Leaving BindForge with edits not applied asks the one leave prompt** — Go back / Discard / Apply
+([Unsaved Work on Exit](overview.md#unsaved-work-on-exit)).
 
 **Inside the Device Editor — 2026-10-10 (Alan).** Closing the [dialog](#a-dialog-opened-from-the-row--2026-10-10-alan)
-with unsaved edits — BACK, its close glyph or Esc — asks **Save**, **Discard** or **Keep editing**. The third
-answer exists because the user is still on the screen and may only have pressed BACK by mistake. The dialog is
-modal, so it cannot be left open while the user navigates away; the prompt above covers what is left after it
-closes.
-
-**Nothing is left after it closes — 2026-10-12 (Alan, Core C6).** Every action on this screen writes the draft as it
-is pressed, and saved-but-not-applied is not unsaved, so the editor's prompt is the whole of the exit prompt here
-and the screen adds none. [The ruling](overview.md#built-as-a-ruling-not-code--2026-10-12-alan-core-c6).
+with unsaved changes — BACK, its close glyph or Esc — asks **Save**, **Discard** or **Keep editing**. The third
+answer exists because the user is still on the screen and may only have pressed BACK by mistake. Save there keeps
+the changes as edits not applied. *Until 2026-10-24 every action wrote a draft as it was pressed, so the screen had no
+exit prompt of its own (Core C6, 2026-10-12); edits now stay on screen until APPLY, so the leave prompt applies.*
 
 ## Deferred
 
@@ -2133,10 +1851,6 @@ and the screen adds none. [The ruling](overview.md#built-as-a-ruling-not-code--2
 
 ## Design Considerations — Closed
 
-**The master-copy question is closed — in favour of the master, reversing the earlier answer (2026-09-24).**
-Device configuration is edited as a **draft against the master**, and Apply writes the master out to every
-installation. There is still no two-tier master-plus-shadow model; what changed is which side is
-authoritative. See [Master](../../00-overview/glossary.md#bindforge-terms) in the glossary for the reversal and
-why, and [The master and the draft](overview.md#the-master-and-the-draft--settled-2026-09-24). The superseded
-2026-09-06 reasoning is kept in the archive at
-[Conflict 3.6](../../99-archive/conflicts-and-open-questions.md#36-working-copy-model--resolved-neither-original-option--a-third-sharper-model).
+**The master-copy question is closed — in favour of the working copy (2026-10-22, Alan).** Device configuration is
+one working copy, edited on screen and written to every installation at APPLY. *From 2026-09-24 to 2026-10-22 it was a
+draft edited against a separate master.* See [storage.md](storage.md).

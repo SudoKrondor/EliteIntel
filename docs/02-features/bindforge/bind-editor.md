@@ -10,7 +10,19 @@ makes them cheap to build when they come back — each mode's own section below 
 
 ## Shell (Common to All Modes)
 
-- A Bindings File dropdown plus Load button, above everything. Load performs the standard [Live File Synchronization](overview.md#live-file-synchronization) freshness check for the Bind Domain before opening the file for editing.
+- A Bindings File dropdown plus Load button, above everything. Load opens the file from the working copy; a live copy that differs from it is [the check's](storage.md) to raise (rule 14).
+- **A Name box beside the Bindings File dropdown — renaming a binds file (2026-10-24, Alan).** It shows the selected
+  file's BindName, editable, with the game's version and extension after it as fixed text — `DualVirpilDawnTreader`
+  `.4.2.binds`. A name the user types is held to the same rules as a controller name: letters, digits, `-` and `_`,
+  starting with a letter, 3–50 characters, and not the name of another binds file or of a Frontier factory binds
+  file. **A rename is one edit not applied that changes three things together** — the file name, the `PresetName`
+  inside it (they must always match: a file where they differ is
+  [not offered](preset-editor.md#the-bindname-list--settled-2026-10-17-alan-p1)), and every line of
+  `StartPreset.4.start` naming the old one — because a section left pointing at the old name makes the game load
+  something else without a word. APPLY writes the renamed file and removes the old one from the live bindings folder
+  ([storage.md](storage.md) rule 7). **For a Frontier factory binds file the box is read-only.** A text box rather
+  than an editable dropdown, so picking a file can never rename one by accident. *Until 2026-10-24 renaming was
+  deferred; duplicating a binds file still is.*
 - A Search box, above all mode tabs — filters whichever list is currently showing in whichever mode tab is active. **It clears in one action**: a × appears inside the field once there is anything to clear, and Esc does the same for anyone whose hands are already on the keyboard — which, in a bind editor, is most of them. Clearing restores the full list and returns focus to the field. Controller Mode is picture-based, not a list, so how (or whether) Search applies there is still open.
 - A **Show Anomalies Only** checkbox, on the same line as Search. **It belongs to Game Mode and appears only there** (settled 2026-09-15). It filters the grid to rows carrying an anomaly — any of the [four kinds](#four-kinds-one-question), not conflicts alone. Leaving Game Mode hides it **and clears it**, so a filter is never left applied where nothing on screen explains it. **Why it exists when [Anomalies](#anomalies) has its own tab:** the tab answers *what is wrong*, gathering every anomaly by kind and severity away from the game's own layout; the checkbox answers *what is wrong here*, keeping the sections and groups the user is already working in. *Until 2026-09-15 this was shared shell state that meant something different in each mode. [Action Groups](#action-groups) has no filter of its own as a result, and needs none: it is not where conflicts get fixed.*
 - Mode tabs: **Game Mode**, **Anomalies** and **[Settings](#settings--settled-2026-09-19)** in V1.2 (settled 2026-09-16,
@@ -487,12 +499,12 @@ had** (Alan, 2026-10-15). A chord either slot held when the dialog opened is gre
 #### Which name a controller's tab writes — settled 2026-10-15 (Alan, E1)
 
 **The
-master's** — the name the installations hold now — and Frontier's for a built-in the master does not hold (`CaptureControllers`). A device renamed in the draft and not yet applied is still under its old name in every installation and in `.binds`, so a binding written under that name moves with all the others at APPLY.
+working copy's** — the name the installations hold now — and Frontier's for a built-in the working copy does not hold (`CaptureControllers`). A device renamed on screen and not yet applied is still under its old name in the working copy and in `.binds`, so a binding written under that name moves with all the others at APPLY.
 **A controller with no name gets a greyed
 tab** saying to name it in the Alias Designer first: `.binds` would have to name it by hardware id.
 
 **An unplugged controller keeps its
-tab** (Alan, 2026-10-15): every controller the master or the bindings name gets one, not only those connected right now. A stick binding must not lose its tab because the stick is asleep or unplugged. Its inputs are clicked, not pressed, and run up to the highest button and hat that its saved names or its bindings mention (`CaptureControllers.all`).
+tab** (Alan, 2026-10-15): every controller the working copy or the bindings name gets one, not only those connected right now. A stick binding must not lose its tab because the stick is asleep or unplugged. Its inputs are clicked, not pressed, and run up to the highest button and hat that its saved names or its bindings mention (`CaptureControllers.all`).
 
 #### Tabs are input sources; sub-tabs are input kinds
 
@@ -560,7 +572,7 @@ NEW INPUT        [ NOT DEFINED ]
 | CONTROL | the same record's section and group | yes | yes |
 | XML BINDING | the raw `bindingId` | yes | yes |
 | SLOT | Primary or Secondary | yes | *Axis (one binding)* — an axis element has one `<Binding>` |
-| CURRENT VALUE | the slot as it stands in the draft | yes | yes |
+| CURRENT VALUE | the slot as it stands — in the working copy, or as edited on screen | yes | yes |
 | NEW INPUT | the capture field | yes | yes |
 | INVERTED, DEADZONE | the axis row's settings | — | yes |
 
@@ -572,7 +584,7 @@ tag is what the file, a support bundle and another player's `.binds` all say. To
 #### Nothing is kept until SAVE
 
 The user presses the input, reads whatever the dialog says about it — in use, reserved, the game-menu
-key, a conflict — and then presses **SAVE**. **SAVE writes to the draft**; Apply is still the only thing that
+key, a conflict — and then presses **SAVE**. **SAVE keeps it as an edit not applied**; APPLY is still the only thing that
 reaches the game. **CLEAR BINDING** empties the slot, and **BACK** or Esc leaves with nothing changed.
 
 This is Krondor's flow as it ships, and it **replaces the earlier commit-on-press design**, where a clean

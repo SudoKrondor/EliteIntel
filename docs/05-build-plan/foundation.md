@@ -96,7 +96,7 @@ slices it unblocks still wait; the merge-up reaching `V1.2-BindForge` is what re
 - **The writer widens by who initiates, not by device**, and `KeyBindingsParser` never widens.
   [overview.md](../02-features/bindforge/overview.md#two-narrow-boundaries--one-stays-one-widens)
 - **In a rename, `.binds` goes last, and only if every installation succeeded.**
-  [alias-designer.md](../02-features/bindforge/alias-designer.md#binds-goes-last-and-only-if-every-installation-succeeded)
+  [alias-designer.md](../02-features/bindforge/alias-designer.md#how-a-rename-is-done--2026-10-24)
 - **F2: Alias Designer writes the device rewrite inside its own Apply; drafts and masters are rewritten by the same
   substitution and the draft's baseline re-recorded; the game's file goes last; matching ignores case, and a hex
   reference is rewritten from the value found — `hardwareIdToName` matches VID then PID only (Krondor, 2026-10-13,
@@ -104,7 +104,7 @@ slices it unblocks still wait; the merge-up reaching `V1.2-BindForge` is what re
   [format §4.2](../02-features/bindforge/domain-knowledge/EliteDangerous-BindsFileFormat.md#42-vidpid-derived-hex-identifiers)
 - **F3: only revert changes a V1.1 file** — one new `BindingsApplyService` method (F3b); the master, startup check,
   merge and `StartPreset.4.start` are new V1.2 classes; `.binds` Edit History is the existing backups folder.
-  [overview.md](../02-features/bindforge/overview.md#where-the-binds-and-startpreset-master-lives--settled-2026-10-12-alan-foundation-f3)
+  [overview.md](../02-features/bindforge/overview.md#where-the-working-copy-lives--2026-10-23)
 - **F4: the user-edit path does not refuse a conflicting chord, and carries Hold**; a keyboard token is any `Key_`
   name. [bind-editor.md](../02-features/bindforge/bind-editor.md#what-the-writer-takes-from-the-dialog--settled-2026-10-12-alan-foundation-f4)
 - **F5 withdrawn** — `axisToBindsToken` has no caller on either line.
@@ -155,7 +155,7 @@ slices it unblocks still wait; the merge-up reaching `V1.2-BindForge` is what re
 |---|---|---|---|---|
 | F1 | **Read all four `StartPreset.4.start` lines** — General, Ship, SRV, On Foot, in that order — as a new method beside `getActivePresetName()` | `BindingsLoader` | Preset Editor (first job), [Core C7](core.md#slices) | **done 2026-10-13** — `1fa8c1026`, review fixes `bbad46667`, `0718ba71b`; merged by Krondor (`1b61096c9`) |
 | F2 | **The `.binds` device rewrite** — replace one `Device=` value with another across `.binds`: hex → name (onboarding), old name → new name (rename), name → hex (CLEAR) | `BindingsWriter` | [A6b, A11, CLEAR on a named device](alias-designer.md#slices) | **done 2026-10-13** — `1d3108a7c`, with F3b and F4; Krondor's fixes `8d670a28d`; merged `1b61096c9` |
-| F3 | **Scope the `.binds` and `StartPreset.4.start` master** — what of C4's whole-file master must change an existing file, and what can be a new V1.2 class. A scoping slice: its output is a ruling and F3b's definition, not code | — | [Core C4](core.md#slices) | **settled 2026-10-12** — [the split](../02-features/bindforge/overview.md#where-the-binds-and-startpreset-master-lives--settled-2026-10-12-alan-foundation-f3); its one V1.1 change is F3b |
+| F3 | **Scope the `.binds` and `StartPreset.4.start` master** — what of C4's whole-file master must change an existing file, and what can be a new V1.2 class. A scoping slice: its output is a ruling and F3b's definition, not code | — | [Core C4](core.md#slices) | **settled 2026-10-12** — [the split](../02-features/bindforge/overview.md#where-the-working-copy-lives--2026-10-23); its one V1.1 change is F3b |
 | F3b | **Revert** — push a given file over the game's `.binds` through the same validate, back up, atomic write as `apply`, leaving the draft alone | `BindingsApplyService` (`applyFrom`) | Core C4's revert | **done 2026-10-13** — `1d3108a7c`; merged `1b61096c9` |
 | F4 | **The writer's user-edit path** — a deliberate edit may write any device; the existing keyboard-only path stays for everything automatic | `BindingsWriter` | Bind Editor: editing | **done 2026-10-13** — `1d3108a7c`; merged `1b61096c9` |
 | F5 | **`Joy_UAxis` and `Joy_VAxis`** in `ButtonInputMapper`'s axis tokens, so axis 6 and above stop throwing | ~~`ButtonInputMapper`~~ | the capture dialog | **withdrawn 2026-10-12** — no caller; the dialog uses `AxisSlots` → `GameAxis`, a V1.2 change |
@@ -185,7 +185,7 @@ Kept below as the questions were asked.*
    both sides. Rewrite the draft too, or refuse the rename while a draft exists.
 
 *Also for its sources table:* every `.binds` in the folder or the active ones only (every binds file is
-[a first-class file](../02-features/bindforge/overview.md#what-the-master-covers-everything--settled-2026-09-24));
+[a first-class file](../02-features/bindforge/overview.md#what-the-working-copy-and-backups-cover--2026-10-22));
 `Device=` appears on `<Modifier>` elements as well as slots; and all-or-nothing across several `.binds` files.
 
 ## Hand-off notes

@@ -54,7 +54,7 @@ installations with each other before then. Once the master exists, each row offe
 - **The list is the union of live hardware and file entries.** `DeviceMappings.xml` supplies names, never
   existence. [Spec, My Devices](../02-features/bindforge/alias-designer.md#my-devices)
 - **The Installations markers wait for first setup.** `M`, *not added* and the divergence colour are all defined
-  against a master record, so before first setup there are no Installations columns. [Spec, the Installations markers](../02-features/bindforge/alias-designer.md#the-installations-markers--2026-10-08-alan)
+  against a master record, so before first setup there are no Installations columns. [Spec, the Installations markers](../02-features/bindforge/alias-designer.md#my-devices)
 - **"Device service is not running" is a row in the table**, not just a log line — an empty list because nothing
   is plugged in and one because nothing is looking are different states.
 - **Duplicate-VID/PID handling is out of scope.** [Spec, Deferred](../02-features/bindforge/alias-designer.md#deferred)
@@ -435,20 +435,20 @@ next slice needs.*
   for `<GamePad>`/`<DualShock4>`; pairs now keep file order, primary first. **A9** opens a row of My Devices — the
   Built-in tab is read-only and acts on nothing; the device list is now a `JTabbedPane`, not a `HudSection`.
 
-- **2026-10-08 — A4 review fixes** (`code-integrity-review.md`, Alan). Recorded under [the Installations markers](../02-features/bindforge/alias-designer.md#the-installations-markers--2026-10-08-alan):
+- **2026-10-08 — A4 review fixes** (`code-integrity-review.md`, Alan). Recorded under [the Installations markers](../02-features/bindforge/alias-designer.md#my-devices):
   a built-in reads M only where Frontier's entry is there, even when the master labels it — the check never compares
   Frontier's elements, so a gone one raised no finding. `Severity`'s declaration order is now documented as
   load-bearing; the device columns are stated once (`DEVICE_COLUMN_KEYS`); the marker has its own *not added* key;
   GAP 5 is marked avoided in the component map. Two tests added.
 
-- **2026-10-08 — A4 built** (Alan chose all six recommendations). Recorded in [the Installations markers](../02-features/bindforge/alias-designer.md#the-installations-markers--2026-10-08-alan):
+- **2026-10-08 — A4 built** (Alan chose all six recommendations). Recorded in [the Installations markers](../02-features/bindforge/alias-designer.md#my-devices):
   one column per installation; colour read from the divergence findings; *not added* in the finding's colour for an
   entry the master holds and the installation lacks; a reset file marks every master device in its row's colour; a
   gone folder reads *not found*; no columns before first setup. The markers read the check, not
   `bindforge_device_installs` (noted in device-provenance.md). **Found:** first setup has no undo in the app — now a
   known issue. **A9's install strip** can reuse `InstallationMarkers.of` for the open device; the spec draws it with `•`.
 
-- **2026-10-08 — A3b built** (Alan chose all five recommendations). Recorded in [the ways out](../02-features/bindforge/alias-designer.md#the-ways-out--2026-10-08-alan):
+- **2026-10-08 — A3b built** (Alan chose all five recommendations). Recorded in [the ways out](../02-features/bindforge/alias-designer.md#when-an-installations-device-files-differ):
   adopt from a row takes **one device** (`adopt(installId, deviceName)`), never a missing entry; revert stays the
   whole installation and the confirm counts the rows it reaches; Edit History is the backup before revert; adopt and
   the re-merge write the master (and draft) only, so the other installations become rows to revert. An unreadable
@@ -456,7 +456,7 @@ next slice needs.*
   an unreadable file has no repair until File Manager's restore. **A4** reads the same `DeviceFilesCheck.Report` the
   panel now keeps as `currentReport`.
 
-- **2026-10-08 — A3 review fixes** (`code-integrity-review.md`, Alan). Recorded in [against the master](../02-features/bindforge/alias-designer.md#against-the-master--2026-10-08-alan):
+- **2026-10-08 — A3 review fixes** (`code-integrity-review.md`, Alan). Recorded in [against the master](../02-features/bindforge/alias-designer.md#when-an-installations-device-files-differ):
   reset to Frontier's file is red only when `.binds` names one of the user's own devices, and no file at all is
   always red (`InstallationCheck.fileGone`); one cause is one row — no label rows beside a reset, no orphan row for
   a missing entry's map. `DeviceFilesCheck.Report` now carries `masterNames` and `userNames`, so the screen reads
@@ -464,7 +464,7 @@ next slice needs.*
   `ENTRY_MISSING_FROM_SOME` became `ENTRY_MISSING`; an unchanged installation logs at DEBUG. **A4** can read the
   same `Report`.
 
-- **2026-10-08 — A3 built** (Alan chose all three recommendations). Recorded in [against the master](../02-features/bindforge/alias-designer.md#against-the-master--2026-10-08-alan):
+- **2026-10-08 — A3 built** (Alan chose all three recommendations). Recorded in [against the master](../02-features/bindforge/alias-designer.md#when-an-installations-device-files-differ):
   before first setup the list still compares installations with each other; a reset or unreadable
   `DeviceMappings.xml` is one row; an entry the master lacks, and one out of place, are red when `.binds` names
   them; labels are one yellow row per device. **Split:** the ways out became **A3b** — they are writes, and the
@@ -520,7 +520,7 @@ next slice needs.*
 
 - **2026-10-06 — A8 built** (Alan). `ButtonMapGeneration` creates a `.buttonMap` for a connected controller an
   installation already names, never over an existing file; decisions recorded in
-  [the startup `.buttonMap`](../02-features/bindforge/alias-designer.md#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller):
+  [the startup `.buttonMap`](../02-features/bindforge/alias-designer.md#default-labels-for-every-connected-named-controller):
   every connect, not only startup; the name is per installation (first match); a device the master labels is
   skipped as C3's drift; axes by position X–V; no hats (they report as buttons). **Found:** SDL compacts axis
   indices — see Known issues. Started as `BUTTON_MAP_STARTUP` in `AppController.buildServices` after `DEVICE`

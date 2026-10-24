@@ -78,16 +78,20 @@ StellarCore specs have no equivalent and can be dropped.
 There is no staged plugin load (Stage 1/2/3), no unload, and no dirty-state gate blocking shutdown.
 Tabs are constructed with the UI and live for the process lifetime.
 
-**Consequence for the ported specs:** BindForge's *Unsaved Work on Exit* dialog (**Save / Discard**, settled
-2026-09-06 — Apply is deliberately not offered there) does not get invoked by a host lifecycle hook,
+**Consequence for the ported specs:** BindForge's *Unsaved Work on Exit* dialog (**Go back / Discard / Apply**,
+2026-10-24) does not get invoked by a host lifecycle hook,
 because there is not one. It has to be wired to application shutdown — and to tab-switch away from
 BindForge — by BindForge itself.
 
 Two triggers, not one, and they are not equally trustworthy. A tab switch is an ordinary UI event
 BindForge controls. Application shutdown is not: a crash, a kill, or a Windows session ending runs no
-handler at all. That asymmetry is the practical argument for the draft being written eagerly rather than
-held in memory until a dialog says so — the dialog is a courtesy on the paths where it can run, not the
-mechanism that keeps work safe.
+handler at all.
+
+**A crash loses edits not applied, and that is accepted** (2026-10-24, Alan): *"we cannot, and should not, cover
+the possibility that the user's computer crashes and loses unapplied edits."* There is no draft copy and no saving
+as the user goes — edits stay on screen until APPLY ([storage.md](../02-features/bindforge/storage.md) rule 6). The
+game's files and the working copy are untouched by a crash; only the unapplied work is lost. *Until 2026-10-24 this
+section argued for writing a draft eagerly so a crash lost nothing.*
 
 ---
 
@@ -388,8 +392,10 @@ informal prefix — `lmStudio*`, `pushToTalk*`, `localLlm*`, `noiseReduction*`. 
 **Proposed 2026-09-20, approved by Krondor 2026-09-22, built 2026-09-28** —
 `12000__bindforge_settings.sql`, `elite.intel.db.dao.BindForgeSettingsDao` and
 `elite.intel.db.managers.BindForgeSettingsManager`, with `BindForgeSettingsManagerTest` pinning the round
-trip. **The three settings are stored but nothing reads them yet**: the launch trigger, the destination
-lookup in `PlayerBackupService` and Edit History itself are all still to build. He set the shape:
+trip. **The settings are stored but nothing reads them yet**: the launch trigger and the destination
+lookup in `PlayerBackupService` are still to build. *(2026-10-24: the auto-backup switch and Edit History retention
+were removed — the startup backup cannot be switched off, and Edit History was folded into backups; see
+[File Manager — Settings](../02-features/bindforge/file-manager.md#settings).)* He set the shape:
 
 > *"We are NOT using .INI files for settings. we are using SQLite same as Google Chrome, Mozilla Firefox and
 > others. This provides us a way to version and modify things with new releases without messing with ugly

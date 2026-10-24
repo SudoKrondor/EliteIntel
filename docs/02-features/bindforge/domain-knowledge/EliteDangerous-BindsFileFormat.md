@@ -362,6 +362,9 @@ out.
    [a name with no entry](EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
    One `lvwap` among the `LVWAP`s was enough.
 
+**Alan, 2026-10-24: in `.binds`, `LVWAP` and `lvwap` are not the same name — tested.** BindForge therefore writes
+each device one way, exactly as the user spelled it, in every binds file.
+
 **Not yet separated:** whether the rule is *one spelling per device within `.binds`*, or something stricter about
 case in `.binds` itself. The deciding test is every `Device=` lowercase with the element uppercase —
 [testing item 24](../../../00-overview/testing-required.md#bindforge).
@@ -523,7 +526,7 @@ A pad on Frontier's `<GamePad>` element (Xbox 360, One and others; 80 VID/PID pa
 - **The `.#.0`-style version suffix on a `.binds`/`StartPreset.#.start` filename is assigned by the game itself**, tied to the game's own version (e.g. an Odyssey on-foot-component version bump produced a `.4.0` suffix). No external tool mints or should mint this number — a tool only ever reacts to whatever suffix the game already wrote.
 - **A game update can overwrite or erase `.binds`, `StartPreset.4.start`, `DeviceMappings.xml`, and `.buttonMap` files — but this is not universal or guaranteed.** It doesn't happen on every update, or for every user, and no reliable trigger pattern is confirmed. Any tool managing these files should always validate presence/correctness after a game update rather than assuming either outcome.
 - **Elite only re-reads `.binds` when its own in-game Controls screen is opened.** Editing the file externally — by hand or by any tool — has no effect on a running game session until that screen is opened. This is the single most important lifecycle gotcha for any external editor: a "no-op"-looking edit may just be a stale read, and conversely a stale read can be misdiagnosed as a real binding-logic bug (see §9.2 for a documented case of exactly this happening).
-- **`StartPreset.4.start` (the preset file) records, independently per top-level section (General/Ship/SRV/On Foot), the BindName of the binds file the game currently loads for that section — always, whether that binds file is a factory binds file from the game install's `ControlSchemes` folder or a custom `.binds` file the player created by editing bindings in-game.** This is confirmed to always hold a value, even for a player who has never customized anything — it's how BindForge can know for certain which specific binds file is active per section without guessing, rather than only being able to detect the presence of a custom file. See [BindForge Overview — First-Time Startup](../overview.md#first-time-startup) for the feature this enables, and [Preset Editor](../preset-editor.md) for how this file is otherwise managed.
+- **`StartPreset.4.start` (the preset file) records, independently per top-level section (General/Ship/SRV/On Foot), the BindName of the binds file the game currently loads for that section — always, whether that binds file is a factory binds file from the game install's `ControlSchemes` folder or a custom `.binds` file the player created by editing bindings in-game.** This is confirmed to always hold a value, even for a player who has never customized anything — it's how BindForge can know for certain which specific binds file is active per section without guessing, rather than only being able to detect the presence of a custom file. See [BindForge Overview — First-Time Startup](../overview.md#create--a-new-players-first-binds-file--2026-10-24) for the feature this enables, and [Preset Editor](../preset-editor.md) for how this file is otherwise managed.
 
 ---
 
