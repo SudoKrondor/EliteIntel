@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'application'
-    id 'com.github.johnrengelman.shadow'
+    id 'com.gradleup.shadow'
 }
 
 // LWJGL3 version used for both API JARs and native extraction
@@ -10,9 +10,6 @@ def lwjglVersion = "3.4.0"
 repositories {
     mavenCentral()
     google()
-    maven {
-        url 'https://oss.sonatype.org/content/repositories/snapshots'
-    }
 }
 
 // Separate configuration so the extraction task can resolve native JARs independently
@@ -208,11 +205,13 @@ shadowJar {
         attributes 'Main-Class': 'elite.intel.App'
     }
     mergeServiceFiles()
-    from("${rootProject.projectDir}/THIRD_PARTY_NOTICES.md") {
+    from("${rootProject.projectDir}/distribution/THIRD_PARTY_NOTICES.md") {
         into 'META-INF'
     }
     destinationDirectory = file("${rootProject.projectDir}/distribution")
     dependsOn extractLwjglNatives
+    // The notices live in distribution/, which the updater's copy task claims as its output.
+    mustRunAfter ':updater:copyUpdaterToDistribution'
 }
 
 // Default test task — exclude local-integration tests so CI never tries to call a live LLM,
@@ -235,7 +234,7 @@ test {
     // lives on a runner that has already been destroyed. Failures only.
     testLogging {
         events 'failed'
-        exceptionFormat 'full'
+        exceptionFormat = 'full'
         showStackTraces = true
     }
     // Journal subscribers do their work on a virtual thread nobody joins, and these
@@ -272,7 +271,7 @@ tasks.register('subscriberTest', Test) {
     systemProperty 'java.awt.headless', 'true'
     testLogging {
         events 'failed'
-        exceptionFormat 'full'
+        exceptionFormat = 'full'
         showStackTraces = true
     }
     filter {
@@ -291,7 +290,7 @@ tasks.register('localIntegrationTest', Test) {
     maxParallelForks = 1
     testLogging {
         events 'passed', 'failed', 'skipped'
-        exceptionFormat 'full'
+        exceptionFormat = 'full'
         showStandardStreams = true // surface the companion eval's printed conversation
     }
 }
@@ -308,7 +307,7 @@ tasks.register('embeddingTest', Test) {
     maxParallelForks = 1
     testLogging {
         events 'passed', 'failed', 'skipped'
-        exceptionFormat 'full'
+        exceptionFormat = 'full'
         showStandardStreams = true // surface the printed cosine matrix
     }
 }

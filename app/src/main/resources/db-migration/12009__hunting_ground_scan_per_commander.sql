@@ -1,0 +1,13 @@
+-- The hunting-ground backfill bookmark moved into each commander's own file (commander 12000).
+--
+-- The shared row is dropped, not copied: it was written by whichever commander last ran the scan, so it cannot
+-- be handed to any one of them. Each commander's first scan after this reads their whole archive again, which
+-- is safe because contracts are keyed on MissionID and resource site counts only ever rise.
+--
+-- The shared tree runs on its own connection before the commander file is attached, so this cannot reach the
+-- commander's table of the same name.
+--
+-- NOTE: no semicolon may appear inside these comments. Migrations are split on a semicolon at end of
+-- line before comments are stripped, so one here would cut the file mid-comment and hand SQLite a
+-- statement with no SQL in it.
+DROP TABLE IF EXISTS hunting_ground_scan;

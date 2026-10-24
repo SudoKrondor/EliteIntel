@@ -341,6 +341,10 @@ binds file load in the game. Then repeat, but plug in a controller with the old 
 nothing be named, and the question come back next run.
 → [Built — A17](../02-features/bindforge/alias-designer.md#built--2026-10-17-alan-a17)
 
+**27. Which tokens does the game write for an Xbox pad?** *Added 2026-10-23 — needs a tester with a pad; Krondor is
+asking the one who reported
+it.* In the game's own controls screen, bind one face button and one trigger (as a button) on the pad, then send the active `.binds` file and the pad's model, wired or wireless. The file says which family the game writes, `Pad_…` or `GamePad_…`, and whether the pad is on `Device="GamePad"` at all - a wired Xbox Series pad (`045E:0B12`) is not on Frontier's `<GamePad>` list. Also worth a look: open the pad in the Device Editor and say whether the sticks light, or nothing at all. Blocks A18 and E7. → [A gamepad is not a joystick](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor)
+
 ## Core Platform
 
 **8. Linux/Proton path resolution — Krondor's, not a BindForge testing item.** *Reassigned 2026-09-06.* Not a one-time check but ongoing, given how much Linux path resolution varies by distro and by how an individual user has their Steam library configured — which is exactly why it is owned by the person running it. BindForge builds and tests Windows storefront detection; Krondor makes the edits his platform needs. Listed here so the dependency stays visible, not as work waiting on Alan. The journal path is confirmed against independent precedent (EDMarketConnector); the bindings-folder path is inferred from the same structure but not independently confirmed.

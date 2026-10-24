@@ -136,9 +136,10 @@ installations with each other before then. Once the master exists, each row offe
 | A16 | **First setup's name choices that need Rename** — a name conflict whose losing name `.binds` uses: keep the winner with the loser as its `previous_name`, so the first Apply moves the bindings (A11's machinery). Design first: two losing names `.binds` uses (one `previous_name` per device), and first setup stuck because `.binds` uses both names. [Spec](../02-features/bindforge/alias-designer.md#names-that-needed-rename--2026-10-17-alan-a16) | A11 (done) | **done 2026-10-17** |
 | A17 | **When hardware changes, for a controller with no name** — `.binds` names a missing controller by hardware id only and an unnamed one is attached: a yes names the new controller *and* moves the bindings from the **old** id to the name. Needs a stored "old id → name" record, since Apply's hex move only finds a device's current VID/PID. Reuse A12's question, answers and hold-back. [Spec](../02-features/bindforge/alias-designer.md#built--2026-10-17-alan-a17) | A12 (done) | **done 2026-10-17** — split out of A12 2026-10-15 (Alan) |
 | A14 | **Catch-up** — an installation that missed an Apply (missing, locked, unavailable) is found again, at Elite-Intel startup or by the check: ask *"write your recent changes to it?"*, Yes being ~~`DeviceFilesPush.push(installId)`~~ Apply's push to that installation alone, removals and renames included (Alan, 2026-10-15). [Spec](../02-features/bindforge/alias-designer.md#catch-up--2026-10-15-alan-a14) | A10 (done) | **done 2026-10-15** |
+| A18 | **Gamepads** — `DeviceService` reads a pad through SDL's Gamepad API when `SDL_IsGamepad` holds (new gamepad events, `isGamepad(id)`; joystick events unchanged); the pure table from its named inputs to the game's `GamePad` tokens; the Device Editor shows a `<GamePad>` read-only, lit by name. Design proposed by Krondor 2026-10-23, **to settle with Alan first**. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor) | the tester's `.binds` ([testing item 27](../00-overview/testing-required.md#bindforge)) for the token family | **blocked** on item 27 |
 
-**Every slice in the table is done** — A16 and A17 on 2026-10-17; A15 on 2026-10-16; A7, A11, A12 and A14 on
-2026-10-15. Next is a review of A17 in its own session (`/check-code-integrity`), then whatever Alan picks from the
+**Every slice but A18 is
+done** — A16 and A17 on 2026-10-17; A15 on 2026-10-16; A7, A11, A12 and A14 on 2026-10-15. A18 was added 2026-10-23 from a tester's report. Next is a review of A17 in its own session (`/check-code-integrity`), then whatever Alan picks from the
 owed items below (the Linux bindings-folder slice, the orphan's **Remove** way out) or the next section, Preset Editor. Core C6, the exit
 prompt A10 unblocked, was settled 2026-10-12 as a ruling with no code — the Device Editor's own prompt is it.
 
@@ -153,6 +154,14 @@ game's `.binds` **last**; a hex reference rewritten **from the value `BindsDevic
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
+
+- **2026-10-23 — an Xbox pad is not lit, and is bound with the wrong tokens** (Krondor, from a tester's report:
+  *"the new editor apparently doesn't recognize my Xbox controller
+  triggers"*). A8b's description fails for an XInput pad, so no axis is lit; worse, E1's capture writes `Joy_N` under `GamePad`, which the game binds by
+  `Pad_…`/`GamePad_…` tokens. Recorded in the spec,
+  [A gamepad is not a joystick](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor), and the tokens in [`.binds` §5.6](../02-features/bindforge/domain-knowledge/EliteDangerous-BindsFileFormat.md#56-gamepad-codes--read-from-frontiers-presets-2026-10-23).
+  **A18 here and E7
+  in [bind-editor-editing.md](bind-editor-editing.md#slices)** — the design is Krondor's proposal, not settled; Krondor is asking the tester for item 27. Nobody on the team has a pad.
 
 - **2026-10-17 — A17 review fixes** (`code-integrity-review.md`, Alan: 1–10, P2 and the missing test; P1 left).
   Recorded under *After review* in [Built — A17](../02-features/bindforge/alias-designer.md#built--2026-10-17-alan-a17):

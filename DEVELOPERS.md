@@ -298,7 +298,7 @@ SQLite via JDBI 3 + HikariCP, with versioned migrations in `app/src/main/resourc
 
 ## Licensing
 
-The project is released under CC0 1.0 Universal; see `LICENSE`. Third-party components keep their own licenses and must be listed in `THIRD_PARTY_NOTICES.md` when distribution requires it. Any dependency you add must have a license that allows redistribution in the installer.
+The project is released under CC0 1.0 Universal; see `LICENSE`. Third-party components keep their own licenses and must be listed in `distribution/THIRD_PARTY_NOTICES.md` when distribution requires it. Any dependency you add must have a license that allows redistribution in the installer.
 
 ## IDE Note: unused-declaration false positives
 
