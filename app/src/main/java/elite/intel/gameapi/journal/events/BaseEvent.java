@@ -3,6 +3,7 @@ package elite.intel.gameapi.journal.events;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.gson.JsonObject;
+import elite.intel.gameapi.GameClock;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.ToJsonConvertible;
 import elite.intel.util.yaml.ToYamlConvertable;
@@ -34,7 +35,7 @@ public abstract class BaseEvent implements ToJsonConvertible, ToYamlConvertable 
 
     @JsonIgnore
     public boolean isReplay() {
-        return Instant.parse(timestamp).isBefore(APP_START);
+        return GameClock.get().toPcTime(Instant.parse(timestamp)).isBefore(APP_START);
     }
 
     @JsonIgnore

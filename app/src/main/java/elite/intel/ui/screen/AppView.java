@@ -6,6 +6,7 @@ import elite.intel.session.SystemSession;
 import elite.intel.ui.controller.AiTabController;
 import elite.intel.ui.event.*;
 import elite.intel.ui.inputmonitor.InputMonitorTabPanel;
+import elite.intel.ui.support.GameClockWarning;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
@@ -199,6 +200,11 @@ public class AppView extends JFrame implements AppViewInterface {
     @Subscribe
     public void onUpdateAvailableEvent(UpdateAvailableEvent event) {
         SwingUtilities.invokeLater(() -> setTitle(getText("app.updateAvailable.title")));
+    }
+
+    @Subscribe
+    public void onGameClockDisagreement(GameClockDisagreementEvent event) {
+        SwingUtilities.invokeLater(() -> GameClockWarning.show(this, event));
     }
 
     @Subscribe
