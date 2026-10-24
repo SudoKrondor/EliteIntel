@@ -678,6 +678,7 @@ still holds one name, and making it a list is what remains.*
 | ~~**Hats cannot be captured.**~~ **Closed 2026-10-15 (E1):** `DeviceHatEvent` (polled since A9) through `ControllerCapture` to `Joy_POVnUp`…`Left` | `elite.intel.devices`, `bindforge.devices.ControllerCapture` | — |
 | **U and V axes cannot be captured.** `AXIS_TOKENS` is exactly X, Y, Z, RX, RY, RZ, so a panel's A1/A2 dials make `axisToBindsToken` throw | ~~`ButtonInputMapper`~~ the capture dialog | ~~the token list grows to `Joy_UAxis` and `Joy_VAxis`~~ the dialog maps SDL's axis through `devices.hid.AxisSlots` to `GameAxis`, which names all eight. **Corrected 2026-10-12 (Alan, Foundation F5 withdrawn):** `axisToBindsToken` has no caller on either line, and taking SDL's axis number as the slot is wrong whenever a controller skips a slot — `AxisSlots` matches them by DirectInput slot. No V1.1 file changes |
 | ~~**SELECTED BINDING shows the raw tag**~~ **Closed 2026-10-15 (E1):** the title is the in-game name, with CONTROL and XML BINDING beneath | `AssignKeyboardBindingDialog.buildUi` | — |
+| **A gamepad is captured as a joystick** (found 2026-10-23, Krondor). A pad on `<GamePad>` gets `Joy_N` and `Joy_POVn…` tokens under `Device="GamePad"`, where the game binds `Pad_…`/`GamePad_…` tokens; its triggers cannot be captured at all | `ControllerCapture`, `ControllerInputsPanel` | E7 — [A gamepad is not a joystick](alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor) |
 
 ### Open items — capture dialog
 

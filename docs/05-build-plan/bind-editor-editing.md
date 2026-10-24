@@ -51,6 +51,8 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 - **Losing Vega's access is a warning, not a
   block** (amber banner above the tabs). The user can save past it. The grid's AI ACCESS column shows the result afterwards.
   *Raise with Alan:* it is the kind of message he says nobody reads.
+- **A gamepad is captured as a joystick** (found 2026-10-23, Krondor). An Xbox pad on `<GamePad>` gets `Joy_N`
+  and hat tokens under `Device="GamePad"`, where the game binds `Pad_…`/`GamePad_…` tokens, so its bindings most likely do nothing in game. E7 fixes it. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor)
 - **The controller conflict check matches exact chords
   only.** The keyboard check also flags a modifier that another control binds on its own (`shadowedModifier`). Whether that holds for controller buttons is unmeasured.
 
@@ -71,6 +73,7 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 | E4 | **MOUSE tab.** Buttons and the wheel half-axes are chosen, never captured (spec § *MOUSE is chosen, not captured*) | ready |
 | E5 | **Cross-device chords.** A keyboard key with controller buttons held, and a controller input with keyboard modifiers held | ready |
 | E6 | **Game Mode and Settings rows** — the spec's grid modes. Read the spec first: scope the slice before building | not scoped |
+| E7 | **Gamepad capture.** On a controller named `GamePad`, the tab offers and captures the game's gamepad tokens, never `Joy_N` or hats; a trigger pulled past a threshold is a press of its `Pos_` token and can be held as a modifier. Needs [A18](alias-designer.md#slices)'s gamepad events and token table. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor) | **blocked** on A18 |
 
 ## Hand-off notes — newest first
 
