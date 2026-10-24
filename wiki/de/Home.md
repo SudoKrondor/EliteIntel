@@ -71,6 +71,8 @@ Elite Intel ist Open Source. Fehlermeldungen, Feature-Anfragen und Pull Requests
 
 Tritt der Community auf Matrix bei: 👉 [**#krondor:matrix.org**](https://app.element.io/#/room/#krondor:matrix.org) 👈
 
+Noch nie Matrix benutzt? 👉 [**Matrix-Anleitung**](../Matrix-How-To.html) (Englisch): Schritt für Schritt zum Konto und in den Raum.
+
 ---
 
 *Behalte die manuelle Kontrolle über kritische Schiffssysteme jederzeit.*

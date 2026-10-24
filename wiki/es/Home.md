@@ -71,6 +71,8 @@ Elite Intel es de código abierto. Los informes de errores, solicitudes de funci
 
 Únete a la comunidad en Matrix: 👉 [**#krondor:matrix.org**](https://app.element.io/#/room/#krondor:matrix.org) 👈
 
+¿Nunca has usado Matrix? 👉 [**Guía de Matrix**](../Matrix-How-To.html) (en inglés): crea una cuenta y entra en la sala paso a paso.
+
 ---
 
 *Mantén el control manual de los sistemas críticos de la nave en todo momento.*

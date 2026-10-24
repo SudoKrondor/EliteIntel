@@ -2,6 +2,8 @@
 
 👉[**Comunidad en Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈
 
+👉 ¿Nuevo en Matrix? [**Guía de Matrix**](../Matrix-How-To.html) (en inglés)
+
 👉[YouTube](https://www.youtube.com/@SudoKrondor)
 
 ### 📧 Correo de Soporte:

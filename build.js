@@ -198,6 +198,7 @@ const DEFAULT_NAV = {
     section_howdoi:                    'How Do I…?',
     section_community:                 'Community',
     link_matrix:                       'Matrix Chat ↗',
+    'Matrix-How-To':                   '❓ New to Matrix? Start here',
     link_privacy:                      '🔒 Privacy Policy',
     link_contact:                      '📧 Contact Developer',
     link_academy_test:                 '🎓 Academy Test',
@@ -324,6 +325,7 @@ function buildSidebar(activePage, assetBase, nav, titleMap, localePages) {
 
             ${sec('section_community')}
             <a href="https://app.element.io/#/room/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener">${img('communications.png', '')} ${esc(nav['link_matrix'])}</a>
+            ${lnk('Matrix-How-To', '', ' nav-sub')}
             <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
             <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
 

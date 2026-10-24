@@ -93,6 +93,10 @@
     <xhtml:link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/LM-Studio-Ubuntu-Server.html"/>
   </url>
   <url>
+    <loc>https://www.elite-intel.org/Matrix-How-To.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Matrix-How-To.html"/>
+  </url>
+  <url>
     <loc>https://www.elite-intel.org/Navigation-Assistance.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Navigation-Assistance.html"/>
     <xhtml:link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Navigation-Assistance.html"/>

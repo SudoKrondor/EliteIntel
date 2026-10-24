@@ -6,6 +6,7 @@ section_wiki: Wiki
 section_howdoi: Comment faire ?
 section_community: Communauté
 link_matrix: Chat Matrix ↗
+Matrix-How-To: ❓ Nouveau sur Matrix ? Commencez ici
 link_privacy: 🔒 Politique de confidentialité
 link_contact: 📧 Contacter le développeur
 

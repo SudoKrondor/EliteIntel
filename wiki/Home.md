@@ -75,9 +75,9 @@ Switch providers at any time in settings. No reinstallation required.
 
 Elite Intel is open source. Bug reports, feature requests, and pull requests are welcome.
 
-Get 👉 [ELEMENT client to connect to Matrix network here](https://element.io/en/download) 👈
-
 Join the community on Matrix: 👉 [**#krondor:matrix.org**](https://app.element.io/#/room/#krondor:matrix.org) 👈
+
+Never used Matrix? 👉 [**Matrix How To**](Matrix-How-To): a step-by-step guide to creating an account and joining the room.
 
 ---
 

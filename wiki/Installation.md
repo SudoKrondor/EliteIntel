@@ -41,4 +41,4 @@ missing — but they are worth doing up front:
 ----
 For issues, report on Matrix. Bug reports and pull requests are welcome.
 
-Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈
+Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈 (new to Matrix? read the [**Matrix How To**](Matrix-How-To))
