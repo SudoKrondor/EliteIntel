@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academy Test  EliteIntel</title>
+    <meta name="description" content="Elite Intel Academy: test what you learned from episodes 1 to 5.">
+    <meta name="robots" content="noindex">
+    <link rel="canonical" href="https://www.elite-intel.org/test/">
+    <link rel="stylesheet" href="../css/main.css">
+    <style>
+        .content { margin-left: 0; }
+        .quiz-dim { color: var(--ed-text-dim); }
+        .quiz-btn {
+            background: var(--ed-orange); color: #000; border: 0; cursor: pointer;
+            font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1rem;
+            letter-spacing: 0.08em; text-transform: uppercase;
+            padding: 0.55rem 1.4rem; margin-top: 1rem;
+        }
+        .quiz-btn:hover:not(:disabled) { background: var(--ed-orange-bright); box-shadow: 0 0 14px var(--ed-orange-glow); }
+        .quiz-btn:disabled { background: var(--ed-orange-dim); opacity: 0.45; cursor: not-allowed; }
+        .quiz-progress {
+            display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;
+            font-family: 'Rajdhani', sans-serif; color: var(--ed-text-dim);
+            text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.9rem;
+        }
+        .quiz-bar { height: 4px; background: var(--ed-orange-subtle); margin: 0.4rem 0 1.5rem; }
+        .quiz-bar-fill { height: 100%; background: var(--ed-orange); transition: width 0.3s; }
+        .quiz-q {
+            border: 1px solid var(--ed-border); background: var(--ed-bg-panel);
+            padding: 1rem 1.2rem; margin: 0 0 1.2rem;
+        }
+        .quiz-q legend { padding: 0 0.4rem; color: var(--ed-orange-bright); font-weight: 600; }
+        .quiz-opt {
+            display: flex; gap: 0.7rem; align-items: flex-start;
+            padding: 0.45rem 0.5rem; cursor: pointer; border: 1px solid transparent;
+        }
+        .quiz-opt:hover { background: var(--ed-orange-subtle); }
+        .quiz-opt:has(input:checked) { border-color: var(--ed-orange); background: var(--ed-orange-subtle); }
+        .quiz-opt input { accent-color: var(--ed-orange); margin-top: 0.3rem; flex-shrink: 0; }
+        .quiz-score { text-align: center; margin: 1.5rem 0; padding: 1.5rem; border: 1px solid var(--ed-border); background: var(--ed-bg-panel); }
+        .quiz-score-pct { font-family: 'Rajdhani', sans-serif; font-size: 3.5rem; font-weight: 700; color: var(--ed-orange); line-height: 1; }
+        .quiz-score-label { font-family: 'Rajdhani', sans-serif; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.4rem; }
+        @media (max-width: 600px) { .content-inner { padding: 1.5rem 1rem 4rem; } }
+    </style>
+</head>
+<body>
+
+<header class="site-header">
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+</header>
+
+<div class="layout">
+    <main class="content" role="main">
+        <div class="content-inner markdown-body">
+            <h1>Elite Intel Academy Test</h1>
+            <p class="quiz-dim">Covers Academy episodes 1–5: setup, concepts and navigation, chatting with VEGA and custom commands, bookmarks and discovery, and pirate massacre stacking.</p>
+            <div id="quiz"><noscript>This test needs JavaScript.</noscript></div>
+        </div>
+    </main>
+</div>
+
+<script src="questions.js"></script>
+<script src="test.js"></script>
+</body>
+</html>
