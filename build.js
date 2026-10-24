@@ -200,6 +200,7 @@ const DEFAULT_NAV = {
     link_matrix:                       'Matrix Chat ↗',
     link_privacy:                      '🔒 Privacy Policy',
     link_contact:                      '📧 Contact Developer',
+    link_academy_test:                 '🎓 Academy Test',
     Home:                              'Home',
     Installation:                      'Installation',
     UI:                                'User Interface',
@@ -287,6 +288,7 @@ function buildSidebar(activePage, assetBase, nav, titleMap, localePages) {
 
     return `
             ${lnk('Home', 'elite-logo.png')}
+            <a href="${assetBase}test/index.html" class="nav-link">${esc(nav['link_academy_test'])}</a>
 
             ${sec('section_app')}
             ${lnk('Installation',  'release.png')}
