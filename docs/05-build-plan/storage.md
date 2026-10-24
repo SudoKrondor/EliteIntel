@@ -121,6 +121,10 @@ to a hardware ID (after S4); A18 and E7 stay blocked on [testing item 27](../00-
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the next
 slice needs.*
 
+- **2026-10-24 — a new player is told to play the training first.** The one exception to the silent backup (Alan):
+  `SetupCheck` says `speech.setup.noBindingsYet`, in Alan's words, when the game's default bindings folder is missing
+  or holds no `StartPreset` — it used to tell them to set the folder. Recorded in storage.md rule 12 and
+  file-manager.md. **Open:** Backup Now's "nothing to back up yet" dialog still has the earlier tutorials wording.
 - **2026-10-24 — S1 review follow-up** ([code-integrity-review-storage-s1.md](../../code-integrity-review-storage-s1.md)).
   Fixed: a prune renames a backup to `.taking-` before deleting it, so a delete that stops part way is finished by the
   next prune; one prune resolves the folder once; the backup runs detection once and hands it to

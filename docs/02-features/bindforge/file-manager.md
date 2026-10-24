@@ -77,6 +77,16 @@ at the next start; Backup Now says so. **It is not a fault** — a new player, o
 yet — so it is logged as a warning, not an error, and both the log line and Backup Now tell the user what to do:
 *start Elite Dangerous and play past the tutorials*, which is when the game creates them (Alan, 2026-10-24).
 
+**A new player is also told at every start, spoken** — the one exception to the silent backup ([storage.md](storage.md)
+rule 12; Alan, 2026-10-24). It is Elite-Intel's existing setup check (`setup.SetupCheck`) that speaks, not the backup,
+so the player hears one warning rather than two: when the bindings folder is the game's default and is missing or
+holds no `StartPreset`, it says, in Alan's words (`speech.setup.noBindingsYet`): *"Commander, your control input <!-- terminology-ok: quotes the spoken line verbatim -->
+configuration files have not been created yet. Complete your commander training, then in Options, Controls, set the <!-- terminology-ok: quotes the spoken line verbatim -->
+galaxy map UI movement to the arrow keys and apply. Once you do, I can read your controls. Until then I cannot operate
+your ship."* Until 2026-10-24 that case was told to set the bindings folder, which was already right. A folder the user
+chose that is missing or empty is still told to fix the setting; the game's folder with a `StartPreset` and no `.binds`
+is still told to change a binding in the game.
+
 ### Old folder backups — V1.1's, and the old BindForge ones (settled 2026-10-24, Alan)
 
 V1.1's Backup Now wrote `<backup folder>\<yyyy-MM-dd_HH-mm-ss>\` folders holding only `.binds` and `StartPreset`;

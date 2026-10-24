@@ -14,14 +14,12 @@ import elite.intel.gameapi.journal.events.ReputationEvent;
 import elite.intel.gameapi.journal.events.dto.*;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
 import elite.intel.ui.event.RadioTransmissionStateChangedEvent;
-import elite.intel.util.OsDetector;
 import elite.intel.util.Ranks;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -837,16 +835,7 @@ public class PlayerSession {
      */
     public Path getBindingsDir() {
         return Database.withDao(PlayerDao.class, dao ->
-                DirectorySetting.resolve(trimToNull(dao.get().getBindingsDirectory()), defaultBindingsDir()));
-    }
-
-    private static Path defaultBindingsDir() {
-        if (OsDetector.getOs() == OsDetector.OS.WINDOWS) {
-            return Paths.get(System.getProperty("user.home"), "AppData", "Local", "Frontier Developments", "Elite Dangerous", "Options", "Bindings");
-        } else if (OsDetector.getOs() == OsDetector.OS.LINUX) {
-            return Paths.get(System.getProperty("user.home"), ".var", "app", "elite.intel.app", "ed-bindings");
-        }
-        return Paths.get(System.getProperty("user.home"), "Library", "Application Support", "Frontier Developments", "Elite Dangerous", "Options", "Bindings");
+                DirectorySetting.resolve(trimToNull(dao.get().getBindingsDirectory()), DirectorySetting.defaultBindingsPath()));
     }
 
     public void setAlternativeName(String alternativeName) {

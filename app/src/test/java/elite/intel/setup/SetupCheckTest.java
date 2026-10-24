@@ -188,6 +188,41 @@ class SetupCheckTest {
         assertEquals(List.of(text("speech.setup.noSavedBindings")), spoken);
     }
 
+    /**
+     * Alan, 2026-10-24: a new player's game has not created its bindings folder yet - it appears once they have
+     * played through the training - so they are told to play, not to change a setting that is already right.
+     */
+    @Test
+    void aNewPlayerWithNoGameBindingsFolderIsToldToPlayTheTrainingFirst(@TempDir Path dir) throws IOException {
+        Files.createFile(dir.resolve("Journal.2026-08-11T200621.01.log"));
+        Path gameDefault = dir.resolve("Options").resolve("Bindings");
+
+        List<String> spoken = capture(() -> checkWith(dir, gameDefault, gameDefault).check());
+
+        assertEquals(List.of(text("speech.setup.noBindingsYet")), spoken);
+    }
+
+    @Test
+    void theGameFolderWithNoStartPresetIsStillANewPlayer(@TempDir Path dir) throws IOException {
+        Files.createFile(dir.resolve("Journal.2026-08-11T200621.01.log"));
+        Path gameDefault = Files.createDirectories(dir.resolve("Options").resolve("Bindings"));
+
+        List<String> spoken = capture(() -> checkWith(dir, gameDefault, gameDefault).check());
+
+        assertEquals(List.of(text("speech.setup.noBindingsYet")), spoken);
+    }
+
+    /** A folder the commander chose that is missing is the wrong-folder case, not a new player. */
+    @Test
+    void aChosenFolderThatIsMissingIsStillTheWrongFolder(@TempDir Path dir) throws IOException {
+        Files.createFile(dir.resolve("Journal.2026-08-11T200621.01.log"));
+        Path gameDefault = dir.resolve("Options").resolve("Bindings");
+
+        List<String> spoken = capture(() -> checkWith(dir, dir.resolve("somewhere else"), gameDefault).check());
+
+        assertEquals(List.of(text("speech.setup.noBindings")), spoken);
+    }
+
     @Test
     void aFullyConfiguredInstallSaysNothing(@TempDir Path dir) throws IOException {
         Files.createFile(dir.resolve("Journal.2026-08-11T200621.01.log"));
@@ -255,6 +290,12 @@ class SetupCheckTest {
                 () -> journals, () -> bindings);
     }
 
+    /** A configured model, with the game's default bindings folder at {@code gameDefault}. */
+    private static SetupCheck checkWith(Path journals, Path bindings, Path gameDefault) {
+        return new SetupCheck(new BindingsLoader(), () -> false, () -> false, () -> journals, () -> bindings,
+                () -> gameDefault);
+    }
+
     private static String text(String key) {
         return MultiLingualTextProvider.getText(Language.EN, key);
     }
@@ -284,7 +325,8 @@ class SetupCheckTest {
 
     @Test
     void everyWarningIsTranslatedInEveryLanguage() {
-        for (String key : new String[]{"speech.setup.noLlm", "speech.setup.noJournals", "speech.setup.noBindings"}) {
+        for (String key : new String[]{"speech.setup.noLlm", "speech.setup.noJournals", "speech.setup.noBindings",
+                "speech.setup.noBindingsYet"}) {
             String english = MultiLingualTextProvider.getText(Language.EN, key);
             assertFalse(english.isBlank(), key);
             assertNotEquals(key, english, "missing from the base bundle: " + key);

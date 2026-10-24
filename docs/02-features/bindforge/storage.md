@@ -107,7 +107,11 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
     background** — whether or not the user ever opens BindForge, and before first-time startup has ever run. The
     user is not told. The working copy is not included: after BindForge was last used it matches the live copy. If
     the backup fails, it is written to the application log and tried again the next time Elite-Intel starts
-    (2026-10-23, Alan). It cannot be switched off (2026-10-24, Alan). *Why:* a user who lost their binds can be told where their backups are, or restore one in
+    (2026-10-23, Alan). It cannot be switched off (2026-10-24, Alan). **The one exception to "not told": a new player
+    with nothing to back up** — the game creates its bindings folder only once they have played through the training,
+    so until then there is nothing of theirs to protect, and Elite-Intel cannot operate their ship either. They are
+    told at every start, spoken and logged, by Elite-Intel's setup check rather than by the backup (2026-10-24, Alan;
+    [file-manager.md](file-manager.md#how-a-backup-folder-is-laid-out--built-2026-10-24-storage-s1)). *Why:* a user who lost their binds can be told where their backups are, or restore one in
     BindForge; and if a BindForge bug ever destroys someone's files, there is a backup from before it ran.
 
 ## When a live copy differs
