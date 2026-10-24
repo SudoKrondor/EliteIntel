@@ -73,7 +73,9 @@ On Linux, an installation whose own bindings folder is not the one Elite-Intel i
 `StartPreset` copied under its own `Installations\<n>-<storefront>\Bindings\`.
 
 **A backup with no file at all is not written.** If nothing could be read, the startup backup logs it and tries again
-at the next start; Backup Now says so.
+at the next start; Backup Now says so. **It is not a fault** — a new player, or a game not yet installed, has no files
+yet — so it is logged as a warning, not an error, and both the log line and Backup Now tell the user what to do:
+*start Elite Dangerous and play past the tutorials*, which is when the game creates them (Alan, 2026-10-24).
 
 ### Old folder backups — V1.1's, and the old BindForge ones (settled 2026-10-24, Alan)
 
@@ -273,16 +275,16 @@ user's to spend. One open point from that proposal still belongs here: that *"Bi
 screen — not the Bind Editor's [Settings mode](bind-editor.md#settings--settled-2026-09-19), which edits the
 game's own settings inside the `.binds` file.
 
-## What exists in code today — checked 2026-10-21
+## What exists in code today — checked 2026-10-21, updated for Storage S1 2026-10-24
 
 From the [simplification review](../../../bindforge-simplification-review.md), chunk 6, set against
 [storage.md](storage.md):
 
 | Today's code | Against `storage.md` |
 |---|---|
-| **Backup Now** copies `.binds` and `StartPreset` only, **no device files**, into an uncompressed **folder**, not a zip, and finds `StartPreset` with the old `findStartPresetFile` (`PlayerBackupService.createBackup`) | every file from every installation, as a date-stamped zip (rules 11–12) |
-| **No backup when Elite-Intel starts** — the setting exists; nothing reads it | a silent backup at every start, which cannot be switched off (rule 12) |
-| **Nothing is ever deleted** | retention, 30 days by default; first-time startup's backup kept forever (rule 11) |
+| ~~**Backup Now** copies `.binds` and `StartPreset` only, **no device files**, and finds `StartPreset` with the old `findStartPresetFile`~~ **Built 2026-10-24 (Storage S1):** every file from every installation, as a date-stamped folder (`bindforge.storage.Backups`) | every file from every installation, as a date-stamped folder (rules 11–12) |
+| ~~**No backup when Elite-Intel starts**~~ **Built 2026-10-24 (Storage S1):** `StartupBackup`, every start, silent; the switch is gone | a silent backup at every start, which cannot be switched off (rule 12) |
+| ~~**Nothing is ever deleted**~~ **Built 2026-10-24 (Storage S1):** retention at start, after a successful backup | retention, 30 days by default; first-time startup's backup kept forever (rule 11) |
 | **Restore covers `.binds` only, one file at a time**, to the editing copy or straight to the game | everything, no choices, to the live copies and the working copy (rule 10) |
 | **The "before BindForge" backup** holds everything, but its restore covers `.binds` only | part of the one backup system |
 | **Edit History is written three ways** — device files into `bindings\history\<installation>\` (last 10), `.binds` copies into the backup folder (never deleted), `StartPreset` copies into that same folder (last 10) — and a `.bak` is left beside the working copy on every save | all of it goes: one backup system, nothing per file (rule 11) |

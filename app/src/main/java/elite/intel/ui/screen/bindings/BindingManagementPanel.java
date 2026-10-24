@@ -65,6 +65,8 @@ public class BindingManagementPanel extends JPanel {
     private JButton restoreToEditingSlotButton;
     private JButton restoreToLiveButton;
     private boolean operationInProgress;
+    /** The newest list refresh asked for. Read and written on the EDT only. */
+    private int latestRefresh;
 
     public BindingManagementPanel() {
         buildUi();
@@ -133,17 +135,27 @@ public class BindingManagementPanel extends JPanel {
         new Thread(() -> {
             Backup taken = null;
             IOException failure = null;
+            boolean nothingYet = false;
             try {
                 taken = backups.backUpEverything();
+            } catch (Backups.NothingToBackUpException e) {
+                log.info("Backup Now found nothing to back up: {}", e.getMessage());
+                nothingYet = true;
             } catch (IOException e) {
                 log.warn("Backup Now failed", e);
                 failure = e;
             }
             Backup result = taken;
             IOException resultFailure = failure;
+            boolean resultNothingYet = nothingYet;
             SwingUtilities.invokeLater(() -> {
                 setOperationBusy(false);
-                if (resultFailure != null) {
+                if (resultNothingYet) {
+                    // WHY: not a fault - a new player has no files yet, and is told how the game makes them (Alan,
+                    // 2026-10-24).
+                    HudConfirmDialog.info(this, getText("bindings.bindingManagement.backup.nothingYet.title"),
+                            getText("bindings.bindingManagement.backup.nothingYet"), getText("button.ok"));
+                } else if (resultFailure != null) {
                     showError("bindings.bindingManagement.backup.dialogTitle", "bindings.bindingManagement.backup.error",
                             resultFailure.getMessage());
                 } else if (!result.full()) {
@@ -284,8 +296,15 @@ public class BindingManagementPanel extends JPanel {
                 getText("button.ok"));
     }
 
-    /** Lists the backup folder off the EDT - it reads the settings and the disk - then fills the table. */
+    /**
+     * Lists the backup folder off the EDT - it reads the settings and the disk - then fills the table. Called on the
+     * EDT.
+     * <p>
+     * Only the newest request's listing is shown (review, 2026-10-24): two refreshes can finish out of order, and the
+     * older listing, without the backup just taken, must not be the one left on screen.
+     */
     private void refreshBackups() {
+        int request = ++latestRefresh;
         new Thread(() -> {
             List<Backup> listed;
             try {
@@ -296,7 +315,9 @@ public class BindingManagementPanel extends JPanel {
                 listed = List.of();
             }
             List<Backup> result = listed;
-            SwingUtilities.invokeLater(() -> showBackups(result));
+            SwingUtilities.invokeLater(() -> {
+                if (request == latestRefresh) showBackups(result);
+            });
         }, "PlayerBackupList-Thread").start();
     }
 

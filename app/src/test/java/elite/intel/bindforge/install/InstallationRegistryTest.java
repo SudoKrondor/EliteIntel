@@ -242,6 +242,23 @@ class InstallationRegistryTest {
         assertEquals(steam.toString(), rowOf(id).rootPath(), "it stayed where it was");
     }
 
+    /**
+     * Review, 2026-10-24: the backup detects once and hands the result over, and that detection is the run's - the
+     * screens' first refresh does not detect again.
+     */
+    @Test
+    void aDetectionHandedInIsRecordedAndCountsAsTheRunsDetection() throws IOException {
+        InstallationRegistry registry = registry();
+        Path steam = gameAt("steam");
+        List<GameInstallation> handedIn = List.of(new GameInstallation(Storefront.STEAM, steam,
+                GameInstallation.controlSchemesUnder(steam), machine.resolve("Bindings")));
+
+        assertEquals(1, registry.rescan(handedIn).size());
+
+        detect(Storefront.EPIC, gameAt("epic"));
+        assertEquals(1, registry.currentWithStartupScan().size(), "no second detection this run");
+    }
+
     private long idOf(Path root) {
         return installations.findByPath(root).id();
     }

@@ -55,12 +55,33 @@ public class InstallationRegistry {
         // hold one. Recording a folder is check-then-insert, so two detections at once can both find it absent, and
         // the second insert then breaks the path's UNIQUE constraint (review, 2026-10-13).
         synchronized (DETECTING) {
-            for (GameInstallation detected : provider.findInstallations()) {
-                installations.record(detected.storefront().name(), detected.root(), false);
-            }
-            refreshMissingFlags();
-            return installations.findAll();
+            return record(provider.findInstallations());
         }
+    }
+
+    /**
+     * As {@link #rescan()}, with a detection the caller already ran - so a caller that also needs what detection
+     * found (the backup, for each installation's bindings folder) detects once, not twice (review, 2026-10-24).
+     *
+     * @param detected a full detection, {@link GameInstallationProvider#findInstallations()}
+     * @return the list as it now stands, including rows detection did not produce
+     */
+    public List<InstallationRow> rescan(List<GameInstallation> detected) {
+        synchronized (DETECTING) {
+            return record(detected);
+        }
+    }
+
+    /** Folds a detection into the stored list. Holds {@code DETECTING}. */
+    private List<InstallationRow> record(List<GameInstallation> detected) {
+        for (GameInstallation installation : detected) {
+            installations.record(installation.storefront().name(), installation.root(), false);
+        }
+        refreshMissingFlags();
+        // WHY: a full detection has run, so the run's startup detection has nothing left to do - the startup backup's
+        // detection serves the screens' first refresh and catch-up too (review, 2026-10-24).
+        DETECTED_THIS_RUN.set(true);
+        return installations.findAll();
     }
 
     /**

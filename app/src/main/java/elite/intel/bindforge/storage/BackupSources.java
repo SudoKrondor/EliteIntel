@@ -56,8 +56,9 @@ public record BackupSources(Path bindingsFolder, List<Installation> installation
     public static BackupSources gather() {
         Path bindingsFolder = PlayerSession.getInstance().getBindingsDir();
         GameInstallationProvider provider = GameInstallationProvider.forThisPlatform(bindingsFolder);
-        List<InstallationRow> rows = new InstallationRegistry(provider).rescan();
-        return of(bindingsFolder, rows, provider.findInstallations());
+        List<GameInstallation> detected = provider.findInstallations();
+        List<InstallationRow> rows = new InstallationRegistry(provider).rescan(detected);
+        return of(bindingsFolder, rows, detected);
     }
 
     /**

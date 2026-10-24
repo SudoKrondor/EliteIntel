@@ -72,6 +72,12 @@ public final class StartupBackup {
             Backup backup = backupSystem.backUpEverything();
             taken = true;
             log.info("Startup backup taken at {}", backup.folder());
+        } catch (Backups.NothingToBackUpException e) {
+            // WHY: a warning, not an error - a new player, or a game not yet installed, has no files yet, and an error
+            // line at every start would send whoever reads a support bundle looking for a fault (review, 2026-10-24).
+            log.warn("Nothing to back up at Elite-Intel start: {}. {}", String.join("; ", e.notRead()),
+                    Backups.NothingToBackUpException.ADVICE);
+            return;
         } catch (Exception e) {
             // WHY: broad on purpose - whatever stopped it, it is logged and tried again at the next start, and startup
             // goes on. Nothing is pruned.

@@ -84,11 +84,11 @@ installations with each other before then. Once the master exists, each row offe
   is not enough either — the master stays filled, so the installations then show as diverging, **SET UP** is not
   offered, and nothing in the app empties the master. An undo needs both halves: the files restored and the master
   (and any draft) emptied.
-- **The first-setup backup shows in the Player Backups list.** *Storage S1 replaces both backups with the one backup
-  system, and settles what its list shows of the old folders.* `DeviceFilesSnapshot` writes beside
-  `PlayerBackupService`'s folders, so `listBackups()` lists it, with installation subfolders as its "files". File
-  Manager's restore work should recognise it (or Krondor moves it) — `bindforge.io`.
-- **The first-setup backup ignores a chosen backup destination** — the resolver is private to `PlayerBackupService`. *Goes in Storage S1.*
+- ~~**The first-setup backup shows in the Player Backups list.**~~ *Resolved by Storage S1 (2026-10-24):* the list shows
+  only folders holding `backup-info.txt`, so `DeviceFilesSnapshot`'s folder is no longer listed; it stays on disk.
+- **The first-setup backup ignores a chosen backup destination** — `DeviceFilesSnapshot` always writes to the default
+  folder. *Goes in Storage S2*, which removes `DeviceFilesSnapshot` and takes first setup's backup through
+  `Backups`, whose `BackupDestination` honours the setting.
 - **`ButtonInputMapper.axisToBindsToken` throws for axis index 6 and above.** A8 went around it (`ButtonMapLabels`
   labels all eight tokens); the class is shared with V1.1, so the fix — add U and V — is Krondor's, and the
   Bind Editor's capture needs it.

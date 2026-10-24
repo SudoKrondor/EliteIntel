@@ -112,6 +112,9 @@ slices it unblocks still wait; the merge-up reaching `V1.2-BindForge` is what re
 
 ## Known issues
 
+- *Superseded by Storage S1 (2026-10-24): taking backups and the destination resolver moved to
+  `bindforge.storage`; `PlayerBackupService` keeps only the two restores until S3. The two items about it below are
+  history.*
 - **`PlayerBackupService` already differs between the two lines** (found 2026-10-12). On `V1.2-BindForge` its
   `resolvePlayerBackupsDir` reads `BindForgeSettingsManager.getBackupDestination()` — a V1.2-only class — and
   `V1.1-Release` does not have that. It arrived on this branch through merge `f9deb5522`. That is a V1.2 change

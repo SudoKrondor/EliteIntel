@@ -209,6 +209,33 @@ class BackupsTest {
         assertFalse(Files.exists(leftover));
     }
 
+    /**
+     * Review, 2026-10-24: a delete that stops part way - after taking {@code backup-info.txt}, which on Linux goes
+     * first - must not leave a folder that is no longer a backup and so is never pruned again.
+     */
+    @Test
+    void aDeleteThatStopsPartWayIsFinishedByTheNextPrune() throws IOException {
+        Path old = backups("2026-09-01T10:00:00Z", sources()).backUpEverything().folder();
+        Backups failingPartWay = new Backups(this::sources, () -> root,
+                Clock.fixed(Instant.parse("2026-10-24T10:00:00Z"), ZoneOffset.UTC), folder -> {
+            try (Stream<Path> found = Files.walk(folder)) {
+                for (Path info : found.filter(p -> p.endsWith(Backups.INFO_FILE)).toList()) Files.delete(info);
+            }
+            throw new IOException("a file in the backup is locked");
+        });
+
+        failingPartWay.prune(30);
+
+        assertFalse(Files.exists(old));
+        List<String> leftover = names(root);
+        assertEquals(1, leftover.size(), leftover.toString());
+        assertTrue(leftover.getFirst().startsWith(".taking-"), "left for the sweep, not as a folder nobody prunes");
+
+        backups("2026-10-25T10:00:00Z", sources()).prune(30);
+
+        assertEquals(List.of(), names(root));
+    }
+
     @Test
     void retentionBelowOneDayIsRefused() {
         assertThrows(IllegalArgumentException.class, () -> backups("2026-10-24T10:00:00Z", sources()).prune(0));

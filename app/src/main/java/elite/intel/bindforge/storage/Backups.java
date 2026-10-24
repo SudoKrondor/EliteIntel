@@ -83,6 +83,12 @@ public final class Backups {
 
     /** Thrown when not one file could be read, so no backup was written. */
     public static final class NothingToBackUpException extends IOException {
+        /**
+         * What the user does about it, in the log (Alan, 2026-10-24). The screen says the same from its bundles.
+         */
+        public static final String ADVICE = "The game creates its input configuration files once the player starts "
+                + "Elite Dangerous and plays past the tutorials.";
+
         private final transient List<String> notRead;
 
         NothingToBackUpException(List<String> notRead) {
@@ -109,9 +115,16 @@ public final class Backups {
         Path get() throws IOException;
     }
 
+    /** Deletes a folder and everything in it. */
+    @FunctionalInterface
+    interface TreeDeleter {
+        void delete(Path folder) throws IOException;
+    }
+
     private final Sources sources;
     private final Root root;
     private final Clock clock;
+    private final TreeDeleter treeDeleter;
 
     /** Detection and the stored installations, the chosen backup folder, and the system clock. */
     public static Backups stored() {
@@ -119,9 +132,15 @@ public final class Backups {
     }
 
     Backups(Sources sources, Root root, Clock clock) {
+        this(sources, root, clock, Backups::walkAndDelete);
+    }
+
+    /** Test seam: {@code treeDeleter} can fail part way, as a locked file would. */
+    Backups(Sources sources, Root root, Clock clock, TreeDeleter treeDeleter) {
         this.sources = sources;
         this.root = root;
         this.clock = clock;
+        this.treeDeleter = treeDeleter;
     }
 
     /**
@@ -177,7 +196,11 @@ public final class Backups {
      * one of these backups and is left out.
      */
     public List<Backup> list() throws IOException {
-        Path backupRoot = root.get();
+        return list(root.get());
+    }
+
+    /** As {@link #list()}, in a backup folder already resolved - so one prune works in one folder throughout. */
+    private static List<Backup> list(Path backupRoot) throws IOException {
         List<Backup> backups = new ArrayList<>();
         try (DirectoryStream<Path> folders = Files.newDirectoryStream(backupRoot, Files::isDirectory)) {
             for (Path folder : folders) {
@@ -206,13 +229,13 @@ public final class Backups {
             Path backupRoot = root.get();
             LocalDateTime cutoff = LocalDateTime.now(clock).minusDays(retentionDays);
             List<Path> deleted = new ArrayList<>();
-            for (Backup backup : list()) {
+            for (Backup backup : list(backupRoot)) {
                 if (backup.firstSetup() || !backup.taken().isBefore(cutoff)) continue;
-                if (delete(backup.folder())) deleted.add(backup.folder());
+                if (deleteBackup(backupRoot, backup.folder())) deleted.add(backup.folder());
             }
             try (DirectoryStream<Path> leftovers = Files.newDirectoryStream(backupRoot, TAKING_PREFIX + "*")) {
                 for (Path leftover : leftovers) {
-                    if (Files.isDirectory(leftover) && delete(leftover)) deleted.add(leftover);
+                    if (Files.isDirectory(leftover) && deleteTree(leftover)) deleted.add(leftover);
                 }
             }
             if (!deleted.isEmpty()) {
@@ -365,15 +388,41 @@ public final class Backups {
 
     // ---- helpers
 
-    private static boolean delete(Path folder) {
-        try (Stream<Path> paths = Files.walk(folder)) {
-            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
-                Files.deleteIfExists(path);
-            }
+    /**
+     * Deletes a backup by first renaming it to a {@code .taking-} folder, then deleting that.
+     * <p>
+     * <strong>Why the rename</strong> (review, 2026-10-24): deleting in place can remove {@code backup-info.txt} before
+     * a file that then refuses to go - on Linux it sorts after the capitalised folders, so it goes first. What is left
+     * is no longer a backup, so it would never be listed or pruned again. Renamed first, a delete that stops part way
+     * leaves a leftover the next prune's sweep removes.
+     */
+    private boolean deleteBackup(Path backupRoot, Path folder) {
+        Path doomed = backupRoot.resolve(uniqueName(backupRoot, TAKING_PREFIX + folder.getFileName()));
+        try {
+            Files.move(folder, doomed, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException e) {
+            log.warn("Could not delete backup folder {}; tried again at the next start", folder, e);
+            return false;
+        }
+        return deleteTree(doomed);
+    }
+
+    private boolean deleteTree(Path folder) {
+        try {
+            treeDeleter.delete(folder);
             return true;
         } catch (IOException e) {
             log.warn("Could not delete backup folder {}; tried again at the next start", folder, e);
             return false;
+        }
+    }
+
+    /** Deletes a folder and everything in it, deepest first. */
+    private static void walkAndDelete(Path folder) throws IOException {
+        try (Stream<Path> paths = Files.walk(folder)) {
+            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+                Files.deleteIfExists(path);
+            }
         }
     }
 
