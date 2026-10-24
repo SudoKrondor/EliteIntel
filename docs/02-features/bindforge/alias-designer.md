@@ -1233,7 +1233,7 @@ vocabulary.** The game does not bind a pad on `<GamePad>` by `Joy_` tokens: it w
 |---|---|---|
 | Capture dialog (E1) | a button press is captured as `Joy_N`, the D-pad as `Joy_POVnUp`… and written under `GamePad` | **a binding the game most likely ignores** — not measured |
 | Capture dialog, triggers | axes are not captured at all until E2/E3 | a trigger cannot be bound as a button |
-| Device Editor (A9) | `Joy_` label boxes for a device the game draws itself ([`gameDrawsIt`](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller)) | labels that never show in game |
+| Device Editor (A9) | `Joy_` label boxes for a device the game draws itself ([`gameDrawsIt`](#default-labels-for-every-connected-named-controller)) | labels that never show in game |
 | Device Editor lights | axes unknown, so nothing is lit | the reported bug |
 
 **Proposed (Krondor, 2026-10-23) — to settle with Alan before building:**

@@ -10,7 +10,7 @@ why it is kept apart from the specs.
 
 ## How a session runs
 
-Start with **`/next-slice <section>`** — for example `/next-slice core`. The command holds the whole routine:
+Start with **`/next-slice <section>`** — for example `/next-slice storage`. The command holds the whole routine:
 
 1. **Check the branch is current.** Krondor pushes to it several times a day. If it is behind, Alan pulls first.
 2. **Read this file, then the section's brief.** Take the slice marked **next**.
@@ -34,8 +34,7 @@ Krondor's work is not reviewed as ours.
   below are repealed ([CLAUDE.md](../../CLAUDE.md#branching-model)).
 - **`elite.intel.ai.hands` is keystroke execution only.** BindForge code never goes there.
 - **Migrations:** the next free number in BindForge's band, `12000–12499`. Never edit an applied one.
--
-**Strings:** all seven `gui*.properties` bundles (RU and UK were dropped 2026-10-15). `getText` runs `MessageFormat` only when arguments are passed,
+- **Strings:** all seven `gui*.properties` bundles (RU and UK were dropped 2026-10-15). `getText` runs `MessageFormat` only when arguments are passed,
   so a literal apostrophe is doubled in a string that takes arguments and single in one that does not.
 - **UI:** [the HUD canon](../02-features/bindforge/ui-component-map.md) — state is text colour, never a pill;
   `HudConfirmDialog`, never `JOptionPane`.
@@ -43,20 +42,26 @@ Krondor's work is not reviewed as ours.
 
 ## Sections, in build order
 
-The spec's [phased rollout](../00-overview/v1.2-scope.md#phased-rollout--revised-2026-09-08) puts Alias Designer
-and Preset Editor first, File Manager second, the Bind Editor third and the rename last. **Core** is not a tab:
-it is the machinery every tab writes through, so it comes first and is built only as far as the next tab needs.
+**Since 2026-10-24 the plan is built from [storage.md](../02-features/bindforge/storage.md) and
+[the principles](../02-features/bindforge/principles.md): back up, edit, apply.** One working copy is the source of
+truth, edits stay on screen until one APPLY above BindForge's tabs, and one backup system protects everything.
+**Storage** is not a tab: it is the machinery every tab writes through, and it comes first — each tab's remaining
+work waits on the Storage slice that moves that tab onto the working copy.
 
 | # | Section | Brief | Spec | State |
 |---|---|---|---|---|
-| 0 | **Foundation** — the additions to shared V1.1 files that later slices need, on `V1.1-Release-bf-foundation`; built off `V1.1-Release`, merged by Krondor | [foundation.md](foundation.md) | the specs of the slices it unblocks | **done 2026-10-13**, merged by Krondor — F1 (four-line `StartPreset.4.start` read), F2 (`.binds` device rewrite), F3b (`applyFrom`), F4 (writer user-edit path); F3 settled, F5 withdrawn. Reopened only when a slice needs another change to a V1.1 file |
-| 1 | **Core** — master and draft, Apply, Edit History filling, startup check | [core.md](core.md) | [overview.md](../02-features/bindforge/overview.md) | C1–C3, C5 and C6 done; C4 unblocked 2026-10-13; C7 waits on Preset Editor |
-| 2 | **Alias Designer** | [alias-designer.md](alias-designer.md) | [alias-designer.md](../02-features/bindforge/alias-designer.md) | device list, naming rule, startup `.buttonMap`, first setup, the label merge, divergence against the master and its ways out, the Installations markers, the Built-in Devices tab, which axes and hats a controller has, the Device Editor, the actions (CLEAR, RESET LABELS, APPLY, DISCARD), the missing-controller warning, activation (A1b), onboarding (A6b), rename (A11), catch-up (A14), hot-plug (A7), when hardware changes (A12, and A17 for a controller known only by id), shadowing a built-in (A15), first setup's names that needed Rename (A16) built; every slice done but **A18 (gamepads, added 2026-10-23), blocked on a tester's `.binds`** |
-| 3 | **Preset Editor** | [preset-editor.md](preset-editor.md) | [preset-editor.md](../02-features/bindforge/preset-editor.md) | P1 (the BindName list, factory binds files included) done 2026-10-17; P2 (`StartPreset.4.start` master and draft) done 2026-10-18; **P3 (Apply) next** |
-| 4 | **File Manager** — Edit History browsing, auto-backup and retention, restore scope | *not yet written* | [file-manager.md](../02-features/bindforge/file-manager.md) | Install Locations built; Player Backups manual only |
-| 5 | **Bind Editor: editing** — Game Mode, Settings, capture dialog, mouse inputs | [bind-editor-editing.md](bind-editor-editing.md) | [bind-editor.md](../02-features/bindforge/bind-editor.md) | E1 (controller buttons and hats in the capture dialog) built 2026-10-15; **E2 next**; E7 (gamepad capture) blocked on A18 |
-| 6 | **Bind Editor: Anomalies** and shared conflict detection | *not yet written* | [bind-editor.md](../02-features/bindforge/bind-editor.md#anomalies) | scanner exists; three known defects |
-| 7 | **Rename the section to BindForge** | — | [v1.2-scope.md](../00-overview/v1.2-scope.md#phased-rollout--revised-2026-09-08) | three keys across seven bundles, done by whichever session finishes last |
+| 0 | **Foundation** — V1.2's additions to shared V1.1 files | [foundation.md](foundation.md) | the specs of the slices it unblocked | **closed 2026-10-20** — the foundation branch is repealed; F1–F4 merged. A record only |
+| 1 | **Core** — master and draft, Apply, Edit History, startup check | [core.md](core.md) | — | **closed 2026-10-24** — replaced by Storage; its master, draft and Edit History are gone from the specs. A record only |
+| 2 | **Storage** — backups, the working copy and first-time startup, RESTORE, the APPLY / DISCARD bar, the leave prompt, the check, CREATE, binds-file rename | [storage.md](storage.md) | [storage.md](../02-features/bindforge/storage.md), [principles.md](../02-features/bindforge/principles.md) | **S1 (one backup system) next**; S2–S12 pending |
+| 3 | **Alias Designer** | [alias-designer.md](alias-designer.md) | [alias-designer.md](../02-features/bindforge/alias-designer.md) | built against the old model: device list, naming rule, first setup and the label merge, the Built-in Devices tab, which axes and hats a controller has, the Device Editor, CLEAR and RESET LABELS, onboarding, rename, shadowing a built-in, hot-plug, when hardware changes, the missing-controller warning. **Its mechanics move to the working copy in Storage S4**, which also removes the divergence list, the installation markers and catch-up. Then A19 (CLEAR moves bindings to a hardware ID); **A18 (gamepads) blocked** on a tester's `.binds` |
+| 4 | **Preset Editor** | [preset-editor.md](preset-editor.md) | [preset-editor.md](../02-features/bindforge/preset-editor.md) | P1 (the BindName list) done; P2–P3's master, draft and merge replaced by Storage S6; **P4 (the screen) after S6**; P5 and P6 dropped — the check (S8) and the leave prompt (S7) replace them |
+| 5 | **File Manager** | — its work is in [storage.md](storage.md) | [file-manager.md](../02-features/bindforge/file-manager.md) | backups S1, Game Install Locations S2 and S9, RESTORE S3. No brief of its own |
+| 6 | **Bind Editor: editing** — Game Mode, Settings, capture dialog, mouse inputs | [bind-editor-editing.md](bind-editor-editing.md) | [bind-editor.md](../02-features/bindforge/bind-editor.md) | E1 built 2026-10-15; **E2 after Storage S5**; E7 (gamepad capture) blocked on A18 |
+| 7 | **Bind Editor: Anomalies** and shared conflict detection | *not yet written* | [bind-editor.md](../02-features/bindforge/bind-editor.md#anomalies) | scanner exists; three known defects |
+| 8 | **Rename the section to BindForge** | — | [v1.2-scope.md](../00-overview/v1.2-scope.md#phased-rollout--revised-2026-09-08) | three keys across seven bundles, done by whichever session finishes last |
+
+**Before V1.2 ships:** the reminders are in [storage.md — Before V1.2 ships](storage.md#before-v12-ships) — among
+them, hide or remove the Run first-time startup again button.
 
 **A brief marked *not yet written* is written by the first session for that section** — it is that session's
 first slice. Written the week its section starts, it is accurate; written months ahead, it would not be.
@@ -94,6 +99,6 @@ scoped first. Its work is planned in its own brief — **section 0 below**.
 
 ## Writing a new brief
 
-Same shape as [core.md](core.md): **spec** (what to read), **built** (with file paths), **settled** (with links to
+Same shape as [storage.md](storage.md): **spec** (what to read), **built** (with file paths), **settled** (with links to
 where each ruling is recorded), **known issues**, **boundaries**, **slices** (ordered, each with a status), and
 **hand-off notes**, newest first. Keep it under about two hundred lines; it is read at the start of every session.

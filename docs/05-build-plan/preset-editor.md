@@ -1,9 +1,13 @@
 # Preset Editor — which binds file the game loads for each section
 
 **One file, four values.** The screen manages the preset file, `StartPreset.4.start`: four lines — General, Ship, SRV, On Foot —
-each holding the BindName of the binds file that section loads. It never moves, hides or deletes a `.binds` file. Same draft-and-Apply
-model as every other section: Save writes the draft, Discard drops unsaved dropdown changes, Apply is what reaches
-the live file.
+each holding the BindName of the binds file that section loads. It never moves, hides or deletes a `.binds` file. Like every
+other section, its changes are edits not applied, held on screen, and the one APPLY above BindForge's tabs writes them.
+
+> **Rewritten 2026-10-24 (Alan): back up, edit, apply** ([storage.md](../02-features/bindforge/storage.md)). P2's master
+> and draft and P3's per-line merge are replaced by the working copy in **[Storage S6](storage.md#slices)**, which also
+> moves APPLY's checks — every line names a listed binds file, four lines, CRLF — onto the one APPLY. **P4, the screen,
+> follows S6.** P5 and P6 are dropped: the check (S8) and the leave prompt (S7) replace them.
 
 **The spec's own build order** ([what exists in code](../02-features/bindforge/preset-editor.md#what-exists-in-code-today--checked-2026-09-17)):
 read all four lines, then the draft model, then the write path. The first is done (Foundation F1); the slices
@@ -70,9 +74,8 @@ write are new V1.2 classes ([the split](../02-features/bindforge/overview.md#whe
 
 1. ~~**Factory presets are not in the bindings folder.**~~ **Settled 2026-10-17 (Alan, P1):** the list reads
    each installation's `ControlSchemes` too. [The BindName list](../02-features/bindforge/preset-editor.md#the-bindname-list--settled-2026-10-17-alan-p1)
-2. **What "wiped" means for `StartPreset.4.start`.** preset-editor.md's example is *"all four lines reset to a single
-   default BindName"*; overview.md's 2026-10-05 rewrite defines wiped as *matches Frontier's stock file, or is
-   gone*, and no stock `StartPreset.4.start` reference exists. **P5.**
+2. **What "wiped" means for `StartPreset.4.start`.** storage.md rule 14 names a reset when a live copy matches
+   Frontier's factory file, and no stock `StartPreset.4.start` reference exists. **Storage S8** settles it.
 3. ~~**The badge compares against "the live file".**~~ **Settled 2026-10-20 (Alan):** DRAFT means a saved draft
    differs from the master; a game change is a separate signal (P5). [Sync Badge](../02-features/bindforge/preset-editor.md#is-there-anything-to-apply)
 4. ~~**Writing the single-line form.**~~ **Settled 2026-10-20 (Alan, P3):** always four lines, CRLF between them, no
@@ -111,13 +114,13 @@ write are new V1.2 classes ([the split](../02-features/bindforge/overview.md#whe
 | # | Slice | Needs | Status |
 |---|---|---|---|
 | P1 | **The BindName list** — the BindNames the four dropdowns offer: every file in the bindings folder that *is* a binds file by its contents, each reduced to its BindName (suffix stripped only when present), plus a sentence for each file that is not one. Settles doc conflict 1 (factory binds files). Read-only, no UI | F1 (done) | **done 2026-10-17** |
-| P2 | **`StartPreset.4.start` master and draft** — where each lives (master under `elite-intel/bindings/master/`), what Save writes, Discard, "has the draft changed", and the per-line three-way compare the screen and P5 both need | P1 | **done 2026-10-18** |
-| P3 | **Apply** — the draft to the live file through `AtomicFiles`, the replaced file kept in Edit History and pruned, the draft promoted to master; refuses a BindName no file answers to; the single-line form and line ending (doc conflict 4); the `BindingsMonitor` question above | P2 | **done 2026-10-20** |
-| P4 | **The screen** — a fourth sub-tab: four dropdowns, Set All to Same, the consistency warning (live, never blocking), the sync state as coloured text (doc conflict 3), SAVE / DISCARD / APPLY; strings in all seven bundles | P3 | **next** |
-| P5 | **Change detection** — the game's `StartPreset.4.start` against the master: unchanged, edited (adopt / revert, merged per line with the draft), wiped (doc conflict 2); refreshed when the file changes | P4 | pending |
-| P6 | **Unsaved work on exit** — Save / Discard, never Apply, on the tab switch and `AppView`'s close, for this screen's unsaved dropdowns only | P4 | pending |
+| P2 | ~~**`StartPreset.4.start` master and draft**~~ *replaced by Storage S6* — where each lives (master under `elite-intel/bindings/master/`), what Save writes, Discard, "has the draft changed", and the per-line three-way compare the screen and P5 both need | P1 | **done 2026-10-18** |
+| P3 | ~~**Apply**~~ *replaced by Storage S6, which keeps its checks* — the draft to the live file through `AtomicFiles`, the replaced file kept in Edit History and pruned, the draft promoted to master; refuses a BindName no file answers to; the single-line form and line ending (doc conflict 4); the `BindingsMonitor` question above | P2 | **done 2026-10-20** |
+| P4 | **The screen** — a sub-tab: four dropdowns from the BindName list, Set All to Same, the consistency warning (live, never blocking); every change an edit not applied on the one APPLY / DISCARD bar, with no buttons of its own and no badge; each file the list does not offer turned into its sentence; strings in all seven bundles | Storage S6 | after S6 |
+| P5 | ~~**Change detection**~~ — dropped 2026-10-24: the check, [Storage S8](storage.md#slices) | — | dropped |
+| P6 | ~~**Unsaved work on exit**~~ — dropped 2026-10-24: the leave prompt, [Storage S7](storage.md#slices) | — | dropped |
 
-**Core C7 (First-Time Startup) waits on P3**: it repoints a section through this section's write.
+*Core C7 (First-Time Startup) is gone with Core; CREATE ([Storage S11](storage.md#slices)) points the four lines at a new binds file as edits not applied.*
 
 ### P1 — what the session needed to know (done 2026-10-17)
 
@@ -135,6 +138,10 @@ write are new V1.2 classes ([the split](../02-features/bindforge/overview.md#whe
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
+
+- **2026-10-24 — build plan rewritten to back up, edit, apply** (Alan). P2–P3's store and merge are replaced in
+  [Storage S6](storage.md#slices), which keeps P3's checks and folds in P3 review findings 2 and 5 (finding 7 went
+  with the spec rewrite). P4 follows S6; P5 and P6 dropped. The **Built** table below is the state before S6.
 
 - **2026-10-20 — P3 done** (`StartPresetApply`), **with Krondor's second P2 review and his repeal of the
   foundation branch.** **Decided** (in [Apply](../02-features/bindforge/preset-editor.md#what-apply-checks-and-writes-for-the-preset-file--2026-10-24)

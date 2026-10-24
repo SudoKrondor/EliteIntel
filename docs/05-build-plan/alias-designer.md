@@ -1,14 +1,22 @@
 # Alias Designer
 
 **Naming controllers, and keeping every installation's device files identical.** The tab exists and shows real
-data; most of what the spec describes is still ahead.
+data.
+
+> **Built against the old model (2026-10-24).** Everything below was built on a database master and draft, a
+> divergence list against it, installation markers and catch-up. The specs now say *back up, edit, apply*
+> ([storage.md](../02-features/bindforge/storage.md)), so **[Storage S4](storage.md#slices) moves this screen onto the
+> working copy and the one APPLY / DISCARD bar**, and removes the divergence list, its ways out, the installation
+> markers, catch-up, Edit History and startup `.buttonMap` generation. First setup's reconcile (`FirstSetupPlan`,
+> `LabelMerge`) moves to the working copy in S2. The rules in the spec's *Built* notes still hold; the classes and
+> tables named in **Built** below are the state before S4.
 
 ## Spec
 
 - [alias-designer.md](../02-features/bindforge/alias-designer.md) — **read end to end at the start of every
   session.** It is the screen's definition, and building from the slice's name instead of the page is how this
   tab went wrong the first time — see `CLAUDE.md`.
-- [device-provenance.md](../03-data-models/device-provenance.md) — the three tables, and why there are three.
+- [device-provenance.md](../03-data-models/device-provenance.md) — the old model's tables; rewritten in Storage S4 to what is left.
 - [EliteDangerous-DeviceMappings-ButtonMap.md](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md)
   — the file formats, and what has been measured on a live game.
 - [ui-component-map.md — Alias Designer](../02-features/bindforge/ui-component-map.md#alias-designer).
@@ -53,8 +61,9 @@ installations with each other before then. Once the master exists, each row offe
 
 - **The list is the union of live hardware and file entries.** `DeviceMappings.xml` supplies names, never
   existence. [Spec, My Devices](../02-features/bindforge/alias-designer.md#my-devices)
-- **The Installations markers wait for first setup.** `M`, *not added* and the divergence colour are all defined
-  against a master record, so before first setup there are no Installations columns. [Spec, the Installations markers](../02-features/bindforge/alias-designer.md#my-devices)
+- ~~**The Installations markers wait for first setup.**~~ **The markers are removed** (2026-10-24, Alan): no
+  installations on the editor screens; File Manager's Game Install Locations shows whether each installation
+  matches. [Spec, My Devices](../02-features/bindforge/alias-designer.md#my-devices)
 - **"Device service is not running" is a row in the table**, not just a log line — an empty list because nothing
   is plugged in and one because nothing is looking are different states.
 - **Duplicate-VID/PID handling is out of scope.** [Spec, Deferred](../02-features/bindforge/alias-designer.md#deferred)
@@ -68,16 +77,18 @@ installations with each other before then. Once the master exists, each row offe
   The review of A9/A10 (2026-10-11, finding 4) asks for one shared HUD gear column in `ui.widget` now, not at a third
   list. **Deferred by Alan:** sharing it edits `CommanderTabPanel`, V1.1's fleet screen — settle with Krondor first.
 
-- **First setup has no undo in the app** (found 2026-10-08, Alan). Its labelled backup
+- **First setup has no undo in the app** (found 2026-10-08, Alan). *RESTORE (Storage S3) is the undo, and Run
+  first-time startup again (S2) lets a tester start over.* Its labelled backup
   (`playerbackups\<time>_first-setup\<id>-<storefront>\`) can only be copied back by hand: the Player Backups
   restore handles binds files only, and Edit History has no browser until File Manager. Copying the files back
   is not enough either — the master stays filled, so the installations then show as diverging, **SET UP** is not
   offered, and nothing in the app empties the master. An undo needs both halves: the files restored and the master
   (and any draft) emptied.
-- **The first-setup backup shows in the Player Backups list.** `DeviceFilesSnapshot` writes beside
+- **The first-setup backup shows in the Player Backups list.** *Storage S1 replaces both backups with the one zip
+  system, and settles what its list shows of the old folders.* `DeviceFilesSnapshot` writes beside
   `PlayerBackupService`'s folders, so `listBackups()` lists it, with installation subfolders as its "files". File
   Manager's restore work should recognise it (or Krondor moves it) — `bindforge.io`.
-- **The first-setup backup ignores a chosen backup destination** — the resolver is private to `PlayerBackupService`.
+- **The first-setup backup ignores a chosen backup destination** — the resolver is private to `PlayerBackupService`. *Goes in Storage S1.*
 - **`ButtonInputMapper.axisToBindsToken` throws for axis index 6 and above.** A8 went around it (`ButtonMapLabels`
   labels all eight tokens); the class is shared with V1.1, so the fix — add U and V — is Krondor's, and the
   Bind Editor's capture needs it.
@@ -136,13 +147,16 @@ installations with each other before then. Once the master exists, each row offe
 | A16 | **First setup's name choices that need Rename** — a name conflict whose losing name `.binds` uses: keep the winner with the loser as its `previous_name`, so the first Apply moves the bindings (A11's machinery). Design first: two losing names `.binds` uses (one `previous_name` per device), and first setup stuck because `.binds` uses both names. [Spec](../02-features/bindforge/alias-designer.md#names-that-needed-rename--2026-10-17-alan-a16) | A11 (done) | **done 2026-10-17** |
 | A17 | **When hardware changes, for a controller with no name** — `.binds` names a missing controller by hardware id only and an unnamed one is attached: a yes names the new controller *and* moves the bindings from the **old** id to the name. Needs a stored "old id → name" record, since Apply's hex move only finds a device's current VID/PID. Reuse A12's question, answers and hold-back. [Spec](../02-features/bindforge/alias-designer.md#built--2026-10-17-alan-a17) | A12 (done) | **done 2026-10-17** — split out of A12 2026-10-15 (Alan) |
 | A14 | **Catch-up** — an installation that missed an Apply (missing, locked, unavailable) is found again, at Elite-Intel startup or by the check: ask *"write your recent changes to it?"*, Yes being ~~`DeviceFilesPush.push(installId)`~~ Apply's push to that installation alone, removals and renames included (Alan, 2026-10-15). [Spec](../02-features/bindforge/alias-designer.md#catch-up--2026-10-15-alan-a14) | A10 (done) | **done 2026-10-15** |
+| A19 | **CLEAR on a device the bindings use** — moves those bindings to its hardware ID (VID then PID, upper case) as part of the same edit not applied, with the confirmation the spec words; today CLEAR is refused for such a device. [Spec](../02-features/bindforge/alias-designer.md#an-edit-binds-depends-on-updates-binds--2026-10-11-alan) | Storage S4 | pending |
 | A18 | **Gamepads** — `DeviceService` reads a pad through SDL's Gamepad API when `SDL_IsGamepad` holds (new gamepad events, `isGamepad(id)`; joystick events unchanged); the pure table from its named inputs to the game's `GamePad` tokens; the Device Editor shows a `<GamePad>` read-only, lit by name. Design proposed by Krondor 2026-10-23, **to settle with Alan first**. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor) | the tester's `.binds` ([testing item 27](../00-overview/testing-required.md#bindforge)) for the token family | **blocked** on item 27 |
 
-**Every slice but A18 is
+**Next here is A19, after [Storage S4](storage.md#slices)** moves the screen onto the working copy. A18 stays
+blocked. *Before 2026-10-24:* **every slice but A18 was
 done** — A16 and A17 on 2026-10-17; A15 on 2026-10-16; A7, A11, A12 and A14 on 2026-10-15. A18 was added 2026-10-23 from a tester's report. Next is a review of A17 in its own session (`/check-code-integrity`), then whatever Alan picks from the
 owed items below (the Linux bindings-folder slice, the orphan's **Remove** way out) or the next section, Preset Editor. Core C6, the exit
 prompt A10 unblocked, was settled 2026-10-12 as a ruling with no code — the Device Editor's own prompt is it.
 
+*Under the old model (S4 replaces it: a rewrite is part of the edit, in the working copy's binds files):*
 **One `.binds` rewrite unblocks three slices:** A6b's hex case, A11's rename, and CLEAR on a device `.binds` names
 (refused until then — [the rule](../02-features/bindforge/alias-designer.md#an-edit-binds-depends-on-updates-binds--2026-10-11-alan)).
 *Settled 2026-10-12:* Alias Designer writes it inside its own Apply. The API is
@@ -154,6 +168,11 @@ game's `.binds` **last**; a hex reference rewritten **from the value `BindsDevic
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
+
+- **2026-10-24 — build plan rewritten to back up, edit, apply** (Alan). This screen's mechanics move to the working
+  copy in [Storage S4](storage.md#slices), first setup's in S2; the divergence list, markers and catch-up are
+  removed there. **A19 added** for CLEAR moving bindings to a hardware ID, which the spec now asks for. Still open from
+  A17's review: P1, whether `DeviceNames.validate` should refuse an 8-hex name.
 
 - **2026-10-23 — an Xbox pad is not lit, and is bound with the wrong tokens** (Krondor, from a tester's report:
   *"the new editor apparently doesn't recognize my Xbox controller

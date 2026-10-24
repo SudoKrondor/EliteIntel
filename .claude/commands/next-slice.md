@@ -1,6 +1,6 @@
 ---
 description: Start the next BindForge build slice from its brief in docs/05-build-plan/
-argument-hint: "<section>  — core, alias-designer, preset-editor, file-manager, ..."
+argument-hint: "<section>  — storage, alias-designer, preset-editor, bind-editor-editing, ..."
 ---
 
 Section: $ARGUMENTS

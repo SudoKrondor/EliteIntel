@@ -156,6 +156,13 @@ what is being edited; this sub-tab is where the files go. It lists:
 *Until 2026-10-24 (morning) it had Rescan, Add, Relocate and Remove; for a few hours that day it was an Installations…
 button instead of a sub-tab, before Alan settled that File Manager is where installations live.*
 
+**Run first-time startup again — for testing, and to be hidden or removed before V1.2 ships** (2026-10-24, Alan). A
+button on this sub-tab that clears the "first-time startup complete" flag ([storage.md](storage.md) rule 1) and
+nothing else — no backup is deleted, no game file is touched, and the working copy stays until first-time startup
+replaces it. It asks first (`HudConfirmDialog`). The next click on the BindForge tab runs first-time startup again,
+from the live copies, with its backup first. **It is shown to every user**, because Elite-Intel has no way to tell a
+tester from anyone else; the build plan carries the reminder to take it out.
+
 **A missing installation is never removed on its own.** A row whose folder has gone stays in the list, marked
 missing, because an unplugged drive and an uninstall look identical from here.
 

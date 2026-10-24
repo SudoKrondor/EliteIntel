@@ -15,7 +15,9 @@ Every rule applies to all of them, in every installation, unless it says otherwi
 
 ## First-time startup
 
-Runs once, controlled by a stored "first-time startup complete" flag.
+Runs once, controlled by a stored "first-time startup complete" flag. *While V1.2 is tested, File Manager has a
+button that clears the flag so first-time startup runs again — [Run first-time startup again](file-manager.md#game-install-locations),
+to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
 
 1. When the user clicks the BindForge tab and the flag is not complete:
    - **Find installations.** BindForge lists every installation Elite-Intel already knows about, with two buttons:

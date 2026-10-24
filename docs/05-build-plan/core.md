@@ -1,5 +1,11 @@
 # Core — the machinery every tab writes through
 
+> **Closed 2026-10-24 — replaced by [Storage](storage.md).** The specs now say *back up, edit, apply*
+> ([storage.md](../02-features/bindforge/storage.md)): the master, the draft, the three-way merge, adopt, revert and
+> Edit History described below are gone, and Storage's slices remove the code. This brief is the record of C1–C6;
+> do not start a Core session. C4 (`.binds` whole-file master) and C7 (first-time startup) were never built —
+> Storage S2 and S11 cover what is left of them.
+
 **Not a tab.** The master and the draft, Apply, Edit History filling, the startup check, change detection,
 unsaved work on exit and first-time startup. Every tab edits a draft and every tab applies through this — built
 once here so no tab builds its own.
