@@ -21,6 +21,7 @@ import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
+import elite.intel.ui.dialog.JournalImportDialog;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.CommanderChangedEvent;
 import elite.intel.ui.event.TTSProviderChangedEvent;
@@ -219,6 +220,15 @@ public class CommanderTabPanel extends JPanel {
                 playerSession.isAddressMeOn(), playerSession::setAddressMeOn);
         addressMeBox.setToolTipText(getText("player.addressMe.tooltip"));
         addCheck(profile, addressMeBox, gbc);
+
+        // On the commander's own row: what an import teaches - their contracts, discoveries, samples - is theirs.
+        JButton importJournalsButton = AppTheme.makeButtonSubtle(getText("player.importJournals"));
+        importJournalsButton.setToolTipText(getText("player.importJournals.tooltip"));
+        importJournalsButton.addActionListener(e -> JournalImportDialog.open(this));
+        gbc.gridx = 3;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        profile.add(importJournalsButton, gbc);
 
         fleetTableModel = new FleetTableModel(playerSession);
         // Carrier rows share the grid but not its editors: their voices come from the radio engine's roster,

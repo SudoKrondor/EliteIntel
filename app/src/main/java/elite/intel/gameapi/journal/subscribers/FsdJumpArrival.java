@@ -32,7 +32,7 @@ final class FsdJumpArrival {
         PlayerSession.getInstance().moveTo(new Position(event.getSystemAddress(), event.getStarSystem(), star.getBodyId()));
     }
 
-    private static void describe(LocationDto star, FSDJumpEvent event) {
+    static void describe(LocationDto star, FSDJumpEvent event) {
         star.setBodyId(event.getBodyId());
         star.setSystemAddress(event.getSystemAddress());
         star.setStationGovernment(event.getSystemGovernmentLocalised());

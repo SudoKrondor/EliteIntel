@@ -2,16 +2,8 @@ package elite.intel.gameapi;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import elite.intel.db.dao.LocationDao.Coordinates;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.util.Database;
-import elite.intel.gameapi.journal.events.MissionAcceptedEvent;
-import elite.intel.gameapi.journal.events.MissionCompletedEvent;
-import elite.intel.gameapi.journal.events.dto.MissionDto;
-import elite.intel.gameapi.missions.PirateMassacreContract;
-import elite.intel.gameapi.missions.ResourceSiteProfile;
-import elite.intel.gameapi.signals.ResourceSiteGrade;
-import elite.intel.gameapi.signals.ResourceSiteSweep;
 import elite.intel.util.json.GsonFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,7 +14,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -46,11 +39,6 @@ import java.util.function.Supplier;
 public class HuntingGroundJournalScanner {
 
     private static final Logger log = LogManager.getLogger(HuntingGroundJournalScanner.class);
-
-    private static final String EVENT_MARKER = "\"event\":\"";
-    private static final Set<String> EVENTS_OF_INTEREST = Set.of(
-            "FSDJump", "Location", "CarrierJump", "Docked", "Undocked",
-            "FSSSignalDiscovered", "MissionAccepted", "MissionCompleted");
 
     private final HuntingGroundManager huntingGrounds;
     private final Supplier<Optional<String>> commander;
@@ -85,11 +73,11 @@ public class HuntingGroundJournalScanner {
             return new Result(0, before, before);
         }
 
-        Tally tally = new Tally();
+        HuntingGroundTally tally = new HuntingGroundTally(huntingGrounds, true);
         for (Path journal : journals) {
             readJournal(journal, tally);
         }
-        tally.persistResourceSites(huntingGrounds);
+        tally.persistResourceSites();
         rememberProgress(journals.getLast());
 
         HuntingGroundManager.Knowledge after = huntingGrounds.knowledge();
@@ -142,47 +130,17 @@ public class HuntingGroundJournalScanner {
 
     // ---------------------------------------------------------------- reading
 
-    private void readJournal(Path journal, Tally tally) {
+    private void readJournal(Path journal, HuntingGroundTally tally) {
         try (BufferedReader reader = Files.newBufferedReader(journal, StandardCharsets.UTF_8)) {
             String line;
             while ((line = reader.readLine()) != null) {
-                String eventName = eventNameOf(line);
-                if (eventName == null) continue;
-                handle(eventName, line, tally);
+                String eventName = HuntingGroundTally.eventNameOf(line);
+                if (eventName == null || !tally.wants(eventName)) continue;
+                JsonObject json = parse(line);
+                if (json != null) tally.accept(eventName, json);
             }
         } catch (IOException e) {
             log.warn("Hunting ground scan: cannot read {}: {}", journal.getFileName(), e.getMessage());
-        }
-    }
-
-    /**
-     * The event a journal line carries, or null when the line is not one this scan cares about.
-     * <p>
-     * WHY read the name out of the raw text rather than parse the line: a long archive is millions of
-     * lines and all but a few thousand are of no interest here. One {@code indexOf} rejects them for
-     * the cost of a scan, where parsing each one to a JSON tree first would dominate the run.
-     */
-    private String eventNameOf(String line) {
-        int marker = line.indexOf(EVENT_MARKER);
-        if (marker < 0) return null;
-        int start = marker + EVENT_MARKER.length();
-        int end = line.indexOf('"', start);
-        if (end < 0) return null;
-        String name = line.substring(start, end);
-        return EVENTS_OF_INTEREST.contains(name) ? name : null;
-    }
-
-    private void handle(String eventName, String line, Tally tally) {
-        JsonObject json = parse(line);
-        if (json == null) return;
-
-        switch (eventName) {
-            case "FSDJump", "Location", "CarrierJump" -> tally.arrived(json);
-            case "Docked" -> tally.docked(text(json, "StationName"));
-            case "Undocked" -> tally.docked(null);
-            case "FSSSignalDiscovered" -> tally.signal(json);
-            case "MissionAccepted" -> recordContract(json, tally);
-            case "MissionCompleted" -> recordCompletion(json);
         }
     }
 
@@ -194,115 +152,6 @@ public class HuntingGroundJournalScanner {
         } catch (JsonParseException e) {
             log.debug("Hunting ground scan: skipping malformed line: {}", e.getMessage());
             return null;
-        }
-    }
-
-    private void recordContract(JsonObject json, Tally tally) {
-        MissionAcceptedEvent event = new MissionAcceptedEvent(json);
-        if (!PirateMassacreContract.isOne(event.getName(), event.getTargetType())) return;
-
-        Coordinates provider = tally.currentLocation();
-        if (provider == null) {
-            log.debug("Hunting ground scan: contract {} has no known provider system, skipping",
-                    event.getMissionID());
-            return;
-        }
-        huntingGrounds.recordContract(new MissionDto(event), provider, tally.currentStation());
-    }
-
-    private void recordCompletion(JsonObject json) {
-        MissionCompletedEvent event = new MissionCompletedEvent(json);
-        if (!PirateMassacreContract.isOne(event.getName(), event.getTargetType())) return;
-        huntingGrounds.recordContractCompleted(event.getMissionID(), event.getTimestamp());
-    }
-
-    private static String text(JsonObject json, String field) {
-        return json.has(field) && !json.get(field).isJsonNull() ? json.get(field).getAsString() : null;
-    }
-
-    // ---------------------------------------------------------------- what the scan is holding
-
-    /**
-     * Where the commander was, and what the journal has said about resource sites so far.
-     * <p>
-     * Sites are held in memory until the whole scan is done and then written once per system. A
-     * commander who has flown through the same ring system fifty times would otherwise pay for fifty
-     * writes to learn the same thing.
-     */
-    private static final class Tally {
-
-        private final Map<Long, String> systemNames = new HashMap<>();
-        private final Map<Long, double[]> systemCoordinates = new HashMap<>();
-        private final Map<Long, ResourceSiteProfile> sites = new LinkedHashMap<>();
-        private final Map<Long, String> lastSeen = new HashMap<>();
-        private final ResourceSiteSweep sweep = new ResourceSiteSweep();
-
-        private String currentSystem;
-        private double[] currentCoordinates;
-        private String currentStation;
-
-        void arrived(JsonObject json) {
-            String system = text(json, "StarSystem");
-            if (system == null) return;
-
-            currentSystem = system;
-            currentCoordinates = coordinates(json);
-            currentStation = text(json, "StationName");
-
-            if (!json.has("SystemAddress")) return;
-            long address = json.get("SystemAddress").getAsLong();
-            systemNames.put(address, system);
-            if (currentCoordinates != null) systemCoordinates.put(address, currentCoordinates);
-        }
-
-        void docked(String stationName) {
-            currentStation = stationName;
-        }
-
-        /**
-         * WHY the signal's own system address and not {@link #currentSystem}: signals do not always
-         * follow the arrival that explains them, and crediting them to wherever the scan last thought
-         * it was invents resource sites in systems that have none.
-         */
-        void signal(JsonObject json) {
-            ResourceSiteGrade grade = ResourceSiteGrade.fromSymbol(text(json, "SignalName"));
-            if (grade == null || !json.has("SystemAddress")) return;
-
-            long address = json.get("SystemAddress").getAsLong();
-            String timestamp = text(json, "timestamp");
-            ResourceSiteProfile sweepSoFar = sweep.add(address + "@" + timestamp, grade);
-            sites.merge(address, sweepSoFar, ResourceSiteProfile::max);
-            if (timestamp != null) lastSeen.put(address, timestamp);
-        }
-
-        Coordinates currentLocation() {
-            if (currentSystem == null || currentCoordinates == null) return null;
-            return new Coordinates(currentSystem, currentCoordinates[0], currentCoordinates[1], currentCoordinates[2]);
-        }
-
-        String currentStation() {
-            return currentStation;
-        }
-
-        void persistResourceSites(HuntingGroundManager huntingGrounds) {
-            for (Map.Entry<Long, ResourceSiteProfile> entry : sites.entrySet()) {
-                long address = entry.getKey();
-                String system = systemNames.get(address);
-                if (system == null) continue;
-
-                double[] position = systemCoordinates.get(address);
-                Coordinates coordinates = position == null
-                        ? null
-                        : new Coordinates(system, position[0], position[1], position[2]);
-                huntingGrounds.recordResourceSites(system, address, coordinates, entry.getValue(), lastSeen.get(address));
-            }
-        }
-
-        private static double[] coordinates(JsonObject json) {
-            if (!json.has("StarPos") || !json.get("StarPos").isJsonArray()) return null;
-            var array = json.getAsJsonArray("StarPos");
-            if (array.size() < 3) return null;
-            return new double[]{array.get(0).getAsDouble(), array.get(1).getAsDouble(), array.get(2).getAsDouble()};
         }
     }
 

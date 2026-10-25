@@ -77,7 +77,15 @@ public class GameLanguage {
      * speaks (a Russian client - see {@link #isRussian()}).
      */
     public Optional<Language> language() {
-        return clientName(current()).map(CLIENT_LANGUAGES::get);
+        return languageOf(current());
+    }
+
+    /**
+     * The language a journal header's {@code language} field names, or empty when it names none this app speaks -
+     * for a reader of old journals, whose client may not have been the one installed today.
+     */
+    public static Optional<Language> languageOf(String headerLanguage) {
+        return clientName(headerLanguage).map(CLIENT_LANGUAGES::get);
     }
 
     /**
