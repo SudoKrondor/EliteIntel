@@ -10,7 +10,8 @@ package elite.intel.gameapi.signals;
  * The three intensities are the order of danger and reward: a low-intensity zone is a handful of
  * small ships, a high-intensity one brings capital-class support and pays the best bonds.
  * {@code POWERPLAY} is a different mechanic altogether - a power's war rather than a faction's -
- * and is counted so a system's rows are honest, but never offered as somewhere to go and fight.
+ * and is never offered as a faction war. It has a ledger of its own ({@code PowerConflictZoneManager}),
+ * read back for a commander pledged to one of the powers present.
  */
 public enum ConflictZoneIntensity {
 

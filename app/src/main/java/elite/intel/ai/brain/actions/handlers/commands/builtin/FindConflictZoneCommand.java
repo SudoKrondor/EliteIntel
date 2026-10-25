@@ -47,7 +47,7 @@ public final class FindConflictZoneCommand implements IntelCommand {
     @Override
     public String llmDescription() {
         return "Plot a route to a star system with active conflict zones (war zones), to fight for a faction "
-                + "and earn combat bonds. Not for bounty hunting or resource extraction sites. Answered from wars "
+                + "and earn combat bonds. Not for bounty hunting, resource extraction sites or powerplay. Answered from wars "
                 + "sighted in the last week, within the range in light years given by 'key'.";
     }
 

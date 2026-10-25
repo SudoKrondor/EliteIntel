@@ -106,6 +106,9 @@ public class EventRegistry {
         registerEvent("NavRouteClear", NavRouteClearEvent.class);
         registerEvent("NpcCrewPaidWage", NpcCrewPaidWageEvent.class);
         registerEvent("Powerplay", PowerplayEvent.class);
+        registerEvent("PowerplayDefect", PowerplayDefectEvent.class);
+        registerEvent("PowerplayJoin", PowerplayJoinEvent.class);
+        registerEvent("PowerplayLeave", PowerplayLeaveEvent.class);
         registerEvent("Progress", ProgressEvent.class);
         registerEvent("ProspectedAsteroid", ProspectedAsteroidEvent.class);
         registerEvent("Rank", RankEvent.class);

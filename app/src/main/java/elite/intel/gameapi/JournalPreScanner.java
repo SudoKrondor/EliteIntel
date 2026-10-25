@@ -76,6 +76,9 @@ public class JournalPreScanner {
         privateBus.register(new ResourceSiteSubscriber());
         // And for the conflict-zone fight, which is the same marker for the other kind of war.
         privateBus.register(new ConflictZoneSubscriber());
+        // And for the power the commander is pledged to: the game says so at every load and never again, so a
+        // commander who starts the app after loading in would otherwise be offered no power conflict zones.
+        privateBus.register(new PowerPlaySubscriber());
         // And for the vehicle the commander is sitting in: the Nomad reports as an SRV, and a commander who
         // starts the app already flying one would otherwise get wheeled-SRV keys until they stowed it.
         privateBus.register(new DeployedVehicleSubscriber());
