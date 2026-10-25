@@ -25,10 +25,7 @@ import java.util.function.Consumer;
 public class SupertonicTTS extends SherpaOnnxTTS {
 
     private static final int NUM_STEPS = 10;
-    private static final float MIN_SPEED = 0.8f;
-    private static final float MAX_SPEED = 1.5f;
-    private static final float SPEED_MULTIPLIER = 0.75f;
-    private static final float MAX_MODEL_SPEED = 0.85f;
+    private static final float SPEED_MULTIPLIER = 0.85f;
 
     private static volatile SupertonicTTS instance;
 
@@ -63,15 +60,12 @@ public class SupertonicTTS extends SherpaOnnxTTS {
      * times in three at 1.15, and still about one in ten at 1.0). At its default pace it spoke 45 of 45 whole;
      * the rest of the pace is added afterwards by {@link TimeStretch}, which keeps the pitch.
      */
+    private static final float MAX_MODEL_SPEED = SPEED_MULTIPLIER;
+
     @Override
     protected GeneratedAudio generate(OfflineTts tts, String text, int sid, float speed, Language language,
                                       boolean russian) {
-        return generateSegment(tts, text, sid, speed, language, russian);
-    }
-
-    private GeneratedAudio generateSegment(OfflineTts tts, String text, int sid, float speed, Language language,
-                                           boolean russian) {
-        float pace = effectivePace(speed);
+        float pace = speed * SPEED_MULTIPLIER;
         float modelPace = Math.min(pace, MAX_MODEL_SPEED);
         GenerationConfig genConfig = new GenerationConfig();
         genConfig.setSid(sid);
@@ -88,16 +82,9 @@ public class SupertonicTTS extends SherpaOnnxTTS {
         return new GeneratedAudio(faster, audio.getSampleRate());
     }
 
-    static float effectivePace(float speed) {
-        if (!Float.isFinite(speed)) {
-            throw new IllegalArgumentException("Supertonic speed must be finite, but was " + speed);
-        }
-        return Math.max(MIN_SPEED, Math.min(speed * SPEED_MULTIPLIER, MAX_SPEED));
-    }
-
     @Override
     protected String textForSynthesis(String text, Language language) {
-        return SupertonicTextNormalizer.normalize(text, language).replace(".", " ");
+        return SupertonicTextNormalizer.normalize(text, language);
     }
 
     /**

@@ -77,6 +77,44 @@ class SupertonicTextNormalizerTest {
     }
 
     @Test
+    void readsSeveralThousandsGroupsAsOneNumberWhicheverSeparatorTheModelUsed() {
+        assertEquals("Hai un milione duecentotrentaquattromilacinquecentosessantasette crediti.",
+                SupertonicTextNormalizer.normalize("Hai 1,234,567 crediti.", Language.IT));
+        assertEquals("Hai un milione duecentotrentaquattromilacinquecentosessantasette crediti.",
+                SupertonicTextNormalizer.normalize("Hai 1.234.567 crediti.", Language.IT));
+        assertEquals("You have one million two hundred thirty-four thousand five hundred sixty-seven credits.",
+                SupertonicTextNormalizer.normalize("You have 1,234,567 credits.", Language.EN));
+    }
+
+    @Test
+    void readsAFractionAfterTheOtherSeparatorAsGrouping() {
+        assertEquals("one thousand two hundred thirty-four point five",
+                SupertonicTextNormalizer.normalize("1,234.5", Language.EN));
+        assertEquals("milleduecentotrentaquattro virgola cinque",
+                SupertonicTextNormalizer.normalize("1,234.5", Language.IT));
+    }
+
+    @Test
+    void readsASingleCommaGroupAsThousandsOnlyInEnglish() {
+        assertEquals("one thousand two hundred thirty-four tons",
+                SupertonicTextNormalizer.normalize("1,234 tons", Language.EN));
+        assertEquals("zero virgola zero zero uno",
+                SupertonicTextNormalizer.normalize("0.001", Language.IT));
+    }
+
+    @Test
+    void spellsWholeSectorCodes() {
+        assertEquals("Synuefe ex oh dash ar bee nineteen dash three",
+                SupertonicTextNormalizer.normalize("Synuefe XO-R b19-3", Language.EN));
+        assertEquals("Swoilz ay ay dash ay aitch zero",
+                SupertonicTextNormalizer.normalize("Swoilz AA-A h0", Language.EN));
+        assertEquals("Col two hundred eighty-five Sector ex why dash zee see twelve dash thirty-four",
+                SupertonicTextNormalizer.normalize("Col 285 Sector XY-Z c12-34", Language.EN));
+        assertEquals("Synuefe iks oh Bindestrich err beh neunzehn Bindestrich drei",
+                SupertonicTextNormalizer.normalize("Synuefe XO-R b19-3", Language.DE));
+    }
+
+    @Test
     void keepsSingleUppercaseLettersUnchanged() {
         assertEquals("A new ship",
                 SupertonicTextNormalizer.normalize("A new ship", Language.EN));

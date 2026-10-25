@@ -486,6 +486,27 @@ Two consequences for BindForge:
 This list is **not** exhaustive — it is what one consumer needed. Treat an unrecognised `Key_` token as valid
 and unclassified rather than invalid.
 
+### 5.6 GamePad codes — read from Frontier's presets, 2026-10-23
+
+A pad on Frontier's `<GamePad>` element (Xbox 360, One and others; 80 VID/PID pairs) is bound as
+`Device="GamePad"` with tokens of its own, never `Joy_N` or `Joy_POVn…`. Read from the `.binds` files the game ships in `Products/<product>/ControlSchemes/`.
+**Two families appear, and which one the game writes when a user binds a pad today is not measured:**
+
+| Input | `Pad_` family | `GamePad_` family |
+|---|---|---|
+| Face buttons | `Pad_A`, `Pad_B`, `Pad_X`, `Pad_Y` | `GamePad_FaceDown`, `GamePad_FaceRight`, `GamePad_FaceLeft`, `GamePad_FaceUp` |
+| Bumpers | `Pad_LBumper`, `Pad_RBumper` | `GamePad_LBumper`, `GamePad_RBumper` |
+| Stick clicks | `Pad_LThumb`, `Pad_RThumb` | `GamePad_LThumb`, `GamePad_RThumb` |
+| D-pad | `Pad_DPadUp`, `…Down`, `…Left`, `…Right` | `GamePad_DPadUp`, `…Down`, `…Left`, `…Right` |
+| Back, Start | `Pad_Back`, `Pad_Start` | `GamePad_Back` (no `GamePad_Start` in any preset) |
+| Stick axes | `Pad_LStickX`, `Pad_LStickY`, `Pad_RStickX`, `Pad_RStickY` | `GamePad_LStickX`, `…LStickY`, `…RStickX`, `…RStickY` |
+| Triggers, as axes | `Pad_LTrigger`, `Pad_RTrigger` | `GamePad_LTrigger`, `GamePad_RTrigger` |
+| Triggers, as buttons | `Pos_Pad_LTrigger`, `Pos_Pad_RTrigger` | `Pos_GamePad_LTrigger`, `Pos_GamePad_RTrigger` |
+
+`ControlPad`, `AdvancedControlPad`, `AdvancedControlPad2` and the `PS3Controller` presets use `Pad_` only;
+`ConsoleX360` and `ConsoleX360Classic` use mostly `GamePad_` with some `Pad_`. A trigger is a half-axis on a button slot, as in §5.2. Why this matters to BindForge:
+[A gamepad is not a joystick](../alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor).
+
 ---
 
 ## 6. File-Level Structural Quirks

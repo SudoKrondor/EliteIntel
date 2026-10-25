@@ -1355,6 +1355,57 @@ generated labels all need to.
 - **Reading the description runs on the device thread at connect**, before the connect is published — which is what
   makes `description()` race-free. It is a few system calls; nothing may add per-poll HID work there.
 
+### A gamepad is not a joystick — found 2026-10-23 (Krondor)
+
+**Not built. A design to settle before [A18](../../05-build-plan/alias-designer.md#slices) and
+[E7](../../05-build-plan/bind-editor-editing.md#slices).** A tester reported in the dev chat that the Device Editor *"
+doesn't recognize my Xbox controller
+triggers"*. Krondor has no Xbox pad; this was worked out from the code and from Frontier's shipped presets, not on hardware.
+
+**SDL is not the
+problem.** SDL3 reads Xbox pads well and reports each trigger as an axis of its own. What fails is A8b's description, on Windows, in one of two ways:
+
+- **Through
+  XInput** (the usual driver), SDL gives no HID device path, so `WindowsHidUsages.read` returns nothing and the axes are
+  *unknown*.
+- **Through HID**, Windows' description of an Xbox pad puts both triggers on
+  **one** shared Z axis — DirectInput's long-standing limitation — so it counts five axes where SDL counts six, `agreesWith` fails, and the axes are
+  *unknown* again.
+
+Either way `axisAt` is empty and no axis is lit, sticks included. On Linux the `xpad` driver is not HID, so there is no `report_descriptor` to read either.
+*Expected from the code, not seen.*
+
+**The bigger problem is the token
+vocabulary.** The game does not bind a pad on `<GamePad>` by `Joy_` tokens: it writes `Device="GamePad"` with tokens of its own, `Pad_A`, `GamePad_FaceDown`, `Pos_Pad_LTrigger` and the rest ([`.binds` format §5.6](domain-knowledge/EliteDangerous-BindsFileFormat.md#56-gamepad-codes--read-from-frontiers-presets-2026-10-23)). BindForge treats the pad like a stick:
+
+| Where | What happens with a pad on `<GamePad>` | Cost |
+|---|---|---|
+| Capture dialog (E1) | a button press is captured as `Joy_N`, the D-pad as `Joy_POVnUp`… and written under `GamePad` | **a binding the game most likely ignores** — not measured |
+| Capture dialog, triggers | axes are not captured at all until E2/E3 | a trigger cannot be bound as a button |
+| Device Editor (A9) | `Joy_` label boxes for a device the game draws itself ([`gameDrawsIt`](#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller)) | labels that never show in game |
+| Device Editor lights | axes unknown, so nothing is lit | the reported bug |
+
+**Proposed (Krondor, 2026-10-23) — to settle with Alan before building:**
+
+- **Read a gamepad as a
+  gamepad.** When `SDL_IsGamepad` holds, `DeviceService` also opens it with SDL's Gamepad API and polls its named inputs (`SDL_GetGamepadAxis`, `SDL_GetGamepadButton`): south/east/west/north, the bumpers, both sticks and thumbs, both triggers, the D-pad, back and start. They are published as new gamepad events keyed by a `devices.model` enum. The raw joystick events go on as now, so the input monitor and push-to-talk are unchanged. The flag is a lookup, `DeviceService.isGamepad(id)`, like `description(id)` — not a widened `Device`. In this API a trigger runs 0 to 32767 and rests at 0.
+- **Map the named inputs to the game's
+  tokens** in one pure table, with the `Pos_` form for a trigger used as a button, as the presets bind it. **Which
+  family the game writes today is not known** — see the open questions.
+- **Capture on `GamePad` offers and writes gamepad
+  tokens**, never `Joy_N` or hats. A trigger pulled past a threshold is a press of its `Pos_` token and can be held as a modifier, by `DeviceEditorLights`' rest rule.
+- **The Device Editor shows a `<GamePad>`
+  read-only:** its inputs by name, lit live through the gamepad events, and a note that the game draws them itself. No label boxes, so nothing for SAVE.
+
+**Open — the tester's answers decide them** ([testing item 27](../../00-overview/testing-required.md#bindforge)):
+
+1. **Which family the game writes when a pad is bound in its own controls screen** — `Pad_` or `GamePad_`. Frontier's
+   `ConsoleX360` preset uses both.
+2. **Which pad, by VID/PID.** Frontier's `<GamePad>` lists the Microsoft ids `028E`, `028F`, `02FF`, `02A1`, `0291`,
+   `0719`, `02EA`, `0B13` and `02D1`, but **not `0B12`, the wired Xbox Series pad**. A wired Series pad would not be on
+   `<GamePad>`, BindForge would treat it as the user's own controller, and this section would not be its bug.
+3. **Whether the game also sees the pad as a
+   joystick**, which would make `Joy_` bindings on its VID/PID real. The answer to 1 likely shows it.
 
 ## Device Editor
 

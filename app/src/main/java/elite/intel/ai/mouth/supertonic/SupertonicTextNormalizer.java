@@ -1,12 +1,12 @@
 package elite.intel.ai.mouth.supertonic;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.List;
-import java.util.Map;
-
 import elite.intel.i18n.Language;
 import elite.intel.util.SignedAndDecimalNumbers;
+
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Makes text unambiguous for Supertonic's multilingual tokenizer.
@@ -20,8 +20,15 @@ final class SupertonicTextNormalizer {
     private static final Pattern DECIMAL_WITH_UNIT = Pattern.compile(
             "(?<![\\p{L}\\p{N}])([-−]?\\d+[.,]\\d+)([A-Z])([,.;:!?])?(?![\\p{L}])");
     private static final Pattern COMMA_DECIMAL =
-            Pattern.compile("(?<![\\p{L}\\p{N}.])([-−]?(?:\\d{1,3}(?:\\.\\d{3})+|\\d+)),"
-                    + "(\\d+)(?![\\p{L}\\p{N}]|[.,]\\d)");
+            Pattern.compile("(?<![\\p{L}\\p{N}.])([-−]?\\d+),(\\d+)(?![\\p{L}\\p{N}]|[.,]\\d)");
+    // WHY: the model writes thousands either way round whatever the language ("1,234,567 crediti"), and
+    // read as a decimal that is a thousand times too small. See groupedNumbersInWords for which are grouping.
+    private static final Pattern GROUPED_NUMBER = Pattern.compile(
+            "(?<![\\p{L}\\p{N}.,])([-−]?\\d{1,3})((?:([.,])\\d{3})(?:\\3\\d{3})*)(?:(?!\\3)[.,](\\d+))?"
+                    + "(?![\\p{L}\\p{N}]|[.,]\\d)");
+    // An Elite procedural name's tail, "XO-R b19-3" or "AA-A h0": spelled whole, so no letter is left bare.
+    private static final Pattern SECTOR_CODE = Pattern.compile(
+            "(?<![\\p{L}\\p{N}])([A-Z]{2})-([A-Z])\\s+([a-h])(\\d+)((?:-\\d+)?)(?![\\p{L}\\p{N}])");
     private static final Pattern LETTER_HYPHENATED_NUMBER =
             Pattern.compile("(?<![\\p{L}\\p{N}])([A-Za-z])(\\d+(?:-\\d+)+)(?![\\p{L}\\p{N}])");
     private static final Map<Language, List<String>> LETTER_NAMES = Map.of(
@@ -51,23 +58,17 @@ final class SupertonicTextNormalizer {
     }
 
     static String normalize(String text, Language language) {
-        String withSpokenCodes = letterHyphenatedNumbersInWords(text, language);
-        String withDecimalUnits = decimalUnitsInWords(withSpokenCodes, language);
+        String withSectorCodes = sectorCodesInWords(text, language);
+        String withSpokenCodes = letterHyphenatedNumbersInWords(withSectorCodes, language);
+        String withGroupedNumbers = groupedNumbersInWords(withSpokenCodes, language);
+        String withDecimalUnits = decimalUnitsInWords(withGroupedNumbers, language);
         String spoken = SignedAndDecimalNumbers.inWordsIncludingWholeNumbers(
                 commaDecimalsInWords(withDecimalUnits, language),
                 language);
         Matcher matcher = UPPERCASE_ACRONYM.matcher(spoken);
         StringBuffer result = new StringBuffer();
         while (matcher.find()) {
-            String acronym = matcher.group(1);
-            StringBuilder spokenAcronym = new StringBuilder();
-            for (int i = 0; i < acronym.length(); i++) {
-                if (i > 0) {
-                    spokenAcronym.append(' ');
-                }
-                spokenAcronym.append(letterName(acronym.charAt(i), language));
-            }
-            matcher.appendReplacement(result, Matcher.quoteReplacement(spokenAcronym.toString()));
+            matcher.appendReplacement(result, Matcher.quoteReplacement(spokenLetters(matcher.group(1), language)));
         }
         matcher.appendTail(result);
         if (language == Language.IT) {
@@ -96,6 +97,69 @@ final class SupertonicTextNormalizer {
         }
         matcher.appendTail(result);
         return result.toString();
+    }
+
+    /**
+     * Thousands groups, read as one whole number. A separator is grouping when nothing else can explain it:
+     * two or more groups ("1.234.567"), a fraction after the other separator ("1,234.5", "1.234,56"), or a
+     * comma in English, which never writes a decimal comma. A lone group elsewhere ("135,234", "0.001") is
+     * as likely a decimal and is left to the decimal passes.
+     */
+    private static String groupedNumbersInWords(String text, Language language) {
+        Matcher matcher = GROUPED_NUMBER.matcher(text);
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            String separator = matcher.group(3);
+            String groups = matcher.group(2);
+            String fraction = matcher.group(4);
+            int groupCount = groups.length() / ",234".length();
+            boolean grouping = groupCount > 1 || fraction != null
+                    || (language == Language.EN && separator.equals(","));
+            if (!grouping) {
+                matcher.appendReplacement(result, Matcher.quoteReplacement(matcher.group()));
+                continue;
+            }
+            String whole = matcher.group(1) + groups.replace(separator, "");
+            String number = fraction == null ? whole : whole + "." + fraction;
+            matcher.appendReplacement(result, Matcher.quoteReplacement(
+                    SignedAndDecimalNumbers.inWordsIncludingWholeNumbers(number, language)));
+        }
+        matcher.appendTail(result);
+        return result.toString();
+    }
+
+    private static String sectorCodesInWords(String text, Language language) {
+        Matcher matcher = SECTOR_CODE.matcher(text);
+        StringBuffer result = new StringBuffer();
+        String hyphenName = hyphenName(language);
+        while (matcher.find()) {
+            StringBuilder spokenCode = new StringBuilder()
+                    .append(spokenLetters(matcher.group(1), language))
+                    .append(' ').append(hyphenName).append(' ')
+                    .append(spokenLetters(matcher.group(2), language))
+                    .append(' ').append(letterName(Character.toUpperCase(matcher.group(3).charAt(0)), language))
+                    .append(' ').append(SignedAndDecimalNumbers.inWordsIncludingWholeNumbers(
+                            matcher.group(4), language));
+            if (!matcher.group(5).isEmpty()) {
+                spokenCode.append(' ').append(hyphenName).append(' ')
+                        .append(SignedAndDecimalNumbers.inWordsIncludingWholeNumbers(
+                                matcher.group(5).substring(1), language));
+            }
+            matcher.appendReplacement(result, Matcher.quoteReplacement(spokenCode.toString()));
+        }
+        matcher.appendTail(result);
+        return result.toString();
+    }
+
+    private static String spokenLetters(String letters, Language language) {
+        StringBuilder spoken = new StringBuilder();
+        for (int i = 0; i < letters.length(); i++) {
+            if (i > 0) {
+                spoken.append(' ');
+            }
+            spoken.append(letterName(letters.charAt(i), language));
+        }
+        return spoken.toString();
     }
 
     private static String letterHyphenatedNumbersInWords(String text, Language language) {

@@ -103,6 +103,25 @@ public final class JournalCommander {
     }
 
     /**
+     * The journals from {@code from} on that belong to {@code fid}, oldest first: the shape the hunting-ground
+     * backfill reads.
+     * <p>
+     * Ownership follows the same rules as {@link #newestOwnedBy}, but nothing caps how far back it looks: the
+     * backfill reads a whole archive by design. A continuation part at {@code from} still asks the part before it,
+     * so starting mid-session does not lose the session's owner.
+     */
+    public static List<Path> ownedBy(List<Path> journals, int from, String fid) {
+        Map<Integer, Optional<String>> owners = new HashMap<>();
+        List<Path> owned = new ArrayList<>();
+        for (int i = from; i < journals.size(); i++) {
+            if (ownerOf(journals, i, owners).filter(fid::equals).isPresent()) {
+                owned.add(journals.get(i));
+            }
+        }
+        return owned;
+    }
+
+    /**
      * The newest {@code count} journals of the commander whose database is open, oldest first. Before any journal
      * has named a commander there is no one to filter by, and the newest {@code count} are read as they come.
      */

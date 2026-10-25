@@ -90,7 +90,8 @@ final class CommanderSplit {
     static final List<String> COMMANDER_NATIVE = List.of(
             "location_bookmark",
             "cartographic_body",
-            "cartographic_system"
+            "cartographic_system",
+            "hunting_ground_scan"
     );
 
     /**
