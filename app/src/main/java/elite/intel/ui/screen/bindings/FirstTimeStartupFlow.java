@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
@@ -71,6 +72,11 @@ public final class FirstTimeStartupFlow {
                 // the next click offers it again (Alan, 2026-10-25). Told in the setup check's own words.
                 log.info("First-time startup waits for the bindings folder: {}", e.getMessage());
                 return () -> tell(getText(FirstTimeStartup.NoBindingsYetException.ADVICE_KEY));
+            } catch (FirstTimeStartup.NoInstallationReachableException e) {
+                log.info("First-time startup waits for an installation: {}", e.getMessage());
+                String which = e.unreachable().stream().map(row -> row.storefront() + " (" + row.rootPath() + ")")
+                        .collect(Collectors.joining(", "));
+                return () -> tell(getText("bindings.firstTimeStartup.noneReachable", which));
             } catch (IOException | RuntimeException e) {
                 // WHY: broad on purpose - a thread boundary. A file that is there but cannot be read stops first-time
                 // startup, and is named: it could hold the one entry the working copy must not lose.

@@ -40,7 +40,8 @@ import java.util.stream.Stream;
  * <p>
  * <strong>A new player with no bindings folder yet is not taken through it</strong> (Alan, 2026-10-25): the game makes
  * the folder only after the training, so nothing of theirs exists yet - {@link #read} refuses with
- * {@link NoBindingsYetException}, and the flag stays unset. Touches the disk and the database - not for the EDT.
+ * {@link NoBindingsYetException}, and the flag stays unset. Nor is first-time startup run when every installation is
+ * unreachable ({@link NoInstallationReachableException}). Touches the disk and the database - not for the EDT.
  */
 public final class FirstTimeStartup {
 
@@ -62,6 +63,26 @@ public final class FirstTimeStartup {
 
         NoBindingsYetException(Path folder) {
             super("the bindings folder is not there yet: " + folder);
+        }
+    }
+
+    /**
+     * Thrown by {@link #read} when Elite-Intel knows installations but none of their folders is there - a drive
+     * unplugged. First-time startup does not run on none of them (Alan, 2026-10-25); the flag stays unset. With no
+     * installation known at all it runs, with the binds and preset files alone.
+     */
+    public static final class NoInstallationReachableException extends IOException {
+        private final transient List<InstallationRow> unreachable;
+
+        NoInstallationReachableException(List<InstallationRow> unreachable) {
+            super("no installation could be reached: " + unreachable.stream()
+                    .map(row -> row.storefront() + " (" + row.rootPath() + ")").toList());
+            this.unreachable = List.copyOf(unreachable);
+        }
+
+        /** The installations that could not be reached, for the user to plug in or Remove. */
+        public List<InstallationRow> unreachable() {
+            return unreachable;
         }
     }
 
@@ -148,7 +169,8 @@ public final class FirstTimeStartup {
     /**
      * Reads the bindings folder and every installation in the list whose folder is there. Writes nothing.
      *
-     * @throws NoBindingsYetException if the bindings folder is not there
+     * @throws NoBindingsYetException            if the bindings folder is not there
+     * @throws NoInstallationReachableException if installations are known and none of their folders is there
      * @throws IOException            if a file that is there cannot be read - the message names the installation and
      *                                the file. First setup does not run on a partial picture
      */
@@ -170,6 +192,9 @@ public final class FirstTimeStartup {
                 throw new IOException(row.storefront() + " (" + row.rootPath() + "): " + e.getMessage(), e);
             }
         }
+        // WHY: installations are known but none can be read - a drive unplugged. Going on would create a working copy
+        // with no device files, which the next write would put over theirs when they come back (review, 2026-10-25).
+        if (reachable.isEmpty() && !unreachable.isEmpty()) throw new NoInstallationReachableException(unreachable);
         return FirstSetupReading.of(folder, bindings, reachable, unreachable, FrontierStockDevices.getInstance(),
                 FrontierStockButtonMaps.getInstance());
     }

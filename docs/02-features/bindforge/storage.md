@@ -28,8 +28,10 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
        list is stored in the user's data like every other user setting.
 
    The same list, with **Remove** beside each row, is File Manager's **Game Install Locations** sub-tab, where it can
-   be changed at any time; an installation added later gets the working copy at the next APPLY (2026-10-24,
-   Alan).
+   be changed at any time. **An installation added later, or one that was unreachable at first setup and comes
+   back,** is compared with the working copy: if its device files match, nothing is done; if they differ, it is
+   reconciled as in rule 2 before anything is written to it. It is never overwritten automatically (Alan,
+   2026-10-25, from the S2b review; until then it got the working copy at the next APPLY).
 
    The live copies were already backed up when Elite-Intel started ([rule 12](#backups)).
 2. If the installations hold different versions of `DeviceMappings.xml` or the `.buttonMap`s, the user reconciles
@@ -46,6 +48,10 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
 - **The flag is `bindforge_activation.activated_at`**, set in the step that writes the working copy and cleared by
   Run first-time startup again; the "before BindForge" backup's `backup_folder` is dropped. **The migration clears
   it**, so every tester already set up the old way goes through first-time startup again.
+- **Every known installation unreachable stops it** (Alan, 2026-10-25, from the S2b review) - a drive unplugged. BindForge
+  names them, says to plug the drive in or Remove the installation, and leaves the flag unset; a working copy with no
+  device files would otherwise go over theirs when they come back. With no installation known at all it runs, with
+  the binds and preset files alone.
 - **Offered at every click on the BindForge tab while the flag is not set** — abandoning it asks again at the next
   click, not only the next run.
 - **A new player with no bindings folder yet is not taken through it.** BindForge says the setup check's words

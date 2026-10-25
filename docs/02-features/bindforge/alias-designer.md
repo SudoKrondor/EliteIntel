@@ -252,7 +252,7 @@ are history.
 
 #### Built — 2026-10-13 (Alan, A1b)
 
-*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+*Removed in Storage S2b (2026-10-25); kept as history. The rules above still hold.*
 
 Built as `bindforge.devicefiles.Activation`, run by `AliasDesignerController.activateOnFirstShowing()` (through the panel's), which the
 outer BindForge tab (`BindingsTabPanel`) calls the first time it is shown. The fact is the `bindforge_activation`
@@ -413,7 +413,7 @@ installation; rule 3's one backup replaces both.*
 
 ### Settled while building it — 2026-10-07 (Alan)
 
-*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+*Removed in Storage S2b (2026-10-25); kept as history. The rules above still hold.*
 
 Built as `bindforge.devicefiles.FirstSetup` (the flow), `FirstSetupPlan` (the decision, pure), `FirstSetupReader`
 and `DeviceFilesSnapshot`, with `ui.screen.bindings.FirstSetupDialog` opened from **SET UP** on the Alias Designer
@@ -513,9 +513,11 @@ setup.
 ### An install that appears later
 
 - **An installation added later** — Add missing, in File Manager's
-  [Game Install Locations](file-manager.md#game-install-locations) — gets the working copy at the next APPLY.
-- **If it already holds different device entries**, the check finds the difference and the user reconciles it, the
-  same as first setup ([storage.md](storage.md) rule 14). Nothing is overwritten silently.
+  [Game Install Locations](file-manager.md#game-install-locations) — **or one that was unreachable at first setup and
+  comes back**, is compared with the working copy. If its device files match, nothing is done.
+- **If they differ**, the user reconciles them the same way as first setup, before anything is written to it
+  ([storage.md](storage.md) rules 1 and 14). It is never overwritten automatically (Alan, 2026-10-25, from the S2b
+  review: *"who knows what the user is doing to that other installation"*).
 
 ### The user's entries come first in `DeviceMappings.xml` — settled 2026-10-04
 
@@ -1124,7 +1126,7 @@ connect, once BindForge was activated (Krondor, 2026-10-14).*
 - **Nothing is named here:** a controller with no name waits for onboarding.
 - **After RESET LABELS** on a built-in, the defaults come back the same way.
 
-*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+*Removed in Storage S2b (2026-10-25); kept as history. The rules above still hold.*
 
 **Settled while building it — 2026-10-06 (Alan).** Built as `bindforge.devicefiles.ButtonMapGeneration`
 (`ButtonMapLabels` for the labels), run by `bindforge.devices.ButtonMapStartup`.

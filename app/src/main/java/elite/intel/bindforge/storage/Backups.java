@@ -44,8 +44,8 @@ import java.util.zip.ZipOutputStream;
  * ones and Storage S1's dated folders are never listed and never deleted (Alan, 2026-10-24).
  * <p>
  * <strong>Every write to a game file goes through {@link WritePath}, which takes a backup first</strong> (principle 3) -
- * {@link #backUpBeforeChange(Before, BackupSources)}, or first setup's {@link Kind#FIRST_SETUP}. Its callers arrive with Storage S2b,
- * S3 and S4; until then the old writers take their own backups.
+ * {@link #backUpBeforeChange(Before, BackupSources)}, or first setup's {@link Kind#FIRST_SETUP}. First-time startup calls it
+ * since Storage S2b; RESTORE and APPLY arrive with S3 and S4, and until then the old writers take their own backups.
  * Touches the disk - not for the EDT.
  */
 public final class Backups {

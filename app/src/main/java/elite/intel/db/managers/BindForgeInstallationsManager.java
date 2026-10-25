@@ -55,6 +55,15 @@ public class BindForgeInstallationsManager {
     }
 
     /**
+     * Every installation, the ones the user removed included - for the backup folder check, which refuses every game
+     * folder BindForge knows of (Alan, 2026-10-25). Read from the table each time; nothing else should use it.
+     */
+    public List<InstallationRow> findAllIncludingRemoved() {
+        return List.copyOf(Database.withDao(BindForgeInstallationsDao.class,
+                BindForgeInstallationsDao::findAllIncludingRemoved));
+    }
+
+    /**
      * Records an installation detection found, or leaves the existing row alone when that folder is already known -
      * <strong>a removed one included, which stays removed</strong> (file-manager.md, <em>Game Install Locations</em>;
      * Storage S2b). Detection runs at every start, and would otherwise put back an installation the user removed.

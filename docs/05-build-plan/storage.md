@@ -134,6 +134,15 @@ to a hardware ID (after S4); A18 and E7 stay blocked on [testing item 27](../00-
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the next
 slice needs.*
 
+- **2026-10-25 — S2b review follow-up** (`code-integrity-review.md`, Alan: all seven). **Fixed:** every known
+  installation unreachable stops first-time startup, naming them (`NoInstallationReachableException`); the backup folder
+  check refuses a removed installation's folder too (`findAllIncludingRemoved`); a test for migration `12012`; stale
+  lines in file-manager.md, alias-designer.md and the `Backups` javadoc. **Decided (Alan):** an installation added
+  later, or one unreachable at first setup that comes back, is left alone if it matches the working copy and reconciled
+  as in first setup if it differs - never overwritten automatically (storage.md rule 1, file-manager.md, alias-designer.md
+  *An install that appears later*). **S4 and S9 need:** APPLY must not write an installation that differs until it is
+  reconciled. **Left (pre-existing):** Add Missing and Remove do not catch a database failure; a removed installation is
+  matched by exact path string; one date pattern defined twice.
 - **2026-10-25 — S2b done: first-time startup.** **Decided (Alan):** the flag is `bindforge_activation.activated_at`,
   cleared once by migration `12012` so testers set up again; offered at every tab click; a new player with no bindings
   folder is told and not taken through it; startup `.buttonMap` generation removed now (storage.md *First-time

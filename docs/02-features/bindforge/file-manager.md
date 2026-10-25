@@ -42,11 +42,11 @@ start.*
 started from `App.main` once the database is open — not with the services, which need credentials to start. It runs
 installation detection first, so it covers every installation before first-time startup has ever run. **Retention
 runs only after the backup succeeds:** when today's backup failed, the older ones are the newest there are. **Nothing
-else BindForge does at startup writes to a game file until it is done** — `ButtonMapStartup` waits for it, and writes
-nothing that run if it failed (principle 3; Alan, 2026-10-24).
+else BindForge does at startup writes to a game file** — since Storage S2b (2026-10-25) nothing does at all; until then
+`ButtonMapStartup` waited for it (principle 3; Alan, 2026-10-24).
 
 **Whether today's is taken is read from `Daily\`** — a zip stamped with today's date, Partial included — not from a
-table. A start that finds one takes none, counts as taken for `ButtonMapStartup`, and **still runs retention**: the
+table. A start that finds one takes none, and **still runs retention**: the
 backup succeeded earlier that day, so the older ones are not the newest there are (2026-10-24, S1b).
 
 ### What a backup holds
@@ -237,7 +237,9 @@ what is being edited; this sub-tab is where the files go. It lists:
 - **Add missing** — browse to an installation's root folder, checked for `EliteDangerous64.exe` and the other files
   that confirm it — and **Remove** beside each row: the same list and buttons as first-time startup
   ([storage.md](storage.md) rule 1). Moving the game to another drive is Remove, then Add missing. An installation
-  added later gets the working copy at the next APPLY.
+  added later, or one that comes back, is left alone if its device files match the working copy, and reconciled as
+  in first-time startup if they differ - never overwritten automatically ([storage.md](storage.md) rule 1; Alan,
+  2026-10-25).
 
 *Until 2026-10-24 (morning) it had Rescan, Add, Relocate and Remove; for a few hours that day it was an Installations…
 button instead of a sub-tab, before Alan settled that File Manager is where installations live.*

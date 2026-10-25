@@ -131,6 +131,16 @@ class BindForgeInstallationsManagerTest {
         assertTrue(installations.findAll().isEmpty());
     }
 
+    /** The backup folder check refuses every game folder, a removed installation's included (Alan, 2026-10-25). */
+    @Test
+    void aRemovedInstallationIsStillAmongEveryInstallation() {
+        installations.recordDetected("STEAM", STEAM);
+        installations.remove(installations.findAll().getFirst().id());
+
+        assertEquals(List.of(STEAM.toString()),
+                installations.findAllIncludingRemoved().stream().map(InstallationRow::rootPath).toList());
+    }
+
     @Test
     void addMissingOnARemovedInstallationsFolderBringsItBack() {
         installations.recordDetected("STEAM", STEAM);

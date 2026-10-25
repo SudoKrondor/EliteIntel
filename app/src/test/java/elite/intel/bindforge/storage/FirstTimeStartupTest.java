@@ -68,6 +68,32 @@ class FirstTimeStartupTest {
         assertEquals(List.of(2L), reading.unreachable().stream().map(InstallationRow::id).toList());
     }
 
+    /**
+     * Review, 2026-10-25 (Alan): installations known but none reachable - a drive unplugged - stop first-time startup,
+     * naming them. A working copy with no device files would otherwise go over theirs when they come back.
+     */
+    @Test
+    void installationsKnownButNoneReachableStopTheReadingAndAreNamed() throws IOException {
+        Path bindings = Files.createDirectories(temp.resolve("Bindings"));
+        rows.add(new InstallationRow(1, "STEAM", temp.resolve("unplugged").toString(), false, true));
+
+        FirstTimeStartup.NoInstallationReachableException thrown = assertThrows(
+                FirstTimeStartup.NoInstallationReachableException.class,
+                () -> startup(bindings, writerThatWrites()).read());
+
+        assertEquals(List.of(1L), thrown.unreachable().stream().map(InstallationRow::id).toList());
+        assertFalse(flag.complete);
+    }
+
+    @Test
+    void withNoInstallationKnownTheReadingGoesOn() throws IOException {
+        Path bindings = Files.createDirectories(temp.resolve("Bindings"));
+
+        FirstSetupReading reading = startup(bindings, writerThatWrites()).read();
+
+        assertTrue(reading.installations().isEmpty());
+    }
+
     /** An unread file could hold the one entry the working copy must not lose, so nothing goes on without it. */
     @Test
     void anUnreadableDeviceFileStopsTheReadingAndNamesTheInstallation() throws IOException {

@@ -144,11 +144,14 @@ public final class BackupDestination {
         }
     }
 
-    /** Every stored installation's folder and the bindings folder Elite-Intel is set to. Reads the database. */
+    /**
+     * Every stored installation's folder - a removed one included, since it is still a game folder an update can wipe
+     * (Alan, 2026-10-25, from the S2b review) - and the bindings folder Elite-Intel is set to. Reads the database.
+     */
     private static List<Path> storedGameFolders() {
         List<Path> folders = new ArrayList<>();
         folders.add(PlayerSession.getInstance().getBindingsDir());
-        for (var row : BindForgeInstallationsManager.getInstance().findAll()) {
+        for (var row : BindForgeInstallationsManager.getInstance().findAllIncludingRemoved()) {
             try {
                 folders.add(Path.of(row.rootPath()));
             } catch (InvalidPathException e) {

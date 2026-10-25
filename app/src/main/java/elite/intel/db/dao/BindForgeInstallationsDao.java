@@ -22,6 +22,10 @@ public interface BindForgeInstallationsDao {
     @SqlQuery("SELECT * FROM bindforge_installations WHERE is_removed = 0 ORDER BY id")
     List<InstallationRow> findAll();
 
+    /** Every installation, removed ones included - for a check that must know every game folder. */
+    @SqlQuery("SELECT * FROM bindforge_installations ORDER BY id")
+    List<InstallationRow> findAllIncludingRemoved();
+
     /** The row at that folder, removed or not. */
     @SqlQuery("SELECT * FROM bindforge_installations WHERE root_path = :rootPath")
     InstallationRow findByPath(@Bind("rootPath") String rootPath);
