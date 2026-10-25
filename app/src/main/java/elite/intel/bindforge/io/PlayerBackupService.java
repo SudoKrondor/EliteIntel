@@ -14,7 +14,7 @@ import java.nio.file.Path;
  * Restores one {@code .binds} file from a backup - Restore to Editing Slot and Restore to Live, until RESTORE
  * replaces both (Storage S3).
  * <p>
- * Taking, listing, pruning and reading backups is {@link Backups}. A backup is a zip since Storage S1b (2026-10-25),
+ * Taking, listing, pruning and reading backups is {@link Backups}. A backup is a zip since Storage S1b (2026-10-24),
  * holding its {@code .binds} under {@code Bindings\}; old folder backups are no longer listed, so are not read here.
  * <p>
  * Restore has two targets sharing the same first step (loading the backup's file for the active preset into the

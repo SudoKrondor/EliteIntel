@@ -26,7 +26,7 @@ other documents disagree, the work stops and Alan decides.** How the files are h
   the user can open them.
 - **Backup** — a zip of the live copies, named with its date stamp, in Elite-Intel's BindForge backup folder — **or a
   zip of the working copy**, made the same way, before a live copy replaces it (2026-10-23, Alan). Every backup is a
-  zip, so there is one format to restore (2026-10-25, Alan). There are four kinds — **daily**, **before changes**,
+  zip, so there is one format to restore (2026-10-24, Alan). There are four kinds — **daily**, **before changes**,
   **user** and **first setup** — each kept by its own rule ([storage.md](storage.md) rules 11–12).
 - **Edits not applied** — changes on the editor screens that APPLY has not written yet. They live only on screen.
 - **"Master" and "draft" are retired.** Older documents use them: *draft* means the editor screens' edits not

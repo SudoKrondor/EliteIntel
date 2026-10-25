@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -68,6 +69,19 @@ class BackupDestinationTest {
         });
 
         assertEquals(chosen, destination.resolve());
+    }
+
+    /** Browse... asks before saving, so a folder that would fall back is refused with its reason (review, 2026-10-24). */
+    @Test
+    void checkSaysWhyAFolderWouldNotBeUsed() throws IOException {
+        Path game = temp.resolve("Elite Dangerous");
+        Path aFile = temp.resolve("a file");
+        Files.writeString(aFile, "not a folder");
+        BackupDestination destination = destination(() -> null, List.of(game));
+
+        assertEquals(BackupDestination.Refusal.INSIDE_GAME_FOLDER, destination.check(game.resolve("Backups")));
+        assertEquals(BackupDestination.Refusal.CANNOT_CREATE, destination.check(aFile.resolve("Backups")));
+        assertNull(destination.check(temp.resolve("my backups")), "a usable folder is not refused");
     }
 
     private BackupDestination destination(BackupDestination.Chosen chosen, List<Path> gameFolders) {

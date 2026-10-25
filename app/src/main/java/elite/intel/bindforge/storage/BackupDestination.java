@@ -61,6 +61,16 @@ public final class BackupDestination {
         this.gameFolders = gameFolders;
     }
 
+    /** Why a chosen folder is not used, so the user can be told (file-manager.md, <em>Settings</em>). */
+    public enum Refusal {
+        /** Inside an installation or the bindings folder, where a game update would delete the backups. */
+        INSIDE_GAME_FOLDER,
+        /** It does not exist and cannot be created. */
+        CANNOT_CREATE,
+        /** It exists but cannot be written to. */
+        CANNOT_WRITE
+    }
+
     /**
      * The folder to write to, created if needed.
      *
@@ -68,10 +78,21 @@ public final class BackupDestination {
      */
     public Path resolve() throws IOException {
         Path folder = chosenFolder();
-        if (folder != null && usable(folder)) {
+        if (folder != null && refusal(folder) == null) {
             return folder;
         }
         return fallback.get();
+    }
+
+    /**
+     * Whether {@code folder} would be used if the user chose it - checked before it is saved, so a folder that would
+     * fall back to the default is never stored without the user knowing (Alan, 2026-10-24). Creates the folder, as a
+     * backup would.
+     *
+     * @return why it would not be used, or {@code null} when it would
+     */
+    public Refusal check(Path folder) {
+        return refusal(folder);
     }
 
     private Path chosenFolder() {
@@ -87,26 +108,26 @@ public final class BackupDestination {
         }
     }
 
-    private boolean usable(Path folder) {
+    private Refusal refusal(Path folder) {
         Path normal = folder.toAbsolutePath().normalize();
         for (Path gameFolder : gameFoldersOrNone()) {
             if (normal.startsWith(gameFolder.toAbsolutePath().normalize())) {
-                log.warn("The chosen backup folder {} is inside a game folder ({}), where a game update would delete "
-                        + "it - using the default", folder, gameFolder);
-                return false;
+                log.warn("The backup folder {} is inside a game folder ({}), where a game update would delete it - "
+                        + "using the default", folder, gameFolder);
+                return Refusal.INSIDE_GAME_FOLDER;
             }
         }
         try {
             Files.createDirectories(folder);
         } catch (IOException | RuntimeException e) {
-            log.warn("The chosen backup folder {} cannot be created - using the default", folder, e);
-            return false;
+            log.warn("The backup folder {} cannot be created - using the default", folder, e);
+            return Refusal.CANNOT_CREATE;
         }
         if (!Files.isWritable(folder)) {
-            log.warn("The chosen backup folder {} cannot be written to - using the default", folder);
-            return false;
+            log.warn("The backup folder {} cannot be written to - using the default", folder);
+            return Refusal.CANNOT_WRITE;
         }
-        return true;
+        return null;
     }
 
     private List<Path> gameFoldersOrNone() {

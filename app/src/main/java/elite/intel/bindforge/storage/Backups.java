@@ -34,17 +34,18 @@ import java.util.zip.ZipOutputStream;
  * <strong>A backup is a zip</strong>, named with its date stamp, holding a copy of every game input configuration
  * file: every {@code .binds} and {@code StartPreset.N.start} in the bindings folder, and each installation's
  * {@code DeviceMappings.xml} and {@code .buttonMap}s - the full set from every installation, even when they match,
- * with no comparison first. Every backup a zip, so restore has one format to read (Alan, 2026-10-25).
+ * with no comparison first. Every backup a zip, so restore has one format to read (Alan, 2026-10-24).
  * <p>
- * <strong>Four kinds, each in its own folder and kept by its own rule</strong> (Alan, 2026-10-25): daily, kept by age;
+ * <strong>Four kinds, each in its own folder and kept by its own rule</strong> (Alan, 2026-10-24): daily, kept by age;
  * before changes, kept by count; user, kept until the user deletes them; first setup, kept forever.
  * <p>
  * <strong>The backup folder is the record.</strong> The list is the kind folders' listing, sorted by the stamp in each
  * name, with no database table. Only zips in the kind folders are listed, so V1.1's folder backups, the old BindForge
- * ones and Storage S1's dated folders are never listed and never deleted (Alan, 2026-10-24 and 2026-10-25).
+ * ones and Storage S1's dated folders are never listed and never deleted (Alan, 2026-10-24).
  * <p>
- * <strong>Every write to a game file calls {@link #backUpBeforeChange(Before)} first</strong> (principle 3). Touches
- * the disk - not for the EDT.
+ * <strong>Every write to a game file is to call {@link #backUpBeforeChange(Before)} first</strong> (principle 3). Nothing
+ * calls it yet: the callers arrive with Storage S2's write path, and until then the old writers take their own backups.
+ * Touches the disk - not for the EDT.
  */
 public final class Backups {
 
@@ -148,7 +149,7 @@ public final class Backups {
     public static final class NothingToBackUpException extends IOException {
         /**
          * The bundle key of what the user does about it - the new-player message the startup setup check speaks and
-         * Backup Now shows, so the log says the same words (Alan, 2026-10-25).
+         * Backup Now shows, so the log says the same words (Alan, 2026-10-24).
          */
         public static final String ADVICE_KEY = "speech.setup.noBindingsYet";
 
@@ -304,7 +305,7 @@ public final class Backups {
 
     /**
      * Deletes a user backup - the user made it, so they decide when it goes (file-manager.md, <em>Retention</em>;
-     * Alan, 2026-10-25). The other kinds have no Delete.
+     * Alan, 2026-10-24). The other kinds have no Delete.
      *
      * @throws IllegalArgumentException if it is not a user backup
      */
@@ -365,7 +366,7 @@ public final class Backups {
             Files.createDirectories(folder);
             Path target = folder.resolve(uniqueName(folder, now.format(STAMP)));
             // WHY: written to a temporary file and renamed into place once complete, so a half-written backup is
-            // never in the list. Built in memory first - a full backup is a few megabytes at most (Alan, 2026-10-25).
+            // never in the list. Built in memory first - a full backup is a few megabytes at most (Alan, 2026-10-24).
             AtomicFiles.write(target, bytes.toByteArray());
 
             Backup backup = new Backup(target, now, kind, before, copy.notRead.isEmpty(), copy.notRead);

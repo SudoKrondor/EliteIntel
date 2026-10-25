@@ -306,7 +306,38 @@ class BackupsTest {
 
         assertEquals("<Root custom/>", Backups.readBindingsFile(backup, "Custom.4.2.binds"));
         assertThrows(IOException.class, () -> Backups.readBindingsFile(backup, "DawnTreader.4.2.binds"));
-        assertThrows(IllegalArgumentException.class, () -> Backups.readBindingsFile(backup, "../Custom.4.2.binds"));
+    }
+
+    /** The guard that keeps a restore inside the zip's {@code Bindings/}: a file name, never a path. */
+    @Test
+    void readingABindingsFileRefusesAPath() throws IOException {
+        Backup backup = backups("2026-10-24T18:30:00Z", sources()).backUpEverything(Backups.Kind.USER);
+
+        for (String path : List.of("../Custom.4.2.binds", "Bindings/Custom.4.2.binds", "Bindings\\Custom.4.2.binds", "..")) {
+            assertThrows(IllegalArgumentException.class, () -> Backups.readBindingsFile(backup, path), path);
+        }
+    }
+
+    /**
+     * A stamp-named file that is not a zip is still listed, as Partial - it is in the folder, and only its summary cannot
+     * be read - and counts toward the before-changes N, so retention can delete it.
+     */
+    @Test
+    void aDamagedZipIsListedAsPartialAndRetentionCountsIt() throws IOException {
+        Path damaged = root.resolve("BeforeChanges/2026-10-24_10-00-00.zip");
+        write(damaged, "not a zip");
+        Path newer = backups("2026-10-24T11:00:00Z", sources()).backUpBeforeChange(Backups.Before.APPLY).zip();
+
+        Backup listed = backups("2026-10-24T12:00:00Z", sources()).list().getLast();
+        assertEquals(damaged, listed.zip());
+        assertFalse(listed.full());
+        assertNull(listed.before(), "what it came before cannot be read");
+        assertTrue(listed.notRead().getFirst().startsWith(Backups.INFO_FILE), listed.notRead().toString());
+
+        List<Path> deleted = backups("2026-10-24T12:00:00Z", sources()).prune(new Backups.Retention(30, 1));
+
+        assertEquals(List.of(damaged), deleted);
+        assertTrue(Files.exists(newer));
     }
 
     @Test

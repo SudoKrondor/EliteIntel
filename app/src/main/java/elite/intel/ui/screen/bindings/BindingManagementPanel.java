@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -39,9 +41,9 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
  * <strong>Game Install Locations</strong> is where BindForge looks for the files it manages.
  * <strong>Player Backups</strong> lists every backup ({@link Backups}) newest first, with a <em>Taken</em> column
  * naming its kind, and holds the backup settings: where backups go, and the two retention rules (file-manager.md,
- * <em>Settings</em>; Storage S1b, 2026-10-25).
+ * <em>Settings</em>; Storage S1b, 2026-10-24).
  * <p>
- * <strong>Delete is for user backups only</strong> (Alan, 2026-10-25): the user made them, so they decide when they
+ * <strong>Delete is for user backups only</strong> (Alan, 2026-10-24): the user made them, so they decide when they
  * go. Retention looks after daily and before-changes backups, and first setup's is kept forever.
  * <p>
  * Both restore actions share the same first step (loading the backup's file for the active
@@ -57,6 +59,17 @@ public class BindingManagementPanel extends JPanel {
     private static final Logger log = LogManager.getLogger(BindingManagementPanel.class);
     private static final DateTimeFormatter CREATED = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final int BEFORE_CHANGES_STEP = 10;
+
+    /**
+     * Every settings read and save, one at a time and in the order asked (review, 2026-10-24): a thread each let three
+     * quick stepper clicks land out of order, and the stored value end at one the screen did not show. Daemon, so it
+     * never keeps Elite-Intel from closing.
+     */
+    private final ExecutorService settingsWork = Executors.newSingleThreadExecutor(work -> {
+        Thread thread = new Thread(work, "PlayerBackupSettings-Thread");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     private final Backups backups = Backups.stored();
     private final BindForgeSettingsManager settings = BindForgeSettingsManager.getInstance();
@@ -233,7 +246,7 @@ public class BindingManagementPanel extends JPanel {
                 if (resultNothingYet) {
                     // WHY: not a fault - a new player has no files yet, and is told how the game makes them. The same
                     // string the startup setup check speaks, so the two can never say different things (Alan,
-                    // 2026-10-25).
+                    // 2026-10-24).
                     HudConfirmDialog.info(this, getText("bindings.bindingManagement.backup.nothingYet.title"),
                             getText(Backups.NothingToBackUpException.ADVICE_KEY), getText("button.ok"));
                 } else if (resultFailure != null) {
@@ -387,7 +400,7 @@ public class BindingManagementPanel extends JPanel {
 
     /** Reads the settings and resolves the backup folder off the EDT, then fills the controls without saving. */
     private void loadSettings() {
-        new Thread(() -> {
+        settingsWork.execute(() -> {
             int days;
             int kept;
             String folder;
@@ -409,7 +422,7 @@ public class BindingManagementPanel extends JPanel {
                     loadingSettings = false;
                 }
             });
-        }, "PlayerBackupSettings-Thread").start();
+        });
     }
 
     /**
@@ -432,16 +445,29 @@ public class BindingManagementPanel extends JPanel {
         String current = destinationField.getText();
         if (current != null && !current.isBlank()) chooser.setCurrentDirectory(new File(current));
         if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
-        saveDestination(chooser.getSelectedFile().getAbsolutePath());
+        saveDestination(chooser.getSelectedFile().toPath());
     }
 
-    /** Saves the folder ({@code null} for the default), then shows where backups now go and that folder's list. */
-    private void saveDestination(String folder) {
-        new Thread(() -> {
+    /**
+     * Saves the folder ({@code null} for the default), then shows where backups now go and that folder's list.
+     * <p>
+     * <strong>A folder that would not be used is not saved, and the user is told why</strong> (review, 2026-10-24;
+     * principle 9): stored, it would fall back to the default without a word, and Browse... would look broken.
+     */
+    private void saveDestination(Path folder) {
+        settingsWork.execute(() -> {
+            BackupDestination.Refusal refusal = folder == null ? null : BackupDestination.stored().check(folder);
+            if (refusal != null) {
+                SwingUtilities.invokeLater(() -> HudConfirmDialog.info(this,
+                        getText("bindings.bindingManagement.settings.refused.title"),
+                        getText(refusalKey(refusal), folder.toString()),
+                        getText("button.ok")));
+                return;
+            }
             String failure = null;
             String shown = null;
             try {
-                settings.setBackupDestination(folder);
+                settings.setBackupDestination(folder == null ? null : folder.toString());
                 shown = resolvedDestination();
             } catch (RuntimeException e) {
                 log.warn("Could not save the backup folder {}", folder, e);
@@ -458,12 +484,20 @@ public class BindingManagementPanel extends JPanel {
                 destinationField.setText(resultShown);
                 refreshBackups();
             });
-        }, "PlayerBackupSettings-Thread").start();
+        });
     }
 
-    /** Saves one retention setting off the EDT. Retention applies at the next Elite-Intel start. */
+    static String refusalKey(BackupDestination.Refusal refusal) {
+        return switch (refusal) {
+            case INSIDE_GAME_FOLDER -> "bindings.bindingManagement.settings.refused.insideGameFolder";
+            case CANNOT_CREATE -> "bindings.bindingManagement.settings.refused.cannotCreate";
+            case CANNOT_WRITE -> "bindings.bindingManagement.settings.refused.cannotWrite";
+        };
+    }
+
+    /** Saves one retention setting off the EDT, after any save asked for before it. Applies at the next start. */
     private void saveSetting(Runnable save) {
-        new Thread(() -> {
+        settingsWork.execute(() -> {
             try {
                 save.run();
             } catch (RuntimeException e) {
@@ -472,7 +506,7 @@ public class BindingManagementPanel extends JPanel {
                 SwingUtilities.invokeLater(() -> showError("bindings.bindingManagement.settings.error.title",
                         "bindings.bindingManagement.settings.error", message));
             }
-        }, "PlayerBackupSettings-Thread").start();
+        });
     }
 
     // ---- the list

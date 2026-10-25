@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * Two retention settings replace the one (file-manager.md, <em>Settings</em>; Alan, 2026-10-25): daily backups kept by
+ * Two retention settings replace the one (file-manager.md, <em>Settings</em>; Alan, 2026-10-24): daily backups kept by
  * age, 30 days by default, and before-changes backups kept by count, 100 by default. The old value is not carried
  * over, and the other settings survive.
  */

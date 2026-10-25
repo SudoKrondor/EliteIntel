@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 /**
  * The daily backup, taken silently the first time Elite-Intel starts each day, then retention (storage.md rules 11-12).
  * <p>
- * <strong>Once a day</strong> (Alan, 2026-10-25): a start that finds a daily backup stamped today in the backup folder
+ * <strong>Once a day</strong> (Alan, 2026-10-24): a start that finds a daily backup stamped today in the backup folder
  * takes none. Every start until then took one.
  * <p>
  * <strong>Whether or not the user ever opens BindForge, and before first-time startup has ever run.</strong> Started

@@ -15,7 +15,7 @@ Backups on 2026-10-22.*
 
 ## Player Backups
 
-### Four kinds of backup — settled 2026-10-25 (Alan)
+### Four kinds of backup — settled 2026-10-24 (Alan)
 
 | Kind | Taken | Kept | Folder |
 |---|---|---|---|
@@ -24,7 +24,7 @@ Backups on 2026-10-22.*
 | **User** | Backup Now | until the user deletes them | `User\` |
 | **First setup** | first-time startup, before the working copy is created | forever | `FirstSetup\` |
 
-Every one is a zip holding the same files. **Why four** (Krondor's review, 2026-10-25): age alone deletes every good
+Every one is a zip holding the same files. **Why four** (Krondor's review, 2026-10-24): age alone deletes every good
 backup when a user is away longer than the limit; a count alone loses last week's good copy to one evening of applies.
 Daily backups cover the first, before-changes backups the second, and the two the user cares most about — their own and
 the one from before BindForge wrote anything — are never deleted by either rule. Alan: *"i think that will probably
@@ -35,10 +35,10 @@ cover our butts better."*
 The first time Elite-Intel starts each day, silently, in the background ([storage.md](storage.md) rule 12) — tied to
 Elite-Intel's startup, not the game's, so a backup is not missed when the user launches the game first, and it never
 holds startup up. It covers every installation. If it fails, the next start tries again, the same day included.
-*Until 2026-10-23 startup said what it had backed up; it is silent now (Alan). Until 2026-10-25 one was taken at every
+*Until 2026-10-23 startup said what it had backed up; it is silent now (Alan). Until Storage S1b (2026-10-24) one was taken at every
 start.*
 
-**Built 2026-10-24 (Storage S1), one at every start; once a day since 2026-10-25 (S1b):** `bindforge.storage.StartupBackup`,
+**Built 2026-10-24 (Storage S1), one at every start; once a day since S1b, later the same day:** `bindforge.storage.StartupBackup`,
 started from `App.main` once the database is open — not with the services, which need credentials to start. It runs
 installation detection first, so it covers every installation before first-time startup has ever run. **Retention
 runs only after the backup succeeds:** when today's backup failed, the older ones are the newest there are. **Nothing
@@ -47,7 +47,7 @@ nothing that run if it failed (principle 3; Alan, 2026-10-24).
 
 **Whether today's is taken is read from `Daily\`** — a zip stamped with today's date, Partial included — not from a
 table. A start that finds one takes none, counts as taken for `ButtonMapStartup`, and **still runs retention**: the
-backup succeeded earlier that day, so the older ones are not the newest there are (2026-10-25, S1b).
+backup succeeded earlier that day, so the older ones are not the newest there are (2026-10-24, S1b).
 
 ### What a backup holds
 
@@ -67,10 +67,10 @@ When Elite-Intel starts, after the daily backup ([storage.md](storage.md) rule 1
 setting are deleted, and **before-changes** backups beyond the newest N. **User** and **first setup** backups are never
 deleted by retention. Both limits are set in Player Backups' [retention settings](#settings).
 
-**Delete is for user backups only** (2026-10-25, Alan): the user made them, so they decide when they go; it asks
+**Delete is for user backups only** (2026-10-24, Alan): the user made them, so they decide when they go; it asks
 first (`HudConfirmDialog`). Daily, before-changes and first setup backups have no Delete — retention looks after the
 first two, and the third is the one from before BindForge wrote anything. *Removed 2026-10-24 with the folder format,
-back 2026-10-25 for user backups.*
+back 2026-10-24 for user backups.*
 
 ### Backup Now
 
@@ -101,7 +101,7 @@ list. On Linux, an installation whose own bindings folder is not the one Elite-I
 `StartPreset` under its own `Installations\<n>-<storefront>\Bindings\`. *Storage S1 built this as dated folders
 directly in the backup folder; S1b made it zips in the four kind folders.*
 
-**Built 2026-10-25 (Storage S1b; Alan approved):** the zip is built in memory — a full backup is a few megabytes at
+**Built 2026-10-24 (Storage S1b; Alan approved):** the zip is built in memory — a full backup is a few megabytes at
 most — and written with `elite.intel.io.AtomicFiles`, the one write path, so its temporary file is
 `.<stamp>.zip.elite-intel-<id>.tmp` beside the target; retention's sweep removes one a crash left. Two backups of one
 kind in one second are `<stamp>.zip` and `<stamp>-2.zip`. The list's columns are **Created, Taken, Status** — the
@@ -120,16 +120,16 @@ galaxy map UI movement to the arrow keys and apply. Once you do, I can read your
 your ship."* Until 2026-10-24 that case was told to set the bindings folder, which was already right. A folder the user
 chose that is missing or empty is still told to fix the setting; the game's folder with a `StartPreset` and no `.binds`
 is still told to change a binding in the game. **Backup Now's "Nothing to Back Up Yet" dialog and the startup log line
-say the same words** (Alan, 2026-10-25).
+say the same words** (Alan, 2026-10-24).
 
 ### Old folder backups — V1.1's, and the old BindForge ones (settled 2026-10-24, Alan)
 
 V1.1's Backup Now wrote `<backup folder>\<yyyy-MM-dd_HH-mm-ss>\` folders holding only `.binds` and `StartPreset`;
 BindForge before Storage S1 wrote `…_before-bindforge` and `…_first-setup` folders; and Storage S1 itself, until S1b,
-wrote dated folders holding a `backup-info.txt` (2026-10-25, Alan). **They stay where they are, untouched: not listed,
+wrote dated folders holding a `backup-info.txt` (2026-10-24, Alan). **They stay where they are, untouched: not listed,
 and never deleted by retention** — the list reads only zips in the four kind folders. The user can still open them in
-their file manager. *Restore to Editing Slot and Restore to Live read the `.binds` from a new backup's `Bindings\`,
-or from the top of an old one, until RESTORE replaces them (S3).*
+their file manager. *Restore to Editing Slot and Restore to Live read the `.binds` from the zip's `Bindings\` until
+RESTORE replaces them (S3). Old folders are no longer read since S1b — they are not listed, so none can be chosen.*
 
 ### Restore
 
@@ -203,17 +203,17 @@ Steam and Epic restores onto one with only Steam with nothing to ask. The `.bind
 bindings folder. Whether the device entries describe *this user's* hardware is
 [Browse for Backup File's](#browse-for-backup-file) check.
 
-### Backup Format — every backup is a zip (2026-10-25, Alan)
+### Backup Format — every backup is a zip (2026-10-24, Alan)
 
 **One zip per backup, of every kind**, so restore has one format to read, and a backup is one file to copy to a new PC
 or send for support. Java ships `java.util.zip`; RAR was rejected for needing a third-party library.
 
 *Settled 2026-09-06 as a zip; changed to a plain folder on 2026-10-24 to match V1.1 (Alan: "lets just use folder, that
-stays consistent with version 1.1"); back to a zip on 2026-10-25 so every backup restores the same way.*
+stays consistent with version 1.1"); back to a zip later that day so every backup restores the same way.*
 
 **Open for S3:** a zip made with `java.util.zip` does not keep Windows' read-only flag, which players set to stop the
 game resetting a binds file. A restored file comes back writable unless RESTORE records and puts the flag back (Krondor's
-review, 2026-10-25).
+review, 2026-10-24).
 
 ### Browse for Backup File
 
@@ -297,7 +297,7 @@ first ([storage.md](storage.md) rule 12), which meets that.
 
 ## Settings
 
-**A retention settings section on Player Backups** (2026-10-25, Alan) — beside the list, where the mockup already has
+**A retention settings section on Player Backups** (2026-10-24, Alan) — beside the list, where the mockup already has
 *Backups go to* and *Keep backups for*:
 
 | Setting | Default | Description |
@@ -309,16 +309,24 @@ first ([storage.md](storage.md) rule 12), which meets that.
 *Removed 2026-10-24 (Alan): "Auto-backup on Elite-Intel launch" — the startup backup is the safety net and cannot be
 switched off ([storage.md](storage.md) rule 12); "Edit History retention" — Edit History is gone.* **Built 2026-10-24
 (Storage S1):** migration `12010` drops the `auto_backup_on_launch` column, and `edit_history_retention` stays in the
-table until Edit History's code is removed (S4), because it still reads it. *Until 2026-10-25 the settings were meant
+table until Edit History's code is removed (S4), because it still reads it. *Until S1b (2026-10-24) the settings were meant
 for a BindForge panel on Elite-Intel's Settings screen, and there was one retention, 30 days with a floor of one day.*
 
-**Built 2026-10-25 (Storage S1b; Alan approved):** a *Backup Settings* section above the list. **Backups go to** shows
+**Built 2026-10-24 (Storage S1b; Alan approved):** a *Backup Settings* section above the list. **Backups go to** shows
 the folder backups are actually written to — the chosen one, or the default when it is unset or unusable — with
 **Browse…** and **Use Default**, which clears the choice. **Keep daily backups for** is a dropdown of the four
 choices; **Keep newest before-changes backups** a stepper, 10 to 1000 in tens. Each saves when changed and applies at
 the next Elite-Intel start. Migration `12011` adds `daily_backup_retention_days` (30) and `before_changes_backups_kept`
 (100) and drops `backup_retention_days` — **its old value is not carried over**: no screen ever set it, V1.2 has not
 shipped, and it need not be one of the four choices.
+
+**A folder Browse… picks that would not be used is not saved, and the user is told why** (Alan, 2026-10-24, from the
+S1b review; principle 9): *inside a game folder*, *could not be created* or *cannot be written to*, with backups still
+going to the folder shown. Saved, it would have fallen back to the default without a word, and Browse… would have looked
+broken. The check is the same one a backup uses (`BackupDestination.check`), so the two cannot disagree. A stored
+folder that becomes unusable later — an unplugged drive — still falls back silently at backup time, as above. The
+settings are read and saved one at a time, in order, and the manager's read-modify-write is locked, so quick stepper
+clicks can never leave a stored value the screen does not show (review, 2026-10-24).
 
 **Where they are stored — built 2026-09-28:** a `bindforge_settings` table of their own, one column each; the
 destination is rejected at the setter if the platform cannot represent it, and each retention is checked against its
@@ -335,9 +343,9 @@ From the [simplification review](../../../bindforge-simplification-review.md), c
 
 | Today's code | Against `storage.md` |
 |---|---|
-| ~~**Backup Now** copies `.binds` and `StartPreset` only, **no device files**, and finds `StartPreset` with the old `findStartPresetFile`~~ **Built 2026-10-24 (Storage S1):** every file from every installation, as a date-stamped folder (`bindforge.storage.Backups`); a zip in one of four kind folders since 2026-10-25 (S1b) | every file from every installation, as a date-stamped zip (rules 11–12) |
-| ~~**No backup when Elite-Intel starts**~~ **Built 2026-10-24 (Storage S1):** `StartupBackup`, every start, silent; the switch is gone | a silent backup at every start, which cannot be switched off (rule 12) |
-| ~~**Nothing is ever deleted**~~ **Built 2026-10-24 (Storage S1):** retention at start, after a successful backup | retention, 30 days by default; first-time startup's backup kept forever (rule 11) |
+| ~~**Backup Now** copies `.binds` and `StartPreset` only, **no device files**, and finds `StartPreset` with the old `findStartPresetFile`~~ **Built 2026-10-24 (Storage S1):** every file from every installation, as a date-stamped folder (`bindforge.storage.Backups`); a zip in one of four kind folders since 2026-10-24 (S1b) | every file from every installation, as a date-stamped zip (rules 11–12) |
+| ~~**No backup when Elite-Intel starts**~~ **Built 2026-10-24 (Storage S1):** `StartupBackup`, every start, silent; the switch is gone; once a day since S1b | a silent daily backup at the first start each day, which cannot be switched off (rule 12) |
+| ~~**Nothing is ever deleted**~~ **Built 2026-10-24 (Storage S1):** retention at start, after a successful backup; two rules since S1b | daily backups kept by age, before-changes backups by count, user backups until deleted, first-time startup's backup forever (rule 11) |
 | **Restore covers `.binds` only, one file at a time**, to the editing copy or straight to the game | everything, no choices, to the live copies and the working copy (rule 10) |
 | **The "before BindForge" backup** holds everything, but its restore covers `.binds` only | part of the one backup system |
 | **Edit History is written three ways** — device files into `bindings\history\<installation>\` (last 10), `.binds` copies into the backup folder (never deleted), `StartPreset` copies into that same folder (last 10) — and a `.bak` is left beside the working copy on every save | all of it goes: one backup system, nothing per file (rule 11) |
@@ -351,9 +359,8 @@ first, the other has to land with it.
 **BindForge owns migrations `12000–12499`**, commander and galaxy work `12500–12999`, per Krondor's <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
 [proposal §4](../../multi-install-proposal.md#4-migrations-one-tree-per-file), accepted 2026-09-24, in the
 shared top-level `db-migration/` tree and never `db-migration/commander/`, which is Krondor's alone. <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
-The range held one file when this was written and now holds five — `12000__bindforge_settings.sql`,
-`12001__bindforge_installations.sql`, `12002__bindforge_devices.sql`, `12003__bindforge_device_draft.sql` and
-`12004__bindforge_device_pending_removal.sql`. [An applied migration is never edited](../../../CLAUDE.md).
+The range held one file when this was written; it now holds `12000` to `12011` — look in `db-migration/` for the
+current list rather than trusting a count here. [An applied migration is never edited](../../../CLAUDE.md).
 
 ## Export / Import — Considered, Then Cut
 

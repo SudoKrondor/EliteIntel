@@ -22,7 +22,7 @@ public class BindForgeSettingsManager {
     public static final int MIN_EDIT_HISTORY_RETENTION = 1;
     public static final int MAX_EDIT_HISTORY_RETENTION = 30;
 
-    /** The days a daily backup can be kept for (file-manager.md, <em>Settings</em>; Alan, 2026-10-25). */
+    /** The days a daily backup can be kept for (file-manager.md, <em>Settings</em>; Alan, 2026-10-24). */
     public static final List<Integer> DAILY_BACKUP_RETENTION_CHOICES = List.of(30, 60, 90, 180);
 
     /** The range of how many before-changes backups are kept (file-manager.md, <em>Settings</em>). */
@@ -139,7 +139,9 @@ public class BindForgeSettingsManager {
 
     // WHY: read-modify-write in one DAO call. Saving writes the whole row, so changing one setting from a
     // stale copy would overwrite every other setting with whatever it held when it was read.
-    private void update(Consumer<BindForgeSettingsDao.BindForgeSettings> change) {
+    // WHY: synchronized, so two callers on different threads never both read the row before either writes it back -
+    // the second write would put back the first one's old value (review, 2026-10-24).
+    private synchronized void update(Consumer<BindForgeSettingsDao.BindForgeSettings> change) {
         Database.withDao(BindForgeSettingsDao.class, dao -> {
             BindForgeSettingsDao.BindForgeSettings settings = dao.get();
             change.accept(settings);
