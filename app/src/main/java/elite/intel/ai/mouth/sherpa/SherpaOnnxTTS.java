@@ -152,6 +152,13 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                                                boolean russian);
 
     /**
+     * Converts text into the representation this local voice reads reliably.
+     */
+    protected String textForSynthesis(String text, Language language) {
+        return SignedAndDecimalNumbers.inWords(text, language).replace(".", " ");
+    }
+
+    /**
      * The regex a transmission is split on, one queue entry per piece.
      */
     protected abstract String sentenceBoundary();
@@ -540,9 +547,10 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
      * sign and point are still there - in the task's language, which is why Russian chatter keeps its digits:
      * we have no Russian number words to give it. Then dots go, or the voice says "dot" all the time.
      */
-    private static String spokenText(SynthesisTask task) {
-        String text = task.russian() ? task.text() : SignedAndDecimalNumbers.inWords(task.text(), task.language());
-        return text.replace(".", " ");
+    private String spokenText(SynthesisTask task) {
+        return task.russian()
+                ? task.text().replace(".", " ")
+                : textForSynthesis(task.text(), task.language());
     }
 
     // -- Stage 1: Synthesis thread ---------------------------------------------

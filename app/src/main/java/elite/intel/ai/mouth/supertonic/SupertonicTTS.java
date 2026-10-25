@@ -24,8 +24,11 @@ import java.util.function.Consumer;
  */
 public class SupertonicTTS extends SherpaOnnxTTS {
 
-    private static final int NUM_STEPS = 8;
-    private static final float SPEED_MULTIPLIER = 0.85f;
+    private static final int NUM_STEPS = 10;
+    private static final float MIN_SPEED = 0.8f;
+    private static final float MAX_SPEED = 1.5f;
+    private static final float SPEED_MULTIPLIER = 0.75f;
+    private static final float MAX_MODEL_SPEED = 0.85f;
 
     private static volatile SupertonicTTS instance;
 
@@ -60,12 +63,15 @@ public class SupertonicTTS extends SherpaOnnxTTS {
      * times in three at 1.15, and still about one in ten at 1.0). At its default pace it spoke 45 of 45 whole;
      * the rest of the pace is added afterwards by {@link TimeStretch}, which keeps the pitch.
      */
-    private static final float MAX_MODEL_SPEED = SPEED_MULTIPLIER;
-
     @Override
     protected GeneratedAudio generate(OfflineTts tts, String text, int sid, float speed, Language language,
                                       boolean russian) {
-        float pace = speed * SPEED_MULTIPLIER;
+        return generateSegment(tts, text, sid, speed, language, russian);
+    }
+
+    private GeneratedAudio generateSegment(OfflineTts tts, String text, int sid, float speed, Language language,
+                                           boolean russian) {
+        float pace = effectivePace(speed);
         float modelPace = Math.min(pace, MAX_MODEL_SPEED);
         GenerationConfig genConfig = new GenerationConfig();
         genConfig.setSid(sid);
@@ -80,6 +86,18 @@ public class SupertonicTTS extends SherpaOnnxTTS {
         }
         float[] faster = TimeStretch.speedUp(audio.getSamples(), audio.getSampleRate(), pace / modelPace);
         return new GeneratedAudio(faster, audio.getSampleRate());
+    }
+
+    static float effectivePace(float speed) {
+        if (!Float.isFinite(speed)) {
+            throw new IllegalArgumentException("Supertonic speed must be finite, but was " + speed);
+        }
+        return Math.max(MIN_SPEED, Math.min(speed * SPEED_MULTIPLIER, MAX_SPEED));
+    }
+
+    @Override
+    protected String textForSynthesis(String text, Language language) {
+        return SupertonicTextNormalizer.normalize(text, language).replace(".", " ");
     }
 
     /**
@@ -143,6 +161,7 @@ public class SupertonicTTS extends SherpaOnnxTTS {
                     "Supertonic model missing at: " + modelDir +
                             " - run the installer to download TTS models.");
         }
+        validateModelAssets(modelDir);
 
         OfflineTtsSupertonicModelConfig supertonic = OfflineTtsSupertonicModelConfig.builder()
                 .setDurationPredictor(AppPaths.toNativePath(modelDir.resolve("duration_predictor.int8.onnx")))
@@ -167,5 +186,24 @@ public class SupertonicTTS extends SherpaOnnxTTS {
                 .build();
 
         return new OfflineTts(config);
+    }
+
+    static void validateModelAssets(Path modelDir) {
+        Path voiceStyle = modelDir.resolve("voice.bin");
+        Path unicodeIndexer = modelDir.resolve("unicode_indexer.bin");
+        StringBuilder missing = new StringBuilder();
+        if (!Files.isRegularFile(voiceStyle)) {
+            missing.append(voiceStyle);
+        }
+        if (!Files.isRegularFile(unicodeIndexer)) {
+            if (!missing.isEmpty()) {
+                missing.append(", ");
+            }
+            missing.append(unicodeIndexer);
+        }
+        if (!missing.isEmpty()) {
+            throw new IllegalStateException("Supertonic model assets missing: " + missing
+                    + " - run the installer to download TTS models.");
+        }
     }
 }

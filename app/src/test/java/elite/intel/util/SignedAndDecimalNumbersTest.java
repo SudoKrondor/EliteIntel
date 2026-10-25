@@ -38,4 +38,18 @@ class SignedAndDecimalNumbersTest {
                 SignedAndDecimalNumbers.inWords("Col 285 Sector XY-Z c12-34 runs v1.1.0021", Language.EN));
         assertEquals("build 1.1.0021", SignedAndDecimalNumbers.inWords("build 1.1.0021", Language.EN));
     }
+
+    @Test
+    void canSpellStandaloneWholeNumbersForSensitiveVoices() {
+        assertEquals("one thousand three hundred twenty",
+                SignedAndDecimalNumbers.inWordsIncludingWholeNumbers("1320", Language.EN));
+        assertEquals("minus one thousand three hundred twenty",
+                SignedAndDecimalNumbers.inWordsIncludingWholeNumbers("-1320", Language.EN));
+        assertEquals("minus one thousand three hundred twenty",
+                SignedAndDecimalNumbers.inWordsIncludingWholeNumbers("−1320", Language.EN));
+        assertEquals("Docked at one thousand three hundred twenty, platform seven.",
+                SignedAndDecimalNumbers.inWordsIncludingWholeNumbers("Docked at 1320, platform 7.", Language.EN));
+        assertEquals("build 1.1.0021",
+                SignedAndDecimalNumbers.inWordsIncludingWholeNumbers("build 1.1.0021", Language.EN));
+    }
 }
