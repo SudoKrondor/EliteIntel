@@ -85,7 +85,8 @@ configuration files have not been created yet. Complete your commander training,
 galaxy map UI movement to the arrow keys and apply. Once you do, I can read your controls. Until then I cannot operate
 your ship."* Until 2026-10-24 that case was told to set the bindings folder, which was already right. A folder the user
 chose that is missing or empty is still told to fix the setting; the game's folder with a `StartPreset` and no `.binds`
-is still told to change a binding in the game.
+is still told to change a binding in the game. **Backup Now's "Nothing to Back Up Yet" dialog shows the same string**,
+so the two can never say different things (Alan, 2026-10-25).
 
 ### Old folder backups — V1.1's, and the old BindForge ones (settled 2026-10-24, Alan)
 

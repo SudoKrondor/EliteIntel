@@ -151,10 +151,11 @@ public class BindingManagementPanel extends JPanel {
             SwingUtilities.invokeLater(() -> {
                 setOperationBusy(false);
                 if (resultNothingYet) {
-                    // WHY: not a fault - a new player has no files yet, and is told how the game makes them (Alan,
-                    // 2026-10-24).
+                    // WHY: not a fault - a new player has no files yet, and is told how the game makes them. The same
+                    // string the startup setup check speaks, so the two can never say different things (Alan,
+                    // 2026-10-25).
                     HudConfirmDialog.info(this, getText("bindings.bindingManagement.backup.nothingYet.title"),
-                            getText("bindings.bindingManagement.backup.nothingYet"), getText("button.ok"));
+                            getText("speech.setup.noBindingsYet"), getText("button.ok"));
                 } else if (resultFailure != null) {
                     showError("bindings.bindingManagement.backup.dialogTitle", "bindings.bindingManagement.backup.error",
                             resultFailure.getMessage());

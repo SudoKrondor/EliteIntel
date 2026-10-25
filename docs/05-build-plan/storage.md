@@ -124,7 +124,7 @@ slice needs.*
 - **2026-10-24 — a new player is told to play the training first.** The one exception to the silent backup (Alan):
   `SetupCheck` says `speech.setup.noBindingsYet`, in Alan's words, when the game's default bindings folder is missing
   or holds no `StartPreset` — it used to tell them to set the folder. Recorded in storage.md rule 12 and
-  file-manager.md. **Open:** Backup Now's "nothing to back up yet" dialog still has the earlier tutorials wording.
+  file-manager.md. Backup Now's "Nothing to Back Up Yet" dialog shows the same string since 2026-10-25.
 - **2026-10-24 — S1 review follow-up** ([code-integrity-review-storage-s1.md](../../code-integrity-review-storage-s1.md)).
   Fixed: a prune renames a backup to `.taking-` before deleting it, so a delete that stops part way is finished by the
   next prune; one prune resolves the folder once; the backup runs detection once and hands it to
