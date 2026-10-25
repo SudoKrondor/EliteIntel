@@ -85,16 +85,24 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
     BindForge last wrote, and the next check would ask the user about their own restore.)
     **If the working copy cannot be read,** BindForge says so and offers the most recent backup to restore from
     (2026-10-23, Alan).
-11. One backup system. No versions, no history per file. **Backups older than the retention setting — 30 days by
-    default — are deleted when Elite-Intel starts**, except the one first-time startup takes before creating the working copy (rule 3), which is kept
-    forever (2026-10-21 and 2026-10-23, Alan).
+11. One backup system. No versions, no history per file. **Four kinds of backup, each kept by its own rule**
+    (2026-10-25, Alan), applied when Elite-Intel starts:
+    - **daily** — kept by age: 30, 60, 90 or 180 days, the user's choice, 30 by default;
+    - **before changes** — kept by count: the newest 100 by default, the user's choice from 10 to 1000;
+    - **user** (Backup Now) — kept until the user deletes them;
+    - **first setup** — the one first-time startup takes before creating the working copy (rule 3), kept forever.
+
+    *Why two rules* (Krondor's review, 2026-10-25): age alone deletes every good backup when a user is away longer than
+    the limit; a count alone loses last week's good copy to one evening of applies. *Until 2026-10-25 every backup was
+    deleted by age, 30 days by default.*
 
 ## Backups
 
-12. A backup is a folder holding a copy of the live copies, named with its date stamp, in Elite-Intel's BindForge
-    backup folder — a plain folder, not a zip, so the user can look through it, as in V1.1 (2026-10-24, Alan). One is
-    made before every write to the live copies. **Before a live copy replaces the working copy, the working copy is
-    backed up the same way** (2026-10-23, Alan).
+12. A backup is a zip of the live copies, named with its date stamp, in Elite-Intel's BindForge backup folder — every
+    backup a zip, so there is one format to restore (2026-10-25, Alan; folders were tried 2026-10-24). **A
+    before-changes backup is made before every write to the live copies** — APPLY, RESTORE (of what is there now) —
+    and **before a live copy replaces the working copy, the working copy is backed up the same way** (2026-10-23 and
+    2026-10-25, Alan). Backup Now makes a **user** backup.
 
     **The backup folder is the record** — the list of backups is the folder's listing, sorted by the date stamp in
     each name, with no database table — and **it is in Elite-Intel's own data folder, never in a game folder**, where
@@ -103,15 +111,16 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
     Every backup holds the full set of live copies from every installation, even when they match — no comparison
     first (2026-10-24, Alan).
 
-    **Every time Elite-Intel starts, it backs up all the live copies, in every installation, silently, in the
-    background** — whether or not the user ever opens BindForge, and before first-time startup has ever run. The
-    user is not told. The working copy is not included: after BindForge was last used it matches the live copy. If
-    the backup fails, it is written to the application log and tried again the next time Elite-Intel starts
-    (2026-10-23, Alan). It cannot be switched off (2026-10-24, Alan). **The one exception to "not told": a new player
+    **The first time Elite-Intel starts each day, it backs up all the live copies, in every installation, silently,
+    in the background — the daily backup** (2026-10-25, Alan; every start until then) — whether or not the user ever
+    opens BindForge, and before first-time startup has ever run. The user is not told. The working copy is not
+    included: after BindForge was last used it matches the live copy. If the backup fails, it is written to the
+    application log and tried again at the next start, the same day included (2026-10-23 and 2026-10-25, Alan). Once a
+    day is enough because BindForge writes only at APPLY, and every APPLY takes its own backup. It cannot be switched off (2026-10-24, Alan). **The one exception to "not told": a new player
     with nothing to back up** — the game creates its bindings folder only once they have played through the training,
     so until then there is nothing of theirs to protect, and Elite-Intel cannot operate their ship either. They are
     told at every start, spoken and logged, by Elite-Intel's setup check rather than by the backup (2026-10-24, Alan;
-    [file-manager.md](file-manager.md#how-a-backup-folder-is-laid-out--built-2026-10-24-storage-s1)). *Why:* a user who lost their binds can be told where their backups are, or restore one in
+    [file-manager.md](file-manager.md#how-the-backup-folder-is-laid-out)). *Why:* a user who lost their binds can be told where their backups are, or restore one in
     BindForge; and if a BindForge bug ever destroys someone's files, there is a backup from before it ran.
 
 ## When a live copy differs

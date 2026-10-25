@@ -155,7 +155,7 @@ public class BindingManagementPanel extends JPanel {
                     // string the startup setup check speaks, so the two can never say different things (Alan,
                     // 2026-10-25).
                     HudConfirmDialog.info(this, getText("bindings.bindingManagement.backup.nothingYet.title"),
-                            getText("speech.setup.noBindingsYet"), getText("button.ok"));
+                            getText(Backups.NothingToBackUpException.ADVICE_KEY), getText("button.ok"));
                 } else if (resultFailure != null) {
                     showError("bindings.bindingManagement.backup.dialogTitle", "bindings.bindingManagement.backup.error",
                             resultFailure.getMessage());

@@ -5,6 +5,7 @@ import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.bindforge.io.BindingsLoader;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.i18n.Language;
+import elite.intel.session.DirectorySetting;
 import elite.intel.session.SystemSession;
 import elite.intel.setup.SetupCheck.LlmSetup;
 import elite.intel.ui.i18n.MultiLingualTextProvider;
@@ -287,7 +288,7 @@ class SetupCheckTest {
 
     private static SetupCheck checkWith(boolean llmUnconfigured, boolean providerMissing, Path journals, Path bindings) {
         return new SetupCheck(new BindingsLoader(), () -> llmUnconfigured, () -> providerMissing,
-                () -> journals, () -> bindings);
+                () -> journals, () -> bindings, DirectorySetting::defaultBindingsPath);
     }
 
     /** A configured model, with the game's default bindings folder at {@code gameDefault}. */

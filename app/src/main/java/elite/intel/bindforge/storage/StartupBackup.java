@@ -1,6 +1,8 @@
 package elite.intel.bindforge.storage;
 
 import elite.intel.db.managers.BindForgeSettingsManager;
+import elite.intel.i18n.Language;
+import elite.intel.ui.i18n.MultiLingualTextProvider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -75,8 +77,9 @@ public final class StartupBackup {
         } catch (Backups.NothingToBackUpException e) {
             // WHY: a warning, not an error - a new player, or a game not yet installed, has no files yet, and an error
             // line at every start would send whoever reads a support bundle looking for a fault (review, 2026-10-24).
+            // WHY: in English, like the rest of the log, whatever language the user speaks - the log is read for support.
             log.warn("Nothing to back up at Elite-Intel start: {}. {}", String.join("; ", e.notRead()),
-                    Backups.NothingToBackUpException.ADVICE);
+                    MultiLingualTextProvider.getText(Language.EN, Backups.NothingToBackUpException.ADVICE_KEY));
             return;
         } catch (Exception e) {
             // WHY: broad on purpose - whatever stopped it, it is logged and tried again at the next start, and startup

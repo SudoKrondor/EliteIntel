@@ -3,6 +3,7 @@ package elite.intel.bindforge.storage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -84,10 +85,10 @@ public final class Backups {
     /** Thrown when not one file could be read, so no backup was written. */
     public static final class NothingToBackUpException extends IOException {
         /**
-         * What the user does about it, in the log (Alan, 2026-10-24). The screen says the same from its bundles.
+         * The bundle key of what the user does about it - the new-player message the startup setup check speaks and
+         * Backup Now shows, so the log says the same words (Alan, 2026-10-25).
          */
-        public static final String ADVICE = "The game creates its input configuration files once the player starts "
-                + "Elite Dangerous and plays past the tutorials.";
+        public static final String ADVICE_KEY = "speech.setup.noBindingsYet";
 
         private final transient List<String> notRead;
 
@@ -335,7 +336,7 @@ public final class Backups {
         List<BackupSources.Installation> installations = from.installations();
         for (int i = 0; i < installations.size(); i++) {
             BackupSources.Installation installation = installations.get(i);
-            text.append(INSTALLATIONS).append('\\').append(i + 1).append('-').append(safe(installation.storefront()))
+            text.append(INSTALLATIONS).append(File.separatorChar).append(i + 1).append('-').append(safe(installation.storefront()))
                     .append(": ").append(installation.storefront()).append(", ").append(installation.root())
                     .append('\n');
         }

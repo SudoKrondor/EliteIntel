@@ -72,20 +72,13 @@ public class SetupCheck {
                 SetupCheck::isLlmUnconfigured,
                 LlmProviderResolver::isCloudProviderMissing,
                 () -> PlayerSession.getInstance().getJournalPath(),
-                () -> PlayerSession.getInstance().getBindingsDir());
-    }
-
-    /**
-     * Seam for tests: everything this reads about the install comes through here.
-     */
-    SetupCheck(BindingsLoader bindingsLoader, BooleanSupplier llmUnconfigured, BooleanSupplier cloudProviderMissing,
-               Supplier<Path> journalDir, Supplier<Path> bindingsDir) {
-        this(bindingsLoader, llmUnconfigured, cloudProviderMissing, journalDir, bindingsDir,
+                () -> PlayerSession.getInstance().getBindingsDir(),
                 DirectorySetting::defaultBindingsPath);
     }
 
     /**
-     * As above, with the game's default bindings folder too - the new-player message is for that folder only.
+     * Seam for tests: everything this reads about the install comes through here - including the game's default
+     * bindings folder, since the new-player message is for that folder only.
      */
     SetupCheck(BindingsLoader bindingsLoader, BooleanSupplier llmUnconfigured, BooleanSupplier cloudProviderMissing,
                Supplier<Path> journalDir, Supplier<Path> bindingsDir, Supplier<Path> defaultBindingsDir) {

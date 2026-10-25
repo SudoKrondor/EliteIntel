@@ -207,7 +207,7 @@ single most important next task is a detailed read of `elite.intel.bindforge.io`
 [BindForge specs](../02-features/bindforge/overview.md)**, to determine what is reusable, what conflicts, and
 what must be rewritten.
 
-**Gaps against the ported specs:** the Backup and Restore operations (a backup is a dated folder since 2026-10-24, no longer a ZIP) that BindForge's
+**Gaps against the ported specs:** the Backup and Restore operations (a backup is a dated zip, of one of four kinds, since 2026-10-25) that BindForge's
 File Manager is built on have no equivalent and must be written. ~~`DeviceMappings.xml` and `.buttonMap` handling
 appears absent entirely — BindForge's Device Identity and Button Map domains are greenfield.~~ Built since, in
 `elite.intel.bindforge.devicefiles` (Core C1–C3 and C5, 2026-10-04 to 2026-10-11).
