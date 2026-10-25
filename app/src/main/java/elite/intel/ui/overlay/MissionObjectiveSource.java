@@ -2,6 +2,7 @@ package elite.intel.ui.overlay;
 
 import elite.intel.db.managers.MissionManager;
 import elite.intel.db.managers.ShipRouteManager;
+import elite.intel.gameapi.GameClock;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.gameapi.missions.MissionCargo;
 import elite.intel.gameapi.missions.MissionSelection;
@@ -291,13 +292,14 @@ public class MissionObjectiveSource implements HudObjectiveSource {
     }
 
     /**
-     * Journal expiry timestamps are ISO-8601; anything unparseable sorts last.
+     * Journal expiry timestamps are ISO-8601; anything unparseable sorts last. Shifted onto the PC clock the countdown
+     * is read against.
      */
     private static Optional<Instant> expiryOf(MissionDto mission) {
         String raw = mission.getExpiry();
         if (raw == null || raw.isBlank()) return Optional.empty();
         try {
-            return Optional.of(Instant.parse(raw));
+            return Optional.of(GameClock.get().toPcTime(Instant.parse(raw)));
         } catch (DateTimeParseException e) {
             return Optional.empty();
         }

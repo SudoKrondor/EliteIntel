@@ -6,6 +6,7 @@ import elite.intel.ai.brain.vega.memory.facts.RegisterMemoryFactSource;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.db.managers.ShipRouteManager;
+import elite.intel.gameapi.GameClock;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.gameapi.missions.MissionSelection;
 
@@ -166,7 +167,8 @@ public final class MissionFactSource implements MemoryFactSource {
     }
 
     /**
-     * Journal expiry timestamps are ISO-8601; anything unparseable is treated as absent.
+     * Journal expiry timestamps are ISO-8601; anything unparseable is treated as absent. Shifted onto the PC clock the
+     * deadline is read against.
      */
     private static Optional<Instant> expiryOf(MissionDto mission) {
         String raw = mission.getExpiry();
@@ -174,7 +176,7 @@ public final class MissionFactSource implements MemoryFactSource {
             return Optional.empty();
         }
         try {
-            return Optional.of(Instant.parse(raw.trim()));
+            return Optional.of(GameClock.get().toPcTime(Instant.parse(raw.trim())));
         } catch (DateTimeParseException unparseable) {
             return Optional.empty();
         }

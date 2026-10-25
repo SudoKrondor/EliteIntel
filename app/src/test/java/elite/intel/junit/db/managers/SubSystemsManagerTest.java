@@ -86,6 +86,20 @@ class SubSystemsManagerTest {
     }
 
     @Test
+    void gameClockBehindThePc_stillMatches() throws InterruptedException {
+        // A Windows clock a few seconds fast: every reply is stamped before the PC moment of the key press. The stale
+        // filter works in game time, so the replies still count.
+        startResponder(7,
+                raw("int_lifesupport"),
+                raw("int_powerplant"));
+
+        manager.targetSubSystem("power plant");
+
+        awaitTrue(() -> beeps.contains(AudioPlayer.BEEP_1));
+        assertTrue(announcements.isEmpty(), "should not announce 'not installed' when the module is found");
+    }
+
+    @Test
     void moduleNotInstalled_announcesAfterFullLoop() throws InterruptedException {
         // Five fitted subsystems, none of them a Refinery. The cycle wraps back to the first.
         startResponder(
@@ -127,7 +141,11 @@ class SubSystemsManagerTest {
     // ── harness ──────────────────────────────────────────────────────────────
 
     private void startResponder(String... cycle) {
-        responder = new GameResponder(cycle);
+        startResponder(0, cycle);
+    }
+
+    private void startResponder(long gameSecondsBehind, String... cycle) {
+        responder = new GameResponder(gameSecondsBehind, cycle);
         GameControllerBus.register(responder);
     }
 
@@ -138,9 +156,9 @@ class SubSystemsManagerTest {
         return "$" + machineKey + "_size5_class5_name;";
     }
 
-    private static ShipTargetedEvent shipTargeted(String rawSubsystem) {
+    private static ShipTargetedEvent shipTargeted(String rawSubsystem, long gameSecondsBehind) {
         JsonObject j = new JsonObject();
-        j.addProperty("timestamp", Instant.now().toString());
+        j.addProperty("timestamp", Instant.now().minusSeconds(gameSecondsBehind).toString());
         j.addProperty("event", "ShipTargeted");
         j.addProperty("TargetLocked", true);
         j.addProperty("ScanStage", 3);
@@ -152,11 +170,13 @@ class SubSystemsManagerTest {
      * Simulates the game: each key press advances the cycle and replies asynchronously.
      */
     private static final class GameResponder {
+        private final long gameSecondsBehind;
         private final String[] cycle;
         private final AtomicInteger idx = new AtomicInteger(-1);
         final List<String> pressedBindings = Collections.synchronizedList(new ArrayList<>());
 
-        GameResponder(String[] cycle) {
+        GameResponder(long gameSecondsBehind, String[] cycle) {
+            this.gameSecondsBehind = gameSecondsBehind;
             this.cycle = cycle;
         }
 
@@ -166,7 +186,7 @@ class SubSystemsManagerTest {
             String rawSubsystem = cycle[Math.floorMod(idx.incrementAndGet(), cycle.length)];
             Thread t = new Thread(() -> {
                 SleepNoThrow.sleep(15); // reply after the manager has parked on pause, like the journal
-                GameEventBus.publish(shipTargeted(rawSubsystem));
+                GameEventBus.publish(shipTargeted(rawSubsystem, gameSecondsBehind));
             }, "TestGameResponder");
             t.setDaemon(true);
             t.start();
