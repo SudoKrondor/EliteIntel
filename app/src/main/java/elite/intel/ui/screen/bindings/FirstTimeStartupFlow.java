@@ -74,7 +74,9 @@ public final class FirstTimeStartupFlow {
                 return () -> tell(getText(FirstTimeStartup.NoBindingsYetException.ADVICE_KEY));
             } catch (FirstTimeStartup.NoInstallationReachableException e) {
                 log.info("First-time startup waits for an installation: {}", e.getMessage());
-                String which = e.unreachable().stream().map(row -> row.storefront() + " (" + row.rootPath() + ")")
+                String which = e.unreachable().stream()
+                        .map(row -> getText("bindings.firstTimeStartup.place.installation", row.storefront(),
+                                row.rootPath()))
                         .collect(Collectors.joining(", "));
                 return () -> tell(getText("bindings.firstTimeStartup.noneReachable", which));
             } catch (IOException | RuntimeException e) {

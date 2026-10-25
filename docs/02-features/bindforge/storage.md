@@ -31,7 +31,9 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
    be changed at any time. **An installation added later, or one that was unreachable at first setup and comes
    back,** is compared with the working copy: if its device files match, nothing is done; if they differ, it is
    reconciled as in rule 2 before anything is written to it. It is never overwritten automatically (Alan,
-   2026-10-25, from the S2b review; until then it got the working copy at the next APPLY).
+   2026-10-25, from the S2b review; until then it got the working copy at the next APPLY). **RESTORE is the one
+   exception** ([rule 10](#restore)): it is the user asking to put a whole backup back, so it replaces every
+   installation's device files, one the backup does not hold included.
 
    The live copies were already backed up when Elite-Intel started ([rule 12](#backups)).
 2. If the installations hold different versions of `DeviceMappings.xml` or the `.buttonMap`s, the user reconciles
@@ -130,8 +132,10 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
 10. RESTORE: choose a backup. It backs up what is there now, then puts the whole backup back and replaces the working copy.
     No choices (2026-10-24, Alan). The `.binds` and `StartPreset.4.start` go to the bindings folder; the device files
     go to every installation on this machine now, as one set — the backup's, or, if the backup holds different device
-    files for different installations, the set the user reconciles as in rule 2. Its confirmation says any edits on
-    screen are thrown away. (2026-10-22, Alan: the working copy is replaced too, otherwise it would no longer be what
+    files for different installations, the set the user reconciles as in rule 2. **An installation the backup does not
+    hold - one added since - is replaced too, without a reconcile** (Alan, 2026-10-25, from the S2b review): RESTORE is
+    not automatic, it backs up what is there first, and its confirmation names every installation it replaces. Its
+    confirmation says any edits on screen are thrown away. (2026-10-22, Alan: the working copy is replaced too, otherwise it would no longer be what
     BindForge last wrote, and the next check would ask the user about their own restore.)
     **If the working copy cannot be read,** BindForge says so and offers the most recent backup to restore from
     (2026-10-23, Alan).
