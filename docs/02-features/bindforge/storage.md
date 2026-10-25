@@ -75,6 +75,28 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
    are reminded, and choose **Go back**, **Discard** or **Apply** (Apply with its usual confirmation and backup).
    Nothing is selected and Enter chooses nothing; Esc and the close glyph are Go back (2026-10-23, Alan).
 
+## How the files are written — 2026-10-25
+
+Settled with Storage S2a's sources (Alan, 2026-10-25). Built as `bindforge.storage.WritePath`, `WorkingCopy` and
+`LiveCopies`.
+
+- **One write path.** First setup, APPLY, RESTORE and the check's reconcile all write the same way: back up, save the
+  set as the working copy, write it to every live copy. If the backup cannot be taken or the working copy cannot be
+  saved, it stops, and no live copy is written. The working copy is saved first so that it always holds what BindForge
+  last wrote: a live copy the write missed then differs from it, and the check or the next write puts it right (rule 8).
+- **The working copy is written in one step.** The new set is written into a folder beside it, marked complete, then
+  swapped in. A write that stops before the mark leaves the old set; one that stops after it is finished by the next
+  read or write. The working copy is never half one set and half another.
+- **A live file that already holds the same bytes is not rewritten.** Bytes, not values: rewriting a file that differs
+  only in line endings costs nothing, and what counts as a change is the check's question (rule 14), not the write's.
+- **A missing bindings folder is reported, never created** — creating it would put the files where the game never
+  reads them. A missing `DeviceButtonMaps` folder inside an installation is created.
+- **A `.buttonMap` the working copy lacks is removed**, except Frontier's shipped `VPCPanel` and `VPCThrottle`. An old
+  spelling of a kept one (`lvwap.buttonMap` for `LVWAP.buttonMap`) is the same file on Windows and is kept as it; on a
+  file system that heeds case it is a file of its own, and goes.
+- **A `.binds` the working copy lacks is left in the bindings folder.** Removing an old-named one is a rename's
+  (rule 7, Storage S12).
+
 ## Restore
 
 10. RESTORE: choose a backup. It backs up what is there now, then puts the whole backup back and replaces the working copy.

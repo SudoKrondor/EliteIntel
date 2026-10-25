@@ -43,8 +43,9 @@ import java.util.zip.ZipOutputStream;
  * name, with no database table. Only zips in the kind folders are listed, so V1.1's folder backups, the old BindForge
  * ones and Storage S1's dated folders are never listed and never deleted (Alan, 2026-10-24).
  * <p>
- * <strong>Every write to a game file is to call {@link #backUpBeforeChange(Before)} first</strong> (principle 3). Nothing
- * calls it yet: the callers arrive with Storage S2's write path, and until then the old writers take their own backups.
+ * <strong>Every write to a game file goes through {@link WritePath}, which takes a backup first</strong> (principle 3) -
+ * {@link #backUpBeforeChange(Before)}, or first setup's {@link Kind#FIRST_SETUP}. Its callers arrive with Storage S2b,
+ * S3 and S4; until then the old writers take their own backups.
  * Touches the disk - not for the EDT.
  */
 public final class Backups {
