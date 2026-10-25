@@ -75,15 +75,19 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
    are reminded, and choose **Go back**, **Discard** or **Apply** (Apply with its usual confirmation and backup).
    Nothing is selected and Enter chooses nothing; Esc and the close glyph are Go back (2026-10-23, Alan).
 
-## How the files are written — 2026-10-25
+## How the files are written — 2026-10-24
 
-Settled with Storage S2a's sources (Alan, 2026-10-25). Built as `bindforge.storage.WritePath`, `WorkingCopy` and
+Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.storage.WritePath`, `WorkingCopy` and
 `LiveCopies`.
 
 - **One write path.** First setup, APPLY, RESTORE and the check's reconcile all write the same way: back up, save the
   set as the working copy, write it to every live copy. If the backup cannot be taken or the working copy cannot be
   saved, it stops, and no live copy is written. The working copy is saved first so that it always holds what BindForge
   last wrote: a live copy the write missed then differs from it, and the check or the next write puts it right (rule 8).
+- **The backup and the write cover the same places, and one write runs at a time** (review, 2026-10-24). The
+  installations are found once per write, and that list is both backed up and written, so nothing is written that was
+  not backed up (rule 12). A second write waits until the first has written its last live copy, so the working copy
+  and the live copies always hold the same set.
 - **The working copy is written in one step.** The new set is written into a folder beside it, marked complete, then
   swapped in. A write that stops before the mark leaves the old set; one that stops after it is finished by the next
   read or write. The working copy is never half one set and half another.
@@ -94,6 +98,10 @@ Settled with Storage S2a's sources (Alan, 2026-10-25). Built as `bindforge.stora
 - **A `.buttonMap` the working copy lacks is removed**, except Frontier's shipped `VPCPanel` and `VPCThrottle`. An old
   spelling of a kept one (`lvwap.buttonMap` for `LVWAP.buttonMap`) is the same file on Windows and is kept as it; on a
   file system that heeds case it is a file of its own, and goes.
+- **A working copy with no `DeviceMappings.xml` leaves each installation's alone** (review, 2026-10-24). Without that
+  file the game loads no bindings at all ([overview](overview.md#why-devicemappingsxml-is-not-cosmetic--reclassified-2026-09-08)),
+  so the write never removes one — unlike a `.buttonMap`, which holds only labels and is removed when the working copy
+  lacks it.
 - **A `.binds` the working copy lacks is left in the bindings folder.** Removing an old-named one is a rename's
   (rule 7, Storage S12).
 

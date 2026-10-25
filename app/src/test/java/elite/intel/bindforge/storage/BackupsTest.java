@@ -106,7 +106,7 @@ class BackupsTest {
 
         assertEquals(root.resolve("Daily/2026-10-24_18-30-00.zip"), backups.backUpEverything(Backups.Kind.DAILY).zip());
         assertEquals(root.resolve("BeforeChanges/2026-10-24_18-30-00.zip"),
-                backups.backUpBeforeChange(Backups.Before.APPLY).zip());
+                backups.backUpBeforeChange(Backups.Before.APPLY, sources()).zip());
         assertEquals(root.resolve("User/2026-10-24_18-30-00.zip"), backups.backUpEverything(Backups.Kind.USER).zip());
         assertEquals(root.resolve("FirstSetup/2026-10-24_18-30-00.zip"),
                 backups.backUpEverything(Backups.Kind.FIRST_SETUP).zip());
@@ -115,9 +115,9 @@ class BackupsTest {
     @Test
     void aBeforeChangesBackupRecordsWhatItWasTakenBefore() throws IOException {
         Backups backups = backups("2026-10-24T18:30:00Z", sources());
-        Backup apply = backups.backUpBeforeChange(Backups.Before.APPLY);
-        backups("2026-10-24T18:31:00Z", sources()).backUpBeforeChange(Backups.Before.RESTORE);
-        backups("2026-10-24T18:32:00Z", sources()).backUpBeforeChange(Backups.Before.CHECK);
+        Backup apply = backups.backUpBeforeChange(Backups.Before.APPLY, sources());
+        backups("2026-10-24T18:31:00Z", sources()).backUpBeforeChange(Backups.Before.RESTORE, sources());
+        backups("2026-10-24T18:32:00Z", sources()).backUpBeforeChange(Backups.Before.CHECK, sources());
 
         String info = entry(apply, Backups.INFO_FILE);
         assertNotNull(info, "every backup holds backup-info.txt");
@@ -132,7 +132,7 @@ class BackupsTest {
         Backups backups = backups("2026-10-24T18:30:00Z", sources());
 
         assertThrows(IllegalArgumentException.class, () -> backups.backUpEverything(Backups.Kind.BEFORE_CHANGES));
-        assertThrows(IllegalArgumentException.class, () -> backups.backUpBeforeChange(null));
+        assertThrows(IllegalArgumentException.class, () -> backups.backUpBeforeChange(null, sources()));
     }
 
     @Test
@@ -197,7 +197,7 @@ class BackupsTest {
     void theListIsEveryKindNewestFirstAndLeavesOutFolderBackups() throws IOException {
         backups("2026-10-20T10:00:00Z", sources()).backUpEverything(Backups.Kind.DAILY);
         backups("2026-10-24T09:00:00Z", sources()).backUpEverything(Backups.Kind.USER);
-        backups("2026-10-22T10:00:00Z", sources()).backUpBeforeChange(Backups.Before.APPLY);
+        backups("2026-10-22T10:00:00Z", sources()).backUpBeforeChange(Backups.Before.APPLY, sources());
         backups("2026-10-13T10:00:00Z", sources()).backUpEverything(Backups.Kind.FIRST_SETUP);
         write(root.resolve("2026-08-01_12-00-00/Custom.4.2.binds"), "<Root/>");
         write(root.resolve("2026-10-13_09-00-00_before-bindforge/bindings/Custom.4.2.binds"), "<Root/>");
@@ -233,7 +233,7 @@ class BackupsTest {
         Path oldDaily = backups("2026-09-01T10:00:00Z", sources()).backUpEverything(Backups.Kind.DAILY).zip();
         Path oldUser = backups("2026-09-01T10:00:00Z", sources()).backUpEverything(Backups.Kind.USER).zip();
         Path oldFirstSetup = backups("2026-09-02T10:00:00Z", sources()).backUpEverything(Backups.Kind.FIRST_SETUP).zip();
-        Path oldBeforeChanges = backups("2026-09-01T10:00:00Z", sources()).backUpBeforeChange(Backups.Before.APPLY).zip();
+        Path oldBeforeChanges = backups("2026-09-01T10:00:00Z", sources()).backUpBeforeChange(Backups.Before.APPLY, sources()).zip();
         Path recentDaily = backups("2026-10-20T10:00:00Z", sources()).backUpEverything(Backups.Kind.DAILY).zip();
         Path s1Folder = root.resolve("2026-08-01_12-00-00");
         write(s1Folder.resolve("backup-info.txt"), "Status: Full");
@@ -264,7 +264,7 @@ class BackupsTest {
         List<Path> taken = new ArrayList<>();
         for (int minute = 0; minute < 12; minute++) {
             taken.add(backups("2026-10-24T18:%02d:00Z".formatted(minute), sources())
-                    .backUpBeforeChange(Backups.Before.APPLY).zip());
+                    .backUpBeforeChange(Backups.Before.APPLY, sources()).zip());
         }
 
         List<Path> deleted = backups("2026-10-24T19:00:00Z", sources()).prune(new Backups.Retention(30, 10));
@@ -289,7 +289,7 @@ class BackupsTest {
         Backup user = backups.backUpEverything(Backups.Kind.USER);
         Backup daily = backups.backUpEverything(Backups.Kind.DAILY);
         Backup firstSetup = backups.backUpEverything(Backups.Kind.FIRST_SETUP);
-        Backup beforeChanges = backups.backUpBeforeChange(Backups.Before.APPLY);
+        Backup beforeChanges = backups.backUpBeforeChange(Backups.Before.APPLY, sources());
 
         backups.delete(user);
 
@@ -326,7 +326,7 @@ class BackupsTest {
     void aDamagedZipIsListedAsPartialAndRetentionCountsIt() throws IOException {
         Path damaged = root.resolve("BeforeChanges/2026-10-24_10-00-00.zip");
         write(damaged, "not a zip");
-        Path newer = backups("2026-10-24T11:00:00Z", sources()).backUpBeforeChange(Backups.Before.APPLY).zip();
+        Path newer = backups("2026-10-24T11:00:00Z", sources()).backUpBeforeChange(Backups.Before.APPLY, sources()).zip();
 
         Backup listed = backups("2026-10-24T12:00:00Z", sources()).list().getLast();
         assertEquals(damaged, listed.zip());

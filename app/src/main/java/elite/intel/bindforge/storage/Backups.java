@@ -44,7 +44,7 @@ import java.util.zip.ZipOutputStream;
  * ones and Storage S1's dated folders are never listed and never deleted (Alan, 2026-10-24).
  * <p>
  * <strong>Every write to a game file goes through {@link WritePath}, which takes a backup first</strong> (principle 3) -
- * {@link #backUpBeforeChange(Before)}, or first setup's {@link Kind#FIRST_SETUP}. Its callers arrive with Storage S2b,
+ * {@link #backUpBeforeChange(Before, BackupSources)}, or first setup's {@link Kind#FIRST_SETUP}. Its callers arrive with Storage S2b,
  * S3 and S4; until then the old writers take their own backups.
  * Touches the disk - not for the EDT.
  */
@@ -196,30 +196,41 @@ public final class Backups {
     }
 
     /**
-     * Backs up everything before a write - the one call every write to a game file uses first.
+     * Backs up everything before a write - the one call every write to a game file uses first, through
+     * {@link WritePath}.
      *
      * @param before what is about to write, recorded in {@code backup-info.txt}
+     * @param from   the bindings folder and installations the write is about to write - the write's own list, so
+     *               nothing is written that was not backed up (principle 3; review, 2026-10-24)
      * @return the backup taken, Full or Partial
      * @throws NothingToBackUpException if not one file could be read; nothing is written
      * @throws IOException              if the backup folder cannot be written
      */
-    public Backup backUpBeforeChange(Before before) throws IOException {
+    public Backup backUpBeforeChange(Before before, BackupSources from) throws IOException {
         if (before == null) throw new IllegalArgumentException("a before-changes backup says what it is taken before");
-        return take(Kind.BEFORE_CHANGES, before);
+        return take(Kind.BEFORE_CHANGES, before, from);
     }
 
     /**
      * Backs up everything as a daily, user or first setup backup. A before-changes backup is
-     * {@link #backUpBeforeChange(Before)}, which says what it is taken before.
+     * {@link #backUpBeforeChange(Before, BackupSources)}, which says what it is taken before.
      *
      * @throws NothingToBackUpException if not one file could be read; nothing is written
      * @throws IOException              if the backup folder cannot be written
      */
     public Backup backUpEverything(Kind kind) throws IOException {
+        return backUpEverything(kind, sources.get());
+    }
+
+    /**
+     * As {@link #backUpEverything(Kind)}, of the bindings folder and installations a write is about to write - first
+     * setup's backup, taken through {@link WritePath}.
+     */
+    public Backup backUpEverything(Kind kind, BackupSources from) throws IOException {
         if (kind == Kind.BEFORE_CHANGES) {
             throw new IllegalArgumentException("a before-changes backup is taken with backUpBeforeChange");
         }
-        return take(kind, null);
+        return take(kind, null, from);
     }
 
     /**
@@ -343,8 +354,7 @@ public final class Backups {
 
     // ---- taking
 
-    private Backup take(Kind kind, Before before) throws IOException {
-        BackupSources from = sources.get();
+    private Backup take(Kind kind, Before before, BackupSources from) throws IOException {
         synchronized (WRITING) {
             Path folder = root.get().resolve(kind.folder);
             LocalDateTime now = LocalDateTime.now(clock).withNano(0);

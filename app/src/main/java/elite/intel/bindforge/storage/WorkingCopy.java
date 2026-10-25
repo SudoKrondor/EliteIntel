@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  *   ControlSchemes\DeviceButtonMaps\ every .buttonMap
  * </pre>
  * <strong>Read whole and written whole, in one step</strong> (storage.md, <em>How the files are written</em>,
- * 2026-10-25): the new set is written into a folder beside it, marked complete, then swapped in. A write
+ * 2026-10-24): the new set is written into a folder beside it, marked complete, then swapped in. A write
  * that stops before the mark leaves the old set; one that stops after it is finished by the next read or write. So
  * the working copy is never half one set and half another.
  * <p>

@@ -29,8 +29,19 @@ public final class WritePath {
      */
     @FunctionalInterface
     public interface BackUpFirst {
-        Backup take() throws IOException;
+        /**
+         * @param sources the bindings folder and installations the write is about to write - back up exactly these
+         *                ({@link Backups#backUpBeforeChange(Backups.Before, BackupSources)})
+         */
+        Backup take(BackupSources sources) throws IOException;
     }
+
+    /**
+     * One write at a time, from the backup to the last live copy. Without it, two writes could each save the working
+     * copy and then write the live copies in the other order, leaving the working copy holding one set and the game's
+     * files the other (review, 2026-10-24).
+     */
+    private static final Object WRITING = new Object();
 
     private final WorkingCopy workingCopy;
     private final Supplier<BackupSources> sources;
@@ -55,11 +66,17 @@ public final class WritePath {
      *                     written
      */
     public WriteReport write(ConfigurationFiles files, BackUpFirst backUp) throws IOException {
-        Backup backup = backUp.take();
-        workingCopy.write(files);
-        WriteReport report = new LiveCopies(sources.get()).write(files);
-        log(backup, report);
-        return report;
+        synchronized (WRITING) {
+            // WHY: found once, for the backup and the write alike. Found twice, an installation found only the second
+            // time - a drive plugged in between - would be written with no backup of it (principle 3; review,
+            // 2026-10-24).
+            BackupSources places = sources.get();
+            Backup backup = backUp.take(places);
+            workingCopy.write(files);
+            WriteReport report = new LiveCopies(places).write(files);
+            log(backup, report);
+            return report;
+        }
     }
 
     private static void log(Backup backup, WriteReport report) {
@@ -67,7 +84,7 @@ public final class WritePath {
                         + "updated {} of {}", backup.zip(), report.bindings().updated() ? "updated" : "not updated",
                 report.installationsUpdated(), report.installations().size());
         for (WriteReport.Place place : report.installations()) {
-            if (!place.updated()) log.warn("{} ({}) was not fully updated: {}", place.label(), place.folder(),
+            if (!place.updated()) log.warn("Installation {} ({}) was not fully updated: {}", place.storefront(), place.folder(),
                     String.join("; ", place.failures()));
         }
         if (!report.bindings().updated()) {

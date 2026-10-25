@@ -10,8 +10,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static elite.intel.bindforge.storage.WorkingCopyTest.bytes;
 import static elite.intel.bindforge.storage.WorkingCopyTest.text;
@@ -43,7 +46,7 @@ class WritePathTest {
 
     @Test
     void theBackupIsTakenFirstThenTheWorkingCopyAndTheLiveCopiesHoldTheSet() throws IOException {
-        WriteReport report = writePath().write(set(), () -> {
+        WriteReport report = writePath().write(set(), sources -> {
             assertFalse(workingCopy.exists(), "the backup comes before anything is written");
             assertEquals("<live/>", Files.readString(bindings.resolve("Custom.4.2.binds")));
             order.add("backup");
@@ -60,7 +63,7 @@ class WritePathTest {
 
     @Test
     void aBackupThatFailsStopsTheWriteWithNothingWritten() throws IOException {
-        assertThrows(IOException.class, () -> writePath().write(set(), () -> {
+        assertThrows(IOException.class, () -> writePath().write(set(), sources -> {
             throw new IOException("the backup folder cannot be written");
         }));
 
@@ -75,10 +78,92 @@ class WritePathTest {
         Files.writeString(blocked, "in the way");
         WritePath writePath = new WritePath(new WorkingCopy(blocked), this::sources);
 
-        assertThrows(IOException.class, () -> writePath.write(set(), this::backup));
+        assertThrows(IOException.class, () -> writePath.write(set(), sources -> backup()));
 
         assertEquals("<live/>", Files.readString(bindings.resolve("Custom.4.2.binds")));
         assertFalse(Files.exists(GameInstallation.deviceMappingsIn(GameInstallation.controlSchemesUnder(steam))));
+    }
+
+    @Test
+    void theBackupIsOfExactlyThePlacesTheWriteWrites() throws IOException {
+        List<BackupSources> found = new ArrayList<>();
+        WritePath writePath = new WritePath(workingCopy, () -> {
+            BackupSources sources = sources();
+            found.add(sources);
+            return sources;
+        });
+        List<BackupSources> backedUp = new ArrayList<>();
+
+        WriteReport report = writePath.write(set(), sources -> {
+            backedUp.add(sources);
+            return backup();
+        });
+
+        assertEquals(1, found.size(), "the installations are found once, for the backup and the write alike");
+        assertSame(found.getFirst(), backedUp.getFirst());
+        assertEquals(steam, report.installations().getFirst().folder());
+    }
+
+    @Test
+    void twoWritesAtOnceRunOneAfterTheOther() throws Exception {
+        CountDownLatch firstBackingUp = new CountDownLatch(1);
+        CountDownLatch releaseFirst = new CountDownLatch(1);
+        List<String> seenBySecond = Collections.synchronizedList(new ArrayList<>());
+        List<Throwable> failures = Collections.synchronizedList(new ArrayList<>());
+        WritePath writePath = writePath();
+        Thread first = new Thread(() -> writeOrRecord(writePath, "<first/>", () -> {
+            firstBackingUp.countDown();
+            if (!releaseFirst.await(10, TimeUnit.SECONDS)) throw new IOException("never released");
+        }, failures));
+        // WHY: what the second write's backup finds in the game's file says whether the first write had finished.
+        Thread second = new Thread(() -> writeOrRecord(writePath, "<second/>",
+                () -> seenBySecond.add(Files.readString(bindings.resolve("Custom.4.2.binds"))), failures));
+
+        first.start();
+        assertTrue(firstBackingUp.await(10, TimeUnit.SECONDS));
+        second.start();
+        waitUntilBlocked(second);
+        releaseFirst.countDown();
+        first.join(10_000);
+        second.join(10_000);
+
+        assertEquals(List.of(), failures);
+        assertEquals(List.of("<first/>"), seenBySecond, "the second write began only once the first had finished");
+        assertEquals("<second/>", text(workingCopy.read().bindings().get("Custom.4.2.binds")));
+        assertEquals("<second/>", Files.readString(bindings.resolve("Custom.4.2.binds")),
+                "the working copy and the game's file hold the same set");
+    }
+
+    private void writeOrRecord(WritePath writePath, String binds, DuringBackup duringBackup, List<Throwable> failures) {
+        try {
+            writePath.write(new ConfigurationFiles(Map.of("Custom.4.2.binds", bytes(binds)), null, Map.of()),
+                    sources -> {
+                        try {
+                            duringBackup.run();
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new IOException(e);
+                        }
+                        return backup();
+                    });
+        } catch (IOException | RuntimeException e) {
+            failures.add(e);
+        }
+    }
+
+    @FunctionalInterface
+    private interface DuringBackup {
+        void run() throws IOException, InterruptedException;
+    }
+
+    // WHY: the second write is waiting for the first when its thread is blocked on the write path's lock - asked of the
+    // thread rather than waited out with a sleep.
+    private static void waitUntilBlocked(Thread thread) throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (thread.getState() != Thread.State.BLOCKED) {
+            if (System.nanoTime() > deadline) fail("the second write never waited for the first");
+            Thread.onSpinWait();
+        }
     }
 
     private WritePath writePath() {

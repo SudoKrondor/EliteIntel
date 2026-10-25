@@ -23,7 +23,7 @@ import java.util.stream.Stream;
  * <ul>
  *     <li><strong>Device files whole, to every installation</strong> - a missing {@code DeviceMappings.xml} is
  *     simply written.</li>
- *     <li><strong>A file that already holds the same bytes is not rewritten</strong> (2026-10-25), so a write with
+ *     <li><strong>A file that already holds the same bytes is not rewritten</strong> (2026-10-24), so a write with
  *     nothing new for an installation writes nothing there.</li>
  *     <li><strong>A {@code .buttonMap} the set lacks is removed</strong>, except Frontier's shipped ones
  *     ({@link FrontierStockButtonMaps#shipsMapFor}).</li>
@@ -61,12 +61,12 @@ final class LiveCopies {
         // drive, and creating it would put the user's files where the game never reads them.
         if (!Files.isDirectory(folder)) {
             writing.failures.add(FOLDER_NOT_FOUND);
-            return writing.place("the bindings folder", folder);
+            return writing.place(WriteReport.Kind.BINDINGS_FOLDER, null, folder);
         }
         // WHY: the one folder Elite-Intel is set to, on Linux too, where each installation has its own - every .binds
         // read and write in BindForge uses it (input-environment.md section 7; storage brief, Known issues).
         writing.writeAll(folder, files.bindings());
-        return writing.place("the bindings folder", folder);
+        return writing.place(WriteReport.Kind.BINDINGS_FOLDER, null, folder);
     }
 
     private Place writeInstallation(BackupSources.Installation installation, ConfigurationFiles files) {
@@ -74,7 +74,7 @@ final class LiveCopies {
         Path controlSchemes = installation.controlSchemes();
         if (installation.missing() || !Files.isDirectory(controlSchemes)) {
             writing.failures.add(FOLDER_NOT_FOUND);
-            return writing.place(installation.storefront(), installation.root());
+            return writing.place(WriteReport.Kind.INSTALLATION, installation.storefront(), installation.root());
         }
         if (files.hasDeviceMappings()) {
             writing.writeIfDifferent(GameInstallation.deviceMappingsIn(controlSchemes), files.deviceMappings());
@@ -87,7 +87,7 @@ final class LiveCopies {
         } catch (IOException e) {
             writing.fail(buttonMaps, e);
         }
-        return writing.place(installation.storefront(), installation.root());
+        return writing.place(WriteReport.Kind.INSTALLATION, installation.storefront(), installation.root());
     }
 
     /** What one place's write did so far. */
@@ -148,8 +148,8 @@ final class LiveCopies {
             log.warn("Could not write {}", file, e);
         }
 
-        Place place(String label, Path folder) {
-            return new Place(label, folder, written, removed, failures);
+        Place place(WriteReport.Kind kind, String storefront, Path folder) {
+            return new Place(kind, storefront, folder, written, removed, failures);
         }
     }
 

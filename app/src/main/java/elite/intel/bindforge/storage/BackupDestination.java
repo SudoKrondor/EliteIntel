@@ -78,10 +78,14 @@ public final class BackupDestination {
      */
     public Path resolve() throws IOException {
         Path folder = chosenFolder();
-        if (folder != null && refusal(folder) == null) {
-            return folder;
-        }
-        return fallback.get();
+        if (folder == null) return fallback.get();
+        Refusal refusal = refusal(folder);
+        if (refusal == null) return folder;
+        // WHY: said here, not where the refusal is found - check() finds the same refusals for Browse..., which falls
+        // back to nothing and only tells the user why (review, 2026-10-24).
+        Path fallbackFolder = fallback.get();
+        log.warn("Backups go to the default folder {} instead of the chosen {} ({})", fallbackFolder, folder, refusal);
+        return fallbackFolder;
     }
 
     /**
@@ -112,19 +116,19 @@ public final class BackupDestination {
         Path normal = folder.toAbsolutePath().normalize();
         for (Path gameFolder : gameFoldersOrNone()) {
             if (normal.startsWith(gameFolder.toAbsolutePath().normalize())) {
-                log.warn("The backup folder {} is inside a game folder ({}), where a game update would delete it - "
-                        + "using the default", folder, gameFolder);
+                log.warn("The backup folder {} is inside a game folder ({}), where a game update would delete it",
+                        folder, gameFolder);
                 return Refusal.INSIDE_GAME_FOLDER;
             }
         }
         try {
             Files.createDirectories(folder);
         } catch (IOException | RuntimeException e) {
-            log.warn("The backup folder {} cannot be created - using the default", folder, e);
+            log.warn("The backup folder {} cannot be created", folder, e);
             return Refusal.CANNOT_CREATE;
         }
         if (!Files.isWritable(folder)) {
-            log.warn("The backup folder {} cannot be written to - using the default", folder);
+            log.warn("The backup folder {} cannot be written to", folder);
             return Refusal.CANNOT_WRITE;
         }
         return null;

@@ -242,7 +242,7 @@ what is being edited; this sub-tab is where the files go. It lists:
 *Until 2026-10-24 (morning) it had Rescan, Add, Relocate and Remove; for a few hours that day it was an Installations…
 button instead of a sub-tab, before Alan settled that File Manager is where installations live.*
 
-**Settled with Storage S2's sources (Alan, 2026-10-25), built in S2b:**
+**Settled with Storage S2's sources (Alan, 2026-10-24), built in S2b:**
 
 - **Rescan and Relocate are removed.** Detection runs at every Elite-Intel start, before the daily backup, so Rescan
   has nothing to add; moving the game is Remove, then Add missing.

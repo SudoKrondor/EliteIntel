@@ -61,6 +61,10 @@ class LiveCopiesTest {
         assertEquals(List.of("Old.buttonMap"), report.installations().getFirst().removed());
         assertTrue(report.complete());
         assertEquals(2, report.installationsUpdated());
+        assertEquals(WriteReport.Kind.BINDINGS_FOLDER, report.bindings().kind());
+        assertNull(report.bindings().storefront());
+        assertEquals(WriteReport.Kind.INSTALLATION, report.installations().getFirst().kind());
+        assertEquals("STEAM", report.installations().getFirst().storefront());
     }
 
     @Test

@@ -39,7 +39,7 @@ change. The slice that moves them rewrites the *Built* note.
 | Device Apply and per-installation push, Edit History, catch-up | `devicefiles.DeviceApply`, `DeviceFilesPush`, `EditHistory`, `MissedWrites`, `CatchUpAnnouncement`, migration `12006` | S2a (the new write path), S4 (removed) |
 | Divergence list, ways out, installation markers, the 2-second poll | `DeviceDivergence`, `DeviceDivergenceScanner`, `DivergenceWaysOut`, `DeviceFilesAdopt`, `LabelReMerge`, `devices.InstallationMarkers`, `DeviceFilesMonitor`, `DeviceFilesCheck` | S4 (removed), S9 (the new check) |
 | `.buttonMap` written at every connect | `devices.ButtonMapStartup`, `devicefiles.ButtonMapGeneration` | S4: default labels written at APPLY |
-| `.binds`: a copy of the **active** file, a checksum, its own APPLY / REVERT and close prompt; copied at launch before any backup | `bindforge.io.BindingsWorkingCopyRepository`, `BindingsApplyService`, `ui.screen.bindings.BindingProfilePanel` (`promptCloseWithDraft`) | S5, the launch copy with the rest (moved from S2, Alan, 2026-10-25) |
+| `.binds`: a copy of the **active** file, a checksum, its own APPLY / REVERT and close prompt; copied at launch before any backup | `bindforge.io.BindingsWorkingCopyRepository`, `BindingsApplyService`, `ui.screen.bindings.BindingProfilePanel` (`promptCloseWithDraft`) | S5, the launch copy with the rest (moved from S2, Alan, 2026-10-24) |
 | Preset file: master and draft files, per-line merge, its own Apply | `bindforge.preseteditor.StartPresetStore`, `StartPresetComparison`, `StartPresetApply` | S6 |
 | The Vega tab's KEYMAP readout | `ui.screen.AiTabPanel` (`keymapBadge`) | S5: removed |
 | Installations found; the stored list | `bindforge.install.*`, `InstallationRegistry`, migration `12001`; `GameInstallLocationsPanel` (no Add missing, no match states) | S2b, S9 |
@@ -63,11 +63,11 @@ its table (`12007`), `BindingsMonitor` (not BindForge's — it reloads the assis
 - **Every slice removes the old code it makes unused**, and its tests — there is no clean-up slice at the end.
 - **One write per apply, and never publish `BindingsUpdatedEvent`.** [overview.md](../02-features/bindforge/overview.md#bindforge-must-not-publish-bindingsupdatedevent)
 - **Values, never dates or bytes.** [Freshness Checks](../02-features/bindforge/overview.md#freshness-checks)
-- **No interim compatibility** (Alan, 2026-10-25): `V1.2-BindForge` has no users, so nothing is kept working, or
+- **No interim compatibility** (Alan, 2026-10-24): `V1.2-BindForge` has no users, so nothing is kept working, or
   bridged, between slices. A slice that replaces old code removes it, even when another screen stops working until its
   own slice. Never chosen for, or argued from, keeping users happy.
-- **S2 is two slices, S2a and S2b** (Alan, 2026-10-25), in the order the table gives; S3 stays before S4.
-- **How the working copy and the live copies are written** — [storage.md, How the files are written](../02-features/bindforge/storage.md#how-the-files-are-written--2026-10-25).
+- **S2 is two slices, S2a and S2b** (Alan, 2026-10-24), in the order the table gives; S3 stays before S4.
+- **How the working copy and the live copies are written** — [storage.md, How the files are written](../02-features/bindforge/storage.md#how-the-files-are-written--2026-10-24).
 - **Game Install Locations loses Rescan and Relocate, and a removed installation stays removed** — [file-manager.md](../02-features/bindforge/file-manager.md#game-install-locations).
 
 ## Before V1.2 ships
@@ -77,7 +77,7 @@ its table (`12007`), `BindingsMonitor` (not BindForge's — it reloads the assis
 
 ## Known issues
 
-- **Tabs break until their slice moves them, and that is accepted** (Alan, 2026-10-25). From S2b first setup no longer
+- **Tabs break until their slice moves them, and that is accepted** (Alan, 2026-10-24). From S2b first setup no longer
   fills the database master, so the Alias Designer shows the user's devices as *not added* until S4; a tab not yet
   moved still edits and applies the old way, and its writes do not reach the working copy. Run first-time startup
   again after S6 to start clean.
@@ -108,7 +108,7 @@ its table (`12007`), `BindingsMonitor` (not BindForge's — it reloads the assis
 |---|---|---|---|
 | S1 | **One backup system.** A backup is a dated folder holding every live copy — every `.binds`, `StartPreset.4.start`, and each installation's `DeviceMappings.xml` and `.buttonMap`s — named with its date stamp, in Elite-Intel's backup folder (the destination setting, falling back to the default). Full or Partial, naming what could not be read. **Taken silently at every Elite-Intel start, before anything else BindForge does**, whether or not BindForge is ever opened; a failure is logged and retried next start; cannot be switched off. **Backup Now** takes one. The list is the folder's listing, sorted by the stamp — no table. **Retention** at start: older than the setting (30 days, at least 1) is deleted, except the backup marked as first setup's. One call every later write uses: *back up everything*. **Removes:** the folder format in `PlayerBackupService.createBackup` and its `findStartPresetFile`; the auto-backup and Edit History retention settings from the settings screen. Restore stays as it is until S3 | 11, 12 | **done 2026-10-24** |
 | S1b | **Four kinds of backup, every one a zip** (Alan, 2026-10-24; [file-manager.md — Four kinds of backup](../02-features/bindforge/file-manager.md#four-kinds-of-backup--settled-2026-10-24-alan)). `Backups` writes zips — `backup-info.txt` inside, written to a temporary file and renamed into place — into `Daily\`, `BeforeChanges\`, `User\` and `FirstSetup\`. **Daily:** the first Elite-Intel start each day, retried at the next start if it failed; kept 30, 60, 90 or 180 days (default 30). **Before changes:** the kind every write uses — APPLY, RESTORE of what is there now, the check before the working copy is replaced — recording which in `backup-info.txt`; the newest 100 kept (10 to 1000). **User:** Backup Now; kept until the user deletes them, with **Delete** for user backups only (`HudConfirmDialog`). **First setup:** kept forever. One list, newest first, with a **Taken** column. **A retention settings section on Player Backups:** Backups go to, Keep daily backups for, Keep before-changes backups — a migration replaces `backup_retention_days` with the two new settings. S1's dated folders are left untouched and unlisted, like V1.1's. **Restore to Editing Slot / Restore to Live** read the `.binds` from the zip until S3 | 11, 12 | **done 2026-10-24** |
-| S2a | **The working copy store and the write path.** `WorkingCopy` reads the working copy whole and writes it in one step (a folder swap, finished or thrown away after a crash); `LiveCopies` writes it to every live copy — device files whole to every installation, a missing `DeviceMappings.xml` simply written, a file with the same bytes not rewritten, a `.buttonMap` the working copy lacks removed except Frontier's shipped ones — everything it can, reported per place (*"updated 2 of 3"*), nothing rolled back; `WritePath` backs up first, then the working copy, then the live copies. No UI, no migration, no caller yet | 3, 7, 8 | **done 2026-10-25** |
+| S2a | **The working copy store and the write path.** `WorkingCopy` reads the working copy whole and writes it in one step (a folder swap, finished or thrown away after a crash); `LiveCopies` writes it to every live copy — device files whole to every installation, a missing `DeviceMappings.xml` simply written, a file with the same bytes not rewritten, a `.buttonMap` the working copy lacks removed except Frontier's shipped ones — everything it can, reported per place (*"updated 2 of 3"*), nothing rolled back; `WritePath` backs up first, then the working copy, then the live copies. No UI, no migration, no caller yet | 3, 7, 8 | **done 2026-10-24** |
 | S2b | **First-time startup.** On the BindForge tab's first click while the flag is not set: the installation list with **Confirm** and **Add missing** (checked for `EliteDangerous64.exe`); device files reconciled by **use one installation for all** (that installation's files whole; warning when it removes an entry bindings use) or **merge** (`FirstSetupPlan`, `LabelMerge` kept; bindings on a losing name moved to the winner in the working copy's binds files); the working copy created and written out through `WritePath` with the first setup backup; the flag set. Game Install Locations: **Add missing**, **Remove** (stays removed), **Run first-time startup again**; Rescan and Relocate removed. A migration adds the removed flag and drops `bindforge_activation.backup_folder`. **Removes:** `BeforeBindForgeBackup`, `DeviceFilesSnapshot`, `Activation`'s silent path, first setup's database fill (the master stays empty until S4 removes it) | 1–4, 8 | **next** |
 | S3 | **RESTORE.** Choose a backup; it backs up what is there now, puts the whole backup back — `.binds` and `StartPreset.4.start` to the bindings folder, device files to every installation as one set, reconciled as in first setup when the backup's installations differ — and replaces the working copy. Its confirmation says everything is replaced and edits on screen are lost. **Browse for Backup File**, with *"Only restore your own backups…"*. **If the working copy cannot be read**, say so and offer the newest backup. **Removes:** `restoreToWorkingCopy`, `restoreToLive`, Restore to Editing Slot | 10 | pending |
 | S4 | **APPLY / DISCARD above the tabs, with Alias Designer on it.** Edits not applied, held on screen and shared by the tabs; the bar under Elite-Intel's main tabs, lit only when there are edits. **APPLY:** back up, save the edits into the working copy, write it out (S2), confirm with rule 13's sentence and the Linux note. **DISCARD** drops every edit. Alias Designer reads the working copy; Device Editor SAVE, CLEAR, RESET LABELS, rename, shadow, onboarding, retarget and A17's id move become edits; a rename or id move rewrites the working copy's binds files as part of the edit; default labels shown on screen and written at the next APPLY without lighting the bar. **Removes:** the screen's own APPLY / DISCARD, the divergence list and its ways out, the installation markers, catch-up and `missed_write`, Edit History, startup `.buttonMap` generation, the poll, and the master / draft / pending-removal / old-name / id-move tables (a new migration drops them). **Rewrites** [device-provenance.md](../03-data-models/device-provenance.md) to what is left | 6, 7, 8, 13 | pending |
@@ -134,14 +134,23 @@ to a hardware ID (after S4); A18 and E7 stay blocked on [testing item 27](../00-
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the next
 slice needs.*
 
-- **2026-10-25 — S2a done: the working copy store and the write path.** **Decided (Alan):** S2 split into S2a and S2b; no
+- **2026-10-24 — S2a review follow-up** (`code-integrity-review.md`, Alan: all six). **Fixed:** `WritePath` finds the
+  installations once and hands that list to the backup (`BackUpFirst.take(BackupSources)`, `Backups.backUpBeforeChange(Before,
+  BackupSources)` and `backUpEverything(Kind, BackupSources)`), and runs one write at a time; `WriteReport.Place` has a `Kind` and
+  a storefront instead of an English label, and its failure lines are documented as log and support text;
+  `BackupDestination` says "using the default" only where it falls back. **Recorded** in storage.md *How the files are
+  written*: one list and one write at a time; a working copy with no `DeviceMappings.xml` leaves each installation's alone.
+  **Dates:** S2a's decisions moved to 2026-10-24, Alan's day. **S2b needs:** the backup lambda is
+  `sources -> Backups.stored().backUpEverything(Kind.FIRST_SETUP, sources)`; name a place from `Place.kind()` through a bundle key.
+
+- **2026-10-24 — S2a done: the working copy store and the write path.** **Decided (Alan):** S2 split into S2a and S2b; no
   interim compatibility — first setup stops filling the database master in S2b, and the Alias Designer is broken until S4
   (brief, *Settled* and *Known issues*); the launch-time `.binds` copy goes in S5; Game Install Locations loses Rescan and
   Relocate and a removed installation stays removed (file-manager.md). How the files are written — one-step folder swap,
   byte match, the bindings folder never created, case spellings — is in storage.md *How the files are written*. **Built:**
   `WorkingCopy`, `LiveCopies`, `WritePath`, `ConfigurationFiles`, `WriteReport`, `FrontierStockButtonMaps.shipsMapFor`.
-  **S2b needs:** build the first setup set as a `ConfigurationFiles` and call `WritePath.stored().write(files, () ->
-  Backups.stored().backUpEverything(Kind.FIRST_SETUP))`; report from `WriteReport`. `WorkingCopy.exists()` is not the
+  **S2b needs:** build the first setup set as a `ConfigurationFiles` and call `WritePath.stored().write(files, …)` with the first
+  setup backup (see the review follow-up above); report from `WriteReport`. `WorkingCopy.exists()` is not the
   flag — the flag is stored separately and Run first-time startup again clears only it. A `NothingToBackUpException`
   from the backup is S2b's to word.
 
