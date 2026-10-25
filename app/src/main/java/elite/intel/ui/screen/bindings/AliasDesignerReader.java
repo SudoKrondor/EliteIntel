@@ -279,6 +279,9 @@ final class AliasDesignerReader {
         if (live == null) return Map.of();
         DeviceDescription description =
                 DeviceService.getInstance().description(live.id()).orElse(DeviceDescription.axesUnknown(0));
+        if (GamepadSupport.isGamepad(live)) {
+            description = DeviceDescription.gamepad(live.axisCount(), description.hatCount());
+        }
         return ButtonMapLabels.generate(live.buttonCount(), live.axisCount(), description);
     }
 
@@ -303,9 +306,13 @@ final class AliasDesignerReader {
         Map<String, String> saved = name == null ? Map.of() : SavedDeviceLabels.of(name);
 
         Device live = device.attached() ? attachedController(device.hardware()) : null;
+        boolean gamepad = live != null && GamepadSupport.isGamepad(live);
         DeviceDescription description = live == null
                 ? null
                 : DeviceService.getInstance().description(live.id()).orElse(DeviceDescription.axesUnknown(0));
+        if (gamepad) {
+            description = DeviceDescription.gamepad(live.axisCount(), description.hatCount());
+        }
         DeviceEditorInputs inputs = live == null
                 ? DeviceEditorInputs.ofSavedLabels(saved)
                 : DeviceEditorInputs.ofController(live.buttonCount(), live.axisCount(), description);
@@ -323,7 +330,7 @@ final class AliasDesignerReader {
         DeviceEditorDialog.Covering frontier = covering == null ? null
                 : new DeviceEditorDialog.Covering(covering.name(), covering.hardware().size() > 1,
                 DeviceRename.frontierNameHeld(covering.name(), storedNames(master)));
-        return new DeviceEditorDialog.Opening(device, name, live == null ? null : live.id(), description, inputs,
+        return new DeviceEditorDialog.Opening(device, name, live == null ? null : live.id(), description, gamepad, inputs,
                 saved, name != null && stock.gameDrawsIt(name), strip, middle, rename, taken, frontier);
     }
 

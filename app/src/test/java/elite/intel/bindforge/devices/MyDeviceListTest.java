@@ -182,7 +182,7 @@ class MyDeviceListTest {
     }
 
     private static Device device(String name, String guid) {
-        return new Device(1, name, 6, 32, "usb-0001", guid);
+        return new Device(1, name, 6, 32, "usb-0001", guid, false);
     }
 
     private static DeviceEntry entry(String name, String vid, String pid) {

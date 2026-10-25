@@ -91,6 +91,8 @@ final class DeviceEditorDialog extends JDialog {
      *                    {@code null} for a device with no name yet
      * @param liveId      the Device Service's id for the controller when it is attached, else {@code null}
      * @param description which axes and hats it has when attached, else {@code null}
+     * @param gamepad     whether the attached controller is a gamepad, whose triggers rest at -1; {@code false}
+     *                    when it is not attached
      * @param saved       the labels saved before the dialog opened: the draft's, or the master's with no draft
      * @param gameDrawsIt whether the game draws this device's inputs itself, so untouched defaults are not written
      * @param middle      what the middle button is, and whether it can be pressed
@@ -99,7 +101,7 @@ final class DeviceEditorDialog extends JDialog {
      * @param covering    Frontier's element covering the controller's hardware, or {@code null} when none does
      */
     record Opening(MyDevice device, String deviceName, Integer liveId, DeviceDescription description,
-                   DeviceEditorInputs inputs, Map<String, String> saved, boolean gameDrawsIt,
+                   boolean gamepad, DeviceEditorInputs inputs, Map<String, String> saved, boolean gameDrawsIt,
                    List<StripLine> strip, DeviceEditorMiddle middle, DeviceRename.Allowed rename,
                    Set<String> taken, Covering covering) {
         Opening {
@@ -148,7 +150,7 @@ final class DeviceEditorDialog extends JDialog {
         this.starting = opening.inputs().startingLabels(opening.saved());
         this.lights = new DeviceEditorLights(opening.description() == null
                 ? DeviceDescription.axesUnknown(0)
-                : opening.description());
+                : opening.description(), opening.gamepad());
         buildUi();
     }
 

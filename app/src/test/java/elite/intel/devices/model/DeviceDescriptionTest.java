@@ -53,6 +53,12 @@ class DeviceDescriptionTest {
     }
 
     @Test
+    void gamepadUsesItsSixSdlAxesWithoutUAndV() {
+        DeviceDescription gamepad = DeviceDescription.gamepad(6, 0);
+        assertEquals(List.of(X, Y, GameAxis.Z, GameAxis.RX, GameAxis.RY, RZ), gamepad.sdlAxes());
+    }
+
+    @Test
     void anAxisCannotBeHeldTwice() {
         assertThrows(IllegalArgumentException.class,
                 () -> new DeviceDescription(true, List.of(X, X), 0, List.of(), 0));

@@ -57,8 +57,11 @@ public class BindingsWriter {
     private static final Pattern KEYBOARD_TOKEN = Pattern.compile("Key_[^\\s\"'<>&]+");
     private static final Pattern MOUSE_BUTTON_TOKEN = Pattern.compile("Mouse_[1-9][0-9]*|(?:Pos|Neg)_Mouse_ZAxis");
     private static final String GAME_AXIS = "(?:X|Y|Z|RX|RY|RZ|U|V)Axis";
+    private static final String GAMEPAD_TOKEN = "Pos_GamePad_(?:LTrigger|RTrigger)"
+            + "|GamePad_(?:Face(?:Down|Right|Left|Up)|Back|LBumper|RBumper|LThumb|RThumb|DPad(?:Up|Right|Down|Left))";
     private static final Pattern CONTROLLER_BUTTON_TOKEN =
-            Pattern.compile("Joy_[1-9][0-9]*|Joy_POV[1-4](?:Up|Down|Left|Right)|(?:Pos|Neg)_Joy_" + GAME_AXIS);
+            Pattern.compile("Joy_[1-9][0-9]*|Joy_POV[1-4](?:Up|Down|Left|Right)|(?:Pos|Neg)_Joy_" + GAME_AXIS
+                    + "|" + GAMEPAD_TOKEN);
     private static final Pattern CONTROLLER_AXIS_TOKEN = Pattern.compile("Joy_" + GAME_AXIS);
 
     // Any child element of a slot, by name - comments, processing instructions and closing tags excluded.

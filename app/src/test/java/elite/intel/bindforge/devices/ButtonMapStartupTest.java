@@ -29,8 +29,8 @@ class ButtonMapStartupTest {
 
     /** A real VIRPIL GUID - VID 3344, PID 83F4 - as {@code DeviceIdentitiesTest} carries it. */
     private static final Device LVWAP =
-            new Device(7, "VIRPIL Controls 20220720", 3, 30, "", "03002cec44330000f483000000000000");
-    private static final Device NO_GUID = new Device(8, "Mystery Stick", 2, 10, "", "");
+            new Device(7, "VIRPIL Controls 20220720", 3, 30, "", "03002cec44330000f483000000000000", false);
+    private static final Device NO_GUID = new Device(8, "Mystery Stick", 2, 10, "", "", false);
 
     /** LVWAP as its HID description reads: X, Y and its twist on RZ, and one hat. */
     private static final DeviceDescription LVWAP_DESCRIPTION = new DeviceDescription(true,
@@ -66,7 +66,7 @@ class ButtonMapStartupTest {
         CountDownLatch done = new CountDownLatch(1);
         IntFunction<Optional<DeviceDescription>> onlyLvwap =
                 id -> id == LVWAP.id() ? Optional.of(LVWAP_DESCRIPTION) : Optional.empty();
-        Device gone = new Device(9, "Gone", 1, 12, "", "03002cec44330000f583000000000000");
+        Device gone = new Device(9, "Gone", 1, 12, "", "03002cec44330000f583000000000000", false);
         startup = new ButtonMapStartup(recording(seen, done), () -> List.of(gone, LVWAP), onlyLvwap, ACTIVATED);
 
         startup.start();
@@ -102,7 +102,7 @@ class ButtonMapStartupTest {
                 interrupted.countDown();
             }
         };
-        Device other = new Device(9, "Other", 1, 12, "", "03002cec44330000f583000000000000");
+        Device other = new Device(9, "Other", 1, 12, "", "03002cec44330000f583000000000000", false);
         startup = new ButtonMapStartup(generation, () -> List.of(LVWAP, other), DESCRIBED, ACTIVATED);
         startup.start();
         assertTrue(busy.await(5, TimeUnit.SECONDS));
@@ -121,7 +121,7 @@ class ButtonMapStartupTest {
             if (controller.buttonCount() == 30) throw new IllegalStateException("disk on fire");
             second.countDown();
         };
-        Device other = new Device(9, "Other", 1, 12, "", "03002cec44330000f583000000000000");
+        Device other = new Device(9, "Other", 1, 12, "", "03002cec44330000f583000000000000", false);
         startup = new ButtonMapStartup(generation, () -> List.of(LVWAP, other), DESCRIBED, ACTIVATED);
 
         startup.start();

@@ -117,6 +117,6 @@ class DeviceIdentitiesTest {
     }
 
     private static Device deviceWith(String guid) {
-        return new Device(1, "VIRPIL Controls CONF_A02 L-L-VP-WBD-CAP", 6, 32, "usb-0001", guid);
+        return new Device(1, "VIRPIL Controls CONF_A02 L-L-VP-WBD-CAP", 6, 32, "usb-0001", guid, false);
     }
 }
