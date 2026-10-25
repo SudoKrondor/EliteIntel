@@ -39,14 +39,13 @@ class StartupBackupTest {
         });
         startup.run();
 
-        assertTrue(startup.awaitTaken());
         assertEquals(1, retentionAsked.get());
         assertFalse(Files.exists(old));
         assertTrue(Files.exists(root.resolve("Daily/2026-10-24_10-00-00.zip")));
     }
 
     @Test
-    void aLaterStartTheSameDayTakesNoneButStillPrunesAndSaysItIsTaken() throws IOException {
+    void aLaterStartTheSameDayTakesNoneButStillPrunes() throws IOException {
         Path root = temp.resolve("backups");
         BackupSources sources = sourcesWithOneBindsFile();
         Path old = backups(root, sources, "2026-09-01T10:00:00Z").backUpEverything(Backups.Kind.DAILY).zip();
@@ -55,7 +54,6 @@ class StartupBackupTest {
         StartupBackup later = new StartupBackup(() -> backups(root, sources, "2026-10-24T20:00:00Z"), () -> RETENTION);
         later.run();
 
-        assertTrue(later.awaitTaken(), "today's backup is there, so a write waiting on it may go ahead");
         assertEquals(List.of("2026-10-24_08-00-00.zip"), names(root.resolve("Daily")), "one daily backup a day");
         assertFalse(Files.exists(old));
     }
@@ -72,7 +70,7 @@ class StartupBackupTest {
     }
 
     @Test
-    void aFailedBackupIsReportedNothingIsPrunedAndTheNextStartTriesAgain() throws IOException {
+    void aFailedBackupPrunesNothingAndTheNextStartTriesAgain() throws IOException {
         Path root = temp.resolve("backups");
         Path old = backups(root, sourcesWithOneBindsFile(), "2026-09-01T10:00:00Z")
                 .backUpEverything(Backups.Kind.DAILY).zip();
@@ -81,7 +79,6 @@ class StartupBackupTest {
         StartupBackup startup = new StartupBackup(() -> backups(root, nothing, "2026-10-24T10:00:00Z"), () -> RETENTION);
         startup.run();
 
-        assertFalse(startup.awaitTaken(), "a write waiting on it is told not to go ahead");
         assertTrue(Files.exists(old), "today's backup is missing, so the older ones are kept");
 
         BackupSources readable = sourcesWithOneBindsFile();
@@ -96,7 +93,6 @@ class StartupBackupTest {
         }, () -> RETENTION);
 
         assertDoesNotThrow(startup::run);
-        assertFalse(startup.awaitTaken());
     }
 
     private BackupSources sourcesWithOneBindsFile() throws IOException {

@@ -95,7 +95,7 @@ final class AliasDesignerReader {
         List<Long> foundAgain = List.of();
         IdentityQuestions.Reading identity = IdentityQuestions.Reading.NONE;
         try {
-            activated = BindForgeActivationManager.getInstance().isActivated();
+            activated = BindForgeActivationManager.getInstance().isFirstTimeStartupComplete();
             changes = DraftChanges.stored();
             List<InstallationRow> rows = registry.currentWithStartupScan();
             labels = labelsFor(rows);
@@ -233,7 +233,7 @@ final class AliasDesignerReader {
      */
     OnboardingReading readOnboarding(Set<HardwareId> only, Set<HardwareId> heldBack,
                                      Map<HardwareId, HardwareId> replacing) {
-        if (!BindForgeActivationManager.getInstance().isActivated()) {
+        if (!BindForgeActivationManager.getInstance().isFirstTimeStartupComplete()) {
             return new OnboardingReading(List.of(), List.of(), getText("bindings.aliasDesigner.onboarding.notActivated"));
         }
         Map<String, Integer> hardwareIds;

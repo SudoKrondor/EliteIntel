@@ -241,6 +241,15 @@ last button, and the next opening of the tab offers it again.
   is listed with the other backups, and the user is told once — spoken and logged (rule 3). *Until 2026-10-24 first
   setup also took a second, labelled backup of its own; rule 3's is that backup.*
 
+#### Built on the working copy — 2026-10-25 (Storage S2b)
+
+First-time startup runs from a click on the BindForge tab (`ui.screen.bindings.FirstTimeStartupFlow`): the installation
+list (`InstallationListDialog`), the reconcile when the installations differ (`FirstSetupDialog`), and the write
+(`bindforge.storage.FirstTimeStartup`, through `WritePath` with the first setup backup). The files are read once
+(`FirstSetupReading`, `InstallationFiles`) and the working copy is made from them (`FirstSetupFiles`); `FirstSetupPlan`
+and `LabelMerge` still decide the merge. The master is not filled, SET UP is gone, and the A1b and 2026-10-07 notes below
+are history.
+
 #### Built — 2026-10-13 (Alan, A1b)
 
 *Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
@@ -364,6 +373,20 @@ naming the binds files and the count — *"Epic has an entry Steam does not — 
 DualVirpilDawnTreader.4.2.binds use it. Overwriting removes it, and those bindings will stop working. Choose Merge to
 keep it."* An entry no bindings use is simply overwritten. Binds files and `StartPreset.4.start` are not part of this
 choice: binds files sit side by side in the one folder, and there is one preset file.
+
+**How the reconciled files are made — settled with Storage S2b's sources (Alan, 2026-10-25):**
+
+- **One `DeviceMappings.xml`, from one installation's file.** Frontier's entries are the same everywhere, so the
+  first installation holding a `DeviceMappings.xml` gives the file; the user's elements are taken out of it and the
+  kept ones put at the top of `<Root>`, each copied whole from the installation whose version won — its
+  `<Alternative>` and `<SupportsIcons>` with it — and given the hardware the user chose. A losing or shadowed name is
+  not in the working copy.
+- **A `.buttonMap` keeps its bytes when its labels came through unchanged**; only one whose labels were merged is
+  written again. `VPCPanel` and `VPCThrottle` stay as Frontier ships them.
+- **A case-only name conflict rewrites every binds file to the winner's exact spelling**; a reference already spelled
+  that way is not counted as moved.
+- **"Use one installation for all" is not offered for an installation with no `DeviceMappings.xml`** — the working
+  copy would then hold none, and the write leaves every installation's alone.
 
 **First setup never asks which binds file to use** (2026-10-24, Alan). `StartPreset.4.start` names the active one, for
 every installation; every binds file goes into the working copy; and the overwrite warning counts bindings across all

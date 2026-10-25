@@ -1,32 +1,28 @@
 package elite.intel.db.dao;
 
-import org.jdbi.v3.sqlobject.customizer.Bind;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
 /**
- * Whether BindForge is activated, and its "before BindForge" backup. One row, at {@code id = 1}, created by
- * {@code 12005__bindforge_activation.sql}.
+ * The "first-time startup complete" flag (storage.md, <em>First-time startup</em>). One row, at {@code id = 1},
+ * created by {@code 12005__bindforge_activation.sql}; the flag is its {@code activated_at}.
  * <p>
- * Callers go through {@link elite.intel.db.managers.BindForgeActivationManager}, or - to activate in the same
- * transaction that fills the master - {@link elite.intel.db.managers.BindForgeDeviceDraftManager#establish}.
+ * Callers go through {@link elite.intel.db.managers.BindForgeActivationManager}.
  */
 public interface BindForgeActivationDao {
 
     @SqlQuery("SELECT activated_at IS NOT NULL FROM bindforge_activation WHERE id = 1")
-    boolean isActivated();
+    boolean isComplete();
 
-    /** Activates, keeping the first time it happened. */
+    /** Marks first-time startup complete, keeping the first time it happened. */
     @SqlUpdate("""
             UPDATE bindforge_activation
             SET activated_at = COALESCE(activated_at, CURRENT_TIMESTAMP)
             WHERE id = 1
             """)
-    void activate();
+    void markComplete();
 
-    @SqlQuery("SELECT backup_folder FROM bindforge_activation WHERE id = 1")
-    String backupFolder();
-
-    @SqlUpdate("UPDATE bindforge_activation SET backup_folder = :folder WHERE id = 1")
-    void recordBackupFolder(@Bind("folder") String folder);
+    /** Clears the flag, so first-time startup runs again - Run first-time startup again. */
+    @SqlUpdate("UPDATE bindforge_activation SET activated_at = NULL WHERE id = 1")
+    void clear();
 }

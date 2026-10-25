@@ -250,6 +250,14 @@ button instead of a sub-tab, before Alan settled that File Manager is where inst
   straight back, so the stored list records that the user removed it, and detection skips it. **Add missing** on its
   folder brings it back.
 
+**Settled with Storage S2b's sources (Alan, 2026-10-25):**
+
+- **A removed installation is neither backed up nor written** — removing it says it is not one of the user's.
+  **Remove's confirmation says so:** *"Remove Steam (D:\SteamLibrary\…)? BindForge will no longer back up this
+  installation or write to it. Add missing brings it back."*
+- **Add missing checks for `EliteDangerous64.exe`** in the installation's Odyssey product folder, as well as its
+  `ControlSchemes` folder.
+
 **Run first-time startup again — for testing, and to be hidden or removed before V1.2 ships** (2026-10-24, Alan). A
 button on this sub-tab that clears the "first-time startup complete" flag ([storage.md](storage.md) rule 1) and
 nothing else — no backup is deleted, no game file is touched, and the working copy stays until first-time startup
@@ -357,7 +365,7 @@ From the [simplification review](../../../bindforge-simplification-review.md), c
 | **Restore covers `.binds` only, one file at a time**, to the editing copy or straight to the game | everything, no choices, to the live copies and the working copy (rule 10) |
 | **The "before BindForge" backup** holds everything, but its restore covers `.binds` only | part of the one backup system |
 | **Edit History is written three ways** — device files into `bindings\history\<installation>\` (last 10), `.binds` copies into the backup folder (never deleted), `StartPreset` copies into that same folder (last 10) — and a `.bak` is left beside the working copy on every save | all of it goes: one backup system, nothing per file (rule 11) |
-| **Game Install Locations** shows no match states and no Add missing — detection is built | the list with match states, Add missing and Remove (rule 1) |
+| **Game Install Locations** ~~shows no match states and no Add missing~~ **Built 2026-10-25 (Storage S2b):** Add missing, Remove (stays removed) and Run first-time startup again; Rescan and Relocate removed. Match states wait for S9 | the list with match states, Add missing and Remove (rule 1) |
 
 **Auto-backup and retention are one change, not two.** Today nothing prunes, and that is harmless because
 every backup is a deliberate button press. Add the launch trigger on its own and the folder grows every

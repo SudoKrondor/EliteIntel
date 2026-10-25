@@ -6,6 +6,7 @@ import elite.intel.bindforge.devicefiles.DeviceMappingsParser;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.install.GameInstallationProvider;
 import elite.intel.bindforge.install.InstallationRegistry;
+import elite.intel.bindforge.storage.FirstTimeStartup;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.dialog.HudConfirmDialog;
@@ -13,13 +14,13 @@ import elite.intel.ui.widget.HudFooter;
 import elite.intel.ui.widget.HudPanel;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudTable;
+import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,7 +42,13 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
  * the thing people get wrong.
  * <p>
  * Backup, restore and apply all work from this list, so when detection is wrong every one of them is wrong -
- * which is why the list is editable rather than merely displayed.
+ * which is why the list is editable rather than merely displayed: <strong>Add Missing</strong> and
+ * <strong>Remove</strong>, the same list and buttons as first-time startup (storage.md rule 1). A removed installation
+ * stays removed. <em>Rescan and Relocate were removed in Storage S2b (Alan, 2026-10-24): detection runs at every
+ * start, and moving the game is Remove, then Add Missing.</em>
+ * <p>
+ * <strong>Run First-Time Startup Again</strong> is for testing V1.2, shown to every user, and is to be hidden or
+ * removed before V1.2 ships (Alan, 2026-10-24; build plan, <em>Before V1.2 ships</em>).
  */
 public class GameInstallLocationsPanel extends JPanel {
 
@@ -59,7 +66,6 @@ public class GameInstallLocationsPanel extends JPanel {
     private final AtomicBoolean refreshInProgress = new AtomicBoolean();
     private Long pendingSelection;
 
-    private JButton relocateButton;
     private JButton removeButton;
 
     public GameInstallLocationsPanel() {
@@ -113,22 +119,19 @@ public class GameInstallLocationsPanel extends JPanel {
     }
 
     private JPanel buildFooter() {
-        JButton rescanButton = makeButton(getText("bindings.installLocations.button.rescan"));
-        rescanButton.addActionListener(e -> performRescan());
-
-        JButton addButton = makeButton(getText("bindings.installLocations.button.add"));
+        JButton addButton = makeButton(getText("bindings.installLocations.button.addMissing"));
         addButton.addActionListener(e -> performAdd());
-
-        relocateButton = makeButtonSubtle(getText("bindings.installLocations.button.relocate"));
-        relocateButton.setEnabled(false);
-        relocateButton.addActionListener(e -> performRelocate());
 
         removeButton = makeButtonSubtle(getText("bindings.installLocations.button.remove"));
         removeButton.setEnabled(false);
         removeButton.addActionListener(e -> performRemove());
 
-        return HudFooter.build(false, null, null,
-                List.of(rescanButton, addButton, relocateButton, removeButton));
+        // WHY: shown to every user, because Elite-Intel cannot tell a tester from anyone else - to be hidden or removed
+        // before V1.2 ships (Alan, 2026-10-24; build plan, storage.md, Before V1.2 ships).
+        JButton runAgainButton = makeButtonSubtle(getText("bindings.installLocations.button.runFirstTimeStartupAgain"));
+        runAgainButton.addActionListener(e -> performRunAgain());
+
+        return HudFooter.build(false, null, null, List.of(addButton, removeButton, runAgainButton));
     }
 
     /**
@@ -142,10 +145,6 @@ public class GameInstallLocationsPanel extends JPanel {
      */
     public void initData() {
         loadInBackground(registry::currentWithStartupScan);
-    }
-
-    private void performRescan() {
-        loadInBackground(registry::rescan);
     }
 
     private void loadInBackground(Supplier<List<InstallationRow>> source) {
@@ -179,7 +178,7 @@ public class GameInstallLocationsPanel extends JPanel {
     }
 
     private void performAdd() {
-        Path chosen = chooseFolder(getText("bindings.installLocations.add.chooserTitle"), null);
+        Path chosen = chooseFolder(getText("bindings.installLocations.add.chooserTitle"));
         if (chosen == null) return;
         InstallationRow added;
         try {
@@ -199,46 +198,41 @@ public class GameInstallLocationsPanel extends JPanel {
         initData();
     }
 
-    private void performRelocate() {
-        InstallationRow row = selectedRow();
-        if (row == null) return;
-        Path chosen = chooseFolder(getText("bindings.installLocations.relocate.chooserTitle"), row.rootPath());
-        if (chosen == null) return;
-        try {
-            registry.relocate(row.id(), chosen);
-        } catch (InstallationRegistry.AlreadyListedException e) {
-            // WHY: told apart from "not an installation" because the remedy differs. That folder is fine -
-            // it is simply somebody else's already - and naming which installation holds it is the whole
-            // of what the user needs to know.
-            HudConfirmDialog.info(this,
-                    getText("bindings.installLocations.relocate.alreadyListed.title"),
-                    getText("bindings.installLocations.relocate.alreadyListed.text",
-                            chosen.toString(), e.occupant().storefront()),
-                    getText("button.ok"));
-            return;
-        } catch (IllegalArgumentException e) {
-            HudConfirmDialog.info(this,
-                    getText("bindings.installLocations.add.rejected.title"),
-                    getText("bindings.installLocations.add.rejected.text", chosen.toString()),
-                    getText("button.ok"));
-            return;
-        }
-        initData();
-    }
-
     private void performRemove() {
         InstallationRow row = selectedRow();
         if (row == null) return;
-        // WHY: confirmed because it discards what was held against this installation, and there is no undo
-        // beyond adding the folder again and letting import run.
+        // WHY: confirmed, and saying what it costs - a removed installation is neither backed up nor written from
+        // then on (Alan, 2026-10-25).
         boolean confirmed = HudConfirmDialog.confirm(this,
                 getText("bindings.installLocations.remove.confirm.title"),
-                getText("bindings.installLocations.remove.confirm.text", row.rootPath()),
+                getText("bindings.installLocations.remove.confirm.text", row.storefront(), row.rootPath()),
                 getText("bindings.installLocations.button.remove"),
                 getText("button.cancel"));
         if (!confirmed) return;
         registry.remove(row.id());
         initData();
+    }
+
+    /**
+     * Clears the "first-time startup complete" flag and nothing else - no backup is deleted, no game file is touched
+     * (file-manager.md, <em>Game Install Locations</em>). The next time the BindForge tab is opened, first-time startup
+     * runs from the live copies, with its backup first.
+     */
+    private void performRunAgain() {
+        boolean confirmed = HudConfirmDialog.confirm(this,
+                getText("bindings.installLocations.runAgain.confirm.title"),
+                getText("bindings.installLocations.runAgain.confirm.text"),
+                getText("bindings.installLocations.runAgain.confirm.do"),
+                getText("button.cancel"));
+        if (!confirmed) return;
+        try {
+            FirstTimeStartup.stored().runAgain();
+        } catch (RuntimeException e) {
+            // WHY: the flag is a database write, whose failures are unchecked - the user pressed a button and is told.
+            log.warn("Could not clear the first-time startup flag", e);
+            HudConfirmDialog.info(this, getText("bindings.installLocations.runAgain.confirm.title"),
+                    getText("bindings.installLocations.runAgain.failed", StringUtls.messageOf(e)), getText("button.ok"));
+        }
     }
 
     private void showConfigFolder(Path bindingsDir) {
@@ -310,11 +304,10 @@ public class GameInstallLocationsPanel extends JPanel {
         }
     }
 
-    private Path chooseFolder(String title, String startAt) {
+    private Path chooseFolder(String title) {
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle(title);
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        if (startAt != null) chooser.setCurrentDirectory(new File(startAt));
         if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return null;
         return chooser.getSelectedFile().toPath();
     }
@@ -336,9 +329,7 @@ public class GameInstallLocationsPanel extends JPanel {
     }
 
     private void updateSelectionActionsEnabled() {
-        boolean hasSelection = selectedRow() != null;
-        relocateButton.setEnabled(hasSelection);
-        removeButton.setEnabled(hasSelection);
+        removeButton.setEnabled(selectedRow() != null);
     }
 
     private String[] columnNames() {

@@ -45,7 +45,7 @@ public final class CatchUpAnnouncement implements ManagedService {
     private final AtomicBoolean announced;
 
     public CatchUpAnnouncement() {
-        this(BindForgeActivationManager.getInstance()::isActivated,
+        this(BindForgeActivationManager.getInstance()::isFirstTimeStartupComplete,
                 () -> new InstallationRegistry(GameInstallationProvider.forThisPlatform(
                         PlayerSession.getInstance().getBindingsDir())).currentWithStartupScan(),
                 DeviceFilesPush::storedInstallations,

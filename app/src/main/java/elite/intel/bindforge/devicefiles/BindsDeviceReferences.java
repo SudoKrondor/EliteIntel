@@ -2,6 +2,7 @@ package elite.intel.bindforge.devicefiles;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -10,6 +11,7 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -186,10 +188,29 @@ public final class BindsDeviceReferences {
     private record Reading(Map<String, Integer> counts, Map<String, Integer> hardwareIds, int files, int parsed) {
     }
 
+    /**
+     * How many bindings name each entry in one binds file held in memory - first-time startup's, which reads the
+     * binds files once and judges what it will write (Storage S2b, 2026-10-25). Keyed as written.
+     *
+     * @throws IOException if the bytes are not XML
+     */
+    public static Map<String, Integer> referenceCountsIn(byte[] bindsFile) throws IOException {
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        try {
+            collectInto(newDocumentBuilder().parse(new ByteArrayInputStream(bindsFile)), counts, new LinkedHashMap<>());
+        } catch (SAXException | ParserConfigurationException e) {
+            throw new IOException(e.getMessage(), e);
+        }
+        return Map.copyOf(counts);
+    }
+
     private static void collectInto(Path bindsFile, Map<String, Integer> counts, Map<String, Integer> hardwareIds)
             throws IOException, SAXException, ParserConfigurationException {
+        collectInto(newDocumentBuilder().parse(bindsFile.toFile()), counts, hardwareIds);
+    }
 
-        NodeList all = newDocumentBuilder().parse(bindsFile.toFile()).getElementsByTagName("*");
+    private static void collectInto(Document document, Map<String, Integer> counts, Map<String, Integer> hardwareIds) {
+        NodeList all = document.getElementsByTagName("*");
         for (int i = 0; i < all.getLength(); i++) {
             Element element = (Element) all.item(i);
             if (!element.hasAttribute(DEVICE_ATTRIBUTE)) continue;

@@ -1,6 +1,5 @@
 package elite.intel.ui.screen.bindings;
 
-import elite.intel.bindforge.devicefiles.Activation;
 import elite.intel.bindforge.devicefiles.DeviceDivergence;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush.InstallationResult;
 import elite.intel.bindforge.devicefiles.DeviceFilesPush.Outcome;
@@ -52,13 +51,5 @@ class AliasDesignerReportsTest {
         assertTrue(text.contains("EPIC") && text.contains("folder not found: epic"), text);
         assertFalse(text.contains("STEAM"), text);
         assertEquals(2, text.lines().count(), text);
-    }
-
-    @Test
-    void onlyAFailedActivationIsLogged() {
-        assertNull(AliasDesignerReports.activationFailure(Activation.Outcome.ACTIVATED, null));
-        assertNull(AliasDesignerReports.activationFailure(Activation.Outcome.FIRST_SETUP, null));
-        String line = AliasDesignerReports.activationFailure(Activation.Outcome.BACKUP_FAILED, "disk full");
-        assertTrue(line.contains("backup") && line.contains("disk full"), line);
     }
 }

@@ -18,11 +18,19 @@ import java.util.List;
 @RegisterRowMapper(BindForgeInstallationsDao.InstallationRowMapper.class)
 public interface BindForgeInstallationsDao {
 
-    @SqlQuery("SELECT * FROM bindforge_installations ORDER BY id")
+    /** Every installation the user has not removed - a removed one is neither backed up nor written (Storage S2b). */
+    @SqlQuery("SELECT * FROM bindforge_installations WHERE is_removed = 0 ORDER BY id")
     List<InstallationRow> findAll();
 
+    /** The row at that folder, removed or not. */
     @SqlQuery("SELECT * FROM bindforge_installations WHERE root_path = :rootPath")
     InstallationRow findByPath(@Bind("rootPath") String rootPath);
+
+    @SqlQuery("SELECT is_removed FROM bindforge_installations WHERE root_path = :rootPath")
+    Boolean isRemoved(@Bind("rootPath") String rootPath);
+
+    @SqlUpdate("UPDATE bindforge_installations SET is_removed = :removed WHERE id = :id")
+    void setRemoved(@Bind("id") long id, @Bind("removed") boolean removed);
 
     @SqlUpdate("""
             INSERT INTO bindforge_installations (storefront, root_path, added_by_hand, is_missing)
@@ -39,13 +47,6 @@ public interface BindForgeInstallationsDao {
     @SqlUpdate("UPDATE bindforge_installations SET missed_write = :missed WHERE id = :id AND missed_write <> :missed")
     int setMissedWrite(@Bind("id") long id, @Bind("missed") boolean missed);
 
-    /** Repoints a row at a new folder, keeping the row - and everything keyed to it - intact. */
-    @SqlUpdate("UPDATE bindforge_installations SET root_path = :rootPath, is_missing = 0 WHERE id = :id")
-    void relocate(@Bind("id") long id, @Bind("rootPath") String rootPath);
-
-    @SqlUpdate("DELETE FROM bindforge_installations WHERE id = :id")
-    void delete(@Bind("id") long id);
-
 
     class InstallationRowMapper implements RowMapper<InstallationRow> {
         @Override
@@ -61,7 +62,7 @@ public interface BindForgeInstallationsDao {
     }
 
     /**
-     * @param id          what device records are keyed by, so it outlives a relocate
+     * @param id          what device records are keyed by
      * @param addedByHand true when the user added this rather than detection finding it
      * @param missing     true when the folder is not there right now - a state, never a reason to delete
      * @param missedWrite true when a write the other installations took did not land here, and catch-up has not

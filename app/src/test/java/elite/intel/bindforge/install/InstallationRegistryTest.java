@@ -2,6 +2,7 @@ package elite.intel.bindforge.install;
 
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.db.managers.BindForgeInstallationsManager;
+import elite.intel.db.managers.InstallationsTable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -22,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * A rescan folds detection into the stored list without ever rebuilding it, which is what keeps hand-added
- * rows and device records alive across restarts.
+ * and removed rows as the user left them across restarts.
  */
 class InstallationRegistryTest {
 
@@ -34,7 +35,7 @@ class InstallationRegistryTest {
 
     @BeforeEach
     void emptyTheList() {
-        installations.findAll().forEach(row -> installations.remove(row.id()));
+        InstallationsTable.empty();
         detected.clear();
         InstallationRegistry.forgetStartupScan();
     }
@@ -73,8 +74,8 @@ class InstallationRegistryTest {
     @Test
     void aReaderArrivingDuringDetectionWaitsForIt() throws Exception {
         Path steam = gameAt("steam");
-        long id = installations.record("STEAM", steam, false).id();
-        installations.setMissing(id, true);
+        installations.recordDetected("STEAM", steam);
+        installations.setMissing(installations.findAll().getFirst().id(), true);
         CountDownLatch detecting = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
         InstallationRegistry registry = new InstallationRegistry(() -> {
@@ -195,51 +196,39 @@ class InstallationRegistryTest {
         assertTrue(rows.get(0).addedByHand(), "it is still the only reason BindForge knows about it");
     }
 
+    /** A folder with ControlSchemes but no game executable is not confirmed (storage.md rule 1). */
     @Test
-    void relocatingOntoAFolderAnotherInstallHoldsIsRefusedByName() throws IOException {
-        Path steam = gameAt("steam");
-        Path epic = gameAt("epic");
-        detect(Storefront.STEAM, steam);
-        detect(Storefront.EPIC, epic);
-        InstallationRegistry registry = registry();
-        registry.rescan();
-        long epicId = idOf(epic);
+    void addingAFolderWithoutTheGameExecutableIsRefused() throws IOException {
+        Path root = machine.resolve("half");
+        Files.createDirectories(GameInstallation.controlSchemesUnder(root));
 
-        InstallationRegistry.AlreadyListedException refused = assertThrows(
-                InstallationRegistry.AlreadyListedException.class, () -> registry.relocate(epicId, steam));
-
-        assertEquals("STEAM", refused.occupant().storefront(), "the user is told which installation holds it");
-        assertEquals(epic.toString(), rowOf(epicId).rootPath(), "and the one they were moving did not move");
+        assertThrows(IllegalArgumentException.class, () -> registry().addByHand(root));
+        assertTrue(installations.findAll().isEmpty(), "nothing was recorded");
     }
 
-    /**
-     * Picking the folder it already has is a no-op, not a collision with itself - the row the check finds is
-     * the row being moved.
-     */
+    /** Storage S2b: a removed installation stays removed, however often detection finds it. */
     @Test
-    void relocatingAnInstallOntoItsOwnFolderIsAllowed() throws IOException {
+    void aRemovedInstallationIsNotPutBackByDetection() throws IOException {
         Path steam = gameAt("steam");
         detect(Storefront.STEAM, steam);
         InstallationRegistry registry = registry();
-        registry.rescan();
-        long id = idOf(steam);
+        registry.remove(registry.rescan().getFirst().id());
 
-        registry.relocate(id, steam);
-
-        assertEquals(steam.toString(), rowOf(id).rootPath());
+        assertTrue(registry.rescan().isEmpty());
     }
 
     @Test
-    void relocatingOntoAFolderThatIsNotAnInstallIsRefused() throws IOException {
+    void addMissingBringsBackARemovedInstallation() throws IOException {
         Path steam = gameAt("steam");
         detect(Storefront.STEAM, steam);
         InstallationRegistry registry = registry();
-        registry.rescan();
-        long id = idOf(steam);
-        Path notAGame = Files.createDirectories(machine.resolve("Documents"));
+        long id = registry.rescan().getFirst().id();
+        registry.remove(id);
 
-        assertThrows(IllegalArgumentException.class, () -> registry.relocate(id, notAGame));
-        assertEquals(steam.toString(), rowOf(id).rootPath(), "it stayed where it was");
+        InstallationRow back = registry.addByHand(steam);
+
+        assertEquals(id, back.id());
+        assertEquals(1, registry.rescan().size());
     }
 
     /**
@@ -259,14 +248,6 @@ class InstallationRegistryTest {
         assertEquals(1, registry.currentWithStartupScan().size(), "no second detection this run");
     }
 
-    private long idOf(Path root) {
-        return installations.findByPath(root).id();
-    }
-
-    private InstallationRow rowOf(long id) {
-        return installations.findAll().stream().filter(row -> row.id() == id).findFirst().orElseThrow();
-    }
-
     private InstallationRegistry registry() {
         return new InstallationRegistry(() -> List.copyOf(detected), installations);
     }
@@ -276,10 +257,16 @@ class InstallationRegistryTest {
                 machine.resolve("Bindings")));
     }
 
-    /** Creates the Live product's ControlSchemes folder, which is what makes a folder an installation. */
+    /**
+     * Creates the Live product's ControlSchemes folder and its game executable, which is what makes a folder an
+     * installation Add missing accepts.
+     */
     private Path gameAt(String name) throws IOException {
         Path root = machine.resolve(name);
         Files.createDirectories(GameInstallation.controlSchemesUnder(root));
+        Path executable = root.resolve("Products").resolve(GameInstallation.LIVE_PRODUCT)
+                .resolve(GameInstallation.GAME_EXECUTABLE);
+        if (!Files.exists(executable)) Files.createFile(executable);
         return root;
     }
 

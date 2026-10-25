@@ -387,38 +387,6 @@ public final class DeviceApply {
     }
 
     /**
-     * First setup's bindings move, straight after its push (Alan, 2026-10-17, A16): a losing name {@code .binds} uses
-     * hands its bindings to the name that beat it. Waiting for the next Apply would leave every installation without
-     * the losing name - the push renames it - while the presets still name it.
-     * <p>
-     * The losing name kept as a device's old name moves as a rename's does, and is retried by every later Apply until
-     * it is finished. A further loser to the same winner has no record, so it rides <strong>in the same rewrite</strong>
-     * as the old name (review, 2026-10-17): one write, all or nothing, so it is never the lone second rewrite that
-     * meets the bindings monitor mid-reload and is not retried. Its element stays as a pending removal, which Apply
-     * holds back while {@code .binds} still names it, so a rewrite that stops strands nothing that was working.
-     *
-     * @param report     first setup's push
-     * @param handedOver the losing names no device keeps as its old name, by the name their bindings move to
-     */
-    public SetupMoves afterFirstSetup(Report report, Map<String, String> handedOver) {
-        Map<String, Set<String>> byWinner = new TreeMap<>();
-        handedOver.forEach((from, to) -> byWinner.computeIfAbsent(to, name -> new TreeSet<>()).add(from));
-        boolean everywhere = everyInstallationTookIt(report);
-        Renames renames = moveRenamedReferences(report, row -> everywhere, byWinner);
-        return new SetupMoves(renames.moves(), renames.unread());
-    }
-
-    /**
-     * @param moves  the bindings each losing name handed over, and what became of them
-     * @param unread whether {@code .binds} could not be read, so none was moved
-     */
-    public record SetupMoves(List<RenameMove> moves, boolean unread) {
-        public SetupMoves {
-            moves = List.copyOf(moves);
-        }
-    }
-
-    /**
      * The pending removals of devices no longer in the master, split into those this write carries out and those
      * {@code .binds} holds back.
      */

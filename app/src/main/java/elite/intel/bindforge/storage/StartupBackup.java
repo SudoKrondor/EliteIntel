@@ -6,7 +6,6 @@ import elite.intel.ui.i18n.MultiLingualTextProvider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -23,8 +22,8 @@ import java.util.function.Supplier;
  * <strong>A failure is logged and tried again at the next start</strong>, the same day included. Nothing is pruned after
  * a failure: today's backup is missing, so the older ones are the newest there are (2026-10-24).
  * <p>
- * <strong>Nothing else BindForge does at startup writes to a game file before it is done</strong> - such a write asks
- * {@link #awaitTaken()} first, and writes nothing that run if the backup failed (principle 3; Alan, 2026-10-24).
+ * <strong>Nothing BindForge does at startup writes to a game file</strong> - the startup {@code .buttonMap} generation
+ * that waited on this backup was removed in Storage S2b (principle 4; Alan, 2026-10-25).
  */
 public final class StartupBackup {
 
@@ -37,8 +36,6 @@ public final class StartupBackup {
     private final Supplier<Backups> backups;
     private final Supplier<Backups.Retention> retention;
     private final AtomicBoolean started = new AtomicBoolean();
-    private final CountDownLatch finished = new CountDownLatch(1);
-    private volatile boolean taken;
 
     StartupBackup(Supplier<Backups> backups, Supplier<Backups.Retention> retention) {
         this.backups = backups;
@@ -56,22 +53,6 @@ public final class StartupBackup {
     }
 
     /**
-     * Waits for the startup backup. Blocks - never on the EDT or the device bus.
-     *
-     * @return {@code true} once it has been taken, or today's was already there; {@code false} if it failed, or the
-     * wait was interrupted
-     */
-    public boolean awaitTaken() {
-        try {
-            finished.await();
-            return taken;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        }
-    }
-
-    /**
      * The daily backup unless today's is there, then retention. On the caller's thread; {@link #startInBackground()} is
      * what production uses.
      */
@@ -86,7 +67,6 @@ public final class StartupBackup {
                 Backup backup = backupSystem.backUpEverything(Backups.Kind.DAILY);
                 log.info("Daily backup taken at {}", backup.zip());
             }
-            taken = true;
         } catch (Backups.NothingToBackUpException e) {
             // WHY: a warning, not an error - a new player, or a game not yet installed, has no files yet, and an error
             // line at every start would send whoever reads a support bundle looking for a fault (review, 2026-10-24).
@@ -99,8 +79,6 @@ public final class StartupBackup {
             // goes on. Nothing is pruned.
             log.error("The daily backup taken when Elite-Intel starts failed; it is tried again at the next start", e);
             return;
-        } finally {
-            finished.countDown();
         }
         prune(backupSystem);
     }

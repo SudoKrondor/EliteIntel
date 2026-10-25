@@ -11,8 +11,6 @@ import elite.intel.bindforge.devices.MissingControllerWarning;
 import elite.intel.bindforge.devices.MyDevice;
 import elite.intel.bindforge.devices.Onboarding;
 import elite.intel.bindforge.install.InstallationRegistry;
-import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
-import elite.intel.db.managers.BindForgeActivationManager;
 import elite.intel.db.managers.BindForgeDeviceDraftManager;
 import elite.intel.db.managers.BindForgeIdentityAnswerManager;
 import elite.intel.db.managers.BindForgeInstallationsManager;
@@ -21,7 +19,6 @@ import elite.intel.devices.events.DeviceDisconnectedEvent;
 import elite.intel.eventbus.DeviceBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.dialog.HudConfirmDialog;
-import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.DeviceFilesChangedEvent;
 import elite.intel.ui.screen.bindings.AliasDesignerReader.OnboardingReading;
 import elite.intel.ui.screen.bindings.AliasDesignerReader.Snapshot;
@@ -42,7 +39,7 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.util.StringUtls.messageOf;
 
 /**
- * The Alias Designer screen's flows: the refresh, activation, first setup, APPLY and DISCARD, the ways out, catch-up,
+ * The Alias Designer screen's flows: the refresh, APPLY and DISCARD, the ways out, catch-up,
  * the identity question (A12), onboarding, controllers plugged in or out (A7), and opening the Device Editor. It decides when each runs, runs the disk work off the EDT, asks and tells
  * the user, and hands what it read to {@link AliasDesignerPanel}, which only draws.
  * <p>
@@ -61,7 +58,6 @@ final class AliasDesignerController {
 
     private final AliasDesignerPanel view;
     private final AliasDesignerReader reader;
-    private final InstallationRegistry registry;
 
     private final RefreshCoalescer refreshes = new RefreshCoalescer();
     /**
@@ -71,14 +67,10 @@ final class AliasDesignerController {
      */
     private final AtomicBoolean missingWarningWanted = new AtomicBoolean();
     /**
-     * Activation is tried once per run - abandoned first setup is then SET UP's, and the next run's to offer again.
+     * Set from the start and on CHECK AGAIN, and taken by the first refresh after it that finds first-time startup
+     * complete and the hardware listed: onboarding opens then, for the controllers attached (Alan, 2026-10-14, A6b).
      */
-    private final AtomicBoolean activationTried = new AtomicBoolean();
-    /**
-     * Set when activation is tried and on CHECK AGAIN, and taken by the first refresh after it that finds BindForge
-     * activated and the hardware listed: onboarding opens then, for the controllers attached (Alan, 2026-10-14, A6b).
-     */
-    private final AtomicBoolean onboardingWanted = new AtomicBoolean();
+    private final AtomicBoolean onboardingWanted = new AtomicBoolean(true);
     /**
      * The installations catch-up has asked about in this run, answered either way - No is asked again next run, not
      * again this one (Alan, 2026-10-15, A14). EDT only.
@@ -112,18 +104,12 @@ final class AliasDesignerController {
      */
     private Snapshot shown = NOTHING_YET;
     /**
-     * Whether activation is running. SET UP waits for it, or the two could open first setup twice (review,
-     * 2026-10-13). EDT only.
-     */
-    private boolean activationRunning;
-    /**
      * Whether a write the user started - APPLY, DISCARD, a way out, onboarding - is running. EDT only.
      */
     private boolean actionRunning;
 
     AliasDesignerController(AliasDesignerPanel view, InstallationRegistry registry) {
         this.view = view;
-        this.registry = registry;
         this.reader = new AliasDesignerReader(registry);
         UiBus.register(this);
         DeviceBus.register(this);
@@ -294,132 +280,16 @@ final class AliasDesignerController {
     }
 
     /**
-     * SET UP until BindForge is activated, and not while activation runs, which may open first setup itself. APPLY
-     * once activated and only when it has work ({@link ApplyWork}), DISCARD while the draft changes something - and
+     * APPLY once first-time startup is complete and only when it has work ({@link ApplyWork}), DISCARD while the draft changes something - and
      * neither while a write runs.
      */
     private void refreshButtons() {
-        view.refreshButtons(!activated() && !activationRunning, canApply(),
+        view.refreshButtons(canApply(),
                 !shown.changes().isEmpty() && !actionRunning, shown.changes());
     }
 
     private boolean canApply() {
         return activated() && shown.applyWork() && !actionRunning;
-    }
-
-    // ------------------------------------------------------------------ activation and first setup
-
-    /**
-     * Activation, the first time the BindForge tab is shown in a run (Alan, 2026-10-13, A1b): a "before BindForge"
-     * backup, then the master filled with no prompt when the installations are identical, or first setup opened when
-     * they are not. On the EDT; does nothing once tried in this run.
-     */
-    void activateOnFirstShowing() {
-        if (!activationTried.compareAndSet(false, true)) return;
-        onboardingWanted.set(true);
-        activationRunning = true;
-        refreshButtons();
-        new Thread(() -> {
-            Activation.Result result = null;
-            Map<String, String> names = Map.of();
-            try {
-                // WHY: asked first, so every run after activation - nearly all of them - pays for no detection and
-                // starts none to race the refresh's (review, 2026-10-13).
-                if (!BindForgeActivationManager.getInstance().isActivated()) {
-                    // WHY: a detection of its own, not currentWithStartupScan(). Activation reads the stored list, and
-                    // on a fresh database nothing is stored until detection has run; the startup scan may still be
-                    // running on the refresh thread, and the call that loses that race returns the list as it was -
-                    // so the user would activate with an empty master. rescan() waits for a detection in progress.
-                    List<InstallationRow> rows = registry.rescan();
-                    names = AliasDesignerReader.labelsFor(rows);
-                    result = Activation.stored().run();
-                    reportActivationFailure(result.outcome(), result.reason());
-                }
-            } catch (RuntimeException e) {
-                // WHY: broad on purpose - a thread boundary. Not activated, so SET UP stays offered.
-                log.warn("BindForge could not be activated", e);
-                reportActivationFailure(Activation.Outcome.FAILED, messageOf(e));
-            }
-            Activation.Result loadedResult = result;
-            Map<String, String> loadedNames = names;
-            SwingUtilities.invokeLater(() -> {
-                activationRunning = false;
-                refreshButtons();
-                if (loadedResult != null && loadedResult.outcome() == Activation.Outcome.FIRST_SETUP) {
-                    showFirstSetup(loadedResult.setup(), loadedResult.reading(),
-                            AliasDesignerReports.problemOf(loadedResult), loadedNames);
-                }
-                refresh();
-            });
-        }, "BindForge-Activation").start();
-    }
-
-    /**
-     * A failed activation is said in the application log, as a successful one's backup is.
-     */
-    private static void reportActivationFailure(Activation.Outcome outcome, String reason) {
-        String line = AliasDesignerReports.activationFailure(outcome, reason);
-        if (line != null) UiBus.publish(new AppLogEvent(line));
-    }
-
-    /**
-     * SET UP: reads every installation for first setup off the EDT, then opens it. Nothing is written until the user
-     * confirms the summary inside it.
-     */
-    void openFirstSetup() {
-        // WHY: activation may open first setup itself any moment now - one dialog, not two (review, 2026-10-13).
-        if (activationRunning) return;
-        view.refreshButtons(false, canApply(), !shown.changes().isEmpty() && !actionRunning, shown.changes());
-        Map<String, String> names = shown.labels();
-        new Thread(() -> {
-            FirstSetup setup = null;
-            FirstSetup.Reading reading = null;
-            String problem = null;
-            try {
-                // WHY: SET UP is a way into activation too, so it takes the "before BindForge" backup if activation
-                // could not - otherwise finishing first setup would activate without it, for good (review, 2026-10-13).
-                BeforeBindForgeBackup.stored().ensureTaken();
-            } catch (IOException | RuntimeException e) {
-                // WHY: broad on purpose - a thread boundary, and the user pressed a button and must be told.
-                log.warn("First setup did not open: the backup before BindForge could not be taken", e);
-                problem = getText("bindings.aliasDesigner.firstSetup.result.backupFailed", messageOf(e));
-            }
-            if (problem == null) {
-                try {
-                    setup = FirstSetup.stored();
-                    reading = setup.read();
-                } catch (IOException | RuntimeException e) {
-                    // WHY: broad on purpose - a thread boundary, and the user pressed a button and must be told.
-                    log.warn("First setup could not read the installations", e);
-                    problem = getText("bindings.aliasDesigner.firstSetup.readFailed", messageOf(e));
-                }
-            }
-            FirstSetup loadedSetup = setup;
-            FirstSetup.Reading loadedReading = reading;
-            String loadedProblem = problem;
-            SwingUtilities.invokeLater(() -> {
-                refreshButtons();
-                showFirstSetup(loadedSetup, loadedReading, loadedProblem, names);
-            });
-        }, "BindForge-FirstSetupRead").start();
-    }
-
-    /**
-     * First setup's dialog for a reading, naming the problem when there is one - or, with no reading, the problem
-     * alone. On the EDT.
-     *
-     * @param problem the text to show the user, already worded; {@code null} when nothing went wrong
-     */
-    private void showFirstSetup(FirstSetup setup, FirstSetup.Reading reading, String problem,
-                                Map<String, String> names) {
-        // WHY: decided on the reading, not the message. An exception can carry no message, and keyed on that, a
-        // failed read would open the dialog with nothing to show.
-        if (setup == null || reading == null) {
-            HudConfirmDialog.info(view, getText("bindings.aliasDesigner.firstSetup.title"), problem,
-                    getText("bindings.aliasDesigner.firstSetup.close"));
-            return;
-        }
-        new FirstSetupDialog(view, setup, reading, problem, names, this::refresh).showDialog();
     }
 
     // ------------------------------------------------------------------ APPLY and DISCARD
@@ -854,22 +724,18 @@ final class AliasDesignerController {
     }
 
     /**
-     * Opens the Device Editor for one My Devices row. Before activation there is no master for its edits to be saved
-     * against - first setup throws any draft away - so it says SET UP comes first, and offers it (Alan, 2026-10-10).
+     * Opens the Device Editor for one My Devices row. Before first-time startup there is nothing for its edits to be
+     * saved against, so it says first-time startup comes first, from a click on the BindForge tab (Storage S2b).
      *
      * @param strip the install strip the view drew for the row
      */
     void openDeviceEditor(MyDevice device, List<DeviceEditorDialog.StripLine> strip) {
-        // WHY: the stored fact, not the report - a refresh that failed also leaves no report, and once activated that is
-        // no reason to send the user to first setup (review, 2026-10-11). Activated, not "the master has rows": a
-        // user who owns nothing is activated with an empty master (Alan, 2026-10-13).
+        // WHY: the stored flag, not the report - a refresh that failed also leaves no report, and that is no reason to
+        // send the user to first-time startup (review, 2026-10-11).
         if (!activated()) {
-            if (HudConfirmDialog.confirm(view, getText("bindings.aliasDesigner.editor.heading"),
+            HudConfirmDialog.info(view, getText("bindings.aliasDesigner.editor.heading"),
                     getText("bindings.aliasDesigner.editor.beforeSetUp.message"),
-                    getText("bindings.aliasDesigner.firstSetup.button"),
-                    getText("button.back"))) {
-                openFirstSetup();
-            }
+                    getText("bindings.aliasDesigner.firstSetup.close"));
             return;
         }
         new Thread(() -> {

@@ -3,6 +3,7 @@ package elite.intel.ui.screen;
 import elite.intel.ui.screen.bindings.AliasDesignerPanel;
 import elite.intel.ui.screen.bindings.BindingManagementPanel;
 import elite.intel.ui.screen.bindings.BindingProfilePanel;
+import elite.intel.ui.screen.bindings.FirstTimeStartupFlow;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 
@@ -22,15 +23,16 @@ public class BindingsTabPanel extends JPanel {
     private final BindingProfilePanel bindingProfilePanel = new BindingProfilePanel();
     private final BindingManagementPanel bindingManagementPanel = new BindingManagementPanel();
     private final AliasDesignerPanel aliasDesignerPanel = new AliasDesignerPanel();
+    private final FirstTimeStartupFlow firstTimeStartup = new FirstTimeStartupFlow(this);
 
     public BindingsTabPanel() {
         buildUi();
-        // WHY: activation is the first opening of the BindForge tab - this one, not the Alias Designer sub-tab
-        // (Alan, 2026-10-13, A1b). Opening BindForge is the user coming to it; first setup may open over whichever
-        // sub-tab is showing.
+        // WHY: first-time startup runs from a click on the BindForge tab - this one, not a sub-tab (storage.md rule 1) -
+        // every time it is shown while the flag is not set, so one abandoned is offered again (Alan, 2026-10-25). It may
+        // open over whichever sub-tab is showing.
         addHierarchyListener(event -> {
             if ((event.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) == 0 || !isShowing()) return;
-            aliasDesignerPanel.activateOnFirstShowing();
+            firstTimeStartup.offerIfNeeded();
         });
     }
 

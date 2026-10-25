@@ -232,6 +232,68 @@ public final class DeviceMappingsMerge {
     }
 
     /**
+     * One of the user's elements first-time startup takes into the working copy whole, from the file of the
+     * installation whose version won (alias-designer.md, <em>How the reconciled files are made</em>; Storage S2b).
+     *
+     * @param source that installation's {@code DeviceMappings.xml}
+     * @param name   the element's tag
+     * @param vid    the VID the user chose; empty, with {@code pid}, for an element that claims no hardware - it is
+     *               copied as it is
+     * @param pid    the PID the user chose
+     */
+    public record Taken(byte[] source, String name, String vid, String pid) {
+        public Taken {
+            Objects.requireNonNull(source, "source");
+            Objects.requireNonNull(name, "name");
+            Objects.requireNonNull(vid, "vid");
+            Objects.requireNonNull(pid, "pid");
+        }
+    }
+
+    /**
+     * The working copy's one {@code DeviceMappings.xml}, made by first-time startup's merge: {@code base} - one
+     * installation's file, since Frontier's entries are the same everywhere - with every one of the user's elements
+     * taken out, and the kept ones put at the top of {@code <Root>} in the order given, each copied whole from its
+     * own installation's file and given the hardware the user chose. Its {@code <Alternative>} and
+     * {@code <SupportsIcons>} come with it, which a new element would lose.
+     *
+     * @param base       the file Frontier's entries, and everything else that is not the user's, are kept from
+     * @param usersNames every element tag that is the user's, in any installation - all taken out of {@code base}
+     * @param taken      the elements kept, in the order they lead the file
+     * @throws IOException if a file is not a {@code DeviceMappings.xml}, or a taken element is not in its source
+     */
+    public static byte[] assemble(byte[] base, Collection<String> usersNames, List<Taken> taken) throws IOException {
+        Document document = DeviceFileXml.parse(base);
+        Element root = rootOf(document);
+
+        List<Node> gone = new ArrayList<>();
+        NodeList children = root.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            if (child.getNodeType() == Node.ELEMENT_NODE && usersNames.contains(child.getNodeName())) gone.add(child);
+        }
+        gone.forEach(root::removeChild);
+
+        Map<byte[], Element> sourceRoots = new IdentityHashMap<>();
+        for (int i = taken.size() - 1; i >= 0; i--) {
+            Taken one = taken.get(i);
+            Element sourceRoot = sourceRoots.get(one.source());
+            if (sourceRoot == null) {
+                sourceRoot = rootOf(DeviceFileXml.parse(one.source()));
+                sourceRoots.put(one.source(), sourceRoot);
+            }
+            Element original = firstChildNamed(sourceRoot, one.name());
+            if (original == null) throw new IOException(one.name() + " is not in the file it was to be taken from");
+            Element copy = (Element) document.importNode(original, true);
+            if (!one.vid().isEmpty() || !one.pid().isEmpty()) {
+                matchHardware(document, copy, new UserEntry(one.name(), one.vid(), one.pid()));
+            }
+            root.insertBefore(copy, root.getFirstChild());
+        }
+        return DeviceFileXml.write(document);
+    }
+
+    /**
      * @throws IOException if the document is not a {@code DeviceMappings.xml} - its root is not {@code <Root>}
      */
     private static Element rootOf(Document document) throws IOException {

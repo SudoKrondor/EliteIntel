@@ -1,14 +1,14 @@
 package elite.intel.ui.screen.bindings;
 
-import elite.intel.bindforge.devicefiles.DeviceApply;
 import elite.intel.bindforge.devicefiles.DeviceDivergence;
-import elite.intel.bindforge.devicefiles.DeviceFilesPush;
-import elite.intel.bindforge.devicefiles.DeviceFilesPush.Target;
-import elite.intel.bindforge.devicefiles.FirstSetup;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan;
-import elite.intel.bindforge.devicefiles.LabelMerge;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan.Option;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan.Row;
+import elite.intel.bindforge.devicefiles.LabelMerge;
+import elite.intel.bindforge.storage.ConfigurationFiles;
+import elite.intel.bindforge.storage.FirstSetupFiles;
+import elite.intel.bindforge.storage.FirstSetupReading;
+import elite.intel.bindforge.storage.InstallationFiles;
 import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
@@ -16,15 +16,18 @@ import elite.intel.ui.widget.HudBanner;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudTable;
 import elite.intel.ui.widget.StatusBadge;
+import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -33,52 +36,52 @@ import static elite.intel.ui.theme.AppTheme.makeButtonSubtle;
 import static elite.intel.ui.theme.AppTheme.transparentPanel;
 
 /**
- * First setup: what the installations hold, one row per device, and the few questions that need an answer
- * (alias-designer.md, <em>The flow</em>).
+ * First-time startup's reconcile, when the installations' device files differ (storage.md rule 2; alias-designer.md,
+ * <em>The flow</em>): what the installations hold, one row per device, and the two routes through - <strong>use one
+ * installation for all</strong>, its files whole, or <strong>merge</strong> and answer the few questions. Colliding
+ * labels are answered per input in {@link LabelMergeDialog}, or for the whole device by one installation.
  * <p>
- * Nothing is written until the summary is confirmed, so the dialog can be opened and abandoned. Two routes
- * through: answer the questions one by one, or use one installation as the master. Colliding labels are answered
- * per input in {@link LabelMergeDialog}, or for the whole device by one installation.
+ * <strong>Nothing is written here.</strong> The dialog ends with a summary the user confirms, and hands back the
+ * working copy to write; the caller writes it.
  */
 final class FirstSetupDialog extends JDialog {
 
     private static final Logger log = LogManager.getLogger(FirstSetupDialog.class);
     private static final int MAX_COLUMN_WIDTH = 360;
 
-    private final FirstSetup setup;
-    private final FirstSetup.Reading reading;
-    private final String problem;
+    /**
+     * The working copy the user confirmed.
+     *
+     * @param files the working copy to write
+     * @param moved how many bindings a merge moved off a losing name; 0 for "use one installation for all"
+     */
+    record Choice(ConfigurationFiles files, int moved) {
+    }
+
+    private final FirstSetupReading reading;
     private final Map<String, String> installNames;
-    private final Runnable afterApply;
     private final List<Row> rows;
     private final Map<String, String> answers = new LinkedHashMap<>();
 
     private DefaultTableModel model;
     private JTable table;
     private JPanel choicePanel;
-    private JButton continueButton;
+    private Choice choice;
 
-    /**
-     * @param problem      a file activation could not read, already worded - shown first, so the dialog does not look
-     *                     complete when it is not (review, 2026-10-13); {@code null} when nothing went wrong
-     * @param installNames what each installation is called, keyed by its id as text
-     * @param afterApply   run on the EDT once something was written, to refresh the screen behind
-     */
-    FirstSetupDialog(Component parent, FirstSetup setup, FirstSetup.Reading reading, String problem,
-                     Map<String, String> installNames, Runnable afterApply) {
+    /** @param installNames what each installation is called, keyed by its id as text */
+    FirstSetupDialog(Component parent, FirstSetupReading reading, Map<String, String> installNames) {
         super(SwingUtilities.getWindowAncestor(parent), ModalityType.APPLICATION_MODAL);
         setUndecorated(true);
-        this.setup = setup;
         this.reading = reading;
-        this.problem = problem;
         this.installNames = installNames;
-        this.afterApply = afterApply;
         this.rows = reading.plan().rows();
         buildUi();
     }
 
-    void showDialog() {
+    /** @return the working copy the user confirmed, or empty when they cancelled */
+    Optional<Choice> showDialog() {
         AppTheme.runWithModalScrim(getOwner(), () -> setVisible(true));
+        return Optional.ofNullable(choice);
     }
 
     private void buildUi() {
@@ -87,42 +90,38 @@ final class FirstSetupDialog extends JDialog {
         // WHY: said first, because it is what makes the rest safe to touch.
         top.add(HudBanner.multiline(getText("bindings.aliasDesigner.firstSetup.backupBefore"),
                 StatusBadge.State.INFO));
-        if (problem != null) {
-            top.add(HudBanner.multiline(problem, StatusBadge.State.OFFLINE));
-        }
+        top.add(HudBanner.multiline(getText("bindings.firstTimeStartup.reconcile.intro"), StatusBadge.State.IDLE));
         if (!reading.unreachable().isEmpty()) {
             top.add(HudBanner.multiline(getText("bindings.aliasDesigner.firstSetup.unreachable",
-                    reading.unreachable().stream().map(this::nameOf).collect(Collectors.joining(", "))),
+                    reading.unreachable().stream().map(row -> nameOf(row.id(), row.storefront()))
+                            .collect(Collectors.joining(", "))),
                     StatusBadge.State.STANDBY));
         }
         body.add(top, BorderLayout.NORTH);
 
-        continueButton = makeButton(getText("bindings.aliasDesigner.firstSetup.continue"));
-        continueButton.addActionListener(e -> onContinue());
+        JButton merge = makeButton(getText("bindings.firstTimeStartup.reconcile.merge"));
+        merge.addActionListener(e -> onMerge());
         JButton cancel = makeButtonSubtle(getText("bindings.aliasDesigner.firstSetup.cancel"));
         cancel.addActionListener(e -> dispose());
 
+        JPanel bottom = transparentPanel(new GridLayout(0, 1, 0, 6));
         if (reading.plan().isEmpty()) {
-            // WHY: Continue stays offered. Activation opens first setup whenever filling the master would write a game
-            // file, even with nothing to ask - an installation missing its DeviceMappings.xml - and the dialog's last
-            // button is how the user says yes to that write, and how BindForge is activated (Alan, 2026-10-13).
             body.add(HudBanner.multiline(getText("bindings.aliasDesigner.firstSetup.nothing"),
                     StatusBadge.State.IDLE), BorderLayout.CENTER);
         } else {
             body.add(HudTable.dataPlaneScrollPane(buildTable()), BorderLayout.CENTER);
-            JPanel bottom = transparentPanel(new GridLayout(0, 1, 0, 6));
             choicePanel = transparentPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
             bottom.add(choicePanel);
-            bottom.add(useAsMasterButtons());
-            body.add(bottom, BorderLayout.SOUTH);
         }
+        bottom.add(useOneButtons());
+        body.add(bottom, BorderLayout.SOUTH);
 
         HudModalSpec spec = HudModalSpec.builder()
-                .title(getText("bindings.aliasDesigner.firstSetup.title"))
+                .title(getText("bindings.firstTimeStartup.title"))
                 .onClose(this::dispose)
                 .body(body)
                 .scrollBody(false)
-                .primary(continueButton)
+                .primary(merge)
                 .dismiss(cancel)
                 .build();
         setContentPane(AppTheme.hudModalScaffold(spec));
@@ -264,120 +263,84 @@ final class FirstSetupDialog extends JDialog {
         return option.text() + " (" + holders + ")";
     }
 
-    private JPanel useAsMasterButtons() {
+    /**
+     * "Use one installation for all", one button per installation - not offered for one with no
+     * {@code DeviceMappings.xml}, since the working copy would then hold none (Alan, 2026-10-25).
+     */
+    private JPanel useOneButtons() {
         JPanel panel = transparentPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        for (FirstSetupPlan.Installation installation : reading.plan().installations()) {
-            String name = installNames.getOrDefault(String.valueOf(installation.installId()),
-                    installation.storefront());
-            JButton button = makeButtonSubtle(getText("bindings.aliasDesigner.firstSetup.useAsMaster", name));
-            button.addActionListener(e -> {
-                answers.putAll(reading.plan().answersFavouring(installation.installId()));
-                refreshRows();
-            });
+        for (InstallationFiles installation : reading.installations()) {
+            if (!installation.hasDeviceMappings()) continue;
+            String name = nameOf(installation.installId(), installation.storefront());
+            JButton button = makeButtonSubtle(getText("bindings.firstTimeStartup.reconcile.useOne", name));
+            button.addActionListener(e -> onUseOne(installation, name));
             panel.add(button);
         }
         return panel;
     }
 
-    private void onContinue() {
+    /**
+     * Its confirmation says, before anything is written, which entries the bindings use that it would remove - the
+     * binds files and the counts (alias-designer.md, <em>Reconciliation is per device element</em>).
+     */
+    private void onUseOne(InstallationFiles installation, String name) {
+        StringBuilder text = new StringBuilder(getText("bindings.firstTimeStartup.reconcile.useOne.confirm", name));
+        for (FirstSetupFiles.Loss loss : FirstSetupFiles.lossesUsingOne(reading, installation.installId())) {
+            String files = loss.bindings().entrySet().stream()
+                    .map(file -> getText("bindings.firstTimeStartup.reconcile.useOne.inFile", file.getValue(),
+                            file.getKey()))
+                    .collect(Collectors.joining(", "));
+            text.append("\n\n").append(getText("bindings.firstTimeStartup.reconcile.useOne.loss",
+                    String.join(", ", loss.holders()), name, loss.name(), files));
+        }
+        text.append("\n\n").append(getText("bindings.firstTimeStartup.summary.installations",
+                reading.installations().size()));
+        if (!HudConfirmDialog.confirm(this, getText("bindings.firstTimeStartup.summary.title"), text.toString(),
+                getText("bindings.firstTimeStartup.summary.create"),
+                getText("bindings.aliasDesigner.firstSetup.cancel"))) {
+            return;
+        }
+        choice = new Choice(FirstSetupFiles.useOne(reading, installation.installId()), 0);
+        dispose();
+    }
+
+    /** Merge: every question answered, then a summary of what the working copy will hold, then the choice. */
+    private void onMerge() {
         List<String> missing = reading.plan().unanswered(answers);
         if (!missing.isEmpty()) {
-            HudConfirmDialog.info(this, getText("bindings.aliasDesigner.firstSetup.title"),
+            HudConfirmDialog.info(this, getText("bindings.firstTimeStartup.title"),
                     getText("bindings.aliasDesigner.firstSetup.unanswered", missing.size()),
                     getText("bindings.aliasDesigner.firstSetup.close"));
             return;
         }
-        FirstSetupPlan.Resolution resolution = reading.plan().resolve(answers);
-        long reachable = reading.targets().size() - reading.unreachable().size();
-        StringBuilder summary = new StringBuilder(getText("bindings.aliasDesigner.firstSetup.summary.text",
-                resolution.devices().size(), resolution.buttonMapCount(), reachable));
-        resolution.bindingMoves().forEach((from, to) -> summary.append('\n')
+        FirstSetupFiles.Merged merged;
+        try {
+            merged = FirstSetupFiles.merge(reading, Map.copyOf(answers));
+        } catch (IOException e) {
+            // WHY: nothing was written - the working copy could not be made from these files, and the file is named.
+            log.warn("First-time startup could not merge the installations", e);
+            HudConfirmDialog.info(this, getText("bindings.firstTimeStartup.title"),
+                    getText("bindings.firstTimeStartup.mergeFailed", StringUtls.messageOf(e)),
+                    getText("bindings.aliasDesigner.firstSetup.close"));
+            return;
+        }
+        StringBuilder summary = new StringBuilder(getText("bindings.firstTimeStartup.summary.merge",
+                merged.devices(), merged.files().buttonMaps().size()));
+        merged.moves().forEach((from, to) -> summary.append('\n')
                 .append(getText("bindings.aliasDesigner.firstSetup.summary.moves", from, to)));
-        boolean go = HudConfirmDialog.confirm(this, getText("bindings.aliasDesigner.firstSetup.summary.title"),
-                summary.toString(),
-                getText("bindings.aliasDesigner.firstSetup.summary.apply"),
-                getText("bindings.aliasDesigner.firstSetup.cancel"));
-        if (!go) return;
-
-        continueButton.setEnabled(false);
-        Map<String, String> chosen = Map.copyOf(answers);
-        new Thread(() -> {
-            FirstSetup.Result result;
-            try {
-                result = setup.apply(reading, chosen);
-            } catch (RuntimeException e) {
-                // WHY: broad on purpose - a thread boundary, and an escaping exception would leave the dialog
-                // waiting with nothing said.
-                log.error("First setup failed", e);
-                result = FirstSetup.Result.failedBeforeWriting(e);
-            }
-            FirstSetup.Result finished = result;
-            SwingUtilities.invokeLater(() -> showResult(finished));
-        }, "BindForge-FirstSetup").start();
+        summary.append("\n\n").append(getText("bindings.firstTimeStartup.summary.installations",
+                reading.installations().size()));
+        if (!HudConfirmDialog.confirm(this, getText("bindings.firstTimeStartup.summary.title"), summary.toString(),
+                getText("bindings.firstTimeStartup.summary.create"),
+                getText("bindings.aliasDesigner.firstSetup.cancel"))) {
+            return;
+        }
+        choice = new Choice(merged.files(), merged.bindingsMoved());
+        dispose();
     }
 
-    private void showResult(FirstSetup.Result result) {
-        String message = switch (result.outcome()) {
-            case APPLIED -> appliedText(result);
-            case ALREADY_SET_UP -> getText("bindings.aliasDesigner.firstSetup.result.alreadySetUp");
-            case BACKUP_FAILED -> getText("bindings.aliasDesigner.firstSetup.result.backupFailed", result.reason());
-            case FAILED -> getText("bindings.aliasDesigner.firstSetup.result.failed", result.reason());
-        };
-        HudConfirmDialog.info(this, getText("bindings.aliasDesigner.firstSetup.title"), message,
-                getText("bindings.aliasDesigner.firstSetup.close"));
-        // WHY: closed whenever the master holds anything, whatever else failed. First setup is then over -
-        // continuing again could only say so - and the screen behind must stop offering it.
-        if (result.masterFilled()) {
-            dispose();
-            afterApply.run();
-        } else {
-            continueButton.setEnabled(true);
-        }
-    }
-
-    private String appliedText(FirstSetup.Result result) {
-        DeviceFilesPush.Report report = result.report();
-        StringBuilder text = new StringBuilder(getText("bindings.aliasDesigner.firstSetup.result.applied",
-                String.valueOf(result.backup()), report.matchingCount(), report.installations().size()));
-        for (DeviceFilesPush.InstallationResult installation : report.installations()) {
-            if (installation.reason() == null) continue;
-            text.append('\n').append(getText("bindings.aliasDesigner.firstSetup.result.installation",
-                    nameOf(installation.target()), installation.reason()));
-        }
-        appendMoves(text, result);
-        if (!result.resolution().pendingRemovals().isEmpty()) {
-            text.append('\n').append(getText("bindings.aliasDesigner.firstSetup.result.leftOnDisk",
-                    String.join(", ", result.resolution().pendingRemovals())));
-        }
-        return text.toString();
-    }
-
-    /**
-     * What became of the bindings on each name the user gave up (A16). An old name's move the next Apply retries; a
-     * handed-over name's is not retried, and its entry stays while the bindings still name it.
-     */
-    private static void appendMoves(StringBuilder text, FirstSetup.Result result) {
-        if (result.moves().unread()) {
-            text.append('\n').append(getText("bindings.aliasDesigner.firstSetup.result.movesUnread"));
-        }
-        Map<String, String> handedOver = result.resolution().handedOver();
-        for (DeviceApply.RenameMove move : result.moves().moves()) {
-            String stillOn = handedOver.containsKey(move.from())
-                    ? "bindings.aliasDesigner.firstSetup.result.moveKept"
-                    : "bindings.aliasDesigner.firstSetup.result.moveRetried";
-            text.append('\n').append(switch (move.outcome()) {
-                case MOVED -> getText("bindings.aliasDesigner.firstSetup.result.moved", move.bindings(), move.from(),
-                        move.to());
-                case NOT_FOUND -> getText("bindings.aliasDesigner.firstSetup.result.moveNotFound", move.from());
-                case NOT_APPLIED -> getText(stillOn, move.from(), move.to(),
-                        getText("bindings.aliasDesigner.firstSetup.result.nothingUpdated"));
-                case FAILED -> getText(stillOn, move.from(), move.to(), AliasDesignerReports.moveReason(move.status()));
-            });
-        }
-    }
-
-    private String nameOf(Target target) {
-        return installNames.getOrDefault(String.valueOf(target.installId()), target.storefront());
+    private String nameOf(long installId, String storefront) {
+        return installNames.getOrDefault(String.valueOf(installId), storefront);
     }
 
     private static String kindKey(FirstSetupPlan.Kind kind) {

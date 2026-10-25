@@ -37,7 +37,7 @@ import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * Alias Designer, the view: My Devices and Built-in Devices above the divergence list, the selected row's ways out, and
- * the footer's SET UP, CHECK AGAIN, DISCARD and APPLY. The list compares each installation with the master, or before
+ * the footer's CHECK AGAIN, DISCARD and APPLY. The list compares each installation with the master, or before
  * activation, the installations with each other.
  * <p>
  * <strong>It draws; {@link AliasDesignerController} acts.</strong> Every button hands its press to the controller, which
@@ -45,10 +45,9 @@ import static elite.intel.ui.theme.HudPalette.*;
  * {@link AliasDesignerReader.Snapshot} to draw. What the screen reads is {@link AliasDesignerReader}'s; what it says once
  * a write has run is {@link AliasDesignerReports}'.
  * <p>
- * <strong>Activation runs from here</strong>, through the controller, the first time the BindForge tab is shown in a run (Alan, 2026-10-13,
- * A1b; {@link Activation}): the master filled with no prompt when the installations are identical, first setup
- * opened when they are not. Every test of "set up" here is "activated", never "the master has rows" - a user who
- * owns nothing is activated with an empty master.
+ * <strong>First-time startup does not run from here</strong> since Storage S2b (2026-10-25) - it runs from a click on
+ * the BindForge tab ({@link FirstTimeStartupFlow}). Every test of "set up" here is its flag, never "the master has
+ * rows".
  * <p>
  * Every installation is supposed to hold the same device files, so anywhere they disagree is something to
  * resolve. <strong>One list, not three</strong> - every kind of disagreement appears together, because
@@ -120,7 +119,6 @@ public class AliasDesignerPanel extends JPanel {
     private DefaultTableModel builtInModel;
     private JTable builtInTable;
     private JPanel waysOutPanel;
-    private JButton setUpButton;
     private JButton applyButton;
     private JButton discardButton;
     private JLabel pendingLine;
@@ -164,13 +162,6 @@ public class AliasDesignerPanel extends JPanel {
      */
     public void initData() {
         controller.refresh();
-    }
-
-    /**
-     * Activation, the first time the BindForge tab is shown in a run - see {@link AliasDesignerController}.
-     */
-    public void activateOnFirstShowing() {
-        controller.activateOnFirstShowing();
     }
 
     /**
@@ -246,12 +237,6 @@ public class AliasDesignerPanel extends JPanel {
         JButton rescanButton = makeButton(getText("bindings.aliasDesigner.button.recheck"));
         rescanButton.addActionListener(e -> controller.checkAgain());
 
-        // WHY: offered only until BindForge is activated - first setup runs once. Activation opens it on its own the
-        // first time the tab is shown; abandoned, it waits here for the user (Alan, 2026-10-13).
-        setUpButton = makeButton(getText("bindings.aliasDesigner.firstSetup.button"));
-        setUpButton.setEnabled(false);
-        setUpButton.addActionListener(e -> controller.openFirstSetup());
-
         // WHY: stacked rather than tabbed. The two answer different questions - what devices there are, and
         // where the installations disagree about them - and a user resolving a divergence wants the device it
         // names in sight. Equal halves because neither is the subordinate of the other. The divergence list stays
@@ -275,7 +260,7 @@ public class AliasDesignerPanel extends JPanel {
         left.add(pendingLine);
 
         add(stacked, BorderLayout.CENTER);
-        add(HudFooter.build(false, null, left, List.of(setUpButton, rescanButton, applyButton)), BorderLayout.SOUTH);
+        add(HudFooter.build(false, null, left, List.of(rescanButton, applyButton)), BorderLayout.SOUTH);
     }
 
     /**
@@ -296,12 +281,11 @@ public class AliasDesignerPanel extends JPanel {
      *
      * @param changes what the draft changes, by device; empty when nothing
      */
-    void refreshButtons(boolean setUp, boolean apply, boolean discard, List<String> changes) {
-        setUpButton.setEnabled(setUp);
+    void refreshButtons(boolean apply, boolean discard, List<String> changes) {
         applyButton.setEnabled(apply);
         // WHY a tooltip on the dimmed button: a user pressing APPLY to be sure is told there is nothing to send,
-        // rather than left wondering why it does not answer. Before activation SET UP is the way in instead.
-        applyButton.setToolTipText(apply || setUp ? null : getText("bindings.aliasDesigner.apply.nothing"));
+        // rather than left wondering why it does not answer.
+        applyButton.setToolTipText(apply ? null : getText("bindings.aliasDesigner.apply.nothing"));
         discardButton.setEnabled(discard);
         pendingLine.setText(changes.isEmpty()
                 ? ""

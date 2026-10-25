@@ -10,8 +10,7 @@ import java.util.stream.Collectors;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * What the Alias Designer screen tells the user once a write has run - Apply, a way out, onboarding - and what
- * first setup names when activation opens it. Words only: nothing here reads or writes anything.
+ * What the Alias Designer screen tells the user once a write has run - Apply, a way out, onboarding. Words only: nothing here reads or writes anything.
  */
 final class AliasDesignerReports {
 
@@ -146,29 +145,5 @@ final class AliasDesignerReports {
             text.append(getText("bindings.aliasDesigner.onboarding.result.atApply", naming.name(), naming.bindings()));
         }
         return text.toString();
-    }
-
-    /**
-     * What first setup should name, for activation that opens it: a file it could not read, if any.
-     */
-    static String problemOf(Activation.Result result) {
-        if (result.reason() == null) return null;
-        return result.reading() == null
-                ? getText("bindings.aliasDesigner.firstSetup.readFailed", result.reason())
-                : getText("bindings.aliasDesigner.firstSetup.unreadableFile", result.reason());
-    }
-
-    /**
-     * The application-log line for an activation that failed, or {@code null} when it did not fail - otherwise the
-     * user sees SET UP and nothing saying why (review, 2026-10-13).
-     */
-    static String activationFailure(Activation.Outcome outcome, String reason) {
-        String what = switch (outcome) {
-            case BACKUP_FAILED -> "the backup before BindForge could not be taken";
-            case FAILED -> "it could not be set up";
-            default -> null;
-        };
-        if (what == null) return null;
-        return "BindForge was not activated: " + what + " - " + reason + ". SET UP on Alias Designer tries again.";
     }
 }

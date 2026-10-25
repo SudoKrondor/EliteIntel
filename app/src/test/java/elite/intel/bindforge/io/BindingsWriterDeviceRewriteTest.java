@@ -60,6 +60,19 @@ class BindingsWriterDeviceRewriteTest {
         assertEquals(withThrottleAs("LeftStick"), result.xml());
     }
 
+    /**
+     * Storage S2b (Alan, 2026-10-25): a case-only change rewrites every other spelling to the one chosen, and a
+     * reference already spelled that way is neither rewritten nor counted.
+     */
+    @Test
+    void aCaseOnlyRenameRewritesTheOtherSpellingsOnly() {
+        RewrittenXml result =
+                writer.rewriteDeviceReferences(BINDS, DeviceReferenceRewrite.rename("throttle", "Throttle"));
+
+        assertEquals(1, result.references(), "only the lower-case modifier changes");
+        assertEquals(BINDS.replace("Device=\"throttle\"", "Device=\"Throttle\""), result.xml());
+    }
+
     @Test
     void hardwareIdIsMatchedVidThenPidIgnoringCase() {
         RewrittenXml result = writer.rewriteDeviceReferences(BINDS,
@@ -104,7 +117,7 @@ class BindingsWriterDeviceRewriteTest {
         assertThrows(IllegalArgumentException.class, () -> DeviceReferenceRewrite.rename("Throttle", "{NoDevice}"));
         assertThrows(IllegalArgumentException.class, () -> DeviceReferenceRewrite.rename("Throttle", "Left Stick"));
         assertThrows(IllegalArgumentException.class, () -> DeviceReferenceRewrite.rename("Throttle", "Bad\"Name"));
-        assertThrows(IllegalArgumentException.class, () -> DeviceReferenceRewrite.rename("Throttle", "throttle"));
+        assertThrows(IllegalArgumentException.class, () -> DeviceReferenceRewrite.rename("Throttle", "Throttle"));
         assertThrows(IllegalArgumentException.class, () -> DeviceReferenceRewrite.hardwareIdToName("334", "43F4", "X"));
         assertThrows(IllegalArgumentException.class, () -> new DeviceReferenceRewrite(Set.of(), "X"));
     }

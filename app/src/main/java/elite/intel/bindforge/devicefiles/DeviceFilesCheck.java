@@ -143,7 +143,7 @@ public final class DeviceFilesCheck {
 
     /** Checks the stored installations against the stored master. */
     public DeviceFilesCheck() {
-        this(BindForgeActivationManager.getInstance()::isActivated,
+        this(BindForgeActivationManager.getInstance()::isFirstTimeStartupComplete,
                 DeviceFilesPush::storedInstallations,
                 DeviceFilesPush::storedMaster,
                 DeviceFilesCheck::storedLeftovers,

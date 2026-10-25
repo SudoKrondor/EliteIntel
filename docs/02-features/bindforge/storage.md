@@ -41,6 +41,20 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
    first-time startup complete.
 4. From then on, **the working copy is the source of truth.**
 
+**Settled with Storage S2b's sources (Alan, 2026-10-25):**
+
+- **The flag is `bindforge_activation.activated_at`**, set in the step that writes the working copy and cleared by
+  Run first-time startup again; the "before BindForge" backup's `backup_folder` is dropped. **The migration clears
+  it**, so every tester already set up the old way goes through first-time startup again.
+- **Offered at every click on the BindForge tab while the flag is not set** — abandoning it asks again at the next
+  click, not only the next run.
+- **A new player with no bindings folder yet is not taken through it.** BindForge says the setup check's words
+  (`speech.setup.noBindingsYet`), leaves the flag unset, and offers it again at the next click: nothing of theirs
+  exists yet, and [CREATE](#create--a-new-players-first-binds-file) needs the folder.
+- **No `.buttonMap` is written at Elite-Intel startup any more** — the startup generation is removed here, ahead of
+  Storage S4, because once the flag is set it would write to the game's files unasked (principle 4). Default labels
+  come back at APPLY in S4.
+
 ## Opening BindForge
 
 5. The first time the user clicks the BindForge tab in an Elite-Intel session, [the check](#when-a-live-copy-differs)

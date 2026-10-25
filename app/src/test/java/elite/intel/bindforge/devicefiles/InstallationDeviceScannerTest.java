@@ -4,6 +4,7 @@ import elite.intel.db.dao.BindForgeDeviceInstallsDao.InstallDeviceRow;
 import elite.intel.db.managers.BindForgeDeviceInstallsManager;
 import elite.intel.db.managers.BindForgeDeviceInstallsManager.FoundDevice;
 import elite.intel.db.managers.BindForgeInstallationsManager;
+import elite.intel.db.managers.InstallationsTable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -35,8 +36,8 @@ class InstallationDeviceScannerTest {
 
     @BeforeEach
     void oneInstallation() {
-        installations.findAll().forEach(row -> installations.remove(row.id()));
-        installId = installations.record("STEAM", install, false).id();
+        InstallationsTable.empty();
+        installId = installations.addByHand("STEAM", install).id();
     }
 
     @Test

@@ -11,9 +11,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Keeps the stored installation list in step with what is on disk.
  * <p>
- * Detection runs again every time, but the list is never rebuilt from it. Rows persist because things hang
- * off them - device records are keyed by installation - and because a row carries facts detection cannot
- * supply: that the user added it by hand, or moved it.
+ * Detection runs again every time, but the list is never rebuilt from it. Rows persist because a row carries
+ * facts detection cannot supply: that the user added it by hand, or removed it - a removed installation stays
+ * removed (Storage S2b, 2026-10-25).
  */
 public class InstallationRegistry {
 
@@ -75,7 +75,7 @@ public class InstallationRegistry {
     /** Folds a detection into the stored list. Holds {@code DETECTING}. */
     private List<InstallationRow> record(List<GameInstallation> detected) {
         for (GameInstallation installation : detected) {
-            installations.record(installation.storefront().name(), installation.root(), false);
+            installations.recordDetected(installation.storefront().name(), installation.root());
         }
         refreshMissingFlags();
         // WHY: a full detection has run, so the run's startup detection has nothing left to do - the startup backup's
@@ -85,7 +85,7 @@ public class InstallationRegistry {
     }
 
     /**
-     * Adds an installation the user chose themselves.
+     * Adds an installation the user chose themselves - Add missing - or brings back one they removed.
      * <p>
      * For a Frontier-launcher install this is the only way in: nothing on the machine records where one went,
      * so detection cannot find it once it is off the published defaults.
@@ -94,58 +94,20 @@ public class InstallationRegistry {
      */
     public InstallationRow addByHand(Path root) {
         // WHY: validated before it is accepted, because an arbitrary folder is not an installation and a bad
-        // row would send every backup, restore and apply at the wrong place.
-        requireAnInstallation(root);
-        return installations.record(Storefront.MANUAL.name(), root, true);
+        // row would send every backup and write at the wrong place.
+        if (!GameInstallation.confirmsAnInstall(root)) {
+            throw new IllegalArgumentException("Not an Elite Dangerous installation: " + root + " (expected "
+                    + GameInstallation.controlSchemesUnder(root) + " and " + GameInstallation.GAME_EXECUTABLE + ")");
+        }
+        return installations.addByHand(Storefront.MANUAL.name(), root);
     }
 
     /**
-     * Repoints an installation at a folder the user picked, keeping its id and everything keyed to it.
-     *
-     * @throws IllegalArgumentException if the folder is not an Elite Dangerous installation, or if another
-     *                                  installation already occupies it
-     */
-    public void relocate(long id, Path newRoot) {
-        // WHY: validated exactly as a hand-added folder is. Relocate is the same act - the user naming where
-        // the game is - so accepting something here that addByHand would refuse makes no sense.
-        requireAnInstallation(newRoot);
-        // WHY: asked before writing rather than left to the table's UNIQUE constraint. The constraint is
-        // right and stays, but it surfaces as an opaque wrapped SQL failure that the caller cannot tell
-        // apart from a broken database - and that reached the user as nothing happening at all.
-        InstallationRow occupant = installations.findByPath(newRoot);
-        if (occupant != null && occupant.id() != id) {
-            throw new AlreadyListedException(newRoot, occupant);
-        }
-        installations.relocate(id, newRoot);
-    }
-
-    /** Thrown when the folder the user picked is already held by a different installation. */
-    public static class AlreadyListedException extends IllegalArgumentException {
-        private final transient InstallationRow occupant;
-
-        AlreadyListedException(Path folder, InstallationRow occupant) {
-            super("Already listed as " + occupant.storefront() + ": " + folder);
-            this.occupant = occupant;
-        }
-
-        /** The installation already at that folder, so the user can be told which one it is. */
-        public InstallationRow occupant() {
-            return occupant;
-        }
-    }
-
-    /**
-     * Drops an installation from the list, discarding what was held against it.
+     * Removes an installation from the list. It stays removed: detection skips it, and nothing backs it up or writes
+     * to it, until Add missing brings it back (Storage S2b, 2026-10-25).
      */
     public void remove(long id) {
         installations.remove(id);
-    }
-
-    private static void requireAnInstallation(Path root) {
-        if (!GameInstallation.looksLikeAnInstall(root)) {
-            throw new IllegalArgumentException("Not an Elite Dangerous installation: " + root
-                    + " (expected " + GameInstallation.controlSchemesUnder(root) + ")");
-        }
     }
 
     public List<InstallationRow> current() {
@@ -156,8 +118,7 @@ public class InstallationRegistry {
      * The list, having run detection once since the application started.
      * <p>
      * Detection belongs at startup: a storefront installed since the last run is otherwise invisible until
-     * the user happens to press Rescan, and they have no reason to - the screen shows one installation and
-     * looks correct. Everything downstream inherits that staleness, including a launch backup that would then
+     * something runs detection, and nothing else does. Everything downstream inherits that staleness, including a launch backup that would then
      * cover fewer installations than it claims.
      * <p>
      * Once per run, not per call: this is reached from a refresh that also fires on every ship-profile
