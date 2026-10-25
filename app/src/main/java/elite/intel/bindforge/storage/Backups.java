@@ -1,16 +1,20 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.io.AtomicFiles;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileTime;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -20,41 +24,49 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 /**
  * BindForge's one backup system (storage.md rules 11-12; file-manager.md, <em>Player Backups</em>).
  * <p>
- * <strong>A backup is a folder</strong>, named with its date stamp, holding a copy of every game input configuration
+ * <strong>A backup is a zip</strong>, named with its date stamp, holding a copy of every game input configuration
  * file: every {@code .binds} and {@code StartPreset.N.start} in the bindings folder, and each installation's
  * {@code DeviceMappings.xml} and {@code .buttonMap}s - the full set from every installation, even when they match,
- * with no comparison first. A folder, not a zip, so the user can look through it (Alan, 2026-10-24).
+ * with no comparison first. Every backup a zip, so restore has one format to read (Alan, 2026-10-25).
  * <p>
- * <strong>The backup folder is the record.</strong> The list is its listing, sorted by the stamp in each name, with
- * no database table. A folder is a backup only when it holds {@code backup-info.txt}, so V1.1's folder backups and the
- * old BindForge ones are never listed and never deleted (Alan, 2026-10-24).
+ * <strong>Four kinds, each in its own folder and kept by its own rule</strong> (Alan, 2026-10-25): daily, kept by age;
+ * before changes, kept by count; user, kept until the user deletes them; first setup, kept forever.
  * <p>
- * <strong>Every write to a game file calls {@link #backUpEverything()} first</strong> (principle 3). Touches the
- * disk - not for the EDT.
+ * <strong>The backup folder is the record.</strong> The list is the kind folders' listing, sorted by the stamp in each
+ * name, with no database table. Only zips in the kind folders are listed, so V1.1's folder backups, the old BindForge
+ * ones and Storage S1's dated folders are never listed and never deleted (Alan, 2026-10-24 and 2026-10-25).
+ * <p>
+ * <strong>Every write to a game file calls {@link #backUpBeforeChange(Before)} first</strong> (principle 3). Touches
+ * the disk - not for the EDT.
  */
 public final class Backups {
 
     private static final Logger log = LogManager.getLogger(Backups.class);
 
-    /** The file that makes a folder a backup, and says what it holds. */
+    /** The file inside every zip that says what it holds. */
     public static final String INFO_FILE = "backup-info.txt";
     static final String BINDINGS = "Bindings";
     static final String INSTALLATIONS = "Installations";
     static final String CONTROL_SCHEMES = "ControlSchemes";
     static final String DEVICE_MAPPINGS = "DeviceMappings.xml";
     static final String DEVICE_BUTTON_MAPS = "DeviceButtonMaps";
-    static final String FIRST_SETUP_SUFFIX = "_first-setup";
-    private static final String TAKING_PREFIX = ".taking-";
+    private static final String ZIP = ".zip";
+    /** Zip entry names always use a forward slash, whatever the platform. */
+    private static final char ENTRY_SEPARATOR = '/';
 
     private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
     private static final DateTimeFormatter READABLE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    /** A stamp, then first setup's mark, then the number added when two backups share a second. */
-    private static final Pattern NAME =
-            Pattern.compile("(\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2})(" + FIRST_SETUP_SUFFIX + ")?(-\\d+)?");
+    /** A stamp, then the number added when two backups of one kind share a second. */
+    private static final Pattern NAME = Pattern.compile("(\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2})(-\\d+)?\\.zip");
+    /** The temporary file {@link AtomicFiles} writes a zip to before renaming it into place. */
+    private static final Pattern HALF_WRITTEN = Pattern.compile("\\..+\\.zip\\.elite-intel-.+\\.tmp");
 
     /** {@code <name>.<major>.<minor>.binds} - a {@code .binds.backup} copy or an unversioned name is not one. */
     private static final Pattern BINDS_FILE = Pattern.compile(".+\\.\\d+\\.\\d+\\.binds");
@@ -62,6 +74,8 @@ public final class Backups {
     private static final Pattern START_PRESET_FILE = Pattern.compile("StartPreset\\.\\d+\\.start");
     private static final String BUTTON_MAP_SUFFIX = ".buttonMap";
 
+    private static final String KIND_LINE = "Kind: ";
+    private static final String BEFORE_LINE = "Taken before: ";
     private static final String STATUS_LINE = "Status: ";
     private static final String FULL = "Full";
     private static final String PARTIAL = "Partial";
@@ -69,17 +83,65 @@ public final class Backups {
     private static final String NOT_READ_ITEM = "- ";
 
     /**
-     * One backup or one pruning at a time, across every caller: the startup backup and Backup Now can overlap, and
-     * pruning removes a half-taken backup left by a crash, which must never be one being taken now.
+     * One backup, one pruning or one delete at a time, across every caller: the startup backup and Backup Now can
+     * overlap, and pruning removes a half-written zip left by a crash, which must never be one being written now.
      */
     private static final Object WRITING = new Object();
 
-    /** What a backup takes. */
+    /** The four kinds of backup (file-manager.md, <em>Four kinds of backup</em>). */
     public enum Kind {
-        /** Every other backup: at Elite-Intel start, Backup Now, before a write. */
-        REGULAR,
-        /** First-time startup's, before the working copy is created - kept forever (storage.md rule 3). */
-        FIRST_SETUP
+        /** The first Elite-Intel start each day; kept by age. */
+        DAILY("Daily", "Daily"),
+        /** Before every write - APPLY, RESTORE, the check; kept by count. */
+        BEFORE_CHANGES("BeforeChanges", "Before changes"),
+        /** Backup Now; kept until the user deletes it. */
+        USER("User", "User"),
+        /** First-time startup's, before the working copy is created; kept forever (storage.md rule 3). */
+        FIRST_SETUP("FirstSetup", "First setup");
+
+        private final String folder;
+        private final String infoLabel;
+
+        Kind(String folder, String infoLabel) {
+            this.folder = folder;
+            this.infoLabel = infoLabel;
+        }
+
+        /** The folder inside the backup folder that holds this kind. */
+        public String folder() {
+            return folder;
+        }
+    }
+
+    /** What a before-changes backup was taken before, recorded in its {@code backup-info.txt}. */
+    public enum Before {
+        APPLY("APPLY"),
+        RESTORE("RESTORE"),
+        /** The check, of the working copy before a live copy replaces it. */
+        CHECK("the check");
+
+        private final String infoLabel;
+
+        Before(String infoLabel) {
+            this.infoLabel = infoLabel;
+        }
+    }
+
+    /**
+     * The two retention rules, read from the settings at Elite-Intel start.
+     *
+     * @param dailyDays         daily backups older than this many days are deleted
+     * @param beforeChangesKept the newest this many before-changes backups are kept
+     */
+    public record Retention(int dailyDays, int beforeChangesKept) {
+        public Retention {
+            // WHY: zero would delete the backup just taken. The setters refuse it; this refuses it again here, at the
+            // one place it would do harm.
+            if (dailyDays < 1) throw new IllegalArgumentException("daily retention must be at least one day, was " + dailyDays);
+            if (beforeChangesKept < 1) {
+                throw new IllegalArgumentException("at least one before-changes backup must be kept, was " + beforeChangesKept);
+            }
+        }
     }
 
     /** Thrown when not one file could be read, so no backup was written. */
@@ -116,16 +178,9 @@ public final class Backups {
         Path get() throws IOException;
     }
 
-    /** Deletes a folder and everything in it. */
-    @FunctionalInterface
-    interface TreeDeleter {
-        void delete(Path folder) throws IOException;
-    }
-
     private final Sources sources;
     private final Root root;
     private final Clock clock;
-    private final TreeDeleter treeDeleter;
 
     /** Detection and the stored installations, the chosen backup folder, and the system clock. */
     public static Backups stored() {
@@ -133,68 +188,58 @@ public final class Backups {
     }
 
     Backups(Sources sources, Root root, Clock clock) {
-        this(sources, root, clock, Backups::walkAndDelete);
-    }
-
-    /** Test seam: {@code treeDeleter} can fail part way, as a locked file would. */
-    Backups(Sources sources, Root root, Clock clock, TreeDeleter treeDeleter) {
         this.sources = sources;
         this.root = root;
         this.clock = clock;
-        this.treeDeleter = treeDeleter;
     }
 
     /**
-     * Backs up everything - the one call every write uses first.
+     * Backs up everything before a write - the one call every write to a game file uses first.
      *
+     * @param before what is about to write, recorded in {@code backup-info.txt}
      * @return the backup taken, Full or Partial
      * @throws NothingToBackUpException if not one file could be read; nothing is written
      * @throws IOException              if the backup folder cannot be written
      */
-    public Backup backUpEverything() throws IOException {
-        return backUpEverything(Kind.REGULAR);
-    }
-
-    /** As {@link #backUpEverything()}, marked as {@code kind}. */
-    public Backup backUpEverything(Kind kind) throws IOException {
-        BackupSources from = sources.get();
-        synchronized (WRITING) {
-            Path backupRoot = root.get();
-            LocalDateTime now = LocalDateTime.now(clock).withNano(0);
-            String name = uniqueName(backupRoot, now.format(STAMP) + (kind == Kind.FIRST_SETUP ? FIRST_SETUP_SUFFIX : ""));
-            Path taking = backupRoot.resolve(TAKING_PREFIX + name);
-            Path folder = backupRoot.resolve(name);
-
-            Copy copy = new Copy(taking);
-            try {
-                Files.createDirectories(taking);
-                copyBindings(copy, from.bindingsFolder(), taking.resolve(BINDINGS), "the bindings folder");
-                List<BackupSources.Installation> installations = from.installations();
-                for (int i = 0; i < installations.size(); i++) {
-                    copyInstallation(copy, i + 1, installations.get(i), from.bindingsFolder());
-                }
-                if (copy.copied == 0) {
-                    throw new NothingToBackUpException(copy.notRead);
-                }
-                Files.writeString(taking.resolve(INFO_FILE), info(now, kind, from, copy.notRead),
-                        StandardCharsets.UTF_8);
-                // WHY: renamed into place only once complete, so a half-taken backup is never in the list.
-                Files.move(taking, folder, StandardCopyOption.ATOMIC_MOVE);
-            } catch (IOException | RuntimeException e) {
-                deleteQuietly(taking, e);
-                throw e;
-            }
-            Backup backup = new Backup(folder, now, kind == Kind.FIRST_SETUP, copy.notRead.isEmpty(), copy.notRead);
-            log.info("Backed up {} game input configuration files to {} ({}){}", copy.copied, folder,
-                    backup.full() ? FULL : PARTIAL,
-                    backup.full() ? "" : " - could not read: " + String.join("; ", copy.notRead));
-            return backup;
-        }
+    public Backup backUpBeforeChange(Before before) throws IOException {
+        if (before == null) throw new IllegalArgumentException("a before-changes backup says what it is taken before");
+        return take(Kind.BEFORE_CHANGES, before);
     }
 
     /**
-     * Every backup, newest first. A folder without {@code backup-info.txt}, or whose name is not a date stamp, is not
-     * one of these backups and is left out.
+     * Backs up everything as a daily, user or first setup backup. A before-changes backup is
+     * {@link #backUpBeforeChange(Before)}, which says what it is taken before.
+     *
+     * @throws NothingToBackUpException if not one file could be read; nothing is written
+     * @throws IOException              if the backup folder cannot be written
+     */
+    public Backup backUpEverything(Kind kind) throws IOException {
+        if (kind == Kind.BEFORE_CHANGES) {
+            throw new IllegalArgumentException("a before-changes backup is taken with backUpBeforeChange");
+        }
+        return take(kind, null);
+    }
+
+    /**
+     * Whether a daily backup stamped today is already in the backup folder - so the daily backup is taken once a day,
+     * read from the folder rather than a table (storage.md rule 12). A Partial one counts: it was taken.
+     */
+    public boolean dailyTakenToday() throws IOException {
+        Path folder = root.get().resolve(Kind.DAILY.folder);
+        if (!Files.isDirectory(folder)) return false;
+        LocalDate today = LocalDate.now(clock);
+        try (DirectoryStream<Path> zips = Files.newDirectoryStream(folder, "*" + ZIP)) {
+            for (Path zip : zips) {
+                LocalDateTime taken = stampOf(zip);
+                if (taken != null && taken.toLocalDate().equals(today)) return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Every backup of every kind, newest first. A file that is not a zip named with a date stamp, in one of the four
+     * kind folders, is not one of these backups and is left out.
      */
     public List<Backup> list() throws IOException {
         return list(root.get());
@@ -203,96 +248,195 @@ public final class Backups {
     /** As {@link #list()}, in a backup folder already resolved - so one prune works in one folder throughout. */
     private static List<Backup> list(Path backupRoot) throws IOException {
         List<Backup> backups = new ArrayList<>();
-        try (DirectoryStream<Path> folders = Files.newDirectoryStream(backupRoot, Files::isDirectory)) {
-            for (Path folder : folders) {
-                Backup backup = read(folder);
-                if (backup != null) backups.add(backup);
+        for (Kind kind : Kind.values()) {
+            Path folder = backupRoot.resolve(kind.folder);
+            if (!Files.isDirectory(folder)) continue;
+            try (DirectoryStream<Path> zips = Files.newDirectoryStream(folder, "*" + ZIP)) {
+                for (Path zip : zips) {
+                    Backup backup = read(zip, kind);
+                    if (backup != null) backups.add(backup);
+                }
             }
         }
-        backups.sort(Comparator.comparing(Backup::taken).thenComparing(b -> b.folder().getFileName().toString())
+        backups.sort(Comparator.comparing(Backup::taken).thenComparing(b -> b.zip().getFileName().toString())
                 .reversed());
         return backups;
     }
 
     /**
-     * Deletes every backup older than {@code retentionDays}, except first setup's, and any half-taken backup a crash
-     * left (storage.md rule 11). A backup that cannot be deleted is logged and left; the next start tries again.
+     * Retention (storage.md rule 11): daily backups older than the setting are deleted, and before-changes backups
+     * beyond the newest N, and any half-written zip a crash left. User and first setup backups are never deleted
+     * here. A backup that cannot be deleted is logged and left; the next start tries again.
      *
-     * @return the folders deleted
+     * @return the files deleted
      */
-    public List<Path> prune(int retentionDays) throws IOException {
-        if (retentionDays < 1) {
-            // WHY: zero would delete the backup just taken. The setter refuses it; this refuses it again here, at the
-            // one place it would do harm.
-            throw new IllegalArgumentException("retention must be at least one day, was " + retentionDays);
-        }
+    public List<Path> prune(Retention retention) throws IOException {
         synchronized (WRITING) {
             Path backupRoot = root.get();
-            LocalDateTime cutoff = LocalDateTime.now(clock).minusDays(retentionDays);
+            LocalDateTime cutoff = LocalDateTime.now(clock).minusDays(retention.dailyDays());
             List<Path> deleted = new ArrayList<>();
+            int beforeChangesSeen = 0;
             for (Backup backup : list(backupRoot)) {
-                if (backup.firstSetup() || !backup.taken().isBefore(cutoff)) continue;
-                if (deleteBackup(backupRoot, backup.folder())) deleted.add(backup.folder());
+                boolean doomed = switch (backup.kind()) {
+                    case DAILY -> backup.taken().isBefore(cutoff);
+                    case BEFORE_CHANGES -> ++beforeChangesSeen > retention.beforeChangesKept();
+                    case USER, FIRST_SETUP -> false;
+                };
+                if (doomed && deleteQuietly(backup.zip())) deleted.add(backup.zip());
             }
-            try (DirectoryStream<Path> leftovers = Files.newDirectoryStream(backupRoot, TAKING_PREFIX + "*")) {
-                for (Path leftover : leftovers) {
-                    if (Files.isDirectory(leftover) && deleteTree(leftover)) deleted.add(leftover);
+            for (Kind kind : Kind.values()) {
+                Path folder = backupRoot.resolve(kind.folder);
+                if (!Files.isDirectory(folder)) continue;
+                try (DirectoryStream<Path> leftovers = Files.newDirectoryStream(folder,
+                        p -> HALF_WRITTEN.matcher(p.getFileName().toString()).matches())) {
+                    for (Path leftover : leftovers) {
+                        if (deleteQuietly(leftover)) deleted.add(leftover);
+                    }
                 }
             }
             if (!deleted.isEmpty()) {
-                log.info("Deleted {} backup folder(s) older than {} days: {}", deleted.size(), retentionDays, deleted);
+                log.info("Deleted {} backup(s) by retention (daily older than {} days, before-changes beyond the newest {}): {}",
+                        deleted.size(), retention.dailyDays(), retention.beforeChangesKept(), deleted);
             }
             return deleted;
         }
     }
 
-    // ---- taking
-
-    /** Counts what was copied and collects what could not be read, so one bad file never stops the rest. */
-    private static final class Copy {
-        final Path into;
-        int copied;
-        final List<String> notRead = new ArrayList<>();
-
-        Copy(Path into) {
-            this.into = into;
+    /**
+     * Deletes a user backup - the user made it, so they decide when it goes (file-manager.md, <em>Retention</em>;
+     * Alan, 2026-10-25). The other kinds have no Delete.
+     *
+     * @throws IllegalArgumentException if it is not a user backup
+     */
+    public void delete(Backup backup) throws IOException {
+        if (backup.kind() != Kind.USER) {
+            throw new IllegalArgumentException("only a user backup can be deleted, was " + backup.kind());
         }
+        synchronized (WRITING) {
+            Files.delete(backup.zip());
+        }
+        log.info("Deleted user backup {}", backup.zip());
+    }
 
-        void file(Path source, Path target) {
-            try {
-                Files.createDirectories(target.getParent());
-                Files.copy(source, target, StandardCopyOption.COPY_ATTRIBUTES);
-                copied++;
-            } catch (IOException e) {
-                notRead.add(source + ": " + reason(e));
-                log.warn("Could not back up {}", source, e);
+    /**
+     * The content of one {@code .binds} or {@code StartPreset} under the backup's {@code Bindings\}. Restore to Editing
+     * Slot and Restore to Live read it until RESTORE replaces them (Storage S3).
+     *
+     * @throws IOException if the zip cannot be read, or holds no such file
+     */
+    public static String readBindingsFile(Backup backup, String fileName) throws IOException {
+        if (fileName.indexOf('/') >= 0 || fileName.indexOf('\\') >= 0 || fileName.equals("..")) {
+            throw new IllegalArgumentException("a file name, not a path: " + fileName);
+        }
+        try (ZipFile zip = new ZipFile(backup.zip().toFile(), StandardCharsets.UTF_8)) {
+            ZipEntry entry = zip.getEntry(BINDINGS + ENTRY_SEPARATOR + fileName);
+            if (entry == null) {
+                throw new IOException("Backup " + backup.zip().getFileName() + " has no file named " + fileName);
+            }
+            try (InputStream in = zip.getInputStream(entry)) {
+                return new String(in.readAllBytes(), StandardCharsets.UTF_8);
             }
         }
     }
 
-    private static void copyBindings(Copy copy, Path bindingsFolder, Path into, String label) {
+    // ---- taking
+
+    private Backup take(Kind kind, Before before) throws IOException {
+        BackupSources from = sources.get();
+        synchronized (WRITING) {
+            Path folder = root.get().resolve(kind.folder);
+            LocalDateTime now = LocalDateTime.now(clock).withNano(0);
+
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            ZipOutputStream zip = new ZipOutputStream(bytes, StandardCharsets.UTF_8);
+            Copy copy = new Copy(zip);
+            try (zip) {
+                copyBindings(copy, from.bindingsFolder(), BINDINGS, "the bindings folder");
+                List<BackupSources.Installation> installations = from.installations();
+                for (int i = 0; i < installations.size(); i++) {
+                    copyInstallation(copy, i + 1, installations.get(i), from.bindingsFolder());
+                }
+                if (copy.copied == 0) {
+                    throw new NothingToBackUpException(copy.notRead);
+                }
+                copy.entry(INFO_FILE, info(now, kind, before, from, copy.notRead).getBytes(StandardCharsets.UTF_8),
+                        null);
+            }
+            Files.createDirectories(folder);
+            Path target = folder.resolve(uniqueName(folder, now.format(STAMP)));
+            // WHY: written to a temporary file and renamed into place once complete, so a half-written backup is
+            // never in the list. Built in memory first - a full backup is a few megabytes at most (Alan, 2026-10-25).
+            AtomicFiles.write(target, bytes.toByteArray());
+
+            Backup backup = new Backup(target, now, kind, before, copy.notRead.isEmpty(), copy.notRead);
+            log.info("Backed up {} game input configuration files to {} ({}){}", copy.copied, target,
+                    backup.full() ? FULL : PARTIAL,
+                    backup.full() ? "" : " - could not read: " + String.join("; ", copy.notRead));
+            return backup;
+        }
+    }
+
+    /** Counts what was copied and collects what could not be read, so one bad file never stops the rest. */
+    private static final class Copy {
+        final ZipOutputStream zip;
+        int copied;
+        final List<String> notRead = new ArrayList<>();
+
+        Copy(ZipOutputStream zip) {
+            this.zip = zip;
+        }
+
+        /** Copies one file in; a file that cannot be read is recorded, not thrown. */
+        void file(Path source, String entryName) throws IOException {
+            byte[] content;
+            FileTime modified;
+            try {
+                content = Files.readAllBytes(source);
+                modified = Files.getLastModifiedTime(source);
+            } catch (IOException e) {
+                notRead.add(source + ": " + reason(e));
+                log.warn("Could not back up {}", source, e);
+                return;
+            }
+            entry(entryName, content, modified);
+            copied++;
+        }
+
+        void entry(String name, byte[] content, FileTime modified) throws IOException {
+            ZipEntry entry = new ZipEntry(name);
+            if (modified != null) entry.setLastModifiedTime(modified);
+            zip.putNextEntry(entry);
+            zip.write(content);
+            zip.closeEntry();
+        }
+    }
+
+    private static void copyBindings(Copy copy, Path bindingsFolder, String into, String label) throws IOException {
         if (!Files.isDirectory(bindingsFolder)) {
             copy.notRead.add(label + " (" + bindingsFolder + "): folder not found");
             return;
         }
+        List<Path> found;
         try (Stream<Path> files = Files.list(bindingsFolder)) {
-            for (Path file : files.filter(Files::isRegularFile).filter(Backups::isBindingsFile).sorted().toList()) {
-                copy.file(file, into.resolve(file.getFileName().toString()));
-            }
+            found = files.filter(Files::isRegularFile).filter(Backups::isBindingsFile).sorted().toList();
         } catch (IOException e) {
             copy.notRead.add(label + " (" + bindingsFolder + "): " + reason(e));
             log.warn("Could not list {}", bindingsFolder, e);
+            return;
+        }
+        for (Path file : found) {
+            copy.file(file, into + ENTRY_SEPARATOR + file.getFileName());
         }
     }
 
     private static void copyInstallation(Copy copy, int number, BackupSources.Installation installation,
-                                         Path mainBindingsFolder) {
+                                         Path mainBindingsFolder) throws IOException {
         String label = "installation " + number + " (" + installation.storefront() + ", " + installation.root() + ")";
-        Path into = copy.into.resolve(INSTALLATIONS).resolve(number + "-" + safe(installation.storefront()));
+        String into = INSTALLATIONS + ENTRY_SEPARATOR + number + "-" + safe(installation.storefront());
 
         Path own = installation.bindingsFolder();
         if (own != null && !sameFolder(own, mainBindingsFolder)) {
-            copyBindings(copy, own, into.resolve(BINDINGS), label + "'s bindings folder");
+            copyBindings(copy, own, into + ENTRY_SEPARATOR + BINDINGS, label + "'s bindings folder");
         }
 
         Path controlSchemes = installation.controlSchemes();
@@ -300,21 +444,24 @@ public final class Backups {
             copy.notRead.add(label + ": folder not found");
             return;
         }
+        String schemesEntry = into + ENTRY_SEPARATOR + CONTROL_SCHEMES + ENTRY_SEPARATOR;
         Path deviceMappings = controlSchemes.resolve(DEVICE_MAPPINGS);
         if (Files.isRegularFile(deviceMappings)) {
-            copy.file(deviceMappings, into.resolve(CONTROL_SCHEMES).resolve(DEVICE_MAPPINGS));
+            copy.file(deviceMappings, schemesEntry + DEVICE_MAPPINGS);
         }
         Path buttonMaps = controlSchemes.resolve(DEVICE_BUTTON_MAPS);
         if (!Files.isDirectory(buttonMaps)) return;
+        List<Path> found;
         try (Stream<Path> files = Files.list(buttonMaps)) {
-            for (Path file : files.filter(Files::isRegularFile)
-                    .filter(f -> f.getFileName().toString().endsWith(BUTTON_MAP_SUFFIX)).sorted().toList()) {
-                copy.file(file, into.resolve(CONTROL_SCHEMES).resolve(DEVICE_BUTTON_MAPS)
-                        .resolve(file.getFileName().toString()));
-            }
+            found = files.filter(Files::isRegularFile)
+                    .filter(f -> f.getFileName().toString().endsWith(BUTTON_MAP_SUFFIX)).sorted().toList();
         } catch (IOException e) {
             copy.notRead.add(label + "'s " + DEVICE_BUTTON_MAPS + ": " + reason(e));
             log.warn("Could not list {}", buttonMaps, e);
+            return;
+        }
+        for (Path file : found) {
+            copy.file(file, schemesEntry + DEVICE_BUTTON_MAPS + ENTRY_SEPARATOR + file.getFileName());
         }
     }
 
@@ -324,13 +471,19 @@ public final class Backups {
     }
 
     /** {@code backup-info.txt}: for a person reading the backup, and what {@link #list()} reads back. */
-    private static String info(LocalDateTime taken, Kind kind, BackupSources from, List<String> notRead) {
+    private static String info(LocalDateTime taken, Kind kind, Before before, BackupSources from,
+                               List<String> notRead) {
         StringBuilder text = new StringBuilder();
         text.append("Elite-Intel backup of your game input configuration files.\n");
         text.append("Taken: ").append(taken.format(READABLE)).append('\n');
+        text.append(KIND_LINE).append(kind.infoLabel).append('\n');
+        if (before != null) text.append(BEFORE_LINE).append(before.infoLabel).append('\n');
         text.append(STATUS_LINE).append(notRead.isEmpty() ? FULL : PARTIAL).append('\n');
-        if (kind == Kind.FIRST_SETUP) {
-            text.append("Kept forever: first-time startup's backup, taken before BindForge wrote anything.\n");
+        switch (kind) {
+            case DAILY -> text.append("Kept by age, as the daily backup retention setting says.\n");
+            case BEFORE_CHANGES -> text.append("Kept by count, as the before-changes backup retention setting says.\n");
+            case USER -> text.append("Kept until you delete it.\n");
+            case FIRST_SETUP -> text.append("Kept forever: first-time startup's backup, taken before BindForge wrote anything.\n");
         }
         text.append('\n').append(BINDINGS).append(": ").append(from.bindingsFolder()).append('\n');
         List<BackupSources.Installation> installations = from.installations();
@@ -347,95 +500,73 @@ public final class Backups {
         return text.toString();
     }
 
-    private static String uniqueName(Path backupRoot, String name) {
-        String candidate = name;
-        for (int n = 2; Files.exists(backupRoot.resolve(candidate))
-                || Files.exists(backupRoot.resolve(TAKING_PREFIX + candidate)); n++) {
-            candidate = name + "-" + n;
+    private static String uniqueName(Path folder, String stamp) {
+        String candidate = stamp + ZIP;
+        for (int n = 2; Files.exists(folder.resolve(candidate)); n++) {
+            candidate = stamp + "-" + n + ZIP;
         }
         return candidate;
     }
 
     // ---- reading
 
-    /** The backup in {@code folder}, or {@code null} when it is not one. */
-    static Backup read(Path folder) {
-        Matcher name = NAME.matcher(folder.getFileName().toString());
-        Path info = folder.resolve(INFO_FILE);
-        if (!name.matches() || !Files.isRegularFile(info)) return null;
-        LocalDateTime taken;
+    /** The stamp in a backup's name, or {@code null} when the name is not one. */
+    private static LocalDateTime stampOf(Path zip) {
+        Matcher name = NAME.matcher(zip.getFileName().toString());
+        if (!name.matches()) return null;
         try {
-            taken = LocalDateTime.parse(name.group(1), STAMP);
+            return LocalDateTime.parse(name.group(1), STAMP);
         } catch (DateTimeParseException e) {
             return null;
         }
+    }
+
+    /** The backup in {@code zip}, of the kind its folder says, or {@code null} when it is not one. */
+    static Backup read(Path zip, Kind kind) {
+        LocalDateTime taken = stampOf(zip);
+        if (taken == null || !Files.isRegularFile(zip)) return null;
         boolean full = true;
+        Before before = null;
         List<String> notRead = new ArrayList<>();
-        try {
+        try (ZipFile file = new ZipFile(zip.toFile(), StandardCharsets.UTF_8)) {
+            ZipEntry entry = file.getEntry(INFO_FILE);
+            if (entry == null) throw new IOException(INFO_FILE + " is missing");
+            String text;
+            try (InputStream in = file.getInputStream(entry)) {
+                text = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            }
             boolean inNotRead = false;
-            for (String line : Files.readAllLines(info, StandardCharsets.UTF_8)) {
+            for (String line : text.split("\n")) {
                 if (line.startsWith(STATUS_LINE)) full = FULL.equals(line.substring(STATUS_LINE.length()).trim());
+                else if (line.startsWith(BEFORE_LINE)) before = beforeOf(line.substring(BEFORE_LINE.length()).trim());
                 else if (line.equals(NOT_READ_HEADING)) inNotRead = true;
                 else if (inNotRead && line.startsWith(NOT_READ_ITEM)) notRead.add(line.substring(NOT_READ_ITEM.length()));
             }
         } catch (IOException e) {
-            // WHY: still listed - the files are there, and only the summary could not be read.
-            log.warn("Could not read {}", info, e);
+            // WHY: still listed - the zip is there, and only its summary could not be read.
+            log.warn("Could not read {} in {}", INFO_FILE, zip, e);
             full = false;
             notRead.add(INFO_FILE + ": " + reason(e));
         }
-        return new Backup(folder, taken, name.group(2) != null, full, notRead);
+        return new Backup(zip, taken, kind, kind == Kind.BEFORE_CHANGES ? before : null, full, notRead);
+    }
+
+    private static Before beforeOf(String label) {
+        for (Before before : Before.values()) {
+            if (before.infoLabel.equals(label)) return before;
+        }
+        return null;
     }
 
     // ---- helpers
 
-    /**
-     * Deletes a backup by first renaming it to a {@code .taking-} folder, then deleting that.
-     * <p>
-     * <strong>Why the rename</strong> (review, 2026-10-24): deleting in place can remove {@code backup-info.txt} before
-     * a file that then refuses to go - on Linux it sorts after the capitalised folders, so it goes first. What is left
-     * is no longer a backup, so it would never be listed or pruned again. Renamed first, a delete that stops part way
-     * leaves a leftover the next prune's sweep removes.
-     */
-    private boolean deleteBackup(Path backupRoot, Path folder) {
-        Path doomed = backupRoot.resolve(uniqueName(backupRoot, TAKING_PREFIX + folder.getFileName()));
+    private static boolean deleteQuietly(Path file) {
         try {
-            Files.move(folder, doomed, StandardCopyOption.ATOMIC_MOVE);
-        } catch (IOException e) {
-            log.warn("Could not delete backup folder {}; tried again at the next start", folder, e);
-            return false;
-        }
-        return deleteTree(doomed);
-    }
-
-    private boolean deleteTree(Path folder) {
-        try {
-            treeDeleter.delete(folder);
+            Files.deleteIfExists(file);
             return true;
         } catch (IOException e) {
-            log.warn("Could not delete backup folder {}; tried again at the next start", folder, e);
+            log.warn("Could not delete backup {}; tried again at the next start", file, e);
             return false;
-        }
-    }
-
-    /** Deletes a folder and everything in it, deepest first. */
-    private static void walkAndDelete(Path folder) throws IOException {
-        try (Stream<Path> paths = Files.walk(folder)) {
-            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
-                Files.deleteIfExists(path);
-            }
-        }
-    }
-
-    /** Removes a backup that failed part way. What cannot be removed is attached to the failure, not thrown over it. */
-    private static void deleteQuietly(Path folder, Exception failure) {
-        if (!Files.exists(folder)) return;
-        try (Stream<Path> paths = Files.walk(folder)) {
-            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
-                Files.deleteIfExists(path);
-            }
-        } catch (IOException e) {
-            failure.addSuppressed(e);
         }
     }
 

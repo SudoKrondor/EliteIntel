@@ -27,11 +27,13 @@ public interface BindForgeSettingsDao {
     @SqlUpdate("""
             INSERT OR REPLACE INTO bindforge_settings (id,
                                                        backup_destination,
-                                                       backup_retention_days,
+                                                       daily_backup_retention_days,
+                                                       before_changes_backups_kept,
                                                        edit_history_retention)
             VALUES (1,
                     :backupDestination,
-                    :backupRetentionDays,
+                    :dailyBackupRetentionDays,
+                    :beforeChangesBackupsKept,
                     :editHistoryRetention)
             """)
     void save(@BindBean BindForgeSettings settings);
@@ -42,7 +44,8 @@ public interface BindForgeSettingsDao {
         public BindForgeSettings map(ResultSet rs, StatementContext ctx) throws SQLException {
             BindForgeSettings entity = new BindForgeSettings();
             entity.setBackupDestination(rs.getString("backup_destination"));
-            entity.setBackupRetentionDays(rs.getInt("backup_retention_days"));
+            entity.setDailyBackupRetentionDays(rs.getInt("daily_backup_retention_days"));
+            entity.setBeforeChangesBackupsKept(rs.getInt("before_changes_backups_kept"));
             entity.setEditHistoryRetention(rs.getInt("edit_history_retention"));
             return entity;
         }
@@ -51,7 +54,8 @@ public interface BindForgeSettingsDao {
 
     class BindForgeSettings {
         String backupDestination;
-        int backupRetentionDays;
+        int dailyBackupRetentionDays;
+        int beforeChangesBackupsKept;
         int editHistoryRetention;
 
         /**
@@ -66,15 +70,25 @@ public interface BindForgeSettingsDao {
         }
 
         /**
-         * How many days a Player Backup is kept before it is pruned. Distinct from
-         * {@link #getEditHistoryRetention()}, which counts versions rather than days.
+         * How many days a daily backup is kept before retention deletes it.
          */
-        public int getBackupRetentionDays() {
-            return backupRetentionDays;
+        public int getDailyBackupRetentionDays() {
+            return dailyBackupRetentionDays;
         }
 
-        public void setBackupRetentionDays(int backupRetentionDays) {
-            this.backupRetentionDays = backupRetentionDays;
+        public void setDailyBackupRetentionDays(int dailyBackupRetentionDays) {
+            this.dailyBackupRetentionDays = dailyBackupRetentionDays;
+        }
+
+        /**
+         * How many before-changes backups are kept, newest first - a count, not days.
+         */
+        public int getBeforeChangesBackupsKept() {
+            return beforeChangesBackupsKept;
+        }
+
+        public void setBeforeChangesBackupsKept(int beforeChangesBackupsKept) {
+            this.beforeChangesBackupsKept = beforeChangesBackupsKept;
         }
 
         public int getEditHistoryRetention() {

@@ -38,12 +38,16 @@ holds startup up. It covers every installation. If it fails, the next start trie
 *Until 2026-10-23 startup said what it had backed up; it is silent now (Alan). Until 2026-10-25 one was taken at every
 start.*
 
-**Built 2026-10-24 (Storage S1), one at every start; once a day from S1b:** `bindforge.storage.StartupBackup`,
+**Built 2026-10-24 (Storage S1), one at every start; once a day since 2026-10-25 (S1b):** `bindforge.storage.StartupBackup`,
 started from `App.main` once the database is open — not with the services, which need credentials to start. It runs
 installation detection first, so it covers every installation before first-time startup has ever run. **Retention
 runs only after the backup succeeds:** when today's backup failed, the older ones are the newest there are. **Nothing
 else BindForge does at startup writes to a game file until it is done** — `ButtonMapStartup` waits for it, and writes
 nothing that run if it failed (principle 3; Alan, 2026-10-24).
+
+**Whether today's is taken is read from `Daily\`** — a zip stamped with today's date, Partial included — not from a
+table. A start that finds one takes none, counts as taken for `ButtonMapStartup`, and **still runs retention**: the
+backup succeeded earlier that day, so the older ones are not the newest there are (2026-10-25, S1b).
 
 ### What a backup holds
 
@@ -95,7 +99,13 @@ setup — read from each zip's `backup-info.txt`; the date stamp in the name ord
 zip is written to a temporary file and renamed into place once complete, so a half-written backup never shows in the
 list. On Linux, an installation whose own bindings folder is not the one Elite-Intel is set to has its `.binds` and
 `StartPreset` under its own `Installations\<n>-<storefront>\Bindings\`. *Storage S1 built this as dated folders
-directly in the backup folder; S1b makes it zips in the four kind folders.*
+directly in the backup folder; S1b made it zips in the four kind folders.*
+
+**Built 2026-10-25 (Storage S1b; Alan approved):** the zip is built in memory — a full backup is a few megabytes at
+most — and written with `elite.intel.io.AtomicFiles`, the one write path, so its temporary file is
+`.<stamp>.zip.elite-intel-<id>.tmp` beside the target; retention's sweep removes one a crash left. Two backups of one
+kind in one second are `<stamp>.zip` and `<stamp>-2.zip`. The list's columns are **Created, Taken, Status** — the
+*Kept* column ("Forever") went, since *Taken* says First setup, and the mockup's *Files* column was not built.
 
 **A backup with no file at all is not written.** If nothing could be read, the startup backup logs it and tries again
 at the next start; Backup Now says so. **It is not a fault** — a new player, or a game not yet installed, has no files
@@ -302,6 +312,14 @@ switched off ([storage.md](storage.md) rule 12); "Edit History retention" — Ed
 table until Edit History's code is removed (S4), because it still reads it. *Until 2026-10-25 the settings were meant
 for a BindForge panel on Elite-Intel's Settings screen, and there was one retention, 30 days with a floor of one day.*
 
+**Built 2026-10-25 (Storage S1b; Alan approved):** a *Backup Settings* section above the list. **Backups go to** shows
+the folder backups are actually written to — the chosen one, or the default when it is unset or unusable — with
+**Browse…** and **Use Default**, which clears the choice. **Keep daily backups for** is a dropdown of the four
+choices; **Keep newest before-changes backups** a stepper, 10 to 1000 in tens. Each saves when changed and applies at
+the next Elite-Intel start. Migration `12011` adds `daily_backup_retention_days` (30) and `before_changes_backups_kept`
+(100) and drops `backup_retention_days` — **its old value is not carried over**: no screen ever set it, V1.2 has not
+shipped, and it need not be one of the four choices.
+
 **Where they are stored — built 2026-09-28:** a `bindforge_settings` table of their own, one column each; the
 destination is rejected at the setter if the platform cannot represent it, and each retention is checked against its
 choices. **Resolving an unset destination to a real folder is not done in the settings manager** —
@@ -317,7 +335,7 @@ From the [simplification review](../../../bindforge-simplification-review.md), c
 
 | Today's code | Against `storage.md` |
 |---|---|
-| ~~**Backup Now** copies `.binds` and `StartPreset` only, **no device files**, and finds `StartPreset` with the old `findStartPresetFile`~~ **Built 2026-10-24 (Storage S1):** every file from every installation, as a date-stamped folder (`bindforge.storage.Backups`) | every file from every installation, as a date-stamped zip (rules 11–12; zips from S1b) |
+| ~~**Backup Now** copies `.binds` and `StartPreset` only, **no device files**, and finds `StartPreset` with the old `findStartPresetFile`~~ **Built 2026-10-24 (Storage S1):** every file from every installation, as a date-stamped folder (`bindforge.storage.Backups`); a zip in one of four kind folders since 2026-10-25 (S1b) | every file from every installation, as a date-stamped zip (rules 11–12) |
 | ~~**No backup when Elite-Intel starts**~~ **Built 2026-10-24 (Storage S1):** `StartupBackup`, every start, silent; the switch is gone | a silent backup at every start, which cannot be switched off (rule 12) |
 | ~~**Nothing is ever deleted**~~ **Built 2026-10-24 (Storage S1):** retention at start, after a successful backup | retention, 30 days by default; first-time startup's backup kept forever (rule 11) |
 | **Restore covers `.binds` only, one file at a time**, to the editing copy or straight to the game | everything, no choices, to the live copies and the working copy (rule 10) |

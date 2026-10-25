@@ -7,6 +7,8 @@ import elite.intel.ui.theme.HudGlyphs;
 
 import javax.swing.JComponent;
 import javax.swing.UIManager;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -112,13 +114,22 @@ public class HudStepper extends JComponent {
         return value;
     }
 
-    /** Sets the value, clamped to the configured range, and repaints. */
+    /** Sets the value, clamped to the configured range, repaints, and tells the change listeners if it changed. */
     public void setValue(int newValue) {
         int clamped = clamp(newValue);
         if (clamped != value) {
             value = clamped;
             repaint();
+            ChangeEvent event = new ChangeEvent(this);
+            for (ChangeListener listener : listenerList.getListeners(ChangeListener.class)) {
+                listener.stateChanged(event);
+            }
         }
+    }
+
+    /** Told whenever the value changes - an arrow click or {@link #setValue(int)}. */
+    public void addChangeListener(ChangeListener listener) {
+        listenerList.add(ChangeListener.class, listener);
     }
 
     private int clamp(int v) {

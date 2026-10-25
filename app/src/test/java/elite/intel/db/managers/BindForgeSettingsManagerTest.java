@@ -24,13 +24,15 @@ class BindForgeSettingsManagerTest {
     @BeforeEach
     void resetToTheMigrationDefaults() {
         settings.setBackupDestination(null);
-        settings.setBackupRetentionDays(30);
+        settings.setDailyBackupRetentionDays(30);
+        settings.setBeforeChangesBackupsKept(100);
         settings.setEditHistoryRetention(10);
     }
 
     @Test
     void defaultsAreWhatTheMigrationDeclares() {
-        assertEquals(30, settings.getBackupRetentionDays(), "Player backups are kept for 30 days by default");
+        assertEquals(30, settings.getDailyBackupRetentionDays(), "daily backups are kept for 30 days by default");
+        assertEquals(100, settings.getBeforeChangesBackupsKept(), "the newest 100 before-changes backups by default");
         assertEquals(10, settings.getEditHistoryRetention(), "Edit History keeps 10 versions by default");
         assertNull(settings.getBackupDestination(), "no folder chosen means no stored destination");
     }
@@ -42,17 +44,20 @@ class BindForgeSettingsManagerTest {
     @Test
     void changingOneSettingLeavesTheOthersAlone() {
         settings.setBackupDestination("D:\\EliteBackups");
-        settings.setBackupRetentionDays(7);
+        settings.setDailyBackupRetentionDays(90);
+        settings.setBeforeChangesBackupsKept(250);
         settings.setEditHistoryRetention(25);
 
         assertEquals("D:\\EliteBackups", settings.getBackupDestination());
-        assertEquals(7, settings.getBackupRetentionDays());
+        assertEquals(90, settings.getDailyBackupRetentionDays());
+        assertEquals(250, settings.getBeforeChangesBackupsKept());
         assertEquals(25, settings.getEditHistoryRetention());
 
         settings.setEditHistoryRetention(3);
 
         assertEquals("D:\\EliteBackups", settings.getBackupDestination(), "still set after an unrelated save");
-        assertEquals(7, settings.getBackupRetentionDays(), "still set after an unrelated save");
+        assertEquals(90, settings.getDailyBackupRetentionDays(), "still set after an unrelated save");
+        assertEquals(250, settings.getBeforeChangesBackupsKept(), "still set after an unrelated save");
         assertEquals(3, settings.getEditHistoryRetention());
     }
 
@@ -76,19 +81,32 @@ class BindForgeSettingsManagerTest {
         assertEquals(30, settings.getEditHistoryRetention(), "the top of the range is accepted");
     }
 
-    /**
-     * Zero days would make every backup older than the limit the instant it was written, so pruning would
-     * delete the backup it had just taken.
-     */
+    /** Daily backups are kept for 30, 60, 90 or 180 days - nothing else (file-manager.md, Settings). */
     @Test
-    void aRetentionThatWouldDeleteTheBackupItJustTookIsRejected() {
-        assertThrows(IllegalArgumentException.class, () -> settings.setBackupRetentionDays(0));
-        assertThrows(IllegalArgumentException.class, () -> settings.setBackupRetentionDays(-1));
+    void aDailyRetentionThatIsNotOneOfTheChoicesIsRejected() {
+        assertThrows(IllegalArgumentException.class, () -> settings.setDailyBackupRetentionDays(0));
+        assertThrows(IllegalArgumentException.class, () -> settings.setDailyBackupRetentionDays(45));
 
-        assertEquals(30, settings.getBackupRetentionDays(), "the bad value never reached the row");
+        assertEquals(30, settings.getDailyBackupRetentionDays(), "the bad value never reached the row");
 
-        settings.setBackupRetentionDays(BindForgeSettingsManager.MIN_BACKUP_RETENTION_DAYS);
-        assertEquals(1, settings.getBackupRetentionDays(), "one day is the floor and is accepted");
+        for (int days : BindForgeSettingsManager.DAILY_BACKUP_RETENTION_CHOICES) {
+            settings.setDailyBackupRetentionDays(days);
+            assertEquals(days, settings.getDailyBackupRetentionDays());
+        }
+    }
+
+    /** Ten to a thousand: never so few that one evening of applies empties it. */
+    @Test
+    void aBeforeChangesCountOutsideItsRangeIsRejected() {
+        assertThrows(IllegalArgumentException.class, () -> settings.setBeforeChangesBackupsKept(9));
+        assertThrows(IllegalArgumentException.class, () -> settings.setBeforeChangesBackupsKept(1001));
+
+        assertEquals(100, settings.getBeforeChangesBackupsKept(), "the bad value never reached the row");
+
+        settings.setBeforeChangesBackupsKept(BindForgeSettingsManager.MIN_BEFORE_CHANGES_BACKUPS_KEPT);
+        assertEquals(10, settings.getBeforeChangesBackupsKept(), "the bottom of the range is accepted");
+        settings.setBeforeChangesBackupsKept(BindForgeSettingsManager.MAX_BEFORE_CHANGES_BACKUPS_KEPT);
+        assertEquals(1000, settings.getBeforeChangesBackupsKept(), "the top of the range is accepted");
     }
 
     /**

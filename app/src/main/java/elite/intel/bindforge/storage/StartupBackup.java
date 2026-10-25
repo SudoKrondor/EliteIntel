@@ -8,18 +8,20 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 /**
- * The backup taken silently every time Elite-Intel starts, then retention (storage.md rules 11-12).
+ * The daily backup, taken silently the first time Elite-Intel starts each day, then retention (storage.md rules 11-12).
+ * <p>
+ * <strong>Once a day</strong> (Alan, 2026-10-25): a start that finds a daily backup stamped today in the backup folder
+ * takes none. Every start until then took one.
  * <p>
  * <strong>Whether or not the user ever opens BindForge, and before first-time startup has ever run.</strong> Started
  * from {@code App.main} once the database is open, on a thread of its own, so it never holds startup up and does not
  * wait for the services - which need credentials to start. The user is not told. It cannot be switched off.
  * <p>
- * <strong>A failure is logged and tried again at the next start.</strong> Nothing is pruned after a failure: today's
- * backup is missing, so the older ones are the newest there are (2026-10-24).
+ * <strong>A failure is logged and tried again at the next start</strong>, the same day included. Nothing is pruned after
+ * a failure: today's backup is missing, so the older ones are the newest there are (2026-10-24).
  * <p>
  * <strong>Nothing else BindForge does at startup writes to a game file before it is done</strong> - such a write asks
  * {@link #awaitTaken()} first, and writes nothing that run if the backup failed (principle 3; Alan, 2026-10-24).
@@ -27,18 +29,20 @@ import java.util.function.Supplier;
 public final class StartupBackup {
 
     private static final Logger log = LogManager.getLogger(StartupBackup.class);
-    private static final StartupBackup INSTANCE = new StartupBackup(Backups::stored,
-            () -> BindForgeSettingsManager.getInstance().getBackupRetentionDays());
+    private static final StartupBackup INSTANCE = new StartupBackup(Backups::stored, () -> {
+        BindForgeSettingsManager settings = BindForgeSettingsManager.getInstance();
+        return new Backups.Retention(settings.getDailyBackupRetentionDays(), settings.getBeforeChangesBackupsKept());
+    });
 
     private final Supplier<Backups> backups;
-    private final IntSupplier retentionDays;
+    private final Supplier<Backups.Retention> retention;
     private final AtomicBoolean started = new AtomicBoolean();
     private final CountDownLatch finished = new CountDownLatch(1);
     private volatile boolean taken;
 
-    StartupBackup(Supplier<Backups> backups, IntSupplier retentionDays) {
+    StartupBackup(Supplier<Backups> backups, Supplier<Backups.Retention> retention) {
         this.backups = backups;
-        this.retentionDays = retentionDays;
+        this.retention = retention;
     }
 
     public static StartupBackup getInstance() {
@@ -54,7 +58,8 @@ public final class StartupBackup {
     /**
      * Waits for the startup backup. Blocks - never on the EDT or the device bus.
      *
-     * @return {@code true} once it has been taken; {@code false} if it failed, or the wait was interrupted
+     * @return {@code true} once it has been taken, or today's was already there; {@code false} if it failed, or the
+     * wait was interrupted
      */
     public boolean awaitTaken() {
         try {
@@ -66,14 +71,22 @@ public final class StartupBackup {
         }
     }
 
-    /** The backup, then retention. On the caller's thread; {@link #startInBackground()} is what production uses. */
+    /**
+     * The daily backup unless today's is there, then retention. On the caller's thread; {@link #startInBackground()} is
+     * what production uses.
+     */
     void run() {
         Backups backupSystem;
         try {
             backupSystem = backups.get();
-            Backup backup = backupSystem.backUpEverything();
+            if (backupSystem.dailyTakenToday()) {
+                // WHY: retention still runs - today's backup succeeded earlier, so the older ones are not the newest.
+                log.info("Today's daily backup was already taken");
+            } else {
+                Backup backup = backupSystem.backUpEverything(Backups.Kind.DAILY);
+                log.info("Daily backup taken at {}", backup.zip());
+            }
             taken = true;
-            log.info("Startup backup taken at {}", backup.folder());
         } catch (Backups.NothingToBackUpException e) {
             // WHY: a warning, not an error - a new player, or a game not yet installed, has no files yet, and an error
             // line at every start would send whoever reads a support bundle looking for a fault (review, 2026-10-24).
@@ -84,7 +97,7 @@ public final class StartupBackup {
         } catch (Exception e) {
             // WHY: broad on purpose - whatever stopped it, it is logged and tried again at the next start, and startup
             // goes on. Nothing is pruned.
-            log.error("The backup taken when Elite-Intel starts failed; it is tried again at the next start", e);
+            log.error("The daily backup taken when Elite-Intel starts failed; it is tried again at the next start", e);
             return;
         } finally {
             finished.countDown();
@@ -94,11 +107,11 @@ public final class StartupBackup {
 
     private void prune(Backups backupSystem) {
         try {
-            backupSystem.prune(retentionDays.getAsInt());
+            backupSystem.prune(retention.get());
         } catch (Exception e) {
             // WHY: broad on purpose - a backup kept too long costs disk, never the user's files; the next start
             // tries again.
-            log.error("Deleting backups older than the retention setting failed; tried again at the next start", e);
+            log.error("Deleting backups by the retention settings failed; tried again at the next start", e);
         }
     }
 }
