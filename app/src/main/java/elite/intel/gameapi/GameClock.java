@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Optional;
 
 /**
  * How far the game's UTC stamps run behind (or ahead of) the PC clock Java reads, measured from the stamps
@@ -32,7 +33,12 @@ import java.util.Deque;
  * would overstate it - so callers offer a changed {@code Status.json} stamp and journal lines read a few at a time.
  * <p>
  * Below {@link #CORRECTION_THRESHOLD} the offset is noise and nothing is corrected, so a healthy PC behaves exactly as
- * before.
+ * before. The commander is only warned from {@link #WARNING_THRESHOLD}: a Windows clock drifts by seconds between its
+ * weekly syncs, and every comparison in the app is either corrected or made in game time, so a drift of seconds
+ * breaks nothing they could fix.
+ * <p>
+ * The correction is only good to about a second. Anything that needs better - a stamp compared with a moment the app
+ * itself chose, like a key press - compares game time with game time instead, through {@link #newestStamp()}.
  */
 public final class GameClock {
 
@@ -42,6 +48,11 @@ public final class GameClock {
      * An offset this large is a clock disagreement, not stamp rounding plus a poll interval.
      */
     static final Duration CORRECTION_THRESHOLD = Duration.ofSeconds(5);
+    /**
+     * An offset this large is worth the commander's attention: over 59 seconds is a clock that is plainly wrong, not
+     * a Windows clock between its weekly syncs, and other Elite Dangerous tools on the PC will not correct it.
+     */
+    static final Duration WARNING_THRESHOLD = Duration.ofSeconds(60);
     /**
      * Fresh stamps needed before an offset is believed.
      */
@@ -65,6 +76,7 @@ public final class GameClock {
     private final Deque<Duration> ages = new ArrayDeque<>();
     private Duration measured;
     private Duration reported;
+    private Instant newestStamp;
     /**
      * The commander has been shown (and told) the disagreement this run. Once is enough: the correction keeps the app going,
      * and a warning on every drift of the measurement would be nagging.
@@ -89,6 +101,15 @@ public final class GameClock {
     }
 
     /**
+     * The latest stamp the game has written that the app has read: a moment the game's own clock has certainly
+     * reached. A key pressed now gets a reply stamped no earlier than this, whatever the PC clock says. Empty until
+     * the first fresh stamp.
+     */
+    public synchronized Optional<Instant> newestStamp() {
+        return Optional.ofNullable(newestStamp);
+    }
+
+    /**
      * Offers a stamp the game wrote moments ago. An unparseable one is not a sample.
      */
     public void observe(String gameStamp) {
@@ -107,13 +128,14 @@ public final class GameClock {
         GameClockDisagreementEvent warning = null;
         boolean correcting;
         synchronized (this) {
+            if (newestStamp == null || gameStamp.isAfter(newestStamp)) newestStamp = gameStamp;
             ages.addLast(Duration.between(gameStamp, pcClock.instant()));
             if (ages.size() > WINDOW) ages.removeFirst();
             if (ages.size() < MIN_SAMPLES) return;
             measured = ages.stream().min(Duration::compareTo).orElseThrow();
             correction = measured.abs().compareTo(CORRECTION_THRESHOLD) >= 0 ? measured : Duration.ZERO;
             correcting = !correction.isZero();
-            if (correcting && !warned) {
+            if (!warned && measured.abs().compareTo(WARNING_THRESHOLD) >= 0) {
                 warned = true;
                 warning = new GameClockDisagreementEvent(measured, wholeHours(measured));
             }
