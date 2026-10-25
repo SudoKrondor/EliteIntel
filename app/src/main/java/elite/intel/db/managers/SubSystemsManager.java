@@ -10,6 +10,7 @@ import elite.intel.db.dao.SubSystemDao;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.GameClock;
 import elite.intel.gameapi.i18n.EventsTextProvider;
 import elite.intel.gameapi.journal.events.ShipTargetedEvent;
 import elite.intel.util.AudioPlayer;
@@ -19,7 +20,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Locale;
 import java.util.Set;
 
@@ -64,6 +64,11 @@ public class SubSystemsManager {
     private volatile boolean pause = false;
     private volatile int consecutiveTimeouts = 0;
     private volatile Instant lastKeyPressInstant = Instant.EPOCH;
+    /**
+     * The newest game stamp read when the cycle key was last pressed: a reply to that press is stamped no earlier.
+     * Game time, not PC time - a Windows clock a second or two off the game's would otherwise reject every reply.
+     */
+    private volatile Instant keyPressGameFloor = Instant.EPOCH;
 
     // Full-loop ("module not installed") detection state. The cycle wraps with no wall, so a
     // module that isn't fitted is only knowable by returning to the first subsystem we observed.
@@ -147,6 +152,7 @@ public class SubSystemsManager {
                         break;
                     }
                     lastKeyPressInstant = Instant.now();
+                    keyPressGameFloor = GameClock.get().newestStamp().orElse(Instant.EPOCH);
                     log.debug("[cycle] press #{} target=[{}] key=[{}]", pressCount, getTarget(), cycleBinding);
                     GameControllerBus.publish(GameInputSequenceEvent.of(
                             GameInputStep.bindingHold(cycleBinding.getGameBinding(), 50),
@@ -197,9 +203,9 @@ public class SubSystemsManager {
         }
 
         Instant eventInstant = Instant.parse(event.getTimestamp());
-        Instant keyPressFloor = lastKeyPressInstant.truncatedTo(ChronoUnit.SECONDS);
+        Instant keyPressFloor = keyPressGameFloor;
         if (eventInstant.isBefore(keyPressFloor)) {
-            log.debug("[journal] stale event filtered: eventTime=[{}] keyPressFloor=[{}]", eventInstant, keyPressFloor);
+            log.debug("[journal] stale event filtered: eventTime=[{}] keyPressGameFloor=[{}]", eventInstant, keyPressFloor);
             return;
         }
 

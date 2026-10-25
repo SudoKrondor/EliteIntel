@@ -136,6 +136,57 @@ class GameClockTest {
     }
 
     @Test
+    void aDriftOfSecondsIsCorrectedButNotWarnedAbout() {
+        List<GameClockDisagreementEvent> warnings = new ArrayList<>();
+        Object listener = new Object() {
+            @Subscribe
+            public void on(GameClockDisagreementEvent event) {
+                warnings.add(event);
+            }
+        };
+        UiBus.register(listener);
+        try {
+            observeAges(59, 59, 60, 59, 61);
+        } finally {
+            UiBus.unregister(listener);
+        }
+
+        Instant stamp = PC_NOW.minusSeconds(59);
+        assertEquals(PC_NOW, clock.toPcTime(stamp));
+        assertTrue(warnings.isEmpty(), "a Windows clock between its syncs is corrected silently");
+    }
+
+    @Test
+    void aMinuteIsWarnedAbout() {
+        List<GameClockDisagreementEvent> warnings = new ArrayList<>();
+        Object listener = new Object() {
+            @Subscribe
+            public void on(GameClockDisagreementEvent event) {
+                warnings.add(event);
+            }
+        };
+        UiBus.register(listener);
+        try {
+            observeAges(-60, -58, -55, -60, -59);
+        } finally {
+            UiBus.unregister(listener);
+        }
+
+        assertEquals(1, warnings.size());
+        assertEquals(Duration.ofSeconds(-60), warnings.getFirst().offset());
+        assertEquals(0, warnings.getFirst().wholeHours());
+    }
+
+    @Test
+    void theNewestStampIsTheLatestTheGameWrote() {
+        assertTrue(clock.newestStamp().isEmpty());
+
+        observeAges(7, 5, 9);
+
+        assertEquals(PC_NOW.minusSeconds(5), clock.newestStamp().orElseThrow());
+    }
+
+    @Test
     void onlyAGapNearWholeHoursCountsAsHours() {
         assertEquals(1, GameClock.wholeHours(Duration.ofSeconds(3650)));
         assertEquals(2, GameClock.wholeHours(Duration.ofSeconds(-7180)));

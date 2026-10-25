@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.handlers.queries;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
+import elite.intel.gameapi.GameClock;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
@@ -9,6 +10,7 @@ import elite.intel.util.yaml.YamlFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -46,8 +48,10 @@ public class AnalyzeCarrierDepartureEtaQuery extends BaseQueryAnalyzer implement
 
         long minutesUntilArrival;
         try {
-            ZonedDateTime arrival = ZonedDateTime.parse(departureTime, DateTimeFormatter.ISO_DATE_TIME);
-            minutesUntilArrival = ChronoUnit.MINUTES.between(ZonedDateTime.now(), arrival);
+            // The game's clock wrote the departure; the countdown runs on the PC's.
+            Instant arrival = GameClock.get().toPcTime(
+                    ZonedDateTime.parse(departureTime, DateTimeFormatter.ISO_DATE_TIME).toInstant());
+            minutesUntilArrival = ChronoUnit.MINUTES.between(Instant.now(), arrival);
         } catch (DateTimeParseException e) {
             // The journal writes ISO-8601, so an unparseable value means the stored session state is corrupt,
             // not that the carrier has no jump scheduled. Say we cannot tell, but leave a trail.

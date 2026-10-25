@@ -3,6 +3,7 @@ package elite.intel.gameapi.journal.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.db.managers.DeferredNotificationManager;
+import elite.intel.gameapi.GameClock;
 import elite.intel.gameapi.journal.events.CarrierJumpRequestEvent;
 import elite.intel.session.PlayerSession;
 
@@ -15,6 +16,11 @@ import static elite.intel.util.StringUtls.localizedEventPlural;
 @SuppressWarnings("unused")
 public class CarrierJumpRequestSubscriber {
 
+    /**
+     * How long before departure the commander is reminded.
+     */
+    private static final Duration DEPARTURE_WARNING = Duration.ofMinutes(3);
+
     @Subscribe
     public void onCarrierJumpRequestEvent(CarrierJumpRequestEvent event) {
         Thread.ofVirtual().start(() -> {
@@ -26,7 +32,8 @@ public class CarrierJumpRequestSubscriber {
             String destination = firstNonBlank(event.getSystemName(), event.getBody());
             String rawDepartureTime = event.getDepartureTime();
 
-            Instant departureInstant = Instant.parse(rawDepartureTime);
+            // The game's clock wrote the departure; the countdown runs on the PC's.
+            Instant departureInstant = GameClock.get().toPcTime(Instant.parse(rawDepartureTime));
             long totalMinutes = Duration.between(Instant.now(), departureInstant).toMinutes();
             long hours = totalMinutes / 60;
             long minutes = totalMinutes % 60;
@@ -58,8 +65,11 @@ public class CarrierJumpRequestSubscriber {
             PlayerSession playerSession = PlayerSession.getInstance();
             playerSession.setCarrierDepartureTime(rawDepartureTime);
 
-            long millis = Instant.parse(event.getDepartureTime()).toEpochMilli() - (1000 * 60 * 3);
-            DeferredNotificationManager.getInstance().scheduleNotification(localizedEvent("event.carrier.departingThreeMinutes"), millis);
+            // scheduleNotification takes a delay from now, not a moment.
+            long delayMillis = Duration.between(Instant.now(), departureInstant.minus(DEPARTURE_WARNING)).toMillis();
+            if (delayMillis > 0) {
+                DeferredNotificationManager.getInstance().scheduleNotification(localizedEvent("event.carrier.departingThreeMinutes"), delayMillis);
+            }
             VegaRuntime.narrator().narrate(data, instructions);
         });
     }
