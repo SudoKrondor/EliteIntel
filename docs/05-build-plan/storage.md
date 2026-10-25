@@ -134,6 +134,10 @@ to a hardware ID (after S4); A18 and E7 stay blocked on [testing item 27](../00-
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the next
 slice needs.*
 
+- **2026-10-25 — S2b second review** (`code-integrity-review.md`). **Decided (Alan):** RESTORE is the one exception to
+  "never overwritten automatically" - it replaces an installation the backup does not hold, without a reconcile
+  (storage.md rules 1 and 10, the S3 row). **Fixed:** the unreachable list uses `place.installation`. **Left:** the
+  migration-test `run` helper is in four tests - share it at the next migration test.
 - **2026-10-25 — S2b review follow-up** (`code-integrity-review.md`, Alan: all seven). **Fixed:** every known
   installation unreachable stops first-time startup, naming them (`NoInstallationReachableException`); the backup folder
   check refuses a removed installation's folder too (`findAllIncludingRemoved`); a test for migration `12012`; stale
