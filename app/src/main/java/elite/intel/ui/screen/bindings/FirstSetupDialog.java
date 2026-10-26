@@ -43,6 +43,9 @@ import static elite.intel.ui.theme.AppTheme.transparentPanel;
  * <p>
  * <strong>Nothing is written here.</strong> The dialog ends with a summary the user confirms, and hands back the
  * working copy to write; the caller writes it.
+ * <p>
+ * RESTORE reconciles a backup's installations the same way (storage.md rule 10), in its own {@link Wording}: there the
+ * summary is RESTORE's one confirmation (Alan, 2026-10-26).
  */
 final class FirstSetupDialog extends JDialog {
 
@@ -58,8 +61,33 @@ final class FirstSetupDialog extends JDialog {
     record Choice(ConfigurationFiles files, int moved) {
     }
 
+    /**
+     * What the dialog says, as text already in the user's language.
+     *
+     * @param title        the dialog's title
+     * @param intro        what the user is asked to do
+     * @param backupBefore the line saying what is backed up first
+     * @param summaryTitle the summary's title
+     * @param confirm      the summary's button
+     * @param trailer      the summary's last paragraph - where it is written
+     */
+    record Wording(String title, String intro, String backupBefore, String summaryTitle, String confirm,
+                   String trailer) {
+
+        /** First-time startup's words. */
+        static Wording firstSetup(int installations) {
+            return new Wording(getText("bindings.firstTimeStartup.title"),
+                    getText("bindings.firstTimeStartup.reconcile.intro"),
+                    getText("bindings.aliasDesigner.firstSetup.backupBefore"),
+                    getText("bindings.firstTimeStartup.summary.title"),
+                    getText("bindings.firstTimeStartup.summary.create"),
+                    getText("bindings.firstTimeStartup.summary.installations", installations));
+        }
+    }
+
     private final FirstSetupReading reading;
     private final Map<String, String> installNames;
+    private final Wording wording;
     private final List<Row> rows;
     private final Map<String, String> answers = new LinkedHashMap<>();
 
@@ -70,10 +98,16 @@ final class FirstSetupDialog extends JDialog {
 
     /** @param installNames what each installation is called, keyed by its id as text */
     FirstSetupDialog(Component parent, FirstSetupReading reading, Map<String, String> installNames) {
+        this(parent, reading, installNames, Wording.firstSetup(reading.installations().size()));
+    }
+
+    /** @param installNames what each installation is called, keyed by its id as text */
+    FirstSetupDialog(Component parent, FirstSetupReading reading, Map<String, String> installNames, Wording wording) {
         super(SwingUtilities.getWindowAncestor(parent), ModalityType.APPLICATION_MODAL);
         setUndecorated(true);
         this.reading = reading;
         this.installNames = installNames;
+        this.wording = wording;
         this.rows = reading.plan().rows();
         buildUi();
     }
@@ -88,9 +122,8 @@ final class FirstSetupDialog extends JDialog {
         JPanel body = transparentPanel(new BorderLayout(0, 8));
         JPanel top = transparentPanel(new GridLayout(0, 1, 0, 4));
         // WHY: said first, because it is what makes the rest safe to touch.
-        top.add(HudBanner.multiline(getText("bindings.aliasDesigner.firstSetup.backupBefore"),
-                StatusBadge.State.INFO));
-        top.add(HudBanner.multiline(getText("bindings.firstTimeStartup.reconcile.intro"), StatusBadge.State.IDLE));
+        top.add(HudBanner.multiline(wording.backupBefore(), StatusBadge.State.INFO));
+        top.add(HudBanner.multiline(wording.intro(), StatusBadge.State.IDLE));
         if (!reading.unreachable().isEmpty()) {
             top.add(HudBanner.multiline(getText("bindings.aliasDesigner.firstSetup.unreachable",
                     reading.unreachable().stream().map(row -> nameOf(row.id(), row.storefront()))
@@ -117,7 +150,7 @@ final class FirstSetupDialog extends JDialog {
         body.add(bottom, BorderLayout.SOUTH);
 
         HudModalSpec spec = HudModalSpec.builder()
-                .title(getText("bindings.firstTimeStartup.title"))
+                .title(wording.title())
                 .onClose(this::dispose)
                 .body(body)
                 .scrollBody(false)
@@ -293,10 +326,8 @@ final class FirstSetupDialog extends JDialog {
             text.append("\n\n").append(getText("bindings.firstTimeStartup.reconcile.useOne.loss",
                     String.join(", ", loss.holders()), name, loss.name(), files));
         }
-        text.append("\n\n").append(getText("bindings.firstTimeStartup.summary.installations",
-                reading.installations().size()));
-        if (!HudConfirmDialog.confirm(this, getText("bindings.firstTimeStartup.summary.title"), text.toString(),
-                getText("bindings.firstTimeStartup.summary.create"),
+        text.append("\n\n").append(wording.trailer());
+        if (!HudConfirmDialog.confirm(this, wording.summaryTitle(), text.toString(), wording.confirm(),
                 getText("bindings.aliasDesigner.firstSetup.cancel"))) {
             return;
         }
@@ -308,7 +339,7 @@ final class FirstSetupDialog extends JDialog {
     private void onMerge() {
         List<String> missing = reading.plan().unanswered(answers);
         if (!missing.isEmpty()) {
-            HudConfirmDialog.info(this, getText("bindings.firstTimeStartup.title"),
+            HudConfirmDialog.info(this, wording.title(),
                     getText("bindings.aliasDesigner.firstSetup.unanswered", missing.size()),
                     getText("bindings.aliasDesigner.firstSetup.close"));
             return;
@@ -319,7 +350,7 @@ final class FirstSetupDialog extends JDialog {
         } catch (IOException e) {
             // WHY: nothing was written - the working copy could not be made from these files, and the file is named.
             log.warn("First-time startup could not merge the installations", e);
-            HudConfirmDialog.info(this, getText("bindings.firstTimeStartup.title"),
+            HudConfirmDialog.info(this, wording.title(),
                     getText("bindings.firstTimeStartup.mergeFailed", StringUtls.messageOf(e)),
                     getText("bindings.aliasDesigner.firstSetup.close"));
             return;
@@ -328,10 +359,8 @@ final class FirstSetupDialog extends JDialog {
                 merged.devices(), merged.files().buttonMaps().size()));
         merged.moves().forEach((from, to) -> summary.append('\n')
                 .append(getText("bindings.aliasDesigner.firstSetup.summary.moves", from, to)));
-        summary.append("\n\n").append(getText("bindings.firstTimeStartup.summary.installations",
-                reading.installations().size()));
-        if (!HudConfirmDialog.confirm(this, getText("bindings.firstTimeStartup.summary.title"), summary.toString(),
-                getText("bindings.firstTimeStartup.summary.create"),
+        summary.append("\n\n").append(wording.trailer());
+        if (!HudConfirmDialog.confirm(this, wording.summaryTitle(), summary.toString(), wording.confirm(),
                 getText("bindings.aliasDesigner.firstSetup.cancel"))) {
             return;
         }

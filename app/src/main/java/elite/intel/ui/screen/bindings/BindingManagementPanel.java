@@ -1,14 +1,10 @@
 package elite.intel.ui.screen.bindings;
 
-import elite.intel.bindforge.io.BindingsApplyException;
-import elite.intel.bindforge.io.BindingsMonitor;
-import elite.intel.bindforge.io.PlayerBackupService;
 import elite.intel.bindforge.storage.Backup;
 import elite.intel.bindforge.storage.BackupDestination;
 import elite.intel.bindforge.storage.Backups;
 import elite.intel.db.managers.BindForgeSettingsManager;
 import elite.intel.ui.dialog.HudConfirmDialog;
-import elite.intel.ui.support.BindingApplyResultPresenter;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudFooter;
@@ -21,6 +17,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
@@ -46,13 +43,9 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
  * <strong>Delete is for user backups only</strong> (Alan, 2026-10-24): the user made them, so they decide when they
  * go. Retention looks after daily and before-changes backups, and first setup's is kept forever.
  * <p>
- * Both restore actions share the same first step (loading the backup's file for the active
- * preset into the working copy as the new draft): "Restore to Editing Slot" stops there, the
- * Binding Profile tab picks up the new draft reactively via the existing
- * {@code BindingsUpdatedEvent}. "Restore to Live" continues into the existing safe-apply
- * pipeline ({@code BindingsApplyService.apply()}), so it gets that pipeline's own
- * conflict-check and pre-write backup rather than a separate, less-safe direct write.
- * RESTORE replaces both (Storage S3).
+ * <strong>RESTORE</strong> puts the whole selected backup back, and <strong>Browse for Backup File</strong> one that is
+ * not in the list ({@link RestoreFlow}; storage.md rule 10, Storage S3, 2026-10-26). They replaced Restore to Editing
+ * Slot and Restore to Live, which restored one binds file.
  */
 public class BindingManagementPanel extends JPanel {
 
@@ -73,8 +66,7 @@ public class BindingManagementPanel extends JPanel {
 
     private final Backups backups = Backups.stored();
     private final BindForgeSettingsManager settings = BindForgeSettingsManager.getInstance();
-    private final PlayerBackupService restoreService = PlayerBackupService.getInstance();
-    private final BindingApplyResultPresenter applyResultPresenter = new BindingApplyResultPresenter(this);
+    private final RestoreFlow restoreFlow = new RestoreFlow(this);
 
     private final GameInstallLocationsPanel gameInstallLocationsPanel = new GameInstallLocationsPanel();
 
@@ -84,8 +76,8 @@ public class BindingManagementPanel extends JPanel {
 
     private JButton backupNowButton;
     private JButton deleteButton;
-    private JButton restoreToEditingSlotButton;
-    private JButton restoreToLiveButton;
+    private JButton browseButton;
+    private JButton restoreButton;
     private boolean operationInProgress;
     /** The newest list refresh asked for. Read and written on the EDT only. */
     private int latestRefresh;
@@ -201,16 +193,15 @@ public class BindingManagementPanel extends JPanel {
         deleteButton.setEnabled(false);
         deleteButton.addActionListener(e -> performDelete());
 
-        restoreToEditingSlotButton = makeButtonSubtle(getText("bindings.bindingManagement.button.restoreToEditingSlot"));
-        restoreToEditingSlotButton.setEnabled(false);
-        restoreToEditingSlotButton.addActionListener(e -> performRestoreToEditingSlot());
+        browseButton = makeButtonSubtle(getText("bindings.restore.browse"));
+        browseButton.addActionListener(e -> performBrowse());
 
-        restoreToLiveButton = makeButton(getText("bindings.bindingManagement.button.restoreToLive"));
-        restoreToLiveButton.setEnabled(false);
-        restoreToLiveButton.addActionListener(e -> performRestoreToLive());
+        restoreButton = makeButton(getText("bindings.restore.button"));
+        restoreButton.setEnabled(false);
+        restoreButton.addActionListener(e -> performRestore());
 
         return HudFooter.build(false, null, null,
-                List.of(backupNowButton, deleteButton, restoreToEditingSlotButton, restoreToLiveButton));
+                List.of(backupNowButton, deleteButton, browseButton, restoreButton));
     }
 
     public void initData() {
@@ -297,103 +288,39 @@ public class BindingManagementPanel extends JPanel {
         }, "PlayerBackupDelete-Thread").start();
     }
 
-    private void performRestoreToEditingSlot() {
+    /** RESTORE: the whole selected backup goes back (storage.md rule 10). */
+    private void performRestore() {
         Backup backup = selectedBackup();
         if (backup == null || operationInProgress) {
             return;
         }
-        File gameFile = resolveActiveBindsFileOrShowError();
-        if (gameFile == null) {
-            return;
-        }
-        String presetFileName = gameFile.getName();
-        if (!confirmRestore("bindings.bindingManagement.restore.editingSlot.confirm.text", presetFileName)) {
-            return;
-        }
-
-        setOperationBusy(true);
-        new Thread(() -> {
-            IOException failure = null;
-            try {
-                restoreService.restoreToWorkingCopy(backup, presetFileName);
-            } catch (IOException e) {
-                failure = e;
-            }
-            IOException result = failure;
-            SwingUtilities.invokeLater(() -> {
-                setOperationBusy(false);
-                if (result != null) {
-                    showRestoreError(result.getMessage());
-                }
-                // No success dialog needed: Binding Profile reflects the new draft reactively
-                // via the BindingsUpdatedEvent that restoreToWorkingCopy() publishes.
-            });
-        }, "PlayerBackupRestoreSlot-Thread").start();
-    }
-
-    private void performRestoreToLive() {
-        Backup backup = selectedBackup();
-        if (backup == null || operationInProgress) {
-            return;
-        }
-        File gameFile = resolveActiveBindsFileOrShowError();
-        if (gameFile == null) {
-            return;
-        }
-        String presetFileName = gameFile.getName();
-        if (!confirmRestore("bindings.bindingManagement.restore.live.confirm.text", presetFileName)) {
-            return;
-        }
-
-        setOperationBusy(true);
-        new Thread(() -> {
-            Path appliedBackup = null;
-            IOException ioFailure = null;
-            BindingsApplyException applyFailure = null;
-            try {
-                appliedBackup = restoreService.restoreToLive(backup, presetFileName, gameFile.toPath());
-            } catch (IOException e) {
-                ioFailure = e;
-            } catch (BindingsApplyException e) {
-                applyFailure = e;
-            }
-            Path resultBackup = appliedBackup;
-            IOException resultIoFailure = ioFailure;
-            BindingsApplyException resultApplyFailure = applyFailure;
-            SwingUtilities.invokeLater(() -> {
-                setOperationBusy(false);
-                if (resultIoFailure != null) {
-                    showRestoreError(resultIoFailure.getMessage());
-                } else if (resultApplyFailure != null) {
-                    applyResultPresenter.showError(resultApplyFailure);
-                } else if (resultBackup != null) {
-                    table.clearSelection();
-                    applyResultPresenter.showSuccess(resultBackup);
-                }
-            });
-        }, "PlayerBackupRestoreLive-Thread").start();
-    }
-
-    private boolean confirmRestore(String messageKey, String presetFileName) {
-        return HudConfirmDialog.confirm(this,
-                getText("bindings.bindingManagement.restore.confirm.title"),
-                getText(messageKey, presetFileName),
-                getText("bindings.bindingManagement.restore.confirm.title"),
-                getText("button.cancel"));
+        restore(backup.zip(), false);
     }
 
     /**
-     * Resolves the active bindings file the same way {@code BindingProfilePanel} does, for
-     * the preset name restore writes into.
+     * Browse for Backup File: a backup that is not in the list - off an old PC, out of a cloud folder - restored the
+     * same way, its confirmation saying to restore only the user's own (file-manager.md).
      */
-    private File resolveActiveBindsFileOrShowError() {
-        try {
-            return BindingsMonitor.getInstance().resolveActiveBindsFile();
-        } catch (IOException e) {
-            log.warn("Could not resolve the active bindings preset for restore: {}", e.getMessage());
-            showRestoreError(e.getMessage());
-            return null;
+    private void performBrowse() {
+        if (operationInProgress) {
+            return;
         }
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle(getText("bindings.restore.browse.title"));
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        chooser.setAcceptAllFileFilterUsed(true);
+        chooser.setFileFilter(new FileNameExtensionFilter(getText("bindings.restore.browse.filter"), "zip"));
+        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
+        restore(chooser.getSelectedFile().toPath(), true);
+    }
+
+    private void restore(Path zip, boolean browsed) {
+        setOperationBusy(true);
+        restoreFlow.restore(zip, browsed, () -> {
+            setOperationBusy(false);
+            // WHY: RESTORE took a before-RESTORE backup, which belongs in the list.
+            refreshBackups();
+        });
     }
 
     // ---- settings
@@ -525,14 +452,9 @@ public class BindingManagementPanel extends JPanel {
 
     private void updateSelectionActionsEnabled() {
         Backup selected = operationInProgress ? null : selectedBackup();
-        restoreToEditingSlotButton.setEnabled(selected != null);
-        restoreToLiveButton.setEnabled(selected != null);
+        restoreButton.setEnabled(selected != null);
+        browseButton.setEnabled(!operationInProgress);
         deleteButton.setEnabled(selected != null && selected.kind() == Backups.Kind.USER);
-    }
-
-    private void showRestoreError(String message) {
-        showError("bindings.bindingManagement.restore.error.dialogTitle", "bindings.bindingManagement.restore.error",
-                message);
     }
 
     private void showError(String titleKey, String messageKey, String message) {

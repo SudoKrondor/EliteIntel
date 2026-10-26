@@ -145,7 +145,7 @@ as edits not applied, so the Preset Editor shows them pointing there and the APP
 | `BindingsLoader.findStartPresetFile(Path)` | **exists** — finds `StartPreset.*.start` by prefix and extension, so it copes with the version suffix. ~~Reusable as-is.~~ **Not for this screen** (2026-10-20): it takes whichever file the listing yields first, so with both generations present it can name the old one. Use `findLiveStartPresetFile` — see [How the four lines are read](#how-the-four-lines-are-read--settled-2026-10-12-alan-foundation-f1). |
 | `BindingsLoader.getActivePresetName()` | **exists, and reads one line** — see below |
 | Writing the file | ~~**does not exist.**~~ **Built 2026-10-20 (P3)** as `preseteditor.StartPresetApply` — see [Apply](#what-apply-checks-and-writes-for-the-preset-file--2026-10-24). The only writer of the game's `StartPreset.*.start` — to be reworked: APPLY writes the preset file from the working copy ([storage.md](storage.md)). |
-| Backup coverage | `PlayerBackupService` already includes the file, and `SetupCheck` reads it. |
+| Backup coverage | `bindforge.storage.Backups` includes the file in every backup, and RESTORE puts it back (Storage S3); `SetupCheck` reads it. |
 
 **`getActivePresetName()` collapses the four sections into one.** It takes the first non-empty line, and its
 own comment explains why: *“The file repeats the preset name on multiple lines; we take the first non-empty

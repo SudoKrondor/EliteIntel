@@ -27,6 +27,8 @@ import java.util.stream.Stream;
  *     nothing new for an installation writes nothing there.</li>
  *     <li><strong>A {@code .buttonMap} the set lacks is removed</strong>, except Frontier's shipped ones
  *     ({@link FrontierStockButtonMaps#shipsMapFor}).</li>
+ *     <li><strong>A read-only file stays read-only</strong> - the flag is cleared for the write and set again
+ *     (storage.md rule 10, 2026-10-26). A read-only {@code .buttonMap} the set lacks is not removed, and is reported.</li>
  *     <li><strong>Everything it can</strong>: a file or an installation that cannot be written is reported, the rest
  *     are still written, and nothing is rolled back.</li>
  * </ul>
@@ -103,10 +105,37 @@ final class LiveCopies {
         void writeIfDifferent(Path target, byte[] content) {
             try {
                 if (Files.isRegularFile(target) && Arrays.equals(Files.readAllBytes(target), content)) return;
+            } catch (IOException e) {
+                fail(target, e);
+                return;
+            }
+            // WHY: players set the read-only flag to stop the game resetting a binds file, and a file with it cannot
+            // be replaced. The write is the user asking, so the flag is cleared, the file written, and the flag set
+            // again - the live file's flag as it is now (storage.md rule 10; Alan, 2026-10-26).
+            boolean readOnly;
+            try {
+                readOnly = ReadOnlyFlag.isSet(target);
+                if (readOnly) ReadOnlyFlag.set(target, false);
+            } catch (IOException e) {
+                fail(target, e);
+                return;
+            }
+            try {
                 AtomicFiles.write(target, content);
                 written.add(target.getFileName().toString());
             } catch (IOException e) {
                 fail(target, e);
+            } finally {
+                if (readOnly) restoreFlag(target);
+            }
+        }
+
+        private void restoreFlag(Path target) {
+            try {
+                ReadOnlyFlag.set(target, true);
+            } catch (IOException e) {
+                failures.add(target.getFileName() + ": its read-only flag could not be set again: " + reason(e));
+                log.warn("Could not set the read-only flag on {} again", target, e);
             }
         }
 

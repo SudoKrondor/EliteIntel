@@ -300,24 +300,6 @@ class BackupsTest {
         }
     }
 
-    @Test
-    void aBindingsFileIsReadFromTheZip() throws IOException {
-        Backup backup = backups("2026-10-24T18:30:00Z", sources()).backUpEverything(Backups.Kind.USER);
-
-        assertEquals("<Root custom/>", Backups.readBindingsFile(backup, "Custom.4.2.binds"));
-        assertThrows(IOException.class, () -> Backups.readBindingsFile(backup, "DawnTreader.4.2.binds"));
-    }
-
-    /** The guard that keeps a restore inside the zip's {@code Bindings/}: a file name, never a path. */
-    @Test
-    void readingABindingsFileRefusesAPath() throws IOException {
-        Backup backup = backups("2026-10-24T18:30:00Z", sources()).backUpEverything(Backups.Kind.USER);
-
-        for (String path : List.of("../Custom.4.2.binds", "Bindings/Custom.4.2.binds", "Bindings\\Custom.4.2.binds", "..")) {
-            assertThrows(IllegalArgumentException.class, () -> Backups.readBindingsFile(backup, path), path);
-        }
-    }
-
     /**
      * A stamp-named file that is not a zip is still listed, as Partial - it is in the folder, and only its summary cannot
      * be read - and counts toward the before-changes N, so retention can delete it.

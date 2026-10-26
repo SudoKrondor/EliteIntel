@@ -1,6 +1,7 @@
 package elite.intel.bindforge.storage;
 
 import elite.intel.bindforge.install.GameInstallation;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.DosFileAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.util.List;
 import java.util.Map;
@@ -144,6 +146,45 @@ class LiveCopiesTest {
         liveCopies(steam).write(new ConfigurationFiles(Map.of(), null, Map.of()));
 
         assertEquals("<Theirs/>", Files.readString(GameInstallation.deviceMappingsIn(controlSchemes(steam))));
+    }
+
+    /**
+     * A read-only binds file - set by players to stop the game resetting it - is written, and is read-only again
+     * afterwards (storage.md rule 10; Alan, 2026-10-26). Only where the file system keeps the flag.
+     */
+    @Test
+    void aReadOnlyLiveFileIsWrittenAndStaysReadOnly() throws IOException {
+        Path binds = bindings.resolve("Custom.4.2.binds");
+        write(binds, "<Old/>");
+        DosFileAttributeView view = Files.getFileAttributeView(binds, DosFileAttributeView.class);
+        Assumptions.assumeTrue(view != null && Files.getFileStore(bindings).supportsFileAttributeView("dos"),
+                "the file system keeps no read-only flag");
+        view.setReadOnly(true);
+
+        WriteReport report = liveCopies().write(set());
+
+        assertTrue(report.bindings().updated(), report.bindings().failures().toString());
+        assertEquals("<Custom/>", Files.readString(binds));
+        assertTrue(Files.getFileAttributeView(binds, DosFileAttributeView.class).readAttributes().isReadOnly(),
+                "the flag is set again");
+        Files.getFileAttributeView(binds, DosFileAttributeView.class).setReadOnly(false);
+    }
+
+    /** A read-only file that already holds the bytes is not touched - its flag is not even cleared. */
+    @Test
+    void aReadOnlyFileWithTheSameBytesIsLeftAlone() throws IOException {
+        Path binds = bindings.resolve("Custom.4.2.binds");
+        write(binds, "<Custom/>");
+        DosFileAttributeView view = Files.getFileAttributeView(binds, DosFileAttributeView.class);
+        Assumptions.assumeTrue(view != null && Files.getFileStore(bindings).supportsFileAttributeView("dos"),
+                "the file system keeps no read-only flag");
+        view.setReadOnly(true);
+
+        WriteReport report = liveCopies().write(set());
+
+        assertFalse(report.bindings().written().contains("Custom.4.2.binds"));
+        assertTrue(view.readAttributes().isReadOnly());
+        view.setReadOnly(false);
     }
 
     private LiveCopies liveCopies(Path... installations) {

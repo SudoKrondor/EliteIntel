@@ -45,7 +45,8 @@ import java.util.zip.ZipOutputStream;
  * <p>
  * <strong>Every write to a game file goes through {@link WritePath}, which takes a backup first</strong> (principle 3) -
  * {@link #backUpBeforeChange(Before, BackupSources)}, or first setup's {@link Kind#FIRST_SETUP}. First-time startup calls it
- * since Storage S2b; RESTORE and APPLY arrive with S3 and S4, and until then the old writers take their own backups.
+ * since Storage S2b and RESTORE since S3 ({@link Restore}, reading the zip through {@link BackupContents}); APPLY
+ * arrives with S4, and until then the old writers take their own backups.
  * Touches the disk - not for the EDT.
  */
 public final class Backups {
@@ -74,7 +75,7 @@ public final class Backups {
     private static final Pattern BINDS_FILE = Pattern.compile(".+\\.\\d+\\.\\d+\\.binds");
     /** {@code StartPreset.4.start}; a leftover pre-Odyssey {@code StartPreset.start} is not one. */
     private static final Pattern START_PRESET_FILE = Pattern.compile("StartPreset\\.\\d+\\.start");
-    private static final String BUTTON_MAP_SUFFIX = ".buttonMap";
+    static final String BUTTON_MAP_SUFFIX = ".buttonMap";
 
     private static final String KIND_LINE = "Kind: ";
     private static final String BEFORE_LINE = "Taken before: ";
@@ -329,27 +330,6 @@ public final class Backups {
             Files.delete(backup.zip());
         }
         log.info("Deleted user backup {}", backup.zip());
-    }
-
-    /**
-     * The content of one {@code .binds} or {@code StartPreset} under the backup's {@code Bindings\}. Restore to Editing
-     * Slot and Restore to Live read it until RESTORE replaces them (Storage S3).
-     *
-     * @throws IOException if the zip cannot be read, or holds no such file
-     */
-    public static String readBindingsFile(Backup backup, String fileName) throws IOException {
-        if (fileName.indexOf('/') >= 0 || fileName.indexOf('\\') >= 0 || fileName.equals("..")) {
-            throw new IllegalArgumentException("a file name, not a path: " + fileName);
-        }
-        try (ZipFile zip = new ZipFile(backup.zip().toFile(), StandardCharsets.UTF_8)) {
-            ZipEntry entry = zip.getEntry(BINDINGS + ENTRY_SEPARATOR + fileName);
-            if (entry == null) {
-                throw new IOException("Backup " + backup.zip().getFileName() + " has no file named " + fileName);
-            }
-            try (InputStream in = zip.getInputStream(entry)) {
-                return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            }
-        }
     }
 
     // ---- taking

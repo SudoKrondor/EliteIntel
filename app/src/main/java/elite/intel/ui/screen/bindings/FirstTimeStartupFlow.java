@@ -2,11 +2,13 @@ package elite.intel.ui.screen.bindings;
 
 import elite.intel.bindforge.install.GameInstallationProvider;
 import elite.intel.bindforge.install.InstallationRegistry;
+import elite.intel.bindforge.storage.Backup;
 import elite.intel.bindforge.storage.Backups;
 import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.FirstSetupFiles;
 import elite.intel.bindforge.storage.FirstSetupReading;
 import elite.intel.bindforge.storage.FirstTimeStartup;
+import elite.intel.bindforge.storage.WorkingCopy;
 import elite.intel.bindforge.storage.WriteReport;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.session.PlayerSession;
@@ -18,6 +20,7 @@ import org.apache.logging.log4j.Logger;
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,12 +48,15 @@ public final class FirstTimeStartupFlow {
         this.parent = parent;
     }
 
-    /** Offers first-time startup if its flag is not set. On the EDT. */
+    /**
+     * Offers first-time startup if its flag is not set; once it is, reads the working copy, and offers the newest backup
+     * when it cannot be read (storage.md rule 10; Alan, 2026-10-26). On the EDT.
+     */
     public void offerIfNeeded() {
         if (!running.compareAndSet(false, true)) return;
         background("BindForge-FirstTimeStartup", () -> {
             FirstTimeStartup startup = FirstTimeStartup.stored();
-            if (!startup.needed()) return null;
+            if (!startup.needed()) return workingCopyCheck();
             List<InstallationRow> rows = startup.installations();
             return () -> showList(startup, rows);
         });
@@ -88,6 +94,34 @@ public final class FirstTimeStartupFlow {
             Map<String, String> names = AliasDesignerReader.labelsFor(startup.installations());
             return () -> reconcile(startup, reading, names);
         });
+    }
+
+    /**
+     * Nothing to do when the working copy reads; otherwise the step that says so and offers the newest backup. A
+     * working copy that is missing while first-time startup is complete counts as one that cannot be read.
+     */
+    private Runnable workingCopyCheck() {
+        try {
+            WorkingCopy.stored().read();
+            return null;
+        } catch (IOException e) {
+            log.error("The working copy could not be read", e);
+            String why = e instanceof NoSuchFileException ? getText("bindings.restore.unreadable.missing")
+                    : StringUtls.messageOf(e);
+            Backup newest = newestBackup();
+            return () -> new RestoreFlow(parent).offerNewest(why, newest, this::finish);
+        }
+    }
+
+    /** The newest backup of any kind, or {@code null} when there is none or the backup folder cannot be listed. */
+    private static Backup newestBackup() {
+        try {
+            List<Backup> backups = Backups.stored().list();
+            return backups.isEmpty() ? null : backups.getFirst();
+        } catch (IOException e) {
+            log.warn("Could not list the backups to offer one", e);
+            return null;
+        }
     }
 
     /** Identical installations ask nothing but the summary; any difference opens the reconcile (rule 2). */
@@ -135,6 +169,15 @@ public final class FirstTimeStartupFlow {
         StringBuilder text = new StringBuilder(getText("bindings.firstTimeStartup.result.written",
                 written.backup().zip().toString(), report.installationsUpdated(), report.installations().size()));
         if (moved > 0) text.append('\n').append(getText("bindings.firstTimeStartup.result.moved", moved));
+        return text.append(placeFailures(report)).toString();
+    }
+
+    /**
+     * Each place a write did not fully update, one line each, and that the next APPLY writes it - empty when every
+     * place took everything. RESTORE reports the same way.
+     */
+    static String placeFailures(WriteReport report) {
+        StringBuilder text = new StringBuilder();
         if (!report.bindings().updated()) {
             text.append('\n').append(getText("bindings.firstTimeStartup.result.place",
                     getText("bindings.firstTimeStartup.place.bindingsFolder"),

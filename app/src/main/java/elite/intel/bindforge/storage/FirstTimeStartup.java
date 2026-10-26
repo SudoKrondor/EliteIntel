@@ -99,7 +99,7 @@ public final class FirstTimeStartup {
         }
     }
 
-    /** Writes the set - {@link WritePath#write} with the first setup backup. */
+    /** Writes the set - {@link WritePath#write} with the backup given; RESTORE uses it too. */
     @FunctionalInterface
     interface Writer {
         WriteReport write(ConfigurationFiles files, WritePath.BackUpFirst backUp) throws IOException;
@@ -120,8 +120,19 @@ public final class FirstTimeStartup {
 
     /** The stored flag, installations, bindings folder and write path. */
     public static FirstTimeStartup stored() {
+        Supplier<Path> folder = () -> PlayerSession.getInstance().getBindingsDir();
+        return new FirstTimeStartup(storedFlag(), folder,
+                () -> new InstallationRegistry(GameInstallationProvider.forThisPlatform(folder.get()))
+                        .currentWithStartupScan(),
+                (files, backUp) -> WritePath.stored().write(files, backUp),
+                sources -> Backups.stored().backUpEverything(Backups.Kind.FIRST_SETUP, sources),
+                FirstTimeStartup::announce);
+    }
+
+    /** The stored flag - RESTORE sets it too ({@link Restore}). */
+    static Flag storedFlag() {
         BindForgeActivationManager manager = BindForgeActivationManager.getInstance();
-        Flag flag = new Flag() {
+        return new Flag() {
             @Override
             public boolean complete() {
                 return manager.isFirstTimeStartupComplete();
@@ -137,13 +148,6 @@ public final class FirstTimeStartup {
                 manager.clearFirstTimeStartup();
             }
         };
-        Supplier<Path> folder = () -> PlayerSession.getInstance().getBindingsDir();
-        return new FirstTimeStartup(flag, folder,
-                () -> new InstallationRegistry(GameInstallationProvider.forThisPlatform(folder.get()))
-                        .currentWithStartupScan(),
-                (files, backUp) -> WritePath.stored().write(files, backUp),
-                sources -> Backups.stored().backUpEverything(Backups.Kind.FIRST_SETUP, sources),
-                FirstTimeStartup::announce);
     }
 
     FirstTimeStartup(Flag flag, Supplier<Path> bindingsFolder, Supplier<List<InstallationRow>> installations,

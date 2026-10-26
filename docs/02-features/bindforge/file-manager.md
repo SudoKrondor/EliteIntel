@@ -128,8 +128,8 @@ V1.1's Backup Now wrote `<backup folder>\<yyyy-MM-dd_HH-mm-ss>\` folders holding
 BindForge before Storage S1 wrote `…_before-bindforge` and `…_first-setup` folders; and Storage S1 itself, until S1b,
 wrote dated folders holding a `backup-info.txt` (2026-10-24, Alan). **They stay where they are, untouched: not listed,
 and never deleted by retention** — the list reads only zips in the four kind folders. The user can still open them in
-their file manager. *Restore to Editing Slot and Restore to Live read the `.binds` from the zip's `Bindings\` until
-RESTORE replaces them (S3). Old folders are no longer read since S1b — they are not listed, so none can be chosen.*
+their file manager. *Old folders are no longer read since S1b — they are not listed, and Browse for Backup File takes
+only a zip, so none can be restored.*
 
 ### Restore
 
@@ -138,6 +138,10 @@ in every installation — no choices** (2026-10-24, Alan), so nothing can be mix
 what is there now is taken first, and the working copy is replaced too ([storage.md](storage.md) rule 10). Its
 confirmation says that everything will be replaced, and that any edits on screen are thrown away. *Until 2026-10-22 a
 restore only landed in the draft and needed Apply; until 2026-10-24 the user could pick files.*
+
+**Built 2026-10-26 (Storage S3):** one **RESTORE** button and **Browse for Backup File** on Player Backups, replacing
+Restore to Editing Slot and Restore to Live (`bindforge.storage.Restore`, `BackupContents`). What it refuses, the one
+confirmation, the read-only flag and first-time startup are settled in [storage.md](storage.md) rule 10.
 
 ### Restore never asks *which installation* — reworked 2026-09-26
 
@@ -211,9 +215,10 @@ or send for support. Java ships `java.util.zip`; RAR was rejected for needing a 
 *Settled 2026-09-06 as a zip; changed to a plain folder on 2026-10-24 to match V1.1 (Alan: "lets just use folder, that
 stays consistent with version 1.1"); back to a zip later that day so every backup restores the same way.*
 
-**Open for S3:** a zip made with `java.util.zip` does not keep Windows' read-only flag, which players set to stop the
-game resetting a binds file. A restored file comes back writable unless RESTORE records and puts the flag back (Krondor's
-review, 2026-10-24).
+**The read-only flag — settled 2026-10-26 (Alan, Storage S3):** a zip made with `java.util.zip` does not keep Windows'
+read-only flag, which players set to stop the game resetting a binds file (Krondor's review, 2026-10-24). Backups do not
+record it. Instead every write keeps the flag the live file has now: it clears it, writes, and sets it again — a file
+with the flag cannot otherwise be replaced at all ([storage.md](storage.md) rule 10).
 
 ### Browse for Backup File
 
@@ -221,6 +226,11 @@ review, 2026-10-24).
 It is [Restore](#restore) in every way: everything, no choices (2026-10-24, Alan). **It is for the user's own
 backups**: its confirmation says *"Only restore your own backups. A backup from another player holds their
 controllers, not yours."*
+
+**What it accepts — settled 2026-10-26 (Alan, Storage S3):** only a zip holding Elite-Intel's `backup-info.txt` and at
+least one file in a backup's layout. Anything else is refused in one sentence and nothing is written — [no restore may
+overwrite a file BindForge could not identify](#what-a-binds-file-might-not-be). Its confirmation names it by the `Taken:`
+line inside it, since it is in none of the kind folders and its name may have changed.
 
 *Restoring part of another player's backup — their `.binds`, never their device files — is [deferred](#deferred).*
 
@@ -364,7 +374,7 @@ From the [simplification review](../../../bindforge-simplification-review.md), c
 | ~~**Backup Now** copies `.binds` and `StartPreset` only, **no device files**, and finds `StartPreset` with the old `findStartPresetFile`~~ **Built 2026-10-24 (Storage S1):** every file from every installation, as a date-stamped folder (`bindforge.storage.Backups`); a zip in one of four kind folders since 2026-10-24 (S1b) | every file from every installation, as a date-stamped zip (rules 11–12) |
 | ~~**No backup when Elite-Intel starts**~~ **Built 2026-10-24 (Storage S1):** `StartupBackup`, every start, silent; the switch is gone; once a day since S1b | a silent daily backup at the first start each day, which cannot be switched off (rule 12) |
 | ~~**Nothing is ever deleted**~~ **Built 2026-10-24 (Storage S1):** retention at start, after a successful backup; two rules since S1b | daily backups kept by age, before-changes backups by count, user backups until deleted, first-time startup's backup forever (rule 11) |
-| **Restore covers `.binds` only, one file at a time**, to the editing copy or straight to the game | everything, no choices, to the live copies and the working copy (rule 10) |
+| ~~**Restore covers `.binds` only, one file at a time**, to the editing copy or straight to the game~~ **Built 2026-10-26 (Storage S3):** RESTORE puts the whole backup back, through the one write path | everything, no choices, to the live copies and the working copy (rule 10) |
 | **The "before BindForge" backup** holds everything, but its restore covers `.binds` only | part of the one backup system |
 | **Edit History is written three ways** — device files into `bindings\history\<installation>\` (last 10), `.binds` copies into the backup folder (never deleted), `StartPreset` copies into that same folder (last 10) — and a `.bak` is left beside the working copy on every save | all of it goes: one backup system, nothing per file (rule 11) |
 | **Game Install Locations** ~~shows no match states and no Add missing~~ **Built 2026-10-25 (Storage S2b):** Add missing, Remove (stays removed) and Run first-time startup again; Rescan and Relocate removed. Match states wait for S9 | the list with match states, Add missing and Remove (rule 1) |

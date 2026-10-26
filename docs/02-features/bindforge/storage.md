@@ -139,6 +139,27 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
     BindForge last wrote, and the next check would ask the user about their own restore.)
     **If the working copy cannot be read,** BindForge says so and offers the most recent backup to restore from
     (2026-10-23, Alan).
+
+    **Settled with Storage S3's sources (Alan, 2026-10-26):**
+
+    - **A read-only live file stays read-only.** Players set the flag to stop the game resetting a binds file, and a
+      file with it cannot be replaced, so every write - RESTORE and APPLY alike - clears it, writes, and sets it
+      again. The flag is the live file's as it is now; backups do not record it.
+    - **A backup missing a half is refused, naming what is missing:** one with no binds or preset file, or one with
+      no device files while this machine has installations. Put back, it would leave the working copy without binds,
+      or remove every `.buttonMap` the user has.
+    - **RESTORE before first-time startup is complete marks it complete**: it leaves the working copy and the live
+      copies matching, as first-time startup does, and first-time startup run afterwards would take a "before
+      BindForge" backup of files BindForge had already written.
+    - **One confirmation.** When the backup's installations differ, the reconcile's summary is RESTORE's
+      confirmation; otherwise RESTORE's own. Either names every installation it replaces, marks any not found, and
+      says that edits on screen are thrown away.
+    - **The working copy is read at every click on the BindForge tab** once first-time startup is complete; one that
+      cannot be read, or is missing, is said so with the newest backup offered - **Restore** or **Not now**.
+    - **No bindings folder: RESTORE refuses before the backup**, in the setup check's words
+      (`speech.setup.noBindingsYet`), since the folder is never created (rule 7's write) and half a restore would follow.
+    - **RESTORE publishes no `BindingsUpdatedEvent`** - `BindingsMonitor` sees the bindings folder change
+      ([overview](overview.md#bindforge-must-not-publish-bindingsupdatedevent)).
 11. One backup system. No versions, no history per file. **Four kinds of backup, each kept by its own rule**
     (2026-10-24, Alan), applied when Elite-Intel starts:
     - **daily** — kept by age: 30, 60, 90 or 180 days, the user's choice, 30 by default;
