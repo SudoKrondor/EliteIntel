@@ -35,7 +35,7 @@ public final class ResetHeadLookAheadCommand implements IntelCommand {
 
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip();
+        return status.isInMainShip() || status.isInSrv();
     }
 
     @Override
