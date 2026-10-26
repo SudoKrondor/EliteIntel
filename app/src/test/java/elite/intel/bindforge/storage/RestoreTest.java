@@ -25,7 +25,7 @@ import java.util.zip.ZipOutputStream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * RESTORE (storage.md rule 10; Storage S3, Alan, 2026-10-26): the whole backup goes back - binds and preset files to
+ * RESTORE (storage.md rule 10; Storage S3, Alan, 2026-10-25): the whole backup goes back - binds and preset files to
  * the bindings folder, one set of device files to every installation, one it does not hold included - and replaces
  * the working copy, after a before-RESTORE backup of what was there. Refused before anything is written with no
  * bindings folder or a backup missing a half.
@@ -64,7 +64,7 @@ class RestoreTest {
 
         Restore.Prepared prepared = restore.prepare(BackupContents.read(zip));
         assertTrue(prepared.identical(), "one installation in the backup - nothing to reconcile");
-        Restore.Written written = restore.write(prepared, prepared.files());
+        Written written = restore.write(prepared.contents(), prepared.files()).written();
 
         assertEquals("<Then/>", Files.readString(bindings.resolve("Custom.4.2.binds")));
         assertEquals("Then", Files.readString(bindings.resolve("StartPreset.4.start")));
@@ -88,7 +88,7 @@ class RestoreTest {
         Restore restore = restore(List.of(steam, epic));
         Restore.Prepared prepared = restore.prepare(BackupContents.read(backupZip(true, THEN)));
 
-        Restore.Written written = restore.write(prepared, prepared.files());
+        Written written = restore.write(prepared.contents(), prepared.files()).written();
 
         assertEquals(Backups.Kind.BEFORE_CHANGES, written.backup().kind());
         assertEquals(Backups.Before.RESTORE, written.backup().before());
@@ -96,16 +96,48 @@ class RestoreTest {
         assertEquals(STEAM_NOW, entry(written.backup().zip(), "Installations/1-STEAM/ControlSchemes/DeviceMappings.xml"));
     }
 
-    /** RESTORE leaves the working copy and the live copies matching, as first-time startup does (Alan, 2026-10-26). */
+    /** RESTORE leaves the working copy and the live copies matching, as first-time startup does (Alan, 2026-10-25). */
     @Test
     void restoringBeforeFirstTimeStartupMarksItComplete() throws IOException {
         Restore restore = restore(List.of(steam));
         Restore.Prepared prepared = restore.prepare(BackupContents.read(backupZip(true, THEN)));
         assertFalse(flag.complete);
 
-        restore.write(prepared, prepared.files());
+        restore.write(prepared.contents(), prepared.files());
 
         assertTrue(flag.complete);
+    }
+
+    /** Review, 2026-10-25: the user is told when first-time startup will be offered again. */
+    @Test
+    void aFlagThatCannotBeSetIsReportedAndTheRestoreStillStands() throws IOException {
+        flag.failing = true;
+        Restore restore = restore(List.of(steam));
+        Restore.Prepared prepared = restore.prepare(BackupContents.read(backupZip(true, THEN)));
+
+        Restore.Restored restored = restore.write(prepared.contents(), prepared.files());
+
+        assertTrue(restored.setUpAskedAgain());
+        assertEquals("<Then/>", Files.readString(bindings.resolve("Custom.4.2.binds")), "the restore is written");
+    }
+
+    @Test
+    void restoringWhenAlreadySetUpAsksNothingAgain() throws IOException {
+        flag.complete = true;
+        Restore restore = restore(List.of(steam));
+        Restore.Prepared prepared = restore.prepare(BackupContents.read(backupZip(true, THEN)));
+
+        assertFalse(restore.write(prepared.contents(), prepared.files()).setUpAskedAgain());
+    }
+
+    /** Review, 2026-10-25: whether each installation is there is decided while preparing, off the EDT. */
+    @Test
+    void theConfirmationsInstallationsSayWhetherEachWasFound() throws IOException {
+        Path unplugged = temp.resolve("unplugged");
+        Restore.Prepared prepared = restore(List.of(steam, unplugged)).prepare(BackupContents.read(backupZip(true, THEN)));
+
+        assertEquals(List.of(true, false), prepared.targets().stream().map(Restore.Target::found).toList());
+        assertEquals(bindings, prepared.bindingsFolder());
     }
 
     @Test
@@ -158,7 +190,7 @@ class RestoreTest {
         Restore restore = restore(List.of());
         Restore.Prepared prepared = restore.prepare(BackupContents.read(backupZip(true, null)));
 
-        restore.write(prepared, prepared.files());
+        restore.write(prepared.contents(), prepared.files());
 
         assertEquals("<Then/>", Files.readString(bindings.resolve("Custom.4.2.binds")));
     }
@@ -173,7 +205,7 @@ class RestoreTest {
         }
         BackupSources places = new BackupSources(bindings, list);
         Backups backupsOf = new Backups(() -> places, () -> backups,
-                Clock.fixed(Instant.parse("2026-10-26T10:00:00Z"), ZoneOffset.UTC));
+                Clock.fixed(Instant.parse("2026-10-25T10:00:00Z"), ZoneOffset.UTC));
         WritePath writePath = new WritePath(new WorkingCopy(workingCopy), () -> places);
         return new Restore(() -> places, writePath::write,
                 sources -> backupsOf.backUpBeforeChange(Backups.Before.RESTORE, sources), flag);
@@ -247,6 +279,7 @@ class RestoreTest {
 
     private static final class FakeFlag implements FirstTimeStartup.Flag {
         boolean complete;
+        boolean failing;
 
         @Override
         public boolean complete() {
@@ -255,6 +288,7 @@ class RestoreTest {
 
         @Override
         public void markComplete() {
+            if (failing) throw new IllegalStateException("the database could not be written");
             complete = true;
         }
 

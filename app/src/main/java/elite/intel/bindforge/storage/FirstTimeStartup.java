@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -83,19 +82,6 @@ public final class FirstTimeStartup {
         /** The installations that could not be reached, for the user to plug in or Remove. */
         public List<InstallationRow> unreachable() {
             return unreachable;
-        }
-    }
-
-    /**
-     * What a write did.
-     *
-     * @param report each place, as the write path reports it
-     * @param backup the first setup backup taken before it
-     */
-    public record Written(WriteReport report, Backup backup) {
-        public Written {
-            Objects.requireNonNull(report, "report");
-            Objects.requireNonNull(backup, "backup");
         }
     }
 

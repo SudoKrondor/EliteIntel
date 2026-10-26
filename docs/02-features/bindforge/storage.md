@@ -140,11 +140,14 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
     **If the working copy cannot be read,** BindForge says so and offers the most recent backup to restore from
     (2026-10-23, Alan).
 
-    **Settled with Storage S3's sources (Alan, 2026-10-26):**
+    **Settled with Storage S3's sources (Alan, 2026-10-25):**
 
     - **A read-only live file stays read-only.** Players set the flag to stop the game resetting a binds file, and a
       file with it cannot be replaced, so every write - RESTORE and APPLY alike - clears it, writes, and sets it
-      again. The flag is the live file's as it is now; backups do not record it.
+      again. The flag is the live file's as it is now; backups do not record it. **On Linux it is the owner's write
+      permission**, what Wine shows as read-only, kept the same way - otherwise the new file would come back writable
+      (Alan, 2026-10-25, from the S3 review). On Windows a read-only `.buttonMap` the working copy lacks cannot be
+      removed; it stays, and the report says to clear its flag.
     - **A backup missing a half is refused, naming what is missing:** one with no binds or preset file, or one with
       no device files while this machine has installations. Put back, it would leave the working copy without binds,
       or remove every `.buttonMap` the user has.
@@ -155,7 +158,11 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
       confirmation; otherwise RESTORE's own. Either names every installation it replaces, marks any not found, and
       says that edits on screen are thrown away.
     - **The working copy is read at every click on the BindForge tab** once first-time startup is complete; one that
-      cannot be read, or is missing, is said so with the newest backup offered - **Restore** or **Not now**.
+      cannot be read, or is missing, is said so with the newest backup offered - **Restore** or **Not now**. **With no
+      backup at all, first-time startup is offered instead**, from the live files - **Set Up Again** or **Not now** -
+      the one way out once Run first-time startup again is gone (Alan, 2026-10-25, from the S3 review).
+    - **If first-time startup cannot be marked complete** after a restore, the report says it will be offered again at
+      the next click (review, 2026-10-25).
     - **No bindings folder: RESTORE refuses before the backup**, in the setup check's words
       (`speech.setup.noBindingsYet`), since the folder is never created (rule 7's write) and half a restore would follow.
     - **RESTORE publishes no `BindingsUpdatedEvent`** - `BindingsMonitor` sees the bindings folder change

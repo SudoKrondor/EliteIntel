@@ -485,7 +485,7 @@ is driven by the filesystem, not by the event.** There is no staleness gap and n
 
 `BindingsUpdatedEvent` is a UI notification — its subscribers are UI panels because that is all it is for. It
 is published by `BindingsMonitor` (the watcher noticed a change). *`PlayerBackupService` published it on restore too,
-until RESTORE replaced it (Storage S3, 2026-10-26); RESTORE publishes nothing.*
+until RESTORE replaced it (Storage S3, 2026-10-25); RESTORE publishes nothing.*
 Applying to a live `.binds` trips the watcher, which publishes the event itself; **a manual publish on top of
 that double-fires.**
 

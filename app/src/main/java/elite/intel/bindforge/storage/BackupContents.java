@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,7 +29,7 @@ import java.util.zip.ZipFile;
  * {@code DeviceMappings.xml} and {@code .buttonMap}s under {@code Installations\<n>-<storefront>\ControlSchemes\}
  * (file-manager.md, <em>How the backup folder is laid out</em>).
  * <p>
- * <strong>Only a zip Elite-Intel made is read</strong> (Alan, 2026-10-26): one holding {@code backup-info.txt} and at
+ * <strong>Only a zip Elite-Intel made is read</strong> (Alan, 2026-10-25): one holding {@code backup-info.txt} and at
  * least one file in a backup's layout. Anything else is {@link NotABackupException}, and nothing is restored from it -
  * no restore may overwrite a file BindForge could not identify (file-manager.md). An entry outside the layout, or one
  * whose name is a path, is not part of the backup and is skipped. A Linux installation's own {@code Bindings\} is
@@ -57,7 +58,10 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
     /** {@code Installations\1-STEAM: STEAM, D:\SteamLibrary}, either separator - the platform's when it was taken. */
     private static final Pattern INSTALLATION_LINE =
             Pattern.compile(Backups.INSTALLATIONS + "[\\\\/](\\d+-[^:]+): ([^,]+), (.+)");
-    private static final Pattern INSTALLATION_FOLDER = Pattern.compile("(\\d+)-(.+)");
+    /** Bounded, so the number always fits - one of ours is never past a handful (review, 2026-10-25). */
+    private static final Pattern INSTALLATION_FOLDER = Pattern.compile("(\\d{1,9})-(.+)");
+    /** Characters Windows refuses in a file name - a name holding one is not one Elite-Intel wrote. */
+    private static final String NOT_IN_A_NAME = "<>:\"|?*\\";
 
     public BackupContents {
         Objects.requireNonNull(zip, "zip");
@@ -79,11 +83,16 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
      * @throws IOException         if it cannot be read
      */
     public static BackupContents read(Path zip) throws IOException {
+        return read(zip, MAX_BYTES);
+    }
+
+    /** As {@link #read(Path)}, refusing a zip holding more than {@code maxBytes} once unpacked. */
+    static BackupContents read(Path zip, long maxBytes) throws IOException {
         if (!Files.isRegularFile(zip)) throw new NotABackupException(zip, "not a file");
         try (ZipFile file = new ZipFile(zip.toFile(), StandardCharsets.UTF_8)) {
             ZipEntry infoEntry = file.getEntry(Backups.INFO_FILE);
             if (infoEntry == null) throw new NotABackupException(zip, Backups.INFO_FILE + " is missing");
-            Budget budget = new Budget(zip);
+            Budget budget = new Budget(zip, maxBytes);
             String info = new String(bytesOf(file, infoEntry, budget), StandardCharsets.UTF_8);
 
             Map<String, byte[]> bindings = new TreeMap<>();
@@ -142,14 +151,20 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
     }
 
     private static boolean isInstallationFolder(String[] parts) {
-        return parts[0].equals(Backups.INSTALLATIONS) && INSTALLATION_FOLDER.matcher(parts[1]).matches();
+        return parts[0].equals(Backups.INSTALLATIONS) && plain(parts[1])
+                && INSTALLATION_FOLDER.matcher(parts[1]).matches();
     }
 
     // WHY: a name is written into a game folder, so one that is a path - "..", "C:x", a backslash - would write outside
-    // it. Never one Elite-Intel wrote; skipped rather than trusted.
+    // it, and one Windows refuses would throw rather than be skipped (review, 2026-10-25). Never one Elite-Intel
+    // wrote; skipped rather than trusted.
     private static boolean plain(String name) {
-        return !name.isBlank() && !name.equals(".") && !name.equals("..") && name.indexOf('\\') < 0
-                && name.indexOf(':') < 0;
+        if (name.isBlank() || name.equals(".") || name.equals("..")) return false;
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (c < ' ' || NOT_IN_A_NAME.indexOf(c) >= 0) return false;
+        }
+        return true;
     }
 
     // ---- what backup-info.txt says
@@ -178,9 +193,18 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
             if (!name.matches()) return;
             String[] label = recorded.getOrDefault(folder, new String[]{name.group(2), folder});
             installations.add(new InstallationFiles(Long.parseLong(name.group(1)), label[0].trim(),
-                    Path.of(label[1].trim()), files.deviceMappings, files.buttonMaps));
+                    folderOf(label[1].trim(), folder), files.deviceMappings, files.buttonMaps));
         });
         return installations;
+    }
+
+    /** The folder recorded for an installation - a label for a person - or its name in the zip when that is no path. */
+    private static Path folderOf(String recorded, String inZip) {
+        try {
+            return Path.of(recorded);
+        } catch (InvalidPathException e) {
+            return Path.of(inZip);
+        }
     }
 
     private static int byNumber(String a, String b) {
@@ -190,11 +214,7 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
 
     private static long numberOf(String folder) {
         Matcher name = INSTALLATION_FOLDER.matcher(folder);
-        try {
-            return name.matches() ? Long.parseLong(name.group(1)) : Long.MAX_VALUE;
-        } catch (NumberFormatException e) {
-            return Long.MAX_VALUE;
-        }
+        return name.matches() ? Long.parseLong(name.group(1)) : Long.MAX_VALUE;
     }
 
     // ---- reading
@@ -210,10 +230,11 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
     /** What is left of {@link #MAX_BYTES} - counted as read, never from the sizes the zip claims. */
     private static final class Budget {
         private final Path zip;
-        private long left = MAX_BYTES;
+        private long left;
 
-        Budget(Path zip) {
+        Budget(Path zip, long maxBytes) {
             this.zip = zip;
+            this.left = maxBytes;
         }
 
         long left() {

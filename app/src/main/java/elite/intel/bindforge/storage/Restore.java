@@ -7,8 +7,10 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 /**
@@ -20,7 +22,7 @@ import java.util.function.Supplier;
  * In two steps, so nothing is written until the user confirms: {@link #prepare} reads and checks, and {@link #write}
  * backs up what is there now (before RESTORE) and writes through {@link WritePath}, the one write path.
  * <p>
- * <strong>Refused before anything is backed up or written</strong> (Alan, 2026-10-26): with no bindings folder - it is
+ * <strong>Refused before anything is backed up or written</strong> (Alan, 2026-10-25): with no bindings folder - it is
  * never created, and half a restore would follow; and a backup missing a half - no binds or preset file, or no device
  * files while this machine has installations - which would leave the working copy without binds, or remove every
  * {@code .buttonMap} the user has.
@@ -57,17 +59,34 @@ public final class Restore {
     }
 
     /**
+     * One installation on this machine now, as RESTORE's confirmation names it.
+     *
+     * @param installation the installation
+     * @param found        whether its folder was there when the restore was prepared - decided off the EDT, so the
+     *                     confirmation only formats it (review, 2026-10-25)
+     */
+    public record Target(BackupSources.Installation installation, boolean found) {
+        public Target {
+            Objects.requireNonNull(installation, "installation");
+        }
+    }
+
+    /**
      * What a restore will do, read and checked, and nothing written yet.
      *
-     * @param contents what the backup holds
-     * @param places   the bindings folder and every installation on this machine now - what its confirmation names
-     * @param reading  the backup's installations, compared as first-time startup compares them - the reconcile's input
-     *                 when they differ
+     * @param contents       what the backup holds
+     * @param bindingsFolder the bindings folder it goes to
+     * @param targets        every installation on this machine now - what its confirmation names. The write finds
+     *                       them again ({@link WritePath}), a moment later
+     * @param reading        the backup's installations, compared as first-time startup compares them - the
+     *                       reconcile's input when they differ
      */
-    public record Prepared(BackupContents contents, BackupSources places, FirstSetupReading reading) {
+    public record Prepared(BackupContents contents, Path bindingsFolder, List<Target> targets,
+                           FirstSetupReading reading) {
         public Prepared {
             Objects.requireNonNull(contents, "contents");
-            Objects.requireNonNull(places, "places");
+            Objects.requireNonNull(bindingsFolder, "bindingsFolder");
+            targets = List.copyOf(targets);
             Objects.requireNonNull(reading, "reading");
         }
 
@@ -88,13 +107,13 @@ public final class Restore {
     /**
      * What a restore did.
      *
-     * @param report each place, as the write path reports it
-     * @param backup the before-RESTORE backup of what was there
+     * @param written         the write and the before-RESTORE backup
+     * @param setUpAskedAgain whether first-time startup could not be marked complete, so the next click on the BindForge
+     *                        tab offers it again - the user is told (review, 2026-10-25)
      */
-    public record Written(WriteReport report, Backup backup) {
-        public Written {
-            Objects.requireNonNull(report, "report");
-            Objects.requireNonNull(backup, "backup");
+    public record Restored(Written written, boolean setUpAskedAgain) {
+        public Restored {
+            Objects.requireNonNull(written, "written");
         }
     }
 
@@ -144,37 +163,50 @@ public final class Restore {
         FirstSetupReading reading = FirstSetupReading.of(now.bindingsFolder(), contents.bindings(),
                 contents.installations(), List.of(), FrontierStockDevices.getInstance(),
                 FrontierStockButtonMaps.getInstance());
-        return new Prepared(contents, now, reading);
+        List<Target> targets = now.installations().stream()
+                .map(installation -> new Target(installation,
+                        !installation.missing() && Files.isDirectory(installation.controlSchemes())))
+                .toList();
+        return new Prepared(contents, now.bindingsFolder(), targets, reading);
     }
 
     /**
      * Backs up what is there now, then writes {@code files} - the backup's, or the set the user reconciled - as the
-     * working copy and to every live copy. Marks first-time startup complete if it was not: RESTORE leaves the working
-     * copy and the live copies matching, as first-time startup does (Alan, 2026-10-26).
+     * working copy and to every live copy. The write finds the installations itself ({@link WritePath}), so what it
+     * writes is what it backs up; the confirmation's list was found a moment before. Marks first-time startup complete
+     * if it was not: RESTORE leaves the working copy and the live copies matching, as first-time startup does (Alan,
+     * 2026-10-25).
      *
+     * @param from  the backup restored, for the log
+     * @param files the set to write
      * @throws IOException if the backup cannot be taken, or the working copy cannot be saved - nothing was written
      */
-    public Written write(Prepared prepared, ConfigurationFiles files) throws IOException {
-        Backup[] taken = new Backup[1];
+    public Restored write(BackupContents from, ConfigurationFiles files) throws IOException {
+        AtomicReference<Backup> taken = new AtomicReference<>();
         WriteReport report = writer.write(files, sources -> {
-            taken[0] = beforeRestore.take(sources);
-            return taken[0];
+            Backup backup = beforeRestore.take(sources);
+            taken.set(backup);
+            return backup;
         });
-        markFirstTimeStartupComplete();
+        boolean askedAgain = !markFirstTimeStartupComplete();
         log.info("Restored {} ({}): {} binds and preset files, {}, {} button maps; installations updated {} of {}",
-                prepared.contents().zip(), prepared.contents().taken(), files.bindings().size(),
+                from.zip(), from.taken(), files.bindings().size(),
                 files.hasDeviceMappings() ? "a DeviceMappings.xml" : "no DeviceMappings.xml",
                 files.buttonMaps().size(), report.installationsUpdated(), report.installations().size());
-        return new Written(report, taken[0]);
+        return new Restored(new Written(report, taken.get()), askedAgain);
     }
 
-    private void markFirstTimeStartupComplete() {
+    /** @return whether first-time startup is complete afterwards */
+    private boolean markFirstTimeStartupComplete() {
         try {
             if (!flag.complete()) flag.markComplete();
+            return true;
         } catch (RuntimeException e) {
-            // WHY: the restore itself is done and must be reported as done. Unset, the next click runs first-time
-            // startup over the restored files, which now match the working copy - nothing is lost.
+            // WHY: the restore itself is done and is reported as done, with one line saying first-time startup will be
+            // offered again at the next click. It would then run over the restored files and take its kept-forever
+            // backup of files BindForge already wrote - the case rule 10 sets the flag to avoid, now told, not hidden.
             log.error("The restore is written, but first-time startup could not be marked complete", e);
+            return false;
         }
     }
 }

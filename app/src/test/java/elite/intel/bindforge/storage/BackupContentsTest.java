@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Reading a whole backup zip for RESTORE (storage.md rule 10; file-manager.md, <em>Browse for Backup File</em>): every
  * file in a backup's layout, each installation labelled as {@code backup-info.txt} records it, and only a zip
- * Elite-Intel made (Alan, 2026-10-26).
+ * Elite-Intel made (Alan, 2026-10-25).
  */
 class BackupContentsTest {
 
@@ -42,11 +42,11 @@ class BackupContentsTest {
                 new BackupSources.Installation("EPIC", epic, false, bindings)));
         Path root = temp.resolve("backups");
         Backup backup = new Backups(() -> sources, () -> root,
-                Clock.fixed(Instant.parse("2026-10-26T09:00:00Z"), ZoneOffset.UTC)).backUpEverything(Backups.Kind.USER);
+                Clock.fixed(Instant.parse("2026-10-25T09:00:00Z"), ZoneOffset.UTC)).backUpEverything(Backups.Kind.USER);
 
         BackupContents contents = BackupContents.read(backup.zip());
 
-        assertEquals("2026-10-26 09:00:00", contents.taken());
+        assertEquals("2026-10-25 09:00:00", contents.taken());
         assertEquals(List.of("Custom.4.2.binds", "StartPreset.4.start"), List.copyOf(contents.bindings().keySet()));
         assertEquals("<Custom/>", text(contents.bindings().get("Custom.4.2.binds")));
         assertEquals(2, contents.installations().size());
@@ -65,7 +65,7 @@ class BackupContentsTest {
     @Test
     void anEntryOutsideTheLayoutIsSkipped() throws IOException {
         Map<String, String> entries = new LinkedHashMap<>();
-        entries.put(Backups.INFO_FILE, "Taken: 2026-10-26 09:00:00\n");
+        entries.put(Backups.INFO_FILE, "Taken: 2026-10-25 09:00:00\n");
         entries.put("Bindings/Custom.4.2.binds", "<Custom/>");
         entries.put("Bindings/Custom.4.2.binds.backup", "not one of the files");
         entries.put("Bindings/..\\evil.4.2.binds", "a path");
@@ -84,7 +84,43 @@ class BackupContentsTest {
         InstallationFiles steam = contents.installations().getFirst();
         assertEquals("STEAM", steam.storefront(), "from the folder name when backup-info.txt records none");
         assertTrue(steam.buttonMaps().isEmpty());
-        assertEquals("2026-10-26 09:00:00", contents.taken());
+        assertEquals("2026-10-25 09:00:00", contents.taken());
+    }
+
+    /**
+     * Review, 2026-10-25: names Windows refuses, a folder number past any number, and a recorded folder that is no path
+     * are skipped or fall back - never an unexpected error from a hand-made zip.
+     */
+    @Test
+    void namesThatAreNoFileNameAreSkippedNotThrown() throws IOException {
+        Map<String, String> entries = new LinkedHashMap<>();
+        entries.put(Backups.INFO_FILE, "Taken: x\nInstallations\\1-STEAM: STEAM, D:\\bad|folder?\n");
+        entries.put("Bindings/Custom.4.2.binds", "<Custom/>");
+        entries.put("Bindings/Bad<name>.4.2.binds", "refused by Windows");
+        entries.put("Bindings/Bad\"q\".4.2.binds", "refused by Windows");
+        entries.put("Bindings/Star*.4.2.binds", "refused by Windows");
+        entries.put("Installations/1-STEAM/ControlSchemes/DeviceMappings.xml", "<Steam/>");
+        entries.put("Installations/1-STEAM/ControlSchemes/DeviceButtonMaps/Pipe|.buttonMap", "refused by Windows");
+        entries.put("Installations/99999999999999999999-HUGE/ControlSchemes/DeviceMappings.xml", "<Huge/>");
+        entries.put("Installations/2-A?B/ControlSchemes/DeviceMappings.xml", "<Odd/>");
+
+        BackupContents contents = BackupContents.read(zip("odd-names.zip", entries));
+
+        assertEquals(List.of("Custom.4.2.binds"), List.copyOf(contents.bindings().keySet()));
+        assertEquals(1, contents.installations().size(), "the huge number and the odd folder are skipped");
+        InstallationFiles steam = contents.installations().getFirst();
+        assertTrue(steam.buttonMaps().isEmpty());
+        assertNotNull(steam.root(), "a recorded folder that is no path falls back to the zip's own name");
+    }
+
+    /** Review, 2026-10-25: a zip that unpacks to more than a backup can hold is refused, not read into memory. */
+    @Test
+    void aZipPastTheSizeLimitIsNotABackup() throws IOException {
+        Path zip = zip("big.zip", Map.of(Backups.INFO_FILE, "Taken: x\n", "Bindings/Custom.4.2.binds",
+                "x".repeat(2000)));
+
+        assertThrows(BackupContents.NotABackupException.class, () -> BackupContents.read(zip, 1000));
+        assertEquals(1, BackupContents.read(zip, 10_000).bindings().size(), "within the limit it is read");
     }
 
     @Test
@@ -104,7 +140,7 @@ class BackupContentsTest {
 
     @Test
     void aZipWithBackupInfoAndNoFileIsNotABackup() throws IOException {
-        Path zip = zip("empty.zip", Map.of(Backups.INFO_FILE, "Taken: 2026-10-26 09:00:00\n"));
+        Path zip = zip("empty.zip", Map.of(Backups.INFO_FILE, "Taken: 2026-10-25 09:00:00\n"));
 
         assertThrows(BackupContents.NotABackupException.class, () -> BackupContents.read(zip));
     }

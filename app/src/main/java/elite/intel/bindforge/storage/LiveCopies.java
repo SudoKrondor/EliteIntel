@@ -27,8 +27,9 @@ import java.util.stream.Stream;
  *     nothing new for an installation writes nothing there.</li>
  *     <li><strong>A {@code .buttonMap} the set lacks is removed</strong>, except Frontier's shipped ones
  *     ({@link FrontierStockButtonMaps#shipsMapFor}).</li>
- *     <li><strong>A read-only file stays read-only</strong> - the flag is cleared for the write and set again
- *     (storage.md rule 10, 2026-10-26). A read-only {@code .buttonMap} the set lacks is not removed, and is reported.</li>
+ *     <li><strong>A read-only file stays read-only</strong> - Windows' flag, or the owner's write permission elsewhere
+ *     ({@link ReadOnlyFlag}) - cleared for the write and set again (storage.md rule 10, 2026-10-25). On Windows a
+ *     read-only {@code .buttonMap} the set lacks cannot be removed, and is reported with what to do.</li>
  *     <li><strong>Everything it can</strong>: a file or an installation that cannot be written is reported, the rest
  *     are still written, and nothing is rolled back.</li>
  * </ul>
@@ -40,6 +41,9 @@ final class LiveCopies {
     private static final Logger log = LogManager.getLogger(LiveCopies.class);
 
     static final String FOLDER_NOT_FOUND = "folder not found";
+    /** A {@code .buttonMap} the set lacks that the user made read-only - English, like every failure line. */
+    static final String READ_ONLY_NOT_REMOVED =
+            "not removed because it is read-only - clear its read-only flag, and the next write removes it";
 
     private final BackupSources sources;
 
@@ -109,9 +113,10 @@ final class LiveCopies {
                 fail(target, e);
                 return;
             }
-            // WHY: players set the read-only flag to stop the game resetting a binds file, and a file with it cannot
-            // be replaced. The write is the user asking, so the flag is cleared, the file written, and the flag set
-            // again - the live file's flag as it is now (storage.md rule 10; Alan, 2026-10-26).
+            // WHY: players protect a binds file to stop the game resetting it, and on Windows a file with the flag cannot
+            // be replaced; on Linux the new file would come back writable. The write is the user asking, so the
+            // protection is lifted, the file written, and the protection put back - the live file's as it is now
+            // (storage.md rule 10; Alan, 2026-10-25).
             boolean readOnly;
             try {
                 readOnly = ReadOnlyFlag.isSet(target);
@@ -155,7 +160,14 @@ final class LiveCopies {
                     Files.delete(file);
                     removed.add(name);
                 } catch (IOException e) {
-                    fail(file, e);
+                    if (isReadOnly(file)) {
+                        // WHY: the user protected it, so it is not removed against that - they are told how to let it
+                        // go, rather than shown the system's "access denied" (principle 9; review, 2026-10-25).
+                        failures.add(name + ": " + READ_ONLY_NOT_REMOVED);
+                        log.warn("Did not remove {}: it is read-only", file, e);
+                    } else {
+                        fail(file, e);
+                    }
                 }
             }
         }
@@ -170,6 +182,14 @@ final class LiveCopies {
                 if (Files.exists(keptFile) && Files.isSameFile(file, keptFile)) return true;
             }
             return false;
+        }
+
+        private static boolean isReadOnly(Path file) {
+            try {
+                return ReadOnlyFlag.isSet(file);
+            } catch (IOException e) {
+                return false;
+            }
         }
 
         void fail(Path file, IOException e) {

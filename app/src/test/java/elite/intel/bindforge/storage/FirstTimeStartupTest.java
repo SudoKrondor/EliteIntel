@@ -114,7 +114,7 @@ class FirstTimeStartupTest {
     void aWriteBacksUpFirstThenSetsTheFlagAndSaysSoOnce() throws IOException {
         FirstTimeStartup startup = startup(temp.resolve("Bindings"), writerThatWrites());
 
-        FirstTimeStartup.Written written = startup.write(files());
+        Written written = startup.write(files());
 
         assertEquals(List.of("backup", "write"), steps);
         assertTrue(flag.complete);

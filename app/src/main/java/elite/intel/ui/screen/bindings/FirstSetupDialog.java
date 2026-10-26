@@ -45,7 +45,7 @@ import static elite.intel.ui.theme.AppTheme.transparentPanel;
  * working copy to write; the caller writes it.
  * <p>
  * RESTORE reconciles a backup's installations the same way (storage.md rule 10), in its own {@link Wording}: there the
- * summary is RESTORE's one confirmation (Alan, 2026-10-26).
+ * summary is RESTORE's one confirmation (Alan, 2026-10-25).
  */
 final class FirstSetupDialog extends JDialog {
 

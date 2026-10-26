@@ -44,7 +44,7 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
  * go. Retention looks after daily and before-changes backups, and first setup's is kept forever.
  * <p>
  * <strong>RESTORE</strong> puts the whole selected backup back, and <strong>Browse for Backup File</strong> one that is
- * not in the list ({@link RestoreFlow}; storage.md rule 10, Storage S3, 2026-10-26). They replaced Restore to Editing
+ * not in the list ({@link RestoreFlow}; storage.md rule 10, Storage S3, 2026-10-25). They replaced Restore to Editing
  * Slot and Restore to Live, which restored one binds file.
  */
 public class BindingManagementPanel extends JPanel {

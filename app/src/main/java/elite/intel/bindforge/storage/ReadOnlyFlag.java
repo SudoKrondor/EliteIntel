@@ -5,37 +5,58 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.DosFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.Locale;
+import java.util.Set;
 
 /**
- * Windows' read-only flag on a live file - which players set to stop the game resetting a binds file (file-manager.md,
- * <em>The read-only flag</em>). Where the file system has no such flag, a file never has it.
+ * Whether a live file is protected from being written - which players do to stop the game resetting a binds file
+ * (file-manager.md, <em>The read-only flag</em>):
+ * <ul>
+ *     <li><strong>on Windows</strong>, the read-only flag;</li>
+ *     <li><strong>elsewhere</strong> - Linux, where the game runs under Proton - the owner's write permission, which is
+ *     what Wine shows as read-only (Alan, 2026-10-25, from the S3 review).</li>
+ * </ul>
+ * Where the file system has neither, a file is never protected.
  */
 final class ReadOnlyFlag {
+
+    /**
+     * Decided by the system, not by which views the file store offers: on Linux the JDK offers a "dos" view wherever
+     * extended attributes are enabled, emulated in an attribute nothing else reads (review, 2026-10-25).
+     */
+    private static final boolean WINDOWS = System.getProperty("os.name", "").toLowerCase(Locale.ROOT).startsWith("windows");
 
     private ReadOnlyFlag() {
     }
 
-    /** Whether {@code file} is there and carries the flag. */
+    /** Whether {@code file} is there and protected. */
     static boolean isSet(Path file) throws IOException {
-        DosFileAttributeView view = viewOf(file);
-        return view != null && Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)
-                && view.readAttributes().isReadOnly();
-    }
-
-    /** Sets or clears the flag; nothing where the file system has none. */
-    static void set(Path file, boolean readOnly) throws IOException {
-        DosFileAttributeView view = viewOf(file);
-        if (view != null) view.setReadOnly(readOnly);
-    }
-
-    private static DosFileAttributeView viewOf(Path file) {
-        // WHY: only where the store really keeps DOS attributes. On Linux the view can exist and be emulated, which
-        // is not the flag a Windows player sets.
-        try {
-            if (!Files.getFileStore(file.getParent()).supportsFileAttributeView("dos")) return null;
-        } catch (IOException e) {
-            return null;
+        if (!Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) return false;
+        if (WINDOWS) {
+            DosFileAttributeView dos = Files.getFileAttributeView(file, DosFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+            return dos != null && dos.readAttributes().isReadOnly();
         }
-        return Files.getFileAttributeView(file, DosFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+        PosixFileAttributeView posix = Files.getFileAttributeView(file, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+        return posix != null && !posix.readAttributes().permissions().contains(PosixFilePermission.OWNER_WRITE);
+    }
+
+    /** Protects {@code file}, or lifts the protection; nothing where the file system has none. */
+    static void set(Path file, boolean readOnly) throws IOException {
+        if (WINDOWS) {
+            DosFileAttributeView dos = Files.getFileAttributeView(file, DosFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+            if (dos != null) dos.setReadOnly(readOnly);
+            return;
+        }
+        PosixFileAttributeView posix = Files.getFileAttributeView(file, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+        if (posix == null) return;
+        Set<PosixFilePermission> permissions = posix.readAttributes().permissions();
+        if (readOnly) {
+            permissions.remove(PosixFilePermission.OWNER_WRITE);
+        } else {
+            permissions.add(PosixFilePermission.OWNER_WRITE);
+        }
+        posix.setPermissions(permissions);
     }
 }

@@ -10,6 +10,7 @@ import elite.intel.bindforge.storage.FirstSetupReading;
 import elite.intel.bindforge.storage.FirstTimeStartup;
 import elite.intel.bindforge.storage.WorkingCopy;
 import elite.intel.bindforge.storage.WriteReport;
+import elite.intel.bindforge.storage.Written;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.dialog.HudConfirmDialog;
@@ -50,13 +51,13 @@ public final class FirstTimeStartupFlow {
 
     /**
      * Offers first-time startup if its flag is not set; once it is, reads the working copy, and offers the newest backup
-     * when it cannot be read (storage.md rule 10; Alan, 2026-10-26). On the EDT.
+     * when it cannot be read (storage.md rule 10; Alan, 2026-10-25). On the EDT.
      */
     public void offerIfNeeded() {
         if (!running.compareAndSet(false, true)) return;
         background("BindForge-FirstTimeStartup", () -> {
             FirstTimeStartup startup = FirstTimeStartup.stored();
-            if (!startup.needed()) return workingCopyCheck();
+            if (!startup.needed()) return workingCopyCheck(startup);
             List<InstallationRow> rows = startup.installations();
             return () -> showList(startup, rows);
         });
@@ -97,10 +98,12 @@ public final class FirstTimeStartupFlow {
     }
 
     /**
-     * Nothing to do when the working copy reads; otherwise the step that says so and offers the newest backup. A
-     * working copy that is missing while first-time startup is complete counts as one that cannot be read.
+     * Nothing to do when the working copy reads; otherwise the step that says so and offers the newest backup - or,
+     * with no backup at all, first-time startup again from the live files (Alan, 2026-10-25, from the S3 review), the
+     * one way out once Run first-time startup again is gone. A working copy that is missing while first-time startup is
+     * complete counts as one that cannot be read.
      */
-    private Runnable workingCopyCheck() {
+    private Runnable workingCopyCheck(FirstTimeStartup startup) {
         try {
             WorkingCopy.stored().read();
             return null;
@@ -109,8 +112,26 @@ public final class FirstTimeStartupFlow {
             String why = e instanceof NoSuchFileException ? getText("bindings.restore.unreadable.missing")
                     : StringUtls.messageOf(e);
             Backup newest = newestBackup();
+            if (newest == null) return () -> offerSetUpAgain(startup, why);
             return () -> new RestoreFlow(parent).offerNewest(why, newest, this::finish);
         }
+    }
+
+    /** No backup to restore the working copy from: first-time startup again, from the live files, if the user agrees. */
+    private void offerSetUpAgain(FirstTimeStartup startup, String why) {
+        if (!HudConfirmDialog.confirm(parent, getText("bindings.restore.title"),
+                getText("bindings.restore.unreadable.noBackup", why),
+                getText("bindings.restore.unreadable.setUpAgain"), getText("bindings.restore.notNow"))) {
+            finish();
+            return;
+        }
+        background("BindForge-FirstTimeStartupAgain", () -> {
+            // WHY: the flag is cleared first, so abandoning the list below leaves first-time startup offered at the next
+            // click - as for any first-time startup not finished.
+            startup.runAgain();
+            List<InstallationRow> rows = startup.installations();
+            return () -> showList(startup, rows);
+        });
     }
 
     /** The newest backup of any kind, or {@code null} when there is none or the backup folder cannot be listed. */
@@ -148,7 +169,7 @@ public final class FirstTimeStartupFlow {
         background("BindForge-FirstTimeStartupWrite", () -> {
             String message;
             try {
-                FirstTimeStartup.Written written = startup.write(chosen.files());
+                Written written = startup.write(chosen.files());
                 message = writtenText(written, chosen.moved());
             } catch (Backups.NothingToBackUpException e) {
                 log.warn("First-time startup wrote nothing: there was nothing to back up");
@@ -164,7 +185,7 @@ public final class FirstTimeStartupFlow {
     }
 
     /** The report, per place: <em>"updated 2 of 2"</em>, or which one failed and why (alias-designer.md, step 5). */
-    private static String writtenText(FirstTimeStartup.Written written, int moved) {
+    private static String writtenText(Written written, int moved) {
         WriteReport report = written.report();
         StringBuilder text = new StringBuilder(getText("bindings.firstTimeStartup.result.written",
                 written.backup().zip().toString(), report.installationsUpdated(), report.installations().size()));
