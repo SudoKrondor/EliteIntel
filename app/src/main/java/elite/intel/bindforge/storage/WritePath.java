@@ -84,8 +84,8 @@ public final class WritePath {
                         + "updated {} of {}", backup.zip(), report.bindings().updated() ? "updated" : "not updated",
                 report.installationsUpdated(), report.installations().size());
         for (WriteReport.Place place : report.installations()) {
-            if (!place.updated()) log.warn("Installation {} ({}) was not fully updated: {}", place.storefront(), place.folder(),
-                    String.join("; ", place.failures()));
+            if (!place.updated()) log.warn("Installation {} ({}) was not fully updated: {}; kept as read-only: {}",
+                    place.storefront(), place.folder(), String.join("; ", place.failures()), place.keptReadOnly());
         }
         if (!report.bindings().updated()) {
             log.warn("The bindings folder ({}) was not fully updated: {}", report.bindings().folder(),

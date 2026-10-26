@@ -33,13 +33,16 @@ public record WriteReport(Place bindings, List<Place> installations) {
      *                   folder
      * @param folder     the bindings folder, or the installation's root
      * @param written    the files written, by name - a file that already held the same bytes is not
-     * @param removed    the {@code .buttonMap}s removed, by name
-     * @param failures   what could not be done, one line each - English, for the log and for support, built from the
-     *                   system's own messages. A screen says that a place was not updated in its own words, and may
-     *                   show these lines as the detail
+     * @param removed      the {@code .buttonMap}s removed, by name
+     * @param keptReadOnly the {@code .buttonMap}s the set lacks that were kept because the user made them read-only,
+     *                     by name - the screen tells the user how to let them go, in their language (review,
+     *                     2026-10-25)
+     * @param failures     what could not be done, one line each - English, for the log and for support, built from the
+     *                     system's own messages. A screen says that a place was not updated in its own words, and may
+     *                     show these lines as the detail
      */
     public record Place(Kind kind, String storefront, Path folder, List<String> written, List<String> removed,
-                        List<String> failures) {
+                        List<String> keptReadOnly, List<String> failures) {
         public Place {
             Objects.requireNonNull(kind, "kind");
             Objects.requireNonNull(folder, "folder");
@@ -48,12 +51,13 @@ public record WriteReport(Place bindings, List<Place> installations) {
             }
             written = List.copyOf(written);
             removed = List.copyOf(removed);
+            keptReadOnly = List.copyOf(keptReadOnly);
             failures = List.copyOf(failures);
         }
 
-        /** Whether everything for this place was done. */
+        /** Whether everything for this place was done - a kept read-only file means it does not match the set. */
         public boolean updated() {
-            return failures.isEmpty();
+            return failures.isEmpty() && keptReadOnly.isEmpty();
         }
     }
 

@@ -28,8 +28,8 @@ import java.util.stream.Stream;
  *     <li><strong>A {@code .buttonMap} the set lacks is removed</strong>, except Frontier's shipped ones
  *     ({@link FrontierStockButtonMaps#shipsMapFor}).</li>
  *     <li><strong>A read-only file stays read-only</strong> - Windows' flag, or the owner's write permission elsewhere
- *     ({@link ReadOnlyFlag}) - cleared for the write and set again (storage.md rule 10, 2026-10-25). On Windows a
- *     read-only {@code .buttonMap} the set lacks cannot be removed, and is reported with what to do.</li>
+ *     ({@link ReadOnlyFlag}) - cleared for the write and set again (storage.md rule 10, 2026-10-25). A read-only
+ *     {@code .buttonMap} the set lacks is kept, on every system, and reported with what to do.</li>
  *     <li><strong>Everything it can</strong>: a file or an installation that cannot be written is reported, the rest
  *     are still written, and nothing is rolled back.</li>
  * </ul>
@@ -41,9 +41,6 @@ final class LiveCopies {
     private static final Logger log = LogManager.getLogger(LiveCopies.class);
 
     static final String FOLDER_NOT_FOUND = "folder not found";
-    /** A {@code .buttonMap} the set lacks that the user made read-only - English, like every failure line. */
-    static final String READ_ONLY_NOT_REMOVED =
-            "not removed because it is read-only - clear its read-only flag, and the next write removes it";
 
     private final BackupSources sources;
 
@@ -100,6 +97,7 @@ final class LiveCopies {
     private static final class Writing {
         final List<String> written = new ArrayList<>();
         final List<String> removed = new ArrayList<>();
+        final List<String> keptReadOnly = new ArrayList<>();
         final List<String> failures = new ArrayList<>();
 
         void writeAll(Path folder, Map<String, byte[]> files) {
@@ -156,18 +154,19 @@ final class LiveCopies {
                 String name = file.getFileName().toString();
                 if (kept.containsKey(name) || isOneKept(file, folder, kept)) continue;
                 if (FrontierStockButtonMaps.shipsMapFor(deviceNameOf(name))) continue;
+                // WHY: the user protected it, so it is not removed against that - asked before deleting, because on
+                // Linux the delete would succeed whatever the file's own permission. They are told how to let it go,
+                // rather than shown the system's "access denied" (principle 9; Alan, 2026-10-25, from the review).
+                if (isReadOnly(file)) {
+                    keptReadOnly.add(name);
+                    log.warn("Did not remove {}: it is read-only", file);
+                    continue;
+                }
                 try {
                     Files.delete(file);
                     removed.add(name);
                 } catch (IOException e) {
-                    if (isReadOnly(file)) {
-                        // WHY: the user protected it, so it is not removed against that - they are told how to let it
-                        // go, rather than shown the system's "access denied" (principle 9; review, 2026-10-25).
-                        failures.add(name + ": " + READ_ONLY_NOT_REMOVED);
-                        log.warn("Did not remove {}: it is read-only", file, e);
-                    } else {
-                        fail(file, e);
-                    }
+                    fail(file, e);
                 }
             }
         }
@@ -198,7 +197,7 @@ final class LiveCopies {
         }
 
         Place place(WriteReport.Kind kind, String storefront, Path folder) {
-            return new Place(kind, storefront, folder, written, removed, failures);
+            return new Place(kind, storefront, folder, written, removed, keptReadOnly, failures);
         }
     }
 

@@ -134,6 +134,15 @@ to a hardware ID (after S4); A18 and E7 stay blocked on [testing item 27](../00-
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the next
 slice needs.*
 
+- **2026-10-25 — S3 second review follow-up** (`code-integrity-review.md`, Alan: all four recommendations).
+  **Decided:** a read-only `.buttonMap` the set lacks is kept on every system, asked before deleting, and worded from a
+  bundle key (`WriteReport.Place.keptReadOnly`, `bindings.firstTimeStartup.result.keptReadOnly`); a protected Linux file
+  another user owns is accepted as not written, and reported - both in storage.md rule 10. **Fixed:** a zip entry
+  ending in a space or dot is skipped; the read-only tests check through `Files.isWritable`, not `ReadOnlyFlag`;
+  `FirstTimeStartupFlow` logs a `RuntimeException` as an error and says it stopped unexpectedly. **S4 needs:** APPLY's
+  report shows `keptReadOnly` through `FirstTimeStartupFlow.placeFailures` like the others. **Left (Alan):**
+  IntelliJ's "double negation" warning on `WriteReport.Place`'s storefront check (from S2a) - correct as it is; tidy it
+  into two named booleans when S4 is in that file.
 - **2026-10-25 — S3 review follow-up** (`code-integrity-review.md`, Alan: all four recommendations). **Decided:** with
   the working copy unreadable and no backup, first-time startup is offered from the live files (Set Up Again); on Linux
   the owner's write permission is kept like Windows' read-only flag, Windows decided by `os.name` - recorded in storage.md

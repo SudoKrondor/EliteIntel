@@ -163,7 +163,7 @@ class FirstTimeStartupTest {
             backUp.take(new BackupSources(temp.resolve("Bindings"), List.of()));
             steps.add("write");
             WriteReport.Place bindings = new WriteReport.Place(WriteReport.Kind.BINDINGS_FOLDER, null,
-                    temp.resolve("Bindings"), List.of(), List.of(), List.of());
+                    temp.resolve("Bindings"), List.of(), List.of(), List.of(), List.of());
             return new WriteReport(bindings, List.of());
         };
     }

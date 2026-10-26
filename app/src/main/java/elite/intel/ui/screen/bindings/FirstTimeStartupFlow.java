@@ -86,11 +86,16 @@ public final class FirstTimeStartupFlow {
                                 row.rootPath()))
                         .collect(Collectors.joining(", "));
                 return () -> tell(getText("bindings.firstTimeStartup.noneReachable", which));
-            } catch (IOException | RuntimeException e) {
-                // WHY: broad on purpose - a thread boundary. A file that is there but cannot be read stops first-time
-                // startup, and is named: it could hold the one entry the working copy must not lose.
+            } catch (IOException e) {
+                // WHY: a file that is there but cannot be read stops first-time startup, and is named: it could hold the
+                // one entry the working copy must not lose.
                 log.warn("First-time startup could not read the files", e);
                 return () -> tell(getText("bindings.aliasDesigner.firstSetup.readFailed", StringUtls.messageOf(e)));
+            } catch (RuntimeException e) {
+                // WHY: broad on purpose - a thread boundary. A bug, not an unreadable file, so not blamed on one
+                // (review, 2026-10-25).
+                log.error("First-time startup stopped while reading the files", e);
+                return () -> tell(getText("bindings.firstTimeStartup.stopped", StringUtls.messageOf(e)));
             }
             Map<String, String> names = AliasDesignerReader.labelsFor(startup.installations());
             return () -> reconcile(startup, reading, names);
@@ -206,9 +211,17 @@ public final class FirstTimeStartupFlow {
         }
         for (WriteReport.Place place : report.installations()) {
             if (place.updated()) continue;
-            text.append('\n').append(getText("bindings.firstTimeStartup.result.place",
-                    getText("bindings.firstTimeStartup.place.installation", place.storefront(), place.folder()),
-                    String.join("; ", place.failures())));
+            String name = getText("bindings.firstTimeStartup.place.installation", place.storefront(), place.folder());
+            if (!place.failures().isEmpty()) {
+                text.append('\n').append(getText("bindings.firstTimeStartup.result.place", name,
+                        String.join("; ", place.failures())));
+            }
+            // WHY: worded here, in the user's language - it is the one line that tells them what to do (review,
+            // 2026-10-25). The failure lines are the system's own words, for support.
+            if (!place.keptReadOnly().isEmpty()) {
+                text.append('\n').append(getText("bindings.firstTimeStartup.result.keptReadOnly", name,
+                        String.join(", ", place.keptReadOnly())));
+            }
         }
         if (!report.complete()) text.append('\n').append(getText("bindings.firstTimeStartup.result.nextApply"));
         return text.toString();
@@ -235,12 +248,17 @@ public final class FirstTimeStartupFlow {
             Runnable next;
             try {
                 next = step.run();
-            } catch (IOException | RuntimeException e) {
-                // WHY: broad on purpose - a thread boundary. Escaping, it would leave the flow marked running, and
-                // first-time startup would never be offered again this run.
+            } catch (IOException e) {
                 log.warn("First-time startup stopped", e);
                 String reason = StringUtls.messageOf(e);
                 next = () -> tell(getText("bindings.firstTimeStartup.result.failed", reason));
+            } catch (RuntimeException e) {
+                // WHY: broad on purpose - a thread boundary; escaping, it would leave the flow marked running, and
+                // first-time startup would never be offered again this run. A RuntimeException here is a bug, so it is
+                // logged as one and said to have stopped unexpectedly (review, 2026-10-25).
+                log.error("First-time startup stopped", e);
+                String reason = StringUtls.messageOf(e);
+                next = () -> tell(getText("bindings.firstTimeStartup.stopped", reason));
             }
             Runnable then = next;
             SwingUtilities.invokeLater(() -> {

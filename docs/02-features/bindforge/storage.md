@@ -146,8 +146,10 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
       file with it cannot be replaced, so every write - RESTORE and APPLY alike - clears it, writes, and sets it
       again. The flag is the live file's as it is now; backups do not record it. **On Linux it is the owner's write
       permission**, what Wine shows as read-only, kept the same way - otherwise the new file would come back writable
-      (Alan, 2026-10-25, from the S3 review). On Windows a read-only `.buttonMap` the working copy lacks cannot be
-      removed; it stays, and the report says to clear its flag.
+      (Alan, 2026-10-25, from the S3 review). **A read-only `.buttonMap` the working copy lacks is kept, on every
+      system** - on Linux the delete would succeed - and the report says, in the user's language, to clear its flag
+      (Alan, 2026-10-25, from the second review). *Accepted:* on Linux a protected file another user owns - one made
+      through `sudo` - cannot have its protection lifted, so it is not written, and the report says so.
     - **A backup missing a half is refused, naming what is missing:** one with no binds or preset file, or one with
       no device files while this machine has installations. Put back, it would leave the working copy without binds,
       or remove every `.buttonMap` the user has.

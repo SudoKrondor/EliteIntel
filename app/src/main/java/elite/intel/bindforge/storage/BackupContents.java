@@ -156,10 +156,10 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
     }
 
     // WHY: a name is written into a game folder, so one that is a path - "..", "C:x", a backslash - would write outside
-    // it, and one Windows refuses would throw rather than be skipped (review, 2026-10-25). Never one Elite-Intel
-    // wrote; skipped rather than trusted.
+    // it, and one Windows refuses - a reserved character, or a space or dot at the end - would throw rather than be
+    // skipped (reviews, 2026-10-25). Never one Elite-Intel wrote; skipped rather than trusted.
     private static boolean plain(String name) {
-        if (name.isBlank() || name.equals(".") || name.equals("..")) return false;
+        if (name.isBlank() || name.endsWith(" ") || name.endsWith(".")) return false;
         for (int i = 0; i < name.length(); i++) {
             char c = name.charAt(i);
             if (c < ' ' || NOT_IN_A_NAME.indexOf(c) >= 0) return false;

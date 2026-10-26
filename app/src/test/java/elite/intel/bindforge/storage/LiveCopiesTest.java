@@ -11,7 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -163,7 +162,7 @@ class LiveCopiesTest {
 
         assertTrue(report.bindings().updated(), report.bindings().failures().toString());
         assertEquals("<Custom/>", Files.readString(binds));
-        assertTrue(ReadOnlyFlag.isSet(binds), "the protection is put back");
+        assertFalse(Files.isWritable(binds), "the protection is put back - asked of the file system, not ReadOnlyFlag");
         ReadOnlyFlag.set(binds, false);
     }
 
@@ -177,18 +176,16 @@ class LiveCopiesTest {
         WriteReport report = liveCopies().write(set());
 
         assertFalse(report.bindings().written().contains("Custom.4.2.binds"));
-        assertTrue(ReadOnlyFlag.isSet(binds));
+        assertFalse(Files.isWritable(binds));
         ReadOnlyFlag.set(binds, false);
     }
 
     /**
-     * On Windows a read-only {@code .buttonMap} the set lacks cannot be removed: it stays, and the failure says how to
-     * let it go (review, 2026-10-25).
+     * A read-only {@code .buttonMap} the set lacks is kept on every system - on Linux the delete would succeed - and
+     * reported so the screen can say how to let it go (Alan, 2026-10-25, from the review).
      */
     @Test
-    void aReadOnlyButtonMapTheSetLacksIsKeptAndReportedOnWindows() throws IOException {
-        Assumptions.assumeTrue(System.getProperty("os.name", "").toLowerCase(Locale.ROOT).startsWith("windows"),
-                "only Windows refuses to delete a read-only file");
+    void aReadOnlyButtonMapTheSetLacksIsKeptAndReported() throws IOException {
         Path old = buttonMap(steam, "Old.buttonMap");
         write(old, "<a device the set no longer has/>");
         protect(old);
@@ -196,15 +193,22 @@ class LiveCopiesTest {
         WriteReport report = liveCopies(steam).write(set());
 
         assertTrue(Files.exists(old));
-        assertTrue(report.installations().getFirst().failures().stream()
-                .anyMatch(line -> line.contains(LiveCopies.READ_ONLY_NOT_REMOVED)), report.toString());
+        WriteReport.Place place = report.installations().getFirst();
+        assertEquals(List.of("Old.buttonMap"), place.keptReadOnly());
+        assertTrue(place.failures().isEmpty(), place.failures().toString());
+        assertFalse(place.updated(), "the installation does not match the set");
         ReadOnlyFlag.set(old, false);
     }
 
     /** Protects a file as a player would, or skips the test where the file system cannot. */
     private static void protect(Path file) throws IOException {
+        // WHY: root on Linux writes whatever a file's permission says, so nothing here could be seen.
+        Assumptions.assumeFalse("root".equals(System.getProperty("user.name")), "root writes a protected file anyway");
         ReadOnlyFlag.set(file, true);
         Assumptions.assumeTrue(ReadOnlyFlag.isSet(file), "the file system keeps no read-only flag");
+        // WHY: asked of the file system itself, so a ReadOnlyFlag looking at the wrong attribute fails here rather than
+        // agreeing with itself (review, 2026-10-25).
+        assertFalse(Files.isWritable(file), "ReadOnlyFlag protected the file the way the system sees it");
     }
 
     private LiveCopies liveCopies(Path... installations) {

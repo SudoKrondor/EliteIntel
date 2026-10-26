@@ -99,6 +99,8 @@ class BackupContentsTest {
         entries.put("Bindings/Bad<name>.4.2.binds", "refused by Windows");
         entries.put("Bindings/Bad\"q\".4.2.binds", "refused by Windows");
         entries.put("Bindings/Star*.4.2.binds", "refused by Windows");
+        entries.put("Bindings/Custom.4.2.binds ", "a space at the end, refused by Windows");
+        entries.put("Installations/1-STEAM/ControlSchemes/DeviceButtonMaps/Dot.buttonMap.", "a dot at the end");
         entries.put("Installations/1-STEAM/ControlSchemes/DeviceMappings.xml", "<Steam/>");
         entries.put("Installations/1-STEAM/ControlSchemes/DeviceButtonMaps/Pipe|.buttonMap", "refused by Windows");
         entries.put("Installations/99999999999999999999-HUGE/ControlSchemes/DeviceMappings.xml", "<Huge/>");
