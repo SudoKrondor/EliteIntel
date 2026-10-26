@@ -1,9 +1,10 @@
 package elite.intel.ui.dialog;
 
-import elite.intel.bindforge.devicefiles.ButtonMapLabels;
 import elite.intel.bindforge.devicefiles.SavedDeviceLabels;
 import elite.intel.bindforge.devices.CaptureControllers;
+import elite.intel.bindforge.devices.ControllerCapture;
 import elite.intel.bindforge.devices.DeviceEditorInputs;
+import elite.intel.devices.model.GameAxis;
 import elite.intel.ui.theme.AppTheme;
 
 import javax.swing.*;
@@ -19,9 +20,10 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.HudPalette.*;
 
 /**
- * One controller's page in the Assign Control dialog: its BUTTONS and HATS, each input named the way the
- * Device Editor names it. Clicking an input picks it, for anyone working from the list rather than the hardware;
- * pressing it on the controller does the same through the dialog.
+ * One controller's page in the Assign Control dialog: its BUTTONS, HATS and AXES, each input named the way the
+ * Device Editor names it. Clicking a button or hat picks it, for anyone working from the list rather than the
+ * hardware; pressing it on the controller does the same through the dialog. The AXES page only shows: an axis
+ * cell stands for both of its directions, so a click could not say which one to pick, and moving the axis does.
  * <p>
  * <strong>Colours:</strong> an input the control holds right now, in either slot, sits on blue - the one in the
  * slot being edited also outlined in orange. Otherwise green is free and red is held by another control. An input
@@ -77,24 +79,60 @@ final class ControllerInputsPanel extends JPanel {
         this.controller = controller;
         this.inUse = inUse;
 
-        List<String> buttons = new ArrayList<>();
-        for (int b = 1; b <= controller.buttonCount(); b++) buttons.add(ButtonMapLabels.buttonToken(b));
-        List<String> hats = new ArrayList<>();
-        for (int h = 1; h <= controller.hatCount(); h++) hats.addAll(DeviceEditorInputs.hatTokens(h));
+        List<String> buttons = buttonTokens(controller);
+        List<String> hats = hatTokens(controller);
+        List<String> axes = controller.axes().stream().map(GameAxis::token).toList();
 
         pages = AppTheme.makeCompactTabs();
         pages.addTab(getText("bindings.assign.page.buttons"), page(buttons, labels, onPick));
         pages.addTab(getText("bindings.assign.page.hats"), page(hats, labels, onPick));
+        pages.addTab(getText("bindings.assign.page.axes"), page(axes, labels, null));
         if (hats.isEmpty()) {
             pages.setEnabledAt(1, false);
             pages.setToolTipTextAt(1, getText("bindings.assign.page.hats.none"));
         }
+        if (axes.isEmpty()) pages.setEnabledAt(2, false);
         add(pages, BorderLayout.CENTER);
         refresh();
     }
 
+    static List<String> buttonTokens(CaptureControllers.Controller controller) {
+        List<String> buttons = new ArrayList<>();
+        for (int sdlIndex = 0; sdlIndex < controller.buttonCount(); sdlIndex++) {
+            ControllerCapture.buttonToken(controller.gamepad(), sdlIndex).ifPresent(buttons::add);
+        }
+        return List.copyOf(buttons);
+    }
+
+    static List<String> hatTokens(CaptureControllers.Controller controller) {
+        List<String> hats = new ArrayList<>();
+        for (int h = 1; h <= controller.hatCount(); h++) {
+            // WHY: SDL reports a gamepad's D-pad as its first hat; the game names it with its own GamePad tokens.
+            if (controller.gamepad() && h == 1) hats.addAll(ControllerCapture.gamepadDPadTokens());
+            else hats.addAll(DeviceEditorInputs.hatTokens(h));
+        }
+        return List.copyOf(hats);
+    }
+
+    /**
+     * @param sdlIndex SDL's button index, from 0
+     * @return the token pressing it captures, as the page lists it; empty for a button no binding can use
+     */
+    Optional<String> buttonToken(int sdlIndex) {
+        return ControllerCapture.buttonToken(controller.gamepad(), sdlIndex);
+    }
+
+    Optional<GameAxis> axis(int sdlIndex) {
+        return sdlIndex >= 0 && sdlIndex < controller.axes().size()
+                ? Optional.of(controller.axes().get(sdlIndex)) : Optional.empty();
+    }
+
     String deviceName() {
         return controller.name();
+    }
+
+    boolean gamepad() {
+        return controller.gamepad();
     }
 
     /**
@@ -112,10 +150,11 @@ final class ControllerInputsPanel extends JPanel {
         this.own = Set.copyOf(own);
         used.clear();
         refresh();
-        JLabel cell = activeToken == null ? null : cells.get(activeToken);
+        String displayToken = displayToken(activeToken);
+        JLabel cell = displayToken == null ? null : cells.get(displayToken);
         if (bringForward && cell != null) {
-            pages.setSelectedIndex(isHat(activeToken) ? 1 : 0);
-            Runnable group = showGroup.get(activeToken);
+            pages.setSelectedIndex(isHat(displayToken) ? 1 : isAxis(displayToken) ? 2 : 0);
+            Runnable group = showGroup.get(displayToken);
             if (group != null) group.run();
             cell.scrollRectToVisible(new Rectangle(cell.getSize()));
         }
@@ -136,6 +175,9 @@ final class ControllerInputsPanel extends JPanel {
         return groups;
     }
 
+    /**
+     * @param onPick the token clicked, or {@code null} for a page that only shows
+     */
     private JComponent group(List<String> tokens, SavedDeviceLabels labels, Consumer<String> onPick) {
         JPanel grid = new JPanel(new GridLayout(0, COLUMNS, 4, 4));
         grid.setOpaque(false);
@@ -147,13 +189,15 @@ final class ControllerInputsPanel extends JPanel {
             cell.setBackground(HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
             cell.setPreferredSize(new Dimension(0, CELL_HEIGHT));
             cell.setToolTipText(controller.name() + " " + token);
-            cell.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            cell.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mousePressed(MouseEvent e) {
-                    if (SwingUtilities.isLeftMouseButton(e)) onPick.accept(token);
-                }
-            });
+            if (onPick != null) {
+                cell.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                cell.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mousePressed(MouseEvent e) {
+                        if (SwingUtilities.isLeftMouseButton(e)) onPick.accept(token);
+                    }
+                });
+            }
             cells.put(token, cell);
             grid.add(cell);
         }
@@ -172,22 +216,58 @@ final class ControllerInputsPanel extends JPanel {
     }
 
     private static boolean isHat(String token) {
-        return token.startsWith("Joy_POV");
+        return token.startsWith("Joy_POV") || token.startsWith("GamePad_DPad");
+    }
+
+    private static boolean isAxis(String token) {
+        return token.startsWith("Joy_") && token.endsWith("Axis");
+    }
+
+    /**
+     * Maps a binding token back to the cell this panel shows for it: an axis cell stands for both its directions
+     * and a GamePad trigger token for the axis SDL reports it as.
+     */
+    static String displayToken(String token) {
+        if (token == null) return null;
+        if (token.startsWith("Pos_Joy_") || token.startsWith("Neg_Joy_")) {
+            return token.substring(4);
+        }
+        return ControllerCapture.gamepadTriggerAxis(token).map(GameAxis::token).orElse(token);
+    }
+
+    /**
+     * The binding tokens a cell stands for, which is what the control holds and what other controls clash with: an
+     * axis cell stands for both of its directions, and a gamepad's trigger cell for its trigger token.
+     */
+    static List<String> bindingTokens(String cellToken, boolean gamepad) {
+        if (!isAxis(cellToken)) return List.of(cellToken);
+        if (gamepad) {
+            Optional<String> trigger = Arrays.stream(GameAxis.values())
+                    .filter(axis -> axis.token().equals(cellToken))
+                    .findFirst()
+                    .flatMap(ControllerCapture::gamepadTriggerToken);
+            if (trigger.isPresent()) return List.of(trigger.get());
+        }
+        return List.of("Neg_" + cellToken, "Pos_" + cellToken);
     }
 
     private void refresh() {
+        String activeCell = displayToken(activeToken);
+        Set<String> assignedCells = new HashSet<>();
+        assigned.forEach(assignedToken -> assignedCells.add(displayToken(assignedToken)));
         for (Map.Entry<String, JLabel> entry : cells.entrySet()) {
             String token = entry.getKey();
             JLabel cell = entry.getValue();
-            boolean held = token.equals(activeToken) || assigned.contains(token);
+            boolean held = token.equals(activeCell) || assignedCells.contains(token);
             cell.setBackground(held ? HUD_COLOR_ROLE_ASSIGNED_INPUT_BACKGROUND : HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
             if (held) {
                 cell.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
             } else {
-                boolean taken = !own.contains(token) && used.computeIfAbsent(token, inUse::test);
+                boolean taken = bindingTokens(token, controller.gamepad()).stream()
+                        .anyMatch(binding -> !own.contains(binding) && used.computeIfAbsent(binding, inUse::test));
                 cell.setForeground(taken ? HUD_COLOR_ROLE_DANGER : HUD_COLOR_ROLE_SUCCESS);
             }
-            cell.setBorder(token.equals(activeToken)
+            cell.setBorder(token.equals(activeCell)
                     ? BorderFactory.createLineBorder(HUD_COLOR_ROLE_PRIMARY_ACTION, 2)
                     : BorderFactory.createLineBorder(HUD_COLOR_ROLE_SECONDARY_BORDER));
         }

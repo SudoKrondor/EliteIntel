@@ -44,6 +44,15 @@ public record DeviceDescription(boolean axesKnown, List<GameAxis> axes, int axes
         return new DeviceDescription(false, List.of(), 0, List.of(), hatCount);
     }
 
+    /** SDL's axis order for a mapped gamepad: sticks first, then the two triggers. */
+    private static final List<GameAxis> GAMEPAD_AXES =
+            List.of(GameAxis.X, GameAxis.Y, GameAxis.Z, GameAxis.RX, GameAxis.RY, GameAxis.RZ);
+
+    public static DeviceDescription gamepad(int axisCount, int hatCount) {
+        List<GameAxis> order = GAMEPAD_AXES.subList(0, Math.min(axisCount, GAMEPAD_AXES.size()));
+        return new DeviceDescription(true, order, Math.max(0, axisCount - order.size()), order, hatCount);
+    }
+
     /**
      * Whether the description's axes are trusted: it was read, and it counts as many axes as SDL does. A description
      * that finds no axis where SDL counts three has missed something - a vendor-defined usage, say - and a consumer

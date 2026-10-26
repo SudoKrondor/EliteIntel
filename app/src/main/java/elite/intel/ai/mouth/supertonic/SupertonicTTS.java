@@ -24,7 +24,7 @@ import java.util.function.Consumer;
  */
 public class SupertonicTTS extends SherpaOnnxTTS {
 
-    private static final int NUM_STEPS = 8;
+    private static final int NUM_STEPS = 10;
     private static final float SPEED_MULTIPLIER = 0.85f;
 
     private static volatile SupertonicTTS instance;
@@ -80,6 +80,11 @@ public class SupertonicTTS extends SherpaOnnxTTS {
         }
         float[] faster = TimeStretch.speedUp(audio.getSamples(), audio.getSampleRate(), pace / modelPace);
         return new GeneratedAudio(faster, audio.getSampleRate());
+    }
+
+    @Override
+    protected String textForSynthesis(String text, Language language) {
+        return SupertonicTextNormalizer.normalize(text, language);
     }
 
     /**
@@ -143,6 +148,7 @@ public class SupertonicTTS extends SherpaOnnxTTS {
                     "Supertonic model missing at: " + modelDir +
                             " - run the installer to download TTS models.");
         }
+        validateModelAssets(modelDir);
 
         OfflineTtsSupertonicModelConfig supertonic = OfflineTtsSupertonicModelConfig.builder()
                 .setDurationPredictor(AppPaths.toNativePath(modelDir.resolve("duration_predictor.int8.onnx")))
@@ -167,5 +173,24 @@ public class SupertonicTTS extends SherpaOnnxTTS {
                 .build();
 
         return new OfflineTts(config);
+    }
+
+    static void validateModelAssets(Path modelDir) {
+        Path voiceStyle = modelDir.resolve("voice.bin");
+        Path unicodeIndexer = modelDir.resolve("unicode_indexer.bin");
+        StringBuilder missing = new StringBuilder();
+        if (!Files.isRegularFile(voiceStyle)) {
+            missing.append(voiceStyle);
+        }
+        if (!Files.isRegularFile(unicodeIndexer)) {
+            if (!missing.isEmpty()) {
+                missing.append(", ");
+            }
+            missing.append(unicodeIndexer);
+        }
+        if (!missing.isEmpty()) {
+            throw new IllegalStateException("Supertonic model assets missing: " + missing
+                    + " - run the installer to download TTS models.");
+        }
     }
 }

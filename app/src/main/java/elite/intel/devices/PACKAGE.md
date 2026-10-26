@@ -97,7 +97,9 @@ The loop runs on the `elite-intel-devices` platform thread (not a virtual thread
 **State polling** is delta-only:
 
 - Axes: previous raw `short` stored in
-  `prevAxes[deviceId][axisIndex]`. Published only when the raw value changes; no deadzone threshold - all movement is reported and consumers apply their own deadzone if needed.
+  `prevAxes[deviceId][axisIndex]`, seeded at connect with where each axis rests then - a trigger rests at -1, not 0,
+  so seeding zeros reported every such axis as moved on the first poll. Published only when the raw value changes;
+  no deadzone threshold - all movement is reported and consumers apply their own deadzone if needed.
 - Buttons: previous `boolean` stored in
   `prevButtons[deviceId][buttonIndex]`. Published on both press and release transitions. Never published while held
   (unlike keyboard repeat events).
@@ -147,6 +149,7 @@ The
 | `buttonCount` | `int` | Number of buttons reported by SDL3 |
 | `usbPath` | `String` | USB port path from `SDL_GetJoystickPathForID`; empty string if unavailable. Identifies the **port**, not the unit |
 | `guid` | `String` | 32-char hex SDL3 GUID (see below) |
+| `gamepad` | `boolean` | Whether SDL types the joystick as a gamepad (`SDL_GetJoystickType`), independent of its name |
 
 ### `DeviceIdentity` (record)
 
@@ -302,7 +305,7 @@ onDeviceAdded
 | Class | Role |
 |---|---|
 | `DeviceService` | Singleton; SDL3 poll loop; publishes all device events |
-| `model/Device` | Immutable record for a connected device (id, name, axes, buttons, usbPath, guid) |
+| `model/Device` | Immutable record for a connected device (id, name, axes, buttons, usbPath, guid, gamepad) |
 | `model/DeviceIdentity` | Resolved VID/PID + bindsHexId for `.binds` correlation |
 | `model/ButtonInputMapper` | SDL3 index ↔ Elite `.binds` token translation |
 | `model/DeviceDescription` | Which game axes and hats a connected controller has; `DeviceService.description(id)` |
