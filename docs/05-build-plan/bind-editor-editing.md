@@ -37,8 +37,8 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
   tab**; the user frees it first. The writer stays permissive. [What the writer takes from the dialog](../02-features/bindforge/bind-editor.md#what-the-writer-takes-from-the-dialog--settled-2026-10-12-alan-foundation-f4)
 - **The dialog edits the row: both slots as cards, all sources in view, one
   SAVE.** [The dialog edits the row](../02-features/bindforge/bind-editor.md#the-dialog-edits-the-row-both-slots--settled-2026-10-15-alan-e1)
-- **A controller's tab writes the master's
-  name.** [Which name a controller's tab writes](../02-features/bindforge/bind-editor.md#which-name-a-controllers-tab-writes--settled-2026-10-15-alan-e1)
+- **A controller's tab writes the working copy's
+  name** (the master's, before Storage S5). [Which name a controller's tab writes](../02-features/bindforge/bind-editor.md#which-name-a-controllers-tab-writes--settled-2026-10-15-alan-e1)
 - **The KEYBOARD tab is V1.1's dialog unchanged**, including its refusals (Alan, 2026-10-15).
 - **AI ACCESS wording, and only Vega's controls
   judged.** [The mechanism](../02-features/bindforge/bind-editor.md#the-mechanism-an-assistant-column-in-the-grid--settled-2026-09-12)
@@ -68,7 +68,7 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 | # | Slice | Status |
 |---|---|---|
 | E1 | **Controller buttons and hats in the capture dialog.** The gate is removed, there is a tab per connected controller, capture by press or click, held buttons become modifiers, an input in use blocks SAVE, the AI-access warning shows, and saving goes through `assignSlot` | **done 2026-10-15** |
-| E2 | **AXIS DIRECTIONS on a button slot.** `Pos_`/`Neg_Joy_*Axis` as a third page of a controller tab, captured by pushing an axis past a threshold from where it rests (reuse `DeviceEditorLights`' rest rule) and mapped through `DeviceDescription.axisAt` | **next** |
+| E2 | **AXIS DIRECTIONS on a button slot.** `Pos_`/`Neg_Joy_*Axis` as a third page of a controller tab, captured by pushing an axis past a threshold from where it rests (reuse `DeviceEditorLights`' rest rule) and mapped through `DeviceDescription.axisAt` | **next, after [Storage S5](storage.md#slices)** |
 | E3 | **Axis rows.** One `<Binding>` plus Inverted and Deadzone, both inline and in the dialog. The AXES page is captured by moving an axis, and saving goes through `assignAxis`. The grid needs the axis-row column shape (spec § *Modifiers, Hold, Inverted, Deadzone*) | ready after E2 |
 | E4 | **MOUSE tab.** Buttons and the wheel half-axes are chosen, never captured (spec § *MOUSE is chosen, not captured*) | ready |
 | E5 | **Cross-device chords.** A keyboard key with controller buttons held, and a controller input with keyboard modifiers held | ready |
@@ -76,6 +76,10 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 | E7 | **Gamepad capture.** On a controller named `GamePad`, the tab offers and captures the game's gamepad tokens, never `Joy_N` or hats; a trigger pulled past a threshold is a press of its `Pos_` token and can be held as a modifier. Needs [A18](alias-designer.md#slices)'s gamepad events and token table. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor) | **blocked** on A18 |
 
 ## Hand-off notes — newest first
+
+**2026-10-24, build plan rewritten to back up, edit, apply** (Alan). [Storage S5](storage.md#slices) moves this
+screen onto the working copy and the one APPLY / DISCARD bar: any binds file loads, capture SAVE is an edit not
+applied, and the grid's own APPLY / REVERT and close prompt go. E2–E6 build on that, so E2 waits for S5.
 
 **2026-10-15, E1 fix: the input page is larger.** A controller page is now eight rows of four, so a 32-button
 stick no longer scrolls, and a page with more than 32 inputs splits into numbered group tabs (`1–32`, `33–64`…),

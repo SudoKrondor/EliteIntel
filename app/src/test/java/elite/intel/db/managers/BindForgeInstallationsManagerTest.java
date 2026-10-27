@@ -12,10 +12,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The installation list persists across rescans, which is the whole reason it is a table rather than
- * whatever detection last returned.
+ * The installation list persists across detections, which is the whole reason it is a table rather than
+ * whatever detection last returned - and a removed installation stays removed (Storage S2b, 2026-10-25).
  */
 class BindForgeInstallationsManagerTest {
+
+    private static final Path STEAM = Path.of("E:\\SteamLibrary\\Elite Dangerous");
+    private static final Path EPIC = Path.of("C:\\EpicLibrary\\Elite");
 
     private final BindForgeInstallationsManager installations = BindForgeInstallationsManager.getInstance();
 
@@ -23,89 +26,74 @@ class BindForgeInstallationsManagerTest {
     // list rather than inheriting rows a sibling left behind.
     @BeforeEach
     void emptyTheList() {
-        installations.findAll().forEach(row -> installations.remove(row.id()));
+        InstallationsTable.empty();
     }
 
     @Test
     void recordsADetectedInstallation() {
-        InstallationRow row = installations.record("STEAM", Path.of("E:\\SteamLibrary\\Elite Dangerous"), false);
+        installations.recordDetected("STEAM", STEAM);
 
+        InstallationRow row = installations.findAll().getFirst();
         assertEquals("STEAM", row.storefront());
-        assertEquals("E:\\SteamLibrary\\Elite Dangerous", row.rootPath());
+        assertEquals(STEAM.toString(), row.rootPath());
         assertFalse(row.addedByHand());
         assertFalse(row.missing());
         assertEquals(1, installations.findAll().size());
     }
 
-    /**
-     * A rescan re-reports what it found last time. The row has to survive that unchanged, because device
-     * records are keyed to its id.
-     */
+    /** Detection re-reports what it found last time. The row has to survive that unchanged. */
     @Test
-    void recordingTheSameFolderTwiceKeepsTheOriginalRow() {
-        InstallationRow first = installations.record("STEAM", Path.of("E:\\Elite"), false);
-        InstallationRow second = installations.record("STEAM", Path.of("E:\\Elite"), false);
+    void detectingTheSameFolderTwiceKeepsTheOriginalRow() {
+        installations.recordDetected("STEAM", STEAM);
+        long id = installations.findAll().getFirst().id();
 
-        assertEquals(first.id(), second.id(), "the same folder is the same installation");
+        installations.recordDetected("STEAM", STEAM);
+
         assertEquals(1, installations.findAll().size());
+        assertEquals(id, installations.findAll().getFirst().id(), "the same folder is the same installation");
     }
 
     /**
      * Nothing records where a Frontier install went, so the user adds it by hand. If detection later happens
-     * to find that folder, the row must not be demoted to auto-detected - it is still the only reason
-     * BindForge knows about it.
+     * to find that folder, the row must not be demoted to auto-detected.
      */
     @Test
     void detectionDoesNotDemoteAHandAddedInstallation() {
-        installations.record("FRONTIER", Path.of("D:\\Games\\Frontier"), true);
-        installations.record("FRONTIER", Path.of("D:\\Games\\Frontier"), false);
+        installations.addByHand("MANUAL", STEAM);
+        installations.recordDetected("STEAM", STEAM);
 
-        assertTrue(installations.findAll().get(0).addedByHand(), "it is still the user's row");
+        assertTrue(installations.findAll().getFirst().addedByHand(), "it is still the user's row");
     }
 
     @Test
     void aMissingInstallationIsMarkedRatherThanDropped() {
-        InstallationRow row = installations.record("EPIC", Path.of("C:\\EpicLibrary\\Elite"), false);
+        installations.recordDetected("EPIC", EPIC);
+        InstallationRow row = installations.findAll().getFirst();
 
         installations.setMissing(row.id(), true);
 
         List<InstallationRow> all = installations.findAll();
         assertEquals(1, all.size(), "an unmounted drive and an uninstall look the same, so the row stays");
-        assertTrue(all.get(0).missing());
-        assertEquals(row.id(), all.get(0).id(), "and it keeps its id, so its device records survive");
+        assertTrue(all.getFirst().missing());
+        assertEquals(row.id(), all.getFirst().id());
     }
 
     @Test
     void aMissingInstallationThatComesBackIsMarkedPresentAgain() {
-        InstallationRow row = installations.record("EPIC", Path.of("C:\\EpicLibrary\\Elite"), false);
+        installations.recordDetected("EPIC", EPIC);
+        InstallationRow row = installations.findAll().getFirst();
         installations.setMissing(row.id(), true);
 
         installations.setMissing(row.id(), false);
 
-        assertFalse(installations.findAll().get(0).missing());
-    }
-
-    /**
-     * The reinstalled-to-another-drive case: the row follows the game rather than being replaced, so
-     * everything keyed to it comes along.
-     */
-    @Test
-    void relocateMovesTheRowAndClearsMissing() {
-        InstallationRow row = installations.record("STEAM", Path.of("E:\\Elite"), false);
-        installations.setMissing(row.id(), true);
-
-        installations.relocate(row.id(), Path.of("F:\\Elite"));
-
-        InstallationRow moved = installations.findAll().get(0);
-        assertEquals(row.id(), moved.id(), "same row, new folder");
-        assertEquals("F:\\Elite", moved.rootPath());
-        assertFalse(moved.missing(), "it is where the user says it is");
+        assertFalse(installations.findAll().getFirst().missing());
     }
 
     /** Migration 12006 (A14): a new row has missed nothing; the flag is kept until a write clears it. */
     @Test
     void aMissedWriteIsKeptUntilCleared() {
-        InstallationRow row = installations.record("EPIC", Path.of("C:\\EpicLibrary\\Elite"), false);
+        installations.recordDetected("EPIC", EPIC);
+        InstallationRow row = installations.findAll().getFirst();
         assertFalse(row.missedWrite());
 
         installations.setMissedWrite(row.id(), true);
@@ -117,18 +105,59 @@ class BindForgeInstallationsManagerTest {
 
     @Test
     void twoStorefrontsAreTwoInstallations() {
-        installations.record("STEAM", Path.of("E:\\SteamLibrary\\Elite Dangerous"), false);
-        installations.record("EPIC", Path.of("C:\\EpicLibrary\\EliteDangerous"), false);
+        installations.recordDetected("STEAM", STEAM);
+        installations.recordDetected("EPIC", EPIC);
 
         assertEquals(2, installations.findAll().size());
     }
 
     @Test
-    void removeDropsTheRow() {
-        InstallationRow row = installations.record("STEAM", Path.of("E:\\Elite"), false);
+    void aRemovedInstallationLeavesTheList() {
+        installations.recordDetected("STEAM", STEAM);
 
-        installations.remove(row.id());
+        installations.remove(installations.findAll().getFirst().id());
 
         assertTrue(installations.findAll().isEmpty());
+    }
+
+    /** Detection at the next start would otherwise put it straight back (file-manager.md, Game Install Locations). */
+    @Test
+    void aRemovedInstallationStaysRemovedWhenDetectionFindsItAgain() {
+        installations.recordDetected("STEAM", STEAM);
+        installations.remove(installations.findAll().getFirst().id());
+
+        installations.recordDetected("STEAM", STEAM);
+
+        assertTrue(installations.findAll().isEmpty());
+    }
+
+    /** The backup folder check refuses every game folder, a removed installation's included (Alan, 2026-10-25). */
+    @Test
+    void aRemovedInstallationIsStillAmongEveryInstallation() {
+        installations.recordDetected("STEAM", STEAM);
+        installations.remove(installations.findAll().getFirst().id());
+
+        assertEquals(List.of(STEAM.toString()),
+                installations.findAllIncludingRemoved().stream().map(InstallationRow::rootPath).toList());
+    }
+
+    @Test
+    void addMissingOnARemovedInstallationsFolderBringsItBack() {
+        installations.recordDetected("STEAM", STEAM);
+        long id = installations.findAll().getFirst().id();
+        installations.remove(id);
+
+        InstallationRow back = installations.addByHand("MANUAL", STEAM);
+
+        assertEquals(id, back.id(), "the same row, back in the list");
+        assertEquals(List.of(back), installations.findAll());
+    }
+
+    @Test
+    void addMissingRecordsANewFolderAsAddedByHand() {
+        InstallationRow row = installations.addByHand("MANUAL", EPIC);
+
+        assertTrue(row.addedByHand());
+        assertEquals(List.of(row), installations.findAll());
     }
 }

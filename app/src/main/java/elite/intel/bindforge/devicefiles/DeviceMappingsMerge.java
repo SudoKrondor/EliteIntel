@@ -23,7 +23,8 @@ import java.util.*;
  * be silently ignored. Each one is placed at the top of {@code <Root>}, in master order, moving it up if it is
  * already further down.
  * <p>
- * Bytes in, bytes out: reading and writing the files is {@link DeviceFilesPush}'s job.
+ * Bytes in, bytes out: nothing here reads or writes a file. Since Storage S4a the edits on screen change the working
+ * copy's file with it ({@code bindforge.storage.DeviceEdits}).
  */
 public final class DeviceMappingsMerge {
 
@@ -120,6 +121,28 @@ public final class DeviceMappingsMerge {
             changed = true;
         }
         return changed ? new Result(DeviceFileXml.write(document), true) : new Result(existing, false);
+    }
+
+    /**
+     * Puts one element back, copied whole from {@code source} - its {@code <Alternative>} and {@code <SupportsIcons>}
+     * with it, which {@link #insert} would lose - placed among the user's elements leading the file as {@link #insert}
+     * places a new one. UNDO CLEAR's, putting back what the working copy holds (Storage S4a). An element already under
+     * that tag is left alone.
+     *
+     * @param order every user's name leading the file, the one put back included, in the order they should lead it
+     * @throws IOException if a file is not a {@code DeviceMappings.xml}, or {@code source} has no such element
+     */
+    public static Result copyIn(byte[] existing, byte[] source, String name, List<String> order) throws IOException {
+        Document document = DeviceFileXml.parse(existing);
+        Element root = rootOf(document);
+        if (firstChildNamed(root, name) != null) return new Result(existing, false);
+        Element original = firstChildNamed(rootOf(DeviceFileXml.parse(source)), name);
+        if (original == null) throw new IOException(name + " is not in the file it was to be copied from");
+        int place = order.indexOf(name);
+        if (place < 0) throw new IllegalArgumentException(name + " is not in the order it is placed by");
+        Element copy = (Element) document.importNode(original, true);
+        root.insertBefore(copy, insertionPoint(root, order, place));
+        return new Result(DeviceFileXml.write(document), true);
     }
 
     /**
@@ -229,6 +252,68 @@ public final class DeviceMappingsMerge {
         if (gone.isEmpty()) return new Result(existing, false);
         gone.forEach(root::removeChild);
         return new Result(DeviceFileXml.write(document), true);
+    }
+
+    /**
+     * One of the user's elements first-time startup takes into the working copy whole, from the file of the
+     * installation whose version won (alias-designer.md, <em>How the reconciled files are made</em>; Storage S2b).
+     *
+     * @param source that installation's {@code DeviceMappings.xml}
+     * @param name   the element's tag
+     * @param vid    the VID the user chose; empty, with {@code pid}, for an element that claims no hardware - it is
+     *               copied as it is
+     * @param pid    the PID the user chose
+     */
+    public record Taken(byte[] source, String name, String vid, String pid) {
+        public Taken {
+            Objects.requireNonNull(source, "source");
+            Objects.requireNonNull(name, "name");
+            Objects.requireNonNull(vid, "vid");
+            Objects.requireNonNull(pid, "pid");
+        }
+    }
+
+    /**
+     * The working copy's one {@code DeviceMappings.xml}, made by first-time startup's merge: {@code base} - one
+     * installation's file, since Frontier's entries are the same everywhere - with every one of the user's elements
+     * taken out, and the kept ones put at the top of {@code <Root>} in the order given, each copied whole from its
+     * own installation's file and given the hardware the user chose. Its {@code <Alternative>} and
+     * {@code <SupportsIcons>} come with it, which a new element would lose.
+     *
+     * @param base       the file Frontier's entries, and everything else that is not the user's, are kept from
+     * @param usersNames every element tag that is the user's, in any installation - all taken out of {@code base}
+     * @param taken      the elements kept, in the order they lead the file
+     * @throws IOException if a file is not a {@code DeviceMappings.xml}, or a taken element is not in its source
+     */
+    public static byte[] assemble(byte[] base, Collection<String> usersNames, List<Taken> taken) throws IOException {
+        Document document = DeviceFileXml.parse(base);
+        Element root = rootOf(document);
+
+        List<Node> gone = new ArrayList<>();
+        NodeList children = root.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            if (child.getNodeType() == Node.ELEMENT_NODE && usersNames.contains(child.getNodeName())) gone.add(child);
+        }
+        gone.forEach(root::removeChild);
+
+        Map<byte[], Element> sourceRoots = new IdentityHashMap<>();
+        for (int i = taken.size() - 1; i >= 0; i--) {
+            Taken one = taken.get(i);
+            Element sourceRoot = sourceRoots.get(one.source());
+            if (sourceRoot == null) {
+                sourceRoot = rootOf(DeviceFileXml.parse(one.source()));
+                sourceRoots.put(one.source(), sourceRoot);
+            }
+            Element original = firstChildNamed(sourceRoot, one.name());
+            if (original == null) throw new IOException(one.name() + " is not in the file it was to be taken from");
+            Element copy = (Element) document.importNode(original, true);
+            if (!one.vid().isEmpty() || !one.pid().isEmpty()) {
+                matchHardware(document, copy, new UserEntry(one.name(), one.vid(), one.pid()));
+            }
+            root.insertBefore(copy, root.getFirstChild());
+        }
+        return DeviceFileXml.write(document);
     }
 
     /**

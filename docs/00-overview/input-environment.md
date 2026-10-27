@@ -2,7 +2,7 @@
 
 **What actually exists on a player's computer, and what each thing is called.** This page is definitions only —
 the real files, folders and accounts Elite Dangerous keeps. It deliberately contains **no BindForge terms**:
-master, draft and mirror live in the [glossary](glossary.md), so this page cannot go stale when our own design
+working copy, live copy and backup live in the [glossary](glossary.md), so this page cannot go stale when our own design
 changes.
 
 **Written 2026-09-24, from Alan's definitions.** Read it before writing or reviewing anything that touches
@@ -252,7 +252,7 @@ folder.** On Windows a single `%LOCALAPPDATA%` tree is shared by every storefron
 | `DeviceMappings.xml`, `.buttonMap` | one set per installation | *unchanged* — one set per installation |
 
 Which makes Linux the simpler case to describe: **everything is installation-scoped.** It does not change the
-master — BindForge still keeps one; it simply has more places to push it to.
+working copy — BindForge still keeps one; it simply has more places to write it to.
 
 ### What does not change
 

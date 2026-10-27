@@ -1,13 +1,12 @@
 package elite.intel.bindforge.devicefiles;
 
-import elite.intel.bindforge.devicefiles.DeviceDivergence.Severity;
+import elite.intel.bindforge.devicefiles.FirstSetupPlan.Severity;
 import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan.Installation;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan.Kind;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan.Option;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan.Resolution;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan.Row;
-import elite.intel.db.managers.BindForgeDeviceDraftManager.StoredDevice;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
@@ -42,7 +41,7 @@ class FirstSetupPlanTest {
         assertEquals(Kind.IDENTICAL, row.kind());
         assertEquals(Severity.GREEN, row.severity());
         assertFalse(row.isQuestion());
-        assertEquals(List.of(device("LVWAP", LEFT, Map.of())), plan.resolve(Map.of()).devices());
+        assertEquals(List.of(device("LVWAP", LEFT, Map.of())), devices(plan.resolve(Map.of())));
     }
 
     /** The measured outage: Epic lacks the sticks Steam's .binds names, so the whole preset is rejected there. */
@@ -74,11 +73,12 @@ class FirstSetupPlanTest {
 
         Option epics = optionHeldByEpic(row);
         Resolution resolution = plan.resolve(Map.of(row.id(), epics.key()));
-        assertEquals(List.of(device("LVWAP", OLD_LEFT, Map.of())), resolution.devices());
+        assertEquals(List.of(device("LVWAP", OLD_LEFT, Map.of())), devices(resolution));
+        assertEquals(EPIC, resolution.devices().getFirst().source(), "copied whole from the installation that won");
     }
 
     @Test
-    void oneHardwareUnderTwoNamesIsAQuestionAndTheLoserIsAPendingRemoval() {
+    void oneHardwareUnderTwoNamesIsAQuestionAndTheLoserMovesToTheWinner() {
         FirstSetupPlan plan = plan(Set.of(),
                 install(STEAM, Map.of("RVWAP", RIGHT)),
                 install(EPIC, Map.of("RightStick", RIGHT)));
@@ -89,13 +89,13 @@ class FirstSetupPlanTest {
 
         Resolution resolution = plan.resolve(Map.of(row.id(), "RVWAP"));
         assertEquals(List.of("RVWAP"), names(resolution));
-        assertEquals(List.of("RightStick"), resolution.pendingRemovals(),
-                "its entry stays on disk below the winner until something removes it");
+        assertEquals(Map.of("RightStick", "RVWAP"), resolution.moves(),
+                "its entry leaves the working copy, and any binding naming it follows the winner");
     }
 
-    /** A16: a losing name .binds uses becomes the winner's old name, so its bindings follow - not a removal. */
+    /** A16, on the working copy (Storage S2b): a losing name the binds use hands its bindings to the winner. */
     @Test
-    void aLosingNameTheBindsUseBecomesTheWinnersOldName() {
+    void aLosingNameTheBindsUseMovesToTheWinner() {
         FirstSetupPlan plan = plan(Set.of("RVWAP"),
                 install(STEAM, Map.of("RVWAP", RIGHT)),
                 install(EPIC, Map.of("RightStick", RIGHT)));
@@ -104,23 +104,24 @@ class FirstSetupPlanTest {
         assertEquals(Severity.RED, row.severity());
         Resolution resolution = plan.resolve(Map.of(row.id(), "RightStick"));
 
-        assertEquals(List.of(renamed("RightStick", RIGHT, "RVWAP")), resolution.devices());
-        assertTrue(resolution.pendingRemovals().isEmpty(), "the push renames it, so nothing is left to remove");
-        assertTrue(resolution.handedOver().isEmpty());
-        assertEquals(Map.of("RVWAP", "RightStick"), resolution.bindingMoves());
+        assertEquals(List.of(device("RightStick", RIGHT, Map.of())), devices(resolution));
+        assertEquals(Map.of("RVWAP", "RightStick"), resolution.moves());
     }
 
-    /** Review, 2026-10-17: a case-only loser is still the old name, but the confirm promises no move for it. */
+    /**
+     * Storage S2b (Alan, 2026-10-25): a case-only loser is a move - in .binds LVWAP and lvwap are not the same name, so
+     * every binds file takes the winner's exact spelling.
+     */
     @Test
-    void aCaseOnlyLoserIsNoBindingMove() {
+    void aCaseOnlyLoserIsABindingMove() {
         FirstSetupPlan plan = plan(Set.of("lvwap"),
                 install(STEAM, Map.of("LVWAP", LEFT)),
                 install(EPIC, Map.of("lvwap", LEFT)));
 
         Resolution resolution = plan.resolve(Map.of(only(plan.rows()).id(), "LVWAP"));
 
-        assertEquals(List.of(renamed("LVWAP", LEFT, "lvwap")), resolution.devices());
-        assertTrue(resolution.bindingMoves().isEmpty(), ".binds finds an element ignoring case");
+        assertEquals(List.of(device("LVWAP", LEFT, Map.of())), devices(resolution));
+        assertEquals(Map.of("lvwap", "LVWAP"), resolution.moves());
     }
 
     /** Was stuck until A16: with both names in .binds, either may now win. */
@@ -132,16 +133,12 @@ class FirstSetupPlanTest {
 
         Row row = only(plan.rows());
         assertEquals(Map.of(row.id(), "RVWAP"), plan.answersFavouring(STEAM));
-        assertEquals(List.of(renamed("RVWAP", RIGHT, "RightStick")),
-                plan.resolve(plan.answersFavouring(STEAM)).devices());
+        assertEquals(List.of(device("RVWAP", RIGHT, Map.of())), devices(plan.resolve(plan.answersFavouring(STEAM))));
     }
 
-    /**
-     * A16, two losing names .binds uses (Alan, option 1): the first by name is the old name; the other is handed over
-     * at first setup and stays a pending removal, which Apply holds back while .binds names it.
-     */
+    /** A16, two losing names the binds use: both hand their bindings to the one winner. */
     @Test
-    void aSecondLosingNameTheBindsUseIsHandedOverAndStaysPending() {
+    void twoLosingNamesBothMoveToTheWinner() {
         FirstSetupPlan plan = plan(Set.of("RightStick", "Stick"),
                 install(STEAM, Map.of("RVWAP", RIGHT)),
                 install(EPIC, Map.of("RightStick", RIGHT)),
@@ -150,10 +147,8 @@ class FirstSetupPlanTest {
         Row row = only(plan.rows());
         Resolution resolution = plan.resolve(Map.of(row.id(), "RVWAP"));
 
-        assertEquals(List.of(renamed("RVWAP", RIGHT, "RightStick")), resolution.devices());
-        assertEquals(List.of("Stick"), resolution.pendingRemovals());
-        assertEquals(Map.of("Stick", "RVWAP"), resolution.handedOver());
-        assertEquals(Map.of("RightStick", "RVWAP", "Stick", "RVWAP"), resolution.bindingMoves());
+        assertEquals(List.of(device("RVWAP", RIGHT, Map.of())), devices(resolution));
+        assertEquals(Map.of("RightStick", "RVWAP", "Stick", "RVWAP"), resolution.moves());
     }
 
     @Test
@@ -166,7 +161,7 @@ class FirstSetupPlanTest {
         Resolution resolution = plan.resolve(Map.of(names.id(), "LeftStick"));
 
         assertEquals(List.of("LeftStick"), names(resolution));
-        assertEquals(List.of("LVWAP"), resolution.pendingRemovals());
+        assertEquals(Map.of("LVWAP", "LeftStick"), resolution.moves());
     }
 
     @Test
@@ -240,13 +235,14 @@ class FirstSetupPlanTest {
 
         Row row = only(plan.rows());
         assertEquals(Kind.BUILT_IN_LABELS, row.kind());
-        assertEquals(List.of(device("T-Rudder", rudder, Map.of("Joy_XAxis", "X Axis"))),
-                plan.resolve(Map.of()).devices());
+        FirstSetupPlan.Kept rudderKept = only(plan.resolve(Map.of()).devices());
+        assertEquals(device("T-Rudder", rudder, Map.of("Joy_XAxis", "X Axis")), device(rudderKept));
+        assertTrue(rudderKept.builtIn(), "Frontier's element is already in the file - only its labels are the user's");
     }
 
-    /** The blunt route: one click, and still never drops an element only another installation holds. */
+    /** Answering in one installation's favour still never drops an element only another installation holds. */
     @Test
-    void usingOneInstallationAsTheMasterAnswersInItsFavourAndKeepsTheOthersExtras() {
+    void answeringInOneInstallationsFavourKeepsTheOthersExtras() {
         FirstSetupPlan plan = plan(Set.of(),
                 install(STEAM, Map.of("LVWAP", LEFT, "RVWAP", RIGHT)),
                 install(EPIC, Map.of("LVWAP", OLD_LEFT, "Pedals", new HardwareId("044F", "B679"))));
@@ -255,7 +251,7 @@ class FirstSetupPlanTest {
         Resolution resolution = plan.resolve(answers);
 
         assertEquals(List.of(device("LVWAP", LEFT, Map.of()), device("Pedals", new HardwareId("044F", "B679"), Map.of()),
-                device("RVWAP", RIGHT, Map.of())), resolution.devices());
+                device("RVWAP", RIGHT, Map.of())), devices(resolution));
     }
 
     @Test
@@ -283,8 +279,8 @@ class FirstSetupPlanTest {
 
         Resolution resolution = plan.resolve(plan.answersFavouring(STEAM));
 
-        assertEquals(List.of(device("X", h1, Map.of()), device("Z", h2, Map.of())), resolution.devices());
-        assertEquals(List.of("Y"), resolution.pendingRemovals());
+        assertEquals(List.of(device("X", h1, Map.of()), device("Z", h2, Map.of())), devices(resolution));
+        assertEquals(Map.of("Y", "X"), resolution.moves());
     }
 
     /** Answers that would leave two devices on one VID/PID are not accepted until changed. */
@@ -303,7 +299,7 @@ class FirstSetupPlanTest {
         assertEquals(List.of("hardware:X"), plan.unanswered(answers), "X would sit on Y's hardware");
 
         answers.put("hardware:X", "3344:0002");
-        assertEquals(List.of(device("X", h2, Map.of()), device("Y", h1, Map.of())), plan.resolve(answers).devices());
+        assertEquals(List.of(device("X", h2, Map.of()), device("Y", h1, Map.of())), devices(plan.resolve(answers)));
     }
 
     /** The game uses the first of two elements on one VID/PID, so the second is not the user's choice to make. */
@@ -318,8 +314,8 @@ class FirstSetupPlanTest {
         assertEquals(Kind.IDENTICAL, rows.get("RightStick").kind(), "the first in the file is the device");
         assertEquals(Kind.SHADOWED, rows.get("RVWAP").kind());
         Resolution resolution = plan.resolve(Map.of());
-        assertEquals(List.of("RightStick"), names(resolution));
-        assertEquals(List.of("RVWAP"), resolution.pendingRemovals());
+        assertEquals(List.of("RightStick"), names(resolution), "the shadowed name is not in the working copy");
+        assertTrue(resolution.moves().isEmpty(), "it was never the device, so it hands nothing over");
     }
 
     @Test
@@ -330,7 +326,7 @@ class FirstSetupPlanTest {
 
         Row row = only(plan.rows());
         assertEquals(Kind.NAME_DIFFERS, row.kind(), "Steam uses RVWAP, Epic uses RightStick - a real disagreement");
-        assertEquals(List.of("RVWAP"), plan.resolve(plan.answersFavouring(EPIC)).pendingRemovals());
+        assertEquals(Map.of("RVWAP", "RightStick"), plan.resolve(plan.answersFavouring(EPIC)).moves());
     }
 
     @Test
@@ -359,16 +355,25 @@ class FirstSetupPlanTest {
         return elements;
     }
 
-    private static StoredDevice device(String name, HardwareId hardware, Map<String, String> labels) {
-        return new StoredDevice(null, name, hardware.vid(), hardware.pid(), true, null, labels);
+    /** A kept device as the tests compare it: its name, hardware and labels. */
+    private record Device(String name, HardwareId hardware, Map<String, String> labels) {
     }
 
-    private static StoredDevice renamed(String name, HardwareId hardware, String oldName) {        return new StoredDevice(null, name, hardware.vid(), hardware.pid(), true, oldName, Map.of());
+    private static Device device(String name, HardwareId hardware, Map<String, String> labels) {
+        return new Device(name, hardware, labels);
     }
 
-    private static Row only(List<Row> rows) {
-        assertEquals(1, rows.size(), rows.toString());
-        return rows.getFirst();
+    private static Device device(FirstSetupPlan.Kept kept) {
+        return new Device(kept.name(), kept.hardware(), kept.labels());
+    }
+
+    private static List<Device> devices(Resolution resolution) {
+        return resolution.devices().stream().map(FirstSetupPlanTest::device).toList();
+    }
+
+    private static <T> T only(List<T> items) {
+        assertEquals(1, items.size(), items.toString());
+        return items.getFirst();
     }
 
     private static Option optionHeldByEpic(Row row) {
@@ -382,6 +387,6 @@ class FirstSetupPlanTest {
     }
 
     private static List<String> names(Resolution resolution) {
-        return resolution.devices().stream().map(StoredDevice::deviceName).toList();
+        return resolution.devices().stream().map(FirstSetupPlan.Kept::name).toList();
     }
 }

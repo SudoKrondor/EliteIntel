@@ -213,6 +213,16 @@ What differs:
 - **44.1 kHz native
   output**, resampled to the pipeline's `SAMPLE_RATE` (24 kHz) before the declicker, the radio filter and the playback line, so nothing downstream sees a second rate.
 - **Sentence split on `.!?` only** - comma clauses stay together so the model's own prosody carries the pause.
+- **Text is normalised before synthesis** (`SupertonicTextNormalizer`, through the base class's overridable
+  `textForSynthesis`): two-to-four-letter capitalised words are spelled letter by letter in the voice's language
+  (`FSD`, `SRV`), decimals with a unit letter and comma decimals are read as numbers, thousands grouping is read the
+  right way round whatever the separator, procedural sector codes (`XO-R b19-3`) are spelled whole, and whole numbers
+  are spelled through `SignedAndDecimalNumbers.inWordsIncludingWholeNumbers` - only this voice asks for whole numbers.
+  Italian also spells a class letter (`classe A`). Russian radio text is passed through unchanged.
+- **Ten diffusion steps** (`NUM_STEPS`, raised from 8 on 2026-10-25), at a `SPEED_MULTIPLIER` of 0.85, which is also
+  the fastest the model is asked to go (`MAX_MODEL_SPEED`).
+- **The model folder is checked at load** (`validateModelAssets`): a missing `voice.bin` or `unicode_indexer.bin` is
+  named, with the fix, rather than failing inside the native loader.
 
 Selecting it is a stored setting like any other engine (`game_session.ttsProvider = SUPERTONIC`), written by the LOCAL column's engine switch in the AI services settings. Kokoro remains the shipped default and the fallback for an unreadable stored value.
 

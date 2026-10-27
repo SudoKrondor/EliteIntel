@@ -73,7 +73,7 @@ it.
 scoped to the version it came from: the wipe test that uses it asks "is this file identical to what
 Frontier shipped?", and after an update Frontier ships something else. Until the re-capture lands, the
 wipe test reports `unknown` rather than guessing — see
-[New slots are the only thing an update brings](../overview.md#new-slots-are-the-only-thing-an-update-brings--settled-2026-09-24). Comparing the factory binds files across two installations
+[New slots are the only thing an update brings](../overview.md#when-a-game-update-brings-a-newer-version--2026-10-23). Comparing the factory binds files across two installations
 of different vintages found them identical, which suggests `ControlSchemes` changes rarely — but that is an
 observation from one machine, not a guarantee. See
 [testing-required.md](../../../00-overview/testing-required.md) item 10, which captures all four file domains

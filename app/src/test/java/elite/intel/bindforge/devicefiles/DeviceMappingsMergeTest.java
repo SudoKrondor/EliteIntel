@@ -230,6 +230,60 @@ class DeviceMappingsMergeTest {
         assertArrayEquals(file, result.content(), "untouched, not re-laid-out");
     }
 
+    // ------------------------------------------------------------------ copyIn (UNDO CLEAR, Storage S4a)
+
+    /**
+     * UNDO CLEAR puts the element back whole - its {@code <SupportsIcons>} with it, which an insert would lose - in its
+     * place among the user's elements leading the file.
+     */
+    @Test
+    void aCopiedElementComesBackWholeInItsPlaceAmongTheUsers() throws IOException {
+        String source = """
+                <?xml version="1.0" encoding="UTF-8" ?>
+                <Root>
+                \t<AAA><PID>0001</PID><VID>1234</VID></AAA>
+                \t<MyX52><PID>075C</PID><VID>06A3</VID><SupportsIcons>SaitekX52</SupportsIcons></MyX52>
+                \t<CCC><PID>0003</PID><VID>1234</VID></CCC>
+                \t<T-Rudder><PID>B679</PID><VID>044F</VID></T-Rudder>
+                </Root>
+                """;
+        String cleared = """
+                <?xml version="1.0" encoding="UTF-8" ?>
+                <Root>
+                \t<AAA><PID>0001</PID><VID>1234</VID></AAA>
+                \t<CCC><PID>0003</PID><VID>1234</VID></CCC>
+                \t<T-Rudder><PID>B679</PID><VID>044F</VID></T-Rudder>
+                </Root>
+                """;
+
+        Result result = DeviceMappingsMerge.copyIn(bytes(cleared), bytes(source), "MyX52",
+                List.of("AAA", "MyX52", "CCC"));
+
+        assertTrue(result.changed());
+        assertEquals(List.of("AAA", "MyX52", "CCC", "T-Rudder"), names(result));
+        assertEquals(1, supportsIconsIn(text(result)), "its <SupportsIcons> came with it");
+        assertEquals("075C", entry(result, "MyX52").primary().pid());
+    }
+
+    /** An element already under that tag is left alone - the file is returned untouched. */
+    @Test
+    void anElementAlreadyPresentIsNotCopiedIn() throws IOException {
+        byte[] file = bytes(SPECIMEN);
+
+        Result result = DeviceMappingsMerge.copyIn(file,
+                bytes("<Root><SaitekX52><PID>0001</PID><VID>1234</VID></SaitekX52></Root>"), "SaitekX52",
+                List.of("SaitekX52"));
+
+        assertFalse(result.changed());
+        assertArrayEquals(file, result.content(), "untouched, not re-laid-out");
+    }
+
+    @Test
+    void anElementTheSourceLacksIsRefused() {
+        assertThrows(IOException.class, () -> DeviceMappingsMerge.copyIn(bytes(SPECIMEN), bytes("<Root/>"), "MyX52",
+                List.of("MyX52")));
+    }
+
     // ------------------------------------------------------------------ rename (A11)
 
     /** The element keeps its place and every child it has; only its tag changes. */

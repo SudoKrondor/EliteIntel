@@ -57,6 +57,19 @@ public final class DirectorySetting {
     }
 
     /**
+     * This platform's usual bindings folder, used when nothing usable is stored. Beside {@link #defaultJournalPath()}
+     * so the startup checks can tell the game's own folder from one the commander chose (2026-10-24).
+     */
+    public static Path defaultBindingsPath() {
+        if (OsDetector.getOs() == OsDetector.OS.WINDOWS) {
+            return Paths.get(System.getProperty("user.home"), "AppData", "Local", "Frontier Developments", "Elite Dangerous", "Options", "Bindings");
+        } else if (OsDetector.getOs() == OsDetector.OS.LINUX) {
+            return Paths.get(System.getProperty("user.home"), ".var", "app", "elite.intel.app", "ed-bindings");
+        }
+        return Paths.get(System.getProperty("user.home"), "Library", "Application Support", "Frontier Developments", "Elite Dangerous", "Options", "Bindings");
+    }
+
+    /**
      * The folder a stored setting names, or {@code fallback} when it names nothing usable.
      * <p>
      * A path that merely does not exist right now is still returned: a folder on a drive that is not

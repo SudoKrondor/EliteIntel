@@ -35,11 +35,13 @@ public final class DeviceEditorLights {
     public static final float REST_MARGIN = 0.1f;
 
     private final DeviceDescription description;
+    private final boolean gamepad;
     private final Map<Integer, Float> rest = new HashMap<>();
     private final Set<String> lit = new LinkedHashSet<>();
 
-    public DeviceEditorLights(DeviceDescription description) {
+    public DeviceEditorLights(DeviceDescription description, boolean gamepad) {
         this.description = description;
+        this.gamepad = gamepad;
     }
 
     /** The tokens lit now. */
@@ -56,8 +58,14 @@ public final class DeviceEditorLights {
     public boolean axis(int sdlIndex, float value) {
         Optional<GameAxis> axis = description.axisAt(sdlIndex);
         if (axis.isEmpty()) return false;
-        float resting = rest.computeIfAbsent(sdlIndex, index -> value);
+        float resting = rest.computeIfAbsent(sdlIndex, index -> gamepad ? gamepadRest(axis.get()) : value);
         return set(axis.get().token(), Math.abs(value - resting) > REST_MARGIN);
+    }
+
+    // WHY: a gamepad is known to rest its sticks at 0 and its triggers at -1, so no first-seen value is needed -
+    // and one seen mid-pull would otherwise become the rest.
+    private static float gamepadRest(GameAxis axis) {
+        return ControllerCapture.gamepadTriggerToken(axis).isPresent() ? -1f : 0f;
     }
 
     /**

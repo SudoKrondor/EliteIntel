@@ -9,7 +9,8 @@ public record Device(
         int axisCount,    // number of analog axes
         int buttonCount,  // number of buttons
         String usbPath,   // USB port path from SDL_GetJoystickPathForID — for duplicate VID/PID detection
-        String guid       // SDL3 GUID — used for VID/PID extraction and .binds file correlation
+        String guid,      // SDL3 GUID — used for VID/PID extraction and .binds file correlation
+        boolean gamepad   // SDL's semantic gamepad classification, independent of the display name
 ) {
 
     @Override

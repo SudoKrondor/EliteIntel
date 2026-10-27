@@ -346,10 +346,17 @@ public class DeviceService {
         if (usbPath == null) usbPath = "";
         String guid = readGuid(id);
 
-        prevAxes.put(id, new short[Math.max(0, axes)]);
+        // WHY: seed with where each axis rests now. A trigger rests at -1, not 0, so seeding zeros made the first
+        // poll report every such axis as moved.
+        short[] initialAxes = new short[Math.max(0, axes)];
+        for (int axis = 0; axis < initialAxes.length; axis++) {
+            initialAxes[axis] = SDLJoystick.SDL_GetJoystickAxis(handle, axis);
+        }
+        prevAxes.put(id, initialAxes);
         prevButtons.put(id, new boolean[Math.max(0, buttons)]);
 
-        Device device = new Device(id, name, axes, buttons, usbPath, guid);
+        boolean gamepad = SDLJoystick.SDL_GetJoystickType(handle) == SDLJoystick.SDL_JOYSTICK_TYPE_GAMEPAD;
+        Device device = new Device(id, name, axes, buttons, usbPath, guid, gamepad);
         int hats = Math.max(0, SDLJoystick.SDL_GetNumJoystickHats(handle));
         prevHats.put(id, new int[hats]);
         descriptions.put(id, DeviceDescriber.describe(name, usbPath, axes, hats));

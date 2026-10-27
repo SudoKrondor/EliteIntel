@@ -6,6 +6,7 @@ import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.bindforge.io.BindingsLoader;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
+import elite.intel.session.DirectorySetting;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
@@ -33,9 +34,11 @@ import java.util.stream.Stream;
  *       tab to pick one.</li>
  *   <li><b>No journal files</b> where the app is looking. Without them it knows nothing about the game.</li>
  *   <li><b>No bindings files</b> where the app is looking. Without them it cannot fly anything. This one
- *       splits in two: a folder that is not Elite's bindings folder at all (fix the setting), and Elite's
- *       own folder holding only a {@code StartPreset} because the commander still runs a stock preset and
- *       has never saved custom controls (fix it in the game, not in the setting).</li>
+ *       splits in three: Elite's own folder holding only a {@code StartPreset} because the commander still runs
+ *       a stock preset and has never saved custom controls (fix it in the game, not in the setting); the game's
+ *       default folder not there yet, or holding no {@code StartPreset}, because the commander has not played
+ *       the game far enough for it to write one (play the training, then save a binding - Alan, 2026-10-24); and
+ *       any other folder, which is the wrong one (fix the setting).</li>
  * </ul>
  * <p>
  * Every line is published as a {@link VocalisationRequestEvent} straight to the TTS engine rather than routed
@@ -62,20 +65,24 @@ public class SetupCheck {
     private final BooleanSupplier cloudProviderMissing;
     private final Supplier<Path> journalDir;
     private final Supplier<Path> bindingsDir;
+    private final Supplier<Path> defaultBindingsDir;
 
     private SetupCheck() {
         this(new BindingsLoader(),
                 SetupCheck::isLlmUnconfigured,
                 LlmProviderResolver::isCloudProviderMissing,
                 () -> PlayerSession.getInstance().getJournalPath(),
-                () -> PlayerSession.getInstance().getBindingsDir());
+                () -> PlayerSession.getInstance().getBindingsDir(),
+                DirectorySetting::defaultBindingsPath);
     }
 
     /**
-     * Seam for tests: everything this reads about the install comes through here.
+     * Seam for tests: everything this reads about the install comes through here - including the game's default
+     * bindings folder, since the new-player message is for that folder only.
      */
     SetupCheck(BindingsLoader bindingsLoader, BooleanSupplier llmUnconfigured, BooleanSupplier cloudProviderMissing,
-               Supplier<Path> journalDir, Supplier<Path> bindingsDir) {
+               Supplier<Path> journalDir, Supplier<Path> bindingsDir, Supplier<Path> defaultBindingsDir) {
+        this.defaultBindingsDir = defaultBindingsDir;
         this.bindingsLoader = bindingsLoader;
         this.llmUnconfigured = llmUnconfigured;
         this.cloudProviderMissing = cloudProviderMissing;
@@ -110,6 +117,9 @@ public class SetupCheck {
             if (isEliteBindingsFolder(bindings)) {
                 warn("speech.setup.noSavedBindings", "Bindings folder " + bindings
                         + " is Elite's own, but holds no .binds file: the commander is on a stock preset and has never saved custom controls.");
+            } else if (isDefaultBindingsFolder(bindings)) {
+                warn("speech.setup.noBindingsYet", "Bindings folder " + bindings
+                        + " is the game's default, and is missing or holds no StartPreset: the game has not created the control input configuration files yet, so there is nothing to back up. The commander is told to complete the training and save a binding.");
             } else {
                 warn("speech.setup.noBindings", "No .binds files found in " + bindings);
             }
@@ -201,6 +211,18 @@ public class SetupCheck {
             log.warn("Cannot read bindings directory {}: {}", dir, unreadable.getMessage());
             return false;
         }
+    }
+
+    /**
+     * True when {@code dir} is the game's default bindings folder rather than one the commander chose.
+     * <p>
+     * A new player's game has not created that folder yet - it appears once they have played through the training -
+     * so missing there means "play first", not "set the folder" (Alan, 2026-10-24). A folder the commander chose that
+     * is missing or empty is still the wrong-folder case.
+     */
+    boolean isDefaultBindingsFolder(Path dir) {
+        if (dir == null) return false;
+        return dir.toAbsolutePath().normalize().equals(defaultBindingsDir.get().toAbsolutePath().normalize());
     }
 
     /**

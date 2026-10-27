@@ -65,29 +65,25 @@ class AppControllerServicesTest {
         }
     }
 
-    /** The startup .buttonMap acts on the device poll loop's connect events, so it comes up after it. */
+    /** Storage S2b (Alan, 2026-10-25): nothing writes a .buttonMap at startup any more - APPLY does, from S4. */
     @Test
-    void buttonMapStartupComesUpAfterTheDevices() {
-        List<ServiceType> order =
-                List.copyOf(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO).keySet());
-        assertTrue(order.contains(ServiceType.BUTTON_MAP_STARTUP));
-        assertTrue(order.indexOf(ServiceType.DEVICE) < order.indexOf(ServiceType.BUTTON_MAP_STARTUP));
+    void noServiceWritesButtonMapsAtStartup() {
+        List<String> names = AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO).keySet().stream()
+                .map(Enum::name).toList();
+        assertFalse(names.contains("BUTTON_MAP_STARTUP"));
     }
 
-    /** The device-file watch is a service of its own, so a change is noticed whether or not the screen is open. */
+    /**
+     * BindForge does not watch the device files, nor announce an installation that missed a write: the check runs at
+     * three moments instead, and APPLY leaves an installation that differs for it (Storage S4a; overview.md,
+     * <em>External change detection</em>).
+     */
     @Test
-    void deviceFilesWatchIsRegistered() {
-        assertTrue(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO)
-                .containsKey(ServiceType.DEVICE_FILES_MONITOR));
-    }
-
-    /** The catch-up line is spoken, so it comes up after the voice that speaks it (A14). */
-    @Test
-    void catchUpAnnouncementComesUpAfterTheMouth() {
-        List<ServiceType> order =
-                List.copyOf(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO).keySet());
-        assertTrue(order.contains(ServiceType.CATCH_UP_ANNOUNCEMENT));
-        assertTrue(order.indexOf(ServiceType.MOUTH) < order.indexOf(ServiceType.CATCH_UP_ANNOUNCEMENT));
+    void noServiceWatchesTheDeviceFilesOrAnnouncesAMissedWrite() {
+        List<String> names = AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO).keySet().stream()
+                .map(Enum::name).toList();
+        assertFalse(names.contains("DEVICE_FILES_MONITOR"));
+        assertFalse(names.contains("CATCH_UP_ANNOUNCEMENT"));
     }
 
     @Test

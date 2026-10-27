@@ -45,6 +45,15 @@ public final class FrontierStockButtonMaps {
     }
 
     /**
+     * Whether Frontier ships a {@code .buttonMap} under this device name, whatever a file by that name holds now.
+     * Compared ignoring case, as the game finds the file. A file by one of these names is never removed from an
+     * installation (alias-designer.md, <em>What APPLY does to each installation's device files</em>).
+     */
+    public static boolean shipsMapFor(String deviceName) {
+        return SHIPPED.stream().anyMatch(shipped -> shipped.equalsIgnoreCase(deviceName));
+    }
+
+    /**
      * Whether this is Frontier's own file for that device: the name is one Frontier ships a map for, and the
      * labels are Frontier's.
      * <p>

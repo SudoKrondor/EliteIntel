@@ -1,5 +1,10 @@
 # Data Model — Device Provenance
 
+> **Being reworked to [storage.md](../02-features/bindforge/storage.md) (2026-10-24, Alan).** This page describes
+> the database tables of the master/draft design — the device master, the draft, pending removals and the
+> per-installation rows. Under storage.md the device files are files in the working copy, so most of these tables
+> go; which ones, and what replaces them, is decided in the build plan.
+
 **Status:** Design decision taken 2026-09-01. **Built 2026-10-01** as
 `db-migration/12002__bindforge_devices.sql`, which carries this table alongside the two the master needs —
 see [Migration](#migration).
@@ -61,7 +66,7 @@ row per device there is nothing to compare a patched installation against, so a 
 from a device that was never configured. Per-installation rows are what let the
 [**M** marker](../02-features/bindforge/alias-designer.md#one-record-and-where-it-lands--reworked-2026-09-26)
 say *this installation matches the master* and the
-[divergence list](../02-features/bindforge/alias-designer.md#divergence-between-installs--one-list-ranked-by-consequence)
+[divergence list](../02-features/bindforge/alias-designer.md#when-an-installations-device-files-differ)
 say where it does not.
 
 So: **the master records intent, these rows record reality, and drift is the difference between them.**
@@ -70,7 +75,7 @@ the grounds that installations now match — knowing they match is exactly what 
 
 *Built 2026-10-08 (Alan): the **M** markers on screen read the startup check against the master, not these rows.*
 The check reads the files and judges labels and severity, which these rows do not carry. The rows remain the stored record of reality — see
-[the Installations markers](../02-features/bindforge/alias-designer.md#the-installations-markers--2026-10-08-alan).
+[the Installations markers](../02-features/bindforge/alias-designer.md#my-devices).
 
 | Field | Purpose |
 |---|---|
@@ -78,7 +83,6 @@ The check reads the files and judges labels and severity, which these rows do no
 | `vid`, `pid` | hardware identity **as currently reported** — survives a rename, but **not a vendor firmware update**; see [VID/PID Is Not a Stable Identity](../02-features/bindforge/alias-designer.md#vidpid-is-not-a-stable-identity). Correlates to `.binds` `Device=` only for devices with no entry. **Compare case-insensitively** — see [Hex case](#hex-case-is-not-a-convention-in-frontiers-file). |
 | `device_name` | the XML element tag for this installation, which is also its `.buttonMap` filename stem |
 | `provenance` | `frontier` \| `user_preexisting` \| `bindforge` \| `unknown` — **approved 2026-09-06**, see [below](#the-table-cannot-solve-first-import) |
-| ~~`mirrored`~~ | **Superseded 2026-09-23** — every install holds the same files, so there is no per-device switch to record. See [Every install gets the same files](../02-features/bindforge/overview.md#every-install-gets-the-same-files--settled-2026-09-23). |
 | ~~`alias_confirmed`~~ | **Moved to the master 2026-10-01.** It gates button/axis naming per [Device Editor](../02-features/bindforge/alias-designer.md#device-editor), and that is a fact about the device, not about one installation: since standardisation there is [one record per device](../02-features/bindforge/alias-designer.md#one-record-and-where-it-lands--reworked-2026-09-26), so a name cannot be confirmed in Steam and unconfirmed in Epic. It sits on `bindforge_device_master`. |
 | `has_button_map` | whether a rename must also rename a file |
 | ~~`previous_name`~~ | **Moved to the master 2026-10-01**, for the same reason. A rename is one operation on the master that then renames a `.buttonMap` in *every* installation, so the name being renamed away from is one fact, not one per installation. It sits on `bindforge_device_master` and is cleared when the rename completes. |
@@ -158,9 +162,7 @@ with standardisation. The conclusion did not: see the grain above. Rows multiply
 that is still the correct cost, because recording what each installation holds is the only way to notice one
 has been wiped.
 
-**~~Which installation seeds a device on first import?~~ Settled 2026-09-06: neither — both preserved,
-device left unmirrored. Overtaken 2026-09-23.** There is no `mirrored` flag to set any more, and leaving
-installations permanently disagreeing is the state standardisation exists to end. The replacement is
+**Which installation seeds a device on first import?** Answered by
 [first setup](../02-features/bindforge/alias-designer.md#first-setup--reconciling-the-installs--settled-2026-09-23):
 BindForge reads every installation, shows what disagrees, and asks — once, per element.
 

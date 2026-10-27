@@ -78,16 +78,20 @@ StellarCore specs have no equivalent and can be dropped.
 There is no staged plugin load (Stage 1/2/3), no unload, and no dirty-state gate blocking shutdown.
 Tabs are constructed with the UI and live for the process lifetime.
 
-**Consequence for the ported specs:** BindForge's *Unsaved Work on Exit* dialog (**Save / Discard**, settled
-2026-09-06 — Apply is deliberately not offered there) does not get invoked by a host lifecycle hook,
+**Consequence for the ported specs:** BindForge's *Unsaved Work on Exit* dialog (**Go back / Discard / Apply**,
+2026-10-24) does not get invoked by a host lifecycle hook,
 because there is not one. It has to be wired to application shutdown — and to tab-switch away from
 BindForge — by BindForge itself.
 
 Two triggers, not one, and they are not equally trustworthy. A tab switch is an ordinary UI event
 BindForge controls. Application shutdown is not: a crash, a kill, or a Windows session ending runs no
-handler at all. That asymmetry is the practical argument for the draft being written eagerly rather than
-held in memory until a dialog says so — the dialog is a courtesy on the paths where it can run, not the
-mechanism that keeps work safe.
+handler at all.
+
+**A crash loses edits not applied, and that is accepted** (2026-10-24, Alan): *"we cannot, and should not, cover
+the possibility that the user's computer crashes and loses unapplied edits."* There is no draft copy and no saving
+as the user goes — edits stay on screen until APPLY ([storage.md](../02-features/bindforge/storage.md) rule 6). The
+game's files and the working copy are untouched by a crash; only the unapplied work is lost. *Until 2026-10-24 this
+section argued for writing a draft eagerly so a crash lost nothing.*
 
 ---
 
@@ -177,8 +181,8 @@ StarVizion implementation begins — it is the most direct evidence of what the 
 ## File Access
 
 Elite-Intel has **no central file broker**. There is no Controlled Replace pattern, no shared backup-then-write
-service, no archive/restore service, and no Watch Path facility available generically — the nearest is
-`elite.intel.io.FilePoller` (2026-10-11), which says which files changed but leaves the polling to its caller.
+service, no archive/restore service, and no Watch Path facility available generically. *`elite.intel.io.FilePoller`
+(2026-10-11) said which files changed; it was removed with its one caller in Storage S4a (2026-10-26).*
 
 What exists instead is BindForge-shaped already, and since 2026-10-03 it lives under `elite.intel.bindforge`
 (it moved out of `elite.intel.ai.hands`, which now only presses keys):
@@ -192,7 +196,7 @@ What exists instead is BindForge-shaped already, and since 2026-10-03 it lives u
 | `elite.intel.io.AtomicFiles` | safe replace: temp file, flush, rename over the target |
 | `io.BindingsApplyService`, `io.BindingsApplyException`, `io.BindingSaveResult` | apply-to-game with typed failure |
 | `io.BindingsMonitor` | external-change detection for the bindings folder (`WatchService`) |
-| `elite.intel.io.FilePoller` | polled change detection for files another process writes — first used by `devicefiles.DeviceFilesMonitor` for each installation's device files (C5, 2026-10-11) |
+| ~~`elite.intel.io.FilePoller`~~ | ~~polled change detection for files another process writes~~ — removed in Storage S4a (2026-10-26) with its one caller, `devicefiles.DeviceFilesMonitor`: BindForge does not watch the files ([overview](../02-features/bindforge/overview.md#external-change-detection--2026-10-23)) |
 | `rules.BindingConflictScanner`, `rules.BindingConflictRules` | conflict detection |
 | `model.BindingSection`, `model.BindingDisplayNames` | in-game section, group and row label for a `.binds` tag |
 | `db.dao.BindingConflictDao`, `db.managers.BindingConflictManager` | conflict persistence |
@@ -203,7 +207,7 @@ single most important next task is a detailed read of `elite.intel.bindforge.io`
 [BindForge specs](../02-features/bindforge/overview.md)**, to determine what is reusable, what conflicts, and
 what must be rewritten.
 
-**Gaps against the ported specs:** the Archive Backup (ZIP) and Restore Archive operations that BindForge's
+**Gaps against the ported specs:** the Backup and Restore operations (a backup is a dated zip, of one of four kinds, since 2026-10-24) that BindForge's
 File Manager is built on have no equivalent and must be written. ~~`DeviceMappings.xml` and `.buttonMap` handling
 appears absent entirely — BindForge's Device Identity and Button Map domains are greenfield.~~ Built since, in
 `elite.intel.bindforge.devicefiles` (Core C1–C3 and C5, 2026-10-04 to 2026-10-11).
@@ -388,8 +392,10 @@ informal prefix — `lmStudio*`, `pushToTalk*`, `localLlm*`, `noiseReduction*`. 
 **Proposed 2026-09-20, approved by Krondor 2026-09-22, built 2026-09-28** —
 `12000__bindforge_settings.sql`, `elite.intel.db.dao.BindForgeSettingsDao` and
 `elite.intel.db.managers.BindForgeSettingsManager`, with `BindForgeSettingsManagerTest` pinning the round
-trip. **The three settings are stored but nothing reads them yet**: the launch trigger, the destination
-lookup in `PlayerBackupService` and Edit History itself are all still to build. He set the shape:
+trip. **The settings are stored but nothing reads them yet**: the launch trigger and the destination
+lookup in `PlayerBackupService` are still to build. *(2026-10-24: the auto-backup switch and Edit History retention
+were removed — the startup backup cannot be switched off, and Edit History was folded into backups; see
+[File Manager — Settings](../02-features/bindforge/file-manager.md#settings).)* He set the shape:
 
 > *"We are NOT using .INI files for settings. we are using SQLite same as Google Chrome, Mozilla Firefox and
 > others. This provides us a way to version and modify things with new releases without messing with ugly
@@ -647,7 +653,8 @@ versions of four lines came about. Deliberately not named `filemanager`, which w
 that it was changed only on `V1.1-Release` and merged up, and the 2026-10-12 foundation branch for V1.2's changes
 to it and to `bindforge.io` and `.rules`, are both repealed - [CLAUDE.md](../../CLAUDE.md#branching-model).
 
-**Watching: `io.FilePoller` — built 2026-10-11 (C5).** It says which of a set of files changed since the last look,
+**Watching: `io.FilePoller` — built 2026-10-11 (C5), removed 2026-10-26 (Storage S4a)** with `DeviceFilesMonitor`, its
+only caller, since BindForge no longer watches the files. Kept as history: it said which of a set of files changed since the last look,
 by last-modified plus size, and holds no thread. It polls rather than using `WatchService`, as
 `AuxiliaryFilesMonitor` does, because notifications for files another process writes arrive late, get merged, or
 never arrive, and a missed one is never recovered. Its first caller is BindForge's `DeviceFilesMonitor`, for the

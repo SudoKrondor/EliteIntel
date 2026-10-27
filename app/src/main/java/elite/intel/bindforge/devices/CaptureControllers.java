@@ -1,5 +1,6 @@
 package elite.intel.bindforge.devices;
 
+import elite.intel.bindforge.devicefiles.ButtonMapLabels;
 import elite.intel.bindforge.devicefiles.DeviceEntry;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
 import elite.intel.bindforge.devicefiles.SavedDeviceLabels;
@@ -13,6 +14,7 @@ import elite.intel.devices.DeviceService;
 import elite.intel.devices.model.Device;
 import elite.intel.devices.model.DeviceDescription;
 import elite.intel.devices.model.DeviceIdentity;
+import elite.intel.devices.model.GameAxis;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -44,8 +46,15 @@ public final class CaptureControllers {
      * @param name    the controller's {@code .binds} name, or {@code null} when it has none yet
      * @param liveId  the Device Service's id while it is connected, else {@code -1}
      * @param product what the controller calls itself, for a tab with no name
+     * @param axes    the game axis behind each SDL axis index; empty for a controller that is not connected
+     * @param gamepad whether the controller is a gamepad, whose inputs are bound under the game's GamePad tokens
      */
-    public record Controller(String name, int liveId, String product, int buttonCount, int hatCount) {
+    public record Controller(String name, int liveId, String product, int buttonCount, int hatCount,
+                             List<GameAxis> axes, boolean gamepad) {
+
+        public Controller {
+            axes = List.copyOf(axes);
+        }
 
         public boolean named() {
             return name != null;
@@ -90,7 +99,7 @@ public final class CaptureControllers {
             int[] counts = counts(tokens);
             // Nothing saved and nothing bound: no input to offer, so no tab.
             if (counts[0] == 0 && counts[1] == 0) continue;
-            absent.add(new Controller(name, -1, name, counts[0], counts[1]));
+            absent.add(new Controller(name, -1, name, counts[0], counts[1], List.of(), false));
         }
         controllers.addAll(absent);
         return List.copyOf(controllers);
@@ -108,12 +117,21 @@ public final class CaptureControllers {
         for (Device device : service.getConnectedDevices()) {
             Optional<DeviceIdentity> identity = DeviceIdentities.of(device);
             String name = identity.map(id -> nameOf(id, master, stock)).orElse(null);
-            int hats = service.description(device.id()).map(DeviceDescription::hatCount).orElse(0);
-            controllers.add(new Controller(name, device.id(), device.name(), device.buttonCount(), hats));
+            DeviceDescription description = service.description(device.id()).orElse(DeviceDescription.axesUnknown(0));
+            boolean gamepad = GamepadSupport.isGamepad(device);
+            List<GameAxis> axes = axesFor(gamepad, device.axisCount(), description);
+            controllers.add(new Controller(name, device.id(), device.name(), device.buttonCount(),
+                    description.hatCount(), axes, gamepad));
         }
         controllers.sort(Comparator.comparing((Controller c) -> !c.named())
                 .thenComparing(Controller::tabTitle, String.CASE_INSENSITIVE_ORDER));
         return List.copyOf(controllers);
+    }
+
+    static List<GameAxis> axesFor(boolean gamepad, int axisCount, DeviceDescription description) {
+        if (gamepad) return GamepadSupport.axes(axisCount);
+        if (description.agreesWith(axisCount)) return description.sdlAxes();
+        return ButtonMapLabels.axesToLabel(axisCount, description);
     }
 
     /**

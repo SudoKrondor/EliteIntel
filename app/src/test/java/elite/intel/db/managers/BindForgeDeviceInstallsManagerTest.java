@@ -34,9 +34,9 @@ class BindForgeDeviceInstallsManagerTest {
 
     @BeforeEach
     void twoInstallations() {
-        installations.findAll().forEach(row -> installations.remove(row.id()));
-        steam = installations.record("STEAM", Path.of("E:/SteamLibrary/Elite Dangerous"), false).id();
-        epic = installations.record("EPIC", Path.of("E:/EpicLibrary/Elite Dangerous"), false).id();
+        InstallationsTable.empty();
+        steam = installations.addByHand("STEAM", Path.of("E:/SteamLibrary/Elite Dangerous")).id();
+        epic = installations.addByHand("EPIC", Path.of("E:/EpicLibrary/Elite Dangerous")).id();
     }
 
     @Test
@@ -139,20 +139,5 @@ class BindForgeDeviceInstallsManagerTest {
         }
 
         assertEquals(Provenance.values().length, devices.findByInstall(steam).size());
-    }
-
-    /**
-     * Removing an installation discards what was held against it. That is deliberate - device rows are
-     * rebuilt by a rescan - but it must actually happen, or the rows outlive the installation they describe.
-     */
-    @Test
-    void removingAnInstallationTakesItsDeviceRowsWithIt() {
-        devices.record(steam, "LVWAP", "3344", "83F4", Provenance.USER_PREEXISTING, true);
-        devices.record(epic, "LVWAP", "3344", "83F4", Provenance.USER_PREEXISTING, false);
-
-        installations.remove(steam);
-
-        assertTrue(devices.findByInstall(steam).isEmpty(), "gone with the installation");
-        assertEquals(1, devices.findByInstall(epic).size(), "and the other installation is untouched");
     }
 }

@@ -56,14 +56,12 @@ ranks one as safer to lose.
 
 ### Every install gets the same files — settled 2026-09-23
 
-**BindForge keeps one configuration and applies it everywhere.** `.binds` and `StartPreset.4.start` are
-already shared by every install. `DeviceMappings.xml` and the `.buttonMap` files are duplicated per install,
-and BindForge keeps those copies **identical** — the same aliases and the same button and axis labels in every
-installation it knows about. There is no per-install configuration, no per-device switch, and no separate
-setup per storefront or per account.
-
-**"Mirroring" now means exactly that** (Alan, 2026-09-23). It used to name a per-device choice about which
-installations shared a definition; it now means every install matches the master, always.
+**BindForge keeps one configuration and applies it everywhere** ([principle 8](principles.md)).
+`DeviceMappings.xml` and the `.buttonMap`s exist once per installation; APPLY writes the working copy's one set to
+every installation, so they are identical — the same names and the same labels everywhere. There is no
+per-installation configuration. `.binds` and `StartPreset.4.start` are shared by every installation on Windows; on
+Linux each installation has its own bindings folder, and BindForge uses the one Elite-Intel is set to, for now
+(2026-10-14, Alan — see [input environment §7](../../00-overview/input-environment.md#7-linux-the-bindings-folder-is-not-shared)).
 
 **Why, and it is measured rather than argued.** The shared `.binds` names devices by entries that live in a
 per-install file, so an install whose `DeviceMappings.xml` lacks them
@@ -71,51 +69,26 @@ per-install file, so an install whose `DeviceMappings.xml` lacks them
 Divergence between installs is not a configuration a user chose. It is a latent outage waiting for
 whichever install they launch next, and the only symptom is a log file nobody opens.
 
-**The master copy lives in Elite-Intel's own folder and is pushed out** — Krondor,
-[multi-install-proposal.md](../../multi-install-proposal.md) §2. No install is primary, because any file
-inside a game folder can be wiped by a patch, and a wipe looks exactly like the newest edit.
-
-**Three things this still owes**, none of them a per-install configuration:
-
-1. **One adoption choice, once.** When a user's installs already disagree — the common case for anyone who
-   customised one and not the others — something has to become the master. That question is asked once, not
-   per device and not per edit.
-2. **Honest reporting when a push cannot land.** An install on a disconnected drive, or one that refuses the
-   write, must be named: *"updated 2 of 3."* Silent partial success is the drift this model exists to remove.
-3. **A drift check after game updates.** A patch resets these files per install, which is the incident
-   BindForge was built for, so the check that finds divergence is the same one that offers to repair it.
+**What this needs, and where it is:** one reconcile when installations already disagree
+([storage.md](storage.md) rules 1–3); saying so when an installation cannot be written, *"updated 2 of 3"* (rule 8);
+and a check after game updates, since a patch resets these files per installation (rules 14–15).
 
 #### Offered, never forced — settled 2026-09-23
 
-**Standardisation is the target state, not something BindForge imposes.** Alan: *"we build BindForge to help
-when asked. not force a situation on the user… all we need to do at first is be the support mechanism."*
+**Offered, never forced** ([principle 5](principles.md)). Alan: *"we build BindForge to help when asked. not force a
+situation on the user… all we need to do at first is be the support mechanism."* BindForge asks nothing and writes
+nothing to the game's files until the user opens its tab. First-time startup then runs ([storage.md](storage.md)
+rules 1–3): where the installations are identical there is nothing to reconcile and nothing is asked; where they
+differ, the user reconciles them. The user is told once, spoken and logged, when the backup before the working copy
+is created is taken.
 
-So the default posture is **back up, detect, report — and write nothing to a game file until asked**:
+**Why not force it, when installations that differ are an outage waiting to happen?** Elite-Intel has warned about
+binding conflicts for months without requiring anyone to act, and a user can run a long time with one harmless
+conflict. Forcing a choice on a user who has not asked for one is how a backup tool turns into an obstacle.
 
-- **Every launch backs up every install's input configuration**, whether or not the user ever opens BindForge.
-  A user who only ever edits in the game still gets protected; that is most of the value on its own.
-- **Startup reports what it found**, alongside the lines Elite-Intel already speaks about binding conflicts
-  and custom commands. On first run: *"BindForge has backed up all your &lt;install names&gt; input configuration
-  files"*, then *"you will need to make some decisions about your configuration setup, see BindForge for
-  details."*
-- **The decisions live in Alias Designer**, which shows the installs whose `DeviceMappings.xml` and
-  `.buttonMap` files disagree and offers the ways out — merge them, overwrite one install from another, or
-  pick one as the master. The user chooses; BindForge does not.
-- **Until they choose, nothing is pushed.** No master is imposed, no install is edited.
-- *Refined 2026-10-13 (Alan):* opening BindForge's tab is the user coming to it. Where the installs are
-  identical, the master is filled from them with no question, since that writes no game file; where they differ,
-  first setup opens. Either way a "before BindForge" backup is taken first, and the user is told once. See
-  [Activation](alias-designer.md#activation--2026-10-13-alan).
-
-**Why not force it, when divergence is a latent outage?** Because the app already behaves this way and it
-works: Elite-Intel has warned about binding conflicts for months without requiring anyone to act, and a
-user can run for a long time with one harmless conflict. The same is true here — a divergent install only
-bites when that install is launched. Forcing a choice on a user who has not asked for one is how a backup tool
-turns into an obstacle, and the answer to *"what if they never edit anything in BindForge?"* has to be
-*"then it quietly protects them anyway."*
-
-*(This matches [First-Time Startup](#first-time-startup), which offers to fix a factory binds file, accepts "no",
-and re-offers later.)*
+**The one thing done unasked: a backup every time Elite-Intel starts** (2026-10-23, Alan; storage.md rule 12) —
+silently, of every live copy in every installation, whether or not the user ever opens BindForge. A user who only
+ever edits in the game is protected too, and a user who lost their binds can be told where their backups are.
 
 The preset file has four lines, one per binding section, in a fixed order: General, Ship, SRV, On Foot. All four normally name the same BindName (the common case), but each line is independently settable — a valid, if unusual, split preset file. See [Preset Editor](preset-editor.md).
 
@@ -143,293 +116,181 @@ A confirmed real-world incident — a game update that overwrote a user's `Devic
 
 ## Live File Synchronization
 
-~~Every managed file domain follows the same synchronization model: the live file inside the game's own folders is the source of truth, and BindForge keeps a local working copy in its own user-data folder that mirrors it for editing.~~ **Inverted 2026-09-24.** The master copy in Elite-Intel's own folder is the source of truth, and the live file in the game's folders is what gets compared against it and pushed to — see [The master and the draft](#the-master-and-the-draft--settled-2026-09-24) below, and [multi-install-proposal.md](../../multi-install-proposal.md) §2. The live file cannot be authoritative: a patch can wipe it, and a wipe looks exactly like the newest edit. This applies uniformly across all four domains - Bind, Device Identity, Button Map, and Preset File.
+How the working copy and the live copies stay in step is [storage.md](storage.md): the working copy is the source of truth (rule 4), APPLY writes it to the live copies (rule 7), and the check finds a live copy that changed (rule 14).
 
-### The master and the draft — settled 2026-09-24
+### The working copy and edits not applied — 2026-10-22
 
-**Two files, two jobs.**
+**One file, and edits held on screen.** The working copy is the last state BindForge wrote, and the check compares
+the live copies against it ([storage.md](storage.md) rule 14). The user's changes stay on the editor screens, as
+edits not applied, until APPLY saves them into the working copy and writes them out in one step (rules 6–7).
 
-- **The master** is the last known good state: what BindForge pushed, and what every comparison is made
-  against. It lives in Elite-Intel's folder. For `.binds` and `StartPreset.4.start` it is a whole file; for device
-  identity it is [the user's element set](alias-designer.md#what-the-master-actually-is).
-- **The draft** is what the user is editing. **Apply promotes the draft to master** and pushes it out.
+**Why the edits are not written into the working copy as they are made.** A comparison against a half-edited file
+is meaningless. Someone midway through renaming a stick would hold a working copy matching neither the game nor
+anything worth restoring, and the check would fire against it. *This was the reason for the separate master and
+draft (2026-09-24). Holding edits on screen meets it with one file (2026-10-22, Alan).*
 
-**Why not one file doing both.** A comparison against a half-edited file is meaningless. Someone midway
-through renaming a stick would hold a "master" matching neither the game nor anything worth restoring, and the
-startup check would fire against it.
-
-### What the master covers: everything — settled 2026-09-24
+### What the working copy and backups cover — 2026-10-22
 
 Alan: *"my intent behind the 'keep the users input data safe' motto is, EVERYTHING… any user data that lives
 in this realm of input configurations."*
 
-**Protection and pushing are different scopes, and both are total in their own way.**
+**Backups and the working copy cover the same files, and only these** (2026-10-23, Alan):
 
-**Backup covers everything that is the user's, and nothing that is Frontier's to replace.**
+| Folder | Files |
+|---|---|
+| The bindings folder — on Windows `%LOCALAPPDATA%\Frontier Developments\Elite Dangerous\Options\Bindings\`, on Linux one per installation | **`StartPreset.4.start`** — exactly one; **every `<name>.<major>.<minor>.binds`** — one or more |
+| Each installation's `Products\elite-dangerous-odyssey-64\ControlSchemes\` | **`DeviceMappings.xml`** — exactly one per installation; **every `DeviceButtonMaps\<device name>.buttonMap`** — none or more, the user's own, BindForge's generated ones and the two Frontier ships (`VPCPanel`, `VPCThrottle`) |
 
-| Location | Backed up | Why |
-|---|---|---|
-| The user bindings folder | **all of it** — every `.binds`, `StartPreset.4.start`, whatever else the user keeps there | it is entirely the user's, and a backup that skipped something for looking uninteresting is how a tool loses their work |
-| Each install's `ControlSchemes\DeviceMappings.xml` | **yes** | holds the user's device entries |
-| Each install's `ControlSchemes\DeviceButtonMaps\` | **yes, the folder** | holds their labels; Frontier's own maps ride along, which is harmless and simpler than filtering |
-| The factory binds files in `ControlSchemes` | **no** | not the user's, and not editable in place |
+**Not backed up and not in the working copy:** the factory binds files in `ControlSchemes`, a leftover
+`StartPreset.start`, `.binds.backup` copies, `BindingLoadingErrors.log`, and anything else in either folder.
+*Until 2026-10-23 a backup took the whole bindings folder.*
 
 **Why the factory binds files are excluded** (Alan, 2026-09-24): the game never edits them. Changing one in the
 Controls screen writes a `Custom.#.#.binds` into the *user* folder instead, and a factory binds file hand-edited outside
 the game is overwritten by the next update anyway. Backing them up would archive Frontier's files, which
 Frontier already ships.
 
-**They are still read**, as the source First-Time Startup copies a factory binds file from. Read-only reference, not
-protected data.
+**They are still read**, as the templates [First-Time Startup](#create--a-new-players-first-binds-file--2026-10-24) copies a factory binds file
+from. Whether that copy works byte for byte is [testing item 7](../../00-overview/testing-required.md).
 
-**They are templates, and that is their real use to BindForge** (Alan, 2026-09-24). A user starting
-fresh, or wanting a clean base for one section, picks a factory binds file and BindForge copies it into the user
-folder as a custom `.binds` — where it survives updates and can be edited. That is already what
-[First-Time Startup](#first-time-startup) does for a section still sitting on a factory binds file; offering the
-same copy on demand generalises it rather than adding a mechanism.
+**The working copy holds whole files.** APPLY writes `DeviceMappings.xml` and the `.buttonMap`s whole to every
+installation, Frontier's entries in `DeviceMappings.xml` with them: every installation runs the same game version,
+so those entries are the same everywhere. *Until 2026-10-22 only the user's own elements were kept, so that one
+installation's Frontier entries were never pushed into another.*
 
-*One related case, later rather than now: a user who hand-edited a factory binds file in place can have it
-imported the same way, and saved where the next update will not overwrite it.*
-
-**The copy itself is still unproven** — whether a factory binds file can be used byte-for-byte as a
-valid starting `.binds`, or whether the game's own first save does something to it, is
-[testing item 7](../../00-overview/testing-required.md).
-
-**The master covers what the user owns**, per file:
-
-| | Master granularity |
-|---|---|
-| `.binds` | **one master per file** — every binds file in the folder, not only the active one |
-| `StartPreset.4.start` | one master, one file |
-| `DeviceMappings.xml` | [the user's element set](alias-designer.md#what-the-master-actually-is), written at the top of `<Root>`; Frontier's stock entries are never mastered, never pushed — **unless the user renames or shadows one, which makes it theirs** ([2026-10-04](alias-designer.md#built-in-controllers-in-my-devices--settled-2026-09-13)) |
-| `.buttonMap` | one master per file the user or BindForge made; Frontier's shipped maps are left alone |
-
-**Every binds file is a first-class file, not just the active one.** A user editing a binds file they are not
-currently playing — *"edit the testing binds and use that for testing in game"* — gets the same master,
-the same comparison, the same conflict checks and the same history as the one `StartPreset.4.start` points at. The
-game validates every `.binds` in the folder at startup
+**Every binds file can be edited, not only the active one** (2026-10-21, Alan). A user editing a binds file they
+are not playing — *"edit the testing binds and use that for testing in game"* — gets the same protection as the one
+`StartPreset.4.start` points at. The game validates every `.binds` in the folder at startup
 ([measured](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22)),
-so BindForge has no reason to be narrower.
+and a binds file that disappears from the live copy is caught by the check ([storage.md](storage.md) rule 14).
 
-**Per-file masters, plus one set-level fact.** Because the master knows which files it has seen, a binds file that
-**disappears** is noticed — which a per-file comparison alone could never report, since there is nothing left
-to compare.
+### What the check tells the user — 2026-10-23
 
-### What the startup check actually decides
-
-At startup — and whenever a watched live file changes — BindForge compares the game's file against the master.
-**Four outcomes, each detected exactly.** No similarity score: every case below has a precise test, and a
-threshold could only blur them.
-
-| What happened | How it is known |
-|---|---|
-| Nothing | the game's file is byte-identical to the master |
-| **A patch wiped it** | it matches [Frontier's shipped stock file](reference-data/FrontierStock-README.md) for this version |
-| **A game update added controls** | the version in the filename and the XML root is higher than the master's — see [multi-install-proposal.md](../../multi-install-proposal.md) §2 for the merge rule, and [New slots are the only thing an update brings](#new-slots-are-the-only-thing-an-update-brings--settled-2026-09-24) |
-| **The user edited in the game** | none of the above |
-
-**A percentage was considered and rejected** (2026-09-24). The case it was reaching for — "is this a reset to
-factory?" — is exactly testable against the stock reference, so the threshold bought nothing there; and it
-actively misjudges a user who rebinds a whole stick in one sitting, which is a large legitimate change
-that any similarity cut-off would read as a wipe.
+The check ([storage.md](storage.md) rule 14) runs the first time the BindForge tab is opened in a session, and at
+APPLY. It compares content exactly: a modification time is not evidence of a change, and no similarity score is
+used — a percentage cannot tell a reset from a user who rebinds a whole stick in one sitting (rejected 2026-09-24).
 
 **What the user is shown is the change, not a score.** *"The game's file has 3 bindings yours does not: Ship ›
-Landing Gear, …"* can be judged. *"90% similar"* cannot.
+Landing Gear, …"* can be judged; *"90% similar"* cannot.
 
-**The two ways out keep Krondor's names:** **adopt** takes the game's version into the master, **revert**
-pushes the master back over the game's. Never automatic, on the same ask-don't-guess rule as Restore.
+**A reset is named** (2026-10-23, Alan). When a live copy matches [Frontier's factory file](reference-data/FrontierStock-README.md),
+the warning says a game update probably reset it, offers putting the working copy back first, and asks *"Are you
+sure?"* before the reset file replaces the working copy.
 
-**When a draft exists and the game changed underneath it**, adopting moves the master while the draft sits on
-an older one. The [merge grain](#merge-grain-the-slot-not-the-action--settled-2026-09-07) settles it: adopt,
-keep the draft, and raise a conflict only for the bindings the draft and the adopted file **both** touch.
+**Nothing is decided automatically**, and the backup is taken before anything is written (rule 12).
 
-**Backups first, always.** Any adopt or revert is a write, so it takes the backup-before-write every other
-write takes, and lands an [Edit History](file-manager.md#edit-history) entry.
+**At APPLY, with edits on screen** (2026-10-23, Alan): the check settles the working copy first; APPLY then puts the
+on-screen edits on top and writes everything out.
 
-#### For the device files — settled 2026-10-05 (Alan)
+#### The check for device files — 2026-10-23
 
-`DeviceMappings.xml` and `.buttonMap` are checked per installation, against the master's
-[element set](alias-designer.md#what-the-master-actually-is) and labels. Built in
-`bindforge.devicefiles.DeviceFilesCheck` and `DeviceFilesAdopt`; revert is `DeviceFilesPush.push(installId)`.
+First setup reconciles every installation's `DeviceMappings.xml` and `.buttonMap`s into one working copy: the user
+keeps one installation's files over the others, or merges them and decides each conflict — for example, device
+3344 BFBF is named `LVWAP` in one and `VirpilLeft` in the other, so the user picks one. The result is the working
+copy, the only copy that matters, and APPLY writes it to every installation.
 
-1. **Unchanged means Apply would write nothing, and the installation holds no entry of the user's that the master
-   lacks** — the master's elements lead the file as the push puts them, and every `.buttonMap` is what the push
-   would write. The second half was found while building: Apply never removes, so a hand-added entry leaves it
-   nothing to write. Pending removals and a rename's old name are expected to linger and do not count.
-2. **Wiped means byte-identical to Frontier's stock file, or no file at all.** `DeviceMappings.xml` carries no
-   version, so the *game update added controls* row does not apply to it, and the stock reference cannot be
-   marked stale. A patch that ships a **newer** stock file therefore reads as *edited*, with every one of the
-   user's entries listed as gone — which fails safe, since nothing is ever adopted on its own. *A master holding
-   only labels on Frontier's own entries expects the stock file, so for it a stock file is not a wipe.*
-3. **An empty master means first setup has not run**, and the check compares nothing. Before then every custom
-   entry would read as an edit, and [nothing is forced](#offered-never-forced--settled-2026-09-23).
-   *Changed 2026-10-13 (Alan): the test is **not activated**, not an empty master — a user who owns nothing is
-   activated with an empty master. See [Activation](alias-designer.md#activation--2026-10-13-alan).*
-4. **Adopt changes the master, never a game file.** The other installations then stop matching it, and the
-   user's next Apply brings them in line. An entry the installation no longer has leaves the master as a
-   [pending removal](alias-designer.md#actions-and-what-each-one-reaches); an entry it has that the master does
-   not is added — unless it is already a pending removal or the old name of a rename, which are expected to
-   linger. Adopting a **wiped** installation is refused: that would empty the master into Frontier's file.
-   *From a row of the divergence list, adopt takes **one device** and nothing else of that installation's*
-   (2026-10-08, [the ways out](alias-designer.md#the-ways-out--2026-10-08-alan)).
-5. **Adopt with a draft compares device by device, label by label**, against the master as it was before the
-   adopt. What the draft left alone takes the adopted value; what only the draft changed keeps the draft's; what
-   both changed differently keeps the draft's and is reported as a conflict. Master and draft change in one
-   transaction.
-6. **Revert pushes the whole master to that one installation**, through the same push as Apply — so it adds
-   and updates, and an entry hand-added there stays (C1's *no removals*).
+After first setup, if any installation's `DeviceMappings.xml` or `.buttonMap`s no longer match the working copy —
+because the user changed something in the game, or a game update changed them — BindForge tells the user what
+changed and they reconcile it **the same way as first setup**, with the working copy as one of the sides: keep the
+working copy, keep an installation's version, or merge and decide each conflict. The result becomes the working
+copy, and goes to every installation after the backup (2026-10-23, Alan).
 
-### New slots are the only thing an update brings — settled 2026-09-24
+If the installation's file now matches Frontier's factory file, or is gone, BindForge says a game update probably
+reset it, and offers putting the working copy back first. Without `DeviceMappings.xml` the game loads no bindings.
 
-**A game update adds binding slots. It has never taken one away or renamed one** (Alan, 2026-09-24). So the
-version-bump merge has one job and one message:
+### When a game update brings a newer version — 2026-10-23
 
-- **Carry every binding the master holds into the game's new file**, control by control.
-- **New controls keep the game's default**, which is usually unbound.
-- **Tell the user what arrived:** *"This update added N new binding slots — you may want to bind them."*
-  Per control, not a reassurance: a count they can act on, and a list they can open.
+**A working copy is never written over a game file of a newer version** (Krondor, 2026-09-24; Alan, 2026-10-23). A
+newer version — `DualVirpilDawnTreader.4.2.binds` becoming `.4.3.binds`, or a newer version on the file's XML root —
+means a reconcile, never an overwrite. This holds for every one of the files: `.binds` certainly,
+`DeviceMappings.xml` and `StartPreset.4.start` possibly one day, `.buttonMap`s probably never.
 
-**Never push a master over a game file of a higher version** — Krondor's rule, agreed 2026-09-24. A push
-writes the master as it stands, so pushing it over a newer file would silently delete every control the update
-added. The version is on the surface in two places, the filename (`Custom.4.2.binds`) and the version
-attributes on the XML root, so the check is cheap and has nothing to get wrong. On a bump the merge above runs
-instead of a restore, **the merged file becomes the new master**, and the user is told what was carried
-over. This is the same principle as the auto-fix rule: never change a binding the user already has.
+**The quick way, when nothing of the user's was lost.** The game carries the user's bindings into the new version
+itself. So when the newer live copy holds every binding the working copy has, unchanged, the user is told: *"The
+game's new version has all your bindings, plus N new ones. It should become your working copy. Approve?"* On
+approval the working copy is backed up, and the game's new file becomes the working copy, under its new name.
 
-**The stock reference is version-scoped.** The [Frontier stock capture](reference-data/FrontierStock-README.md)
-is what the "did a patch wipe this back to factory?" test compares against, and it is only valid for the
-version it was taken from. After a version bump it needs re-capturing, and until it is re-captured the wipe
-test reports `unknown` rather than guessing — the same fail-safe the provenance rule already uses for a device
-absent from the reference.
+**The full reconcile, when something was removed or renamed.** If the newer file lacks a binding the working copy
+has, or changed one, the user reconciles: the new slots are listed and inserted into the working copy where they
+belong, every other difference is decided line by line, and the working copy is renamed to the new version. That
+becomes the working copy and goes out at APPLY.
 
-**The safety net, for the case nobody has seen.** If a control the master knows is *absent* from the new file,
-BindForge **keeps it and says so** rather than dropping it. Deleting a user's binding on the assumption
-that Frontier removed a control is the one outcome that cannot be undone from inside the app, and the cost of
-being wrong is not symmetrical. This path is untested because it has never happened.
+**New slots usually need binding.** The reconcile shows the list of new slots, so the user knows to put keys,
+buttons or axes on them.
+
+**Frontier's factory reference belongs to one game version.** After an update, until the
+[Frontier stock capture](reference-data/FrontierStock-README.md) is re-captured, BindForge cannot say a file was
+reset; the user is still asked, without that wording.
 
 ### Freshness Checks
 
-**A modification time is not evidence of a change (observed 2026-09-17).** Pressing apply in the game's options
-screen with nothing altered still rewrites the `.binds` file, every value identical — watched directly on a
-live file. So a freshness check compares **content**, never timestamps: a file that looks newer may hold
-exactly what BindForge already has, and treating that as a conflict would put a pointless question in front
-of the user every time they visited the options screen.
-
-**Rewritten 2026-10-05 for the master model (Alan).** A freshness check *is* [the startup
-check](#what-the-startup-check-actually-decides): the game's file is compared against the **master**, never the
-other way round, and nothing is refreshed from it without the user's say.
-
-- **The game's file differs from the master** — it was edited in the game or by hand. BindForge offers
-  **adopt** (take it into the master) or **revert** (push the master back over it). It never adopts on its own.
-- **A draft exists when that happens** — adopt moves the master, the draft is kept, and only what the draft and
-  the adopted file **both** changed is raised as a conflict, as [the startup check](#what-the-startup-check-actually-decides)
-  says.
-
-*Replaced — the working-copy model, kept because older notes use its wording:*
-
-~~Whenever BindForge is opened, or whenever a live file changes while BindForge is running (detected by `bindforge.io.BindingsMonitor`, which already watches the bindings directory and is [extended to cover the game installation folders too](#external-change-detection--two-watchers-settled-2026-10-11) rather than BindForge adding a second watcher; see [File Access](../../01-host-integration/elite-intel-platform-map.md#file-access)), BindForge compares its local working copy against the live file's current state.~~
-
-- ~~If the local copy is simply behind — the live file changed in a way that doesn't lose anything the user has customized — BindForge treats the live file as newer truth and offers to refresh the local working copy to match it.~~
-- ~~If the local working copy already has unsaved edits at the moment a live-file change is detected, BindForge does not silently pick a winner. It surfaces the conflict to the user, using the same pattern as [Unsaved Work on Exit](#unsaved-work-on-exit): keep editing the current local draft (ignoring the incoming live change for now), or refresh from the live file (discarding the unsaved local edits).~~
+**A file's date is not evidence of a change** (observed 2026-09-17). Pressing Apply on the game's controls screen
+with nothing altered still rewrites the whole `.binds` file, every value the same. So [the check](storage.md)
+compares what is in the files — the values — never their dates, and never their exact bytes: a different line
+ending or byte-order mark is not a change. Otherwise the user would be asked about a change every time they visited
+the game's controls screen.
 
 ### Destructive Change Detection
 
-**Rewritten 2026-10-05 for the master model (Alan).** Data loss is the startup check's **wiped** outcome: the
-game's file matches [Frontier's stock reference](reference-data/FrontierStock-README.md), or is gone. The
-master is never refreshed from a game file, so the source for the repair is always there, and the repair is
-**revert** — offered, never automatic — raised as an Error-level condition (Elite-Intel's tabbed UI has no
-badge affordance yet, see [Status Badges](../../01-host-integration/elite-intel-platform-map.md#status-badges)).
+**A game update can overwrite or delete the user's files** — it has happened to `DeviceMappings.xml`, and nothing
+guarantees it cannot happen to the others. BindForge never takes a reset file as the new truth: a reset is named, and
+putting the working copy back is offered first ([the check](#what-the-check-tells-the-user--2026-10-23),
+[device files](#the-check-for-device-files--2026-10-23)).
 
-*Replaced — the working-copy model:*
+**The user is told even if they never open BindForge** (2026-10-23, Alan). When Elite-Intel starts, once first setup
+is complete, it reads the live copies and compares them with the working copy — reading only, writing nothing, no
+backup. If anything differs it says once, spoken and logged: *"Your control files were changed outside BindForge.
+Open BindForge to check them."*
 
-~~Not every live-file change is legitimate. Elite Dangerous itself has, at least once, overwritten a player's `DeviceMappings.xml` back to factory defaults during a game update — the same real-world incident referenced above — and there is no guarantee a future update couldn't do the same to any of the other three domains.~~
+**If the working copy cannot be read,** BindForge says so and offers the most recent backup to restore from
+([storage.md](storage.md) rule 10).
 
-~~BindForge does not treat "the live file changed" and "the live file is now correct" as the same thing. Before refreshing its local working copy from a changed live file, BindForge checks whether the change looks like **data loss** rather than a legitimate update — specifically, whether content the working copy (or a recent File Manager backup) already knows about is now missing from the live file: custom device aliases gone from `DeviceMappings.xml`, bindings reverted to defaults, or anything else that would mean a normal freshness refresh would silently make BindForge complicit in overwriting the user's own configuration with a damaged file.~~
+### Create — a new player's first binds file — 2026-10-24
 
-~~**If a change looks like data loss:** BindForge does not sync its working copy to match. Instead, it raises this as an Error-level condition (Elite-Intel's tabbed UI has no badge affordance yet — some visible equivalent is required, see [Status Badges](../../01-host-integration/elite-intel-platform-map.md#status-badges)) and offers to **restore** the missing configuration back onto the live file immediately — the roles reverse, and the working copy (or, if the working copy itself is somehow unavailable, the most recent File Manager backup) becomes the source used to overwrite the damaged live file, through the same backed-up, atomic write every other BindForge write already uses (see [Data Integrity Principle](#data-integrity-principle)).~~
+**A new player may have no binds file of their own.** The game runs on one of Frontier's factory binds files until the
+player first rebinds something in the game, so there would be nothing of theirs to edit — for exactly the players
+who would benefit most.
 
-This is a general behaviour, not specific to Alias Designer — see also [Bind Editor — Shell](bind-editor.md#shell-common-to-all-modes) and [Preset Editor — Sync Badge](preset-editor.md#sync-badge) for how each section surfaces it.
+**CREATE sits at the left end of the [APPLY / DISCARD bar](#apply-and-discard--one-pair-above-bindforges-tabs-2026-10-24-alan),
+shown only while the user has no custom binds file** (2026-10-24, Alan). Until it is pressed, Alias Designer, Bind
+Editor and Preset Editor are greyed out — the sign to a new player that this is where to start. **File Manager stays
+usable**, so a returning player on a new PC can restore a backup instead of creating a file they do not want.
 
-### First-Time Startup
+**Pressing CREATE asks two things:**
 
-Live File Synchronization assumes a live custom `.binds` file already exists for BindForge to mirror. That assumption doesn't hold for a player who has never customized a binding in-game — Elite Dangerous runs perfectly well on one of its own factory binds files (from the game install's `ControlSchemes` folder) indefinitely, and never writes anything to the player's own bindings folder until the player changes a binding in-game for the first time. Left unhandled, BindForge would show an empty or broken state for exactly the players who'd benefit from it most: newcomers who haven't touched their bindings yet.
+- **Which of Frontier's factory binds files to start from** — a dropdown of the factory binds files in the
+  installation's `ControlSchemes` folder (30 on Alan's: `KeyboardMouseOnly`, `SaitekX56`, `ThrustMasterHOTASWarthog`,
+  the gamepad layouts and the rest), **`KeyboardMouseOnly` first and selected**, as the game's own default.
+  BindForge does not guess which factory file fits which controller ([principle 6](principles.md)); Alias
+  Designer's device list, right there, shows what is attached.
+- **A name for the new binds file**, pre-filled `Custom` — the name the game itself gives the first binds file it
+  makes — and held to the [binds-file naming rules](bind-editor.md#shell-common-to-all-modes).
 
-**Detection:** the preset file (`StartPreset.4.start` — see [Preset Editor](preset-editor.md)) records, independently per section (General/Ship/SRV/On Foot, the same four sections Preset Editor's own dropdowns manage), the BindName currently active for that section — factory or custom, always known, never guessed. BindForge checks this per section on startup.
+**What CREATE does is an edit not applied:** the new binds file, copied from the chosen factory file under the chosen
+name, and all four lines of `StartPreset.4.start` pointing at it. The greyed tabs come alive, CREATE greys out, and
+APPLY and DISCARD light up. **APPLY** writes it, and CREATE disappears for good — the user now has a custom binds
+file. **DISCARD** throws it away, and the user is back where they started: CREATE lit, the tabs greyed.
 
-**The only reader that exists today cannot do that** (checked 2026-09-18). `BindingsLoader.getActivePresetName()`
-takes the **first non-empty line** of the file, on the stated assumption that the name simply repeats — which
-holds for the common case and fails for exactly the split preset file this screen is built to handle. Against the
-shipped specimen `KeyboardMouseOnly / Custom / Custom / Custom`, it reports *KeyboardMouseOnly* and never sees
-the other three. **First-Time Startup is the first screen a new user meets**, so a mis-detection there
-offers to fix a section that is fine and stays silent about three that are not. Reading all four lines is a
-prerequisite for this feature, not a refinement of it — see [Preset Editor — what exists in code
-today](preset-editor.md#what-exists-in-code-today--checked-2026-09-17).
+A user who already has a custom binds file never sees CREATE; a section still on a factory binds file is pointed at a
+custom one in the Preset Editor. *Until 2026-10-24 this was a prompt asking per section — Create / Choose sections /
+Not now — and before 2026-10-23 it wrote straight into the game's folders.*
 
-**If a section is still pointing at a factory binds file:** BindForge asks the player whether to create a real custom `.binds` file for that section, seeded from a copy of the *exact* factory binds file currently active for it (read from the preset file, not assumed). If the player agrees:
-1. BindForge copies that factory binds file's content into a new file in the player's own bindings folder.
-2. BindForge repoints that section's entry in the preset file to the new custom file, through Preset Editor's own existing write path (Save, backed by the standard timestamped-backup-before-write) — the same mechanism the player would use to manually switch binds files themselves.
+Whether a factory file copied byte for byte is a valid custom binds file is still
+[testing item 7](../../00-overview/testing-required.md).
 
-From that point on, the section behaves exactly like any other managed domain — normal Live File Synchronization takes over.
+#### Writes outside Apply — none
 
-**If the player declines**, that section is simply left alone. BindForge doesn't force the issue, and re-offers the next time that section is found still on a factory binds file.
+**Nothing writes to the game's files outside APPLY and RESTORE** (2026-10-23, Alan; [principle 4](principles.md)).
+Until 2026-10-23 three writes did, on the grounds that each only created something new: a custom binds file from a
+factory one (now [in the working copy](#create--a-new-players-first-binds-file--2026-10-24)), a controller's name at
+onboarding, and a generated `.buttonMap` at Elite-Intel startup.
 
-**Per-section, not all-or-nothing:** because the preset file tracks each of the four sections independently — the same split preset file Preset Editor already supports — a player can be partway customized (some sections on a real custom file, others still on factory defaults), and this flow only prompts for the sections that actually need it.
+**A controller named at onboarding is an edit not applied**: its `DeviceMappings.xml` entry and `.buttonMap` reach the
+working copy and every installation at the next APPLY.
 
-#### When it fires — settled 2026-09-12
-
-**When the player first opens BindForge, not when Elite-Intel launches.** The check is cheap and could run at startup, but a newcomer who launched the application to do something else has not asked about bindings, and a prompt about factory binds files at that moment is an interruption rather than an offer. Opening the Bindings section is the moment the question is *in context*, and it is also the first moment the answer matters — the section cannot show a real state until it exists.
-
-The four sections are gathered into one prompt rather than asked about one at a time:
-
-```
-2 of 4 sections are on factory binds files.
-Ship and SRV cannot be edited until they
-have a custom binds file of their own.
-
-  [ Create both ]  [ Choose ]  [ Not now ]
-```
-
-**Choose** opens the per-section picker, for a partly-customized player who wants one section and not another.
-
-#### It applies immediately — settled 2026-09-12
-
-**This is one of three documented exceptions to [Apply is the only thing that writes a live game file](#live-file-synchronization)** — [the complete list](#writes-outside-apply--the-complete-list) follows below. The click on **Create** is the consent, and setup completes when the player gives it. Leaving a draft here would mean they pressed Create and nothing was created, then asked them to **Apply** a change they cannot yet evaluate, in a product they opened seconds ago.
-
-**Why the exception is safe rather than merely convenient.** The draft model exists to stop BindForge overwriting a user's work. **This case is defined by there being none** — it runs only where no custom `.binds` exists for that section. Concretely:
-
-| The write | Why it cannot lose anything |
-|---|---|
-| Create the new `.binds` | **Additive.** The file did not exist; nothing is overwritten. |
-| Repoint `StartPreset.4.start` | **One line, reversible.** [Preset Editor](preset-editor.md) switches it back at any time. |
-| The factory binds file | **Never touched.** `ControlSchemes` is read-only to BindForge; the original remains exactly as shipped. |
-
-So the player is told what happened and how to undo it, rather than being asked to authorize it twice:
-
-```
-Created Custom.binds for Ship and SRV,
-and set both sections to use them.
-
-Your factory binds files are unchanged.
-You can switch back any time in Preset Editor.
-```
-
-**The exception does not generalize, and its boundary is the point.** It covers *creating* a binds file where none existed, at first open, with explicit consent. Every subsequent write to that section — every binding the player then edits — goes through the draft and Apply like everything else. A write that modifies existing player data is never an exception, whatever the flow.
-
-#### Writes outside Apply — the complete list
-
-**Added 2026-09-13**, when device onboarding brought the count to three. Every entry creates something that did
-not exist; none changes an existing binding, entry or file.
-
-| Write | When | Why it cannot lose anything |
-|---|---|---|
-| A custom binds file from a factory one | [First-Time Startup](#it-applies-immediately--settled-2026-09-12), on **Create** | a new `.binds`; one reversible `StartPreset.4.start` line; the factory binds file untouched |
-| A controller's name | [onboarding](alias-designer.md#what-onboarding-writes-and-when), when the name is confirmed or the default taken — **only for a controller `.binds` does not reference by hex** | adds a new `DeviceMappings.xml` entry beside the existing ones; creates a `.buttonMap` that did not exist |
-| A generated `.buttonMap` | [Elite-Intel startup](alias-designer.md#at-elite-intel-startup-a-buttonmap-for-every-connected-named-controller), for a connected, named controller without one — and when such a controller connects later (2026-10-06) | creates a file that did not exist; never overwrites |
-
-**What is never on this list:** anything that rewrites existing player data. Naming a controller that `.binds`
-already references by hex rewrites its bindings, so it waits for Apply — entry and rewrite together.
-
-**Testing-required, and now load-bearing:** whether a factory binds file can be copied byte-for-byte into the player's bindings folder as a valid starting `.binds` file, or whether the game's own first-customization save does something to the file beyond a plain copy, hasn't been confirmed against a real install — see [testing-required.md](../../00-overview/testing-required.md). **Applying immediately raises the stakes on that test:** a bad copy reaches the live bindings folder with no review step in front of it. The timestamped backup still runs, so it is recoverable rather than dangerous — but this should be confirmed before the flow ships, not after.
+**Default labels** — `Button 1`, `X Axis`, `Hat 1 Up` — are worked out by BindForge for every connected controller and
+shown on its own screens; they become `.buttonMap` files at the next APPLY. The game's own controls screen shows them
+from then.
 
 ## Top-Level Structure
 
@@ -442,118 +303,37 @@ BindForge's UI is organised into four top-level sections, in this order:
 
 ## Data Integrity Principle
 
-BindForge inherits and applies Elite-Intel's project-wide [Data Integrity Principle](../../01-host-integration/elite-intel-platform-map.md#data-integrity-principle): every write either fully succeeds or fully rolls back. Nothing is written to a live game file without a timestamped backup first, using an atomic write-to-temp-then-replace pattern everywhere.
+BindForge follows Elite-Intel's [Data Integrity Principle](../../01-host-integration/elite-intel-platform-map.md#data-integrity-principle):
+a backup first ([storage.md](storage.md) rule 12), and each file written to a temporary file and swapped in, so a
+crash never leaves a half-written file.
+
+**APPLY writes everything it can** (2026-10-23, Alan). If a file or an installation cannot be written, the others are
+still written, and the user is told — *"updated 2 of 3: Epic — folder not found"*. Nothing is rolled back. The working
+copy holds the edits, and the next APPLY writes whatever was missed.
 
 ## Reconciling BindForge Edits With In-Game Rebinds
 
-**Settled 2026-09-06.** A player can rebind inside Elite's own controls screen while BindForge is open. Both sides then hold a changed file, and something has to decide what happens. Elite-Intel already implements the mechanism, in `BindingsWorkingCopyRepository`.
+**When the check finds a live copy that changed and the user chooses merge** ([storage.md](storage.md) rule 14), this
+is the dialog. *Until 2026-10-23 a V1.1 mechanism decided instead — three fingerprints; an in-game rebind silently
+taken when BindForge had no edits, and Apply refused when both sides had. Rule 14 replaced it: the user is always
+asked.*
 
-Three SHA-256 fingerprints are compared:
+**One row per line item** — see [merge grain](#merge-grain-the-slot-not-the-action--settled-2026-09-07) — with the
+working copy's value and the game's side by side; clicking one picks it. **Every line that differs is a row**
+(2026-10-22, Alan). A full-file diff was rejected: a `.binds` holds 774 slots, and showing two versions of it asks a
+user to think like a programmer about their joystick.
 
-- **baseline** - the game file as it stood when the draft was taken, stored beside the draft as
-  `<BindName>.elite-intel.base.sha256`
-- **draft** - the player's copy, carrying BindForge's edits
-- **live** - the game's file as it stands right now
+**Nothing is pre-selected.** Merge stays disabled until every row has an answer, and a count says how many are left:
+either default silently destroys work in the case the user does not read the dialog. **Keep all mine** and **Keep
+all in-game** set every row at once; pressing one is itself the decision. **Cancel resolves nothing.** **If the game
+changes the file again** while the dialog is open, the comparison re-runs; answers on rows that did not change again
+are kept.
 
-| Draft changed | Live changed | Meaning | Behaviour |
-|---|---|---|---|
-| no | no | idle | nothing |
-| **yes** | no | ordinary editing | apply proceeds |
-| no | **yes** | player rebound in-game, BindForge untouched | `refreshFromGameIfClean` adopts the change into the draft and re-baselines, silently. Nothing is lost and nothing is asked. |
-| **yes** | **yes** | both sides edited | **apply refuses**, via `BindingsApplyService.verifyGameFileDidNotChange` |
-
-The refusal is what makes it safe to leave BindForge open while the game runs: an in-game rebind cannot be silently overwritten by a stale draft. The current message offers only *reload from game* or *discard the draft* - both of which lose somebody's work.
-
-### Direction: merge rather than choose a loser
-
-**Agreed in principle 2026-09-06; dialog settled 2026-09-12 — [see below](#the-conflict-dialog--settled-2026-09-12).** The last row deserves better than a forced choice. `.binds` is a list of actions with stable names, each holding a primary and a secondary slot, so a three-way compare against the baseline resolves per action rather than per line:
-
-- changed in the draft only -> take the draft
-- changed live only -> take live
-- changed both sides to the same value -> not a conflict
-- changed both sides differently -> a real conflict, and the only case worth interrupting for
-
-**Show without asking, where nothing conflicts.** The silent adoption in row three is correct behaviour and must survive: a player who has not touched BindForge should never be prompted about their own in-game rebind. Non-conflicting merges are reported - a summary the player can open - rather than confirmed. Confirmation is reserved for genuine conflicts.
-
-### The conflict dialog — settled 2026-09-12
-
-**It never interrupts.** Detection raises a banner on the BindForge screen and nothing more — no modal,
-no stolen focus. The player may be mid-flight when their in-game rebind collides with a draft edit, and
-**nothing is about to be written either way**, so there is nothing urgent to decide.
-
-```
-⚠ 3 controls were rebound in-game while you were
-  editing. 2 merged cleanly. 1 needs your decision.
-
-                              [ Review ]  [ Later ]
-
-  APPLY is unavailable until the conflict is resolved.
-```
-
-The banner reports the clean merges in the same breath as the conflict, because *"2 merged cleanly"* is
-what tells the player the remaining one is genuinely worth their attention rather than the usual noise.
-**Later** dismisses it; the conflict stays, and **Apply stays unavailable** until it is resolved. That
-is the existing refusal in `BindingsApplyService.verifyGameFileDidNotChange` doing its job — it is not
-being relaxed, it is being given a way out that does not cost somebody their work.
-
-#### The resolution list
-
-**One row per conflicting slot**, both values side by side, and clicking a value picks it:
-
-```
-1 conflict     [ Keep all mine ]  [ Keep all in-game ]
-
-CONTROL           SECONDARY
-                  YOURS        IN-GAME
-Landing Gear      ( ) L        ( ) G
-Cargo Scoop       ( ) Home     ( ) End
-
-  2 of 2 still to decide
-                          [ Merge ]  disabled
-```
-
-**A row is a slot, not a control** — the column header says which, because
-[Primary and Secondary are separate entities](#merge-grain-the-slot-not-the-action--settled-2026-09-07)
-and one control can appear twice with different answers. The layout deliberately echoes the bind grid:
-the player is choosing between two keys for a named control, which is what they do all day in
-[Game Mode](bind-editor.md#game-mode).
-
-**A full-file diff was rejected.** A `.binds` holds 774 slots, and showing two versions of it asks a
-user to think like a programmer about their joystick. One-at-a-time was rejected too: it hides how
-much they are agreeing to.
-
-#### Nothing is pre-selected
-
-**Merge stays disabled until every row has an answer**, and the count says how many are left.
-
-**Why no default, when a default would be one click.** Either default silently destroys work in the case
-the player does not read the dialog. Pre-selecting *in-game* discards BindForge edits, which is the exact
-outcome the apply refusal exists to prevent. Pre-selecting *yours* overwrites a binding the game is
-already using. **A genuine conflict is rare by construction** — it needs both sides to change the same
-slot to different values between one apply and the next — so the cost of asking is a few clicks in an
-uncommon case, and the cost of guessing is lost work with nobody aware it happened.
-
-**The bulk buttons are not a default.** *Keep all mine* and *Keep all in-game* set every row at once, but
-pressing one is itself the decision. They exist so that twenty conflicts after a long session are not
-twenty clicks; they do not pre-empt the choice.
-
-#### Where the result goes
-
-**Merge writes the draft, not the game.** The merged set — clean merges and resolved conflicts together —
-becomes the new draft, and the baseline is reset to the live file it was reconciled against. The player
-then reviews and applies like any other edit, so **the merge itself is discardable**: Discard puts the
-draft back and the live file was never touched.
-
-**Cancel resolves nothing.** The draft and the conflict both stand, and Apply remains unavailable. There
-is no state in which closing the dialog loses an edit from either side.
-
-**If the game changes again mid-resolution**, the comparison is simply re-run against the new live file.
-Decisions already made on slots that did not change again are kept; a slot that moved underneath the
-dialog returns to undecided rather than silently resolving to a value the player never saw.
+**The result** becomes the working copy and is written to the live copies, backup first (rules 7 and 12).
 
 ### Merge grain: the slot, not the action — settled 2026-09-07
 
-**Primary and Secondary are separate entities, not two halves of one.** A live change to *Primary* and a draft change to *Secondary* of the same action are **two independent edits and merge cleanly** — there is nothing to ask the player about.
+**Primary and Secondary are separate entities, not two halves of one.** A change to *Primary* and a change to *Secondary* of the same action are **two separate line items** in [the merge](#reconciling-bindforge-edits-with-in-game-rebinds).
 
 It is not simply twice the element count, because the three element types carry different numbers of slots. From the 457-element reference specimen in [the format documentation](domain-knowledge/EliteDangerous-BindsFileFormat.md):
 
@@ -579,39 +359,27 @@ So around 600 addressable slots on that file rather than the ~900 a flat doublin
 
 The same reasoning covers file-level non-binding settings such as `KeyboardLayout`: one value, no slot, so both sides changing it is a conflict.
 
-**Settled 2026-09-12:** [the conflict dialog](#the-conflict-dialog--settled-2026-09-12) resolves per slot, which is why the grain above is the thing it needed to know.
+**Settled 2026-09-12:** [the merge dialog](#reconciling-bindforge-edits-with-in-game-rebinds) resolves per slot, which is why the grain above is the thing it needed to know.
 
-**Gap:** all of the above exists for `.binds` only. `DeviceMappings.xml` and `.buttonMap` have no baseline and no staleness check. Extending the same three-fingerprint treatment to them is new work. *They have a draft since 2026-10-04 — two tables beside the master, see [Alias Designer — where the draft lives](alias-designer.md#actions-and-what-each-one-reaches).*
 
 ## Writing While the Game Is Running
 
-BindForge does not block writes while Elite Dangerous is running, and does not detect whether it is running. Reinstating such a block was reconsidered on 2026-09-06, on the strength of the in-game-rebind problem above, and rejected again: the three-fingerprint check catches precisely the case that is dangerous and leaves every other session unpenalised, which a blanket block does not.
+**BindForge does not block writes while Elite Dangerous is running, and does not detect whether it is.** An earlier
+**Dormant Mode** blocked every write while the game was up; it was dropped in August 2026 because the game re-reads
+`.binds` only when its own controls screen opens, so the risk is far narrower than "the game is running", and
+because Elite-Intel cannot detect the game process.
 
-Earlier designs specified a **Dormant Mode** that hard-blocked every write for the entire time the game was up. That was dropped in August 2026. Two reasons: the block window was far wider than the actual risk — the game only re-reads the Bind Domain (`.binds`) when its own in-game Controls menu is opened, so an edit made while the player is out flying has no effect until they next open that menu — and it made BindForge depend on game-process detection that the host does not provide.
+**The risk that remains** (measured 2026-09-18): if the game's controls screen is open while BindForge applies, and
+the user then applies in the game, the game
+[writes back the whole file as it loaded it](bind-editor.md#an-in-game-apply-re-emits-the-whole-file--observed-2026-09-17),
+and BindForge's write is gone. **Nothing is lost for good:** the working copy still holds the user's work, and the
+next check — at Elite-Intel startup, when BindForge is next opened, or at the next APPLY ([storage.md](storage.md)
+rules 14–15) — finds the live copy changed and asks.
 
-Configuration is protected instead by two mechanisms that never depended on Dormant Mode and are unchanged:
+**APPLY's confirmation always says** (2026-10-23, Alan): *"Close the game's controls screen before applying. Changes
+made in BindForge and in the game at the same time can be lost."* — rule 13's warning, at the moment it matters.
 
-- **A timestamped backup before every write**, with the atomic write-to-temp-then-replace pattern described
-  under [Data Integrity Principle](#data-integrity-principle). Nothing reaches a live game file un-backed-up.
-- **[Destructive Change Detection](#destructive-change-detection)**, which catches the case that motivated the
-  original caution — the game overwriting a player's configuration — and offers to restore it, regardless of
-  what caused the loss.
-
-**Residual risk, restated 2026-09-18 — it is wider than “narrow”, and it is not a torn read.** Two observed
-facts change the shape of it. The game [re-reads `.binds` only when its own Controls screen opens](domain-knowledge/EliteDangerous-BindsFileFormat.md), and an in-game apply
-**re-emits the entire file from the game's in-memory model** — watched directly on a live file, where a save
-with nothing changed still rewrote every value ([how that was established](bind-editor.md#an-in-game-apply-re-emits-the-whole-file--observed-2026-09-17)).
-
-Put together: if a user opens the Controls screen, BindForge writes, and the user then applies
-in-game, **BindForge's write is gone in its entirety** — not corrupted, not half-merged, simply replaced by
-what the game loaded when the screen opened. The exposure is not an instant but **the whole time that screen
-is open**, and the loss is whole-file.
-
-**What that does and does not change.** It does not revive Dormant Mode: the game being *running* is still
-not the risk, and blocking for a whole session still costs more than it saves. What it argues for is narrower
-and cheaper — [Destructive Change Detection](#destructive-change-detection) already catches the loss after the
-fact and offers the backup, which is the mitigation that matters. A warning at the point of writing remains
-the next cheapest step if this turns out to bite anyone in practice.
+Every write is backed up first (rule 12) and written atomically ([Data Integrity Principle](#data-integrity-principle)).
 
 ## Upgrading the Existing Bind Editor
 
@@ -624,31 +392,33 @@ That settles what used to be this document's hardest open question — which com
 
 ### There is one writer, and it already exists
 
-`BindingsApplyService`, `BindingsWorkingCopyRepository`, `BindingsWriter`, `elite.intel.io.TimestampedBackups` and `AppPaths.getBindingsWorkingDir()` are **BindForge's pipeline already**. They are not borrowed from a neighbour; the neighbour is the thing being upgraded. The [draft model](#live-file-synchronization) this document describes is the working-copy repository that exists today, with Apply as the only path to a live file — save
-[three documented exceptions](#writes-outside-apply--the-complete-list), each of which creates something that
-did not exist rather than modifying anything.
+`BindingsApplyService`, `BindingsWorkingCopyRepository`, `BindingsWriter`, `elite.intel.io.TimestampedBackups` and `AppPaths.getBindingsWorkingDir()` are **BindForge's pipeline already**. They are not borrowed from a neighbour; the neighbour is the thing being upgraded. The [working copy](#live-file-synchronization) this document describes is the working-copy repository that exists today, grown, with APPLY and RESTORE as the only paths to a live file — [no exceptions](#writes-outside-apply--none) since 2026-10-23.
 
 **The hazard this replaces is worth naming, so that nobody rebuilds it.** A second editor would have meant two working copies and two writers over the same `.binds`. Each would have been individually safe — backup, atomic write, the [Data Integrity Principle](#data-integrity-principle) satisfied — and **jointly they would not have been:** one saves, the other is still holding a stale in-memory model, the player applies there, and the first editor's work is gone with no operation having misbehaved. The Data Integrity Principle does not
 catch that, because it governs atomicity *within* an operation, not ownership *across* components.
 
 **Under upgrade-in-place that failure cannot occur, because the second owner is never built.** The rule that keeps it that way is simple: BindForge adds no working copy, no writer and no working directory of its own. Where a capability is missing, the existing class grows it.
 
-#### Where the `.binds` and `StartPreset` master lives — settled 2026-10-12 (Alan, Foundation F3)
+#### Where the working copy lives — 2026-10-23
 
-Scoping [Core C4](../../05-build-plan/core.md#slices) against the rule above, and against the
-[foundation terms](../../05-build-plan/foundation.md): **only one piece of it changes a file V1.1 ships.**
+The working copy is Elite-Intel's existing working folder, `AppPaths.getBindingsWorkingDir()`, grown to hold every
+file — not a new folder beside it ([one writer](#there-is-one-writer-and-it-already-exists)). Inside, it matches the
+game's own layout, so a user browsing to it recognises what they see: `Bindings\` holds every `.binds` and
+`StartPreset.4.start`; `ControlSchemes\` holds the one `DeviceMappings.xml`, with every `.buttonMap` in
+`ControlSchemes\DeviceButtonMaps\` (2026-10-23, Alan). *Until 2026-10-23 this section placed a separate master, its
+Edit History and a Revert method; [storage.md](storage.md) replaced them.*
 
-| Piece | Where | Why |
-|---|---|---|
-| Whole-file `.binds` master, one per binds file | a **new V1.2 class**, files under `elite-intel/bindings/master/` | it is never edited, so it is not a second working copy; it edits no V1.1 file |
-| Which binds files the master has seen | the master folder's listing | the folder is the record, as for [Edit History](file-manager.md#edit-history) — no table |
-| The `.binds` startup check, and the version-bump merge | **new V1.2 classes** | they read; the merge is pure |
-| `.binds` Edit History | the existing `AppPaths.getBindingsBackupDir()`, pruned by V1.2 to the retention setting | `BindingsApplyService.apply` already keeps the replaced file there under a timestamped name |
-| **Revert — the master pushed over the game's file** | **one new `BindingsApplyService` method**: the same validate, back up, atomic write, from a given source file | `apply` pushes only the working copy, so pushing the master through it would destroy the draft; writing it any other way would be a second writer |
-| `StartPreset.4.start` master, and writing `StartPreset.4.start` | **new V1.2 classes** | nothing writes `StartPreset.4.start` today, so there is no existing writer to grow |
+### APPLY and DISCARD — one pair, above BindForge's tabs (2026-10-24, Alan)
 
-A master store that fails after an Apply succeeded fails safe: the next check reads the game's file as edited
-and asks, rather than adopting it.
+**APPLY and DISCARD sit once, above BindForge's four tabs — Alias Designer, Bind Editor, Preset Editor, File Manager —
+and beneath Elite-Intel's main tabs.** They are the only APPLY and DISCARD in BindForge; no tab has its own. They act
+on everything: APPLY pushes the whole working copy, with every edit not applied from any tab, to the live files in
+every installation; DISCARD throws away every edit not applied, from every tab.
+
+**They are lit only when there are edits not applied, and greyed out otherwise** — so their state is itself the hint
+that there is work to apply. Placed under Elite-Intel's main tabs, they are where the mouse goes to leave BindForge,
+so the user sees them before switching away. Leaving with edits not applied still asks
+([Unsaved Work on Exit](#unsaved-work-on-exit)).
 
 ### Two narrow boundaries — one stays, one widens
 
@@ -689,39 +459,17 @@ Two consequences worth building for:
    though the user sees it as bound. That is a real state with a real remedy, and it belongs in
    [Anomalies](bind-editor.md#four-kinds-one-question) rather than only in a log line.
 
-### External change detection — two watchers, settled 2026-10-11
+### External change detection — 2026-10-23
 
-**Rewritten 2026-10-11 (Alan, Core C5).** Two watchers, one per kind of file, because the two kinds are written
-by different hands:
+**BindForge does not watch the files.** The check runs at three moments — when Elite-Intel starts, the first time the
+BindForge tab is opened in a session, and at APPLY ([storage.md](storage.md) rules 5, 7, 14–15) — and the one at
+APPLY catches anything that changed while BindForge was open, before anything is written (2026-10-23, Alan).
+*Until 2026-10-23 `DeviceFilesMonitor` polled every installation's device files every two seconds to refresh the
+Alias Designer screen.*
 
-- **The bindings folder** (`.binds`, `StartPreset.4.start`) stays with `bindforge.io.BindingsMonitor` and its
-  `WatchService`, unchanged.
-- **Each installation's `DeviceMappings.xml` and `.buttonMap` files are polled**, by
-  `bindforge.devicefiles.DeviceFilesMonitor` through `elite.intel.io.FilePoller`, every two seconds. The game writes
-  these, and a `WatchService` notification for another process's write can arrive late, merged, or never — and a
-  missed one is never recovered (Krondor, 2026-10-03, in the
-  [platform map](../../01-host-integration/elite-intel-platform-map.md#the-shared-write-path-is-eliteintelio--built-2026-10-03)).
-  `AuxiliaryFilesMonitor` polls for the same reason.
-
-**What a change does.** The monitor publishes `DeviceFilesChangedEvent`, and the Alias Designer screen refreshes —
-which runs [the startup check](#for-the-device-files--settled-2026-10-05-alan) against the master again, by
-content. The monitor itself judges nothing and writes nothing: a changed stamp is not a changed file.
-
-- **Installations are re-read on every poll**, so one added or removed is followed; one the registry knows is
-  missing is not polled.
-- **BindForge's own writes are reported too** — Apply, revert, adopt, first setup, generated `.buttonMap`s. That
-  costs one refresh that finds the files matching the master, which was judged cheaper than telling the monitor
-  which writes were ours.
-- **No refresh asked for is lost** (C5 review, 2026-10-11, Alan): a request made while the screen is refreshing —
-  a file change, the end of an APPLY, a ship-profile change — is followed by one more refresh when the running one
-  ends. Before, it was dropped, and a poll landing mid-APPLY left the screen showing what APPLY had already changed.
-- **Not here:** the Error-level condition for a [wipe](#destructive-change-detection), which still has no caller.
-
-*Replaced — one watcher for everything:*
-
-~~`BindingsMonitor` already watches the bindings directory with a `java.nio.file.WatchService`, re-parsing and swapping a `volatile` map when the file changes. **It is extended to also register the detected game installation folders**, rather than BindForge adding a watcher of its own — one component owns external-change detection across all four [managed file domains](#managed-file-domains).~~
-
-~~The install folders differ from the bindings directory in one way worth building for: there may be several, and they appear and disappear as the player adds or removes installations, so registration is dynamic where the bindings directory is fixed. Nothing in Elite-Intel reads `DeviceMappings.xml` or `.buttonMap` at runtime, so this watch serves BindForge's own freshness checks rather than any live consumer.~~
+**`BindingsMonitor` stays, unchanged, and is not BindForge's.** It watches the bindings folder so the assistant
+reloads the user's key bindings when `.binds` changes — see
+[BindForge must not publish `BindingsUpdatedEvent`](#bindforge-must-not-publish-bindingsupdatedevent).
 
 ### BindForge must not publish `BindingsUpdatedEvent`
 
@@ -736,7 +484,8 @@ wrong key mid-flight. Worse than a stale screen: a wrong action in the game.
 is driven by the filesystem, not by the event.** There is no staleness gap and no pre-existing bug.
 
 `BindingsUpdatedEvent` is a UI notification — its subscribers are UI panels because that is all it is for. It
-is published by `BindingsMonitor` (the watcher noticed a change) and `PlayerBackupService` (restore).
+is published by `BindingsMonitor` (the watcher noticed a change). *`PlayerBackupService` published it on restore too,
+until RESTORE replaced it (Storage S3, 2026-10-25); RESTORE publishes nothing.*
 Applying to a live `.binds` trips the watcher, which publishes the event itself; **a manual publish on top of
 that double-fires.**
 
@@ -746,37 +495,17 @@ defeats that.
 
 ## Unsaved Work on Exit
 
-**Settled 2026-09-06.** Leaving BindForge with unsaved edits offers **two** options: **Save** (write the
-edits into the draft) or **Discard** (throw them away). Both are cheap and neither touches a game
-installation. It fires on switching to another Elite-Intel tab and on application shutdown.
+**Leaving BindForge with edits not applied** — switching to another Elite-Intel tab, or closing Elite-Intel — asks
+first ([storage.md](storage.md) rule 9), with three choices: **Go back** (return with the edits still on screen; on
+closing Elite-Intel it cancels the close), **Discard** (throw them away and leave), or **Apply** (apply, with its usual
+confirmation and backup, then leave).
 
-**Apply is deliberately not on this dialog.** Writing to a live game installation is the one action
-BindForge takes that a player cannot shrug off, and it must never be the incidental outcome of navigating
-away from a screen. It stays a button the player goes and presses on purpose - the same principle
-[Alias Designer's action table](alias-designer.md#actions-and-what-each-one-reaches) states, and the same
-one `BindingsApplyService` already enforces in code: *"The game directory is never touched until the user
-explicitly requests apply."*
-
-An earlier revision of this section specified a three-option dialog (Apply to Game / Keep Draft /
-Discard). It put the only irreversible option first, in a dialog raised because the player was already
-leaving. Recorded here because the wording survives in older notes.
-
-### Built as a ruling, not code — 2026-10-12 (Alan, Core C6)
-
-**Saved but not applied is not unsaved.** A draft that differs from the master (`DraftChanges.stored()`) is work
-already saved: offering Save on it would do nothing, and Discard would throw away saved work. The prompt never
-fires on it — the same flaw recorded against the `.binds` close prompt in
-[core.md's known issues](../../05-build-plan/core.md#known-issues).
-
-**Today the only unsaved state in BindForge is the Device Editor's open label boxes**, and its own close prompt —
-Save, Discard, Keep editing, on BACK, the close glyph and Esc — is this prompt for Alias Designer. The Alias
-Designer screen holds no edits of its own: SAVE, CLEAR, RESET LABELS and their undo each write the draft as they
-are pressed. The editor is modal, so neither a tab switch nor the main window's close can be reached while it is
-open, and the only other exit (`SystemShutDownEvent`, from the update button on the Settings tab) is blocked behind
-it too. So nothing was built for C6.
-
-**When a later screen holds edits outside a modal dialog** — Preset Editor's dropdowns, the Bind Editor — it brings
-this prompt with it, on the tab switch and on the close in `AppView`, guarding only its own unsaved edits.
+**Nothing is selected, and Enter chooses nothing** (2026-10-23, Alan): the user clicks one of the three, so no choice
+is made by accident. **Esc and the close glyph are Go back**, which loses nothing. Writing to the game's files must
+never be the incidental outcome of leaving a screen — the 2026-09-06 reason Apply was once left off this dialog
+altogether. *Until 2026-10-23 the choices were Save and Discard, Save keeping the edits in the draft; with edits held
+on screen there is nothing to save to. The 2026-10-12 ruling (Core C6) that saved-but-not-applied work needs no
+prompt went with the draft.*
 
 ## Document Map
 

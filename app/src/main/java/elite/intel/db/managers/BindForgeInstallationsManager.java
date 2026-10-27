@@ -10,13 +10,16 @@ import java.util.List;
 /**
  * The game installations BindForge knows about.
  * <p>
- * Stores and reads rows; it does not decide what the list should contain. Reconciling a fresh detection
+ * Stores and reads rows; it does not decide what the list should contain. <strong>A removed installation is not in
+ * the list</strong> - {@link #findAll()} leaves it out - so nothing backs it up or writes to it.
+ * <p>
+ * It does not decide what the list should contain otherwise. Reconciling a fresh detection
  * against these rows is the caller's job, because that needs the filesystem and a provider, and neither
  * belongs in a manager.
  * <p>
  * <strong>The list is held in memory</strong> and read from the table again only after one of this manager's own
- * writes, which are the only writes the table gets. {@code DeviceFilesMonitor} asks for it every two seconds, for as
- * long as Elite-Intel runs, and the list changes only when the user or a rescan changes it.
+ * writes, which are the only writes the table gets: every BindForge read and write asks for it, and the list changes
+ * only when the user or a rescan changes it.
  */
 public class BindForgeInstallationsManager {
 
@@ -52,32 +55,47 @@ public class BindForgeInstallationsManager {
     }
 
     /**
-     * The installation at {@code root}, or {@code null} when no row holds that folder.
-     * <p>
-     * A folder belongs to at most one installation - the table enforces it - so callers can ask before
-     * writing rather than reading the answer out of a constraint violation.
+     * Every installation, the ones the user removed included - for the backup folder check, which refuses every game
+     * folder BindForge knows of (Alan, 2026-10-25). Read from the table each time; nothing else should use it.
      */
-    public InstallationRow findByPath(Path root) {
-        String rootPath = root.toString();
-        return Database.withDao(BindForgeInstallationsDao.class, dao -> dao.findByPath(rootPath));
+    public List<InstallationRow> findAllIncludingRemoved() {
+        return List.copyOf(Database.withDao(BindForgeInstallationsDao.class,
+                BindForgeInstallationsDao::findAllIncludingRemoved));
     }
 
     /**
-     * Records an installation, or leaves the existing row alone when that folder is already known.
+     * Records an installation detection found, or leaves the existing row alone when that folder is already known -
+     * <strong>a removed one included, which stays removed</strong> (file-manager.md, <em>Game Install Locations</em>;
+     * Storage S2b). Detection runs at every start, and would otherwise put back an installation the user removed.
      * <p>
-     * Doing nothing on a repeat is what makes a rescan safe to run as often as the user likes: the row keeps
-     * its id, so everything keyed to it survives, and keeps {@code addedByHand} rather than being demoted to
-     * auto-detected because detection has now also found it.
-     *
-     * @return the row for that folder, whether it was just created or already there
+     * Doing nothing on a repeat is what makes detection safe to run at every start: the row keeps its id and keeps
+     * {@code addedByHand} rather than being demoted to auto-detected because detection has now also found it.
      */
-    public synchronized InstallationRow record(String storefront, Path root, boolean addedByHand) {
+    public synchronized void recordDetected(String storefront, Path root) {
+        String rootPath = root.toString();
+        Database.withDao(BindForgeInstallationsDao.class, dao -> {
+            if (dao.findByPath(rootPath) != null) return Void.TYPE;
+            cached = null;
+            dao.insert(storefront, rootPath, false, false);
+            return Void.TYPE;
+        });
+    }
+
+    /**
+     * Records an installation the user added - Add missing - or brings back one they removed at that folder.
+     *
+     * @return the row for that folder, in the list again
+     */
+    public synchronized InstallationRow addByHand(String storefront, Path root) {
         String rootPath = root.toString();
         cached = null;
         return Database.withDao(BindForgeInstallationsDao.class, dao -> {
             InstallationRow existing = dao.findByPath(rootPath);
-            if (existing != null) return existing;
-            dao.insert(storefront, rootPath, addedByHand, false);
+            if (existing == null) {
+                dao.insert(storefront, rootPath, true, false);
+            } else if (Boolean.TRUE.equals(dao.isRemoved(rootPath))) {
+                dao.setRemoved(existing.id(), false);
+            }
             return dao.findByPath(rootPath);
         });
     }
@@ -86,8 +104,7 @@ public class BindForgeInstallationsManager {
      * Marks whether an installation's folder is there right now.
      * <p>
      * Missing is a state the user acts on, never something to clean up automatically: an unmounted drive and
-     * an uninstall are indistinguishable from here, and dropping the row would take its device records away
-     * with it.
+     * an uninstall are indistinguishable from here.
      */
     public synchronized void setMissing(long id, boolean missing) {
         cached = null;
@@ -109,28 +126,23 @@ public class BindForgeInstallationsManager {
     }
 
     /**
-     * Repoints an installation at a new folder, keeping its id and everything keyed to it - the
-     * reinstalled-to-another-drive case.
+     * Removes an installation from the list - Remove on Game Install Locations. <strong>It stays removed</strong>:
+     * the row is kept and marked, so detection at the next start does not put it back, and it is neither backed up
+     * nor written (file-manager.md, <em>Game Install Locations</em>; Storage S2b, 2026-10-25). Add missing on its
+     * folder brings it back.
      */
-    public synchronized void relocate(long id, Path newRoot) {
+    public synchronized void remove(long id) {
         cached = null;
         Database.withDao(BindForgeInstallationsDao.class, dao -> {
-            dao.relocate(id, newRoot.toString());
+            dao.setRemoved(id, true);
             return Void.TYPE;
         });
     }
 
     /**
-     * Drops an installation from the list.
-     * <p>
-     * Deliberately discards what was held against it. There is no orphan-retention scheme and no undo beyond
-     * adding the folder again: device records are cheap to rebuild, and backups are not kept here.
+     * Drops the list held in memory - for a test that empties the table by SQL, since {@link #remove} keeps the row.
      */
-    public synchronized void remove(long id) {
+    synchronized void forgetCached() {
         cached = null;
-        Database.withDao(BindForgeInstallationsDao.class, dao -> {
-            dao.delete(id);
-            return Void.TYPE;
-        });
     }
 }

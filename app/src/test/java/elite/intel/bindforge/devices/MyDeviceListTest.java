@@ -2,7 +2,6 @@ package elite.intel.bindforge.devices;
 
 import elite.intel.bindforge.devicefiles.DeviceEntry;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
-import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
 import elite.intel.devices.model.Device;
 import org.junit.jupiter.api.Test;
 
@@ -12,7 +11,8 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * The union rule the whole screen rests on: live hardware and file entries, correlated by VID/PID.
+ * The union rule the whole screen rests on: live hardware and the working copy's entries, correlated by VID/PID - the
+ * alias from the edits on screen, so a name given or changed shows before APPLY (Storage S4a).
  * <p>
  * The GUIDs here were reported by real controllers - see {@link DeviceIdentitiesTest} - so the correlation is
  * exercised on the ids the hardware actually produces rather than on invented ones.
@@ -52,7 +52,7 @@ class MyDeviceListTest {
     @Test
     void anEntryForHardwareThatIsNotPluggedInStillAppears() {
         List<MyDevice> rows = MyDeviceList.build(
-                List.of(), List.of(entry("LVWAP", "3344", "83F4")), List.of(), stock);
+                List.of(), List.of(entry("LVWAP", "3344", "83F4")), List.of(entry("LVWAP", "3344", "83F4")), stock);
 
         assertEquals(1, rows.size());
         MyDevice row = rows.getFirst();
@@ -66,7 +66,7 @@ class MyDeviceListTest {
     void hardwareAndItsEntryAreOneRowRatherThanTwo() {
         List<MyDevice> rows = MyDeviceList.build(
                 List.of(device("VIRPIL Controls L-VP-WBD-CAP", VIRPIL_LEFT_GUID)),
-                List.of(entry("LVWAP", "3344", "83F4")), List.of(), stock);
+                List.of(entry("LVWAP", "3344", "83F4")), List.of(entry("LVWAP", "3344", "83F4")), stock);
 
         assertEquals(1, rows.size(), "correlated by VID/PID, which is what the two halves share");
         assertEquals("VIRPIL Controls L-VP-WBD-CAP", rows.getFirst().hardwareName());
@@ -117,13 +117,14 @@ class MyDeviceListTest {
         assertTrue(rows.getFirst().attached());
     }
 
-    /** A built-in the master labels under Frontier's name is still a built-in. */
+    /** A built-in whose only element is Frontier's own is still a built-in, with no name of the user's. */
     @Test
-    void aBuiltInTheMasterHoldsUnderFrontiersNameStaysMarked() {
-        List<MyDevice> rows = MyDeviceList.build(List.of(device("Thrustmaster T-Rudder", T_RUDDER_GUID)), List.of(),
-                List.of(masterRow("T-Rudder", "044F", "B679")), stock);
+    void aBuiltInUnderFrontiersElementStaysMarked() {
+        List<MyDevice> rows = MyDeviceList.build(List.of(device("Thrustmaster T-Rudder", T_RUDDER_GUID)),
+                List.of(entry("T-Rudder", "044F", "B679")), List.of(entry("T-Rudder", "044F", "B679")), stock);
 
         assertTrue(rows.getFirst().builtIn());
+        assertNull(rows.getFirst().alias());
     }
 
     /**
@@ -132,8 +133,8 @@ class MyDeviceListTest {
      */
     @Test
     void aShadowedBuiltInIsTheUsersDevice() {
-        List<MyDevice> rows = MyDeviceList.build(List.of(device("Thrustmaster T-Rudder", T_RUDDER_GUID)), List.of(),
-                List.of(masterRow("MyRudder", "044F", "B679")), stock);
+        List<MyDevice> rows = MyDeviceList.build(List.of(device("Thrustmaster T-Rudder", T_RUDDER_GUID)),
+                List.of(entry("MyRudder", "044F", "B679"), entry("T-Rudder", "044F", "B679")), List.of(), stock);
 
         assertFalse(rows.getFirst().builtIn());
         assertEquals("MyRudder", rows.getFirst().alias());
@@ -147,14 +148,25 @@ class MyDeviceListTest {
         assertFalse(rows.getFirst().builtIn());
     }
 
+    /** Renamed in the edits and not applied: the new name shows, and the working copy's is the entry's. */
     @Test
-    void theAliasComesFromTheMaster() {
+    void theAliasComesFromTheEdits() {
         List<MyDevice> rows = MyDeviceList.build(
-                List.of(device("VIRPIL Controls L-VP-WBD-CAP", VIRPIL_LEFT_GUID)), List.of(),
-                List.of(masterRow("LeftStick", "3344", "83F4")), stock);
+                List.of(device("VIRPIL Controls L-VP-WBD-CAP", VIRPIL_LEFT_GUID)),
+                List.of(entry("LeftStick", "3344", "83F4")), List.of(entry("LVWAP", "3344", "83F4")), stock);
 
-        assertEquals("LeftStick", rows.getFirst().alias(),
-                "the master's name, not the one the file happens to hold");
+        assertEquals("LeftStick", rows.getFirst().alias(), "the edits' name, before APPLY");
+        assertEquals("LVWAP", rows.getFirst().entryName(), "what the last write left");
+    }
+
+    /** Cleared in the edits, it is still listed - not added, under the working copy's name - so it can be undone. */
+    @Test
+    void aDeviceClearedInTheEditsIsStillListed() {
+        List<MyDevice> rows = MyDeviceList.build(List.of(), List.of(), List.of(entry("LVWAP", "3344", "83F4")), stock);
+
+        assertEquals(1, rows.size());
+        assertNull(rows.getFirst().alias());
+        assertEquals("LVWAP", rows.getFirst().entryName());
     }
 
     /** Attached controllers keep the Device Service's order, then the entries nothing is plugged in for. */
@@ -182,14 +194,11 @@ class MyDeviceListTest {
     }
 
     private static Device device(String name, String guid) {
-        return new Device(1, name, 6, 32, "usb-0001", guid);
+        return new Device(1, name, 6, 32, "usb-0001", guid, false);
     }
 
     private static DeviceEntry entry(String name, String vid, String pid) {
         return new DeviceEntry(name, Set.of(new DeviceEntry.HardwareId(vid, pid)));
     }
 
-    private static DeviceRow masterRow(String deviceName, String vid, String pid) {
-        return new DeviceRow(1, deviceName, vid, pid, true, null);
-    }
 }

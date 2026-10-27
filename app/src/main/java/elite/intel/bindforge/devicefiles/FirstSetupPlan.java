@@ -1,8 +1,6 @@
 package elite.intel.bindforge.devicefiles;
 
-import elite.intel.bindforge.devicefiles.DeviceDivergence.Severity;
 import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
-import elite.intel.db.managers.BindForgeDeviceDraftManager.StoredDevice;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,8 +16,9 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
- * First setup, as a decision: what the installations hold, where they disagree, and the master that results once
- * the user has answered. Pure - reading the files is {@link FirstSetupReader}'s, writing is {@link FirstSetup}'s.
+ * First setup, as a decision: what the installations hold, where they disagree, and the devices the working copy
+ * holds once the user has answered. Pure - reading the files is {@link FirstSetupReader}'s, making the working copy
+ * from the answers is {@code bindforge.storage.FirstSetupFiles}'.
  * <p>
  * Settled 2026-09-23 - alias-designer.md, <em>First setup</em>:
  * <ul>
@@ -33,26 +32,26 @@ import java.util.TreeSet;
  * <ul>
  *     <li><strong>Colliding labels can be answered per device</strong>, by an installation: that installation's
  *     label wins every collision it holds one for, and labels the others hold alone are still taken.</li>
- *     <li><strong>"Use one installation as the master"</strong> answers every question in its favour, and still
- *     takes the elements only the others hold - first setup never drops a custom entry.</li>
+ *     <li>{@link #answersFavouring} answers every question in one installation's favour. <em>Since 2026-10-24 "use one
+ *     installation for all" takes that installation's files whole instead, warning when it removes an entry the
+ *     bindings use - {@code bindforge.storage.FirstSetupFiles#useOne}.</em></li>
  * </ul>
  * After review - 2026-10-08 (Alan):
  * <ul>
  *     <li><strong>Two names for one VID/PID inside one installation are not a question.</strong> The game uses the
- *     first in the file, so the later ones are dead entries: they are shown, and become pending removals. A name
- *     conflict is asked only where different installations disagree.</li>
+ *     first in the file, so the later ones are dead entries: they are shown, and not taken. A name conflict is asked
+ *     only where different installations disagree.</li>
  *     <li><strong>A name that wins any name conflict is kept</strong>, even where it loses another - a stale PID in
  *     one installation must not cost the user the device. Answers that would leave two devices on one VID/PID are
  *     unanswered until changed.</li>
  * </ul>
- * Names that need Rename - 2026-10-17 (Alan, A16):
+ * Names that need Rename - 2026-10-17 (Alan, A16), reworked 2026-10-24 (Alan) and built on the working copy in
+ * Storage S2b (2026-10-25):
  * <ul>
- *     <li><strong>Every name may win.</strong> A losing name {@code .binds} uses hands its bindings to the winner:
- *     the first such loser, by name, becomes the winner's old name ({@code previous_name}), so the push renames its
- *     element and {@code .buttonMap} and every later Apply retries the move until it is finished. Any further one is
- *     moved by first setup alone and stays a pending removal, which Apply holds back while {@code .binds} names
- *     it.</li>
- *     <li>A losing name {@code .binds} does not use stays a pending removal, as before.</li>
+ *     <li><strong>Every name may win, and the bindings follow it.</strong> Every losing name is a move to the name
+ *     that beat it, made in the working copy's binds files - a name differing only in case included, since in
+ *     {@code .binds} {@code LVWAP} and {@code lvwap} are not the same name. A losing or shadowed name is not in the
+ *     working copy.</li>
  * </ul>
  * The {@code .buttonMap} label merge - 2026-10-08 (Alan):
  * <ul>
@@ -70,7 +69,7 @@ public final class FirstSetupPlan {
      *                 game uses depends on it
      * @param builtIns Frontier-named elements this installation holds that carry labels of the user's or of
      *                 BindForge's, with the primary pair the file gives them. Only those with labels: a built-in
-     *                 with none has nothing to master
+     *                 with none has nothing for the working copy
      * @param labels   labels by device name, for elements and built-ins alike. Frontier's own files are not here
      */
     public record Installation(long installId, String storefront, Map<String, HardwareId> elements,
@@ -88,7 +87,7 @@ public final class FirstSetupPlan {
     public enum Kind {
         /** The user's element, the same in every installation. */
         IDENTICAL,
-        /** The user's element, in some installations only. The master takes it. */
+        /** The user's element, in some installations only. The working copy takes it. */
         ONLY_IN_SOME,
         /** One name, different VID/PID. A question. */
         HARDWARE_DIFFERS,
@@ -103,7 +102,7 @@ public final class FirstSetupPlan {
         BUILT_IN_LABELS,
         /**
          * An element below another on the same VID/PID in its installation, and the first nowhere. The game never
-         * uses it, so it is not taken, and it becomes a pending removal.
+         * uses it, so the working copy does not take it.
          */
         SHADOWED
     }
@@ -119,6 +118,20 @@ public final class FirstSetupPlan {
         public Option {
             installs = Set.copyOf(installs);
         }
+    }
+
+    /**
+     * How much a row matters, judged against the bindings: red where bindings use the device, so losing its entry
+     * would break them; yellow where nothing stops working; green where every installation agrees. <em>Moved here from
+     * the divergence list, removed in Storage S4a.</em>
+     */
+    public enum Severity {
+        /** Consistent - every installation says the same thing. */
+        GREEN,
+        /** Wrong, but nothing stops working. */
+        YELLOW,
+        /** Will stop bindings working. */
+        RED
     }
 
     /**
@@ -141,33 +154,32 @@ public final class FirstSetupPlan {
     }
 
     /**
-     * @param devices         the master as it is to be. A device whose losing name {@code .binds} uses carries it
-     *                        as its {@code previousName}
-     * @param pendingRemovals names that lost a name conflict or were shadowed, other than an old name. Their entries
-     *                        stay in the installations, below the winner, until something removes them
-     * @param handedOver      losing names {@code .binds} uses that are no device's old name - a second loser to one
-     *                        winner - by the name their bindings move to. First setup moves them once, after its push
+     * One device the working copy holds.
+     *
+     * @param name     its element name - for a built-in, Frontier's
+     * @param hardware its VID/PID, as the user chose it
+     * @param source   the installation whose element is taken whole - the one holding the chosen hardware
+     * @param builtIn  one of Frontier's elements, which the working copy's {@code DeviceMappings.xml} already holds:
+     *                 only its labels are the user's
+     * @param labels   its labels, every collision answered; empty for a device with none
      */
-    public record Resolution(List<StoredDevice> devices, List<String> pendingRemovals,
-                             Map<String, String> handedOver) {
+    public record Kept(String name, HardwareId hardware, long source, boolean builtIn, Map<String, String> labels) {
+        public Kept {
+            Objects.requireNonNull(name, "name");
+            Objects.requireNonNull(hardware, "hardware");
+            labels = Collections.unmodifiableMap(new LinkedHashMap<>(labels));
+        }
+    }
+
+    /**
+     * @param devices the devices the working copy holds: the user's elements by name, then the built-ins carrying
+     *                labels
+     * @param moves   every losing name, by the name its bindings move to - a case-only difference included
+     */
+    public record Resolution(List<Kept> devices, Map<String, String> moves) {
         public Resolution {
             devices = List.copyOf(devices);
-            pendingRemovals = List.copyOf(pendingRemovals);
-            handedOver = Collections.unmodifiableMap(new TreeMap<>(handedOver));
-        }
-
-        /**
-         * Every losing name whose bindings move, old names and handed-over names alike, by the name they move to. A
-         * name differing from its winner only in case is left out: {@code .binds} finds an element ignoring case, so
-         * nothing is moved for it (review, 2026-10-17).
-         */
-        public Map<String, String> bindingMoves() {
-            Map<String, String> moves = new TreeMap<>(handedOver);
-            devices.forEach(device -> {
-                if (device.previousName() != null) moves.put(device.previousName(), device.deviceName());
-            });
-            moves.entrySet().removeIf(move -> move.getKey().equalsIgnoreCase(move.getValue()));
-            return Collections.unmodifiableMap(moves);
+            moves = Collections.unmodifiableMap(new TreeMap<>(moves));
         }
 
         public long buttonMapCount() {
@@ -191,8 +203,7 @@ public final class FirstSetupPlan {
     private final Map<HardwareId, Set<String>> namesByHardware;
 
     /**
-     * @param referenced the device names the shared {@code .binds} uses - what ranks a row red, and what makes a
-     *                   name impossible to give up
+     * @param referenced the device names the binds files use - what ranks a row red
      */
     public FirstSetupPlan(List<Installation> installations, Set<String> referenced) {
         this.installations = List.copyOf(installations);
@@ -212,7 +223,7 @@ public final class FirstSetupPlan {
         return installations;
     }
 
-    /** Whether there is anything of the user's to take into a master. */
+    /** Whether there is anything of the user's to reconcile. */
     public boolean isEmpty() {
         return rows.isEmpty();
     }
@@ -295,7 +306,7 @@ public final class FirstSetupPlan {
     }
 
     /**
-     * The master the answers produce.
+     * The devices the answers produce.
      *
      * @throws IllegalStateException if a question is still unanswered - see {@link #unanswered(Map)}
      */
@@ -304,33 +315,26 @@ public final class FirstSetupPlan {
         if (!missing.isEmpty()) throw new IllegalStateException("first setup is not answered: " + missing);
         Map<String, String> losers = losers(answers);
 
-        // WHY: a device keeps one old name (A11), so of two losing names .binds uses only the first, by name, is
-        // recorded; the other is handed over by first setup's own move and kept as a pending removal, which Apply
-        // holds back while .binds still names it (Alan, 2026-10-17, A16).
-        Map<String, String> oldNames = new LinkedHashMap<>();
-        Map<String, String> handedOver = new TreeMap<>();
-        new TreeMap<>(losers).forEach((loser, winner) -> {
-            if (!referenced.contains(loser)) return;
-            if (oldNames.putIfAbsent(winner, loser) != null) handedOver.put(loser, winner);
-        });
-
-        List<StoredDevice> devices = new ArrayList<>();
+        List<Kept> devices = new ArrayList<>();
         for (String name : elementNames()) {
             if (losers.containsKey(name)) continue;
             HardwareId hardware = hardwareFor(name, answers);
-            devices.add(new StoredDevice(null, name, hardware.vid(), hardware.pid(), true, oldNames.get(name),
-                    labelsFor(name, answers)));
+            devices.add(new Kept(name, hardware, sourceOf(name, hardware), false, labelsFor(name, answers)));
         }
         for (String name : builtInNames()) {
-            HardwareId hardware = firstBuiltInHardware(name);
-            // WHY: confirmed, because a built-in has no name to confirm - its labels unlock straight away.
-            devices.add(new StoredDevice(null, name, hardware.vid(), hardware.pid(), true, null,
+            Installation holder = firstBuiltInHolder(name);
+            devices.add(new Kept(name, holder.builtIns().get(name), holder.installId(), true,
                     labelsFor(name, answers)));
         }
-        Set<String> removals = new TreeSet<>(losers.keySet());
-        removals.removeAll(oldNames.values());
-        removals.addAll(shadowed.keySet());
-        return new Resolution(devices, List.copyOf(removals), handedOver);
+        return new Resolution(devices, losers);
+    }
+
+    /** The first installation, in list order, whose element under {@code name} has {@code hardware}. */
+    private long sourceOf(String name, HardwareId hardware) {
+        for (Installation install : effective) {
+            if (hardware.equals(install.elements().get(name))) return install.installId();
+        }
+        throw new IllegalStateException("no installation holds " + name + " on " + hardware);
     }
 
     /**
@@ -461,10 +465,9 @@ public final class FirstSetupPlan {
         return byInstall.values().iterator().next();
     }
 
-    private HardwareId firstBuiltInHardware(String name) {
+    private Installation firstBuiltInHolder(String name) {
         for (Installation install : installations) {
-            HardwareId hardware = install.builtIns().get(name);
-            if (hardware != null) return hardware;
+            if (install.builtIns().containsKey(name)) return install;
         }
         throw new IllegalStateException("no installation holds built-in " + name);
     }

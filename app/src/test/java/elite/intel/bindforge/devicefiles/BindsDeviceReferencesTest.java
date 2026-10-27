@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -36,7 +37,7 @@ class BindsDeviceReferencesTest {
                 </Root>
                 """);
 
-        assertEquals(Set.of("RVWAP"), BindsDeviceReferences.referencedEntryNames(bindings));
+        assertEquals(Set.of("RVWAP"), BindsDeviceReferences.referenceCounts(bindings).keySet());
     }
 
     /** Keyboard and mouse are named directly and have no entry, so they are not entries. */
@@ -50,7 +51,7 @@ class BindsDeviceReferencesTest {
                 </Root>
                 """);
 
-        assertTrue(BindsDeviceReferences.referencedEntryNames(bindings).isEmpty());
+        assertTrue(BindsDeviceReferences.referenceCounts(bindings).isEmpty());
     }
 
     /**
@@ -66,7 +67,7 @@ class BindsDeviceReferencesTest {
                 </Root>
                 """);
 
-        Set<String> names = BindsDeviceReferences.referencedEntryNames(bindings);
+        Set<String> names = BindsDeviceReferences.referenceCounts(bindings).keySet();
 
         assertEquals(Set.of("T-Rudder"), names);
         assertFalse(names.contains("334403F3"));
@@ -81,7 +82,7 @@ class BindsDeviceReferencesTest {
         binds("Custom.4.2.binds", "<Root><A><Primary Device=\"RVWAP\" Key=\"Joy_1\" /></A></Root>");
         binds("Racing.4.2.binds", "<Root><A><Primary Device=\"VPCThrottle\" Key=\"Joy_2\" /></A></Root>");
 
-        assertEquals(Set.of("RVWAP", "VPCThrottle"), BindsDeviceReferences.referencedEntryNames(bindings));
+        assertEquals(Set.of("RVWAP", "VPCThrottle"), BindsDeviceReferences.referenceCounts(bindings).keySet());
     }
 
     /**
@@ -93,13 +94,12 @@ class BindsDeviceReferencesTest {
         binds("Broken.4.2.binds", "this is a StartPreset, saved under the wrong name");
         binds("Custom.4.2.binds", "<Root><A><Primary Device=\"RVWAP\" Key=\"Joy_1\" /></A></Root>");
 
-        assertEquals(Set.of("RVWAP"), BindsDeviceReferences.referencedEntryNames(bindings));
+        assertEquals(Set.of("RVWAP"), BindsDeviceReferences.referenceCounts(bindings).keySet());
     }
 
     @Test
     void aFolderWithNoBindsGivesNothing() throws IOException {
-        assertTrue(BindsDeviceReferences.referencedEntryNames(bindings).isEmpty());
-        assertTrue(BindsDeviceReferences.referencedEntryNames(bindings.resolve("gone")).isEmpty());
+        assertTrue(BindsDeviceReferences.referenceCounts(bindings).isEmpty());
     }
 
     /** Each slot naming the device counts, across every preset - what CLEAR's refusal says is at stake (A10). */
@@ -138,10 +138,28 @@ class BindsDeviceReferencesTest {
         assertTrue(BindsDeviceReferences.referenceCounts(bindings).isEmpty());
     }
 
-    /** Severity stays lenient: a missing folder only turns findings yellow. */
+    /** The working copy's binds files are counted in memory, as the folder's are (Storage S4a). */
     @Test
-    void namesOfAFolderThatIsNotThereAreEmpty() throws IOException {
-        assertTrue(BindsDeviceReferences.referencedEntryNames(bindings.resolve("moved")).isEmpty());
+    void filesInMemoryAreCountedAsTheFolderIs() throws IOException {
+        BindsDeviceReferences.Counts counts = BindsDeviceReferences.countsIn(Map.of(
+                "Custom.4.2.binds", ("<Root><A><Primary Device=\"LVWAP\" Key=\"Joy_1\" />"
+                        + "<Secondary Device=\"334483F4\" Key=\"Joy_2\" /></A></Root>").getBytes(StandardCharsets.UTF_8),
+                "StartPreset.4.start", "Custom\nCustom\nCustom\nCustom".getBytes(StandardCharsets.UTF_8)));
+
+        assertEquals(Map.of("LVWAP", 1), counts.names());
+        assertEquals(Map.of("334483F4", 1), counts.hardwareIds());
+    }
+
+    /** Strict, as the folder's: binds files that all fail to parse never read as "nothing names this device". */
+    @Test
+    void filesInMemoryThatAllFailToParseAreRefused() {
+        assertThrows(IOException.class, () -> BindsDeviceReferences.countsIn(
+                Map.of("Custom.4.2.binds", "<Root><unclosed></Root>".getBytes(StandardCharsets.UTF_8))));
+    }
+
+    @Test
+    void noBindsFilesInMemoryNameNothing() throws IOException {
+        assertTrue(BindsDeviceReferences.countsIn(Map.of()).names().isEmpty());
     }
 
     /**

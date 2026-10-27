@@ -33,6 +33,8 @@ public record GameInstallation(Storefront storefront, Path root, Path controlSch
     public static final String DEVICE_MAPPINGS = "DeviceMappings.xml";
     public static final String DEVICE_BUTTON_MAPS = "DeviceButtonMaps";
     public static final String BUTTON_MAP_SUFFIX = ".buttonMap";
+    /** The Live product's game executable, which Add missing looks for. */
+    public static final String GAME_EXECUTABLE = "EliteDangerous64.exe";
 
     public GameInstallation {
         Objects.requireNonNull(storefront, "storefront");
@@ -57,6 +59,18 @@ public record GameInstallation(Storefront storefront, Path root, Path controlSch
      */
     public static boolean looksLikeAnInstall(Path root) {
         return Files.isDirectory(controlSchemesUnder(root));
+    }
+
+    /**
+     * Whether {@code root} is an installation the user may add by hand - Add missing (storage.md rule 1;
+     * file-manager.md, <em>Game Install Locations</em>): the {@code ControlSchemes} folder, and
+     * {@code EliteDangerous64.exe} beside it in the Live product's folder. Stricter than {@link #looksLikeAnInstall},
+     * because a folder the user picked has been vouched for by nothing else - detection has a storefront's own record
+     * behind it.
+     */
+    public static boolean confirmsAnInstall(Path root) {
+        return looksLikeAnInstall(root)
+                && Files.isRegularFile(root.resolve("Products").resolve(LIVE_PRODUCT).resolve(GAME_EXECUTABLE));
     }
 
     public Path deviceMappings() {

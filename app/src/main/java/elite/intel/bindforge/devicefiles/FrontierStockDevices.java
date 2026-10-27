@@ -154,8 +154,8 @@ public final class FrontierStockDevices {
     /**
      * Whether the game draws this Frontier device's inputs itself, so a text label would replace an icon: an element
      * carrying {@code <SupportsIcons>} - the X52, X52 Pro, T.Flight HOTAS 4 and Hotas One - or {@code <GamePad>},
-     * which the game binds by its own {@code GamePad_} tokens. The same rule {@link ButtonMapGeneration} applies to
-     * an installation's file; this answers it from the reference, for the Device Editor (Alan, 2026-10-10, A9).
+     * which the game binds by its own {@code GamePad_} tokens. Answered from the reference, for the Device Editor (Alan,
+     * 2026-10-10, A9).
      */
     public boolean gameDrawsIt(String deviceName) {
         return GAME_PAD.equals(deviceName) || drawnByGame.contains(deviceName);

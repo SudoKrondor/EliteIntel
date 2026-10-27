@@ -2,6 +2,7 @@ package elite.intel.bindforge.devicefiles;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -10,6 +11,7 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -51,21 +53,6 @@ public final class BindsDeviceReferences {
     }
 
     /**
-     * The entry names referenced by the {@code .binds} files in {@code bindingsFolder}.
-     * <p>
-     * A file that cannot be parsed is skipped rather than failing the scan - the folder demonstrably holds
-     * files with a {@code .binds} name that are not binds files, most often a {@code StartPreset} picked by
-     * mistake, and one of those must not stop the rest being read.
-     * <p>
-     * Lenient: a folder that is not there names nothing. That suits severity, where it only turns findings yellow;
-     * anything deciding a removal uses {@link #referenceCounts(Path)}, which refuses to guess.
-     */
-    public static Set<String> referencedEntryNames(Path bindingsFolder) throws IOException {
-        if (!Files.isDirectory(bindingsFolder)) return Set.of();
-        return Set.copyOf(read(bindingsFolder).counts().keySet());
-    }
-
-    /**
      * How many bindings name each entry, across every {@code .binds} in {@code bindingsFolder} - one per
      * {@code Device=} naming it. The count is what makes a question about the device answerable: 142 bindings is
      * worth a moment's thought, 2 is not.
@@ -74,7 +61,8 @@ public final class BindsDeviceReferences {
      * out (review, 2026-10-11). A folder that is not there, or one whose {@code .binds} files all fail to parse, would
      * otherwise read as "nothing names this device", and removing a named entry makes the game reject the whole
      * preset. So both throw, and the callers take their "cannot read" path. One unparsable file among readable ones
-     * is still skipped, as above. An empty folder is an answer: no custom preset names anything.
+     * is still skipped - the folder demonstrably holds files with a {@code .binds} name that are not binds files, most
+     * often a {@code StartPreset} picked by mistake. An empty folder is an answer: no custom preset names anything.
      *
      * @throws IOException when the folder is missing or no {@code .binds} in it could be read
      */
@@ -186,10 +174,58 @@ public final class BindsDeviceReferences {
     private record Reading(Map<String, Integer> counts, Map<String, Integer> hardwareIds, int files, int parsed) {
     }
 
-    private static void collectInto(Path bindsFile, Map<String, Integer> counts, Map<String, Integer> hardwareIds)
-            throws IOException, SAXException, ParserConfigurationException {
+    /**
+     * How many bindings name each entry in one binds file held in memory - first-time startup's, which reads the
+     * binds files once and judges what it will write (Storage S2b, 2026-10-25). Keyed as written.
+     *
+     * @throws IOException if the bytes are not XML
+     */
+    public static Map<String, Integer> referenceCountsIn(byte[] bindsFile) throws IOException {
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        try {
+            collectInto(newDocumentBuilder().parse(new ByteArrayInputStream(bindsFile)), counts, new LinkedHashMap<>());
+        } catch (SAXException | ParserConfigurationException e) {
+            throw new IOException(e.getMessage(), e);
+        }
+        return Map.copyOf(counts);
+    }
 
-        NodeList all = newDocumentBuilder().parse(bindsFile.toFile()).getElementsByTagName("*");
+    /**
+     * {@link #counts(Path)} for binds files held in memory - the working copy's, with the edits on screen (Storage
+     * S4a). Strict in the same way: one file that cannot be parsed is skipped, but if none of the {@code .binds} can be,
+     * it throws rather than reading as "nothing names this device". Files of any other name are not read.
+     *
+     * @param files by file name, as {@code ConfigurationFiles.bindings()} holds them
+     * @throws IOException when no {@code .binds} among them could be read
+     */
+    public static Counts countsIn(Map<String, byte[]> files) throws IOException {
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        Map<String, Integer> hardwareIds = new LinkedHashMap<>();
+        int binds = 0;
+        int parsed = 0;
+        for (Map.Entry<String, byte[]> file : files.entrySet()) {
+            if (!file.getKey().endsWith(BINDS_SUFFIX)) continue;
+            binds++;
+            try {
+                collectInto(newDocumentBuilder().parse(new ByteArrayInputStream(file.getValue())), counts,
+                        hardwareIds);
+                parsed++;
+            } catch (SAXException | ParserConfigurationException | IOException e) {
+                log.warn("Skipped {} while reading which devices the bindings name: {}", file.getKey(),
+                        e.getMessage());
+            }
+        }
+        if (binds > 0 && parsed == 0) throw new IOException("none of the " + binds + " .binds files could be read");
+        return new Counts(Map.copyOf(counts), Map.copyOf(hardwareIds));
+    }
+
+    private static void collectInto(Path bindsFile,Map<String, Integer> counts, Map<String, Integer> hardwareIds)
+            throws IOException, SAXException, ParserConfigurationException {
+        collectInto(newDocumentBuilder().parse(bindsFile.toFile()), counts, hardwareIds);
+    }
+
+    private static void collectInto(Document document, Map<String, Integer> counts, Map<String, Integer> hardwareIds) {
+        NodeList all = document.getElementsByTagName("*");
         for (int i = 0; i < all.getLength(); i++) {
             Element element = (Element) all.item(i);
             if (!element.hasAttribute(DEVICE_ATTRIBUTE)) continue;

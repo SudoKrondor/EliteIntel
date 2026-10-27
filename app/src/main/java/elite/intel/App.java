@@ -6,6 +6,7 @@ import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
 import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import elite.intel.ai.brain.vega.memory.facts.MemoryFactSourceRegistry;
+import elite.intel.bindforge.storage.StartupBackup;
 import elite.intel.db.managers.ShipMakeManager;
 import elite.intel.db.util.Database;
 import elite.intel.diagnostics.*;
@@ -57,6 +58,9 @@ public class App {
         // init kry and db first!
         Cypher.initializeKey();
         Database.init();
+        // BindForge's silent backup of every game input configuration file, on a thread of its own, before anything
+        // else BindForge does (storage.md rule 12). It needs only the database, never the services.
+        StartupBackup.getInstance().startInBackground();
         // Before anything builds an LLM client or the settings tab reads the provider.
         LlmProviderUpgrade.run();
         CustomCommandRegistry.getInstance().load();

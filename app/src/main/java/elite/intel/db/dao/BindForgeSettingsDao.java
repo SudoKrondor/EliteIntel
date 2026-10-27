@@ -26,14 +26,14 @@ public interface BindForgeSettingsDao {
     // global_settings, where two columns are missing. BindForgeSettingsRoundTripTest is what keeps this honest.
     @SqlUpdate("""
             INSERT OR REPLACE INTO bindforge_settings (id,
-                                                       auto_backup_on_launch,
                                                        backup_destination,
-                                                       backup_retention_days,
+                                                       daily_backup_retention_days,
+                                                       before_changes_backups_kept,
                                                        edit_history_retention)
             VALUES (1,
-                    :autoBackupOnLaunch,
                     :backupDestination,
-                    :backupRetentionDays,
+                    :dailyBackupRetentionDays,
+                    :beforeChangesBackupsKept,
                     :editHistoryRetention)
             """)
     void save(@BindBean BindForgeSettings settings);
@@ -43,9 +43,9 @@ public interface BindForgeSettingsDao {
         @Override
         public BindForgeSettings map(ResultSet rs, StatementContext ctx) throws SQLException {
             BindForgeSettings entity = new BindForgeSettings();
-            entity.setAutoBackupOnLaunch(rs.getBoolean("auto_backup_on_launch"));
             entity.setBackupDestination(rs.getString("backup_destination"));
-            entity.setBackupRetentionDays(rs.getInt("backup_retention_days"));
+            entity.setDailyBackupRetentionDays(rs.getInt("daily_backup_retention_days"));
+            entity.setBeforeChangesBackupsKept(rs.getInt("before_changes_backups_kept"));
             entity.setEditHistoryRetention(rs.getInt("edit_history_retention"));
             return entity;
         }
@@ -53,21 +53,13 @@ public interface BindForgeSettingsDao {
 
 
     class BindForgeSettings {
-        boolean autoBackupOnLaunch;
         String backupDestination;
-        int backupRetentionDays;
+        int dailyBackupRetentionDays;
+        int beforeChangesBackupsKept;
         int editHistoryRetention;
 
-        public boolean isAutoBackupOnLaunch() {
-            return autoBackupOnLaunch;
-        }
-
-        public void setAutoBackupOnLaunch(boolean onOff) {
-            this.autoBackupOnLaunch = onOff;
-        }
-
         /**
-         * Where Player Backup archives are written, or {@code null} to use Elite-Intel's default backup path.
+         * Where backups are written, or {@code null} to use Elite-Intel's default backup path.
          */
         public String getBackupDestination() {
             return backupDestination;
@@ -78,15 +70,25 @@ public interface BindForgeSettingsDao {
         }
 
         /**
-         * How many days a Player Backup is kept before it is pruned. Distinct from
-         * {@link #getEditHistoryRetention()}, which counts versions rather than days.
+         * How many days a daily backup is kept before retention deletes it.
          */
-        public int getBackupRetentionDays() {
-            return backupRetentionDays;
+        public int getDailyBackupRetentionDays() {
+            return dailyBackupRetentionDays;
         }
 
-        public void setBackupRetentionDays(int backupRetentionDays) {
-            this.backupRetentionDays = backupRetentionDays;
+        public void setDailyBackupRetentionDays(int dailyBackupRetentionDays) {
+            this.dailyBackupRetentionDays = dailyBackupRetentionDays;
+        }
+
+        /**
+         * How many before-changes backups are kept, newest first - a count, not days.
+         */
+        public int getBeforeChangesBackupsKept() {
+            return beforeChangesBackupsKept;
+        }
+
+        public void setBeforeChangesBackupsKept(int beforeChangesBackupsKept) {
+            this.beforeChangesBackupsKept = beforeChangesBackupsKept;
         }
 
         public int getEditHistoryRetention() {

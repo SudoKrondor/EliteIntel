@@ -161,8 +161,7 @@ open; what the user sees is the tabs and the list above, both of which exist.
 | Four section dropdowns | `HudComboBox` ✓ |
 | Set All to Same — a dropdown plus a button | `HudComboBox`, `HudButton` ✓ |
 | The live banner when the four do not match | `HudBanner` in the `INFO` state ✓ |
-| The sync state — IN SYNC / DRAFT | a readout value in its state colour, as `HudStatusReadout` does ✓ — **no pill**, see [TENSION 2](#2-statusbadge-draws-a-pill) |
-| Revert and Save | `HudFooter.build(false, …)` with `HudUnsavedHint` ✓ |
+| ~~The sync state — IN SYNC / DRAFT~~ | removed 2026-10-24 — the APPLY / DISCARD bar above BindForge's tabs shows whether there is anything to apply |
 
 **Preset Editor needs nothing new** — which is another reason, beside needing no install discovery, to build it
 first.
@@ -173,7 +172,7 @@ first.
 |---|---|
 | The two views, toggled | `HudTabbedPane` `COMPACT` ✓ |
 | The device list | `HudTable` ✓ |
-| One marker per detected installation, **M**, *not added* or the divergence colour | One `HudTable` column per installation ✓ — GAP 5 avoided (A4, 2026-10-08) |
+| ~~One marker per detected installation~~ | removed 2026-10-24 — installations show only in File Manager's Game Install Locations ([principle 12](principles.md)) |
 | ~~The editor, **expanding inline beneath the open device**~~ | ~~**GAP 1**~~ — no longer needed here, 2026-10-10 |
 | The gear at the end of each row, opening the editor | the fleet list's gear cell ✓ — a renderer and a one-column editor; **copied** into Alias Designer for now, to become one shared HUD gear column when a third list takes it |
 | The Device Editor — a dialog with DEVICE, AXES, BUTTONS and HATS tabs | `hudModalScaffold` ✓, `HudTabbedPane` `COMPACT` ✓ for the tabs and the `1–32` button groups |
@@ -181,17 +180,16 @@ first.
 | Button, axis and hat labels | `HudTextField` boxes in a grid beside each input's name ✓ — not table cells, so **GAP 2 is not needed** here |
 | BACK · CLEAR · SAVE along the dialog's bottom | `HudButton` ✓ and **GAP 7** for CLEAR's middle place |
 | Save / Discard / Keep editing on leaving with edits | `HudConfirmDialog.show` ✓ — already takes three answers (primary, extra, dismiss) |
-| APPLY, beneath the list | `HudButton` ✓ |
+| ~~APPLY, beneath the list~~ | moved 2026-10-26 (Storage S4a) to the one APPLY / DISCARD bar above BindForge's tabs - `ui.screen.bindings.ApplyBar`, a `HudFooter` with DISCARD and APPLY, lit only when there are edits not applied |
 | Rename and onboarding dialogs | `hudModalScaffold` ✓ |
 
 **The Device Editor became a dialog, 2026-10-10 (Alan)** — see
 [the Device Editor](alias-designer.md#a-dialog-opened-from-the-row--2026-10-10-alan). A table row cannot host a
 panel beneath itself, so the inline expansion needed GAP 1; a dialog opened from a gear needs neither GAP 1 nor
-GAP 2, both of which stay open for the Bind Editor. MIRROR was removed from this table: the action went on
-2026-09-26.
+GAP 2, both of which stay open for the Bind Editor.
 
 **GAP 5 was avoided, 2026-10-08 (Alan).** The Installations markers became one column per installation — see
-[the Installations markers](alias-designer.md#the-installations-markers--2026-10-08-alan) — so nothing paints
+[the Installations markers](alias-designer.md#my-devices) — so nothing paints
 several markers in one cell. The Device Editor's install strip sits inside the expansion, not in a row, and is the
 `COMPACT` row suggested below. *What was written before:* **GAP 5 has one user**, so the canon lets it stay local to Alias Designer. It is also the most unusual thing
 BindForge asks of the kit — a JTable row does not host components, so tabs inside one means painting them in a
@@ -207,8 +205,6 @@ installations could be a `COMPACT` tab row inside the inline editor, which the k
 | Player Backups | exists today as Binding Management ✓ |
 | The restore checklist — *Everything* forcing the four domains on and disabled | `HudCheckBox` ✓ — the dependent-disable shape `SettingToggle` / `ToggleTreePanel` already express |
 | Ticking device entries in a foreign archive | `HudBooleanCellEditor` with `HudCheckBoxHeaderRenderer` ✓ — the selector-column pattern the Import dialog already uses |
-| Edit History — entries per domain, a preview, Restore | `HudTable` beside a detail pane in `HudSplitPane` ✓ |
-| Edit History retention, 1–30 | `HudStepper` ✓ — the canon's *"a few discrete values compactly"* |
 | Every restore confirmation | `HudConfirmDialog` ✓ |
 
 ---
@@ -305,7 +301,8 @@ colour list, is used everywhere and stays. And **that state is already shown the
 Quick Status panel carries **KEYMAP — IN SYNC** as a `HudStatusReadout` row, label left, value right in its
 state colour, no fill. So:
 
-- **Preset Editor shows IN SYNC / DRAFT as a readout value in its state colour**, not a pill.
+- *Preset Editor's IN SYNC / DRAFT and the Vega tab's KEYMAP readout were removed 2026-10-24 (Alan): the APPLY /
+  DISCARD bar above BindForge's tabs shows whether there is anything to apply.*
 - **The Binding Profile's pill is replaced the same way** when the Bind Editor grows out of that panel. That
   leaves the `StatusBadge` widget with no caller, so it is deleted then — the enum stays.
 - Not a bug ticket: a styling departure on one screen, fixed by the screen that owns it.
@@ -315,7 +312,7 @@ state colour, no fill. So:
 ## What this is not
 
 - **Not a list of every widget.** Forty-nine exist; this names the ones BindForge will reach for.
-- **Not behaviour.** Controller capture, install discovery, the ZIP archive and the settings namespacing are
+- **Not behaviour.** Controller capture, install discovery, the backup folders and the settings namespacing are
   real work, tracked in [v1.2-scope.md](../../00-overview/v1.2-scope.md) and the
   [porting notes](../../PORTING-NOTES.md#7-open-questions-this-port-creates). They need code, not components.
 - **Not a mockup review.** The mockups predate the port; where this document and a mockup disagree, this

@@ -56,28 +56,16 @@ listed so that older notes and mockups can be read correctly:
   command, which makes keeping this distinction more important here than it was under StellarCore.
 - **Binding element** — the parsed representation of one action's key/button/axis assignment. See
   [Binding Schema](../03-data-models/binding-schema.md).
-- **Draft** — the copy a player edits; never the live game file directly. **The preferred term throughout
-  this documentation as of 2026-09-06.** Elite-Intel already implements it (`bindforge.io.BindingsWorkingCopyRepository`, `AppPaths.getBindingsWorkingDir()`), and carries a baseline
-  fingerprint alongside each one so an in-game rebind can be told apart from a BindForge edit — see
-  [Reconciling BindForge Edits With In-Game Rebinds](../02-features/bindforge/overview.md#reconciling-bindforge-edits-with-in-game-rebinds).
-- **Working copy** — the same thing as a draft. Retained only where it names the actual code
-  (`BindingsWorkingCopyRepository`); prefer *draft* in prose.
-- **Master** — BindForge's own copy of the user's input files, held in Elite-Intel's folder, and **the source
-  of truth**. Apply pushes it outward: binds files and `StartPreset.4.start` to the one shared bindings folder,
-  `DeviceMappings.xml` and `.buttonMap` to **every** installation. **Adopted 2026-09-24**, on Krondor's
-  [proposal §2](../multi-install-proposal.md#2-installations-your-side-elite-intel-keeps-the-master-copy).
-  **This reverses the 2026-09-06 decision**, which held that the live game file was the source of truth and
-  that a master copy was "dropped, and not an option". That was right for one installation and wrong for
-  several: each installation keeps its own `DeviceMappings.xml`, they demonstrably disagree, and a set of
-  disagreeing files cannot be the truth — so something has to arbitrate, and the master is it. A live file also
-  cannot be trusted on its own, because a game patch can wipe it and a wipe looks exactly like the newest edit.
-  The superseded reasoning is kept in the archive at
-  [Conflict 3.6](../99-archive/../99-archive/conflicts-and-open-questions.md#36-working-copy-model--resolved-neither-original-option--a-third-sharper-model).
+- **Game input configuration files, working copy, live copy, backup, edits not applied** — defined in
+  [BindForge — Principles](../02-features/bindforge/principles.md#words) (2026-10-22, Alan), which every BindForge
+  document follows. In short: the **working copy** is in Elite-Intel's BindForge folder and is the source of truth;
+  the **live copy** is where the game reads the files; a **backup** is a date-stamped zip of the live copies, of one of four kinds — daily, before changes, user, first setup (2026-10-24).
+- **Draft** — **retired 2026-10-22.** In older documents it means the editor screens' edits not applied.
+  (Until then it named the editable copy in Elite-Intel's folder, beside a separate master.)
+- **Master** — **retired 2026-10-22.** In older documents read it as the working copy. (From 2026-09-24 it named a
+  third copy, separate from the draft, that game files were compared against and adopted into; that model was
+  replaced by [storage.md](../02-features/bindforge/storage.md).)
 - **Local master** — not a concept in this design. Used once in discussion on 2026-09-06 to mean *draft*.
-- **Mirror** — keeping every installation's device files identical to BindForge's master copy.
-  **Redefined 2026-09-23:** it used to name a per-device switch choosing which installations shared one
-  definition. There is no switch now — all installs match, always. See
-  [Every install gets the same files](../02-features/bindforge/overview.md#every-install-gets-the-same-files--settled-2026-09-23).
 - **Alias Designer / Bind Editor / Preset Editor / File Manager** — BindForge's four top-level sections. See
   [BindForge Overview](../02-features/bindforge/overview.md#top-level-structure).
 - **Game Mode / Action Groups / Control Types / Controller Mode / Input Mode / Anomalies / Settings** — the

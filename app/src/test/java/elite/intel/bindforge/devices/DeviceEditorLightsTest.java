@@ -21,7 +21,7 @@ class DeviceEditorLightsTest {
 
     @Test
     void aButtonIsLitWhileHeld() {
-        DeviceEditorLights lights = new DeviceEditorLights(TWIST_ON_RZ);
+        DeviceEditorLights lights = new DeviceEditorLights(TWIST_ON_RZ, false);
 
         assertTrue(lights.button(13, true));
         assertEquals(Set.of("Joy_14"), lights.lit(), "SDL's 0-based index is the game's 1-based button");
@@ -32,7 +32,7 @@ class DeviceEditorLightsTest {
     /** SDL's axis 2 is RZ here, not Z. */
     @Test
     void anAxisIsLitByWhichAxisItIs() {
-        DeviceEditorLights lights = new DeviceEditorLights(TWIST_ON_RZ);
+        DeviceEditorLights lights = new DeviceEditorLights(TWIST_ON_RZ, false);
 
         lights.axis(2, 0.0f);
         lights.axis(2, 0.5f);
@@ -40,10 +40,28 @@ class DeviceEditorLightsTest {
         assertEquals(Set.of("Joy_RZAxis"), lights.lit());
     }
 
+    @Test
+    void gamepadTriggerReturnsToItsNegativeRestValue() {
+        DeviceEditorLights lights = new DeviceEditorLights(DeviceDescription.gamepad(6, 0), true);
+
+        assertTrue(lights.axis(2, -0.2f));
+        assertEquals(Set.of("Joy_ZAxis"), lights.lit());
+        assertTrue(lights.axis(2, -1.0f));
+        assertTrue(lights.lit().isEmpty());
+    }
+
+    @Test
+    void gamepadStickRestsAtCentreEvenWhenFirstSeenDisplaced() {
+        DeviceEditorLights lights = new DeviceEditorLights(DeviceDescription.gamepad(6, 0), true);
+
+        assertTrue(lights.axis(0, 0.6f));
+        assertEquals(Set.of("Joy_XAxis"), lights.lit());
+    }
+
     /** Rest is the first value seen, so a throttle parked at one end does not light the moment the dialog opens. */
     @Test
     void anAxisRestsWhereItWasFirstSeenAndJitterNeverShows() {
-        DeviceEditorLights lights = new DeviceEditorLights(TWIST_ON_RZ);
+        DeviceEditorLights lights = new DeviceEditorLights(TWIST_ON_RZ, false);
 
         assertFalse(lights.axis(0, -1.0f));
         assertFalse(lights.axis(0, -0.95f), "within 5% of its travel from rest");
@@ -55,7 +73,7 @@ class DeviceEditorLightsTest {
 
     @Test
     void noAxisIsLitWhenSdlsNumberingIsNotMatched() {
-        DeviceEditorLights lights = new DeviceEditorLights(DeviceDescription.axesUnknown(0));
+        DeviceEditorLights lights = new DeviceEditorLights(DeviceDescription.axesUnknown(0), false);
 
         lights.axis(0, -1.0f);
         assertFalse(lights.axis(0, 1.0f));
@@ -65,7 +83,7 @@ class DeviceEditorLightsTest {
     /** An 8-way hat's diagonal lights two directions (testing item 20). */
     @Test
     void aHatLightsEachDirectionPushedAndGoesOutAtCentre() {
-        DeviceEditorLights lights = new DeviceEditorLights(TWIST_ON_RZ);
+        DeviceEditorLights lights = new DeviceEditorLights(TWIST_ON_RZ, false);
 
         lights.hat(0, DeviceHatEvent.UP | DeviceHatEvent.RIGHT);
         assertEquals(Set.of("Joy_POV1Up", "Joy_POV1Right"), lights.lit());
@@ -79,7 +97,7 @@ class DeviceEditorLightsTest {
 
     @Test
     void clearingPutsEverythingOutAndForgetsWhereAxesRest() {
-        DeviceEditorLights lights = new DeviceEditorLights(TWIST_ON_RZ);
+        DeviceEditorLights lights = new DeviceEditorLights(TWIST_ON_RZ, false);
         lights.button(0, true);
         lights.axis(1, 0.0f);
 

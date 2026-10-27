@@ -5,6 +5,7 @@ import elite.intel.db.util.Database;
 
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -21,11 +22,12 @@ public class BindForgeSettingsManager {
     public static final int MIN_EDIT_HISTORY_RETENTION = 1;
     public static final int MAX_EDIT_HISTORY_RETENTION = 30;
 
-    /**
-     * The shortest a Player Backup may be kept. See {@link #setBackupRetentionDays(int)} for why there is a
-     * floor but no ceiling.
-     */
-    public static final int MIN_BACKUP_RETENTION_DAYS = 1;
+    /** The days a daily backup can be kept for (file-manager.md, <em>Settings</em>; Alan, 2026-10-24). */
+    public static final List<Integer> DAILY_BACKUP_RETENTION_CHOICES = List.of(30, 60, 90, 180);
+
+    /** The range of how many before-changes backups are kept (file-manager.md, <em>Settings</em>). */
+    public static final int MIN_BEFORE_CHANGES_BACKUPS_KEPT = 10;
+    public static final int MAX_BEFORE_CHANGES_BACKUPS_KEPT = 1000;
 
     private static volatile BindForgeSettingsManager instance;
 
@@ -44,21 +46,12 @@ public class BindForgeSettingsManager {
         return instance;
     }
 
-    public boolean isAutoBackupOnLaunch() {
-        return Database.withDao(BindForgeSettingsDao.class, dao -> dao.get().isAutoBackupOnLaunch());
-    }
-
-    public void setAutoBackupOnLaunch(boolean autoBackupOnLaunch) {
-        update(settings -> settings.setAutoBackupOnLaunch(autoBackupOnLaunch));
-    }
-
     /**
-     * The folder the user chose for Player Backup archives, or {@code null} when they have not chosen one.
+     * The folder the user chose for backups, or {@code null} when they have not chosen one.
      * <p>
-     * Deliberately returns the stored value rather than resolving it. {@code PlayerBackupService} reads this
-     * and decides "chosen folder, else {@code AppPaths.getPlayerBackupsDir()}" in its own
-     * {@code resolvePlayerBackupsDir()}, and that is the one place the decision is made - a second resolver
-     * here would be a rival that can disagree with it.
+     * Deliberately returns the stored value rather than resolving it. {@code bindforge.storage.BackupDestination}
+     * reads this and decides "chosen folder, else {@code AppPaths.getPlayerBackupsDir()}", and that is the one
+     * place the decision is made - a second resolver here would be a rival that can disagree with it.
      */
     public String getBackupDestination() {
         return Database.withDao(BindForgeSettingsDao.class, dao -> dao.get().getBackupDestination());
@@ -74,26 +67,43 @@ public class BindForgeSettingsManager {
     }
 
     /**
-     * How many days a Player Backup is kept before it is pruned.
+     * How many days a daily backup is kept before retention deletes it.
      */
-    public int getBackupRetentionDays() {
-        return Database.withDao(BindForgeSettingsDao.class, dao -> dao.get().getBackupRetentionDays());
+    public int getDailyBackupRetentionDays() {
+        return Database.withDao(BindForgeSettingsDao.class, dao -> dao.get().getDailyBackupRetentionDays());
     }
 
     /**
-     * @param backupRetentionDays how many days to keep a Player Backup, at least one
-     * @throws IllegalArgumentException if fewer than one day
+     * @param days one of {@link #DAILY_BACKUP_RETENTION_CHOICES}
+     * @throws IllegalArgumentException if it is not one of them
      */
-    public void setBackupRetentionDays(int backupRetentionDays) {
-        // WHY: a floor of one day, not a range the specification gives. Zero or negative would mean every
-        // backup is older than the limit the moment it is written, so pruning would delete the backup that
-        // had just been taken - the one outcome a backup feature must never produce. No upper bound: keeping
-        // backups for longer costs disk, which is the user's to spend.
-        if (backupRetentionDays < MIN_BACKUP_RETENTION_DAYS) {
-            throw new IllegalArgumentException("Player backups must be kept for at least "
-                    + MIN_BACKUP_RETENTION_DAYS + " day, was " + backupRetentionDays);
+    public void setDailyBackupRetentionDays(int days) {
+        if (!DAILY_BACKUP_RETENTION_CHOICES.contains(days)) {
+            throw new IllegalArgumentException("Daily backups are kept for one of " + DAILY_BACKUP_RETENTION_CHOICES
+                    + " days, was " + days);
         }
-        update(settings -> settings.setBackupRetentionDays(backupRetentionDays));
+        update(settings -> settings.setDailyBackupRetentionDays(days));
+    }
+
+    /**
+     * How many before-changes backups are kept, newest first.
+     */
+    public int getBeforeChangesBackupsKept() {
+        return Database.withDao(BindForgeSettingsDao.class, dao -> dao.get().getBeforeChangesBackupsKept());
+    }
+
+    /**
+     * @param kept how many before-changes backups to keep, {@value #MIN_BEFORE_CHANGES_BACKUPS_KEPT} to
+     *             {@value #MAX_BEFORE_CHANGES_BACKUPS_KEPT}
+     * @throws IllegalArgumentException if outside that range
+     */
+    public void setBeforeChangesBackupsKept(int kept) {
+        // WHY: a floor of ten - never so few that one evening of applies empties it (file-manager.md, Settings).
+        if (kept < MIN_BEFORE_CHANGES_BACKUPS_KEPT || kept > MAX_BEFORE_CHANGES_BACKUPS_KEPT) {
+            throw new IllegalArgumentException("Before-changes backups kept must be between "
+                    + MIN_BEFORE_CHANGES_BACKUPS_KEPT + " and " + MAX_BEFORE_CHANGES_BACKUPS_KEPT + ", was " + kept);
+        }
+        update(settings -> settings.setBeforeChangesBackupsKept(kept));
     }
 
     public int getEditHistoryRetention() {
@@ -129,7 +139,9 @@ public class BindForgeSettingsManager {
 
     // WHY: read-modify-write in one DAO call. Saving writes the whole row, so changing one setting from a
     // stale copy would overwrite every other setting with whatever it held when it was read.
-    private void update(Consumer<BindForgeSettingsDao.BindForgeSettings> change) {
+    // WHY: synchronized, so two callers on different threads never both read the row before either writes it back -
+    // the second write would put back the first one's old value (review, 2026-10-24).
+    private synchronized void update(Consumer<BindForgeSettingsDao.BindForgeSettings> change) {
         Database.withDao(BindForgeSettingsDao.class, dao -> {
             BindForgeSettingsDao.BindForgeSettings settings = dao.get();
             change.accept(settings);

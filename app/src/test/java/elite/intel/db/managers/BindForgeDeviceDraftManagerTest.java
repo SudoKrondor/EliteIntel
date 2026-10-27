@@ -512,67 +512,6 @@ class BindForgeDeviceDraftManagerTest {
         assertEquals(List.of("LVWAP", "RVWAP"), names(draft.findAll()));
     }
 
-    /** First setup runs once: a master that is no longer empty is never overwritten by it. */
-    @Test
-    void establishingRefusesAMasterThatIsNotEmpty() {
-        assertFalse(draft.establish(List.of(new StoredDevice(null, "STICK2", "1234", "0001", true, null, Map.of())),
-                List.of()));
-
-        assertNull(master.findByName("STICK2"));
-        assertEquals(2, master.findAll().size());
-    }
-
-    @Test
-    void establishingFillsAnEmptyMasterRecordsTheLosersAndEndsAnyDraft() {
-        master.findAll().forEach(row -> master.remove(row.id()));
-        draft.start();
-
-        assertTrue(draft.establish(List.of(
-                        new StoredDevice(null, "RVWAP", "3344", "03F5", true, null, labels("Joy_1", "TRIGGER")),
-                        new StoredDevice(null, "T-Rudder", "044F", "B679", true, null, labels("Joy_XAxis", "X Axis"))),
-                List.of("RightStick")));
-
-        assertEquals(List.of("RVWAP", "T-Rudder"), master.findAll().stream().map(DeviceRow::deviceName).toList());
-        assertEquals(labels("Joy_1", "TRIGGER"), master.labelsOf(master.findByName("RVWAP").id()));
-        assertTrue(master.findByName("RVWAP").aliasConfirmed());
-        assertEquals(List.of("RightStick"), master.pendingRemovals());
-        assertFalse(draft.isStarted(), "a draft left started would replace the new master with its empty copy");
-    }
-
-    /** First setup's losing name that .binds uses is kept as the winner's old name, for Apply's rename (A16). */
-    @Test
-    void establishingKeepsAnOldName() {
-        master.findAll().forEach(row -> master.remove(row.id()));
-
-        assertTrue(draft.establish(List.of(
-                new StoredDevice(null, "RVWAP", "3344", "03F5", true, "RightStick", Map.of())), List.of()));
-
-        assertEquals("RightStick", master.findByName("RVWAP").previousName());
-        assertTrue(master.pendingRemovals().isEmpty());
-    }
-
-    @Test
-    void establishingActivatesInTheSameTransaction() {
-        master.findAll().forEach(row -> master.remove(row.id()));
-
-        assertTrue(draft.establish(List.of(), List.of()), "a user who owns nothing is still activated");
-
-        assertTrue(BindForgeActivationManager.getInstance().isActivated());
-        assertTrue(master.findAll().isEmpty());
-    }
-
-    /** Activation happens once: an activated BindForge with an empty master is not filled again (Alan, 2026-10-13). */
-    @Test
-    void establishingRefusesOnceActivatedEvenWithAnEmptyMaster() {
-        master.findAll().forEach(row -> master.remove(row.id()));
-        activated();
-
-        assertFalse(draft.establish(List.of(new StoredDevice(null, "STICK2", "1234", "0001", true, null, Map.of())),
-                List.of()));
-
-        assertTrue(master.findAll().isEmpty());
-    }
-
     /** CLEAR: the device leaves the draft, and applying makes it a pending removal for the cleanup (A10). */
     @Test
     void clearingADeviceMakesItAPendingRemovalOnApply() {
@@ -738,11 +677,11 @@ class BindForgeDeviceDraftManagerTest {
     /** The suite shares one database, and activation is a stored fact - each test starts before it. */
     static void notActivated() {
         try (Handle handle = Database.init()) {
-            handle.execute("UPDATE bindforge_activation SET activated_at = NULL, backup_folder = NULL WHERE id = 1");
+            handle.execute("UPDATE bindforge_activation SET activated_at = NULL WHERE id = 1");
         }
     }
 
-    /** Activated by SQL: the manager has no way to activate outside {@code establish}, by design. */
+    /** First-time startup marked complete, as onboarding requires until Storage S4 removes the master. */
     static void activated() {
         try (Handle handle = Database.init()) {
             handle.execute("UPDATE bindforge_activation SET activated_at = CURRENT_TIMESTAMP WHERE id = 1");

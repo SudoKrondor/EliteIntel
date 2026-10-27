@@ -19,44 +19,35 @@ class OnboardingTest {
 
     @Test
     void onePagePerControllerThatNeedsAName() {
-        MyDevice unnamed = attached("VIRPIL Controls 20220720", "3344", "0194");
+        MyDevice unnamed = attached("VIRPIL Controls 20220720", "0194");
         MyDevice named = new MyDevice("Stick", "LVWAP", "3344", "83F4", true, "LVWAP", false);
         MyDevice builtIn = new MyDevice("T-Rudder", "T-Rudder", "044F", "B679", true, null, true);
 
-        List<Onboarding.Page> pages = pages(List.of(unnamed, named, builtIn), List.of(), Map.of());
+        List<Onboarding.Page> pages = pages(List.of(unnamed, named, builtIn), Map.of());
 
         assertEquals(1, pages.size());
         assertEquals("VIRPILControls20220720", pages.getFirst().defaultName());
         assertEquals(LABELS, pages.getFirst().labels());
-        assertFalse(pages.getFirst().waitsForApply(), "no binding names it by hardware id");
-    }
-
-    /** Named for Apply and not applied yet: waiting, not unnamed - asking again would give it a second name. */
-    @Test
-    void aControllerTheDraftNamesIsNotAskedAgain() {
-        MyDevice unnamed = attached("VIRPIL Controls 20220720", "3344", "0194");
-
-        assertTrue(pages(List.of(unnamed), List.of(new HardwareId("3344", "0194")), Map.of()).isEmpty());
+        assertEquals(0, pages.getFirst().bindings(), "no binding names it by hardware id");
     }
 
     @Test
     void twoControllersReportingOneNameAreOfferedDifferentDefaults() {
         List<Onboarding.Page> pages = pages(List.of(
-                attached("VIRPIL Controls 20220720", "3344", "0194"),
-                attached("VIRPIL Controls 20220720", "3344", "0195")), List.of(), Map.of());
+                attached("VIRPIL Controls 20220720", "0194"),
+                attached("VIRPIL Controls 20220720", "0195")), Map.of());
 
         assertEquals("VIRPILControls20220720", pages.get(0).defaultName());
         assertEquals("VIRPILControls202207202", pages.get(1).defaultName());
     }
 
-    /** A controller .binds names by hex waits for Apply, and the page says how many bindings move. */
+    /** A controller .binds names by hex: the page says how many bindings move to the name. */
     @Test
-    void aControllerTheBindingsNameByHexWaitsForApply() {
-        List<Onboarding.Page> pages = pages(List.of(attached("VIRPIL Controls 20220720", "3344", "83F3")), List.of(),
+    void aControllerTheBindingsNameByHexSaysHowManyMove() {
+        List<Onboarding.Page> pages = pages(List.of(attached("VIRPIL Controls 20220720", "83F3")),
                 Map.of("334483F3", 100, "83f33344", 31, "334403F5", 7));
 
         Onboarding.Page page = pages.getFirst();
-        assertTrue(page.waitsForApply());
         assertEquals(131, page.bindings());
         assertEquals(Set.of("334483F3", "83f33344"), page.hardwareIds(), "as found, for the rewrite");
     }
@@ -65,28 +56,26 @@ class OnboardingTest {
     @Test
     void aSharedHardwareIdIsPromisedByTheFirstPageOnly() {
         List<Onboarding.Page> pages = pages(List.of(
-                attached("VIRPIL Controls 20220720", "3344", "83F3"),
-                attached("VIRPIL Controls 20220720", "3344", "83F3")), List.of(), Map.of("334483F3", 100));
+                attached("VIRPIL Controls 20220720", "83F3"),
+                attached("VIRPIL Controls 20220720", "83F3")), Map.of("334483F3", 100));
 
-        assertTrue(pages.get(0).waitsForApply());
         assertEquals(100, pages.get(0).bindings());
-        assertFalse(pages.get(1).waitsForApply(), "the second is named now, its bindings already promised");
+        assertEquals(0, pages.get(1).bindings(), "its bindings are already promised to the first");
     }
 
     /**
      * The identity question's yes for a controller known only by its old id (A17): the page promises the bindings on
-     * the old id, and says which id it replaces so FINISH stores it for Apply.
+     * the old id, and says which id it replaces; FINISH moves them with the name.
      */
     @Test
     void aControllerReplacingAnOldIdPromisesItsBindings() {
-        MyDevice alpha = attached("VIRPIL Constellation ALPHA", "3344", "83F4");
+        MyDevice alpha = attached("VIRPIL Constellation ALPHA", "83F4");
         HardwareId old = new HardwareId("3344", "83F3");
 
-        List<Onboarding.Page> pages = Onboarding.pages(List.of(alpha), List.of(), List.of(),
+        List<Onboarding.Page> pages = Onboarding.pages(List.of(alpha), List.of(),
                 Map.of("334483F3", 131, "334483F4", 2), device -> LABELS, Map.of(alpha.hardware(), old));
 
         Onboarding.Page page = pages.getFirst();
-        assertTrue(page.waitsForApply());
         assertEquals(133, page.bindings(), "the old id's and its own");
         assertEquals(Set.of("334483F3", "334483F4"), page.hardwareIds());
         assertEquals(old, page.replaces());
@@ -94,7 +83,7 @@ class OnboardingTest {
 
     @Test
     void aControllerReplacingNothingSaysSo() {
-        assertNull(pages(List.of(attached("VIRPIL Controls 20220720", "3344", "0194")), List.of(), Map.of())
+        assertNull(pages(List.of(attached("VIRPIL Controls 20220720", "0194")), Map.of())
                 .getFirst().replaces());
     }
 
@@ -115,12 +104,11 @@ class OnboardingTest {
                 Onboarding.check("T_Rudder", 0, List.of("Whatever"), List.of("T-Rudder")).problem());
     }
 
-    private static List<Onboarding.Page> pages(List<MyDevice> devices, List<HardwareId> held,
-                                               Map<String, Integer> hardwareIds) {
-        return Onboarding.pages(devices, held, List.of("T-Rudder", "LVWAP"), hardwareIds, device -> LABELS);
+    private static List<Onboarding.Page> pages(List<MyDevice> devices, Map<String, Integer> hardwareIds) {
+        return Onboarding.pages(devices, List.of("T-Rudder", "LVWAP"), hardwareIds, device -> LABELS);
     }
 
-    private static MyDevice attached(String hardwareName, String vid, String pid) {
-        return new MyDevice(hardwareName, null, vid, pid, true, null, false);
+    private static MyDevice attached(String hardwareName, String pid) {
+        return new MyDevice(hardwareName, null, "3344", pid, true, null, false);
     }
 }

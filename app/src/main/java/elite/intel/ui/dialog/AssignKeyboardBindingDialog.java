@@ -10,6 +10,7 @@ import elite.intel.bindforge.rules.BindingConflictScanner;
 import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
 import elite.intel.bindforge.rules.ReservedKeyChords;
 import elite.intel.bindforge.rules.SlotInputConflicts;
+import elite.intel.devices.events.DeviceAxisEvent;
 import elite.intel.devices.events.DeviceButtonEvent;
 import elite.intel.devices.events.DeviceDisconnectedEvent;
 import elite.intel.devices.events.DeviceHatEvent;
@@ -300,7 +301,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
         SwingUtilities.invokeLater(() -> {
             ControllerInputsPanel panel = livePanels.get(event.deviceId());
             if (panel == null) return;
-            capture.button(panel.deviceName(), event.buttonIndex(), event.pressed()).ifPresent(this::pickControl);
+            panel.buttonToken(event.buttonIndex()).flatMap(token ->
+                    capture.button(panel.deviceName(), token, event.pressed())).ifPresent(this::pickControl);
         });
     }
 
@@ -309,7 +311,22 @@ public class AssignKeyboardBindingDialog extends JDialog {
         SwingUtilities.invokeLater(() -> {
             ControllerInputsPanel panel = livePanels.get(event.deviceId());
             if (panel == null) return;
-            capture.hat(panel.deviceName(), event.hatIndex(), event.directions()).ifPresent(this::pickControl);
+            Optional<ControllerCapture.Captured> captured = panel.gamepad()
+                    ? capture.gamepadHat(panel.deviceName(), event.hatIndex(), event.directions())
+                    : capture.hat(panel.deviceName(), event.hatIndex(), event.directions());
+            captured.ifPresent(this::pickControl);
+        });
+    }
+
+    @Subscribe
+    public void onAxis(DeviceAxisEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            ControllerInputsPanel panel = livePanels.get(event.deviceId());
+            if (panel == null) return;
+            panel.axis(event.axisIndex()).flatMap(axis -> panel.gamepad()
+                            ? capture.gamepadAxis(panel.deviceName(), axis, event.value())
+                            : capture.axis(panel.deviceName(), axis, event.value()))
+                    .ifPresent(this::pickControl);
         });
     }
 

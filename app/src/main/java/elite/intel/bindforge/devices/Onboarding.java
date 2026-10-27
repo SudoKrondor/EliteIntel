@@ -11,9 +11,8 @@ import java.util.function.Function;
  * alias-designer.md, <em>Onboarding</em>; Alan, 2026-10-14, A6b). Pure - the caller reads the hardware, the names
  * already taken and the bindings.
  * <p>
- * <strong>One page per controller {@link DeviceNames#needingName} returns</strong>, less any whose hardware the
- * draft already names: a controller named for Apply is waiting, not unnamed, and asking again would give it a
- * second name.
+ * <strong>One page per controller {@link DeviceNames#needingName} returns.</strong> A controller named in the edits
+ * already has its name on My Devices, so it is not asked again.
  * <p>
  * <strong>The defaults never clash with each other.</strong> Two sticks reporting the same name are offered
  * {@code VirpilControls20220720} and {@code VirpilControls202207202}, as the default-name rule numbers any clash.
@@ -35,7 +34,7 @@ public final class Onboarding {
      * @param labels       its generated labels, by input token
      * @param replaces     the old hardware id the user said this controller is - the identity question's yes for a
      *                     controller {@code .binds} knows only by its id (A17) - or {@code null}. Its bindings are among
-     *                     {@code hardwareIds} and {@code bindings}, and Apply finds them through a stored record
+     *                     {@code hardwareIds} and {@code bindings}, and move with the name in the same edit
      */
     public record Page(MyDevice device, String defaultName, Set<String> hardwareIds, int bindings,
                        Map<String, String> labels, HardwareId replaces) {
@@ -45,50 +44,42 @@ public final class Onboarding {
             hardwareIds = Set.copyOf(hardwareIds);
             labels = Map.copyOf(labels);
         }
-
-        /** Whether naming it moves bindings, so it waits for Apply. */
-        public boolean waitsForApply() {
-            return bindings > 0;
-        }
     }
 
     /**
      * The pages, in the order My Devices lists the controllers.
      * <p>
      * A hardware-id reference two controllers could both claim - identical hardware, or one's VID+PID reading as the
-     * other's PID+VID - goes to the first page only, so no two pages promise the same bindings. Apply moves them by
-     * the master's order (see {@code DeviceApply}); for identical hardware either name drives the same controller.
+     * other's PID+VID - goes to the first page only, so no two pages promise the same bindings; for identical
+     * hardware either name drives the same controller.
      *
      * @param devices      My Devices, as the screen built it
-     * @param heldByDraft  hardware the draft already names - controllers named for Apply and not yet applied
-     * @param taken        every name in use: the master's, the draft's, every installation's entries, Frontier's
-     * @param hardwareIds  {@code .binds}' hardware-id references, as {@link BindsDeviceReferences#hardwareIdCounts}
+     * @param taken        every name in use: the edits', the working copy's, Frontier's
+     * @param hardwareIds  {@code .binds}' hardware-id references, as {@link BindsDeviceReferences#countsIn}
      *                     reads them
      * @param labels       each controller's generated labels
      */
-    public static List<Page> pages(List<MyDevice> devices, Collection<HardwareId> heldByDraft,
-                                   Collection<String> taken, Map<String, Integer> hardwareIds,
+    public static List<Page> pages(List<MyDevice> devices, Collection<String> taken,
+                                   Map<String, Integer> hardwareIds,
                                    Function<MyDevice, Map<String, String>> labels) {
-        return pages(devices, heldByDraft, taken, hardwareIds, labels, Map.of());
+        return pages(devices, taken, hardwareIds, labels, Map.of());
     }
 
     /**
      * The pages, where some controllers are the identity question's answer for a controller {@code .binds} knows only
      * by its hardware id (Alan, 2026-10-17, A17): such a page promises the bindings on the <strong>old</strong> id too,
-     * and says which id it replaces, so FINISH can store it for Apply.
+     * and says which id it replaces; FINISH moves them with the name.
      *
      * @param replacing the old id each picked controller is, by the picked controller's hardware
      */
-    public static List<Page> pages(List<MyDevice> devices, Collection<HardwareId> heldByDraft,
-                                   Collection<String> taken, Map<String, Integer> hardwareIds,
+    public static List<Page> pages(List<MyDevice> devices, Collection<String> taken,
+                                   Map<String, Integer> hardwareIds,
                                    Function<MyDevice, Map<String, String>> labels,
                                    Map<HardwareId, HardwareId> replacing) {
-        Set<HardwareId> held = Set.copyOf(heldByDraft);
         List<String> used = new ArrayList<>(taken);
         Set<String> claimed = new HashSet<>();
         List<Page> pages = new ArrayList<>();
         for (MyDevice device : DeviceNames.needingName(devices)) {
-            if (held.contains(device.hardware())) continue;
             String name = DeviceNames.defaultName(device.hardwareName(), used);
             used.add(name);
             Map<String, Integer> found =

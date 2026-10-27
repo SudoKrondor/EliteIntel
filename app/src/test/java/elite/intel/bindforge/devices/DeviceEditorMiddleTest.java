@@ -10,12 +10,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The Device Editor's middle button: CLEAR or RESET LABELS, its undo, and when it is refused (Alan, 2026-10-11). */
+/**
+ * The Device Editor's middle button: CLEAR or RESET LABELS, its undo, and when it is refused (Alan, 2026-10-11) - read
+ * from the working copy and the edits since Storage S4a.
+ */
 class DeviceEditorMiddleTest {
 
     @Test
-    void theUsersDeviceInTheMasterCanBeCleared() {
-        DeviceEditorMiddle middle = DeviceEditorMiddle.of("LVWAP", false, true, false, false, 0);
+    void theUsersDeviceCanBeCleared() {
+        DeviceEditorMiddle middle = DeviceEditorMiddle.of("LVWAP", false, true, true, 0);
 
         assertEquals(Kind.CLEAR, middle.kind());
         assertTrue(middle.enabled());
@@ -24,11 +27,11 @@ class DeviceEditorMiddleTest {
 
     /**
      * An edit to an entry .binds depends on must update .binds with it. Clearing would mean moving those bindings to
-     * the hardware ID, which is not built - so CLEAR is refused, and says how many bindings are at stake.
+     * the hardware ID, which is A19's - so CLEAR is refused, and says how many bindings are at stake.
      */
     @Test
     void clearIsRefusedWhileBindingsNameTheDevice() {
-        DeviceEditorMiddle middle = DeviceEditorMiddle.of("LVWAP", false, true, true, true, 142);
+        DeviceEditorMiddle middle = DeviceEditorMiddle.of("LVWAP", false, true, true, 142);
 
         assertEquals(Kind.CLEAR, middle.kind());
         assertFalse(middle.enabled());
@@ -39,43 +42,43 @@ class DeviceEditorMiddleTest {
     /** .binds names inputs by token, never by label, so a reset never touches it. */
     @Test
     void aBuiltInsLabelsCanBeResetWhateverTheBindingsName() {
-        DeviceEditorMiddle middle = DeviceEditorMiddle.of("T-Rudder", true, true, false, false, 30);
+        DeviceEditorMiddle middle = DeviceEditorMiddle.of("T-Rudder", true, true, true, 30);
 
         assertEquals(Kind.RESET_LABELS, middle.kind());
         assertTrue(middle.enabled());
     }
 
     @Test
-    void aBuiltInWithNothingSavedHasNothingToReset() {
-        DeviceEditorMiddle middle = DeviceEditorMiddle.of("T-Rudder", true, false, false, false, 0);
+    void aBuiltInWithNoLabelsOfTheUsersHasNothingToReset() {
+        DeviceEditorMiddle middle = DeviceEditorMiddle.of("T-Rudder", true, false, false, 0);
 
         assertFalse(middle.enabled());
         assertEquals(Why.NOTHING_TO_RESET, middle.why());
     }
 
     @Test
-    void aDeviceClearedInTheDraftOffersItsUndo() {
-        DeviceEditorMiddle middle = DeviceEditorMiddle.of("LVWAP", false, true, true, false, 142);
+    void aDeviceClearedInTheEditsOffersItsUndo() {
+        DeviceEditorMiddle middle = DeviceEditorMiddle.of("LVWAP", false, true, false, 142);
 
         assertEquals(Kind.UNDO_CLEAR, middle.kind());
-        assertTrue(middle.enabled(), "the undo is never refused: it puts back what the master holds");
+        assertTrue(middle.enabled(), "the undo is never refused: it puts back what the working copy holds");
         assertTrue(middle.undoing());
     }
 
     @Test
-    void aBuiltInResetInTheDraftOffersItsUndo() {
-        assertEquals(Kind.UNDO_RESET, DeviceEditorMiddle.of("T-Rudder", true, true, true, false, 0).kind());
+    void aBuiltInResetInTheEditsOffersItsUndo() {
+        assertEquals(Kind.UNDO_RESET, DeviceEditorMiddle.of("T-Rudder", true, true, false, 0).kind());
     }
 
-    /** With a draft, the draft is what CLEAR acts on: a device only the draft holds can be cleared from it. */
+    /** The edits are what CLEAR acts on: a device named only there, not yet applied, can be cleared from them. */
     @Test
-    void aDeviceSavedOnlyInTheDraftCanStillBeCleared() {
-        assertTrue(DeviceEditorMiddle.of("TRudder2", false, false, true, true, 0).enabled());
+    void aDeviceOnlyTheEditsHoldCanStillBeCleared() {
+        assertTrue(DeviceEditorMiddle.of("TRudder2", false, false, true, 0).enabled());
     }
 
     @Test
     void aDeviceNeitherHoldsHasNothingToClear() {
-        DeviceEditorMiddle middle = DeviceEditorMiddle.of("Lvwap", false, false, false, false, 0);
+        DeviceEditorMiddle middle = DeviceEditorMiddle.of("Lvwap", false, false, false, 0);
 
         assertFalse(middle.enabled());
         assertEquals(Why.NOT_ADDED, middle.why());
@@ -83,7 +86,7 @@ class DeviceEditorMiddleTest {
 
     @Test
     void aDeviceWithNoNameHasNothingToClear() {
-        DeviceEditorMiddle middle = DeviceEditorMiddle.of(null, false, false, false, false, 0);
+        DeviceEditorMiddle middle = DeviceEditorMiddle.of(null, false, false, false, 0);
 
         assertFalse(middle.enabled());
         assertEquals(Why.NO_NAME, middle.why());
@@ -92,23 +95,11 @@ class DeviceEditorMiddleTest {
     /** Bindings that cannot be read refuse CLEAR rather than guess; a reset needs nothing from them (review). */
     @Test
     void unreadableBindingsRefuseClearButNotReset() {
-        DeviceEditorMiddle clear = DeviceEditorMiddle.of("LVWAP", false, true, false, false, OptionalInt.empty());
-        DeviceEditorMiddle reset = DeviceEditorMiddle.of("T-Rudder", true, true, false, false, OptionalInt.empty());
+        DeviceEditorMiddle clear = DeviceEditorMiddle.of("LVWAP", false, true, true, OptionalInt.empty());
+        DeviceEditorMiddle reset = DeviceEditorMiddle.of("T-Rudder", true, true, true, OptionalInt.empty());
 
         assertFalse(clear.enabled());
         assertEquals(Why.BINDS_UNREAD, clear.why());
         assertTrue(reset.enabled());
-    }
-
-    /** Review, 2026-10-15 (A11): clearing mid-rename would drop the old name the next Apply needs to finish it. */
-    @Test
-    void clearIsRefusedWhileARenameIsPendingButAnUndoIsNot() {
-        DeviceEditorMiddle clear = DeviceEditorMiddle.of("LeftStick", false, true, false, false, 0).whileRenamePending();
-        DeviceEditorMiddle undo = DeviceEditorMiddle.of("LeftStick", false, true, true, false, 0).whileRenamePending();
-
-        assertFalse(clear.enabled());
-        assertEquals(Why.RENAME_PENDING, clear.why());
-        assertTrue(undo.enabled());
-        assertEquals(Kind.UNDO_CLEAR, undo.kind());
     }
 }

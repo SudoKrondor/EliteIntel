@@ -4,12 +4,11 @@ import elite.intel.db.dao.BindForgeActivationDao;
 import elite.intel.db.util.Database;
 
 /**
- * Whether BindForge is activated, read and written through {@link BindForgeActivationDao} (alias-designer.md,
- * <em>Activation</em>, 2026-10-13).
+ * The stored "first-time startup complete" flag (storage.md, <em>First-time startup</em>; Storage S2b, Alan,
+ * 2026-10-25), read and written through {@link BindForgeActivationDao}.
  * <p>
- * <strong>Activated is its own fact, not "the master has rows".</strong> A user who owns nothing is activated with
- * an empty master. <strong>The one way to activate is {@link BindForgeDeviceDraftManager#establish}</strong>, in the
- * transaction that fills the master - so there is deliberately no {@code activate()} here (review, 2026-10-13).
+ * Set in the step that writes the working copy, and cleared only by Run first-time startup again - which clears it and
+ * nothing else. It is not "the working copy exists": a working copy can be there while the flag is cleared.
  */
 public class BindForgeActivationManager {
 
@@ -30,18 +29,21 @@ public class BindForgeActivationManager {
         return instance;
     }
 
-    public boolean isActivated() {
-        return Database.withDao(BindForgeActivationDao.class, BindForgeActivationDao::isActivated);
+    public boolean isFirstTimeStartupComplete() {
+        return Database.withDao(BindForgeActivationDao.class, BindForgeActivationDao::isComplete);
     }
 
-    /** The "before BindForge" backup's folder, or {@code null} when it has not been taken. */
-    public String backupFolder() {
-        return Database.withDao(BindForgeActivationDao.class, BindForgeActivationDao::backupFolder);
-    }
-
-    public void recordBackupFolder(String folder) {
+    public void markFirstTimeStartupComplete() {
         Database.withDao(BindForgeActivationDao.class, dao -> {
-            dao.recordBackupFolder(folder);
+            dao.markComplete();
+            return Void.TYPE;
+        });
+    }
+
+    /** Run first-time startup again: clears the flag, and touches nothing else. */
+    public void clearFirstTimeStartup() {
+        Database.withDao(BindForgeActivationDao.class, dao -> {
+            dao.clear();
             return Void.TYPE;
         });
     }

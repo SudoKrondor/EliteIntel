@@ -39,7 +39,7 @@ extra comparison — and never writes hex at all. What remains is the numbering 
 → [BindForge Roadmap](../02-features/bindforge/roadmap.md#formerly-needed-before-v1-can-be-built--now-resolved)
 
 **7. First-Time Startup's file copy** — confirm whether a factory binds file from `ControlSchemes` can be copied byte-for-byte into the player's bindings folder as a valid starting `.binds` file, or whether the game's own first-customization save does something to the file beyond a plain copy (e.g. a header/version rewrite) that a plain copy would miss.
-→ [BindForge Overview — First-Time Startup](../02-features/bindforge/overview.md#first-time-startup)
+→ [BindForge Overview — First-Time Startup](../02-features/bindforge/overview.md#create--a-new-players-first-binds-file--2026-10-24)
 
 **9. ~~Does `.binds` reference a `DeviceMappings.xml` device by name or by hex?~~ ANSWERED 2026-09-08 —
 both, and the rule is now known.** *No longer a testing item.*
@@ -108,7 +108,7 @@ left by an earlier BindForge attempt.
 reinstall reverts the files the manifest ships and ignores files the player added. That is the motivating
 incident, observed directly rather than reported: **the edit is lost, the orphan survives.** It also means
 orphaned `.buttonMap` files exist in the wild, which
-[File Manager's restore scope](../02-features/bindforge/file-manager.md#restore-scope) has to tolerate
+[File Manager's restore scope](../02-features/bindforge/file-manager.md#restore) has to tolerate
 rather than treat as corruption.
 
 **Reframed 2026-09-23, and the original question answered itself.** They *do* differ — but differing is
@@ -121,10 +121,8 @@ and there is no per-install choice left to test.
 
 *Original question, for the record:* The
 per-installation model in [Alias Designer](../02-features/bindforge/alias-designer.md#one-record-and-where-it-lands--reworked-2026-09-26)
-assumes they can, and builds the UI around allowing it. Worth confirming against real multi-storefront setups
-whether that ever actually happens in practice, or whether every real user mirrors everything — which would
-make mirrored the sensible default rather than a choice. *That last guess is what happened, though not for the
-reason it expected: not because everyone mirrors, but because not mirroring breaks the game.*
+assumes they can, and builds the UI around allowing it. It was answered the other way: installations that differ
+break the game, so they never differ on purpose.
 
 **12. Does the game tolerate a `DeviceMappings.xml` entry for hardware that is not attached?** Entries outlive
 hardware, and BindForge lists and preserves them deliberately. Confirm the game ignores a stale entry rather
