@@ -34,7 +34,7 @@ once here so no tab builds its own.
 | Device-file write (C1) | `bindforge.devicefiles.DeviceFilesPush` — Apply for `DeviceMappings.xml` and `.buttonMap`, per installation, with Edit History in `elite-intel/bindings/history/<installId>/`; `DeviceMappingsMerge`, `ButtonMapWriter`, `DeviceFileXml` (the layout). **No caller yet** |
 | Device draft and Apply (C2) | migrations `12003`, `12004`; `db.managers.BindForgeDeviceDraftManager` — `start()` copies the whole master in (a started draft may hold no edits, so `isStarted()` is not "changed"); `promote()` makes it the master and stores what it removed as pending removals (`BindForgeDeviceMasterManager.pendingRemovals()`, `clearPendingRemoval`); `revert(masterId)`, `discard()`. Master ids change on every promote. `bindforge.devicefiles.DeviceApply` — promote, then `DeviceFilesPush.push(Set)` with the pending removals `.binds` does not name; called by APPLY on the Alias Designer screen (A10). `DraftChanges` tells a draft with edits from one only started |
 | Startup check, adopt, revert (C3) | `bindforge.devicefiles.DeviceFilesCheck` — each installation against the saved master: `UNCHANGED`, `WIPED`, `EDITED` (with element and label changes), `MISSING`, `UNREADABLE`; an empty master reports *not set up*. `DeviceFilesAdopt` — the installation into the master (and the draft, three-way) through `BindForgeDeviceDraftManager.adopt()`, one transaction. Revert is `DeviceFilesPush.push(installId)`. Helpers: `ButtonMapReader`, `DeviceMappingsParser.primaries()`. **No caller yet** |
-| Device-file monitor (C5) | `elite.intel.io.FilePoller` (which files changed since the last look - stamp only, no thread); `bindforge.devicefiles.DeviceFilesMonitor` (polls every installation's `DeviceMappings.xml` and `.buttonMap`s every 2 s, started as `DEVICE_FILES_MONITOR` in `AppController`) publishes `ui.event.DeviceFilesChangedEvent`; `AliasDesignerPanel` refreshes on it; a request made mid-refresh is never dropped (`ui.screen.bindings.RefreshCoalescer`) |
+| Device-file monitor (C5) | ~~`elite.intel.io.FilePoller` (which files changed since the last look - stamp only, no thread); `bindforge.devicefiles.DeviceFilesMonitor` (polls every installation's `DeviceMappings.xml` and `.buttonMap`s every 2 s, started as `DEVICE_FILES_MONITOR` in `AppController`) publishes `ui.event.DeviceFilesChangedEvent`; `AliasDesignerPanel` refreshes on it~~ — removed in Storage S4a (2026-10-26): BindForge does not watch the files. Kept: a request made mid-refresh is never dropped (`ui.screen.bindings.RefreshCoalescer`) |
 | `.binds` draft and apply | `bindforge.io.BindingsWorkingCopyRepository` (drafts in `elite-intel/bindings/`), `BindingsApplyService`, `BindingsMonitor` |
 
 **The `.binds` master is only a hash today.** `BindingsWorkingCopyRepository` records a baseline fingerprint
@@ -161,8 +161,9 @@ next slice needs.*
   mid-refresh gets one more, so a ship-profile change now costs one extra refresh; recorded in
   [overview.md](../02-features/bindforge/overview.md#external-change-detection--2026-10-23).
   `DeviceFilesWatch` renamed **`DeviceFilesMonitor`** (`DEVICE_FILES_MONITOR`) to match `BindingsMonitor`.
-  `FilePoller` reads time and size in one call. **Left (#7):** `FilePoller.stampOf` duplicates
-  `AuxiliaryFilesMonitor.stampOf`, which is V1.1 code — that class could use `FilePoller` once on `V1.1-Release`.
+  `FilePoller` reads time and size in one call. ~~**Left (#7):** `FilePoller.stampOf` duplicates
+  `AuxiliaryFilesMonitor.stampOf`, which is V1.1 code — that class could use `FilePoller` once on `V1.1-Release`.~~
+  Removed in Storage S4a (2026-10-26), with `FilePoller`.
 
 - **2026-10-11 — C5 built.** **Branch ruling (Alan):** a new class in `elite.intel.io` that only V1.2 calls is built
   on `V1.2-BindForge` — it edits nothing V1.1 ships; recorded in the README, the platform map and `CLAUDE.md`

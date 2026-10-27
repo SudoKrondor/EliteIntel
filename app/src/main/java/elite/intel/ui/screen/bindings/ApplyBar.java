@@ -96,15 +96,21 @@ public final class ApplyBar extends JPanel {
         new Thread(() -> {
             String message;
             try {
-                message = reportText(Apply.stored().apply());
+                message = reportText(Apply.stored(AliasDesignerReader::defaultLabels).apply());
             } catch (Backups.NothingToBackUpException e) {
                 log.warn("APPLY wrote nothing: there was nothing to back up");
                 message = getText(Backups.NothingToBackUpException.ADVICE_KEY);
-            } catch (IOException | RuntimeException e) {
-                // WHY: broad on purpose - a thread boundary. Nothing reached a game file, and the edits are still on
-                // screen.
+            } catch (IOException | Edits.WriteRunningException e) {
+                // WHY: each of these stops before any live copy is written - the working copy unreadable, the backup
+                // or the working copy's save failed, or another write running - so the edits are still on screen.
                 log.error("APPLY stopped before writing the game files", e);
                 message = getText("bindings.applyBar.failed", StringUtls.messageOf(e));
+            } catch (RuntimeException e) {
+                // WHY: broad on purpose - a thread boundary. A bug can strike after the working copy was saved and the
+                // edits handed over, with some live copies written, so nothing is promised either way: the log says
+                // what was written (review, 2026-10-27).
+                log.error("APPLY stopped part way", e);
+                message = getText("bindings.applyBar.stopped", StringUtls.messageOf(e));
             }
             String told = message;
             SwingUtilities.invokeLater(() -> {
@@ -128,6 +134,13 @@ public final class ApplyBar extends JPanel {
                 getText("bindings.aliasDesigner.firstSetup.cancel"))) {
             return;
         }
-        Edits.stored().discard();
+        try {
+            Edits.stored().discard();
+        } catch (Edits.WriteRunningException e) {
+            // WHY: an APPLY started while the question was open, and is writing these edits - once it has, there is
+            // nothing left to throw away. The bar shows it running.
+            log.info("DISCARD not done: {}", e.getMessage());
+            refresh();
+        }
     }
 }

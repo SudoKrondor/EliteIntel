@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -48,7 +49,7 @@ class LiveCopiesTest {
     void theSetGoesToTheBindingsFolderAndWholeToEveryInstallation() throws IOException {
         write(buttonMap(steam, "Old.buttonMap"), "<a device the set no longer has/>");
 
-        WriteReport report = liveCopies(steam, epic).write(set());
+        WriteReport report = liveCopies(steam, epic).write(set(), LiveCopies.LeaveAlone.NONE);
 
         assertEquals("<Custom/>", Files.readString(bindings.resolve("Custom.4.2.binds")));
         assertEquals("Custom", Files.readString(bindings.resolve("StartPreset.4.start")));
@@ -74,7 +75,7 @@ class LiveCopiesTest {
         write(bindings.resolve("Custom.4.2.binds"), "<Custom/>");
         Files.setLastModifiedTime(bindings.resolve("Custom.4.2.binds"), LONG_AGO);
 
-        WriteReport report = liveCopies(steam).write(set());
+        WriteReport report = liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE);
 
         assertEquals(LONG_AGO, Files.getLastModifiedTime(bindings.resolve("Custom.4.2.binds")));
         assertEquals(List.of("StartPreset.4.start"), report.bindings().written());
@@ -89,7 +90,7 @@ class LiveCopiesTest {
         write(controlSchemes(steam).resolve("KeyboardMouseOnly.binds"), "<factory/>");
         write(bindings.resolve("Testing.4.2.binds"), "<not in the set/>");
 
-        liveCopies(steam).write(set());
+        liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE);
 
         assertTrue(Files.exists(buttonMap(steam, "VPCThrottle.buttonMap")));
         assertTrue(Files.exists(buttonMap(steam, "readme.txt")));
@@ -102,7 +103,7 @@ class LiveCopiesTest {
     void anOldSpellingOfAKeptButtonMapEndsAsTheOneNewFile() throws IOException {
         write(buttonMap(steam, "lvwap.buttonMap"), "<old/>");
 
-        liveCopies(steam).write(set());
+        liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE);
 
         // WHY: holds whether or not the file system ignores case - on one that does, the old spelling is the new
         // file and must not be deleted; on one that heeds it, the old spelling is a file of its own and goes.
@@ -116,7 +117,7 @@ class LiveCopiesTest {
     void anInstallationThatCannotBeWrittenIsReportedAndTheOthersAreStillWritten() {
         Path gone = temp.resolve("Unplugged/EliteDangerous");
 
-        WriteReport report = liveCopies(steam, gone, epic).write(set());
+        WriteReport report = liveCopies(steam, gone, epic).write(set(), LiveCopies.LeaveAlone.NONE);
 
         assertEquals(2, report.installationsUpdated(), "updated 2 of 3");
         assertEquals(3, report.installations().size());
@@ -127,11 +128,35 @@ class LiveCopiesTest {
         assertTrue(Files.exists(buttonMap(epic, "LVWAP.buttonMap")), "the one after it is still written");
     }
 
+    /**
+     * APPLY's leave-alone is asked only of an installation that is there: a missing one is not asked about but reported
+     * as not found, so the user hears the drive is gone rather than "differs" (Storage S4a).
+     */
+    @Test
+    void aMissingInstallationIsReportedNotFoundAndNeverAskedAbout() {
+        Path gone = temp.resolve("Unplugged/EliteDangerous");
+        List<Path> asked = new ArrayList<>();
+
+        WriteReport report = liveCopies(steam, gone).write(set(), installation -> {
+            asked.add(installation.root());
+            return true;
+        });
+
+        assertEquals(List.of(steam), asked);
+        WriteReport.Place leftAlone = report.installations().getFirst();
+        assertTrue(leftAlone.differs());
+        assertTrue(leftAlone.written().isEmpty(), "nothing is written to one left alone");
+        assertFalse(Files.exists(buttonMap(steam, "LVWAP.buttonMap")));
+        WriteReport.Place missing = report.installations().get(1);
+        assertFalse(missing.differs());
+        assertEquals(List.of(LiveCopies.FOLDER_NOT_FOUND), missing.failures());
+    }
+
     @Test
     void aMissingBindingsFolderIsReportedNotCreated() throws IOException {
         Files.delete(bindings);
 
-        WriteReport report = liveCopies(steam).write(set());
+        WriteReport report = liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE);
 
         assertEquals(List.of(LiveCopies.FOLDER_NOT_FOUND), report.bindings().failures());
         assertFalse(Files.exists(bindings), "creating it would put the files where the game never reads them");
@@ -142,7 +167,7 @@ class LiveCopiesTest {
     void aSetWithNoDeviceMappingsLeavesTheLiveOneAlone() throws IOException {
         write(GameInstallation.deviceMappingsIn(controlSchemes(steam)), "<Theirs/>");
 
-        liveCopies(steam).write(new ConfigurationFiles(Map.of(), null, Map.of()));
+        liveCopies(steam).write(new ConfigurationFiles(Map.of(), null, Map.of()), LiveCopies.LeaveAlone.NONE);
 
         assertEquals("<Theirs/>", Files.readString(GameInstallation.deviceMappingsIn(controlSchemes(steam))));
     }
@@ -158,7 +183,7 @@ class LiveCopiesTest {
         write(binds, "<Old/>");
         protect(binds);
 
-        WriteReport report = liveCopies().write(set());
+        WriteReport report = liveCopies().write(set(), LiveCopies.LeaveAlone.NONE);
 
         assertTrue(report.bindings().updated(), report.bindings().failures().toString());
         assertEquals("<Custom/>", Files.readString(binds));
@@ -173,7 +198,7 @@ class LiveCopiesTest {
         write(binds, "<Custom/>");
         protect(binds);
 
-        WriteReport report = liveCopies().write(set());
+        WriteReport report = liveCopies().write(set(), LiveCopies.LeaveAlone.NONE);
 
         assertFalse(report.bindings().written().contains("Custom.4.2.binds"));
         assertFalse(Files.isWritable(binds));
@@ -190,7 +215,7 @@ class LiveCopiesTest {
         write(old, "<a device the set no longer has/>");
         protect(old);
 
-        WriteReport report = liveCopies(steam).write(set());
+        WriteReport report = liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE);
 
         assertTrue(Files.exists(old));
         WriteReport.Place place = report.installations().getFirst();

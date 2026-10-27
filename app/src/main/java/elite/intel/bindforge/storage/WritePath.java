@@ -56,11 +56,6 @@ public final class WritePath {
         return new WritePath(WorkingCopy.stored(), BackupSources::gather, Edits.onWritten());
     }
 
-    WritePath(WorkingCopy workingCopy, Supplier<BackupSources> sources) {
-        this(workingCopy, sources, files -> {
-        });
-    }
-
     WritePath(WorkingCopy workingCopy, Supplier<BackupSources> sources, Consumer<ConfigurationFiles> written) {
         this.workingCopy = workingCopy;
         this.sources = sources;

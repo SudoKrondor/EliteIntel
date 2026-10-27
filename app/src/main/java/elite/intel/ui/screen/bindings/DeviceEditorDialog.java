@@ -96,12 +96,11 @@ final class DeviceEditorDialog extends JDialog {
      * @param rename      whether the name can be changed, and why not
      * @param taken       the names a new name must not clash with - empty unless {@code rename} allows it
      * @param covering    Frontier's element covering the controller's hardware, or {@code null} when none does
-     * @param installations how many installations APPLY reaches - what CLEAR's question names
      */
     record Opening(MyDevice device, String deviceName, Integer liveId, DeviceDescription description,
                    boolean gamepad, DeviceEditorInputs inputs, Map<String, String> saved, boolean gameDrawsIt,
                    DeviceEditorMiddle middle, DeviceRename.Allowed rename,
-                   Set<String> taken, Covering covering, int installations) {
+                   Set<String> taken, Covering covering) {
         Opening {
             taken = Set.copyOf(taken);
         }
@@ -603,8 +602,9 @@ final class DeviceEditorDialog extends JDialog {
     }
 
     /**
-     * CLEAR and RESET LABELS ask first, naming how many installations APPLY will reach; the undo does not, since it puts
-     * back what the working copy holds. Each changes the edits alone, then closes.
+     * CLEAR and RESET LABELS ask first - naming no installations, which editors never show (principle 12; Alan,
+     * 2026-10-27); the undo does not ask, since it puts back what the working copy holds. Each changes the edits alone,
+     * then closes.
      */
     private void middleAction() {
         DeviceEditorMiddle rule = opening.middle();
@@ -612,7 +612,7 @@ final class DeviceEditorDialog extends JDialog {
         String name = opening.deviceName();
         FrontierStockDevices stock = FrontierStockDevices.getInstance();
         if (rule.undoing()) {
-            runAndClose(current -> DeviceEdits.restore(current, Edits.stored().applied(), name, stock),
+            runAndClose((current, applied) -> DeviceEdits.restore(current, applied, name, stock),
                     "bindings.aliasDesigner.editor.actionFailed");
             return;
         }
@@ -620,7 +620,7 @@ final class DeviceEditorDialog extends JDialog {
         if (!HudConfirmDialog.confirm(this, getText("bindings.aliasDesigner.editor.heading"),
                 getText(reset
                         ? "bindings.aliasDesigner.editor.reset.confirm"
-                        : "bindings.aliasDesigner.editor.clear.confirm", name, opening.installations()),
+                        : "bindings.aliasDesigner.editor.clear.confirm", name),
                 getText(reset
                         ? "bindings.aliasDesigner.editor.button.resetLabels"
                         : "bindings.aliasDesigner.editor.button.clear"),
@@ -648,6 +648,11 @@ final class DeviceEditorDialog extends JDialog {
      *                  was done" in one breath (review, 2026-10-11)
      */
     private void runAndClose(Edits.Edit edit, String failedKey) {
+        runAndClose((current, applied) -> edit.apply(current), failedKey);
+    }
+
+    /** As {@link #runAndClose(Edits.Edit, String)}, for a change that needs the working copy too - the undo. */
+    private void runAndClose(Edits.EditFromApplied edit, String failedKey) {
         busy = true;
         middle.setEnabled(false);
         refreshDirty();

@@ -1464,8 +1464,11 @@ entry and its matching `.buttonMap`, returning the device to the state it had be
 device stays listed, showing *not added*. This also replaces the old "delete and recreate to fix a wrong VID/PID"
 repair path, which never worked: automatic registration would re-add a connected device immediately.
 
-**CLEAR reaches every installation, so it asks first** and names the count — *"Clear RHVCAPDirection from all 3
-installations?"* — using [`HudConfirmDialog`](ui-component-map.md), never `JOptionPane`.
+**CLEAR asks first, naming no installations** — *"Clear RHVCAPDirection? APPLY removes its entry and its labels
+from your game files."* — and RESET LABELS the same way, using [`HudConfirmDialog`](ui-component-map.md), never
+`JOptionPane` (Alan, 2026-10-27, from the S4a review: editors show no installations - principle 12 - and since APPLY
+leaves alone an installation that differs, *"all 3"* could be wrong). *Until 2026-10-27 it named the count - "Clear
+RHVCAPDirection from all 3 installations?"*
 
 **What APPLY does to each installation's device files** (2026-10-24, Alan):
 
@@ -1503,8 +1506,10 @@ Device Editor's install strip, catch-up, Edit History and the device-file poll.
 - **Onboarding's FINISH** is an edit (Alan, 2026-10-26): the element after the user's others, ahead of Frontier's;
   the default labels unless a map is already under the name; every binding naming it by hardware id - and an old id it
   replaces (A17) - moved to the name. Nothing reaches the game until APPLY.
-- **Default labels** are worked out at each refresh for every connected, named controller with no map, and held apart
-  from the edits: APPLY writes them, and they never light the bar.
+- **Default labels** are worked out by APPLY as it runs, for every connected, named controller with no map in the
+  edits it writes (`Apply.DefaultLabels`, `AliasDesignerReader.defaultLabels`), and are never part of the edits, so they
+  never light the bar (Alan, 2026-10-27, from the S4a review: worked out at each refresh, they went stale after a
+  rename applied before the refresh, or a controller plugged in while the screen was not showing).
 - **No rename is ever "under way"**, so a renamed device can be renamed again before APPLY, and CLEAR no longer waits
   for one. No chains holds: every name the working copy holds stays taken until APPLY.
 

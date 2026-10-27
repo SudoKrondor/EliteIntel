@@ -38,7 +38,7 @@ change. The slice that moves them rewrites the *Built* note.
 | Device master, draft, pending removals, old names, hardware-id moves - **nothing on the Alias Designer reads them since S4a** but the identity question; `SavedDeviceLabels` and `CaptureControllers` still do | migrations `12002`–`12004`, `12008`; `BindForgeDeviceMasterManager`, `BindForgeDeviceDraftManager`, `BindForgeDeviceInstallsManager`, `BindForgeHardwareIdMoveManager`, `DraftChanges`, `SavedDeviceLabels` | S4b |
 | ~~Device Apply and per-installation push, Edit History, catch-up~~ **removed in S4a**; the `missed_write` column (`12006`) and `BindForgeInstallationsManager.setMissedWrite` are left for S4b's migration | migration `12006` | S4b |
 | ~~Divergence list, ways out, installation markers, the 2-second poll~~ **removed in S4a**, with `io.FilePoller` | - | S9 (the new check) |
-| ~~`.buttonMap` written at every connect~~ removed in S2b; **default labels written at APPLY since S4a** | `AliasDesignerReader.defaultLabels`, `Edits.defaultLabels` | - |
+| ~~`.buttonMap` written at every connect~~ removed in S2b; **default labels written at APPLY since S4a**, worked out as it runs since the S4a review | `AliasDesignerReader.defaultLabels`, `Apply.DefaultLabels` | - |
 | `.binds`: a copy of the **active** file, a checksum, its own APPLY / REVERT and close prompt; copied at launch before any backup | `bindforge.io.BindingsWorkingCopyRepository`, `BindingsApplyService`, `ui.screen.bindings.BindingProfilePanel` (`promptCloseWithDraft`) | S5, the launch copy with the rest (moved from S2, Alan, 2026-10-24) |
 | Preset file: master and draft files, per-line merge, its own Apply | `bindforge.preseteditor.StartPresetStore`, `StartPresetComparison`, `StartPresetApply` | S6 |
 | The Vega tab's KEYMAP readout | `ui.screen.AiTabPanel` (`keymapBadge`) | S5: removed |
@@ -89,8 +89,9 @@ its table (`12007`), `BindingsMonitor` (not BindForge's — it reloads the assis
   so it never reaches the game; and the Bind Editor's controller labels (`SavedDeviceLabels`, `CaptureControllers`,
   `InputSettingsPanel`) still read the old tables, so they show none of the Alias Designer's names or labels.
 - **Until S9:** an installation that missed a write differs from the working copy, so APPLY leaves it alone and nothing
-  puts the working copy there - rule 8's *"the next APPLY writes it"* no longer holds (storage.md, *How the files are
-  written*). Accepted by Alan 2026-10-27 - nothing is built for it before S9, which must close it.
+  puts the working copy there - rule 8 promises the next APPLY only the bindings folder since 2026-10-27, and the
+  report says the installation is left as it is until the check (storage.md, *How the files are written*). Accepted
+  by Alan 2026-10-27 - nothing is built for it before S9, which must close it.
 - **Linux, several installations:** every `.binds` read and write uses the one bindings folder Elite-Intel is set
   to ([input environment §7](../00-overview/input-environment.md#7-linux-the-bindings-folder-is-not-shared)). The
   working copy holds one `Bindings\`; APPLY's confirm keeps A11's Linux note.
@@ -144,6 +145,16 @@ to a hardware ID (after S4b); A18 and E7 stay blocked on [testing item 27](../00
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the next
 slice needs.*
+
+- **2026-10-27 — S4a review follow-up** (`code-integrity-review.md`, all 15 findings). **Decided (Alan):** the report
+  promises the next APPLY only for the bindings folder - a missed or read-only-kept installation is left as it is
+  until the check; the differs line gives no instruction; by value ignores an element's other children - all in
+  storage.md *How the files are written* and rule 8; CLEAR and RESET LABELS name no installations (alias-designer.md).
+  **Fixed:** default labels worked out as APPLY runs (`Apply.DefaultLabels`); `Edits.snapshot()`, `EditFromApplied`
+  for the undo, DISCARD refused during a write; a working copy that cannot be parsed stops APPLY before the backup;
+  `DeviceFiles` replaces the `-1` id; a neutral "stopped part way" message for a `RuntimeException`; unused
+  `LiveCopies` / `WritePath` overloads removed; tests for the report text, `copyIn` and a missing installation.
+  **S4b needs:** read the edits through `Edits.snapshot()` - `current()` and `applied()` are gone.
 
 - **2026-10-26 — S4a done: the APPLY / DISCARD bar, and the Device Editor and onboarding on it.** **Decided (Alan):** S4
   split into S4a and S4b; onboarding's FINISH moved into S4a, since its writes went through the push S4a removed; APPLY

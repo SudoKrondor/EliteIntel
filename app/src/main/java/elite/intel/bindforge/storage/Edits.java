@@ -6,9 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
 import java.util.function.Consumer;
 
 /**
@@ -16,9 +14,9 @@ import java.util.function.Consumer;
  * and shared by the tabs until APPLY writes them or DISCARD throws them away (principles.md, <em>Words</em>; storage.md
  * rules 6-7; Storage S4a). Nothing here writes a file.
  * <p>
- * <strong>Default labels are held apart</strong> (alias-designer.md, <em>Default labels</em>; Alan, 2026-10-24): the
- * {@code .buttonMap}s BindForge works out for a connected, named controller that has none are written at the next
- * APPLY, but they are not the user's edits, so they never light the APPLY / DISCARD bar on their own.
+ * <strong>Default labels are not held here</strong>: {@link Apply} works them out when it runs, from the edits and the
+ * controllers attached then, so they are never the user's edits and never light the APPLY / DISCARD bar
+ * (alias-designer.md, <em>Default labels</em>; Alan, 2026-10-24 and 2026-10-27).
  * <p>
  * <strong>The working copy is read again whenever there are no edits</strong>, so what the screens show is never older
  * than the last write. Every write through {@link WritePath} - APPLY, first-time startup, RESTORE - puts its set here,
@@ -46,7 +44,29 @@ public final class Edits {
         ConfigurationFiles apply(ConfigurationFiles current) throws IOException;
     }
 
-    /** Thrown by {@link #change} while an APPLY or another write is under way - its set would drop the change. */
+    /**
+     * A change that needs the working copy as well - an undo puts back what it holds. Both sets are handed in, read
+     * together, so the edit never reaches back into the {@code Edits} running it.
+     */
+    @FunctionalInterface
+    public interface EditFromApplied {
+        ConfigurationFiles apply(ConfigurationFiles current, ConfigurationFiles applied) throws IOException;
+    }
+
+    /**
+     * The edits and the working copy they started from, read together under one lock - a pair that existed at one
+     * moment, never one set from before a change and the other from after it.
+     *
+     * @param current the working copy with the edits on it
+     * @param applied the working copy - what the last write left
+     */
+    public record Snapshot(ConfigurationFiles current, ConfigurationFiles applied) {
+    }
+
+    /**
+     * Thrown by {@link #change} and {@link #discard} while an APPLY or another write is under way - its set would drop
+     * the change.
+     */
     public static final class WriteRunningException extends IllegalStateException {
         WriteRunningException() {
             super("your control files are being written - try again when it has finished");
@@ -58,7 +78,6 @@ public final class Edits {
 
     private ConfigurationFiles applied;
     private ConfigurationFiles edited;
-    private Map<String, byte[]> defaults = Map.of();
     private boolean writing;
 
     /** The edits every BindForge screen shares. */
@@ -72,31 +91,27 @@ public final class Edits {
     }
 
     /**
-     * The working copy with the edits on it - read again first when there are none.
+     * The edits and the working copy, from one read - the working copy is read again first when there are no edits,
+     * so neither is ever older than the last write.
      *
      * @throws java.nio.file.NoSuchFileException if there is no working copy yet - first-time startup makes it
      * @throws IOException                        if it cannot be read
      */
-    public ConfigurationFiles current() throws IOException {
-        synchronized (this) {
-            if (edited != null && !hasEditsLocked()) {
-                applied = null;
-                edited = null;
-            }
-            if (edited == null) {
-                applied = source.read();
-                edited = applied;
-            }
-            return edited;
-        }
+    public synchronized Snapshot snapshot() throws IOException {
+        return new Snapshot(currentLocked(), applied);
     }
 
-    /** The working copy the edits started from - what the last write left. Read as {@link #current()} reads it. */
-    public ConfigurationFiles applied() throws IOException {
-        synchronized (this) {
-            current();
-            return applied;
+    /** The working copy with the edits on it, reading the working copy again first when there are none. Under the lock. */
+    private ConfigurationFiles currentLocked() throws IOException {
+        if (edited != null && !hasEditsLocked()) {
+            applied = null;
+            edited = null;
         }
+        if (edited == null) {
+            applied = source.read();
+            edited = applied;
+        }
+        return edited;
     }
 
     /** Whether there are edits not applied - default labels alone are not. */
@@ -115,42 +130,37 @@ public final class Edits {
      * @throws IOException           if the working copy cannot be read, or the edit cannot be made - nothing changes
      */
     public void change(Edit edit) throws IOException {
+        change((current, applied) -> edit.apply(current));
+    }
+
+    /**
+     * Changes the edits with a change that needs the working copy too.
+     *
+     * @throws WriteRunningException while a write runs
+     * @throws IOException           if the working copy cannot be read, or the edit cannot be made - nothing changes
+     */
+    public void change(EditFromApplied edit) throws IOException {
         synchronized (this) {
             if (writing) throw new WriteRunningException();
-            edited = Objects.requireNonNull(edit.apply(current()), "edit");
+            ConfigurationFiles current = currentLocked();
+            edited = Objects.requireNonNull(edit.apply(current, applied), "edit");
         }
         log.info("BindForge edits changed; edits not applied: {}", hasEdits());
         changed.run();
     }
 
-    /** DISCARD: every edit thrown away. Default labels stay - they are not the user's. */
+    /**
+     * DISCARD: every edit thrown away.
+     *
+     * @throws WriteRunningException while a write runs - guarded here as {@link #change} is, not only by the bar
+     */
     public void discard() {
         synchronized (this) {
+            if (writing) throw new WriteRunningException();
             edited = applied;
         }
         log.info("BindForge edits discarded");
         changed.run();
-    }
-
-    /**
-     * The default labels, by {@code .buttonMap} file name - replaced whole by the screen that works them out. A map
-     * the edits hold under the same name, in any spelling, wins.
-     */
-    public void defaultLabels(Map<String, byte[]> maps) {
-        synchronized (this) {
-            defaults = Map.copyOf(maps);
-        }
-    }
-
-    /** What APPLY writes: the edits, with the default labels for every device that has no {@code .buttonMap}. */
-    public ConfigurationFiles toApply() throws IOException {
-        synchronized (this) {
-            ConfigurationFiles files = current();
-            Map<String, byte[]> maps = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-            maps.putAll(files.buttonMaps());
-            defaults.forEach(maps::putIfAbsent);
-            return files.withButtonMaps(new TreeMap<>(maps));
-        }
     }
 
     /**
@@ -192,7 +202,6 @@ public final class Edits {
         synchronized (this) {
             applied = files;
             edited = files;
-            defaults = Map.of();
         }
         changed.run();
     }

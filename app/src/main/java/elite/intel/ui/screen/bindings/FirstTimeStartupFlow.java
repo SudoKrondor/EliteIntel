@@ -200,27 +200,26 @@ public final class FirstTimeStartupFlow {
     }
 
     /**
-     * Each place a write did not fully update, one line each, and that the next APPLY writes it - empty when every
-     * place took everything. RESTORE reports the same way.
+     * Each place a write did not fully update, one line each - empty when every place took everything. RESTORE reports
+     * the same way. <strong>Only the bindings folder is promised to the next APPLY</strong> (Alan, 2026-10-27): an
+     * installation a write missed, or one that kept a read-only file, no longer matches the working copy, so APPLY
+     * leaves it as it is until the check reconciles it (storage.md, <em>How the files are written</em>; Storage S9).
      */
     static String placeFailures(WriteReport report) {
         StringBuilder text = new StringBuilder();
-        boolean nextApply = !report.bindings().updated();
         if (!report.bindings().updated()) {
             text.append('\n').append(getText("bindings.firstTimeStartup.result.place",
                     getText("bindings.firstTimeStartup.place.bindingsFolder"),
                     String.join("; ", report.bindings().failures())));
+            text.append('\n').append(getText("bindings.firstTimeStartup.result.nextApply"));
         }
         for (WriteReport.Place place : report.installations()) {
             if (place.updated()) continue;
             String name = getText("bindings.firstTimeStartup.place.installation", place.storefront(), place.folder());
-            // WHY: left alone, not failed - the next APPLY leaves it alone too, until it is reconciled (Alan,
-            // 2026-10-26), so it is not promised to the next APPLY.
             if (place.differs()) {
                 text.append('\n').append(getText("bindings.applyBar.result.differs", name));
                 continue;
             }
-            nextApply = true;
             if (!place.failures().isEmpty()) {
                 text.append('\n').append(getText("bindings.firstTimeStartup.result.place", name,
                         String.join("; ", place.failures())));
@@ -231,8 +230,8 @@ public final class FirstTimeStartupFlow {
                 text.append('\n').append(getText("bindings.firstTimeStartup.result.keptReadOnly", name,
                         String.join(", ", place.keptReadOnly())));
             }
+            text.append('\n').append(getText("bindings.firstTimeStartup.result.leftAsItIs", name));
         }
-        if (nextApply) text.append('\n').append(getText("bindings.firstTimeStartup.result.nextApply"));
         return text.toString();
     }
 

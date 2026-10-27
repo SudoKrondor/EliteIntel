@@ -22,47 +22,63 @@ import java.util.TreeMap;
  * <p>
  * <strong>Not a difference:</strong> an installation with no {@code DeviceMappings.xml} - nothing of the user's is in it,
  * and APPLY simply writes one (alias-designer.md, <em>What APPLY does</em>); a working copy with none, which the write
- * leaves every installation's alone for; and Frontier's own {@code VPCPanel} and {@code VPCThrottle} maps the working
- * copy lacks, which no write removes.
+ * leaves every installation's alone for; Frontier's own {@code VPCPanel} and {@code VPCThrottle} maps the working copy
+ * lacks, which no write removes; and <strong>an element's children</strong>, such as {@code <SupportsIcons>} - they are
+ * Frontier's, and the user does not edit them (Alan, 2026-10-27).
+ * <p>
+ * The working copy's side is parsed once, by {@link #of}, so a working copy that cannot be read stops APPLY before
+ * anything is written rather than leaving every installation alone as "differs" (Storage S4a review, 2026-10-27).
  */
 public final class DeviceFilesComparison {
 
-    private DeviceFilesComparison() {
+    /** The working copy's elements, or {@code null} when it holds no {@code DeviceMappings.xml}. */
+    private final List<DeviceEntry> elements;
+    private final Map<String, Map<String, String>> labels;
+
+    private DeviceFilesComparison(List<DeviceEntry> elements, Map<String, Map<String, String>> labels) {
+        this.elements = elements;
+        this.labels = labels;
     }
 
     /**
-     * @param workingCopy  the working copy - what the last write left, before the edits on screen
-     * @param installation the installation's device files as they are now
-     * @return whether they differ - an installation file that cannot be read differs, since what it holds is unknown
+     * Reads the working copy's side.
+     *
+     * @param workingCopy the working copy - what the last write left, before the edits on screen
+     * @throws IOException if its own {@code DeviceMappings.xml} or a {@code .buttonMap} cannot be parsed
      */
-    public static boolean differs(ConfigurationFiles workingCopy, InstallationFiles installation) {
-        try {
-            return !sameDeviceMappings(workingCopy, installation) || !sameButtonMaps(workingCopy, installation);
-        } catch (IOException e) {
-            return true;
-        }
+    public static DeviceFilesComparison of(ConfigurationFiles workingCopy) throws IOException {
+        return new DeviceFilesComparison(
+                workingCopy.hasDeviceMappings() ? elements(workingCopy.deviceMappings()) : null,
+                labelsByDevice(workingCopy.buttonMaps()));
     }
 
-    private static boolean sameDeviceMappings(ConfigurationFiles workingCopy, InstallationFiles installation)
-            throws IOException {
-        if (!workingCopy.hasDeviceMappings() || !installation.hasDeviceMappings()) return true;
-        return elements(workingCopy.deviceMappings()).equals(elements(installation.deviceMappings()));
+    /**
+     * @param installation the installation's device files as they are now
+     * @return whether they differ from the working copy
+     * @throws IOException if one of the installation's files cannot be parsed - what it holds is unknown, so the caller
+     *                     treats it as differing
+     */
+    public boolean differs(DeviceFiles installation) throws IOException {
+        return !sameDeviceMappings(installation) || !sameButtonMaps(installation);
+    }
+
+    private boolean sameDeviceMappings(DeviceFiles installation) throws IOException {
+        if (elements == null || !installation.hasDeviceMappings()) return true;
+        return elements.equals(elements(installation.deviceMappings()));
     }
 
     private static List<DeviceEntry> elements(byte[] deviceMappings) throws IOException {
         return DeviceMappingsParser.parse(new ByteArrayInputStream(deviceMappings), GameInstallation.DEVICE_MAPPINGS);
     }
 
-    private static boolean sameButtonMaps(ConfigurationFiles workingCopy, InstallationFiles installation)
-            throws IOException {
-        Map<String, Map<String, String>> ours = labelsByDevice(workingCopy.buttonMaps());
+    private boolean sameButtonMaps(DeviceFiles installation) throws IOException {
         Map<String, Map<String, String>> theirs = labelsByDevice(installation.buttonMaps());
         // WHY: a shipped map the working copy lacks is never removed by a write, so it is no difference - but one the
         // working copy holds must match.
         for (String device : List.copyOf(theirs.keySet())) {
-            if (!ours.containsKey(device) && FrontierStockButtonMaps.shipsMapFor(device)) theirs.remove(device);
+            if (!labels.containsKey(device) && FrontierStockButtonMaps.shipsMapFor(device)) theirs.remove(device);
         }
-        return ours.equals(theirs);
+        return labels.equals(theirs);
     }
 
     /** Labels by device name, the name folded to lower case - the game finds a map ignoring case. */

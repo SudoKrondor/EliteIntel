@@ -14,7 +14,6 @@ import elite.intel.db.managers.BindForgeDeviceDraftManager;
 import elite.intel.db.managers.BindForgeDeviceMasterManager;
 import elite.intel.db.managers.BindForgeHardwareIdMoveManager;
 import elite.intel.db.managers.BindForgeIdentityAnswerManager;
-import elite.intel.db.managers.BindForgeInstallationsManager;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.model.Device;
 import elite.intel.devices.model.DeviceDescription;
@@ -72,8 +71,8 @@ final class AliasDesignerReader {
     }
 
     /**
-     * Reads the edits, the working copy and the hardware, and works out the default labels APPLY will write. A failure
-     * part-way is logged and leaves what was not read empty or {@code null}, so the screen keeps showing what it can.
+     * Reads the edits, the working copy and the hardware. A failure part-way is logged and leaves what was not read
+     * empty or {@code null}, so the screen keeps showing what it can.
      *
      * @param judgeMissing whether this refresh is the one that judges the missing-controller warning
      */
@@ -95,7 +94,6 @@ final class AliasDesignerReader {
             myDevices = MyDeviceList.build(attached.devices(), sets.editedElements(), sets.appliedElements(),
                     FrontierStockDevices.getInstance());
             builtIn = BuiltInDeviceList.build(FrontierStockDevices.getInstance(), attached.devices());
-            if (sets.edited() != null) Edits.stored().defaultLabels(defaultLabels(sets.edited(), myDevices));
             if (complete && listed) identity = readIdentity(myDevices, bindings);
             // WHY: last, so nothing it does can cost the screen what this refresh has already read.
             if (judgeMissing) {
@@ -112,8 +110,8 @@ final class AliasDesignerReader {
     /** The edits and the working copy, or none when the working copy cannot be read - the tab click offers RESTORE. */
     private static Sets readSets() {
         try {
-            Edits edits = Edits.stored();
-            return new Sets(edits.current(), edits.applied());
+            Edits.Snapshot snapshot = Edits.stored().snapshot();
+            return new Sets(snapshot.current(), snapshot.applied());
         } catch (IOException e) {
             log.warn("Could not read the working copy for the Alias Designer: {}", e.getMessage());
             return Sets.NONE;
@@ -122,11 +120,16 @@ final class AliasDesignerReader {
 
     /**
      * Default labels - {@code Button 1}, {@code X Axis}, {@code Hat 1 Up} - for every connected controller with a name
-     * and no {@code .buttonMap} (alias-designer.md, <em>Default labels</em>; Alan, 2026-10-24). Written at the next
-     * APPLY, never lighting the bar. Skipped for a device the game draws itself, where a {@code Button 3} would replace
-     * an icon. Only the axes the controller has, four labels per hat.
+     * and no {@code .buttonMap} (alias-designer.md, <em>Default labels</em>; Alan, 2026-10-24). Worked out by APPLY as
+     * it runs, from the controllers attached then ({@link elite.intel.bindforge.storage.Apply.DefaultLabels}; Alan,
+     * 2026-10-27), never lighting the bar. Skipped for a device the game draws itself, where a {@code Button 3} would
+     * replace an icon. Only the axes the controller has, four labels per hat.
+     *
+     * @throws IOException if the edits' device files cannot be read
      */
-    private static Map<String, byte[]> defaultLabels(ConfigurationFiles edited, List<MyDevice> devices) {
+    static Map<String, byte[]> defaultLabels(ConfigurationFiles edited, ConfigurationFiles applied) throws IOException {
+        List<MyDevice> devices = MyDeviceList.build(readAttached().devices(), DeviceEdits.elements(edited),
+                DeviceEdits.elements(applied), FrontierStockDevices.getInstance());
         FrontierStockDevices stock = FrontierStockDevices.getInstance();
         Map<String, byte[]> maps = new TreeMap<>();
         for (MyDevice device : devices) {
@@ -237,8 +240,8 @@ final class AliasDesignerReader {
         Sets sets;
         Map<String, Integer> hardwareIds;
         try {
-            Edits edits = Edits.stored();
-            sets = new Sets(edits.current(), edits.applied());
+            Edits.Snapshot snapshot = Edits.stored().snapshot();
+            sets = new Sets(snapshot.current(), snapshot.applied());
             hardwareIds = BindsDeviceReferences.countsIn(sets.edited().bindings()).hardwareIds();
         } catch (IOException e) {
             log.warn("Onboarding did not open: the bindings could not be read", e);
@@ -297,9 +300,9 @@ final class AliasDesignerReader {
     DeviceEditorDialog.Opening openingFor(MyDevice device) throws IOException {
         FrontierStockDevices stock = FrontierStockDevices.getInstance();
         FrontierStockButtonMaps shipped = FrontierStockButtonMaps.getInstance();
-        Edits edits = Edits.stored();
-        ConfigurationFiles edited = edits.current();
-        ConfigurationFiles applied = edits.applied();
+        Edits.Snapshot snapshot = Edits.stored().snapshot();
+        ConfigurationFiles edited = snapshot.current();
+        ConfigurationFiles applied = snapshot.applied();
         DeviceEntry covering = stock.covering(device.vid(), device.pid()).orElse(null);
         String name = device.alias() != null ? device.alias()
                 : device.entryName() != null ? device.entryName()
@@ -338,9 +341,8 @@ final class AliasDesignerReader {
         DeviceEditorDialog.Covering frontier = covering == null ? null
                 : new DeviceEditorDialog.Covering(covering.name(), covering.hardware().size() > 1,
                 frontierNameHeld(edited, covering, shipped));
-        int installations = BindForgeInstallationsManager.getInstance().findAll().size();
         return new DeviceEditorDialog.Opening(device, name, live == null ? null : live.id(), description, gamepad, inputs,
-                saved, name != null && stock.gameDrawsIt(name), middle, rename, taken, frontier, installations);
+                saved, name != null && stock.gameDrawsIt(name), middle, rename, taken, frontier);
     }
 
     /**

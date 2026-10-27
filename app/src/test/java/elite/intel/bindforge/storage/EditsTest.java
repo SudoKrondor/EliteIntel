@@ -25,10 +25,10 @@ class EditsTest {
 
     @Test
     void withNoEditsTheWorkingCopyIsReadAgainEachTime() throws IOException {
-        assertEquals("<applied/>", binds(edits.current()));
+        assertEquals("<applied/>", binds(edits.snapshot().current()));
         workingCopy.set(set("<written elsewhere/>"));
 
-        assertEquals("<written elsewhere/>", binds(edits.current()), "never older than the last write");
+        assertEquals("<written elsewhere/>", binds(edits.snapshot().current()), "never older than the last write");
         assertFalse(edits.hasEdits());
     }
 
@@ -38,8 +38,8 @@ class EditsTest {
         workingCopy.set(set("<written elsewhere/>"));
 
         assertTrue(edits.hasEdits());
-        assertEquals("<edited/>", binds(edits.current()), "the edits are not read over");
-        assertEquals("<applied/>", binds(edits.applied()), "what the edits started from");
+        assertEquals("<edited/>", binds(edits.snapshot().current()), "the edits are not read over");
+        assertEquals("<applied/>", binds(edits.snapshot().applied()), "what the edits started from");
         assertEquals(List.of("changed"), announced);
     }
 
@@ -59,27 +59,49 @@ class EditsTest {
         edits.discard();
 
         assertFalse(edits.hasEdits());
-        assertEquals("<applied/>", binds(edits.current()));
+        assertEquals("<applied/>", binds(edits.snapshot().current()));
     }
 
-    /** Default labels are written at the next APPLY, but are not the user's edits, so they never light the bar. */
+    /** The edits and the working copy come from one read, never two reads of the disk a change apart. */
     @Test
-    void defaultLabelsGoOutWithApplyWithoutLightingTheBar() throws IOException {
-        edits.defaultLabels(Map.of("LVWAP.buttonMap", bytes("<Root><Joy_1>Button 1</Joy_1></Root>")));
+    void aSnapshotReadsTheWorkingCopyOnce() throws IOException {
+        int[] reads = {0};
+        Edits counted = new Edits(() -> {
+            reads[0]++;
+            return workingCopy.get();
+        }, () -> {
+        });
+
+        Edits.Snapshot snapshot = counted.snapshot();
+
+        assertEquals(1, reads[0]);
+        assertSame(snapshot.current(), snapshot.applied(), "no edits: the edits are the working copy");
+    }
+
+    /** An undo is handed the working copy with the edits, so it never reaches back into the Edits running it. */
+    @Test
+    void anEditFromAppliedIsHandedTheWorkingCopy() throws IOException {
+        edits.change(current -> set("<edited/>"));
+
+        edits.change((current, applied) -> {
+            assertEquals("<edited/>", binds(current));
+            return applied;
+        });
 
         assertFalse(edits.hasEdits());
-        assertTrue(edits.toApply().buttonMaps().containsKey("LVWAP.buttonMap"));
     }
 
-    /** A map the edits hold under the device's name, in any spelling, wins over its default labels. */
+    /** DISCARD is refused while APPLY writes, as a change is - not left to the bar alone. */
     @Test
-    void theUsersOwnMapWinsOverItsDefaults() throws IOException {
-        edits.change(current -> current.withButtonMaps(Map.of("lvwap.buttonMap", bytes("<Root><Joy_1>FIRE</Joy_1></Root>"))));
-        edits.defaultLabels(Map.of("LVWAP.buttonMap", bytes("<Root><Joy_1>Button 1</Joy_1></Root>")));
+    void discardIsRefusedWhileAWriteRuns() throws IOException {
+        edits.change(current -> set("<edited/>"));
 
-        Map<String, byte[]> maps = edits.toApply().buttonMaps();
-        assertEquals(1, maps.size());
-        assertEquals("<Root><Joy_1>FIRE</Joy_1></Root>", text(maps.get("lvwap.buttonMap")));
+        edits.whileWriting(() -> {
+            assertThrows(Edits.WriteRunningException.class, edits::discard);
+            return null;
+        });
+
+        assertTrue(edits.hasEdits());
     }
 
     /** A write puts its set in the working copy: the edits start from it, and are gone. */
@@ -92,7 +114,7 @@ class EditsTest {
         edits.written(set("<edited/>"));
 
         assertFalse(edits.hasEdits());
-        assertEquals("<edited/>", binds(edits.applied()));
+        assertEquals("<edited/>", binds(edits.snapshot().applied()));
     }
 
     /** While APPLY writes, no change is let in - its set would drop it. */
@@ -114,7 +136,7 @@ class EditsTest {
         }, () -> {
         });
 
-        assertThrows(NoSuchFileException.class, none::current);
+        assertThrows(NoSuchFileException.class, none::snapshot);
         assertFalse(none.hasEdits());
     }
 

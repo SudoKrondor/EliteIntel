@@ -1,18 +1,14 @@
 package elite.intel.bindforge.storage;
 
-import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import java.util.stream.Stream;
 
 /**
  * One installation's device files as first-time startup read them: its {@code DeviceMappings.xml} and every
@@ -40,35 +36,9 @@ public record InstallationFiles(long installId, String storefront, Path root, by
      *                     the one entry the working copy must not lose (alias-designer.md, <em>Activation</em>)
      */
     public static InstallationFiles read(InstallationRow row) throws IOException {
-        return read(row.id(), row.storefront(), Path.of(row.rootPath()));
-    }
-
-    /**
-     * Reads the device files of the installation at {@code root} - APPLY's comparison, which has the write path's list
-     * rather than the stored rows (Storage S4a).
-     *
-     * @throws IOException as {@link #read(InstallationRow)}
-     */
-    public static InstallationFiles read(long installId, String storefront, Path root) throws IOException {
-        Path controlSchemes = GameInstallation.controlSchemesUnder(root);
-        Path mappings = GameInstallation.deviceMappingsIn(controlSchemes);
-        byte[] deviceMappings = Files.isRegularFile(mappings) ? readNamed(mappings) : null;
-
-        Map<String, byte[]> buttonMaps = new TreeMap<>();
-        Path folder = GameInstallation.deviceButtonMapsIn(controlSchemes);
-        if (Files.isDirectory(folder)) {
-            List<Path> found;
-            try (Stream<Path> files = Files.list(folder)) {
-                found = files.filter(Files::isRegularFile)
-                        .filter(file -> file.getFileName().toString().endsWith(GameInstallation.BUTTON_MAP_SUFFIX))
-                        .sorted().toList();
-            } catch (IOException e) {
-                throw new IOException(GameInstallation.DEVICE_BUTTON_MAPS + " could not be listed: " + e.getMessage(),
-                        e);
-            }
-            for (Path file : found) buttonMaps.put(file.getFileName().toString(), readNamed(file));
-        }
-        return new InstallationFiles(installId, storefront, root, deviceMappings, buttonMaps);
+        Path root = Path.of(row.rootPath());
+        DeviceFiles files = DeviceFiles.read(root);
+        return new InstallationFiles(row.id(), row.storefront(), root, files.deviceMappings(), files.buttonMaps());
     }
 
     /** Whether this installation holds a {@code DeviceMappings.xml} - "use one installation for all" needs one. */
@@ -84,13 +54,5 @@ public record InstallationFiles(long installId, String storefront, Path root, by
             if (!Arrays.equals(file.getValue(), other.buttonMaps.get(file.getKey()))) return false;
         }
         return true;
-    }
-
-    private static byte[] readNamed(Path file) throws IOException {
-        try {
-            return Files.readAllBytes(file);
-        } catch (IOException e) {
-            throw new IOException(file.getFileName() + " could not be read: " + e.getMessage(), e);
-        }
     }
 }

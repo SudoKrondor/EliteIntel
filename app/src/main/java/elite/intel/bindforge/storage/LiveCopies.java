@@ -59,12 +59,10 @@ final class LiveCopies {
         this.sources = sources;
     }
 
-    /** The bindings folder first, then each installation in the stored list's order. */
-    WriteReport write(ConfigurationFiles files) {
-        return write(files, LeaveAlone.NONE);
-    }
-
-    /** As {@link #write(ConfigurationFiles)}, leaving alone the installations {@code leaveAlone} picks. */
+    /**
+     * The bindings folder first, then each installation in the stored list's order, leaving alone the installations
+     * {@code leaveAlone} picks - asked only of one that is there; a missing one is reported as not found.
+     */
     WriteReport write(ConfigurationFiles files, LeaveAlone leaveAlone) {
         Place bindings = writeBindings(files);
         List<Place> installations = sources.installations().stream()

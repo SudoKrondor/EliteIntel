@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import static elite.intel.bindforge.storage.WorkingCopyTest.bytes;
 import static elite.intel.bindforge.storage.WorkingCopyTest.text;
@@ -26,6 +27,10 @@ import static org.junit.jupiter.api.Assertions.*;
  * failed (principle 3; storage.md rules 7-8).
  */
 class WritePathTest {
+
+    /** Where the write path hands each set it wrote - nowhere, in these tests. */
+    private static final Consumer<ConfigurationFiles> NO_HAND_OFF = files -> {
+    };
 
     @TempDir
     Path temp;
@@ -76,7 +81,7 @@ class WritePathTest {
         // WHY: a file where the working copy's folder goes, so it cannot be saved.
         Path blocked = temp.resolve("blocked");
         Files.writeString(blocked, "in the way");
-        WritePath writePath = new WritePath(new WorkingCopy(blocked), this::sources);
+        WritePath writePath = new WritePath(new WorkingCopy(blocked), this::sources, NO_HAND_OFF);
 
         assertThrows(IOException.class, () -> writePath.write(set(), sources -> backup()));
 
@@ -91,7 +96,7 @@ class WritePathTest {
             BackupSources sources = sources();
             found.add(sources);
             return sources;
-        });
+        }, NO_HAND_OFF);
         List<BackupSources> backedUp = new ArrayList<>();
 
         WriteReport report = writePath.write(set(), sources -> {
@@ -200,7 +205,7 @@ class WritePathTest {
     }
 
     private WritePath writePath() {
-        return new WritePath(workingCopy, this::sources);
+        return new WritePath(workingCopy, this::sources, NO_HAND_OFF);
     }
 
     private BackupSources sources() {

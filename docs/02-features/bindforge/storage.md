@@ -91,8 +91,10 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
    `StartPreset.4.start` names a binds file that exists.** If one does not — or is empty — APPLY refuses as a whole
    and names the sections (2026-10-24, Alan), because the game would silently load something else.
 8. APPLY writes everything it can. If a file or an installation can't be written, the user is told — *"updated 2 of
-   3"* — and the check finds the missed installation and offers to put the working copy there (rule 14), or the
-   next APPLY writes it. Nothing is rolled back (2026-10-23, Alan).
+   3"* — and the check finds the missed installation and offers to put the working copy there (rule 14). The next
+   APPLY writes only the bindings folder again: a missed installation now differs, and is left as it is until the
+   check (Alan, 2026-10-27; [How the files are written](#how-the-files-are-written--2026-10-24)). Nothing is rolled
+   back (2026-10-23, Alan).
 9. Before the user leaves BindForge with edits not applied — another Elite-Intel tab, or closing Elite-Intel — they
    are reminded, and choose **Go back**, **Discard** or **Apply** (Apply with its usual confirmation and backup).
    Nothing is selected and Enter chooses nothing; Esc and the close glyph are Go back (2026-10-23, Alan).
@@ -136,6 +138,23 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
   (built in Storage S4a, 2026-10-26). A file there that
   cannot be read counts as differing - it could hold anything of the user's. An installation with no
   `DeviceMappings.xml` does not differ: nothing of the user's is in it.
+
+  **Settled from the S4a review (Alan, 2026-10-27):**
+
+  - **The report promises the next APPLY only for the bindings folder.** An installation a write missed part-way, or
+    one that kept a read-only `.buttonMap`, is told it now differs and is **left as it is until the check reconciles
+    it** - never *"written by the next APPLY"*, which no longer holds for an installation. A kept read-only map's line
+    says to clear its flag if the user wants BindForge to remove it, and no longer promises *"the next write"*.
+  - **An installation left alone is told only why:** *"…so nothing was written to it, to keep what is there safe."* No
+    instruction to reconcile - nothing in the app can until S9.
+  - **"By value" compares the elements' names and VID/PIDs and each map's labels - not an element's other
+    children**, such as `<SupportsIcons>`. They are Frontier's and the user does not edit them, so one changed by hand
+    inside an installation is overwritten at the next APPLY without a word. Accepted.
+  - **A working copy BindForge cannot parse stops APPLY before the backup**, rather than leaving every installation
+    alone as "differs": it is BindForge's own file, so that is a broken invariant, not the user's file to protect. An
+    installation's file that cannot be parsed is logged and still left alone.
+  - **The default labels are worked out as APPLY runs**, from the controllers attached then - not held from the
+    screen's last refresh ([alias-designer.md](alias-designer.md#built-on-the-working-copy--2026-10-26-storage-s4a)).
 - **A `.binds` the working copy lacks is left in the bindings folder.** Removing an old-named one is a rename's
   (rule 7, Storage S12).
 

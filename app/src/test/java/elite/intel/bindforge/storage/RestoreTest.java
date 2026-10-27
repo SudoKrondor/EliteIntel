@@ -206,7 +206,8 @@ class RestoreTest {
         BackupSources places = new BackupSources(bindings, list);
         Backups backupsOf = new Backups(() -> places, () -> backups,
                 Clock.fixed(Instant.parse("2026-10-25T10:00:00Z"), ZoneOffset.UTC));
-        WritePath writePath = new WritePath(new WorkingCopy(workingCopy), () -> places);
+        WritePath writePath = new WritePath(new WorkingCopy(workingCopy), () -> places, files -> {
+        });
         return new Restore(() -> places, writePath::write,
                 sources -> backupsOf.backUpBeforeChange(Backups.Before.RESTORE, sources), flag);
     }
