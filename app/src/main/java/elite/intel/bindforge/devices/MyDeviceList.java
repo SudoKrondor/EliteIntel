@@ -3,15 +3,14 @@ package elite.intel.bindforge.devices;
 import elite.intel.bindforge.devicefiles.DeviceEntry;
 import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
-import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
 import elite.intel.devices.model.Device;
 import elite.intel.devices.model.DeviceIdentity;
 
 import java.util.*;
 
 /**
- * Builds the My Devices list: <strong>the union of live hardware and file entries</strong>, correlated by
- * VID/PID.
+ * Builds the My Devices list: <strong>the union of live hardware and the working copy's
+ * {@code DeviceMappings.xml}</strong>, correlated by VID/PID (alias-designer.md, <em>My Devices</em>).
  * <p>
  * The two halves answer different questions and neither is sufficient. {@code DeviceMappings.xml} supplies
  * <em>names</em> and never <em>existence</em> - the game writes nothing into it, so a controller only appears
@@ -19,11 +18,12 @@ import java.util.*;
  * until the user edits a file by hand. Build it from the hardware alone and an entry for a controller sold
  * last year vanishes, taking with it the only sign that bindings still reference it.
  * <p>
- * So: every controller attached right now, named or not, plus every entry any installation holds, plugged in
- * or not.
+ * <strong>The alias is the edits' name</strong> - the working copy with the edits on screen - so a name given or changed
+ * shows at once, before APPLY (Storage S4a). The working copy's own name is the row's entry name, so a device cleared in
+ * the edits is still listed, and still opens with its undo.
  * <p>
- * A pure function over its inputs, with no service or database access of its own. The rule it encodes is the
- * one the whole screen rests on, and it is worth being able to test without a UI or a game installation.
+ * A pure function over its inputs, with no service or file access of its own. The rule it encodes is the one the whole
+ * screen rests on, and it is worth being able to test without a UI or a game installation.
  */
 public final class MyDeviceList {
 
@@ -31,20 +31,20 @@ public final class MyDeviceList {
     }
 
     /**
-     * @param attached    what the Device Service reports right now, in its own order
-     * @param fileEntries every entry read from the installations, Frontier's own included - they are filtered
-     *                    here rather than by the caller, so the rule lives in one place
-     * @param master      the user's device records, which supply the alias column
-     * @param stock       Frontier's shipped list, which decides what is a built-in
-     * @return attached controllers first, in the order the Device Service gave them, then entries for
+     * @param attached what the Device Service reports right now, in its own order
+     * @param edited   every element in the edits' {@code DeviceMappings.xml}, Frontier's included - they are filtered
+     *                 here rather than by the caller, so the rule lives in one place
+     * @param applied  every element in the working copy's, the same way
+     * @param stock    Frontier's shipped list, which decides what is a built-in
+     * @return attached controllers first, in the order the Device Service gave them, then the user's entries for
      *         hardware that is not present
      */
     public static List<MyDevice> build(List<Device> attached,
-                                       Collection<DeviceEntry> fileEntries,
-                                       Collection<DeviceRow> master,
+                                       Collection<DeviceEntry> edited,
+                                       Collection<DeviceEntry> applied,
                                        FrontierStockDevices stock) {
-        Map<HardwareId, DeviceRow> masterByHardware = indexMaster(master);
-        Map<HardwareId, String> entryNames = entryNamesByHardware(fileEntries, stock);
+        Map<HardwareId, String> aliases = usersNamesByHardware(edited, stock);
+        Map<HardwareId, String> appliedNames = usersNamesByHardware(applied, stock);
 
         Map<HardwareId, MyDevice> rows = new LinkedHashMap<>();
 
@@ -56,88 +56,55 @@ public final class MyDeviceList {
             if (identity.isEmpty()) continue;
 
             HardwareId hardware = new HardwareId(identity.get().vid(), identity.get().pid());
-            rows.put(hardware, row(device.name(), entryNames.get(hardware), hardware, true,
-                    masterByHardware.get(hardware), stock));
+            rows.put(hardware, row(device.name(), hardware, true, aliases, appliedNames, stock));
         }
 
-        for (Map.Entry<HardwareId, String> entry : entryNames.entrySet()) {
-            HardwareId hardware = entry.getKey();
-            // WHY: an entry for hardware already listed above adds only its name, which that row took when it
-            // was built. Putting it again would move the row to the end of the list.
+        Set<HardwareId> filed = new LinkedHashSet<>(aliases.keySet());
+        filed.addAll(appliedNames.keySet());
+        for (HardwareId hardware : filed) {
+            // WHY: hardware already listed above is plugged in, and its row says so. Putting it again would move the
+            // row to the end of the list.
             if (rows.containsKey(hardware)) continue;
-            rows.put(hardware, row(null, entry.getValue(), hardware, false,
-                    masterByHardware.get(hardware), stock));
+            rows.put(hardware, row(null, hardware, false, aliases, appliedNames, stock));
         }
 
         return List.copyOf(rows.values());
     }
 
-    private static MyDevice row(String hardwareName, String entryName, HardwareId hardware, boolean attached,
-                                DeviceRow masterRow, FrontierStockDevices stock) {
-        return new MyDevice(
-                hardwareName,
-                entryName,
-                hardware.vid(),
-                hardware.pid(),
-                attached,
-                masterRow == null ? null : masterRow.deviceName(),
-                builtIn(hardware, masterRow, stock));
+    private static MyDevice row(String hardwareName, HardwareId hardware, boolean attached,
+                                Map<HardwareId, String> aliases, Map<HardwareId, String> appliedNames,
+                                FrontierStockDevices stock) {
+        String alias = aliases.get(hardware);
+        String entryName = appliedNames.getOrDefault(hardware, alias);
+        return new MyDevice(hardwareName, entryName, hardware.vid(), hardware.pid(), attached, alias,
+                builtIn(hardware, alias, stock));
     }
 
     /**
-     * Whether the row is a built-in: Frontier covers the hardware, and the master holds it under Frontier's name or not
-     * at all. <strong>A shadow is the user's</strong> (Alan, 2026-10-16, A15) - an element of theirs leading the file for
-     * the controller - so it is judged as their devices are, by the Installations markers among others: Frontier's
-     * element being there says nothing about whether theirs is.
+     * Whether the row is a built-in: Frontier covers the hardware, and no element of the user's names it. <strong>A
+     * shadow is the user's</strong> (Alan, 2026-10-16, A15) - an element of theirs leading the file for the controller.
      */
-    private static boolean builtIn(HardwareId hardware, DeviceRow masterRow, FrontierStockDevices stock) {
-        if (stock.covering(hardware.vid(), hardware.pid()).isEmpty()) return false;
-        return masterRow == null || stock.ships(masterRow.deviceName());
+    private static boolean builtIn(HardwareId hardware, String alias, FrontierStockDevices stock) {
+        return alias == null && stock.covering(hardware.vid(), hardware.pid()).isPresent();
     }
 
     /**
-     * The master's records by hardware, so the alias column is a lookup rather than a query per row.
-     * <p>
-     * First wins on a collision. Two master records claiming one VID/PID should not exist - the alias is
-     * unique and a device is one piece of hardware - and silently preferring the later one would make which
-     * alias a row shows depend on insertion order.
-     */
-    private static Map<HardwareId, DeviceRow> indexMaster(Collection<DeviceRow> master) {
-        Map<HardwareId, DeviceRow> byHardware = new LinkedHashMap<>();
-        for (DeviceRow row : master) {
-            byHardware.putIfAbsent(new HardwareId(row.vid(), row.pid()), row);
-        }
-        return byHardware;
-    }
-
-    /**
-     * The name each piece of hardware is known by in the installations, Frontier's own entries excluded.
+     * The name each piece of hardware has among the user's elements, Frontier's own left out.
      * <p>
      * Frontier's are dropped because they are not devices the user added - the game ships 51 of them, most for
-     * hardware nobody owns, and listing them all under My Devices would bury the handful that are real. A
-     * built-in that is actually <em>attached</em> still appears, because it comes in through the hardware half
-     * of the union, marked {@code builtIn}.
-     * <p>
-     * Several installations normally name the same device identically, so a repeat is expected and the first
-     * is kept. Where they genuinely disagree, that is drift, and reporting it is the divergence list's job
-     * rather than this one's - a single cell here could only ever show one of the two names.
+     * hardware nobody owns, and listing them all under My Devices would bury the handful that are real. A built-in that
+     * is actually <em>attached</em> still appears, because it comes in through the hardware half of the union, marked
+     * {@code builtIn}. Two of the user's elements claiming one VID/PID: the first in the file, as the game picks.
      */
-    private static Map<HardwareId, String> entryNamesByHardware(Collection<DeviceEntry> fileEntries,
-                                                               FrontierStockDevices stock) {
+    private static Map<HardwareId, String> usersNamesByHardware(Collection<DeviceEntry> entries,
+                                                                FrontierStockDevices stock) {
         Map<HardwareId, String> names = new LinkedHashMap<>();
-        for (DeviceEntry entry : fileEntries) {
+        for (DeviceEntry entry : entries) {
             if (stock.ships(entry.name())) continue;
             for (HardwareId hardware : entry.hardware()) {
                 names.putIfAbsent(hardware, entry.name());
             }
         }
         return names;
-    }
-
-    /** Every entry across the installations given, for feeding {@link #build}. */
-    public static List<DeviceEntry> entriesAcross(Collection<List<DeviceEntry>> perInstallation) {
-        List<DeviceEntry> all = new ArrayList<>();
-        perInstallation.forEach(all::addAll);
-        return all;
     }
 }

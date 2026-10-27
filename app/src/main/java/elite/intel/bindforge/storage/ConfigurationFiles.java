@@ -3,6 +3,7 @@ package elite.intel.bindforge.storage;
 import elite.intel.bindforge.install.GameInstallation;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
@@ -59,6 +60,34 @@ public final class ConfigurationFiles {
     /** Every {@code .buttonMap}, by file name. */
     public Map<String, byte[]> buttonMaps() {
         return buttonMaps;
+    }
+
+    /**
+     * Whether {@code other} holds exactly these files, byte for byte - how the edits on screen are told from the
+     * working copy they started from (Storage S4a).
+     */
+    public boolean sameAs(ConfigurationFiles other) {
+        return sameFiles(bindings, other.bindings)
+                && Arrays.equals(deviceMappings, other.deviceMappings)
+                && sameFiles(buttonMaps, other.buttonMaps);
+    }
+
+    private static boolean sameFiles(Map<String, byte[]> one, Map<String, byte[]> other) {
+        if (!one.keySet().equals(other.keySet())) return false;
+        for (Map.Entry<String, byte[]> file : one.entrySet()) {
+            if (!Arrays.equals(file.getValue(), other.get(file.getKey()))) return false;
+        }
+        return true;
+    }
+
+    /** These files with {@code deviceMappings} in place of this set's. */
+    public ConfigurationFiles withDeviceMappings(byte[] deviceMappings) {
+        return new ConfigurationFiles(bindings, deviceMappings, buttonMaps);
+    }
+
+    /** These files with {@code buttonMaps} in place of this set's. */
+    public ConfigurationFiles withButtonMaps(Map<String, byte[]> buttonMaps) {
+        return new ConfigurationFiles(bindings, deviceMappings, buttonMaps);
     }
 
     private static void requireBindingsFileName(String name) {

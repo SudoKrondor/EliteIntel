@@ -40,7 +40,16 @@ public record InstallationFiles(long installId, String storefront, Path root, by
      *                     the one entry the working copy must not lose (alias-designer.md, <em>Activation</em>)
      */
     public static InstallationFiles read(InstallationRow row) throws IOException {
-        Path root = Path.of(row.rootPath());
+        return read(row.id(), row.storefront(), Path.of(row.rootPath()));
+    }
+
+    /**
+     * Reads the device files of the installation at {@code root} - APPLY's comparison, which has the write path's list
+     * rather than the stored rows (Storage S4a).
+     *
+     * @throws IOException as {@link #read(InstallationRow)}
+     */
+    public static InstallationFiles read(long installId, String storefront, Path root) throws IOException {
         Path controlSchemes = GameInstallation.controlSchemesUnder(root);
         Path mappings = GameInstallation.deviceMappingsIn(controlSchemes);
         byte[] deviceMappings = Files.isRegularFile(mappings) ? readNamed(mappings) : null;
@@ -59,7 +68,7 @@ public record InstallationFiles(long installId, String storefront, Path root, by
             }
             for (Path file : found) buttonMaps.put(file.getFileName().toString(), readNamed(file));
         }
-        return new InstallationFiles(row.id(), row.storefront(), root, deviceMappings, buttonMaps);
+        return new InstallationFiles(installId, storefront, root, deviceMappings, buttonMaps);
     }
 
     /** Whether this installation holds a {@code DeviceMappings.xml} - "use one installation for all" needs one. */

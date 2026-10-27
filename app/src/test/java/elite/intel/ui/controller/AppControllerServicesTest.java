@@ -73,20 +73,17 @@ class AppControllerServicesTest {
         assertFalse(names.contains("BUTTON_MAP_STARTUP"));
     }
 
-    /** The device-file watch is a service of its own, so a change is noticed whether or not the screen is open. */
+    /**
+     * BindForge does not watch the device files, nor announce an installation that missed a write: the check runs at
+     * three moments instead, and APPLY leaves an installation that differs for it (Storage S4a; overview.md,
+     * <em>External change detection</em>).
+     */
     @Test
-    void deviceFilesWatchIsRegistered() {
-        assertTrue(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO)
-                .containsKey(ServiceType.DEVICE_FILES_MONITOR));
-    }
-
-    /** The catch-up line is spoken, so it comes up after the voice that speaks it (A14). */
-    @Test
-    void catchUpAnnouncementComesUpAfterTheMouth() {
-        List<ServiceType> order =
-                List.copyOf(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO).keySet());
-        assertTrue(order.contains(ServiceType.CATCH_UP_ANNOUNCEMENT));
-        assertTrue(order.indexOf(ServiceType.MOUTH) < order.indexOf(ServiceType.CATCH_UP_ANNOUNCEMENT));
+    void noServiceWatchesTheDeviceFilesOrAnnouncesAMissedWrite() {
+        List<String> names = AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO).keySet().stream()
+                .map(Enum::name).toList();
+        assertFalse(names.contains("DEVICE_FILES_MONITOR"));
+        assertFalse(names.contains("CATCH_UP_ANNOUNCEMENT"));
     }
 
     @Test

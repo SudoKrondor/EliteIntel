@@ -157,7 +157,7 @@ final class OnboardingDialog extends JDialog {
         hardware.setText(getText("bindings.aliasDesigner.onboarding.hardware", controller.vid(), controller.pid()));
         setParagraph(device, controller.label());
         name.setText(chosen.get(page));
-        if (!current.waitsForApply()) setParagraph(moves, " ");
+        if (current.bindings() == 0) setParagraph(moves, " ");
         next.setText(getText(page == pages.size() - 1
                 ? "bindings.aliasDesigner.onboarding.finish"
                 : "bindings.aliasDesigner.onboarding.next"));
@@ -176,7 +176,7 @@ final class OnboardingDialog extends JDialog {
         setParagraph(problem, verdict.valid() ? " " : problemText(verdict));
         next.setEnabled(verdict.valid());
         Onboarding.Page current = pages.get(page);
-        if (current.waitsForApply()) {
+        if (current.bindings() > 0) {
             String shown = verdict.valid() ? name.getText().trim() : current.defaultName();
             // WHY: a controller the user said replaces an old id has its bindings on that id, not on its own (A17) - shown
             // as .binds writes it, as the question before this page shows it (review, 2026-10-17).

@@ -134,6 +134,39 @@ class WritePathTest {
                 "the working copy and the game's file hold the same set");
     }
 
+    /** The set written is handed on once the working copy holds it - the edits then start from it (Storage S4a). */
+    @Test
+    void theSetWrittenIsHandedOnOnceTheWorkingCopyHoldsIt() throws IOException {
+        List<String> handed = new ArrayList<>();
+        WritePath writePath = new WritePath(workingCopy, this::sources, files -> {
+            try {
+                handed.add(text(workingCopy.read().bindings().get("Custom.4.2.binds")));
+            } catch (IOException e) {
+                throw new AssertionError(e);
+            }
+        });
+
+        writePath.write(set(), sources -> backup());
+
+        assertEquals(List.of("<new/>"), handed);
+    }
+
+    /**
+     * APPLY leaves alone an installation whose device files differ from the working copy (Alan, 2026-10-26): nothing is
+     * written to it, the report says it differs, and everything else is still written.
+     */
+    @Test
+    void anInstallationLeftAloneIsNotWrittenAndIsReportedAsDiffering() throws IOException {
+        WriteReport report = writePath().write(set(), sources -> backup(), installation -> true);
+
+        WriteReport.Place place = report.installations().getFirst();
+        assertTrue(place.differs());
+        assertFalse(place.updated());
+        assertFalse(Files.exists(GameInstallation.deviceMappingsIn(GameInstallation.controlSchemesUnder(steam))));
+        assertEquals("<new/>", Files.readString(bindings.resolve("Custom.4.2.binds")), "the bindings folder is written");
+        assertEquals("<new/>", text(workingCopy.read().bindings().get("Custom.4.2.binds")));
+    }
+
     private void writeOrRecord(WritePath writePath, String binds, DuringBackup duringBackup, List<Throwable> failures) {
         try {
             writePath.write(new ConfigurationFiles(Map.of("Custom.4.2.binds", bytes(binds)), null, Map.of()),

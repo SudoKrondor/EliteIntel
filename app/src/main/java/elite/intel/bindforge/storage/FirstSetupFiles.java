@@ -7,12 +7,9 @@ import elite.intel.bindforge.devicefiles.FirstSetupPlan;
 import elite.intel.bindforge.devicefiles.FirstSetupReader;
 import elite.intel.bindforge.devicefiles.FrontierStockButtonMaps;
 import elite.intel.bindforge.install.GameInstallation;
-import elite.intel.bindforge.io.BindingsWriter;
 import elite.intel.bindforge.io.DeviceReferenceRewrite;
-import elite.intel.bindforge.io.RewrittenXml;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -33,8 +30,6 @@ import java.util.TreeMap;
  * asks which binds file to use (Alan, 2026-10-24). Only a merge's losing names change them.
  */
 public final class FirstSetupFiles {
-
-    private static final String BINDS_SUFFIX = ".binds";
 
     private FirstSetupFiles() {
     }
@@ -214,29 +209,12 @@ public final class FirstSetupFiles {
         if (moves.isEmpty()) return 0;
         Map<String, Set<String>> losersByWinner = new LinkedHashMap<>();
         moves.forEach((loser, winner) -> losersByWinner.computeIfAbsent(winner, w -> new LinkedHashSet<>()).add(loser));
-
-        BindingsWriter writer = new BindingsWriter();
-        int moved = 0;
-        for (Map.Entry<String, byte[]> file : bindings.entrySet()) {
-            if (!file.getKey().endsWith(BINDS_SUFFIX)) continue;
-            Encoded text = Encoded.of(file.getValue());
-            String xml = text.xml();
-            int inFile = 0;
-            try {
-                for (Map.Entry<String, Set<String>> winner : losersByWinner.entrySet()) {
-                    RewrittenXml rewritten = writer.rewriteDeviceReferences(xml,
-                            new DeviceReferenceRewrite(winner.getValue(), winner.getKey()));
-                    xml = rewritten.xml();
-                    inFile += rewritten.references();
-                }
-            } catch (IllegalArgumentException e) {
-                throw new IOException(file.getKey() + " could not be rewritten: " + e.getMessage(), e);
-            }
-            if (inFile == 0) continue;
-            file.setValue(text.with(xml));
-            moved += inFile;
-        }
-        return moved;
+        List<DeviceReferenceRewrite> rewrites = new ArrayList<>();
+        losersByWinner.forEach((winner, losers) -> rewrites.add(new DeviceReferenceRewrite(losers, winner)));
+        BindsFiles.Rewritten rewritten = BindsFiles.rewrite(bindings, rewrites);
+        bindings.clear();
+        bindings.putAll(rewritten.bindings());
+        return rewritten.moved();
     }
 
     private static FirstSetupPlan.Installation planOf(FirstSetupReading reading, long installId) {
@@ -249,26 +227,5 @@ public final class FirstSetupFiles {
         Set<String> folded = new LinkedHashSet<>();
         names.forEach(name -> folded.add(name.toLowerCase(Locale.ROOT)));
         return folded;
-    }
-
-    /** A binds file's text, and whether it began with a UTF-8 byte-order mark, which is written back. */
-    private record Encoded(String xml, boolean bom) {
-
-        private static final byte[] BOM = {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
-
-        static Encoded of(byte[] content) {
-            boolean bom = content.length >= 3 && content[0] == BOM[0] && content[1] == BOM[1] && content[2] == BOM[2];
-            int start = bom ? 3 : 0;
-            return new Encoded(new String(content, start, content.length - start, StandardCharsets.UTF_8), bom);
-        }
-
-        byte[] with(String xml) {
-            byte[] text = xml.getBytes(StandardCharsets.UTF_8);
-            if (!bom) return text;
-            byte[] content = new byte[BOM.length + text.length];
-            System.arraycopy(BOM, 0, content, 0, BOM.length);
-            System.arraycopy(text, 0, content, BOM.length, text.length);
-            return content;
-        }
     }
 }

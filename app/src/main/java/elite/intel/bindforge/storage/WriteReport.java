@@ -40,24 +40,38 @@ public record WriteReport(Place bindings, List<Place> installations) {
      * @param failures     what could not be done, one line each - English, for the log and for support, built from the
      *                     system's own messages. A screen says that a place was not updated in its own words, and may
      *                     show these lines as the detail
+     * @param differs      whether the installation was left alone because its device files differ from the working
+     *                     copy - nothing was written to it, until it is reconciled (Alan, 2026-10-26)
      */
     public record Place(Kind kind, String storefront, Path folder, List<String> written, List<String> removed,
-                        List<String> keptReadOnly, List<String> failures) {
+                        List<String> keptReadOnly, List<String> failures, boolean differs) {
         public Place {
             Objects.requireNonNull(kind, "kind");
             Objects.requireNonNull(folder, "folder");
-            if ((kind == Kind.INSTALLATION) != (storefront != null)) {
+            boolean installation = kind == Kind.INSTALLATION;
+            boolean hasStorefront = storefront != null;
+            if (installation != hasStorefront) {
                 throw new IllegalArgumentException("an installation has a storefront, and the bindings folder none");
             }
+            if (differs && !installation) throw new IllegalArgumentException("only an installation can differ");
             written = List.copyOf(written);
             removed = List.copyOf(removed);
             keptReadOnly = List.copyOf(keptReadOnly);
             failures = List.copyOf(failures);
         }
 
-        /** Whether everything for this place was done - a kept read-only file means it does not match the set. */
+        /** A place that was written to, or could not be. */
+        public Place(Kind kind, String storefront, Path folder, List<String> written, List<String> removed,
+                     List<String> keptReadOnly, List<String> failures) {
+            this(kind, storefront, folder, written, removed, keptReadOnly, failures, false);
+        }
+
+        /**
+         * Whether everything for this place was done - a kept read-only file, or an installation left alone because it
+         * differs, means it does not match the set.
+         */
         public boolean updated() {
-            return failures.isEmpty() && keptReadOnly.isEmpty();
+            return failures.isEmpty() && keptReadOnly.isEmpty() && !differs;
         }
     }
 

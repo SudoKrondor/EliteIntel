@@ -180,7 +180,7 @@ first.
 | Button, axis and hat labels | `HudTextField` boxes in a grid beside each input's name ✓ — not table cells, so **GAP 2 is not needed** here |
 | BACK · CLEAR · SAVE along the dialog's bottom | `HudButton` ✓ and **GAP 7** for CLEAR's middle place |
 | Save / Discard / Keep editing on leaving with edits | `HudConfirmDialog.show` ✓ — already takes three answers (primary, extra, dismiss) |
-| APPLY, beneath the list | `HudButton` ✓ |
+| ~~APPLY, beneath the list~~ | moved 2026-10-26 (Storage S4a) to the one APPLY / DISCARD bar above BindForge's tabs - `ui.screen.bindings.ApplyBar`, a `HudFooter` with DISCARD and APPLY, lit only when there are edits not applied |
 | Rename and onboarding dialogs | `hudModalScaffold` ✓ |
 
 **The Device Editor became a dialog, 2026-10-10 (Alan)** — see

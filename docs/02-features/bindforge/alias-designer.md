@@ -125,8 +125,8 @@ away, because there is no name to confirm.
 
 **RESET LABELS replaces CLEAR.** [CLEAR](#actions-and-what-each-one-reaches) removes an installation's entry,
 and on a built-in that entry is Frontier's. RESET LABELS removes only the `.buttonMap` the user or BindForge
-created, and the next [Elite-Intel startup](#default-labels-for-every-connected-named-controller)
-generates a fresh one. A `.buttonMap` Frontier itself shipped — `VPCPanel`, `VPCThrottle` — is never removed.
+created, and the next APPLY writes [default labels](#default-labels-for-every-connected-named-controller)
+for it while it is plugged in. A `.buttonMap` Frontier itself shipped — `VPCPanel`, `VPCThrottle` — is never removed.
 Like SAVE and CLEAR, it reaches **every installation** on the next APPLY — there is one working copy, so a reset
 is a reset everywhere.
 
@@ -141,7 +141,7 @@ is a reset everywhere.
 
 #### Built — 2026-10-16 (Alan, A15)
 
-*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+*Built against the master/draft model; moved onto the working copy in Storage S4a (2026-10-26) - see [Built on the working copy](#built-on-the-working-copy--2026-10-26-storage-s4a). The rules above still hold; the master, draft and Apply named below are history.*
 
 Built in `bindforge.devices.DeviceRename` (who may rename, and `backToFrontier`), `AliasDesignerReader.openingFor`
 and the name box in `DeviceEditorDialog`, `BindForgeDeviceDraftManager.saveDevice(…, BuiltIn)`, and at Apply in
@@ -750,7 +750,7 @@ update that keeps the same layout costs them one dismissed dialog.
 
 ### Built — 2026-10-15 (Alan, A12)
 
-*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+*Built against the master/draft model. The identity question still reads the master and the draft until Storage S4b moves it onto the working copy, so until then a retarget does not reach the game (Alan, 2026-10-26). The rules above still hold.*
 
 Built as `bindforge.devices.IdentityQuestions` (who is asked, about what - pure), `ui.screen.bindings.IdentityDialog`,
 `BindForgeDeviceDraftManager.retargetByName`, and the remembered answers in `bindforge_identity_answer` (migration
@@ -797,7 +797,7 @@ Built as `bindforge.devices.IdentityQuestions` (who is asked, about what - pure)
 
 ### Built — 2026-10-17 (Alan, A17)
 
-*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+*Built against the master/draft model. Since Storage S4a (2026-10-26) a yes opens onboarding, whose FINISH moves the bindings from the old id to the name in the same edit - no record waits for Apply; the record's table (`12008`) goes in S4b. The rules above still hold.*
 
 **A controller the bindings know only by its hardware id.** A stick that never had an entry in `DeviceMappings.xml`
 is named in `.binds` by its id - `334483F3` - and a firmware update or a replacement gives it a new one, leaving every
@@ -878,7 +878,7 @@ Any controller connected to the system — whether already connected when BindFo
 
 ### Built — 2026-10-15 (Alan, A7)
 
-*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+*Built against the master/draft model; moved onto the working copy in Storage S4a (2026-10-26) - see [Built on the working copy](#built-on-the-working-copy--2026-10-26-storage-s4a). The rules above still hold; the master, draft and Apply named below are history.*
 
 Built as `bindforge.devices.HotPlugOffers` (who is still owed an offer — in memory, tested) and the Device Bus
 subscription in `AliasDesignerController`. Alan approved these as the sources' defaults and answered one question:
@@ -1058,7 +1058,7 @@ the bindings did not name by ID was written straight away.*
 
 #### Built — 2026-10-14 (Alan, A6b)
 
-*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+*Built against the master/draft model; moved onto the working copy in Storage S4a (2026-10-26) - see [Built on the working copy](#built-on-the-working-copy--2026-10-26-storage-s4a). The rules above still hold; the master, draft and Apply named below are history.*
 
 Built as `bindforge.devices.Onboarding` (the pages, pure), `ui.screen.bindings.OnboardingDialog`,
 `bindforge.devicefiles.DeviceOnboarding` (the writes), `BindForgeDeviceDraftManager.onboard` (one transaction),
@@ -1348,7 +1348,7 @@ still to come.*
 
 #### Built as a dialog — 2026-10-10 (Alan, A9)
 
-*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+*Built against the master/draft model; moved onto the working copy in Storage S4a (2026-10-26) - see [Built on the working copy](#built-on-the-working-copy--2026-10-26-storage-s4a). The rules above still hold; the master, draft and Apply named below are history.*
 
 Built as `ui.screen.bindings.DeviceEditorDialog`, opened from the gear on `AliasDesignerPanel`'s My Devices rows,
 with `bindforge.devices.DeviceEditorInputs` (which boxes, their defaults, what SAVE writes — pure) and
@@ -1485,6 +1485,36 @@ installations?"* — using [`HudConfirmDialog`](ui-component-map.md), never `JOp
 renames kept lists of what to remove — and one installation's files changed all or nothing; the working copy and
 whole-file APPLY replaced all of it.*
 
+#### Built on the working copy — 2026-10-26 (Storage S4a)
+
+The screen reads the working copy with the edits on screen (`bindforge.storage.Edits`), never an installation or a
+database table, and every action is a change to those edits (`bindforge.storage.DeviceEdits`); the one APPLY above
+BindForge's tabs writes them ([storage.md](storage.md#how-the-files-are-written--2026-10-24)). Removed with the old
+model: the screen's own APPLY and DISCARD, the divergence list and its ways out, the Installations columns and the
+Device Editor's install strip, catch-up, Edit History and the device-file poll.
+
+- **My Devices** is live hardware with the edits' `DeviceMappings.xml`: the alias is the edits' name, so a name given
+  or changed shows at once. A device cleared in the edits stays listed under the working copy's name, *not added*, so
+  its editor opens with UNDO CLEAR.
+- **SAVE** writes the device's whole `.buttonMap`; with the name changed, a rename (`DeviceMappingsMerge.rename`, the
+  map moved, every binds file rewritten), a shadow, or going back to Frontier's name - each one edit.
+- **CLEAR** takes out the element and its map; **RESET LABELS** the map, or Frontier's own back for `VPCPanel` and
+  `VPCThrottle`; **UNDO** puts back what the working copy holds - the element copied whole, where it led the file.
+- **Onboarding's FINISH** is an edit (Alan, 2026-10-26): the element after the user's others, ahead of Frontier's;
+  the default labels unless a map is already under the name; every binding naming it by hardware id - and an old id it
+  replaces (A17) - moved to the name. Nothing reaches the game until APPLY.
+- **Default labels** are worked out at each refresh for every connected, named controller with no map, and held apart
+  from the edits: APPLY writes them, and they never light the bar.
+- **No rename is ever "under way"**, so a renamed device can be renamed again before APPLY, and CLEAR no longer waits
+  for one. No chains holds: every name the working copy holds stays taken until APPLY.
+
+*Decided while building it (2026-10-26), confirmed by Alan 2026-10-27:*
+
+- **A Frontier element covering several controllers keeps its `.buttonMap` when one of them is shadowed** - another
+  controller may still be called by it - and **going back to its name is refused while a map of the user's is under
+  it**, since this controller's labels would go over it. There is no record any more of which controller a shared
+  element's labels were made for. For an element covering one controller (`T-Rudder`) the map goes with the name.
+
 #### An edit `.binds` depends on updates `.binds` — 2026-10-11 (Alan)
 
 **When the user changes a `DeviceMappings.xml` entry, or its `.buttonMap`, that the shared `.binds` depends on,
@@ -1528,7 +1558,7 @@ the edit.*
 
 #### Built — 2026-10-11 (Alan, A10)
 
-*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+*Built against the master/draft model; moved onto the working copy in Storage S4a (2026-10-26) - see [Built on the working copy](#built-on-the-working-copy--2026-10-26-storage-s4a). The rules above still hold; the master, draft and Apply named below are history.*
 
 Built as the Device Editor's middle button (`bindforge.devices.DeviceEditorMiddle`, pure), APPLY and DISCARD on
 the Alias Designer screen, `bindforge.devicefiles.DeviceApply` (now with its first caller), removals in
@@ -1602,7 +1632,7 @@ Alan answered five questions, one at a time:
 
 #### Catch-up — 2026-10-15 (Alan, A14)
 
-*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+*Removed in Storage S4a (2026-10-26): an installation that missed a write differs from the working copy, so APPLY leaves it alone and the check reconciles it (storage.md, How the files are written; Storage S9). Kept as history.*
 
 Built as `bindforge.devicefiles.MissedWrites` (the flag, and who is found again), `DeviceFilesPush.push(installIds,
 removals)`, `DeviceApply.catchUp`, `InstallationHoldings` (what settles), `CatchUpAnnouncement` (the startup line)
@@ -1697,7 +1727,7 @@ Applies, with CLEAR refused while a rename was under way. The working copy and w
 
 #### Settled before building it — 2026-10-14 (Alan, A11)
 
-*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+*Built against the master/draft model; moved onto the working copy in Storage S4a (2026-10-26) - see [Built on the working copy](#built-on-the-working-copy--2026-10-26-storage-s4a). The rules above still hold; the master, draft and Apply named below are history.*
 
 - **~~All or nothing~~ — a rename follows onboarding's partial rule** (Alan, option 3 of three). The user's Apply
   comes first, as for [onboarding's hex move](#settled-before-building-it--2026-10-14-alan-a6b): every installation
@@ -1745,7 +1775,7 @@ Applies, with CLEAR refused while a rename was under way. The working copy and w
 
 #### Decided while building it — 2026-10-15 (A11)
 
-*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+*Built against the master/draft model; moved onto the working copy in Storage S4a (2026-10-26) - see [Built on the working copy](#built-on-the-working-copy--2026-10-26-storage-s4a). The rules above still hold; the master, draft and Apply named below are history.*
 
 - **One rename at a time per device.** The master keeps one old name per device, so a device whose last rename has
   not reached every installation and `.binds` yet keeps its name field read-only, saying so, until an Apply finishes
@@ -1768,7 +1798,7 @@ Applies, with CLEAR refused while a rename was under way. The working copy and w
 
 #### After review — 2026-10-15 (Alan, A11)
 
-*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+*Built against the master/draft model; moved onto the working copy in Storage S4a (2026-10-26) - see [Built on the working copy](#built-on-the-working-copy--2026-10-26-storage-s4a). The rules above still hold; the master, draft and Apply named below are history.*
 
 - **CLEAR is refused while a rename is still under way.** Its old name may still be in `.binds` or in an
   installation that missed the rename, and clearing would drop the old name the next Apply needs to finish it —
@@ -1818,7 +1848,7 @@ once-per-run version.
 
 #### Built — 2026-10-11 (Alan, A13)
 
-*Built against the master/draft model; the rules above still hold, the mechanics are being reworked to [storage.md](storage.md) (2026-10-24, Alan).*
+*Built against the master/draft model; moved onto the working copy in Storage S4a (2026-10-26) - see [Built on the working copy](#built-on-the-working-copy--2026-10-26-storage-s4a). The rules above still hold; the master, draft and Apply named below are history.*
 
 Built as `bindforge.devices.MissingControllers` (who is named — pure) and `MissingControllerWarning` (the one warning, spoken and logged), triggered by the Alias Designer screen (`AliasDesignerController.onShown`). Alan answered three questions, one at a time:
 

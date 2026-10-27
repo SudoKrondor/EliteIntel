@@ -338,7 +338,7 @@ first ([storage.md](storage.md) rule 12), which meets that.
 *Removed 2026-10-24 (Alan): "Auto-backup on Elite-Intel launch" — the startup backup is the safety net and cannot be
 switched off ([storage.md](storage.md) rule 12); "Edit History retention" — Edit History is gone.* **Built 2026-10-24
 (Storage S1):** migration `12010` drops the `auto_backup_on_launch` column, and `edit_history_retention` stays in the
-table until Edit History's code is removed (S4), because it still reads it. *Until S1b (2026-10-24) the settings were meant
+table until Storage S4b drops it; Edit History's code went in S4a (2026-10-26), and nothing reads the column now. *Until S1b (2026-10-24) the settings were meant
 for a BindForge panel on Elite-Intel's Settings screen, and there was one retention, 30 days with a floor of one day.*
 
 **Built 2026-10-24 (Storage S1b; Alan approved):** a *Backup Settings* section above the list. **Backups go to** shows
@@ -377,7 +377,7 @@ From the [simplification review](../../../bindforge-simplification-review.md), c
 | ~~**Nothing is ever deleted**~~ **Built 2026-10-24 (Storage S1):** retention at start, after a successful backup; two rules since S1b | daily backups kept by age, before-changes backups by count, user backups until deleted, first-time startup's backup forever (rule 11) |
 | ~~**Restore covers `.binds` only, one file at a time**, to the editing copy or straight to the game~~ **Built 2026-10-25 (Storage S3):** RESTORE puts the whole backup back, through the one write path | everything, no choices, to the live copies and the working copy (rule 10) |
 | **The "before BindForge" backup** holds everything, but its restore covers `.binds` only | part of the one backup system |
-| **Edit History is written three ways** — device files into `bindings\history\<installation>\` (last 10), `.binds` copies into the backup folder (never deleted), `StartPreset` copies into that same folder (last 10) — and a `.bak` is left beside the working copy on every save | all of it goes: one backup system, nothing per file (rule 11) |
+| **Edit History is written three ways** — ~~device files into `bindings\history\<installation>\` (last 10)~~ *removed in Storage S4a, 2026-10-26*, `.binds` copies into the backup folder (never deleted), `StartPreset` copies into that same folder (last 10) — and a `.bak` is left beside the working copy on every save | all of it goes: one backup system, nothing per file (rule 11) |
 | **Game Install Locations** ~~shows no match states and no Add missing~~ **Built 2026-10-25 (Storage S2b):** Add missing, Remove (stays removed) and Run first-time startup again; Rescan and Relocate removed. Match states wait for S9 | the list with match states, Add missing and Remove (rule 1) |
 
 **Auto-backup and retention are one change, not two.** Today nothing prunes, and that is harmless because

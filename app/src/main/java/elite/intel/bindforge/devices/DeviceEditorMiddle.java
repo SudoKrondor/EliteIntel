@@ -5,16 +5,16 @@ import java.util.OptionalInt;
 
 /**
  * The Device Editor's middle button - CLEAR, or RESET LABELS on a built-in - and whether it can be pressed
- * (alias-designer.md, <em>Actions</em>, Alan 2026-10-11, A10). Pure: the screen reads the master, the draft and
- * {@code .binds}.
+ * (alias-designer.md, <em>Actions</em>, Alan 2026-10-11, A10). Pure: the screen reads the edits, the working copy and
+ * the binds files.
  * <p>
- * <strong>A device cleared in the draft, not yet applied, offers its undo</strong> - UNDO CLEAR, or UNDO RESET -
+ * <strong>A device cleared in the edits, not yet applied, offers its undo</strong> - UNDO CLEAR, or UNDO RESET -
  * and its labels cannot be edited: the dialog says APPLY will remove it.
  * <p>
- * <strong>CLEAR is refused while {@code .binds} names the device.</strong> An edit to an entry {@code .binds}
- * depends on must update {@code .binds} with it (Alan, 2026-10-11): here, the bindings would move to the device's
- * hardware ID. That rewrite is not built, and without it the game would reject the whole preset. RESET LABELS is
- * never refused for it: {@code .binds} names inputs by token, never by label.
+ * <strong>CLEAR is refused while the binds files name the device.</strong> An edit to an entry {@code .binds} depends
+ * on must update {@code .binds} with it (Alan, 2026-10-11): here, the bindings would move to the device's hardware ID,
+ * which is slice A19's. Without it the game would reject the whole binds file. RESET LABELS is never refused for it:
+ * {@code .binds} names inputs by token, never by label.
  *
  * @param kind     what the button is
  * @param enabled  whether it can be pressed
@@ -26,9 +26,9 @@ public record DeviceEditorMiddle(Kind kind, boolean enabled, Why why, int bindin
     public enum Kind {
         CLEAR,
         RESET_LABELS,
-        /** The device is cleared in the draft; pressing this puts it back as the master holds it. */
+        /** The device is cleared in the edits; pressing this puts it back as the working copy holds it. */
         UNDO_CLEAR,
-        /** The built-in's labels are reset in the draft; pressing this puts them back. */
+        /** The built-in's labels are reset in the edits; pressing this puts them back. */
         UNDO_RESET
     }
 
@@ -36,19 +36,17 @@ public record DeviceEditorMiddle(Kind kind, boolean enabled, Why why, int bindin
         NONE,
         /** The device has no name yet, so there is nothing of it to clear. */
         NO_NAME,
-        /** Neither the master nor the draft holds it. */
+        /** Neither the edits nor the working copy holds it. */
         NOT_ADDED,
-        /** A built-in with no saved labels: the file on disk is already the generated one, or Frontier's. */
+        /** A built-in with no labels of the user's: there is nothing to reset. */
         NOTHING_TO_RESET,
-        /** {@code .binds} names it. */
+        /** The binds files name it. */
         NAMED_IN_BINDS,
         /**
-         * {@code .binds} could not be read - the folder is not there, or no preset in it parses - so whether it names
-         * the device is unknown, and CLEAR is refused rather than guessed (review, 2026-10-11).
+         * The binds files could not be read, so whether they name the device is unknown, and CLEAR is refused rather
+         * than guessed (review, 2026-10-11).
          */
-        BINDS_UNREAD,
-        /** Its last rename has not reached every installation and {@code .binds} yet (A11). */
-        RENAME_PENDING
+        BINDS_UNREAD
     }
 
     public DeviceEditorMiddle {
@@ -56,35 +54,31 @@ public record DeviceEditorMiddle(Kind kind, boolean enabled, Why why, int bindin
         Objects.requireNonNull(why, "why");
     }
 
-    /** Whether the device is cleared or reset in the draft, so its labels are not editable. */
+    /** Whether the device is cleared or reset in the edits, so its labels are not editable. */
     public boolean undoing() {
         return kind == Kind.UNDO_CLEAR || kind == Kind.UNDO_RESET;
     }
 
     /**
-     * @param deviceName   the name the record is saved under, or {@code null} for a device with no name yet
-     * @param builtIn      whether that name is one of Frontier's - or, with no name, whether Frontier covers the
-     *                     hardware
-     * @param inMaster     whether the master holds that name
-     * @param draftStarted whether a draft is started
-     * @param inDraft      whether the draft holds that name
-     * @param bindings     how many bindings name the device
+     * @param deviceName the name the device is under, or {@code null} for a device with no name yet
+     * @param builtIn    whether that name is one of Frontier's - or, with no name, whether Frontier covers the hardware
+     * @param applied    whether the working copy holds it - the user's element, or a built-in's labels of the user's
+     * @param held       whether the edits hold it, the same way
+     * @param bindings   how many bindings name the device
      */
-    public static DeviceEditorMiddle of(String deviceName, boolean builtIn, boolean inMaster, boolean draftStarted,
-                                        boolean inDraft, int bindings) {
-        return of(deviceName, builtIn, inMaster, draftStarted, inDraft, OptionalInt.of(bindings));
+    public static DeviceEditorMiddle of(String deviceName, boolean builtIn, boolean applied, boolean held,
+                                        int bindings) {
+        return of(deviceName, builtIn, applied, held, OptionalInt.of(bindings));
     }
 
-    /** As above, with {@code bindings} empty when {@code .binds} could not be read. */
-    public static DeviceEditorMiddle of(String deviceName, boolean builtIn, boolean inMaster, boolean draftStarted,
-                                        boolean inDraft, OptionalInt bindings) {
+    /** As above, with {@code bindings} empty when the binds files could not be read. */
+    public static DeviceEditorMiddle of(String deviceName, boolean builtIn, boolean applied, boolean held,
+                                        OptionalInt bindings) {
         Kind kind = builtIn ? Kind.RESET_LABELS : Kind.CLEAR;
         if (deviceName == null) return new DeviceEditorMiddle(kind, false, Why.NO_NAME, 0);
-        if (draftStarted && inMaster && !inDraft) {
+        if (applied && !held) {
             return new DeviceEditorMiddle(builtIn ? Kind.UNDO_RESET : Kind.UNDO_CLEAR, true, Why.NONE, 0);
         }
-        // WHY: the draft when there is one, since it is what SAVE and Apply act on; the master otherwise.
-        boolean held = draftStarted ? inDraft : inMaster;
         if (!held) return new DeviceEditorMiddle(kind, false, builtIn ? Why.NOTHING_TO_RESET : Why.NOT_ADDED, 0);
         if (builtIn) return new DeviceEditorMiddle(kind, true, Why.NONE, 0);
         if (bindings.isEmpty()) return new DeviceEditorMiddle(kind, false, Why.BINDS_UNREAD, 0);
@@ -92,15 +86,5 @@ public record DeviceEditorMiddle(Kind kind, boolean enabled, Why why, int bindin
             return new DeviceEditorMiddle(kind, false, Why.NAMED_IN_BINDS, bindings.getAsInt());
         }
         return new DeviceEditorMiddle(kind, true, Why.NONE, 0);
-    }
-
-    /**
-     * CLEAR refused while the device's rename is still under way (review, 2026-10-15, A11): its old name may still be
-     * in {@code .binds} or in an installation that missed the rename, and clearing would drop the old name the next
-     * Apply needs to finish it - leaving bindings on a device with no entry, or an element nothing cleans up. An undo,
-     * and RESET LABELS, are left as they are.
-     */
-    public DeviceEditorMiddle whileRenamePending() {
-        return kind == Kind.CLEAR ? new DeviceEditorMiddle(kind, false, Why.RENAME_PENDING, 0) : this;
     }
 }

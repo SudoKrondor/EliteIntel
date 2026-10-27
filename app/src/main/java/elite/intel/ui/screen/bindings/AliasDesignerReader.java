@@ -4,15 +4,17 @@ import elite.intel.bindforge.devicefiles.*;
 import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.devices.*;
 import elite.intel.bindforge.install.GameInstallation;
-import elite.intel.bindforge.install.InstallationRegistry;
+import elite.intel.bindforge.storage.ConfigurationFiles;
+import elite.intel.bindforge.storage.DeviceEdits;
+import elite.intel.bindforge.storage.Edits;
 import elite.intel.db.dao.BindForgeDeviceDraftDao.DraftRow;
 import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
-import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.db.managers.BindForgeActivationManager;
 import elite.intel.db.managers.BindForgeDeviceDraftManager;
 import elite.intel.db.managers.BindForgeDeviceMasterManager;
 import elite.intel.db.managers.BindForgeHardwareIdMoveManager;
 import elite.intel.db.managers.BindForgeIdentityAnswerManager;
+import elite.intel.db.managers.BindForgeInstallationsManager;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.model.Device;
 import elite.intel.devices.model.DeviceDescription;
@@ -30,138 +32,136 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.util.StringUtls.messageOf;
 
 /**
- * Everything the Alias Designer screen reads: the refresh's whole picture, what onboarding asks, and what the Device
- * Editor opens with. Touches the disk and the database - never the EDT, and never Swing; {@link AliasDesignerController}
- * runs it on its own threads and hands the result to {@link AliasDesignerPanel}.
+ * Everything the Alias Designer screen reads: the refresh's picture, what onboarding asks, and what the Device Editor
+ * opens with. <strong>It reads the working copy with the edits on screen</strong> ({@link Edits}; Storage S4a) - never an
+ * installation: the editors care what is being edited, and only File Manager cares where the files are (principle 12).
+ * Touches the disk - never the EDT, and never Swing; {@link AliasDesignerController} runs it on its own threads and
+ * hands the result to {@link AliasDesignerPanel}.
  */
 final class AliasDesignerReader {
 
     private static final Logger log = LogManager.getLogger(AliasDesignerReader.class);
 
-    private final InstallationRegistry registry;
-    private final InstallationDeviceScanner deviceScanner = new InstallationDeviceScanner();
-
-    AliasDesignerReader(InstallationRegistry registry) {
-        this.registry = registry;
-    }
-
     /**
      * One refresh's picture of the screen.
      *
-     * @param labels    what each installation is called, keyed as findings key them
-     * @param paths     each installation's folder, keyed the same - for the Device Editor's install strip
-     * @param report    the check the findings came from, or {@code null} before activation, when there are no ways out
-     * @param activated {@code null} when the refresh failed before reading it, so the screen keeps its last answer - an
-     *                  activated user is not sent back to SET UP by one failed query (review, 2026-10-13)
+     * @param activated {@code null} when the refresh failed before reading it, so the screen keeps its last answer
      * @param running   whether the Device Service was running; {@code null} when the refresh failed before the
      *                  hardware, for the same reason
      * @param listed    whether the Device Service had finished its first look at the hardware
-     * @param identity  the identity questions (A12) - none before activation or before the hardware is listed, when
-     *                  every controller reads absent
+     * @param identity  the identity questions (A12) - none before first-time startup or before the hardware is listed,
+     *                  when every controller reads absent
      */
-    record Snapshot(Map<String, String> labels, Map<String, String> paths, DeviceFilesCheck.Report report,
-                    List<DeviceDivergence.Finding> findings, List<MyDevice> myDevices, List<BuiltInDevice> builtIn,
-                    Markers markers, Boolean activated, List<String> changes, Boolean running, boolean listed,
-                    boolean applyWork, List<Long> foundAgain, IdentityQuestions.Reading identity) {
+    record Snapshot(List<MyDevice> myDevices, List<BuiltInDevice> builtIn, Boolean activated, Boolean running,
+                    boolean listed, IdentityQuestions.Reading identity) {
     }
 
     /**
-     * The Installations columns: one per installation, keyed as findings key them, and each device's markers in the
-     * order My Devices lists the devices. Empty before first setup.
+     * The working copy, and it with the edits on top - both empty before first-time startup, or when it cannot be read.
      */
-    record Markers(List<String> installs, List<Map<String, InstallationMarkers.Marker>> perDevice) {
-        static final Markers NONE = new Markers(List.of(), List.of());
+    private record Sets(ConfigurationFiles edited, ConfigurationFiles applied) {
+        static final Sets NONE = new Sets(null, null);
+
+        List<DeviceEntry> editedElements() throws IOException {
+            return edited == null ? List.of() : DeviceEdits.elements(edited);
+        }
+
+        List<DeviceEntry> appliedElements() throws IOException {
+            return applied == null ? List.of() : DeviceEdits.elements(applied);
+        }
     }
 
     /**
-     * Reads the installations and their device files, the master, the draft and the hardware. A failure part-way is
-     * logged and leaves what was not read empty or {@code null}, so the screen keeps showing what it can.
+     * Reads the edits, the working copy and the hardware, and works out the default labels APPLY will write. A failure
+     * part-way is logged and leaves what was not read empty or {@code null}, so the screen keeps showing what it can.
      *
      * @param judgeMissing whether this refresh is the one that judges the missing-controller warning
      */
     Snapshot read(boolean judgeMissing) {
-        Map<String, String> labels = Map.of();
-        Map<String, String> paths = Map.of();
-        DeviceFilesCheck.Report report = null;
-        List<DeviceDivergence.Finding> findings = List.of();
         List<MyDevice> myDevices = List.of();
         List<BuiltInDevice> builtIn = List.of();
-        Markers markers = Markers.NONE;
         Boolean activated = null;
-        List<String> changes = List.of();
         Boolean running = null;
         boolean listed = false;
-        boolean applyWork = false;
-        List<Long> foundAgain = List.of();
         IdentityQuestions.Reading identity = IdentityQuestions.Reading.NONE;
         try {
-            activated = BindForgeActivationManager.getInstance().isFirstTimeStartupComplete();
-            changes = DraftChanges.stored();
-            List<InstallationRow> rows = registry.currentWithStartupScan();
-            labels = labelsFor(rows);
-            paths = rows.stream().collect(Collectors.toMap(AliasDesignerReader::keyOf, InstallationRow::rootPath,
-                    (first, second) -> first, LinkedHashMap::new));
-            recordWhatEachInstallationHolds(rows);
+            boolean complete = BindForgeActivationManager.getInstance().isFirstTimeStartupComplete();
+            activated = complete;
+            Sets sets = complete ? readSets() : Sets.NONE;
             Path bindings = PlayerSession.getInstance().getBindingsDir();
-            // WHY: decided by the check's own reading of the master, not a separate one, so the rows and the master
-            // they are judged against are always the same master. Before activation the installations are compared
-            // with each other - which is what shows the user why SET UP is worth pressing (Alan, 2026-10-08).
-            DeviceFilesCheck.Report check = new DeviceFilesCheck().check();
-            if (check.activated()) {
-                report = check;
-                findings = DeviceDivergenceScanner.scanAgainstMaster(check, bindings);
-                // WHY: after the detection above, which marks a folder that came back as present again.
-                foundAgain = MissedWrites.storedFoundAgain();
-            } else {
-                findings = DeviceDivergenceScanner.scan(controlSchemesByInstall(rows), bindings);
-            }
-            BindForgeDeviceMasterManager master = BindForgeDeviceMasterManager.getInstance();
-            boolean renameWaiting = master.findAll().stream()
-                    .anyMatch(row -> row.previousName() != null && !row.previousName().equals(row.deviceName()));
-            applyWork = ApplyWork.pending(changes, master.pendingRemovals(), renameWaiting, findings, report);
-            Map<String, List<DeviceEntry>> entries = entriesByInstall(rows);
             Attached attached = readAttached();
             running = attached.running();
             listed = attached.listed();
-            myDevices = readMyDevices(attached.devices(), entries);
+            myDevices = MyDeviceList.build(attached.devices(), sets.editedElements(), sets.appliedElements(),
+                    FrontierStockDevices.getInstance());
             builtIn = BuiltInDeviceList.build(FrontierStockDevices.getInstance(), attached.devices());
-            // WHY: only against a master. Before first setup M, not added and the divergence colour mean
-            // nothing, and the column is left out rather than filled with an invented state.
-            if (report != null) markers = markersFor(rows, entries, myDevices, findings);
-            if (report != null && listed) identity = readIdentity(myDevices, bindings);
+            if (sets.edited() != null) Edits.stored().defaultLabels(defaultLabels(sets.edited(), myDevices));
+            if (complete && listed) identity = readIdentity(myDevices, bindings);
             // WHY: last, so nothing it does can cost the screen what this refresh has already read.
             if (judgeMissing) {
                 MissingControllerWarning.getInstance().judgeOnce(attached.listed(), myDevices, bindings);
             }
-        } catch (RuntimeException e) {
+        } catch (IOException | RuntimeException e) {
             // WHY: broad on purpose. This runs on a thread boundary, and an exception escaping it would kill
             // the thread silently and leave the table showing whatever it showed before, with no clue why.
-            log.warn("Could not refresh the divergence list", e);
+            log.warn("Could not refresh the Alias Designer", e);
         }
-        return new Snapshot(labels, paths, report, findings, myDevices, builtIn, markers, activated, changes, running,
-                listed, applyWork, foundAgain, identity);
+        return new Snapshot(myDevices, builtIn, activated, running, listed, identity);
+    }
+
+    /** The edits and the working copy, or none when the working copy cannot be read - the tab click offers RESTORE. */
+    private static Sets readSets() {
+        try {
+            Edits edits = Edits.stored();
+            return new Sets(edits.current(), edits.applied());
+        } catch (IOException e) {
+            log.warn("Could not read the working copy for the Alias Designer: {}", e.getMessage());
+            return Sets.NONE;
+        }
+    }
+
+    /**
+     * Default labels - {@code Button 1}, {@code X Axis}, {@code Hat 1 Up} - for every connected controller with a name
+     * and no {@code .buttonMap} (alias-designer.md, <em>Default labels</em>; Alan, 2026-10-24). Written at the next
+     * APPLY, never lighting the bar. Skipped for a device the game draws itself, where a {@code Button 3} would replace
+     * an icon. Only the axes the controller has, four labels per hat.
+     */
+    private static Map<String, byte[]> defaultLabels(ConfigurationFiles edited, List<MyDevice> devices) {
+        FrontierStockDevices stock = FrontierStockDevices.getInstance();
+        Map<String, byte[]> maps = new TreeMap<>();
+        for (MyDevice device : devices) {
+            if (!device.attached()) continue;
+            String name = device.alias() != null ? device.alias()
+                    : device.builtIn() ? stock.covering(device.vid(), device.pid()).map(DeviceEntry::name).orElse(null)
+                    : null;
+            if (name == null || stock.gameDrawsIt(name) || DeviceEdits.buttonMapFile(edited, name).isPresent()) {
+                continue;
+            }
+            Map<String, String> labels = generatedLabels(device);
+            if (labels.isEmpty()) continue;
+            try {
+                maps.put(name + GameInstallation.BUTTON_MAP_SUFFIX, ButtonMapWriter.write(labels));
+            } catch (IOException e) {
+                log.warn("Could not make default labels for {}: {}", name, e.getMessage());
+            }
+        }
+        return maps;
     }
 
     // ------------------------------------------------------------------ the identity question
 
     /**
      * Which missing controllers to ask about, and which candidates onboarding leaves alone meanwhile (Alan, 2026-10-15,
-     * A12). The user's controllers are read as the next Apply will leave them - the draft's when one is started - so a
-     * retarget the user already answered is not asked again. Answers whose controller is attached again, or no longer
-     * the user's, are forgotten here: that is the hardware changing.
+     * A12). <em>Still read from the master and the draft until Storage S4b moves it onto the edits</em> - between the
+     * two slices a named controller's retarget does not reach the game (Alan, 2026-10-26).
      * <p>
      * Only once the hardware is listed - before then every controller reads absent, and the forgetting would be wrong
      * too. A {@code .binds} that cannot be read asks nothing: without the counts every missing controller would look
      * unbound.
-     * <p>
-     * A controller the bindings know only by its hardware id is asked about too (Alan, 2026-10-17, A17), and the
-     * bindings waiting to move from an old id are forgotten here when they no longer should move: the old controller
-     * is attached again, or no device has the hardware they were to move to.
      */
     private static IdentityQuestions.Reading readIdentity(List<MyDevice> devices, Path bindings) {
         BindsDeviceReferences.Counts counts;
         try {
-            // WHY: both counts from one read, since the identity question needs both on every refresh (review).
             counts = BindsDeviceReferences.counts(bindings);
         } catch (IOException e) {
             log.warn("Could not read which devices the bindings name, so no identity question is asked: {}",
@@ -197,15 +197,14 @@ final class AliasDesignerReader {
         List<String> namesInUse = new ArrayList<>();
         masterRows.forEach(row -> namesInUse.addAll(Arrays.asList(row.deviceName(), row.previousName())));
         draftRows.forEach(row -> namesInUse.addAll(Arrays.asList(row.deviceName(), row.previousName())));
+        // WHY: a device of the user's in the edits is not a missing id, whatever the master says (Storage S4a).
+        devices.forEach(device -> namesInUse.add(device.alias()));
         IdentityQuestions.ById byId = new IdentityQuestions.ById(counts.hardwareIds(), heldByMaster,
                 hardware -> stock.covering(hardware.vid(), hardware.pid()).isPresent(), moves.findAll(), namesInUse);
         IdentityQuestions.Reading reading = IdentityQuestions.read(known, devices, heldByDraft, counts.names(),
                 stock::ships, answers.findAll(), byId);
         answers.forget(reading.forget());
         moves.forget(reading.forgetMoves());
-        reading.forgetMoves().forEach(row -> log.info("Bindings on the old hardware id {} stay where they are - the "
-                + "old controller is attached again, or no device has {} any more",
-                new HardwareId(row.oldVid(), row.oldPid()), new HardwareId(row.vid(), row.pid())));
         return reading;
     }
 
@@ -218,15 +217,14 @@ final class AliasDesignerReader {
     }
 
     /**
-     * Who onboarding asks, what each is offered, and every name already taken - the master's, the draft's, every
-     * installation's entries and Frontier's. A {@code .binds} that cannot be read stops it: without it, a controller
-     * the bindings name by hardware id would be named straight away, leaving those bindings on an id that may no
-     * longer resolve.
+     * Who onboarding asks, what each is offered, and every name already taken - the edits', the working copy's and
+     * Frontier's. Binds files that cannot be read stop it: without them, a controller the bindings name by hardware id
+     * would be named while its bindings stayed on the id.
      *
-     * @param only     the controllers to ask about - one from the gear's NAME, those plugged in later (A7) - or
-     *                 {@code null} for every controller that needs a name
-     * @param heldBack controllers left out - candidates of an identity question still open, which naming would end
-     *                 unasked (Alan, 2026-10-15, A12). Empty from NAME: the user chose to name that one
+     * @param only      the controllers to ask about - one from the gear's NAME, those plugged in later (A7) - or
+     *                  {@code null} for every controller that needs a name
+     * @param heldBack  controllers left out - candidates of an identity question still open, which naming would end
+     *                  unasked (Alan, 2026-10-15, A12). Empty from NAME: the user chose to name that one
      * @param replacing the old hardware id each controller is, by the controller's hardware - the identity question's
      *                  yes for a controller the bindings know only by its id (A17); its page promises the bindings on
      *                  the old id. Empty otherwise
@@ -236,43 +234,42 @@ final class AliasDesignerReader {
         if (!BindForgeActivationManager.getInstance().isFirstTimeStartupComplete()) {
             return new OnboardingReading(List.of(), List.of(), getText("bindings.aliasDesigner.onboarding.notActivated"));
         }
+        Sets sets;
         Map<String, Integer> hardwareIds;
         try {
-            hardwareIds = BindsDeviceReferences.hardwareIdCounts(PlayerSession.getInstance().getBindingsDir());
+            Edits edits = Edits.stored();
+            sets = new Sets(edits.current(), edits.applied());
+            hardwareIds = BindsDeviceReferences.countsIn(sets.edited().bindings()).hardwareIds();
         } catch (IOException e) {
             log.warn("Onboarding did not open: the bindings could not be read", e);
             return new OnboardingReading(List.of(), List.of(),
                     getText("bindings.aliasDesigner.onboarding.bindsUnread", messageOf(e)));
         }
-        List<InstallationRow> rows = registry.currentWithStartupScan();
-        Map<String, List<DeviceEntry>> entries = entriesByInstall(rows);
-        List<MyDevice> devices = readMyDevices(readAttached().devices(), entries);
-
+        List<MyDevice> devices;
         Set<String> taken = new LinkedHashSet<>(FrontierStockDevices.getInstance().names());
-        // WHY: old names too - one still waiting for its rename to reach every installation is taken (A11).
-        BindForgeDeviceMasterManager.getInstance().findAll().forEach(row -> {
-            taken.add(row.deviceName());
-            if (row.previousName() != null) taken.add(row.previousName());
-        });
-        List<DraftRow> draft = BindForgeDeviceDraftManager.getInstance().findAll();
-        draft.forEach(row -> {
-            taken.add(row.deviceName());
-            if (row.previousName() != null) taken.add(row.previousName());
-        });
-        entries.values().forEach(list -> list.forEach(entry -> taken.add(entry.name())));
-        List<HardwareId> heldByDraft = draft.stream().map(row -> new HardwareId(row.vid(), row.pid())).toList();
-
+        try {
+            List<DeviceEntry> edited = sets.editedElements();
+            List<DeviceEntry> applied = sets.appliedElements();
+            devices = MyDeviceList.build(readAttached().devices(), edited, applied, FrontierStockDevices.getInstance());
+            // WHY: the working copy's names too - one a device gave up in the edits is taken until APPLY (no chains).
+            edited.forEach(entry -> taken.add(entry.name()));
+            applied.forEach(entry -> taken.add(entry.name()));
+        } catch (IOException e) {
+            log.warn("Onboarding did not open: the working copy's device file could not be read", e);
+            return new OnboardingReading(List.of(), List.of(),
+                    getText("bindings.aliasDesigner.editor.loadFailed", messageOf(e)));
+        }
         List<MyDevice> asked = devices.stream()
                 .filter(device -> only == null || only.contains(device.hardware()))
                 .filter(device -> !heldBack.contains(device.hardware()))
                 .toList();
-        List<Onboarding.Page> pages = Onboarding.pages(asked, heldByDraft, taken, hardwareIds,
+        List<Onboarding.Page> pages = Onboarding.pages(asked, taken, hardwareIds,
                 AliasDesignerReader::generatedLabels, replacing);
         return new OnboardingReading(pages, List.copyOf(taken), null);
     }
 
     /**
-     * The labels a controller gets when named - what startup generation would give it, read from it now.
+     * The labels a controller gets when named, or as its defaults - worked out from it now.
      */
     private static Map<String, String> generatedLabels(MyDevice device) {
         Device live = attachedController(device.hardware());
@@ -288,22 +285,30 @@ final class AliasDesignerReader {
     // ------------------------------------------------------------------ the Device Editor
 
     /**
-     * What the Device Editor opens with. The name is the draft's for a master device it holds - renamed there, it
-     * opens under the new name - else the master's, or Frontier's for a built-in the master does not hold; with none,
-     * the device has no name yet. The labels are the draft's when it holds the device - SAVE writes there - and the
-     * master's otherwise. The inputs are the controller's when it is attached, read by which axis they are, and the
-     * ones its labels name when it is not.
+     * What the Device Editor opens with, read from the edits and the working copy.
+     * <p>
+     * The name is the device's in the edits; for a device cleared in the edits, the working copy's, so it opens with
+     * its undo; for a built-in, Frontier's; with none, the device has no name yet. The labels are the edits' - or, for a
+     * device cleared there, the working copy's, to show what the undo puts back. The inputs are the controller's when it
+     * is attached, read by which axis they are, and the ones its labels name when it is not.
+     *
+     * @throws IOException if the working copy cannot be read
      */
-    DeviceEditorDialog.Opening openingFor(MyDevice device, List<DeviceEditorDialog.StripLine> strip) {
+    DeviceEditorDialog.Opening openingFor(MyDevice device) throws IOException {
         FrontierStockDevices stock = FrontierStockDevices.getInstance();
-        BindForgeDeviceMasterManager master = BindForgeDeviceMasterManager.getInstance();
-        DeviceRow masterRow = device.alias() == null ? null : master.findByName(device.alias());
-        DraftRow draftRow = draftRowFor(device, masterRow);
-        String name = draftRow != null ? draftRow.deviceName()
-                : device.alias() != null ? device.alias()
-                : device.builtIn() ? stock.covering(device.vid(), device.pid()).map(DeviceEntry::name).orElse(null)
+        FrontierStockButtonMaps shipped = FrontierStockButtonMaps.getInstance();
+        Edits edits = Edits.stored();
+        ConfigurationFiles edited = edits.current();
+        ConfigurationFiles applied = edits.applied();
+        DeviceEntry covering = stock.covering(device.vid(), device.pid()).orElse(null);
+        String name = device.alias() != null ? device.alias()
+                : device.entryName() != null ? device.entryName()
+                : covering != null ? covering.name()
                 : null;
-        Map<String, String> saved = name == null ? Map.of() : SavedDeviceLabels.of(name);
+        boolean frontiers = name == null ? device.builtIn() : stock.ships(name);
+
+        Map<String, String> saved = name == null ? Map.of() : DeviceEdits.labels(edited, name);
+        if (saved.isEmpty() && name != null) saved = DeviceEdits.labels(applied, name);
 
         Device live = device.attached() ? attachedController(device.hardware()) : null;
         boolean gamepad = live != null && GamepadSupport.isGamepad(live);
@@ -316,108 +321,67 @@ final class AliasDesignerReader {
         DeviceEditorInputs inputs = live == null
                 ? DeviceEditorInputs.ofSavedLabels(saved)
                 : DeviceEditorInputs.ofController(live.buttonCount(), live.axisCount(), description);
-        DeviceEditorMiddle middle = middleFor(device, name, masterRow, stock);
-        DeviceRename.Owner owner = name != null && stock.ships(name) ? DeviceRename.Owner.FRONTIER
-                : DeviceRename.Owner.USER;
+
+        DeviceEditorMiddle middle = DeviceEditorMiddle.of(name, frontiers, holds(applied, name, frontiers, stock, shipped),
+                holds(edited, name, frontiers, stock, shipped), bindingsNaming(edited, name));
+        DeviceRename.Owner owner = frontiers ? DeviceRename.Owner.FRONTIER : DeviceRename.Owner.USER;
         DeviceRename.Presence presence = device.attached() ? DeviceRename.Presence.ATTACHED
                 : DeviceRename.Presence.UNPLUGGED;
-        DeviceRename.Allowed rename = DeviceRename.allowed(name, owner, presence, middle.undoing(),
-                masterRow == null ? null : masterRow.deviceName(), masterRow == null ? null : masterRow.previousName());
-        // WHY: the Frontier element covering the controller's hardware, whatever the device is called now - a built-in
-        // under Frontier's name, or one shadowed under the user's, which may go back to it (A15).
-        DeviceEntry covering = stock.covering(device.vid(), device.pid()).orElse(null);
-        Set<String> taken = rename == DeviceRename.Allowed.YES ? takenNames(name, masterRow, draftRow, stock) : Set.of();
+        DeviceRename.Allowed rename = DeviceRename.allowed(name, owner, presence, middle.undoing());
+        Set<String> taken = Set.of();
+        if (rename == DeviceRename.Allowed.YES) {
+            List<String> inUse = new ArrayList<>();
+            DeviceEdits.elements(edited).forEach(entry -> inUse.add(entry.name()));
+            DeviceEdits.elements(applied).forEach(entry -> inUse.add(entry.name()));
+            taken = DeviceRename.taken(stock.names(), inUse, Arrays.asList(name, device.entryName()));
+        }
         DeviceEditorDialog.Covering frontier = covering == null ? null
                 : new DeviceEditorDialog.Covering(covering.name(), covering.hardware().size() > 1,
-                DeviceRename.frontierNameHeld(covering.name(), storedNames(master)));
+                frontierNameHeld(edited, covering, shipped));
+        int installations = BindForgeInstallationsManager.getInstance().findAll().size();
         return new DeviceEditorDialog.Opening(device, name, live == null ? null : live.id(), description, gamepad, inputs,
-                saved, name != null && stock.gameDrawsIt(name), strip, middle, rename, taken, frontier);
-    }
-
-    /** Every name the master and the draft hold - SAVE's view of which names are in use. */
-    private static Set<String> storedNames(BindForgeDeviceMasterManager master) {
-        Set<String> names = new HashSet<>();
-        master.findAll().forEach(row -> names.add(row.deviceName()));
-        BindForgeDeviceDraftManager draft = BindForgeDeviceDraftManager.getInstance();
-        if (draft.isStarted()) draft.findAll().forEach(row -> names.add(row.deviceName()));
-        return names;
+                saved, name != null && stock.gameDrawsIt(name), middle, rename, taken, frontier, installations);
     }
 
     /**
-     * The draft row for this device: the one copied from its master row, or - for a controller named in onboarding
-     * and waiting for APPLY - the one with its hardware. {@code null} when there is no draft, or it holds none.
+     * Whether a set holds the device: the user's element by that name, or - for a built-in - labels of the user's
+     * under Frontier's name, a {@code .buttonMap} that is not Frontier's own as shipped.
      */
-    private static DraftRow draftRowFor(MyDevice device, DeviceRow masterRow) {
-        BindForgeDeviceDraftManager draft = BindForgeDeviceDraftManager.getInstance();
-        if (!draft.isStarted()) return null;
-        List<DraftRow> rows = draft.findAll();
-        if (masterRow != null) {
-            return rows.stream().filter(row -> Objects.equals(row.masterId(), masterRow.id())).findFirst().orElse(null);
-        }
-        if (device.alias() != null) return null;
-        return rows.stream()
-                .filter(row -> new HardwareId(row.vid(), row.pid()).equals(device.hardware()))
-                .findFirst().orElse(null);
+    private static boolean holds(ConfigurationFiles files, String name, boolean frontiers, FrontierStockDevices stock,
+                                 FrontierStockButtonMaps shipped) throws IOException {
+        if (name == null) return false;
+        if (!frontiers) return DeviceEdits.usersNames(files, stock).contains(name);
+        Map<String, String> labels = DeviceEdits.labels(files, name);
+        return !labels.isEmpty() && !shipped.isShipped(name, labels);
     }
 
     /**
-     * The names a rename must not clash with ({@link DeviceRename#taken}): Frontier's, every installation's entries,
-     * and every name and old name in the master and the draft - less this device's own. The Frontier name covering it
-     * stays taken: going back to it is {@link DeviceRename#backToFrontier}'s, spelled exactly as Frontier spells it.
+     * Whether going back to Frontier's name is closed (A15): Frontier's element covers other controllers too, and
+     * labels of the user's are under its name - another controller's, since this one is under a name of its own. Going
+     * back would put this controller's labels over them. <em>Since Storage S4a this is read from the files: there is no
+     * record of which controller a shared element's labels were made for (Alan, 2026-10-26).</em>
      */
-    private Set<String> takenNames(String name, DeviceRow masterRow, DraftRow draftRow, FrontierStockDevices stock) {
-        List<String> entries = new ArrayList<>();
-        entriesByInstall(registry.currentWithStartupScan()).values()
-                .forEach(list -> list.forEach(entry -> entries.add(entry.name())));
-        List<DeviceRename.Named> master = BindForgeDeviceMasterManager.getInstance().findAll().stream()
-                .map(row -> new DeviceRename.Named(row.deviceName(), row.previousName())).toList();
-        List<DeviceRename.Named> draft = BindForgeDeviceDraftManager.getInstance().findAll().stream()
-                .map(row -> new DeviceRename.Named(row.deviceName(), row.previousName())).toList();
-        List<String> own = new ArrayList<>();
-        own.add(name);
-        if (masterRow != null) {
-            own.add(masterRow.deviceName());
-            own.add(masterRow.previousName());
-        }
-        if (draftRow != null) own.add(draftRow.previousName());
-        return DeviceRename.taken(stock.names(), entries, master, draft, own);
+    private static boolean frontierNameHeld(ConfigurationFiles edited, DeviceEntry covering,
+                                            FrontierStockButtonMaps shipped) throws IOException {
+        if (covering.hardware().size() <= 1) return false;
+        Map<String, String> labels = DeviceEdits.labels(edited, covering.name());
+        return !labels.isEmpty() && !shipped.isShipped(covering.name(), labels);
     }
 
     /**
-     * What the editor's middle button is: read from the master, the draft and {@code .binds} as it opens. A
-     * {@code .binds} that cannot be read - a folder that is not there included - refuses CLEAR rather than offering it
-     * on a device it might name, since the game would reject the whole preset. Labels can still be edited.
-     * <p>
-     * Every name the device has is counted - its draft name, its master name, and the old name of a rename still
-     * under way - since {@code .binds} may name it by any of them until Apply moves the bindings. <strong>A rename
-     * still under way refuses CLEAR</strong> (review, 2026-10-15, A11): clearing would drop the old name the next
-     * Apply needs to finish it.
+     * How many bindings in the edits' binds files name the device. Empty when they cannot be read - CLEAR is then
+     * refused rather than offered on a device they might name, since the game would reject the whole binds file.
      */
-    private static DeviceEditorMiddle middleFor(MyDevice device, String name, DeviceRow masterRow,
-                                                FrontierStockDevices stock) {
-        boolean builtIn = name == null ? device.builtIn() : stock.ships(name);
-        if (name == null) return DeviceEditorMiddle.of(null, builtIn, false, false, false, 0);
-        BindForgeDeviceDraftManager draft = BindForgeDeviceDraftManager.getInstance();
-        boolean started = draft.isStarted();
-        boolean inMaster = masterRow != null || BindForgeDeviceMasterManager.getInstance().findByName(name) != null;
-        OptionalInt bindings;
+    private static OptionalInt bindingsNaming(ConfigurationFiles edited, String name) {
+        if (name == null) return OptionalInt.of(0);
         try {
-            Map<String, Integer> counts =
-                    BindsDeviceReferences.referenceCounts(PlayerSession.getInstance().getBindingsDir());
-            List<String> names = masterRow == null
-                    ? List.of(name)
-                    : Arrays.asList(name, masterRow.deviceName(), masterRow.previousName());
-            bindings = OptionalInt.of(BindsDeviceReferences.bindingsNaming(names, counts));
+            Map<String, Integer> names = BindsDeviceReferences.countsIn(edited.bindings()).names();
+            return OptionalInt.of(BindsDeviceReferences.bindingsNaming(List.of(name), names));
         } catch (IOException e) {
             log.warn("Could not read which devices the bindings name, so Clear is refused for {}: {}", name,
                     e.getMessage());
-            bindings = OptionalInt.empty();
+            return OptionalInt.empty();
         }
-        DeviceEditorMiddle middle = DeviceEditorMiddle.of(name, builtIn, inMaster, started,
-                started && draft.findByName(name) != null, bindings);
-        boolean renamePending = masterRow != null && masterRow.previousName() != null
-                && !masterRow.previousName().equals(masterRow.deviceName());
-        return renamePending ? middle.whileRenamePending() : middle;
     }
 
     /**
@@ -434,45 +398,7 @@ final class AliasDesignerReader {
         return null;
     }
 
-    // ------------------------------------------------------------------ the parts of a refresh
-
-    /**
-     * Every installation gets a column, its folder there or not - one that is gone says <em>not found</em> rather
-     * than vanishing, since the user still has it (Alan, 2026-10-08).
-     */
-    private static Markers markersFor(List<InstallationRow> rows, Map<String, List<DeviceEntry>> entries,
-                                      List<MyDevice> devices, List<DeviceDivergence.Finding> findings) {
-        List<String> installs = rows.stream().map(AliasDesignerReader::keyOf).toList();
-        Set<String> notFound = rows.stream().filter(InstallationRow::missing)
-                .map(AliasDesignerReader::keyOf)
-                .collect(Collectors.toSet());
-        List<Map<String, InstallationMarkers.Marker>> perDevice = devices.stream()
-                .map(device -> InstallationMarkers.of(device, installs, notFound, entries, findings))
-                .toList();
-        return new Markers(installs, perDevice);
-    }
-
-    /**
-     * Records what each installation's device files hold right now.
-     * <p>
-     * A write on a refresh, which is deliberate: these rows are BindForge's only record of what is actually
-     * on disk, and they are worth nothing if they are older than the disk. The installation list is already
-     * refreshed the same way, on the same trigger.
-     * <p>
-     * The Installations markers do not read these rows: they need labels and a severity. Their colour and the
-     * differences come from the check against the master; which names an installation gives the hardware comes from
-     * this refresh's own read of its file (Alan, 2026-10-08). The rows stay the stored record of reality, for
-     * whatever must notice a change between refreshes.
-     */
-    private void recordWhatEachInstallationHolds(List<InstallationRow> rows) {
-        for (InstallationRow row : rows) {
-            // WHY: a missing installation is skipped rather than scanned and found empty. Its folder is not
-            // there, so reading it would record no devices - which is indistinguishable from a game patch
-            // having wiped the file, and would raise exactly the alarm these rows exist to raise.
-            if (row.missing()) continue;
-            deviceScanner.scan(row.id(), GameInstallation.controlSchemesUnder(Path.of(row.rootPath())));
-        }
-    }
+    // ------------------------------------------------------------------ the hardware
 
     /**
      * The controllers attached right now, read once per refresh for both device views.
@@ -489,7 +415,7 @@ final class AliasDesignerReader {
         boolean running = service.isAvailable();
         if (!running) {
             log.info("Device service is not running, so no controllers can be read - the list will show only "
-                    + "what the installations' files name");
+                    + "what the working copy names");
         }
         return new Attached(running ? service.getConnectedDevices() : List.of(), running, running && listed);
     }
@@ -502,84 +428,5 @@ final class AliasDesignerReader {
      *                - it is running a moment before that (review, 2026-10-11)
      */
     private record Attached(List<Device> devices, boolean running, boolean listed) {
-    }
-
-    /**
-     * Gathers the four things My Devices is built from: the attached controllers, every installation's device
-     * entries, the master's records, and Frontier's shipped list.
-     */
-    private static List<MyDevice> readMyDevices(List<Device> attached,
-                                                Map<String, List<DeviceEntry>> entriesByInstall) {
-        return MyDeviceList.build(
-                attached,
-                MyDeviceList.entriesAcross(entriesByInstall.values()),
-                BindForgeDeviceMasterManager.getInstance().findAll(),
-                FrontierStockDevices.getInstance());
-    }
-
-    /**
-     * Each present installation's device entries.
-     * <p>
-     * An installation whose file cannot be read is left out rather than counted as holding nothing. The device
-     * list is a union, so a missing contribution only makes it shorter - but silently treating an unreadable
-     * file as an empty one would hide a real problem behind a shorter list.
-     */
-    private static Map<String, List<DeviceEntry>> entriesByInstall(List<InstallationRow> rows) {
-        Map<String, List<DeviceEntry>> byInstall = new LinkedHashMap<>();
-        controlSchemesByInstall(rows).forEach((install, controlSchemes) -> {
-            try {
-                byInstall.put(install,
-                        DeviceMappingsParser.parseIfPresent(GameInstallation.deviceMappingsIn(controlSchemes)));
-            } catch (IOException e) {
-                log.warn("Could not read device entries for {}: {}", install, e.getMessage());
-            }
-        });
-        return byInstall;
-    }
-
-    /**
-     * Only installations whose folder is there: a missing one cannot be read, and reporting its entries as
-     * absent would fill the list with red caused by an unplugged drive.
-     * <p>
-     * Keyed by row id. <strong>Not by storefront</strong>, which is a label rather than a key - a machine can
-     * hold two Frontier copies, several hand-added installations, or three Steams on Linux, and keying by
-     * storefront would drop all but the last of them from the comparison without saying so.
-     */
-    private static Map<String, Path> controlSchemesByInstall(List<InstallationRow> rows) {
-        Map<String, Path> byInstall = new LinkedHashMap<>();
-        for (InstallationRow row : rows) {
-            if (row.missing()) continue;
-            byInstall.put(keyOf(row), GameInstallation.controlSchemesUnder(Path.of(row.rootPath())));
-        }
-        return byInstall;
-    }
-
-    /**
-     * The identity a finding carries. Unique by construction, and never shown to the user. The same key findings
-     * against the master carry, so they find their names too.
-     */
-    static String keyOf(InstallationRow row) {
-        return DeviceDivergence.installKey(row.id());
-    }
-
-    /**
-     * What each installation is called on screen.
-     * <p>
-     * The storefront alone where it identifies one installation, and the storefront with its folder where it
-     * does not - so two Frontier copies read as two different things rather than twice as "FRONTIER". Verbose
-     * only when being brief would be ambiguous.
-     */
-    static Map<String, String> labelsFor(List<InstallationRow> rows) {
-        Map<String, Long> countByStorefront = rows.stream()
-                .collect(Collectors.groupingBy(InstallationRow::storefront, Collectors.counting()));
-
-        Map<String, String> labels = new LinkedHashMap<>();
-        for (InstallationRow row : rows) {
-            boolean storefrontIsEnough = countByStorefront.getOrDefault(row.storefront(), 0L) == 1;
-            labels.put(keyOf(row), storefrontIsEnough
-                    ? row.storefront()
-                    : row.storefront() + " (" + row.rootPath() + ")");
-        }
-        return labels;
     }
 }

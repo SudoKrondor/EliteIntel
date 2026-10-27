@@ -7,13 +7,12 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 /**
  * Installations are identified by row id and only described by storefront, because a storefront is a label
- * that several installations can share.
+ * that several installations can share - the names first-time startup's reconcile gives them.
  */
-class AliasDesignerReaderLabelsTest {
+class FirstTimeStartupFlowLabelsTest {
 
     /**
      * The defect this pins: keyed by storefront, the second of two Frontier copies replaced the first and was
@@ -24,13 +23,12 @@ class AliasDesignerReaderLabelsTest {
         InstallationRow first = row(1, "FRONTIER", "C:\\Games\\Frontier");
         InstallationRow second = row(2, "FRONTIER", "D:\\Games\\Frontier2");
 
-        assertNotEquals(AliasDesignerReader.keyOf(first), AliasDesignerReader.keyOf(second));
-        assertEquals(2, AliasDesignerReader.labelsFor(List.of(first, second)).size());
+        assertEquals(2, FirstTimeStartupFlow.labelsFor(List.of(first, second)).size());
     }
 
     @Test
     void aStorefrontHeldByOneInstallationIsNamedByItself() {
-        Map<String, String> labels = AliasDesignerReader.labelsFor(List.of(
+        Map<String, String> labels = FirstTimeStartupFlow.labelsFor(List.of(
                 row(1, "STEAM", "E:\\SteamLibrary\\Elite Dangerous"),
                 row(2, "EPIC", "E:\\EpicLibrary\\EliteDangerous")));
 
@@ -43,7 +41,7 @@ class AliasDesignerReaderLabelsTest {
      */
     @Test
     void aSharedStorefrontIsNamedWithItsFolder() {
-        Map<String, String> labels = AliasDesignerReader.labelsFor(List.of(
+        Map<String, String> labels = FirstTimeStartupFlow.labelsFor(List.of(
                 row(1, "FRONTIER", "C:\\Games\\Frontier"),
                 row(2, "FRONTIER", "D:\\Games\\Frontier2")));
 
@@ -56,7 +54,7 @@ class AliasDesignerReaderLabelsTest {
      */
     @Test
     void onlyTheAmbiguousOnesCarryTheirFolder() {
-        Map<String, String> labels = AliasDesignerReader.labelsFor(List.of(
+        Map<String, String> labels = FirstTimeStartupFlow.labelsFor(List.of(
                 row(1, "STEAM", "E:\\SteamLibrary\\Elite Dangerous"),
                 row(2, "MANUAL", "C:\\One"),
                 row(3, "MANUAL", "C:\\Two")));

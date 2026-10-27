@@ -23,7 +23,8 @@ import java.util.*;
  * be silently ignored. Each one is placed at the top of {@code <Root>}, in master order, moving it up if it is
  * already further down.
  * <p>
- * Bytes in, bytes out: reading and writing the files is {@link DeviceFilesPush}'s job.
+ * Bytes in, bytes out: nothing here reads or writes a file. Since Storage S4a the edits on screen change the working
+ * copy's file with it ({@code bindforge.storage.DeviceEdits}).
  */
 public final class DeviceMappingsMerge {
 
@@ -120,6 +121,28 @@ public final class DeviceMappingsMerge {
             changed = true;
         }
         return changed ? new Result(DeviceFileXml.write(document), true) : new Result(existing, false);
+    }
+
+    /**
+     * Puts one element back, copied whole from {@code source} - its {@code <Alternative>} and {@code <SupportsIcons>}
+     * with it, which {@link #insert} would lose - placed among the user's elements leading the file as {@link #insert}
+     * places a new one. UNDO CLEAR's, putting back what the working copy holds (Storage S4a). An element already under
+     * that tag is left alone.
+     *
+     * @param order every user's name leading the file, the one put back included, in the order they should lead it
+     * @throws IOException if a file is not a {@code DeviceMappings.xml}, or {@code source} has no such element
+     */
+    public static Result copyIn(byte[] existing, byte[] source, String name, List<String> order) throws IOException {
+        Document document = DeviceFileXml.parse(existing);
+        Element root = rootOf(document);
+        if (firstChildNamed(root, name) != null) return new Result(existing, false);
+        Element original = firstChildNamed(rootOf(DeviceFileXml.parse(source)), name);
+        if (original == null) throw new IOException(name + " is not in the file it was to be copied from");
+        int place = order.indexOf(name);
+        if (place < 0) throw new IllegalArgumentException(name + " is not in the order it is placed by");
+        Element copy = (Element) document.importNode(original, true);
+        root.insertBefore(copy, insertionPoint(root, order, place));
+        return new Result(DeviceFileXml.write(document), true);
     }
 
     /**

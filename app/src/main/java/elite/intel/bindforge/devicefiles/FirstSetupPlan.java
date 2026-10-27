@@ -1,6 +1,5 @@
 package elite.intel.bindforge.devicefiles;
 
-import elite.intel.bindforge.devicefiles.DeviceDivergence.Severity;
 import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 
 import java.util.ArrayList;
@@ -119,6 +118,20 @@ public final class FirstSetupPlan {
         public Option {
             installs = Set.copyOf(installs);
         }
+    }
+
+    /**
+     * How much a row matters, judged against the bindings: red where bindings use the device, so losing its entry
+     * would break them; yellow where nothing stops working; green where every installation agrees. <em>Moved here from
+     * the divergence list, removed in Storage S4a.</em>
+     */
+    public enum Severity {
+        /** Consistent - every installation says the same thing. */
+        GREEN,
+        /** Wrong, but nothing stops working. */
+        YELLOW,
+        /** Will stop bindings working. */
+        RED
     }
 
     /**

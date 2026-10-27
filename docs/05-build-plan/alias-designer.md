@@ -3,13 +3,14 @@
 **Naming controllers, and keeping every installation's device files identical.** The tab exists and shows real
 data.
 
-> **Built against the old model (2026-10-24).** Everything below was built on a database master and draft, a
-> divergence list against it, installation markers and catch-up. The specs now say *back up, edit, apply*
-> ([storage.md](../02-features/bindforge/storage.md)), so **[Storage S4](storage.md#slices) moves this screen onto the
-> working copy and the one APPLY / DISCARD bar**, and removes the divergence list, its ways out, the installation
-> markers, catch-up, Edit History and startup `.buttonMap` generation. First setup's reconcile (`FirstSetupPlan`,
-> `LabelMerge`) moves to the working copy in S2. The rules in the spec's *Built* notes still hold; the classes and
-> tables named in **Built** below are the state before S4.
+> **Built against the old model, moved in Storage S4a (2026-10-26).** Everything below was built on a database master
+> and draft, a divergence list against it, installation markers and catch-up. **[Storage S4a](storage.md#slices) moved
+> the screen onto the working copy and the one APPLY / DISCARD bar** - the Device Editor's actions and onboarding are
+> edits not applied - and removed the divergence list, its ways out, the installation markers, the install strip,
+> catch-up, Edit History and the device-file poll ([spec, *Built on the working
+> copy*](../02-features/bindforge/alias-designer.md#built-on-the-working-copy--2026-10-26-storage-s4a)). **S4b** moves the
+> identity question and drops the tables. The rules in the spec's *Built* notes still hold; many classes named in
+> **Built** below are gone - the storage brief's *Built* table is the current state.
 
 ## Spec
 
@@ -147,10 +148,10 @@ installations with each other before then. Once the master exists, each row offe
 | A16 | **First setup's name choices that need Rename** — a name conflict whose losing name `.binds` uses: keep the winner with the loser as its `previous_name`, so the first Apply moves the bindings (A11's machinery). Design first: two losing names `.binds` uses (one `previous_name` per device), and first setup stuck because `.binds` uses both names. [Spec](../02-features/bindforge/alias-designer.md#names-that-needed-rename--2026-10-17-alan-a16) | A11 (done) | **done 2026-10-17** |
 | A17 | **When hardware changes, for a controller with no name** — `.binds` names a missing controller by hardware id only and an unnamed one is attached: a yes names the new controller *and* moves the bindings from the **old** id to the name. Needs a stored "old id → name" record, since Apply's hex move only finds a device's current VID/PID. Reuse A12's question, answers and hold-back. [Spec](../02-features/bindforge/alias-designer.md#built--2026-10-17-alan-a17) | A12 (done) | **done 2026-10-17** — split out of A12 2026-10-15 (Alan) |
 | A14 | **Catch-up** — an installation that missed an Apply (missing, locked, unavailable) is found again, at Elite-Intel startup or by the check: ask *"write your recent changes to it?"*, Yes being ~~`DeviceFilesPush.push(installId)`~~ Apply's push to that installation alone, removals and renames included (Alan, 2026-10-15). [Spec](../02-features/bindforge/alias-designer.md#catch-up--2026-10-15-alan-a14) | A10 (done) | **done 2026-10-15** |
-| A19 | **CLEAR on a device the bindings use** — moves those bindings to its hardware ID (VID then PID, upper case) as part of the same edit not applied, with the confirmation the spec words; today CLEAR is refused for such a device. [Spec](../02-features/bindforge/alias-designer.md#an-edit-binds-depends-on-updates-binds--2026-10-11-alan) | Storage S4 | pending |
+| A19 | **CLEAR on a device the bindings use** — moves those bindings to its hardware ID (VID then PID, upper case) as part of the same edit not applied, with the confirmation the spec words; today CLEAR is refused for such a device. [Spec](../02-features/bindforge/alias-designer.md#an-edit-binds-depends-on-updates-binds--2026-10-11-alan) | Storage S4b | pending |
 | A18 | **Gamepads** — `DeviceService` reads a pad through SDL's Gamepad API when `SDL_IsGamepad` holds (new gamepad events, `isGamepad(id)`; joystick events unchanged); the pure table from its named inputs to the game's `GamePad` tokens; the Device Editor shows a `<GamePad>` read-only, lit by name. Design proposed by Krondor 2026-10-23, **to settle with Alan first**. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor) | the tester's `.binds` ([testing item 27](../00-overview/testing-required.md#bindforge)) for the token family | **blocked** on item 27 |
 
-**Next here is A19, after [Storage S4](storage.md#slices)** moves the screen onto the working copy. A18 stays
+**Next here is A19, after [Storage S4b](storage.md#slices)** finishes moving the screen onto the working copy. A18 stays
 blocked. *Before 2026-10-24:* **every slice but A18 was
 done** — A16 and A17 on 2026-10-17; A15 on 2026-10-16; A7, A11, A12 and A14 on 2026-10-15. A18 was added 2026-10-23 from a tester's report. Next is a review of A17 in its own session (`/check-code-integrity`), then whatever Alan picks from the
 owed items below (the Linux bindings-folder slice, the orphan's **Remove** way out) or the next section, Preset Editor. Core C6, the exit

@@ -1,6 +1,6 @@
 package elite.intel.bindforge.devicefiles;
 
-import elite.intel.bindforge.devicefiles.DeviceDivergence.Severity;
+import elite.intel.bindforge.devicefiles.FirstSetupPlan.Severity;
 import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan.Installation;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan.Kind;

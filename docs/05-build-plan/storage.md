@@ -27,17 +27,18 @@ BindForge, and the user overwrites, merges or reconciles.
 Sections marked *"Built against the master/draft model"* in alias-designer.md keep their rules; only their mechanics
 change. The slice that moves them rewrites the *Built* note.
 
-## Built today — what the slices replace (checked 2026-10-24)
+## Built today — what the slices replace (checked 2026-10-26)
 
 | Today | Where | Becomes |
 |---|---|---|
 | **Done in S1 and S1b:** the one backup system — a zip of every live copy in `Daily\`, `BeforeChanges\`, `User\` or `FirstSetup\`; the daily one at the first start each day, user ones by Backup Now (Delete for these only); daily kept by age, before-changes by count; retention settings on Player Backups (migration `12011`) | `bindforge.storage.Backups`, `Backup`, `BackupSources`, `BackupDestination`, `StartupBackup` (started in `App.main`); `ui.screen.bindings.BindingManagementPanel` (Player Backups) | — |
 | **Done in S3:** RESTORE - the whole backup back, through `WritePath`, after a before-RESTORE backup; a backup whose installations differ reconciled in `FirstSetupDialog`; Browse for Backup File; the working copy read at every tab click, the newest backup offered when it cannot be; the read-only flag kept by every live write | `bindforge.storage.Restore`, `BackupContents`, `ReadOnlyFlag`, `Written` (shared with first-time startup), `LiveCopies`; `ui.screen.bindings.RestoreFlow`, `BindingManagementPanel`, `FirstTimeStartupFlow` | - |
 | **Done in S2b:** first-time startup - the installation list (Confirm / Add missing), the reconcile (use one installation for all, or merge), the working copy written through `WritePath` with the first setup backup, the flag; Game Install Locations' Add missing, Remove (stays removed), Run first-time startup again (migration `12012`) | `bindforge.storage.FirstTimeStartup`, `FirstSetupReading`, `InstallationFiles`, `FirstSetupFiles`; `ui.screen.bindings.FirstTimeStartupFlow`, `InstallationListDialog`, `FirstSetupDialog`, `GameInstallLocationsPanel` | - |
-| Device master, draft, pending removals, old names, hardware-id moves | migrations `12002`–`12004`, `12008`; `BindForgeDeviceMasterManager`, `BindForgeDeviceDraftManager`, `BindForgeDeviceInstallsManager`, `BindForgeHardwareIdMoveManager` | S4 |
-| Device Apply and per-installation push, Edit History, catch-up | `devicefiles.DeviceApply`, `DeviceFilesPush`, `EditHistory`, `MissedWrites`, `CatchUpAnnouncement`, migration `12006` | S2a (the new write path), S4 (removed) |
-| Divergence list, ways out, installation markers, the 2-second poll | `DeviceDivergence`, `DeviceDivergenceScanner`, `DivergenceWaysOut`, `DeviceFilesAdopt`, `LabelReMerge`, `devices.InstallationMarkers`, `DeviceFilesMonitor`, `DeviceFilesCheck` | S4 (removed), S9 (the new check) |
-| `.buttonMap` written at every connect | removed in S2b (Alan, 2026-10-25) | S4: default labels written at APPLY |
+| **Done in S4a:** the edits not applied, in memory and shared by the tabs; the APPLY / DISCARD bar above BindForge's tabs; APPLY through `WritePath` with a before-APPLY backup, leaving alone an installation whose device files differ by value; the Alias Designer and Device Editor on the edits - SAVE, rename, shadow, going back, CLEAR, RESET LABELS, the undos, onboarding's FINISH with A17's old-id move; default labels written at APPLY | `bindforge.storage.Edits`, `DeviceEdits`, `BindsFiles`, `Apply`, `DeviceFilesComparison` (and `WritePath`'s hand-off and leave-alone, `WriteReport.Place.differs`); `ui.screen.bindings.ApplyBar`, `AliasDesignerReader`, `AliasDesignerController`, `AliasDesignerPanel`, `DeviceEditorDialog`; `ui.event.BindForgeEditsChangedEvent` | - |
+| Device master, draft, pending removals, old names, hardware-id moves - **nothing on the Alias Designer reads them since S4a** but the identity question; `SavedDeviceLabels` and `CaptureControllers` still do | migrations `12002`–`12004`, `12008`; `BindForgeDeviceMasterManager`, `BindForgeDeviceDraftManager`, `BindForgeDeviceInstallsManager`, `BindForgeHardwareIdMoveManager`, `DraftChanges`, `SavedDeviceLabels` | S4b |
+| ~~Device Apply and per-installation push, Edit History, catch-up~~ **removed in S4a**; the `missed_write` column (`12006`) and `BindForgeInstallationsManager.setMissedWrite` are left for S4b's migration | migration `12006` | S4b |
+| ~~Divergence list, ways out, installation markers, the 2-second poll~~ **removed in S4a**, with `io.FilePoller` | - | S9 (the new check) |
+| ~~`.buttonMap` written at every connect~~ removed in S2b; **default labels written at APPLY since S4a** | `AliasDesignerReader.defaultLabels`, `Edits.defaultLabels` | - |
 | `.binds`: a copy of the **active** file, a checksum, its own APPLY / REVERT and close prompt; copied at launch before any backup | `bindforge.io.BindingsWorkingCopyRepository`, `BindingsApplyService`, `ui.screen.bindings.BindingProfilePanel` (`promptCloseWithDraft`) | S5, the launch copy with the rest (moved from S2, Alan, 2026-10-24) |
 | Preset file: master and draft files, per-line merge, its own Apply | `bindforge.preseteditor.StartPresetStore`, `StartPresetComparison`, `StartPresetApply` | S6 |
 | The Vega tab's KEYMAP readout | `ui.screen.AiTabPanel` (`keymapBadge`) | S5: removed |
@@ -66,6 +67,8 @@ its table (`12007`), `BindingsMonitor` (not BindForge's — it reloads the assis
   bridged, between slices. A slice that replaces old code removes it, even when another screen stops working until its
   own slice. Never chosen for, or argued from, keeping users happy.
 - **S2 is two slices, S2a and S2b** (Alan, 2026-10-24), in the order the table gives; S3 stays before S4.
+- **S4 is two slices, S4a and S4b** (Alan, 2026-10-26): the bar, the Device Editor and onboarding first, then the identity
+  question and the tables. The identity retarget is broken between the two.
 - **How the working copy and the live copies are written** — [storage.md, How the files are written](../02-features/bindforge/storage.md#how-the-files-are-written--2026-10-24).
 - **Game Install Locations loses Rescan and Relocate, and a removed installation stays removed** — [file-manager.md](../02-features/bindforge/file-manager.md#game-install-locations).
 
@@ -76,11 +79,18 @@ its table (`12007`), `BindingsMonitor` (not BindForge's — it reloads the assis
 
 ## Known issues
 
-- **Tabs break until their slice moves them, and that is accepted** (Alan, 2026-10-24). Since S2b first setup no longer
-  fills the database master, so the Alias Designer shows the user's devices as *not added* until S4, and no default
-  `.buttonMap` is written until S4 writes them at APPLY; a tab not yet
-  moved still edits and applies the old way, and its writes do not reach the working copy. Run first-time startup
-  again after S6 to start clean.
+- **Edits not applied are lost when Elite-Intel closes**, without a word, until S7's leave prompt (Alan, 2026-10-26,
+  accepted under no interim compatibility).
+
+- **Tabs break until their slice moves them, and that is accepted** (Alan, 2026-10-24). A tab not yet moved - the Bind
+  Editor (S5), the preset file (S6) - still edits and applies the old way, and its writes do not reach the working copy.
+  Run first-time startup again after S6 to start clean.
+- **Until S4b** (Alan, 2026-10-26): the identity question's retarget for a named controller still writes the old draft,
+  so it never reaches the game; and the Bind Editor's controller labels (`SavedDeviceLabels`, `CaptureControllers`,
+  `InputSettingsPanel`) still read the old tables, so they show none of the Alias Designer's names or labels.
+- **Until S9:** an installation that missed a write differs from the working copy, so APPLY leaves it alone and nothing
+  puts the working copy there - rule 8's *"the next APPLY writes it"* no longer holds (storage.md, *How the files are
+  written*). Accepted by Alan 2026-10-27 - nothing is built for it before S9, which must close it.
 - **Linux, several installations:** every `.binds` read and write uses the one bindings folder Elite-Intel is set
   to ([input environment §7](../00-overview/input-environment.md#7-linux-the-bindings-folder-is-not-shared)). The
   working copy holds one `Bindings\`; APPLY's confirm keeps A11's Linux note.
@@ -111,7 +121,8 @@ its table (`12007`), `BindingsMonitor` (not BindForge's — it reloads the assis
 | S2a | **The working copy store and the write path.** `WorkingCopy` reads the working copy whole and writes it in one step (a folder swap, finished or thrown away after a crash); `LiveCopies` writes it to every live copy — device files whole to every installation, a missing `DeviceMappings.xml` simply written, a file with the same bytes not rewritten, a `.buttonMap` the working copy lacks removed except Frontier's shipped ones — everything it can, reported per place (*"updated 2 of 3"*), nothing rolled back; `WritePath` backs up first, then the working copy, then the live copies. No UI, no migration, no caller yet | 3, 7, 8 | **done 2026-10-24** |
 | S2b | **First-time startup.** On the BindForge tab's first click while the flag is not set: the installation list with **Confirm** and **Add missing** (checked for `EliteDangerous64.exe`); device files reconciled by **use one installation for all** (that installation's files whole; warning when it removes an entry bindings use) or **merge** (`FirstSetupPlan`, `LabelMerge` kept; bindings on a losing name moved to the winner in the working copy's binds files); the working copy created and written out through `WritePath` with the first setup backup; the flag set. Game Install Locations: **Add missing**, **Remove** (stays removed), **Run first-time startup again**; Rescan and Relocate removed. A migration adds the removed flag and drops `bindforge_activation.backup_folder`. **Removes:** `BeforeBindForgeBackup`, `DeviceFilesSnapshot`, `Activation`'s silent path, first setup's database fill (the master stays empty until S4 removes it) | 1–4, 8 | **done 2026-10-25** |
 | S3 | **RESTORE.** Choose a backup; it backs up what is there now, puts the whole backup back — `.binds` and `StartPreset.4.start` to the bindings folder, device files to every installation as one set, reconciled as in first setup when the backup's installations differ; an installation the backup does not hold is replaced too, no reconcile, and the confirmation names every installation (Alan, 2026-10-25) — and replaces the working copy. Its confirmation says everything is replaced and edits on screen are lost. **Browse for Backup File**, with *"Only restore your own backups…"*. **If the working copy cannot be read**, say so and offer the newest backup. **Removes:** `restoreToWorkingCopy`, `restoreToLive`, Restore to Editing Slot | 10 | **done 2026-10-25** |
-| S4 | **APPLY / DISCARD above the tabs, with Alias Designer on it.** Edits not applied, held on screen and shared by the tabs; the bar under Elite-Intel's main tabs, lit only when there are edits. **APPLY:** back up, save the edits into the working copy, write it out (S2), confirm with rule 13's sentence and the Linux note. **DISCARD** drops every edit. Alias Designer reads the working copy; Device Editor SAVE, CLEAR, RESET LABELS, rename, shadow, onboarding, retarget and A17's id move become edits; a rename or id move rewrites the working copy's binds files as part of the edit; default labels shown on screen and written at the next APPLY without lighting the bar. **Removes:** the screen's own APPLY / DISCARD, the divergence list and its ways out, the installation markers, catch-up and `missed_write`, Edit History, startup `.buttonMap` generation, the poll, and the master / draft / pending-removal / old-name / id-move tables (a new migration drops them). **Rewrites** [device-provenance.md](../03-data-models/device-provenance.md) to what is left | 6, 7, 8, 13 | **next** |
+| S4a | **The APPLY / DISCARD bar, and the Device Editor on it** (S4 split in two, Alan, 2026-10-26). Edits not applied, held on screen and shared by the tabs (`bindforge.storage.Edits`); the bar under Elite-Intel's main tabs, lit only when there are edits. **APPLY:** back up, save the edits into the working copy, write it out (S2), confirm with rule 13's sentence and the Linux note; **an installation whose device files differ from the working copy, by value, is not written and is reported** until it is reconciled (S9) (Alan, 2026-10-26). **DISCARD** drops every edit; RESTORE and first-time startup drop them too. Alias Designer reads the working copy; Device Editor SAVE, CLEAR, RESET LABELS, rename and shadow, and **onboarding's FINISH with A17's old-id move** (Alan, 2026-10-26: its writes went through the push this slice removes), become edits; a rename or a binding move rewrites the working copy's binds files as part of the edit; default labels shown on screen and written at the next APPLY without lighting the bar. **Removes:** the screen's own APPLY / DISCARD, the divergence list and its ways out, the installation markers and the Device Editor's install strip, catch-up and its startup line, Edit History, the poll, `DeviceApply`, `DeviceFilesPush` and `DeviceOnboarding` | 6, 7, 8, 13 | **done 2026-10-26** |
+| S4b | **The identity question on the bar, and the old tables gone** (Alan, 2026-10-26). The identity retarget becomes an edit, and the questions read the working copy. **Removes:** the master / draft / pending-removal / old-name / id-move tables, `missed_write` and `edit_history_retention` (a new migration drops them), their managers and DAOs. The Bind Editor's label readers (`SavedDeviceLabels`, `CaptureControllers`, `InputSettingsPanel`) read the working copy and the edits. **Rewrites** [device-provenance.md](../03-data-models/device-provenance.md) to what is left | 6, 7 | **next** |
 | S5 | **Bind Editor on the bar.** Load opens any binds file from the working copy, not only the active one; capture SAVE and the inline toggles become edits. **Removes:** the launch-time copy of the active `.binds` (`loadOrImportFromGame`), its APPLY / REVERT, `promptCloseWithDraft`, the checksum in `BindingsWorkingCopyRepository` and the `.bak` beside it, `BindingsApplyService`'s own backup folder, the KEYMAP readout | 6, 7 | pending |
 | S6 | **The preset file on the bar.** The working copy's `StartPreset.4.start`; **APPLY refuses first**, naming the sections, when any of the four lines is empty or names no binds file the BindName list offers — before any backup or write. Written as four lines, CRLF, no final newline. **P3 review finding 2:** the live file is found once and that file is read and written. **Finding 5:** a test that nothing is written when the backup fails. **Removes:** `StartPresetStore`'s master and draft, `StartPresetComparison`, `StartPresetApply`'s merge. Then [P4](preset-editor.md#slices), the screen, resumes | 7 | pending |
 | S7 | **Leaving with edits not applied** — another Elite-Intel tab, or closing Elite-Intel: **Go back**, **Discard**, **Apply**; nothing selected, Enter chooses nothing, Esc and the close glyph are Go back | 9 | pending |
@@ -127,12 +138,25 @@ only S1 and S2. S4–S6 move each tab onto the bar, S4 first because it carries 
 edit model. S8–S10 are the check, which APPLY then runs. S11 and S12 are new features on top.
 
 **After these:** Preset Editor P4 (after S6); Bind Editor E2–E6 (after S5); Alias Designer A19, CLEAR moving bindings
-to a hardware ID (after S4); A18 and E7 stay blocked on [testing item 27](../00-overview/testing-required.md#bindforge).
+to a hardware ID (after S4b); A18 and E7 stay blocked on [testing item 27](../00-overview/testing-required.md#bindforge).
 
 ## Hand-off notes
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the next
 slice needs.*
+
+- **2026-10-26 — S4a done: the APPLY / DISCARD bar, and the Device Editor and onboarding on it.** **Decided (Alan):** S4
+  split into S4a and S4b; onboarding's FINISH moved into S4a, since its writes went through the push S4a removed; APPLY
+  leaves alone an installation whose device files differ by value, reported, until S9 (storage.md *How the files are
+  written*); edits lost on close until S7 (*Known issues*). **Decided while building, confirmed by Alan 2026-10-27** (in
+  alias-designer.md *Built on the working copy*): a shadowed Frontier element covering several controllers keeps its
+  `.buttonMap`, and going back to its name is refused while labels of the user's are under it. **Found:** an
+  installation that missed a write can no longer be caught up by APPLY - accepted by Alan 2026-10-27, S9 must close it (*Known issues*). **Built:** see the
+  *Built* table; `FirstTimeStartupFlow.labelsFor` moved from the reader, `FirstSetupPlan.Severity` from the removed
+  divergence list. **S4b needs:** move `IdentityQuestions`' inputs and the retarget onto `Edits` (a VID/PID change is
+  `DeviceMappingsMerge.merge`); point `SavedDeviceLabels`, `CaptureControllers` and `InputSettingsPanel` at
+  `Edits.stored().current()`; then drop the tables, `missed_write` and `edit_history_retention` in one migration, with
+  `BindForgeInstallationsManager.setMissedWrite` and `DraftChanges`.
 
 - **2026-10-25 — S3 second review follow-up** (`code-integrity-review.md`, Alan: all four recommendations).
   **Decided:** a read-only `.buttonMap` the set lacks is kept on every system, asked before deleting, and worded from a

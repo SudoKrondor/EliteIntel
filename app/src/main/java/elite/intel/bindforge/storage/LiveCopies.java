@@ -42,6 +42,17 @@ final class LiveCopies {
 
     static final String FOLDER_NOT_FOUND = "folder not found";
 
+    /**
+     * Decides, just before an installation is written, whether to leave it alone - APPLY's for an installation whose
+     * device files differ from the working copy (Alan, 2026-10-26).
+     */
+    @FunctionalInterface
+    interface LeaveAlone {
+        LeaveAlone NONE = installation -> false;
+
+        boolean leaveAlone(BackupSources.Installation installation);
+    }
+
     private final BackupSources sources;
 
     LiveCopies(BackupSources sources) {
@@ -50,9 +61,21 @@ final class LiveCopies {
 
     /** The bindings folder first, then each installation in the stored list's order. */
     WriteReport write(ConfigurationFiles files) {
+        return write(files, LeaveAlone.NONE);
+    }
+
+    /** As {@link #write(ConfigurationFiles)}, leaving alone the installations {@code leaveAlone} picks. */
+    WriteReport write(ConfigurationFiles files, LeaveAlone leaveAlone) {
         Place bindings = writeBindings(files);
         List<Place> installations = sources.installations().stream()
-                .map(installation -> writeInstallation(installation, files))
+                .map(installation -> {
+                    boolean present = !installation.missing() && Files.isDirectory(installation.controlSchemes());
+                    if (present && leaveAlone.leaveAlone(installation)) {
+                        return new Place(WriteReport.Kind.INSTALLATION, installation.storefront(), installation.root(),
+                                List.of(), List.of(), List.of(), List.of(), true);
+                    }
+                    return writeInstallation(installation, files);
+                })
                 .toList();
         return new WriteReport(bindings, installations);
     }

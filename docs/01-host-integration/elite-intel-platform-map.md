@@ -181,8 +181,8 @@ StarVizion implementation begins — it is the most direct evidence of what the 
 ## File Access
 
 Elite-Intel has **no central file broker**. There is no Controlled Replace pattern, no shared backup-then-write
-service, no archive/restore service, and no Watch Path facility available generically — the nearest is
-`elite.intel.io.FilePoller` (2026-10-11), which says which files changed but leaves the polling to its caller.
+service, no archive/restore service, and no Watch Path facility available generically. *`elite.intel.io.FilePoller`
+(2026-10-11) said which files changed; it was removed with its one caller in Storage S4a (2026-10-26).*
 
 What exists instead is BindForge-shaped already, and since 2026-10-03 it lives under `elite.intel.bindforge`
 (it moved out of `elite.intel.ai.hands`, which now only presses keys):
@@ -196,7 +196,7 @@ What exists instead is BindForge-shaped already, and since 2026-10-03 it lives u
 | `elite.intel.io.AtomicFiles` | safe replace: temp file, flush, rename over the target |
 | `io.BindingsApplyService`, `io.BindingsApplyException`, `io.BindingSaveResult` | apply-to-game with typed failure |
 | `io.BindingsMonitor` | external-change detection for the bindings folder (`WatchService`) |
-| `elite.intel.io.FilePoller` | polled change detection for files another process writes — first used by `devicefiles.DeviceFilesMonitor` for each installation's device files (C5, 2026-10-11) |
+| ~~`elite.intel.io.FilePoller`~~ | ~~polled change detection for files another process writes~~ — removed in Storage S4a (2026-10-26) with its one caller, `devicefiles.DeviceFilesMonitor`: BindForge does not watch the files ([overview](../02-features/bindforge/overview.md#external-change-detection--2026-10-23)) |
 | `rules.BindingConflictScanner`, `rules.BindingConflictRules` | conflict detection |
 | `model.BindingSection`, `model.BindingDisplayNames` | in-game section, group and row label for a `.binds` tag |
 | `db.dao.BindingConflictDao`, `db.managers.BindingConflictManager` | conflict persistence |
@@ -653,7 +653,8 @@ versions of four lines came about. Deliberately not named `filemanager`, which w
 that it was changed only on `V1.1-Release` and merged up, and the 2026-10-12 foundation branch for V1.2's changes
 to it and to `bindforge.io` and `.rules`, are both repealed - [CLAUDE.md](../../CLAUDE.md#branching-model).
 
-**Watching: `io.FilePoller` — built 2026-10-11 (C5).** It says which of a set of files changed since the last look,
+**Watching: `io.FilePoller` — built 2026-10-11 (C5), removed 2026-10-26 (Storage S4a)** with `DeviceFilesMonitor`, its
+only caller, since BindForge no longer watches the files. Kept as history: it said which of a set of files changed since the last look,
 by last-modified plus size, and holds no thread. It polls rather than using `WatchService`, as
 `AuxiliaryFilesMonitor` does, because notifications for files another process writes arrive late, get merged, or
 never arrive, and a missed one is never recovered. Its first caller is BindForge's `DeviceFilesMonitor`, for the

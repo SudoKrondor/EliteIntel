@@ -20,8 +20,6 @@ import elite.intel.ai.mouth.sherpa.SherpaOnnxTTS;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.ai.mouth.supertonic.SupertonicTTS;
-import elite.intel.bindforge.devicefiles.CatchUpAnnouncement;
-import elite.intel.bindforge.devicefiles.DeviceFilesMonitor;
 import elite.intel.bindforge.rules.KeyBindCheck;
 import elite.intel.devices.DeviceService;
 import elite.intel.diagnostics.*;
@@ -525,14 +523,6 @@ public class AppController {
         // After DEVICE, whose poll loop feeds it the button transitions, and after EARS, because the gate it
         // arms is the microphone's and there must be a microphone to gate.
         services.put(ServiceType.PUSH_TO_TALK, new ServiceHolder(PushToTalkService::getInstance));
-        // Polls every installation's device files and asks the Alias Designer screen to re-read when one changes.
-        // Diagnostics stubs it with the other game-file services: the harness owns game state.
-        services.put(ServiceType.DEVICE_FILES_MONITOR, new ServiceHolder(
-                diagnostics ? NoOpService::new : DeviceFilesMonitor::new));
-        // After MOUTH, which speaks its one line: an installation that missed a BindForge write is back (A14). It
-        // reads game folders, so diagnostics stubs it with the other game-file services.
-        services.put(ServiceType.CATCH_UP_ANNOUNCEMENT, new ServiceHolder(
-                diagnostics ? NoOpService::new : CatchUpAnnouncement::new));
         // VEGA subsystem is the LLM service (the legacy command pipeline was removed). In diagnostics
         // mode it is wired with a recording execution gateway (file-fed phrases exercise the real routing path
         // without pressing keys into the game or calling third-party REST APIs) and a speech gateway that
@@ -612,8 +602,8 @@ public class AppController {
     }
 
     enum ServiceType {
-        MOUTH, RADIO_MOUTH, EARS, HANDS, DEVICE, PUSH_TO_TALK, DEVICE_FILES_MONITOR,
-        CATCH_UP_ANNOUNCEMENT, VEGA, NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR, WEB_SOCKET, JOURNAL_PARSER,
+        MOUTH, RADIO_MOUTH, EARS, HANDS, DEVICE, PUSH_TO_TALK,
+        VEGA, NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR, WEB_SOCKET, JOURNAL_PARSER,
         AUXILIARY_FILES_MONITOR
     }
 }

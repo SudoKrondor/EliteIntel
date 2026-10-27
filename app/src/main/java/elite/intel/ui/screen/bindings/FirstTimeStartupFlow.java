@@ -22,6 +22,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -97,7 +98,7 @@ public final class FirstTimeStartupFlow {
                 log.error("First-time startup stopped while reading the files", e);
                 return () -> tell(getText("bindings.firstTimeStartup.stopped", StringUtls.messageOf(e)));
             }
-            Map<String, String> names = AliasDesignerReader.labelsFor(startup.installations());
+            Map<String, String> names = labelsFor(startup.installations());
             return () -> reconcile(startup, reading, names);
         });
     }
@@ -204,6 +205,7 @@ public final class FirstTimeStartupFlow {
      */
     static String placeFailures(WriteReport report) {
         StringBuilder text = new StringBuilder();
+        boolean nextApply = !report.bindings().updated();
         if (!report.bindings().updated()) {
             text.append('\n').append(getText("bindings.firstTimeStartup.result.place",
                     getText("bindings.firstTimeStartup.place.bindingsFolder"),
@@ -212,6 +214,13 @@ public final class FirstTimeStartupFlow {
         for (WriteReport.Place place : report.installations()) {
             if (place.updated()) continue;
             String name = getText("bindings.firstTimeStartup.place.installation", place.storefront(), place.folder());
+            // WHY: left alone, not failed - the next APPLY leaves it alone too, until it is reconciled (Alan,
+            // 2026-10-26), so it is not promised to the next APPLY.
+            if (place.differs()) {
+                text.append('\n').append(getText("bindings.applyBar.result.differs", name));
+                continue;
+            }
+            nextApply = true;
             if (!place.failures().isEmpty()) {
                 text.append('\n').append(getText("bindings.firstTimeStartup.result.place", name,
                         String.join("; ", place.failures())));
@@ -223,8 +232,26 @@ public final class FirstTimeStartupFlow {
                         String.join(", ", place.keptReadOnly())));
             }
         }
-        if (!report.complete()) text.append('\n').append(getText("bindings.firstTimeStartup.result.nextApply"));
+        if (nextApply) text.append('\n').append(getText("bindings.firstTimeStartup.result.nextApply"));
         return text.toString();
+    }
+
+    /**
+     * What each installation is called in the reconcile, keyed by its id: the storefront alone where it identifies one
+     * installation, and the storefront with its folder where it does not - so two Frontier copies read as two different
+     * things. <em>Moved here from the Alias Designer's reader, which no longer names installations (Storage S4a).</em>
+     */
+    static Map<String, String> labelsFor(List<InstallationRow> rows) {
+        Map<String, Long> countByStorefront = rows.stream()
+                .collect(Collectors.groupingBy(InstallationRow::storefront, Collectors.counting()));
+        Map<String, String> labels = new LinkedHashMap<>();
+        for (InstallationRow row : rows) {
+            boolean storefrontIsEnough = countByStorefront.getOrDefault(row.storefront(), 0L) == 1;
+            labels.put(String.valueOf(row.id()), storefrontIsEnough
+                    ? row.storefront()
+                    : row.storefront() + " (" + row.rootPath() + ")");
+        }
+        return labels;
     }
 
     private void tell(String message) {

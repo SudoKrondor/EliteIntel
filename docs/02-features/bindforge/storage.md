@@ -124,8 +124,26 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
   file the game loads no bindings at all ([overview](overview.md#why-devicemappingsxml-is-not-cosmetic--reclassified-2026-09-08)),
   so the write never removes one — unlike a `.buttonMap`, which holds only labels and is removed when the working copy
   lacks it.
+- **APPLY does not write an installation whose device files differ from the working copy** (Alan, 2026-10-26, from
+  the S2b review and S4's sources). Its `DeviceMappings.xml` and `.buttonMap`s are compared with the working copy's
+  **by value** - the device elements, and each map's labels - before the edits go on top; one that differs is left as
+  it is and reported as *differs, not written until it is reconciled*, since who knows what the user is doing to that
+  installation (rule 1). The bindings folder and every other installation are still written. Reconciling it is the
+  check's (rule 14, Storage S9). First setup and RESTORE write every installation, as they always have: first setup
+  has just reconciled them, and RESTORE is the user asking to replace them (rule 10). **An installation a write
+  missed differs too**, so it also waits for the check rather than the next APPLY, which rule 8 promised it. Until
+  Storage S9 nothing puts the working copy there; that gap is accepted while V1.2 is built (Alan, 2026-10-27: no catch-up record, no per-place overwrite before S9), and S9 must close it
+  (built in Storage S4a, 2026-10-26). A file there that
+  cannot be read counts as differing - it could hold anything of the user's. An installation with no
+  `DeviceMappings.xml` does not differ: nothing of the user's is in it.
 - **A `.binds` the working copy lacks is left in the bindings folder.** Removing an old-named one is a rename's
   (rule 7, Storage S12).
+
+**Built 2026-10-26 (Storage S4a):** `bindforge.storage.Edits` holds the edits not applied, in memory, shared by the
+tabs; every write through `WritePath` hands it the set it wrote, so APPLY, RESTORE and first-time startup all leave no
+edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar above BindForge's tabs, and
+`DeviceFilesComparison` the by-value comparison above. Each Alias Designer action is a change to the edits
+(`DeviceEdits`) - see [alias-designer.md](alias-designer.md#built-on-the-working-copy--2026-10-26-storage-s4a).
 
 ## Restore
 

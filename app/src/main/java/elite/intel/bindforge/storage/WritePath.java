@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -45,15 +46,25 @@ public final class WritePath {
 
     private final WorkingCopy workingCopy;
     private final Supplier<BackupSources> sources;
+    private final Consumer<ConfigurationFiles> written;
 
-    /** The stored working copy, and the bindings folder and installations a backup covers. */
+    /**
+     * The stored working copy, and the bindings folder and installations a backup covers. Each set written is handed to
+     * {@link Edits}, which then starts from it and drops the edits on screen (Storage S4a).
+     */
     public static WritePath stored() throws IOException {
-        return new WritePath(WorkingCopy.stored(), BackupSources::gather);
+        return new WritePath(WorkingCopy.stored(), BackupSources::gather, Edits.onWritten());
     }
 
     WritePath(WorkingCopy workingCopy, Supplier<BackupSources> sources) {
+        this(workingCopy, sources, files -> {
+        });
+    }
+
+    WritePath(WorkingCopy workingCopy, Supplier<BackupSources> sources, Consumer<ConfigurationFiles> written) {
         this.workingCopy = workingCopy;
         this.sources = sources;
+        this.written = written;
     }
 
     /**
@@ -66,6 +77,15 @@ public final class WritePath {
      *                     written
      */
     public WriteReport write(ConfigurationFiles files, BackUpFirst backUp) throws IOException {
+        return write(files, backUp, LiveCopies.LeaveAlone.NONE);
+    }
+
+    /**
+     * As {@link #write(ConfigurationFiles, BackUpFirst)}, leaving alone each installation {@code leaveAlone} picks -
+     * asked just before that installation would be written, after the backup and the working copy.
+     */
+    WriteReport write(ConfigurationFiles files, BackUpFirst backUp, LiveCopies.LeaveAlone leaveAlone)
+            throws IOException {
         synchronized (WRITING) {
             // WHY: found once, for the backup and the write alike. Found twice, an installation found only the second
             // time - a drive plugged in between - would be written with no backup of it (principle 3; review,
@@ -73,7 +93,8 @@ public final class WritePath {
             BackupSources places = sources.get();
             Backup backup = backUp.take(places);
             workingCopy.write(files);
-            WriteReport report = new LiveCopies(places).write(files);
+            written.accept(files);
+            WriteReport report = new LiveCopies(places).write(files, leaveAlone);
             log(backup, report);
             return report;
         }
@@ -84,8 +105,13 @@ public final class WritePath {
                         + "updated {} of {}", backup.zip(), report.bindings().updated() ? "updated" : "not updated",
                 report.installationsUpdated(), report.installations().size());
         for (WriteReport.Place place : report.installations()) {
-            if (!place.updated()) log.warn("Installation {} ({}) was not fully updated: {}; kept as read-only: {}",
-                    place.storefront(), place.folder(), String.join("; ", place.failures()), place.keptReadOnly());
+            if (place.differs()) {
+                log.warn("Installation {} ({}) was left alone: its device files differ from the working copy",
+                        place.storefront(), place.folder());
+            } else if (!place.updated()) {
+                log.warn("Installation {} ({}) was not fully updated: {}; kept as read-only: {}", place.storefront(),
+                        place.folder(), String.join("; ", place.failures()), place.keptReadOnly());
+            }
         }
         if (!report.bindings().updated()) {
             log.warn("The bindings folder ({}) was not fully updated: {}", report.bindings().folder(),

@@ -1,6 +1,5 @@
 package elite.intel.ui.screen.bindings;
 
-import elite.intel.bindforge.devicefiles.DeviceDivergence;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan.Option;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan.Row;
@@ -394,7 +393,7 @@ final class FirstSetupDialog extends JDialog {
             return cell;
         }
 
-        private Color colourOf(DeviceDivergence.Severity severity) {
+        private Color colourOf(FirstSetupPlan.Severity severity) {
             return switch (severity) {
                 case RED -> HudPalette.HUD_COLOR_ROLE_DANGER;
                 case YELLOW -> HudPalette.HUD_COLOR_ROLE_WARNING;

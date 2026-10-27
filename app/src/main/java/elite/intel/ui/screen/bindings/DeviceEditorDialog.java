@@ -2,7 +2,11 @@ package elite.intel.ui.screen.bindings;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.bindforge.devices.*;
-import elite.intel.db.managers.BindForgeDeviceDraftManager;
+import elite.intel.bindforge.devicefiles.FrontierStockButtonMaps;
+import elite.intel.bindforge.devicefiles.FrontierStockDevices;
+import elite.intel.bindforge.storage.ConfigurationFiles;
+import elite.intel.bindforge.storage.DeviceEdits;
+import elite.intel.bindforge.storage.Edits;
 import elite.intel.devices.events.DeviceAxisEvent;
 import elite.intel.devices.events.DeviceButtonEvent;
 import elite.intel.devices.events.DeviceDisconnectedEvent;
@@ -30,6 +34,7 @@ import java.awt.*;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,17 +54,17 @@ import static elite.intel.ui.theme.AppTheme.*;
  * disabled - a {@code .buttonMap} is named after the device, so there is nothing to label until it has a name.
  * <p>
  * <strong>The name can be changed</strong> on one of the user's own named devices (A11) - checked as it is typed, by
- * the rule onboarding uses, against every name and old name in use ({@link DeviceRename}). SAVE puts the new name in the
- * draft; APPLY renames the element and the {@code .buttonMap} in each installation and moves the bindings. On an
- * attached built-in the same box shadows Frontier's element (A15): the user's goes ahead of it, and typing Frontier's
- * name again goes back.
+ * the rule onboarding uses, against every name in use ({@link DeviceRename}). SAVE renames the element and the
+ * {@code .buttonMap} and moves the bindings, all in the edits. On an attached built-in the same box shadows Frontier's
+ * element (A15): the user's goes ahead of it, and typing Frontier's name again goes back.
  * <p>
- * <strong>SAVE writes the draft and nothing else</strong> - never the master, never a game installation. APPLY is
- * the screen's button. Leaving with unsaved edits asks Save, Discard or Keep editing.
+ * <strong>SAVE keeps the changes as edits not applied</strong> (Alan, 2026-10-24; Storage S4a) - it closes the dialog
+ * and lights the APPLY bar above BindForge's tabs; nothing is written until APPLY ({@link Edits}, {@link DeviceEdits}).
+ * Leaving with unsaved changes asks Save, Discard or Keep editing.
  * <p>
- * <strong>CLEAR - RESET LABELS on a built-in - takes the device out of the draft</strong>, and APPLY takes it out of
- * every installation ({@link DeviceEditorMiddle}, A10). A device cleared and not applied says so, cannot be edited,
- * and offers its undo in the same place.
+ * <strong>CLEAR - RESET LABELS on a built-in - takes the device out of the edits</strong>, and APPLY out of every
+ * installation ({@link DeviceEditorMiddle}, A10). A device cleared and not applied says so, cannot be edited, and offers
+ * its undo in the same place.
  * <p>
  * <strong>Live highlighting</strong> listens to the Device Service for this device alone while the dialog is open
  * ({@link DeviceEditorLights}). The dialog never changes tab for an input: a box lights only where the user is
@@ -77,33 +82,26 @@ final class DeviceEditorDialog extends JDialog {
     private static final int FIELD_COLUMNS = 14;
 
     /**
-     * One line of the install strip.
-     *
-     * @param marker {@code null} when the installation has no marker for this device
-     */
-    record StripLine(String installation, InstallationMarkers.Marker marker, String path) {
-    }
-
-    /**
      * Everything the dialog shows, read off the EDT by the screen.
      *
-     * @param deviceName  the name the record is saved under - the master's, or Frontier's for a built-in - or
-     *                    {@code null} for a device with no name yet
+     * @param deviceName  the name the device is under - in the edits, in the working copy when it is cleared in the
+     *                    edits, or Frontier's for a built-in - or {@code null} for a device with no name yet
      * @param liveId      the Device Service's id for the controller when it is attached, else {@code null}
      * @param description which axes and hats it has when attached, else {@code null}
      * @param gamepad     whether the attached controller is a gamepad, whose triggers rest at -1; {@code false}
      *                    when it is not attached
-     * @param saved       the labels saved before the dialog opened: the draft's, or the master's with no draft
+     * @param saved       the labels the device had when the dialog opened, in the edits
      * @param gameDrawsIt whether the game draws this device's inputs itself, so untouched defaults are not written
      * @param middle      what the middle button is, and whether it can be pressed
      * @param rename      whether the name can be changed, and why not
      * @param taken       the names a new name must not clash with - empty unless {@code rename} allows it
      * @param covering    Frontier's element covering the controller's hardware, or {@code null} when none does
+     * @param installations how many installations APPLY reaches - what CLEAR's question names
      */
     record Opening(MyDevice device, String deviceName, Integer liveId, DeviceDescription description,
                    boolean gamepad, DeviceEditorInputs inputs, Map<String, String> saved, boolean gameDrawsIt,
-                   List<StripLine> strip, DeviceEditorMiddle middle, DeviceRename.Allowed rename,
-                   Set<String> taken, Covering covering) {
+                   DeviceEditorMiddle middle, DeviceRename.Allowed rename,
+                   Set<String> taken, Covering covering, int installations) {
         Opening {
             taken = Set.copyOf(taken);
         }
@@ -114,14 +112,13 @@ final class DeviceEditorDialog extends JDialog {
      *
      * @param name   its element name - the name a shadow keeps as its old one, and the one the user may go back to
      * @param shared whether it covers other hardware too, so bindings naming it are not this controller's alone
-     * @param held   whether another controller holds its name in the master or the draft, so going back to it is
-     *               refused ({@link DeviceRename#frontierNameHeld})
+     * @param held   whether labels of the user's are under its name while it covers other controllers too, so going
+     *               back to it is refused - this controller's labels would go over theirs
      */
     record Covering(String name, boolean shared, boolean held) {
     }
 
     private final Opening opening;
-    private final Runnable onSaved;
     private final Runnable onName;
     private final Map<String, String> starting;
     private final Map<String, HudTextField> boxes = new LinkedHashMap<>();
@@ -133,19 +130,18 @@ final class DeviceEditorDialog extends JDialog {
     /** The name box, editable only when the device can be renamed. */
     private HudTextField nameBox;
     private JLabel nameProblem;
-    /** A write to the draft is under way - SAVE, CLEAR, RESET LABELS or an undo - so nothing else may start. */
+    /** A change to the edits is under way - SAVE, CLEAR, RESET LABELS or an undo - so nothing else may start. */
     private boolean busy;
 
     /**
-     * @param onSaved run on the EDT after a save, so the screen reads everything again
-     * @param onName  run on the EDT after the dialog closes, when the user asks to name an unnamed controller - which
-     *                opens onboarding for it (Alan, 2026-10-14, A6b)
+     * @param onName run on the EDT after the dialog closes, when the user asks to name an unnamed controller - which
+     *               opens onboarding for it (Alan, 2026-10-14, A6b). The screen reads again after a save by itself,
+     *               since every change to the edits is announced
      */
-    DeviceEditorDialog(Component parent, Opening opening, Runnable onSaved, Runnable onName) {
+    DeviceEditorDialog(Component parent, Opening opening, Runnable onName) {
         super(SwingUtilities.getWindowAncestor(parent), ModalityType.APPLICATION_MODAL);
         setUndecorated(true);
         this.opening = opening;
-        this.onSaved = onSaved;
         this.onName = onName;
         this.starting = opening.inputs().startingLabels(opening.saved());
         this.lights = new DeviceEditorLights(opening.description() == null
@@ -169,10 +165,7 @@ final class DeviceEditorDialog extends JDialog {
         return opening.deviceName() != null;
     }
 
-    /**
-     * NAME, for a controller onboarding would ask about - {@link DeviceNames#needingName}, the one rule - and not
-     * already named in the draft for Apply.
-     */
+    /** NAME, for a controller onboarding would ask about - {@link DeviceNames#needingName}, the one rule. */
     private boolean offersName() {
         return !named() && !DeviceNames.needingName(List.of(opening.device())).isEmpty();
     }
@@ -315,35 +308,8 @@ final class DeviceEditorDialog extends JDialog {
                     ? "bindings.aliasDesigner.editor.noInputs"
                     : "bindings.aliasDesigner.editor.notAttached"), HudPalette.HUD_COLOR_ROLE_WARNING);
         }
-        row = installStrip(panel, row);
         filler(panel, row);
         return panel;
-    }
-
-    /**
-     * Which installations the user has, and whether each matches the <em>saved master</em> for this device - never
-     * the draft, or every keystroke would flip them all to "differs". A readout: it offers no repairs.
-     */
-    private int installStrip(JPanel panel, int row) {
-        if (opening.strip().isEmpty()) return row;
-        GridBagConstraints heading = cell(0, row++);
-        heading.gridwidth = 3;
-        heading.insets = new Insets(HudPalette.HUD_GAP * 2, 0, HudPalette.HUD_GAP / 2, 0);
-        panel.add(AppTheme.hudReadoutLabel(getText("bindings.aliasDesigner.editor.strip.heading")), heading);
-        int matching = 0;
-        for (StripLine line : opening.strip()) {
-            InstallationMarkers.Marker marker = line.marker();
-            if (marker != null && marker.state() == InstallationMarkers.State.MATCHES) matching++;
-            panel.add(AppTheme.hudReadoutLabel(line.installation()), cell(0, row));
-            Color colour = marker == null || marker.severity() == null
-                    ? HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT
-                    : AliasDesignerPanel.colourOf(marker.severity());
-            panel.add(AppTheme.hudReadoutValue(AliasDesignerPanel.markerText(marker), colour), cell(1, row));
-            panel.add(AppTheme.hudReadoutValue(line.path(), HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT), cell(2, row));
-            row++;
-        }
-        return line(panel, row, getText("bindings.aliasDesigner.editor.strip.summary", matching,
-                opening.strip().size()), HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
     }
 
     /**
@@ -368,7 +334,6 @@ final class DeviceEditorDialog extends JDialog {
             }
             case NO_NAME -> List.of(getText("bindings.aliasDesigner.editor.noName"));
             case BUILT_IN -> List.of(getText("bindings.aliasDesigner.editor.builtIn"));
-            case PENDING -> List.of(getText("bindings.aliasDesigner.editor.name.pending"));
             case CLEARED -> List.of();
         };
     }
@@ -570,8 +535,8 @@ final class DeviceEditorDialog extends JDialog {
     }
 
     /**
-     * Writes the device's whole label set into the draft - and its new name, when it has one - off the EDT, and closes
-     * once it is there. A refused name is never saved: SAVE stays dimmed, and the leave question's Save says why
+     * Puts the device's whole label set - and its new name, when it has one - into the edits, off the EDT, and closes
+     * once they are there. A refused name is never saved: SAVE stays dimmed, and the leave question's Save says why
      * rather than closing.
      */
     private void save() {
@@ -584,21 +549,42 @@ final class DeviceEditorDialog extends JDialog {
         }
         Map<String, String> labels =
                 DeviceEditorInputs.toSave(opening.saved(), boxValues(), opening.gameDrawsIt());
-        MyDevice device = opening.device();
-        BindForgeDeviceDraftManager draft = BindForgeDeviceDraftManager.getInstance();
-        if (nameChanged()) {
-            String newName = typedName();
-            Covering covering = opening.covering();
-            BindForgeDeviceDraftManager.FrontierCover cover = covering == null ? null
-                    : new BindForgeDeviceDraftManager.FrontierCover(covering.name(), device.vid(), device.pid());
-            runAndClose(() -> draft.saveDevice(opening.deviceName(), newName, labels, cover) != null,
+        String name = opening.deviceName();
+        if (!nameChanged()) {
+            runAndClose(current -> DeviceEdits.withLabels(current, name, labels),
                     "bindings.aliasDesigner.editor.saveFailed");
             return;
         }
-        runAndClose(() -> {
-            draft.saveLabels(opening.deviceName(), device.vid(), device.pid(), labels);
-            return true;
+        String newName = typedName();
+        MyDevice device = opening.device();
+        Covering covering = opening.covering();
+        FrontierStockDevices stock = FrontierStockDevices.getInstance();
+        runAndClose(current -> {
+            if (covering != null && name.equals(covering.name())) {
+                return DeviceEdits.shadow(current, name, newName, device.vid(), device.pid(), labels, covering.shared(),
+                        stock, FrontierStockButtonMaps.getInstance()).files();
+            }
+            // WHY: the name it opened with must still be the user's - a DISCARD meanwhile could have taken it away, and
+            // renaming what is no longer there would leave the bindings on a name nothing has.
+            requireNamed(current, name, stock);
+            if (covering != null && DeviceRename.backToFrontier(newName, covering.name())) {
+                return DeviceEdits.backToFrontier(current, name, newName, labels).files();
+            }
+            return DeviceEdits.rename(current, name, newName, labels).files();
         }, "bindings.aliasDesigner.editor.saveFailed");
+    }
+
+    /** The edits still hold the user's element by this name, or the device changed since the dialog opened. */
+    private static void requireNamed(ConfigurationFiles current, String name, FrontierStockDevices stock)
+            throws IOException {
+        if (!DeviceEdits.usersNames(current, stock).contains(name)) throw new Stale();
+    }
+
+    /** The device changed since the dialog opened, so nothing was done. */
+    private static final class Stale extends IOException {
+        Stale() {
+            super("the device changed since the dialog opened");
+        }
     }
 
     // ------------------------------------------------------------------ the middle button
@@ -613,57 +599,65 @@ final class DeviceEditorDialog extends JDialog {
             case NAMED_IN_BINDS -> getText("bindings.aliasDesigner.editor.namedInBinds", rule.bindings(),
                     opening.deviceName());
             case BINDS_UNREAD -> getText("bindings.aliasDesigner.editor.why.bindsUnread");
-            case RENAME_PENDING -> getText("bindings.aliasDesigner.editor.why.renamePending");
         };
     }
 
     /**
-     * CLEAR and RESET LABELS ask first, naming how many installations Apply will reach; the undo does not, since it
-     * puts back what the master already holds. Each writes the draft alone, then closes.
+     * CLEAR and RESET LABELS ask first, naming how many installations APPLY will reach; the undo does not, since it puts
+     * back what the working copy holds. Each changes the edits alone, then closes.
      */
     private void middleAction() {
         DeviceEditorMiddle rule = opening.middle();
         if (busy || !rule.enabled()) return;
         String name = opening.deviceName();
-        BindForgeDeviceDraftManager draft = BindForgeDeviceDraftManager.getInstance();
+        FrontierStockDevices stock = FrontierStockDevices.getInstance();
         if (rule.undoing()) {
-            runAndClose(() -> draft.restoreFromMaster(name), "bindings.aliasDesigner.editor.actionFailed");
+            runAndClose(current -> DeviceEdits.restore(current, Edits.stored().applied(), name, stock),
+                    "bindings.aliasDesigner.editor.actionFailed");
             return;
         }
         boolean reset = rule.kind() == DeviceEditorMiddle.Kind.RESET_LABELS;
         if (!HudConfirmDialog.confirm(this, getText("bindings.aliasDesigner.editor.heading"),
                 getText(reset
                         ? "bindings.aliasDesigner.editor.reset.confirm"
-                        : "bindings.aliasDesigner.editor.clear.confirm", name, opening.strip().size()),
+                        : "bindings.aliasDesigner.editor.clear.confirm", name, opening.installations()),
                 getText(reset
                         ? "bindings.aliasDesigner.editor.button.resetLabels"
                         : "bindings.aliasDesigner.editor.button.clear"),
                 getText("button.back"))) {
             return;
         }
-        runAndClose(() -> draft.removeByName(name), "bindings.aliasDesigner.editor.actionFailed");
+        if (reset) {
+            runAndClose(current -> DeviceEdits.resetLabels(current, name, FrontierStockButtonMaps.getInstance()),
+                    "bindings.aliasDesigner.editor.actionFailed");
+            return;
+        }
+        runAndClose(current -> {
+            requireNamed(current, name, stock);
+            return DeviceEdits.clear(current, name);
+        }, "bindings.aliasDesigner.editor.actionFailed");
     }
 
     /**
-     * Writes the draft off the EDT - SAVE, CLEAR, RESET LABELS or an undo - then closes and has the screen read
-     * everything again. A write that changed nothing ({@code false}) is reported, not closed on in silence: the device
-     * changed since the dialog opened, an Apply having run meanwhile, say (review, 2026-10-11).
+     * Changes the edits off the EDT - SAVE, CLEAR, RESET LABELS or an undo - then closes; the screen reads again when
+     * the edits announce the change. A device that changed since the dialog opened is reported, not closed on in
+     * silence (review, 2026-10-11).
      *
-     * @param failedKey the message for a write that threw, taking the reason as its argument. A stale device has its
+     * @param failedKey the message for a change that failed, taking the reason as its argument. A stale device has its
      *                  own message, shown alone - wrapped in this one it would say "could not be done" and "nothing
      *                  was done" in one breath (review, 2026-10-11)
      */
-    private void runAndClose(BooleanSupplier work, String failedKey) {
+    private void runAndClose(Edits.Edit edit, String failedKey) {
         busy = true;
         middle.setEnabled(false);
         refreshDirty();
         new Thread(() -> {
             String message = null;
             try {
-                if (!work.getAsBoolean()) {
-                    message = getText("bindings.aliasDesigner.editor.stale", opening.deviceName());
-                }
-            } catch (RuntimeException e) {
+                Edits.stored().change(edit);
+            } catch (Stale e) {
+                message = getText("bindings.aliasDesigner.editor.stale", opening.deviceName());
+            } catch (IOException | RuntimeException e) {
                 // WHY: broad on purpose - a thread boundary, and the user pressed the button and must be told.
                 log.warn("The Device Editor could not change {}", opening.deviceName(), e);
                 message = getText(failedKey, StringUtls.messageOf(e));
@@ -679,7 +673,6 @@ final class DeviceEditorDialog extends JDialog {
                     return;
                 }
                 dispose();
-                onSaved.run();
             });
         }, "BindForge-DeviceEditorAction").start();
     }

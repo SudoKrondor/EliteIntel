@@ -18,8 +18,8 @@ import java.util.List;
  * belongs in a manager.
  * <p>
  * <strong>The list is held in memory</strong> and read from the table again only after one of this manager's own
- * writes, which are the only writes the table gets. {@code DeviceFilesMonitor} asks for it every two seconds, for as
- * long as Elite-Intel runs, and the list changes only when the user or a rescan changes it.
+ * writes, which are the only writes the table gets: every BindForge read and write asks for it, and the list changes
+ * only when the user or a rescan changes it.
  */
 public class BindForgeInstallationsManager {
 
