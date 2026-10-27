@@ -1,11 +1,7 @@
 package elite.intel.ui.screen.bindings;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.bindforge.storage.Apply;
-import elite.intel.bindforge.storage.Backups;
-import elite.intel.bindforge.storage.Edits;
-import elite.intel.bindforge.storage.WriteReport;
-import elite.intel.bindforge.storage.Written;
+import elite.intel.bindforge.storage.*;
 import elite.intel.db.managers.BindForgeInstallationsManager;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.dialog.HudConfirmDialog;
@@ -100,9 +96,13 @@ public final class ApplyBar extends JPanel {
             } catch (Backups.NothingToBackUpException e) {
                 log.warn("APPLY wrote nothing: there was nothing to back up");
                 message = getText(Backups.NothingToBackUpException.ADVICE_KEY);
-            } catch (IOException | Edits.WriteRunningException e) {
+            } catch (Edits.WriteRunningException e) {
+                // WHY: RESTORE or first-time startup is writing - nothing was written, and the edits are still on screen.
+                log.info("APPLY not run: {}", e.getMessage());
+                message = getText("bindings.writeRunning");
+            } catch (IOException e) {
                 // WHY: each of these stops before any live copy is written - the working copy unreadable, the backup
-                // or the working copy's save failed, or another write running - so the edits are still on screen.
+                // or the working copy's save failed - so the edits are still on screen.
                 log.error("APPLY stopped before writing the game files", e);
                 message = getText("bindings.applyBar.failed", StringUtls.messageOf(e));
             } catch (RuntimeException e) {

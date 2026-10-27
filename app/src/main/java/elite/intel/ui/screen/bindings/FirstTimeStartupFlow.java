@@ -2,15 +2,7 @@ package elite.intel.ui.screen.bindings;
 
 import elite.intel.bindforge.install.GameInstallationProvider;
 import elite.intel.bindforge.install.InstallationRegistry;
-import elite.intel.bindforge.storage.Backup;
-import elite.intel.bindforge.storage.Backups;
-import elite.intel.bindforge.storage.ConfigurationFiles;
-import elite.intel.bindforge.storage.FirstSetupFiles;
-import elite.intel.bindforge.storage.FirstSetupReading;
-import elite.intel.bindforge.storage.FirstTimeStartup;
-import elite.intel.bindforge.storage.WorkingCopy;
-import elite.intel.bindforge.storage.WriteReport;
-import elite.intel.bindforge.storage.Written;
+import elite.intel.bindforge.storage.*;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.dialog.HudConfirmDialog;
@@ -175,15 +167,22 @@ public final class FirstTimeStartupFlow {
         background("BindForge-FirstTimeStartupWrite", () -> {
             String message;
             try {
-                Written written = startup.write(chosen.files());
-                message = writtenText(written, chosen.moved());
+                message = writtenText(startup.write(chosen.files()), chosen.moved());
             } catch (Backups.NothingToBackUpException e) {
                 log.warn("First-time startup wrote nothing: there was nothing to back up");
                 message = getText(Backups.NothingToBackUpException.ADVICE_KEY);
-            } catch (IOException | RuntimeException e) {
-                // WHY: broad on purpose - a thread boundary. Nothing was written to a game file, and the flag is unset.
+            } catch (Edits.WriteRunningException e) {
+                log.info("First-time startup not run: {}", e.getMessage());
+                message = getText("bindings.writeRunning");
+            } catch (IOException e) {
+                // WHY: the backup or the working copy's save failed, so nothing was written and the flag is unset.
                 log.error("First-time startup stopped before writing the game files", e);
                 message = getText("bindings.firstTimeStartup.result.failed", StringUtls.messageOf(e));
+            } catch (RuntimeException e) {
+                // WHY: broad on purpose - a thread boundary. A bug can strike after the working copy was saved, with
+                // some live copies written, so nothing is promised either way: the log says what was written.
+                log.error("First-time startup stopped part way", e);
+                message = getText("bindings.firstTimeStartup.result.stopped", StringUtls.messageOf(e));
             }
             String told = message;
             return () -> tell(told);
@@ -191,12 +190,17 @@ public final class FirstTimeStartupFlow {
     }
 
     /** The report, per place: <em>"updated 2 of 2"</em>, or which one failed and why (alias-designer.md, step 5). */
-    private static String writtenText(Written written, int moved) {
+    private static String writtenText(FirstTimeStartup.Completed completed, int moved) {
+        Written written = completed.written();
         WriteReport report = written.report();
         StringBuilder text = new StringBuilder(getText("bindings.firstTimeStartup.result.written",
                 written.backup().zip().toString(), report.installationsUpdated(), report.installations().size()));
         if (moved > 0) text.append('\n').append(getText("bindings.firstTimeStartup.result.moved", moved));
-        return text.append(placeFailures(report)).toString();
+        text.append(placeFailures(report));
+        if (completed.setUpAskedAgain()) {
+            text.append('\n').append(getText("bindings.firstTimeStartup.result.setUpAgain"));
+        }
+        return text.toString();
     }
 
     /**

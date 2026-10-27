@@ -3,12 +3,7 @@ package elite.intel.ui.screen.bindings;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
-import elite.intel.bindforge.devices.DeviceIdentities;
-import elite.intel.bindforge.devices.HotPlugOffers;
-import elite.intel.bindforge.devices.IdentityQuestions;
-import elite.intel.bindforge.devices.MissingControllerWarning;
-import elite.intel.bindforge.devices.MyDevice;
-import elite.intel.bindforge.devices.Onboarding;
+import elite.intel.bindforge.devices.*;
 import elite.intel.bindforge.storage.DeviceEdits;
 import elite.intel.bindforge.storage.Edits;
 import elite.intel.db.managers.BindForgeDeviceDraftManager;
@@ -25,10 +20,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
-import java.awt.Dialog;
-import java.awt.Window;
+import java.awt.*;
 import java.io.IOException;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -542,6 +537,10 @@ final class AliasDesignerController {
             String failure = null;
             try {
                 result = work.call();
+            } catch (Edits.WriteRunningException e) {
+                // WHY: a write is running - said in the user's language, not the exception's.
+                log.info("{} not done: {}", title, e.getMessage());
+                failure = getText("bindings.writeRunning");
             } catch (Exception e) {
                 // WHY: broad on purpose - a thread boundary, and anything escaping it would leave the screen waiting
                 // with no word of why.

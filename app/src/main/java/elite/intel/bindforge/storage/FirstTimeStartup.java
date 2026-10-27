@@ -20,10 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -110,9 +107,20 @@ public final class FirstTimeStartup {
         return new FirstTimeStartup(storedFlag(), folder,
                 () -> new InstallationRegistry(GameInstallationProvider.forThisPlatform(folder.get()))
                         .currentWithStartupScan(),
-                (files, backUp) -> WritePath.stored().write(files, backUp),
+                storedWriter(),
                 sources -> Backups.stored().backUpEverything(Backups.Kind.FIRST_SETUP, sources),
                 FirstTimeStartup::announce);
+    }
+
+    /**
+     * The write path, run as a write of the shared {@link Edits} - RESTORE uses it too ({@link Restore}). While it runs
+     * the APPLY / DISCARD bar is dimmed and no APPLY can start: one started meanwhile would write the edits it read
+     * before this write, over the set this write leaves (review, 2026-10-27).
+     *
+     * @throws Edits.WriteRunningException if an APPLY or another write is already running - nothing is written
+     */
+    static Writer storedWriter() {
+        return (files, backUp) -> Edits.stored().whileWriting(() -> WritePath.stored().write(files, backUp));
     }
 
     /** The stored flag - RESTORE sets it too ({@link Restore}). */
@@ -197,32 +205,55 @@ public final class FirstTimeStartup {
      * The flag is set once the working copy is saved, whatever the live copies did: first setup is then over, and an
      * installation that missed the write is reported, for the next APPLY or the check (storage.md rule 8).
      *
+     * @return the write, and whether the flag could not be set - reported as RESTORE reports it ({@link Restore})
      * @throws IOException if the backup cannot be taken - {@link Backups.NothingToBackUpException} when there is
      *                     nothing at all - or the working copy cannot be saved. Nothing was written, and the flag
      *                     stays unset
+     * @throws Edits.WriteRunningException if an APPLY or another write is running - nothing was written
      */
-    public Written write(ConfigurationFiles files) throws IOException {
+    public Completed write(ConfigurationFiles files) throws IOException {
         AtomicReference<Backup> taken = new AtomicReference<>();
         WriteReport report = writer.write(files, sources -> {
             Backup backup = firstSetupBackup.take(sources);
             taken.set(backup);
             return backup;
         });
-        try {
-            flag.markComplete();
-        } catch (RuntimeException e) {
-            // WHY: the working copy is written, and the user must not be left believing nothing happened. Unset, the
-            // next click runs first-time startup again from the live copies - which now match it - with a backup first.
-            log.error("First-time startup wrote the working copy, but could not record that it is complete", e);
-            throw new IOException("the working copy is written, but first-time startup could not be marked complete: "
-                    + StringUtls.messageOf(e), e);
-        }
+        boolean askedAgain = !markComplete();
         announce.accept(taken.get());
         log.info("First-time startup complete: the working copy holds {} binds and preset files, {}, and {} button "
                         + "maps; installations updated {} of {}", files.bindings().size(),
                 files.hasDeviceMappings() ? "a DeviceMappings.xml" : "no DeviceMappings.xml", files.buttonMaps().size(),
                 report.installationsUpdated(), report.installations().size());
-        return new Written(report, taken.get());
+        return new Completed(new Written(report, taken.get()), askedAgain);
+    }
+
+    /**
+     * @return whether the flag is set afterwards
+     */
+    private boolean markComplete() {
+        try {
+            flag.markComplete();
+            return true;
+        } catch (RuntimeException e) {
+            // WHY: the files are written, and reported as written, with one line saying first-time startup will be
+            // offered again at the next click - from the live copies, which now match the working copy, with a backup
+            // first. Thrown instead, the user was told nothing was written (review, 2026-10-27).
+            log.error("First-time startup wrote the working copy, but could not record that it is complete", e);
+            return false;
+        }
+    }
+
+    /**
+     * What first-time startup did.
+     *
+     * @param written         the write and the first setup backup
+     * @param setUpAskedAgain whether the flag could not be set, so the next click on the BindForge tab offers first-time
+     *                        startup again - the user is told
+     */
+    public record Completed(Written written, boolean setUpAskedAgain) {
+        public Completed {
+            Objects.requireNonNull(written, "written");
+        }
     }
 
     /**

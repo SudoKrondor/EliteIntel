@@ -1,9 +1,9 @@
 package elite.intel.ui.screen.bindings;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.bindforge.devices.*;
 import elite.intel.bindforge.devicefiles.FrontierStockButtonMaps;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
+import elite.intel.bindforge.devices.*;
 import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.DeviceEdits;
 import elite.intel.bindforge.storage.Edits;
@@ -35,11 +35,8 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.function.BooleanSupplier;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -662,6 +659,10 @@ final class DeviceEditorDialog extends JDialog {
                 Edits.stored().change(edit);
             } catch (Stale e) {
                 message = getText("bindings.aliasDesigner.editor.stale", opening.deviceName());
+            } catch (Edits.WriteRunningException e) {
+                // WHY: shown alone, like a stale device - wrapped in failedKey it would say "could not be done" twice.
+                log.info("The Device Editor did not change {}: {}", opening.deviceName(), e.getMessage());
+                message = getText("bindings.writeRunning");
             } catch (IOException | RuntimeException e) {
                 // WHY: broad on purpose - a thread boundary, and the user pressed the button and must be told.
                 log.warn("The Device Editor could not change {}", opening.deviceName(), e);

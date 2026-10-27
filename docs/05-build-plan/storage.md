@@ -91,7 +91,7 @@ its table (`12007`), `BindingsMonitor` (not BindForge's — it reloads the assis
 - **Until S9:** an installation that missed a write differs from the working copy, so APPLY leaves it alone and nothing
   puts the working copy there - rule 8 promises the next APPLY only the bindings folder since 2026-10-27, and the
   report says the installation is left as it is until the check (storage.md, *How the files are written*). Accepted
-  by Alan 2026-10-27 - nothing is built for it before S9, which must close it.
+  by Alan 2026-10-27 - nothing is built for it before S9, which must close it. A `.buttonMap` kept because it is read-only makes its installation differ the same way, so the report tells the user to delete it themselves rather than to clear the flag for BindForge to remove it (review, 2026-10-27).
 - **Linux, several installations:** every `.binds` read and write uses the one bindings folder Elite-Intel is set
   to ([input environment §7](../00-overview/input-environment.md#7-linux-the-bindings-folder-is-not-shared)). The
   working copy holds one `Bindings\`; APPLY's confirm keeps A11's Linux note.

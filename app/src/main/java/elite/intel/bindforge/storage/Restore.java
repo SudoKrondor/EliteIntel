@@ -130,7 +130,7 @@ public final class Restore {
 
     /** Detection and the stored installations, the write path, the backup folder and the stored flag. */
     public static Restore stored() {
-        return new Restore(BackupSources::gather, (files, backUp) -> WritePath.stored().write(files, backUp),
+        return new Restore(BackupSources::gather, FirstTimeStartup.storedWriter(),
                 sources -> Backups.stored().backUpBeforeChange(Backups.Before.RESTORE, sources),
                 FirstTimeStartup.storedFlag());
     }
@@ -180,6 +180,7 @@ public final class Restore {
      * @param from  the backup restored, for the log
      * @param files the set to write
      * @throws IOException if the backup cannot be taken, or the working copy cannot be saved - nothing was written
+     * @throws Edits.WriteRunningException if an APPLY or another write is running - nothing was written
      */
     public Restored write(BackupContents from, ConfigurationFiles files) throws IOException {
         AtomicReference<Backup> taken = new AtomicReference<>();

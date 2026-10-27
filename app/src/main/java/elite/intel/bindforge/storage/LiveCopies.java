@@ -178,7 +178,15 @@ final class LiveCopies {
                 // WHY: the user protected it, so it is not removed against that - asked before deleting, because on
                 // Linux the delete would succeed whatever the file's own permission. They are told how to let it go,
                 // rather than shown the system's "access denied" (principle 9; Alan, 2026-10-25, from the review).
-                if (isReadOnly(file)) {
+                // Not knowing is a failure, never a delete: the file may be one the user protected (review, 2026-10-27).
+                boolean readOnly;
+                try {
+                    readOnly = ReadOnlyFlag.isSet(file);
+                } catch (IOException e) {
+                    fail(file, e);
+                    continue;
+                }
+                if (readOnly) {
                     keptReadOnly.add(name);
                     log.warn("Did not remove {}: it is read-only", file);
                     continue;
@@ -202,14 +210,6 @@ final class LiveCopies {
                 if (Files.exists(keptFile) && Files.isSameFile(file, keptFile)) return true;
             }
             return false;
-        }
-
-        private static boolean isReadOnly(Path file) {
-            try {
-                return ReadOnlyFlag.isSet(file);
-            } catch (IOException e) {
-                return false;
-            }
         }
 
         void fail(Path file, IOException e) {

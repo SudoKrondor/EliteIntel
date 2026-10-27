@@ -114,10 +114,12 @@ class FirstTimeStartupTest {
     void aWriteBacksUpFirstThenSetsTheFlagAndSaysSoOnce() throws IOException {
         FirstTimeStartup startup = startup(temp.resolve("Bindings"), writerThatWrites());
 
-        Written written = startup.write(files());
+        FirstTimeStartup.Completed completed = startup.write(files());
+        Written written = completed.written();
 
         assertEquals(List.of("backup", "write"), steps);
         assertTrue(flag.complete);
+        assertFalse(completed.setUpAskedAgain());
         assertEquals(List.of(written.backup()), announced);
         assertEquals(Backups.Kind.FIRST_SETUP, written.backup().kind());
     }
@@ -131,6 +133,23 @@ class FirstTimeStartupTest {
         assertThrows(IOException.class, () -> startup.write(files()));
         assertFalse(flag.complete);
         assertTrue(announced.isEmpty());
+    }
+
+    /**
+     * The flag failing after the files are written is reported with the write, not thrown - thrown, the user was told
+     * nothing was written (review, 2026-10-27). The backup was taken, so it is still announced.
+     */
+    @Test
+    void aFlagThatCannotBeSetIsReportedWithTheWriteNotThrown() throws IOException {
+        flag.failToMark = true;
+        FirstTimeStartup startup = startup(temp.resolve("Bindings"), writerThatWrites());
+
+        FirstTimeStartup.Completed completed = startup.write(files());
+
+        assertEquals(List.of("backup", "write"), steps);
+        assertTrue(completed.setUpAskedAgain());
+        assertFalse(flag.complete);
+        assertEquals(List.of(completed.written().backup()), announced);
     }
 
     /** Run first-time startup again clears the flag and nothing else (file-manager.md, Game Install Locations). */
@@ -175,6 +194,7 @@ class FirstTimeStartupTest {
 
     private static final class FakeFlag implements FirstTimeStartup.Flag {
         boolean complete;
+        boolean failToMark;
 
         @Override
         public boolean complete() {
@@ -183,6 +203,7 @@ class FirstTimeStartupTest {
 
         @Override
         public void markComplete() {
+            if (failToMark) throw new IllegalStateException("the database is locked");
             complete = true;
         }
 

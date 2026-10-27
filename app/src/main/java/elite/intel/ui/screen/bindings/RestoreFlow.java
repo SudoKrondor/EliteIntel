@@ -1,12 +1,6 @@
 package elite.intel.ui.screen.bindings;
 
-import elite.intel.bindforge.storage.Backup;
-import elite.intel.bindforge.storage.BackupContents;
-import elite.intel.bindforge.storage.FirstTimeStartup;
-import elite.intel.bindforge.storage.InstallationFiles;
-import elite.intel.bindforge.storage.Restore;
-import elite.intel.bindforge.storage.WriteReport;
-import elite.intel.bindforge.storage.Written;
+import elite.intel.bindforge.storage.*;
 import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
@@ -117,11 +111,18 @@ final class RestoreFlow {
             try {
                 Restore.Restored restored = restore.write(prepared.contents(), chosen.files());
                 message = restoredText(restored, chosen.moved());
-            } catch (IOException | RuntimeException e) {
-                // WHY: broad on purpose - a thread boundary. The backup or the working copy failed, so no game file
-                // was written.
+            } catch (Edits.WriteRunningException e) {
+                log.info("RESTORE not run: {}", e.getMessage());
+                message = getText("bindings.writeRunning");
+            } catch (IOException e) {
+                // WHY: the backup or the working copy's save failed, so no game file was written.
                 log.error("RESTORE stopped before writing the game files", e);
                 message = getText("bindings.restore.result.failed", StringUtls.messageOf(e));
+            } catch (RuntimeException e) {
+                // WHY: broad on purpose - a thread boundary. A bug can strike after the working copy was saved, with
+                // some live copies written, so nothing is promised either way: the log says what was written.
+                log.error("RESTORE stopped part way", e);
+                message = getText("bindings.restore.result.stopped", StringUtls.messageOf(e));
             }
             String told = message;
             return () -> tell(told, onFinished);

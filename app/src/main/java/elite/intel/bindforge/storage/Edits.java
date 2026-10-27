@@ -64,8 +64,9 @@ public final class Edits {
     }
 
     /**
-     * Thrown by {@link #change} and {@link #discard} while an APPLY or another write is under way - its set would drop
-     * the change.
+     * Thrown by {@link #change} and {@link #discard} while a write is under way - APPLY, RESTORE or first-time startup -
+     * since its set would drop the change; and by {@link #whileWriting} when one is already running. The message is for
+     * the log: a screen says it in the user's language ({@code bindings.writeRunning}).
      */
     public static final class WriteRunningException extends IllegalStateException {
         WriteRunningException() {
@@ -164,8 +165,10 @@ public final class Edits {
     }
 
     /**
-     * Runs a write - APPLY's - with no change let in meanwhile, so nothing the user does while it runs is dropped by
-     * the set it leaves.
+     * Runs a write - APPLY's, RESTORE's or first-time startup's - with no change and no other write let in meanwhile, so
+     * nothing the user does while it runs is dropped by the set it leaves, and no APPLY writes edits read before it.
+     *
+     * @throws WriteRunningException if a write is already running - {@code write} is not run
      */
     public <T> T whileWriting(WriteStep<T> write) throws IOException {
         synchronized (this) {
