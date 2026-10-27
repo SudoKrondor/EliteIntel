@@ -70,14 +70,17 @@ public final class FirstSetupFiles {
 
     /**
      * The working copy when the installations agree: the first installation's device files, since they are all the
-     * same - or, with no installation, the binds and preset files alone.
+     * same - or, with no installation, the binds and preset files alone. Installations that agree in having no
+     * {@code DeviceMappings.xml} give a working copy with none, which leaves each installation's alone; it does not go
+     * through "use one installation for all", which refuses such an installation (Krondor's review, 2026-10-27).
      *
      * @throws IllegalStateException if the installations are not {@linkplain FirstSetupReading#identical() identical}
      */
     public static ConfigurationFiles identical(FirstSetupReading reading) {
         if (!reading.identical()) throw new IllegalStateException("the installations' device files differ");
         if (reading.installations().isEmpty()) return new ConfigurationFiles(reading.bindings(), null, Map.of());
-        return useOne(reading, reading.installations().getFirst().installId());
+        InstallationFiles first = reading.installations().getFirst();
+        return new ConfigurationFiles(reading.bindings(), first.deviceMappings(), first.buttonMaps());
     }
 
     /**

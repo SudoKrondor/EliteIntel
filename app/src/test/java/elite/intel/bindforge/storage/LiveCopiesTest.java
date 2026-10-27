@@ -1,6 +1,7 @@
 package elite.intel.bindforge.storage;
 
 import elite.intel.bindforge.install.GameInstallation;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,7 @@ class LiveCopiesTest {
     private Path bindings;
     private Path steam;
     private Path epic;
+    private final List<Path> protectedFiles = new ArrayList<>();
 
     @BeforeEach
     void aBindingsFolderAndTwoInstallations() throws IOException {
@@ -188,7 +190,6 @@ class LiveCopiesTest {
         assertTrue(report.bindings().updated(), report.bindings().failures().toString());
         assertEquals("<Custom/>", Files.readString(binds));
         assertFalse(Files.isWritable(binds), "the protection is put back - asked of the file system, not ReadOnlyFlag");
-        ReadOnlyFlag.set(binds, false);
     }
 
     /** A read-only file that already holds the bytes is not touched - its flag is not even cleared. */
@@ -202,7 +203,6 @@ class LiveCopiesTest {
 
         assertFalse(report.bindings().written().contains("Custom.4.2.binds"));
         assertFalse(Files.isWritable(binds));
-        ReadOnlyFlag.set(binds, false);
     }
 
     /**
@@ -222,13 +222,24 @@ class LiveCopiesTest {
         assertEquals(List.of("Old.buttonMap"), place.keptReadOnly());
         assertTrue(place.failures().isEmpty(), place.failures().toString());
         assertFalse(place.updated(), "the installation does not match the set");
-        ReadOnlyFlag.set(old, false);
+    }
+
+    /**
+     * Every protected file goes back to writable, whether the test passed or not - else {@code @TempDir} cannot delete it
+     * on Windows, and a failed assertion turns into a cleanup error that hides it (Krondor's review, 2026-10-27).
+     */
+    @AfterEach
+    void unprotectEverything() throws IOException {
+        for (Path file : protectedFiles) {
+            if (Files.exists(file)) ReadOnlyFlag.set(file, false);
+        }
     }
 
     /** Protects a file as a player would, or skips the test where the file system cannot. */
-    private static void protect(Path file) throws IOException {
+    private void protect(Path file) throws IOException {
         // WHY: root on Linux writes whatever a file's permission says, so nothing here could be seen.
         Assumptions.assumeFalse("root".equals(System.getProperty("user.name")), "root writes a protected file anyway");
+        protectedFiles.add(file);
         ReadOnlyFlag.set(file, true);
         Assumptions.assumeTrue(ReadOnlyFlag.isSet(file), "the file system keeps no read-only flag");
         // WHY: asked of the file system itself, so a ReadOnlyFlag looking at the wrong attribute fails here rather than

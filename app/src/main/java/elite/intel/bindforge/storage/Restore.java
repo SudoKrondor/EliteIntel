@@ -76,66 +76,56 @@ public final class Restore {
      *
      * @param contents       what the backup holds
      * @param bindingsFolder the bindings folder it goes to
-     * @param targets        every installation on this machine now - what its confirmation names. The write finds
-     *                       them again ({@link WritePath}), a moment later
+     * @param targets        every installation on this machine now - what its confirmation names
+     * @param places         the bindings folder and those installations - exactly what the write backs up and
+     *                       writes, so the confirmation names every installation RESTORE replaces (Krondor's review,
+     *                       2026-10-27)
      * @param reading        the backup's installations, compared as first-time startup compares them - the
      *                       reconcile's input when they differ
+     * @param identicalFiles the set to write when the backup's installations are identical - worked out here, off the
+     *                       EDT (Krondor's review, 2026-10-27) - or {@code null} when they differ and the user
+     *                       reconciles them
      */
-    public record Prepared(BackupContents contents, Path bindingsFolder, List<Target> targets,
-                           FirstSetupReading reading) {
+    public record Prepared(BackupContents contents, Path bindingsFolder, List<Target> targets, BackupSources places,
+                           FirstSetupReading reading, ConfigurationFiles identicalFiles) {
         public Prepared {
             Objects.requireNonNull(contents, "contents");
             Objects.requireNonNull(bindingsFolder, "bindingsFolder");
             targets = List.copyOf(targets);
+            Objects.requireNonNull(places, "places");
             Objects.requireNonNull(reading, "reading");
         }
 
         /** Whether the backup's installations hold the same device files - then nothing is asked but the confirmation. */
         public boolean identical() {
-            return reading.identical();
+            return identicalFiles != null;
         }
 
         /**
          * The set to write when they are {@linkplain #identical() identical}: every binds and preset file and the one
          * set of device files.
+         *
+         * @throws IllegalStateException when they differ
          */
         public ConfigurationFiles files() {
-            return FirstSetupFiles.identical(reading);
+            if (identicalFiles == null) throw new IllegalStateException("the backup's installations differ");
+            return identicalFiles;
         }
-    }
-
-    /**
-     * What a restore did.
-     *
-     * @param written         the write and the before-RESTORE backup
-     * @param setUpAskedAgain whether first-time startup could not be marked complete, so the next click on the BindForge
-     *                        tab offers it again - the user is told (review, 2026-10-25)
-     */
-    public record Restored(Written written, boolean setUpAskedAgain) {
-        public Restored {
-            Objects.requireNonNull(written, "written");
-        }
-    }
-
-    /** Takes the before-RESTORE backup of what the write is about to write. */
-    @FunctionalInterface
-    interface BackupTaker {
-        Backup take(BackupSources sources) throws IOException;
     }
 
     private final Supplier<BackupSources> places;
     private final FirstTimeStartup.Writer writer;
-    private final BackupTaker beforeRestore;
+    private final WritePath.BackUpFirst beforeRestore;
     private final FirstTimeStartup.Flag flag;
 
     /** Detection and the stored installations, the write path, the backup folder and the stored flag. */
     public static Restore stored() {
-        return new Restore(BackupSources::gather, FirstTimeStartup.storedWriter(),
+        return new Restore(BackupSources::rescan, FirstTimeStartup.storedWriter(),
                 sources -> Backups.stored().backUpBeforeChange(Backups.Before.RESTORE, sources),
                 FirstTimeStartup.storedFlag());
     }
 
-    Restore(Supplier<BackupSources> places, FirstTimeStartup.Writer writer, BackupTaker beforeRestore,
+    Restore(Supplier<BackupSources> places, FirstTimeStartup.Writer writer, WritePath.BackUpFirst beforeRestore,
             FirstTimeStartup.Flag flag) {
         this.places = places;
         this.writer = writer;
@@ -164,50 +154,37 @@ public final class Restore {
                 contents.installations(), List.of(), FrontierStockDevices.getInstance(),
                 FrontierStockButtonMaps.getInstance());
         List<Target> targets = now.installations().stream()
-                .map(installation -> new Target(installation,
-                        !installation.missing() && Files.isDirectory(installation.controlSchemes())))
+                .map(installation -> new Target(installation, installation.reachable()))
                 .toList();
-        return new Prepared(contents, now.bindingsFolder(), targets, reading);
+        ConfigurationFiles identicalFiles = reading.identical() ? FirstSetupFiles.identical(reading) : null;
+        return new Prepared(contents, now.bindingsFolder(), targets, now, reading, identicalFiles);
     }
 
     /**
      * Backs up what is there now, then writes {@code files} - the backup's, or the set the user reconciled - as the
-     * working copy and to every live copy. The write finds the installations itself ({@link WritePath}), so what it
-     * writes is what it backs up; the confirmation's list was found a moment before. Marks first-time startup complete
-     * if it was not: RESTORE leaves the working copy and the live copies matching, as first-time startup does (Alan,
-     * 2026-10-25).
+     * working copy and to every live copy: the places {@link #prepare} found, which its confirmation named. Marks
+     * first-time startup complete if it was not: RESTORE leaves the working copy and the live copies matching, as
+     * first-time startup does (Alan, 2026-10-25). A flag that cannot be set is in {@link Written#setUpAskedAgain()}:
+     * the restore itself is done and is reported as done.
      *
-     * @param from  the backup restored, for the log
-     * @param files the set to write
+     * @param prepared what {@link #prepare} found
+     * @param files    the set to write
      * @throws IOException if the backup cannot be taken, or the working copy cannot be saved - nothing was written
      * @throws Edits.WriteRunningException if an APPLY or another write is running - nothing was written
      */
-    public Restored write(BackupContents from, ConfigurationFiles files) throws IOException {
+    public Written write(Prepared prepared, ConfigurationFiles files) throws IOException {
         AtomicReference<Backup> taken = new AtomicReference<>();
-        WriteReport report = writer.write(files, sources -> {
+        WriteReport report = writer.write(files, prepared.places(), sources -> {
             Backup backup = beforeRestore.take(sources);
             taken.set(backup);
             return backup;
         });
-        boolean askedAgain = !markFirstTimeStartupComplete();
+        boolean askedAgain = !FirstTimeStartup.markComplete(flag);
+        BackupContents from = prepared.contents();
         log.info("Restored {} ({}): {} binds and preset files, {}, {} button maps; installations updated {} of {}",
                 from.zip(), from.taken(), files.bindings().size(),
                 files.hasDeviceMappings() ? "a DeviceMappings.xml" : "no DeviceMappings.xml",
                 files.buttonMaps().size(), report.installationsUpdated(), report.installations().size());
-        return new Restored(new Written(report, taken.get()), askedAgain);
-    }
-
-    /** @return whether first-time startup is complete afterwards */
-    private boolean markFirstTimeStartupComplete() {
-        try {
-            if (!flag.complete()) flag.markComplete();
-            return true;
-        } catch (RuntimeException e) {
-            // WHY: the restore itself is done and is reported as done, with one line saying first-time startup will be
-            // offered again at the next click. It would then run over the restored files and take its kept-forever
-            // backup of files BindForge already wrote - the case rule 10 sets the flag to avoid, now told, not hidden.
-            log.error("The restore is written, but first-time startup could not be marked complete", e);
-            return false;
-        }
+        return new Written(report, taken.get(), askedAgain);
     }
 }

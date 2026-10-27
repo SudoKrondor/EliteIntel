@@ -64,7 +64,7 @@ class RestoreTest {
 
         Restore.Prepared prepared = restore.prepare(BackupContents.read(zip));
         assertTrue(prepared.identical(), "one installation in the backup - nothing to reconcile");
-        Written written = restore.write(prepared.contents(), prepared.files()).written();
+        Written written = restore.write(prepared, prepared.files());
 
         assertEquals("<Then/>", Files.readString(bindings.resolve("Custom.4.2.binds")));
         assertEquals("Then", Files.readString(bindings.resolve("StartPreset.4.start")));
@@ -88,7 +88,7 @@ class RestoreTest {
         Restore restore = restore(List.of(steam, epic));
         Restore.Prepared prepared = restore.prepare(BackupContents.read(backupZip(true, THEN)));
 
-        Written written = restore.write(prepared.contents(), prepared.files()).written();
+        Written written = restore.write(prepared, prepared.files());
 
         assertEquals(Backups.Kind.BEFORE_CHANGES, written.backup().kind());
         assertEquals(Backups.Before.RESTORE, written.backup().before());
@@ -103,7 +103,7 @@ class RestoreTest {
         Restore.Prepared prepared = restore.prepare(BackupContents.read(backupZip(true, THEN)));
         assertFalse(flag.complete);
 
-        restore.write(prepared.contents(), prepared.files());
+        restore.write(prepared, prepared.files());
 
         assertTrue(flag.complete);
     }
@@ -115,7 +115,7 @@ class RestoreTest {
         Restore restore = restore(List.of(steam));
         Restore.Prepared prepared = restore.prepare(BackupContents.read(backupZip(true, THEN)));
 
-        Restore.Restored restored = restore.write(prepared.contents(), prepared.files());
+        Written restored = restore.write(prepared, prepared.files());
 
         assertTrue(restored.setUpAskedAgain());
         assertEquals("<Then/>", Files.readString(bindings.resolve("Custom.4.2.binds")), "the restore is written");
@@ -127,7 +127,7 @@ class RestoreTest {
         Restore restore = restore(List.of(steam));
         Restore.Prepared prepared = restore.prepare(BackupContents.read(backupZip(true, THEN)));
 
-        assertFalse(restore.write(prepared.contents(), prepared.files()).setUpAskedAgain());
+        assertFalse(restore.write(prepared, prepared.files()).setUpAskedAgain());
     }
 
     /** Review, 2026-10-25: whether each installation is there is decided while preparing, off the EDT. */
@@ -190,14 +190,38 @@ class RestoreTest {
         Restore restore = restore(List.of());
         Restore.Prepared prepared = restore.prepare(BackupContents.read(backupZip(true, null)));
 
-        restore.write(prepared.contents(), prepared.files());
+        restore.write(prepared, prepared.files());
 
         assertEquals("<Then/>", Files.readString(bindings.resolve("Custom.4.2.binds")));
+    }
+
+    /**
+     * Krondor's review, 2026-10-27: the write covers the installations RESTORE's confirmation named - one found only
+     * after it was shown is not written.
+     */
+    @Test
+    void anInstallationFoundAfterTheConfirmationIsNotWritten() throws IOException {
+        List<BackupSources> found = new ArrayList<>(List.of(
+                new BackupSources(bindings, List.of(new BackupSources.Installation("STEAM", steam, false, null))),
+                new BackupSources(bindings, List.of(new BackupSources.Installation("STEAM", steam, false, null),
+                        new BackupSources.Installation("EPIC", epic, false, null)))));
+        Restore restore = restore(List.of(steam), found::removeFirst);
+        Restore.Prepared prepared = restore.prepare(BackupContents.read(backupZip(true, THEN)));
+
+        Written written = restore.write(prepared, prepared.files());
+
+        assertEquals(1, written.report().installations().size());
+        assertFalse(Files.exists(GameInstallation.deviceMappingsIn(controlSchemes(epic))), "never shown, never written");
     }
 
     // ---- helpers
 
     private Restore restore(List<Path> installations) {
+        return restore(installations, null);
+    }
+
+    /** @param found what each look for installations finds, or {@code null} for the installations given, every time */
+    private Restore restore(List<Path> installations, java.util.function.Supplier<BackupSources> found) {
         List<BackupSources.Installation> list = new ArrayList<>();
         String[] storefronts = {"STEAM", "EPIC"};
         for (int i = 0; i < installations.size(); i++) {
@@ -208,7 +232,7 @@ class RestoreTest {
                 Clock.fixed(Instant.parse("2026-10-25T10:00:00Z"), ZoneOffset.UTC));
         WritePath writePath = new WritePath(new WorkingCopy(workingCopy), () -> places, files -> {
         });
-        return new Restore(() -> places, writePath::write,
+        return new Restore(found != null ? found : () -> places, writePath::write,
                 sources -> backupsOf.backUpBeforeChange(Backups.Before.RESTORE, sources), flag);
     }
 

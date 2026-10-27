@@ -51,7 +51,7 @@ class WritePathTest {
 
     @Test
     void theBackupIsTakenFirstThenTheWorkingCopyAndTheLiveCopiesHoldTheSet() throws IOException {
-        WriteReport report = writePath().write(set(), sources -> {
+        WriteReport report = applyWrite(writePath(), set(), sources -> {
             assertFalse(workingCopy.exists(), "the backup comes before anything is written");
             assertEquals("<live/>", Files.readString(bindings.resolve("Custom.4.2.binds")));
             order.add("backup");
@@ -68,7 +68,7 @@ class WritePathTest {
 
     @Test
     void aBackupThatFailsStopsTheWriteWithNothingWritten() throws IOException {
-        assertThrows(IOException.class, () -> writePath().write(set(), sources -> {
+        assertThrows(IOException.class, () -> applyWrite(writePath(), set(), sources -> {
             throw new IOException("the backup folder cannot be written");
         }));
 
@@ -83,7 +83,7 @@ class WritePathTest {
         Files.writeString(blocked, "in the way");
         WritePath writePath = new WritePath(new WorkingCopy(blocked), this::sources, NO_HAND_OFF);
 
-        assertThrows(IOException.class, () -> writePath.write(set(), sources -> backup()));
+        assertThrows(IOException.class, () -> applyWrite(writePath, set(), sources -> backup()));
 
         assertEquals("<live/>", Files.readString(bindings.resolve("Custom.4.2.binds")));
         assertFalse(Files.exists(GameInstallation.deviceMappingsIn(GameInstallation.controlSchemesUnder(steam))));
@@ -99,7 +99,7 @@ class WritePathTest {
         }, NO_HAND_OFF);
         List<BackupSources> backedUp = new ArrayList<>();
 
-        WriteReport report = writePath.write(set(), sources -> {
+        WriteReport report = applyWrite(writePath, set(), sources -> {
             backedUp.add(sources);
             return backup();
         });
@@ -151,7 +151,7 @@ class WritePathTest {
             }
         });
 
-        writePath.write(set(), sources -> backup());
+        applyWrite(writePath, set(), sources -> backup());
 
         assertEquals(List.of("<new/>"), handed);
     }
@@ -172,9 +172,38 @@ class WritePathTest {
         assertEquals("<new/>", text(workingCopy.read().bindings().get("Custom.4.2.binds")));
     }
 
+    /**
+     * Krondor's review, 2026-10-27: first-time startup and RESTORE write exactly the places they read and showed - an
+     * installation found only now is neither backed up nor written, and one marked missing is reported as not found.
+     */
+    @Test
+    void aWriteToThePlacesGivenTouchesNoOtherInstallation() throws IOException {
+        Path epic = temp.resolve("Epic/EliteDangerous");
+        Files.createDirectories(GameInstallation.controlSchemesUnder(epic));
+        WritePath writePath = new WritePath(workingCopy, () -> {
+            throw new AssertionError("the places are given, not found again");
+        }, NO_HAND_OFF);
+        BackupSources given = new BackupSources(bindings, List.of(
+                new BackupSources.Installation("STEAM", steam, false, null),
+                new BackupSources.Installation("EPIC", epic, true, null)));
+        List<BackupSources> backedUp = new ArrayList<>();
+
+        WriteReport report = writePath.write(set(), given, sources -> {
+            backedUp.add(sources);
+            return backup();
+        });
+
+        assertSame(given, backedUp.getFirst());
+        assertEquals("<Mappings/>",
+                Files.readString(GameInstallation.deviceMappingsIn(GameInstallation.controlSchemesUnder(steam))));
+        assertFalse(Files.exists(GameInstallation.deviceMappingsIn(GameInstallation.controlSchemesUnder(epic))),
+                "marked missing when it was read, so not written though it is there now");
+        assertEquals(List.of(LiveCopies.FOLDER_NOT_FOUND), report.installations().get(1).failures());
+    }
+
     private void writeOrRecord(WritePath writePath, String binds, DuringBackup duringBackup, List<Throwable> failures) {
         try {
-            writePath.write(new ConfigurationFiles(Map.of("Custom.4.2.binds", bytes(binds)), null, Map.of()),
+            applyWrite(writePath, new ConfigurationFiles(Map.of("Custom.4.2.binds", bytes(binds)), null, Map.of()),
                     sources -> {
                         try {
                             duringBackup.run();
@@ -196,12 +225,18 @@ class WritePathTest {
 
     // WHY: the second write is waiting for the first when its thread is blocked on the write path's lock - asked of the
     // thread rather than waited out with a sleep.
-    private static void waitUntilBlocked(Thread thread) throws InterruptedException {
+    private static void waitUntilBlocked(Thread thread) {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
         while (thread.getState() != Thread.State.BLOCKED) {
             if (System.nanoTime() > deadline) fail("the second write never waited for the first");
             Thread.onSpinWait();
         }
+    }
+
+    /** APPLY's write - the one that finds the places itself - leaving no installation alone. */
+    private static WriteReport applyWrite(WritePath writePath, ConfigurationFiles files, WritePath.BackUpFirst backUp)
+            throws IOException {
+        return writePath.write(files, backUp, LiveCopies.LeaveAlone.NONE);
     }
 
     private WritePath writePath() {

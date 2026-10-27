@@ -40,10 +40,8 @@ public final class WorkingCopy {
 
     private static final Logger log = LogManager.getLogger(WorkingCopy.class);
 
-    static final String BINDINGS = "Bindings";
-    static final String CONTROL_SCHEMES = "ControlSchemes";
     /** The two folders a set is made of, swapped in this order. */
-    private static final List<String> FOLDERS = List.of(BINDINGS, CONTROL_SCHEMES);
+    private static final List<String> FOLDERS = List.of(Backups.BINDINGS, Backups.CONTROL_SCHEMES);
 
     /** Where the next set is written before it is swapped in. */
     static final String NEXT = ".working-copy-next";
@@ -74,7 +72,7 @@ public final class WorkingCopy {
     public boolean exists() throws IOException {
         synchronized (LOCK) {
             finishInterruptedWrite();
-            return Files.isDirectory(root.resolve(BINDINGS));
+            return Files.isDirectory(root.resolve(Backups.BINDINGS));
         }
     }
 
@@ -88,9 +86,9 @@ public final class WorkingCopy {
     public ConfigurationFiles read() throws IOException {
         synchronized (LOCK) {
             finishInterruptedWrite();
-            Path bindings = root.resolve(BINDINGS);
+            Path bindings = root.resolve(Backups.BINDINGS);
             if (!Files.isDirectory(bindings)) throw new NoSuchFileException(bindings.toString(), null, "no working copy");
-            Path controlSchemes = root.resolve(CONTROL_SCHEMES);
+            Path controlSchemes = root.resolve(Backups.CONTROL_SCHEMES);
             Path deviceMappings = GameInstallation.deviceMappingsIn(controlSchemes);
             return new ConfigurationFiles(
                     readFiles(bindings, Backups::isBindingsFile),
@@ -126,8 +124,8 @@ public final class WorkingCopy {
 
     private static void writeSet(Path folder, ConfigurationFiles files) throws IOException {
         deleteTree(folder);
-        Path bindings = folder.resolve(BINDINGS);
-        Path controlSchemes = folder.resolve(CONTROL_SCHEMES);
+        Path bindings = folder.resolve(Backups.BINDINGS);
+        Path controlSchemes = folder.resolve(Backups.CONTROL_SCHEMES);
         Path buttonMaps = GameInstallation.deviceButtonMapsIn(controlSchemes);
         // WHY: both folders always, even empty - an empty folder in the new set still replaces the old one's files.
         Files.createDirectories(bindings);

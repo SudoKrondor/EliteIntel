@@ -10,7 +10,6 @@ import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -91,7 +90,10 @@ public final class FirstTimeStartupFlow {
                 return () -> tell(getText("bindings.firstTimeStartup.stopped", StringUtls.messageOf(e)));
             }
             Map<String, String> names = labelsFor(startup.installations());
-            return () -> reconcile(startup, reading, names);
+            // WHY: worked out here, off the EDT - where it was, a fault in it left first-time startup unavailable for
+            // the rest of the run (Krondor's review, 2026-10-27).
+            ConfigurationFiles identical = reading.identical() ? FirstSetupFiles.identical(reading) : null;
+            return () -> reconcile(startup, reading, identical, names);
         });
     }
 
@@ -143,18 +145,22 @@ public final class FirstTimeStartupFlow {
         }
     }
 
-    /** Identical installations ask nothing but the summary; any difference opens the reconcile (rule 2). */
-    private void reconcile(FirstTimeStartup startup, FirstSetupReading reading, Map<String, String> names) {
+    /**
+     * Identical installations ask nothing but the summary; any difference opens the reconcile (rule 2).
+     *
+     * @param identical the working copy when the installations are identical, or {@code null} when they differ
+     */
+    private void reconcile(FirstTimeStartup startup, FirstSetupReading reading, ConfigurationFiles identical,
+                           Map<String, String> names) {
         Optional<FirstSetupDialog.Choice> choice;
-        if (reading.identical()) {
-            ConfigurationFiles files = FirstSetupFiles.identical(reading);
-            String summary = getText("bindings.firstTimeStartup.summary.identical", files.buttonMaps().size())
+        if (identical != null) {
+            String summary = getText("bindings.firstTimeStartup.summary.identical", identical.buttonMaps().size())
                     + "\n\n" + getText("bindings.firstTimeStartup.summary.installations",
                     reading.installations().size());
             choice = HudConfirmDialog.confirm(parent, getText("bindings.firstTimeStartup.summary.title"), summary,
                     getText("bindings.firstTimeStartup.summary.create"),
                     getText("bindings.aliasDesigner.firstSetup.cancel"))
-                    ? Optional.of(new FirstSetupDialog.Choice(files, 0))
+                    ? Optional.of(new FirstSetupDialog.Choice(identical, 0))
                     : Optional.empty();
         } else {
             choice = new FirstSetupDialog(parent, reading, names).showDialog();
@@ -175,7 +181,9 @@ public final class FirstTimeStartupFlow {
                 log.info("First-time startup not run: {}", e.getMessage());
                 message = getText("bindings.writeRunning");
             } catch (IOException e) {
-                // WHY: the backup or the working copy's save failed, so nothing was written and the flag is unset.
+                // WHY: the backup or the working copy's save failed, so nothing was written and the flag is unset. A
+                // flag that cannot be set after the write is not thrown: it is in the result (Krondor's review,
+                // 2026-10-27).
                 log.error("First-time startup stopped before writing the game files", e);
                 message = getText("bindings.firstTimeStartup.result.failed", StringUtls.messageOf(e));
             } catch (RuntimeException e) {
@@ -189,15 +197,17 @@ public final class FirstTimeStartupFlow {
         });
     }
 
-    /** The report, per place: <em>"updated 2 of 2"</em>, or which one failed and why (alias-designer.md, step 5). */
-    private static String writtenText(FirstTimeStartup.Completed completed, int moved) {
-        Written written = completed.written();
+    /**
+     * The report, per place: <em>"updated 2 of 2"</em>, or which one failed and why (alias-designer.md, step 5) - and a
+     * line saying first-time startup will be asked again when its flag could not be set, as RESTORE says it.
+     */
+    static String writtenText(Written written, int moved) {
         WriteReport report = written.report();
         StringBuilder text = new StringBuilder(getText("bindings.firstTimeStartup.result.written",
                 written.backup().zip().toString(), report.installationsUpdated(), report.installations().size()));
         if (moved > 0) text.append('\n').append(getText("bindings.firstTimeStartup.result.moved", moved));
         text.append(placeFailures(report));
-        if (completed.setUpAskedAgain()) {
+        if (written.setUpAskedAgain()) {
             text.append('\n').append(getText("bindings.firstTimeStartup.result.setUpAgain"));
         }
         return text.toString();
@@ -258,46 +268,17 @@ public final class FirstTimeStartupFlow {
     }
 
     private void tell(String message) {
-        HudConfirmDialog.info(parent, getText("bindings.firstTimeStartup.title"), message,
-                getText("bindings.aliasDesigner.firstSetup.close"));
-        finish();
+        FlowSteps.tell(parent, getText("bindings.firstTimeStartup.title"), message, this::finish);
     }
 
     private void finish() {
         running.set(false);
     }
 
-    /** Disk work that hands back the next step for the EDT, or {@code null} for none. */
-    @FunctionalInterface
-    private interface Step {
-        Runnable run() throws IOException;
-    }
-
-    private void background(String name, Step step) {
-        new Thread(() -> {
-            Runnable next;
-            try {
-                next = step.run();
-            } catch (IOException e) {
-                log.warn("First-time startup stopped", e);
-                String reason = StringUtls.messageOf(e);
-                next = () -> tell(getText("bindings.firstTimeStartup.result.failed", reason));
-            } catch (RuntimeException e) {
-                // WHY: broad on purpose - a thread boundary; escaping, it would leave the flow marked running, and
-                // first-time startup would never be offered again this run. A RuntimeException here is a bug, so it is
-                // logged as one and said to have stopped unexpectedly (review, 2026-10-25).
-                log.error("First-time startup stopped", e);
-                String reason = StringUtls.messageOf(e);
-                next = () -> tell(getText("bindings.firstTimeStartup.stopped", reason));
-            }
-            Runnable then = next;
-            SwingUtilities.invokeLater(() -> {
-                if (then == null) {
-                    finish();
-                } else {
-                    then.run();
-                }
-            });
-        }, name).start();
+    private void background(String name, FlowSteps.Step step) {
+        FlowSteps.inBackground(name, log, "First-time startup", step,
+                reason -> () -> tell(getText("bindings.firstTimeStartup.result.failed", reason)),
+                reason -> () -> tell(getText("bindings.firstTimeStartup.stopped", reason)),
+                this::finish);
     }
 }

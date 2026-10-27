@@ -1,5 +1,7 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.util.OsDetector;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -7,7 +9,6 @@ import java.nio.file.Path;
 import java.nio.file.attribute.DosFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -24,9 +25,10 @@ final class ReadOnlyFlag {
 
     /**
      * Decided by the system, not by which views the file store offers: on Linux the JDK offers a "dos" view wherever
-     * extended attributes are enabled, emulated in an attribute nothing else reads (review, 2026-10-25).
+     * extended attributes are enabled, emulated in an attribute nothing else reads (review, 2026-10-25). Asked of
+     * {@link OsDetector}, as the rest of Elite-Intel asks it (Krondor's review, 2026-10-27).
      */
-    private static final boolean WINDOWS = System.getProperty("os.name", "").toLowerCase(Locale.ROOT).startsWith("windows");
+    private static final boolean WINDOWS = OsDetector.getOs() == OsDetector.OS.WINDOWS;
 
     private ReadOnlyFlag() {
     }

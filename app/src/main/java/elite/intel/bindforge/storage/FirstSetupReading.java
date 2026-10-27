@@ -38,7 +38,6 @@ public record FirstSetupReading(Path bindingsFolder, Map<String, byte[]> binding
                                 FirstSetupPlan plan, Map<String, Map<String, Integer>> references) {
 
     private static final Logger log = LogManager.getLogger(FirstSetupReading.class);
-    private static final String BINDS_SUFFIX = ".binds";
 
     public FirstSetupReading {
         Objects.requireNonNull(bindingsFolder, "bindingsFolder");
@@ -62,7 +61,7 @@ public record FirstSetupReading(Path bindingsFolder, Map<String, byte[]> binding
         Map<String, Map<String, Integer>> references = new LinkedHashMap<>();
         Set<String> referenced = new LinkedHashSet<>();
         bindings.forEach((name, content) -> {
-            if (!name.endsWith(BINDS_SUFFIX)) return;
+            if (!Backups.isBindsFile(name)) return;
             try {
                 Map<String, Integer> counts = BindsDeviceReferences.referenceCountsIn(content);
                 references.put(name, counts);

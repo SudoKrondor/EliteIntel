@@ -6,7 +6,9 @@ import elite.intel.bindforge.install.InstallationRegistry;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.session.PlayerSession;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,19 +48,58 @@ public record BackupSources(Path bindingsFolder, List<Installation> installation
         public Path controlSchemes() {
             return GameInstallation.controlSchemesUnder(root);
         }
+
+        /**
+         * Whether it can be backed up and written now: the stored list does not mark it missing, and its
+         * {@code ControlSchemes} folder is there. <strong>The one test for "reachable"</strong> - first-time startup,
+         * the backup, the write and RESTORE all ask it (Krondor's review, 2026-10-27). Touches the disk.
+         */
+        public boolean reachable() {
+            return isReachable(missing, root);
+        }
+    }
+
+    /** {@link Installation#reachable()} for a stored row - what first-time startup reads. Touches the disk. */
+    static boolean reachable(InstallationRow row) {
+        return isReachable(row.missing(), Path.of(row.rootPath()));
+    }
+
+    private static boolean isReachable(boolean missing, Path root) {
+        return !missing && Files.isDirectory(GameInstallation.controlSchemesUnder(root));
     }
 
     /**
-     * Runs installation detection and reads the stored list, so a backup taken before first-time startup has ever
-     * run still covers every installation on the machine (storage.md rule 12). Touches the disk and the database -
-     * not for the EDT.
+     * Runs installation detection, <strong>records what it found in the stored list</strong>, and returns the bindings
+     * folder and every stored installation - so a backup taken before first-time startup has ever run still covers
+     * every installation on the machine (storage.md rule 12). Touches the disk and the database - not for the EDT.
      */
-    public static BackupSources gather() {
+    public static BackupSources rescan() {
         Path bindingsFolder = PlayerSession.getInstance().getBindingsDir();
         GameInstallationProvider provider = GameInstallationProvider.forThisPlatform(bindingsFolder);
         List<GameInstallation> detected = provider.findInstallations();
         List<InstallationRow> rows = new InstallationRegistry(provider).rescan(detected);
         return of(bindingsFolder, rows, detected);
+    }
+
+    /**
+     * Exactly the installations given, each with the bindings folder detection reports for it - first-time startup's
+     * write, which covers the installations it read and no other (storage.md rule 1). An installation unreachable when
+     * it was read is marked missing, so it is neither backed up nor written even if it is back by now.
+     *
+     * @param reachable   the installations read, in order
+     * @param unreachable the installations that could not be read
+     * @param detected    what detection found, for each installation's own bindings folder on Linux
+     */
+    static BackupSources of(Path bindingsFolder, List<InstallationRow> reachable, List<InstallationRow> unreachable,
+                            List<GameInstallation> detected) {
+        List<InstallationRow> rows = new ArrayList<>(reachable);
+        unreachable.forEach(row -> rows.add(row.missing() ? row : asMissing(row)));
+        return of(bindingsFolder, rows, detected);
+    }
+
+    private static InstallationRow asMissing(InstallationRow row) {
+        return new InstallationRow(row.id(), row.storefront(), row.rootPath(), row.addedByHand(), true,
+                row.missedWrite());
     }
 
     /**

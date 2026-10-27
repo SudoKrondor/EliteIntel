@@ -13,6 +13,7 @@ import elite.intel.ui.widget.HudPanel;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudStepper;
 import elite.intel.ui.widget.HudTable;
+import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,7 +24,6 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -50,7 +50,6 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
 public class BindingManagementPanel extends JPanel {
 
     private static final Logger log = LogManager.getLogger(BindingManagementPanel.class);
-    private static final DateTimeFormatter CREATED = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final int BEFORE_CHANGES_STEP = 10;
 
     /**
@@ -228,6 +227,11 @@ public class BindingManagementPanel extends JPanel {
             } catch (IOException e) {
                 log.warn("Backup Now failed", e);
                 failure = e;
+            } catch (RuntimeException e) {
+                // WHY: broad on purpose - a thread boundary. The backup reads the stored installations, and a database
+                // fault escaping here left Player Backups busy until restart (Krondor's review, 2026-10-27).
+                log.error("Backup Now stopped", e);
+                failure = new IOException(StringUtls.messageOf(e), e);
             }
             Backup result = taken;
             IOException resultFailure = failure;
@@ -262,7 +266,7 @@ public class BindingManagementPanel extends JPanel {
         }
         if (!HudConfirmDialog.confirm(this,
                 getText("bindings.bindingManagement.delete.confirm.title"),
-                getText("bindings.bindingManagement.delete.confirm.text", backup.taken().format(CREATED)),
+                getText("bindings.bindingManagement.delete.confirm.text", backup.taken().format(Backups.TAKEN_FORMAT)),
                 getText("bindings.bindingManagement.button.delete"),
                 getText("button.cancel"))) {
             return;
@@ -492,7 +496,7 @@ public class BindingManagementPanel extends JPanel {
         tableModel.setRowCount(0);
         for (Backup backup : listed) {
             tableModel.addRow(new Object[]{
-                    backup.taken().format(CREATED),
+                    backup.taken().format(Backups.TAKEN_FORMAT),
                     getText(takenKey(backup)),
                     getText(backup.full() ? "bindings.bindingManagement.status.full"
                             : "bindings.bindingManagement.status.partial")

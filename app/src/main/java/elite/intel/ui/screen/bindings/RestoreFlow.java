@@ -6,11 +6,9 @@ import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -33,7 +31,6 @@ final class RestoreFlow {
 
     private static final Logger log = LogManager.getLogger(RestoreFlow.class);
 
-    private static final DateTimeFormatter TAKEN = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final Component parent;
 
@@ -77,7 +74,7 @@ final class RestoreFlow {
      */
     void offerNewest(String why, Backup newest, Runnable onFinished) {
         Objects.requireNonNull(newest, "newest");
-        String taken = newest.taken().format(TAKEN);
+        String taken = newest.taken().format(Backups.TAKEN_FORMAT);
         if (!HudConfirmDialog.confirm(parent, getText("bindings.restore.title"),
                 getText("bindings.restore.unreadable.text", why, taken),
                 getText("bindings.restore.confirm.button"), getText("bindings.restore.notNow"))) {
@@ -109,8 +106,8 @@ final class RestoreFlow {
         background("BindForge-RestoreWrite", onFinished, () -> {
             String message;
             try {
-                Restore.Restored restored = restore.write(prepared.contents(), chosen.files());
-                message = restoredText(restored, chosen.moved());
+                Written written = restore.write(prepared, chosen.files());
+                message = restoredText(written, chosen.moved());
             } catch (Edits.WriteRunningException e) {
                 log.info("RESTORE not run: {}", e.getMessage());
                 message = getText("bindings.writeRunning");
@@ -158,47 +155,25 @@ final class RestoreFlow {
     }
 
     /** The report: where the old files went, how many installations took it, bindings a merge moved, what failed. */
-    private static String restoredText(Restore.Restored restored, int moved) {
-        Written written = restored.written();
+    private static String restoredText(Written written, int moved) {
         WriteReport report = written.report();
         StringBuilder text = new StringBuilder(getText("bindings.restore.result.written",
                 written.backup().zip().toString(), report.installationsUpdated(), report.installations().size()));
         if (moved > 0) text.append('\n').append(getText("bindings.firstTimeStartup.result.moved", moved));
         text.append(FirstTimeStartupFlow.placeFailures(report));
-        if (restored.setUpAskedAgain()) text.append('\n').append(getText("bindings.restore.result.setUpAgain"));
+        if (written.setUpAskedAgain()) text.append('\n').append(getText("bindings.restore.result.setUpAgain"));
         return text.toString();
     }
 
     private void tell(String message, Runnable onFinished) {
-        HudConfirmDialog.info(parent, getText("bindings.restore.title"), message,
-                getText("bindings.aliasDesigner.firstSetup.close"));
-        onFinished.run();
+        FlowSteps.tell(parent, getText("bindings.restore.title"), message, onFinished);
     }
 
-    /** Disk work that hands back the next step for the EDT. */
-    @FunctionalInterface
-    private interface Step {
-        Runnable run() throws IOException;
-    }
-
-    private void background(String name, Runnable onFinished, Step step) {
-        new Thread(() -> {
-            Runnable next;
-            try {
-                next = step.run();
-            } catch (IOException e) {
-                log.warn("RESTORE could not read the backup", e);
-                String reason = StringUtls.messageOf(e);
-                next = () -> tell(getText("bindings.restore.readFailed", reason), onFinished);
-            } catch (RuntimeException e) {
-                // WHY: broad on purpose - a thread boundary; escaping, it would leave Player Backups busy for good. A
-                // RuntimeException here is a bug, not a bad backup, so it is logged as one and not blamed on the
-                // backup (review, 2026-10-25).
-                log.error("RESTORE stopped", e);
-                String reason = StringUtls.messageOf(e);
-                next = () -> tell(getText("bindings.restore.stopped", reason), onFinished);
-            }
-            SwingUtilities.invokeLater(next);
-        }, name).start();
+    /** Escaping, a fault would leave Player Backups busy for good - {@link FlowSteps#inBackground} catches it. */
+    private void background(String name, Runnable onFinished, FlowSteps.Step step) {
+        FlowSteps.inBackground(name, log, "RESTORE", step,
+                reason -> () -> tell(getText("bindings.restore.readFailed", reason), onFinished),
+                reason -> () -> tell(getText("bindings.restore.stopped", reason), onFinished),
+                onFinished);
     }
 }

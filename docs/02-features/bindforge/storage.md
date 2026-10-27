@@ -63,6 +63,18 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
   Storage S4, because once the flag is set it would write to the game's files unasked (principle 4). Default labels
   come back at APPLY in S4.
 
+**Settled from Krondor's review (Alan, 2026-10-27; Storage S4R):**
+
+- **First-time startup writes the installations it read, and no other.** An installation found only while the dialogs
+  are open (a drive plugged in, say) is neither backed up nor written, and one that was unreachable when the files were
+  read stays out of the write even if it is back by then. Either one is reconciled later, as rule 1 says. **RESTORE** also
+  writes the installations its confirmation names.
+- **"Reachable" means one thing everywhere:** the stored list does not mark the installation missing, and its
+  `ControlSchemes` folder is there. First-time startup, the backup, the write and RESTORE all use this test
+  (`BackupSources.Installation.reachable`). An installation folder with no `ControlSchemes` in it counts as unreachable.
+- **If the flag cannot be set after the write,** the user is told the files were written and that first-time startup
+  will be offered again at the next click. RESTORE already says this (rule 10). It never says *"Nothing was written"*.
+
 ## Opening BindForge
 
 5. The first time the user clicks the BindForge tab in an Elite-Intel session, [the check](#when-a-live-copy-differs)

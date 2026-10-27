@@ -94,6 +94,8 @@ final class FirstSetupDialog extends JDialog {
     private JTable table;
     private JPanel choicePanel;
     private Choice choice;
+    /** Whether a merge is being made off the EDT - a second click does nothing meanwhile. */
+    private boolean merging;
 
     /** @param installNames what each installation is called, keyed by its id as text */
     FirstSetupDialog(Component parent, FirstSetupReading reading, Map<String, String> installNames) {
@@ -157,6 +159,7 @@ final class FirstSetupDialog extends JDialog {
                 .dismiss(cancel)
                 .build();
         setContentPane(AppTheme.hudModalScaffold(spec));
+        setGlassPane(clickBlocker());
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         pack();
         setSize(Math.max(getWidth(), 820), Math.max(getHeight(), 520));
@@ -343,15 +346,40 @@ final class FirstSetupDialog extends JDialog {
                     getText("bindings.aliasDesigner.firstSetup.close"));
             return;
         }
-        FirstSetupFiles.Merged merged;
-        try {
-            merged = FirstSetupFiles.merge(reading, Map.copyOf(answers));
-        } catch (IOException e) {
-            // WHY: nothing was written - the working copy could not be made from these files, and the file is named.
-            log.warn("First-time startup could not merge the installations", e);
-            HudConfirmDialog.info(this, wording.title(),
-                    getText("bindings.firstTimeStartup.mergeFailed", StringUtls.messageOf(e)),
-                    getText("bindings.aliasDesigner.firstSetup.close"));
+        if (merging) return;
+        merging = true;
+        setContentEnabled(false);
+        Map<String, String> given = Map.copyOf(answers);
+        // WHY: the merge parses and rewrites every device file and binds file, so it runs off the EDT, with the
+        // dialog greyed until it is done (Krondor's review, 2026-10-27).
+        new Thread(() -> {
+            FirstSetupFiles.Merged merged = null;
+            String failure = null;
+            try {
+                merged = FirstSetupFiles.merge(reading, given);
+            } catch (IOException e) {
+                // WHY: nothing was written - the working copy could not be made from these files, and the file is
+                // named.
+                log.warn("First-time startup could not merge the installations", e);
+                failure = getText("bindings.firstTimeStartup.mergeFailed", StringUtls.messageOf(e));
+            } catch (RuntimeException e) {
+                // WHY: broad on purpose - a thread boundary; escaping, it would leave the dialog greyed for good.
+                log.error("First-time startup stopped while merging the installations", e);
+                failure = getText("bindings.firstTimeStartup.stopped", StringUtls.messageOf(e));
+            }
+            FirstSetupFiles.Merged result = merged;
+            String failed = failure;
+            SwingUtilities.invokeLater(() -> merged(result, failed));
+        }, "BindForge-FirstSetupMerge").start();
+    }
+
+    /** On the EDT, once the merge is made: its failure, or the summary to confirm. */
+    private void merged(FirstSetupFiles.Merged merged, String failure) {
+        merging = false;
+        if (!isDisplayable()) return;
+        setContentEnabled(true);
+        if (failure != null) {
+            HudConfirmDialog.info(this, wording.title(), failure, getText("bindings.aliasDesigner.firstSetup.close"));
             return;
         }
         StringBuilder summary = new StringBuilder(getText("bindings.firstTimeStartup.summary.merge",
@@ -365,6 +393,26 @@ final class FirstSetupDialog extends JDialog {
         }
         choice = new Choice(merged.files(), merged.bindingsMoved());
         dispose();
+    }
+
+    /**
+     * Greys the dialog while a merge is made: a glass pane takes the mouse and shows the wait cursor. Cancelling by
+     * keyboard meanwhile simply closes it, and the merge's result is then dropped.
+     */
+    private void setContentEnabled(boolean enabled) {
+        Component glass = getGlassPane();
+        glass.setCursor(enabled ? Cursor.getDefaultCursor() : Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        glass.setVisible(!enabled);
+    }
+
+    /** The glass pane {@link #setContentEnabled} shows: it takes every click while it is up. */
+    private static JPanel clickBlocker() {
+        JPanel blocker = new JPanel();
+        blocker.setOpaque(false);
+        // WHY: a glass pane with no mouse listener lets clicks through to the buttons beneath.
+        blocker.addMouseListener(new java.awt.event.MouseAdapter() {
+        });
+        return blocker;
     }
 
     private String nameOf(long installId, String storefront) {

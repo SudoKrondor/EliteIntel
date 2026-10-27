@@ -105,11 +105,8 @@ public final class ConfigurationFiles {
     }
 
     // WHY: a name is resolved against a game folder when it is written, so "..\x", "C:x" or a full path would write
-    // outside it.
+    // outside it - the one check RESTORE's backup reading uses too (Krondor's review, 2026-10-27).
     private static void requirePlainName(String name) {
-        if (name.isBlank() || name.contains("/") || name.contains("\\") || name.contains(":")
-                || name.equals("..") || name.equals(".")) {
-            throw new IllegalArgumentException("a file name, not a path: " + name);
-        }
+        if (!FileNames.plain(name)) throw new IllegalArgumentException("a file name, not a path: " + name);
     }
 }

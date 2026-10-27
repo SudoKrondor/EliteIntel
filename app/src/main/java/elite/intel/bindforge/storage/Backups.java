@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.io.AtomicFiles;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,14 +59,13 @@ public final class Backups {
     static final String BINDINGS = "Bindings";
     static final String INSTALLATIONS = "Installations";
     static final String CONTROL_SCHEMES = "ControlSchemes";
-    static final String DEVICE_MAPPINGS = "DeviceMappings.xml";
-    static final String DEVICE_BUTTON_MAPS = "DeviceButtonMaps";
     private static final String ZIP = ".zip";
     /** Zip entry names always use a forward slash, whatever the platform. */
     private static final char ENTRY_SEPARATOR = '/';
 
     private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
-    private static final DateTimeFormatter READABLE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    /** How a backup's time is shown - in {@code backup-info.txt} and on screen. One pattern, used everywhere. */
+    public static final DateTimeFormatter TAKEN_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     /** A stamp, then the number added when two backups of one kind share a second. */
     private static final Pattern NAME = Pattern.compile("(\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2})(-\\d+)?\\.zip");
     /** The temporary file {@link AtomicFiles} writes a zip to before renaming it into place. */
@@ -75,7 +75,6 @@ public final class Backups {
     private static final Pattern BINDS_FILE = Pattern.compile(".+\\.\\d+\\.\\d+\\.binds");
     /** {@code StartPreset.4.start}; a leftover pre-Odyssey {@code StartPreset.start} is not one. */
     private static final Pattern START_PRESET_FILE = Pattern.compile("StartPreset\\.\\d+\\.start");
-    static final String BUTTON_MAP_SUFFIX = ".buttonMap";
 
     private static final String KIND_LINE = "Kind: ";
     private static final String BEFORE_LINE = "Taken before: ";
@@ -187,7 +186,7 @@ public final class Backups {
 
     /** Detection and the stored installations, the chosen backup folder, and the system clock. */
     public static Backups stored() {
-        return new Backups(BackupSources::gather, BackupDestination.stored()::resolve, Clock.systemDefaultZone());
+        return new Backups(BackupSources::rescan, BackupDestination.stored()::resolve, Clock.systemDefaultZone());
     }
 
     Backups(Sources sources, Root root, Clock clock) {
@@ -432,29 +431,34 @@ public final class Backups {
         }
 
         Path controlSchemes = installation.controlSchemes();
-        if (installation.missing() || !Files.isDirectory(controlSchemes)) {
+        if (!installation.reachable()) {
             copy.notRead.add(label + ": folder not found");
             return;
         }
         String schemesEntry = into + ENTRY_SEPARATOR + CONTROL_SCHEMES + ENTRY_SEPARATOR;
-        Path deviceMappings = controlSchemes.resolve(DEVICE_MAPPINGS);
+        Path deviceMappings = controlSchemes.resolve(GameInstallation.DEVICE_MAPPINGS);
         if (Files.isRegularFile(deviceMappings)) {
-            copy.file(deviceMappings, schemesEntry + DEVICE_MAPPINGS);
+            copy.file(deviceMappings, schemesEntry + GameInstallation.DEVICE_MAPPINGS);
         }
-        Path buttonMaps = controlSchemes.resolve(DEVICE_BUTTON_MAPS);
+        Path buttonMaps = controlSchemes.resolve(GameInstallation.DEVICE_BUTTON_MAPS);
         if (!Files.isDirectory(buttonMaps)) return;
         List<Path> found;
         try (Stream<Path> files = Files.list(buttonMaps)) {
             found = files.filter(Files::isRegularFile)
-                    .filter(f -> f.getFileName().toString().endsWith(BUTTON_MAP_SUFFIX)).sorted().toList();
+                    .filter(f -> f.getFileName().toString().endsWith(GameInstallation.BUTTON_MAP_SUFFIX)).sorted().toList();
         } catch (IOException e) {
-            copy.notRead.add(label + "'s " + DEVICE_BUTTON_MAPS + ": " + reason(e));
+            copy.notRead.add(label + "'s " + GameInstallation.DEVICE_BUTTON_MAPS + ": " + reason(e));
             log.warn("Could not list {}", buttonMaps, e);
             return;
         }
         for (Path file : found) {
-            copy.file(file, schemesEntry + DEVICE_BUTTON_MAPS + ENTRY_SEPARATOR + file.getFileName());
+            copy.file(file, schemesEntry + GameInstallation.DEVICE_BUTTON_MAPS + ENTRY_SEPARATOR + file.getFileName());
         }
+    }
+
+    /** Whether {@code name} is a binds file's name - {@code <name>.<major>.<minor>.binds}. */
+    static boolean isBindsFile(String name) {
+        return BINDS_FILE.matcher(name).matches();
     }
 
     static boolean isBindingsFile(Path file) {
@@ -467,7 +471,7 @@ public final class Backups {
                                List<String> notRead) {
         StringBuilder text = new StringBuilder();
         text.append("Elite-Intel backup of your game input configuration files.\n");
-        text.append("Taken: ").append(taken.format(READABLE)).append('\n');
+        text.append("Taken: ").append(taken.format(TAKEN_FORMAT)).append('\n');
         text.append(KIND_LINE).append(kind.infoLabel).append('\n');
         if (before != null) text.append(BEFORE_LINE).append(before.infoLabel).append('\n');
         text.append(STATUS_LINE).append(notRead.isEmpty() ? FULL : PARTIAL).append('\n');

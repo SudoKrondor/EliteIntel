@@ -1261,6 +1261,13 @@ vocabulary.** The game does not bind a pad on `<GamePad>` by `Joy_` tokens: it w
 | Device Editor (A9) | `Joy_` label boxes for a device the game draws itself ([`gameDrawsIt`](#default-labels-for-every-connected-named-controller)) | labels that never show in game |
 | Device Editor lights | axes unknown, so nothing is lit | the reported bug |
 
+**Settled 2026-10-27 (Alan, from Krondor's storage review; Storage S4R): a GamePad's sticks are not captured.** Andrea's
+gamepad work, merged from `V1.2-i18n-IT`, already captures buttons, the D-pad and the triggers under `GamePad_` tokens. It
+captured a stick pushed one way as `Neg_Joy_XAxis` and the like, but a pad never uses `Joy_` tokens, and no preset shows
+which of its own tokens the game writes for half a stick. So the capture dialog ignores a pad's sticks
+(`ControllerCapture.gamepadAxis`), and nothing is guessed into a binds file. The answers to the open questions below
+decide what replaces this.
+
 **Proposed (Krondor, 2026-10-23) — to settle with Alan before building:**
 
 - **Read a gamepad as a

@@ -47,6 +47,8 @@ public final class ControllerCapture {
     private final Set<BindingInput> held = new LinkedHashSet<>();
     private final Map<String, Integer> hatDirections = new HashMap<>();
     private final Map<String, Integer> axisDirections = new HashMap<>();
+    /** Where each axis rests - the first value seen for it. */
+    private final Map<String, Float> rests = new HashMap<>();
 
     /**
      * @param device  the controller's {@code .binds} name
@@ -130,14 +132,21 @@ public final class ControllerCapture {
     }
 
     /**
+     * <strong>Measured from where the axis rests, not from centre</strong> (Krondor's review, 2026-10-27): a throttle,
+     * slider or toe brake parked at one end would otherwise be captured the moment it jitters. Where it rests is the
+     * first value reported after capture began - {@link DeviceEditorLights}' rule (Alan, 2026-10-10): an axis is
+     * reported only when it moves, in raw steps, so the first report arrives within a hair of where it sat.
+     *
      * @param axis the game's axis slot behind the SDL axis
      * @param value the current normalized value
-     * @return what to assign when the axis moves far enough; empty while centred or held in the same direction
+     * @return what to assign when the axis moves far enough from rest; empty while at rest or held in the same
+     * direction
      */
     public Optional<Captured> axis(String device, GameAxis axis, float value) {
         Objects.requireNonNull(axis, "axis");
         String key = device + "#" + axis.token();
-        int direction = Math.abs(value) < AXIS_ACTIVATION_THRESHOLD ? 0 : value < 0 ? -1 : 1;
+        float travel = value - rests.computeIfAbsent(key, k -> value);
+        int direction = Math.abs(travel) < AXIS_ACTIVATION_THRESHOLD ? 0 : travel < 0 ? -1 : 1;
         int before = axisDirections.getOrDefault(key, 0);
         axisDirections.put(key, direction);
         if (direction == before) return Optional.empty();
@@ -150,11 +159,16 @@ public final class ControllerCapture {
     }
 
     /**
-     * Like {@link #axis}, but the GamePad's triggers are captured under their own tokens, one direction each.
+     * A GamePad's axes: its triggers are captured under their own tokens, one direction each. <strong>Its sticks are
+     * not captured</strong> (Alan, 2026-10-27, from Krondor's review): a pad never uses {@code Joy_} tokens, and which
+     * of its own the game writes for a stick pushed one way is not measured yet (testing item 27) - so nothing is
+     * guessed into a binds file.
+     *
+     * @return the trigger pulled; always empty for a stick
      */
     public Optional<Captured> gamepadAxis(String device, GameAxis axis, float value) {
         Optional<String> trigger = gamepadTriggerToken(axis);
-        return trigger.isPresent() ? trigger(device, trigger.get(), value) : axis(device, axis, value);
+        return trigger.isPresent() ? trigger(device, trigger.get(), value) : Optional.empty();
     }
 
     /** @return Elite's token for the GamePad trigger that SDL reports as this axis; empty for any other axis */
@@ -187,12 +201,13 @@ public final class ControllerCapture {
     }
 
     /**
-     * Forgets what one controller holds - it was unplugged, so no release will come.
+     * Forgets what one controller holds - it was unplugged, so no release will come - and where its axes rest.
      */
     public void release(String device) {
         held.removeIf(input -> input.device().equals(device));
         hatDirections.keySet().removeIf(key -> key.startsWith(device + "#"));
         axisDirections.keySet().removeIf(key -> key.startsWith(device + "#"));
+        rests.keySet().removeIf(key -> key.startsWith(device + "#"));
     }
 
     private Captured press(BindingInput input) {

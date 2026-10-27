@@ -84,6 +84,7 @@ class ControllerCaptureTest {
 
     @Test
     void anAxisMovementCapturesItsDirection() {
+        assertEquals(Optional.empty(), capture.axis(STICK, GameAxis.RX, 0.0f), "where it rests");
         assertEquals(Optional.of(new Captured(input(STICK, "Pos_Joy_RXAxis"), List.of())),
                 capture.axis(STICK, GameAxis.RX, 0.8f));
         assertEquals(Optional.empty(), capture.axis(STICK, GameAxis.RX, 0.9f));
@@ -92,8 +93,26 @@ class ControllerCaptureTest {
                 capture.axis(STICK, GameAxis.RX, -0.8f));
     }
 
+    /** Krondor's review, 2026-10-27: measured from where the axis rests, so a parked throttle is not captured. */
+    @Test
+    void anAxisRestingAtOneEndIsNotCapturedUntilItIsMovedFromThere() {
+        assertEquals(Optional.empty(), capture.axis(THROTTLE, GameAxis.Z, -1.0f), "parked at one end");
+        assertEquals(Optional.empty(), capture.axis(THROTTLE, GameAxis.Z, -0.95f), "jitter");
+        assertEquals(Optional.of(new Captured(input(THROTTLE, "Pos_Joy_ZAxis"), List.of())),
+                capture.axis(THROTTLE, GameAxis.Z, -0.4f), "pushed forward, away from where it rests");
+    }
+
+    @Test
+    void anUnpluggedControllerForgetsWhereItsAxesRest() {
+        capture.axis(THROTTLE, GameAxis.Z, -1.0f);
+        capture.release(THROTTLE);
+
+        assertEquals(Optional.empty(), capture.axis(THROTTLE, GameAxis.Z, 0.8f), "a new rest, not a push");
+    }
+
     @Test
     void changingAxisDirectionDoesNotMakeTheOldDirectionAModifier() {
+        capture.axis(STICK, GameAxis.RZ, 0.0f);
         capture.axis(STICK, GameAxis.RZ, -0.8f);
         assertEquals(List.of(), capture.axis(STICK, GameAxis.RZ, 0.8f).orElseThrow().modifiers());
     }
@@ -118,10 +137,12 @@ class ControllerCaptureTest {
                 capture.gamepadAxis("GamePad", GameAxis.Z, 0.5f), "pulled again after it went back to rest");
     }
 
+    /** Alan, 2026-10-27: a pad never uses Joy_ tokens, and its own stick tokens are not measured yet. */
     @Test
-    void aGamePadStickIsCapturedLikeAnyAxis() {
-        assertEquals(Optional.of(new Captured(input("GamePad", "Neg_Joy_XAxis"), List.of())),
-                capture.gamepadAxis("GamePad", GameAxis.X, -0.8f));
+    void aGamePadStickIsNotCaptured() {
+        assertEquals(Optional.empty(), capture.gamepadAxis("GamePad", GameAxis.X, 0.0f));
+        assertEquals(Optional.empty(), capture.gamepadAxis("GamePad", GameAxis.X, -0.8f));
+        assertEquals(Optional.empty(), capture.gamepadAxis("GamePad", GameAxis.RY, 0.9f));
     }
 
     @Test
@@ -185,7 +206,9 @@ class ControllerCaptureTest {
 
     @Test
     void anAxisHeldFromAnEarlierMotionIsNeverAnAxisModifier() {
+        capture.axis(STICK, GameAxis.RX, 0.0f);
         capture.axis(STICK, GameAxis.RX, -0.8f);
+        capture.axis(STICK, GameAxis.RY, 0.0f);
         assertEquals(List.of(), capture.axis(STICK, GameAxis.RY, 0.8f).orElseThrow().modifiers());
     }
 

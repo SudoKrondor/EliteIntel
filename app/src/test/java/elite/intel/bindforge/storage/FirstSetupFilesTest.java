@@ -48,6 +48,24 @@ class FirstSetupFilesTest {
         assertEquals(List.of(BINDS, PRESET), List.copyOf(files.bindings().keySet()));
     }
 
+    /**
+     * Krondor's review, 2026-10-27: two installations that agree in having no DeviceMappings.xml give a working copy
+     * with none - where it went through "use one installation for all", it threw on the EDT.
+     */
+    @Test
+    void identicalInstallationsWithNoDeviceMappingsGiveAWorkingCopyWithNone() throws IOException {
+        Map<String, byte[]> maps = Map.of("RVWAP.buttonMap", map("<Joy_1>TRIGGER</Joy_1>"));
+        FirstSetupReading reading = reading(binds("RVWAP"),
+                installation(STEAM, "STEAM", null, maps), installation(EPIC, "EPIC", null, maps));
+        assertTrue(reading.identical());
+
+        ConfigurationFiles files = FirstSetupFiles.identical(reading);
+
+        assertFalse(files.hasDeviceMappings());
+        assertEquals(List.of("RVWAP.buttonMap"), List.copyOf(files.buttonMaps().keySet()));
+        assertEquals(List.of(BINDS, PRESET), List.copyOf(files.bindings().keySet()));
+    }
+
     @Test
     void withNoInstallationTheWorkingCopyHoldsTheBindsAndPresetFilesAlone() throws IOException {
         ConfigurationFiles files = FirstSetupFiles.identical(reading(binds("RVWAP")));

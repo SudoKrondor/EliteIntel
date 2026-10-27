@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.install.GameInstallation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -60,8 +61,6 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
             Pattern.compile(Backups.INSTALLATIONS + "[\\\\/](\\d+-[^:]+): ([^,]+), (.+)");
     /** Bounded, so the number always fits - one of ours is never past a handful (review, 2026-10-25). */
     private static final Pattern INSTALLATION_FOLDER = Pattern.compile("(\\d{1,9})-(.+)");
-    /** Characters Windows refuses in a file name - a name holding one is not one Elite-Intel wrote. */
-    private static final String NOT_IN_A_NAME = "<>:\"|?*\\";
 
     public BackupContents {
         Objects.requireNonNull(zip, "zip");
@@ -73,6 +72,11 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
     public static final class NotABackupException extends IOException {
         NotABackupException(Path zip, String why) {
             super(zip.getFileName() + " is not an Elite-Intel backup: " + why);
+        }
+
+        /** Keeping the cause - the zip reader's own words, for the log (Krondor's review, 2026-10-27). */
+        NotABackupException(Path zip, String why, Throwable cause) {
+            super(zip.getFileName() + " is not an Elite-Intel backup: " + why, cause);
         }
     }
 
@@ -118,7 +122,7 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
             }
             return new BackupContents(zip, takenOf(info), bindings, installationsOf(installations, info));
         } catch (ZipException e) {
-            throw new NotABackupException(zip, "not a zip");
+            throw new NotABackupException(zip, "not a zip", e);
         }
     }
 
@@ -141,13 +145,13 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
 
     private static boolean isDeviceMappingsEntry(String[] parts) {
         return parts.length == 4 && isInstallationFolder(parts) && parts[2].equals(Backups.CONTROL_SCHEMES)
-                && parts[3].equals(Backups.DEVICE_MAPPINGS);
+                && parts[3].equals(GameInstallation.DEVICE_MAPPINGS);
     }
 
     private static boolean isButtonMapEntry(String[] parts) {
         return parts.length == 5 && isInstallationFolder(parts) && parts[2].equals(Backups.CONTROL_SCHEMES)
-                && parts[3].equals(Backups.DEVICE_BUTTON_MAPS) && plain(parts[4])
-                && parts[4].endsWith(Backups.BUTTON_MAP_SUFFIX) && parts[4].length() > Backups.BUTTON_MAP_SUFFIX.length();
+                && parts[3].equals(GameInstallation.DEVICE_BUTTON_MAPS) && plain(parts[4])
+                && parts[4].endsWith(GameInstallation.BUTTON_MAP_SUFFIX) && parts[4].length() > GameInstallation.BUTTON_MAP_SUFFIX.length();
     }
 
     private static boolean isInstallationFolder(String[] parts) {
@@ -157,14 +161,10 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
 
     // WHY: a name is written into a game folder, so one that is a path - "..", "C:x", a backslash - would write outside
     // it, and one Windows refuses - a reserved character, or a space or dot at the end - would throw rather than be
-    // skipped (reviews, 2026-10-25). Never one Elite-Intel wrote; skipped rather than trusted.
+    // skipped (reviews, 2026-10-25). Never one Elite-Intel wrote; skipped rather than trusted. The one check the
+    // working copy's names use too (Krondor's review, 2026-10-27).
     private static boolean plain(String name) {
-        if (name.isBlank() || name.endsWith(" ") || name.endsWith(".")) return false;
-        for (int i = 0; i < name.length(); i++) {
-            char c = name.charAt(i);
-            if (c < ' ' || NOT_IN_A_NAME.indexOf(c) >= 0) return false;
-        }
-        return true;
+        return FileNames.plain(name);
     }
 
     // ---- what backup-info.txt says

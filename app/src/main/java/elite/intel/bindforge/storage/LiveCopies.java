@@ -42,6 +42,9 @@ final class LiveCopies {
 
     static final String FOLDER_NOT_FOUND = "folder not found";
 
+    /** A failure line: a .buttonMap the set lacks was kept because its read-only flag could not be read. */
+    static final String NOT_REMOVED_FLAG_UNREADABLE = "not removed: whether it is read-only could not be read";
+
     /**
      * Decides, just before an installation is written, whether to leave it alone - APPLY's for an installation whose
      * device files differ from the working copy (Alan, 2026-10-26).
@@ -67,7 +70,7 @@ final class LiveCopies {
         Place bindings = writeBindings(files);
         List<Place> installations = sources.installations().stream()
                 .map(installation -> {
-                    boolean present = !installation.missing() && Files.isDirectory(installation.controlSchemes());
+                    boolean present = installation.reachable();
                     if (present && leaveAlone.leaveAlone(installation)) {
                         return new Place(WriteReport.Kind.INSTALLATION, installation.storefront(), installation.root(),
                                 List.of(), List.of(), List.of(), List.of(), true);
@@ -96,7 +99,7 @@ final class LiveCopies {
     private Place writeInstallation(BackupSources.Installation installation, ConfigurationFiles files) {
         Writing writing = new Writing();
         Path controlSchemes = installation.controlSchemes();
-        if (installation.missing() || !Files.isDirectory(controlSchemes)) {
+        if (!installation.reachable()) {
             writing.failures.add(FOLDER_NOT_FOUND);
             return writing.place(WriteReport.Kind.INSTALLATION, installation.storefront(), installation.root());
         }
@@ -178,12 +181,14 @@ final class LiveCopies {
                 // WHY: the user protected it, so it is not removed against that - asked before deleting, because on
                 // Linux the delete would succeed whatever the file's own permission. They are told how to let it go,
                 // rather than shown the system's "access denied" (principle 9; Alan, 2026-10-25, from the review).
-                // Not knowing is a failure, never a delete: the file may be one the user protected (review, 2026-10-27).
                 boolean readOnly;
                 try {
                     readOnly = ReadOnlyFlag.isSet(file);
                 } catch (IOException e) {
-                    fail(file, e);
+                    // WHY: a file whose protection cannot be read may be protected, so it is kept, not deleted, and
+                    // reported (Krondor's review, 2026-10-27). Taken for unprotected, it was deleted.
+                    failures.add(name + ": " + NOT_REMOVED_FLAG_UNREADABLE + " (" + reason(e) + ")");
+                    log.warn("Did not remove {}: whether it is read-only could not be read", file, e);
                     continue;
                 }
                 if (readOnly) {

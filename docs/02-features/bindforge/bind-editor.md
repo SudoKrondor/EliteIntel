@@ -623,6 +623,12 @@ and real files use it: `DualVirpilDawnTreader.4.1.binds` puts `Neg_Joy_YAxis` on
 slot and `Neg_Joy_RYAxis` on Toggle HUD. The AXIS DIRECTIONS page offers a *+* and a *−* for every axis the
 device reports.
 
+**An axis is captured by how far it moves from where it rests, not from centre** (Alan, 2026-10-27, from Krondor's
+storage review; Storage S4R). Measured from centre, a throttle, slider or toe brake resting at one end was captured as
+soon as it jittered. Where an axis rests is the first value reported after capture begins, the same rule as the
+Device Editor's lights ([alias-designer.md](alias-designer.md)). A GamePad's sticks are not captured at all
+([alias-designer.md, *A gamepad is not a joystick*](alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor)).
+
 **Hats.** A hat is written `Joy_POV1Up`, `Joy_POV1Down`, `Joy_POV1Left`, `Joy_POV1Right`, and a diagonal sets two
 of them at once ([format §5.4](domain-knowledge/EliteDangerous-BindsFileFormat.md#54-pov--hat-codes)). Real
 files bind them to button rows — `FocusRightPanel` on `Joy_POV1Right`. Some hardware reports its hats as plain

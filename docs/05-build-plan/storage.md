@@ -123,6 +123,7 @@ its table (`12007`), `BindingsMonitor` (not BindForge's — it reloads the assis
 | S2b | **First-time startup.** On the BindForge tab's first click while the flag is not set: the installation list with **Confirm** and **Add missing** (checked for `EliteDangerous64.exe`); device files reconciled by **use one installation for all** (that installation's files whole; warning when it removes an entry bindings use) or **merge** (`FirstSetupPlan`, `LabelMerge` kept; bindings on a losing name moved to the winner in the working copy's binds files); the working copy created and written out through `WritePath` with the first setup backup; the flag set. Game Install Locations: **Add missing**, **Remove** (stays removed), **Run first-time startup again**; Rescan and Relocate removed. A migration adds the removed flag and drops `bindforge_activation.backup_folder`. **Removes:** `BeforeBindForgeBackup`, `DeviceFilesSnapshot`, `Activation`'s silent path, first setup's database fill (the master stays empty until S4 removes it) | 1–4, 8 | **done 2026-10-25** |
 | S3 | **RESTORE.** Choose a backup; it backs up what is there now, puts the whole backup back — `.binds` and `StartPreset.4.start` to the bindings folder, device files to every installation as one set, reconciled as in first setup when the backup's installations differ; an installation the backup does not hold is replaced too, no reconcile, and the confirmation names every installation (Alan, 2026-10-25) — and replaces the working copy. Its confirmation says everything is replaced and edits on screen are lost. **Browse for Backup File**, with *"Only restore your own backups…"*. **If the working copy cannot be read**, say so and offer the newest backup. **Removes:** `restoreToWorkingCopy`, `restoreToLive`, Restore to Editing Slot | 10 | **done 2026-10-25** |
 | S4a | **The APPLY / DISCARD bar, and the Device Editor on it** (S4 split in two, Alan, 2026-10-26). Edits not applied, held on screen and shared by the tabs (`bindforge.storage.Edits`); the bar under Elite-Intel's main tabs, lit only when there are edits. **APPLY:** back up, save the edits into the working copy, write it out (S2), confirm with rule 13's sentence and the Linux note; **an installation whose device files differ from the working copy, by value, is not written and is reported** until it is reconciled (S9) (Alan, 2026-10-26). **DISCARD** drops every edit; RESTORE and first-time startup drop them too. Alias Designer reads the working copy; Device Editor SAVE, CLEAR, RESET LABELS, rename and shadow, and **onboarding's FINISH with A17's old-id move** (Alan, 2026-10-26: its writes went through the push this slice removes), become edits; a rename or a binding move rewrites the working copy's binds files as part of the edit; default labels shown on screen and written at the next APPLY without lighting the bar. **Removes:** the screen's own APPLY / DISCARD, the divergence list and its ways out, the installation markers and the Device Editor's install strip, catch-up and its startup line, Edit History, the poll, `DeviceApply`, `DeviceFilesPush` and `DeviceOnboarding` | 6, 7, 8, 13 | **done 2026-10-26** |
+| S4R | **Krondor's storage review** (Alan, 2026-10-27): the findings in [Krondor's review](#krondors-review--2026-10-27). He reviewed the storage code up to S3 and the `V1.2-i18n-IT` merge, so **check each finding against today's code first** - S3's follow-ups and S4a may have fixed some - and fix only those still true; say which were already fixed. Findings 2, 3 and 14 are in Andrea's Supertonic and gamepad work, merged into this branch: they are fixed here like the rest (Alan, 2026-10-27). **Then narrowed by Krondor, the same day: only BindForge changes, by package** - 14 (`devices.model.DeviceDescription`) and 15 (`CLAUDE.md`) are dropped; 2 and 3 stay (`bindforge.devices`) | - | **done 2026-10-27** |
 | S4b | **The identity question on the bar, and the old tables gone** (Alan, 2026-10-26). The identity retarget becomes an edit, and the questions read the working copy. **Removes:** the master / draft / pending-removal / old-name / id-move tables, `missed_write` and `edit_history_retention` (a new migration drops them), their managers and DAOs. The Bind Editor's label readers (`SavedDeviceLabels`, `CaptureControllers`, `InputSettingsPanel`) read the working copy and the edits. **Rewrites** [device-provenance.md](../03-data-models/device-provenance.md) to what is left | 6, 7 | **next** |
 | S5 | **Bind Editor on the bar.** Load opens any binds file from the working copy, not only the active one; capture SAVE and the inline toggles become edits. **Removes:** the launch-time copy of the active `.binds` (`loadOrImportFromGame`), its APPLY / REVERT, `promptCloseWithDraft`, the checksum in `BindingsWorkingCopyRepository` and the `.bak` beside it, `BindingsApplyService`'s own backup folder, the KEYMAP readout | 6, 7 | pending |
 | S6 | **The preset file on the bar.** The working copy's `StartPreset.4.start`; **APPLY refuses first**, naming the sections, when any of the four lines is empty or names no binds file the BindName list offers — before any backup or write. Written as four lines, CRLF, no final newline. **P3 review finding 2:** the live file is found once and that file is read and written. **Finding 5:** a test that nothing is written when the backup fails. **Removes:** `StartPresetStore`'s master and draft, `StartPresetComparison`, `StartPresetApply`'s merge. Then [P4](preset-editor.md#slices), the screen, resumes | 7 | pending |
@@ -141,10 +142,70 @@ edit model. S8–S10 are the check, which APPLY then runs. S11 and S12 are new f
 **After these:** Preset Editor P4 (after S6); Bind Editor E2–E6 (after S5); Alias Designer A19, CLEAR moving bindings
 to a hardware ID (after S4b); A18 and E7 stay blocked on [testing item 27](../00-overview/testing-required.md#bindforge).
 
+## Krondor's review — 2026-10-27
+
+*Krondor's review of the storage code (S1 to S3) and the `V1.2-i18n-IT` merge, as he sent it to Alan. Built in slice
+S4R. His own numbers are kept. He found no new dependencies, no `@SuppressWarnings`, no event-shape changes and no
+effect on security or the journal-only rule, and left out uncalled API and the Alias Designer gap (S4a has since
+closed it). He judged the storage code careful overall: the write order explicit, interrupted writes handled,
+failures reported per place, tests in the matching package, migrations `12010`–`12012` clean.*
+
+**Most important**
+
+1. **Wrong "nothing was written" message.** If first-time startup cannot record that it is complete, it has already
+   written the backup, the working copy and the game files, yet the flow tells the user *"Nothing was written to your
+   game files"*. RESTORE handles the same failure correctly with `setUpAskedAgain`. No test covers it.
+2. **Axis capture fires on its own.** It measures movement from centre, not from where the axis rests, so a throttle,
+   slider or toe brake resting at -1 is assigned the moment it jitters. `DeviceEditorLights` already learns each
+   axis's rest position; capture should too. *(Andrea's work.)*
+3. **Gamepad sticks get `Joy_` tokens** such as `Neg_Joy_XAxis`. The repo's own format reference says a gamepad never
+   uses `Joy_` tokens; its sticks are `GamePad_LStickX` and the like. Krondor marked it *plausible*, not confirmed:
+   which token family the game writes is not measured yet. *(Andrea's work.)*
+4. **`FirstSetupFiles.identical()` can throw on the Swing UI thread.** With two identical installations that both
+   lack `DeviceMappings.xml` it throws, leaving first-time startup unavailable for the rest of the run, or Player
+   Backups busy for good.
+5. **First-time startup can overwrite an installation it never reconciled.** The write looks for installations again
+   instead of using the ones it read, so a drive plugged in while the dialogs are open gets the working copy written
+   over it - which storage.md rule 1 forbids.
+
+**Robustness**
+
+6. Backup Now catches only `IOException`; a database failure leaves Player Backups disabled until restart.
+7. `LiveCopies.isReadOnly` swallows errors and returns false, so a protected `.buttonMap` gets deleted.
+
+**Consistency, duplication and docs**
+
+8. First-time startup and the backup and write disagree on what counts as a reachable installation.
+9. Constants, helpers and the "file name, not a path" check are duplicated, and the duplicates differ.
+10. Three functional interfaces have the same signature.
+11. `RestoreFlow` and `FirstTimeStartupFlow` repeat the same background-step and message code.
+12. `ReadOnlyFlag` checks the OS itself instead of using `OsDetector`.
+13. `BackupSources.gather()` writes to the database despite its name.
+14. A comment on the gamepad axis order contradicts the list it describes. *(Andrea's work.)*
+15. The CLAUDE.md package table does not mention `bindforge.storage`.
+16. to 18. Smaller items: cleanup in `LiveCopiesTest`, a lost cause on a corrupt zip, and the merge running on the
+    Swing UI thread.
+
 ## Hand-off notes
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the next
 slice needs.*
+
+- **2026-10-27 — S4R done: Krondor's storage review.** All 18 findings were still true; 16 fixed, 14 and 15 dropped
+  (Krondor: BindForge only, by package). **Decided (Alan):** a GamePad's sticks are not captured until testing item 27
+  (alias-designer.md *A gamepad is not a joystick*); axis capture measures from rest (bind-editor.md *Axis directions*);
+  first-time startup writes only the installations it read, one meaning of "reachable", a flag that cannot be set is
+  reported with the write (storage.md *Settled from Krondor's review*); `BackupSources.gather` renamed `rescan`.
+  **Built:** `WritePath.write(files, places, backUp)` for first-time startup and RESTORE (APPLY still finds its own);
+  `Written.setUpAskedAgain` replaces `Restore.Restored`; `Restore.Prepared` carries its places and the identical set,
+  worked out off the EDT; `FileNames`, `FlowSteps`, `Backups.TAKEN_FORMAT` and `isBindsFile`; the merge off the EDT.
+  **Left:** `BindsDeviceReferences` (devicefiles) keeps its own `.binds` suffix; no test for a `.buttonMap` whose flag
+  cannot be read; `bindings.firstTimeStartup.result.written` still opens *"First-time startup is complete"* above the
+  ask-again line when the flag fails. **S4b needs:** nothing new from this slice.
+  **Rebased onto Krondor's `e08d5cd46`** (S4a second review follow-up), which fixed findings 1 and 7 his own way: kept
+  his one write at a time (`storedWriter` runs `WritePath.write(files, places, backUp)` inside `Edits.whileWriting`),
+  the write-running and stopped-part-way messages and his `firstTimeStartup.result.setUpAgain` string; his
+  `FirstTimeStartup.Completed` folded into `Written.setUpAskedAgain`; S4R's `NOT_REMOVED_FLAG_UNREADABLE` kept.
 
 - **2026-10-27 — S4a review follow-up** (`code-integrity-review.md`, all 15 findings). **Decided (Alan):** the report
   promises the next APPLY only for the bindings folder - a missed or read-only-kept installation is left as it is

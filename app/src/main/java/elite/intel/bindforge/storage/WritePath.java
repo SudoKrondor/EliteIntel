@@ -49,11 +49,11 @@ public final class WritePath {
     private final Consumer<ConfigurationFiles> written;
 
     /**
-     * The stored working copy, and the bindings folder and installations a backup covers. Each set written is handed to
+     * The stored working copy, and the bindings folder and installations APPLY finds. Each set written is handed to
      * {@link Edits}, which then starts from it and drops the edits on screen (Storage S4a).
      */
     public static WritePath stored() throws IOException {
-        return new WritePath(WorkingCopy.stored(), BackupSources::gather, Edits.onWritten());
+        return new WritePath(WorkingCopy.stored(), BackupSources::rescan, Edits.onWritten());
     }
 
     WritePath(WorkingCopy workingCopy, Supplier<BackupSources> sources, Consumer<ConfigurationFiles> written) {
@@ -63,21 +63,28 @@ public final class WritePath {
     }
 
     /**
-     * Backs up, saves {@code files} as the working copy, and writes them to every live copy.
+     * Backs up, saves {@code files} as the working copy, and writes them to exactly the places given - the ones the
+     * caller read and showed the user. First-time startup and RESTORE write this way, so an installation that turns up
+     * while their dialogs are open is not written unseen (storage.md rule 1; Krondor's review, 2026-10-27).
      *
      * @param files  the whole set - the working copy becomes exactly this
+     * @param places the bindings folder and installations to back up and write; one that is missing, or whose folder
+     *               is gone by now, is reported as not found
      * @param backUp the backup to take first
      * @return what each place took; a place that could not be written is in it, not thrown
      * @throws IOException if the backup cannot be taken, or the working copy cannot be saved - no live copy was
      *                     written
      */
-    public WriteReport write(ConfigurationFiles files, BackUpFirst backUp) throws IOException {
-        return write(files, backUp, LiveCopies.LeaveAlone.NONE);
+    public WriteReport write(ConfigurationFiles files, BackupSources places, BackUpFirst backUp) throws IOException {
+        synchronized (WRITING) {
+            return write(files, places, backUp, LiveCopies.LeaveAlone.NONE);
+        }
     }
 
     /**
-     * As {@link #write(ConfigurationFiles, BackUpFirst)}, leaving alone each installation {@code leaveAlone} picks -
-     * asked just before that installation would be written, after the backup and the working copy.
+     * APPLY's write: finds the places itself, then as {@link #write(ConfigurationFiles, BackupSources, BackUpFirst)},
+     * leaving alone each installation {@code leaveAlone} picks - asked just before that installation would be written,
+     * after the backup and the working copy.
      */
     WriteReport write(ConfigurationFiles files, BackUpFirst backUp, LiveCopies.LeaveAlone leaveAlone)
             throws IOException {
@@ -85,14 +92,19 @@ public final class WritePath {
             // WHY: found once, for the backup and the write alike. Found twice, an installation found only the second
             // time - a drive plugged in between - would be written with no backup of it (principle 3; review,
             // 2026-10-24).
-            BackupSources places = sources.get();
-            Backup backup = backUp.take(places);
-            workingCopy.write(files);
-            written.accept(files);
-            WriteReport report = new LiveCopies(places).write(files, leaveAlone);
-            log(backup, report);
-            return report;
+            return write(files, sources.get(), backUp, leaveAlone);
         }
+    }
+
+    /** Holds {@code WRITING}. */
+    private WriteReport write(ConfigurationFiles files, BackupSources places, BackUpFirst backUp,
+                              LiveCopies.LeaveAlone leaveAlone) throws IOException {
+        Backup backup = backUp.take(places);
+        workingCopy.write(files);
+        written.accept(files);
+        WriteReport report = new LiveCopies(places).write(files, leaveAlone);
+        log(backup, report);
+        return report;
     }
 
     private static void log(Backup backup, WriteReport report) {
