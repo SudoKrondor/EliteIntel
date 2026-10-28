@@ -33,7 +33,8 @@ import java.util.stream.Stream;
  * the working copy is never half one set and half another.
  * <p>
  * Only APPLY, first setup, RESTORE and the check's reconcile write it (principles.md, <em>Words</em>), each through
- * {@link WritePath}. Anything else in the folder - the Bind Editor's own copies until Storage S5 - is left alone.
+ * {@link WritePath}. Anything else in the folder - the Bind Editor's own loose copies, which nothing reads since
+ * Storage S5 (Alan, 2026-10-28) - is left alone.
  * Touches the disk - not for the EDT.
  */
 public final class WorkingCopy {

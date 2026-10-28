@@ -67,9 +67,8 @@ public class AppView extends JFrame implements AppViewInterface {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                if (bindingsTabPanel != null) {
-                    bindingsTabPanel.promptCloseWithDraft();
-                }
+                // WHY no prompt: BindForge's edits not applied are lost on close until Storage S7's leave prompt
+                // (Alan, 2026-10-26, accepted under no interim compatibility).
                 System.exit(0);
             }
         });

@@ -13,6 +13,9 @@ import elite.intel.bindforge.rules.AiAccess;
 import elite.intel.bindforge.rules.BindingConflictScanner;
 import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
 import elite.intel.bindforge.rules.MissingBindingAutoAssigner;
+import elite.intel.bindforge.storage.BindsEdits;
+import elite.intel.bindforge.storage.ConfigurationFiles;
+import elite.intel.bindforge.storage.Edits;
 import elite.intel.bindforge.storage.SavedDeviceLabels;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.DataDirectoryValidator;
@@ -20,9 +23,9 @@ import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.dialog.AssignKeyboardBindingDialog;
 import elite.intel.ui.dialog.ClearKeyboardBindingDialog;
+import elite.intel.ui.event.BindForgeEditsChangedEvent;
 import elite.intel.ui.event.BindingsSummaryChangedEvent;
 import elite.intel.ui.event.BindingsUpdatedEvent;
-import elite.intel.ui.event.KeymapSyncStateChangedEvent;
 import elite.intel.ui.support.*;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.*;
@@ -36,14 +39,12 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.HierarchyEvent;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import static elite.intel.ui.dialog.HudConfirmDialog.info;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
 import static elite.intel.ui.theme.HudForms.sizeFieldLabel;
@@ -51,9 +52,14 @@ import static elite.intel.ui.theme.HudGlyphs.verticalEllipsisIcon;
 import static elite.intel.ui.theme.HudPalette.*;
 
 /**
- * The "Binding Profile" sub-tab of BIND FORGE: bindings directory/profile/file fields, the
- * Used/Missing Bindings tables, conflict detection, hover callouts, and the Auto-Assign Missing Binds/Revert/Apply
- * footer. Extracted from the former monolithic {@code BindingsTabPanel}.
+ * The "Binding Profile" sub-tab of BIND FORGE - the Bind Editor: the binds file chosen from the working copy, the
+ * Used/Missing Bindings tables, conflict detection, hover callouts and Auto-Assign Missing Binds. Extracted from the
+ * former monolithic {@code BindingsTabPanel}.
+ * <p>
+ * <strong>It shows and changes the edits not applied</strong> (Storage S5, 2026-10-28): any binds file in the working
+ * copy loads, and capture SAVE, CLEAR and Auto-Assign are edits that light the one APPLY / DISCARD bar above
+ * BindForge's tabs. Nothing here writes a file (storage.md rule 6). Reading and changing the edits touch the disk, so
+ * both run off the EDT.
  */
 public class BindingProfilePanel extends JPanel {
     private static final Logger log = LogManager.getLogger(BindingProfilePanel.class);
@@ -65,7 +71,6 @@ public class BindingProfilePanel extends JPanel {
      */
     private static final int KEY_INPUT_PACING_STEP_MS = 10;
 
-    private final BindingsLoader loader = new BindingsLoader();
     private final KeyBindingsParser parser = KeyBindingsParser.getInstance();
     private final BindingsMonitor monitor = BindingsMonitor.getInstance();
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -73,29 +78,26 @@ public class BindingProfilePanel extends JPanel {
     private final KeyboardKeyAvailabilityService availabilityService = new KeyboardKeyAvailabilityService();
     private final BindingsWriter bindingsWriter = new BindingsWriter();
     /**
-     * Reads controller inputs by the names saved in the Device Editor - re-read whenever the grid is shown.
+     * Reads controller inputs by the names and labels in the edits - read with the binds file, off the EDT.
      */
     private BindingSlotDisplayFormatter slotFormatter = new BindingSlotDisplayFormatter();
+    /** The names and labels {@link #slotFormatter} reads, for the capture dialog's controller tabs. */
+    private SavedDeviceLabels labels = SavedDeviceLabels.NONE;
     private final BindingsSelectionController selectionController;
     private final BindingsGroupTableFactory tableFactory;
-    private final BindingsWorkingCopyRepository workingCopyRepo = new BindingsWorkingCopyRepository();
-    private final BindingsApplyService applyService = new BindingsApplyService();
     private final MissingBindingAutoAssigner autoAssigner = new MissingBindingAutoAssigner();
+    private final RefreshCoalescer refreshes = new RefreshCoalescer();
 
-    private JTextField profileField;
-    private JTextField filePathField;
+    private JComboBox<String> bindsFileBox;
+    private JButton loadButton;
     private JTextField bindingsDirField;
     private JPanel keyboardOnlyBanner;
     private BindingSaveResultPresenter saveResultPresenter;
-    private BindingApplyResultPresenter applyResultPresenter;
     private JPanel usedBindingsPanel;
     private JPanel missingBindingsPanel;
     private JScrollPane usedBindingsScrollPane;
     private JScrollPane missingBindingsScrollPane;
     private JTabbedPane tabs;
-    private StatusBadge syncStatusBadge;
-    private JButton applyButton;
-    private JButton revertButton;
     private JButton fixAllButton;
     private JCheckBox conflictsOnlyCheck;
     /**
@@ -120,16 +122,15 @@ public class BindingProfilePanel extends JPanel {
      * Recomputed on each load.
      */
     private Map<String, Set<String>> recommendationsByBinding = Map.of();
-    /** Working copy file currently loaded in the editor - used for stale checks. */
-    private File activeBindingsFile;
-    private FileTime activeBindingsLastModified;
-    private long activeBindingsFileSize = -1;
-    /** The actual game binds file - source for Apply and for the file-path display field. */
-    private File gameBindingsFile;
-    /** The preset file name (e.g. {@code Custom.3.0.binds}) - key for the working copy. */
-    private String activePresetFileName;
+    /** The binds file shown, by file name - {@code null} when none could be read. */
+    private volatile String loadedFile;
+    /** Its bytes as the edits held them when it was read - what the capture dialog checks a key against. */
+    private byte[] loadedContent;
+    /** The file LOAD asked for, shown at the next read if the edits still hold it. */
+    private volatile String wantedFile;
     private boolean assignDialogOpen;
-    private boolean autoFixInProgress;
+    /** A change to the edits is running - SAVE, CLEAR or Auto-Assign; a second waits for it. */
+    private boolean changeRunning;
 
     public BindingProfilePanel() {
         selectionController = new BindingsSelectionController();
@@ -142,16 +143,14 @@ public class BindingProfilePanel extends JPanel {
                 id -> recommendationsByBinding.containsKey(id),
                 this::buildRowCalloutContent);
         buildUi();
-        // WHY: what the grid shows also comes from outside the binds file - button names saved in the Device
-        // Editor, and which controls custom commands tap - and nothing announces a change to either. Coming
-        // back to this tab is when the commander looks, so that is when it is read again.
+        // WHY: what the grid shows also comes from outside the binds file - which controls custom commands tap - and
+        // nothing announces a change to it. Coming back to this tab is when the commander looks, so that is when it
+        // is read again.
         addHierarchyListener(event -> {
             if ((event.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) == 0 || !isShowing()) return;
-            reloadDeviceLabels();
-            renderBindingTables();
+            initData();
         });
         saveResultPresenter = new BindingSaveResultPresenter(this);
-        applyResultPresenter = new BindingApplyResultPresenter(this);
         UiBus.register(this);
     }
 
@@ -159,61 +158,22 @@ public class BindingProfilePanel extends JPanel {
         UiBus.unregister(this);
     }
 
+    /**
+     * The edits changed - an edit here or in the Alias Designer, DISCARD, APPLY, RESTORE or first-time startup - so the
+     * binds file shown may have.
+     */
     @Subscribe
-    public void onBindingsUpdated(BindingsUpdatedEvent event) {
+    public void onEditsChanged(BindForgeEditsChangedEvent event) {
         SwingUtilities.invokeLater(this::initData);
     }
 
     /**
-     * Returns {@code true} if a draft working copy exists that differs from the
-     * current game file. Used by the parent window to decide whether to show a
-     * close confirmation dialog.
+     * The live bindings changed - {@code BindingsMonitor} saw the bindings folder change. Only the AI tab's counts
+     * read them; the grid shows the edits.
      */
-    public boolean hasUnappliedChanges() {
-        if (activePresetFileName == null || gameBindingsFile == null) {
-            return false;
-        }
-        try {
-            return workingCopyRepo.hasUnappliedDraft(activePresetFileName, gameBindingsFile.toPath());
-        } catch (Exception e) {
-            return true;
-        }
-    }
-
-    /**
-     * Shows a modal dialog when the user closes the application with an unapplied
-     * draft. Offers Apply, Keep Draft, or Discard. Blocks until the user responds.
-     * Must be called on the EDT.
-     */
-    public void promptCloseWithDraft() {
-        if (!hasUnappliedChanges()) {
-            return;
-        }
-        Object[] options = {
-                getText("bindings.close.draft.apply"),
-                getText("bindings.close.draft.keep"),
-                getText("bindings.close.draft.discard")
-        };
-        int choice = JOptionPane.showOptionDialog(
-                this,
-                getText("bindings.close.draft.text"),
-                getText("bindings.close.draft.title"),
-                JOptionPane.YES_NO_CANCEL_OPTION,
-                JOptionPane.WARNING_MESSAGE,
-                null,
-                options,
-                options[1]
-        );
-        if (choice == 0) {
-            // Apply
-            performApply();
-        } else if (choice == 2) {
-            // Discard
-            if (activePresetFileName != null) {
-                workingCopyRepo.delete(activePresetFileName);
-            }
-        }
-        // choice == 1 (Keep Draft) or dialog closed: do nothing, draft is already on disk
+    @Subscribe
+    public void onBindingsUpdated(BindingsUpdatedEvent event) {
+        new Thread(this::publishLiveSummary, "BindForge-BindingsSummary").start();
     }
 
     private void buildUi() {
@@ -254,8 +214,8 @@ public class BindingProfilePanel extends JPanel {
         gbc.insets = new Insets(2, 0, 6, 7);
         gbc.anchor = GridBagConstraints.WEST;
 
-        // Single-column grid: [label | field | affordance]. All three rows share the label
-        // column width and the field right edge; vertical-ellipsis and the in-field "i" line up on the right.
+        // Single-column grid: [label | field | affordance]. Both rows share the label column width and the field
+        // right edge; the vertical-ellipsis and LOAD line up on the right.
         // Row 0 - Bindings Directory + picker
         addProfileLabel(details, getText("player.bindingsDirectory"), gbc, 0, LABEL_COL_WIDTH);
         bindingsDirField = readOnlyField();
@@ -271,17 +231,23 @@ public class BindingProfilePanel extends JPanel {
         gbc.insets = new Insets(2, 0, 6, 7);
         details.add(selectBindingsDirButton, gbc);
 
-        // Row 1 - Profile (field spans the picker column so its right edge aligns)
+        // Row 1 - the binds file, from the working copy with the edits on it, and LOAD (bind-editor.md, Shell)
         gbc.gridy = 1;
-        addProfileLabel(details, getText("bindings.profileName"), gbc, 0, LABEL_COL_WIDTH);
-        profileField = readOnlyInfoField("bindings.profileName.info");
-        addProfileField(details, profileField, gbc, 1, 2, 1.0);
+        addProfileLabel(details, getText("bindings.bindsFile"), gbc, 0, LABEL_COL_WIDTH);
+        bindsFileBox = new JComboBox<>();
+        AppTheme.styleComboBox(bindsFileBox);
+        bindsFileBox.setToolTipText(getText("bindings.bindsFile.tooltip"));
+        addProfileField(details, bindsFileBox, gbc, 1, 1, 1.0);
 
-        // Row 2 - File
-        gbc.gridy = 2;
-        addProfileLabel(details, getText("bindings.filePath"), gbc, 0, LABEL_COL_WIDTH);
-        filePathField = readOnlyInfoField("bindings.filePath.info");
-        addProfileField(details, filePathField, gbc, 1, 2, 1.0);
+        loadButton = makeButtonSubtle(getText("bindings.bindsFile.load"));
+        loadButton.setToolTipText(getText("bindings.bindsFile.load.tooltip"));
+        loadButton.addActionListener(e -> loadSelected());
+        gbc.gridx = 2;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.insets = new Insets(2, 0, 6, 7);
+        details.add(loadButton, gbc);
 
         profileCardBody.add(details, BorderLayout.CENTER);
         return profileCardBody;
@@ -304,16 +270,6 @@ public class BindingProfilePanel extends JPanel {
     }
 
     private JPanel buildFooter() {
-        syncStatusBadge = new StatusBadge("", StatusBadge.State.INFO);
-
-        revertButton = makeButtonSubtle(getText("bindings.button.revert.short"));
-        revertButton.setToolTipText(getText("bindings.button.revert.tooltip"));
-        revertButton.addActionListener(e -> revertFromGame());
-
-        applyButton = makeButton(getText("bindings.button.apply.short"));
-        applyButton.setToolTipText(getText("bindings.button.apply.tooltip"));
-        applyButton.addActionListener(e -> performApply());
-
         fixAllButton = makeButtonSubtle(getText("bindings.button.fixAll.short"));
         fixAllButton.setToolTipText(getText("bindings.button.fixAll.tooltip"));
         fixAllButton.addActionListener(e -> fixAllMissing());
@@ -325,102 +281,120 @@ public class BindingProfilePanel extends JPanel {
         vegaOnlyCheck.setToolTipText(getText("bindings.filter.vegaOnly.tooltip"));
         vegaOnlyCheck.addActionListener(e -> renderBindingTables());
 
-        // Non-modal footer: sync status on the left, then the conflicts-only filter, AUTO-ASSIGN MISSING BINDS,
-        // REVERT and APPLY (primary) on the right, no BACK.
-        return HudFooter.build(false, null, syncStatusBadge,
-                List.of(conflictsOnlyCheck, vegaOnlyCheck, fixAllButton, revertButton, applyButton));
+        // Non-modal footer: the filters and AUTO-ASSIGN MISSING BINDS on the right, no BACK. APPLY and DISCARD are
+        // the bar's, above BindForge's tabs (Storage S5).
+        return HudFooter.build(false, null, null,
+                List.of(conflictsOnlyCheck, vegaOnlyCheck, fixAllButton));
     }
 
+    /**
+     * Reads the edits and the binds file to show, off the EDT, then shows them - the file LOAD asked for, else the one
+     * shown, else the one the preset file's General line names, else the first.
+     * <p>
+     * A read already in flight is left to finish, and one more follows it - see {@link RefreshCoalescer}.
+     */
     public void initData() {
-        selectionController.resetTables();
         bindingsDirField.setText(playerSession.getBindingsDir().toString());
+        if (!refreshes.tryStart()) return;
+        String wanted = wantedFile != null ? wantedFile : loadedFile;
+        new Thread(() -> {
+            Loaded read = read(wanted);
+            SwingUtilities.invokeLater(() -> {
+                show(read);
+                if (refreshes.finish()) initData();
+            });
+            publishLiveSummary();
+        }, "BindForge-BindEditorRead").start();
+    }
+
+    /** LOAD: the file chosen in the list. */
+    private void loadSelected() {
+        Object chosen = bindsFileBox.getSelectedItem();
+        if (chosen == null) return;
+        wantedFile = chosen.toString();
+        initData();
+    }
+
+    /**
+     * What one read found. {@code file} is {@code null} when nothing could be shown - the log says why.
+     *
+     * @param asked the file this read was asked for, LOAD's or the one shown - {@code null} for neither
+     */
+    private record Loaded(String asked, List<String> files, String file, byte[] content,
+                          Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots, SavedDeviceLabels labels) {
+        static Loaded nothing(String asked) {
+            return new Loaded(asked, List.of(), null, null, Map.of(), SavedDeviceLabels.NONE);
+        }
+    }
+
+    /** Reads the edits and parses the file to show. Off the EDT. */
+    private Loaded read(String asked) {
         try {
-            File resolvedGameFile = resolveGameBindsFile();
-            String presetFileName = resolvedGameFile.getName();
-
-            Path workingCopyPath = workingCopyRepo.loadOrImportFromGame(
-                    presetFileName, resolvedGameFile.toPath());
-
-            Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots =
-                    parser.parseReadOnlyBindingSlots(workingCopyPath.toFile());
-            Map<String, KeyBindingsParser.BindingSlots> parsedSlots = parser.toExecutableSlots(slots);
-            conflicts = computeConflicts(parsedSlots);
-            recommendationsByBinding = computeRecommendations(parsedSlots);
-
-            currentSlots = slots;
-            reloadDeviceLabels();
-            activeBindingsFile = workingCopyPath.toFile();
-            activeBindingsLastModified = Files.getLastModifiedTime(workingCopyPath);
-            activeBindingsFileSize = Files.size(workingCopyPath);
-            gameBindingsFile = resolvedGameFile;
-            activePresetFileName = presetFileName;
-
-            profileField.setText(activeProfileName(resolvedGameFile));
-            filePathField.setText(resolvedGameFile.getAbsolutePath());
-
-            renderBindingTables();
-
-            // The AiTab badge reflects only the controls EliteIntel itself drives, so it reads the
-            // collapsed execution view - the one slot we would press - not both slots.
-            Map<String, KeyBindingsParser.KeyBinding> executable = parser.toExecutableBindings(parsedSlots);
-            UiBus.publish(new BindingsSummaryChangedEvent(
-                    monitor.findMissingGameBindings(executable).size(),
-                    monitor.findFoundGameBindings(executable).size()));
+            ConfigurationFiles current = Edits.stored().snapshot().current();
+            List<String> files = BindsEdits.bindsFiles(current);
+            if (files.isEmpty()) return Loaded.nothing(asked);
+            String file = asked != null && files.contains(asked)
+                    ? asked
+                    : BindsEdits.generalFile(current).orElse(files.getFirst());
+            byte[] content = current.bindings().get(file);
+            return new Loaded(asked, files, file, content, parser.parseReadOnlyBindingSlots(content),
+                    SavedDeviceLabels.of(current));
         } catch (Exception e) {
-            UiBus.publish(new BindingsSummaryChangedEvent(0, 0));
+            // WHY: broad on purpose - a thread boundary. Before first-time startup there is no working copy, and the
+            // BindForge tab says so; a damaged one is offered a restore there too. The grid shows nothing.
+            log.warn("The Bind Editor could not read the edits: {}", e.getMessage());
+            return Loaded.nothing(asked);
+        }
+    }
+
+    /** Shows what {@link #read} found. On the EDT. */
+    private void show(Loaded read) {
+        selectionController.resetTables();
+        bindsFileBox.setModel(new DefaultComboBoxModel<>(read.files().toArray(String[]::new)));
+        bindsFileBox.setSelectedItem(read.file());
+        boolean any = read.file() != null;
+        bindsFileBox.setEnabled(any);
+        loadButton.setEnabled(any);
+        // WHY only when this read was LOAD's: a LOAD pressed while an older read ran is read next, not forgotten.
+        if (Objects.equals(wantedFile, read.asked())) wantedFile = null;
+        loadedFile = read.file();
+        loadedContent = read.content();
+        labels = read.labels();
+        slotFormatter = new BindingSlotDisplayFormatter(labels);
+        currentSlots = read.slots();
+        if (!any) {
             conflicts = ConflictIndex.empty();
             recommendationsByBinding = Map.of();
-            clearLoadedBindingsSnapshot();
-            profileField.setText(getText("bindings.notAvailable"));
-            filePathField.setText(getText("bindings.notAvailable"));
             renderGroupedTables(usedBindingsPanel, Map.of(), BindingsGroupTableFactory.RowAction.NONE, getText("bindings.column.action"));
             renderGroupedTables(missingBindingsPanel, Map.of(), BindingsGroupTableFactory.RowAction.NONE, getText("bindings.column.action"));
             tabs.setTitleAt(0, getText("bindings.usedBindings", 0));
             tabs.setTitleAt(1, getText("bindings.missingBindings", 0));
             fixAllButton.setEnabled(false);
+            return;
         }
-        updateSyncStatus();
+        Map<String, KeyBindingsParser.BindingSlots> parsedSlots = parser.toExecutableSlots(currentSlots);
+        conflicts = computeConflicts(parsedSlots);
+        recommendationsByBinding = computeRecommendations(parsedSlots);
+        renderBindingTables();
     }
 
     /**
-     * Reads the Device Editor's button names again.
+     * The AI tab's counts, from the live bindings {@code BindingsMonitor} reads - what Vega presses, not what is on
+     * screen (Alan, 2026-10-28, Storage S5). Only the slot EliteIntel would press counts, not both slots.
      */
-    private void reloadDeviceLabels() {
-        slotFormatter = BindingSlotDisplayFormatter.withSavedLabels();
-    }
-
-    private void updateSyncStatus() {
-        if (applyButton == null || syncStatusBadge == null) {
+    private void publishLiveSummary() {
+        Map<String, KeyBindingsParser.KeyBinding> live = monitor.getBindings();
+        if (live == null) {
+            UiBus.publish(new BindingsSummaryChangedEvent(0, 0));
             return;
         }
-        boolean hasDraft = hasUnappliedChanges();
-
-        syncStatusBadge.setStatus(
-                hasDraft ? getText("bindings.status.draft.badge") : getText("bindings.status.synced.badge"),
-                hasDraft ? StatusBadge.State.STANDBY : StatusBadge.State.OK);
-        syncStatusBadge.setToolTipText(hasDraft ? getText("bindings.status.draft") : getText("bindings.status.synced"));
-
-        applyButton.setEnabled(hasDraft && activePresetFileName != null);
-        revertButton.setEnabled(activePresetFileName != null && workingCopyRepo.exists(activePresetFileName));
-
-        UiBus.publish(new KeymapSyncStateChangedEvent(!hasDraft));
-    }
-
-    private void performApply() {
-        if (activePresetFileName == null || gameBindingsFile == null) {
-            return;
-        }
-        try {
-            Path backupPath = applyService.apply(activePresetFileName, gameBindingsFile.toPath());
-            applyResultPresenter.showSuccess(backupPath);
-            updateSyncStatus();
-        } catch (BindingsApplyException e) {
-            applyResultPresenter.showError(e);
-        }
+        UiBus.publish(new BindingsSummaryChangedEvent(
+                monitor.findMissingGameBindings(live).size(),
+                monitor.findFoundGameBindings(live).size()));
     }
 
     private void fixAllMissing() {
-        if (activeBindingsFile == null || currentSlots.isEmpty() || autoFixInProgress) {
+        if (loadedFile == null || currentSlots.isEmpty() || changeRunning) {
             return;
         }
         int choice = JOptionPane.showConfirmDialog(
@@ -438,7 +412,7 @@ public class BindingProfilePanel extends JPanel {
     }
 
     private void autoFixSingleBinding(String bindingId) {
-        if (bindingId == null || bindingId.isBlank() || activeBindingsFile == null || autoFixInProgress) {
+        if (bindingId == null || bindingId.isBlank() || loadedFile == null || changeRunning) {
             return;
         }
         MissingBindingAutoAssigner.Plan plan = autoAssigner.planOne(bindingId, currentSlots);
@@ -449,71 +423,43 @@ public class BindingProfilePanel extends JPanel {
     }
 
     /**
-     * Writes a plan off the EDT. Each edit re-reads and rewrites the binds file
-     * (and re-parses it for conflict checks), so a large batch would freeze the
-     * UI if run on the dispatch thread. The file path is captured up front so the
-     * worker never touches mutable UI state; the result dialog and reload are
-     * marshalled back onto the EDT.
+     * Makes a plan's edits off the EDT, as one change to the edits. Each edit is checked against the file as the
+     * previous ones left it, so the conflict checks see them. The result dialog and the reload come back on the EDT.
      */
     private void applyPlanInBackground(MissingBindingAutoAssigner.Plan plan, Consumer<ApplyOutcome> onComplete) {
         if (plan.edits().isEmpty()) {
-            // Nothing to write (every target was skipped); report without touching the file.
+            // Nothing to change (every target was skipped); report without touching the edits.
             onComplete.accept(new ApplyOutcome(0, 0));
             return;
         }
-        Path file = activeBindingsFile.toPath();
-        setAutoFixBusy(true);
-        new Thread(() -> {
-            ApplyOutcome outcome = applyPlan(file, plan);
-            SwingUtilities.invokeLater(() -> {
-                setAutoFixBusy(false);
-                initData();
-                onComplete.accept(outcome);
-            });
-        }, "BindingsAutoFix-Thread").start();
+        String file = loadedFile;
+        AtomicInteger saved = new AtomicInteger();
+        AtomicInteger failed = new AtomicInteger();
+        offEdt(getText("bindings.autofix.result.title"),
+                () -> Edits.stored().change(current -> applyPlan(current, file, plan, saved, failed)),
+                () -> onComplete.accept(new ApplyOutcome(saved.get(), failed.get())), () -> { });
     }
 
-    private void setAutoFixBusy(boolean busy) {
-        autoFixInProgress = busy;
-        setCursor(busy ? Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR) : Cursor.getDefaultCursor());
-        if (busy) {
-            fixAllButton.setEnabled(false);
-        }
-        // When clearing busy, initData() recomputes the button's enabled state.
-    }
-
-    /**
-     * Writes each planned edit to the working copy via {@link BindingsWriter}.
-     * The file's timestamp and size change after every successful write, so the
-     * stale-check snapshot is refreshed before each edit.
-     */
-    private ApplyOutcome applyPlan(Path file, MissingBindingAutoAssigner.Plan plan) {
-        int saved = 0;
-        int failed = 0;
+    /** Each planned edit made to the binds file in turn; one refused is counted and the rest go on. Pure. */
+    private ConfigurationFiles applyPlan(ConfigurationFiles current, String file, MissingBindingAutoAssigner.Plan plan,
+                                         AtomicInteger saved, AtomicInteger failed) {
+        // WHY reset: Edits runs the change under its lock once; counted here so the dialog reports this run alone.
+        saved.set(0);
+        failed.set(0);
+        ConfigurationFiles files = current;
         for (MissingBindingAutoAssigner.PlannedEdit edit : plan.edits()) {
-            FileTime lastModified;
-            long size;
-            try {
-                lastModified = Files.getLastModifiedTime(file);
-                size = Files.size(file);
-            } catch (IOException e) {
-                // The working copy became unreadable mid-batch: count every
-                // remaining edit as failed so the summary total stays honest.
-                failed = plan.edits().size() - saved;
-                break;
-            }
-            KeyboardBindingEdit kbe = new KeyboardBindingEdit(
-                    file, edit.bindingId(), edit.slotType(), edit.key(), lastModified, size);
-            BindingSaveResult result = edit.modifier() == null
-                    ? bindingsWriter.assignKeyboardKey(kbe)
-                    : bindingsWriter.assignKeyboardKeyWithModifier(kbe, edit.modifier());
-            if (result == BindingSaveResult.SAVED) {
-                saved++;
+            KeyboardBindingEdit kbe = new KeyboardBindingEdit(edit.bindingId(), edit.slotType(), edit.key());
+            BindsEdits.Changed changed = BindsEdits.change(files, file, binds -> edit.modifier() == null
+                    ? bindingsWriter.assignKeyboardKey(binds, kbe)
+                    : bindingsWriter.assignKeyboardKeyWithModifier(binds, kbe, edit.modifier()));
+            if (changed.result() == BindingSaveResult.SAVED) {
+                saved.incrementAndGet();
+                files = changed.files();
             } else {
-                failed++;
+                failed.incrementAndGet();
             }
         }
-        return new ApplyOutcome(saved, failed);
+        return files;
     }
 
     private void showBatchSummary(ApplyOutcome outcome, MissingBindingAutoAssigner.Plan plan) {
@@ -577,22 +523,6 @@ public class BindingProfilePanel extends JPanel {
     private record ApplyOutcome(int saved, int failed) {
     }
 
-    private void revertFromGame() {
-        if (activePresetFileName == null || gameBindingsFile == null) {
-            return;
-        }
-        int response = JOptionPane.showConfirmDialog(
-                this,
-                getText("bindings.revert.confirm.text"),
-                getText("bindings.revert.confirm.title"),
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE);
-        if (response == JOptionPane.YES_OPTION) {
-            workingCopyRepo.delete(activePresetFileName);
-            initData();
-        }
-    }
-
     private void selectBindingsDirectory() {
         JFileChooser chooser = new JFileChooser();
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -610,20 +540,6 @@ public class BindingProfilePanel extends JPanel {
             DataDirectoryValidator.validateAndWarn(playerSession.getBindingsDir(), DataDirectoryValidator.DirectoryKind.BINDINGS);
             initData();
         }
-    }
-
-    private File resolveGameBindsFile() throws IOException {
-        return monitor.resolveActiveBindsFile();
-    }
-
-    private String activeProfileName(File bindingsFile) {
-        String presetName = loader.getActivePresetName();
-        if (presetName != null && !presetName.isBlank())
-            return presetName;
-
-        String fileName = bindingsFile.getName();
-        int profileEnd = fileName.indexOf('.');
-        return profileEnd > 0 ? fileName.substring(0, profileEnd) : fileName;
     }
 
     private void addProfileLabel(JPanel panel, String text, GridBagConstraints gbc, int column, int width) {
@@ -661,24 +577,6 @@ public class BindingProfilePanel extends JPanel {
         JTextField field = makeTextField();
         field.setEditable(false);
         return field;
-    }
-
-    /**
-     * Creates a read-only value field carrying an in-field info-"i" (HUD section 5.1) that opens the
-     * help text for {@code infoKey} on click - replaces the former external Unicode info button.
-     */
-    private JTextField readOnlyInfoField(String infoKey) {
-        HudTextField field = makeTextField(() -> showFieldInfo(infoKey));
-        field.setEditable(false);
-        return field;
-    }
-
-    private void showFieldInfo(String messageKey) {
-        JOptionPane.showMessageDialog(
-                this,
-                getText(messageKey),
-                getText("bindings.info.title"),
-                JOptionPane.INFORMATION_MESSAGE);
     }
 
     private JButton compactDirectoryChooserButton() {
@@ -1238,7 +1136,7 @@ public class BindingProfilePanel extends JPanel {
     }
 
     private void openAssignKeyboardBindingDialog(String bindingId, BindingSlotType slotType) {
-        if (bindingId == null || bindingId.isBlank() || activeBindingsFile == null || assignDialogOpen) {
+        if (bindingId == null || bindingId.isBlank() || loadedFile == null || assignDialogOpen || changeRunning) {
             return;
         }
         // Opening the dialog comes from a row click, so no mouseExited fires to dismiss the hover
@@ -1248,11 +1146,10 @@ public class BindingProfilePanel extends JPanel {
         // WHY no gate on what the slots hold: a controller slot opens like any other (Alan, 2026-10-15). The
         // writer refuses, without rewriting, a slot whose structure it does not know, and SAVE says so.
         KeyBindingsParser.ReadOnlyBindingSlots slots = currentSlots.get(bindingId);
-        // WHY: one read of the working copy for the tabs and the labels, not one per use (review, 2026-10-28).
-        SavedDeviceLabels labels = SavedDeviceLabels.load();
+        String file = loadedFile;
         AssignKeyboardBindingDialog dialog = new AssignKeyboardBindingDialog(
                 this,
-                activeBindingsFile.toPath(),
+                loadedContent,
                 bindingId,
                 slotType,
                 slots,
@@ -1260,6 +1157,7 @@ public class BindingProfilePanel extends JPanel {
                 parser.toExecutableSlots(currentSlots),
                 currentSlots,
                 existingConflicts(bindingId, slots),
+                // WHY: the names and labels read with the file, off the EDT (S4b review; Storage S5).
                 CaptureControllers.all(currentSlots, labels),
                 labels,
                 currentAiAccess().stateOf(bindingId, slots) != AiAccess.State.NOT_USED
@@ -1269,7 +1167,7 @@ public class BindingProfilePanel extends JPanel {
         try {
             AppTheme.runWithModalScrim(
                     SwingUtilities.getWindowAncestor(this),
-                    () -> saveSelections(bindingId, dialog.showDialog(), slots));
+                    () -> saveSelections(file, bindingId, dialog.showDialog(), slots));
         } finally {
             assignDialogOpen = false;
         }
@@ -1296,55 +1194,32 @@ public class BindingProfilePanel extends JPanel {
     }
 
     /**
-     * Writes what the dialog changed, one slot after the other, then reloads once.
-     * <p>
-     * WHY the file is stamped again between writes: the writer refuses a file that changed since it was read,
-     * and the first write changes it. The stamp is taken right after our own write, so a change by the game in
-     * between is still caught at the next load. The first refusal stops the rest - half a row written is
-     * reported, not hidden.
+     * Keeps what the dialog changed as one edit not applied, every changed slot or none (Storage S5): the first slot
+     * the writer refuses leaves the edits as they were, and says why.
      */
-    private void saveSelections(String bindingId, List<AssignSelection> selections,
+    private void saveSelections(String file, String bindingId, List<AssignSelection> selections,
                                 KeyBindingsParser.ReadOnlyBindingSlots slots) {
         if (selections.isEmpty()) return;
-        if (activeBindingsFile == null || activeBindingsLastModified == null || activeBindingsFileSize < 0) {
-            saveResultPresenter.showWriteFailed();
-            return;
-        }
-        Path file = activeBindingsFile.toPath();
-        FileTime stamp = activeBindingsLastModified;
-        long size = activeBindingsFileSize;
-        BindingSaveResult result = BindingSaveResult.NO_CHANGE;
+        List<BindsEdits.SlotChange> changes = new ArrayList<>();
         for (AssignSelection selection : selections) {
-            BindingSaveResult one = switch (selection) {
-                case AssignKeyboardBindingSelection keyboard -> saveKeyboardBinding(
-                        new KeyboardBindingEdit(file, bindingId, keyboard.slotType(), keyboard.key(), stamp, size),
-                        keyboard.modifiers());
-                case AssignSlotSelection any -> bindingsWriter.assignSlot(new SlotAssignment(
-                        file, bindingId, any.slotType(), any.input(), any.modifiers(),
+            BindsEdits.SlotChange change = switch (selection) {
+                case AssignKeyboardBindingSelection keyboard -> binds -> saveKeyboardBinding(binds,
+                        new KeyboardBindingEdit(bindingId, keyboard.slotType(), keyboard.key()), keyboard.modifiers());
+                case AssignSlotSelection any -> binds -> bindingsWriter.assignSlot(binds, new SlotAssignment(
+                        bindingId, any.slotType(), any.input(), any.modifiers(),
                         // The slot keeps its Hold - an inline setting of the slot, not part of what was captured.
-                        any.input() != null && holds(slots, any.slotType()),
-                        stamp, size));
+                        any.input() != null && holds(slots, any.slotType())));
             };
-            if (one != BindingSaveResult.SAVED && one != BindingSaveResult.NO_CHANGE) {
-                result = one;
-                break;
-            }
-            if (one == BindingSaveResult.SAVED) {
-                result = one;
-                try {
-                    stamp = Files.getLastModifiedTime(file);
-                    size = Files.size(file);
-                } catch (IOException e) {
-                    log.warn("Could not re-read {} after saving {}: {}", file, bindingId, e.getMessage());
-                    result = BindingSaveResult.WRITE_FAILED;
-                    break;
-                }
-            }
+            changes.add(change);
         }
-        saveResultPresenter.show(result);
-        if (result == BindingSaveResult.SAVED || result == BindingSaveResult.NO_CHANGE || result == BindingSaveResult.STALE_FILE) {
-            initData();
-        }
+        BindingSaveResult[] result = {BindingSaveResult.NO_CHANGE};
+        offEdt(getText("bindings.assign.dialogTitle"),
+                () -> Edits.stored().change(current -> {
+                    BindsEdits.Changed changed = BindsEdits.change(current, file, changes);
+                    result[0] = changed.result();
+                    return changed.files();
+                }),
+                () -> saveResultPresenter.show(result[0]), () -> { });
     }
 
     private static boolean holds(KeyBindingsParser.ReadOnlyBindingSlots slots, BindingSlotType type) {
@@ -1353,10 +1228,10 @@ public class BindingProfilePanel extends JPanel {
         return slot != null && slot.hold();
     }
 
-    private BindingSaveResult saveKeyboardBinding(KeyboardBindingEdit edit, List<BindingModifier> modifiers) {
+    private EditedBinds saveKeyboardBinding(byte[] binds, KeyboardBindingEdit edit, List<BindingModifier> modifiers) {
         return modifiers == null || modifiers.isEmpty()
-                ? bindingsWriter.assignKeyboardKey(edit)
-                : bindingsWriter.assignKeyboardKeyWithModifiers(edit, modifiers);
+                ? bindingsWriter.assignKeyboardKey(binds, edit)
+                : bindingsWriter.assignKeyboardKeyWithModifiers(binds, edit, modifiers);
     }
 
     /**
@@ -1365,7 +1240,7 @@ public class BindingProfilePanel extends JPanel {
      * the other slot untouched. The actual edit + reload is delegated back via {@link #clearKeyboardSlot}.
      */
     private void openClearKeyboardBindingDialog(String bindingId) {
-        if (bindingId == null || bindingId.isBlank() || activeBindingsFile == null) {
+        if (bindingId == null || bindingId.isBlank() || loadedFile == null || changeRunning) {
             return;
         }
         // Opened from a row click - no mouseExited fires, so drop the hover callout explicitly.
@@ -1375,43 +1250,79 @@ public class BindingProfilePanel extends JPanel {
         if (slots == null) {
             return;
         }
+        String file = loadedFile;
         ClearKeyboardBindingDialog dialog = new ClearKeyboardBindingDialog(
-                this, bindingId, slots, slotType -> clearKeyboardSlot(bindingId, slotType));
+                this, bindingId, slots, slotFormatter,
+                (slotType, done) -> clearKeyboardSlot(file, bindingId, slotType, done));
         AppTheme.runWithModalScrim(SwingUtilities.getWindowAncestor(this), dialog::showDialog);
     }
 
     /**
-     * Clears one slot's keyboard binding in the working copy, reloads, and returns the row's refreshed
-     * slots so the dialog can re-evaluate what is left to clear. Clearing writes Elite's empty-slot
-     * marker for that slot only; the other slot (and any HOTAS binding on it) is not touched.
+     * Clears one slot's keyboard binding in the edits, off the EDT, then hands the dialog the row as it is now so it
+     * can re-evaluate what is left to clear. Clearing writes Elite's empty-slot marker for that slot only; the other
+     * slot (and any HOTAS binding on it) is not touched.
      */
-    private ClearKeyboardBindingDialog.ClearOutcome clearKeyboardSlot(String bindingId, BindingSlotType slotType) {
-        if (activeBindingsFile == null || activeBindingsLastModified == null || activeBindingsFileSize < 0) {
-            return new ClearKeyboardBindingDialog.ClearOutcome(false, currentSlots.get(bindingId));
-        }
-        KeyboardBindingEdit edit = new KeyboardBindingEdit(
-                activeBindingsFile.toPath(),
-                bindingId,
-                slotType,
-                null, // null key clears the slot
-                activeBindingsLastModified,
-                activeBindingsFileSize
-        );
-        BindingSaveResult result = bindingsWriter.assignKeyboardKey(edit);
-        boolean success = result == BindingSaveResult.SAVED || result == BindingSaveResult.NO_CHANGE;
-        if (success || result == BindingSaveResult.STALE_FILE) {
-            // Reload so the tables and snapshot re-sync; a stale file also needs a reload before retry.
-            initData();
-        }
-        return new ClearKeyboardBindingDialog.ClearOutcome(success, currentSlots.get(bindingId));
+    private void clearKeyboardSlot(String file, String bindingId, BindingSlotType slotType,
+                                   Consumer<ClearKeyboardBindingDialog.ClearOutcome> done) {
+        BindingSaveResult[] result = {BindingSaveResult.WRITE_FAILED};
+        KeyBindingsParser.ReadOnlyBindingSlots[] row = {currentSlots.get(bindingId)};
+        offEdt(getText("bindings.clear.dialogTitle"), () -> {
+            Edits.stored().change(current -> {
+                BindsEdits.Changed changed = BindsEdits.change(current, file, binds -> bindingsWriter.assignKeyboardKey(
+                        binds, new KeyboardBindingEdit(bindingId, slotType, null))); // null key clears the slot
+                result[0] = changed.result();
+                return changed.files();
+            });
+            row[0] = parser.parseReadOnlyBindingSlots(Edits.stored().snapshot().current().bindings().get(file))
+                    .get(bindingId);
+        }, () -> done.accept(new ClearKeyboardBindingDialog.ClearOutcome(
+                result[0] == BindingSaveResult.SAVED || result[0] == BindingSaveResult.NO_CHANGE, row[0])),
+                // WHY: the dialog waits for an answer. The failure was already shown, so it is not told twice; the row
+                // as it stands shows nothing was cleared.
+                () -> done.accept(new ClearKeyboardBindingDialog.ClearOutcome(true, row[0])));
     }
 
-    private void clearLoadedBindingsSnapshot() {
-        currentSlots = Map.of();
-        activeBindingsFile = null;
-        activeBindingsLastModified = null;
-        activeBindingsFileSize = -1;
-        gameBindingsFile = null;
-        activePresetFileName = null;
+    /** A change to the edits, run by {@link #offEdt}. */
+    @FunctionalInterface
+    private interface Change {
+        void run() throws Exception;
+    }
+
+    /**
+     * Changes the edits off the EDT, one change at a time, then runs {@code onEdt} on it. A failure is shown under
+     * {@code title}, not only logged - the user pressed a button and must be told - and {@code afterFailure} runs
+     * instead. The screen reads the edits again either way.
+     */
+    private void offEdt(String title, Change change, Runnable onEdt, Runnable afterFailure) {
+        changeRunning = true;
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        fixAllButton.setEnabled(false);
+        new Thread(() -> {
+            String failure = null;
+            try {
+                change.run();
+            } catch (Edits.WriteRunningException e) {
+                // WHY: a write is running - said in the user's language, not the exception's.
+                log.info("{} not done: {}", title, e.getMessage());
+                failure = getText("bindings.writeRunning");
+            } catch (Exception e) {
+                // WHY: broad on purpose - a thread boundary, and anything escaping it would leave the screen waiting
+                // with no word of why.
+                log.warn("{} failed", title, e);
+                failure = getText("bindings.assign.writeFailed");
+            }
+            String shown = failure;
+            SwingUtilities.invokeLater(() -> {
+                changeRunning = false;
+                setCursor(Cursor.getDefaultCursor());
+                initData();
+                if (shown != null) {
+                    info(this, title, shown, getText("bindings.aliasDesigner.firstSetup.close"));
+                    afterFailure.run();
+                    return;
+                }
+                onEdt.run();
+            });
+        }, "BindForge-BindEditorChange").start();
     }
 }

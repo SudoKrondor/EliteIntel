@@ -190,11 +190,12 @@ What exists instead is BindForge-shaped already, and since 2026-10-03 it lives u
 | Class | Role |
 |---|---|
 | `io.BindingsLoader`, `io.KeyBindingsParser` | read and parse `.binds` |
-| `io.BindingsWriter` | write `.binds` |
-| `io.BindingsWorkingCopyRepository` | the **working copy** concept, already implemented |
+| `io.BindingsWriter` | edit a `.binds` held in memory - reads and writes no file since Storage S5 (2026-10-28) |
+| ~~`io.BindingsWorkingCopyRepository`~~ | ~~the working copy concept~~ — removed in Storage S5 (2026-10-28): the working copy is `bindforge.storage.WorkingCopy`, and the edits not applied are `bindforge.storage.Edits` |
 | `elite.intel.io.TimestampedBackups` | timestamped backups — **moved out of BindForge 2026-10-03**, replacing `io.BindingsBackupService`, because it knows nothing about `.binds` and StarVizion will want it too. See [the shared write path](#the-shared-write-path-is-eliteintelio--built-2026-10-03) |
 | `elite.intel.io.AtomicFiles` | safe replace: temp file, flush, rename over the target |
-| `io.BindingsApplyService`, `io.BindingsApplyException`, `io.BindingSaveResult` | apply-to-game with typed failure |
+| ~~`io.BindingsApplyService`, `io.BindingsApplyException`~~ | ~~apply-to-game with typed failure~~ — removed in Storage S5 (2026-10-28): APPLY is `bindforge.storage.Apply`, through `WritePath` |
+| `io.BindingSaveResult`, `io.EditedBinds` | the outcome of one binding edit, and the file's bytes after it |
 | `io.BindingsMonitor` | external-change detection for the bindings folder (`WatchService`) |
 | ~~`elite.intel.io.FilePoller`~~ | ~~polled change detection for files another process writes~~ — removed in Storage S4a (2026-10-26) with its one caller, `devicefiles.DeviceFilesMonitor`: BindForge does not watch the files ([overview](../02-features/bindforge/overview.md#external-change-detection--2026-10-23)) |
 | `rules.BindingConflictScanner`, `rules.BindingConflictRules` | conflict detection |

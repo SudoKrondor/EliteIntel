@@ -392,7 +392,7 @@ That settles what used to be this document's hardest open question — which com
 
 ### There is one writer, and it already exists
 
-`BindingsApplyService`, `BindingsWorkingCopyRepository`, `BindingsWriter`, `elite.intel.io.TimestampedBackups` and `AppPaths.getBindingsWorkingDir()` are **BindForge's pipeline already**. They are not borrowed from a neighbour; the neighbour is the thing being upgraded. The [working copy](#live-file-synchronization) this document describes is the working-copy repository that exists today, grown, with APPLY and RESTORE as the only paths to a live file — [no exceptions](#writes-outside-apply--none) since 2026-10-23.
+*Storage S5 (2026-10-28) finished this:* `BindingsApplyService` and `BindingsWorkingCopyRepository` are gone, and `BindingsWriter` edits a binds file's bytes held in the edits not applied — it reads and writes no file, and its rewrite across files on disk, uncalled since Storage S4a, went with them. The one write path is `bindforge.storage.WritePath`, and the working copy is `AppPaths.getBindingsWorkingDir()`. *What follows is the reasoning, as written when the old classes were* **BindForge's pipeline already**: `BindingsApplyService`, `BindingsWorkingCopyRepository`, `BindingsWriter`, `elite.intel.io.TimestampedBackups` and `AppPaths.getBindingsWorkingDir()`. They are not borrowed from a neighbour; the neighbour is the thing being upgraded. The [working copy](#live-file-synchronization) this document describes is the working-copy repository that exists today, grown, with APPLY and RESTORE as the only paths to a live file — [no exceptions](#writes-outside-apply--none) since 2026-10-23.
 
 **The hazard this replaces is worth naming, so that nobody rebuilds it.** A second editor would have meant two working copies and two writers over the same `.binds`. Each would have been individually safe — backup, atomic write, the [Data Integrity Principle](#data-integrity-principle) satisfied — and **jointly they would not have been:** one saves, the other is still holding a stale in-memory model, the player applies there, and the first editor's work is gone with no operation having misbehaved. The Data Integrity Principle does not
 catch that, because it governs atomicity *within* an operation, not ownership *across* components.
@@ -407,6 +407,11 @@ game's own layout, so a user browsing to it recognises what they see: `Bindings\
 `StartPreset.4.start`; `ControlSchemes\` holds the one `DeviceMappings.xml`, with every `.buttonMap` in
 `ControlSchemes\DeviceButtonMaps\` (2026-10-23, Alan). *Until 2026-10-23 this section placed a separate master, its
 Edit History and a Revert method; [storage.md](storage.md) replaced them.*
+
+**The old Bind Editor's loose files are left where they are** (Alan, 2026-10-28, Storage S5): its copy of the active
+`.binds`, the `.bak` beside it and the `.sha256` checksum sit at the top of that folder, beside `Bindings\` and
+`ControlSchemes\`. Nothing reads them since Storage S5, nothing deletes them, and a tester may delete them by hand —
+`V1.2-BindForge` has no users, so no clean-up is written for them.
 
 ### APPLY and DISCARD — one pair, above BindForge's tabs (2026-10-24, Alan)
 

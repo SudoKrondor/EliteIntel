@@ -11,6 +11,20 @@ makes them cheap to build when they come back — each mode's own section below 
 ## Shell (Common to All Modes)
 
 - A Bindings File dropdown plus Load button, above everything. Load opens the file from the working copy; a live copy that differs from it is [the check's](storage.md) to raise (rule 14).
+  **Built on the edits — 2026-10-28 (Alan, Storage S5).** The list offers **every binds file in the working copy**,
+  with the edits not applied on it — not only the active one, and not filtered to the files the Preset Editor's
+  BindName list offers, which is the preset file's rule, not the editor's. The file shown first is the one the preset
+  file's **General** line names, in its newest version, else the first by name; after that, the one shown stays
+  shown until LOAD picks another. Capture SAVE, the Clear column and Auto-Assign Missing Binds are **edits not
+  applied**: they light the one APPLY / DISCARD bar, and nothing on this screen writes a file
+  ([storage.md](storage.md) rule 6). **One SAVE is all or none** — when the writer refuses one changed slot, the
+  other is not kept either, and the reason is shown (until then the first slot stayed written). The screen's own
+  APPLY, REVERT, its draft badge and its close prompt are gone, with the launch-time copy of the active `.binds` and
+  its checksum; until [Storage S7](../../05-build-plan/storage.md#slices), edits are lost on close. **Elite-Intel's
+  Bindings Directory row stays on this screen for now**, though [principle 12](principles.md) puts folders in File
+  Manager only: it is Elite-Intel's setting for Vega, not the editor's, and moving it is a slice of its own. **The AI
+  tab's Missing / Found counts come from the live bindings** `BindingsMonitor` reads — what Vega presses — not from
+  this screen's edits; the AI tab's KEYMAP readout is removed.
 - **A Name box beside the Bindings File dropdown — renaming a binds file (2026-10-24, Alan).** It shows the selected
   file's BindName, editable, with the game's version and extension after it as fixed text — `DualVirpilDawnTreader`
   `.4.2.binds`. A name the user types is held to the same rules as a controller name: letters, digits, `-` and `_`,
@@ -499,12 +513,10 @@ had** (Alan, 2026-10-15). A chord either slot held when the dialog opened is gre
 #### Which name a controller's tab writes — settled 2026-10-15 (Alan, E1)
 
 **The
-working copy's** — the name the installations hold now — and Frontier's for a built-in the working copy does not hold (`CaptureControllers`). A device renamed on screen and not yet applied is still under its old name in the working copy and in `.binds`, so a binding written under that name moves with all the others at APPLY.
-*Read from the working copy since Storage S4b (2026-10-28; until then from the database master).* **The labels
-shown are the edits'** (`bindforge.storage.SavedDeviceLabels`), so a label SAVEd in the Alias Designer shows at once,
-and a device renamed on screen keeps its working-copy name on the tab while its labels are found by its hardware under
-the new one. The name stays the working copy's because the Bind Editor still writes the live `.binds` until Storage S5,
-where a name not applied would name a device no installation has.
+edits'** — the name the working copy will hold once applied — and Frontier's for a built-in the edits do not hold (`CaptureControllers`). **Since Storage S5 (2026-10-28)** the Bind Editor writes the edits, not the live `.binds`, and a rename in the Alias Designer moves every binding in the edits' binds files with it (Storage S4a), so the edits' name is the one their binds files hold. A device renamed on screen shows its new name on the tab at once, with its labels under it (`bindforge.storage.SavedDeviceLabels`).
+*From Storage S4b until S5 (2026-10-28) the name was the working copy's and the labels the edits', because the Bind
+Editor still wrote the live `.binds`, where a name not applied would have named a device no installation had; before
+S4b both came from the database master.*
 **A controller with no name gets a greyed
 tab** saying to name it in the Alias Designer first: `.binds` would have to name it by hardware id.
 

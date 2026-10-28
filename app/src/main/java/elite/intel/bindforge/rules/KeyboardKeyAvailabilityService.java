@@ -13,6 +13,7 @@ import org.w3c.dom.NodeList;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.ByteArrayInputStream;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -125,8 +126,33 @@ public class KeyboardKeyAvailabilityService {
             String key,
             Collection<BindingModifier> modifiers
     ) throws Exception {
+        return isKeyOccupiedByOtherSlot(keyboardSlotAssignments(parse(bindsFile)), bindingId, key, modifiers);
+    }
+
+    /**
+     * {@link #isKeyOccupiedByOtherSlot(Path, String, BindingSlotType, String, Collection)} for a binds file held in
+     * memory - the edits not applied (Storage S5). No slot is named: a binding never conflicts with itself, in either
+     * slot, so the file version's slot was never read.
+     *
+     * @param binds the binds file's bytes
+     */
+    public boolean isKeyOccupiedByOtherSlot(
+            byte[] binds,
+            String bindingId,
+            String key,
+            Collection<BindingModifier> modifiers
+    ) throws Exception {
+        return isKeyOccupiedByOtherSlot(keyboardSlotAssignments(parse(binds)), bindingId, key, modifiers);
+    }
+
+    private boolean isKeyOccupiedByOtherSlot(
+            List<SlotAssignment> assignments,
+            String bindingId,
+            String key,
+            Collection<BindingModifier> modifiers
+    ) {
         Set<BindingModifier> normalizedModifiers = normalizeModifiers(modifiers);
-        for (SlotAssignment assignment : keyboardSlotAssignments(bindsFile)) {
+        for (SlotAssignment assignment : assignments) {
             if (!assignment.key().equals(key)) {
                 continue;
             }
@@ -175,7 +201,10 @@ public class KeyboardKeyAvailabilityService {
     }
 
     private List<SlotAssignment> keyboardSlotAssignments(Path bindsFile) throws Exception {
-        Document doc = parse(bindsFile);
+        return keyboardSlotAssignments(parse(bindsFile));
+    }
+
+    private List<SlotAssignment> keyboardSlotAssignments(Document doc) {
         List<SlotAssignment> assignments = new ArrayList<>();
         collectKeyboardSlotAssignments(doc, BindingSlotType.PRIMARY, assignments);
         collectKeyboardSlotAssignments(doc, BindingSlotType.SECONDARY, assignments);
@@ -295,13 +324,22 @@ public class KeyboardKeyAvailabilityService {
     }
 
     private Document parse(Path bindsFile) throws Exception {
+        Document doc = documentBuilder().parse(bindsFile.toFile());
+        doc.getDocumentElement().normalize();
+        return doc;
+    }
+
+    private Document parse(byte[] binds) throws Exception {
+        Document doc = documentBuilder().parse(new ByteArrayInputStream(binds));
+        doc.getDocumentElement().normalize();
+        return doc;
+    }
+
+    private static DocumentBuilder documentBuilder() throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
         factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(bindsFile.toFile());
-        doc.getDocumentElement().normalize();
-        return doc;
+        return factory.newDocumentBuilder();
     }
 
     private record SlotAssignment(String bindingId, BindingSlotType slotType, String key,

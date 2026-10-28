@@ -23,10 +23,6 @@ public class BindingSaveResultPresenter {
         showError(messageFor(result));
     }
 
-    public void showWriteFailed() {
-        showError(getText("bindings.assign.writeFailed"));
-    }
-
     private void showInfo(String message) {
         JOptionPane.showMessageDialog(
                 parent,
@@ -49,12 +45,10 @@ public class BindingSaveResultPresenter {
         return switch (result) {
             case SAVED -> getText("bindings.assign.success");
             case NO_CHANGE -> getText("bindings.assign.noChange");
-            case STALE_FILE -> getText("bindings.assign.staleFile");
             case KEY_OCCUPIED -> getText("bindings.assign.keyOccupied");
             case UNKNOWN_KEY -> getText("bindings.assign.unknownKey");
             case BINDING_NOT_FOUND -> getText("bindings.assign.bindingNotFound");
             case UNSUPPORTED_XML -> getText("bindings.assign.unsupportedXml");
-            case BACKUP_FAILED -> getText("bindings.assign.backupFailed");
             case WRITE_FAILED -> getText("bindings.assign.writeFailed");
         };
     }

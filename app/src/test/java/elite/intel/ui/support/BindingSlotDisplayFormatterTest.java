@@ -29,7 +29,7 @@ class BindingSlotDisplayFormatterTest {
                 "<Root><VKB-Stick><PID>0200</PID><VID>231D</VID></VKB-Stick></Root>".getBytes(StandardCharsets.UTF_8),
                 Map.of("VKB-Stick.buttonMap", ("<Root><Joy_6>1st Hat Up</Joy_6><Joy_14>2nd Hat Left</Joy_14></Root>")
                         .getBytes(StandardCharsets.UTF_8)));
-        formatter = new BindingSlotDisplayFormatter(SavedDeviceLabels.of(files, files));
+        formatter = new BindingSlotDisplayFormatter(SavedDeviceLabels.of(files));
     }
 
     @Test

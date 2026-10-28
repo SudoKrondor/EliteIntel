@@ -47,14 +47,17 @@ public final class AppPaths {
         return dir;
     }
 
-    /** Returns the directory for per-preset working copies, creating it if needed. */
+    /** Returns BindForge's working copy folder ({@code bindforge.storage.WorkingCopy}), creating it if needed. */
     public static Path getBindingsWorkingDir() throws IOException {
         Path dir = getAppDataBase().resolve("elite-intel/bindings");
         Files.createDirectories(dir);
         return dir;
     }
 
-    /** Returns the directory for timestamped game-file backups, creating it if needed. */
+    /**
+     * Returns the directory for timestamped game-file copies, creating it if needed - only the preset file's own
+     * history uses it now, until Storage S6 removes that (the Bind Editor's went in Storage S5).
+     */
     public static Path getBindingsBackupDir() throws IOException {
         Path dir = getAppDataBase().resolve("elite-intel/bindings/backups");
         Files.createDirectories(dir);

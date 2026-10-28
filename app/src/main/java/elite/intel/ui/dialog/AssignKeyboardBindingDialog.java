@@ -30,7 +30,6 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
@@ -196,7 +195,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
 
     private final SavedDeviceLabels labels;
     private final BindingSlotDisplayFormatter slotFormatter;
-    private final Path bindingsFile;
+    /** The binds file being edited, as the edits not applied hold it (Storage S5). */
+    private final byte[] binds;
     private final String bindingId;
     private final KeyboardKeyAvailabilityService availabilityService;
     private final Map<String, KeyBindingsParser.BindingSlots> existingSlots;
@@ -236,7 +236,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
 
     public AssignKeyboardBindingDialog(
             Component parent,
-            Path bindingsFile,
+            byte[] binds,
             String bindingId,
             BindingSlotType startSlot,
             KeyBindingsParser.ReadOnlyBindingSlots slots,
@@ -250,7 +250,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
     ) {
         super(SwingUtilities.getWindowAncestor(parent), getText("bindings.assign.dialogTitle"), ModalityType.APPLICATION_MODAL);
         setUndecorated(true);
-        this.bindingsFile = bindingsFile;
+        this.binds = binds;
         this.bindingId = bindingId;
         this.availabilityService = availabilityService;
         this.existingSlots = existingSlots == null ? Map.of() : existingSlots;
@@ -684,7 +684,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
 
     private boolean isOccupied(SlotEdit edit) {
         try {
-            return availabilityService.isKeyOccupiedByOtherSlot(bindingsFile, bindingId, edit.type, edit.key,
+            return availabilityService.isKeyOccupiedByOtherSlot(binds, bindingId, edit.key,
                     edit.keyboardModifiers);
         } catch (Exception e) {
             // WHY: an unreadable/unparseable .binds must never be reported as free,

@@ -16,7 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The writer's user-edit path (Foundation F4): a deliberate edit in the bindings editor may write any device, with
- * modifiers on any device and Hold, and an axis with Inverted and Deadzone.
+ * modifiers on any device and Hold, and an axis with Inverted and Deadzone. The writer edits a binds file's bytes in
+ * memory (Storage S5); a temporary file stands in for the edits that hold them.
  */
 class BindingsWriterUserEditTest {
 
@@ -58,7 +59,7 @@ class BindingsWriterUserEditTest {
     void aControllerSlotCanBeReboundToAnotherController() throws IOException {
         Path file = binds();
 
-        BindingSaveResult result = writer.assignSlot(slot(file, "UpThrustButton", BindingSlotType.PRIMARY,
+        BindingSaveResult result = assignSlot(file, slot("UpThrustButton", BindingSlotType.PRIMARY,
                 new BindingInput("Stick", "Joy_POV1Up"), List.of(), false));
 
         assertEquals(BindingSaveResult.SAVED, result);
@@ -70,7 +71,7 @@ class BindingsWriterUserEditTest {
     void modifiersOnAnyDeviceAndHoldAreWrittenWithTheFilesIndentation() throws IOException {
         Path file = binds();
 
-        BindingSaveResult result = writer.assignSlot(slot(file, "UpThrustButton", BindingSlotType.PRIMARY,
+        BindingSaveResult result = assignSlot(file, slot("UpThrustButton", BindingSlotType.PRIMARY,
                 new BindingInput("Throttle", "Joy_6"),
                 List.of(new BindingInput("Keyboard", "Key_LeftShift"), new BindingInput("Stick", "Joy_3")), true));
 
@@ -88,7 +89,7 @@ class BindingsWriterUserEditTest {
     void holdComesOffWhenTheEditSaysSo() throws IOException {
         Path file = binds();
 
-        assertEquals(BindingSaveResult.SAVED, writer.assignSlot(slot(file, "UpThrustButton", BindingSlotType.SECONDARY,
+        assertEquals(BindingSaveResult.SAVED, assignSlot(file, slot("UpThrustButton", BindingSlotType.SECONDARY,
                 new BindingInput("Keyboard", "Key_R"), List.of(), false)));
         assertTrue(read(file).contains("\t\t<Secondary Device=\"Keyboard\" Key=\"Key_R\" />\n\t</UpThrustButton>"));
     }
@@ -98,7 +99,7 @@ class BindingsWriterUserEditTest {
         Path file = binds();
 
         // Key_Home is ToggleCargoScoop's Primary; the keyboard path would answer KEY_OCCUPIED.
-        assertEquals(BindingSaveResult.SAVED, writer.assignSlot(slot(file, "UpThrustButton", BindingSlotType.PRIMARY,
+        assertEquals(BindingSaveResult.SAVED, assignSlot(file, slot("UpThrustButton", BindingSlotType.PRIMARY,
                 new BindingInput("Keyboard", "Key_Home"), List.of(), false)));
     }
 
@@ -107,10 +108,10 @@ class BindingsWriterUserEditTest {
         Path file = binds();
         FileTime before = Files.getLastModifiedTime(file);
 
-        assertEquals(BindingSaveResult.NO_CHANGE, writer.assignSlot(slot(file, "ToggleCargoScoop",
+        assertEquals(BindingSaveResult.NO_CHANGE, assignSlot(file, slot("ToggleCargoScoop",
                 BindingSlotType.SECONDARY, new BindingInput("vJoy", "Joy_11"),
                 List.of(new BindingInput("Throttle", "Joy_1")), false)));
-        assertEquals(BindingSaveResult.NO_CHANGE, writer.assignSlot(slot(file, "UpThrustButton",
+        assertEquals(BindingSaveResult.NO_CHANGE, assignSlot(file, slot("UpThrustButton",
                 BindingSlotType.SECONDARY, new BindingInput("Keyboard", "Key_R"), List.of(), true)));
         assertEquals(before, Files.getLastModifiedTime(file));
         assertEquals(BINDS, read(file));
@@ -119,10 +120,9 @@ class BindingsWriterUserEditTest {
     @Test
     void clearingWritesTheEmptySlotAndLeavesToggleOn() throws IOException {
         Path file = binds();
-        SlotAssignment clear = SlotAssignment.clear(file, "ToggleCargoScoop", BindingSlotType.SECONDARY,
-                Files.getLastModifiedTime(file), Files.size(file));
+        SlotAssignment clear = SlotAssignment.clear("ToggleCargoScoop", BindingSlotType.SECONDARY);
 
-        assertEquals(BindingSaveResult.SAVED, writer.assignSlot(clear));
+        assertEquals(BindingSaveResult.SAVED, assignSlot(file, clear));
         assertTrue(read(file).contains(
                 "\t\t<Secondary Device=\"{NoDevice}\" Key=\"\" />\n\t\t<ToggleOn Value=\"1\" />"));
     }
@@ -144,10 +144,10 @@ class BindingsWriterUserEditTest {
                 new BindingInput("Throttle", "Joy_1\" Evil=\"x"));
 
         for (BindingInput input : refused) {
-            assertEquals(BindingSaveResult.UNKNOWN_KEY, writer.assignSlot(slot(file, "UpThrustButton",
+            assertEquals(BindingSaveResult.UNKNOWN_KEY, assignSlot(file, slot("UpThrustButton",
                     BindingSlotType.PRIMARY, input, List.of(), false)), input.toString());
         }
-        assertEquals(BindingSaveResult.UNKNOWN_KEY, writer.assignSlot(slot(file, "UpThrustButton",
+        assertEquals(BindingSaveResult.UNKNOWN_KEY, assignSlot(file, slot("UpThrustButton",
                 BindingSlotType.PRIMARY, new BindingInput("Throttle", "Joy_1"),
                 List.of(new BindingInput("Stick", "Joy_YAxis")), false)));
         assertEquals(BINDS, read(file));
@@ -179,7 +179,7 @@ class BindingsWriterUserEditTest {
 
         for (BindingInput input : accepted) {
             Path file = binds();
-            assertEquals(BindingSaveResult.SAVED, writer.assignSlot(slot(file, "UpThrustButton",
+            assertEquals(BindingSaveResult.SAVED, assignSlot(file, slot("UpThrustButton",
                     BindingSlotType.PRIMARY, input, List.of(), false)), input.toString());
         }
     }
@@ -188,18 +188,8 @@ class BindingsWriterUserEditTest {
     void aSlotWithUnknownStructureIsNeverRewritten() throws IOException {
         Path file = binds();
 
-        assertEquals(BindingSaveResult.UNSUPPORTED_XML, writer.assignSlot(slot(file, "OddButton",
+        assertEquals(BindingSaveResult.UNSUPPORTED_XML, assignSlot(file, slot("OddButton",
                 BindingSlotType.PRIMARY, new BindingInput("Throttle", "Joy_3"), List.of(), false)));
-        assertEquals(BINDS, read(file));
-    }
-
-    @Test
-    void aFileChangedSinceItWasReadIsRefused() throws IOException {
-        Path file = binds();
-        SlotAssignment edit = new SlotAssignment(file, "UpThrustButton", BindingSlotType.PRIMARY,
-                new BindingInput("Throttle", "Joy_6"), List.of(), false, FileTime.fromMillis(0), Files.size(file));
-
-        assertEquals(BindingSaveResult.STALE_FILE, writer.assignSlot(edit));
         assertEquals(BINDS, read(file));
     }
 
@@ -207,34 +197,31 @@ class BindingsWriterUserEditTest {
     void anUnknownBindingIsNotFound() throws IOException {
         Path file = binds();
 
-        assertEquals(BindingSaveResult.BINDING_NOT_FOUND, writer.assignSlot(slot(file, "NoSuchButton",
+        assertEquals(BindingSaveResult.BINDING_NOT_FOUND, assignSlot(file, slot("NoSuchButton",
                 BindingSlotType.PRIMARY, new BindingInput("Throttle", "Joy_6"), List.of(), false)));
     }
 
     @Test
     void impossibleRequestsAreRejectedWhenBuilt() {
-        Path file = tempDir.resolve("x.binds");
         BindingInput input = new BindingInput("Throttle", "Joy_1");
         List<BindingInput> four = List.of(new BindingInput("Throttle", "Joy_2"), new BindingInput("Throttle", "Joy_3"),
                 new BindingInput("Throttle", "Joy_4"), new BindingInput("Throttle", "Joy_5"));
 
-        assertThrows(IllegalArgumentException.class, () -> new SlotAssignment(file, "B", BindingSlotType.PRIMARY,
-                input, four, false, FileTime.fromMillis(0), 0));
-        assertThrows(IllegalArgumentException.class, () -> new SlotAssignment(file, "B", BindingSlotType.PRIMARY,
-                input, List.of(new BindingInput("throttle", "joy_1")), false, FileTime.fromMillis(0), 0));
-        assertThrows(IllegalArgumentException.class, () -> new SlotAssignment(file, "B", BindingSlotType.PRIMARY,
-                null, List.of(), true, FileTime.fromMillis(0), 0));
-        assertThrows(IllegalArgumentException.class, () -> new AxisAssignment(file, "A", null, false, 1.5f,
-                FileTime.fromMillis(0), 0));
-        assertThrows(IllegalArgumentException.class, () -> new AxisAssignment(file, "A", null, false, Float.NaN,
-                FileTime.fromMillis(0), 0));
+        assertThrows(IllegalArgumentException.class, () -> new SlotAssignment("B", BindingSlotType.PRIMARY,
+                input, four, false));
+        assertThrows(IllegalArgumentException.class, () -> new SlotAssignment("B", BindingSlotType.PRIMARY,
+                input, List.of(new BindingInput("throttle", "joy_1")), false));
+        assertThrows(IllegalArgumentException.class, () -> new SlotAssignment("B", BindingSlotType.PRIMARY,
+                null, List.of(), true));
+        assertThrows(IllegalArgumentException.class, () -> new AxisAssignment("A", null, false, 1.5f));
+        assertThrows(IllegalArgumentException.class, () -> new AxisAssignment("A", null, false, Float.NaN));
     }
 
     @Test
     void anAxisTakesAControllersWholeAxisWithInvertedAndDeadzone() throws IOException {
         Path file = binds();
 
-        BindingSaveResult result = writer.assignAxis(axis(file, "YawAxisRaw",
+        BindingSaveResult result = assignAxis(file, axis("YawAxisRaw",
                 new BindingInput("Stick", "Joy_VAxis"), true, 0.05f));
 
         assertEquals(BindingSaveResult.SAVED, result);
@@ -254,9 +241,9 @@ class BindingsWriterUserEditTest {
         Path file = binds();
 
         assertEquals(BindingSaveResult.NO_CHANGE,
-                writer.assignAxis(axis(file, "YawAxisRaw", null, false, 0.4f)));
+                assignAxis(file, axis("YawAxisRaw", null, false, 0.4f)));
         assertEquals(BindingSaveResult.SAVED,
-                writer.assignAxis(axis(file, "YawAxisRaw", new BindingInput("Stick", "Joy_XAxis"), false, 0.4f)));
+                assignAxis(file, axis("YawAxisRaw", new BindingInput("Stick", "Joy_XAxis"), false, 0.4f)));
         assertTrue(read(file).contains("<Deadzone Value=\"0.40000001\" />"));
     }
 
@@ -264,7 +251,7 @@ class BindingsWriterUserEditTest {
     void aDeadzoneIsWrittenTheWayTheGameWritesAFloat() throws IOException {
         Path file = binds();
 
-        writer.assignAxis(axis(file, "YawAxisRaw", null, false, 0.3f));
+        assignAxis(file, axis("YawAxisRaw", null, false, 0.3f));
 
         assertTrue(read(file).contains("<Deadzone Value=\"0.30000001\" />"));
     }
@@ -282,7 +269,7 @@ class BindingsWriterUserEditTest {
 
         for (BindingInput input : refused) {
             assertEquals(BindingSaveResult.UNKNOWN_KEY,
-                    writer.assignAxis(axis(file, "YawAxisRaw", input, false, 0f)), input.toString());
+                    assignAxis(file, axis("YawAxisRaw", input, false, 0f)), input.toString());
         }
         assertEquals(BINDS, read(file));
     }
@@ -294,9 +281,9 @@ class BindingsWriterUserEditTest {
         Path file = binds();
         Files.writeString(file, withAttribute, StandardCharsets.UTF_8);
 
-        assertEquals(BindingSaveResult.NO_CHANGE, writer.assignSlot(slot(file, "ToggleCargoScoop",
+        assertEquals(BindingSaveResult.NO_CHANGE, assignSlot(file, slot("ToggleCargoScoop",
                 BindingSlotType.PRIMARY, new BindingInput("Keyboard", "Key_Home"), List.of(), true)));
-        assertEquals(BindingSaveResult.SAVED, writer.assignSlot(slot(file, "ToggleCargoScoop",
+        assertEquals(BindingSaveResult.SAVED, assignSlot(file, slot("ToggleCargoScoop",
                 BindingSlotType.PRIMARY, new BindingInput("Keyboard", "Key_End"), List.of(), true)));
         assertEquals(withAttribute.replace("Key=\"Key_Home\" Hold=\"1\"", "Key=\"Key_End\" Hold=\"1\""),
                 read(file));
@@ -307,7 +294,7 @@ class BindingsWriterUserEditTest {
         Path file = binds();
 
         assertEquals(BindingSaveResult.UNSUPPORTED_XML,
-                writer.assignAxis(axis(file, "UpThrustButton", new BindingInput("Stick", "Joy_XAxis"), false, 0f)));
+                assignAxis(file, axis("UpThrustButton", new BindingInput("Stick", "Joy_XAxis"), false, 0f)));
         assertEquals(BINDS, read(file));
     }
 
@@ -322,7 +309,7 @@ class BindingsWriterUserEditTest {
         System.arraycopy(body, 0, content, 3, body.length);
         Files.write(file, content);
 
-        assertEquals(BindingSaveResult.SAVED, writer.assignSlot(slot(file, "UpThrustButton", BindingSlotType.PRIMARY,
+        assertEquals(BindingSaveResult.SAVED, assignSlot(file, slot("UpThrustButton", BindingSlotType.PRIMARY,
                 new BindingInput("Throttle", "Joy_6"), List.of(), false)));
         byte[] written = Files.readAllBytes(file);
         assertEquals((byte) 0xEF, written[0]);
@@ -330,16 +317,31 @@ class BindingsWriterUserEditTest {
         assertEquals((byte) 0xBF, written[2]);
     }
 
-    private SlotAssignment slot(Path file, String bindingId, BindingSlotType slotType, BindingInput input,
-                                List<BindingInput> modifiers, boolean hold) throws IOException {
-        return new SlotAssignment(file, bindingId, slotType, input, modifiers, hold,
-                Files.getLastModifiedTime(file), Files.size(file));
+    private static SlotAssignment slot(String bindingId, BindingSlotType slotType, BindingInput input,
+                                      List<BindingInput> modifiers, boolean hold) {
+        return new SlotAssignment(bindingId, slotType, input, modifiers, hold);
     }
 
-    private AxisAssignment axis(Path file, String bindingId, BindingInput input, boolean inverted, float deadzone)
-            throws IOException {
-        return new AxisAssignment(file, bindingId, input, inverted, deadzone,
-                Files.getLastModifiedTime(file), Files.size(file));
+    private static AxisAssignment axis(String bindingId, BindingInput input, boolean inverted, float deadzone) {
+        return new AxisAssignment(bindingId, input, inverted, deadzone);
+    }
+
+    private BindingSaveResult assignSlot(Path file, SlotAssignment edit) throws IOException {
+        return kept(file, writer.assignSlot(Files.readAllBytes(file), edit));
+    }
+
+    private BindingSaveResult assignAxis(Path file, AxisAssignment edit) throws IOException {
+        return kept(file, writer.assignAxis(Files.readAllBytes(file), edit));
+    }
+
+    /** The edit's bytes put back in the file when they changed; otherwise the writer must hand back what it was given. */
+    private static BindingSaveResult kept(Path file, EditedBinds edited) throws IOException {
+        if (edited.changed()) {
+            Files.write(file, edited.content());
+        } else {
+            assertArrayEquals(Files.readAllBytes(file), edited.content(), "an edit not made changes nothing");
+        }
+        return edited.result();
     }
 
     private Path binds() throws IOException {

@@ -5,9 +5,6 @@ import elite.intel.bindforge.io.KeyBindingsParser;
 import elite.intel.bindforge.model.BindingModifier;
 import elite.intel.bindforge.storage.SavedDeviceLabels;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -25,8 +22,6 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  */
 public class BindingSlotDisplayFormatter {
 
-    private static final Logger log = LogManager.getLogger(BindingSlotDisplayFormatter.class);
-
     private static final String KEYBOARD = "Keyboard";
 
     private final SavedDeviceLabels deviceLabels;
@@ -40,19 +35,6 @@ public class BindingSlotDisplayFormatter {
 
     public BindingSlotDisplayFormatter(SavedDeviceLabels deviceLabels) {
         this.deviceLabels = deviceLabels;
-    }
-
-    /**
-     * Shows controller inputs by their labels in the edits, read now. A working copy that cannot be read or parsed
-     * costs only the names: inputs fall back to their numbers rather than the screen failing to open.
-     */
-    public static BindingSlotDisplayFormatter withSavedLabels() {
-        try {
-            return new BindingSlotDisplayFormatter(SavedDeviceLabels.load());
-        } catch (RuntimeException e) {
-            log.warn("Could not read the saved controller button names; showing input numbers: {}", e.getMessage());
-            return new BindingSlotDisplayFormatter();
-        }
     }
 
     public String formatSlot(KeyBindingsParser.ReadOnlyBindingSlot slot) {

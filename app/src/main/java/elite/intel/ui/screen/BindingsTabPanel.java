@@ -65,14 +65,6 @@ public class BindingsTabPanel extends JPanel {
         applyBar.dispose();
     }
 
-    /**
-     * Shows a modal dialog when the user closes the application with an unapplied
-     * binding draft. Delegates to the Binding Profile sub-tab, the only one with state to lose.
-     */
-    public void promptCloseWithDraft() {
-        bindingProfilePanel.promptCloseWithDraft();
-    }
-
     public void initData() {
         bindingProfilePanel.initData();
         bindingManagementPanel.initData();

@@ -11,8 +11,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * The Bind Editor names a controller as the working copy does - what the installations and .binds hold - and shows the
- * edits' labels, so a SAVE in the Alias Designer shows at once (Storage S4b, Alan, 2026-10-28).
+ * The Bind Editor names a controller and shows its labels as the edits do, so a rename or a SAVE in the Alias Designer
+ * shows at once (Storage S5, 2026-10-28; names were the working copy's from S4b until then).
  */
 class SavedDeviceLabelsTest {
 
@@ -25,7 +25,7 @@ class SavedDeviceLabelsTest {
 
     @Test
     void aDevicesLabelsAreItsButtonMapsFoundIgnoringCase() throws IOException {
-        SavedDeviceLabels labels = SavedDeviceLabels.of(set(), set());
+        SavedDeviceLabels labels = SavedDeviceLabels.of(set());
 
         assertEquals(Map.of("Joy_6", "Gear", "Joy_7", ""), labels.labelsOf("RightStick"), "trimmed, as read");
         assertEquals(Optional.of("Gear"), labels.label("rightstick", "Joy_6"), "the game finds an element ignoring case");
@@ -33,7 +33,7 @@ class SavedDeviceLabelsTest {
 
     @Test
     void aBlankNameOrAnUnknownInputOrDeviceHasNoLabel() throws IOException {
-        SavedDeviceLabels labels = SavedDeviceLabels.of(set(), set());
+        SavedDeviceLabels labels = SavedDeviceLabels.of(set());
 
         assertEquals(Optional.empty(), labels.label("RightStick", "Joy_7"));
         assertEquals(Optional.empty(), labels.label("RightStick", "Joy_9"));
@@ -45,7 +45,7 @@ class SavedDeviceLabelsTest {
     /** As the game resolves hardware: the first element claiming it, primary or alternative. */
     @Test
     void hardwareIsNamedByTheFirstElementClaimingIt() throws IOException {
-        SavedDeviceLabels labels = SavedDeviceLabels.of(set(), set());
+        SavedDeviceLabels labels = SavedDeviceLabels.of(set());
 
         assertEquals(Optional.of("RightStick"), labels.nameOf("231d", "0200"), "the first, not the shadowed one");
         assertEquals(Optional.of("T-Rudder"), labels.nameOf("044F", "B678"), "an alternative pair counts");
@@ -53,17 +53,20 @@ class SavedDeviceLabelsTest {
         assertEquals(List.of("RightStick", "T-Rudder", "Shadowed"), labels.names());
     }
 
-    /** Renamed on screen, not applied: the tab keeps the old name, and its labels are found under the new one. */
+    /**
+     * Renamed on screen, not applied: the tab takes the new name - the one the edits' binds files now hold, since the
+     * rename moved every binding in them - and its labels are under it.
+     */
     @Test
-    void aDeviceRenamedOnScreenKeepsTheWorkingCopysNameAndShowsItsNewLabels() throws IOException {
+    void aDeviceRenamedOnScreenIsNamedAsTheEditsNameIt() throws IOException {
         ConfigurationFiles renamed = DeviceEdits.rename(set(), "RightStick", "MainStick",
                 Map.of("Joy_6", "Gear up")).files();
 
-        SavedDeviceLabels labels = SavedDeviceLabels.of(renamed, set());
+        SavedDeviceLabels labels = SavedDeviceLabels.of(renamed);
 
-        assertEquals(Optional.of("RightStick"), labels.nameOf("231D", "0200"), "what .binds says until APPLY");
-        assertEquals(Optional.of("Gear up"), labels.label("RightStick", "Joy_6"), "found by its hardware");
+        assertEquals(Optional.of("MainStick"), labels.nameOf("231D", "0200"));
         assertEquals(Optional.of("Gear up"), labels.label("MainStick", "Joy_6"));
+        assertEquals(Optional.empty(), labels.label("RightStick", "Joy_6"), "the old name is gone from the edits");
     }
 
     private static ConfigurationFiles set() {

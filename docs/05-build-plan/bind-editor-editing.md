@@ -19,13 +19,13 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 | What | Where |
 |---|---|
 | The grid | `ui.screen.bindings.BindingProfilePanel`, tables from `ui.support.BindingsGroupTableFactory`, cells drawn by `ui.render.BindingSlotCellRenderer` |
-| Button names in the grid, the dialogs and the search | `bindforge.devicefiles.SavedDeviceLabels` (draft over master, old name while a rename waits); `ui.support.BindingSlotDisplayFormatter` (`withSavedLabels`, `rawTokens`, `controllerSearchText`); `SlotCell` with the raw token as tooltip |
+| Button names in the grid, the dialogs and the search | `bindforge.storage.SavedDeviceLabels` (the edits' names and labels, since Storage S5); `ui.support.BindingSlotDisplayFormatter` (`withSavedLabels`, `rawTokens`, `controllerSearchText`); `SlotCell` with the raw token as tooltip |
 | AI ACCESS column | `bindforge.rules.AiAccess`, `ui.support.AiAccessCell`; recorded in [bind-editor.md](../02-features/bindforge/bind-editor.md#the-mechanism-an-assistant-column-in-the-grid--settled-2026-09-12) |
 | The capture dialog (E1) | `ui.dialog.AssignKeyboardBindingDialog` (name kept) — a **row editor**: title = in-game name, CONTROL / XML BINDING, then a card per slot (`SlotCard`: now, → new, CLEAR, what blocks it), the orange card being filled; one picker below that follows the orange card (`showSourceOf`) — KEYBOARD (V1.1's capture field and map, checks unchanged) and a tab per connected controller; one SAVE for every changed slot. Per-slot state in `SlotEdit`. `ui.dialog.ControllerInputsPanel` (BUTTONS / HATS pages, names, free/used/own colouring, click to pick); `KeyboardAvailabilityView.setOtherSlotKey` |
 | Which controllers, under which name (E1) | `bindforge.devices.CaptureControllers.all` — connected ones, plus every one the master or the bindings name (click-only when unplugged); the master's name, else Frontier's; unnamed connected ones get a greyed tab |
 | Press-to-capture (E1) | `bindforge.devices.ControllerCapture` — held inputs on any controller become modifiers (up to three); hats as `Joy_POV` tokens. Fed from `DeviceBus` while the dialog is open |
 | Input already held elsewhere (E1) | `bindforge.rules.SlotInputConflicts` — exact chord, same Hold, `isSafeOverlap` contexts. Blocks SAVE |
-| Saving (E1) | `ui.support.AssignSelection` — `AssignKeyboardBindingSelection` (keyboard path, unchanged) or `AssignSlotSelection` → `BindingsWriter.assignSlot`; `BindingProfilePanel.saveSelections` writes them in turn, re-stamping the file after each, Hold kept from each slot |
+| Saving (E1; on the edits since Storage S5) | `ui.support.AssignSelection` — `AssignKeyboardBindingSelection` (keyboard path, unchanged) or `AssignSlotSelection` → `BindingsWriter.assignSlot`, on the binds file's bytes; `BindingProfilePanel.saveSelections` makes them one edit through `BindsEdits.change`, all or none, Hold kept from each slot |
 | Required-by-Vega filter | `BindingProfilePanel.filterVegaOnly`, a footer checkbox beside *Show conflicts only*. It keeps the rows whose AI ACCESS state is not `NOT_USED`, and combines with the conflicts filter and search |
 | Clear column | `ui.dialog.ClearKeyboardBindingDialog` — keyboard slots only, as V1.1 shipped it |
 
@@ -68,7 +68,7 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 | # | Slice | Status |
 |---|---|---|
 | E1 | **Controller buttons and hats in the capture dialog.** The gate is removed, there is a tab per connected controller, capture by press or click, held buttons become modifiers, an input in use blocks SAVE, the AI-access warning shows, and saving goes through `assignSlot` | **done 2026-10-15** |
-| E2 | **AXIS DIRECTIONS on a button slot.** `Pos_`/`Neg_Joy_*Axis` as a third page of a controller tab, captured by pushing an axis past a threshold from where it rests (reuse `DeviceEditorLights`' rest rule) and mapped through `DeviceDescription.axisAt` | **next, after [Storage S5](storage.md#slices)** |
+| E2 | **AXIS DIRECTIONS on a button slot.** `Pos_`/`Neg_Joy_*Axis` as a third page of a controller tab, captured by pushing an axis past a threshold from where it rests (reuse `DeviceEditorLights`' rest rule) and mapped through `DeviceDescription.axisAt` | **next** ([Storage S5](storage.md#slices) done 2026-10-28) |
 | E3 | **Axis rows.** One `<Binding>` plus Inverted and Deadzone, both inline and in the dialog. The AXES page is captured by moving an axis, and saving goes through `assignAxis`. The grid needs the axis-row column shape (spec § *Modifiers, Hold, Inverted, Deadzone*) | ready after E2 |
 | E4 | **MOUSE tab.** Buttons and the wheel half-axes are chosen, never captured (spec § *MOUSE is chosen, not captured*) | ready |
 | E5 | **Cross-device chords.** A keyboard key with controller buttons held, and a controller input with keyboard modifiers held | ready |
@@ -76,6 +76,11 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 | E7 | **Gamepad capture.** On a controller named `GamePad`, the tab offers and captures the game's gamepad tokens, never `Joy_N` or hats; a trigger pulled past a threshold is a press of its `Pos_` token and can be held as a modifier. Needs [A18](alias-designer.md#slices)'s gamepad events and token table. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor) | **blocked** on A18 |
 
 ## Hand-off notes — newest first
+
+**2026-10-28, Storage S5 moved this screen onto the edits.** LOAD opens any binds file; SAVE, the Clear column and
+Auto-Assign are edits not applied; the writer takes and returns bytes (`EditedBinds`), so E2–E3 write through
+`BindsEdits.change` and never a file. The "re-stamp between writes" note below no longer applies. See
+[storage.md](storage.md#hand-off-notes).
 
 **2026-10-24, build plan rewritten to back up, edit, apply** (Alan). [Storage S5](storage.md#slices) moves this
 screen onto the working copy and the one APPLY / DISCARD bar: any binds file loads, capture SAVE is an edit not

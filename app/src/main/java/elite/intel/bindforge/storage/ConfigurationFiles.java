@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 /**
@@ -83,6 +84,17 @@ public final class ConfigurationFiles {
     /** These files with {@code deviceMappings} in place of this set's. */
     public ConfigurationFiles withDeviceMappings(byte[] deviceMappings) {
         return new ConfigurationFiles(bindings, deviceMappings, buttonMaps);
+    }
+
+    /**
+     * These files with one binds or preset file in place of this set's - added when the set holds none of that name.
+     *
+     * @throws IllegalArgumentException if the name is a path, or not a binds or preset file's
+     */
+    public ConfigurationFiles withBindingsFile(String name, byte[] content) {
+        Map<String, byte[]> changed = new TreeMap<>(bindings);
+        changed.put(name, Objects.requireNonNull(content, "content"));
+        return new ConfigurationFiles(changed, deviceMappings, buttonMaps);
     }
 
     /** These files with {@code buttonMaps} in place of this set's. */

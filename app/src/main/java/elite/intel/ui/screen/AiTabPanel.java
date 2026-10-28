@@ -82,7 +82,6 @@ public class AiTabPanel extends JPanel {
     private HudStatusReadout ttsBadge;
     private HudStatusReadout bindingsBadge;
     private HudStatusReadout commandsBadge;
-    private HudStatusReadout keymapBadge;
     /**
      * Whether the push-to-talk gate is armed, so the STT badge can say what opens the microphone.
      */
@@ -627,7 +626,6 @@ public class AiTabPanel extends JPanel {
         bindingsBadge = new HudStatusReadout(getText("hud.bindings"), "—", StatusBadge.State.STANDBY);
         commandsBadge = new HudStatusReadout(getText("hud.commands"),
                 getText("hud.commands.summary", initCmdCount), StatusBadge.State.INFO);
-        keymapBadge   = new HudStatusReadout(getText("hud.keymap"), "—", StatusBadge.State.STANDBY);
 
         JPanel panel = transparentPanel(null);
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -640,8 +638,6 @@ public class AiTabPanel extends JPanel {
         panel.add(bindingsBadge);
         panel.add(Box.createRigidArea(new Dimension(0, 3)));
         panel.add(commandsBadge);
-        panel.add(Box.createRigidArea(new Dimension(0, 3)));
-        panel.add(keymapBadge);
         return panel;
     }
 
@@ -726,15 +722,6 @@ public class AiTabPanel extends JPanel {
     public void onCustomCommandsSummaryChanged(CustomCommandsSummaryChangedEvent event) {
         SwingUtilities.invokeLater(() ->
                 commandsBadge.setValue(getText("hud.commands.summary", event.count()), StatusBadge.State.INFO));
-    }
-
-    @Subscribe
-    public void onKeymapSyncStateChanged(KeymapSyncStateChangedEvent event) {
-        SwingUtilities.invokeLater(() -> {
-            StatusBadge.State state = event.inSync() ? StatusBadge.State.OK : StatusBadge.State.STANDBY;
-            String text = event.inSync() ? getText("hud.keymap.inSync") : getText("hud.keymap.modified");
-            keymapBadge.setValue(text, state);
-        });
     }
 
     private String sleepWakeText() {

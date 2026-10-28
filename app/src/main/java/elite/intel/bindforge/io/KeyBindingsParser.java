@@ -10,8 +10,8 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -190,10 +190,22 @@ public class KeyBindingsParser {
      * executable.
      */
     public Map<String, ReadOnlyBindingSlots> parseReadOnlyBindingSlots(File file) throws Exception {
+        return readOnlyBindingSlots(DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file), file.getName());
+    }
+
+    /**
+     * {@link #parseReadOnlyBindingSlots(File)} for a binds file held in memory - the Bind Editor reads the edits not
+     * applied (Storage S5). It reads exactly what the file version reads: nothing here widens what is executable.
+     *
+     * @param binds the binds file's bytes
+     */
+    public Map<String, ReadOnlyBindingSlots> parseReadOnlyBindingSlots(byte[] binds) throws Exception {
+        return readOnlyBindingSlots(DocumentBuilderFactory.newInstance().newDocumentBuilder()
+                .parse(new ByteArrayInputStream(binds)), "the edits not applied");
+    }
+
+    private Map<String, ReadOnlyBindingSlots> readOnlyBindingSlots(Document doc, String source) {
         Map<String, ReadOnlyBindingSlots> bindings = new HashMap<>();
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(file);
         doc.getDocumentElement().normalize();
 
         NodeList nodes = doc.getDocumentElement().getChildNodes();
@@ -229,7 +241,7 @@ public class KeyBindingsParser {
                 }
             }
         }
-        log.info("Parsed {} read-only binding slots from file: {}", bindings.size(), file.getName());
+        log.info("Parsed {} read-only binding slots from {}", bindings.size(), source);
         return bindings;
     }
 
