@@ -9,6 +9,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -65,15 +66,26 @@ public class TimestampedBackups {
         if (keep < 0) {
             throw new IllegalArgumentException("keep must not be negative: " + keep);
         }
-        List<Path> newestFirst = copiesOf(directory, fileName).stream()
+        List<Path> newestFirst = newestFirst(directory, fileName);
+        for (Path stale : newestFirst.subList(Math.min(keep, newestFirst.size()), newestFirst.size())) {
+            Files.deleteIfExists(stale);
+        }
+    }
+
+    /**
+     * The most recent copy of {@code fileName} in {@code directory}, or empty when there is none (or no directory).
+     */
+    public Optional<Path> newest(Path directory, String fileName) throws IOException {
+        return newestFirst(directory, fileName).stream().findFirst();
+    }
+
+    private List<Path> newestFirst(Path directory, String fileName) throws IOException {
+        return copiesOf(directory, fileName).stream()
                 .sorted(Comparator.comparing(BackupName::timestamp)
                         .thenComparingInt(BackupName::sameSecondIndex)
                         .reversed())
                 .map(BackupName::path)
                 .toList();
-        for (Path stale : newestFirst.subList(Math.min(keep, newestFirst.size()), newestFirst.size())) {
-            Files.deleteIfExists(stale);
-        }
     }
 
     private List<BackupName> copiesOf(Path directory, String fileName) throws IOException {

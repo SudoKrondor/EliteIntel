@@ -26,7 +26,13 @@ class VegaSystemPromptTest {
      * dilutes the rest for a small local model. Raise this number only with a reason that is not "the new rule
      * did not fit".
      *
-     * <p>It last fired when the request_input branch was made conditional on that function actually being listed
+     * <p>It last fired when the fallback branch was told never to report an action no function performed
+     * ({@link #aReplyNeverClaimsAnActionNoFunctionPerformed}). The branch paid for itself: "using reasoning or"
+     * became "from", and "decline only requests requiring unavailable external data or actions" went, since the
+     * new sentence says what to do about actions and <em>Game-data questions require their matching function</em>
+     * already covers data.
+     *
+     * <p>Before that it fired when the request_input branch was made conditional on that function actually being listed
      * (it is withheld when nothing offered takes a required argument, so the old unconditional ELSE told the model
      * to call a function that was not there). "Never claim completion without calling the action" paid for it: it
      * repeats <em>Speaking is the fallback ... never in place of an action you could have taken</em>.
@@ -163,7 +169,23 @@ class VegaSystemPromptTest {
         assertTrue(normalized.contains("Combine its <original_command> with the current commander input"));
         assertTrue(normalized.contains("Treat single-word or very short ship-context phrases as likely commands"));
         assertTrue(normalized.contains("Game-data questions require their matching function"));
-        assertTrue(normalized.contains("decline only requests requiring unavailable external data or actions"));
+    }
+
+    /**
+     * When no offered function performs the action asked for, the reply must say so - never report it done.
+     *
+     * <p>WHY: "flight assist on" (no command exists for it) was answered with speak "Flight assist engaged." by
+     * ministral-8b, and nothing was pressed (support bundle of 2026-10-27). The old fallback branch said only
+     * "decline ... unavailable ... actions", which a small model read as optional, and the earlier general rule
+     * against claiming completion had been cut as a repeat of "Speaking is the fallback". That rule is about
+     * choosing to act; this one is about what a reply may claim when acting is impossible.
+     */
+    @Test
+    void aReplyNeverClaimsAnActionNoFunctionPerformed() {
+        String normalized = prompt.staticRules(ThoughtSource.COMMANDER).replaceAll("\\s+", " ");
+
+        assertTrue(normalized.contains("For an action no offered function performs, say it is unavailable, "
+                + "never that it is done"));
     }
 
     /**
