@@ -141,7 +141,10 @@ Startup diagnostics (`logStartupDiagnostics`) run on every
 
 Uses `XTestFakeKeyEvent` (libXtst) to inject key events directly into the X input stream.
 
+- Sends
+  **every** key over its one display connection, plain AWT keys included, never through Robot. Robot injects over AWT's own connection, and KWin on an Xwayland built with libei asks permission once per X11 client: two connections meant two prompts, and a chord split across them lost its modifier while the second was open.
 - `KEYSYM_MAP`: synthetic codes → X11 keysym values (from `keysymdef.h`).
+- `VK_KEYSYM_MAP`: AWT virtual keys → the keysym Robot presses for each, resolved to a keycode per press. Every `KEY_*` below `NATIVE_BASE` needs an entry (`LinuxX11NativeKeyInputTest` checks).
 - Keycodes are resolved at startup via `XKeysymToKeycode` and cached in `keycodeCache`.
 - `typeChar(c)`: queries
   `XGetKeyboardMapping` to determine if Shift is needed for the character's level (level 0 = plain, level 1 = Shift), then injects accordingly. Falls back to Robot for AltGr or other multi-level chars.

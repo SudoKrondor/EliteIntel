@@ -558,6 +558,7 @@ public final class SupportBundle {
                 .append("  Timezone: ").append(java.time.ZoneId.systemDefault()).append('\n')
                 .append("Game clock: ").append(GameClock.get().describe()).append('\n')
                 .append(desktop())
+                .append(WaylandInputReport.describe())
                 .append(displays())
                 .append(HardwareReport.describe(installDir(sources), sources.journalDir()))
                 .append(aiSetup(sources.aiSetup()))
