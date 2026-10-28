@@ -44,6 +44,13 @@ public class ApproachSettlementEvent extends BaseEvent {
     @SerializedName("Name")
     private String name;
 
+    /**
+     * Present only when {@link #name} is a symbol: Guardian ruins arrive as {@code "$Ancient:#index=3;"} with
+     * {@code "Ancient Ruins (3)"} here. An ordinary settlement's name is plain text and has no sibling.
+     */
+    @SerializedName("Name_Localised")
+    private String nameLocalised;
+
     @SerializedName("MarketID")
     private long marketID;
 
@@ -90,6 +97,7 @@ public class ApproachSettlementEvent extends BaseEvent {
         super(json.get("timestamp").getAsString(), Duration.ofSeconds(30), "ApproachSettlement");
         ApproachSettlementEvent event = GsonFactory.getGson().fromJson(json, ApproachSettlementEvent.class);
         this.name = event.name;
+        this.nameLocalised = event.nameLocalised;
         this.marketID = event.marketID;
         this.stationFaction = event.stationFaction;
         this.stationGovernment = event.stationGovernment;
@@ -124,8 +132,8 @@ public class ApproachSettlementEvent extends BaseEvent {
             return "";
         }
         return bodyName == null || bodyName.isBlank()
-                ? "approaching settlement " + name
-                : "approaching settlement " + name + " on " + bodyName;
+                ? "approaching settlement " + getDisplayName()
+                : "approaching settlement " + getDisplayName() + " on " + bodyName;
     }
 
     @Override
@@ -143,8 +151,19 @@ public class ApproachSettlementEvent extends BaseEvent {
         return GsonFactory.toJsonObject(this);
     }
 
+    /**
+     * The journal's name, which is a symbol for Guardian ruins - an identifier, never something to show or say.
+     */
     public String getName() {
         return name;
+    }
+
+    /**
+     * The settlement's name as the commander reads it: the game's own wording when the name is a symbol,
+     * otherwise the name itself.
+     */
+    public String getDisplayName() {
+        return nameLocalised == null || nameLocalised.isBlank() ? name : nameLocalised;
     }
 
     public long getMarketID() {
