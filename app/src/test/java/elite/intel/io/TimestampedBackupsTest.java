@@ -10,6 +10,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -67,6 +68,29 @@ class TimestampedBackupsTest {
         backupsAt("2026-10-03T12:00:00Z").prune(backupDir, "a.binds", 0);
 
         assertEquals(List.of("b.binds.20261003-120000.bak", "notes.txt"), names(backupDir));
+    }
+
+    @Test
+    void newestCountsSameSecondOrderAndIgnoresOtherFiles() throws IOException {
+        Path backupDir = dir.resolve("backups");
+        backupsAt("2026-10-01T09:00:00Z").create(original("a.binds", "old"), backupDir);
+        TimestampedBackups later = backupsAt("2026-10-03T12:00:00Z");
+        later.create(original("a.binds", "first"), backupDir);
+        later.create(original("a.binds", "second"), backupDir);
+        backupsAt("2026-10-05T12:00:00Z").create(original("b.binds", "other preset"), backupDir);
+
+        Path newest = later.newest(backupDir, "a.binds").orElseThrow();
+
+        assertEquals("a.binds.20261003-120000-1.bak", newest.getFileName().toString());
+        assertEquals("second", Files.readString(newest));
+    }
+
+    @Test
+    void newestIsEmptyWithoutACopyOrAFolder() throws IOException {
+        TimestampedBackups backups = backupsAt("2026-10-03T12:00:00Z");
+
+        assertEquals(Optional.empty(), backups.newest(dir.resolve("missing"), "a.binds"));
+        assertEquals(Optional.empty(), backups.newest(dir, "a.binds"));
     }
 
     @Test
