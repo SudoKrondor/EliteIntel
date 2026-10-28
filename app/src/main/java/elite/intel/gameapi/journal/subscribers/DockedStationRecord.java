@@ -89,7 +89,7 @@ public record DockedStationRecord(
                 event.getSystemAddress(),
                 starSystem,
                 event.getMarketID(),
-                event.getName(),
+                event.getDisplayName(),
                 null,
                 event.getStationServices(),
                 event.getStationEconomyLocalised(),

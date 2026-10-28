@@ -38,7 +38,8 @@ public class ApproachSettlementSubscriber {
     @Subscribe
     public void onApproachSettlementEvent(ApproachSettlementEvent event) {
         Thread.ofVirtual().start(() -> {
-            StringBuilder sb = new StringBuilder(settlementFacts(event));
+            String facts = settlementFacts(event);
+            StringBuilder sb = new StringBuilder(facts);
 
             // The settlement is a place of its own, not the body it stands on: give it its own record before
             // anything is filed against it. The event names the body but not the system, so that comes from
@@ -52,14 +53,32 @@ public class ApproachSettlementSubscriber {
             if (!availableData.isEmpty()) sb.append(" ").append(localizedEvent("event.approach.settlement.moreData"));
 
             if (playerSession.isRouteAnnouncementOn() && firstApproachThisSession(event)) {
-                String instructions = """
-                            Approaching settlement.
-                            Provide very brief summary for the settlement data.
-                            Do not list every service.
-                        """;
-                VegaRuntime.narrator().narrate(sb.toString(), instructions);
+                boolean nameOnly = facts.equals(nameFact(event)) && availableData.isEmpty();
+                VegaRuntime.narrator().narrate(sb.toString(), narrationInstructions(nameOnly));
             }
         });
+    }
+
+    /**
+     * How VEGA is told to announce the approach.
+     *
+     * <p>WHY two shapes: Guardian ruins, crash sites and the like carry a name and nothing else - no market,
+     * no faction, no services. Asked to "summarise the settlement data, not listing every service" over a
+     * bare name, a small local model supplied the services itself ("services including Trade and Repair"
+     * at Ancient Ruins). With only a name there is nothing to summarise, and services are not mentioned.
+     */
+    static String narrationInstructions(boolean nameOnly) {
+        if (nameOnly) {
+            return """
+                        Approaching a site.
+                        Announce the approach and the name only. Nothing else is known about it.
+                    """;
+        }
+        return """
+                    Approaching settlement.
+                    Provide very brief summary for the settlement data.
+                    Do not list every service. Mention only what the data states.
+                """;
     }
 
     /**
@@ -82,8 +101,7 @@ public class ApproachSettlementSubscriber {
      * Only the facts the event actually carried, see {@link #appendFact}.
      */
     static String settlementFacts(ApproachSettlementEvent event) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(localizedEvent("event.approach.settlement.approaching", event.getName())).append(" ");
+        StringBuilder sb = new StringBuilder(nameFact(event));
 
         String faction = event.getStationFaction() == null ? null : event.getStationFaction().getName();
         if ("$government_Engineer;".equalsIgnoreCase(event.getStationGovernment())) {
@@ -103,6 +121,14 @@ public class ApproachSettlementSubscriber {
             sb.append(String.join(", ", stationServices)).append(".");
         }
         return sb.toString();
+    }
+
+    /**
+     * The opening fact every announcement carries: the settlement's name as the commander reads it, never the
+     * journal's symbol ("$Ancient:#index=3;" was read out word for word).
+     */
+    private static String nameFact(ApproachSettlementEvent event) {
+        return localizedEvent("event.approach.settlement.approaching", event.getDisplayName()) + " ";
     }
 
     /**
