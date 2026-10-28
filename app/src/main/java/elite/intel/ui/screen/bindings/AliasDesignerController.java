@@ -4,9 +4,9 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
 import elite.intel.bindforge.devices.*;
+import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.DeviceEdits;
 import elite.intel.bindforge.storage.Edits;
-import elite.intel.db.managers.BindForgeDeviceDraftManager;
 import elite.intel.db.managers.BindForgeIdentityAnswerManager;
 import elite.intel.devices.events.DeviceConnectedEvent;
 import elite.intel.devices.events.DeviceDisconnectedEvent;
@@ -265,8 +265,8 @@ final class AliasDesignerController {
     /**
      * One dialog per missing controller. A controller picked for one is left out of the next, since one controller
      * cannot be two; a question left with no candidate is not put. Every answer is written together once the last is
-     * given: Not now and None of these are remembered; a pick for a named controller is a retarget, still written to the
-     * draft until Storage S4b moves it onto the edits.
+     * given: Not now and None of these are remembered; a pick for a named controller is a retarget, an edit not applied
+     * (Storage S4b).
      * <p>
      * <strong>A pick for a controller the bindings know only by its hardware id</strong> names the picked controller
      * (Alan, 2026-10-17, A17): onboarding's page opens for it, and its FINISH moves the bindings from the old id to the
@@ -323,11 +323,15 @@ final class AliasDesignerController {
     private record IdentityResult(List<IdentityDecision> moved, List<String> stale) {
     }
 
-    private static IdentityResult writeIdentity(List<IdentityDecision> decisions) {
-        BindForgeDeviceDraftManager draft = BindForgeDeviceDraftManager.getInstance();
+    /**
+     * Writes the answers: Not now and None of these remembered, and every retarget made in one edit (Storage S4b, Alan,
+     * 2026-10-28) - the element given the picked controller's VID/PID, written at the next APPLY.
+     *
+     * @throws IOException if the edits cannot be read or changed - no retarget is made
+     */
+    private static IdentityResult writeIdentity(List<IdentityDecision> decisions) throws IOException {
         BindForgeIdentityAnswerManager answers = BindForgeIdentityAnswerManager.getInstance();
-        List<IdentityDecision> moved = new ArrayList<>();
-        List<String> stale = new ArrayList<>();
+        List<IdentityDecision> retargets = new ArrayList<>();
         for (IdentityDecision decision : decisions) {
             IdentityQuestions.Question question = decision.question();
             MyDevice picked = decision.choice().picked();
@@ -338,15 +342,35 @@ final class AliasDesignerController {
                 // WHY: named by onboarding's page, which opens next - nothing changes until its FINISH (A17).
                 log.info("Identity question for {} answered: {} ({}), to be named", question.answerKey(), picked.label(),
                         picked.hardware());
-            } else if (draft.retargetByName(question.deviceName(), question.was().vid(), question.was().pid(),
-                    picked.vid(), picked.pid())) {
-                answers.forget(Set.of(question.deviceName()));
-                log.info("{} retargeted in the draft from {} to {} ({})", question.deviceName(), question.was(),
-                        picked.hardware(), picked.label());
-                moved.add(decision);
             } else {
-                stale.add(question.deviceName());
+                retargets.add(decision);
             }
+        }
+        if (retargets.isEmpty()) return new IdentityResult(List.of(), List.of());
+        List<IdentityDecision> moved = new ArrayList<>();
+        List<String> stale = new ArrayList<>();
+        Edits.stored().change(current -> {
+            moved.clear();
+            stale.clear();
+            ConfigurationFiles result = current;
+            for (IdentityDecision decision : retargets) {
+                IdentityQuestions.Question question = decision.question();
+                MyDevice picked = decision.choice().picked();
+                Optional<ConfigurationFiles> retargeted = DeviceEdits.retarget(result, question.deviceName(),
+                        question.was(), picked.vid(), picked.pid());
+                if (retargeted.isPresent()) {
+                    result = retargeted.get();
+                    moved.add(decision);
+                } else {
+                    stale.add(question.deviceName());
+                }
+            }
+            return result;
+        });
+        for (IdentityDecision decision : moved) {
+            answers.forget(Set.of(decision.question().deviceName()));
+            log.info("{} retargeted in the edits from {} to {} ({})", decision.question().deviceName(),
+                    decision.question().was(), decision.choice().picked().hardware(), decision.choice().picked().label());
         }
         return new IdentityResult(moved, stale);
     }

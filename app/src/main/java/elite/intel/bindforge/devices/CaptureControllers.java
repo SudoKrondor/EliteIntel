@@ -3,13 +3,11 @@ package elite.intel.bindforge.devices;
 import elite.intel.bindforge.devicefiles.ButtonMapLabels;
 import elite.intel.bindforge.devicefiles.DeviceEntry;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
-import elite.intel.bindforge.devicefiles.SavedDeviceLabels;
 import elite.intel.bindforge.io.KeyBindingsParser;
 import elite.intel.bindforge.io.KeyBindingsParser.ReadOnlyBindingSlot;
 import elite.intel.bindforge.io.KeyBindingsParser.ReadOnlyBindingSlots;
 import elite.intel.bindforge.model.BindingInput;
-import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
-import elite.intel.db.managers.BindForgeDeviceMasterManager;
+import elite.intel.bindforge.storage.SavedDeviceLabels;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.model.Device;
 import elite.intel.devices.model.DeviceDescription;
@@ -24,13 +22,15 @@ import java.util.regex.Pattern;
  * The controllers the capture dialog offers a tab for, under the name {@code .binds} calls each.
  * <p>
  * <strong>Every controller the user has, connected or not</strong> (Alan, 2026-10-15): the connected ones,
- * every one the master names, and every one the bindings name. A stick binding must not lose its tab because the
+ * every one of the user's elements in the working copy, and every one the bindings name. A stick binding must not lose its tab because the
  * stick is asleep or unplugged - an unplugged controller's inputs are clicked, not pressed, and come from its saved
  * names and the inputs the bindings already use.
  * <p>
- * <strong>The name is the master's</strong> - what the installations hold now - and Frontier's for a built-in the
- * master does not hold (Alan, 2026-10-15). A device renamed in the draft and not yet applied is still under its old
- * name in the installations and in {@code .binds}; a binding written under that name moves with the rest at APPLY.
+ * <strong>The name is the working copy's</strong> - what the installations hold now (Alan, 2026-10-15; read from the
+ * working copy since Storage S4b, 2026-10-28): the first element in its {@code DeviceMappings.xml} claiming the
+ * controller, as the game resolves it, and Frontier's when the working copy holds none. A device renamed on screen and
+ * not yet applied is still under its old name in the working copy and in {@code .binds}, so a binding written under
+ * that name moves with all the others at APPLY. Labels are the edits' ({@link SavedDeviceLabels}).
  * <p>
  * <strong>A connected controller with no name gets no capture</strong>: {@code .binds} would have to name it by
  * hardware id, which BindForge moves to a name at APPLY anyway. Its tab is shown and greyed, saying where to name it.
@@ -76,25 +76,27 @@ public final class CaptureControllers {
     }
 
     /**
-     * Connected controllers first - named ones, then unnamed - then the ones only the master or the bindings know,
+     * Connected controllers first - named ones, then unnamed - then the ones only the working copy or the bindings know,
      * each group in name order.
      *
      * @param bindings the bindings being edited, for the controllers they name and the inputs they use
      */
     public static List<Controller> all(Map<String, ReadOnlyBindingSlots> bindings) {
-        List<Controller> controllers = new ArrayList<>(connected());
+        SavedDeviceLabels labels = SavedDeviceLabels.load();
+        FrontierStockDevices stock = FrontierStockDevices.getInstance();
+        List<Controller> controllers = new ArrayList<>(connected(labels));
         Set<String> present = new HashSet<>();
         controllers.stream().filter(Controller::named).forEach(c -> present.add(c.name().toLowerCase(Locale.ROOT)));
 
         Map<String, Set<String>> used = tokensByDevice(bindings);
         Set<String> known = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        BindForgeDeviceMasterManager.getInstance().findAll().forEach(row -> known.add(row.deviceName()));
+        labels.names().stream().filter(name -> !stock.ships(name)).forEach(known::add);
         known.addAll(used.keySet());
 
         List<Controller> absent = new ArrayList<>();
         for (String name : known) {
             if (present.contains(name.toLowerCase(Locale.ROOT))) continue;
-            Set<String> tokens = new HashSet<>(SavedDeviceLabels.of(name).keySet());
+            Set<String> tokens = new HashSet<>(labels.labelsOf(name).keySet());
             tokens.addAll(used.getOrDefault(name, Set.of()));
             int[] counts = counts(tokens);
             // Nothing saved and nothing bound: no input to offer, so no tab.
@@ -109,14 +111,17 @@ public final class CaptureControllers {
      * Every connected controller, named ones first, each group in name order. Empty when the service is down.
      */
     public static List<Controller> connected() {
+        return connected(SavedDeviceLabels.load());
+    }
+
+    private static List<Controller> connected(SavedDeviceLabels labels) {
         DeviceService service = DeviceService.getInstance();
         if (!service.isAvailable()) return List.of();
-        BindForgeDeviceMasterManager master = BindForgeDeviceMasterManager.getInstance();
         FrontierStockDevices stock = FrontierStockDevices.getInstance();
         List<Controller> controllers = new ArrayList<>();
         for (Device device : service.getConnectedDevices()) {
             Optional<DeviceIdentity> identity = DeviceIdentities.of(device);
-            String name = identity.map(id -> nameOf(id, master, stock)).orElse(null);
+            String name = identity.map(id -> nameOf(id, labels, stock)).orElse(null);
             DeviceDescription description = service.description(device.id()).orElse(DeviceDescription.axesUnknown(0));
             boolean gamepad = GamepadSupport.isGamepad(device);
             List<GameAxis> axes = axesFor(gamepad, device.axisCount(), description);
@@ -136,13 +141,13 @@ public final class CaptureControllers {
 
     /**
      * The {@code .binds} name of one connected controller, as {@link #connected()} names it - for a caller that needs
-     * one controller, not all of them (review, 2026-10-17). Reads the master, so call it off the EDT.
+     * one controller, not all of them (review, 2026-10-17).
      *
+     * @param labels the edits, as {@link SavedDeviceLabels#load()} read them - off the EDT
      * @return empty when the controller has no name yet, or its GUID could not be read
      */
-    public static Optional<String> nameOf(Device device) {
-        return DeviceIdentities.of(device)
-                .map(id -> nameOf(id, BindForgeDeviceMasterManager.getInstance(), FrontierStockDevices.getInstance()));
+    public static Optional<String> nameOf(Device device, SavedDeviceLabels labels) {
+        return DeviceIdentities.of(device).map(id -> nameOf(id, labels, FrontierStockDevices.getInstance()));
     }
 
     /**
@@ -185,9 +190,9 @@ public final class CaptureControllers {
         byDevice.computeIfAbsent(device, d -> new HashSet<>()).add(token);
     }
 
-    private static String nameOf(DeviceIdentity identity, BindForgeDeviceMasterManager master, FrontierStockDevices stock) {
-        DeviceRow row = master.findByHardware(identity.vid(), identity.pid());
-        if (row != null) return row.deviceName();
-        return stock.covering(identity.vid(), identity.pid()).map(DeviceEntry::name).orElse(null);
+    private static String nameOf(DeviceIdentity identity, SavedDeviceLabels labels, FrontierStockDevices stock) {
+        return labels.nameOf(identity.vid(), identity.pid())
+                .or(() -> stock.covering(identity.vid(), identity.pid()).map(DeviceEntry::name))
+                .orElse(null);
     }
 }

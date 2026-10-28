@@ -98,8 +98,7 @@ public record BackupSources(Path bindingsFolder, List<Installation> installation
     }
 
     private static InstallationRow asMissing(InstallationRow row) {
-        return new InstallationRow(row.id(), row.storefront(), row.rootPath(), row.addedByHand(), true,
-                row.missedWrite());
+        return new InstallationRow(row.id(), row.storefront(), row.rootPath(), row.addedByHand(), true);
     }
 
     /**

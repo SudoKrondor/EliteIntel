@@ -750,7 +750,7 @@ update that keeps the same layout costs them one dismissed dialog.
 
 ### Built — 2026-10-15 (Alan, A12)
 
-*Built against the master/draft model. The identity question still reads the master and the draft until Storage S4b moves it onto the working copy, so until then a retarget does not reach the game (Alan, 2026-10-26). The rules above still hold.*
+*Built against the master/draft model; moved onto the working copy in Storage S4b (2026-10-28) - see [On the working copy](#on-the-working-copy--2026-10-28-storage-s4b) below. The rules above still hold; the master, draft and Apply named below are history.*
 
 Built as `bindforge.devices.IdentityQuestions` (who is asked, about what - pure), `ui.screen.bindings.IdentityDialog`,
 `BindForgeDeviceDraftManager.retargetByName`, and the remembered answers in `bindforge_identity_answer` (migration
@@ -797,7 +797,7 @@ Built as `bindforge.devices.IdentityQuestions` (who is asked, about what - pure)
 
 ### Built — 2026-10-17 (Alan, A17)
 
-*Built against the master/draft model. Since Storage S4a (2026-10-26) a yes opens onboarding, whose FINISH moves the bindings from the old id to the name in the same edit - no record waits for Apply; the record's table (`12008`) goes in S4b. The rules above still hold.*
+*Built against the master/draft model. Since Storage S4a (2026-10-26) a yes opens onboarding, whose FINISH moves the bindings from the old id to the name in the same edit - no record waits for Apply; the record's table (`12008`) was dropped in S4b (2026-10-28). The rules above still hold.*
 
 **A controller the bindings know only by its hardware id.** A stick that never had an entry in `DeviceMappings.xml`
 is named in `.binds` by its id - `334483F3` - and a firmware update or a replacement gives it a new one, leaving every
@@ -858,6 +858,24 @@ four questions, one at a time:
 - **One read of `.binds` per refresh** for both counts the question needs (`BindsDeviceReferences.counts`).
 - *Also:* `Question.answerKey()` and `hardwareSetKey(…)`, so no accessor shadows a static; each question is built once;
   the manager's write is only the draft's, in its transaction; one form for an id in the logs, `VID 3344 PID 83F3`.
+
+### On the working copy — 2026-10-28 (Storage S4b)
+
+The identity question reads the working copy with the edits on it (`bindforge.storage.Edits`), as the rest of the
+screen has since S4a. Alan approved the sources on 2026-10-28:
+
+- **The named controllers are the user's elements in the edits' `DeviceMappings.xml`** - every element Frontier does
+  not ship, with its own VID/PID. A controller named or retargeted in the edits is spoken for, so it is no candidate.
+- **The bindings are counted in the edits' binds files** (Alan, option 1 of two), as onboarding counts them - so a
+  rename or a hardware-id move not yet applied is counted the way APPLY will write it. Until S4b the question counted
+  the live bindings folder.
+- **A yes for a named controller is an edit not applied** (`DeviceEdits.retarget`, `DeviceMappingsMerge.retarget`):
+  the element keeps its name, its place in the file and every other child, and only its `<VID>` and `<PID>` change.
+  The binds files and the `.buttonMap` are untouched - the bindings name the device. Several answers are one edit. A
+  device whose element is gone, or no longer has the hardware the question saw, changes nothing and is reported as
+  changed, as before.
+- **No record of a yes is kept.** A12's answers still go to `bindforge_identity_answer`; A17's waiting moves went with
+  their table, since onboarding's FINISH moves the bindings in its edit.
 
 ## Automatic Device Registration
 

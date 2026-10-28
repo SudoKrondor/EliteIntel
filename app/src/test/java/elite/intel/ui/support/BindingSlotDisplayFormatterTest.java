@@ -1,14 +1,15 @@
 package elite.intel.ui.support;
 
-import elite.intel.bindforge.devicefiles.SavedDeviceLabels;
 import elite.intel.bindforge.io.KeyBindingsParser.BindingSlotType;
 import elite.intel.bindforge.io.KeyBindingsParser.ReadOnlyBindingSlot;
 import elite.intel.bindforge.model.BindingModifier;
-import elite.intel.db.managers.BindForgeDeviceDraftManager;
-import elite.intel.db.managers.BindForgeDeviceMasterManager;
+import elite.intel.bindforge.storage.ConfigurationFiles;
+import elite.intel.bindforge.storage.SavedDeviceLabels;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -23,14 +24,12 @@ class BindingSlotDisplayFormatterTest {
     private BindingSlotDisplayFormatter formatter;
 
     @BeforeEach
-    void aStickWithOneNamedButton() {
-        BindForgeDeviceDraftManager.getInstance().discard();
-        BindForgeDeviceMasterManager master = BindForgeDeviceMasterManager.getInstance();
-        master.findAll().forEach(row -> master.remove(row.id()));
-        master.pendingRemovals().forEach(master::clearPendingRemoval);
-        long stick = master.record("VKB-Stick", "231D", "0200", true).id();
-        master.replaceLabels(stick, Map.of("Joy_6", "1st Hat Up", "Joy_14", "2nd Hat Left"));
-        formatter = new BindingSlotDisplayFormatter(SavedDeviceLabels.load());
+    void aStickWithOneNamedButton() throws IOException {
+        ConfigurationFiles files = new ConfigurationFiles(Map.of(),
+                "<Root><VKB-Stick><PID>0200</PID><VID>231D</VID></VKB-Stick></Root>".getBytes(StandardCharsets.UTF_8),
+                Map.of("VKB-Stick.buttonMap", ("<Root><Joy_6>1st Hat Up</Joy_6><Joy_14>2nd Hat Left</Joy_14></Root>")
+                        .getBytes(StandardCharsets.UTF_8)));
+        formatter = new BindingSlotDisplayFormatter(SavedDeviceLabels.of(files, files));
     }
 
     @Test

@@ -500,6 +500,11 @@ had** (Alan, 2026-10-15). A chord either slot held when the dialog opened is gre
 
 **The
 working copy's** — the name the installations hold now — and Frontier's for a built-in the working copy does not hold (`CaptureControllers`). A device renamed on screen and not yet applied is still under its old name in the working copy and in `.binds`, so a binding written under that name moves with all the others at APPLY.
+*Read from the working copy since Storage S4b (2026-10-28; until then from the database master).* **The labels
+shown are the edits'** (`bindforge.storage.SavedDeviceLabels`), so a label SAVEd in the Alias Designer shows at once,
+and a device renamed on screen keeps its working-copy name on the tab while its labels are found by its hardware under
+the new one. The name stays the working copy's because the Bind Editor still writes the live `.binds` until Storage S5,
+where a name not applied would name a device no installation has.
 **A controller with no name gets a greyed
 tab** saying to name it in the Alias Designer first: `.binds` would have to name it by hardware id.
 

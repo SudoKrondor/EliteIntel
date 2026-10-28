@@ -5,7 +5,6 @@ import elite.intel.bindforge.devices.IdentityQuestions.ById;
 import elite.intel.bindforge.devices.IdentityQuestions.Known;
 import elite.intel.bindforge.devices.IdentityQuestions.Question;
 import elite.intel.bindforge.devices.IdentityQuestions.Reading;
-import elite.intel.db.dao.BindForgeHardwareIdMoveDao.MoveRow;
 import elite.intel.db.dao.BindForgeIdentityAnswerDao.AnswerRow;
 import org.junit.jupiter.api.Test;
 
@@ -103,9 +102,9 @@ class IdentityQuestionsTest {
                 "a named controller and a built-in are recognised, so neither is a candidate");
     }
 
-    /** A controller the draft already names - named for Apply, or the target of a retarget - is spoken for. */
+    /** A controller the edits already name - named for APPLY, or the target of a retarget - is spoken for. */
     @Test
-    void hardwareTheDraftHoldsIsNoCandidate() {
+    void hardwareTheEditsHoldIsNoCandidate() {
         Reading reading = IdentityQuestions.read(List.of(LVWAP), List.of(ALPHA), List.of(ALPHA.hardware()), BOUND,
                 name -> false, List.of());
 
@@ -193,7 +192,7 @@ class IdentityQuestionsTest {
     /** A controller the bindings know only by its id is asked about, under the id (Alan, 2026-10-17, A17). */
     @Test
     void aMissingControllerKnownOnlyByIdIsAsked() {
-        Reading reading = readById(List.of(), List.of(ALPHA), BY_ID, List.of(), List.of());
+        Reading reading = readById(List.of(), List.of(ALPHA), BY_ID, List.of());
 
         Question question = reading.toAsk().getFirst();
         assertFalse(question.named());
@@ -208,7 +207,7 @@ class IdentityQuestionsTest {
 
     @Test
     void oneIdWrittenInBothOrdersIsOneQuestion() {
-        Reading reading = readById(List.of(), List.of(ALPHA), Map.of("334483F3", 100, "83f33344", 31), List.of(),
+        Reading reading = readById(List.of(), List.of(ALPHA), Map.of("334483F3", 100, "83f33344", 31),
                 List.of());
 
         assertEquals(1, reading.toAsk().size());
@@ -222,15 +221,15 @@ class IdentityQuestionsTest {
     void anIdAnAttachedControllerHasIsNotMissing() {
         MyDevice old = new MyDevice("VIRPIL", null, "3344", "83F3", true, null, false);
 
-        Reading reading = readById(List.of(), List.of(old, ALPHA), BY_ID, List.of(), List.of());
+        Reading reading = readById(List.of(), List.of(old, ALPHA), BY_ID, List.of());
 
         assertTrue(reading.toAsk().stream().allMatch(Question::named));
     }
 
-    /** A device of the user's on the id is Apply's to move by its own hardware. */
+    /** A device of the working copy on the id is APPLY's to move by its own hardware. */
     @Test
     void anIdADeviceOfTheUsersHasIsNotAsked() {
-        assertTrue(readById(List.of(new HardwareId("3344", "83F3")), List.of(ALPHA), BY_ID, List.of(), List.of())
+        assertTrue(readById(List.of(new HardwareId("3344", "83F3")), List.of(ALPHA), BY_ID, List.of())
                 .toAsk().isEmpty());
     }
 
@@ -238,7 +237,7 @@ class IdentityQuestionsTest {
     void anIdFrontierCoversIsNotAsked() {
         Reading reading = IdentityQuestions.read(List.of(), List.of(ALPHA), List.of(), Map.of(), name -> false,
                 List.of(), new ById(Map.of("044FB679", 4), List.of(), new HardwareId("044F", "B679")::equals,
-                        List.of(), List.of()));
+                        List.of()));
 
         assertTrue(reading.toAsk().isEmpty());
     }
@@ -253,14 +252,14 @@ class IdentityQuestionsTest {
         Known deadbeef = new Known("DEADBEEF", List.of("DEADBEEF"), new HardwareId("3344", "0194"));
         MyDevice entry = new MyDevice(null, "deadbeef", "1234", "0001", false, null, false);
 
-        Reading inMaster = IdentityQuestions.read(List.of(), List.of(ALPHA), List.of(), Map.of(), name -> false,
-                List.of(), new ById(named, List.of(), hardware -> false, List.of(), List.of("DEADBEEF")));
+        Reading inUse = IdentityQuestions.read(List.of(), List.of(ALPHA), List.of(), Map.of(), name -> false,
+                List.of(), new ById(named, List.of(), hardware -> false, List.of("DEADBEEF")));
         Reading known = IdentityQuestions.read(List.of(deadbeef), List.of(ALPHA), List.of(), Map.of(),
-                name -> false, List.of(), new ById(named, List.of(), hardware -> false, List.of(), List.of()));
-        Reading inAnInstallation = readById(List.of(), List.of(entry, ALPHA), named, List.of(), List.of());
+                name -> false, List.of(), new ById(named, List.of(), hardware -> false, List.of()));
+        Reading inAnInstallation = readById(List.of(), List.of(entry, ALPHA), named, List.of());
 
-        assertTrue(inMaster.toAsk().isEmpty(), "a name in the master");
-        assertTrue(known.toAsk().isEmpty(), "a name the draft or master gives a known device");
+        assertTrue(inUse.toAsk().isEmpty(), "a name in the edits or the working copy");
+        assertTrue(known.toAsk().isEmpty(), "a name the edits give a known device");
         assertTrue(inAnInstallation.toAsk().isEmpty(), "an installation's entry name, ignoring case");
     }
 
@@ -274,19 +273,9 @@ class IdentityQuestionsTest {
         assertEquals("334483F3", IdentityQuestions.asWritten(old, List.of()), "the game's order when none is found");
     }
 
-    /** Already answered yes: the bindings wait for Apply, and the question is not put again. */
-    @Test
-    void anIdAnEarlierYesClaimsIsNotAsked() {
-        MoveRow waiting = new MoveRow("3344", "83F4", "3344", "83F3");
-
-        Reading reading = readById(List.of(), List.of(ALPHA), BY_ID, List.of(waiting), List.of());
-
-        assertTrue(reading.toAsk().isEmpty());
-    }
-
     @Test
     void notNowIsStoredUnderTheIdAndDefersIt() {
-        Reading reading = readById(List.of(), List.of(ALPHA), BY_ID, List.of(),
+        Reading reading = readById(List.of(), List.of(ALPHA), BY_ID,
                 List.of(new AnswerRow("3344:83F3", "3344:83F4", "NOT_NOW")));
 
         assertTrue(reading.toAsk().isEmpty());
@@ -298,43 +287,10 @@ class IdentityQuestionsTest {
     void anAnswerUnderAnIdIsForgottenOnceItsControllerIsAttachedAgain() {
         MyDevice old = new MyDevice("VIRPIL", null, "3344", "83F3", true, null, false);
 
-        Reading reading = readById(List.of(), List.of(old, ALPHA), BY_ID, List.of(),
+        Reading reading = readById(List.of(), List.of(old, ALPHA), BY_ID,
                 List.of(new AnswerRow("3344:83F3", "3344:83F4", "NOT_NOW")));
 
         assertEquals(Set.of("3344:83F3"), reading.forget());
-    }
-
-    /** The old stick back before Apply: its bindings work again and stay with it (Alan, 2026-10-17, A17). */
-    @Test
-    void aWaitingMoveIsForgottenWhenTheOldControllerIsAttachedAgain() {
-        MyDevice old = new MyDevice("VIRPIL", null, "3344", "83F3", true, null, false);
-        MoveRow waiting = new MoveRow("3344", "83F4", "3344", "83F3");
-
-        Reading reading = IdentityQuestions.read(List.of(), List.of(old, ALPHA), List.of(ALPHA.hardware()), Map.of(),
-                name -> false, List.of(), new ById(BY_ID, List.of(), hardware -> false, List.of(waiting), List.of()));
-
-        assertEquals(List.of(waiting), reading.forgetMoves());
-    }
-
-    /** DISCARD or CLEAR before Apply: no device has the hardware the bindings were to move to. */
-    @Test
-    void aWaitingMoveIsForgottenWhenNoDeviceHasItsHardware() {
-        MoveRow waiting = new MoveRow("3344", "83F4", "3344", "83F3");
-
-        assertEquals(List.of(waiting), readById(List.of(), List.of(ALPHA), BY_ID, List.of(waiting), List.of())
-                .forgetMoves());
-    }
-
-    @Test
-    void aWaitingMoveIsKeptWhileTheDraftOrTheMasterHasItsHardware() {
-        MoveRow waiting = new MoveRow("3344", "83F4", "3344", "83F3");
-
-        Reading inDraft = IdentityQuestions.read(List.of(), List.of(ALPHA), List.of(ALPHA.hardware()), Map.of(),
-                name -> false, List.of(), new ById(BY_ID, List.of(), hardware -> false, List.of(waiting), List.of()));
-        Reading inMaster = readById(List.of(ALPHA.hardware()), List.of(ALPHA), BY_ID, List.of(waiting), List.of());
-
-        assertTrue(inDraft.forgetMoves().isEmpty());
-        assertTrue(inMaster.forgetMoves().isEmpty());
     }
 
     @Test
@@ -344,9 +300,9 @@ class IdentityQuestionsTest {
         assertThrows(IllegalArgumentException.class, () -> new Question(null, LVWAP_WAS, 1, List.of(), Set.of()));
     }
 
-    private static Reading readById(List<HardwareId> heldByMaster, List<MyDevice> devices,
-                                    Map<String, Integer> hardwareIds, List<MoveRow> waiting, List<AnswerRow> answers) {
+    private static Reading readById(List<HardwareId> heldByWorkingCopy, List<MyDevice> devices,
+                                    Map<String, Integer> hardwareIds, List<AnswerRow> answers) {
         return IdentityQuestions.read(List.of(), devices, List.of(), Map.of(), name -> false, answers,
-                new ById(hardwareIds, heldByMaster, hardware -> false, waiting, List.of()));
+                new ById(hardwareIds, heldByWorkingCopy, hardware -> false, List.of()));
     }
 }

@@ -89,20 +89,6 @@ class BindForgeInstallationsManagerTest {
         assertFalse(installations.findAll().getFirst().missing());
     }
 
-    /** Migration 12006 (A14): a new row has missed nothing; the flag is kept until a write clears it. */
-    @Test
-    void aMissedWriteIsKeptUntilCleared() {
-        installations.recordDetected("EPIC", EPIC);
-        InstallationRow row = installations.findAll().getFirst();
-        assertFalse(row.missedWrite());
-
-        installations.setMissedWrite(row.id(), true);
-        assertTrue(installations.findAll().getFirst().missedWrite());
-
-        installations.setMissedWrite(row.id(), false);
-        assertFalse(installations.findAll().getFirst().missedWrite());
-    }
-
     @Test
     void twoStorefrontsAreTwoInstallations() {
         installations.recordDetected("STEAM", STEAM);

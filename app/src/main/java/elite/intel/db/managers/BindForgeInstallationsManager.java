@@ -115,17 +115,6 @@ public class BindForgeInstallationsManager {
     }
 
     /**
-     * Records whether an installation missed a write the others took - what catch-up asks about (A14).
-     * <p>
-     * Written only when it changes, so the list held in memory - read every two seconds by the device-file monitor -
-     * is dropped only then: every push reports every installation, and most reports change nothing here.
-     */
-    public synchronized void setMissedWrite(long id, boolean missed) {
-        int changed = Database.withDao(BindForgeInstallationsDao.class, dao -> dao.setMissedWrite(id, missed));
-        if (changed > 0) cached = null;
-    }
-
-    /**
      * Removes an installation from the list - Remove on Game Install Locations. <strong>It stays removed</strong>:
      * the row is kept and marked, so detection at the next start does not put it back, and it is neither backed up
      * nor written (file-manager.md, <em>Game Install Locations</em>; Storage S2b, 2026-10-25). Add missing on its

@@ -3,6 +3,7 @@ package elite.intel.bindforge.storage;
 import elite.intel.bindforge.devicefiles.ButtonMapReader;
 import elite.intel.bindforge.devicefiles.ButtonMapWriter;
 import elite.intel.bindforge.devicefiles.DeviceEntry;
+import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.devicefiles.DeviceMappingsMerge;
 import elite.intel.bindforge.devicefiles.DeviceMappingsParser;
 import elite.intel.bindforge.devicefiles.FrontierStockButtonMaps;
@@ -118,6 +119,24 @@ public final class DeviceEdits {
                 .toList();
         BindsFiles.Rewritten rewritten = BindsFiles.rewrite(files.bindings(), moves);
         return new Changed(new ConfigurationFiles(rewritten.bindings(), deviceMappings, maps), rewritten.moved());
+    }
+
+    /**
+     * The identity question's yes for a named controller (A12; Storage S4b, Alan, 2026-10-28): the user's element given
+     * the picked controller's VID/PID. The name, the labels and the binds files stay as they are - the bindings name the
+     * device, so they follow it at APPLY.
+     *
+     * @param was the hardware the question was asked about
+     * @return the changed set, or empty when the element is gone or no longer has {@code was} - the device changed
+     *         between the question and the answer, so nothing is changed
+     * @throws IOException if the set's {@code DeviceMappings.xml} cannot be read or changed
+     */
+    public static Optional<ConfigurationFiles> retarget(ConfigurationFiles files, String name, HardwareId was,
+                                                        String vid, String pid) throws IOException {
+        Optional<DeviceEntry> element = elements(files).stream().filter(e -> e.name().equals(name)).findFirst();
+        if (element.isEmpty() || !was.equals(element.get().primary())) return Optional.empty();
+        return Optional.of(files.withDeviceMappings(
+                DeviceMappingsMerge.retarget(files.deviceMappings(), name, vid, pid).content()));
     }
 
     /**

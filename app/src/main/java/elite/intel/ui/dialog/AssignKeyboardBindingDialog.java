@@ -1,7 +1,7 @@
 package elite.intel.ui.dialog;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.bindforge.devicefiles.SavedDeviceLabels;
+import elite.intel.bindforge.storage.SavedDeviceLabels;
 import elite.intel.bindforge.devices.CaptureControllers;
 import elite.intel.bindforge.devices.ControllerCapture;
 import elite.intel.bindforge.io.KeyBindingsParser;

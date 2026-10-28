@@ -1,6 +1,7 @@
 package elite.intel.bindforge.storage;
 
 import elite.intel.bindforge.devicefiles.DeviceEntry;
+import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.devicefiles.FrontierStockButtonMaps;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,29 @@ class DeviceEditsTest {
         assertEquals(FIRE, DeviceEdits.labels(files, "LVWAP"));
         assertEquals(Set.of("LVWAP.buttonMap"), files.buttonMaps().keySet(), "the old spelling is replaced");
         assertTrue(DeviceEdits.withLabels(files, "LVWAP", Map.of()).buttonMaps().isEmpty(), "no label, no file");
+    }
+
+    /** The identity question's yes (A12, Storage S4b): new hardware, nothing else - the bindings follow the name. */
+    @Test
+    void aRetargetChangesOnlyTheElementsHardware() throws IOException {
+        ConfigurationFiles before = set();
+
+        ConfigurationFiles files = DeviceEdits.retarget(before, "LVWAP", new HardwareId("3344", "83f4"), "3344", "83F5")
+                .orElseThrow();
+
+        assertEquals(List.of("LVWAP", "T-Rudder"), names(files), "in place");
+        assertEquals(new HardwareId("3344", "83F5"), DeviceEdits.elements(files).getFirst().primary());
+        assertTrue(text(files.deviceMappings()).contains("<SupportsIcons"), "every other child kept");
+        assertEquals(binds(before), binds(files), "the bindings name the device, so they stay");
+        assertEquals(before.buttonMaps().keySet(), files.buttonMaps().keySet());
+    }
+
+    /** A device that changed between the question and the answer is left alone, and says so. */
+    @Test
+    void aRetargetOfADeviceThatChangedChangesNothing() throws IOException {
+        assertTrue(DeviceEdits.retarget(set(), "LVWAP", new HardwareId("3344", "83F3"), "3344", "83F5").isEmpty(),
+                "its hardware is no longer what the question saw");
+        assertTrue(DeviceEdits.retarget(set(), "Gone", new HardwareId("3344", "83F4"), "3344", "83F5").isEmpty());
     }
 
     /** A rename moves the element, its labels and every binding naming it, together (A11). */

@@ -13,7 +13,7 @@ import java.util.Map;
  * the working copy. Works on the bytes first-time startup read once, so what is judged is what is written
  * (Storage S2b, 2026-10-25).
  * <p>
- * <strong>Frontier's elements are set aside by name</strong>, as {@link ProvenanceRule} does - every installation
+ * <strong>Frontier's elements are set aside by name</strong> ({@link FrontierStockDevices#ships}) - every installation
  * runs the same game version, so their shipped entries agree by construction and are never compared. A Frontier
  * element is read only when a {@code .buttonMap} of the user's or BindForge's sits beside it; Frontier's own two
  * maps are recognised and left out ({@link FrontierStockButtonMaps}).

@@ -76,6 +76,20 @@ class MigrationLayoutTest {
     }
 
     @Test
+    void noMigrationWrittenUnderTheBandRuleEndsWithComments() throws Exception {
+        // The same split: comments after the last statement are a piece of their own, which SQLite prepares as an
+        // empty statement - and then the connection cannot be closed, so the database never opens (Storage S4b,
+        // 2026-10-28: 12013 did this, and every test touching the database failed).
+        for (DatabaseMigrator.Tree tree : DatabaseMigrator.Tree.values()) {
+            for (String file : DatabaseMigrator.findMigrationFiles(tree)) {
+                if (numberOf(file) <= LAST_LEGACY_NUMBER) continue;
+                String text = read(tree, file).strip();
+                assertTrue(text.endsWith(";"), tree + " tree: " + file + " ends with something after its last statement");
+            }
+        }
+    }
+
+    @Test
     void afterTheSplitEveryTableLivesInExactlyOneFile() throws Exception {
         try (Built built = Built.freshAndSplit()) {
             Set<String> shared = tables(built.handle, "main");

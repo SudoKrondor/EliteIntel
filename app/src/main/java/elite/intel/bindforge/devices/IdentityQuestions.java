@@ -2,7 +2,6 @@ package elite.intel.bindforge.devices;
 
 import elite.intel.bindforge.devicefiles.BindsDeviceReferences;
 import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
-import elite.intel.db.dao.BindForgeHardwareIdMoveDao.MoveRow;
 import elite.intel.db.dao.BindForgeIdentityAnswerDao.AnswerRow;
 
 import java.util.*;
@@ -25,8 +24,8 @@ import java.util.stream.Collectors;
  * <strong>A controller the bindings know only by its hardware id is asked about too</strong> (Alan, 2026-10-17, A17):
  * an id in {@code .binds} that no controller listed has, no device of the user's has or is named, and Frontier does not
  * cover. A yes
- * there names the picked controller, and Apply moves the bindings from the old id to the name - which needs a record
- * ({@link ById#waiting}), since Apply's own move finds a device only by the hardware it has now.
+ * there opens onboarding for the picked controller, whose FINISH names it and moves the bindings from the old id to the
+ * name in one edit (Storage S4a, 2026-10-26).
  * <p>
  * <strong>An answer holds until the hardware changes</strong> (Alan): {@code NOT_NOW} and {@code NONE_OF_THESE} are
  * stored with the candidates the question listed, and stop matching when that set changes. A {@code NOT_NOW}
@@ -44,12 +43,11 @@ public final class IdentityQuestions {
     }
 
     /**
-     * One of the user's named controllers, as it will be after the next Apply - the draft's row when a draft is
-     * started, the master's otherwise.
+     * One of the user's named controllers, as the edits hold it - what APPLY will write (Storage S4b, 2026-10-28).
      *
      * @param name     its name now
-     * @param names    every name bindings may use for it: now, in the master, and an old name a rename is still moving
-     *                 away from. {@code null}s are ignored
+     * @param names    every name bindings may use for it. Since the edits rewrite the binds files with a rename, that is
+     *                 its name now (Storage S4b); {@code null}s are ignored
      * @param hardware its VID/PID
      */
     public record Known(String name, Collection<String> names, HardwareId hardware) {
@@ -134,22 +132,20 @@ public final class IdentityQuestions {
      *
      * @param hardwareIds    {@code .binds}' hardware-id references, as {@link BindsDeviceReferences#hardwareIdCounts}
      *                       reads them
-     * @param heldByMaster   hardware the master's devices have - an id one of them has is Apply's to move, not a question
+     * @param heldByWorkingCopy hardware the working copy's devices have - an id one of them has is no missing controller
      * @param frontierCovers whether Frontier's file covers some hardware - the game names it by Frontier's element
-     * @param waiting        bindings already waiting to move from an old id, from an earlier yes
-     * @param namesInUse     every name a device has in the master, the draft or an installation, old names included. A
-     *                       name of eight hex characters - {@code DEADBEEF} - is read from {@code .binds} as an id, and
-     *                       is no missing controller: its bindings work (review, 2026-10-17)
+     * @param namesInUse     every name a device has in the edits or the working copy. A name of eight hex characters -
+     *                       {@code DEADBEEF} - is read from {@code .binds} as an id, and is no missing controller: its
+     *                       bindings work (review, 2026-10-17)
      */
-    public record ById(Map<String, Integer> hardwareIds, Collection<HardwareId> heldByMaster,
-                       Predicate<HardwareId> frontierCovers, List<MoveRow> waiting, Collection<String> namesInUse) {
-        public static final ById NONE = new ById(Map.of(), List.of(), hardware -> false, List.of(), List.of());
+    public record ById(Map<String, Integer> hardwareIds, Collection<HardwareId> heldByWorkingCopy,
+                       Predicate<HardwareId> frontierCovers, Collection<String> namesInUse) {
+        public static final ById NONE = new ById(Map.of(), List.of(), hardware -> false, List.of());
 
         public ById {
             hardwareIds = Map.copyOf(hardwareIds);
-            heldByMaster = List.copyOf(heldByMaster);
+            heldByWorkingCopy = List.copyOf(heldByWorkingCopy);
             Objects.requireNonNull(frontierCovers, "frontierCovers");
-            waiting = List.copyOf(waiting);
             namesInUse = namesInUse.stream().filter(Objects::nonNull).toList();
         }
     }
@@ -161,19 +157,16 @@ public final class IdentityQuestions {
      * @param deferred    the questions answered {@code NOT_NOW} for the hardware attached now - CHECK AGAIN asks them
      * @param withheld    the candidates of both, which onboarding's automatic offer leaves alone
      * @param forget      keys of remembered answers that no longer apply: attached again, or no longer the user's
-     * @param forgetMoves bindings waiting to move that no longer should: the old controller is attached again, so they
-     *                    stay with it, or no device in the master or the draft has the hardware they were to move to
      */
     public record Reading(List<Question> toAsk, List<Question> deferred, Set<HardwareId> withheld,
-                          Set<String> forget, List<MoveRow> forgetMoves) {
-        public static final Reading NONE = new Reading(List.of(), List.of(), Set.of(), Set.of(), List.of());
+                          Set<String> forget) {
+        public static final Reading NONE = new Reading(List.of(), List.of(), Set.of(), Set.of());
 
         public Reading {
             toAsk = List.copyOf(toAsk);
             deferred = List.copyOf(deferred);
             withheld = Set.copyOf(withheld);
             forget = Set.copyOf(forget);
-            forgetMoves = List.copyOf(forgetMoves);
         }
 
         /** The questions CHECK AGAIN puts: the deferred ones too, since the user pressed it to deal with them. */
@@ -185,29 +178,29 @@ public final class IdentityQuestions {
     }
 
     /** The named controllers' questions alone (A12). */
-    public static Reading read(List<Known> known, List<MyDevice> devices, Collection<HardwareId> heldByDraft,
+    public static Reading read(List<Known> known, List<MyDevice> devices, Collection<HardwareId> heldByEdits,
                                Map<String, Integer> counts, Predicate<String> frontier, List<AnswerRow> answers) {
-        return read(known, devices, heldByDraft, counts, frontier, answers, ById.NONE);
+        return read(known, devices, heldByEdits, counts, frontier, answers, ById.NONE);
     }
 
     /**
-     * @param known       the user's named controllers, in the order of the master
+     * @param known       the user's named controllers, in the order of the edits' {@code DeviceMappings.xml}
      * @param devices     My Devices, as the screen built it
-     * @param heldByDraft hardware the draft already names - a controller named for Apply, or one a retarget points at,
+     * @param heldByEdits hardware the edits already name - a controller named for APPLY, or one a retarget points at,
      *                    is spoken for and no candidate
      * @param counts      {@code .binds}' references by name, as {@link BindsDeviceReferences#referenceCounts} reads them
      * @param frontier    whether a name is one of Frontier's - never asked about, as the warning never names one
      * @param answers     the remembered answers
      * @param byId        what the questions about controllers known only by id are read from
      */
-    public static Reading read(List<Known> known, List<MyDevice> devices, Collection<HardwareId> heldByDraft,
+    public static Reading read(List<Known> known, List<MyDevice> devices, Collection<HardwareId> heldByEdits,
                                Map<String, Integer> counts, Predicate<String> frontier, List<AnswerRow> answers,
                                ById byId) {
         Set<HardwareId> attached = devices.stream()
                 .filter(MyDevice::attached)
                 .map(MyDevice::hardware)
                 .collect(Collectors.toSet());
-        Set<HardwareId> held = Set.copyOf(heldByDraft);
+        Set<HardwareId> held = Set.copyOf(heldByEdits);
         List<MyDevice> candidates = DeviceNames.needingName(devices).stream()
                 .filter(device -> !held.contains(device.hardware()))
                 .toList();
@@ -253,7 +246,7 @@ public final class IdentityQuestions {
                 .map(AnswerRow::deviceName)
                 .filter(name -> !missing.contains(folded(name)))
                 .collect(Collectors.toSet());
-        return new Reading(toAsk, deferred, withheld, forget, movesToForget(known, attached, held, byId));
+        return new Reading(toAsk, deferred, withheld, forget);
     }
 
     /**
@@ -274,14 +267,13 @@ public final class IdentityQuestions {
      * {@code DEADBEEF}, eight hex characters, which {@code .binds} is read as giving an id. Asked about, a yes would move
      * a working controller's bindings away.
      */
-    private static List<IdOnly> knownById(List<Known> known, List<MyDevice> devices, Set<HardwareId> heldByDraft,
+    private static List<IdOnly> knownById(List<Known> known, List<MyDevice> devices, Set<HardwareId> heldByEdits,
                                           ById byId) {
         List<HardwareId> owned = new ArrayList<>();
         devices.forEach(device -> owned.add(device.hardware()));
         known.forEach(device -> owned.add(device.hardware()));
-        owned.addAll(heldByDraft);
-        owned.addAll(byId.heldByMaster());
-        byId.waiting().forEach(row -> owned.add(new HardwareId(row.oldVid(), row.oldPid())));
+        owned.addAll(heldByEdits);
+        owned.addAll(byId.heldByWorkingCopy());
         Set<String> names = new HashSet<>();
         byId.namesInUse().forEach(name -> names.add(folded(name)));
         known.forEach(device -> device.names().forEach(name -> names.add(folded(name))));
@@ -307,24 +299,6 @@ public final class IdentityQuestions {
         return found;
     }
 
-    /**
-     * The waiting moves that no longer should run (Alan, 2026-10-17, A17): the old controller is attached again - its
-     * bindings work again and stay with it - or no device in the master or the draft has the hardware they were to
-     * move to, after DISCARD or CLEAR.
-     */
-    private static List<MoveRow> movesToForget(List<Known> known, Set<HardwareId> attached,
-                                               Set<HardwareId> heldByDraft, ById byId) {
-        Set<HardwareId> devicesHave = new HashSet<>(heldByDraft);
-        devicesHave.addAll(byId.heldByMaster());
-        known.forEach(device -> devicesHave.add(device.hardware()));
-        return byId.waiting().stream()
-                .filter(row -> {
-                    HardwareId old = new HardwareId(row.oldVid(), row.oldPid());
-                    boolean oldBack = attached.stream().anyMatch(hardware -> sameController(hardware, old));
-                    return oldBack || !devicesHave.contains(new HardwareId(row.vid(), row.pid()));
-                })
-                .toList();
-    }
 
     /**
      * An old id as {@code .binds} writes it (review, 2026-10-17): the value found in the game's order, VID then PID,

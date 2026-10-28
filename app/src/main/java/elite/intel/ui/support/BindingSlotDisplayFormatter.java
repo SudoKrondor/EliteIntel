@@ -1,7 +1,7 @@
 package elite.intel.ui.support;
 
 
-import elite.intel.bindforge.devicefiles.SavedDeviceLabels;
+import elite.intel.bindforge.storage.SavedDeviceLabels;
 import elite.intel.bindforge.io.KeyBindingsParser;
 import elite.intel.bindforge.model.BindingModifier;
 

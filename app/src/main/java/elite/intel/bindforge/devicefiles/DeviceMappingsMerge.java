@@ -90,6 +90,22 @@ public final class DeviceMappingsMerge {
     }
 
     /**
+     * One element given other hardware - the identity question's yes (A12; Storage S4b, 2026-10-28). The element keeps
+     * its name, its place in the file and every other child; only its own {@code <VID>} and {@code <PID>} change.
+     * Nothing else moves, unlike {@link #merge}, which would lead the file with the entries it is given.
+     *
+     * @param name the element's tag, exactly as the file spells it
+     * @throws IOException if {@code existing} is not a {@code DeviceMappings.xml}, or holds no element {@code name}
+     */
+    public static Result retarget(byte[] existing, String name, String vid, String pid) throws IOException {
+        Document document = DeviceFileXml.parse(existing);
+        Element element = firstChildNamed(rootOf(document), name);
+        if (element == null) throw new IOException("no element " + name + " to give other hardware");
+        if (!matchHardware(document, element, new UserEntry(name, vid, pid))) return new Result(existing, false);
+        return new Result(DeviceFileXml.write(document), true);
+    }
+
+    /**
      * Adds new elements to the file and changes nothing else - onboarding's write (Alan, 2026-10-14, A6b).
      * <p>
      * Unlike {@link #merge}, an element already in the file is not brought into line or moved: onboarding names a

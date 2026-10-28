@@ -3,7 +3,7 @@ package elite.intel.ui.screen.settings;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ears.PushToTalkService;
 import elite.intel.bindforge.devicefiles.ButtonMapLabels;
-import elite.intel.bindforge.devicefiles.SavedDeviceLabels;
+import elite.intel.bindforge.storage.SavedDeviceLabels;
 import elite.intel.bindforge.devices.CaptureControllers;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.events.DeviceConnectedEvent;
@@ -319,13 +319,14 @@ public class InputSettingsPanel extends JPanel {
     }
 
     /**
-     * The names the user gave this controller's buttons, by token: BindForge's saved labels, the draft's before the
-     * master's, as the bind editor shows them - so a label saved and not yet applied shows here before the game has it.
+     * The names the user gave this controller's buttons, by token: BindForge's labels in the working copy with the edits
+     * on it, as the bind editor shows them - so a label saved and not yet applied shows here before the game has it.
      * Empty for a controller BindForge has no name for, or when they cannot be read.
      */
     private static Map<String, String> savedLabelsOf(Device device) {
         try {
-            return CaptureControllers.nameOf(device).map(SavedDeviceLabels::of).orElse(Map.of());
+            SavedDeviceLabels labels = SavedDeviceLabels.load();
+            return CaptureControllers.nameOf(device, labels).map(labels::labelsOf).orElse(Map.of());
         } catch (RuntimeException e) {
             // WHY: broad on purpose - a thread boundary, and a label read must never break the PTT picker; it falls
             // back to Button N.

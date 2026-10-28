@@ -337,8 +337,9 @@ first ([storage.md](storage.md) rule 12), which meets that.
 
 *Removed 2026-10-24 (Alan): "Auto-backup on Elite-Intel launch" — the startup backup is the safety net and cannot be
 switched off ([storage.md](storage.md) rule 12); "Edit History retention" — Edit History is gone.* **Built 2026-10-24
-(Storage S1):** migration `12010` drops the `auto_backup_on_launch` column, and `edit_history_retention` stays in the
-table until Storage S4b drops it; Edit History's code went in S4a (2026-10-26), and nothing reads the column now. *Until S1b (2026-10-24) the settings were meant
+(Storage S1):** migration `12010` drops the `auto_backup_on_launch` column. Edit History's device-file code went in
+S4a (2026-10-26), but the preset file's own history (`StartPresetApply`) still reads `edit_history_retention`, so the
+column is dropped in **Storage S6**, with that code (Alan, 2026-10-28, from S4b's sources). *Until S1b (2026-10-24) the settings were meant
 for a BindForge panel on Elite-Intel's Settings screen, and there was one retention, 30 days with a floor of one day.*
 
 **Built 2026-10-24 (Storage S1b; Alan approved):** a *Backup Settings* section above the list. **Backups go to** shows

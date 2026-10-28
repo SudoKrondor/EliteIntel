@@ -5,13 +5,11 @@ import org.jdbi.v3.core.Jdbi;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import static elite.intel.db.util.MigrationScripts.run;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Two retention settings replace the one (file-manager.md, <em>Settings</em>; Alan, 2026-10-24): daily backups kept by
@@ -41,19 +39,6 @@ class BindForgeTwoRetentionsMigrationTest {
                     .mapTo(String.class).one());
             assertEquals(4, handle.createQuery("SELECT edit_history_retention FROM bindforge_settings")
                     .mapTo(Integer.class).one(), "Edit History's setting stays until Edit History goes");
-        }
-    }
-
-    /** Runs a migration a statement at a time, as {@code DatabaseMigrator} does. */
-    private static void run(Handle handle, String file) throws IOException {
-        String sql;
-        try (InputStream input = BindForgeTwoRetentionsMigrationTest.class.getResourceAsStream("/db-migration/" + file)) {
-            assertNotNull(input, file);
-            sql = new String(input.readAllBytes(), StandardCharsets.UTF_8).replace("\r\n", "\n");
-        }
-        for (String statement : sql.split(";\\s*\n")) {
-            String trimmed = statement.replaceAll("(?m)^\\s*--.*$", "").trim();
-            if (!trimmed.isEmpty()) handle.execute(trimmed);
         }
     }
 }

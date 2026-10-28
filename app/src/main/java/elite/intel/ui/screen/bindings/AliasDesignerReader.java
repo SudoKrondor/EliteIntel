@@ -7,12 +7,7 @@ import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.DeviceEdits;
 import elite.intel.bindforge.storage.Edits;
-import elite.intel.db.dao.BindForgeDeviceDraftDao.DraftRow;
-import elite.intel.db.dao.BindForgeDeviceMasterDao.DeviceRow;
 import elite.intel.db.managers.BindForgeActivationManager;
-import elite.intel.db.managers.BindForgeDeviceDraftManager;
-import elite.intel.db.managers.BindForgeDeviceMasterManager;
-import elite.intel.db.managers.BindForgeHardwareIdMoveManager;
 import elite.intel.db.managers.BindForgeIdentityAnswerManager;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.model.Device;
@@ -25,7 +20,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.util.StringUtls.messageOf;
@@ -94,7 +88,7 @@ final class AliasDesignerReader {
             myDevices = MyDeviceList.build(attached.devices(), sets.editedElements(), sets.appliedElements(),
                     FrontierStockDevices.getInstance());
             builtIn = BuiltInDeviceList.build(FrontierStockDevices.getInstance(), attached.devices());
-            if (complete && listed) identity = readIdentity(myDevices, bindings);
+            if (complete && listed && sets.edited() != null) identity = readIdentity(myDevices, sets);
             // WHY: last, so nothing it does can cost the screen what this refresh has already read.
             if (judgeMissing) {
                 MissingControllerWarning.getInstance().judgeOnce(attached.listed(), myDevices, bindings);
@@ -155,60 +149,49 @@ final class AliasDesignerReader {
 
     /**
      * Which missing controllers to ask about, and which candidates onboarding leaves alone meanwhile (Alan, 2026-10-15,
-     * A12). <em>Still read from the master and the draft until Storage S4b moves it onto the edits</em> - between the
-     * two slices a named controller's retarget does not reach the game (Alan, 2026-10-26).
+     * A12). <strong>Read from the edits</strong> (Storage S4b, Alan, 2026-10-28): the user's elements in the edits'
+     * {@code DeviceMappings.xml} are the named controllers, and the bindings are counted in the edits' binds files - so a
+     * rename or a hardware-id move not yet applied is counted as onboarding counts it.
      * <p>
      * Only once the hardware is listed - before then every controller reads absent, and the forgetting would be wrong
-     * too. A {@code .binds} that cannot be read asks nothing: without the counts every missing controller would look
-     * unbound.
+     * too. Binds files that cannot be read ask nothing: without the counts every missing controller would look unbound.
      */
-    private static IdentityQuestions.Reading readIdentity(List<MyDevice> devices, Path bindings) {
+    private static IdentityQuestions.Reading readIdentity(List<MyDevice> devices, Sets sets) throws IOException {
         BindsDeviceReferences.Counts counts;
         try {
-            counts = BindsDeviceReferences.counts(bindings);
+            counts = BindsDeviceReferences.countsIn(sets.edited().bindings());
         } catch (IOException e) {
             log.warn("Could not read which devices the bindings name, so no identity question is asked: {}",
                     e.getMessage());
             return IdentityQuestions.Reading.NONE;
         }
-        List<DeviceRow> masterRows = BindForgeDeviceMasterManager.getInstance().findAll();
-        BindForgeDeviceDraftManager draft = BindForgeDeviceDraftManager.getInstance();
-        List<DraftRow> draftRows = draft.findAll();
-        List<IdentityQuestions.Known> known = new ArrayList<>();
-        if (draft.isStarted()) {
-            Map<Long, DeviceRow> masterById = masterRows.stream()
-                    .collect(Collectors.toMap(DeviceRow::id, row -> row, (first, second) -> first));
-            for (DraftRow row : draftRows) {
-                if (row.vid() == null || row.pid() == null) continue;
-                DeviceRow from = row.masterId() == null ? null : masterById.get(row.masterId());
-                known.add(new IdentityQuestions.Known(row.deviceName(), Arrays.asList(row.deviceName(),
-                        row.previousName(), from == null ? null : from.deviceName(),
-                        from == null ? null : from.previousName()), new HardwareId(row.vid(), row.pid())));
-            }
-        } else {
-            for (DeviceRow row : masterRows) {
-                if (row.vid() == null || row.pid() == null) continue;
-                known.add(new IdentityQuestions.Known(row.deviceName(),
-                        Arrays.asList(row.deviceName(), row.previousName()), new HardwareId(row.vid(), row.pid())));
-            }
-        }
-        List<HardwareId> heldByDraft = draftRows.stream().map(row -> new HardwareId(row.vid(), row.pid())).toList();
-        BindForgeIdentityAnswerManager answers = BindForgeIdentityAnswerManager.getInstance();
-        BindForgeHardwareIdMoveManager moves = BindForgeHardwareIdMoveManager.getInstance();
         FrontierStockDevices stock = FrontierStockDevices.getInstance();
-        List<HardwareId> heldByMaster = masterRows.stream().map(row -> new HardwareId(row.vid(), row.pid())).toList();
+        List<DeviceEntry> edited = usersElements(sets.editedElements(), stock);
+        List<DeviceEntry> applied = usersElements(sets.appliedElements(), stock);
+        List<IdentityQuestions.Known> known = new ArrayList<>();
+        List<HardwareId> heldByEdits = new ArrayList<>();
+        for (DeviceEntry element : edited) {
+            HardwareId hardware = element.primary();
+            if (hardware == null) continue;
+            known.add(new IdentityQuestions.Known(element.name(), List.of(element.name()), hardware));
+            heldByEdits.add(hardware);
+        }
+        List<HardwareId> heldByWorkingCopy = applied.stream().map(DeviceEntry::primary).filter(Objects::nonNull).toList();
         List<String> namesInUse = new ArrayList<>();
-        masterRows.forEach(row -> namesInUse.addAll(Arrays.asList(row.deviceName(), row.previousName())));
-        draftRows.forEach(row -> namesInUse.addAll(Arrays.asList(row.deviceName(), row.previousName())));
-        // WHY: a device of the user's in the edits is not a missing id, whatever the master says (Storage S4a).
-        devices.forEach(device -> namesInUse.add(device.alias()));
-        IdentityQuestions.ById byId = new IdentityQuestions.ById(counts.hardwareIds(), heldByMaster,
-                hardware -> stock.covering(hardware.vid(), hardware.pid()).isPresent(), moves.findAll(), namesInUse);
-        IdentityQuestions.Reading reading = IdentityQuestions.read(known, devices, heldByDraft, counts.names(),
+        edited.forEach(element -> namesInUse.add(element.name()));
+        applied.forEach(element -> namesInUse.add(element.name()));
+        BindForgeIdentityAnswerManager answers = BindForgeIdentityAnswerManager.getInstance();
+        IdentityQuestions.ById byId = new IdentityQuestions.ById(counts.hardwareIds(), heldByWorkingCopy,
+                hardware -> stock.covering(hardware.vid(), hardware.pid()).isPresent(), namesInUse);
+        IdentityQuestions.Reading reading = IdentityQuestions.read(known, devices, heldByEdits, counts.names(),
                 stock::ships, answers.findAll(), byId);
         answers.forget(reading.forget());
-        moves.forget(reading.forgetMoves());
         return reading;
+    }
+
+    /** The user's elements - every one Frontier does not ship - in the file's order. */
+    private static List<DeviceEntry> usersElements(List<DeviceEntry> elements, FrontierStockDevices stock) {
+        return elements.stream().filter(element -> !stock.ships(element.name())).toList();
     }
 
     // ------------------------------------------------------------------ onboarding
