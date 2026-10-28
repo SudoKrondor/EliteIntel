@@ -370,6 +370,49 @@ class SupportBundleTest {
                 result.omitted().toString());
     }
 
+    /**
+     * "The app changed my binds" is answered by what the last apply replaced, so the newest backup of the active
+     * preset travels with it - and only that preset's, since another preset's history says nothing about this one.
+     */
+    @Test
+    void carriesTheNewestBackupOfTheActivePreset(@TempDir Path tmp) throws IOException {
+        Path bindingsDir = Files.createDirectory(tmp.resolve("bindings"));
+        Path backupDir = Files.createDirectory(tmp.resolve("backups"));
+        write(bindingsDir, "Custom.4.2.binds", "<Root now/>");
+        write(backupDir, "Custom.4.2.binds.20261027-120000.bak", "<Root older/>");
+        write(backupDir, "Custom.4.2.binds.20261027-165718.bak", "<Root before apply/>");
+        write(backupDir, "Other.4.2.binds.20261028-090000.bak", "<Root other preset/>");
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip, new SupportBundle.Sources("1.1.0", "log",
+                null, null, bindingsDir, null, null, null, backupDir));
+
+        Map<String, String> entries = unzip(zip);
+        assertEquals("<Root now/>", entries.get("Custom.4.2.binds"));
+        assertEquals("<Root before apply/>", entries.get("Custom.4.2.binds.20261027-165718.bak"));
+        assertFalse(entries.containsKey("Custom.4.2.binds.20261027-120000.bak"));
+        assertFalse(entries.containsKey("Other.4.2.binds.20261028-090000.bak"));
+        assertTrue(result.omitted().stream().noneMatch(line -> line.startsWith("bindings backup")),
+                result.omitted().toString());
+    }
+
+    /**
+     * No backup means Elite Intel never wrote the preset, which is the answer to the report - so it is said.
+     */
+    @Test
+    void aPresetEliteIntelNeverWroteIsSaidSo(@TempDir Path tmp) throws IOException {
+        Path bindingsDir = Files.createDirectory(tmp.resolve("bindings"));
+        Path backupDir = Files.createDirectory(tmp.resolve("backups"));
+        write(bindingsDir, "Custom.4.2.binds", "<Root/>");
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip, new SupportBundle.Sources("1.1.0", "log",
+                null, null, bindingsDir, null, null, null, backupDir));
+
+        assertTrue(result.omitted().contains("bindings backup - none - Elite Intel has never written Custom.4.2.binds"),
+                result.omitted().toString());
+    }
+
     @Test
     void theManifestCarriesTheAiSetup(@TempDir Path tmp) throws IOException {
         Path zip = tmp.resolve("bundle.zip");

@@ -401,7 +401,8 @@ public class AiTabPanel extends JPanel {
                 // blocks, and this runs on the EDT. The bundle worker calls it.
                 MicDiagnosticsReport::render,
                 customCommandsFile(),
-                AiSetupReport::render);
+                AiSetupReport::render,
+                bindingsBackupDir());
 
         Thread.ofVirtual().name("diagnostics-bundle").start(() -> writeBundle(target, sources));
     }
@@ -418,6 +419,19 @@ public class AiTabPanel extends JPanel {
             return AppPaths.getCustomCommandsFilePath();
         } catch (IOException | RuntimeException e) {
             log.warn("Diagnostics bundle: could not resolve the custom commands file", e);
+            return null;
+        }
+    }
+
+    /**
+     * Where the copies of the game's bindings taken before each apply are kept, or null if that cannot be worked
+     * out - on the same reasoning as {@link #customCommandsFile()}.
+     */
+    private static Path bindingsBackupDir() {
+        try {
+            return AppPaths.getBindingsBackupDir();
+        } catch (IOException | RuntimeException e) {
+            log.warn("Diagnostics bundle: could not resolve the bindings backup folder", e);
             return null;
         }
     }

@@ -3,6 +3,7 @@ package elite.intel.ui.support;
 import elite.intel.bindforge.io.BindingsLoader;
 import elite.intel.gameapi.GameClock;
 import elite.intel.gameapi.JournalFiles;
+import elite.intel.io.TimestampedBackups;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -116,11 +117,24 @@ public final class SupportBundle {
      * @param aiSetup        the language model and voice engine in use (see {@link AiSetupReport}), written into
      *                       the manifest. Deferred for the same reason as {@code micDiagnostics}: it reads the
      *                       database. Null when the caller has no settings to report.
+     * @param bindingsBackupDir where Elite Intel keeps the copy of the game's {@code .binds} it takes before every
+     *                          write (see {@link #previousBindings}). Null when the caller cannot resolve it.
      */
     public record Sources(String appVersion, String sessionLog,
                           @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
                           @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands,
-                          @Nullable Supplier<String> aiSetup) {
+                          @Nullable Supplier<String> aiSetup, @Nullable Path bindingsBackupDir) {
+
+        /**
+         * Sources with no bindings backups to report.
+         */
+        public Sources(String appVersion, String sessionLog,
+                       @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
+                       @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands,
+                       @Nullable Supplier<String> aiSetup) {
+            this(appVersion, sessionLog, appLog, journalDir, bindingsDir, micDiagnostics, customCommands, aiSetup,
+                    null);
+        }
 
         /**
          * Sources with no AI setup to report.
@@ -192,7 +206,10 @@ public final class SupportBundle {
             copy(zip, "previous application log", previousAppLog(sources.appLog()), included, omitted);
             copy(zip, "journal", newestJournal(sources.journalDir()), included, omitted);
             copyGameState(zip, sources.journalDir(), included, omitted);
-            copy(zip, "bindings", activeBindings(sources.bindingsDir()), included, omitted);
+            Collected activeBindings = activeBindings(sources.bindingsDir());
+            copy(zip, "bindings", activeBindings, included, omitted);
+            copy(zip, "bindings backup", previousBindings(sources.bindingsBackupDir(), activeBindings),
+                    included, omitted);
             copy(zip, "custom commands", customCommands(sources.customCommands()), included, omitted);
             writeMicDiagnostics(zip, sources.micDiagnostics(), included, omitted);
 
@@ -427,6 +444,29 @@ public final class SupportBundle {
             return Collected.of(new BindingsLoader().getLatestBindsFile(bindingsDir).toPath());
         } catch (IOException e) {
             return Collected.missing("could not resolve the active preset in " + bindingsDir + ": " + e);
+        }
+    }
+
+    /**
+     * The newest copy of the active preset's {@code .binds} that Elite Intel took before it last wrote that file.
+     * <p>
+     * WHY: "the app changed my gamepad binds" is a report the current file alone cannot answer, because it shows
+     * the result and not what it replaced. A bundle of 2026-10-27 turned on exactly that question, and the
+     * answer sat in this backup on the commander's disk, in a folder they had no reason to know about. Diffed
+     * against the active file, it shows every change the last apply made, and nothing the game itself made later.
+     * <p>
+     * No backup at all is worth a line of its own: it means Elite Intel has never written this preset, which
+     * answers the report by itself. Nothing is said when the active preset is unknown, since the bindings entry
+     * has already said why, or when the caller has no backup folder to point at.
+     */
+    private static Collected previousBindings(@Nullable Path backupDir, Collected activeBindings) {
+        if (backupDir == null || activeBindings.path() == null) return Collected.absent();
+        String presetFile = activeBindings.path().getFileName().toString();
+        try {
+            return new TimestampedBackups().newest(backupDir, presetFile).map(Collected::of)
+                    .orElseGet(() -> Collected.missing("none - Elite Intel has never written " + presetFile));
+        } catch (IOException e) {
+            return Collected.missing("could not list " + backupDir + ": " + e);
         }
     }
 
