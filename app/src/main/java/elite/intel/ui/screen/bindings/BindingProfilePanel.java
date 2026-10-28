@@ -13,6 +13,7 @@ import elite.intel.bindforge.rules.AiAccess;
 import elite.intel.bindforge.rules.BindingConflictScanner;
 import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
 import elite.intel.bindforge.rules.MissingBindingAutoAssigner;
+import elite.intel.bindforge.storage.SavedDeviceLabels;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;
@@ -1247,6 +1248,8 @@ public class BindingProfilePanel extends JPanel {
         // WHY no gate on what the slots hold: a controller slot opens like any other (Alan, 2026-10-15). The
         // writer refuses, without rewriting, a slot whose structure it does not know, and SAVE says so.
         KeyBindingsParser.ReadOnlyBindingSlots slots = currentSlots.get(bindingId);
+        // WHY: one read of the working copy for the tabs and the labels, not one per use (review, 2026-10-28).
+        SavedDeviceLabels labels = SavedDeviceLabels.load();
         AssignKeyboardBindingDialog dialog = new AssignKeyboardBindingDialog(
                 this,
                 activeBindingsFile.toPath(),
@@ -1257,7 +1260,8 @@ public class BindingProfilePanel extends JPanel {
                 parser.toExecutableSlots(currentSlots),
                 currentSlots,
                 existingConflicts(bindingId, slots),
-                CaptureControllers.all(currentSlots),
+                CaptureControllers.all(currentSlots, labels),
+                labels,
                 currentAiAccess().stateOf(bindingId, slots) != AiAccess.State.NOT_USED
         );
 

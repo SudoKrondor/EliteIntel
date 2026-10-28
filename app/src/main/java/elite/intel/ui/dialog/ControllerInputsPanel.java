@@ -1,9 +1,9 @@
 package elite.intel.ui.dialog;
 
-import elite.intel.bindforge.storage.SavedDeviceLabels;
 import elite.intel.bindforge.devices.CaptureControllers;
 import elite.intel.bindforge.devices.ControllerCapture;
 import elite.intel.bindforge.devices.DeviceEditorInputs;
+import elite.intel.bindforge.storage.SavedDeviceLabels;
 import elite.intel.devices.model.GameAxis;
 import elite.intel.ui.theme.AppTheme;
 

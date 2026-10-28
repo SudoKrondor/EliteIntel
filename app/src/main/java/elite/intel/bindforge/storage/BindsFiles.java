@@ -18,7 +18,6 @@ import java.util.TreeMap;
  */
 public final class BindsFiles {
 
-
     private BindsFiles() {
     }
 

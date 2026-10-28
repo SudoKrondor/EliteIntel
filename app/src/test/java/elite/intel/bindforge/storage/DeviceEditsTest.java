@@ -59,6 +59,20 @@ class DeviceEditsTest {
         assertTrue(DeviceEdits.retarget(set(), "Gone", new HardwareId("3344", "83F4"), "3344", "83F5").isEmpty());
     }
 
+    /** Several answers are one edit: each made on what the last left, a changed device skipped and listed. */
+    @Test
+    void retargetAllMakesEachAndListsTheStaleOnes() throws IOException {
+        DeviceEdits.Retarget lvwap = new DeviceEdits.Retarget("LVWAP", new HardwareId("3344", "83F4"), "3344", "83F5");
+        DeviceEdits.Retarget gone = new DeviceEdits.Retarget("Gone", new HardwareId("3344", "0001"), "3344", "0002");
+        DeviceEdits.Retarget again = new DeviceEdits.Retarget("LVWAP", new HardwareId("3344", "83F4"), "3344", "83F6");
+
+        DeviceEdits.Retargeted done = DeviceEdits.retargetAll(set(), List.of(lvwap, gone, again));
+
+        assertEquals(List.of(lvwap), done.made());
+        assertEquals(List.of(gone, again), done.stale(), "the second saw LVWAP on hardware the first had moved");
+        assertEquals(new HardwareId("3344", "83F5"), DeviceEdits.elements(done.files()).getFirst().primary());
+    }
+
     /** A rename moves the element, its labels and every binding naming it, together (A11). */
     @Test
     void aRenameMovesTheElementItsLabelsAndItsBindings() throws IOException {

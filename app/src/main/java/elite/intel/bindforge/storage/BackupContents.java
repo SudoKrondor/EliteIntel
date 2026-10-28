@@ -137,9 +137,14 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
     }
 
     // ---- the layout
+    //
+    // WHY FileNames.plain on every name taken from the zip: a name is written into a game folder, so one that is a path
+    // - "..", "C:x", a backslash - would write outside it, and one Windows refuses - a reserved character, or a space or
+    // dot at the end - would throw rather than be skipped (reviews, 2026-10-25). Never one Elite-Intel wrote, skipped
+    // rather than trusted. The one check the working copy's names use too (Krondor's review, 2026-10-27).
 
     private static boolean isBindingsEntry(String[] parts) {
-        return parts.length == 2 && parts[0].equals(Backups.BINDINGS) && plain(parts[1])
+        return parts.length == 2 && parts[0].equals(Backups.BINDINGS) && FileNames.plain(parts[1])
                 && Backups.isBindingsFile(Path.of(parts[1]));
     }
 
@@ -150,21 +155,13 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
 
     private static boolean isButtonMapEntry(String[] parts) {
         return parts.length == 5 && isInstallationFolder(parts) && parts[2].equals(Backups.CONTROL_SCHEMES)
-                && parts[3].equals(GameInstallation.DEVICE_BUTTON_MAPS) && plain(parts[4])
+                && parts[3].equals(GameInstallation.DEVICE_BUTTON_MAPS) && FileNames.plain(parts[4])
                 && parts[4].endsWith(GameInstallation.BUTTON_MAP_SUFFIX) && parts[4].length() > GameInstallation.BUTTON_MAP_SUFFIX.length();
     }
 
     private static boolean isInstallationFolder(String[] parts) {
-        return parts[0].equals(Backups.INSTALLATIONS) && plain(parts[1])
+        return parts[0].equals(Backups.INSTALLATIONS) && FileNames.plain(parts[1])
                 && INSTALLATION_FOLDER.matcher(parts[1]).matches();
-    }
-
-    // WHY: a name is written into a game folder, so one that is a path - "..", "C:x", a backslash - would write outside
-    // it, and one Windows refuses - a reserved character, or a space or dot at the end - would throw rather than be
-    // skipped (reviews, 2026-10-25). Never one Elite-Intel wrote; skipped rather than trusted. The one check the
-    // working copy's names use too (Krondor's review, 2026-10-27).
-    private static boolean plain(String name) {
-        return FileNames.plain(name);
     }
 
     // ---- what backup-info.txt says

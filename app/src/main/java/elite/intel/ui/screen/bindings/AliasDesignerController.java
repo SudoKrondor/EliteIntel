@@ -4,7 +4,6 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
 import elite.intel.bindforge.devices.*;
-import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.DeviceEdits;
 import elite.intel.bindforge.storage.Edits;
 import elite.intel.db.managers.BindForgeIdentityAnswerManager;
@@ -347,26 +346,19 @@ final class AliasDesignerController {
             }
         }
         if (retargets.isEmpty()) return new IdentityResult(List.of(), List.of());
-        List<IdentityDecision> moved = new ArrayList<>();
-        List<String> stale = new ArrayList<>();
+        Map<DeviceEdits.Retarget, IdentityDecision> byRetarget = new LinkedHashMap<>();
+        for (IdentityDecision decision : retargets) {
+            MyDevice picked = decision.choice().picked();
+            byRetarget.put(new DeviceEdits.Retarget(decision.question().deviceName(), decision.question().was(),
+                    picked.vid(), picked.pid()), decision);
+        }
+        DeviceEdits.Retargeted[] done = new DeviceEdits.Retargeted[1];
         Edits.stored().change(current -> {
-            moved.clear();
-            stale.clear();
-            ConfigurationFiles result = current;
-            for (IdentityDecision decision : retargets) {
-                IdentityQuestions.Question question = decision.question();
-                MyDevice picked = decision.choice().picked();
-                Optional<ConfigurationFiles> retargeted = DeviceEdits.retarget(result, question.deviceName(),
-                        question.was(), picked.vid(), picked.pid());
-                if (retargeted.isPresent()) {
-                    result = retargeted.get();
-                    moved.add(decision);
-                } else {
-                    stale.add(question.deviceName());
-                }
-            }
-            return result;
+            done[0] = DeviceEdits.retargetAll(current, List.copyOf(byRetarget.keySet()));
+            return done[0].files();
         });
+        List<IdentityDecision> moved = done[0].made().stream().map(byRetarget::get).toList();
+        List<String> stale = done[0].stale().stream().map(DeviceEdits.Retarget::name).toList();
         for (IdentityDecision decision : moved) {
             answers.forget(Set.of(decision.question().deviceName()));
             log.info("{} retargeted in the edits from {} to {} ({})", decision.question().deviceName(),

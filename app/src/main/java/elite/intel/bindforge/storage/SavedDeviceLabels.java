@@ -43,14 +43,15 @@ public final class SavedDeviceLabels {
     }
 
     /**
-     * The edits as they are now. When the working copy cannot be read - before first-time startup, or a damaged one -
-     * there is nothing to show, and every input reads as its token; the BindForge tab says why.
+     * The working copy and the edits as they are now - {@link #NONE} when they cannot be read.
      */
     public static SavedDeviceLabels load() {
         try {
             Edits.Snapshot snapshot = Edits.stored().snapshot();
             return of(snapshot.current(), snapshot.applied());
         } catch (IOException e) {
+            // WHY: before first-time startup, or with a damaged working copy, there is nothing to show - every input
+            // reads as its token rather than the screen failing, and the BindForge tab says why.
             log.warn("Could not read the working copy for the controllers' labels: {}", e.getMessage());
             return NONE;
         }

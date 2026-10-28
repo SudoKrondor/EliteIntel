@@ -45,16 +45,14 @@ public final class IdentityQuestions {
     /**
      * One of the user's named controllers, as the edits hold it - what APPLY will write (Storage S4b, 2026-10-28).
      *
-     * @param name     its name now
-     * @param names    every name bindings may use for it. Since the edits rewrite the binds files with a rename, that is
-     *                 its name now (Storage S4b); {@code null}s are ignored
+     * @param name     its name - the only one bindings use for it, since the edits rewrite the binds files with a
+     *                 rename (Storage S4b, review 2026-10-28)
      * @param hardware its VID/PID
      */
-    public record Known(String name, Collection<String> names, HardwareId hardware) {
+    public record Known(String name, HardwareId hardware) {
         public Known {
             Objects.requireNonNull(name, "name");
             Objects.requireNonNull(hardware, "hardware");
-            names = names.stream().filter(Objects::nonNull).toList();
         }
     }
 
@@ -212,7 +210,7 @@ public final class IdentityQuestions {
         for (Known device : known) {
             if (frontier.test(device.name()) || attached.contains(device.hardware())) continue;
             missing.add(folded(device.name()));
-            int bindings = BindsDeviceReferences.bindingsNaming(device.names(), counts);
+            int bindings = BindsDeviceReferences.bindingsNaming(List.of(device.name()), counts);
             if (bindings == 0 || candidates.isEmpty()) continue;
             asked.add(new Question(device.name(), device.hardware(), bindings, candidates));
         }
@@ -276,7 +274,7 @@ public final class IdentityQuestions {
         owned.addAll(byId.heldByWorkingCopy());
         Set<String> names = new HashSet<>();
         byId.namesInUse().forEach(name -> names.add(folded(name)));
-        known.forEach(device -> device.names().forEach(name -> names.add(folded(name))));
+        known.forEach(device -> names.add(folded(device.name())));
         devices.forEach(device -> {
             if (device.entryName() != null) names.add(folded(device.entryName()));
             if (device.alias() != null) names.add(folded(device.alias()));
@@ -298,7 +296,6 @@ public final class IdentityQuestions {
         }
         return found;
     }
-
 
     /**
      * An old id as {@code .binds} writes it (review, 2026-10-17): the value found in the game's order, VID then PID,

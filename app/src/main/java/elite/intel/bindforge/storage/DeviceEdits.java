@@ -140,6 +140,55 @@ public final class DeviceEdits {
     }
 
     /**
+     * One identity answer to make: the user's device {@code name}, asked about with hardware {@code was}, to get the
+     * picked controller's VID/PID.
+     */
+    public record Retarget(String name, HardwareId was, String vid, String pid) {
+        public Retarget {
+            Objects.requireNonNull(name, "name");
+            Objects.requireNonNull(was, "was");
+            Objects.requireNonNull(vid, "vid");
+            Objects.requireNonNull(pid, "pid");
+        }
+    }
+
+    /**
+     * @param files the set with every retarget made
+     * @param made  the retargets made, in order
+     * @param stale the retargets whose device changed since the question - nothing was changed for them
+     */
+    public record Retargeted(ConfigurationFiles files, List<Retarget> made, List<Retarget> stale) {
+        public Retargeted {
+            Objects.requireNonNull(files, "files");
+            made = List.copyOf(made);
+            stale = List.copyOf(stale);
+        }
+    }
+
+    /**
+     * Every identity answer in one edit (review, 2026-10-28): each {@link #retarget} in turn on the set the last one
+     * left, a stale one skipped and listed.
+     *
+     * @throws IOException if the set's {@code DeviceMappings.xml} cannot be read or changed - nothing is made
+     */
+    public static Retargeted retargetAll(ConfigurationFiles files, List<Retarget> retargets) throws IOException {
+        ConfigurationFiles result = files;
+        List<Retarget> made = new ArrayList<>();
+        List<Retarget> stale = new ArrayList<>();
+        for (Retarget retarget : retargets) {
+            Optional<ConfigurationFiles> changed = retarget(result, retarget.name(), retarget.was(), retarget.vid(),
+                    retarget.pid());
+            if (changed.isPresent()) {
+                result = changed.get();
+                made.add(retarget);
+            } else {
+                stale.add(retarget);
+            }
+        }
+        return new Retargeted(result, made, stale);
+    }
+
+    /**
      * One of the user's devices renamed (A11): the element renamed in place, keeping every child; the
      * {@code .buttonMap} renamed, never copied, with {@code labels} - or its own content when there are none; and every
      * binding naming the old name moved to the new one, a case-only change included.

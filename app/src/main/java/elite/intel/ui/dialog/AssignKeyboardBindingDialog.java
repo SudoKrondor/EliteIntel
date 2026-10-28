@@ -1,7 +1,6 @@
 package elite.intel.ui.dialog;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.bindforge.storage.SavedDeviceLabels;
 import elite.intel.bindforge.devices.CaptureControllers;
 import elite.intel.bindforge.devices.ControllerCapture;
 import elite.intel.bindforge.io.KeyBindingsParser;
@@ -10,6 +9,7 @@ import elite.intel.bindforge.rules.BindingConflictScanner;
 import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
 import elite.intel.bindforge.rules.ReservedKeyChords;
 import elite.intel.bindforge.rules.SlotInputConflicts;
+import elite.intel.bindforge.storage.SavedDeviceLabels;
 import elite.intel.devices.events.DeviceAxisEvent;
 import elite.intel.devices.events.DeviceButtonEvent;
 import elite.intel.devices.events.DeviceDisconnectedEvent;
@@ -194,7 +194,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
         }
     }
 
-    private final BindingSlotDisplayFormatter slotFormatter = BindingSlotDisplayFormatter.withSavedLabels();
+    private final SavedDeviceLabels labels;
+    private final BindingSlotDisplayFormatter slotFormatter;
     private final Path bindingsFile;
     private final String bindingId;
     private final KeyboardKeyAvailabilityService availabilityService;
@@ -244,6 +245,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
             Map<String, KeyBindingsParser.ReadOnlyBindingSlots> readOnlySlots,
             Map<BindingSlotType, ExistingConflict> existingConflicts,
             List<CaptureControllers.Controller> controllers,
+            SavedDeviceLabels labels,
             boolean vegaUsesIt
     ) {
         super(SwingUtilities.getWindowAncestor(parent), getText("bindings.assign.dialogTitle"), ModalityType.APPLICATION_MODAL);
@@ -257,6 +259,9 @@ public class AssignKeyboardBindingDialog extends JDialog {
                 ? Set.of()
                 : ReservedKeyChords.gameMenuKeysFromExecutableSlots(this.existingSlots);
         this.controllers = controllers == null ? List.of() : List.copyOf(controllers);
+        // WHY: read once by the caller, for the controllers' tabs and every label here (review, 2026-10-28).
+        this.labels = labels == null ? SavedDeviceLabels.NONE : labels;
+        this.slotFormatter = new BindingSlotDisplayFormatter(this.labels);
         this.vegaUsesIt = vegaUsesIt;
         Map<BindingSlotType, ExistingConflict> conflicts = existingConflicts == null ? Map.of() : existingConflicts;
         edits.put(BindingSlotType.PRIMARY, new SlotEdit(BindingSlotType.PRIMARY,
@@ -509,7 +514,6 @@ public class AssignKeyboardBindingDialog extends JDialog {
         sourceTabs = AppTheme.makeSectionTabs();
         keyboardTab = keyboardSource();
         sourceTabs.addTab(getText("bindings.assign.tab.keyboard"), keyboardTab);
-        SavedDeviceLabels labels = SavedDeviceLabels.load();
         for (CaptureControllers.Controller controller : controllers) {
             if (!controller.named()) {
                 sourceTabs.addTab(controller.tabTitle(), transparentPanel(new BorderLayout()));

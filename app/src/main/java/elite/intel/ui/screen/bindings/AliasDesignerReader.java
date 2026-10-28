@@ -155,6 +155,9 @@ final class AliasDesignerReader {
      * <p>
      * Only once the hardware is listed - before then every controller reads absent, and the forgetting would be wrong
      * too. Binds files that cannot be read ask nothing: without the counts every missing controller would look unbound.
+     *
+     * @throws IOException if the edits' or the working copy's {@code DeviceMappings.xml} cannot be parsed - the
+     *                     refresh then keeps what it has read
      */
     private static IdentityQuestions.Reading readIdentity(List<MyDevice> devices, Sets sets) throws IOException {
         BindsDeviceReferences.Counts counts;
@@ -173,7 +176,7 @@ final class AliasDesignerReader {
         for (DeviceEntry element : edited) {
             HardwareId hardware = element.primary();
             if (hardware == null) continue;
-            known.add(new IdentityQuestions.Known(element.name(), List.of(element.name()), hardware));
+            known.add(new IdentityQuestions.Known(element.name(), hardware));
             heldByEdits.add(hardware);
         }
         List<HardwareId> heldByWorkingCopy = applied.stream().map(DeviceEntry::primary).filter(Objects::nonNull).toList();

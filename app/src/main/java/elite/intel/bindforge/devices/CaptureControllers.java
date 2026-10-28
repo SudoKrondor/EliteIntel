@@ -80,9 +80,9 @@ public final class CaptureControllers {
      * each group in name order.
      *
      * @param bindings the bindings being edited, for the controllers they name and the inputs they use
+     * @param labels   the working copy's names and the edits' labels, as {@link SavedDeviceLabels#load()} read them
      */
-    public static List<Controller> all(Map<String, ReadOnlyBindingSlots> bindings) {
-        SavedDeviceLabels labels = SavedDeviceLabels.load();
+    public static List<Controller> all(Map<String, ReadOnlyBindingSlots> bindings, SavedDeviceLabels labels) {
         FrontierStockDevices stock = FrontierStockDevices.getInstance();
         List<Controller> controllers = new ArrayList<>(connected(labels));
         Set<String> present = new HashSet<>();

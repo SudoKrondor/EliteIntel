@@ -192,6 +192,17 @@ failures reported per place, tests in the matching package, migrations `12010`�
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the next
 slice needs.*
 
+- **2026-10-28 — S4R and S4b review follow-up** (`code-integrity-review.md`, Alan: all recommendations). **Decided:**
+  the assign dialog's labels are read once by `BindingProfilePanel` and passed in, still on the EDT until S5 moves it
+  (D1); `IdentityQuestions.Known` has no `names` (D2); `FirstSetupDialog` keeps its own thread (D3); an axis pushed
+  when capture opens takes that as its rest, accepted (D4, bind-editor.md *Axis directions*). **Fixed:**
+  `DeviceEdits.retargetAll` holds the identity answers' loop, with a test; `Restore.Prepared` refuses a reading and
+  files that disagree; `// WHY:` at two broad catches; `FlowSteps` documents every parameter (`whenNoNextStep`) and
+  closes with `button.close`; stale javadoc and blank lines. **Not done:** finding 5 was wrong - `readIdentity`'s
+  `throws IOException` is live (the element reads parse), so it is documented instead. **Left:** finding 11 (where
+  `CONTROL_SCHEMES` lives) and 13 (renaming `SavedDeviceLabels` - S5 touches its callers). **S5 needs:** load
+  `SavedDeviceLabels` off the EDT when the Bind Editor moves onto the edits.
+
 - **2026-10-28 — S4b done: the identity question on the bar, and the old tables gone.** **Decided (Alan):**
   `edit_history_retention` is dropped in S6, with `StartPresetApply`, which still reads it (file-manager.md *Settings*);
   the identity question counts the edits' binds files (alias-designer.md *On the working copy — 2026-10-28*). **Found,

@@ -94,6 +94,11 @@ public final class Restore {
             targets = List.copyOf(targets);
             Objects.requireNonNull(places, "places");
             Objects.requireNonNull(reading, "reading");
+            // WHY: one answer to "identical" - the reading's and the files' never disagree (review, 2026-10-28).
+            boolean hasFiles = identicalFiles != null;
+            if (reading.identical() != hasFiles) {
+                throw new IllegalArgumentException("identicalFiles must be given exactly when the reading is identical");
+            }
         }
 
         /** Whether the backup's installations hold the same device files - then nothing is asked but the confirmation. */

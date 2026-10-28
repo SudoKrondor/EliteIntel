@@ -872,8 +872,8 @@ screen has since S4a. Alan approved the sources on 2026-10-28:
 - **A yes for a named controller is an edit not applied** (`DeviceEdits.retarget`, `DeviceMappingsMerge.retarget`):
   the element keeps its name, its place in the file and every other child, and only its `<VID>` and `<PID>` change.
   The binds files and the `.buttonMap` are untouched - the bindings name the device. Several answers are one edit. A
-  device whose element is gone, or no longer has the hardware the question saw, changes nothing and is reported as
-  changed, as before.
+  device whose element is gone, or no longer has the hardware the question saw, changes nothing, and the user is told
+  that controller changed since the question, as before.
 - **No record of a yes is kept.** A12's answers still go to `bindforge_identity_answer`; A17's waiting moves went with
   their table, since onboarding's FINISH moves the bindings in its edit.
 

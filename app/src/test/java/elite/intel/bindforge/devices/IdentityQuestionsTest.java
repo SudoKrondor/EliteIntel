@@ -8,7 +8,6 @@ import elite.intel.bindforge.devices.IdentityQuestions.Reading;
 import elite.intel.db.dao.BindForgeIdentityAnswerDao.AnswerRow;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,8 +32,8 @@ class IdentityQuestionsTest {
             new MyDevice("VIRPIL MongoosT-50CM3", null, "3344", "03F5", true, null, false);
     private static final MyDevice LVWAP_ROW = new MyDevice(null, "LVWAP", "3344", "83F3", false, "LVWAP", false);
 
-    private static final Known LVWAP = new Known("LVWAP", List.of("LVWAP"), LVWAP_WAS);
-    private static final Known RVWAP = new Known("RVWAP", List.of("RVWAP"), RVWAP_WAS);
+    private static final Known LVWAP = new Known("LVWAP", LVWAP_WAS);
+    private static final Known RVWAP = new Known("RVWAP", RVWAP_WAS);
 
     private static final Map<String, Integer> BOUND = Map.of("LVWAP", 131, "RVWAP", 12);
 
@@ -76,16 +75,6 @@ class IdentityQuestionsTest {
         assertTrue(reading.withheld().isEmpty(), "its candidate is onboarding's to name");
     }
 
-    /** Bindings may still name it by the old name a rename is moving away from. */
-    @Test
-    void bindingsOnAnOldNameCount() {
-        Known renamed = new Known("LeftStick", Arrays.asList("LeftStick", "LeftStick", "LVWAP", null), LVWAP_WAS);
-
-        Reading reading = read(List.of(renamed), List.of(ALPHA), Map.of("lvwap", 131), List.of());
-
-        assertEquals(131, reading.toAsk().getFirst().bindings());
-    }
-
     @Test
     void anAttachedControllerIsNotMissing() {
         MyDevice lvwapAttached = new MyDevice("VIRPIL", "LVWAP", "3344", "83F3", true, "LVWAP", false);
@@ -113,7 +102,7 @@ class IdentityQuestionsTest {
 
     @Test
     void frontiersNamesAreNeverAsked() {
-        Known rudder = new Known("T-Rudder", List.of("T-Rudder"), new HardwareId("044F", "B679"));
+        Known rudder = new Known("T-Rudder", new HardwareId("044F", "B679"));
 
         Reading reading = IdentityQuestions.read(List.of(rudder), List.of(ALPHA), List.of(),
                 Map.of("T-Rudder", 4), "T-Rudder"::equals, List.of());
@@ -249,7 +238,7 @@ class IdentityQuestionsTest {
     @Test
     void aDeviceNamedLikeAnIdIsNotAsked() {
         Map<String, Integer> named = Map.of("DEADBEEF", 40);
-        Known deadbeef = new Known("DEADBEEF", List.of("DEADBEEF"), new HardwareId("3344", "0194"));
+        Known deadbeef = new Known("DEADBEEF", new HardwareId("3344", "0194"));
         MyDevice entry = new MyDevice(null, "deadbeef", "1234", "0001", false, null, false);
 
         Reading inUse = IdentityQuestions.read(List.of(), List.of(ALPHA), List.of(), Map.of(), name -> false,

@@ -269,6 +269,9 @@ public final class FirstTimeStartup {
             if (!flag.complete()) flag.markComplete();
             return true;
         } catch (RuntimeException e) {
+            // WHY: broad on purpose - the files are written by now, so a failure here is reported in the result and never
+            // thrown, where it would read as "nothing was written". For RESTORE it also keeps a second first-setup backup
+            // from being taken over files BindForge already wrote, unannounced.
             log.error("The files are written, but first-time startup could not be marked complete", e);
             return false;
         }

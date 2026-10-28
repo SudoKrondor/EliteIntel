@@ -31,7 +31,6 @@ final class RestoreFlow {
 
     private static final Logger log = LogManager.getLogger(RestoreFlow.class);
 
-
     private final Component parent;
 
     RestoreFlow(Component parent) {

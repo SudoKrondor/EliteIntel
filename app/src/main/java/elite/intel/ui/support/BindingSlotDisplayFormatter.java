@@ -1,9 +1,9 @@
 package elite.intel.ui.support;
 
 
-import elite.intel.bindforge.storage.SavedDeviceLabels;
 import elite.intel.bindforge.io.KeyBindingsParser;
 import elite.intel.bindforge.model.BindingModifier;
+import elite.intel.bindforge.storage.SavedDeviceLabels;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,7 +43,7 @@ public class BindingSlotDisplayFormatter {
     }
 
     /**
-     * Shows controller inputs by the names saved in the Device Editor, read now. A database that cannot be read
+     * Shows controller inputs by their labels in the edits, read now. A working copy that cannot be read or parsed
      * costs only the names: inputs fall back to their numbers rather than the screen failing to open.
      */
     public static BindingSlotDisplayFormatter withSavedLabels() {

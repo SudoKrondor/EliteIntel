@@ -30,15 +30,17 @@ final class FlowSteps {
      * Runs {@code step} on a thread of its own, then its next step on the EDT. Nothing escapes: a flow left half run
      * would stay marked busy, and never be offered again this run.
      *
-     * @param what      the flow, for the log
-     * @param failed    the step for an {@link IOException}, given its reason - a file the step could not use
-     * @param stopped   the step for a {@link RuntimeException}, given its reason - a bug, logged as an error and said to
-     *                  have stopped unexpectedly rather than blamed on a file (review, 2026-10-25)
-     * @param nothingTo run on the EDT when the step hands back none
+     * @param threadName     the thread's name, as thread dumps show it
+     * @param log            the calling flow's logger, so a failure is logged under the flow
+     * @param what           the flow, for the log
+     * @param failed         the step for an {@link IOException}, given its reason - a file the step could not use
+     * @param stopped        the step for a {@link RuntimeException}, given its reason - a bug, logged as an error and
+     *                       said to have stopped unexpectedly rather than blamed on a file (review, 2026-10-25)
+     * @param whenNoNextStep run on the EDT when the step hands back none
      */
     static void inBackground(String threadName, Logger log, String what, Step step,
                              Function<String, Runnable> failed, Function<String, Runnable> stopped,
-                             Runnable nothingTo) {
+                             Runnable whenNoNextStep) {
         new Thread(() -> {
             Runnable next;
             try {
@@ -51,14 +53,14 @@ final class FlowSteps {
                 log.error("{} stopped", what, e);
                 next = stopped.apply(StringUtls.messageOf(e));
             }
-            Runnable then = next == null ? nothingTo : next;
+            Runnable then = next == null ? whenNoNextStep : next;
             SwingUtilities.invokeLater(then);
         }, threadName).start();
     }
 
     /** The message box a flow ends with, then {@code then}. On the EDT. */
     static void tell(Component parent, String title, String message, Runnable then) {
-        HudConfirmDialog.info(parent, title, message, getText("bindings.aliasDesigner.firstSetup.close"));
+        HudConfirmDialog.info(parent, title, message, getText("button.close"));
         then.run();
     }
 }

@@ -631,7 +631,11 @@ device reports.
 **An axis is captured by how far it moves from where it rests, not from centre** (Alan, 2026-10-27, from Krondor's
 storage review; Storage S4R). Measured from centre, a throttle, slider or toe brake resting at one end was captured as
 soon as it jittered. Where an axis rests is the first value reported after capture begins, the same rule as the
-Device Editor's lights ([alias-designer.md](alias-designer.md)). A GamePad's sticks are not captured at all
+Device Editor's lights ([alias-designer.md](alias-designer.md)). **Accepted (Alan, 2026-10-28, from the S4b review):**
+an axis already pushed when capture begins - held forward, or a fast flick that arrives as one coarse step - takes that
+position as its rest, so the push is missed and the return is captured as the other direction. The user sees the
+binding and can capture it again; reading each axis's rest from the device when capture opens is for when testing
+shows it in practice. A GamePad's sticks are not captured at all
 ([alias-designer.md, *A gamepad is not a joystick*](alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor)).
 
 **Hats.** A hat is written `Joy_POV1Up`, `Joy_POV1Down`, `Joy_POV1Left`, `Joy_POV1Right`, and a diagonal sets two
