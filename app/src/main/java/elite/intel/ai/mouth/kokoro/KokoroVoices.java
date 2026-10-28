@@ -35,6 +35,8 @@ import java.util.Set;
  * <p>
  * Source: https://k2-fsa.github.io/sherpa/onnx/tts/pretrained_models/kokoro.html
  */
+
+@Deprecated
 public enum KokoroVoices {
 
     // --- American Female (af_) ---
@@ -90,27 +92,9 @@ public enum KokoroVoices {
     IT_SARA(35, false, "Sara", "Italian female"),
     IT_NICOLA(36, true, "Nicola", "Italian male"),
 
-    // --- Japanese (jf_ / jm_) ---
-//    JA_ALPHA(37, false, "Alpha", "Japanese female"),
-//    JA_GONGITSUNE(38, false, "Gongitsune", "Japanese female"),
-//    JA_NEZUMI(39, false, "Nezumi", "Japanese female"),
-//    JA_TEBUKURO(40, false, "Tebukuro", "Japanese female"),
-//    JA_KUMO(41, true, "Kumo", "Japanese male"),
-
     // --- Portuguese (pf_ / pm_) ---
     PT_DORA(42, false, "Dora", "Portuguese female"),
     PT_ALEX(43, true, "Alex", "Portuguese male");
-    //PT_SANTA(44, true, "Santa", "Portuguese male");
-
-    // --- Chinese (zf_ / zm_) ---
-//    ZH_XIAOBEI(45, false, "Xiaobei", "Chinese female"),
-//    ZH_XIAONI(46, false, "Xiaoni", "Chinese female"),
-//    ZH_XIAOXIAO(47, false, "Xiaoxiao", "Chinese female"),
-//    ZH_XIAOYI(48, false, "Xiaoyi", "Chinese female"),
-//    ZH_YUNJIAN(49, true, "Yunjian", "Chinese male"),
-//    ZH_YUNXI(50, true, "Yunxi", "Chinese male"),
-//    ZH_YUNXIA(51, false, "Yunxia", "Chinese female"),
-//    ZH_YUNYANG(52, true, "Yunyang", "Chinese male");
 
     /**
      * The default ship voice, used when a ship has no stored voice or carries a name this engine does not

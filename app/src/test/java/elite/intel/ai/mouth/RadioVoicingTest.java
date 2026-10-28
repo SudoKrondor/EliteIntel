@@ -5,24 +5,21 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Pins which engine voices radio. The transmission is the game client's prose, so the engine follows the
- * client - never the commander's own language and never the main mouth: Kokoro everywhere, except Supertonic
- * for a Russian client, whose Cyrillic Kokoro cannot read.
+ * Pins which engine voices radio: Supertonic, for every game client, whatever the main mouth. It reads every
+ * language the game ships in, so the client no longer decides the engine.
  */
 class RadioVoicingTest {
 
     @Test
-    void aRussianClientIsVoicedBySupertonicAndEveryOtherByKokoro() {
-        assertEquals(TtsProvider.SUPERTONIC, RadioVoicing.engineFor(true));
-        assertEquals(TtsProvider.KOKORO, RadioVoicing.engineFor(false));
+    void supertonicVoicesRadioForEveryClient() {
+        assertEquals(TtsProvider.SUPERTONIC, RadioVoicing.engine());
+        assertTrue(RadioVoicing.isRadioEngine(TtsProvider.SUPERTONIC));
+        assertFalse(RadioVoicing.isRadioEngine(TtsProvider.KOKORO));
     }
 
     @Test
     void radioIsAlwaysLocalAndNeverBillsGoogle() {
-        for (boolean russianClient : new boolean[]{true, false}) {
-            TtsProvider radio = RadioVoicing.engineFor(russianClient);
-            assertTrue(radio.isLocal(), "radio is chatter, not narration");
-            assertNotEquals(TtsProvider.GOOGLE, radio);
-        }
+        assertTrue(RadioVoicing.engine().isLocal(), "radio is chatter, not narration");
+        assertFalse(RadioVoicing.isRadioEngine(TtsProvider.GOOGLE));
     }
 }

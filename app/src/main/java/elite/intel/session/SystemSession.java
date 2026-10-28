@@ -355,7 +355,7 @@ public class SystemSession {
      * commander who rolls back to an earlier jar lands on a database where it still describes their choice.
      */
     public void setTtsProvider(TtsProvider provider) {
-        TtsProvider selected = provider == null ? TtsProvider.KOKORO : provider;
+        TtsProvider selected = provider == null ? TtsProvider.SUPERTONIC : provider;
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
             session.setTtsProvider(selected.name());

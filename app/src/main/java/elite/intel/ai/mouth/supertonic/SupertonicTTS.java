@@ -16,8 +16,8 @@ import java.util.function.Consumer;
 /**
  * Offline TTS using Supertonic 3 via sherpa-onnx JNI, on the shared {@link SherpaOnnxTTS} pipeline.
  * <p>
- * The alternative local engine, beside Kokoro (see {@link TtsProvider}), and the radio engine for a Russian
- * game client, whose Cyrillic chatter Kokoro cannot read. Unlike Kokoro, Supertonic is a single
+ * The default local engine (see {@link TtsProvider}) and the radio engine for every game client (see
+ * {@link elite.intel.ai.mouth.RadioVoicing}). Unlike Kokoro, Supertonic is a single
  * multilingual model: the language is not baked into the engine at build time, it is passed on every
  * {@code generate} call (see {@link #supertonicLangCode(Language)}). The engine is therefore built exactly
  * once and never rebuilt on a language switch. It generates at 44.1 kHz; the pipeline resamples.
@@ -125,7 +125,7 @@ public class SupertonicTTS extends SherpaOnnxTTS {
      * The language code Supertonic reads the text with, passed per-call via {@link GenerationConfig#setExtra}
      * rather than baked into the model at build time (see {@link #buildOfflineTts(Language)}). Supertonic
      * ships one multilingual model covering every language this app supports, and Russian besides - which is
-     * why it voices a Russian game client's radio chatter (see {@link elite.intel.ai.mouth.RadioVoicing}).
+     * why it voices every game client's radio chatter (see {@link elite.intel.ai.mouth.RadioVoicing}).
      */
     private static String supertonicLangCode(Language language) {
         return switch (language) {

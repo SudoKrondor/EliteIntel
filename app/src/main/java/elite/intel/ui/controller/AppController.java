@@ -287,8 +287,7 @@ public class AppController {
             appendToLog("Restarting TTS service...");
 
             // A dedicated radio engine is needed only when the main mouth is not itself the radio engine.
-            // Either side can change with what this restart reacts to (the TTS provider; the game client's
-            // language, which picks the radio engine - a Russian client moves radio to Supertonic), and every
+            // The main mouth can change with what this restart reacts to (the TTS provider), and every
             // engine is a singleton shared with the main mouth, so the radio engine is always retired BEFORE
             // the main mouth restarts: starting a main mouth while the same singleton still holds the RADIO
             // role would silence all narration.
@@ -551,7 +550,7 @@ public class AppController {
      */
     private static ManagedService radioEngine(TtsProvider provider) {
         return switch (provider) {
-            case KOKORO -> radioLocal(KokoroTTS.getInstance());
+            case KOKORO -> radioLocal(KokoroTTS.getInstance()); // will be removed
             case SUPERTONIC -> radioLocal(SupertonicTTS.getInstance());
             case GOOGLE -> throw new IllegalArgumentException(provider + " never voices radio transmissions");
         };

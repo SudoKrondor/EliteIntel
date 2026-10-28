@@ -11,14 +11,14 @@ import java.util.stream.Stream;
  * The engine that voices VEGA. Exactly one is active, and the choice is a stored setting in its own
  * right ({@code game_session.ttsProvider}) - it is never inferred from the shape of the cloud API key.
  * <p>
- * Two engines run locally and need nothing configured: {@link #KOKORO}, which is the shipped default and the
+ * Two engines run locally and need nothing configured: {@link #SUPERTONIC}, which is the default and the
  * fallback for an unreadable stored value, so a commander with no cloud account still has a voice; and
- * {@link #SUPERTONIC}, the alternative local engine. {@link #GOOGLE} is the only engine that needs an API key
- * and the only one that is not local.
+ * {@link #KOKORO}, the former default, kept while Supertonic is proven and then retired. {@link #GOOGLE} is the
+ * only engine that needs an API key and the only one that is not local.
  * <p>
  * A stored {@code EDGE} is an engine this build no longer has: Microsoft Edge Read Aloud was removed in
  * v1.1.0026, and migration {@code 11007} moved its commanders to Kokoro. {@link #fromStored} reads anything
- * it does not recognise as Kokoro too, so a row the migration missed still has a voice.
+ * it does not recognise as Supertonic, so a row the migration missed still has a voice.
  */
 public enum TtsProvider {
     KOKORO,
@@ -26,19 +26,19 @@ public enum TtsProvider {
     GOOGLE;
 
     /**
-     * Resolves a stored setting value, falling back to {@link #KOKORO} for anything this build does not
+     * Resolves a stored setting value, falling back to {@link #SUPERTONIC} for anything this build does not
      * recognise (null, blank, or a provider written by a newer version).
      */
     public static TtsProvider fromStored(String stored) {
         if (stored == null || stored.isBlank()) {
-            return KOKORO;
+            return SUPERTONIC;
         }
         for (TtsProvider provider : values()) {
             if (provider.name().equalsIgnoreCase(stored.trim())) {
                 return provider;
             }
         }
-        return KOKORO;
+        return SUPERTONIC;
     }
 
     /**

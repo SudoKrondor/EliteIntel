@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * The radio engine and the language it reads transmissions in are decided when the mouth starts, from the game
+ * The language the radio engine reads transmissions in is decided when the mouth starts, from the game
  * client's language. A client relaunched in another language while the app runs must therefore restart the
  * mouth - and a client relaunched in the same one must not, or every game start would re-greet the commander.
  * <p>
@@ -49,18 +49,18 @@ class FileheaderEventSubscriberTest {
 
     @Test
     void aClientRelaunchedInAnotherLanguageRestartsTheMouth() {
-        subscriber.onEvent(header("Russian/RU"));
-        assertEquals(1, mouthRestarts.get(), "Russian chatter needs Supertonic, so the radio engine must be redecided");
+        subscriber.onEvent(header("German/DE"));
+        assertEquals(1, mouthRestarts.get(), "German chatter must be read as German");
 
         subscriber.onEvent(header("English/UK"));
-        assertEquals(2, mouthRestarts.get(), "and back to Kokoro when the client goes back to English");
+        assertEquals(2, mouthRestarts.get(), "and as English again when the client goes back to English");
     }
 
     @Test
     void aClientRelaunchedInTheSameLanguageLeavesTheMouthAlone() {
         subscriber.onEvent(header("English/UK"));
         subscriber.onEvent(header("English/UK"));
-        assertEquals(0, mouthRestarts.get(), "the same language decides the same engine - no restart, no re-greeting");
+        assertEquals(0, mouthRestarts.get(), "the same language reads the same - no restart, no re-greeting");
     }
 
     /**

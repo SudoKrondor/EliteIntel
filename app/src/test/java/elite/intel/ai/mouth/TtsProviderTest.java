@@ -21,15 +21,15 @@ class TtsProviderTest {
     }
 
     /**
-     * A stored value this build does not know - or none at all - is Kokoro, the shipped default, so a commander
+     * A stored value this build does not know - or none at all - is Supertonic, the default, so a commander
      * who rolls back from a build with more engines still has a voice.
      */
     @Test
-    void unknownStoredValuesFallBackToKokoro() {
-        assertEquals(TtsProvider.KOKORO, TtsProvider.fromStored(null));
-        assertEquals(TtsProvider.KOKORO, TtsProvider.fromStored(""));
-        assertEquals(TtsProvider.KOKORO, TtsProvider.fromStored("ELEVENLABS"));
-        assertEquals(TtsProvider.KOKORO, TtsProvider.fromStored("EDGE"), "Edge was removed in v1.1.0026");
-        assertEquals(TtsProvider.SUPERTONIC, TtsProvider.fromStored("supertonic"));
+    void unknownStoredValuesFallBackToSupertonic() {
+        assertEquals(TtsProvider.SUPERTONIC, TtsProvider.fromStored(null));
+        assertEquals(TtsProvider.SUPERTONIC, TtsProvider.fromStored(""));
+        assertEquals(TtsProvider.SUPERTONIC, TtsProvider.fromStored("ELEVENLABS"));
+        assertEquals(TtsProvider.SUPERTONIC, TtsProvider.fromStored("EDGE"), "Edge was removed in v1.1.0026");
+        assertEquals(TtsProvider.KOKORO, TtsProvider.fromStored("kokoro"));
     }
 }

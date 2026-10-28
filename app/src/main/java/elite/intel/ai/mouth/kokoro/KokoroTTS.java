@@ -15,10 +15,11 @@ import java.util.Set;
  * Offline TTS using Kokoro (multi-lang v1.0) via sherpa-onnx JNI, on the shared {@link SherpaOnnxTTS}
  * pipeline.
  * <p>
- * The shipped default engine and the one with the wider cast (53 voices). Its espeak-ng phonemizer has no
- * Cyrillic front end, so a Russian game client's radio chatter goes to Supertonic instead (see
- * {@link elite.intel.ai.mouth.RadioVoicing}).
+ * The former default engine, being retired: Supertonic now carries its cast and voices all radio (see
+ * {@link elite.intel.ai.mouth.RadioVoicing}). Kokoro still runs as a main mouth when a commander selects it.
  */
+
+@Deprecated
 public class KokoroTTS extends SherpaOnnxTTS {
 
     private static volatile KokoroTTS instance;

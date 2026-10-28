@@ -424,12 +424,14 @@ public class CommanderTabPanel extends JPanel {
     }
 
     /**
-     * A local engine's voice as "DisplayName - description"; both local casts label themselves the same way.
+     * A local engine's voice as a label. Supertonic shows "DisplayName - gender" with the gender in the app
+     * language: every voice speaks every language, so an accent would mislead. Kokoro keeps its English
+     * accent description, which is how its voices tell apart.
      */
     private static String localVoiceLabel(TtsProvider provider, String enumName) {
         if (provider == TtsProvider.SUPERTONIC) {
             SupertonicVoices v = SupertonicVoices.valueOf(enumName);
-            return v.getDisplayName() + " - " + v.getDescription();
+            return v.getDisplayName() + " - " + getText(v.isMale() ? "player.fleet.voice.male" : "player.fleet.voice.female");
         }
         KokoroVoices v = KokoroVoices.valueOf(enumName);
         return v.getDisplayName() + " - " + v.getDescription();
@@ -437,9 +439,8 @@ public class CommanderTabPanel extends JPanel {
 
     /**
      * The voices a carrier's traffic control can be given: the radio engine's roster, not the main mouth's.
-     * A transmission is voiced by whichever engine {@code RadioVoicing} names for the game client's language
-     * - Kokoro almost everywhere, Supertonic for a Russian client - so a Google voice picked here would name
-     * a speaker the engine that has to say the line has never heard of.
+     * A transmission is voiced by the engine {@code RadioVoicing} names - Supertonic - so a Google voice
+     * picked here would name a speaker the engine that has to say the line has never heard of.
      */
     private static String[] radioVoiceOptions() {
         return Stream.concat(Stream.of(RANDOM_VOICE), radioVoiceRoster()).toArray(String[]::new);

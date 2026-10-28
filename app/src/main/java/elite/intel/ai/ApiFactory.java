@@ -95,11 +95,11 @@ public class ApiFactory {
     }
 
     /**
-     * The stored selection, with the Google-without-a-key safety net applied: Kokoro stands in.
+     * The stored selection, with the Google-without-a-key safety net applied: Supertonic stands in.
      */
     static TtsProvider resolveProvider(TtsProvider provider, String ttsApiKey) {
         boolean googleWithoutKey = provider == TtsProvider.GOOGLE && (ttsApiKey == null || ttsApiKey.isBlank());
-        return googleWithoutKey ? TtsProvider.KOKORO : provider;
+        return googleWithoutKey ? TtsProvider.SUPERTONIC : provider;
     }
 
     private static SherpaOnnxTTS mainLocal(SherpaOnnxTTS engine) {

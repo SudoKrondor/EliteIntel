@@ -24,22 +24,23 @@ import java.util.Set;
  * Kokoro's rendering of a long training text. The constant names are the {@code KokoroVoices} names, so a ship
  * voice stored under Kokoro resolves to the same voice here (see {@link #voiceOrDefault(String)}). Only the
  * timbre carries over, not the accent or language. Every voice speaks every language with Supertonic's own
- * pronunciation, so a description such as "Spanish female" names the Kokoro voice it came from, not how it
- * speaks. The male flags follow Kokoro's.
+ * pronunciation, so no accent is shown for them. The male flags follow Kokoro's. Kokoro told its two "Alex"
+ * voices apart by accent, so here they carry display names of their own (Alejandro, Alexandre).
  * <p>
  * The gender matters beyond the label: the ship's voice decides how VEGA speaks of itself (see
  * {@code SystemSession.getVoiceGender()}), so a wrong flag here misgenders every line.
  * <p>
  * <b>Sids must match {@code voice.bin}.</b> The file is packed from this enum by {@code pack_release.py} in the
- * supertonic-voices project, one entry per sid. A sid this enum does not use (29, Kokoro's culled Santa) still
- * holds a filler entry, a copy of F1, so the sids after it do not shift. Adding, removing or renumbering a voice
+ * supertonic-voices project, one entry per sid. Sids are contiguous today; a sid this enum skips would still
+ * get a filler entry, a copy of F1, so the sids after it do not shift. Adding, removing or renumbering a voice
  * here means repacking {@code voice.bin}. A stale file plays the wrong voice for every sid past the change.
  * <p>
  * The constant name is the stored identity of a ship voice and must never change; the display name is what the
  * commander sees when picking a voice. Nothing may assume a contiguous range, a count, or the presence of any
  * particular voice beyond what is declared below: derive from {@link #values()}.
  * <p>
- * The fleet grid renders each voice by its display name; voices are not localized.
+ * The fleet grid renders each voice as its display name and its gender in the app language. The names are
+ * not localized; the description is English and never shown.
  * <p>
  * Licences: the Supertonic model and every style in {@code voice.bin}, fitted ones included, fall under
  * Supertonic's OpenRAIL-M licence and its use restrictions. The Kokoro voices used as fitting targets are
@@ -84,7 +85,6 @@ public enum SupertonicVoices {
     MICHAEL(26, true, "Michael", "Male"),
     ONYX(27, true, "Onyx", "Male"),
     PUCK(28, true, "Puck", "Male"),
-    //SANTA_AM(19, true, "Santa", "Male"),
 
     // --- British Female (bf_) ---
     ALICE(29, false, "Alice", "Female"),
@@ -96,28 +96,26 @@ public enum SupertonicVoices {
     DANIEL(33, true, "Daniel", "Male"),
     FABLE(34, true, "Fable", "Male"),
     GEORGE(35, true, "George", "Male"),
-    LEWIS(36, true, "Lewis", "Male"),
+    LEWIS(36, true, "Lewis", "Male"), // Best sounding male voice. Can be default
+
 
     // --- Spanish (ef_ / em_) ---
-    ES_DORA(37, false, "Dora", "Female"),
-    ES_ALEX(38, true, "Alex", "Male"),
+    ES_ALEX(37, true, "Alejandro", "Male"),
 
     // --- French (ff_) ---
-    FR_SIWIS(39, false, "Siwis", "Female"),
+    FR_SIWIS(38, false, "Siwis", "Female"), // Best sounding Female voice. Should be default
 
     // --- Hindi (hf_ / hm_) ---
-    HI_ALPHA(40, false, "Alpha", "Female"),
-    HI_BETA(41, false, "Beta", "Female"),
-    HI_OMEGA(42, true, "Omega", "Male"),
-    HI_PSI(43, true, "Psi", "Male"),
+    HI_ALPHA(39, false, "Alpha", "Female"),
+    HI_BETA(40, false, "Beta", "Female"),
+    HI_OMEGA(41, true, "Omega", "Male"),
+    HI_PSI(42, true, "Psi", "Male"),
 
     // --- Italian (if_ / im_) ---
-    IT_SARA(44, false, "Sara", "Female"),
-    IT_NICOLA(45, true, "Nicola", "Male"),
+    IT_NICOLA(43, true, "Nicola", "Male"),
 
     // --- Portuguese (pf_ / pm_) ---
-    PT_DORA(46, false, "Dora", "Female"),
-    PT_ALEX(47, true, "Alex", "Male");
+    PT_ALEX(44, true, "Alexandre", "Male");
 
 
 
@@ -126,7 +124,7 @@ public enum SupertonicVoices {
      * know (see {@link #voiceOrDefault(String)}). It is female because that is what every existing fleet
      * already sounds like; the commander may pick any voice here, male or female.
      */
-    public static final SupertonicVoices DEFAULT_VOICE = F1;
+    public static final SupertonicVoices DEFAULT_VOICE = FR_SIWIS;
 
     /**
      * A voice for the next radio transmission: any speaker in the cast other than the commander's own. The

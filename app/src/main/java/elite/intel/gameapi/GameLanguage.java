@@ -21,9 +21,9 @@ import java.util.function.Supplier;
  * client's language whatever the commander set here, and a learned name filed under it.
  * <p>
  * Russian is the one client language that is not also a language of this app. It has no {@link Language} and
- * reads as unknown to {@link #language()}, but {@link #isRussian()} still names it, because its radio chatter
- * is Cyrillic and Kokoro has no Cyrillic phonemizer: Supertonic voices it instead (see
- * {@code elite.intel.ai.mouth.RadioVoicing}). That is the only place a Russian client is treated differently.
+ * reads as unknown to {@link #language()}, but {@link #isRussian()} still names it, so the radio engine is told
+ * its chatter is Russian (see {@code elite.intel.ai.mouth.RadioVoicing}). That is the only place a Russian
+ * client is treated differently.
  * <p>
  * Read lazily and cached: the header is the first line of the newest journal, it does not change while a game
  * session runs, and a live {@code Fileheader} replaces it when the commander starts a new one (see
@@ -89,7 +89,7 @@ public class GameLanguage {
     }
 
     /**
-     * Whether the game client is the Russian edition, whose radio chatter only Supertonic can voice.
+     * Whether the game client is the Russian edition, whose radio chatter has no {@link Language}.
      */
     public boolean isRussian() {
         return clientName(current()).filter(RUSSIAN::equals).isPresent();

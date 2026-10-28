@@ -103,7 +103,7 @@ public class AiServicesSettingsPanel extends JPanel {
      * The stored provider, {@code null} for none.
      */
     private ProviderEnum savedProvider;
-    private TtsProvider savedTtsProvider = TtsProvider.KOKORO;
+    private TtsProvider savedTtsProvider = TtsProvider.SUPERTONIC;
     private int savedGoogleWaveNetPitch;
     private int savedSupertonicBoost;
 
@@ -192,12 +192,12 @@ public class AiServicesSettingsPanel extends JPanel {
         tts.add(ttsSourceControl, BorderLayout.NORTH);
 
         // Left column - LOCAL: two engines that speak on this machine and have nothing to configure, chosen
-        // with a switch of their own. Kokoro is the default. Right column - CLOUD: Google, the one cloud engine, so no switch - just its
+        // with a switch of their own. Supertonic is the default. Right column - CLOUD: Google, the one cloud engine, so no switch - just its
         // key row and WaveNet pitch above its banner.
         JPanel ttsLeftCol = transparentPanel(new BorderLayout(0, HUD_GAP));
         ttsLocalEngineControl = new HudSegmentedControl(
                 new String[]{getText("settings.ai.voice.kokoro"), getText("settings.ai.voice.supertonic")},
-                ENGINE_KOKORO);
+                ENGINE_SUPERTONIC);
         ttsLeftCol.add(ttsLocalEngineControl, BorderLayout.NORTH);
         // One banner is shown at a time: the selected engine's, or the "why Kokoro is greyed out" one.
         ttsKokoroHint = HudBanner.multiline(getText("settings.ai.voice.local.hint"), StatusBadge.State.INFO);

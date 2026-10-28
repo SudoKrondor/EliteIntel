@@ -190,8 +190,8 @@ public class GoogleTTSImpl implements MouthInterface {
     }
 
     @Subscribe @Override public void onVoiceProcessEvent(VocalisationRequestEvent event) {
-        // Radio is never Google's: a dedicated local radio engine voices it (Kokoro, or Supertonic for a
-        // Russian client - see RadioVoicing), so ignore it here rather than double-speak it on a metered key.
+        // Radio is never Google's: a dedicated local radio engine voices it (Supertonic - see
+        // RadioVoicing), so ignore it here rather than double-speak it on a metered key.
         if (event.isRadio()) return;
         if (!running) {
             return;
@@ -585,7 +585,7 @@ public class GoogleTTSImpl implements MouthInterface {
         byte[] silenceBuffer = new byte[silenceFrames * format.getFrameSize()];
         boolean interrupted = false;
 
-        // Bracket main-voice playback so the always-on Kokoro radio engine can duck behind it.
+        // Bracket main-voice playback so the always-on Supertonic radio engine can duck behind it.
         MainVoicePlaybackGate.begin();
         try {
             currentLine.set(persistentLine);

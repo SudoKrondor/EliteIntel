@@ -23,15 +23,15 @@ class ApiFactoryTest {
      * Google without a key would start into silence, so the local engine stands in.
      */
     @Test
-    void googleWithoutAKeyFallsBackToKokoro() {
-        assertSame(KokoroTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, null));
-        assertSame(KokoroTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, ""));
-        assertSame(KokoroTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, "   "));
+    void googleWithoutAKeyFallsBackToSupertonic() {
+        assertSame(SupertonicTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, null));
+        assertSame(SupertonicTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, ""));
+        assertSame(SupertonicTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, "   "));
     }
 
     /**
      * Whether Google has a key is a question of presence, never of format: a key shape Google introduces must
-     * not read as "no key" and quietly hand the commander's voice to Kokoro.
+     * not read as "no key" and quietly hand the commander's voice to Supertonic.
      */
     @Test
     void aGoogleKeyInAnUnfamiliarFormatStillSelectsGoogle() {

@@ -40,9 +40,8 @@ public class VocalisationRouter {
     // legacy TTS in every mode.
 
     /**
-     * Radio is never the main mouth's job as such: it is voiced by whichever engine {@link RadioVoicing} names
-     * for the game client's language - Kokoro almost everywhere, Supertonic for a Russian client, whose prose
-     * Kokoro cannot pronounce - on a random voice so the speaker on the other end sounds like a stranger. The
+     * Radio is never the main mouth's job as such: it is voiced by the engine {@link RadioVoicing} names
+     * - Supertonic, for every game client - on a random voice so the speaker on the other end sounds like a stranger. The
      * voice is drawn by that engine (only it knows its own roster) unless the transmission names one, which
      * happens for the one speaker the commander is not meeting for the first time: their own carrier's traffic
      * control.
