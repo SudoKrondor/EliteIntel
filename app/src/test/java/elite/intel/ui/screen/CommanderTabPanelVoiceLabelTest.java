@@ -2,7 +2,6 @@ package elite.intel.ui.screen;
 
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.google.GoogleVoices;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
@@ -32,8 +31,8 @@ class CommanderTabPanelVoiceLabelTest {
     }
 
     /**
-     * A carrier can hold a voice the radio cast no longer carries - a Kokoro voice that was not refitted for
-     * Supertonic, say. The grid has to show
+     * A carrier can hold a voice the radio cast no longer carries - a voice removed from the cast because it
+     * broke immersion, say. The grid has to show
      * the default it will actually be heard in - not the stale name, which the non-editable combo would reject
      * and quietly replace with whatever was selected instead, and not "Random", which would promise a stranger
      * per transmission when the channel is going to use one fixed voice.
@@ -65,15 +64,15 @@ class CommanderTabPanelVoiceLabelTest {
     }
 
     @Test
-    void kokoroNormalizationKeepsAVoiceKokoroCarries() {
+    void supertonicNormalizationKeepsAVoiceSupertonicCarries() {
         SystemSession session = SystemSession.getInstance();
         TtsProvider previousProvider = session.getTtsProvider();
         try {
-            session.setTtsProvider(TtsProvider.KOKORO);
-            assertEquals(KokoroVoices.NOVA.name(),
-                    CommanderTabPanel.normalizeVoice(KokoroVoices.NOVA.name()));
-            assertEquals(KokoroVoices.GEORGE.name(),
-                    CommanderTabPanel.normalizeVoice(KokoroVoices.GEORGE.name()));
+            session.setTtsProvider(TtsProvider.SUPERTONIC);
+            assertEquals(SupertonicVoices.NOVA.name(),
+                    CommanderTabPanel.normalizeVoice(SupertonicVoices.NOVA.name()));
+            assertEquals(SupertonicVoices.GEORGE.name(),
+                    CommanderTabPanel.normalizeVoice(SupertonicVoices.GEORGE.name()));
         } finally {
             session.setTtsProvider(previousProvider);
         }

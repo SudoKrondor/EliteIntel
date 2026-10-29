@@ -16,10 +16,10 @@ class AiSetupReportTest {
 
     @Test
     void namesTheCloudProviderAndTheModelItServes() {
-        String report = AiSetupReport.describe(false, false, ProviderEnum.MISTRAL, null, null, TtsProvider.KOKORO);
+        String report = AiSetupReport.describe(false, false, ProviderEnum.MISTRAL, null, null, TtsProvider.SUPERTONIC);
 
         assertTrue(report.contains("LLM: cloud - MISTRAL, model " + MistralClient.MODEL), report);
-        assertTrue(report.contains("Text-to-speech: KOKORO (local)"), report);
+        assertTrue(report.contains("Text-to-speech: SUPERTONIC (local)"), report);
     }
 
     @Test
@@ -32,7 +32,7 @@ class AiSetupReportTest {
     @Test
     void namesTheLocalAddressAndModel() {
         String report = AiSetupReport.describe(true, true, ProviderEnum.MISTRAL,
-                "http://localhost:1234", " gemma-4-e4b ", TtsProvider.KOKORO);
+                "http://localhost:1234", " gemma-4-e4b ", TtsProvider.SUPERTONIC);
 
         assertTrue(report.contains("LLM: local - LM Studio at http://localhost:1234, model gemma-4-e4b"), report);
         // The stored cloud provider is not what answers a local setup, so it is not named.
@@ -44,16 +44,16 @@ class AiSetupReportTest {
      */
     @Test
     void saysSoWhenNoLocalModelIsConfigured() {
-        String report = AiSetupReport.describe(true, true, null, "http://localhost:1234", "", TtsProvider.KOKORO);
+        String report = AiSetupReport.describe(true, true, null, "http://localhost:1234", "", TtsProvider.SUPERTONIC);
 
         assertTrue(report.contains("no model configured"), report);
     }
 
     @Test
     void reportsTheQueriesLlmOnlyWhenItDiffers() {
-        String same = AiSetupReport.describe(false, false, ProviderEnum.OPENAI, null, null, TtsProvider.KOKORO);
+        String same = AiSetupReport.describe(false, false, ProviderEnum.OPENAI, null, null, TtsProvider.SUPERTONIC);
         String split = AiSetupReport.describe(false, true, ProviderEnum.OPENAI,
-                "http://localhost:1234", "gemma-4-e4b", TtsProvider.KOKORO);
+                "http://localhost:1234", "gemma-4-e4b", TtsProvider.SUPERTONIC);
 
         assertFalse(same.contains("Queries LLM"), same);
         assertTrue(split.contains("Queries LLM: local - LM Studio"), split);

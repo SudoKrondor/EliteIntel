@@ -15,7 +15,6 @@ import elite.intel.ai.ears.*;
 import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
-import elite.intel.ai.mouth.kokoro.KokoroTTS;
 import elite.intel.ai.mouth.sherpa.SherpaOnnxTTS;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
@@ -550,7 +549,6 @@ public class AppController {
      */
     private static ManagedService radioEngine(TtsProvider provider) {
         return switch (provider) {
-            case KOKORO -> radioLocal(KokoroTTS.getInstance()); // will be removed
             case SUPERTONIC -> radioLocal(SupertonicTTS.getInstance());
             case GOOGLE -> throw new IllegalArgumentException(provider + " never voices radio transmissions");
         };

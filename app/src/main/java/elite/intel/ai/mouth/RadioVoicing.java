@@ -14,8 +14,8 @@ import elite.intel.session.SystemSession;
  * A transmission is the only thing we say that we did not write: the words are the game client's own, in the
  * <em>client's</em> language, which is independent of the language the commander set here. Supertonic voices
  * them for every client: it reads every language the game ships in, Russian included, and takes the language
- * per call. A commander on Supertonic voices radio with the main mouth; a commander on Kokoro or Google gets
- * Supertonic loaded beside it.
+ * per call. A commander on Supertonic voices radio with the main mouth; a commander on Google gets Supertonic
+ * loaded beside it.
  * <p>
  * Every local engine reads this once at start, so exactly one engine ever claims a radio request: the main
  * mouth voices radio only when it is also the radio engine, and a dedicated {@code RADIO_MOUTH} service runs

@@ -190,7 +190,7 @@ Reflex (deterministic) ─or─ semantic reducer → LLM tool call → execution
   ↓
 Keystroke / query handler / EDSM-Spansh call
   ↓
-VocalisationRequestEvent → TTS (Kokoro / Supertonic 3 / Google Cloud) → speaker
+VocalisationRequestEvent → TTS (Supertonic 3 / Google Cloud) → speaker
 ```
 
 1. The app watches the journal and its companion files (`Status.json`, `NavRoute.json`, and others) and keeps a local SQLite cache of the relevant data. EDSM and Spansh are queried for specific features. The EDDN relay is read silently in the background to fill a few ledgers.
@@ -209,7 +209,7 @@ VocalisationRequestEvent → TTS (Kokoro / Supertonic 3 / Google Cloud) → spea
 | `elite.intel.gameapi`   | Journal parsing and events, pre-scan, EDSM/Spansh clients, EDDN listener                  |
 | `elite.intel.ai.brain`  | LLM layer; the VEGA pipeline lives in `ai.brain.vega`                                     |
 | `elite.intel.ai.ears`   | STT (Parakeet, local) and audio calibration                                               |
-| `elite.intel.ai.mouth`  | TTS (Kokoro and Supertonic 3, local; Google Cloud)                                        |
+| `elite.intel.ai.mouth`  | TTS (Supertonic 3, local; Google Cloud)                                                   |
 | `elite.intel.ai.hands`  | Keyboard simulation and game control dispatch                                             |
 | `elite.intel.ai.embed`  | Shared ONNX embedding model (reflex and semantic reducer)                                 |
 | `elite.intel.bindforge` | The `.binds` file: parse, watch, edit, back up; conflict and auto-assign rules            |
@@ -264,8 +264,7 @@ Implement `elite.intel.ai.ears.EarsInterface` (a `ManagedService` with `start()`
 
 Implement `elite.intel.ai.mouth.MouthInterface`: subscribe to `VocalisationRequestEvent`, claim the request's handle before queueing synthesis work, and support `interruptAndClear()`. Run on your own thread with an internal queue. Current backends:
 
-- `kokoro.KokoroTTS`: primary, offline (sherpa-onnx). No API key.
-- `supertonic.SupertonicTTS`: alternative, offline (sherpa-onnx, Supertonic 3, multilingual). Both local engines extend `sherpa.SherpaOnnxTTS`.
+- `supertonic.SupertonicTTS`: primary, offline (sherpa-onnx, Supertonic 3, multilingual). No API key. Extends `sherpa.SherpaOnnxTTS`.
 - `google.GoogleTTSImpl`: cloud, Google Cloud Text-to-Speech. Needs an API key in the System settings tab.
 
 ### HUD overlay cards

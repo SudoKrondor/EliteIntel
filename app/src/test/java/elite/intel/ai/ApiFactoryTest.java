@@ -2,7 +2,6 @@ package elite.intel.ai;
 
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.google.GoogleTTSImpl;
-import elite.intel.ai.mouth.kokoro.KokoroTTS;
 import elite.intel.ai.mouth.supertonic.SupertonicTTS;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +14,6 @@ class ApiFactoryTest {
     @Test
     void theStoredProviderSelectsTheMouth() {
         assertSame(GoogleTTSImpl.getInstance(), ApiFactory.selectMouth(TtsProvider.GOOGLE, GOOGLE_KEY));
-        assertSame(KokoroTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.KOKORO, GOOGLE_KEY));
         assertSame(SupertonicTTS.getInstance(), ApiFactory.selectMouth(TtsProvider.SUPERTONIC, GOOGLE_KEY));
     }
 

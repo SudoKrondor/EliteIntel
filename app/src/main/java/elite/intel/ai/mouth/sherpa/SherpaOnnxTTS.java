@@ -601,10 +601,8 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                 // (Google drops them), so the fork between the two sliders lives here alone.
                 int volume = task.isRadio() ? systemSession.getRadioVolume() : systemSession.getVoiceVolume();
                 AudioDeClicker.applyVolume(pcm, volume / 100f);
-                int supertonicBoost = provider() == TtsProvider.SUPERTONIC
-                        ? systemSession.getSupertonicBoostPercent() : 0;
-                if (supertonicBoost > 0) {
-                    SupertonicBoost.apply(pcm, supertonicBoost);
+                if (provider() == TtsProvider.SUPERTONIC) {
+                    SupertonicBoost.apply(pcm);
                 }
                 pcm = TransmissionAudio.withTones(pcm, task.effects(), task.firstSentence(), task.lastSentence(),
                         volume / 100f);

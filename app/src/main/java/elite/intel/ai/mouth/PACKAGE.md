@@ -1,7 +1,7 @@
 # `elite.intel.ai.mouth` - Developer Reference
 
 The mouth package owns everything from a
-`VocalisationRequestEvent` to speaker output. It normalises the various vox event types produced by other packages, synthesises speech via offline Kokoro or Supertonic 3, or Google Cloud, and publishes an authoritative playback lifecycle while STT remains active for barge-in.
+`VocalisationRequestEvent` to speaker output. It normalises the various vox event types produced by other packages, synthesises speech via offline Supertonic 3 or Google Cloud, and publishes an authoritative playback lifecycle while STT remains active for barge-in.
 
 ---
 
@@ -22,18 +22,18 @@ AiVoxResponseEvent  AiVoxDemoEvent  RadioTransmissionEvent  …
                                        │
                         ┌─────────────┴──────────────┐
                         ▼                            ▼
-              [KokoroTTS]                   [GoogleTTSImpl]
+              [SupertonicTTS]               [GoogleTTSImpl]
               (offline, sherpa-onnx)        (Google Cloud TTS API)
                         │                            │
               synthesisQueue               ttsQueue (synthesis)
-              KokoroTTS-Synthesis          TTSThread
+              SupertonicTTS-Synthesis      TTSThread
               - split sentences            - split sentences
               - generate() via sherpa-onnx - Google Cloud API call
               - fade + volume + effects    - 24kHz LINEAR16
               - tones where enabled              │
                         │                   vocalizationQueue
               playbackQueue                VocalizationThread
-              KokoroTTS-Playback           - SourceDataLine.write()
+              SupertonicTTS-Playback       - SourceDataLine.write()
               - SourceDataLine.write()     - VocalisationSuccessfulEvent
                         │                            │
                         └─────────────┬──────────────┘
@@ -81,9 +81,9 @@ radio transmissions to `VocalisationRequestEvent` on the main EventBus. VEGA spe
 `CompletableFuture`, `VocalisationRouter` passes it through to `VocalisationRequestEvent`; otherwise the request creates its own future. The eligible active Mouth claims the request's `VocalisationHandle` during the same EventBus dispatch. Guava queues reentrant posts, so the no-Mouth check runs through `GameEventBus.afterCurrentDispatch` only after the outer post has drained; checking immediately after a nested `publish` would reject the request before a Mouth sees it. Only the handle publishes `IsSpeakingEvent`, using a process-wide active-request count, so overlapping requests cannot report a false idle state. STT continues listening while the state is true and treats a commander transcript as barge-in.
 
 **`RadioTransmissionEvent` special handling**: The router sets `isRadio=true` on the resulting
-`VocalisationRequestEvent`; the local engine selected by `RadioVoicing` draws a voice from its own cast when the request does not name one. Cloud mouths ignore it; that local engine is picked by the
+`VocalisationRequestEvent`; Supertonic, the radio engine `RadioVoicing` names for every game client, draws a voice from its own cast when the request does not name one. Cloud mouths ignore it. The words are the
 **game
-client's** language (`GameLanguage`, off the journal header), because the words are the client's own prose: Kokoro for every client but the Russian one, Supertonic for that (Russian is not an app language, so `GameLanguage.isRussian()` names it, and a Russian transmission reaches `generate(...)` with `russian=true`). When it is not the main mouth it runs as a dedicated `RADIO_MOUTH` service - Kokoro beside a Supertonic main, or Supertonic beside a Kokoro main under a Russian client. A radio task also carries the client's language into `generate(...)` (`SherpaOnnxTTS.languageOf`), and a RADIO-role engine is built for it; a client relaunched in another language restarts the mouth (`FileheaderEventSubscriber`).
+client's** own prose, in the client's language (`GameLanguage`, off the journal header); Russian is not an app language, so `GameLanguage.isRussian()` names it, and a Russian transmission reaches `generate(...)` with `russian=true`. When Supertonic is not the main mouth (a Google commander) it runs as a dedicated `RADIO_MOUTH` service beside it. A radio task also carries the client's language into `generate(...)` (`SherpaOnnxTTS.languageOf`), and a RADIO-role engine is built for it; a client relaunched in another language restarts the mouth (`FileheaderEventSubscriber`).
 
 ---
 
@@ -98,25 +98,24 @@ public interface MouthInterface extends ManagedService {
 }
 ```
 
-An eligible running backend must call `event.handle().claimForPlayback()` before enqueueing work. A backend that does not own the event (Google for radio, or radio-role Kokoro for main speech) leaves it unclaimed for the correct backend. A claimed handle must be completed or failed on every terminal path.
+An eligible running backend must call `event.handle().claimForPlayback()` before enqueueing work. A backend that does not own the event (Google for radio, or radio-role Supertonic for main speech) leaves it unclaimed for the correct backend. A claimed handle must be completed or failed on every terminal path.
 
 `ManagedService` provides `start()` and `stop()`. Implementations initialize their engine/workers and register
 on `GameEventBus` during `start()`, then unregister and settle owned handles during `stop()`.
 
-Current implementations: `KokoroTTS` and `SupertonicTTS` (offline), and `GoogleTTSImpl` (cloud).
+Current implementations: `SupertonicTTS` (offline) and `GoogleTTSImpl` (cloud). Kokoro was removed in V1.2: migration `12015` moved its commanders to Supertonic, whose cast carries the Kokoro voice names, and commander migration `12001` moved the three Kokoro voices Supertonic never got (`ES_DORA`, `IT_SARA`, `PT_DORA`) to its default.
 
 ---
 
-## 4. The sherpa-onnx pipeline (`sherpa/`) and the Kokoro backend (`kokoro/`)
+## 4. The sherpa-onnx pipeline (`sherpa/`)
 
 ### Overview
 
 `sherpa/SherpaOnnxTTS` is the abstract pipeline every local engine runs on: the two queues below, the synthesis and playback threads, interrupts, the persistent line, the MAIN / RADIO `Role` and the
-`MainVoicePlaybackGate` ducking. It lives once, so the two engines cannot drift apart on interrupt semantics. A concrete engine supplies only what its model needs: `buildOfflineTts(language)`, whether it
+`MainVoicePlaybackGate` ducking. Supertonic is its only engine now that Kokoro is gone. A concrete engine supplies only what its model needs: `buildOfflineTts(language)`, whether it
 `rebuildsOnLanguageSwitch()`, `generate(...)`, the `sentenceBoundary()` regex, and its voice cast (`defaultVoiceName`, `isInTheCast`, `sidOf`, `radioVoiceNameFor`). `sherpa/RadioVoiceDraw` is the one copy of the radio voice draw; each cast enum hands it `values()`.
 
-`KokoroTTS` is a singleton on that pipeline. It uses the `kokoro-multi-lang-v1_0` ONNX model loaded from
-`AppPaths.getTtsModelDir()` via the sherpa-onnx JNI library. Output sample rate is 24000 Hz, 16-bit mono.
+Models load from `AppPaths.getTtsModelDir()` via the sherpa-onnx JNI library. The pipeline's sample rate is 24000 Hz, 16-bit mono.
 
 ### Two-Queue Pipeline
 
@@ -125,17 +124,17 @@ onVoiceProcessEvent()
     │  split text into sentences
     │  push SynthesisTask per sentence → synthesisQueue (BlockingQueue)
     │
-KokoroTTS-Synthesis thread (daemon)
+<Engine>-Synthesis thread (daemon)
     │  pop SynthesisTask
     │  resetNumericLocale()
     │  tts.generate(text, sid, speed) → float[] samples → PCM bytes
     │  AudioDeClicker.sanitize(pcm, fadeMs)   ← fade-in to suppress pop
     │  enhanced processor, or baseline RadioFilter for radio
-    │  apply volume (+ optional Supertonic boost)   ← after the processor, whose compressor would undo it
+    │  apply volume (+ Supertonic boost)            ← after the processor, whose compressor would undo it
     │  attach optional first/last sentence tones
     │  push PlaybackTask → playbackQueue (BlockingQueue)
     │
-KokoroTTS-Playback thread (daemon)
+<Engine>-Playback thread (daemon)
     │  pop PlaybackTask
     │  SourceDataLine.write(pcm)  ← persistent line, never closed between sentences
     │  on last sentence: complete CompletableFuture
@@ -146,42 +145,14 @@ The `SourceDataLine` is opened once in
 
 ### Critical Constraint - Never Call `tts.release()`
 
-`tts.release()` **must not** be called in `stop()`. The `KokoroMultiLangLexicon`
-destructor in sherpa-onnx has a SIGSEGV that crashes the JVM when
-`release()` is called after the model has been used. Language changes (which require a new model instance) are handled by rebuilding the
-`OfflineTts` object at a safe point in
-`start()` rather than releasing it at runtime.
+`tts.release()` **must not** be called in `stop()`. The rule dates from Kokoro, whose `KokoroMultiLangLexicon`
+destructor in sherpa-onnx crashed the JVM with a SIGSEGV when `release()` was called after the model had been used. It stays in the base class until native release is proven safe for every engine.
 
 ### LC_NUMERIC Locale Fix (`resetNumericLocale()`)
 
 ONNX Runtime calls `setlocale(LC_ALL, "")` during its initialization, which on some systems sets
-`LC_NUMERIC` to a locale using `,` as the decimal separator
-(e.g. French). espeak-ng, invoked internally by sherpa-onnx's `generate()`, uses
-`stof()` to parse floats - which hard-crashes if `LC_NUMERIC` is not `"C"`.
-`resetNumericLocale()` sets it back to `"C"` via JNA before every `generate()`
-call. This must not be removed.
-
-### Sentence Splitting
-
-```java
-"(?<=[.,!?])\\s+(?=\\S)"
-```
-
-Commas are included as sentence boundaries (unlike Google). This matches the natural rhythm of comma-heavy text and distributes synthesis load across shorter chunks. The
-`CompletableFuture` is attached only to the **last** sentence's
-`PlaybackTask`.
-
-### Language to langCode Mapping
-
-```
-kokoroLangCode(Language):
-  EN  →  "en-us"
-  FR  →  "fr"
-  ES  →  "es"
-  (all others)  →  null  →  speak with English accent
-```
-
-When the langCode is null, the model synthesises in English regardless of session language. This is a deliberate fallback - Kokoro Multi-Lang v1.0 only has native accent support for these three languages.
+`LC_NUMERIC` to a locale using `,` as the decimal separator (e.g. French). Kokoro's espeak-ng phonemizer parsed floats with `stof()`, which hard-crashed if `LC_NUMERIC`
+was not `"C"`. `resetNumericLocale()` sets it back to `"C"` via JNA before every `generate()` call. It is cheap and kept for every engine.
 
 ### Interruption
 
@@ -199,15 +170,14 @@ The `canBeInterrupted` field on `VocalisationRequestEvent` controls whether
 
 ## 4a. Supertonic TTS Backend (`supertonic/`)
 
-`SupertonicTTS` is the alternative local engine, the second `SherpaOnnxTTS` subclass: the same two-queue pipeline, the same `Role` (MAIN / RADIO), the same `MainVoicePlaybackGate` ducking and the same never-`release()` rule, because all of that is the base class. It runs the `sherpa-onnx-supertonic-3-tts-int8-*` model from `AppPaths.getTtsModelDir()` through the same JNI.
+`SupertonicTTS` is the local engine, the `SherpaOnnxTTS` subclass: the same two-queue pipeline, the same `Role` (MAIN / RADIO), the same `MainVoicePlaybackGate` ducking and the same never-`release()` rule, because all of that is the base class. It runs the `sherpa-onnx-supertonic-3-tts-int8-*` model from `AppPaths.getTtsModelDir()` through the same JNI.
 
 What differs:
 
 - **One multilingual model.** The language is not baked into the model config; each
   `generateWithConfigAndCallback` call passes it as `GenerationConfig.extra("lang", supertonicLangCode(language))`
   (`en`, `de`, `fr`, `es`, `it`, `pt` for both `PT` and `PTBZ`), or `ru` for a Russian client's radio chatter. The engine is built once and never rebuilt on a language switch.
--
-**Russian.** Supertonic reads Cyrillic, Kokoro does not, so `RadioVoicing` hands Supertonic the radio channel whenever the game client is Russian, whatever the main mouth.
+- **Russian.** Supertonic reads Cyrillic, so it voices a Russian client's radio chatter too.
 - **Ten
   voices** (`SupertonicVoices`, `M1`-`M5`, `F1`-`F5`, by `sid`), all offered; the fleet grid shows them by enum name. `DEFAULT_VOICE` is the ship default and the collapse target for a stored name the cast does not carry.
 - **44.1 kHz native
@@ -224,7 +194,7 @@ What differs:
 - **The model folder is checked at load** (`validateModelAssets`): a missing `voice.bin` or `unicode_indexer.bin` is
   named, with the fix, rather than failing inside the native loader.
 
-Selecting it is a stored setting like any other engine (`game_session.ttsProvider = SUPERTONIC`), written by the LOCAL column's engine switch in the AI services settings. Kokoro remains the shipped default and the fallback for an unreadable stored value.
+Selecting it is a stored setting like any other engine (`game_session.ttsProvider = SUPERTONIC`), written by the LOCAL segment of the AI services settings' speech switch. It is the shipped default and the fallback for an unreadable stored value.
 
 ## 5. Google TTS Backend (`google/`)
 
@@ -269,7 +239,7 @@ VocalizationThread (daemon)
 "(?<=[.!?])\\s+(?=\\S)"
 ```
 
-Commas are not boundaries (unlike Kokoro). Google's Chirp3-HD models handle longer sentences more naturally.
+Commas are not boundaries. Google's Chirp3-HD models handle longer sentences more naturally.
 
 ### Language Override in `GoogleVoiceProvider`
 
@@ -298,7 +268,7 @@ Published after each sentence via
 ## 5A. Microsoft Edge Read Aloud (removed)
 
 The `edge/` backend was removed in v1.1.0026. It reached Microsoft's consumer Read Aloud service, which is built for the Edge browser and not offered to third parties, by presenting itself as that browser. Migration
-`11007` moved its commanders to Kokoro. Do not bring back a mouth that calls a private service by pretending to be its client. A Microsoft voice belongs behind Azure Speech and the commander's own key.
+`11007` moved its commanders to Kokoro (since removed in turn, see 12015). Do not bring back a mouth that calls a private service by pretending to be its client. A Microsoft voice belongs behind Azure Speech and the commander's own key.
 
 ---
 
@@ -360,24 +330,6 @@ make radio speech unfiltered.
 ---
 
 ## 7. Voice Catalogs
-
-### `KokoroVoices` (53 voices)
-
-Each voice has a `sid` (speaker ID 0-52) passed to `tts.generate()`. Voice names are prefixed by accent/gender code:
-
-| Prefix | Accent | Gender |
-|---|---|---|
-| `af_` / `am_` | American English | Female / Male |
-| `bf_` / `bm_` | British English | Female / Male |
-| `ef_` / `em_` | (European Spanish-accented) | Female / Male |
-| `ff_` | French-accented | Female |
-| `hf_` / `hm_` | (unspecified) | Female / Male |
-| `if_` / `im_` | Italian-accented | Female / Male |
-| `jf_` / `jm_` | Japanese-accented | Female / Male |
-| `pf_` / `pm_` | (unspecified) | Female / Male |
-| `zf_` / `zm_` | (unspecified) | Female / Male |
-
-Default voice: `GEORGE` (sid=26).
 
 ### `GoogleVoices` (11 voices)
 
@@ -449,13 +401,11 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | `MouthInterface` | Extension point for TTS backends |
 | `VocalisationHandle` | Request ownership, correlation, completion, and authoritative speaking-state count |
 | `subscribers/VocalisationRouter` | Normalises all vox events to `VocalisationRequestEvent` |
-| `sherpa/SherpaOnnxTTS` | The offline pipeline both local engines run on: queues, threads, interrupts, line, roles |
+| `sherpa/SherpaOnnxTTS` | The offline pipeline the local engine runs on: queues, threads, interrupts, line, roles |
 | `sherpa/RadioVoiceDraw` | The radio voice draw, generic over a cast enum |
-| `kokoro/KokoroTTS` | Offline backend; sherpa-onnx kokoro-multi-lang-v1_0 |
-| `kokoro/KokoroVoices` | 53 Kokoro voice enum with sid values |
-| `supertonic/SupertonicTTS` | Alternative offline backend; sherpa-onnx Supertonic 3 (int8); also voices a Russian client's radio |
+| `supertonic/SupertonicTTS` | Offline backend; sherpa-onnx Supertonic 3 (int8); main mouth and radio, every language |
 | `supertonic/SupertonicVoices` | 10 Supertonic voice enum with sid values |
-| `RadioVoicing` | Which engine voices radio, by the game client's language: Kokoro, or Supertonic for a Russian client |
+| `RadioVoicing` | Which engine voices radio (Supertonic, for every client) and in which language |
 | `TtsProvider` | The stored engine choice |
 | `google/GoogleTTSImpl` | Cloud backend; Google Cloud TTS API |
 | `google/GoogleVoices` | 11 Google voice enum with gender and Chirp3-HD character |
@@ -464,7 +414,7 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | `AudioDeClicker` | Fade-in + volume scaling on PCM-16 LE |
 | `RadioFilter` | Existing radio bandpass without synthetic static |
 | `TransmissionAudio` | Optional higher band, saturation, compression and channel tones |
-| `supertonic/SupertonicBoost` | The commander's extra Supertonic 3 gain, with a soft peak ceiling |
+| `supertonic/SupertonicBoost` | Supertonic 3's fixed extra gain (+60%), with a soft peak ceiling |
 | `subscribers/events/VocalisationRequestEvent` | Normalised TTS event (origin, voice, flags, handle) |
 | `subscribers/events/AiVoxResponseEvent` | LLM spoken answer; carries optional CompletableFuture |
 | `subscribers/events/TTSInterruptEvent` | Global or request-id-targeted interrupt signal |
@@ -475,12 +425,10 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | Constant | Value | Location |
 |---|---|---|
 | `SAMPLE_RATE` | `24000` Hz | `SherpaOnnxTTS`, `GoogleTTSImpl`, `AudioDeClicker` |
-| Default Kokoro voice | `ISABELLA` | `KokoroVoices.DEFAULT_VOICE` |
 | Default Supertonic voice | `F1` (sid=0) | `SupertonicVoices.DEFAULT_VOICE` |
 | Default Google voice | `JENNIFER` | `GoogleVoiceProvider` |
 | `GAIN` | `1.4f` | `RadioFilter` |
 | HP cutoff | `300 Hz` | `RadioFilter` |
 | LP cutoff | `5500 Hz` | `RadioFilter` |
-| Kokoro sentence split | `(?<=[.,!?])\s+(?=\S)` | `KokoroTTS.sentenceBoundary` |
 | Supertonic sentence split | `(?<=[.!?])\s+(?=\S)` | `SupertonicTTS.sentenceBoundary` |
 | Google sentence split | `(?<=[.!?])\s+(?=\S)` | `GoogleTTSImpl` |

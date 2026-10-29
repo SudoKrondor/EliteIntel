@@ -6,7 +6,6 @@ import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.google.GoogleVoiceProvider;
 import elite.intel.ai.mouth.google.GoogleVoices;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.subscribers.events.AiVoxDemoEvent;
 import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ShipDao;
@@ -81,7 +80,7 @@ public class CommanderTabPanel extends JPanel {
 
     /**
      * Maps a stored voice enum name to a readable label, resolved against the active TTS provider's voices.
-     * Google/Kokoro show "DisplayName - accent · quality": the accent disambiguates voices that share a display
+     * Google shows "DisplayName - accent · quality": the accent disambiguates voices that share a display
      * name (e.g. Spanish vs Portuguese "Dora"), and the quality tier (HD vs Standard) shows what the selected
      * language actually delivers.
      * Falls back to the raw name when the stored voice is not valid for the active provider (for example after
@@ -92,7 +91,7 @@ public class CommanderTabPanel extends JPanel {
         try {
             TtsProvider provider = SystemSession.getInstance().getTtsProvider();
             if (provider.isLocal()) {
-                return localVoiceLabel(provider, enumName);
+                return localVoiceLabel(enumName);
             }
             GoogleVoices v = GoogleVoices.valueOf(enumName);
             String base = v.getDisplayName() + " - " + googleVoiceDescriptor(v);
@@ -120,8 +119,8 @@ public class CommanderTabPanel extends JPanel {
      * Recomputes each Google voice's quality tier (HD vs Standard) for the current language off the EDT, since
      * resolving a voice may query the TTS provider (a listVoices round-trip on first use), then repaints the
      * fleet grid so the labels show the tier. Shown only for a non-English cloud voice once the TTS engine has
-     * wired its voice lookup: English is uniformly HD (no tier needed), the local (Kokoro) engine already has
-     * accurate accent labels, and before the lookup is wired resolution is optimistic (so no tier is shown).
+     * wired its voice lookup: English is uniformly HD (no tier needed), the local engine's labels carry no
+     * tier, and before the lookup is wired resolution is optimistic (so no tier is shown).
      */
     private void refreshVoiceQualityLabels() {
         voiceQualityLabels.clear();
@@ -424,17 +423,12 @@ public class CommanderTabPanel extends JPanel {
     }
 
     /**
-     * A local engine's voice as a label. Supertonic shows "DisplayName - gender" with the gender in the app
-     * language: every voice speaks every language, so an accent would mislead. Kokoro keeps its English
-     * accent description, which is how its voices tell apart.
+     * A Supertonic voice as a label: "DisplayName - gender", with the gender in the app language. Every voice
+     * speaks every language, so an accent would mislead.
      */
-    private static String localVoiceLabel(TtsProvider provider, String enumName) {
-        if (provider == TtsProvider.SUPERTONIC) {
-            SupertonicVoices v = SupertonicVoices.valueOf(enumName);
-            return v.getDisplayName() + " - " + getText(v.isMale() ? "player.fleet.voice.male" : "player.fleet.voice.female");
-        }
-        KokoroVoices v = KokoroVoices.valueOf(enumName);
-        return v.getDisplayName() + " - " + v.getDescription();
+    private static String localVoiceLabel(String enumName) {
+        SupertonicVoices v = SupertonicVoices.valueOf(enumName);
+        return v.getDisplayName() + " - " + getText(v.isMale() ? "player.fleet.voice.male" : "player.fleet.voice.female");
     }
 
     /**
@@ -459,9 +453,9 @@ public class CommanderTabPanel extends JPanel {
      * than the active provider's.
      * <p>
      * No voice stored means the commander never picked one, which is shown as {@code RANDOM_VOICE} and draws a
-     * stranger per transmission. A voice the radio engine no longer carries is a different thing: the Kokoro
-     * cast is curated by hand and a voice that breaks immersion is removed from it, so a carrier can hold a
-     * name that is no longer offered. That is shown as the engine's default, because that is what
+     * stranger per transmission. A voice the radio engine no longer carries is a different thing: a cast is
+     * curated by hand and a voice that breaks immersion is removed from it, so a carrier can hold a name that
+     * is no longer offered. That is shown as the engine's default, because that is what
      * {@code SherpaOnnxTTS.resolveVoiceName} will actually speak it in - the grid must not promise a voice the
      * channel will not use.
      * <p>
@@ -486,7 +480,7 @@ public class CommanderTabPanel extends JPanel {
     private String radioVoiceLabel(String enumName) {
         if (enumName == null || enumName.isEmpty()) return getText("player.fleet.voice.random");
         try {
-            return localVoiceLabel(RadioVoicing.engine(), enumName);
+            return localVoiceLabel(enumName);
         } catch (IllegalArgumentException e) {
             return enumName;
         }

@@ -14,7 +14,6 @@ class RadioVoicingTest {
     void supertonicVoicesRadioForEveryClient() {
         assertEquals(TtsProvider.SUPERTONIC, RadioVoicing.engine());
         assertTrue(RadioVoicing.isRadioEngine(TtsProvider.SUPERTONIC));
-        assertFalse(RadioVoicing.isRadioEngine(TtsProvider.KOKORO));
     }
 
     @Test
