@@ -127,10 +127,11 @@ onVoiceProcessEvent()
 <Engine>-Synthesis thread (daemon)
     │  pop SynthesisTask
     │  resetNumericLocale()
-    │  tts.generate(text, sid, speed) → float[] samples → PCM bytes
+    │  tts.generate(text, sid, voice's pace) → float[] samples → PCM bytes
+    │  VoiceEqualizer.apply(pcm, voice's EQ)  ← clean voice, before any radio processing
     │  AudioDeClicker.sanitize(pcm, fadeMs)   ← fade-in to suppress pop
     │  enhanced processor, or baseline RadioFilter for radio
-    │  apply volume (+ Supertonic boost)            ← after the processor, whose compressor would undo it
+    │  apply volume × voice's trim (+ Supertonic boost) ← after the processor, whose compressor would undo it
     │  attach optional first/last sentence tones
     │  push PlaybackTask → playbackQueue (BlockingQueue)
     │
@@ -191,6 +192,11 @@ What differs:
   Italian also spells a class letter (`classe A`). Russian radio text is passed through unchanged.
 - **Ten diffusion steps** (`NUM_STEPS`, raised from 8 on 2026-10-25), at a `SPEED_MULTIPLIER` of 0.85, which is also
   the fastest the model is asked to go (`MAX_MODEL_SPEED`).
+- **Each voice is tuned on its
+  own** (`VoiceTuning`: speed, a 0-150% volume trim on top of the Voice/Radio level, and a six-band `VoiceEqualizer` - low shelf, four peaks, high shelf, ±12 dB). The settings live in the shared
+  `supertonic_voice_tuning` table (migration `12016`, one row per tuned voice) and are read through
+  `SupertonicVoiceTuningManager`, which holds the table in memory: the synthesis thread asks once per sentence and never touches the database. The commander sets them in `SupertonicVoiceTuningDialog` (Settings / Speech, always available because Supertonic voices the radio for a Google commander too). Its Test button publishes a
+  `LocalVoiceAuditionEvent`, which Supertonic claims in either role and plays clean, and Google ignores. There is no global speech speed for Supertonic: `game_session.googleSpeechSpeed` drives Google alone.
 - **The model folder is checked at load** (`validateModelAssets`): a missing `voice.bin` or `unicode_indexer.bin` is
   named, with the fix, rather than failing inside the native loader.
 
@@ -414,6 +420,7 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | `AudioDeClicker` | Fade-in + volume scaling on PCM-16 LE |
 | `RadioFilter` | Existing radio bandpass without synthetic static |
 | `TransmissionAudio` | Optional higher band, saturation, compression and channel tones |
+| `VoiceTuning` / `VoiceEqualizer` | One local voice's speed, volume trim and six-band EQ, and the EQ itself |
 | `supertonic/SupertonicBoost` | Supertonic 3's fixed extra gain (+60%), with a soft peak ceiling |
 | `subscribers/events/VocalisationRequestEvent` | Normalised TTS event (origin, voice, flags, handle) |
 | `subscribers/events/AiVoxResponseEvent` | LLM spoken answer; carries optional CompletableFuture |

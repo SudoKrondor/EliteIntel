@@ -191,8 +191,9 @@ public class GoogleTTSImpl implements MouthInterface {
 
     @Subscribe @Override public void onVoiceProcessEvent(VocalisationRequestEvent event) {
         // Radio is never Google's: a dedicated local radio engine voices it (Supertonic - see
-        // RadioVoicing), so ignore it here rather than double-speak it on a metered key.
-        if (event.isRadio()) return;
+        // RadioVoicing), so ignore it here rather than double-speak it on a metered key. A local voice audition
+        // names a Supertonic voice, which only that engine can speak.
+        if (event.isRadio() || event.isLocalVoiceAudition()) return;
         if (!running) {
             return;
         }
@@ -221,7 +222,7 @@ public class GoogleTTSImpl implements MouthInterface {
             TransmissionAudio.Options effects = TransmissionAudio.forRequest(event);
             for (int i = 0; i < sentences.length; i++) {
                 boolean isLast = (i == sentences.length - 1);
-                ttsQueue.put(new VoiceRequest(sentences[i], voiceName, (1f + systemSession.getSpeechSpeed()),
+                ttsQueue.put(new VoiceRequest(sentences[i], voiceName, (1f + systemSession.getGoogleSpeechSpeed()),
                         event.getOriginType(), event.isRadio(), generation, i == 0, isLast, effects, handle));
             }
 

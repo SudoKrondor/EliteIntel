@@ -18,7 +18,7 @@ public interface GameSessionDao {
             INSERT OR REPLACE INTO game_session (id, googleVoice,
                                                              rmsThresholdHigh,
                                                              rmsThresholdLow, encryptedLLMKey, encryptedTTSKey,
-                                                             speechSpeed, googleWaveNetPitch,
+                                                             googleSpeechSpeed, googleWaveNetPitch,
                                                              keyInputDelayMs,
                                                              useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, ttsProvider, llmProvider, notificationVolume, sttThreads, voiceVolume, radioVolume,
                                                              transmissionTones, enhancedRadioEffect, effectsOnRadio, effectsOnVegaAway,
@@ -36,7 +36,7 @@ public interface GameSessionDao {
                                   VALUES (1, :googleVoice,
                                                       :rmsThresholdHigh,
                                                       :rmsThresholdLow, :encryptedLLMKey, :encryptedTTSKey,
-                                                      :speechSpeed, :googleWaveNetPitch,
+                                                      :googleSpeechSpeed, :googleWaveNetPitch,
                                                       :keyInputDelayMs,
                                                       :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :ttsProvider, :llmProvider, :notificationVolume, :sttThreads, :voiceVolume, :radioVolume,
                                                       :transmissionTones, :enhancedRadioEffect, :effectsOnRadio, :effectsOnVegaAway,
@@ -70,7 +70,7 @@ public interface GameSessionDao {
             session.setRmsThresholdHigh(rs.getDouble("rmsThresholdHigh"));
             session.setRmsThresholdLow(rs.getDouble("rmsThresholdLow"));
 
-            session.setSpeechSpeed(rs.getFloat("speechSpeed"));
+            session.setGoogleSpeechSpeed(rs.getFloat("googleSpeechSpeed"));
             session.setGoogleWaveNetPitch(rs.getInt("googleWaveNetPitch"));
             session.setKeyInputDelayMs(rs.getInt("keyInputDelayMs"));
 
@@ -124,7 +124,7 @@ public interface GameSessionDao {
         private Double rmsThresholdHigh = 460.00;
         private Double rmsThresholdLow = 100.00;
 
-        private Float speechSpeed;
+        private Float googleSpeechSpeed;
         private int googleWaveNetPitch;
         /**
          * Floor of the pause the input executor holds after each keystroke, in milliseconds.
@@ -244,12 +244,12 @@ public interface GameSessionDao {
             this.encryptedTTSKey = encryptedTTSKey;
         }
 
-        public Float getSpeechSpeed() {
-            return speechSpeed;
+        public Float getGoogleSpeechSpeed() {
+            return googleSpeechSpeed;
         }
 
-        public void setSpeechSpeed(Float speechSpeed) {
-            this.speechSpeed = speechSpeed;
+        public void setGoogleSpeechSpeed(Float googleSpeechSpeed) {
+            this.googleSpeechSpeed = googleSpeechSpeed;
         }
 
         public int getGoogleWaveNetPitch() {

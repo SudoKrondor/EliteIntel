@@ -100,11 +100,6 @@ public class AppController {
     }
 
     @Subscribe
-    public void onSpeechSpeedChangeEvent(SpeechSpeedChangeEvent event) {
-        systemSession.setSpeechSpeed(event.getSpeed());
-    }
-
-    @Subscribe
     public void onBeepVolumeChangeEvent(NotificationVolumeChangedEvent event) {
         systemSession.setBeepVolume(event.getVolume());
     }

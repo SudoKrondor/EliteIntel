@@ -34,6 +34,16 @@ public class VocalisationRouter {
                 event.getText(), event.getVoiceName(), AiVoxDemoEvent.class, true, event.isRadio(), null));
     }
 
+    /**
+     * A Supertonic voice played from the voice tuning dialog: not radio, so it is heard without the
+     * transmission filter and the EQ can be judged on its own.
+     */
+    @Subscribe
+    public void onLocalVoiceAuditionEvent(LocalVoiceAuditionEvent event) {
+        publishToMouth(new VocalisationRequestEvent(
+                event.getText(), event.getVoiceName(), LocalVoiceAuditionEvent.class, true, false, null));
+    }
+
     // VEGA no longer routes any speech through here: spontaneous callouts and command/query/macro
     // outcomes are voiced by VEGA directly (VegaNarrator / recordOutcome / the speech gateway).
     // What remains is genuinely system speech (AI response, mission-critical, voice demo, radio), voiced by the

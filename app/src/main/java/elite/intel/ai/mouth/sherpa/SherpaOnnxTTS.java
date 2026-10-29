@@ -143,7 +143,7 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     /**
      * One sentence of speech from the model.
      *
-     * @param speed   1.0 is the model's own pace; {@code 1 + speechSpeed} as the commander set it
+     * @param speed   1.0 is the model's own pace; the voice's {@link VoiceTuning#pace()} as the commander set it
      * @param russian the text is a Russian client's radio chatter, to be read as Russian whatever
      *                {@code language} says. Only the radio engine for a Russian client - Supertonic - ever gets
      *                one (see {@link RadioVoicing#engine()}).
@@ -177,6 +177,12 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
      * The speaker index for a voice name, or for the active ship's own voice when {@code voiceName} is null.
      */
     protected abstract int sidOf(String voiceName);
+
+    /**
+     * The speed, volume trim and EQ for a voice name, or for the active ship's own voice when {@code voiceName}
+     * is null. Asked once per sentence on the synthesis thread, so it must not touch the database.
+     */
+    protected abstract VoiceTuning tuningOf(String voiceName);
 
     /**
      * The voice for a radio transmission from {@code speakerKey}: the same speaker draws the same voice, a
@@ -333,8 +339,9 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     public void onVoiceProcessEvent(VocalisationRequestEvent event) {
         // In RADIO role this engine runs alongside a non-local main mouth and voices radio only;
         // normal narration belongs to the main mouth. In MAIN role it handles everything, radio included,
-        // when it is also the radio engine (see RadioVoicing).
-        if (role == Role.RADIO && !event.isRadio()) return;
+        // when it is also the radio engine (see RadioVoicing). A local voice audition is this engine's in
+        // either role: the voice being tuned is one of ours even when Google is the main mouth.
+        if (role == Role.RADIO && !event.isRadio() && !event.isLocalVoiceAudition()) return;
         if (event.isRadio() && !voicesRadio) return;
         if (!running) {
             return;
@@ -567,11 +574,12 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                 }
 
                 resetNumericLocale();
+                VoiceTuning tuning = tuningOf(task.voiceName());
                 GeneratedAudio audio = generate(
                         tts,
                         spokenText(task),
                         sidOf(task.voiceName()),
-                        1f + systemSession.getSpeechSpeed(),
+                        tuning.pace(),
                         task.language(),
                         task.russian()
                 );
@@ -593,14 +601,17 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                     pcm = new Resampler(audio.getSampleRate(), SAMPLE_RATE, 1).resample(pcm, pcm.length);
                 }
 
+                // The voice's own EQ shapes the clean voice, so any radio processing below sits on top of it.
+                VoiceEqualizer.apply(pcm, SAMPLE_RATE, tuning.eq());
                 AudioDeClicker.sanitize(pcm, 5);
                 // WHY before the volume: the enhanced processor compresses, and would level a quiet slider
                 // setting back up to nearly full loudness.
                 TransmissionAudio.processVoice(pcm, task.isRadio(), task.effects());
                 // The radio has a level of its own: this engine is the only one that voices a transmission
-                // (Google drops them), so the fork between the two sliders lives here alone.
+                // (Google drops them), so the fork between the two sliders lives here alone. The voice's own
+                // trim rides on top of whichever it is.
                 int volume = task.isRadio() ? systemSession.getRadioVolume() : systemSession.getVoiceVolume();
-                AudioDeClicker.applyVolume(pcm, volume / 100f);
+                AudioDeClicker.applyVolume(pcm, volume / 100f * tuning.volumeGain());
                 if (provider() == TtsProvider.SUPERTONIC) {
                     SupertonicBoost.apply(pcm);
                 }

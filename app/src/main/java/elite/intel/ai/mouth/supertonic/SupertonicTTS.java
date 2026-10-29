@@ -2,7 +2,9 @@ package elite.intel.ai.mouth.supertonic;
 
 import com.k2fsa.sherpa.onnx.*;
 import elite.intel.ai.mouth.TtsProvider;
+import elite.intel.ai.mouth.VoiceTuning;
 import elite.intel.ai.mouth.sherpa.SherpaOnnxTTS;
+import elite.intel.db.managers.SupertonicVoiceTuningManager;
 import elite.intel.i18n.Language;
 import elite.intel.util.AppPaths;
 
@@ -108,10 +110,18 @@ public class SupertonicTTS extends SherpaOnnxTTS {
 
     @Override
     protected int sidOf(String voiceName) {
-        SupertonicVoices voice = voiceName != null
+        return voiceOf(voiceName).getSid();
+    }
+
+    @Override
+    protected VoiceTuning tuningOf(String voiceName) {
+        return SupertonicVoiceTuningManager.getInstance().tuningOf(voiceOf(voiceName));
+    }
+
+    private SupertonicVoices voiceOf(String voiceName) {
+        return voiceName != null
                 ? SupertonicVoices.voiceOrDefault(voiceName)
                 : systemSession.getSupertonicVoice();
-        return voice.getSid();
     }
 
     @Override

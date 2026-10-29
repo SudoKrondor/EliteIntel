@@ -246,10 +246,10 @@ public class SystemSession {
     }
 
 
-    public void setSpeechSpeed(float speed) {
+    public void setGoogleSpeechSpeed(float speed) {
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
-            session.setSpeechSpeed(speed);
+            session.setGoogleSpeechSpeed(speed);
             dao.save(session);
             return Void.class;
         });
@@ -268,8 +268,8 @@ public class SystemSession {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getNotificationVolume());
     }
 
-    public Float getSpeechSpeed() {
-        return Database.withDao(GameSessionDao.class, dao -> dao.get().getSpeechSpeed());
+    public Float getGoogleSpeechSpeed() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getGoogleSpeechSpeed());
     }
 
     public int getGoogleWaveNetPitch() {
