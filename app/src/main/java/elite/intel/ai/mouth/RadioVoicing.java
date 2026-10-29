@@ -35,18 +35,9 @@ public final class RadioVoicing {
     }
 
     /**
-     * Whether transmissions are written in Russian - a language this app does not otherwise speak.
-     * {@link #transmissionLanguage()} has no answer for it, so the engine is told separately.
-     */
-    public static boolean isRussianClient() {
-        return GameLanguage.getInstance().isRussian();
-    }
-
-    /**
      * The language a radio transmission is written in: the game client's, when its journal header says which
      * it is, otherwise the commander's own - a commander whose client we cannot identify is most likely playing
-     * it in the language they speak to us. Under a Russian client this is the commander's language too, and
-     * means nothing for the transmission itself (see {@link #isRussianClient()}).
+     * it in the language they speak to us.
      */
     public static Language transmissionLanguage() {
         return GameLanguage.getInstance().language().orElseGet(() -> SystemSession.getInstance().getLanguage());

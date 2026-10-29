@@ -30,7 +30,7 @@ class GoogleSynthesisInputFactoryTest {
     @Test
     void standardVoiceRetainsPunctuationAwareSsml() {
         SynthesisInput input = GoogleSynthesisInputFactory.create(
-                "Status ready.", voice("de-DE-Standard-G"));
+                "Status ready.", voice("ru-RU-Standard-A"));
 
         assertEquals(SynthesisInput.InputSourceCase.SSML, input.getInputSourceCase());
     }

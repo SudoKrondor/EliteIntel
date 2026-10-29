@@ -69,7 +69,7 @@ public final class GameToolCandidates {
     private final Status status;
     private final Language language;
     /**
-     * English exonym of {@link #language} (e.g. "English", "German"), naming the example-phrase language.
+     * English exonym of {@link #language} (e.g. "English", "Russian"), naming the example-phrase language.
      */
     private final String languageName;
 

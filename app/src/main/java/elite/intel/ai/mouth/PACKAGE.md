@@ -83,7 +83,7 @@ radio transmissions to `VocalisationRequestEvent` on the main EventBus. VEGA spe
 **`RadioTransmissionEvent` special handling**: The router sets `isRadio=true` on the resulting
 `VocalisationRequestEvent`; Supertonic, the radio engine `RadioVoicing` names for every game client, draws a voice from its own cast when the request does not name one. Cloud mouths ignore it. The words are the
 **game
-client's** own prose, in the client's language (`GameLanguage`, off the journal header); Russian is not an app language, so `GameLanguage.isRussian()` names it, and a Russian transmission reaches `generate(...)` with `russian=true`. When Supertonic is not the main mouth (a Google commander) it runs as a dedicated `RADIO_MOUTH` service beside it. A radio task carries the client's language into `generate(...)` (`SherpaOnnxTTS.languageOf`), read per request, so a client relaunched in another language needs no mouth restart: `FileheaderEventSubscriber` only hands the new language to `GameLanguage`.
+client's** own prose, in the client's language (`GameLanguage`, off the journal header). When Supertonic is not the main mouth (a Google commander) it runs as a dedicated `RADIO_MOUTH` service beside it. A radio task carries the client's language into `generate(...)` (`SherpaOnnxTTS.languageOf`), read per request, so a client relaunched in another language needs no mouth restart: `FileheaderEventSubscriber` only hands the new language to `GameLanguage`.
 
 ---
 
@@ -177,8 +177,9 @@ What differs:
 
 - **One multilingual model.** The language is not baked into the model config; each
   `generateWithConfigAndCallback` call passes it as `GenerationConfig.extra("lang", supertonicLangCode(language))`
-  (`en`, `de`, `fr`, `es`, `it`, `pt` for both `PT` and `PTBZ`), or `ru` for a Russian client's radio chatter. The engine is built once and never rebuilt on a language switch.
-- **Russian.** Supertonic reads Cyrillic, so it voices a Russian client's radio chatter too.
+  (`en`, `de`, `fr`, `es`, `it`, `pt` for both `PT` and `PTBZ`, `ru`, `uk`). The engine is built once and never rebuilt on a language switch.
+-
+**Cyrillic.** Supertonic reads Russian and Ukrainian natively, so they are app languages like any other, and a Russian client's radio chatter is read as `ru`.
 - **45
   voices** (`SupertonicVoices`, by `sid`), all offered: the ten upstream presets (`F1`-`F5`, `M1`-`M5`, sids 0-9) and 35 fitted voices that keep the pre-V1.2 voice names (sids 10-44). The fleet grid shows each as "display name - gender". `DEFAULT_VOICE` is the ship default and the collapse target for a stored name the cast does not carry.
 - **44.1 kHz native
@@ -188,8 +189,7 @@ What differs:
   `textForSynthesis`): two-to-four-letter capitalised words are spelled letter by letter in the voice's language
   (`FSD`, `SRV`), decimals with a unit letter and comma decimals are read as numbers, thousands grouping is read the
   right way round whatever the separator, procedural sector codes (`XO-R b19-3`) are spelled whole, and whole numbers
-  are spelled through `SignedAndDecimalNumbers.inWordsIncludingWholeNumbers` - only this voice asks for whole numbers.
-  Italian also spells a class letter (`classe A`). Russian radio text is passed through unchanged.
+  are spelled through `SignedAndDecimalNumbers.inWordsIncludingWholeNumbers` - only this voice asks for whole numbers. Italian also spells a class letter (`classe A`).
 - **Ten diffusion steps** (`NUM_STEPS`, raised from 8 on 2026-10-25), at a `SPEED_MULTIPLIER` of 0.85, which is also
   the fastest the model is asked to go (`MAX_MODEL_SPEED`).
 - **Each voice is tuned on its

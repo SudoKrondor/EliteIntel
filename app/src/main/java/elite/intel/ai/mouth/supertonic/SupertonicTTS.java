@@ -57,15 +57,14 @@ public class SupertonicTTS extends SherpaOnnxTTS {
     private static final float MAX_MODEL_SPEED = SPEED_MULTIPLIER;
 
     @Override
-    protected GeneratedAudio generate(OfflineTts tts, String text, int sid, float speed, Language language,
-                                      boolean russian) {
+    protected GeneratedAudio generate(OfflineTts tts, String text, int sid, float speed, Language language) {
         float pace = speed * SPEED_MULTIPLIER;
         float modelPace = Math.min(pace, MAX_MODEL_SPEED);
         GenerationConfig genConfig = new GenerationConfig();
         genConfig.setSid(sid);
         genConfig.setSpeed(modelPace);
         genConfig.setNumSteps(NUM_STEPS);
-        genConfig.setExtra(Map.of("lang", russian ? "ru" : supertonicLangCode(language)));
+        genConfig.setExtra(Map.of("lang", supertonicLangCode(language)));
         Consumer<float[]> noStreaming = samples -> {
         };
         GeneratedAudio audio = tts.generateWithConfigAndCallback(text, genConfig, noStreaming);
@@ -126,11 +125,13 @@ public class SupertonicTTS extends SherpaOnnxTTS {
     /**
      * The language code Supertonic reads the text with, passed per-call via {@link GenerationConfig#setExtra}
      * rather than baked into the model at build time (see {@link #buildOfflineTts()}). Supertonic
-     * ships one multilingual model covering every language this app supports, and Russian besides - which is
+     * ships one multilingual model covering every language this app supports, Cyrillic included - which is
      * why it voices every game client's radio chatter (see {@link elite.intel.ai.mouth.RadioVoicing}).
      */
     private static String supertonicLangCode(Language language) {
         return switch (language) {
+            case RU -> "ru";
+            case UK -> "uk";
             case FR -> "fr";
             case ES -> "es";
             case IT -> "it";

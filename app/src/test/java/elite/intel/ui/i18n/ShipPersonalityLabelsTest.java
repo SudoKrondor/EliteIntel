@@ -46,7 +46,7 @@ class ShipPersonalityLabelsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "_de", "_es", "_fr", "_it", "_pt", "_ptbz"})
+    @ValueSource(strings = {"", "_de", "_es", "_fr", "_it", "_pt", "_ptbz", "_ru", "_uk"})
     void everyPersonalityHasALabelInEveryBundle(String suffix) {
         Properties props = bundle(suffix);
 
@@ -68,7 +68,7 @@ class ShipPersonalityLabelsTest {
      * commander, so the value is checked for the key shape too.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"", "_de", "_es", "_fr", "_it", "_pt", "_ptbz"})
+    @ValueSource(strings = {"", "_de", "_es", "_fr", "_it", "_pt", "_ptbz", "_ru", "_uk"})
     void noLabelIsJustTheKey(String suffix) {
         Properties props = bundle(suffix);
 

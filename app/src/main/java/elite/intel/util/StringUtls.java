@@ -168,7 +168,7 @@ public class StringUtls {
 
     public static String localizedEventPlural(int count, String keyBase, Object... extraArgs) {
         Language lang = SystemSession.getInstance().getLanguage();
-        String suffix = pluralSuffix(count);
+        String suffix = pluralSuffix(lang, count);
         Object[] args = new Object[1 + extraArgs.length];
         args[0] = count;
         System.arraycopy(extraArgs, 0, args, 1, extraArgs.length);
@@ -176,18 +176,32 @@ public class StringUtls {
     }
 
     /**
-     * The plural category a count falls into, as a key suffix ({@code .one} or {@code .many}).
+     * The plural category a count falls into, as a key suffix ({@code .one}, {@code .few}, {@code .many}).
      * <p>
      * Public because the rule is the language's, not the bundle's: the HUD pluralises against the
-     * {@code gui} bundle and must not carry a second copy of it. Every language we ship has the same two forms.
+     * {@code gui} bundle and must not carry a second copy of the Slavic categories.
      */
-    public static String pluralSuffix(int count) {
-        return count == 1 ? ".one" : ".many";
+    public static String pluralSuffix(Language lang, int count) {
+        return switch (lang) {
+            case RU, UK -> ruPlural(count);
+            default -> count == 1 ? ".one" : ".many";
+        };
+    }
+
+    private static String ruPlural(int count) {
+        int mod100 = count % 100;
+        int mod10 = count % 10;
+        if (mod100 >= 11 && mod100 <= 19) return ".many";
+        if (mod10 == 1) return ".one";
+        if (mod10 >= 2 && mod10 <= 4) return ".few";
+        return ".many";
     }
 
     public static String localizedSpeechLanguageName(Language language) {
         String key = switch (language) {
             case EN -> "language.english";
+            case RU -> "language.russian";
+            case UK -> "language.ukrainian";
             case DE -> "language.german";
             case FR -> "language.french";
             case ES -> "language.spanish";
@@ -297,8 +311,8 @@ public class StringUtls {
     public static String sanitizeTts(String input, boolean hardenForEspeak) {
         if (input == null) return "";
         // NFC first: fold any decomposed accents (e + combining acute) into single precomposed
-        // letters so legitimate German/French/Spanish/Portuguese characters survive the
-        // \p{M} strip below. Precomposed letters (é, ü, ñ, ã) are category L, not M.
+        // letters so legitimate German/French/Russian/Ukrainian/Spanish characters survive the
+        // \p{M} strip below. Precomposed letters (é, ü, ñ, Cyrillic й/ї) are category L, not M.
         String s = Normalizer.normalize(stripLeadingFillers(input), Normalizer.Form.NFC)
                 .replaceAll("\\*{1,2}([^*\n]*?)\\*{1,2}", "$1") // **bold** / *italic* → plain
                 .replaceAll("_([^_\n]*?)_", "$1")                // _italic_ → plain

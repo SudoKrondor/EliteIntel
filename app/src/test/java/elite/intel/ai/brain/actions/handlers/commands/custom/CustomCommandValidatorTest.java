@@ -133,6 +133,15 @@ class CustomCommandValidatorTest {
     }
 
     @Test
+    void acceptsCyrillicActionKey() {
+        // The key is derived from Cyrillic phrases and stays in-script for routing overlap; it must validate.
+        CustomCommandDefinition customCommand = customCommand("лететь_к_миссии", "Mission", "лететь к миссии",
+                List.of(new CustomCommandStep(CustomCommandStep.Type.SPEAK, null, 0, "hello")));
+
+        assertTrue(CustomCommandValidator.validate(customCommand, List.of(), null).isEmpty());
+    }
+
+    @Test
     void acceptsActionKeyAtMinimumLength() {
         // "custom_command_test" is exactly MIN_ACTION_KEY_LENGTH (10) characters.
         CustomCommandDefinition customCommand = customCommand("custom_command_test", "Test", "test phrase",
