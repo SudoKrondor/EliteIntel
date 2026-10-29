@@ -275,8 +275,8 @@ public class StringUtls {
      * The extra pass the cloud mouth runs over {@link #sanitizeTts(String, boolean)} output: "present" is spoken
      * as "detected", and any underscore or asterisk that survived sanitization inside a word is dropped.
      * <p>
-     * The rule predates the cloud engine and is preserved verbatim for {@code GoogleTTSImpl}. Kokoro does not
-     * apply it.
+     * The rule predates the cloud engine and is preserved verbatim for {@code GoogleTTSImpl}. The offline
+     * Supertonic path does not apply it.
      */
     public static String sanitizeCloudSpeech(String input) {
         if (input == null) return "";
@@ -286,8 +286,9 @@ public class StringUtls {
     /**
      * Cleans LLM text for speech synthesis.
      * <p>
-     * When {@code hardenForEspeak} is true (the no-arg overload, used by the espeak-ng-based Kokoro engine),
-     * punctuation that crashes or misreads in espeak-ng is flattened ("!" → ". ", ":" → " - ", "..." → space).
+     * When {@code hardenForEspeak} is true (the no-arg overload, used by the offline Supertonic path),
+     * punctuation that crashed or misread in the espeak-ng phonemizer of the engine Supertonic replaced is
+     * flattened ("!" → ". ", ":" → " - ", "..." → space).
      * When false (the Google path), that punctuation is preserved so the neural voice can use it for intonation
      * and {@code GoogleSsml} can turn it into explicit pauses ({@code GoogleSsml} then normalizes "!" to "."). All
      * other cleanup is identical and the ordering is preserved, so the no-arg overload reproduces the previous

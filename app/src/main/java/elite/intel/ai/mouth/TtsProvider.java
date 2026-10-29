@@ -16,7 +16,7 @@ import java.util.stream.Stream;
  * <p>
  * A stored {@code EDGE} or {@code KOKORO} is an engine this build no longer has: Microsoft Edge Read Aloud was
  * removed in v1.1.0026, and Kokoro in V1.2 (migration {@code 12015} moved its commanders to Supertonic, whose
- * cast carries Kokoro's voice names). {@link #fromStored} reads anything it does not recognise as Supertonic, so
+ * cast carries the same voice names). {@link #fromStored} reads anything it does not recognise as Supertonic, so
  * a row the migrations missed still has a voice.
  */
 public enum TtsProvider {
@@ -86,7 +86,7 @@ public enum TtsProvider {
 
     /**
      * The voices this engine may speak a radio transmission in, by enum name, in cast order. No engine has a
-     * ship-only voice now that Kokoro is gone, so this is the {@link #voiceRoster()}. This is what a carrier's
+     * ship-only voice, so this is the {@link #voiceRoster()}. This is what a carrier's
      * traffic control is offered.
      */
     public Stream<String> radioVoiceRoster() {

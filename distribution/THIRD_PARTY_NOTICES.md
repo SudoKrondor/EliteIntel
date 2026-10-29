@@ -58,7 +58,7 @@ The dependency is unmodified and is included in `elite_intel.jar` by the Gradle 
 
 ## Supertonic-3 TTS model
 
-`tts/sherpa-onnx-supertonic-3-tts-int8-2026-05-11` bundles the quantized ONNX weights and voice data for Supertone Inc.'s Supertonic-3 text-to-speech model, run locally through the sherpa-onnx JNI bindings as EliteIntel's alternative offline TTS engine (beside Kokoro).
+`tts/sherpa-onnx-supertonic-3-tts-int8-2026-05-11` bundles the quantized ONNX weights and voice data for Supertone Inc.'s Supertonic-3 text-to-speech model, run locally through the sherpa-onnx JNI bindings as EliteIntel's offline TTS engine.
 
 - License: MIT License, Copyright (c) 2025 Supertone Inc. The full text is included alongside the model files as `LICENSE`.
 

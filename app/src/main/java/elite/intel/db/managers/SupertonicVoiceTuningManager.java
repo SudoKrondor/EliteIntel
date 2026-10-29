@@ -40,6 +40,13 @@ public class SupertonicVoiceTuningManager {
         return instance;
     }
 
+    /**
+     * Reads the table into memory if it is not there yet, so a later {@link #tuningOf} does not.
+     */
+    public void load() {
+        tunings();
+    }
+
     public VoiceTuning tuningOf(SupertonicVoices voice) {
         return tunings().getOrDefault(voice.name(), VoiceTuning.DEFAULT);
     }

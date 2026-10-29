@@ -5,20 +5,22 @@ import com.google.gson.JsonObject;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.GameLanguage;
 import elite.intel.gameapi.journal.events.FileheaderEvent;
+import elite.intel.i18n.Language;
 import elite.intel.ui.event.RestartMouthEvent;
 import elite.intel.util.json.GsonFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * The language the radio engine reads transmissions in is decided when the mouth starts, from the game
- * client's language. A client relaunched in another language while the app runs must therefore restart the
- * mouth - and a client relaunched in the same one must not, or every game start would re-greet the commander.
+ * The radio engine reads the transmission language on every request, so a client relaunched in another language
+ * while the app runs is picked up from {@link GameLanguage} alone. Restarting the mouth for it would only re-greet
+ * the commander.
  * <p>
  * Synchronous on purpose: {@link FileheaderEventSubscriber#onEvent} is called directly, so nothing here waits on
  * a bus thread.
@@ -48,29 +50,11 @@ class FileheaderEventSubscriberTest {
     }
 
     @Test
-    void aClientRelaunchedInAnotherLanguageRestartsTheMouth() {
+    void aClientRelaunchedInAnotherLanguageIsReadInItWithoutRestartingTheMouth() {
         subscriber.onEvent(header("German/DE"));
-        assertEquals(1, mouthRestarts.get(), "German chatter must be read as German");
 
-        subscriber.onEvent(header("English/UK"));
-        assertEquals(2, mouthRestarts.get(), "and as English again when the client goes back to English");
-    }
-
-    @Test
-    void aClientRelaunchedInTheSameLanguageLeavesTheMouthAlone() {
-        subscriber.onEvent(header("English/UK"));
-        subscriber.onEvent(header("English/UK"));
-        assertEquals(0, mouthRestarts.get(), "the same language reads the same - no restart, no re-greeting");
-    }
-
-    /**
-     * Frontier's language strings carry a region; only the language moves the radio, so a header naming the
-     * same language from another region is the same session as far as the mouth is concerned.
-     */
-    @Test
-    void aRegionChangeWithinOneLanguageIsNotAChange() {
-        subscriber.onEvent(header("English/US"));
-        assertEquals(0, mouthRestarts.get());
+        assertEquals(Optional.of(Language.DE), GameLanguage.getInstance().language(), "German chatter is read as German");
+        assertEquals(0, mouthRestarts.get(), "the next transmission reads the new language - no restart, no re-greeting");
     }
 
     private static FileheaderEvent header(String language) {

@@ -83,7 +83,7 @@ radio transmissions to `VocalisationRequestEvent` on the main EventBus. VEGA spe
 **`RadioTransmissionEvent` special handling**: The router sets `isRadio=true` on the resulting
 `VocalisationRequestEvent`; Supertonic, the radio engine `RadioVoicing` names for every game client, draws a voice from its own cast when the request does not name one. Cloud mouths ignore it. The words are the
 **game
-client's** own prose, in the client's language (`GameLanguage`, off the journal header); Russian is not an app language, so `GameLanguage.isRussian()` names it, and a Russian transmission reaches `generate(...)` with `russian=true`. When Supertonic is not the main mouth (a Google commander) it runs as a dedicated `RADIO_MOUTH` service beside it. A radio task also carries the client's language into `generate(...)` (`SherpaOnnxTTS.languageOf`), and a RADIO-role engine is built for it; a client relaunched in another language restarts the mouth (`FileheaderEventSubscriber`).
+client's** own prose, in the client's language (`GameLanguage`, off the journal header); Russian is not an app language, so `GameLanguage.isRussian()` names it, and a Russian transmission reaches `generate(...)` with `russian=true`. When Supertonic is not the main mouth (a Google commander) it runs as a dedicated `RADIO_MOUTH` service beside it. A radio task carries the client's language into `generate(...)` (`SherpaOnnxTTS.languageOf`), read per request, so a client relaunched in another language needs no mouth restart: `FileheaderEventSubscriber` only hands the new language to `GameLanguage`.
 
 ---
 
@@ -103,7 +103,7 @@ An eligible running backend must call `event.handle().claimForPlayback()` before
 `ManagedService` provides `start()` and `stop()`. Implementations initialize their engine/workers and register
 on `GameEventBus` during `start()`, then unregister and settle owned handles during `stop()`.
 
-Current implementations: `SupertonicTTS` (offline) and `GoogleTTSImpl` (cloud). Kokoro was removed in V1.2: migration `12015` moved its commanders to Supertonic, whose cast carries the Kokoro voice names, and commander migration `12001` moved the three Kokoro voices Supertonic never got (`ES_DORA`, `IT_SARA`, `PT_DORA`) to its default.
+Current implementations: `SupertonicTTS` (offline) and `GoogleTTSImpl` (cloud). Supertonic is the only local engine. The engine it replaced was removed in V1.2: migration `12015` moved its commanders to Supertonic, whose cast carries the same voice names, and commander migration `12001` moved the three voices Supertonic never got (`ES_DORA`, `IT_SARA`, `PT_DORA`) to its default.
 
 ---
 
@@ -112,8 +112,8 @@ Current implementations: `SupertonicTTS` (offline) and `GoogleTTSImpl` (cloud). 
 ### Overview
 
 `sherpa/SherpaOnnxTTS` is the abstract pipeline every local engine runs on: the two queues below, the synthesis and playback threads, interrupts, the persistent line, the MAIN / RADIO `Role` and the
-`MainVoicePlaybackGate` ducking. Supertonic is its only engine now that Kokoro is gone. A concrete engine supplies only what its model needs: `buildOfflineTts(language)`, whether it
-`rebuildsOnLanguageSwitch()`, `generate(...)`, the `sentenceBoundary()` regex, and its voice cast (`defaultVoiceName`, `isInTheCast`, `sidOf`, `radioVoiceNameFor`). `sherpa/RadioVoiceDraw` is the one copy of the radio voice draw; each cast enum hands it `values()`.
+`MainVoicePlaybackGate` ducking. Supertonic is its only engine. A concrete engine supplies only what its model needs: `buildOfflineTts()` (called once per process),
+`generate(...)`, the `sentenceBoundary()` regex, and its voice cast (`defaultVoiceName`, `isInTheCast`, `sidOf`, `radioVoiceNameFor`). `sherpa/RadioVoiceDraw` is the one copy of the radio voice draw; each cast enum hands it `values()`.
 
 Models load from `AppPaths.getTtsModelDir()` via the sherpa-onnx JNI library. The pipeline's sample rate is 24000 Hz, 16-bit mono.
 
@@ -146,14 +146,14 @@ The `SourceDataLine` is opened once in
 
 ### Critical Constraint - Never Call `tts.release()`
 
-`tts.release()` **must not** be called in `stop()`. The rule dates from Kokoro, whose `KokoroMultiLangLexicon`
-destructor in sherpa-onnx crashed the JVM with a SIGSEGV when `release()` was called after the model had been used. It stays in the base class until native release is proven safe for every engine.
+`tts.release()` **must
+not** be called in `stop()`. The rule dates from an earlier engine whose lexicon destructor in sherpa-onnx crashed the JVM with a SIGSEGV when `release()` was called after the model had been used. It stays in the base class until native release is proven safe for Supertonic.
 
 ### LC_NUMERIC Locale Fix (`resetNumericLocale()`)
 
 ONNX Runtime calls `setlocale(LC_ALL, "")` during its initialization, which on some systems sets
-`LC_NUMERIC` to a locale using `,` as the decimal separator (e.g. French). Kokoro's espeak-ng phonemizer parsed floats with `stof()`, which hard-crashed if `LC_NUMERIC`
-was not `"C"`. `resetNumericLocale()` sets it back to `"C"` via JNA before every `generate()` call. It is cheap and kept for every engine.
+`LC_NUMERIC` to a locale using `,` as the decimal separator (e.g. French). A native front end that parses floats with `stof()` hard-crashes if `LC_NUMERIC`
+is not `"C"`. `resetNumericLocale()` sets it back to `"C"` via JNA before every `generate()` call. It costs one libc call, and which of Supertonic's native parsers are locale-sensitive is not known.
 
 ### Interruption
 
@@ -179,8 +179,8 @@ What differs:
   `generateWithConfigAndCallback` call passes it as `GenerationConfig.extra("lang", supertonicLangCode(language))`
   (`en`, `de`, `fr`, `es`, `it`, `pt` for both `PT` and `PTBZ`), or `ru` for a Russian client's radio chatter. The engine is built once and never rebuilt on a language switch.
 - **Russian.** Supertonic reads Cyrillic, so it voices a Russian client's radio chatter too.
-- **Ten
-  voices** (`SupertonicVoices`, `M1`-`M5`, `F1`-`F5`, by `sid`), all offered; the fleet grid shows them by enum name. `DEFAULT_VOICE` is the ship default and the collapse target for a stored name the cast does not carry.
+- **45
+  voices** (`SupertonicVoices`, by `sid`), all offered: the ten upstream presets (`F1`-`F5`, `M1`-`M5`, sids 0-9) and 35 fitted voices that keep the pre-V1.2 voice names (sids 10-44). The fleet grid shows each as "display name - gender". `DEFAULT_VOICE` is the ship default and the collapse target for a stored name the cast does not carry.
 - **44.1 kHz native
   output**, resampled to the pipeline's `SAMPLE_RATE` (24 kHz) before the declicker, the radio filter and the playback line, so nothing downstream sees a second rate.
 - **Sentence split on `.!?` only** - comma clauses stay together so the model's own prosody carries the pause.
@@ -274,7 +274,7 @@ Published after each sentence via
 ## 5A. Microsoft Edge Read Aloud (removed)
 
 The `edge/` backend was removed in v1.1.0026. It reached Microsoft's consumer Read Aloud service, which is built for the Edge browser and not offered to third parties, by presenting itself as that browser. Migration
-`11007` moved its commanders to Kokoro (since removed in turn, see 12015). Do not bring back a mouth that calls a private service by pretending to be its client. A Microsoft voice belongs behind Azure Speech and the commander's own key.
+`11007` moved its commanders to the local engine of the day (since replaced by Supertonic, see 12015). Do not bring back a mouth that calls a private service by pretending to be its client. A Microsoft voice belongs behind Azure Speech and the commander's own key.
 
 ---
 
@@ -410,7 +410,7 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | `sherpa/SherpaOnnxTTS` | The offline pipeline the local engine runs on: queues, threads, interrupts, line, roles |
 | `sherpa/RadioVoiceDraw` | The radio voice draw, generic over a cast enum |
 | `supertonic/SupertonicTTS` | Offline backend; sherpa-onnx Supertonic 3 (int8); main mouth and radio, every language |
-| `supertonic/SupertonicVoices` | 10 Supertonic voice enum with sid values |
+| `supertonic/SupertonicVoices` | 45 Supertonic voice enum with sid values |
 | `RadioVoicing` | Which engine voices radio (Supertonic, for every client) and in which language |
 | `TtsProvider` | The stored engine choice |
 | `google/GoogleTTSImpl` | Cloud backend; Google Cloud TTS API |
@@ -432,7 +432,7 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | Constant | Value | Location |
 |---|---|---|
 | `SAMPLE_RATE` | `24000` Hz | `SherpaOnnxTTS`, `GoogleTTSImpl`, `AudioDeClicker` |
-| Default Supertonic voice | `F1` (sid=0) | `SupertonicVoices.DEFAULT_VOICE` |
+| Default Supertonic voice | `FR_SIWIS` (sid=38) | `SupertonicVoices.DEFAULT_VOICE` |
 | Default Google voice | `JENNIFER` | `GoogleVoiceProvider` |
 | `GAIN` | `1.4f` | `RadioFilter` |
 | HP cutoff | `300 Hz` | `RadioFilter` |

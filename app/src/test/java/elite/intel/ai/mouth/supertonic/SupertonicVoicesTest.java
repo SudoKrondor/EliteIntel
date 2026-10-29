@@ -83,7 +83,7 @@ class SupertonicVoicesTest {
         assertSame(SupertonicVoices.DEFAULT_VOICE, SupertonicVoices.voiceOrDefault(null));
         assertSame(SupertonicVoices.DEFAULT_VOICE, SupertonicVoices.voiceOrDefault("SANTA"), "an unknown name collapses");
         assertSame(SupertonicVoices.M3, SupertonicVoices.voiceOrDefault("M3"));
-        assertSame(SupertonicVoices.GEORGE, SupertonicVoices.voiceOrDefault("GEORGE"), "a Kokoro name carries over");
+        assertSame(SupertonicVoices.GEORGE, SupertonicVoices.voiceOrDefault("GEORGE"), "a pre-V1.2 voice name carries over");
     }
 
     /**

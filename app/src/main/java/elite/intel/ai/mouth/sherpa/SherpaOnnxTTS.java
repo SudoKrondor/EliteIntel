@@ -44,11 +44,10 @@ import java.util.concurrent.atomic.AtomicReference;
  * playback queue, interrupts, the persistent audio line, the MAIN / RADIO roles and the ducking under
  * {@link MainVoicePlaybackGate}. Synthesis of sentence N+1 overlaps with playback of sentence N.
  * <p>
- * An engine ({@code KokoroTTS}, {@code SupertonicTTS}) supplies only what differs between models: how the
+ * An engine ({@code SupertonicTTS}) supplies only what differs between models: how the
  * {@link OfflineTts} is built and whether it has to be rebuilt on a language switch, how one sentence is
  * generated, where a sentence ends, and its own voice cast. Everything about queues, threads, handles and
- * the audio line lives here exactly once, so the two engines cannot drift apart on interrupt semantics -
- * they had, when each carried its own copy.
+ * the audio line lives here.
  * <p>
  * Each concrete engine is a singleton holding exactly one {@code OfflineTts} per process lifetime; see
  * {@link #stop()} for why that handle is never released.
@@ -115,7 +114,6 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     private Thread synthesisThread;
     private Thread playbackThread;
     private OfflineTts tts;
-    private Language builtFor;
 
     protected SherpaOnnxTTS() {
     }
@@ -128,17 +126,9 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     protected abstract TtsProvider provider();
 
     /**
-     * Builds the native engine for {@code language}. Called once per process for a model that reads the
-     * language per call, and again on every language switch for one that bakes it in (see
-     * {@link #rebuildsOnLanguageSwitch()}).
+     * Builds the native engine. Called once per process: the model takes the language on every generate call.
      */
-    protected abstract OfflineTts buildOfflineTts(Language language);
-
-    /**
-     * Whether the language is fixed at build time, so a switch needs a new {@link OfflineTts}. A model that
-     * takes the language on every generate call answers false and is built exactly once.
-     */
-    protected abstract boolean rebuildsOnLanguageSwitch();
+    protected abstract OfflineTts buildOfflineTts();
 
     /**
      * One sentence of speech from the model.
@@ -180,7 +170,8 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
 
     /**
      * The speed, volume trim and EQ for a voice name, or for the active ship's own voice when {@code voiceName}
-     * is null. Asked once per sentence on the synthesis thread, so it must not touch the database.
+     * is null. Asked once per sentence on the synthesis thread, so it must not touch the database: the
+     * engine loads what it needs in {@link #buildOfflineTts()}.
      */
     protected abstract VoiceTuning tuningOf(String voiceName);
 
@@ -212,9 +203,7 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
             return;
         }
 
-        // A radio-only engine speaks nothing but the game client's prose, so it is built for that language.
-        Language builtLanguage = role == Role.RADIO ? RadioVoicing.transmissionLanguage() : systemSession.getLanguage();
-        if (!ensureEngineBuilt(builtLanguage)) return;
+        if (!ensureEngineBuilt()) return;
 
         voicesRadio = RadioVoicing.isRadioEngine(provider());
         running = true;
@@ -239,26 +228,14 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     }
 
     /**
-     * The native engine, built for {@code language} when it is not already. A model with the language baked
-     * in is released and rebuilt on a switch, here, at the one point where nothing is synthesising - the
-     * safe place to release a handle that {@link #stop()} deliberately leaves alone.
+     * The native engine, built on the first start and kept for the life of the process (see {@link #stop()}).
      *
      * @return false when the engine could not be built, which leaves this mouth stopped
      */
-    private boolean ensureEngineBuilt(Language language) {
-        boolean stale = tts != null && rebuildsOnLanguageSwitch() && builtFor != language;
-        if (stale) {
-            try {
-                tts.release();
-            } catch (Exception e) {
-                log.warn("{}: tts.release on language switch failed", engineName, e);
-            }
-            tts = null;
-        }
+    private boolean ensureEngineBuilt() {
         if (tts != null) return true;
         try {
-            tts = buildOfflineTts(language);
-            builtFor = language;
+            tts = buildOfflineTts();
             return true;
         } catch (Exception e) {
             log.error("{}: engine init failed", engineName, e);
@@ -309,10 +286,10 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
 
         closePersistentLine();
 
-        // WHY tts is NOT released here: tts.release() crashed in Kokoro's lexicon destructor (SIGSEGV) due
-        // to shared native state with ONNX Runtime. Every engine is a singleton with exactly one OfflineTts
-        // per process lifetime, and native memory is reclaimed when the process exits. The one release that
-        // is safe - a language switch, in start(), with nothing synthesising - is in ensureEngineBuilt().
+        // WHY tts is NOT released here: tts.release() crashed in an earlier engine's lexicon destructor
+        // (SIGSEGV) due to shared native state with ONNX Runtime, and it is not proven safe for Supertonic.
+        // Every engine is a singleton with exactly one OfflineTts per process lifetime, and native memory is
+        // reclaimed when the process exits.
     }
 
     // -- MouthInterface --------------------------------------------------------
@@ -533,8 +510,7 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
      * The distinction is the origin, not the radio flag: a carrier audition is flagged radio so it gets
      * the transmission filter, but its words are ours.
      * <p>
-     * Only a model that takes the language per call (Supertonic) can honour a different one per task; Kokoro
-     * has it baked in at build time and reads every task with the language it was built for.
+     * Supertonic takes the language per call, so each task is read in its own language.
      */
     private Language languageOf(VocalisationRequestEvent event) {
         return isTransmission(event) ? RadioVoicing.transmissionLanguage() : systemSession.getLanguage();
@@ -612,9 +588,7 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                 // trim rides on top of whichever it is.
                 int volume = task.isRadio() ? systemSession.getRadioVolume() : systemSession.getVoiceVolume();
                 AudioDeClicker.applyVolume(pcm, volume / 100f * tuning.volumeGain());
-                if (provider() == TtsProvider.SUPERTONIC) {
-                    SupertonicBoost.apply(pcm);
-                }
+                SupertonicBoost.apply(pcm);
                 pcm = TransmissionAudio.withTones(pcm, task.effects(), task.firstSentence(), task.lastSentence(),
                         volume / 100f);
                 playbackQueue.put(new PlaybackTask(
@@ -795,10 +769,10 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     /**
      * ONNX Runtime (initialized by OfflineRecognizer / Parakeet STT) calls setlocale()
      * which can change LC_NUMERIC to the system locale (e.g. de_DE uses "," as decimal).
-     * Kokoro's espeak-ng phonemizer calls stof() inside Generate(), which is locale-sensitive and
-     * crashes with std::invalid_argument if LC_NUMERIC is not "C". Reset before every generate() call so
-     * Parakeet's init can't corrupt synthesis. Applied for every engine rather than only Kokoro: it costs
-     * one libc call, and which of Supertonic's native front-end parsers are locale-sensitive is not known.
+     * A native front end that calls stof() inside Generate() is locale-sensitive and crashes with
+     * std::invalid_argument if LC_NUMERIC is not "C". Reset before every generate() call so Parakeet's init
+     * can't corrupt synthesis: it costs one libc call, and which of Supertonic's native front-end parsers are
+     * locale-sensitive is not known.
      */
     private interface CLib extends Library {
         String setlocale(int category, String locale);

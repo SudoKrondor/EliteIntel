@@ -7,8 +7,8 @@ import java.util.Set;
 /**
  * Speaker IDs for the sherpa-onnx-supertonic-3-tts-int8-2026-05-11 model. Each speaker is one style embedding
  * in {@code voice.bin}, and {@code sid} picks it by position: speaker N is the N-th entry in the file. The
- * upstream release ships 10 speakers. Our {@code voice.bin} replaces it and adds the cast that used to come
- * from Kokoro, so one engine speaks every voice in every language Supertonic supports.
+ * upstream release ships 10 speakers. Our {@code voice.bin} replaces it and adds the cast the app shipped
+ * before V1.2, so one engine speaks every voice in every language Supertonic supports.
  * <p>
  * <b>Sids 0-9, the Supertonic presets.</b> These are the 10 speakers from the upstream file, unchanged. The
  * release does not publish their names or genders; the model card and samples page only say "Speaker 0" through
@@ -19,13 +19,13 @@ import java.util.Set;
  * "F1" and "M3" are model indices, not something to choose a ship's voice by, so these speakers carry
  * space-flavoured display names of our own.
  * <p>
- * <b>Sids 10 and up, voices fitted to Kokoro.</b> Each of these is a new Supertonic style, fitted to one voice of
- * the former Kokoro cast: it starts from the nearest preset and is tuned until its timbre and pitch match
- * Kokoro's rendering of a long training text. The constant names are the {@code KokoroVoices} names, so a ship
- * voice stored under Kokoro resolves to the same voice here (see {@link #voiceOrDefault(String)}). Only the
+ * <b>Sids 10 and up, the fitted voices.</b> Each of these is a new Supertonic style, fitted to one voice of
+ * the pre-V1.2 cast: it starts from the nearest preset and is tuned until its timbre and pitch match that
+ * voice's rendering of a long training text. The constant names are the pre-V1.2 voice names, so a ship voice
+ * stored before V1.2 resolves to the same voice here (see {@link #voiceOrDefault(String)}). Only the
  * timbre carries over, not the accent or language. Every voice speaks every language with Supertonic's own
- * pronunciation, so no accent is shown for them. The male flags follow Kokoro's. Kokoro told its two "Alex"
- * voices apart by accent, so here they carry display names of their own (Alejandro, Alexandre).
+ * pronunciation, so no accent is shown for them. The male flags follow the originals'. The two "Alex" voices
+ * were told apart by accent, so here they carry display names of their own (Alejandro, Alexandre).
  * <p>
  * The gender matters beyond the label: the ship's voice decides how VEGA speaks of itself (see
  * {@code SystemSession.getVoiceGender()}), so a wrong flag here misgenders every line.
@@ -43,15 +43,15 @@ import java.util.Set;
  * not localized; the description is English and never shown.
  * <p>
  * Licences: the Supertonic model and every style in {@code voice.bin}, fitted ones included, fall under
- * Supertonic's OpenRAIL-M licence and its use restrictions. The Kokoro voices used as fitting targets are
- * Apache-2.0.
+ * Supertonic's OpenRAIL-M licence and its use restrictions. The voices used as fitting targets are Kokoro-82M's
+ * (Apache-2.0); none of that model ships with the app.
  * <p>
  * Sources: model https://github.com/k2-fsa/sherpa-onnx/releases/tag/tts-models
  * (sherpa-onnx-supertonic-3-tts-int8-2026-05-11); fitted voices: the supertonic-voices project.
  */
 public enum SupertonicVoices {
 
-    /// Supertonic Default
+    // Supertonic presets, sids 0-9
     F1(0, false, "Astra", "Female"),
     F2(1, false, "Lyra", "Female"),
     F3(2, false, "Vesper", "Female"),
@@ -63,7 +63,7 @@ public enum SupertonicVoices {
     M4(8, true, "Cassian", "Male"),
     M5(9, true, "Draven", "Male"),
 
-    /// Custom voices
+    // Fitted voices, sids 10 and up
     ALLOY(10, false, "Alloy", "Female"),
     AOEDE(11, false, "Aoede", "Female"),
     BELLA(12, false, "Bella", "Female"),
@@ -75,8 +75,6 @@ public enum SupertonicVoices {
     RIVER(18, false, "River", "Female"),
     SARAH(19, false, "Sarah", "Female"),
     SKY(20, false, "Sky", "Female"),
-
-    // --- American Male (am_) ---
     ADAM(21, true, "Adam", "Male"),
     ECHO(22, true, "Echo", "Male"),
     ERIC(23, true, "Eric", "Male"),
@@ -85,39 +83,22 @@ public enum SupertonicVoices {
     MICHAEL(26, true, "Michael", "Male"),
     ONYX(27, true, "Onyx", "Male"),
     PUCK(28, true, "Puck", "Male"),
-
-    // --- British Female (bf_) ---
     ALICE(29, false, "Alice", "Female"),
     EMMA(30, false, "Emma", "Female"),
     ISABELLA(31, false, "Isabella", "Female"),
     LILY(32, false, "Lily", "Female"),
-
-    // --- British Male (bm_) ---
     DANIEL(33, true, "Daniel", "Male"),
     FABLE(34, true, "Fable", "Male"),
     GEORGE(35, true, "George", "Male"),
-    LEWIS(36, true, "Lewis", "Male"), // Best sounding male voice. Can be default
-
-
-    // --- Spanish (ef_ / em_) ---
+    LEWIS(36, true, "Lewis", "Male"),
     ES_ALEX(37, true, "Alejandro", "Male"),
-
-    // --- French (ff_) ---
-    FR_SIWIS(38, false, "Siwis", "Female"), // Best sounding Female voice. Should be default
-
-    // --- Hindi (hf_ / hm_) ---
+    FR_SIWIS(38, false, "Siwis", "Female"),
     HI_ALPHA(39, false, "Alpha", "Female"),
     HI_BETA(40, false, "Beta", "Female"),
     HI_OMEGA(41, true, "Omega", "Male"),
     HI_PSI(42, true, "Psi", "Male"),
-
-    // --- Italian (if_ / im_) ---
     IT_NICOLA(43, true, "Nicola", "Male"),
-
-    // --- Portuguese (pf_ / pm_) ---
     PT_ALEX(44, true, "Alexandre", "Male");
-
-
 
     /**
      * The default ship voice, used when a ship has no stored voice or carries a name this engine does not
@@ -154,8 +135,8 @@ public enum SupertonicVoices {
      * Resolves a stored ship-voice name to a voice of this engine: the named voice when it is one, otherwise
      * {@link #DEFAULT_VOICE}. The stored voice's gender is preserved - ship voices are male or female by the
      * commander's choice, and that choice also decides how VEGA refers to herself or himself (see
-     * {@code SystemSession.getVoiceGender()}). An unknown name (a voice belonging to another engine - a Kokoro
-     * name after a switch between the two local engines) or {@code null} collapses to the default. This
+     * {@code SystemSession.getVoiceGender()}). An unknown name (a voice belonging to another engine, or one
+     * the fitted cast never got) or {@code null} collapses to the default. This
      * is the ship-voice seam only; radio picks from {@link #values()} directly and must not route through here.
      */
     public static SupertonicVoices voiceOrDefault(String name) {

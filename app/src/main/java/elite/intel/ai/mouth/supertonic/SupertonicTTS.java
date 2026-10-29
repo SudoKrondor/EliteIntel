@@ -18,8 +18,8 @@ import java.util.function.Consumer;
 /**
  * Offline TTS using Supertonic 3 via sherpa-onnx JNI, on the shared {@link SherpaOnnxTTS} pipeline.
  * <p>
- * The default local engine (see {@link TtsProvider}) and the radio engine for every game client (see
- * {@link elite.intel.ai.mouth.RadioVoicing}). Unlike Kokoro, Supertonic is a single
+ * The only local engine and the default (see {@link TtsProvider}) and the radio engine for every game client (see
+ * {@link elite.intel.ai.mouth.RadioVoicing}). Supertonic is a single
  * multilingual model: the language is not baked into the engine at build time, it is passed on every
  * {@code generate} call (see {@link #supertonicLangCode(Language)}). The engine is therefore built exactly
  * once and never rebuilt on a language switch. It generates at 44.1 kHz; the pipeline resamples.
@@ -46,14 +46,6 @@ public class SupertonicTTS extends SherpaOnnxTTS {
     @Override
     protected TtsProvider provider() {
         return TtsProvider.SUPERTONIC;
-    }
-
-    /**
-     * One multilingual model, language per call: built once for the life of the process.
-     */
-    @Override
-    protected boolean rebuildsOnLanguageSwitch() {
-        return false;
     }
 
     /**
@@ -133,7 +125,7 @@ public class SupertonicTTS extends SherpaOnnxTTS {
 
     /**
      * The language code Supertonic reads the text with, passed per-call via {@link GenerationConfig#setExtra}
-     * rather than baked into the model at build time (see {@link #buildOfflineTts(Language)}). Supertonic
+     * rather than baked into the model at build time (see {@link #buildOfflineTts()}). Supertonic
      * ships one multilingual model covering every language this app supports, and Russian besides - which is
      * why it voices every game client's radio chatter (see {@link elite.intel.ai.mouth.RadioVoicing}).
      */
@@ -143,15 +135,16 @@ public class SupertonicTTS extends SherpaOnnxTTS {
             case ES -> "es";
             case IT -> "it";
             case DE -> "de";
-            // Supertonic ships one Portuguese code; European Portuguese speaks with whatever accent that
-            // single model carries, same trade-off Kokoro made with its Brazilian-only Portuguese voice.
             case PT, PTBZ -> "pt";
             default -> "en";
         };
     }
 
     @Override
-    protected OfflineTts buildOfflineTts(Language language) {
+    protected OfflineTts buildOfflineTts() {
+        // WHY here: the synthesis thread asks for a voice's tuning on every sentence, and must not be the one
+        // that reads the table the first time.
+        SupertonicVoiceTuningManager.getInstance().load();
         Path modelDir = AppPaths.getTtsModelDir().resolve("sherpa-onnx-supertonic-3-tts-int8-2026-05-11");
         if (!Files.exists(modelDir)) {
             throw new IllegalStateException(
