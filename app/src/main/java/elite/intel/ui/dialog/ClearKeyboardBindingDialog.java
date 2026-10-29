@@ -41,10 +41,20 @@ public class ClearKeyboardBindingDialog extends JDialog {
         void clearSlot(BindingSlotType slotType, Consumer<ClearOutcome> done);
     }
 
+    /** What became of a clear (Storage S6R, 2026-10-29). */
+    public enum Cleared {
+        /** The slot was cleared, or already held nothing. */
+        CLEARED,
+        /** The writer refused it; the dialog says so. */
+        REFUSED,
+        /** It failed, and the caller has already told the user - the dialog says nothing more. */
+        ALREADY_REPORTED
+    }
+
     /**
-     * Whether the clear succeeded, plus the row's slots as they stand after the attempt.
+     * What became of the clear, plus the row's slots as they stand after the attempt.
      */
-    public record ClearOutcome(boolean success, KeyBindingsParser.ReadOnlyBindingSlots slots) {
+    public record ClearOutcome(Cleared cleared, KeyBindingsParser.ReadOnlyBindingSlots slots) {
     }
 
     private final BindingSlotDisplayFormatter slotFormatter;
@@ -145,7 +155,7 @@ public class ClearKeyboardBindingDialog extends JDialog {
     }
 
     private void onCleared(ClearOutcome outcome) {
-        if (!outcome.success()) {
+        if (outcome.cleared() == Cleared.REFUSED) {
             JOptionPane.showMessageDialog(
                     this,
                     getText("bindings.clear.failed"),

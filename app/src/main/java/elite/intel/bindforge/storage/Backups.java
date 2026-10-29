@@ -71,11 +71,6 @@ public final class Backups {
     /** The temporary file {@link AtomicFiles} writes a zip to before renaming it into place. */
     private static final Pattern HALF_WRITTEN = Pattern.compile("\\..+\\.zip\\.elite-intel-.+\\.tmp");
 
-    /** {@code <name>.<major>.<minor>.binds} - a {@code .binds.backup} copy or an unversioned name is not one. */
-    private static final Pattern BINDS_FILE = Pattern.compile(".+\\.\\d+\\.\\d+\\.binds");
-    /** {@code StartPreset.4.start}; a leftover pre-Odyssey {@code StartPreset.start} is not one. */
-    private static final Pattern START_PRESET_FILE = Pattern.compile("StartPreset\\.\\d+\\.start");
-
     private static final String KIND_LINE = "Kind: ";
     private static final String BEFORE_LINE = "Taken before: ";
     private static final String STATUS_LINE = "Status: ";
@@ -409,7 +404,7 @@ public final class Backups {
         }
         List<Path> found;
         try (Stream<Path> files = Files.list(bindingsFolder)) {
-            found = files.filter(Files::isRegularFile).filter(Backups::isBindingsFile).sorted().toList();
+            found = files.filter(Files::isRegularFile).filter(FileNames::isBindingsFile).sorted().toList();
         } catch (IOException e) {
             copy.notRead.add(label + " (" + bindingsFolder + "): " + reason(e));
             log.warn("Could not list {}", bindingsFolder, e);
@@ -454,16 +449,6 @@ public final class Backups {
         for (Path file : found) {
             copy.file(file, schemesEntry + GameInstallation.DEVICE_BUTTON_MAPS + ENTRY_SEPARATOR + file.getFileName());
         }
-    }
-
-    /** Whether {@code name} is a binds file's name - {@code <name>.<major>.<minor>.binds}. */
-    static boolean isBindsFile(String name) {
-        return BINDS_FILE.matcher(name).matches();
-    }
-
-    static boolean isBindingsFile(Path file) {
-        String name = file.getFileName().toString();
-        return BINDS_FILE.matcher(name).matches() || START_PRESET_FILE.matcher(name).matches();
     }
 
     /** {@code backup-info.txt}: for a person reading the backup, and what {@link #list()} reads back. */

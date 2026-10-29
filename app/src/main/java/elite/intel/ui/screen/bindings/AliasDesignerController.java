@@ -25,6 +25,7 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -352,13 +353,13 @@ final class AliasDesignerController {
             byRetarget.put(new DeviceEdits.Retarget(decision.question().deviceName(), decision.question().was(),
                     picked.vid(), picked.pid()), decision);
         }
-        DeviceEdits.Retargeted[] done = new DeviceEdits.Retargeted[1];
+        AtomicReference<DeviceEdits.Retargeted> done = new AtomicReference<>();
         Edits.stored().change(current -> {
-            done[0] = DeviceEdits.retargetAll(current, List.copyOf(byRetarget.keySet()));
-            return done[0].files();
+            done.set(DeviceEdits.retargetAll(current, List.copyOf(byRetarget.keySet())));
+            return done.get().files();
         });
-        List<IdentityDecision> moved = done[0].made().stream().map(byRetarget::get).toList();
-        List<String> stale = done[0].stale().stream().map(DeviceEdits.Retarget::name).toList();
+        List<IdentityDecision> moved = done.get().made().stream().map(byRetarget::get).toList();
+        List<String> stale = done.get().stale().stream().map(DeviceEdits.Retarget::name).toList();
         for (IdentityDecision decision : moved) {
             answers.forget(Set.of(decision.question().deviceName()));
             log.info("{} retargeted in the edits from {} to {} ({})", decision.question().deviceName(),
@@ -485,10 +486,10 @@ final class AliasDesignerController {
      * @return what to tell the user
      */
     private static String nameAll(List<Onboarding.Page> pages, List<String> names) throws IOException {
-        List<String> lines = new ArrayList<>();
+        AtomicReference<List<String>> told = new AtomicReference<>();
         FrontierStockDevices stock = FrontierStockDevices.getInstance();
         Edits.stored().change(current -> {
-            lines.clear();
+            List<String> lines = new ArrayList<>();
             for (int i = 0; i < pages.size(); i++) {
                 Onboarding.Page page = pages.get(i);
                 String name = names.get(i);
@@ -499,10 +500,11 @@ final class AliasDesignerController {
                         ? getText("bindings.aliasDesigner.onboarding.result.namedMoves", name, changed.bindingsMoved())
                         : getText("bindings.aliasDesigner.onboarding.result.named", name));
             }
+            told.set(lines);
             return current;
         });
         log.info("Onboarding named {} controller(s) in the edits", pages.size());
-        return String.join("\n", lines);
+        return String.join("\n", told.get());
     }
 
     /**

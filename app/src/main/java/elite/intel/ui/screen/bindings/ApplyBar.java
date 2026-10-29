@@ -107,7 +107,7 @@ public final class ApplyBar extends JPanel {
                 // WHY: refused before anything was backed up or written - a line naming nothing real fails silently in
                 // the game (preset-editor.md, What APPLY checks and writes for the preset file).
                 log.warn("APPLY refused: {}", e.getMessage());
-                message = getText("bindings.applyBar.presetRefused", sectionNames(e.sections()));
+                message = presetRefusedText(e);
             } catch (IOException e) {
                 // WHY: each of these stops before any live copy is written - the working copy unreadable, the backup
                 // or the working copy's save failed - so the edits are still on screen.
@@ -126,6 +126,20 @@ public final class ApplyBar extends JPanel {
                 HudConfirmDialog.info(this, title, told, getText("bindings.aliasDesigner.firstSetup.close"));
             });
         }, "BindForge-Apply").start();
+    }
+
+    /**
+     * Why APPLY refused the preset file. With an installation that could not be reached, that is named instead of
+     * blaming the preset file alone - its factory binds files may be what a line names (Storage S6R, 2026-10-29).
+     */
+    static String presetRefusedText(PresetRefusedException refused) {
+        if (refused.unreachable().isEmpty()) {
+            return getText("bindings.applyBar.presetRefused", sectionNames(refused.sections()));
+        }
+        String installations = refused.unreachable().stream()
+                .map(row -> getText("bindings.firstTimeStartup.place.installation", row.storefront(), row.rootPath()))
+                .collect(Collectors.joining(", "));
+        return getText("bindings.applyBar.presetUnreachable", installations, sectionNames(refused.sections()));
     }
 
     /** The sections in the user's language, in the file's order - <em>"Ship controls, SRV controls"</em>. */

@@ -61,7 +61,7 @@ public record FirstSetupReading(Path bindingsFolder, Map<String, byte[]> binding
         Map<String, Map<String, Integer>> references = new LinkedHashMap<>();
         Set<String> referenced = new LinkedHashSet<>();
         bindings.forEach((name, content) -> {
-            if (!Backups.isBindsFile(name)) return;
+            if (!FileNames.isBindsFile(name)) return;
             try {
                 Map<String, Integer> counts = BindsDeviceReferences.referenceCountsIn(content);
                 references.put(name, counts);

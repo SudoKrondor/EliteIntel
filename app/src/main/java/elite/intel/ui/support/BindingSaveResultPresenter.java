@@ -49,7 +49,6 @@ public class BindingSaveResultPresenter {
             case UNKNOWN_KEY -> getText("bindings.assign.unknownKey");
             case BINDING_NOT_FOUND -> getText("bindings.assign.bindingNotFound");
             case UNSUPPORTED_XML -> getText("bindings.assign.unsupportedXml");
-            case WRITE_FAILED -> getText("bindings.assign.writeFailed");
         };
     }
 }

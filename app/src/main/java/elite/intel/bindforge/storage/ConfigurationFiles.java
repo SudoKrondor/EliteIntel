@@ -104,7 +104,7 @@ public final class ConfigurationFiles {
 
     private static void requireBindingsFileName(String name) {
         requirePlainName(name);
-        if (!Backups.isBindingsFile(Path.of(name))) {
+        if (!FileNames.isBindingsFile(Path.of(name))) {
             throw new IllegalArgumentException("not a binds or StartPreset file name: " + name);
         }
     }

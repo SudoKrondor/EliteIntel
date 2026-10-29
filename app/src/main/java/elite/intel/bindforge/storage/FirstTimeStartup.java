@@ -290,7 +290,7 @@ public final class FirstTimeStartup {
     private static Map<String, byte[]> readBindings(Path folder) throws IOException {
         List<Path> found;
         try (Stream<Path> files = Files.list(folder)) {
-            found = files.filter(Files::isRegularFile).filter(Backups::isBindingsFile).sorted().toList();
+            found = files.filter(Files::isRegularFile).filter(FileNames::isBindingsFile).sorted().toList();
         } catch (NoSuchFileException e) {
             throw new NoBindingsYetException(folder);
         }

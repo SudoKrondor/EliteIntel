@@ -18,7 +18,9 @@ makes them cheap to build when they come back — each mode's own section below 
   shown until LOAD picks another. Capture SAVE, the Clear column and Auto-Assign Missing Binds are **edits not
   applied**: they light the one APPLY / DISCARD bar, and nothing on this screen writes a file
   ([storage.md](storage.md) rule 6). **One SAVE is all or none** — when the writer refuses one changed slot, the
-  other is not kept either, and the reason is shown (until then the first slot stayed written). The screen's own
+  other is not kept either, and the reason is shown (until then the first slot stayed written). **A change the edits
+  could not take at all** - SAVE, the Clear column or Auto-Assign - says *"The change could not be made; nothing was
+  changed."*, not that a file could not be written: nothing on this screen writes one (Alan, 2026-10-29, Storage S6R). The screen's own
   APPLY, REVERT, its draft badge and its close prompt are gone, with the launch-time copy of the active `.binds` and
   its checksum; until [Storage S7](../../05-build-plan/storage.md#slices), edits are lost on close. **Elite-Intel's
   Bindings Directory row stays on this screen for now**, though [principle 12](principles.md) puts folders in File

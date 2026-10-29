@@ -145,7 +145,7 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
 
     private static boolean isBindingsEntry(String[] parts) {
         return parts.length == 2 && parts[0].equals(Backups.BINDINGS) && FileNames.plain(parts[1])
-                && Backups.isBindingsFile(Path.of(parts[1]));
+                && FileNames.isBindingsFile(Path.of(parts[1]));
     }
 
     private static boolean isDeviceMappingsEntry(String[] parts) {

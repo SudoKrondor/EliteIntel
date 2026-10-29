@@ -4,9 +4,12 @@ import elite.intel.bindforge.model.BindingSection;
 import elite.intel.bindforge.preseteditor.BindNameEntry;
 import elite.intel.bindforge.preseteditor.BindNameList;
 import elite.intel.bindforge.preseteditor.BindsFileOrigin;
+import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -29,11 +32,15 @@ class ApplyTest {
     private static final Map<String, byte[]> LVWAP_DEFAULTS =
             Map.of("LVWAP.buttonMap", bytes("<Root><Joy_1>Button 1</Joy_1></Root>"));
     private static final String ALL_CUSTOM = "Custom\r\nCustom\r\nCustom\r\nCustom";
-    /** The BindName list: the player's Custom, and the factory KeyboardMouseOnly. */
-    private static final Apply.BindNames OFFERED = files -> new BindNameList(List.of(
-            new BindNameEntry("Custom", BindsFileOrigin.USER, List.of(Path.of("Custom.4.2.binds"))),
+    private static final BindNameEntry CUSTOM =
+            new BindNameEntry("Custom", BindsFileOrigin.USER, List.of(Path.of("Custom.4.2.binds")));
+    /** The BindName list: the player's Custom, and the factory KeyboardMouseOnly. Every installation reachable. */
+    private static final Apply.BindNames OFFERED = files -> new Apply.Offered(new BindNameList(List.of(CUSTOM,
             new BindNameEntry("KeyboardMouseOnly", BindsFileOrigin.FACTORY,
-                    List.of(Path.of("Steam/ControlSchemes/KeyboardMouseOnly.binds")))), List.of());
+                    List.of(Path.of("Steam/ControlSchemes/KeyboardMouseOnly.binds")))), List.of()), List.of());
+
+    @TempDir
+    Path root;
 
     private final AtomicReference<ConfigurationFiles> workingCopy = new AtomicReference<>(set("<applied/>", LVWAP));
     private final Edits edits = new Edits(workingCopy::get, () -> {
@@ -170,6 +177,7 @@ class ApplyTest {
                 apply(installation -> live(LVWAP))::apply);
 
         assertEquals(List.of(BindingSection.SHIP), refused.sections());
+        assertEquals(List.of(), refused.unreachable(), "every installation was reachable");
         assertEquals(List.of(), backedUp);
         assertEquals(List.of(), written);
         assertTrue(edits.hasEdits(), "the edits are still on screen");
@@ -216,6 +224,48 @@ class ApplyTest {
                 }).apply();
 
         assertEquals(List.of("<edited/>"), seen);
+    }
+
+    /**
+     * A refusal while an installation could not be reached names it: its factory binds files may be what the line
+     * names, so the preset file is not blamed alone (Storage S6R, 2026-10-29). Still refused.
+     */
+    @Test
+    void aRefusalNamesTheInstallationsThatCouldNotBeReached() throws IOException {
+        edits.change(current -> current.withBindingsFile("StartPreset.4.start",
+                bytes("KeyboardMouseOnly\r\nCustom\r\nCustom\r\nCustom")));
+        InstallationRow unplugged = new InstallationRow(2, "EPIC", root.resolve("Epic").toString(), false, false);
+
+        PresetRefusedException refused = assertThrows(PresetRefusedException.class, new Apply(edits,
+                (current, applied) -> Map.of(), this::write, this::backUp, installation -> live(LVWAP),
+                files -> new Apply.Offered(new BindNameList(List.of(CUSTOM), List.of()), List.of(unplugged)))::apply);
+
+        assertEquals(List.of(BindingSection.GENERAL), refused.sections());
+        assertEquals(List.of(unplugged), refused.unreachable());
+        assertEquals(List.of(), backedUp);
+        assertEquals(List.of(), written);
+    }
+
+    /**
+     * The factory binds files come only from installations that pass the one reachable test - not marked missing, and
+     * their ControlSchemes folder there; the others are returned as unreachable (Storage S6R, 2026-10-29).
+     */
+    @Test
+    void theBindNameListReadsOnlyTheReachableInstallations() throws IOException {
+        Path steamSchemes = Files.createDirectories(root.resolve("Steam/Products/elite-dangerous-odyssey-64/ControlSchemes"));
+        Files.writeString(steamSchemes.resolve("KeyboardMouseOnly.binds"), "<Root PresetName=\"KeyboardMouseOnly\">"
+                + "<YawLeftButton><Primary Device=\"Keyboard\" Key=\"Key_A\" /></YawLeftButton></Root>");
+        Files.createDirectories(root.resolve("Epic"));
+        InstallationRow steam = new InstallationRow(1, "STEAM", root.resolve("Steam").toString(), false, false);
+        InstallationRow noControlSchemes = new InstallationRow(2, "EPIC", root.resolve("Epic").toString(), false, false);
+        InstallationRow missing = new InstallationRow(3, "FRONTIER", root.resolve("Steam").toString(), false, true);
+
+        Apply.Offered offered = Apply.offered(set("<applied/>", LVWAP), List.of(steam, noControlSchemes, missing));
+
+        assertEquals(List.of(new BindNameEntry("KeyboardMouseOnly", BindsFileOrigin.FACTORY,
+                        List.of(steamSchemes.resolve("KeyboardMouseOnly.binds")))),
+                offered.list().entries().stream().filter(entry -> entry.origin() == BindsFileOrigin.FACTORY).toList());
+        assertEquals(List.of(noControlSchemes, missing), offered.unreachable());
     }
 
     /** A split preset file - General on a factory binds file - is applied like any other. */

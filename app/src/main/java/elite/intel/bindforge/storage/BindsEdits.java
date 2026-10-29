@@ -7,8 +7,6 @@ import elite.intel.bindforge.io.StartPresetSections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * What the Bind Editor does to a set of the game input configuration files - the working copy with the edits on
@@ -19,9 +17,6 @@ import java.util.regex.Pattern;
  * edited</em>; bind-editor.md, <em>Shell</em>).
  */
 public final class BindsEdits {
-
-    /** {@code <name>.<major>.<minor>.binds}, the version captured. */
-    private static final Pattern VERSIONED = Pattern.compile("(.+)\\.(\\d+)\\.(\\d+)\\.binds");
 
     private BindsEdits() {
     }
@@ -41,7 +36,7 @@ public final class BindsEdits {
 
     /** Every binds file in the set, by file name, sorted - what the Bind Editor's Load list offers. */
     public static List<String> bindsFiles(ConfigurationFiles files) {
-        return files.bindings().keySet().stream().filter(Backups::isBindsFile).sorted().toList();
+        return files.bindings().keySet().stream().filter(FileNames::isBindsFile).sorted().toList();
     }
 
     /**
@@ -53,8 +48,8 @@ public final class BindsEdits {
         String general = PresetEdits.sections(files).map(StartPresetSections::general).orElse("");
         if (general.isEmpty()) return Optional.empty();
         return bindsFiles(files).stream()
-                .filter(name -> bindNameOf(name).filter(general::equals).isPresent())
-                .max(Comparator.comparingLong(BindsEdits::version));
+                .filter(name -> FileNames.bindName(name).filter(general::equals).isPresent())
+                .max(Comparator.comparingLong(FileNames::version));
     }
 
     /**
@@ -68,7 +63,7 @@ public final class BindsEdits {
      */
     public static Changed change(ConfigurationFiles files, String bindsFile, List<SlotChange> changes) {
         byte[] content = files.bindings().get(bindsFile);
-        if (content == null || !Backups.isBindsFile(bindsFile)) {
+        if (content == null || !FileNames.isBindsFile(bindsFile)) {
             throw new IllegalArgumentException("no binds file " + bindsFile + " in the set");
         }
         BindingSaveResult result = BindingSaveResult.NO_CHANGE;
@@ -89,23 +84,5 @@ public final class BindsEdits {
     /** {@link #change(ConfigurationFiles, String, List)} for one change. */
     public static Changed change(ConfigurationFiles files, String bindsFile, SlotChange change) {
         return change(files, bindsFile, List.of(change));
-    }
-
-    /** A binds file's BindName - {@code Custom} for {@code Custom.4.2.binds}. */
-    public static Optional<String> bindNameOf(String bindsFile) {
-        Matcher matcher = VERSIONED.matcher(bindsFile);
-        return matcher.matches() ? Optional.of(matcher.group(1)) : Optional.empty();
-    }
-
-    /** A binds file's version as one number, major before minor - {@code -1} when the name carries none. */
-    private static long version(String bindsFile) {
-        Matcher matcher = VERSIONED.matcher(bindsFile);
-        if (!matcher.matches()) return -1;
-        // WHY: both numbers bounded so neither overflows into the other.
-        return parse(matcher.group(2)) * 1_000_000L + parse(matcher.group(3));
-    }
-
-    private static long parse(String digits) {
-        return digits.length() > 6 ? 999_999 : Long.parseLong(digits);
     }
 }

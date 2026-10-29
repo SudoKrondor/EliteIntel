@@ -131,12 +131,6 @@ class BindsEditsTest {
                 "the preset file is not a binds file");
     }
 
-    @Test
-    void aBindNameIsTheFileNameBeforeItsVersion() {
-        assertEquals(Optional.of("Dual.Virpil"), BindsEdits.bindNameOf("Dual.Virpil.4.2.binds"));
-        assertEquals(Optional.empty(), BindsEdits.bindNameOf("StartPreset.4.start"));
-    }
-
     private static KeyboardBindingEdit key(String bindingId, BindingSlotType slot, String key) {
         return new KeyboardBindingEdit(bindingId, slot, key);
     }

@@ -1,6 +1,5 @@
 package elite.intel.bindforge.preseteditor;
 
-import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -32,9 +31,7 @@ class BindNameCatalogTest {
         specimen("Custom.4.2.binds");
         specimen("DualVirpilDawnTreader.4.1.binds");
         specimen("Custom.4.2 (2).binds");
-        specimen("20250624_003828_DualVirpilDawnTreader.4.2.binds.backup");
         set.put("StartPreset.binds", bytes("KeyboardMouseOnly\r\nCustom\r\nCustom\r\nCustom"));
-        set.put("StartPreset.4.start", bytes("Custom\r\nCustom\r\nCustom\r\nCustom"));
 
         BindNameList list = BindNameCatalog.list(set, List.of());
 
@@ -43,7 +40,7 @@ class BindNameCatalogTest {
                         new BindNameEntry("DualVirpilDawnTreader", BindsFileOrigin.USER,
                                 List.of(Path.of("DualVirpilDawnTreader.4.1.binds")))),
                 list.entries());
-        // The backup and the preset file are not .binds names at all, so they are neither offered nor explained.
+        // WHY: the caller hands in binds files only (PresetEdits.bindsFiles); whatever it hands in is judged by content.
         assertEquals(List.of(
                         new NotOfferedFile(Path.of("Custom.4.2 (2).binds"), BindsFileOrigin.USER,
                                 NotOfferedReason.NAME_MISMATCH, "Custom"),
@@ -130,15 +127,6 @@ class BindNameCatalogTest {
 
         assertEquals(List.of(new NotOfferedFile(controlSchemes.resolve("Broken.binds"), BindsFileOrigin.FACTORY,
                 NotOfferedReason.EMPTY, "")), list.notOffered());
-    }
-
-    @Test
-    void controlSchemesComeOnlyFromInstallationsThatAreThere() {
-        InstallationRow present = new InstallationRow(1, "STEAM", root.resolve("Steam").toString(), false, false);
-        InstallationRow missing = new InstallationRow(2, "EPIC", root.resolve("Epic").toString(), false, true);
-
-        assertEquals(List.of(root.resolve("Steam/Products/elite-dangerous-odyssey-64/ControlSchemes")),
-                BindNameCatalog.controlSchemesOf(List.of(present, missing)));
     }
 
     private Path folder(String relative) throws IOException {

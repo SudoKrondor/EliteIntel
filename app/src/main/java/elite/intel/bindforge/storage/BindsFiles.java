@@ -35,7 +35,7 @@ public final class BindsFiles {
         BindingsWriter writer = new BindingsWriter();
         int moved = 0;
         for (Map.Entry<String, byte[]> file : result.entrySet()) {
-            if (!Backups.isBindsFile(file.getKey())) continue;
+            if (!FileNames.isBindsFile(file.getKey())) continue;
             Encoded text = Encoded.of(file.getValue());
             String xml = text.xml();
             int inFile = 0;

@@ -92,7 +92,7 @@ public final class WorkingCopy {
             Path controlSchemes = root.resolve(Backups.CONTROL_SCHEMES);
             Path deviceMappings = GameInstallation.deviceMappingsIn(controlSchemes);
             return new ConfigurationFiles(
-                    readFiles(bindings, Backups::isBindingsFile),
+                    readFiles(bindings, FileNames::isBindingsFile),
                     Files.isRegularFile(deviceMappings) ? Files.readAllBytes(deviceMappings) : null,
                     readFiles(GameInstallation.deviceButtonMapsIn(controlSchemes),
                             file -> file.getFileName().toString().endsWith(GameInstallation.BUTTON_MAP_SUFFIX)));

@@ -41,7 +41,7 @@ import java.awt.event.HierarchyEvent;
 import java.io.File;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import static elite.intel.ui.dialog.HudConfirmDialog.info;
@@ -342,7 +342,7 @@ public class BindingProfilePanel extends JPanel {
         } catch (Exception e) {
             // WHY: broad on purpose - a thread boundary. Before first-time startup there is no working copy, and the
             // BindForge tab says so; a damaged one is offered a restore there too. The grid shows nothing.
-            log.warn("The Bind Editor could not read the edits: {}", e.getMessage());
+            log.warn("The Bind Editor could not read the edits", e);
             return Loaded.nothing(asked);
         }
     }
@@ -433,19 +433,20 @@ public class BindingProfilePanel extends JPanel {
             return;
         }
         String file = loadedFile;
-        AtomicInteger saved = new AtomicInteger();
-        AtomicInteger failed = new AtomicInteger();
+        AtomicReference<ApplyOutcome> outcome = new AtomicReference<>();
         offEdt(getText("bindings.autofix.result.title"),
-                () -> Edits.stored().change(current -> applyPlan(current, file, plan, saved, failed)),
-                () -> onComplete.accept(new ApplyOutcome(saved.get(), failed.get())), () -> { });
+                () -> Edits.stored().change(current -> applyPlan(current, file, plan, outcome)),
+                () -> onComplete.accept(outcome.get()), () -> { });
     }
 
-    /** Each planned edit made to the binds file in turn; one refused is counted and the rest go on. Pure. */
+    /**
+     * Each planned edit made to the binds file in turn; one refused is counted and the rest go on. What was saved and
+     * refused goes in {@code outcome}. Pure but for that.
+     */
     private ConfigurationFiles applyPlan(ConfigurationFiles current, String file, MissingBindingAutoAssigner.Plan plan,
-                                         AtomicInteger saved, AtomicInteger failed) {
-        // WHY reset: Edits runs the change under its lock once; counted here so the dialog reports this run alone.
-        saved.set(0);
-        failed.set(0);
+                                         AtomicReference<ApplyOutcome> outcome) {
+        int saved = 0;
+        int failed = 0;
         ConfigurationFiles files = current;
         for (MissingBindingAutoAssigner.PlannedEdit edit : plan.edits()) {
             KeyboardBindingEdit kbe = new KeyboardBindingEdit(edit.bindingId(), edit.slotType(), edit.key());
@@ -453,12 +454,13 @@ public class BindingProfilePanel extends JPanel {
                     ? bindingsWriter.assignKeyboardKey(binds, kbe)
                     : bindingsWriter.assignKeyboardKeyWithModifier(binds, kbe, edit.modifier()));
             if (changed.result() == BindingSaveResult.SAVED) {
-                saved.incrementAndGet();
+                saved++;
                 files = changed.files();
             } else {
-                failed.incrementAndGet();
+                failed++;
             }
         }
+        outcome.set(new ApplyOutcome(saved, failed));
         return files;
     }
 
@@ -501,7 +503,7 @@ public class BindingProfilePanel extends JPanel {
         if (outcome.failed() > 0) {
             JOptionPane.showMessageDialog(
                     this,
-                    getText("bindings.assign.writeFailed"),
+                    getText("bindings.change.failed"),
                     getText("bindings.autofix.result.title"),
                     JOptionPane.ERROR_MESSAGE);
             return;
@@ -1212,14 +1214,14 @@ public class BindingProfilePanel extends JPanel {
             };
             changes.add(change);
         }
-        BindingSaveResult[] result = {BindingSaveResult.NO_CHANGE};
+        AtomicReference<BindingSaveResult> result = new AtomicReference<>();
         offEdt(getText("bindings.assign.dialogTitle"),
                 () -> Edits.stored().change(current -> {
                     BindsEdits.Changed changed = BindsEdits.change(current, file, changes);
-                    result[0] = changed.result();
+                    result.set(changed.result());
                     return changed.files();
                 }),
-                () -> saveResultPresenter.show(result[0]), () -> { });
+                () -> saveResultPresenter.show(result.get()), () -> { });
     }
 
     private static boolean holds(KeyBindingsParser.ReadOnlyBindingSlots slots, BindingSlotType type) {
@@ -1264,22 +1266,25 @@ public class BindingProfilePanel extends JPanel {
      */
     private void clearKeyboardSlot(String file, String bindingId, BindingSlotType slotType,
                                    Consumer<ClearKeyboardBindingDialog.ClearOutcome> done) {
-        BindingSaveResult[] result = {BindingSaveResult.WRITE_FAILED};
-        KeyBindingsParser.ReadOnlyBindingSlots[] row = {currentSlots.get(bindingId)};
+        AtomicReference<BindingSaveResult> result = new AtomicReference<>();
+        AtomicReference<KeyBindingsParser.ReadOnlyBindingSlots> row = new AtomicReference<>(currentSlots.get(bindingId));
         offEdt(getText("bindings.clear.dialogTitle"), () -> {
             Edits.stored().change(current -> {
                 BindsEdits.Changed changed = BindsEdits.change(current, file, binds -> bindingsWriter.assignKeyboardKey(
                         binds, new KeyboardBindingEdit(bindingId, slotType, null))); // null key clears the slot
-                result[0] = changed.result();
+                result.set(changed.result());
                 return changed.files();
             });
-            row[0] = parser.parseReadOnlyBindingSlots(Edits.stored().snapshot().current().bindings().get(file))
-                    .get(bindingId);
+            row.set(parser.parseReadOnlyBindingSlots(Edits.stored().snapshot().current().bindings().get(file))
+                    .get(bindingId));
         }, () -> done.accept(new ClearKeyboardBindingDialog.ClearOutcome(
-                result[0] == BindingSaveResult.SAVED || result[0] == BindingSaveResult.NO_CHANGE, row[0])),
+                result.get() == BindingSaveResult.SAVED || result.get() == BindingSaveResult.NO_CHANGE
+                        ? ClearKeyboardBindingDialog.Cleared.CLEARED
+                        : ClearKeyboardBindingDialog.Cleared.REFUSED, row.get())),
                 // WHY: the dialog waits for an answer. The failure was already shown, so it is not told twice; the row
                 // as it stands shows nothing was cleared.
-                () -> done.accept(new ClearKeyboardBindingDialog.ClearOutcome(true, row[0])));
+                () -> done.accept(new ClearKeyboardBindingDialog.ClearOutcome(
+                        ClearKeyboardBindingDialog.Cleared.ALREADY_REPORTED, row.get())));
     }
 
     /** A change to the edits, run by {@link #offEdt}. */
@@ -1309,7 +1314,7 @@ public class BindingProfilePanel extends JPanel {
                 // WHY: broad on purpose - a thread boundary, and anything escaping it would leave the screen waiting
                 // with no word of why.
                 log.warn("{} failed", title, e);
-                failure = getText("bindings.assign.writeFailed");
+                failure = getText("bindings.change.failed");
             }
             String shown = failure;
             SwingUtilities.invokeLater(() -> {
@@ -1317,7 +1322,7 @@ public class BindingProfilePanel extends JPanel {
                 setCursor(Cursor.getDefaultCursor());
                 initData();
                 if (shown != null) {
-                    info(this, title, shown, getText("bindings.aliasDesigner.firstSetup.close"));
+                    info(this, title, shown, getText("button.close"));
                     afterFailure.run();
                     return;
                 }

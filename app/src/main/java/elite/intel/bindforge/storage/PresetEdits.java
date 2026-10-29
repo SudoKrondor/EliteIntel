@@ -9,8 +9,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -32,17 +30,14 @@ public final class PresetEdits {
     public static final List<BindingSection> SECTIONS =
             List.of(BindingSection.GENERAL, BindingSection.SHIP, BindingSection.SRV, BindingSection.ON_FOOT);
 
-    /** {@code StartPreset.<N>.start}, N captured. */
-    private static final Pattern START_PRESET = Pattern.compile("StartPreset\\.(\\d+)\\.start");
-
     private PresetEdits() {
     }
 
     /** The set's preset file, by name - the highest N. Empty when the set holds none. */
     public static Optional<String> presetFile(ConfigurationFiles files) {
         return files.bindings().keySet().stream()
-                .filter(name -> START_PRESET.matcher(name).matches())
-                .max(Comparator.comparingLong(PresetEdits::generation).thenComparing(Comparator.naturalOrder()));
+                .filter(FileNames::isPresetFile)
+                .max(Comparator.comparingLong(FileNames::presetGeneration).thenComparing(Comparator.naturalOrder()));
     }
 
     /** The four lines of the set's preset file. Empty when the set holds none. */
@@ -100,18 +95,11 @@ public final class PresetEdits {
     /** The set's binds files, by name - what the BindName list offers of the player's own. */
     public static Map<String, byte[]> bindsFiles(ConfigurationFiles files) {
         return files.bindings().entrySet().stream()
-                .filter(file -> Backups.isBindsFile(file.getKey()))
+                .filter(file -> FileNames.isBindsFile(file.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private static StartPresetSections parse(byte[] content) {
         return StartPresetSections.parse(new String(content, StandardCharsets.UTF_8));
-    }
-
-    private static long generation(String presetFile) {
-        Matcher matcher = START_PRESET.matcher(presetFile);
-        if (!matcher.matches()) return -1;
-        String digits = matcher.group(1);
-        return digits.length() > 6 ? 999_999 : Long.parseLong(digits);
     }
 }

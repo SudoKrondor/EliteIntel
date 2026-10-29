@@ -1,12 +1,17 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.preseteditor.BindNameCatalog;
 import elite.intel.bindforge.preseteditor.BindNameList;
+import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.db.managers.BindForgeInstallationsManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -27,7 +32,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * <strong>The preset file is checked first</strong>, before anything is backed up or written (preset-editor.md,
  * <em>What APPLY checks and writes for the preset file</em>; Storage S6, 2026-10-28): every one of its four lines must
  * name a binds file the BindName list offers, else APPLY refuses as a whole ({@link PresetRefusedException}). It runs on
- * every APPLY, whatever the edits are, since a preset file that names nothing real fails silently in the game.
+ * every APPLY, whatever the edits are, since a preset file that names nothing real fails silently in the game. The
+ * factory binds files come only from the installations that are reachable ({@link BackupSources.Installation#reachable});
+ * when one is not, the refusal names it, since its files may be what a line names (Storage S6R, 2026-10-29).
  * <p>
  * <em>Until Storage S8 APPLY runs without the check</em> (Alan, 2026-10-24); the backup before it is the safety net.
  * Publishes no {@code BindingsUpdatedEvent} - {@code BindingsMonitor} sees the bindings folder change. Touches the disk
@@ -65,11 +72,21 @@ public final class Apply {
 
     /**
      * The BindNames a line of the preset file can hold, for a set: its own binds files, and the factory ones of every
-     * installation (preset-editor.md, <em>The BindName list</em>).
+     * reachable installation (preset-editor.md, <em>The BindName list</em>).
      */
     @FunctionalInterface
     interface BindNames {
-        BindNameList of(ConfigurationFiles files) throws IOException;
+        Offered of(ConfigurationFiles files) throws IOException;
+    }
+
+    /**
+     * The BindName list, and the installations whose factory binds files are not in it because they could not be
+     * reached.
+     */
+    record Offered(BindNameList list, List<InstallationRow> unreachable) {
+        Offered {
+            unreachable = List.copyOf(unreachable);
+        }
     }
 
     private final Edits edits;
@@ -89,8 +106,25 @@ public final class Apply {
                 (files, backUp, leaveAlone) -> WritePath.stored().write(files, backUp, leaveAlone),
                 sources -> Backups.stored().backUpBeforeChange(Backups.Before.APPLY, sources),
                 installation -> DeviceFiles.read(installation.root()),
-                files -> BindNameCatalog.list(PresetEdits.bindsFiles(files),
-                        BindNameCatalog.controlSchemesOf(BindForgeInstallationsManager.getInstance().findAll())));
+                files -> offered(files, BindForgeInstallationsManager.getInstance().findAll()));
+    }
+
+    /**
+     * The BindName list for {@code files}: its binds files, and the factory ones of every installation in {@code rows}
+     * that is reachable - the one test (storage.md, <em>Settled from Krondor's review</em>). The others are returned as
+     * unreachable. Touches the disk.
+     */
+    static Offered offered(ConfigurationFiles files, List<InstallationRow> rows) {
+        List<Path> controlSchemes = new ArrayList<>();
+        List<InstallationRow> unreachable = new ArrayList<>();
+        for (InstallationRow row : rows) {
+            if (BackupSources.reachable(row)) {
+                controlSchemes.add(GameInstallation.controlSchemesUnder(Path.of(row.rootPath())));
+            } else {
+                unreachable.add(row);
+            }
+        }
+        return new Offered(BindNameCatalog.list(PresetEdits.bindsFiles(files), controlSchemes), unreachable);
     }
 
     Apply(Edits edits, DefaultLabels defaults, Writer writer, WritePath.BackUpFirst beforeApply, Reader reader,
@@ -109,7 +143,8 @@ public final class Apply {
      *
      * @return the report and the before-APPLY backup
      * @throws PresetRefusedException if a line of the preset file names no binds file that can be found - nothing was
-     *                                 backed up or written, and the edits are still on screen
+     *                                 backed up or written, and the edits are still on screen. It names the
+     *                                 installations that could not be reached, if any
      * @throws IOException             if the working copy's own device files cannot be read, the backup cannot be
      *                                 taken, or the working copy cannot be saved - no live copy was written, and the
      *                                 edits are still on screen
@@ -117,7 +152,7 @@ public final class Apply {
     public Written apply() throws IOException {
         return edits.whileWriting(() -> {
             Edits.Snapshot snapshot = edits.snapshot();
-            PresetEdits.check(snapshot.current(), bindNames.of(snapshot.current()));
+            checkPresetFile(snapshot.current());
             // WHY: before anything is backed up or written. The working copy is BindForge's own, so one it cannot
             // parse is a broken invariant - not a user file to protect by leaving every installation alone.
             DeviceFilesComparison comparison = DeviceFilesComparison.of(snapshot.applied());
@@ -134,6 +169,17 @@ public final class Apply {
                     report.installations().size());
             return new Written(report, taken.get());
         });
+    }
+
+    /** {@link PresetEdits#check}, naming the installations that could not be reached when it refuses. */
+    private void checkPresetFile(ConfigurationFiles current) throws IOException {
+        Offered offered = bindNames.of(current);
+        try {
+            PresetEdits.check(current, offered.list());
+        } catch (PresetRefusedException e) {
+            if (offered.unreachable().isEmpty()) throw e;
+            throw e.withUnreachable(offered.unreachable());
+        }
     }
 
     /** The edits, with the default labels for every device that has no {@code .buttonMap} - one in any spelling wins. */

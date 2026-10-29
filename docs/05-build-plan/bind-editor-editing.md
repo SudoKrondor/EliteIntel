@@ -53,6 +53,10 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
   *Raise with Alan:* it is the kind of message he says nobody reads.
 - **A gamepad is captured as a joystick** (found 2026-10-23, Krondor). An Xbox pad on `<GamePad>` gets `Joy_N`
   and hat tokens under `Device="GamePad"`, where the game binds `Pad_…`/`GamePad_…` tokens, so its bindings most likely do nothing in game. E7 fixes it. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor)
+- **18 `JOptionPane` uses in the Bind Editor, against hard rule 16** (`HudConfirmDialog`, never `JOptionPane`) - in
+  `BindingProfilePanel` (the Auto-Assign confirm and its results among them), `ClearKeyboardBindingDialog.onCleared`
+  and `BindingSaveResultPresenter`. Older than S5; found in the S5/S6 review (Alan, 2026-10-29, D8). Its own item -
+  move them to `HudConfirmDialog` when a slice is in those files, E2 first.
 - **The controller conflict check matches exact chords
   only.** The keyboard check also flags a modifier that another control binds on its own (`shadowedModifier`). Whether that holds for controller buttons is unmeasured.
 
@@ -76,6 +80,11 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 | E7 | **Gamepad capture.** On a controller named `GamePad`, the tab offers and captures the game's gamepad tokens, never `Joy_N` or hats; a trigger pulled past a threshold is a press of its `Pos_` token and can be held as a modifier. Needs [A18](alias-designer.md#slices)'s gamepad events and token table. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor) | **blocked** on A18 |
 
 ## Hand-off notes — newest first
+
+**2026-10-29, Storage S6R tidied this screen.** One failure message for a change the edits could not take
+(`bindings.change.failed`; `BindingSaveResult.WRITE_FAILED` gone); `ClearOutcome` says `CLEARED`, `REFUSED` or
+`ALREADY_REPORTED`; `KeyboardKeyAvailabilityService` keeps only its bytes check. The `JOptionPane` uses are under
+*Known issues*.
 
 **2026-10-28, Storage S5 moved this screen onto the edits.** LOAD opens any binds file; SAVE, the Clear column and
 Auto-Assign are edits not applied; the writer takes and returns bytes (`EditedBinds`), so E2–E3 write through

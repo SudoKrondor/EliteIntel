@@ -1,7 +1,5 @@
 package elite.intel.bindforge.preseteditor;
 
-import elite.intel.bindforge.install.GameInstallation;
-import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,7 +39,8 @@ public final class BindNameCatalog {
      * entry with a file from each. A player's binds file with the BindName of a factory one shadows it, with a
      * warning - no factory binds file has a version suffix, so the case is not expected.
      *
-     * @param userFiles             the player's binds files, by file name - each is listed as a {@link Path} of its
+     * @param userFiles             the player's binds files, by file name - binds files already, as
+     *                              {@code PresetEdits.bindsFiles} gives them. Each is listed as a {@link Path} of its
      *                              name alone, since it is in the set, not yet necessarily on disk
      * @param controlSchemesFolders each installation's {@code ControlSchemes}; one that cannot be listed is
      *                              skipped with a warning, because an unplugged drive must not empty the list
@@ -50,10 +49,8 @@ public final class BindNameCatalog {
         Map<String, Gathered> byName = new LinkedHashMap<>();
         List<NotOfferedFile> notOffered = new ArrayList<>();
 
-        new TreeMap<>(userFiles).forEach((name, content) -> {
-            if (!name.endsWith(BindName.BINDS_EXTENSION)) return;
-            judged(Path.of(name), BindsContent.judge(name, content), BindsFileOrigin.USER, byName, notOffered);
-        });
+        new TreeMap<>(userFiles).forEach((name, content) ->
+                judged(Path.of(name), BindsContent.judge(name, content), BindsFileOrigin.USER, byName, notOffered));
 
         for (Path controlSchemes : controlSchemesFolders) {
             List<Path> factoryFiles;
@@ -74,17 +71,6 @@ public final class BindNameCatalog {
                         .thenComparing(BindNameEntry::bindName))
                 .toList();
         return new BindNameList(entries, notOffered);
-    }
-
-    /**
-     * The {@code ControlSchemes} folder of every installation whose folder is there. A missing one is left out
-     * rather than listed as empty.
-     */
-    public static List<Path> controlSchemesOf(Collection<InstallationRow> rows) {
-        return rows.stream()
-                .filter(row -> !row.missing())
-                .map(row -> GameInstallation.controlSchemesUnder(Path.of(row.rootPath())))
-                .toList();
     }
 
     private static void judged(Path file, BindsContent.Judgement judgement, BindsFileOrigin origin,

@@ -10,6 +10,8 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -190,7 +192,7 @@ public class KeyBindingsParser {
      * executable.
      */
     public Map<String, ReadOnlyBindingSlots> parseReadOnlyBindingSlots(File file) throws Exception {
-        return readOnlyBindingSlots(DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file), file.getName());
+        return readOnlyBindingSlots(documentBuilder().parse(file), file.getName());
     }
 
     /**
@@ -200,8 +202,18 @@ public class KeyBindingsParser {
      * @param binds the binds file's bytes
      */
     public Map<String, ReadOnlyBindingSlots> parseReadOnlyBindingSlots(byte[] binds) throws Exception {
-        return readOnlyBindingSlots(DocumentBuilderFactory.newInstance().newDocumentBuilder()
-                .parse(new ByteArrayInputStream(binds)), "the edits not applied");
+        return readOnlyBindingSlots(documentBuilder().parse(new ByteArrayInputStream(binds)), "the edits not applied");
+    }
+
+    /**
+     * A builder that refuses a DOCTYPE and limits entity expansion, as {@code KeyboardKeyAvailabilityService} does for
+     * the same bytes (review, 2026-10-29). A binds file never has a DOCTYPE.
+     */
+    private static DocumentBuilder documentBuilder() throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        return factory.newDocumentBuilder();
     }
 
     private Map<String, ReadOnlyBindingSlots> readOnlyBindingSlots(Document doc, String source) {

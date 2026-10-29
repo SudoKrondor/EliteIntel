@@ -122,6 +122,13 @@ sections. The master, draft, merge and Edit History copies (`StartPresetStore`, 
 - **The BindName list comes from the set APPLY writes**, not the live bindings folder: the player's binds files from
   the edits, and the factory ones from each installation's `ControlSchemes` (2026-10-28, Alan, Storage S6). A binds
   file created or renamed in the edits can be named before it reaches the game.
+- **The factory binds files come only from installations that are reachable** - the one test, `BackupSources`'
+  ([storage.md, Settled from Krondor's review](storage.md#first-time-startup)): not marked missing, and its
+  `ControlSchemes` folder there. **When a line is refused while an installation could not be reached, APPLY names that
+  installation** - *"BindForge could not reach … Plug in the drive it is on, or Remove it in Game Install Locations"* -
+  instead of blaming the preset file alone, since its factory files may be what the line names. **APPLY is still
+  refused**: the line cannot be checked, and an unchecked line fails silently in the game (Alan, 2026-10-29, Storage
+  S6R, from the S5/S6 review; `Apply.offered`, `PresetRefusedException.unreachable`).
 - **The form written: always four lines, CRLF between them, no newline after the last** — the specimen byte for byte.
   A single-line file is written as four lines; the single-line form is pre-Odyssey and only the Live game is
   supported. **The form is written when the Preset Editor changes a line** (2026-10-28, Alan, Storage S6): a preset

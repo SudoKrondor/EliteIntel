@@ -12,7 +12,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,6 +27,11 @@ class BindingsWriterTest {
     private final KeyboardKeyAvailabilityService availabilityService = new KeyboardKeyAvailabilityService();
     private final KeyBindingsParser parser = KeyBindingsParser.getInstance();
 
+    /** Whether the chord is used by another binding, as the edits hold the file - its bytes. */
+    private boolean occupied(Path file, String bindingId, String key, List<BindingModifier> modifiers) throws Exception {
+        return availabilityService.isKeyOccupiedByOtherSlot(Files.readAllBytes(file), bindingId, key, modifiers);
+    }
+
     @Test
     void occupiedKeysAreCollectedFromEntireFileIncludingUnusedActions() throws Exception {
         Path file = writeBinds("""
@@ -42,11 +46,7 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        Set<String> occupied = availabilityService.occupiedKeyboardKeys(file);
-        List<String> available = availabilityService.availableKeys(file, "GalaxyMapOpen", BindingSlotType.PRIMARY);
-
-        assertTrue(occupied.contains("Key_L"));
-        assertFalse(available.contains("Key_L"));
+        assertTrue(occupied(file, "GalaxyMapOpen", "Key_L", List.of()));
     }
 
     @Test
@@ -60,13 +60,8 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        Set<String> occupied = availabilityService.occupiedKeyboardKeys(file);
-        List<String> available = availabilityService.availableKeys(file);
-
-        assertFalse(occupied.contains("Key_L"));
-        assertFalse(occupied.contains("Key_M"));
-        assertTrue(available.contains("Key_L"));
-        assertTrue(available.contains("Key_M"));
+        assertFalse(occupied(file, "GalaxyMapOpen", "Key_L", List.of()));
+        assertFalse(occupied(file, "GalaxyMapOpen", "Key_M", List.of()));
     }
 
     @Test
@@ -84,11 +79,9 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        Set<String> occupied = availabilityService.occupiedKeyboardKeys(file);
-
-        assertFalse(occupied.contains("Key_L"));
-        assertFalse(occupied.contains("Key_"));
-        assertFalse(occupied.contains("{NoDevice}"));
+        assertFalse(occupied(file, "GalaxyMapOpen", "Key_L", List.of()));
+        assertFalse(occupied(file, "GalaxyMapOpen", "Key_", List.of()));
+        assertFalse(occupied(file, "GalaxyMapOpen", "{NoDevice}", List.of()));
     }
 
     @Test
@@ -130,18 +123,14 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        List<String> available = availabilityService.availableKeys(
-                file,
-                "GalaxyMapOpen",
-                BindingSlotType.PRIMARY,
-                new BindingModifier("Keyboard", "Key_LeftControl")
-        );
+        boolean taken = occupied(file, "GalaxyMapOpen", "Key_J",
+                List.of(new BindingModifier("Keyboard", "Key_LeftControl")));
         BindingSaveResult result = assignKeyboardKeyWithModifier(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_J"),
                 new BindingModifier("Keyboard", "Key_LeftControl")
         );
 
-        assertTrue(available.contains("Key_J"));
+        assertFalse(taken);
         assertEquals(BindingSaveResult.SAVED, result);
     }
 
@@ -161,18 +150,14 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        List<String> available = availabilityService.availableKeys(
-                file,
-                "GalaxyMapOpen",
-                BindingSlotType.PRIMARY,
-                new BindingModifier("Keyboard", "Key_LeftControl")
-        );
+        boolean taken = occupied(file, "GalaxyMapOpen", "Key_J",
+                List.of(new BindingModifier("Keyboard", "Key_LeftControl")));
         BindingSaveResult result = assignKeyboardKeyWithModifier(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_J"),
                 new BindingModifier("Keyboard", "Key_LeftControl")
         );
 
-        assertFalse(available.contains("Key_J"));
+        assertTrue(taken);
         assertEquals(BindingSaveResult.KEY_OCCUPIED, result);
     }
 
@@ -205,19 +190,9 @@ class BindingsWriterTest {
                 new BindingModifier("Keyboard", "Key_LeftControl")
         );
 
-        assertTrue(availabilityService.isKeyOccupiedByOtherSlot(
-                file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_J", shiftCtrl));
-        assertFalse(availabilityService.isKeyOccupiedByOtherSlot(
-                file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_J", ctrlOnly));
-        // The same answers for the file held in memory, as the edits hold it (Storage S5).
-        byte[] binds = Files.readAllBytes(file);
-        assertTrue(availabilityService.isKeyOccupiedByOtherSlot(binds, "GalaxyMapOpen", "Key_J", shiftCtrl));
-        assertFalse(availabilityService.isKeyOccupiedByOtherSlot(binds, "GalaxyMapOpen", "Key_J", ctrlOnly));
-
-        assertFalse(availabilityService.availableKeys(
-                file, "GalaxyMapOpen", BindingSlotType.PRIMARY, ctrlShift).contains("Key_J"));
-        assertTrue(availabilityService.availableKeys(
-                file, "GalaxyMapOpen", BindingSlotType.PRIMARY, ctrlOnly).contains("Key_J"));
+        assertTrue(occupied(file, "GalaxyMapOpen", "Key_J", ctrlShift));
+        assertTrue(occupied(file, "GalaxyMapOpen", "Key_J", shiftCtrl));
+        assertFalse(occupied(file, "GalaxyMapOpen", "Key_J", ctrlOnly));
     }
 
     @Test
