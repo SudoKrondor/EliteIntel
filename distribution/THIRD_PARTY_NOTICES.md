@@ -65,6 +65,16 @@ The dependency is unmodified and is included in `elite_intel.jar` by the Gradle 
 The model is unmodified and distributed as downloaded from the
 [k2-fsa/sherpa-onnx releases](https://github.com/k2-fsa/sherpa-onnx/releases).
 
+## RUAccent Russian stress models
+
+`tts/ruaccent-tiny2.1` bundles the dictionaries and ONNX models of Denis Petrov's RUAccent, which put the stress and the letter ё on Russian text before Supertonic-3 reads it. EliteIntel runs them through ONNX Runtime and the DJL HuggingFace tokenizer, with its own Java port of RUAccent's "tiny" pipeline (`elite.intel.ai.mouth.supertonic.stress`). The Python library itself is not shipped.
+
+- License: MIT License, Copyright 2026 Denis Petrov. The full text is included alongside the model files as `LICENSE`. The model card states that all of RUAccent v1 moved to MIT.
+
+The files are unmodified and distributed as downloaded from
+[ruaccent/accentuator on Hugging Face](https://huggingface.co/ruaccent/accentuator), revision
+`b78ae5ea1e62beaf138bed1865cd8c3b0b5ca855`: the `tiny2.1` homograph model, the character accent model, the ё homograph model and four dictionaries. The rest of the repository (the larger models and dictionaries, and the part-of-speech tools used outside tiny mode) is not bundled.
+
 ## Jukebox audio test fixtures
 
 `../app/src/test/resources/jukebox` holds short synthetic MP3, FLAC, M4A/M4B and Ogg Vorbis files - a few seconds at most of a plain sine tone, generated with FFmpeg for this repository. They carry no third-party audio and exist so the decoders, the resampler and the tag reader are tested against real files of each format rather than against mocks. Two of them hold a codec this build deliberately cannot decode, so that refusing such a file is tested too: `lossless-alac.m4a` is Apple Lossless rather than AAC, and `opus-in-ogg.ogg` is Opus rather than Vorbis.

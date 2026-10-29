@@ -190,6 +190,9 @@ What differs:
   (`FSD`, `SRV`), decimals with a unit letter and comma decimals are read as numbers, thousands grouping is read the
   right way round whatever the separator, procedural sector codes (`XO-R b19-3`) are spelled whole, and whole numbers
   are spelled through `SignedAndDecimalNumbers.inWordsIncludingWholeNumbers` - only this voice asks for whole numbers. Italian also spells a class letter (`classe A`).
+- **Russian gets its stress
+  marked** (`supertonic/stress/RussianStress`, last step of `textForSynthesis`, `RU` only). Supertonic guesses Russian stress from the letters and gets homographs wrong (`голоса`: го́лоса / голоса́). A combining acute (U+0301) after the vowel moves it, because the model decomposes its input and learned that token from é and á. A Java port of RUAccent's tiny pipeline (`Accentuator`) puts one on every word, and ё back where it was dropped (`все` -> `всё`): ё dictionary and model, then homographs judged against the sentence, then the stress dictionary or the character model. Models and dictionaries live in `distribution/tts/ruaccent-tiny2.1` (MIT), load once - at `buildOfflineTts` when the commander or the game client is Russian, else on first use - in about a second, and cost a few ms a sentence. The port only inserts marks and ё: RUAccent's own pipeline deletes characters it does not know and reflows spacing. Missing or failing models fail open to unmarked text, logged.
+  `AccentuatorTest` pins the port to the Python original's output.
 - **Ten diffusion steps** (`NUM_STEPS`, raised from 8 on 2026-10-25), at a `SPEED_MULTIPLIER` of 0.85, which is also
   the fastest the model is asked to go (`MAX_MODEL_SPEED`).
 - **Each voice is tuned on its
@@ -411,6 +414,7 @@ The `SPEAK` custom command blocks the command executor thread on the handle's `C
 | `sherpa/RadioVoiceDraw` | The radio voice draw, generic over a cast enum |
 | `supertonic/SupertonicTTS` | Offline backend; sherpa-onnx Supertonic 3 (int8); main mouth and radio, every language |
 | `supertonic/SupertonicVoices` | 45 Supertonic voice enum with sid values |
+| `supertonic/stress/RussianStress` | Stress marks and ё on Russian text before Supertonic reads it (RUAccent port, `Accentuator`) |
 | `RadioVoicing` | Which engine voices radio (Supertonic, for every client) and in which language |
 | `TtsProvider` | The stored engine choice |
 | `google/GoogleTTSImpl` | Cloud backend; Google Cloud TTS API |

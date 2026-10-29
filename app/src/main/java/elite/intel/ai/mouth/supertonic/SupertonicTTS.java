@@ -1,9 +1,11 @@
 package elite.intel.ai.mouth.supertonic;
 
 import com.k2fsa.sherpa.onnx.*;
+import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.VoiceTuning;
 import elite.intel.ai.mouth.sherpa.SherpaOnnxTTS;
+import elite.intel.ai.mouth.supertonic.stress.RussianStress;
 import elite.intel.db.managers.SupertonicVoiceTuningManager;
 import elite.intel.i18n.Language;
 import elite.intel.util.AppPaths;
@@ -77,7 +79,9 @@ public class SupertonicTTS extends SherpaOnnxTTS {
 
     @Override
     protected String textForSynthesis(String text, Language language) {
-        return SupertonicTextNormalizer.normalize(text, language);
+        String normalized = SupertonicTextNormalizer.normalize(text, language);
+        // WHY last: the number words and spelled letters the normalizer writes need their stress too.
+        return language == Language.RU ? RussianStress.mark(normalized) : normalized;
     }
 
     /**
@@ -146,6 +150,9 @@ public class SupertonicTTS extends SherpaOnnxTTS {
         // WHY here: the synthesis thread asks for a voice's tuning on every sentence, and must not be the one
         // that reads the table the first time.
         SupertonicVoiceTuningManager.getInstance().load();
+        if (systemSession.getLanguage() == Language.RU || RadioVoicing.transmissionLanguage() == Language.RU) {
+            RussianStress.warmUp();
+        }
         Path modelDir = AppPaths.getTtsModelDir().resolve("sherpa-onnx-supertonic-3-tts-int8-2026-05-11");
         if (!Files.exists(modelDir)) {
             throw new IllegalStateException(

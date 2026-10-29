@@ -1,0 +1,37 @@
+{
+  "_name_or_path": "onnx_out",
+  "architectures": [
+    "RoFormerForTokenClassification"
+  ],
+  "attention_probs_dropout_prob": 0.2,
+  "embedding_size": 128,
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.2,
+  "hidden_size": 128,
+  "id2label": {
+    "0": "NO",
+    "1": "STRESS_PRIMARY",
+    "2": "STRESS_SECONDARY"
+  },
+  "initializer_range": 0.02,
+  "intermediate_size": 256,
+  "label2id": {
+    "NO": 0,
+    "STRESS_PRIMARY": 1,
+    "STRESS_SECONDARY": 2
+  },
+  "layer_norm_eps": 1e-12,
+  "max_length": 40,
+  "max_position_embeddings": 60,
+  "max_relative_positions": 60,
+  "model_type": "roformer",
+  "num_attention_heads": 8,
+  "num_hidden_layers": 4,
+  "pad_token_id": 0,
+  "relative_attention": true,
+  "rotary_value": false,
+  "transformers_version": "4.29.2",
+  "type_vocab_size": 2,
+  "use_cache": true,
+  "vocab_size": 45
+}
